@@ -1,6 +1,6 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org)
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/)
 
 brms
 ====
@@ -10,8 +10,8 @@ Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://tra
 [![Coverage
 Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN
-Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
-[![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
+Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+[![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
 Overview
 --------
@@ -19,22 +19,22 @@ Overview
 The **brms** package provides an interface to fit Bayesian generalized
 (non-)linear multivariate multilevel models using Stan, which is a C++
 package for performing full Bayesian inference (see
-<a href="http://mc-stan.org/" class="uri">http://mc-stan.org/</a>). The
-formula syntax is very similar to that of the package lme4 to provide a
-familiar and simple interface for performing regression analyses. A wide
-range of response distributions are supported, allowing users to fit –
-among others – linear, robust linear, count data, survival, response
-times, ordinal, zero-inflated, and even self-defined mixture models all
-in a multilevel context. Further modeling options include non-linear and
-smooth terms, auto-correlation structures, censored data, missing value
-imputation, and quite a few more. In addition, all parameters of the
-response distribution can be predicted in order to perform
-distributional regression. Multivariate models (i.e., models with
-multiple response variables) can be fit, as well. Prior specifications
-are flexible and explicitly encourage users to apply prior distributions
-that actually reflect their beliefs. Model fit can easily be assessed
-and compared with posterior predictive checks, cross-validation, and
-Bayes factors.
+<a href="https://mc-stan.org/" class="uri">https://mc-stan.org/</a>).
+The formula syntax is very similar to that of the package lme4 to
+provide a familiar and simple interface for performing regression
+analyses. A wide range of response distributions are supported, allowing
+users to fit – among others – linear, robust linear, count data,
+survival, response times, ordinal, zero-inflated, and even self-defined
+mixture models all in a multilevel context. Further modeling options
+include non-linear and smooth terms, auto-correlation structures,
+censored data, missing value imputation, and quite a few more. In
+addition, all parameters of the response distribution can be predicted
+in order to perform distributional regression. Multivariate models
+(i.e., models with multiple response variables) can be fit, as well.
+Prior specifications are flexible and explicitly encourage users to
+apply prior distributions that actually reflect their beliefs. Model fit
+can easily be assessed and compared with posterior predictive checks,
+cross-validation, and Bayes factors.
 
 Resources
 ---------
@@ -45,11 +45,11 @@ Resources
 -   [Advanced multilevel modeling with
     brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html)
     (The R Journal)
--   [Website](https://paul-buerkner.github.io/brms) (Website of brms
+-   [Website](https://paul-buerkner.github.io/brms/) (Website of brms
     with documentation and vignettes)
 -   [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/)
     (List of blog posts about brms)
--   [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on
+-   [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
     Discourse)
 -   [Open an issue](https://github.com/paul-buerkner/brms/issues)
     (GitHub issues for bug reports and feature requests)
@@ -89,18 +89,18 @@ summary(fit1)
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.58      0.07     0.46     0.73 1.01      757     1812
+#> sd(Intercept)     0.58      0.07     0.46     0.74 1.00      810     1753
 #> 
 #> Population-Level Effects: 
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.77      0.12     1.54     2.01 1.01      719      946
-#> zAge           0.10      0.08    -0.07     0.27 1.00      778     1318
-#> zBase          0.71      0.12     0.47     0.95 1.01      593     1323
-#> Trt1          -0.27      0.17    -0.61     0.05 1.01      756     1270
-#> zBase:Trt1     0.05      0.16    -0.26     0.37 1.01      764     1131
+#> Intercept      1.77      0.12     1.53     2.00 1.00      779     1319
+#> zAge           0.09      0.09    -0.09     0.26 1.00      683     1071
+#> zBase          0.70      0.12     0.46     0.95 1.00      847     1453
+#> Trt1          -0.27      0.17    -0.59     0.06 1.00      661     1046
+#> zBase:Trt1     0.05      0.16    -0.26     0.37 1.00      993     1624
 #> 
-#> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-#> is a crude measure of effective sample size, and Rhat is the potential 
+#> Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+#> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
@@ -162,8 +162,8 @@ previous seizures. Than we can use
 newdata <- data.frame(Trt = c(0, 1), zAge = 0, zBase = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error Q2.5 Q97.5
-#> [1,]  5.92175  2.487403    2    11
-#> [2,]  4.57475  2.168084    1     9
+#> [1,]   5.8980  2.505627    2    11
+#> [2,]   4.5595  2.162320    1     9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the
@@ -174,8 +174,8 @@ line.
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error     Q2.5    Q97.5
-#> [1,] 5.932893 0.6985409 4.663774 7.447649
-#> [2,] 4.545819 0.5293890 3.574081 5.647261
+#> [1,] 5.917144 0.7056695 4.632004 7.387471
+#> [2,] 4.529949 0.5360204 3.544085 5.624005
 ```
 
 Both methods return the same estimate (up to random error), while the
@@ -204,18 +204,18 @@ loo(fit1, fit2)
 #> Computed from 4000 by 236 log-likelihood matrix
 #> 
 #>          Estimate   SE
-#> elpd_loo   -672.1 36.5
-#> p_loo        94.5 14.2
-#> looic      1344.2 73.1
+#> elpd_loo   -670.4 36.7
+#> p_loo        92.8 14.3
+#> looic      1340.8 73.3
 #> ------
 #> Monte Carlo SE of elpd_loo is NA.
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     209   88.6%   368       
-#>  (0.5, 0.7]   (ok)        19    8.1%   128       
-#>    (0.7, 1]   (bad)        6    2.5%   35        
-#>    (1, Inf)   (very bad)   2    0.8%   5         
+#> (-Inf, 0.5]   (good)     214   90.7%   251       
+#>  (0.5, 0.7]   (ok)        17    7.2%   80        
+#>    (0.7, 1]   (bad)        3    1.3%   81        
+#>    (1, Inf)   (very bad)   2    0.8%   6         
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Output of model 'fit2':
@@ -223,24 +223,24 @@ loo(fit1, fit2)
 #> Computed from 4000 by 236 log-likelihood matrix
 #> 
 #>          Estimate   SE
-#> elpd_loo   -594.9 13.8
-#> p_loo       107.5  6.9
-#> looic      1189.8 27.5
+#> elpd_loo   -595.2 14.1
+#> p_loo       108.0  7.3
+#> looic      1190.4 28.2
 #> ------
 #> Monte Carlo SE of elpd_loo is NA.
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)      84   35.6%   675       
-#>  (0.5, 0.7]   (ok)       100   42.4%   209       
-#>    (0.7, 1]   (bad)       45   19.1%   42        
-#>    (1, Inf)   (very bad)   7    3.0%   11        
+#> (-Inf, 0.5]   (good)      82   34.7%   544       
+#>  (0.5, 0.7]   (ok)       103   43.6%   153       
+#>    (0.7, 1]   (bad)       47   19.9%   22        
+#>    (1, Inf)   (very bad)   4    1.7%   7         
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Model comparisons:
 #>      elpd_diff se_diff
 #> fit2   0.0       0.0  
-#> fit1 -77.2      27.1
+#> fit1 -75.2      26.9
 ```
 
 The `loo` output when comparing models is a little verbose. We first see
@@ -334,7 +334,7 @@ see `help("brm")`.
 ### Where do I ask questions, propose a new feature, or report a bug?
 
 Questions can be asked on the [Stan
-forums](http://discourse.mc-stan.org/) on Discourse. To propose a new
+forums](https://discourse.mc-stan.org/) on Discourse. To propose a new
 feature or report a bug, please open an issue on
 [GitHub](https://github.com/paul-buerkner/brms).
 

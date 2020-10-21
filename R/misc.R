@@ -375,6 +375,27 @@ cblapply <- function(X, FUN, ...) {
   do_call(cbind, lapply(X, FUN, ...))
 }
 
+# parallel lapply sensitive to the operating system
+plapply <- function(X, FUN, cores = 1, ...) {
+  if (cores == 1) {
+    out <- lapply(X, FUN, ...)
+  } else {
+    if (!os_is_windows()) {
+      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = cores, ...)
+    } else {
+      cl <- parallel::makePSOCKcluster(cores)
+      on.exit(parallel::stopCluster(cl))
+      out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
+    }
+  }
+  out
+}
+
+# check if the operating system is Windows
+os_is_windows <- function() {
+  isTRUE(Sys.info()[['sysname']] == "Windows")
+}
+
 # find variables in a character string or expression
 all_vars <- function(expr, ...) {
   if (is.character(expr)) {
@@ -634,6 +655,7 @@ do_call <- function(what, args, pkg = NULL) {
   eval2(call, envir = args, enclos = parent.frame())
 }
 
+# create an empty data frame
 empty_data_frame <- function() {
   as.data.frame(matrix(nrow = 0, ncol = 0))
 }
@@ -660,7 +682,7 @@ empty_data_frame <- function() {
 # deparse 'x' if it is no string
 deparse_no_string <- function(x) {
   if (!is.character(x)) {
-    x <- deparse(x)
+    x <- deparse_combine(x)
   }
   x
 }
@@ -872,9 +894,9 @@ round_largest_remainder <- function(x) {
   out
 }
 
-# add leading and trailing whitespaces
+# add leading and trailing white spaces
 # @param x object accepted by paste
-# @param nsp number of whitespaces to add
+# @param nsp number of white spaces to add
 wsp <- function(x = "", nsp = 1) {
   sp <- collapse(rep(" ", nsp))
   if (length(x)) {
@@ -885,9 +907,21 @@ wsp <- function(x = "", nsp = 1) {
   out
 }
 
+# add white space per line the the strings
+# @param x object accepted by paste
+# @param nsp number of white spaces to add
+wsp_per_line <- function(x, nsp) {
+  sp <- collapse(rep(" ", nsp))
+  x <- paste0(sp, x)
+  x <- gsub("\\n(?=.+)", paste0("\n", sp), x, perl = TRUE)
+  x
+}
+
 # remove whitespaces from strings
 rm_wsp <- function(x) {
-  gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  out <- gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  dim(out) <- dim(x)
+  out
 }
 
 # limit the number of characters of a vector
@@ -937,6 +971,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   }
   warning2(msg)
   invisible(NULL)
+}
+
+# check if verbose mode is activated
+is_verbose <- function() {
+  as_one_logical(getOption("brms.verbose", FALSE))
 }
 
 viridis6 <- function() {

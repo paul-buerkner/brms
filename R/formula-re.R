@@ -58,10 +58,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
-    by <- all.vars(by)
-    if (length(by) != 1L) {
-      stop2("Argument 'by' must contain exactly one variable.")
-    }
+    by <- deparse_combine(by)
   } else {
     by <- ""
   }
@@ -75,7 +72,8 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
     cov <- ""
   }
   dist <- match.arg(dist, c("gaussian", "student"))
-  allvars <- str2formula(c(groups, by))
+  byvars <- all_vars(by)
+  allvars <- str2formula(c(groups, byvars))
   nlist(groups, allvars, label, by, cor, id, cov, dist, type = "")
 }
 
@@ -89,6 +87,11 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' @param weights A matrix specifying the weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
 #'  If \code{NULL} (the default), equally weights are used. 
+#' @param by An optional factor matrix, specifying sub-populations of the
+#'   groups. It should have as many columns as grouping terms specified in
+#'   \code{...}. For each level of the \code{by} variable, a separate
+#'   variance-covariance matrix will be fitted. Levels of the grouping factor
+#'   must be nested in levels of the \code{by} variable matrix.
 #' @param scale Logical; if \code{TRUE} (the default), 
 #'  weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
@@ -121,7 +124,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' }
 #'   
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, cor = TRUE, 
+mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE, 
                id = NA, cov = NULL, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -133,6 +136,12 @@ mm <- function(..., weights = NULL, scale = TRUE, cor = TRUE,
   }
   cor <- as_one_logical(cor)
   id <- as_one_character(id, allow_na = TRUE)
+  by <- substitute(by)
+  if (!is.null(by)) {
+    by <- deparse_combine(by)
+  } else {
+    by <- ""
+  }
   cov <- substitute(cov)
   if (!is.null(cov)) {
     cov <- all.vars(cov)
@@ -145,8 +154,9 @@ mm <- function(..., weights = NULL, scale = TRUE, cor = TRUE,
   dist <- match.arg(dist, c("gaussian", "student"))
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
-  weightvars <- all.vars(weights)
-  allvars <- str2formula(c(groups, weightvars))
+  weightvars <- all_vars(weights)
+  byvars <- all_vars(by)
+  allvars <- str2formula(c(groups, weightvars, byvars))
   if (!is.null(weights)) {
     weights <- str2formula(deparse_no_string(weights))
     attr(weights, "scale") <- scale
@@ -154,7 +164,7 @@ mm <- function(..., weights = NULL, scale = TRUE, cor = TRUE,
   }
   nlist(
     groups, weights, weightvars, allvars, label, 
-    by = "", cor, id, cov, dist, type = "mm"
+    by, cor, id, cov, dist, type = "mm"
   )
 }
 
@@ -575,7 +585,8 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     )
     bylevels <- NULL
     if (nzchar(rdat$by[1])) {
-      bylevels <- rm_wsp(levels(factor(get(rdat$by[1], data))))
+      bylevels <- eval2(rdat$by[1], data)
+      bylevels <- rm_wsp(levels(factor(bylevels)))
     }
     rdat$bylevels <- repl(bylevels, nrow(rdat))
     rdat$form <- repl(re$form[[i]], nrow(rdat))
@@ -638,15 +649,34 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
         ))
         # store information of corresponding by levels
         if (nzchar(rsub$by[i])) {
-          stopifnot(!nzchar(rsub$type[i]))
+          stopifnot(rsub$type[i] %in% c("", "mmc"))
           by <- rsub$by[i]
           bylevels <- rsub$bylevels[[i]]
-          g <- rsub$gcall[[i]]$groups
-          J <- match(get(g, data), levels[[i]])
-          df <- unique(data.frame(J, by = rm_wsp(get(by, data))))
+          byvar <- rm_wsp(eval2(by, data))
+          groups <- rsub$gcall[[i]]$groups
+          if (rsub$gtype[i] == "mm") {
+            byvar <- as.matrix(byvar)
+            if (!identical(dim(byvar), c(nrow(data), length(groups)))) {
+              stop2(
+                "Grouping structure 'mm' expects 'by' to be ", 
+                "a matrix with as many columns as grouping factors."
+              )
+            }
+            df <- J <- named_list(groups)
+            for (k in seq_along(groups)) {
+              J[[k]] <- match(get(groups[k], data), levels[[i]])
+              df[[k]] <- data.frame(J = J[[k]], by = byvar[, k])
+            }
+            J <- unlist(J)
+            df <- do_call(rbind, df)
+          } else {
+            J <- match(get(groups, data), levels[[i]])
+            df <- data.frame(J = J, by = byvar)
+          }
+          df <- unique(df)
           if (nrow(df) > length(unique(J))) {
-            stop2("Some levels of '", g, "' correspond ", 
-                  "to multiple levels of '", by, "'.")
+            stop2("Some levels of ", collapse_comma(groups), 
+                  " correspond to multiple levels of '", by, "'.")
           }
           df <- df[order(df$J), ]
           by_per_level <- bylevels[match(df$by, bylevels)]

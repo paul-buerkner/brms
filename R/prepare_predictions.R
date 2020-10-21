@@ -361,8 +361,8 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
   }
   if (warn_me) {
     warning2(
-      "Noise-free variables were not saved. Please set ",
-      "argument 'save_mevars' to TRUE when fitting your model. ",
+      "Noise-free latent variables were not saved. ",
+      "You can control saving those variables via 'save_pars()'. ",
       "Treating original data as if it was new data as a workaround."
     )
   }
@@ -538,8 +538,8 @@ prepare_predictions_ranef <- function(ranef, samples, sdata, old_ranef, resp = N
     rsamples <- get_samples(samples, rpars)
     if (!length(rsamples)) {
       stop2(
-        "Group-level effects of group '", g, "' not found. ", 
-        "Please set 'save_ranef' to TRUE when fitting your model."
+        "Group-level coefficients of group '", g, "' not found. ", 
+        "You can control saving those coefficients via 'save_pars()'."
       )
     }
     # only prepare predictions of effects specified in the new formula

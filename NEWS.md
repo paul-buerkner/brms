@@ -1,10 +1,59 @@
-# brms 2.13.5++
+# brms 2.14.0++
 
 ### New Features
 
+* Support `by` variables in multi-membership terms.
+
+### Bug Fixes
+
+* Allow multi-membership terms in threaded models.
+* Fix facet labels in `conditional_effects` thanks 
+to Isaac Petersen. (#1014)
+
+
+# brms 2.14.0
+
+### New Features
+
+* Experimentally support within-chain parallelizaion via `reduce_sum`
+using argument `threads` in `brm` thanks to Sebastian Weber. (#892)
 * Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
 * No longer remove `NA` values in `data` if there are unused because of
 the `subset` addition argument. (#895)
+* Combine `by` variables and within-group correlation matrices
+in group-level terms. (#674)
+* Add argument `robust` to the `summary` method. (#976)
+* Parallelize evaluation of the `posterior_predict` and `log_lik` 
+methods via argument `cores`. (#819)
+* Compute effective number of parameters in `kfold`.
+* Show prior sources and vectorization in the `print` output 
+of `brmsprior` objects. (#761)
+* Store unused variables in the model's data frame via 
+argument `unused` of function `brmsformula`.
+* Support posterior mean predictions in `emmeans` via 
+`dpar = "mean"` thanks to Russell V. Lenth. (#993)
+* Improve control of which parameters should be saved via 
+function `save_pars` and corresponding argument in `brm`. (#746)
+* Add method `posterior_smooths` to computing predictions
+of individual smooth terms. (#738)
+* Allow to display grouping variables in `conditional_effects` 
+using the `effects` argument. (#1012)
+
+### Other Changes
+
+* Improve sampling efficiency for a lot of models by using Stan's
+GLM-primitives even in non-GLM cases. (#984)
+* Improve sampling efficiency of multilevel models with 
+within-group covariances thanks to David Westergaard. (#977)
+* Deprecate argument `probs` in the `conditional_effects` method
+in favor of argument `prob`.
+
+### Bug Fixes
+
+* Fix a problem in `pp_check` inducing wronger observation
+orders in time series models thanks to Fiona Seaton. (#1007)
+* Fix multiple problems with `loo_moment_match` that prevented
+it from working for some more complex models.
 
 
 # brms 2.13.5

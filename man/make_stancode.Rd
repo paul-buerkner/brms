@@ -16,6 +16,7 @@ make_stancode(
   stanvars = NULL,
   stan_funs = NULL,
   knots = NULL,
+  threads = NULL,
   save_model = NULL,
   ...
 )
@@ -96,6 +97,13 @@ block of the generated \pkg{Stan} code. It is now recommended to use the
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{threads}{Number of threads to use in within-chain parallelization. For
+more control over the threading process, \code{threads} may also be a
+\code{brmsthreads} object created by \code{\link{threading}}. Within-chain
+parallelization is experimental! We recommend its use only if you are
+experienced with Stan's \code{reduce_sum} function and have a slow running
+model that cannot be sped up by any other means.}
 
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file

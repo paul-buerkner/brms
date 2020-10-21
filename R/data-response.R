@@ -6,6 +6,7 @@
 #' @param resp Optional names of response variables for which to extract values.
 #' @param warn For internal use only.
 #' @param ... Further arguments passed to \code{\link{standata}}.
+#' @inheritParams posterior_predict.brmsfit
 #' 
 #' @return Returns a vector of response values for univariate models and a
 #'   matrix of response values with one column per response variable for
@@ -13,9 +14,10 @@
 #' 
 #' @keywords internal
 #' @export
-get_y <- function(x, resp = NULL, warn = FALSE, ...) {
+get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x)
+  sort <- as_one_logical(sort)
   warn <- as_one_logical(warn)
   args <- list(x, resp = resp, ...)
   args$re_formula <- NA
@@ -35,7 +37,11 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   } else {
     out <- sdata[[Ynames]]
   }
-  attr(out, "old_order") <- attr(sdata, "old_order")
+  old_order <- attr(sdata, "old_order")
+  if (!is.null(old_order) && !sort) {
+    stopifnot(length(old_order) == NROW(out))
+    out <- p(out, old_order)
+  }
   out
 }
 

@@ -233,6 +233,12 @@ test_that("make_standata handles multivariate models", {
   expect_equal(sdata$con_theta_x, as.array(c(2, 1)))
 })
 
+test_that("make_standata removes NAs correctly", {
+  dat <- data.frame(y = c(rnorm(9), NA))
+  sdata <- suppressWarnings(make_standata(y ~ 1, dat))
+  expect_equal(as.numeric(sdata$Y), dat$y[1:9])
+})
+
 test_that("make_standata handles the 'subset' addition argument correctly", {
   dat1 <- data.frame(
     y1 = rnorm(15), y2 = NA,
@@ -616,18 +622,28 @@ test_that("make_standata handles multi-membership models", {
 
 test_that("by variables in grouping terms are handled correctly", {
   gvar <- c("1A", "1B", "2A", "2B", "3A", "3B", "10", "100", "2", "3")
+  gvar <- rep(gvar, each = 10)
+  g_order <- order(gvar)
+  byvar <- c(0, 4.5, 3, 2, "x 1")
+  byvar <- factor(rep(byvar, each = 20))
   dat <- data.frame(
     y = rnorm(100), x = rnorm(100),
-    g = rep(gvar, each = 10),
-    z = factor(rep(c(0, 4.5, 3, 2, "x 1"), each = 20)),
-    z2 = factor(1:2)
+    g = gvar,
+    g2 = gvar[g_order],
+    z = byvar,
+    z2 = byvar[g_order],
+    z3 = factor(1:2)
   )
   sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)
   expect_equal(sdata$Nby_1, 5)
   expect_equal(sdata$Jby_1, as.array(c(2, 2, 1, 1, 5, 4, 4, 5, 3, 3)))
   
-  expect_error(make_standata(y ~ x + (1|gr(g, by = z2)), dat),
-               "Some levels of 'g' correspond to multiple levels of 'z2'")
+  sdata <- make_standata(y ~ x + (x | mm(g, g2, by = cbind(z, z2))), dat)
+  expect_equal(sdata$Nby_1, 5)
+  expect_equal(sdata$Jby_1, as.array(c(2, 2, 1, 1, 5, 4, 4, 5, 3, 3)))
+  
+  expect_error(make_standata(y ~ x + (1|gr(g, by = z3)), dat),
+               "Some levels of 'g' correspond to multiple levels of 'z3'")
 })
 
 test_that("make_standata handles calls to the 'poly' function", {
@@ -955,4 +971,10 @@ test_that("make_standata handles grouped ordinal thresholds correctly", {
   sdata <- make_standata(y | thres(6, gr = gr) ~ x, dat, cumulative())
   expect_equal(sdata$nthres, as.array(c(6, 6)))
   expect_equal(sdata$ngrthres, 2)
+})
+
+test_that("information for threading is handled correctly", {
+  dat <- data.frame(y = 1:10)
+  sdata <- make_standata(y ~ 1, dat, threads = threading(2, grainsize = 3))
+  expect_equal(sdata$grainsize, 3)
 })

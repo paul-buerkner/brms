@@ -34,11 +34,11 @@ of \code{"loo"}, \code{"waic"}, \code{"kfold"}, \code{"stacking"} (current
 default), or \code{"bma"}, \code{"pseudobma"}, For the former three
 options, Akaike weights will be computed based on the information criterion
 values returned by the respective methods. For \code{"stacking"} and
-\code{"pseudobma"} method \code{\link{loo_model_weights}} will be used to
+\code{"pseudobma"}, method \code{\link{loo_model_weights}} will be used to
 obtain weights. For \code{"bma"}, method \code{\link{post_prob}} will be
 used to compute Bayesian model averaging weights based on log marginal
 likelihood values (make sure to specify reasonable priors in this case).
-Some method, \code{weights} may also be a numeric vector of
+For some methods, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
 \item{method}{Method used to obtain predictions to average over. Should be

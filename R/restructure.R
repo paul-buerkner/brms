@@ -179,6 +179,28 @@ restructure_v2 <- function(x) {
       stop_parameterization_changed("cox", "2.13.5")
     }
   }
+  if (version < "2.13.8") {
+    x$prior$source <- ""
+    # ensure correct ordering of columns
+    cols_prior <- intersect(all_cols_prior(), names(x$prior))
+    x$prior <- x$prior[, cols_prior]
+  }
+  if (version < "2.13.10") {
+    # added support for threading
+    x$threads <- threading()
+  }
+  if (version < "2.13.12") {
+    # added more control over which parameters to save
+    save_ranef <- isTRUE(attr(x$exclude, "save_ranef"))
+    save_mevars <- isTRUE(attr(x$exclude, "save_mevars"))
+    save_all_pars <- isTRUE(attr(x$exclude, "save_all_pars"))
+    x$save_pars <- SW(validate_save_pars(
+      save_pars(), save_ranef = save_ranef, 
+      save_mevars = save_mevars,
+      save_all_pars = save_all_pars
+    ))
+    x$exclude <- NULL
+  }
   x
 }
 
@@ -241,7 +263,10 @@ restructure_v1 <- function(x) {
     }
   }
   if (version < "1.8.0.2") {
-    x$prior[, c("resp", "dpar")] <- ""
+    x$prior$resp <- x$prior$dpar <- ""
+    # ensure correct ordering of columns
+    cols_prior <- intersect(all_cols_prior(), names(x$prior))
+    x$prior <- x$prior[, cols_prior]
   }
   if (version < "1.9.0.4") {
     # names of monotonic parameters had to be changed after

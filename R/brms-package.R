@@ -6,16 +6,16 @@
 #'
 #' @description
 #' \if{html}{
-#'    \figure{stanlogo.png}{options: width="50px" alt="http://mc-stan.org/about/logo/"}
+#'    \figure{stanlogo.png}{options: width="50px" alt="https://mc-stan.org/about/logo/"}
 #'    \emph{Stan Development Team}
 #' }
 #' 
 #' The \pkg{brms} package provides an interface to fit Bayesian generalized
-#' multivariate (non-)linear multilevel models using \pkg{Stan}, which is a 
-#' C++ package for obtaining full Bayesian inference (see \url{http://mc-stan.org/}).
-#' The formula syntax is an extended version of the syntax applied in the 
-#' \pkg{lme4} package to provide a familiar and simple interface for 
-#' performing regression analyses.
+#' multivariate (non-)linear multilevel models using \pkg{Stan}, which is a C++
+#' package for obtaining full Bayesian inference (see
+#' \url{https://mc-stan.org/}). The formula syntax is an extended version of the
+#' syntax applied in the \pkg{lme4} package to provide a familiar and simple
+#' interface for performing regression analyses.
 #'  
 #' @details 
 #' The main function of \pkg{brms} is \code{\link{brm}}, which uses
@@ -33,16 +33,16 @@
 #' are perfectly suited. Detailed visual analyses can be performed by applying 
 #' the \code{\link{pp_check}} and \code{\link{stanplot}} methods, which both
 #' rely on the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} package.
-#' Model comparsions can be done via \code{\link{loo}} and \code{\link{waic}}, 
+#' Model comparisons can be done via \code{\link{loo}} and \code{\link{waic}}, 
 #' which make use of the \pkg{\link[loo:loo-package]{loo}} package as well as
 #' via \code{\link{bayes_factor}} which relies on the \pkg{bridgesampling} package. 
 #' For a full list of methods to apply, type \code{methods(class = "brmsfit")}.
 #' 
-#' Because \pkg{brms} is based on \pkg{Stan}, a C++ compiler is required. 
-#' The program Rtools (available on \url{https://cran.r-project.org/bin/windows/Rtools/}) 
-#' comes with a C++ compiler for Windows. On Mac, you should use Xcode.
-#' For further instructions on how to get the compilers running, see the
-#' prerequisites section at the
+#' Because \pkg{brms} is based on \pkg{Stan}, a C++ compiler is required. The
+#' program Rtools (available on
+#' \url{https://cran.r-project.org/bin/windows/Rtools/}) comes with a C++
+#' compiler for Windows. On Mac, you should use Xcode. For further instructions
+#' on how to get the compilers running, see the prerequisites section at the
 #' \href{https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started}{RStan-Getting-Started}
 #' page.
 #' 
@@ -70,10 +70,10 @@
 #' \code{doi:10.32614/RJ-2018-017}
 #' 
 #' The Stan Development Team. \emph{Stan Modeling Language User's Guide and
-#' Reference Manual}. \url{http://mc-stan.org/users/documentation}.
+#' Reference Manual}. \url{https://mc-stan.org/users/documentation/}.
 #' 
-#' Stan Development Team (2018). RStan: the R interface to Stan. R package
-#' version 2.18.1. \url{http://mc-stan.org}
+#' Stan Development Team (2020). RStan: the R interface to Stan. R package
+#' version 2.21.2. \url{https://mc-stan.org/}
 #' 
 #' @seealso 
 #' \code{\link{brm}}, 

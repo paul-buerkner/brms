@@ -25,7 +25,7 @@ A data frame of 76 observations containing
 \source{
 McGilchrist, C. A., & Aisbett, C. W. (1991). 
   Regression with frailty in survival analysis. 
-  \emph{Biometrics, 47(2)}, 461-466.
+  \emph{Biometrics}, 47(2), 461-466.
 }
 \usage{
 kidney

@@ -8,8 +8,6 @@
 #   ad: supported addition arguments
 #   include: names of user-defined Stan functions
 #     to be included in the Stan code
-#   const: definitions of constants in Stan
-#     to be put in the transformed parameters block
 #   specials: character vector specialities of some families
 
 .family_gaussian <- function() {
@@ -38,8 +36,7 @@
     links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma", "alpha"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
-    const = "real sqrt_2_div_pi = sqrt(2 / pi())"
+    ad = c("weights", "subset", "se", "cens", "trunc", "mi")
   )
 }
 

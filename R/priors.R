@@ -44,7 +44,7 @@
 #'   Below, we explain its usage and list some common 
 #'   prior distributions for parameters. 
 #'   A complete overview on possible prior distributions is given 
-#'   in the Stan Reference Manual available at \url{http://mc-stan.org/}.
+#'   in the Stan Reference Manual available at \url{https://mc-stan.org/}.
 #'   
 #'   To combine multiple priors, use \code{c(...)} or the \code{+} operator 
 #'   (see 'Examples'). \pkg{brms} does not check if the priors are written 
@@ -399,9 +399,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- bound <- ""
   }
-  do_call(brmsprior, 
-    nlist(prior, class, coef, group, resp, dpar, nlpar, bound)
-  )
+  source <- "user"
+  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, bound)
+  do_call(brmsprior, out)
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to 
@@ -513,6 +513,8 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   )
   # priors for noise-free variables
   prior <- prior + prior_Xme(meef, internal = internal)
+  # explicitly label default priors as such
+  prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
   to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
   prior <- unique(prior[to_order, , drop = FALSE])
@@ -844,7 +846,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
     cons <- gpef$cons[[i]]
     if (length(cons) > 0L) {
       for (j in seq_along(cons)) {
-        Xgp <- data_gp[[paste0("Xgp", pi, "_", j)]]
+        Xgp <- data_gp[[paste0("Xgp_prior", pi, "_", j)]]
         if (iso) {
           c(out[[i]]) <- .def_lscale_prior(Xgp)
         } else {
@@ -852,7 +854,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
         }
       }
     } else {
-      Xgp <- data_gp[[paste0("Xgp", pi)]]
+      Xgp <- data_gp[[paste0("Xgp_prior", pi)]]
       if (iso) {
         out[[i]] <- .def_lscale_prior(Xgp)
       } else {
@@ -1167,6 +1169,15 @@ validate_prior <- function(prior, bterms, data, sample_prior = "no", ...) {
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
+  if (is_verbose()) {
+    # show remaining default priors added to the model
+    def_prior <- prepare_print_prior(prior)
+    def_prior <- subset2(def_prior, source = "default")
+    if (nrow(def_prior)) {
+      message("The following priors were automatically added to the model:")
+      print(def_prior, show_df = TRUE) 
+    }
+  }
   prior
 }
 
@@ -1292,7 +1303,8 @@ validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
       # in the specification of default priors as it becomes unclear on which 
       # prior level they should be defined
       warning2("Specifying global priors for regression coefficients in ", 
-               "multivariate models is deprecated and may not work as expected.")
+               "multivariate models is deprecated. Please specify priors ",
+               "separately for each response variable.")
     }
     prior$remove[gi] <- TRUE
     for (r in x$responses) {
@@ -1327,7 +1339,8 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         # in the specification of default priors as it becomes unclear on which 
         # prior level they should be defined
         warning2("Specifying global priors for regression coefficients in ", 
-                 "categorical models is deprecated and may not work as expected.")
+                 "categorical models is deprecated. Please specify priors ",
+                 "separately for each response category.")
       }
       prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
@@ -1415,7 +1428,6 @@ validate_prior_special.btl <- function(x, prior, data,
       }
       if (is_special_prior(b_prior, "horseshoe")) {
         hs <- eval2(b_prior)
-        prior$prior[b_index] <- ""
         hs_obj_names <- c(
           "df", "df_global", "df_slab", "scale_global", 
           "scale_slab", "par_ratio", "autoscale"
@@ -1487,15 +1499,12 @@ get_bound <- function(prior, class = "b", coef = "",
 # create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "", 
                       resp = "", dpar = "", nlpar = "", bound = "",
-                      ls = list()) {
+                      source = "", ls = list()) {
   if (length(ls)) {
     if (is.null(names(ls))) {
       stop("Argument 'ls' must be named.")
     }
-    names <- c(
-      "prior", "class", "coef", "group", 
-      "resp", "dpar", "nlpar", "bound"
-    )
+    names <- all_cols_prior()
     if (!all(names(ls) %in% names)) {
       stop("Names of 'ls' must some of ", collapse_comma(names))
     }
@@ -1504,7 +1513,8 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
     }
   }
   out <- data.frame(
-    prior, class, coef, group, resp, dpar, nlpar, bound, 
+    prior, class, coef, group, 
+    resp, dpar, nlpar, bound, source,  
     stringsAsFactors = FALSE
   )
   class(out) <- c("brmsprior", "data.frame")
@@ -1516,9 +1526,9 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
 empty_prior <- function() {
   char0 <- character(0)
   brmsprior(
-    prior = char0, class = char0, coef = char0, 
-    group = char0, resp = char0, dpar = char0,
-    nlpar = char0, bound = char0
+    prior = char0, source = char0, class = char0,
+    coef = char0, group = char0, resp = char0, 
+    dpar = char0, nlpar = char0, bound = char0
   )
 }
 
@@ -1542,6 +1552,12 @@ prior_bounds <- function(prior) {
     von_mises = list(lb = -pi, ub = pi),
     list(lb = -Inf, ub = Inf)
   )
+}
+
+# all columns of brmsprior objects
+all_cols_prior <- function() {
+  c("prior", "class", "coef", "group", "resp", 
+    "dpar", "nlpar", "bound", "source")
 }
 
 # relevant columns for duplication checks in brmsprior objects
@@ -1617,16 +1633,41 @@ is.brmsprior <- function(x) {
 #' @param ... Currently ignored.
 #' 
 #' @export
-print.brmsprior <- function(x, show_df, ...) {
-  if (missing(show_df)) {
+print.brmsprior <- function(x, show_df = NULL, ...) {
+  if (is.null(show_df)) {
     show_df <- nrow(x) > 1L
   }
+  show_df <- as_one_logical(show_df)
+  y <- prepare_print_prior(x)
   if (show_df) {
-    NextMethod()
+    print.data.frame(y, row.names = FALSE, ...)
   } else {
-    cat(collapse(.print_prior(x), "\n"))
+    cat(collapse(.print_prior(y), "\n"))
   }
   invisible(x)
+}
+
+# prepare pretty printing of brmsprior objects
+prepare_print_prior <- function(x) {
+  stopifnot(is.brmsprior(x))
+  x$source[!nzchar(x$source)] <- "(unknown)"
+  # column names to vectorize over
+  cols <- c("group", "nlpar", "dpar", "resp", "class")
+  empty_strings <- rep("", 4)
+  for (i in which(!nzchar(x$prior))) {
+    ls <- x[i, cols]
+    ls <- rbind(ls, c(empty_strings, ls$class))
+    ls <- as.list(ls)
+    sub_prior <- subset2(x, ls = ls)
+    base_prior <- stan_base_prior(sub_prior)
+    if (nzchar(base_prior)) {
+      x$prior[i] <- base_prior
+      x$source[i] <- "(vectorized)"
+    } else {
+      x$prior[i] <- "(flat)"
+    }
+  }
+  x
 }
 
 # prepare text for print.brmsprior
@@ -1641,7 +1682,7 @@ print.brmsprior <- function(x, show_df, ...) {
   }
   bound <- ifelse(nzchar(x$bound), paste0(x$bound, " "), "")
   tilde <- ifelse(nzchar(x$class) | nzchar(group) | nzchar(coef), " ~ ", "")
-  prior <- ifelse(nzchar(x$prior), x$prior, "(no prior)")
+  prior <- ifelse(nzchar(x$prior), x$prior, "(flat)")
   paste0(bound, x$class, group, resp, dpar, nlpar, coef, tilde, prior)
 }
 
@@ -1925,4 +1966,9 @@ is_special_prior <- function(prior, target = NULL) {
   }
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)
+}
+
+# check if parameters should be samples only from the prior
+is_prior_only <- function(prior) {
+  is_equal(get_sample_prior(prior), "only")
 }

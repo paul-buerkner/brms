@@ -135,14 +135,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$backend)) {
     dots$backend <- object$backend
   }
-  if (is.null(dots$save_ranef)) {
-    dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
+  if (is.null(dots$threads)) {
+    dots$threads <- object$threads
   }
-  if (is.null(dots$save_mevars)) {
-    dots$save_mevars <- isTRUE(attr(object$exclude, "save_mevars"))
-  }
-  if (is.null(dots$save_all_pars)) {
-    dots$save_all_pars <- isTRUE(attr(object$exclude, "save_all_pars"))
+  if (is.null(dots$save_pars)) {
+    dots$save_pars <- object$save_pars
   }
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
@@ -192,12 +189,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
+    object$threads <- validate_threads(dots$threads)
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- validate_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
-    object$exclude <- exclude_pars(
-      object, save_ranef = dots$save_ranef, 
+    object$save_pars <- validate_save_pars(
+      save_pars = dots$save_pars, 
+      save_ranef = dots$save_ranef, 
       save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )

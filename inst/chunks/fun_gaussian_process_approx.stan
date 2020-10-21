@@ -1,4 +1,5 @@
   /* Spectral density function of a Gaussian process
+   * with squared exponential covariance kernel
    * Args:
    *   x: array of numeric values of dimension NB x D
    *   sdgp: marginal SD parameter
@@ -27,18 +28,4 @@
       }
     }
     return out;
-  }
-  /* compute an approximate latent Gaussian process
-   * Args:
-   *   X: Matrix of Laplacian eigen functions at the covariate values
-   *   sdgp: marginal SD parameter
-   *   lscale: vector of length-scale parameters
-   *   zgp: vector of independent standard normal variables 
-   *   slambda: square root of the Laplacian eigen values
-   * Returns:  
-   *   a vector to be added to the linear predictor
-   */ 
-  vector gpa(matrix X, real sdgp, vector lscale, vector zgp, vector[] slambda) { 
-    vector[cols(X)] diag_spd = sqrt(spd_cov_exp_quad(slambda, sdgp, lscale));
-    return X * (diag_spd .* zgp);
   }

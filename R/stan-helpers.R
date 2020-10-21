@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
-stan_global_defs <- function(bterms, prior, ranef) {
+stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -20,22 +20,33 @@ stan_global_defs <- function(bterms, prior, ranef) {
   if (any(nzchar(hs_dfs))) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
   }
-  if (any(nzchar(ranef$by))) {
-    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
-  }
-  if (stan_needs_kronecker(ranef)) {
-    str_add(out$fun) <- glue(
-      "  #include 'fun_as_matrix.stan'\n",
-      "  #include 'fun_kronecker.stan'\n"
-    )
+  if (nrow(ranef)) {
+    r_funs <- NULL
+    ids <- unique(ranef$id)
+    for (id in ids) {
+      r <- ranef[ranef$id == id, ]
+      if (nrow(r) > 1L && r$cor[1]) {
+        c(r_funs) <- "  #include 'fun_as_matrix.stan'\n"
+        if (nzchar(r$by[1])) {
+          if (nzchar(r$cov[1])) { 
+            c(r_funs) <- "  #include 'fun_scale_r_cor_by_cov.stan'\n"
+          } else {
+            c(r_funs) <- "  #include 'fun_scale_r_cor_by.stan'\n"
+          }
+        } else {
+          if (nzchar(r$cov[1])) { 
+            c(r_funs) <- "  #include 'fun_scale_r_cor_cov.stan'\n"
+          } else {
+            c(r_funs) <- "  #include 'fun_scale_r_cor.stan'\n"
+          }
+        }
+      }
+    }
+    str_add(out$fun) <- collapse(unique(r_funs))
   }
   family_files <- family_info(bterms, "include")
   if (length(family_files)) {
     str_add(out$fun) <- cglue("  #include '{family_files}'\n")
-  }
-  const <- family_info(bterms, "const")
-  if (length(const)) {
-    str_add(out$tdata_def) <- cglue("  {const};\n")
   }
   is_ordinal <- ulapply(families, is_ordinal)
   if (any(is_ordinal)) {
@@ -94,6 +105,9 @@ stan_global_defs <- function(bterms, prior, ranef) {
       "  #include 'fun_student_t_fcor.stan'\n"
     )
   }
+  if (use_threading(threads)) {
+    str_add(out$fun) <- "  #include 'fun_sequence.stan'\n"
+  }
   out
 }
 
@@ -141,7 +155,7 @@ stan_ilink <- function(link) {
 
 # define a vector in Stan language
 stan_vector <- function(...) {
-  paste0("[", paste0(c(...), collapse = ", "), "]'")
+  paste0("transpose([", paste0(c(...), collapse = ", "), "])")
 }
 
 # prepare Stan code for correlations in the generated quantities block
@@ -203,17 +217,34 @@ make_stan_names <- function(x) {
   gsub("\\.|_", "", make.names(x, unique = TRUE))
 }
 
-# checks if a model needs the kronecker product
-# @param ranef output of tidy_ranef
-# @return a single logical value
-stan_needs_kronecker <- function(ranef) {
-  ids <- unique(ranef$id)
-  out <- FALSE
-  for (id in ids) {
-    r <- ranef[ranef$id == id, ]
-    out <- out || nrow(r) > 1L && r$cor[1] && nzchar(r$cov[1])
-  }
-  out
+# functions to handle indexing when threading
+stan_slice <- function(threads) {
+  str_if(use_threading(threads), "[start:end]")
+}
+
+stan_nn <- function(threads) {
+  str_if(use_threading(threads), "[nn]", "[n]")
+}
+
+stan_nn_def <- function(threads) {
+  str_if(use_threading(threads), "    int nn = n + start - 1;\n")
+}
+
+# clean up arguments for partial_log_lik
+# @param ... strings containing arguments of the form ', type identifier'
+# @return named list of two elements:
+#   typed: types + identifiers for use in the function header
+#   plain: identifiers only for use in the function call
+stan_clean_pll_args <- function(...) {
+  args <- paste0(...)
+  # split up header to remove duplicates
+  typed <- unlist(strsplit(args, ", +"))[-1]
+  typed <- unique(typed)
+  plain <- unlist(strsplit(typed, " +"))
+  plain <- plain[seq(2, length(plain), 2)]
+  typed <- collapse(", ", typed)
+  plain <- collapse(", ", plain)
+  nlist(typed, plain)
 }
 
 # prepare a string to be used as comment in Stan

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Sebastian Weber &amp; Paul Bürkner" />
+
+<meta name="date" content="2020-09-29" />
+
+<title>Running brms models with within-chain parallelization</title>
+
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Running brms models with within-chain parallelization</h1>
+<h4 class="author">Sebastian Weber &amp; Paul Bürkner</h4>
+<h4 class="date">2020-09-29</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#quick-summary">Quick summary</a></li>
+<li><a href="#within-chain-parallelization">Within-chain parallelization</a></li>
+<li><a href="#example-model">Example model</a></li>
+<li><a href="#managing-parallelization-overhead">Managing parallelization overhead</a></li>
+<li><a href="#parallelization-speedup">Parallelization speedup</a></li>
+<li><a href="#appendix">Appendix</a><ul>
+<li><a href="#fake-data-simulation">Fake data simulation</a></li>
+<li><a href="#poisson-example-model">Poisson example model</a></li>
+<li><a href="#threading-benchmark-function">Threading benchmark function</a></li>
+<li><a href="#munging-of-slowdown-with-chunking-data">Munging of slowdown with chunking data</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Full Bayesian inference is a computationally very demanding task and often we wish to run our models faster in shorter walltime. With modern computers we nowadays have multiple processors available on a given machine such that the use of running the inference in parallel will shorten the overall walltime. While between-chain parallelization is straightforward by merely launching multiple chains at the same time, the use of within-chain parallelization is more complicated in various ways. This vignette aims to introduce the user to within-chain parallelization with <strong>brms</strong>, since its efficient use depends on various aspects specific to the users model.</p>
+</div>
+<div id="quick-summary" class="section level2">
+<h2>Quick summary</h2>
+<p>Assuming you have a <strong>brms</strong> model which you wish to evaluate faster by using more cores per chain, for example:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>fit_serial &lt;-<span class="st"> </span><span class="kw">brm</span>(</span>
+<span id="cb1-2"><a href="#cb1-2"></a>  count <span class="op">~</span><span class="st"> </span>zAge <span class="op">+</span><span class="st"> </span>zBase <span class="op">*</span><span class="st"> </span>Trt <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>patient),</span>
+<span id="cb1-3"><a href="#cb1-3"></a>  <span class="dt">data =</span> epilepsy, <span class="dt">family =</span> <span class="kw">poisson</span>(),</span>
+<span id="cb1-4"><a href="#cb1-4"></a>  <span class="dt">chains =</span> <span class="dv">4</span>, <span class="dt">cores =</span> <span class="dv">4</span>, <span class="dt">backend =</span> <span class="st">&quot;cmdstanr&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a>)</span></code></pre></div>
+<p>Then running this model with threading requires <code>cmdstanr</code> as backend and you can simply add threading support to an existing model with the <code>update</code> mechanism as:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>fit_parallel &lt;-<span class="st"> </span><span class="kw">update</span>(</span>
+<span id="cb2-2"><a href="#cb2-2"></a>  fit_serial, <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>,</span>
+<span id="cb2-3"><a href="#cb2-3"></a>  <span class="dt">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>, <span class="dt">threads =</span> <span class="kw">threading</span>(<span class="dv">2</span>)</span>
+<span id="cb2-4"><a href="#cb2-4"></a>)</span></code></pre></div>
+<p>The example above assumes that 4 cores are available which are best used without within-chain parallelization by running 4 chains in parallel. When using within chain parallelization it is still advisable to use just as many threads <em>in total</em> as you have CPU cores. It’s thus sensible in this case to reduce the number of chains running in parallel to just 2, but allow each chain to use 2 threads. Obviously this will reduce the number of iterations in the posterior here as we assumed a fixed amount of 4 cores.</p>
+<ul>
+<li>Only apply within-chain parallelization to large problems which take more than a few minutes at least to calculate. The <code>epilepsy</code> example above is actually too small to gain in speed (just a few seconds per chain on this machine).</li>
+<li>Within-chain parallelization is less efficient than between-chain parallelization. So only use within-chain parallelism if more CPUs can be used to run the entire analysis.</li>
+<li>Due to details of the model and data-set, speedups with more cores can be very limited. Not every model amends to within-chain parallelization and an empirical evaluation is in some cases advisable.</li>
+<li>Doubling the execution speed with few cores is a lot easier than obtaining larger speedups with even more cores.</li>
+<li>Models with computationally expensive likelihoods are easier to parallelize than less expensive likelihoods. For example, the Poisson distribution involves expensive <span class="math inline">\(\log\Gamma\)</span> functions whereas the normal likelihood is very cheap to calculate in comparison.</li>
+<li>Models with many parameters (e.g., multilevel models) carry a large overhead when running in parallel.</li>
+<li>With a larger overhead of the model, the likelihood must be sufficiently expensive such that the relative computational cost of likelihood to parallelization overhead is favorable.</li>
+<li>Avoid using hyper-threading, that is, only use as many threads as you have physical cores available.</li>
+<li>Ensure that the data is randomly sorted such that consecutive subsets of the data are roughly of the same computational effort.</li>
+</ul>
+</div>
+<div id="within-chain-parallelization" class="section level2">
+<h2>Within-chain parallelization</h2>
+<p>The within-chain parallelization implemented in <strong>brms</strong> is based on the <code>reduce_sum</code> facility in Stan. The basic principle that <code>reduce_sum</code> uses is to split a large summation into arbitrary smaller partial sums. Due to the commutativity and associativity of the sum operation these smaller partial sums can be evaluated in any order and in parallel from one another. <strong>brms</strong> leverages <code>reduce_sum</code> to evaluate the log-likelihood of the model in parallel as for example</p>
+<p><span class="math display">\[
+\begin{aligned}
+l(y|\theta) &amp;= \sum_{i=1}^N l_i(y_i| \theta) \\
+ &amp;= \sum_{i=1}^{S_1} l_i(y_i| \theta) + \sum_{i=S_1+1}^N l_i(y_i| \theta).
+\end{aligned}
+\]</span></p>
+<p>As a consequence, the within-chain parallelization requires mutually independent log-likelihood terms which restricts its applicability to some degree.</p>
+<p>Furthermore, the within-chain parallelization is only applicable to the evaluation of the data likelihood while all other parts of the model, for example priors, will remain running serially. Thus, only a partial fraction of the entire Stan model will run in parallel which limits the potential speedup one may obtain. The theoretical speedup for a partially in parallel running program is described by <a href="https://en.wikipedia.org/wiki/Amdahl%27s_law">Amdahl‘s law</a>. For example, with 90% of the computational load running in parallel one can essentially double the execution speed with 2 cores while 8 cores may only speedup the program by at most 5x. How large the computational cost of the log-likelihood is in relation to the entire model is very dependent on the model of the user.</p>
+<p>In practice, the speedups are even smaller than the theoretical speedups. This is caused by the additional overhead implied by forming multiple smaller sums than just one large one. For example, for each partial sum formed the entire parameter vector <span class="math inline">\(\theta\)</span> has to be copied in memory for Stan to be able to calculate the gradient of the log-likelihood. Hence, with more partial sums, more copying is necessary as opposed to evaluating just one large sum. Whether the additional copying is indeed relevant depends on the computational cost of the log-likelihood of each term and the number of parameters. For a model with a computationally cheap normal log-likelihood, this effect is more important than for a model with a Poisson log-likelihood, and for multilevel models with many parameters more copying is needed than for simpler regression models. It may therefore be necessary to form sufficiently large partial sums to warrant an efficient parallel execution. The size of the partial sums is referred to as the <code>grainsize</code>, which is set to a reasonable default value. However, for some models this tuning parameter requires some attention from the user for optimal performance.</p>
+<p>Finally, it is important to note that by default the exact size and order of the partial sums is not stable as it is adjusted to the load of the system. As a result, exact numerical reproducibility is not guaranteed by default. In order to warrant the same size and order of the partial sums, the <code>static</code> option must be used and set to <code>TRUE</code>, which uses a deterministic scheduler for the parallel work.</p>
+</div>
+<div id="example-model" class="section level2">
+<h2>Example model</h2>
+<p>As a toy demonstration, we use here a multilevel Poisson model. The model is a varying intercept model with <span class="math inline">\(10^{4}\)</span> data observation which are grouped into <span class="math inline">\(1000\)</span> groups. Each data item has <span class="math inline">\(3\)</span> continuous covariates. The simulation code for the fake data can be found in the appendix and it’s first <span class="math inline">\(10\)</span> rows are:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">kable</span>(<span class="kw">head</span>(fake, <span class="dv">10</span>), <span class="dt">digits =</span> <span class="dv">3</span>)</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">g</th>
+<th align="right">x1</th>
+<th align="right">x2</th>
+<th align="right">x3</th>
+<th align="right">theta</th>
+<th align="right">eta</th>
+<th align="right">mu</th>
+<th align="right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">382</td>
+<td align="right">0.496</td>
+<td align="right">0.623</td>
+<td align="right">0.069</td>
+<td align="right">-0.262</td>
+<td align="right">0.510</td>
+<td align="right">0.248</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">578</td>
+<td align="right">-0.748</td>
+<td align="right">-0.300</td>
+<td align="right">-0.768</td>
+<td align="right">-0.903</td>
+<td align="right">-0.032</td>
+<td align="right">-0.934</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">772</td>
+<td align="right">-1.124</td>
+<td align="right">-0.161</td>
+<td align="right">-0.882</td>
+<td align="right">-1.047</td>
+<td align="right">-0.551</td>
+<td align="right">-1.598</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">774</td>
+<td align="right">0.992</td>
+<td align="right">-0.593</td>
+<td align="right">1.007</td>
+<td align="right">1.578</td>
+<td align="right">-0.045</td>
+<td align="right">1.533</td>
+<td align="right">2</td>
+</tr>
+<tr class="odd">
+<td align="right">729</td>
+<td align="right">0.641</td>
+<td align="right">-1.563</td>
+<td align="right">-0.491</td>
+<td align="right">-0.291</td>
+<td align="right">-1.460</td>
+<td align="right">-1.751</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">897</td>
+<td align="right">-0.085</td>
+<td align="right">-0.531</td>
+<td align="right">-0.978</td>
+<td align="right">-1.296</td>
+<td align="right">-0.929</td>
+<td align="right">-2.226</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">110</td>
+<td align="right">-0.772</td>
+<td align="right">1.364</td>
+<td align="right">-0.629</td>
+<td align="right">-1.351</td>
+<td align="right">0.124</td>
+<td align="right">-1.227</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">248</td>
+<td align="right">-1.441</td>
+<td align="right">0.699</td>
+<td align="right">1.284</td>
+<td align="right">2.072</td>
+<td align="right">-1.020</td>
+<td align="right">1.053</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">754</td>
+<td align="right">-1.320</td>
+<td align="right">0.837</td>
+<td align="right">-0.137</td>
+<td align="right">-0.237</td>
+<td align="right">1.452</td>
+<td align="right">1.215</td>
+<td align="right">3</td>
+</tr>
+<tr class="even">
+<td align="right">682</td>
+<td align="right">-1.345</td>
+<td align="right">-2.673</td>
+<td align="right">-1.628</td>
+<td align="right">-1.146</td>
+<td align="right">-0.388</td>
+<td align="right">-1.534</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>brms</strong> model fitting this data is:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>model_poisson &lt;-<span class="st"> </span><span class="kw">brm</span>(</span>
+<span id="cb4-2"><a href="#cb4-2"></a>  y <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>x1 <span class="op">+</span><span class="st"> </span>x2 <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">|</span><span class="st"> </span>g),</span>
+<span id="cb4-3"><a href="#cb4-3"></a>  <span class="dt">data =</span> fake,</span>
+<span id="cb4-4"><a href="#cb4-4"></a>  <span class="dt">family =</span> <span class="kw">poisson</span>(),</span>
+<span id="cb4-5"><a href="#cb4-5"></a>  <span class="dt">iter =</span> <span class="dv">100</span>, <span class="co"># short sampling to speedup example</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a>  <span class="dt">prior =</span> <span class="kw">prior</span>(<span class="kw">normal</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="dt">class =</span> b) <span class="op">+</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="st">    </span><span class="kw">prior</span>(<span class="kw">constant</span>(<span class="dv">1</span>), <span class="dt">class =</span> sd, <span class="dt">group =</span> g),</span>
+<span id="cb4-8"><a href="#cb4-8"></a>  <span class="dt">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>,</span>
+<span id="cb4-9"><a href="#cb4-9"></a>  <span class="dt">threads =</span> <span class="kw">threading</span>(<span class="dv">2</span>)</span>
+<span id="cb4-10"><a href="#cb4-10"></a>)</span></code></pre></div>
+<p>Here we have fixed the standard deviation of the between-group variation for the intercept to the true value of <span class="math inline">\(1\)</span> as used in the simulation. This is to avoid unfavorable geometry of the problem allowing us to concentrate on computational aspects alone.</p>
+<p>The Poisson likelihood is a relatively expensive likelihood due to the use of <span class="math inline">\(\log\Gamma\)</span> function as opposed to, for example, a normal likelihood which does is by far less expensive operations. Moreover, this example is chosen in order to demonstrate parallelization overhead implied by a large number of parameters.</p>
+</div>
+<div id="managing-parallelization-overhead" class="section level2">
+<h2>Managing parallelization overhead</h2>
+<p>As discussed above, the key mechanism to run Stan programs with parallelization is to split the large sum over independent log likelihood terms into arbitrary smaller <em>partial sums</em>. Creating more <em>partial sums</em> allows to increase simultaneous parallel computations in a granular way, but at the same time additional overhead is introduced through the requirement to copy the entire parameter vector for each <em>partial sum</em> formed along with further overhead due to splitting up a single large task into multiple smaller ones.</p>
+<p>By default, <strong>brms</strong> will choose a sensible <code>grainsize</code> which defines how large a given <em>partial sum</em> will roughly be. The actual chunk size is automatically tuned whenever the default non-static scheduler is used, which is the recommended choice to start with. As noted before, only the static scheduler is giving fully deterministic results since the chunk size and order of partial sums will be the same during sampling.</p>
+<p>While we expect that the default <code>grainsize</code> in <strong>brms</strong> is reasonably good for many models, it can improve performance if one tunes the <code>grainsize</code> specifically to a given model and data-set. We suggest to increase successively the number of chunks a given data set is split into with the static scheduler and run this on a single core. This way one can control the number of <em>partial sum</em> accurately and monitor the execution time as it increases. These experiments are run with only a single chain and very short iteration numbers as we are not interested in the statistical results, but rather aim to be able to explore the tuning parameter space of the chunk size as quickly as possible. The number of iterations needed to get reliable runtime estimates for a given chunk size will depend on many details and the easiest way to determine this is to run this benchmark with multiple number of iterations. Whenever their results match approximately, then the iteration numbers are sufficient.</p>
+<p>Below is an example R code demonstrating such a benchmark. The utility function <code>benchmark_threading</code> is shown and explained in the appendix.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>chunking_bench &lt;-<span class="st"> </span><span class="kw">transform</span>(</span>
+<span id="cb5-2"><a href="#cb5-2"></a>  <span class="kw">data.frame</span>(<span class="dt">chunks =</span> <span class="dv">2</span><span class="op">^</span>(<span class="dv">0</span><span class="op">:</span><span class="dv">4</span>)), </span>
+<span id="cb5-3"><a href="#cb5-3"></a>  <span class="dt">grainsize =</span> <span class="kw">ceiling</span>(N <span class="op">/</span><span class="st"> </span>chunks)</span>
+<span id="cb5-4"><a href="#cb5-4"></a>)</span>
+<span id="cb5-5"><a href="#cb5-5"></a></span>
+<span id="cb5-6"><a href="#cb5-6"></a>scaling_chunking &lt;-<span class="st"> </span><span class="kw">benchmark_threading</span>(</span>
+<span id="cb5-7"><a href="#cb5-7"></a>  model_poisson,</span>
+<span id="cb5-8"><a href="#cb5-8"></a>  <span class="dt">cores =</span> <span class="dv">1</span>,                         </span>
+<span id="cb5-9"><a href="#cb5-9"></a>  <span class="dt">grainsize =</span> chunking_bench<span class="op">$</span>grainsize,  <span class="co"># test various grainsizes</span></span>
+<span id="cb5-10"><a href="#cb5-10"></a>  <span class="dt">iter =</span> <span class="kw">c</span>(<span class="dv">25</span>, <span class="dv">50</span>),  <span class="co"># very short test runs</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a>  <span class="dt">static =</span> <span class="ot">TRUE</span>  <span class="co"># with static partitioner</span></span>
+<span id="cb5-12"><a href="#cb5-12"></a>)               </span>
+<span id="cb5-13"><a href="#cb5-13"></a></span>
+<span id="cb5-14"><a href="#cb5-14"></a><span class="co"># for additional data munging please refer to the appendix</span></span></code></pre></div>
+<p>Graphically summarizing the results shows that with more than 8 chunks the overhead is about 10% and increasing further with more chunks. For models without many parameters, no such overhead should be observed. Furthermore, one can see that 25 and 50 iterations give similar results implying that 25 iterations suffice for stable runtime estimates for these (and the following) benchmarks. The overhead of up to 20% in this example with 16 chunks may seem large due to the scaling of the plot. One must not forget that when we start to use more CPU cores, the overhead is easily offset, but it limits the maximal speedup we can get. For example, some 2 units of computation become 2.4 units due to the overhead such that on 2 cores we don’t quite double the execution speed, but rather get a 1.6x increase in speed instead of a 2x speedup.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">ggplot</span>(scaling_chunking) <span class="op">+</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="st">  </span><span class="kw">aes</span>(chunks, slowdown, <span class="dt">colour =</span> iter, <span class="dt">shape =</span> iter) <span class="op">+</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>() <span class="op">+</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="st">  </span><span class="kw">scale_x_log10</span>(<span class="dt">breaks =</span> scaling_chunking<span class="op">$</span>chunks) <span class="op">+</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="st">  </span><span class="kw">scale_y_log10</span>() <span class="op">+</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a><span class="st">  </span><span class="kw">ggtitle</span>(<span class="st">&quot;Slowdown with increasing number of chunks&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" width="60%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="parallelization-speedup" class="section level2">
+<h2>Parallelization speedup</h2>
+<p>In practice, we are often interested in so-called “hard-scaling” properties of the parallelization system. That is, for a fixed problem size we would like to know how much faster we can execute the Stan program with increasing number of threads. As nowadays CPUs usually run with so-called hyper-threading, it is also of interest if this technique is beneficial for Stan programs as well (spoiler alert: it’s not useful). As we have seen before, the <code>grainsize</code> can have an impact on the performance and is as such a tuning parameter. Below we demonstrate some exemplary R code which runs a benchmark with varying number of CPU cores and varying number of <code>grainsize</code>s.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>num_cpu &lt;-<span class="st"> </span>parallel<span class="op">::</span><span class="kw">detectCores</span>(<span class="dt">logical =</span> <span class="ot">FALSE</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>num_cpu_logical &lt;-<span class="st"> </span>parallel<span class="op">::</span><span class="kw">detectCores</span>(<span class="dt">logical =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3"></a>grainsize_default &lt;-<span class="st"> </span><span class="kw">ceiling</span>(N <span class="op">/</span><span class="st"> </span>(<span class="dv">2</span> <span class="op">*</span><span class="st"> </span>num_cpu))</span>
+<span id="cb7-4"><a href="#cb7-4"></a>cores &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span><span class="op">^</span><span class="kw">seq</span>(<span class="dv">0</span>, <span class="kw">floor</span>(<span class="kw">log2</span>(num_cpu_logical))), num_cpu, num_cpu_logical)</span>
+<span id="cb7-5"><a href="#cb7-5"></a>cores &lt;-<span class="st"> </span><span class="kw">sort</span>(<span class="kw">unique</span>(cores))</span>
+<span id="cb7-6"><a href="#cb7-6"></a>grainsize &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span><span class="op">*</span>grainsize_default, grainsize_default, grainsize_default<span class="op">/</span><span class="dv">2</span>)</span>
+<span id="cb7-7"><a href="#cb7-7"></a>grainsize &lt;-<span class="st"> </span><span class="kw">round</span>(grainsize)</span>
+<span id="cb7-8"><a href="#cb7-8"></a></span>
+<span id="cb7-9"><a href="#cb7-9"></a>scaling_cores &lt;-<span class="st"> </span><span class="kw">benchmark_threading</span>(</span>
+<span id="cb7-10"><a href="#cb7-10"></a>  model_poisson,</span>
+<span id="cb7-11"><a href="#cb7-11"></a>  <span class="dt">cores =</span> cores,</span>
+<span id="cb7-12"><a href="#cb7-12"></a>  <span class="dt">grainsize =</span> grainsize,</span>
+<span id="cb7-13"><a href="#cb7-13"></a>  <span class="dt">iter =</span> <span class="kw">c</span>(<span class="dv">25</span>), </span>
+<span id="cb7-14"><a href="#cb7-14"></a>  <span class="dt">static =</span> <span class="ot">FALSE</span></span>
+<span id="cb7-15"><a href="#cb7-15"></a>)</span>
+<span id="cb7-16"><a href="#cb7-16"></a></span>
+<span id="cb7-17"><a href="#cb7-17"></a>single_core  &lt;-<span class="st"> </span><span class="kw">transform</span>(</span>
+<span id="cb7-18"><a href="#cb7-18"></a>  <span class="kw">subset</span>(scaling_cores, cores <span class="op">==</span><span class="st"> </span><span class="dv">1</span>),</span>
+<span id="cb7-19"><a href="#cb7-19"></a>  <span class="dt">runtime_single =</span> runtime, <span class="dt">runtime =</span> <span class="ot">NULL</span>, <span class="dt">cores =</span> <span class="ot">NULL</span></span>
+<span id="cb7-20"><a href="#cb7-20"></a>)</span>
+<span id="cb7-21"><a href="#cb7-21"></a></span>
+<span id="cb7-22"><a href="#cb7-22"></a>scaling_cores &lt;-<span class="st"> </span><span class="kw">transform</span>(</span>
+<span id="cb7-23"><a href="#cb7-23"></a>  <span class="kw">merge</span>(scaling_cores, single_core),</span>
+<span id="cb7-24"><a href="#cb7-24"></a>  <span class="dt">speedup =</span> runtime_single<span class="op">/</span>runtime,</span>
+<span id="cb7-25"><a href="#cb7-25"></a>  <span class="dt">grainsize =</span> <span class="kw">factor</span>(grainsize)</span>
+<span id="cb7-26"><a href="#cb7-26"></a>)</span></code></pre></div>
+<p>It is important to consider the absolute runtime and the relative speedup vs. running on a single core. The relative speedup can be misleading if the single core runtime is very slow in which case speed gains on more CPUs may look overly good. Considering instead the absolute runtime avoids this problem. After all, we are interested in the shortest walltime we can get rather than any relative speedups.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">ggplot</span>(scaling_cores) <span class="op">+</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="st">  </span><span class="kw">aes</span>(cores, runtime, <span class="dt">shape =</span> grainsize, <span class="dt">color =</span> grainsize) <span class="op">+</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="st">  </span><span class="kw">geom_vline</span>(<span class="dt">xintercept =</span> num_cpu, <span class="dt">linetype =</span> <span class="dv">3</span>) <span class="op">+</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>() <span class="op">+</span><span class="st"> </span></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="st">  </span><span class="kw">scale_x_log10</span>(<span class="dt">breaks =</span> scaling_cores<span class="op">$</span>cores) <span class="op">+</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="st">  </span><span class="kw">scale_y_log10</span>() <span class="op">+</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">legend.position =</span> <span class="kw">c</span>(<span class="fl">0.85</span>, <span class="fl">0.8</span>)) <span class="op">+</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="st">  </span><span class="kw">ggtitle</span>(<span class="st">&quot;Runtime with varying number of cores&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" width="60%" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">ggplot</span>(scaling_cores) <span class="op">+</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="st">  </span><span class="kw">aes</span>(cores, speedup, <span class="dt">shape =</span> grainsize, <span class="dt">color =</span> grainsize) <span class="op">+</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="st">  </span><span class="kw">geom_abline</span>(<span class="dt">slope =</span> <span class="dv">1</span>, <span class="dt">intercept =</span> <span class="dv">0</span>, <span class="dt">linetype =</span> <span class="dv">2</span>) <span class="op">+</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="st">  </span><span class="kw">geom_vline</span>(<span class="dt">xintercept =</span> num_cpu, <span class="dt">linetype =</span> <span class="dv">3</span>) <span class="op">+</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>() <span class="op">+</span></span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="st">  </span><span class="kw">scale_x_log10</span>(<span class="dt">breaks=</span>scaling_cores<span class="op">$</span>cores) <span class="op">+</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="st">  </span><span class="kw">scale_y_log10</span>(<span class="dt">breaks=</span>scaling_cores<span class="op">$</span>cores) <span class="op">+</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">aspect.ratio =</span> <span class="dv">1</span>) <span class="op">+</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="st">  </span><span class="kw">coord_fixed</span>(<span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">1</span>, num_cpu_logical), <span class="dt">ylim =</span> <span class="kw">c</span>(<span class="dv">1</span>, num_cpu_logical)) <span class="op">+</span></span>
+<span id="cb9-10"><a href="#cb9-10"></a><span class="st">  </span><span class="kw">ggtitle</span>(<span class="st">&quot;Relative speedup vs 1 core&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAu4AAAJYCAMAAAAKUJOQAAABjFBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZmYAZpAAZrYAujgzMzM6AAA6ADo6AGY6OgA6Ojo6OmY6OpA6ZmY6ZpA6ZrY6kLY6kNtNTU1NTU5NTVVNTlVNTmdNVYdOTU1OTVVOTk1OTk5OVYdOZ4dOZ7lVTk1VTlVVZ7lVh7lVh/9hnP9mAABmADpmAGZmOgBmOjpmOmZmOpBmZjpmZmZmZrZmkJBmkLZmkNtmtttmtv9nTk1nTk5nTlVnVU1nVU5nh7lnh/9nuf+HVU2HVU6Hh1WH//+QOgCQOjqQOmaQZgCQZjqQZmaQZpCQZraQkGaQkLaQkNuQtraQttuQtv+Q27aQ29uQ2/+2ZgC2Zjq2Zma2kDq2kGa2kJC2tpC2tra2ttu229u22/+2/9u2//+5Z065Z1W5h1W5h2e5///bkDrbkGbbkJDbtmbbtpDbtrbbttvb25Db27bb29vb2//b/7bb/9vb///4dm3/h1X/tmb/tpD/uWf/uYf/25D/27b/29v//4f//7b//7n//9v///9hq9r3AAAACXBIWXMAABcRAAAXEQHKJvM/AAAgAElEQVR4nO2d/WPbxnmAIUfe7DC1ldmxkrTu6qZpHbVSmiaOlHRLkzRK6y3b6qymUrdeFCsfdKWtzlbZrEo2EvGPD98ESJD4ujsc7p7nB4kggMMReHB88eKIc1wAa3DargCAOtAdLALdwSLQHSwC3cEi0B0sAt3BItAdLALdwSLQHSwC3cEi0B0soi3dJ/e+9WDRvGHv/LH8Goy3VGwFtEKK7n0nZmXtVq5TR5vOuUW6T3adlbsyqpXm0abjiNZ9fHvhZwI9kNS6HzqBzpN7PWdlZ3726ZazWHcVrfvpj3uCdZ8cXlr2mUALJOnutdDhoR/18pvqfp4ap6/LqU0epxtidR+uvYbu2iNbdz+wuZCzQK7ug7wlJeHVUPR3SO5nAp2Qrvswv80b5Lw7zD0xJIHuNqKR7oe9juuedwqDVqjQPdYquJp7KkzVRGpM7nlvOWt3vFe3w1yOt7CfpPQK8BM7d4MCgtMgvXayGW+lK/sP/YuD8e3zx/7k6p35jc2sO/YulFc/9XX3Aviwev3o/1wx0YfJ1iW12TS5uh9teqteTW3ZWfs0mvA2Ndp0ri34bCABFbH7tfC9083njt2jXqhVqMbpprPtTn7nODvhOkHr7rXy3jz/3fA8Od24cDyzdrIVb854wxNx7Al4/v82ghNmZ25j2XUHjjd1ePlSMDmKrljD/3PFRNvJ1mW62Sw5uk92V/fdya+d1WDGYOXNY//jXXXdcFN/6gXffXmfDWQgW/dB0rhPdgPtR71A/1CN8G8UV0S6j6KEXmy/e/qTB7NrRwwC40bP3J186HmzuhWeOv6bmcWz6w7DEuJvnX5UP///XDGpj5OqS7LZmQ+do3s/eGfoRJ95Wo9wUz/bP+x5m837bCADqbpP/G/y+It8GPrjxQ9T0aMMez+te3LJF9sT5Guya0f0gzcnH95N3ZsaBGplFs9MnG6EBcSJyLTuc8UkZOqS2myGed3ji++9lW032bK3qfCMjL9Bcj8byECe7uFd1TeT7+fUrda7M2rk6+61dmGMszO3drKeFyq4bhBE95Nww3+RWTwzMYg2El+qZnWfKSZhpi7TzaaZ172fDokGcYmj8Jo83lT+ZwMZSG3dU5epnj+ZY5lS49GWk9U9nhf6MHr2eG7tCP/K8cp++Dolz7kHmcUzE8lGCnSfzSqm6pLZbJo53b1zZqp7suX4VJqeWViuCrmxeyokWKD75LC39mk/X/dh+D1wbX7taSm+eWldw7UX6+6pdi2u4VLdZ9xN1SWz2WxtlunuTVzI7Bx0V49c3afx6dSzkEiN0aYfFyzQPVglDJFn1k4Yb8YhwIzuqcVnJ8q17jPupuqS2WyaPN0vpCeSi/aZ1p1LVFVIzsxML79SwfDD/eWXqok2/ovR1Zy1UxxtOhl5ghA5s3j+RLHu2bTgtC6Zzc4uknkjdfH5yYNpbjb6oDmXCQ9zQiQQiOxEZBK++w192Iid/vQ4UsN7L3hrke7+BWJ/J2ftiD8Gd6rCREcq6L6QXXx2ImyVi2P37C3eaV0ym02Td6kaJzB/Glw+78Q751pqU/mfDWQg/TZTEr4Pogu88e4FN1Ij/rJPdI/vA8Xa9J2/e/VBztoRg0CfUS/UPboY2A0TP6nFZyfCW09JIjJOAwX/s8WkSdUltdk0eYnIMBE79jPro7iTRJSRTH2R5Hw2kIE83SMZkrYrzk3GoXao+8q2O97yVTva90+R/XHQDMbaDJ3U5d18rm4QmRoGM+GcMNWdWTwz4fcb8K4XxluX/B+fPPBdu3o8OXz2197ktx7MFJNmWpf0ZtPMdxFLthz5HTbvg/BfPxXckIdUg7yfd/i36n1G/u3DO8dBj4HgmEYdBpztKMWxctdPPF+LpnbieT6ppEV67ZiBs/pbL6qIzh9n5Y7fAyEKiNOLZyb8+nhse1tZ2w/19xv8fthPZqaYFNO6pDebYuyV9ObsSuktT/b8s9vbN/FN1LiEvM8GMpD6471QmWHSyt7rhYpFjl3zBXCe3ffjAt+TyW1fh3hewGBq3XTthD/u+1eM4XteaPAnb+Kp7bzFsxO3vcXuTHaj6fFm0IWrv/ppXjEpkrqkN5sQVtuZTbJM9nqpJP3Rlrcnruyn9tHOos8GMjDmSQT9uURJm8WAnqC7lGJAT9BdSjGgJwbpLqQ7IT/AMxpTdPfzLTmXly0VA5pihu5RWqRp3lpQMaAtZugOUAp0B4tAd7AIdAeLQHewCHQHi0B3sAh0B4tAd7AIdAeLQHewCCm6cw6BnqA7WAS6g0WgO5Sn8wcW3bXB0X63OfpXsQB01wbtXeq+7egOZTHAdnSHkphgO7pDOYywHd2hHEbYju5gE+gOFoHu2mBGuKA36K4N6C4fdAeLQHdYjlEHE91hKWbk22Oaf5a//mB9/cV3BRcKmmCW7c3NPLn+/a/cL57P+G7UHrIaw2xvbubBt79y3bO3XhJaKOiBabYL0N1v2M/euim0UCvRTy3jbBcRzDz/jntwQ2yhVqKfW/rVqCnNP9DJ9fXvvRNPPB1g3F4CQxBg5hfr6378LrZQAAk0N/Pgxtn76y9+ILZQABk0NvOJf6l6sP4doYUCSKGxme+94Dfs72XCGXQHPRGk+wG6m4SxB1BAItIz/cvr5N0bo0/az7x8e4yARCR9ZsSgjWPm2k6PSJjFYNvRHWYw2XZ0hyxG247ukMVo29EdbALdwSLQXRvMDiP0AN21Ad3lg+5gEegOIVYcNHSHALPz7THoDj522I7u4GOJ7egOrj22o7s+tKecNbajuz60qXtbW1YNuoNFoDtYBLqDRaA7WAS6g0Wgu81Yd6DQXRvUpwPtybfHoLs2KHfPPtvR3V4stB3drcVG29HdVqy0Hd1txUrb0R1sAt3BItBdG+wML9SC7tqA7vJBd7AIdLcNqw8OuluGnfn2GHS3C7ttR3e7sNx2dLcK221Hd32Qr6L1tqO7PqjQXfYWdAfdwSLQHSwC3cEi0B0sAt3BItDdBjggEeiuDfLShOTbY9BdG6Q5ie0J6G482D4F3U0H21Ogu+Fgexp0NxxsT4PuYBHoDhaB7tpA2CEfdNcGdJcPuoNFoLupcBByQHdDId+eB7qbCbbngu5Ggu35oLuJYPsC0F0bxCmK7YtAd20QqbuokkwD3cEi0B0sAt3BItAdLALdwSLQ3STY8QWguzY0Tx+Sby8C3bWhsavYXgi6GwO2F4PupoDtJUB3Q8D2MqC7IWB7GdAdLALdwSLQXRsIR+SD7tqA7vJBd7AIdO867OwKoHvHId9eBXTvNtheCXTvNNheDXTvMtheEXTXhurqYntV0F0b6uguox4mg+5gEegOFoHuYBHoDhaB7mAR6N5F2ME1QXdtKJ9WJN9eF3TXhtIOY3tt0L1zYHt90L1rYHsD0L1jYHsT0L1jYHsT0B0sAt3BItBdGwhT5IPu2oDu8kF3sAh07wrsVAGge0cg3y4CdO8G2C4EdO8E2C4GdO8C2C4IdNeGxUpjuyjQXRuW6a6yHiaD7mAR6A4Wge5gEegOFoHuYBHorjPsSMGguzbMpxvJt4sG3bVhzm1sFw66awu2iwfddQXbJYDumoLtMkB3TcF2GaA7WAS6g0WguzYQvsgH3bUB3eWD7mAR6K4b7DyJoLtmkG+XCbrrBbZLRcjOPbl+U3yhVoLtchGxd8/eWkd3IWC7ZETs3ifX0V0AjoPtshGwf795+ZfoLgBsl4+AHfz+zSfoDp2guZlPbrhT3Z8OQHfQk8ZmfvPyBy6tO3SDxmYeeKajO3SDpmae3HDRHbpCUzMP1kOef1dgodZh3w6b7K7s1JvZCCE7mta9GWEG0qo0JLpbS5Rvt0r3lkD31uHukjroEdk22K4QdG8ZbFcJureMubYf9hznyrH3YnK0de6zPef8sTu+7Z3da/vee+PbPe9q9Oj2yl3/vWAxd7TprN4Z7sQz+07EBW/e0abjrN5tXCd0Bzn0nW131PNt9bw998afd88/GPXO77uHzrkHwYwdd6/nrLzx+vFkLzB69Mwd13u5E810+9t+MUP/NHEH5/bdo17zfA26gxSGgcKDUOTeStAwD5xrfpbRd/l0I/q7Hcz3zgC37y862U1mfuK95730Vx09czdY/fxxw1qhuzaYFdYEakcih3/9U2A71j2WPjgPwn/94PUwmRnQD4rpB57HZ00D0F0bTNM9bNfTuvs82nIW6D5wVq6GrfdU97AUbzqiaTSD7iAFL04/nv6NdT+8tPqbRa17IPUV/zo20T1a8XSjcRQTge5tYfpOGjjPHU92A51j3b3J7cXBjH8yOE4k/k64fPj/dGP67dAMdG8J4/Ptkw8vRUnHRPf+9FI1V/cgeek15LHmYeAenCbNc5AB6N4Oxtvu7k3j7CQmmTbdObpPMzGR7sMkE9OPXg0/blgpdG8F820frlTVvR805X1v0cxM9/Q//Ez8qvc9MX61aUyD7m1gvu1e6B7iRevuQycUt+/8/fH4ds+5Nvp4tOEHKp7GvuN/6Tlv+nOvHrtHPf9tf2YSwP/uWlLataa1QvcWyLfdrFNgcjv2/bdBGtGPRjyDV24dD5zVO8Ht1mtBN4GV/9zw/5178Mln93rOU9tueC/2Wny+hJIHnQjuNK4VurdAvtiG6f4vYeAx3m3cJAsE3UEK/Th0H0r6YVIt0B1kMIxvgE7+VdAdIiGgO8hgvLFy63+9/4+0sh3dQQ6Te5f8vu3Nry6Fgu5gEeiuEnZMy6C7QpbfXTIrEakn6K6Ognup6C6fKrv4b/deu7z2xr7YQu3Bgp4D2lPhCMR3dVcLheew5oDtGlD+EHi2r966f/8PrzmFfe05rvNguw6UPgaT3bhVH+9eEFWoRWC7DpQ+CKc/Tn5QMvpWQfPOkQU9Kd+6/ypx/PQn6A6dpLyZ055tQ7/v8jLn0b0OhDvyqbCLH4bRzOTosv/icMkFK8etDugun/Kx+4aTBd2hc5Q3s4/utWBnaESF2P1c5vYSwUw5yLfrRPljcfpRpqM+l6qlwHatqHMw/rvoByoc4Rhs14saRyN4BLfoQs0E2zWjfGZm63LEJYdOBOWoZjunhnxqJSKLHj/McQupJjC6e5HD77eih7iPvRcrV5LsSPSI96KGtogKup+/H3L71n+hO8jgYW/lyqeBXFFv8+RBk8NwUtnoHalMzCd0AAYJeC34+ag5H/WeO3Ynv0vu7kw+FPPE6zpmjl6XUCjYjmf71fh19LTsYfwU1OHV/HWqUsdMekRCZR4/LlqiP43MJx9F/3fD90Q17nXM/Fu/6OdM6A5ZHgcsXWSY1y0lGr/Da+XX/l3E48hqZWZIRBZg/Q6YpVh3ryGff1Rw9Iz3MC2zcqu58HV0v8pd1eXUu7tkWiLy8TLmlh46K7/duzTzw/9kyL3Jo3/rFSfAi6mg+7b4Qs2k5r1Uu3XvB4NM+smYlGfDVOZxstc87V5B9wrj4hh23CpCz4F5CoOZ+KLUH0w4Ufx0IxPfDFoZRnhCF7FlYHsOZXQP1T7dmMbwgwv5y9SHLmKCwfZ8CvIyicpJM++FMs/OtKtDFZ0Ipp3DQnpkZpaA7fWIhwyept9Hs7bPBjc1KHFwot455X63V7ZQgAyD2PLY+9HanGWjnorYfbDym/v37/9hc+03QRexe2t36CIGgjndCBvReED4xPavp8sMG2ciy5gZfqv0ky+SYdFXCrrXwfIwKGreR73wX2T7xO89M7kfaH661bgrQZ0ekac/pXWXgOW6u3vOc/6o2UELHowknATOg+CO6tGrJZ61XgDPiARdOLzkBKNmB6PGpzusBCNwCxnVrMJzZi5Ebfp4g18z5WDlh+4aFR68sfHUra+//vrR7V5hst/GI0++vQtUOEbjzbiLmMBCTQHbO0Glg3S0VS6Gsu/IY3s3YOQ9EWB7R6h0mB75jyD4n+JUv23HXoztnDLyqbCLD3tBEnS8WdhxwbbjJkZUdJdPhScAx51linsucNxATyqMvLdy51FwZ/WUvDt0lAo/3tuJOhLEnXkEFAqglEp9ZkLdRz10h25S3sy9u6Hu/qPNCGagk1QarMbX3b+3yqUqdJNqiUjnKb8TAYnIGKEflESkfKrs4vHtXuaZ20IK7TJib6aiu3zoRFAfug50DjoR1AbbuwedCOqC7R2ETgQ1wXbhPPr91lStpWMz+TPX6vxylU4ENcF20ez9QyrHvXRspmHvwvFkr85ATXQiADVcLF7kdCPWfenYTKPgaQWT3SINc6ATgTaY/X1xsZLuS8dmip4zNqjxxEg6EWiD6boX+57ovnRsplEves5YYbM7D50IQAUXK+mekDc20yCKcOaXLoZOBKCAixfL+D4ncO7YTH0nfppk9ce904mgKkZ/OJFcXEbuGnO6543NlATTqSfBl4ZOBBUh314WAbrnjc2E7grB9joslXzKrO65YzMp0/1v9167vPZGiZtZ5hqB7XUoaNQTZnXPHZtJle7Rja7syJdNC+0WUm3nTJrRfcHYTP1I9/SgZWUpv4s921dv3b//h9cKx6oxVne5bTu6Z3VfNDaTkkTkZDdu1ce7tg5FhpByyQi8cGwmJbeZGM4AZJPWfcnYTCo6EUx+NR2s5ifoDhJI6b5sbCYVXcTcYXLiBSfZMufRHeow6jlXj+NXS8ZmGjrPHccj9FWjgpkPw+InR5f9F4dLzi10h+qEXdqDtEvR2EyjTccpcXd/ngr93cuPJYzuoCcVhiKzWHclH4i8j3wqdQBOT9oUzKi5l4ru8qkw8t5Hmay/RZeq9BwwBrqIFYLt5lD1SE5uX14rTAAZpQe2G0T520x7zsrV4zA/Y9OP97DdJMofy5F/B2DgP+pjYNNPs7HdJMq37v6PwcM+l3QigI5S6TkzUd9LdJcC3yPyqdS6j3pBX7RBUa96jlsd0F0+FW4zrVwOOzQsu8FUtVAAlVQwc3z78q1jd/LJz372ukWXqvby+HHbNRAPt5kWYcSHqM/jgLZrIRp0X4Dt+XZ0b7dQtWC7kb6jey4W2/44Q9u1EQy659GK7a2eYY/zabFGUkD3HNpp21vY6BLD1eteYTQm+WMztV6oQsyOZMo244rb9gqjMSkYm6n1QqERuscqFUZjUvLgjbYLhRpo7niKCqMxKRmbqe1CoSzaNeSvxCxepMJoTGrGZmq7UFiOdpJPKaF7QvFoTIrGZmq5UMhDX8dTVNC9xGhMqsZmardQFbRa8Qr5oG5JnseilYpHY2KwGlG0ey+1yFiNo5VcaulePBoTuguiVdsX2ds1yfMoH8yUGI0J3cXQdtue9tgAx1OU173EaEzoLgQdbDdK8imldS81GpOasZnaLlQyLfeBNFDy6pQbjYlEpABa7idjteYRJUdj4jZT17G8VQ8pPRoTnQg6TSS6drIXDXItlvKjMdFFrMMkrbpu3Y6LB3UXSZXRmJSMzdRyoWaicQijVPdqozHJH5up9UJNRGPZfduVNu9KQPf2Kquz7OjecqGSaC3frrfsoe3G+d78WH9xff35G18JLlQZbdmusewXM7RdG7E0PthP1n2+nfG9O7q3ZLuOsl/Mp+1qiaXp0T57+0eu++X19ZsiC1VGO7YvkL2dM2+B4Ib63nQXn/zC//ukm7q3YvvCll1pZUxvxhcgZhcfvPCB+ELl09aDjJRvNcFSyxPEHPD3XopePB3QFd2V05bstlueIMTMk+9mGvfOtO6KUS47ls8iwsyzt98VX6hxqJMdyxciwszPb868ge5zKJAdy4sRYObBSxIKNQuZsmN5BZqb+fkPvT9nP09H79rrrraCJWWvlifC8jo0PvAHwV3V9e8ILVQySvPtpVt2p4ywWN6Ipsc9sr1Tt5lU2l4hjFmmLpaLwcIekQptrxKz5zmM5YKxT3d1tle7QE3ZjOWysE53ZbZXzMbMK47l4rFQdyWbqZp6xHIlWKe7Eqrn2TFdCegunvqy47tk0F00NWXX7zkzJoLuYqktO6gA3UVSo28MsqvEHt3lVwrZtcca3aXn22vKju0qsUV32bYjeyewRHfJtiN7R7BDd7m2C5Jdq0RklYGuO4QVusu3vdoa+S07usvHEt3llW1oGIPuLReqJcbeVUL3lgvVEIGyq7Zr6QjuZUZz7yboXhuhLbtIu0qrjO76FqoZgm+hlrVLlcXo3nKhWiG8v4AojUUZiu4tF1oHSRWRcFdJpcoWY7TucvLtMm6horMaTNZdiu1SZUd3yRisuwzbpYcxjWoHRZiruwTbpcneqFZQHmN1F2+7eNlxXTUG6y62PGQ3AWN1F4tw2XG9FdC9BGpk16oDsKGgeyF1ht4o7i8w/z66ywfdC1AlO6gA3ZdSV/ZFtuN6u5inu8CNC5adhr11jNNdXL4d2c3DNN2F2S5WdlzXA8N0F2U7spuJWboLsl2o7KVdJxEpH6N0F2N7O7KjuwoM0715GSJlJ4jRDaN0bw6ymw26p6gj+4JbqLiuJeiegOzmg+4RtWWfsx3X9QXdA5DdDszQveEGBctesxYkIuVjhO7N8u3CZG/YsKO7fEzQvZ7tkeK6yA4qMED3WrY/DjUXJTuud4Pu6163bY+puiayd5jO697Q9qorzsuO6x3CAN3rrNXE9swbyN4pOq97TWrZPis7rncNO3Wv1bjPxjGiZScRKR8bdY+TMpVWmpFdQsOO7vKxUHcBV6hEMR3FOt1FyS6yTqCK7upePyNTcZ2s7DTsXaazute+l1pxFWQ3ia7qXsf2prLjeufpqO41bG/61GpkN4Bu6l7T9mprpGVX4TqJSPl0Uvfqtje7haqmYUd3+XRU92rL14xjwlcEMQbRSd0r0iSOQXajMF/3BrLjummYrnuDnmDIbh6G615bdlw3EqN1R3bI0i3dKxVcOY7JyF6pXkIgESmfTuleKd9eU/b2GnZ0l0+XdK9ie+dkBxV0SPcKtleNY0LZcd14uqN7edtrBe3IbgOd0b2a7WWWi3vE+LLjuh10SPdyy5Vu2aObSchuE53RvRxl45hXInDdLszSvXTTnuiukewkIuVjku4VrlBfSSG1ThVAd/mYo3ulfIx+soMKjNG9UvLxYhLMSKwR6If+upcqrJrsie2v5I/sDqaive5l8u1V4piU64Qy1qG77mVtL1lcVnZ0tw3NdS9he3nZybFbj966F9tePo7RXnYSkfLRWvdytpcpSXvXXXRXgea6L59vkuygAq11X07JOAbXIaG7uiM7VKarupeSHdchSzd1LxXHIDvM0kndS8iO65CDnrovLcBU2UlEykdL3Zfl24vjmE667qK7CnTUvcj2pSt3VXZQgYa6L7G9SHZch6Xop/ti24viGGSHArTTfbnti9fDdShGQ93z3y+Qnf7rUALtdM9naRxDww4l6YbuS2U3xXUSkfLpgu5LZDepYUd3+eiv+5I4xiDXQQna675QdpMadlCEPrrnrrRYdlyH6mije16+fVEcQ8MO9dBF90W25yyK61AXTXTPsR3ZQTh66D5ve34cY7TrJCLlo4Xu+bbPLWa07OiuAk10z07nyW6466AELXTPkhfHIDuIQD/d52XHdRCEbrojO0hEL93n4hhcB5HopDuyg2Ta1T2z4Izs1rlOIlI+reqezrfPyG7hj/HQXT5t6p6yPRvHWNewgyJa1H3G9uR9XAdZtKf71Pa07DTsIJHWdE9sT8cxuA5SaVH38P9Udhp2kE3Lefep7LgO8mlV9ySOoWF3SUSqoE3dY9lxPQDd5dOe7pHsNOygjrZ0j+IYXAeVqNc9mBnITsMOilGuu59vD2THdVCOat09233ZadihDQTo/uU/v/BBmUIvurHtuA7t0Fz3g39cL9bdszuw3KFhXwiJSPmI2MXvldA9yMQ8foWGfTHoLh/FuiM7tIki3R8/jn0XsD2AmgjW/emAxboL2BpAbRQHMwK2BlAbNbpfjHW/KGBzAHVR1bpHiUgBWwOojRrdSbGVgESkfJTonjcSDczCTpKPgF189k8vvLu0UGwHTWgu4pN1j+8sKRTbQRfk94jEdtAG6bpjO+iDAt1lbAGgDjo93x1AMuiuDXwPygfdtQHd5YPuYBHoDhYhT3ecB+2Qpjv5dtAPWbpjO2iIJN2xHXREju7YXgP2mXxk6S6jWMNhp8lHWus+z9P5b7eGbvXRrkL59ZEhjDIU1v5pdZsqhW710a5CutVHAOiuD7pVSLf6CADd9UG3CulWHwGguz7oViHd6iMAdNcH3SqkW30E0O0LbYBKoDtYBLqDRaA7WAS6g0WgO1gEuoNFKNN9fvTVVvni+vrzN75quxZZTq7fbLsKU/76g/X1F98tXq5bqNI9Z/TVNgme47r+ba18P3trXR/dT65//yv3i+dN811dMDP3FPgWOXv7R973zXWN9PJ4olN9Dvym4Oytl9quh2Ds1P3kF/7fJxrp5brfvPxLjepz4DfsZ2/pUyEx2Kl7yIFWNXr/pk6n38n1599xD260XQ3R2Kz7ey+1XYMUT27o9W1zcn39e++0XQnhWKz7yXc1qtA3L3+gl+7uF7pdyovAXt3P3tYp7XBwU7NriYMbZ++vv6jXIWuOvbp/rpFb7okfJeuk+xP/UvVgZsyt7mOt7gcvtV2DNAfrIdokusOj9Z5p4Yytun/+Q+/P2c91qpJWrXt4tA7QvSbzo6+2SdSa6vVdrZPuJ9c907/UqVeDEFTpnjP6aovEsYNeR1Mn3d0T+swAdBt0B4tAd7AIdAeLQHewCHQHi0B3sAh0B4tAd7AIdAeLQHewCHQHi0B3sAh0B4tAd7AIdAeLQPfyjLcc56k7wcvJvZ7jrO37r462zn2255w/dt2jTcdZvevPHm06q3eGO21WFvJA99IMe9vueNfxJT7dvHDsHvX8133HOffGn3fPP3AH5/a991a890bP3HEnew66awe6l2XUu+b9HQTteN//472zcjf+6zt+N57fv+C9muyiu3age1n6gdVBux6a77fsF9aOt8oAAAFKSURBVHzdzz0IJqanQLgowYx+oHtJJruh1T6DKE4ZOt57ke6TXSdix5u/cvW4rYrCEtC9JKcbU937ke6B6ZHupxvnE8MD9a/sq68kFIDuJTndCEN0n74TBjNZ3aeng+seXnKc6fKgC+heEq/FDh3/y8dhzO76up8/ngYzWb0Pe855AhrdQPey9J2w+f7kQRizu1GyJrlUjfQefuwvkv06AE1A97KMvObaC8cPr05b+oEveqy7N3/Vmz9+9YHbD+b209ENaAG6l2YQ5F3CdOSG89yxexi8fhgH6eF8/0ToO1f9u1DXWq0u5IDu5fGvP6N8y2SvF74O849hGBN0IvA7GXzy2b2e89R2m3WFXNAdLALdwSLQHSwC3cEi0B0sAt3BItAdLALdwSLQHSwC3cEi0B0sAt3BItAdLALdwSLQHSwC3cEi0B0s4v8B+00MgYlaYM4AAAAASUVORK5CYII=" width="60%" style="display: block; margin: auto;" /></p>
+<p>The vertical dotted line marks the physical number of CPU cores on the machine this was run. The dashed lines marks the theoretical maximal speedup. We can see that there is no further reduction in execution time when increasing the thread count to be greater than the number of physical CPUs. Hence, the use of hyper-threading is not helpful when aiming to maximize the speed of a Stan program. For this example, the shown <code>grainsize</code>s matter on some machines but not on others, so your results may look quite different from what is shown here. The overall speedups may not seem impressive in this case, which is attributed in this case to the large number of parameters relative to the number of observations. However, we can still obtain a doubling in speed when using 4 cores and with 2 cores an increase of 40% or more is reached.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">kable</span>(scaling_cores, <span class="dt">digits =</span> <span class="dv">2</span>)</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">grainsize</th>
+<th align="right">iter</th>
+<th align="right">cores</th>
+<th align="right">runtime</th>
+<th align="right">runtime_single</th>
+<th align="right">speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1250</td>
+<td align="right">25</td>
+<td align="right">1</td>
+<td align="right">4.01</td>
+<td align="right">4.01</td>
+<td align="right">1.00</td>
+</tr>
+<tr class="even">
+<td align="left">1250</td>
+<td align="right">25</td>
+<td align="right">2</td>
+<td align="right">3.04</td>
+<td align="right">4.01</td>
+<td align="right">1.32</td>
+</tr>
+<tr class="odd">
+<td align="left">1250</td>
+<td align="right">25</td>
+<td align="right">4</td>
+<td align="right">2.11</td>
+<td align="right">4.01</td>
+<td align="right">1.90</td>
+</tr>
+<tr class="even">
+<td align="left">1250</td>
+<td align="right">25</td>
+<td align="right">8</td>
+<td align="right">1.95</td>
+<td align="right">4.01</td>
+<td align="right">2.06</td>
+</tr>
+<tr class="odd">
+<td align="left">2500</td>
+<td align="right">25</td>
+<td align="right">1</td>
+<td align="right">4.26</td>
+<td align="right">4.26</td>
+<td align="right">1.00</td>
+</tr>
+<tr class="even">
+<td align="left">2500</td>
+<td align="right">25</td>
+<td align="right">2</td>
+<td align="right">3.24</td>
+<td align="right">4.26</td>
+<td align="right">1.31</td>
+</tr>
+<tr class="odd">
+<td align="left">2500</td>
+<td align="right">25</td>
+<td align="right">4</td>
+<td align="right">2.44</td>
+<td align="right">4.26</td>
+<td align="right">1.75</td>
+</tr>
+<tr class="even">
+<td align="left">2500</td>
+<td align="right">25</td>
+<td align="right">8</td>
+<td align="right">2.40</td>
+<td align="right">4.26</td>
+<td align="right">1.78</td>
+</tr>
+<tr class="odd">
+<td align="left">625</td>
+<td align="right">25</td>
+<td align="right">1</td>
+<td align="right">4.32</td>
+<td align="right">4.32</td>
+<td align="right">1.00</td>
+</tr>
+<tr class="even">
+<td align="left">625</td>
+<td align="right">25</td>
+<td align="right">2</td>
+<td align="right">2.86</td>
+<td align="right">4.32</td>
+<td align="right">1.51</td>
+</tr>
+<tr class="odd">
+<td align="left">625</td>
+<td align="right">25</td>
+<td align="right">4</td>
+<td align="right">2.02</td>
+<td align="right">4.32</td>
+<td align="right">2.14</td>
+</tr>
+<tr class="even">
+<td align="left">625</td>
+<td align="right">25</td>
+<td align="right">8</td>
+<td align="right">1.89</td>
+<td align="right">4.32</td>
+<td align="right">2.29</td>
+</tr>
+</tbody>
+</table>
+<p>For a given Stan model one should usually choose the number of chains and the number of threads per chain to be equal to the number of (physical) cores one wishes to use. Only if different chains of the model have relatively different execution times (which they should not have, but it occurs sometimes in practice), then one may consider the use of hyper-threading. Doing so will share the resources evenly across all chains and whenever the fastest chain finishes, the freed resources can be given to the still running chains.</p>
+</div>
+<div id="appendix" class="section level2">
+<h2>Appendix</h2>
+<div id="fake-data-simulation" class="section level3">
+<h3>Fake data simulation</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">set.seed</span>(<span class="dv">54647</span>)</span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="co"># number of observations</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a>N &lt;-<span class="st"> </span><span class="fl">1E4</span></span>
+<span id="cb11-4"><a href="#cb11-4"></a><span class="co"># number of group levels</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a>G &lt;-<span class="st"> </span><span class="kw">round</span>(N <span class="op">/</span><span class="st"> </span><span class="dv">10</span>)</span>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="co"># number of predictors</span></span>
+<span id="cb11-7"><a href="#cb11-7"></a>P &lt;-<span class="st"> </span><span class="dv">3</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="co"># regression coefficients</span></span>
+<span id="cb11-9"><a href="#cb11-9"></a>beta &lt;-<span class="st"> </span><span class="kw">rnorm</span>(P)</span>
+<span id="cb11-10"><a href="#cb11-10"></a></span>
+<span id="cb11-11"><a href="#cb11-11"></a><span class="co"># sampled covariates, group means and fake data</span></span>
+<span id="cb11-12"><a href="#cb11-12"></a>fake &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(N <span class="op">*</span><span class="st"> </span>P), <span class="dt">ncol =</span> P)</span>
+<span id="cb11-13"><a href="#cb11-13"></a><span class="kw">dimnames</span>(fake) &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="ot">NULL</span>, <span class="kw">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="op">:</span>P))</span>
+<span id="cb11-14"><a href="#cb11-14"></a></span>
+<span id="cb11-15"><a href="#cb11-15"></a><span class="co"># fixed effect part and sampled group membership</span></span>
+<span id="cb11-16"><a href="#cb11-16"></a>fake &lt;-<span class="st"> </span><span class="kw">transform</span>(</span>
+<span id="cb11-17"><a href="#cb11-17"></a>  <span class="kw">as.data.frame</span>(fake),</span>
+<span id="cb11-18"><a href="#cb11-18"></a>  <span class="dt">theta =</span> fake <span class="op">%*%</span><span class="st"> </span>beta,</span>
+<span id="cb11-19"><a href="#cb11-19"></a>  <span class="dt">g =</span> <span class="kw">sample.int</span>(G, N, <span class="dt">replace=</span><span class="ot">TRUE</span>)</span>
+<span id="cb11-20"><a href="#cb11-20"></a>)</span>
+<span id="cb11-21"><a href="#cb11-21"></a></span>
+<span id="cb11-22"><a href="#cb11-22"></a><span class="co"># add random intercept by group</span></span>
+<span id="cb11-23"><a href="#cb11-23"></a>fake  &lt;-<span class="st"> </span><span class="kw">merge</span>(fake, <span class="kw">data.frame</span>(<span class="dt">g =</span> <span class="dv">1</span><span class="op">:</span>G, <span class="dt">eta =</span> <span class="kw">rnorm</span>(G)), <span class="dt">by =</span> <span class="st">&quot;g&quot;</span>)</span>
+<span id="cb11-24"><a href="#cb11-24"></a></span>
+<span id="cb11-25"><a href="#cb11-25"></a><span class="co"># linear predictor</span></span>
+<span id="cb11-26"><a href="#cb11-26"></a>fake  &lt;-<span class="st"> </span><span class="kw">transform</span>(fake, <span class="dt">mu =</span> theta <span class="op">+</span><span class="st"> </span>eta)</span>
+<span id="cb11-27"><a href="#cb11-27"></a></span>
+<span id="cb11-28"><a href="#cb11-28"></a><span class="co"># sample Poisson data</span></span>
+<span id="cb11-29"><a href="#cb11-29"></a>fake  &lt;-<span class="st"> </span><span class="kw">transform</span>(fake, <span class="dt">y =</span> <span class="kw">rpois</span>(N, <span class="kw">exp</span>(mu)))</span>
+<span id="cb11-30"><a href="#cb11-30"></a></span>
+<span id="cb11-31"><a href="#cb11-31"></a><span class="co"># shuffle order of data rows to ensure even distribution of computational effort</span></span>
+<span id="cb11-32"><a href="#cb11-32"></a>fake &lt;-<span class="st"> </span>fake[<span class="kw">sample.int</span>(N, N),]</span>
+<span id="cb11-33"><a href="#cb11-33"></a></span>
+<span id="cb11-34"><a href="#cb11-34"></a><span class="co"># drop not needed row names</span></span>
+<span id="cb11-35"><a href="#cb11-35"></a><span class="kw">rownames</span>(fake) &lt;-<span class="st"> </span><span class="ot">NULL</span></span></code></pre></div>
+</div>
+<div id="poisson-example-model" class="section level3">
+<h3>Poisson example model</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>model_poisson &lt;-<span class="st"> </span><span class="kw">brm</span>(</span>
+<span id="cb12-2"><a href="#cb12-2"></a>  y <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>x1 <span class="op">+</span><span class="st"> </span>x2 <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">|</span><span class="st"> </span>g),</span>
+<span id="cb12-3"><a href="#cb12-3"></a>  <span class="dt">data =</span> fake,</span>
+<span id="cb12-4"><a href="#cb12-4"></a>  <span class="dt">family =</span> <span class="kw">poisson</span>(),</span>
+<span id="cb12-5"><a href="#cb12-5"></a>  <span class="dt">iter =</span> <span class="dv">100</span>, <span class="co"># short sampling to speedup example</span></span>
+<span id="cb12-6"><a href="#cb12-6"></a>  <span class="dt">prior =</span> <span class="kw">prior</span>(<span class="kw">normal</span>(<span class="dv">0</span>,<span class="dv">1</span>), <span class="dt">class =</span> b) <span class="op">+</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="st">    </span><span class="kw">prior</span>(<span class="kw">constant</span>(<span class="dv">1</span>), <span class="dt">class =</span> sd, <span class="dt">group =</span> g),</span>
+<span id="cb12-8"><a href="#cb12-8"></a>  <span class="dt">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>,</span>
+<span id="cb12-9"><a href="#cb12-9"></a>  <span class="dt">threads =</span> <span class="kw">threading</span>(<span class="dv">2</span>)</span>
+<span id="cb12-10"><a href="#cb12-10"></a>)</span></code></pre></div>
+</div>
+<div id="threading-benchmark-function" class="section level3">
+<h3>Threading benchmark function</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co"># Benchmarks given model with cross-product of tuning parameters CPU</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="co"># cores, grainsize and iterations. Models are run with either static</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="co"># or non-static scheduler and inits is set by default to 0 on the</span></span>
+<span id="cb13-4"><a href="#cb13-4"></a><span class="co"># unconstrained scale. Function returns a data-frame with the</span></span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="co"># cross-product of the tuning parameters and as result column the</span></span>
+<span id="cb13-6"><a href="#cb13-6"></a><span class="co"># respective runtime.</span></span>
+<span id="cb13-7"><a href="#cb13-7"></a>benchmark_threading &lt;-<span class="st"> </span><span class="cf">function</span>(model, <span class="dt">cores =</span> <span class="dv">1</span>, <span class="dt">grainsize =</span> <span class="dv">1</span>, <span class="dt">iter =</span> <span class="dv">100</span>, </span>
+<span id="cb13-8"><a href="#cb13-8"></a>                                <span class="dt">static =</span> <span class="ot">FALSE</span>, <span class="dt">inits =</span> <span class="dv">0</span>) {</span>
+<span id="cb13-9"><a href="#cb13-9"></a></span>
+<span id="cb13-10"><a href="#cb13-10"></a>  scaling_model &lt;-<span class="st"> </span><span class="kw">update</span>(</span>
+<span id="cb13-11"><a href="#cb13-11"></a>    model, <span class="dt">refresh =</span> <span class="dv">0</span>, </span>
+<span id="cb13-12"><a href="#cb13-12"></a>    <span class="dt">threads =</span> <span class="kw">threading</span>(<span class="dv">1</span>, <span class="dt">grainsize =</span> grainsize[<span class="dv">1</span>], <span class="dt">static =</span> static), </span>
+<span id="cb13-13"><a href="#cb13-13"></a>    <span class="dt">chains =</span> <span class="dv">1</span>, <span class="dt">iter =</span> <span class="dv">2</span>, <span class="dt">backend =</span> <span class="st">&quot;cmdstanr&quot;</span></span>
+<span id="cb13-14"><a href="#cb13-14"></a>  )</span>
+<span id="cb13-15"><a href="#cb13-15"></a></span>
+<span id="cb13-16"><a href="#cb13-16"></a>  run_benchmark &lt;-<span class="st"> </span><span class="cf">function</span>(cores, size, iter) {</span>
+<span id="cb13-17"><a href="#cb13-17"></a>    <span class="kw">unname</span>(</span>
+<span id="cb13-18"><a href="#cb13-18"></a>      <span class="kw">system.time</span>(</span>
+<span id="cb13-19"><a href="#cb13-19"></a>        <span class="kw">update</span>(</span>
+<span id="cb13-20"><a href="#cb13-20"></a>          scaling_model, <span class="dt">iter =</span> iter, </span>
+<span id="cb13-21"><a href="#cb13-21"></a>          <span class="dt">chains =</span> <span class="dv">1</span>, <span class="dt">seed =</span> <span class="dv">1234</span>, <span class="dt">inits =</span> inits, <span class="dt">refresh =</span> <span class="dv">0</span>,</span>
+<span id="cb13-22"><a href="#cb13-22"></a>          <span class="dt">threads =</span> <span class="kw">threading</span>(cores, <span class="dt">grainsize =</span> size, <span class="dt">static =</span> static)</span>
+<span id="cb13-23"><a href="#cb13-23"></a>        )</span>
+<span id="cb13-24"><a href="#cb13-24"></a>      )[<span class="st">&quot;elapsed&quot;</span>]</span>
+<span id="cb13-25"><a href="#cb13-25"></a>    )</span>
+<span id="cb13-26"><a href="#cb13-26"></a>  }</span>
+<span id="cb13-27"><a href="#cb13-27"></a></span>
+<span id="cb13-28"><a href="#cb13-28"></a>  cases &lt;-<span class="st"> </span><span class="kw">expand.grid</span>(<span class="dt">cores =</span> cores, <span class="dt">grainsize =</span> grainsize, <span class="dt">iter =</span> iter)</span>
+<span id="cb13-29"><a href="#cb13-29"></a>  cases<span class="op">$</span>runtime &lt;-<span class="st"> </span><span class="kw">with</span>(cases, <span class="kw">mapply</span>(run_benchmark, cores, grainsize, iter))</span>
+<span id="cb13-30"><a href="#cb13-30"></a>  cases</span>
+<span id="cb13-31"><a href="#cb13-31"></a>}</span></code></pre></div>
+</div>
+<div id="munging-of-slowdown-with-chunking-data" class="section level3">
+<h3>Munging of slowdown with chunking data</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>scaling_chunking &lt;-<span class="st"> </span><span class="kw">merge</span>(scaling_chunking, chunking_bench, <span class="dt">by =</span> <span class="st">&quot;grainsize&quot;</span>)</span>
+<span id="cb14-2"><a href="#cb14-2"></a></span>
+<span id="cb14-3"><a href="#cb14-3"></a>single_chunk  &lt;-<span class="st"> </span><span class="kw">transform</span>(</span>
+<span id="cb14-4"><a href="#cb14-4"></a>  <span class="kw">subset</span>(scaling_chunking, chunks <span class="op">==</span><span class="st"> </span><span class="dv">1</span>),</span>
+<span id="cb14-5"><a href="#cb14-5"></a>  <span class="dt">runtime_single =</span> runtime, <span class="dt">runtime =</span> <span class="ot">NULL</span>, </span>
+<span id="cb14-6"><a href="#cb14-6"></a>  <span class="dt">grainsize =</span> <span class="ot">NULL</span>, <span class="dt">chunks=</span><span class="ot">NULL</span></span>
+<span id="cb14-7"><a href="#cb14-7"></a>)</span>
+<span id="cb14-8"><a href="#cb14-8"></a></span>
+<span id="cb14-9"><a href="#cb14-9"></a>scaling_chunking &lt;-<span class="st"> </span><span class="kw">transform</span>(</span>
+<span id="cb14-10"><a href="#cb14-10"></a>  <span class="kw">merge</span>(scaling_chunking, single_chunk),</span>
+<span id="cb14-11"><a href="#cb14-11"></a>  <span class="dt">slowdown =</span> runtime<span class="op">/</span>runtime_single,</span>
+<span id="cb14-12"><a href="#cb14-12"></a>  <span class="dt">iter =</span> <span class="kw">factor</span>(iter),</span>
+<span id="cb14-13"><a href="#cb14-13"></a>  <span class="dt">runtime_single =</span> <span class="ot">NULL</span></span>
+<span id="cb14-14"><a href="#cb14-14"></a>)</span></code></pre></div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

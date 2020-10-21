@@ -10,8 +10,12 @@
   matrix scale_r_cor_by(matrix z, matrix SD, matrix[] L, int[] Jby) {
     // r is stored in another dimension order than z
     matrix[cols(z), rows(z)] r;
+    matrix[rows(L[1]), cols(L[1])] LC[size(L)];
+    for (i in 1:size(LC)) {
+      LC[i] = diag_pre_multiply(SD[, i], L[i]);
+    }
     for (j in 1:rows(r)) {
-      r[j] = (diag_pre_multiply(SD[, Jby[j]], L[Jby[j]]) * z[, j])';
+      r[j] = transpose(LC[Jby[j]] * z[, j]);
     }
     return r;
   }

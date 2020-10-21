@@ -25,21 +25,21 @@ ggplot2::theme_set(bayesplot::theme_default())
 set.seed(1234)
 ```
 
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org) 
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/) 
 
 # brms 
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
 [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) 
-[![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
-[![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
+[![CRAN Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+[![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
 
 ## Overview
 
 The **brms** package provides an interface to fit Bayesian generalized
 (non-)linear multivariate multilevel models using Stan, which is a C++ package
-for performing full Bayesian inference (see http://mc-stan.org/). The formula
+for performing full Bayesian inference (see https://mc-stan.org/). The formula
 syntax is very similar to that of the package lme4 to provide a familiar and
 simple interface for performing regression analyses. A wide range of response
 distributions are supported, allowing users to fit -- among others -- linear,
@@ -58,9 +58,9 @@ predictive checks, cross-validation, and Bayes factors.
 
 * [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
 * [Advanced multilevel modeling with brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html) (The R Journal)
-* [Website](https://paul-buerkner.github.io/brms) (Website of brms with documentation and vignettes)
+* [Website](https://paul-buerkner.github.io/brms/) (Website of brms with documentation and vignettes)
 * [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/) (List of blog posts about brms)
-* [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
+* [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
 
 ##  How to use brms
@@ -249,7 +249,7 @@ on formula syntax, families, and prior distributions see `help("brm")`.
 
 ### Where do I ask questions, propose a new feature, or report a bug?
 
-Questions can be asked on the [Stan forums](http://discourse.mc-stan.org/) on
+Questions can be asked on the [Stan forums](https://discourse.mc-stan.org/) on
 Discourse. To propose a new feature or report a bug, please open an issue on
 [GitHub](https://github.com/paul-buerkner/brms).
 

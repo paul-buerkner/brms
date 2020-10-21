@@ -1,4 +1,4 @@
-source("setup.R")
+source("setup_local_tests.R")
 
 test_that("Poisson model from brm doc works correctly", {
   ## Poisson regression for the number of seizures in epileptic patients
@@ -9,8 +9,8 @@ test_that("Poisson model from brm doc works correctly", {
     data = epilepsy, family = poisson(),
     prior = prior(student_t(5,0,10), class = b) +
       prior(cauchy(0,2), class = sd),
-    save_all_pars = TRUE,
-    refresh = 0
+    save_all_pars = TRUE, refresh = 0,
+    backend = "rstan"
   )
   print(fit1)
   ## generate a summary of the results
@@ -54,8 +54,7 @@ test_that("Ordinal model from brm doc works correctly", {
     rating ~ period + carry + cs(treat),
     data = inhaler, family = sratio("cloglog"),
     prior = set_prior("normal(0,5)"),
-    iter = 1000, chains = 2, refresh = 0,
-    backend = "cmdstanr"
+    iter = 1000, chains = 2, refresh = 0
   )
   print(fit2)
   expect_range(WAIC(fit2)$estimates[3, 1], 900, 950)
@@ -69,7 +68,9 @@ test_that("Survival model from brm doc works correctly", {
   ## and second recurrence of an infection in kidney patients.
   fit3 <- brm(
     time | cens(censored) ~ age * sex + disease + (1|patient),
-    data = kidney, family = lognormal(), refresh = 0
+    data = kidney, family = lognormal(), refresh = 0,
+    threads = threading(2, grainsize = 100),
+    backend = "cmdstanr"
   )
   print(fit3)
   me3 <- conditional_effects(fit3, method = "predict")
@@ -99,8 +100,7 @@ test_that("Non-linear model from brm doc works correctly", {
   fit5 <- brm(
     bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE), data = data5,
     prior = prior(normal(0, 2), nlpar = a1) +
-      prior(normal(0, 2), nlpar = a2), refresh = 0,
-    backend = "cmdstanr"
+      prior(normal(0, 2), nlpar = a2), refresh = 0
   )
   print(fit5)
   ce <- conditional_effects(fit5)
@@ -210,7 +210,8 @@ test_that("bridgesampling methods work correctly", {
     count ~ zAge + zBase + Trt,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
-    save_all_pars = TRUE, refresh = 0
+    save_all_pars = TRUE, refresh = 0,
+    backend = "rstan"
   )
   print(fit1)
   # model without the treatment effect
@@ -218,7 +219,8 @@ test_that("bridgesampling methods work correctly", {
     count ~ zAge + zBase,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
-    save_all_pars = TRUE, refresh = 0
+    save_all_pars = TRUE, refresh = 0,
+    backend = "rstan"
   )
   print(fit2)
 
@@ -355,8 +357,6 @@ test_that("ZI and HU models work correctly", {
 })
 
 test_that("Non-linear models work correctly", {
-  load("data/loss.Rda")
-  head(loss)
   fit_loss <- brm(
     bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
        ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
@@ -767,7 +767,8 @@ test_that("Missing value imputation works correctly", {
   
   # missing value imputation via multiple imputation
   imp <- mice(nhanes)
-  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1, refresh = 0)
+  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1, 
+                           backend = "rstan", refresh = 0)
   print(fit_imp1)
   expect_equal(nsamples(fit_imp1), 5000)
   expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
@@ -780,7 +781,7 @@ test_that("Missing value imputation works correctly", {
   # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
-  fit_imp2 <- brm(bform, data = nhanes, refresh = 0)
+  fit_imp2 <- brm(bform, data = nhanes, backend = "rstan", refresh = 0)
   print(fit_imp2)
   pred <- predict(fit_imp2)
   expect_true(!anyNA(pred))
@@ -794,7 +795,9 @@ test_that("Missing value imputation works correctly", {
   dat$sdy <- 5
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
-  fit_imp3 <- brm(bform, data = dat, save_mevars = TRUE, refresh = 0)
+  fit_imp3 <- brm(bform, data = dat,
+                  save_pars = save_pars(latent = TRUE), 
+                  backend = "rstan", refresh = 0)
   print(fit_imp3)
   pred <- predict(fit_imp3)
   expect_true(!anyNA(pred))
@@ -812,7 +815,7 @@ test_that("student-t-distributed group-level effects work correctly", {
   )
   print(summary(fit))
   expect_true("df_patient" %in% parnames(fit))
-  expect_true("udf_1" %in% fit$exclude)
+  expect_true(!"udf_1" %in% parnames(fit))
   waic <- suppressWarnings(waic(fit))
   expect_range(waic$estimates[3, 1], 1300, 1400)
 })

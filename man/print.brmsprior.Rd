@@ -4,7 +4,7 @@
 \alias{print.brmsprior}
 \title{Print method for \code{brmsprior} objects}
 \usage{
-\method{print}{brmsprior}(x, show_df, ...)
+\method{print}{brmsprior}(x, show_df = NULL, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsprior}.}

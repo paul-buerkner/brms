@@ -196,10 +196,12 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   check_fdpars(y$fdpars)
   
   # make a formula containing all required variables
+  unused_vars <- all_vars(attr(x$formula, "unused"))
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
   y$allvars <- allvars_formula(
     lhsvars, advars, lapply(y$dpars, get_allvars), 
-    lapply(y$nlpars, get_allvars), y$time$allvars
+    lapply(y$nlpars, get_allvars), y$time$allvars,
+    unused_vars
   )
   if (check_response) {
     y$allvars <- update(y$respform, y$allvars) 
@@ -785,6 +787,15 @@ has_terms <- function(formula) {
   is(terms, "try-error") || 
     length(attr(terms, "term.labels")) ||
     length(attr(terms, "offset")) 
+}
+
+# has a linear formula any terms except overall effects?
+has_special_terms <- function(x) {
+  if (!is.btl(x)) {
+    return(FALSE)
+  }
+  special_terms <- c("sp", "sm", "gp", "ac", "cs", "offset")
+  NROW(x[["re"]]) > 0 || any(lengths(x[special_terms]))
 }
 
 # indicate if the predictor term belongs to a non-linear parameter

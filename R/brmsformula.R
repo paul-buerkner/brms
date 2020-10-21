@@ -51,6 +51,10 @@
 #'   or alternatively a \code{\link{cor_brms}} object (deprecated).
 #'   If \code{autocor} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in other functions.
+#' @param unused An optional \code{formula} which contains variables
+#'   that are unused in the model but should still be stored in the
+#'   model's data frame. This can be useful, for example,
+#'   if those variables are required for post-processing the model.
 #' 
 #' @return An object of class \code{brmsformula}, which
 #'   is essentially a \code{list} containing all model
@@ -638,7 +642,7 @@
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         autocor = NULL, nl = NULL, loop = NULL, 
                         center = NULL, cmc = NULL, sparse = NULL,
-                        decomp = NULL) {
+                        decomp = NULL, unused = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -721,6 +725,9 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   }
   if (!is.null(decomp)) {
     attr(out$formula, "decomp") <- match.arg(decomp, decomp_opts())
+  }
+  if (!is.null(unused)) {
+    attr(out$formula, "unused") <- as.formula(unused)
   }
   if (!is.null(autocor)) {
     attr(out$formula, "autocor") <- validate_autocor(autocor)
@@ -1020,8 +1027,10 @@ allow_rescor <- function(x) {
   parts <- if (is.mvbrmsformula(x)) x$forms else x$terms 
   families <- lapply(parts, "[[", "family")
   has_rescor <- ulapply(families, has_rescor)
+  is_mixture <- ulapply(families, is.mixfamily)
   family_names <- ulapply(families, "[[", "family")
-  all(has_rescor) && length(unique(family_names)) == 1L
+  all(has_rescor) && !any(is_mixture) &&
+    length(unique(family_names)) == 1L
 }
 
 #' @rdname brmsformula-helpers

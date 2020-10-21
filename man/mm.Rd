@@ -8,6 +8,7 @@ mm(
   ...,
   weights = NULL,
   scale = TRUE,
+  by = NULL,
   cor = TRUE,
   id = NA,
   cov = NULL,
@@ -25,6 +26,12 @@ If \code{NULL} (the default), equally weights are used.}
 weights are standardized in order to sum to one per row.
 If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
+
+\item{by}{An optional factor matrix, specifying sub-populations of the
+groups. It should have as many columns as grouping terms specified in
+\code{...}. For each level of the \code{by} variable, a separate
+variance-covariance matrix will be fitted. Levels of the grouping factor
+must be nested in levels of the \code{by} variable matrix.}
 
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}

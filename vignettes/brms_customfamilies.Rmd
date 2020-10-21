@@ -251,6 +251,9 @@ log_lik_beta_binomial2 <- function(i, prep) {
 
 [^phi]: The presented post-processing functions need to be adjusted if you
 predict `phi` in your model as well by writing `phi <- prep$dpars$phi[, i]`.
+If you want to support `pointwise` evaluation as well, please write
+`mu <- brms:::get_dpar(prep, "mu", i = i)` and
+`phi <- brms:::get_dpar(prep, "phi", i = i)`.
 
 With that being done, all of the post-processing methods requiring `log_lik`
 will work as well. For instance, model comparison can simply be performed via

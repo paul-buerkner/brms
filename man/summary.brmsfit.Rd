@@ -4,16 +4,28 @@
 \alias{summary.brmsfit}
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{summary}{brmsfit}(object, priors = FALSE, prob = 0.95, mc_se = FALSE, ...)
+\method{summary}{brmsfit}(
+  object,
+  priors = FALSE,
+  prob = 0.95,
+  robust = FALSE,
+  mc_se = FALSE,
+  ...
+)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{priors}{Logical; Indicating if priors should be included 
 in the summary. Default is \code{FALSE}.}
 
 \item{prob}{A value between 0 and 1 indicating the desired probability 
 to be covered by the uncertainty intervals. The default is 0.95.}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deviation (MAD) are applied instead.}
 
 \item{mc_se}{Logical; Indicating if the uncertainty caused by the 
 MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.}
@@ -25,11 +37,11 @@ Create a summary of a fitted model represented by a \code{brmsfit} object
 }
 \details{
 The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and 
-\code{Tail_ESS} are described in detail in Vehtari et al. (2019).
+\code{Tail_ESS} are described in detail in Vehtari et al. (2020).
 }
 \references{
 Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
-Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+Paul-Christian Bürkner (2020). Rank-normalization, folding, and
 localization: An improved R-hat for assessing convergence of
-MCMC. *arXiv preprint* `arXiv:1903.08008`.
+MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221
 }

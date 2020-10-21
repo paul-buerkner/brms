@@ -36,7 +36,9 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
-    out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
+    if (is.numeric(x$fdpars[[dp]]$value)) {
+      out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value 
+    }
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], basis = basis$nlpars[[nlp]])
@@ -230,7 +232,6 @@ data_gr_local <- function(bterms, data, ranef) {
     levels <- attr(ranef, "levels")[[group]]
     if (id_ranef$gtype[1] == "mm") {
       # multi-membership grouping term
-      stopifnot(!nzchar(id_ranef$by[1]))
       gs <- id_ranef$gcall[[1]]$groups
       ngs <- length(gs)
       weights <- id_ranef$gcall[[1]]$weights
@@ -570,6 +571,8 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
   if (internal) {
     # required for centering of approximate GPs with new data
     out[[paste0("cmeans", sfx)]] <- cmeans
+    # required to compute inverse-gamma priors for length-scales
+    out[[paste0("Xgp_prior", sfx)]] <- Xgp
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables

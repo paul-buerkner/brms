@@ -122,11 +122,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- nlist(
     object, newdata, re_formula, resp, subset, 
-    summary = FALSE, sort = TRUE, ...
+    summary = FALSE, sort = sort, ...
   )
   yrep <- do_call(method, pred_args)
-  y <- get_y(object, resp, newdata = newdata, warn = TRUE, ...)
-  old_order <- attr(y, "old_order")
+  y <- get_y(object, resp, newdata = newdata, sort = sort, warn = TRUE, ...)
   if (length(dim(yrep)) == 3L) {
     # multivariate model
     y <- lapply(seq_cols(y), function(i) y[, i])
@@ -153,5 +152,5 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     }
     out <- out / sd_pred
   }
-  reorder_obs(out, old_order, sort = sort)
+  out
 }

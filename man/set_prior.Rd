@@ -86,7 +86,7 @@ Define priors for specific parameters or classes of parameters.
   Below, we explain its usage and list some common 
   prior distributions for parameters. 
   A complete overview on possible prior distributions is given 
-  in the Stan Reference Manual available at \url{http://mc-stan.org/}.
+  in the Stan Reference Manual available at \url{https://mc-stan.org/}.
   
   To combine multiple priors, use \code{c(...)} or the \code{+} operator 
   (see 'Examples'). \pkg{brms} does not check if the priors are written 

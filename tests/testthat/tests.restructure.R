@@ -5,6 +5,7 @@ test_that("restructure can be run without error", {
   # since restructure is called with an already up-to-date model.
   fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
   fit2$version <- NULL
+  fit2$exclude <- c("L_1", "zs_1")
   expect_warning(
     fit2_up <- restructure(fit2), 
     "Models fitted with brms < 1.0 are no longer offically supported"
