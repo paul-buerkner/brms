@@ -6,6 +6,7 @@
 ^.*\.Rhistory$
 ^\.Rproj\.user$
 ^\.git$
+^\.github$
 ^.*\.Rprofile$
 ^README\.Rmd$
 ^README-.*\.png$
