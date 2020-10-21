@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Support `projpred` version 2.0 for variable selection in generalized
+linear and additive multilevel models thanks to Alejandro Catalina.
 * Support `by` variables in multi-membership terms.
 
 ### Bug Fixes

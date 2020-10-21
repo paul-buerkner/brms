@@ -1,3 +1,73 @@
+#' Projection Predictive Variable Selection
+#' 
+#' Perform projection predictive variable selection with the \pkg{projpred}
+#' package. See \code{\link[projpred:varsel]{varsel}} and
+#' \code{\link[projpred:cv_varsel]{cv_varsel}} for more details.
+#' 
+#' @aliases varsel cv_varsel
+#' 
+#' @param object A \code{brmsfit} object.
+#' @param ... Further arguments passed to \code{\link{get_refmodel.brmsfit}}
+#' as well as \code{\link[projpred:varsel]{varsel.refmodel}} or 
+#' \code{\link[projpred:cv_varsel]{cv_varsel.refmodel}}.
+#' 
+#' @return A \code{vsel} object for which several methods are available
+#' in the \pkg{projpred} package.
+#' 
+#' @examples 
+#' \dontrun{
+#' # fit a simple model
+#' fit <- brm(count ~ zAge + zBase * Trt,
+#'            data = epilepsy, family = poisson())
+#' summary(fit)
+#' 
+#' # perform variable selection without cross-validation
+#' vs <- varsel(fit)
+#' summary(vs)
+#' plot(vs)
+#' 
+#' # perform variable selection with cross-validation
+#' cv_vs <- cv_varsel(fit)
+#' summary(cv_vs)
+#' plot(cv_vs)
+#' }
+#' 
+#' @importFrom projpred varsel
+#' @export varsel
+#' @export
+varsel.brmsfit <- function(object, ...) {
+  refmodel <- get_refmodel(object, ...)
+  varsel(refmodel, ...)
+}
+
+#' @rdname varsel.brmsfit
+#' @importFrom projpred cv_varsel
+#' @export cv_varsel
+#' @export
+cv_varsel.brmsfit <- function(object, ...) {
+  refmodel <- get_refmodel(object, ...)
+  cv_varsel(refmodel, ...)
+}
+
+#' Get Reference Models
+#' 
+#' Get reference model structure from \code{brmsfit} objects for use in
+#' \code{\link[projpred:varsel]{varsel}} and related variable selection methods.
+#' This method is called automatically when performing variable selection via
+#' \code{\link{varsel.brmsfit}} and so you will rarely need to call it manually
+#' yourself.
+#' 
+#' @aliases get_refmodel
+#' 
+#' @inheritParams posterior_predict.brmsfit
+#' @param folds Only used for k-fold variable selection. A vector of fold
+#' indices for each data point in data.
+#' @param ... Further arguments currently ignored.
+#' 
+#' @return A \code{refmodel} object to be used in
+#'   \code{\link[projpred:varsel]{varsel}} and related variable selection
+#'   methods.
+#' 
 #' @importFrom projpred get_refmodel
 #' @export get_refmodel
 #' @export
@@ -33,7 +103,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     family$family <- "binomial"
   }
   family <- get(family$family, mode = "function")(link = family$link)
-  family <- projpred:::extend_family(family)
+  family <- projpred::extend_family(family)
   
   # projpred requires the dispersion parameter if present
   dis <- NULL
