@@ -7,6 +7,7 @@
 ### Bug Fixes
 
 * Allow multi-membership terms in threaded models.
+* Allow `se` addition terms in threaded models.
 * Fix facet labels in `conditional_effects` thanks 
 to Isaac Petersen. (#1014)
 
