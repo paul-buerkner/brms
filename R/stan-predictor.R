@@ -252,7 +252,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, ...) {
         "  }\n"
       )
     }
-    out$model_log_lik <- stan_log_lik(x, ...)
+    out$model_log_lik <- stan_log_lik(x, threads = threads, ...)
     out <- list(out)
   }
   out
