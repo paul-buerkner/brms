@@ -32,7 +32,7 @@ stan_log_lik.family <- function(x, bterms, data, threads,
   } else {
     out <- do_call(stan_log_lik_general, args)
   }
-  if (grepl("\\[n\\]", out) && !nzchar(mix)) {
+  if (grepl(stan_nn_regex(), out) && !nzchar(mix)) {
     # loop over likelihood if it cannot be vectorized
     out <- paste0(
       "  for (n in 1:N", resp, ") {\n", 
@@ -96,7 +96,7 @@ stan_log_lik.mvbrmsterms <- function(x, ...) {
 # default likelihood in Stan language
 stan_log_lik_general <- function(ll, bterms, data, threads, resp = "", ...) {
   stopifnot(is.sdist(ll))
-  require_n <- grepl("\\[n\\]", ll$args)
+  require_n <- grepl(stan_nn_regex(), ll$args)
   n <- str_if(require_n, stan_nn(threads), stan_slice(threads))
   lpdf <- stan_log_lik_lpdf_name(bterms)
   Y <- stan_log_lik_Y_name(bterms)
@@ -275,11 +275,12 @@ stan_log_lik_dpar_usc_logit <- function(dpar, bterms) {
 }
 
 # add 'se' to 'sigma' within the Stan likelihood
-stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "") {
+stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "", 
+                                threads = NULL) {
   if (!is.formula(bterms$adforms$se)) {
     return(sigma) 
   }
-  nse <- str_if(reqn, "[n]")
+  nse <- str_if(reqn, stan_nn(threads), stan_slice(threads))
   if (no_sigma(bterms)) {
     sigma <- glue("se{resp}{nse}") 
   } else {
@@ -291,7 +292,7 @@ stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "") {
 # multiply 'dpar' by the 'rate' denominator within the Stan likelihood
 # @param log add the rate denominator on the log scale if sensible?
 stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "", 
-                                         log = FALSE) {
+                                             log = FALSE) {
   if (!is.formula(bterms$adforms$rate)) {
     return(dpar)
   }
@@ -319,7 +320,7 @@ stan_log_lik_adj <- function(x, adds = c("weights", "cens", "trunc")) {
 }
 
 # one function per family
-stan_log_lik_gaussian <- function(bterms, resp = "", mix = "", threads = 1,
+stan_log_lik_gaussian <- function(bterms, resp = "", mix = "", threads = NULL,
                                   ...) {
   if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
@@ -328,7 +329,7 @@ stan_log_lik_gaussian <- function(bterms, resp = "", mix = "", threads = 1,
   } else {
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-    p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp)
+    p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp, threads)
     out <- sdist("normal", p$mu, p$sigma) 
   }
   out
@@ -366,26 +367,29 @@ stan_log_lik_gaussian_fcor <- function(bterms, resp = "", mix = "", ...) {
   sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$Lfcor)
 }
 
-stan_log_lik_gaussian_lagsar <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_gaussian_lagsar <- function(bterms, resp = "", mix = "",
+                                         threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp)
+  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
   sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$Msar, p$eigenMsar)
 }
 
-stan_log_lik_gaussian_errorsar <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_gaussian_errorsar <- function(bterms, resp = "", mix = "", 
+                                           threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp)
+  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
   sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$Msar, p$eigenMsar)
 }
 
-stan_log_lik_student <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_student <- function(bterms, resp = "", mix = "",
+                                 threads = NULL, ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp)
+  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp, threads)
   sdist("student_t", p$nu, p$mu, p$sigma)
 }
 
@@ -422,18 +426,20 @@ stan_log_lik_student_fcor <- function(bterms, resp = "", mix = "", ...) {
   sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$Lfcor)
 }
 
-stan_log_lik_student_lagsar <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_student_lagsar <- function(bterms, resp = "", mix = "",
+                                        threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp)
+  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
   sdist("student_t_lagsar", p$nu, p$mu, p$sigma, 
         p$lagsar, p$Msar, p$eigenMsar)
 }
 
-stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "",
+                                          threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp)
+  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
   sdist("student_t_errorsar", p$nu, p$mu, p$sigma, 
@@ -457,12 +463,13 @@ stan_log_lik_asym_laplace <- function(bterms, resp = "", mix = "", ...) {
   sdist("asym_laplace", p$mu, p$sigma, p$quantile)
 }
 
-stan_log_lik_skew_normal <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_skew_normal <- function(bterms, resp = "", mix = "",
+                                     threads = NULL, ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp)
+  p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp, threads)
   # required because of CP parameterization of mu and sigma
-  nomega <- any(grepl("\\[n\\]", c(p$sigma, p$alpha)))
+  nomega <- any(grepl(stan_nn_regex(), c(p$sigma, p$alpha)))
   nomega <- str_if(reqn && nomega, "[n]")
   p$omega <- paste0("omega", mix, resp, nomega)
   sdist("skew_normal", p$mu, p$omega, p$alpha)

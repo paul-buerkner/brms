@@ -111,14 +111,14 @@ stan_predictor.brmsterms <- function(x, data, prior, ...) {
     }
   }
   str_add_list(out) <- stan_mixture(x, data = data, prior = prior, ...)
-  str_add_list(out) <- stan_dpar_transform(x)
+  str_add_list(out) <- stan_dpar_transform(x, ...)
   out$model_log_lik <- stan_log_lik(x, data = data, ...) 
   list(out)
 }
 
 #' @export
-stan_predictor.mvbrmsterms <- function(x, prior, ...) {
-  out <- lapply(x$terms, stan_predictor, prior = prior, ...)
+stan_predictor.mvbrmsterms <- function(x, prior, threads, ...) {
+  out <- lapply(x$terms, stan_predictor, prior = prior, threads = threads, ...)
   out <- unlist(out, recursive = FALSE)
   if (x$rescor) {
     resp_type <- out[[1]]$resp_type
@@ -188,8 +188,8 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
         header_type = "real"
       )
     } 
-    sigma <- ulapply(x$terms, stan_sigma_transform)
-    if (any(grepl("\\[n\\]", sigma))) {
+    sigma <- ulapply(x$terms, stan_sigma_transform, threads = threads)
+    if (any(grepl(stan_nn_regex(), sigma))) {
       str_add(out$model_def) <- "  vector[nresp] sigma[N];\n"
       str_add(out$model_comp_mvjoin) <- glue(
         "    sigma[n] = {stan_vector(sigma)};\n"
@@ -2063,7 +2063,7 @@ stan_dpar_tmp_types <- function(dpar, suffix = "", family = NULL) {
 }
 
 # Stan code for transformations of distributional parameters
-stan_dpar_transform <- function(bterms) {
+stan_dpar_transform <- function(bterms, threads, ...) {
   stopifnot(is.brmsterms(bterms))
   out <- list()
   families <- family_names(bterms)
@@ -2090,8 +2090,8 @@ stan_dpar_transform <- function(bterms) {
     dp_names <- names(bterms$dpars)
     for (i in which(families %in% "skew_normal")) {
       id <- str_if(length(families) == 1L, "", i)
-      sigma <- stan_sigma_transform(bterms, id = id)
-      ns <- str_if(grepl("\\[n\\]", sigma), "[n]")
+      sigma <- stan_sigma_transform(bterms, id = id, threads = threads)
+      ns <- str_if(grepl(stan_nn_regex(), sigma), "[n]")
       na <- str_if(glue("alpha{id}") %in% dp_names, "[n]")
       type_delta <- str_if(nzchar(na), glue("vector[N{resp}]"), "real")
       no <- str_if(any(nzchar(c(ns, na))), "[n]", "")
@@ -2111,10 +2111,11 @@ stan_dpar_transform <- function(bterms) {
         "  {omega} = {sigma} / sqrt(1 - sqrt(2 / pi())^2 * {delta}^2);\n"
       )
       str_add(out$model_comp_dpar_trans) <- glue(
-        "   // use efficient skew-normal parameterization\n",
+        "  // use efficient skew-normal parameterization\n",
         str_if(!nzchar(na), comp_delta),
         str_if(!nzchar(no), comp_omega),
         "  for (n in 1:N{resp}) {{\n",
+        stan_nn_def(threads),
         str_if(nzchar(na), glue("  ", comp_delta)),
         str_if(nzchar(no), glue("  ", comp_omega)),
         "    mu{id}{p}[n] = mu{id}{p}[n]", 
@@ -2148,7 +2149,7 @@ stan_dpar_transform <- function(bterms) {
 }
 
 # Stan code for sigma to incorporate addition argument 'se'
-stan_sigma_transform <- function(bterms, id = "") {
+stan_sigma_transform <- function(bterms, id = "", threads = NULL) {
   if (nzchar(id)) {
     # find the right family in mixture models
     family <- family_names(bterms)[as.integer(id)]
@@ -2161,9 +2162,10 @@ stan_sigma_transform <- function(bterms, id = "") {
   has_sigma <- has_sigma(family) && !no_sigma(bterms)
   sigma <- str_if(has_sigma, glue("sigma{id}{p}{ns}"))
   if (is.formula(bterms$adforms$se)) {
+    nse <- stan_nn(threads)
     sigma <- str_if(nzchar(sigma), 
-      glue("sqrt({sigma}^2 + se2{p}[n])"), 
-      glue("se{p}[n]")
+      glue("sqrt(square({sigma}) + se2{p}{nse})"), 
+      glue("se{p}{nse}")
     )
   }
   sigma

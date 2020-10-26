@@ -230,6 +230,10 @@ stan_nn_def <- function(threads) {
   str_if(use_threading(threads), "    int nn = n + start - 1;\n")
 }
 
+stan_nn_regex <- function() {
+  "\\[((n)|(nn))\\]"
+}
+
 # clean up arguments for partial_log_lik
 # @param ... strings containing arguments of the form ', type identifier'
 # @return named list of two elements:
