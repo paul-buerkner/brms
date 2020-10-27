@@ -8,6 +8,7 @@
 
 * Allow multi-membership terms in threaded models.
 * Allow `se` addition terms in threaded models.
+* Fix updating of parameters in `loo_moment_match`.
 * Fix facet labels in `conditional_effects` thanks 
 to Isaac Petersen. (#1014)
 

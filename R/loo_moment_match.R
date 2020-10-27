@@ -111,6 +111,8 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
 .update_pars <- function(x, upars, ...) {
   # list with one element per posterior draw
   pars <- apply(upars, 1, .constrain_pars, x = x)
+  # select required parameters only
+  pars <- lapply(pars, "[", x$fit@sim$pars_oi_old)
   # transform samples
   nsamples <- length(pars)
   pars <- unlist(pars)
@@ -120,7 +122,10 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   pars <- rbind(pars, rep(0, nsamples))
   # bring samples into the right structure
   new_samples <- named_list(x$fit@sim$fnames_oi_old, list(numeric(nsamples)))
-  stopifnot(length(new_samples) == nrow(pars))
+  if (length(new_samples) != nrow(pars)) {
+    stop2("Updating parameters in `loo_moment_match.brmsfit' failed. ",
+          "Please report a bug at https://github.com/paul-buerkner/brms.")
+  }
   for (i in seq_len(npars)) {
     new_samples[[i]] <- pars[i, ]
   }
