@@ -8,6 +8,7 @@ linear and additive multilevel models thanks to Alejandro Catalina.
 
 ### Bug Fixes
 
+* Allow non-linear terms in threaded models.
 * Allow multi-membership terms in threaded models.
 * Allow `se` addition terms in threaded models.
 * Fix updating of parameters in `loo_moment_match`.

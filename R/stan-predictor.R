@@ -1557,8 +1557,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
   resp <- usc(bterms$resp)
   par <- combine_prefix(bterms, keep_mu = TRUE, nlp = TRUE)
   # prepare non-linear model
-  n <- str_if(bterms$loop, stan_nn(threads)) 
-  n <- paste0(n, " ")
+  n <- paste0(str_if(bterms$loop, "[n]"), " ") 
   new_nlpars <- glue(" nlp{resp}_{nlpars}{n}")
   # covariates in the non-linear model
   covars <- all.vars(bterms$covars)
@@ -1567,6 +1566,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
     p <- usc(combine_prefix(bterms))
     new_covars <- rep(NA, length(covars))
     data_cnl <- data_cnl(bterms, data)
+    nn <- paste0(str_if(bterms$loop, stan_nn(threads)), " ")
     str_add(out$data) <- "  // covariate vectors for non-linear functions\n"
     for (i in seq_along(covars)) {
       is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
@@ -1581,7 +1581,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
         )
         str_add(out$pll_args) <- glue(", vector C{p}_{i}")
       }
-      new_covars[i] <- glue(" C{p}_{i}{n}")
+      new_covars[i] <- glue(" C{p}_{i}{nn}")
     }
   }
   # add white spaces to be able to replace parameters and covariates

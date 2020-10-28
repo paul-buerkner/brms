@@ -2137,7 +2137,7 @@ test_that("threaded Stan code is correct", {
     prior = set_prior("normal(0, 1)", nlpar = c("a", "b")),
     threads = threads
   )
-  expect_match2(scode, "mu[n] = shape * exp(-(nlp_a[nn] * C_1[nn] ^ nlp_b[nn]));")
+  expect_match2(scode, "mu[n] = shape * exp(-(nlp_a[n] * C_1[nn] ^ nlp_b[n]));")
   expect_match2(scode, "ptarget += gamma_lpdf(Y[start:end] | shape, mu);")
   
   bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(TRUE)
