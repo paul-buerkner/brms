@@ -930,3 +930,17 @@ test_that("Fixing parameters to constants works correctly", {
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
+
+test_that("projpred methods can be run", {
+  fit <- brm(count ~ zAge + zBase * Trt,
+             data = epilepsy, family = poisson())
+  summary(fit)
+  
+  # perform variable selection without cross-validation
+  vs <- varsel(fit)
+  expect_is(vs, "vsel")
+  
+  # perform variable selection with cross-validation
+  cv_vs <- cv_varsel(fit)
+  expect_is(vs, "vsel")
+})
