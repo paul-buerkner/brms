@@ -23,6 +23,7 @@ stan_response <- function(bterms, data) {
     str_add(out$data) <- glue(
       "  int<lower=2> ncat{resp};  // number of categories\n"
     )
+    str_add(out$pll_args) <- glue(", int ncat{resp}")
   }
   if (has_multicol(family)) {
     if (rtype == "real") {

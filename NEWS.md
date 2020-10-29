@@ -11,6 +11,7 @@ linear and additive multilevel models thanks to Alejandro Catalina.
 * Allow non-linear terms in threaded models.
 * Allow multi-membership terms in threaded models.
 * Allow `se` addition terms in threaded models.
+* Allow `categorical` families in threaded models.
 * Fix updating of parameters in `loo_moment_match`.
 * Fix facet labels in `conditional_effects` thanks 
 to Isaac Petersen. (#1014)
