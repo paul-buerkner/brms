@@ -414,11 +414,10 @@ test_that("loo_R2 has reasonable outputs", {
   skip_on_cran()
   
   R2 <- SW(loo_R2(fit1))
-  expect_equal(length(R2), 1)
+  expect_equal(dim(R2), c(1, 4))
   
-  # fails on travis for some strange reason
-  # R2 <- SW(loo_R2(fit6))
-  # expect_equal(length(R2), 2)
+  R2 <- SW(loo_R2(fit2, summary = FALSE))
+  expect_equal(dim(R2), c(nsamples(fit1), 1))
 })
 
 test_that("loo_linpred has reasonable outputs", {

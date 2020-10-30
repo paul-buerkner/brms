@@ -119,14 +119,17 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' 
 #' @aliases loo_R2
 #' 
-#' @inheritParams posterior_predict.brmsfit
+#' @inheritParams bayes_R2.brmsfit
 #' @param ... Further arguments passed to 
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
 #'   which are used in the computation of the R-squared values.
 #' 
-#' @return A real value per response variable indicating 
-#' the LOO-adjusted R-squared.
+#' @return If \code{summary = TRUE}, an M x C matrix is returned
+#'  (M = number of response variables and c = \code{length(probs) + 2}) 
+#'  containing summary statistics of the LOO-adjusted R-squared values.
+#'  If \code{summary = FALSE}, the posterior samples of the LOO-adjusted
+#'  R-squared values are returned in an S x M matrix (S is the number of samples).
 #'  
 #' @examples
 #' \dontrun{
@@ -143,14 +146,21 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @importFrom rstantools loo_R2
 #' @export loo_R2
 #' @export
-loo_R2.brmsfit <- function(object, resp = NULL, ...) {
+loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE, 
+                           robust = FALSE, probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
+  summary <- as_one_logical(summary)
+  # check for precomputed values
   R2 <- get_criterion(object, "loo_R2")
-  if (is.vector(R2)) {
-    take <- names(R2) %in% paste0("R2", resp)
-    R2 <- R2[take]
+  if (is.matrix(R2)) {
+    # assumes unsummarized 'loo_R2' as ensured by 'add_criterion'
+    take <- colnames(R2) %in% paste0("R2", resp)
+    R2 <- R2[, take, drop = FALSE]
+    if (summary) {
+      R2 <- posterior_summary(R2, probs = probs, robust = robust)
+    }
     return(R2)
   } 
   family <- family(object, resp = resp)
@@ -163,14 +173,6 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
       "'loo_R2' which is likely invalid for ordinal families."
     )
   }
-  # see http://discourse.mc-stan.org/t/stan-summary-r2-or-adjusted-r2/4308/4
-  .loo_R2 <- function(y, ypred, ll) {
-    r_eff <- r_eff_log_lik(ll, object)
-    psis_object <- loo::psis(log_ratios = -ll, r_eff = r_eff)
-    ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
-    eloo <- ypredloo - y
-    return(1 - var(eloo) / var(y))
-  }
   args_y <- list(object, warn = TRUE, ...)
   args_ypred <- list(object, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
@@ -180,12 +182,43 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     y <- do_call(get_y, args_y)
     ypred <- do_call(posterior_epred, args_ypred)
     ll <- do_call(log_lik, args_ypred)
+    r_eff <- r_eff_log_lik(ll, object)
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)
     }
-    R2[[i]] <- .loo_R2(y, ypred, ll)
+    R2[[i]] <- .loo_R2(y, ypred, ll, r_eff)
   }
-  R2 <- unlist(R2)
-  names(R2) <- paste0("R2", resp)
+  R2 <- do_call(cbind, R2)
+  colnames(R2) <- paste0("R2", resp)
+  if (summary) {
+    R2 <- posterior_summary(R2, probs = probs, robust = robust)
+  }
   R2
+}
+
+# internal function of loo_R2.brmsfit
+# see http://discourse.mc-stan.org/t/stan-summary-r2-or-adjusted-r2/4308/4
+# and https://github.com/stan-dev/rstanarm/blob/master/R/bayes_R2.R
+.loo_R2 <- function(y, ypred, ll, r_eff) {
+  psis_object <- loo::psis(log_ratios = -ll, r_eff = r_eff)
+  ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
+  err_loo <- ypredloo - y
+
+  # simulated dirichlet weights 
+  S <- nrow(ypred)
+  N <- ncol(ypred)
+  exp_draws <- matrix(rexp(S * N, rate = 1), nrow = S, ncol = N)
+  weights <- exp_draws / rowSums(exp_draws)
+  
+  var_y <- (N / (N - 1)) * 
+    (rowSums(sweep(weights, 2, y^2, FUN = "*")) -
+        rowSums(sweep(weights, 2, y, FUN = "*"))^2) 
+  var_err_loo <- (N / (N - 1)) * 
+    (rowSums(sweep(weights, 2, err_loo^2, FUN = "*")) -
+       rowSums(sweep(weights, 2, err_loo, FUN = "*")^2)) 
+  
+  out <- unname(1 - var_err_loo / var_y)
+  out[out < -1] <- -1
+  out[out > 1] <- 1
+  as.matrix(out)
 }

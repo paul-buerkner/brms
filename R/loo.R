@@ -476,8 +476,8 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     warning2("Criterion 'R2' is deprecated. Please use 'bayes_R2' instead.")
     criterion[criterion == "R2"] <- "bayes_R2"
   }
-  loo_options <- c("loo", "waic", "kfold", "loo_subsample", "loo_R2")
-  options <- c(loo_options, "bayes_R2", "marglik")
+  loo_options <- c("loo", "waic", "kfold", "loo_subsample")
+  options <- c(loo_options, "bayes_R2", "loo_R2", "marglik")
   if (!length(criterion) || !all(criterion %in% options)) {
     stop2("Argument 'criterion' should be a subset of ",
           collapse_comma(options))
@@ -504,6 +504,10 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   if ("bayes_R2" %in% criterion) {
     args$summary <- FALSE
     x$criteria$bayes_R2 <- do_call(bayes_R2, args)
+  }
+  if ("loo_R2" %in% criterion) {
+    args$summary <- FALSE
+    x$criteria$loo_R2 <- do_call(loo_R2, args)
   }
   if ("marglik" %in% criterion) {
     x$criteria$marglik <- do_call(bridge_sampler, args)

@@ -37,11 +37,11 @@ function. Only used if \code{summary} is \code{TRUE}.}
 which is used in the computation of the R-squared values.}
 }
 \value{
-If \code{summary = TRUE} a 1 x C matrix is returned
- (\code{C = length(probs) + 2}) containing summary statistics
- of Bayesian R-squared values.
- If \code{summary = FALSE} the posterior samples of the R-squared values
- are returned in a S x 1 matrix (S is the number of samples).
+If \code{summary = TRUE}, an M x C matrix is returned
+ (M = number of response variables and c = \code{length(probs) + 2}) 
+ containing summary statistics of the Bayesian R-squared values.
+ If \code{summary = FALSE}, the posterior samples of the Bayesian
+ R-squared values are returned in an S x M matrix (S is the number of samples).
 }
 \description{
 Compute a Bayesian version of R-squared for regression models

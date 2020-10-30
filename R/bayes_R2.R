@@ -7,11 +7,11 @@
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}},
 #'   which is used in the computation of the R-squared values.
 #' 
-#' @return If \code{summary = TRUE} a 1 x C matrix is returned
-#'  (\code{C = length(probs) + 2}) containing summary statistics
-#'  of Bayesian R-squared values.
-#'  If \code{summary = FALSE} the posterior samples of the R-squared values
-#'  are returned in a S x 1 matrix (S is the number of samples).
+#' @return If \code{summary = TRUE}, an M x C matrix is returned
+#'  (M = number of response variables and c = \code{length(probs) + 2}) 
+#'  containing summary statistics of the Bayesian R-squared values.
+#'  If \code{summary = FALSE}, the posterior samples of the Bayesian
+#'  R-squared values are returned in an S x M matrix (S is the number of samples).
 #'  
 #' @details For an introduction to the approach, see Gelman et al. (2018)
 #'  and \url{https://github.com/jgabry/bayes_R2/}.
@@ -42,6 +42,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   object <- restructure(object)
   resp <- validate_resp(resp, object)
   summary <- as_one_logical(summary)
+  # check for precomputed values
   R2 <- get_criterion(object, "bayes_R2")
   if (is.matrix(R2)) {
     # assumes unsummarized 'R2' as ensured by 'add_criterion'
@@ -62,13 +63,6 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       "'bayes_R2' which is likely invalid for ordinal families."
     )
   }
-  # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
-  .bayes_R2 <- function(y, ypred, ...) {
-    e <- -1 * sweep(ypred, 2, y)
-    var_ypred <- matrixStats::rowVars(ypred)
-    var_e <- matrixStats::rowVars(e)
-    return(as.matrix(var_ypred / (var_ypred + var_e)))
-  }
   args_y <- list(object, warn = TRUE, ...)
   args_ypred <- list(object, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
@@ -88,4 +82,13 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
     R2 <- posterior_summary(R2, probs = probs, robust = robust)
   }
   R2
+}
+
+# internal function of bayes_R2.brmsfit
+# see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+.bayes_R2 <- function(y, ypred, ...) {
+  e <- -1 * sweep(ypred, 2, y)
+  var_ypred <- matrixStats::rowVars(ypred)
+  var_e <- matrixStats::rowVars(e)
+  as.matrix(var_ypred / (var_ypred + var_e))
 }
