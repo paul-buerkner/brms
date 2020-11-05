@@ -1083,5 +1083,9 @@ collapse_loops = function(model_code) {
   nn_inds = grep("int nn = n + start - 1;", code_split, fixed=T)
   
   # Return code with those lines removed
-  return(paste0(code_split[-c(unlist(inds),nn_inds[-1])], collapse = "\n"))
+  if(length(nn_inds) < 2) {
+    return(paste0(code_split[-unlist(inds)], collapse = "\n"))
+  } else {
+    return(paste0(code_split[-c(unlist(inds),nn_inds[-1])], collapse = "\n"))
+  }
 }
