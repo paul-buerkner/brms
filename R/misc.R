@@ -1018,7 +1018,7 @@ get_loop_pars = function(loop_arg) {
   ind_mnr = gsub("\\s*for \\(","\\1", spl1[1])
   ind_mjr = gsub("\\) \\{","\\1", spl2[2])
   
-  return(c(ind_mnr,strt_ind,ind_mjr))
+  return(c(trimws(ind_mnr),trimws(strt_ind),trimws(ind_mjr)))
 }
 
 # Find line number of closing brace of loop, given starting line number
