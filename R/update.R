@@ -116,32 +116,33 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   # make sure potentially updated priors pass 'validate_prior'
   attr(dots$prior, "allow_invalid_prior") <- TRUE
-  if (is.null(dots$sample_prior)) {
+  if (!"sample_prior" %in% names(dots)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
       has_prior_pars <- any(grepl("^prior_", parnames(object)))
       dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }
-  if (is.null(dots$data2)) {
+  # do not use 'is.null' to allow updating arguments to NULL
+  if (!"data2" %in% names(dots)) {
     dots$data2 <- object$data2
   }
-  if (is.null(dots$stanvars)) {
+  if (!"stanvars" %in% names(dots)) {
     dots$stanvars <- object$stanvars
   }
-  if (is.null(dots$algorithm)) {
+  if (!"algorithm" %in% names(dots)) {
     dots$algorithm <- object$algorithm
   }
-  if (is.null(dots$backend)) {
+  if (!"backend" %in% names(dots)) {
     dots$backend <- object$backend
   }
-  if (is.null(dots$threads)) {
+  if (!"threads" %in% names(dots)) {
     dots$threads <- object$threads
   }
-  if (is.null(dots$save_pars)) {
+  if (!"save_pars" %in% names(dots)) {
     dots$save_pars <- object$save_pars
   }
-  if (is.null(dots$knots)) {
+  if (!"knots" %in% names(dots)) {
     dots$knots <- attr(object$data, "knots")
   }
   
@@ -190,7 +191,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
     object$threads <- validate_threads(dots$threads)
-    if (!is.null(dots$sample_prior)) {
+    if ("sample_prior" %in% names(dots)) {
       dots$sample_prior <- validate_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
