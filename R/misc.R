@@ -1008,3 +1008,80 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   }
   invisible(NULL)
 }
+
+# Get indices and ranges from loop statement
+get_loop_pars = function(loop_arg) {
+  spl1 = strsplit(loop_arg," in ")[[1]]
+  spl2 = strsplit(spl1[2],":")[[1]]
+  
+  strt_ind = spl2[1]
+  ind_mnr = gsub("\\s*for \\(","\\1", spl1[1])
+  ind_mjr = gsub("\\) \\{","\\1", spl2[2])
+  
+  return(c(ind_mnr,strt_ind,ind_mjr))
+}
+
+# Find line number of closing brace of loop, given starting line number
+get_encl_brace = function(start, code_lines) {
+  char_split = strsplit(code_lines[(start+1):length(code_lines)],"")
+
+  cnt = 1
+  for(i in 1:length(char_split)) {
+    for(j in 1:length(char_split[[i]])) {
+        chr = char_split[[i]][j]
+        cnt = cnt + ifelse(chr == "{", 1, ifelse(chr == "}", -1, 0))
+        if(cnt == 0) {
+          return(start + i)
+        }
+    }
+  }
+}
+
+# Get line numbers to remove to collapse adjacent loops
+loop_inds = function(index_minor, start_index, index_major, code_split) {
+  # Find line numbers for the opening and closing braces of loops
+  l_start = as.numeric(grep(paste0("for (", index_minor, " in ",
+                                   start_index,":", index_major, ") {"),
+                            code_split, fixed = T))
+  if (length(l_start) == 1) { return() }
+  l_end = as.numeric(sapply(l_start, get_encl_brace, code_split))
+
+  # Find line numbers where enclosing brace of a given loop is followed
+  # by a loop over the same index and range
+  inds = list()
+  for(i in 2:length(l_start)) {
+      inds[[i-1]] = if(l_start[i] == l_end[i-1] + 1) { c(l_end[i-1], l_start[i]) }
+  }
+
+  return(unlist(inds))
+}
+
+collapse_loops = function(model_code) {
+  # Split generated code by line
+  code_split = strsplit(model_code, "\n")[[1]]
+  
+  # Get loop statements
+  loops = grep("(?s)(?<=\\bfor\\b).*?(?=\\{)", code_split, value=T, perl = T)
+  
+  # If not multiple loops, return code unchanged
+  if(length(loops) < 2) {
+    return(model_code)
+  }
+  
+  # Extract the indexes and ranges from loop statements
+  loop_pars = unique(lapply(loops,get_loop_pars))
+  
+  # Get the line numbers to remove to collapse loops
+  inds = unlist(lapply(loop_pars,function(x){loop_inds(x[1],x[2],x[3],code_split)}))
+  
+  # If no loops to collapse, return code unchanged
+  if(length(inds) == 0) {
+    return(model_code)
+  }
+
+  # Get line numbers for construction of threading index
+  nn_inds = grep("int nn = n + start - 1;", code_split, fixed=T)
+  
+  # Return code with those lines removed
+  return(paste0(code_split[-c(unlist(inds),nn_inds[-1])], collapse = "\n"))
+}

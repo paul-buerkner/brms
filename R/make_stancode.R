@@ -271,7 +271,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_generated_quantities
   )
   
-  scode <- expand_include_statements(scode)
+  scode <- collapse_loops(expand_include_statements(scode))
   if (parse) {
     scode <- parse_model(scode, backend, silent = silent)
   }
