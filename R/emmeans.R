@@ -73,6 +73,7 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
   nbasis <- matrix(NA)
   dfargs <- list()
   dffun <- function(k, dfargs) Inf
+  environment(dffun) <- baseenv()
   nlist(X, bhat, nbasis, V, dffun, dfargs, misc, post.beta)
 }
 
