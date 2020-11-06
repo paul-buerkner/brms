@@ -899,9 +899,12 @@ smoothCon <- function(object, data, ...) {
   data <- rm_attr(data, "terms")
   vars <- setdiff(c(object$term, object$by), "NA")
   for (v in vars) {
-    # allow factor-like variables #562
     if (is_like_factor(data[[v]])) {
+      # allow factor-like variables #562
       data[[v]] <- as.factor(data[[v]])
+    } else {
+      # mgcv cannot handle some numeric-like variables
+      data[[v]] <- as.numeric(data[[v]])
     }
   }
   mgcv::smoothCon(object, data = data, ...)
