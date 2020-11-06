@@ -4,6 +4,7 @@
 
 * Allow fitting `multinomial` models with the 
 `cmdstanr` backend thanks to Andrew Johnson. (#1033)
+* Allow user-defined Stan functions in threaded models. (#1034)
 
 
 # brms 2.14.4

@@ -165,8 +165,8 @@ make_stancode <- function(formula, data, family = gaussian(),
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
       scode_global_defs$fun,
-      scode_predictor$partial_log_lik,
       collapse_stanvars(stanvars, "functions"),
+      scode_predictor$partial_log_lik,
     "}\n"
   )
   
