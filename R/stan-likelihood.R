@@ -676,7 +676,7 @@ stan_log_lik_multinomial <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")
-  sdist("multinomial_logit", p$mu)
+  sdist("multinomial_logit2", p$mu)
 }
 
 stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {

@@ -1,4 +1,12 @@
-# brms 2.14.0++
+# brms 2.14.4++
+
+### Bug Fixes
+
+* Allow fitting `multinomial` models with the 
+`cmdstanr` backend thanks to Andrew Johnson. (#1033)
+
+
+# brms 2.14.4
 
 ### New Features
 

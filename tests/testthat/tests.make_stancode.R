@@ -623,7 +623,7 @@ test_that("Stan code for multinomial models is correct", {
   scode <- make_stancode(bf(y | trials(size)  ~ 1, muy2 ~ x), data = dat, 
                          family = multinomial(), prior = prior)
   expect_match2(scode, "int Y[N, ncat];")
-  expect_match2(scode, "target += multinomial_logit_lpmf(Y[n] | mu[n]);")
+  expect_match2(scode, "target += multinomial_logit2_lpmf(Y[n] | mu[n]);")
   expect_match2(scode, "muy2 = Intercept_muy2 + Xc_muy2 * b_muy2;")
   expect_match2(scode, "target += normal_lpdf(b_muy2 | 0, 10);")
   expect_match2(scode, "target += cauchy_lpdf(Intercept_muy2 | 0, 1);")
