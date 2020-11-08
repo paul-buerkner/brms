@@ -512,20 +512,38 @@ stan_ordinal_lpmf <- function(family, link) {
   )
   # define the function body
   if (family == "cumulative") {
-    str_add(out) <- glue(
-      "     int nthres = num_elements(thres);\n",
-      "     real p;\n",
-      "     if (y == 1) {{\n",
-      "       p = {ilink}({th(1)});\n",
-      "     }} else if (y == nthres + 1) {{\n",
-      "       p = 1 - {ilink}({th('nthres')});\n",
-      "     }} else {{\n",
-      "       p = {ilink}({th('y')}) -\n",
-      "           {ilink}({th('y - 1')});\n",
-      "     }}\n",
-      "     return log(p);\n",
-      "   }}\n"
-    )
+    if (ilink == "inv_logit") {
+      str_add(out) <- glue(
+        "     int nthres = num_elements(thres);\n",
+        "     if (y == 1) {{\n",
+        "       return log_inv_logit({th(1)});\n",
+        "     }} else if (y == nthres + 1) {{\n",
+        "       return log1m_inv_logit({th('nthres')});\n",
+        "     }} else {{\n",
+        # TODO: replace with log_inv_logit_diff once rstan >= 2.25
+        "       return log_diff_exp(\n",
+        "         log_inv_logit({th('y')}), \n",
+        "         log_inv_logit({th('y - 1')})\n",
+        "       );\n",
+        "     }}\n",
+        "   }}\n"
+      )
+    } else {
+      str_add(out) <- glue(
+        "     int nthres = num_elements(thres);\n",
+        "     real p;\n",
+        "     if (y == 1) {{\n",
+        "       p = {ilink}({th(1)});\n",
+        "     }} else if (y == nthres + 1) {{\n",
+        "       p = 1 - {ilink}({th('nthres')});\n",
+        "     }} else {{\n",
+        "       p = {ilink}({th('y')}) -\n",
+        "           {ilink}({th('y - 1')});\n",
+        "     }}\n",
+        "     return log(p);\n",
+        "   }}\n"
+      )
+    }
   } else if (family %in% c("sratio", "cratio")) {
     sc <- str_if(family == "sratio", "1 - ")
     str_add(out) <- glue(
