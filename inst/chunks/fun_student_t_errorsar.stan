@@ -14,7 +14,7 @@
                                real rho, matrix W, vector eigenW) {
     int N = rows(y);
     real K = rows(y);  // avoid integer division warning
-    real inv_sigma2 = 1 / square(sigma);
+    real inv_sigma2 = inv_square(sigma);
     matrix[N, N] W_tilde = add_diag(-rho * W, 1);
     vector[N] half_pred;
     real log_det;
