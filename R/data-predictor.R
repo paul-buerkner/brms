@@ -902,8 +902,8 @@ smoothCon <- function(object, data, ...) {
     if (is_like_factor(data[[v]])) {
       # allow factor-like variables #562
       data[[v]] <- as.factor(data[[v]])
-    } else {
-      # mgcv cannot handle some numeric-like variables
+    } else if (inherits(data[[v]], "difftime")) {
+      # mgcv cannot handle 'difftime' variables
       data[[v]] <- as.numeric(data[[v]])
     }
   }
