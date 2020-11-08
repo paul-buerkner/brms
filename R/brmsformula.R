@@ -1392,7 +1392,7 @@ validate_formula.mvbrmsformula <- function(
       warning2(
         "In the future, 'rescor' will be set to FALSE by default for ", 
         "all models. It is thus recommended to explicitely set ",
-        "'rescor' via 'set_recor' instead of using the default."
+        "'rescor' via 'set_rescor' instead of using the default."
       ) 
     }
   }
