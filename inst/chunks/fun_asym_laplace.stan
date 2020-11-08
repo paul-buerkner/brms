@@ -37,7 +37,7 @@
      if (y < mu) {
        return log(quantile) + (1 - quantile) * (y - mu) / sigma;
      } else {
-       return log(1 - (1 - quantile) * exp(-quantile * (y - mu) / sigma));
+       return log1m((1 - quantile) * exp(-quantile * (y - mu) / sigma));
      }
    }
   /* asymmetric laplace log-CCDF for a single quantile
@@ -51,8 +51,8 @@
    */ 
    real asym_laplace_lccdf(real y, real mu, real sigma, real quantile) {
      if (y < mu) {
-       return log(1 - quantile * exp((1 - quantile) * (y - mu) / sigma));
+       return log1m(quantile * exp((1 - quantile) * (y - mu) / sigma));
      } else {
-       return log(1 - quantile) - quantile * (y - mu) / sigma;
+       return log1m(quantile) - quantile * (y - mu) / sigma;
      }
    }
