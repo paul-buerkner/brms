@@ -5,8 +5,8 @@
     real nu_mu = nu * exp(log_mu); 
     real nu2 = nu^2;
     // first 4 terms of the residual series
-    real log_sum_resid = log(
-      1 + nu_mu^(-1) * (nu2 - 1) / 24 + 
+    real log_sum_resid = log1p(
+      nu_mu^(-1) * (nu2 - 1) / 24 + 
       nu_mu^(-2) * (nu2 - 1) / 1152 * (nu2 + 23) +
       nu_mu^(-3) * (nu2 - 1) / 414720 * (5 * nu2^2 - 298 * nu2 + 11237)
     );

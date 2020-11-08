@@ -16,5 +16,5 @@
          mat[j, i] = gamma[i - j]; 
        } 
      } 
-     return cholesky_decompose(1 / (1 - ar^2) * mat); 
+     return cholesky_decompose(mat ./ (1 - ar^2)); 
    }
