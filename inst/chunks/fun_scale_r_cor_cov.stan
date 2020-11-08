@@ -32,5 +32,5 @@
       }
     }
     // r is returned in another dimension order than z
-    return as_matrix(r, cols(z), rows(z));
+    return to_matrix(r, cols(z), rows(z), 0);
   }

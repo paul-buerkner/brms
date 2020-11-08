@@ -26,7 +26,6 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     for (id in ids) {
       r <- ranef[ranef$id == id, ]
       if (nrow(r) > 1L && r$cor[1]) {
-        c(r_funs) <- "  #include 'fun_as_matrix.stan'\n"
         if (nzchar(r$by[1])) {
           if (nzchar(r$cov[1])) { 
             c(r_funs) <- "  #include 'fun_scale_r_cor_by_cov.stan'\n"
