@@ -397,7 +397,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1), 
-                threads = NULL, control = NULL,
+                threads = NULL, control = NULL, normalise = TRUE,
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
@@ -468,7 +468,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     model <- .make_stancode(
       bterms, data = data, prior = prior, 
       stanvars = stanvars, save_model = save_model,
-      backend = backend, threads = threads
+      backend = backend, threads = threads, normalise = normalise
     )
     # initialize S3 object
     x <- brmsfit(

@@ -54,7 +54,7 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars, 
-                           threads = threading(), 
+                           threads = threading(), normalise,
                            parse = getOption("brms.parse_stancode", FALSE), 
                            backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {
@@ -65,7 +65,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
   scode_predictor <- stan_predictor(
-    bterms, data = data, prior = prior, 
+    bterms, data = data, prior = prior,
+    normalise = normalise, 
     ranef = ranef, meef = meef,
     stanvars = stanvars, threads = threads
   )
