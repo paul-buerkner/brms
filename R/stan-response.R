@@ -567,13 +567,8 @@ stan_ordinal_lpmf <- function(family, link) {
     if (ilink == "inv_logit") {
       str_add(out) <- glue(
         "     int nthres = num_elements(thres);\n",
-        "     vector[nthres + 1] p;\n",
-        "     p[1] = 0.0;\n",
-        "     for (k in 1:(nthres)) {{\n",
-        "       p[k + 1] = p[k] + {th('k')};\n",
-        "     }}\n",
-        "     p = exp(p);\n",
-        "     return log(p[y] / sum(p));\n",
+        "     vector[nthres + 1] p = append_row(0, cumulative_sum(disc * (mu - thres)));\n",
+        "     return p[y] - log_sum_exp(p);\n",
         "   }}\n"
       )
     } else {
