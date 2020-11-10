@@ -26,8 +26,9 @@
 stan_prior <- function(prior, class, coef = NULL, group = NULL, 
                        type = "real", dim = "", coef_type = "real",
                        prefix = "", suffix = "", broadcast = "vector", 
-                       header_type = "", comment = "", px = list()) {
-  prior_only <- isTRUE(attr(prior, "sample_prior") == "only")
+                       header_type = "", comment = "", px = list(),
+                       normalise=TRUE) {
+  prior_only <- isTRUE(attr(prior, "") == "only")
   prior <- subset2(
     prior, class = class, coef = c(coef, ""), 
     group = c(group, ""), ls = px
@@ -113,7 +114,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           } else {
             coef_prior <- stan_target_prior(
               coef_prior, par_ij, broadcast = broadcast, 
-              bound = bound, resp = px$resp[1]
+              bound = bound, resp = px$resp[1], normalise = normalise
             )
             str_add(out$prior) <- paste0(tp(), coef_prior, ";\n") 
           }
@@ -154,7 +155,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     } else {
       target_base_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, bound = bound,
-        broadcast = broadcast, resp = px$resp[1]
+        broadcast = broadcast, resp = px$resp[1], normalise = normalise
       )
       str_add(out$prior) <- paste0(tp(), target_base_prior, ";\n")
     }
@@ -219,7 +220,7 @@ stan_base_prior <- function(prior) {
 # @param name of the response variable
 # @return a character string defining the prior in Stan language
 stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
-                              bound = "", resp = "") {
+                              bound = "", resp = "", normalise) {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
     "^[^\\(]+(?=\\()", prior, perl = TRUE, simplify = FALSE
@@ -243,30 +244,36 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   if (nzchar(prior_args)) {
     str_add(prior_args, start = TRUE) <- " | "
   }
-  out <- glue("{prior_name}_lpdf({par}{prior_args})")
+  if (normalise) {
+    out <- glue("{prior_name}_lpdf({par}{prior_args})")
+  } else {
+    out <- glue("{prior_name}_lupdf({par}{prior_args})")
+  }
   par_class <- unique(get_matches("^[^_]+", par))
   par_bound <- par_bounds(par_class, bound, resp = resp)
   prior_bound <- prior_bounds(prior_name)
   trunc_lb <- is.character(par_bound$lb) || par_bound$lb > prior_bound$lb
   trunc_ub <- is.character(par_bound$ub) || par_bound$ub < prior_bound$ub
-  if (trunc_lb || trunc_ub) {
-    wsp <- wsp(nsp = 4)
-    # scalar parameters are of length 1 but have no coefficients
-    ncoef <- max(1, ncoef)
-    if (trunc_lb && !trunc_ub) {
-      str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb}{prior_args})"
-      )
-    } else if (!trunc_lb && trunc_ub) {
-      str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub}{prior_args})"
-      )
-    } else if (trunc_lb && trunc_ub) {
-      str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * log_diff_exp(", 
-        "{prior_name}_lcdf({par_bound$ub}{prior_args}), ",
-        "{prior_name}_lcdf({par_bound$lb}{prior_args}))"
-      )
+  if (normalise) {
+    if (trunc_lb || trunc_ub) {
+      wsp <- wsp(nsp = 4)
+      # scalar parameters are of length 1 but have no coefficients
+      ncoef <- max(1, ncoef)
+      if (trunc_lb && !trunc_ub) {
+        str_add(out) <- glue(
+          "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb}{prior_args})"
+        )
+      } else if (!trunc_lb && trunc_ub) {
+        str_add(out) <- glue(
+          "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub}{prior_args})"
+        )
+      } else if (trunc_lb && trunc_ub) {
+        str_add(out) <- glue(
+          "\n{wsp}- {ncoef} * log_diff_exp(", 
+          "{prior_name}_lcdf({par_bound$ub}{prior_args}), ",
+          "{prior_name}_lcdf({par_bound$lb}{prior_args}))"
+        )
+      }
     }
   }
   out

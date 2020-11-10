@@ -36,10 +36,14 @@ stan_predictor.btnl <- function(x, ...) {
   )
 }
 
+get_normalise <- function(...) {
+  return(normalise)
+}
+
 # Stan code for distributional parameters
 # @param rescor is this predictor part of a MV model estimating rescor?
 #' @export
-stan_predictor.brmsterms <- function(x, data, prior, ...) {
+stan_predictor.brmsterms <- function(x, data, prior, normalise, ...) {
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   data <- subset_data(data, x)
@@ -97,7 +101,7 @@ stan_predictor.brmsterms <- function(x, data, prior, ...) {
         str_add_list(out) <- stan_prior(
           prior, dp, type = dp_tmp_type, prefix = "tmp_", 
           suffix = resp, header_type = "real", px = px, 
-          comment = dp_comment
+          comment = dp_comment, normalise=normalise
         )
       } else if (nzchar(dp_type)) {
         # distributional parameter has a regular definition
@@ -105,14 +109,14 @@ stan_predictor.brmsterms <- function(x, data, prior, ...) {
         str_add_list(out) <- stan_prior(
           prior, dp, type = dp_type, suffix = resp, 
           header_type = "real", px = px, 
-          comment = dp_comment
+          comment = dp_comment, normalise=normalise
         )
       }
     }
   }
   str_add_list(out) <- stan_mixture(x, data = data, prior = prior, ...)
   str_add_list(out) <- stan_dpar_transform(x, ...)
-  out$model_log_lik <- stan_log_lik(x, data = data, ...) 
+  out$model_log_lik <- stan_log_lik(x, data = data, normalise=normalise, ...) 
   list(out)
 }
 

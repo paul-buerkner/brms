@@ -232,7 +232,7 @@ stan_log_lik_trunc <- function(ll, bterms, data, threads,resp = "",
   out
 }
 
-stan_log_lik_lpdf_name <- function(bterms, normalise=TRUE) {
+stan_log_lik_lpdf_name <- function(bterms, normalise) {
   if (normalise) {
     ifelse(use_int(bterms$family), "lpmf", "lpdf")
   } else {
