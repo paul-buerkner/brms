@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
-stan_global_defs <- function(bterms, prior, ranef, threads) {
+stan_global_defs <- function(bterms, prior, ranef, threads, normalise) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -52,7 +52,8 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     ord_fams <- families[is_ordinal]
     ord_links <- links[is_ordinal]
     for (i in seq_along(ord_fams)) {
-      str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
+      str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i],
+                                            normalise = normalise)
     }
   }
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")

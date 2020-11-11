@@ -36,14 +36,19 @@ stan_predictor.btnl <- function(x, ...) {
   )
 }
 
-get_normalise <- function(...) {
+get_normalise <- function(normalise,...) {
   return(normalise)
+}
+
+normalised_lpdf <- function(normalise) {
+  return(ifelse(normalise, "lpdf", "lupdf"))
 }
 
 # Stan code for distributional parameters
 # @param rescor is this predictor part of a MV model estimating rescor?
 #' @export
-stan_predictor.brmsterms <- function(x, data, prior, normalise, ...) {
+stan_predictor.brmsterms <- function(x, data, prior, ...) {
+  normalise <- get_normalise(...)
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   data <- subset_data(data, x)
@@ -116,7 +121,7 @@ stan_predictor.brmsterms <- function(x, data, prior, normalise, ...) {
   }
   str_add_list(out) <- stan_mixture(x, data = data, prior = prior, ...)
   str_add_list(out) <- stan_dpar_transform(x, ...)
-  out$model_log_lik <- stan_log_lik(x, data = data, normalise=normalise, ...) 
+  out$model_log_lik <- stan_log_lik(x, data = data, ...) 
   list(out)
 }
 
@@ -264,6 +269,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, ...) {
 
 # Stan code for population-level effects
 stan_fe <- function(bterms, data, prior, stanvars, threads, primitive, ...) {
+  normalise <- get_normalise(...)
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
@@ -322,7 +328,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive, ...) {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type, 
           coef_type = b_coef_type, px = px, suffix = p,
-          header_type = "vector", comment = b_comment
+          header_type = "vector", comment = b_comment,
+          normalise = normalise
         )
       }
     } else {
@@ -419,7 +426,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive, ...) {
       str_add_list(out) <- stan_prior(
         prior, class = "Intercept", type = intercept_type,
         suffix = p, px = px, header_type = "real", 
-        comment = "temporary intercept for centered predictors"
+        comment = "temporary intercept for centered predictors",
+        normalise = normalise
       )
     }
   }
@@ -484,6 +492,8 @@ stan_re <- function(ranef, prior, ...) {
 # @param ranef output of tidy_ranef
 # @param prior object of class brmsprior
 .stan_re <- function(id, ranef, prior, threads, ...) {
+  normalise <- get_normalise(...)
+  lpdf <- normalised_lpdf(normalise)
   out <- list()
   r <- subset2(ranef, id = id)
   has_cov <- nzchar(r$cov[1])
@@ -562,7 +572,8 @@ stan_re <- function(ranef, prior, ...) {
       type = glue("matrix<lower=0>[M_{id}, Nby_{id}]"),
       coef_type = glue("row_vector<lower=0>[Nby_{id}]"),
       suffix = glue("_{id}"), px = px, broadcast = "matrix",
-      comment = "group-level standard deviations"
+      comment = "group-level standard deviations",
+      normalise = normalise
     )
   } else {
     str_add_list(out) <- stan_prior(
@@ -570,7 +581,8 @@ stan_re <- function(ranef, prior, ...) {
       type = glue("vector<lower=0>[M_{id}]"), 
       coef_type = "real<lower=0>",
       suffix = glue("_{id}"), px = px, 
-      comment = "group-level standard deviations"
+      comment = "group-level standard deviations",
+      normalise = normalise
     )
   }
   dfm <- ""
@@ -585,7 +597,7 @@ stan_re <- function(ranef, prior, ...) {
       "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- glue(
-      "  target += std_normal_lpdf(to_vector(z_{id}));\n"
+      "  target += std_normal_{lpdf}(to_vector(z_{id}));\n"
     )
     if (has_rows(tr)) {
       dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
@@ -670,7 +682,7 @@ stan_re <- function(ranef, prior, ...) {
       "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- cglue(
-      "  target += std_normal_lpdf(z_{id}[{seq_rows(r)}]);\n"
+      "  target += std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n"
     )
     Lcov <- str_if(has_cov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
@@ -799,7 +811,8 @@ stan_cs <- function(bterms, data, prior, ranef, threads, ...) {
       type = glue("matrix{bound}[Kcs{p}, nthres{resp}]"),
       coef_type = glue("row_vector{bound}[nthres{resp}]"),
       suffix = glue("cs{p}"), px = px, broadcast = "matrix",
-      header_type = "matrix", comment = "category specific effects"
+      header_type = "matrix", comment = "category specific effects",
+      normalise = get_normalise(...)
     )
     str_add(out$model_def) <- glue(
       "  // linear predictor for category specific effects\n",

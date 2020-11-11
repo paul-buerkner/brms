@@ -230,6 +230,7 @@ stan_response <- function(bterms, data) {
 # and must be present even when using non-linear predictors
 # thus the relevant Stan code cannot be part of 'stan_fe'
 stan_thres <- function(bterms, data, prior, ...) {
+  normalise = get_normalise(...)
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   if (!is_ordinal(bterms)) {
@@ -270,12 +271,14 @@ stan_thres <- function(bterms, data, prior, ...) {
           prior, class = "Intercept", group = groups[i], 
           type = "real", prefix = "first_",
           suffix = glue("{p}{gr[i]}"), px = px, 
-          comment = "first threshold"
+          comment = "first threshold",
+          normalise = normalise
         )
         str_add_list(out) <- stan_prior(
           prior, class = "delta", group = groups[i], 
           type = glue("real{bound}"), px = px, suffix = gr[i], 
-          comment = "distance between thresholds"
+          comment = "distance between thresholds",
+          normalise = normalise
         )
       }
       str_add(out$tpar_def) <- 
@@ -298,7 +301,8 @@ stan_thres <- function(bterms, data, prior, ...) {
           coef = get_thres(bterms, group = groups[i]), 
           type = glue("{type}[nthres{resp}{grb[i]}]"),
           coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
-          comment = "temporary thresholds for centered predictors"
+          comment = "temporary thresholds for centered predictors",
+          normalise = normalise
         )
       }
     }
@@ -486,8 +490,9 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
 
 # ordinal log-probability densitiy functions in Stan language
 # @return a character string
-stan_ordinal_lpmf <- function(family, link) {
+stan_ordinal_lpmf <- function(family, link, normalise) {
   stopifnot(is.character(family), is.character(link))
+  lpmf <- ifelse(normalise, "lpmf", "lupmf")
   ilink <- stan_ilink(link)
   th <- function(k) {
     # helper function generating stan code inside ilink(.)
@@ -508,7 +513,7 @@ stan_ordinal_lpmf <- function(family, link) {
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}_lpmf(int y, real mu, real disc, vector thres) {{\n"
+    "   real {family}_{link}_{lpmf}(int y, real mu, real disc, vector thres) {{\n"
   )
   # define the function body
   if (family == "cumulative") {
@@ -600,9 +605,9 @@ stan_ordinal_lpmf <- function(family, link) {
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}_merged_lpmf(", 
+    "   real {family}_{link}_merged_{lpmf}(", 
     "int y, real mu, real disc, vector thres, int[] j) {{\n",
-    "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
+    "     return {family}_{link}_{lpmf}(y | mu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
   if (family == "cumulative" && link == "logit") {
@@ -617,9 +622,9 @@ stan_ordinal_lpmf <- function(family, link) {
       "   * Returns:\n", 
       "   *   a scalar to be added to the log posterior\n",
       "   */\n",
-      "   real ordered_logistic_merged_lpmf(", 
+      "   real ordered_logistic_merged_{lpmf}(", 
       "int y, real mu, vector thres, int[] j) {{\n",
-      "     return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);\n",
+      "     return ordered_logistic_{lpmf}(y | mu, thres[j[1]:j[2]]);\n",
       "   }}\n"
     )
   }

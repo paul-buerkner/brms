@@ -21,8 +21,8 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
-                          threads = NULL, save_model = NULL, 
-                          ...) {
+                          threads = NULL, save_model = NULL,
+                          normalise = TRUE, ...) {
   
   if (is.brmsfit(formula)) {
     stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
@@ -44,7 +44,7 @@ make_stancode <- function(formula, data, family = gaussian(),
  .make_stancode(
    bterms, data = data, prior = prior, 
    stanvars = stanvars, threads = threads,
-   save_model = save_model,
+   save_model = save_model, normalise = normalise,
    ...
  ) 
 }
@@ -70,10 +70,10 @@ make_stancode <- function(formula, data, family = gaussian(),
     ranef = ranef, meef = meef,
     stanvars = stanvars, threads = threads
   )
-  scode_ranef <- stan_re(ranef, prior = prior, threads = threads)
+  scode_ranef <- stan_re(ranef, prior = prior, threads = threads, normalise = normalise)
   scode_Xme <- stan_Xme(meef, prior = prior, threads = threads)
   scode_global_defs <- stan_global_defs(
-    bterms, prior = prior, ranef = ranef, threads = threads
+    bterms, prior = prior, ranef = ranef, threads = threads, normalise = normalise
   )
   
   # extend Stan's likelihood part
