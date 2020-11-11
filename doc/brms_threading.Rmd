@@ -76,11 +76,12 @@ model_poisson <- brm(
   y ~ 1 + x1 + x2 + (1 | g),
   data = fake,
   family = poisson(),
-  iter = 100, # short sampling to speedup example
+  iter = 500, # short sampling to speedup example
+  chains = 2,
   prior = prior(normal(0,1), class = b) +
     prior(constant(1), class = sd, group = g),
   backend = "cmdstanr",
-  threads = threading(2)
+  threads = threading(4)
 )
 ```
 
@@ -92,30 +93,78 @@ model_poisson <- brm(
 # cross-product of the tuning parameters and as result column the
 # respective runtime.
 benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100, 
-                                static = FALSE, inits = 0) {
+                                static = FALSE) {
 
-  scaling_model <- update(
-    model, refresh = 0, 
-    threads = threading(1, grainsize = grainsize[1], static = static), 
-    chains = 1, iter = 2, backend = "cmdstanr"
-  )
+    winfo <- extract_warmup_info(model)
+    sims  <- rstan::extract(model$fit)
+    init <- list(extract_draw(sims, 1))
 
-  run_benchmark <- function(cores, size, iter) {
-    unname(
-      system.time(
-        update(
-          scaling_model, iter = iter, 
-          chains = 1, seed = 1234, inits = inits, refresh = 0,
-          threads = threading(cores, grainsize = size, static = static)
-        )
-      )["elapsed"]
+    scaling_model <- update(
+        model, refresh = 0, 
+        threads = threading(1, grainsize = grainsize[1], static = static), 
+        chains = 1, iter = 2, backend = "cmdstanr"
     )
-  }
 
-  cases <- expand.grid(cores = cores, grainsize = grainsize, iter = iter)
-  cases$runtime <- with(cases, mapply(run_benchmark, cores, grainsize, iter))
-  cases
+    run_benchmark <- function(cores, size, iter) {
+        bench_fit <- update(
+            scaling_model, warmup=0, iter = iter,
+            chains = 1, seed = 1234, inits = init, refresh = 0, save_warmup=TRUE,
+            threads = threading(cores, grainsize = size, static = static),
+            inv_metric=winfo$inv_metric[[1]],
+            step_size=winfo$step_size[[1]],
+            adapt_engaged=FALSE
+        )
+        lf <- sum(subset(nuts_params(bench_fit, inc_warmup=TRUE), Parameter=="n_leapfrog__")$Value)
+        elapsed <- sum(colSums(rstan::get_elapsed_time(bench_fit$fit)))
+
+        c(num_leapfrog=lf, runtime=elapsed)
+    }
+
+    cases <- expand.grid(cores = cores, grainsize = grainsize, iter = iter)
+    res <- with(cases, mapply(run_benchmark, cores, grainsize, iter))
+    cbind(cases, as.data.frame(t(res)))
 }
+
+benchmark_reference <- function(model, iter=100, inits=0) {
+    winfo <- extract_warmup_info(model)
+    sims  <- rstan::extract(model$fit)
+    init <- list(extract_draw(sims, 1))
+
+    ref_model <- update(
+        model, refresh = 0, 
+        threads = NULL,
+        chains = 1, iter = 2, backend = "cmdstanr"
+    )
+
+    run_benchmark_ref <- function(iter_bench) {
+        bench_fit <- update(
+            ref_model, warmup=0, iter = iter_bench,
+            chains = 1, seed = 1234, inits = init, refresh = 0,
+            inv_metric=winfo$inv_metric[[1]],
+            step_size=winfo$step_size[[1]],
+            adapt_engaged=FALSE
+        )
+
+        lf <- sum(subset(nuts_params(bench_fit, inc_warmup=TRUE), Parameter=="n_leapfrog__")$Value)
+        elapsed <- sum(colSums(rstan::get_elapsed_time(bench_fit$fit)))
+
+        c(num_leapfrog=lf, runtime=elapsed)
+    }
+    
+    ref <- sapply(iter, run_benchmark_ref)
+    ref <- cbind(as.data.frame(t(ref)), iter=iter)
+    ref
+}
+
+extract_warmup_info <- function(bfit) {
+    adapt  <- lapply(rstan::get_adaptation_info(bfit$fit), strsplit, split="\\n")
+    step_size  <- lapply(adapt, function(a) as.numeric(strsplit(a[[1]][[1]], " = ")[[1]][2]))
+    inv_metric <- lapply(adapt, function(a) as.numeric(strsplit(sub("^# ", "", a[[1]][[3]]), ", ")[[1]]))
+    list(step_size=step_size, inv_metric=inv_metric)
+}
+
+extract_draw <- function(sims, draw) lapply(sims, abind::asub, idx=draw, dim=1, drop=FALSE)
+
 ```
 
 ## Introduction
@@ -129,6 +178,8 @@ chains at the same time, the use of within-chain parallelization is more
 complicated in various ways. This vignette aims to introduce the user to
 within-chain parallelization with **brms**, since its efficient use depends on
 various aspects specific to the users model.
+
+CmdStan used to create this document: `r basename(cmdstanr::cmdstan_path())`
 
 ## Quick summary
 
@@ -173,6 +224,9 @@ here as we assumed a fixed amount of 4 cores.
   can be very limited. Not every model amends to within-chain
   parallelization and an empirical evaluation is in some cases
   advisable.
+- Enabling threading *usually* slows down any model to some extent and
+  this slowdown must be offset by sufficent cores per chain in order
+  to really gain in execution speed.
 - Doubling the execution speed with few cores is a lot easier than
   obtaining larger speedups with even more cores.
 - Models with computationally expensive likelihoods are easier to
@@ -303,24 +357,31 @@ explore the tuning parameter space of the chunk size as quickly as possible. The
 number of iterations needed to get reliable runtime estimates for a given chunk
 size will depend on many details and the easiest way to determine this is to run
 this benchmark with multiple number of iterations. Whenever their results match
-approximately, then the iteration numbers are sufficient.
+approximately, then the iteration numbers are sufficient. In order to
+decrease the variation between runs, we also fix the random seed,
+initial value and the tuning parameters of the sampler (step size and
+mass matrix).
 
 Below is an example R code demonstrating such a benchmark. The utility function
 `benchmark_threading` is shown and explained in the appendix.
 
 ```{r, chunking-scale, message=FALSE, warning=FALSE, results='hide'}
 chunking_bench <- transform(
-  data.frame(chunks = 2^(0:4)), 
-  grainsize = ceiling(N / chunks)
+    data.frame(chunks = 4^(0:3)),
+    grainsize = ceiling(N / chunks)
 )
 
+iter_test <- c(10, 20, 40)  # very short test runs
 scaling_chunking <- benchmark_threading(
   model_poisson,
   cores = 1,                         
   grainsize = chunking_bench$grainsize,  # test various grainsizes
-  iter = c(25, 50),  # very short test runs
+  iter = iter_test,  
   static = TRUE  # with static partitioner
-)               
+)
+
+# run as reference the model *without* reduce_sum
+ref <- benchmark_reference(model_poisson, iter_test)
 
 # for additional data munging please refer to the appendix
 ```
@@ -329,17 +390,20 @@ scaling_chunking <- benchmark_threading(
 scaling_chunking <- merge(scaling_chunking, chunking_bench, by = "grainsize")
 
 single_chunk  <- transform(
-  subset(scaling_chunking, chunks == 1),
-  runtime_single = runtime, runtime = NULL, 
-  grainsize = NULL, chunks=NULL
+    subset(scaling_chunking, chunks == 1),
+    num_leapfrog_single = num_leapfrog, num_leapfrog = NULL,
+    runtime_single = runtime, runtime = NULL, 
+    grainsize = NULL, chunks=NULL
 )
 
 scaling_chunking <- transform(
-  merge(scaling_chunking, single_chunk),
-  slowdown = runtime/runtime_single,
-  iter = factor(iter),
-  runtime_single = NULL
+    merge(scaling_chunking, single_chunk),
+    slowdown = runtime/runtime_single,
+    iter = factor(iter),
+    runtime_single = NULL
 )
+
+ref <- transform(ref, iter=factor(iter))
 ```
 
 Graphically summarizing the results shows that with more than 8 chunks the
@@ -352,15 +416,36 @@ large due to the scaling of the plot. One must not forget that when we start to
 use more CPU cores, the overhead is easily offset, but it limits the maximal
 speedup we can get. For example, some 2 units of computation become 2.4 units
 due to the overhead such that on 2 cores we don't quite double the execution
-speed, but rather get a 1.6x increase in speed instead of a 2x speedup.
+speed, but rather get a 1.6x increase in speed instead of a 2x
+speedup.
+
+Considering in addition the time per leapfrog step of the NUTS sampler
+shows on an absolute scale similar information as before. The upside
+of this representation is that we can visualize the slowdown in
+relation to the program *without* `reduce_sum`. As we can see, the
+additional overhead due to merely enabling `reduce_sum` is substantial
+in this example. This is attributed in the specific example to the
+large number of random effects.
 
 ```{r}
 ggplot(scaling_chunking) +
-  aes(chunks, slowdown, colour = iter, shape = iter) +
-  geom_line() + geom_point() +
-  scale_x_log10(breaks = scaling_chunking$chunks) +
-  scale_y_log10() +
-  ggtitle("Slowdown with increasing number of chunks")
+    aes(chunks, slowdown, colour = iter, shape = iter) +
+    geom_line() + geom_point() +
+    scale_x_log10(breaks = scaling_chunking$chunks) +
+    scale_y_log10(breaks=seq(0.8, 2.5, by=0.1)) +
+    ggtitle("Slowdown with increasing number of chunks")
+
+ggplot(scaling_chunking) +
+    aes(chunks, 1E3 * runtime/num_leapfrog, colour = iter, shape=iter) +
+    geom_line() + geom_point() +
+    scale_x_log10(breaks = scaling_chunking$chunks) +
+    scale_y_log10(breaks=seq(0.1, 2.0, by=0.1)) +
+    geom_hline(data=ref, aes(yintercept=1E3 * runtime/num_leapfrog, colour=iter), linetype=I(2)) +
+    ggtitle("Time per leapfrog step vs number of chunks",
+            "Dashed line is reference model without reduce_sum") +
+    ylab("Time per leapfrog step [ms]")
+
+
 ```
 
 ## Parallelization speedup
@@ -381,20 +466,22 @@ num_cpu_logical <- parallel::detectCores(logical = TRUE)
 grainsize_default <- ceiling(N / (2 * num_cpu))
 cores <- c(2^seq(0, floor(log2(num_cpu_logical))), num_cpu, num_cpu_logical)
 cores <- sort(unique(cores))
-grainsize <- c(2*grainsize_default, grainsize_default, grainsize_default/2)
+grainsize <- c(grainsize_default, grainsize_default/2, grainsize_default/4)
 grainsize <- round(grainsize)
 
+iter_scaling <- 20
 scaling_cores <- benchmark_threading(
   model_poisson,
   cores = cores,
   grainsize = grainsize,
-  iter = c(25), 
+  iter = iter_scaling,
   static = FALSE
 )
 
 single_core  <- transform(
-  subset(scaling_cores, cores == 1),
-  runtime_single = runtime, runtime = NULL, cores = NULL
+    subset(scaling_cores, cores == 1),
+    runtime_single = runtime,
+    num_leapfrog=NULL, runtime=NULL, cores = NULL
 )
 
 scaling_cores <- transform(
@@ -413,13 +500,15 @@ relative speedups.
 
 ```{r}
 ggplot(scaling_cores) +
-  aes(cores, runtime, shape = grainsize, color = grainsize) +
-  geom_vline(xintercept = num_cpu, linetype = 3) +
-  geom_line() + geom_point() + 
-  scale_x_log10(breaks = scaling_cores$cores) +
-  scale_y_log10() +
-  theme(legend.position = c(0.85, 0.8)) +
-  ggtitle("Runtime with varying number of cores")
+    aes(cores, runtime, shape = grainsize, color = grainsize) +
+    geom_vline(xintercept = num_cpu, linetype = 3) +
+    geom_line() + geom_point() + 
+    scale_x_log10(breaks = scaling_cores$cores) +
+    scale_y_log10(breaks=seq(0.1, 1.4, by=0.1)) +
+    theme(legend.position = c(0.85, 0.8)) +
+    geom_hline(data=subset(ref, iter==iter_scaling), aes(yintercept=runtime), linetype=I(2)) +
+    ggtitle("Runtime with varying number of cores",
+            "Dashed line is reference model without reduce_sum")
 
 ggplot(scaling_cores) +
   aes(cores, speedup, shape = grainsize, color = grainsize) +
@@ -434,16 +523,24 @@ ggplot(scaling_cores) +
 ```
 
 The vertical dotted line marks the physical number of CPU cores on the machine
-this was run. The dashed lines marks the theoretical maximal speedup. We can see
+this was run. The horizontal dashed line in the plot with absolute
+runtime marks the respective runtime of the model *without*
+`reduce_sum` and the dashed unity line in the plot with the relative
+speedup marks the theoretical maximal speedup. We can see
 that there is no further reduction in execution time when increasing the thread
 count to be greater than the number of physical CPUs. Hence, the use of
 hyper-threading is not helpful when aiming to maximize the speed of a Stan
-program. For this example, the shown `grainsize`s matter on some machines but
+program. Moreover, the use of threading outperforms the single core
+runtime only when using more than 4 cores in this example. 
+
+For this example, the shown `grainsize`s matter on some machines but
 not on others, so your results may look quite different from what is shown here.
 The overall speedups may not seem impressive in this case, which is attributed
 in this case to the large number of parameters relative to the number of
-observations. However, we can still obtain a doubling in speed when using 4
-cores and with 2 cores an increase of 40% or more is reached.
+observations. However, we can still outperform the single core
+runtime when using many cores. Though the most important advantage of
+threading is that with an increasing data set size, the user has the option to
+use a brute-force approach to balance the increase in walltime needed.
 
 ```{r}
 kable(scaling_cores, digits = 2)
