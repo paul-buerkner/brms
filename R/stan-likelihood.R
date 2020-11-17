@@ -601,7 +601,7 @@ stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     glue("shape{mix}") %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  lpdf <- paste0("inv_gaussian", if (!reqn) "vector")
+  lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- str_if(reqn, "[n]")
   sdist(lpdf, p$mu, p$shape)
 }
