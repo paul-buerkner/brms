@@ -131,7 +131,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     futures[[i]] <- future::future(
       update(fit, newdata = data[[i]], data2 = data2[[i]],
              recompile = recompile, ...),
-      packages = "brms"
+      packages = "brms", seed = TRUE
     )
   }
   for (i in seq_along(data)) {
