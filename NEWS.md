@@ -1,5 +1,10 @@
 # brms 2.14.4++
 
+### New Features
+
+* Enable `posterior_predict` for truncated continuous models
+even if the required CDF or quantile functions are unavailable.
+
 ### Bug Fixes
 
 * Allow fitting `multinomial` models with the 
