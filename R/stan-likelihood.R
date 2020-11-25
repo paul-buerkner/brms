@@ -202,7 +202,7 @@ stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
 
 # truncated part of the likelihood
 # @param short use the T[, ] syntax?
-stan_log_lik_trunc <- function(ll, bterms, data, threads,resp = "", 
+stan_log_lik_trunc <- function(ll, bterms, data, threads, resp = "", 
                                short = FALSE) {
   stopifnot(is.sdist(ll))
   bounds <- trunc_bounds(bterms, data = data)
@@ -220,12 +220,12 @@ stan_log_lik_trunc <- function(ll, bterms, data, threads,resp = "",
     # truncation making use of _lcdf functions
     ms <- paste0(" -\n", wsp(nsp = 6))
     if (any(bounds$lb > -Inf) && !any(bounds$ub < Inf)) {
-      out <- glue("{ms}{ll$dist}_lccdf({lb} | {ll$args})")
+      out <- glue("{ms}{ll$dist}_lccdf({lb}{ll$shift} | {ll$args})")
     } else if (!any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
-      out <- glue("{ms}{ll$dist}_lcdf({ub} | {ll$args})")
+      out <- glue("{ms}{ll$dist}_lcdf({ub}{ll$shift} | {ll$args})")
     } else if (any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
-      trr <- glue("{ll$dist}_lcdf({ub} | {ll$args})")
-      trl <- glue("{ll$dist}_lcdf({lb} | {ll$args})")
+      trr <- glue("{ll$dist}_lcdf({ub}{ll$shift} | {ll$args})")
+      trl <- glue("{ll$dist}_lcdf({lb}{ll$shift} | {ll$args})")
       out <- glue("{ms}log_diff_exp({trr}, {trl})")
     }
   }

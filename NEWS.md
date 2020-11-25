@@ -10,6 +10,7 @@ even if the required CDF or quantile functions are unavailable.
 * Allow fitting `multinomial` models with the 
 `cmdstanr` backend thanks to Andrew Johnson. (#1033)
 * Allow user-defined Stan functions in threaded models. (#1034)
+* Fix Stan code of truncated `shifted_lognormal` models. (#1048)
 
 
 # brms 2.14.4
