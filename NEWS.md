@@ -1,10 +1,16 @@
 # brms 2.14.4++
 
+### New Features
+
+* Enable `posterior_predict` for truncated continuous models
+even if the required CDF or quantile functions are unavailable.
+
 ### Bug Fixes
 
 * Allow fitting `multinomial` models with the 
 `cmdstanr` backend thanks to Andrew Johnson. (#1033)
 * Allow user-defined Stan functions in threaded models. (#1034)
+* Fix Stan code of truncated `shifted_lognormal` models. (#1048)
 
 
 # brms 2.14.4

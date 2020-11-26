@@ -115,7 +115,8 @@ fit_model <- function(model, backend, ...) {
         }
         futures[[i]] <- future::future(
           brms::do_call(rstan::sampling, args), 
-          packages = "rstan"
+          packages = "rstan",
+          seed = TRUE
         )
       }
       for (i in seq_len(chains)) {

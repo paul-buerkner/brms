@@ -121,7 +121,9 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
       "\nFitting model ", j, " out of ", J,
       " (leaving out observation ", obs[j], ")"
     )
-    futures[[j]] <- future::future(.reloo(j), packages = "brms")
+    futures[[j]] <- future::future(
+      .reloo(j), packages = "brms", seed = TRUE
+    )
   }
   for (j in seq_len(J)) {
     lls[[j]] <- future::value(futures[[j]])
