@@ -1663,11 +1663,12 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
 
 # global Stan definitions for noise-free variables
 # @param meef output of tidy_meef
-stan_Xme <- function(meef, prior, threads) {
+stan_Xme <- function(meef, prior, threads, normalise) {
   stopifnot(is.meef_frame(meef))
   if (!nrow(meef)) {
     return(list())
   }
+  lpdf <- normalised_lpdf(normalise)
   out <- list()
   coefs <- rename(paste0("me", meef$xname))
   str_add(out$data) <- "  // data for noise-free variables\n"
@@ -1705,7 +1706,7 @@ stan_Xme <- function(meef, prior, threads) {
       coef_type = "real<lower=0>", comment = "latent SDs"
     )
     str_add(out$prior) <- cglue(
-      "  target += normal_lpdf(Xn_{K} | Xme_{K}, noise_{K});\n"
+      "  target += normal_{lpdf}(Xn_{K} | Xme_{K}, noise_{K});\n"
     )
     if (meef$cor[K[1]] && length(K) > 1L) {
       str_add(out$data) <- glue(
@@ -1737,7 +1738,7 @@ stan_Xme <- function(meef, prior, threads) {
       )
       str_add(out$pll_args) <- cglue(", vector Xme_{K}")
       str_add(out$prior) <- glue(
-        "  target += std_normal_lpdf(to_vector(zme_{i}));\n"
+        "  target += std_normal_{lpdf}(to_vector(zme_{i}));\n"
       )
       str_add(out$gen_def) <- cglue(
         "  // obtain latent correlation matrix\n",
@@ -1762,7 +1763,7 @@ stan_Xme <- function(meef, prior, threads) {
       )
       str_add(out$pll_args) <- cglue(", vector Xme_{K}")
       str_add(out$prior) <- cglue(
-        "  target += std_normal_lpdf(zme_{K});\n"
+        "  target += std_normal_{lpdf}(zme_{K});\n"
       )
     }
   }

@@ -71,7 +71,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     stanvars = stanvars, threads = threads
   )
   scode_ranef <- stan_re(ranef, prior = prior, threads = threads, normalise = normalise)
-  scode_Xme <- stan_Xme(meef, prior = prior, threads = threads)
+  scode_Xme <- stan_Xme(meef, prior = prior, threads = threads, normalise = normalise)
   scode_global_defs <- stan_global_defs(
     bterms, prior = prior, ranef = ranef, threads = threads
   )
