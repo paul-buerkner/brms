@@ -120,7 +120,8 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalise, resp = "", .
   stopifnot(is.sdist(ll))
   s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
-  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
+  custom_dist = any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
+  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalise))
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
@@ -154,7 +155,8 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalise, resp = "", .
 stan_log_lik_weights <- function(ll, bterms, data, threads, normalise, resp = "", ...) {
   stopifnot(is.sdist(ll))
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
+  custom_dist = any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
+  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalise))
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   glue(
@@ -172,7 +174,8 @@ stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
     glue("log(theta{mix}{resp})")
   )
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
+  custom_dist = any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
+  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalise))
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   if (is.formula(bterms$adforms$cens)) {
