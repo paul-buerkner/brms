@@ -1,3 +1,13 @@
+custom_dists <- c(
+  "cumulative", "sratio", "acat", "time_hom",
+  "time_het", "sparse_icar", "hurdle_",
+  "zero_inflated_", "zero_one_inflated_",
+  "gen_extreme_value", "wiener_diffusion",
+  "normal_lagsar", "multinomial_logit2",
+  "dirichlet_logit", "cox_log", "ordered_logistic_merged",
+  "von_mises_vector", "asym_laplace", "cratio"
+)
+
 # unless otherwise specified, functions return a single character 
 # string defining the likelihood of the model in Stan language
 
@@ -98,18 +108,19 @@ stan_log_lik_general <- function(ll, bterms, data, threads, normalise, resp = ""
   stopifnot(is.sdist(ll))
   require_n <- grepl(stan_nn_regex(), ll$args)
   n <- str_if(require_n, stan_nn(threads), stan_slice(threads))
-  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
+  custom_dist = any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
+  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalise))
   Y <- stan_log_lik_Y_name(bterms)
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
   glue("{tp()}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n")
 }
 
 # censored likelihood in Stan language
-stan_log_lik_cens <- function(ll, bterms, data, threads, resp = "", ...) {
+stan_log_lik_cens <- function(ll, bterms, data, threads, normalise, resp = "", ...) {
   stopifnot(is.sdist(ll))
   s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
@@ -140,10 +151,10 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, resp = "", ...) {
 }
 
 # weighted likelihood in Stan language
-stan_log_lik_weights <- function(ll, bterms, data, threads, resp = "", ...) {
+stan_log_lik_weights <- function(ll, bterms, data, threads, normalise, resp = "", ...) {
   stopifnot(is.sdist(ll))
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   glue(
@@ -154,14 +165,14 @@ stan_log_lik_weights <- function(ll, bterms, data, threads, resp = "", ...) {
 
 # likelihood of a single mixture component
 stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads, 
-                             resp = "", ...) {
+                             normalise, resp = "", ...) {
   stopifnot(is.sdist(ll))
   theta <- str_if(ptheta,
     glue("theta{mix}{resp}[n]"), 
     glue("log(theta{mix}{resp})")
   )
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalise)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   if (is.formula(bterms$adforms$cens)) {

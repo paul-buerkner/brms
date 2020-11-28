@@ -27,7 +27,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
                        type = "real", dim = "", coef_type = "real",
                        prefix = "", suffix = "", broadcast = "vector", 
                        header_type = "", comment = "", px = list(),
-                       normalise=TRUE) {
+                       normalise = TRUE) {
   prior_only <- isTRUE(attr(prior, "") == "only")
   prior <- subset2(
     prior, class = class, coef = c(coef, ""), 
@@ -407,6 +407,7 @@ stan_unchecked_prior <- function(prior) {
     return("")
   }
   prior <- subset2(prior, class = "")
+  print(prior)
   collapse("  ", prior$prior, ";\n") 
 }
 

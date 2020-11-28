@@ -2,8 +2,9 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bterms, data) {
+stan_response <- function(bterms, data, normalise = TRUE) {
   stopifnot(is.brmsterms(bterms))
+  lpdf <- normalised_lpdf(normalise)
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
   multicol <- has_multicol(family)
@@ -196,7 +197,7 @@ stan_response <- function(bterms, data) {
         "  vector{Ybounds}[N{resp}] Yl{resp};  // latent variable\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(Y{resp}[Jme{resp}]",
+        "  target += normal_{lpdf}(Y{resp}[Jme{resp}]",
         " | Yl{resp}[Jme{resp}], noise{resp}[Jme{resp}]);\n"
       )
       str_add(out$pll_args) <- glue(", vector Yl{resp}")
@@ -229,8 +230,7 @@ stan_response <- function(bterms, data) {
 # intercepts in ordinal models require special treatment
 # and must be present even when using non-linear predictors
 # thus the relevant Stan code cannot be part of 'stan_fe'
-stan_thres <- function(bterms, data, prior, ...) {
-  normalise = get_normalise(...)
+stan_thres <- function(bterms, data, prior, normalise, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   if (!is_ordinal(bterms)) {
@@ -271,14 +271,12 @@ stan_thres <- function(bterms, data, prior, ...) {
           prior, class = "Intercept", group = groups[i], 
           type = "real", prefix = "first_",
           suffix = glue("{p}{gr[i]}"), px = px, 
-          comment = "first threshold",
-          normalise = normalise
+          comment = "first threshold", normalise = normalise
         )
         str_add_list(out) <- stan_prior(
           prior, class = "delta", group = groups[i], 
           type = glue("real{bound}"), px = px, suffix = gr[i], 
-          comment = "distance between thresholds",
-          normalise = normalise
+          comment = "distance between thresholds", normalise = normalise
         )
       }
       str_add(out$tpar_def) <- 
@@ -350,8 +348,9 @@ stan_thres <- function(bterms, data, prior, ...) {
 }
 
 # Stan code for the baseline functions of the Cox model
-stan_bhaz <- function(bterms, prior, threads, ...) {
+stan_bhaz <- function(bterms, prior, threads, normalise, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
+  lpdf <- normalised_lpdf(normalise)
   out <- list()
   if (!is_cox(bterms$family)) {
     return(out)
@@ -374,7 +373,7 @@ stan_bhaz <- function(bterms, prior, threads, ...) {
     "  simplex[Kbhaz{resp}] sbhaz{resp};  // baseline coefficients\n"
   )
   str_add(out$prior) <- glue(
-    "  target += dirichlet_lpdf(sbhaz{resp} | con_sbhaz{resp});\n"
+    "  target += dirichlet_{lpdf}(sbhaz{resp} | con_sbhaz{resp});\n"
   )
   str_add(out$model_def) <- glue(
     "  // compute values of baseline function\n",
@@ -389,11 +388,12 @@ stan_bhaz <- function(bterms, prior, threads, ...) {
 }
 
 # Stan code specific to mixture families
-stan_mixture <- function(bterms, data, prior, threads, ...) {
+stan_mixture <- function(bterms, data, prior, threads, normalise, ...) {
   out <- list()
   if (!is.mixfamily(bterms$family)) {
     return(out)
   }
+  lpdf <- normalised_lpdf(normalise)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   n <- stan_nn(threads)
@@ -444,7 +444,7 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
       "  simplex[{nmix}] theta{p};  // mixing proportions\n"
     )
     str_add(out$prior) <- glue(
-      "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
+      "  target += dirichlet_{lpdf}(theta{p} | con_theta{p});\n"                
     )
     # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- "  // mixing proportions\n"
@@ -481,7 +481,8 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
         type = glue("{type}[nthres{p}{grb[i]}]"), 
         coef_type = coef_type, px = px, 
         prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
-        comment = "thresholds fixed over mixture components"
+        comment = "thresholds fixed over mixture components",
+        normalise = normalise
       )
     }
   }
@@ -490,9 +491,8 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
 
 # ordinal log-probability densitiy functions in Stan language
 # @return a character string
-stan_ordinal_lpmf <- function(family, link, normalise) {
+stan_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
-  lpmf <- ifelse(normalise, "lpmf", "lupmf")
   ilink <- stan_ilink(link)
   th <- function(k) {
     # helper function generating stan code inside ilink(.)
@@ -513,7 +513,7 @@ stan_ordinal_lpmf <- function(family, link, normalise) {
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}_{lpmf}(int y, real mu, real disc, vector thres) {{\n"
+    "   real {family}_{link}_lpmf(int y, real mu, real disc, vector thres) {{\n"
   )
   # define the function body
   if (family == "cumulative") {
@@ -605,9 +605,9 @@ stan_ordinal_lpmf <- function(family, link, normalise) {
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}_merged_{lpmf}(", 
+    "   real {family}_{link}_merged_lpmf(", 
     "int y, real mu, real disc, vector thres, int[] j) {{\n",
-    "     return {family}_{link}_{lpmf}(y | mu, disc, thres[j[1]:j[2]]);\n",
+    "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
   if (family == "cumulative" && link == "logit") {
@@ -622,9 +622,9 @@ stan_ordinal_lpmf <- function(family, link, normalise) {
       "   * Returns:\n", 
       "   *   a scalar to be added to the log posterior\n",
       "   */\n",
-      "   real ordered_logistic_merged_{lpmf}(", 
+      "   real ordered_logistic_merged_lpmf(", 
       "int y, real mu, vector thres, int[] j) {{\n",
-      "     return ordered_logistic_{lpmf}(y | mu, thres[j[1]:j[2]]);\n",
+      "     return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);\n",
       "   }}\n"
     )
   }
