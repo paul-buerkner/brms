@@ -919,7 +919,9 @@ regex_sp <- function(type = "all") {
     type <- names(funs)
   }
   funs <- funs[type]
-  out <- paste0("^(", funs, ")\\(.*\\)$")
+  allow_colon <- c("cs", "mmc", "ac")
+  inner <- ifelse(names(funs) %in% allow_colon, ".*", "[^:]*")
+  out <- paste0("^(", funs, ")\\(", inner, "\\)$")
   paste0("(", out, ")", collapse = "|")
 }
 
