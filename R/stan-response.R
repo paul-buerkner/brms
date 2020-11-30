@@ -2,9 +2,9 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bterms, data, normalise = TRUE) {
+stan_response <- function(bterms, data, normalize = TRUE) {
   stopifnot(is.brmsterms(bterms))
-  lpdf <- normalised_lpdf(normalise)
+  lpdf <- ifelse(normalize, "lpdf", "lupdf")
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
   multicol <- has_multicol(family)
@@ -230,7 +230,7 @@ stan_response <- function(bterms, data, normalise = TRUE) {
 # intercepts in ordinal models require special treatment
 # and must be present even when using non-linear predictors
 # thus the relevant Stan code cannot be part of 'stan_fe'
-stan_thres <- function(bterms, data, prior, normalise, ...) {
+stan_thres <- function(bterms, data, prior, normalize, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   if (!is_ordinal(bterms)) {
@@ -271,12 +271,12 @@ stan_thres <- function(bterms, data, prior, normalise, ...) {
           prior, class = "Intercept", group = groups[i], 
           type = "real", prefix = "first_",
           suffix = glue("{p}{gr[i]}"), px = px, 
-          comment = "first threshold", normalise = normalise
+          comment = "first threshold", normalize = normalize
         )
         str_add_list(out) <- stan_prior(
           prior, class = "delta", group = groups[i], 
           type = glue("real{bound}"), px = px, suffix = gr[i], 
-          comment = "distance between thresholds", normalise = normalise
+          comment = "distance between thresholds", normalize = normalize
         )
       }
       str_add(out$tpar_def) <- 
@@ -300,7 +300,7 @@ stan_thres <- function(bterms, data, prior, normalise, ...) {
           type = glue("{type}[nthres{resp}{grb[i]}]"),
           coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
           comment = "temporary thresholds for centered predictors",
-          normalise = normalise
+          normalize = normalize
         )
       }
     }
@@ -348,9 +348,9 @@ stan_thres <- function(bterms, data, prior, normalise, ...) {
 }
 
 # Stan code for the baseline functions of the Cox model
-stan_bhaz <- function(bterms, prior, threads, normalise, ...) {
+stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
-  lpdf <- normalised_lpdf(normalise)
+  lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
   if (!is_cox(bterms$family)) {
     return(out)
@@ -388,12 +388,12 @@ stan_bhaz <- function(bterms, prior, threads, normalise, ...) {
 }
 
 # Stan code specific to mixture families
-stan_mixture <- function(bterms, data, prior, threads, normalise, ...) {
+stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   out <- list()
   if (!is.mixfamily(bterms$family)) {
     return(out)
   }
-  lpdf <- normalised_lpdf(normalise)
+  lpdf <- ifelse(normalize, "lpdf", "lupdf")
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   n <- stan_nn(threads)
@@ -482,7 +482,7 @@ stan_mixture <- function(bterms, data, prior, threads, normalise, ...) {
         coef_type = coef_type, px = px, 
         prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
         comment = "thresholds fixed over mixture components",
-        normalise = normalise
+        normalize = normalize
       )
     }
   }
