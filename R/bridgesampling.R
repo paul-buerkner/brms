@@ -12,11 +12,11 @@
 #' @param ... Additional arguments passed to 
 #'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.
 #' 
-#' @details Computing the marginal likelihood requires samples 
-#'   of all variables defined in Stan's \code{parameters} block
-#'   to be saved. Otherwise \code{bridge_sampler} cannot be computed.
-#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
-#'   if you are planning to apply \code{bridge_sampler} to your models.
+#' @details Computing the marginal likelihood requires samples of all variables
+#'   defined in Stan's \code{parameters} block to be saved. Otherwise
+#'   \code{bridge_sampler} cannot be computed. Thus, please set \code{save_pars
+#'   = save_pars(all = TRUE)} in the call to \code{brm}, if you are planning to
+#'   apply \code{bridge_sampler} to your models.
 #'   
 #'   The computation of marginal likelihoods based on bridge sampling requires
 #'   a lot more posterior samples than usual. A good conservative 
@@ -42,7 +42,7 @@
 #'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
-#'   save_all_pars = TRUE
+#'   save_pars = save_pars(all = TRUE)
 #' )
 #' summary(fit1)
 #' bridge_sampler(fit1)
@@ -52,7 +52,7 @@
 #'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
-#'   save_all_pars = TRUE
+#'   save_pars = save_pars(all = TRUE)
 #' )
 #' summary(fit2)
 #' bridge_sampler(fit2)
@@ -82,7 +82,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
   if (is(out, "try-error")) {
     stop2(
       "Bridgesampling failed. Perhaps you did not set ", 
-      "'save_all_pars' to TRUE when fitting your model?"
+      "'save_pars = save_pars(all = TRUE)' when fitting your model?"
     )
   }
   out

@@ -23,11 +23,11 @@
 #'   to work correctly.
 #' @return An updated object of class \code{loo}.
 #' 
-#' @details The moment matching algorithm requires samples 
-#'   of all variables defined in Stan's \code{parameters} block
-#'   to be saved. Otherwise \code{loo_moment_match} cannot be computed.
-#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
-#'   if you are planning to apply \code{loo_moment_match} to your models.
+#' @details The moment matching algorithm requires samples of all variables
+#'   defined in Stan's \code{parameters} block to be saved. Otherwise
+#'   \code{loo_moment_match} cannot be computed. Thus, please set
+#'   \code{save_pars = save_pars(all = TRUE)} in the call to \code{brm}, if you
+#'   are planning to apply \code{loo_moment_match} to your models.
 #'   
 #' @references 
 #'   Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2020). 
@@ -37,7 +37,7 @@
 #' \dontrun{
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'             data = epilepsy, family = poisson(),
-#'             save_all_pars = TRUE)
+#'             save_pars = save_pars(all = TRUE))
 #'             
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
@@ -83,7 +83,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   if (is(out, "try-error")) {
     stop2(
       "Moment matching failed. Perhaps you did not set ", 
-      "'save_all_pars' to TRUE when fitting your model?"
+      "'save_pars = save_pars(all = TRUE)' when fitting your model?"
     )
   }
   out
