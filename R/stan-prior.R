@@ -104,7 +104,13 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         }
         if (nzchar(coef_prior)) {
           # implies a proper prior or constant
-          par_ij <- paste0(par, collapse("[", index, "]"))
+          if (type == coef_type) {
+            # the single coefficient of that parameter equals the parameter
+            stopifnot(all(index == 1L))
+            par_ij <- par
+          } else {
+            par_ij <- paste0(par, collapse("[", index, "]")) 
+          }
           if (stan_is_constant_prior(coef_prior)) {
             coef_prior <- stan_constant_prior(
               coef_prior, par_ij, broadcast = broadcast

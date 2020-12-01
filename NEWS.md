@@ -11,6 +11,8 @@ even if the required CDF or quantile functions are unavailable.
 `cmdstanr` backend thanks to Andrew Johnson. (#1033)
 * Allow user-defined Stan functions in threaded models. (#1034)
 * Allow usage of the `:` operator in autocorrelation terms.
+* Fix Stan code generation when specifying coefficient-level
+priors on spline terms.
 
 
 # brms 2.14.4
