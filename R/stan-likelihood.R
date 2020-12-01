@@ -2,13 +2,13 @@
 # will not be replaced when using un-normalized densities
 
 custom_dists <- c(
-  "cumulative", "sratio", "acat", "cratio"
+  "cumulative", "sratio", "acat", "cratio",
   "time_het", "hurdle_", "time_hom",
   "zero_inflated_", "zero_one_inflated_",
   "gen_extreme_value", "wiener_diffusion",
   "normal_lagsar", "multinomial_logit2",
   "dirichlet_logit", "cox_log", "ordered_logistic_merged",
-  "von_mises_vector", "asym_laplace", 
+  "von_mises_vector", "asym_laplace"
 )
 
 # unless otherwise specified, functions return a single character 

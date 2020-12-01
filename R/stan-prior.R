@@ -410,8 +410,7 @@ stan_unchecked_prior <- function(prior) {
     return("")
   }
   prior <- subset2(prior, class = "")
-  print(prior)
-  collapse("  ", prior$prior, ";\n") 
+  collapse("  ", prior$prior, ";\n")
 }
 
 # Stan code to sample separately from priors
