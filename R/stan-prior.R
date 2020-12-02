@@ -104,7 +104,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         }
         if (nzchar(coef_prior)) {
           # implies a proper prior or constant
-          if (type == coef_type) {
+          if (type == coef_type && !nzchar(dim)) {
             # the single coefficient of that parameter equals the parameter
             stopifnot(all(index == 1L))
             par_ij <- par
