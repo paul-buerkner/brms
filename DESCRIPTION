@@ -8,7 +8,8 @@ Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
       person("Jonah", "Gabry", role = c("ctb")),
-      person("Sebastian", "Weber", role = c("ctb")))
+      person("Sebastian", "Weber", role = c("ctb")),
+      person("Andrew", "Johnson", role = c("ctb")))
 Depends: 
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
