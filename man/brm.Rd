@@ -29,6 +29,7 @@ brm(
   thin = 1,
   cores = getOption("mc.cores", 1),
   threads = NULL,
+  normalize = TRUE,
   control = NULL,
   algorithm = getOption("brms.algorithm", "sampling"),
   backend = getOption("brms.backend", "rstan"),
@@ -194,6 +195,11 @@ more control over the threading process, \code{threads} may also be a
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
 model that cannot be sped up by any other means.}
+
+\item{normalize}{Logical. Indicates whether normalization constants should
+be included in the Stan code (defaults to \code{TRUE}). If \code{FALSE},
+sampling efficiency may be increased but some post processing functions
+such as \code{\link{bridge_sampler}} will not be available.}
 
 \item{control}{A named \code{list} of parameters to control the sampler's
 behavior. It defaults to \code{NULL} so all the default values are used.
