@@ -145,6 +145,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (!"knots" %in% names(dots)) {
     dots$knots <- attr(object$data, "knots")
   }
+  if (!"normalize" %in% names(dots)) {
+    dots$normalize <- is_normalized(object$model)
+  }
   
   # update arguments controlling the sampling process
   if (is.null(dots$iter)) {
