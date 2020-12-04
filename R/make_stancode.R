@@ -21,8 +21,8 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
-                          threads = NULL, save_model = NULL,
-                          normalize = TRUE, ...) {
+                          threads = NULL, normalize = TRUE,
+                          save_model = NULL, ...) {
   
   if (is.brmsfit(formula)) {
     stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
@@ -44,7 +44,7 @@ make_stancode <- function(formula, data, family = gaussian(),
  .make_stancode(
    bterms, data = data, prior = prior, 
    stanvars = stanvars, threads = threads,
-   save_model = save_model, normalize = normalize,
+   normalize = normalize, save_model = save_model,
    ...
  ) 
 }
@@ -54,10 +54,11 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars, 
-                           threads = threading(), normalize,
+                           threads = threading(), normalize = TRUE,
                            parse = getOption("brms.parse_stancode", FALSE), 
                            backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {
+  normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
@@ -65,12 +66,15 @@ make_stancode <- function(formula, data, family = gaussian(),
   meef <- tidy_meef(bterms, data = data)
   scode_predictor <- stan_predictor(
     bterms, data = data, prior = prior,
-    normalize = normalize, 
-    ranef = ranef, meef = meef,
+    normalize = normalize, ranef = ranef, meef = meef,
     stanvars = stanvars, threads = threads
   )
-  scode_ranef <- stan_re(ranef, prior = prior, threads = threads, normalize = normalize)
-  scode_Xme <- stan_Xme(meef, prior = prior, threads = threads, normalize = normalize)
+  scode_ranef <- stan_re(
+    ranef, prior = prior, threads = threads, normalize = normalize
+  )
+  scode_Xme <- stan_Xme(
+    meef, prior = prior, threads = threads, normalize = normalize
+  )
   scode_global_defs <- stan_global_defs(
     bterms, prior = prior, ranef = ranef, threads = threads
   )
@@ -102,9 +106,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
       partial_log_lik <- paste0(
         "// compute partial sums of the log-likelihood\n",
-        ifelse(normalize, "", "// Use _lpmf suffix for unnormalized densities\n"),
-        ifelse(normalize, "real partial_log_lik", "real partial_log_lik_lpmf"),
-        resp, "(int[] seq", resp, 
+        "real partial_log_lik", resp, "(int[] seq", resp, 
         ", int start, int end", pll_args$typed, ") {\n",
         "  real ptarget = 0;\n",
         "  int N = end - start + 1;\n",
@@ -116,8 +118,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor[[i]]$partial_log_lik <- partial_log_lik
       static <- str_if(threads$static, "_static")
       scode_predictor[[i]]$model_lik <- paste0(
-        "  target += reduce_sum", static,
-        ifelse(normalize, "(partial_log_lik", "(partial_log_lik_lpmf"), resp, 
+        "  target += reduce_sum", static, "(partial_log_lik", resp, 
         ", seq", resp, ", grainsize", pll_args$plain, ");\n"
       )
       str_add(scode_predictor[[i]]$tdata_def) <- glue(
@@ -236,16 +237,15 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   
   # combine likelihood with prior part
+  not_const <- str_if(!normalize, " not")
   scode_model <- paste0(
     "model {\n",
       collapse_stanvars(stanvars, "model", "start"),
-      ifelse(normalize, "  // likelihood including all constants\n",
-             "  // likelihood not including constants\n"),
+      "  // likelihood", not_const, " including constants\n",
       "  if (!prior_only) {\n",
       scode_predictor$model_lik,
       "  }\n", 
-      ifelse(normalize, "  // priors including all constants\n",
-             "  // priors not including constants\n"), 
+      "  // priors", not_const, " including constants\n",
       scode_prior, 
       collapse_stanvars(stanvars, "model", "end"),
     "}\n"
@@ -340,4 +340,9 @@ expand_include_statements <- function(model) {
     model <- sub(pattern, code, model)
   }
   model
+}
+
+# check if Stan code includes normalization constants
+is_normalized <- function(stancode) {
+  !grepl("_lup(d|m)f\\(", stancode)
 }

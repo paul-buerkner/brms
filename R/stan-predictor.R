@@ -110,7 +110,9 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
       }
     }
   }
-  str_add_list(out) <- stan_mixture(x, data = data, prior = prior, normalize = normalize, ...)
+  str_add_list(out) <- stan_mixture(
+    x, data = data, prior = prior, normalize = normalize, ...
+  )
   str_add_list(out) <- stan_dpar_transform(x, ...)
   out$model_log_lik <- stan_log_lik(x, data = data, normalize = normalize, ...) 
   list(out)
@@ -254,14 +256,17 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
         "  }\n"
       )
     }
-    out$model_log_lik <- stan_log_lik(x, threads = threads, normalize = normalize, ...)
+    out$model_log_lik <- stan_log_lik(
+      x, threads = threads, normalize = normalize, ...
+    )
     out <- list(out)
   }
   out
 }
 
 # Stan code for population-level effects
-stan_fe <- function(bterms, data, prior, stanvars, threads, primitive, normalize, ...) {
+stan_fe <- function(bterms, data, prior, stanvars, threads, primitive, 
+                    normalize, ...) {
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
@@ -856,7 +861,8 @@ stan_cs <- function(bterms, data, prior, ranef, threads, normalize, ...) {
 }
 
 # Stan code for special effects
-stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads, normalize, ...) {
+stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads, 
+                    normalize, ...) {
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -938,7 +944,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads, normali
       "  int<lower=1> Jmo{p}[Imo{p}];  // length of simplexes\n"
     )
     ids <- unlist(spef$ids_mo)
-    lpdf <- ifelse(normalize, "lpdf", "lupdf")
+    lpdf <- stan_lpdf_name(normalize)
     for (i in which_Imo) {
       for (k in seq_along(spef$Imo[[i]])) {
         j <- spef$Imo[[i]][[k]]
@@ -982,8 +988,8 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads, normali
 }
 
 # Stan code for latent gaussian processes
-stan_gp <- function(bterms, data, prior, threads, normalize = normalize, ...) {
-  lpdf <- ifelse(normalize, "lpdf", "lupdf")
+stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
+  lpdf <- stan_lpdf_name(normalize)
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -1198,7 +1204,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize = normalize, ...) {
 
 # Stan code for the linear predictor of autocorrelation terms 
 stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
-  lpdf <- ifelse(normalize, "lpdf", "lupdf")
+  lpdf <- stan_lpdf_name(normalize)
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -1654,7 +1660,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
   if (!nrow(meef)) {
     return(list())
   }
-  lpdf <- ifelse(normalize, "lpdf", "lupdf")
+  lpdf <- stan_lpdf_name(normalize)
   out <- list()
   coefs <- rename(paste0("me", meef$xname))
   str_add(out$data) <- "  // data for noise-free variables\n"

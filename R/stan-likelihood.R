@@ -1,16 +1,3 @@
-# List the custom distribution functions whose _lpdf/_lpmf suffix
-# will not be replaced when using un-normalized densities
-
-custom_dists <- c(
-  "cumulative", "sratio", "acat", "cratio",
-  "time_het", "hurdle_", "time_hom",
-  "zero_inflated_", "zero_one_inflated_",
-  "gen_extreme_value", "wiener_diffusion",
-  "normal_lagsar", "multinomial_logit2",
-  "dirichlet_logit", "cox_log", "ordered_logistic_merged",
-  "von_mises_vector", "asym_laplace"
-)
-
 # unless otherwise specified, functions return a single character 
 # string defining the likelihood of the model in Stan language
 
@@ -111,8 +98,7 @@ stan_log_lik_general <- function(ll, bterms, data, threads, normalize, resp = ""
   stopifnot(is.sdist(ll))
   require_n <- grepl(stan_nn_regex(), ll$args)
   n <- str_if(require_n, stan_nn(threads), stan_slice(threads))
-  custom_dist <- any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
-  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalize))
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
   glue("{tp()}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n")
@@ -123,8 +109,7 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", .
   stopifnot(is.sdist(ll))
   s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
-  custom_dist <- any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
-  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalize))
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
@@ -158,8 +143,7 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", .
 stan_log_lik_weights <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  custom_dist <- any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
-  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalize))
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   glue(
@@ -177,8 +161,7 @@ stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
     glue("log(theta{mix}{resp})")
   )
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  custom_dist <- any(sapply(custom_dists, function(x){ grepl(x = ll$dist, pattern=x) }))
-  lpdf <- stan_log_lik_lpdf_name(bterms, ifelse(custom_dist, TRUE, normalize))
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   if (is.formula(bterms$adforms$cens)) {
@@ -249,12 +232,21 @@ stan_log_lik_trunc <- function(ll, bterms, data, threads, resp = "",
   out
 }
 
-stan_log_lik_lpdf_name <- function(bterms, normalize) {
-  if (normalize) {
-    ifelse(use_int(bterms$family), "lpmf", "lpdf")
-  } else {
-    ifelse(use_int(bterms$family), "lupmf", "lupdf")
+stan_log_lik_lpdf_name <- function(bterms, normalize, dist = NULL) {
+  if (!is.null(dist) && !normalize) {
+    # some Stan lpdfs or lpmfs only exist as normalized versions
+    always_normalized <- always_normalized(bterms)
+    if (length(always_normalized)) {
+      always_normalized <- paste0(escape_all(always_normalized), "$")
+      normalize <- any(ulapply(always_normalized, grepl, x = dist))
+    }
   }
+  if (normalize) {
+    out <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
+  } else {
+    out <- ifelse(use_int(bterms$family), "lupmf", "lupdf")
+  }
+  out
 }
 
 stan_log_lik_Y_name <- function(bterms) {

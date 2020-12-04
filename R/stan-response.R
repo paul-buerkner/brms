@@ -2,9 +2,9 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bterms, data, normalize = TRUE) {
+stan_response <- function(bterms, data, normalize) {
   stopifnot(is.brmsterms(bterms))
-  lpdf <- ifelse(normalize, "lpdf", "lupdf")
+  lpdf <- stan_lpdf_name(normalize)
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
   multicol <- has_multicol(family)
@@ -350,11 +350,11 @@ stan_thres <- function(bterms, data, prior, normalize, ...) {
 # Stan code for the baseline functions of the Cox model
 stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
-  lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
   if (!is_cox(bterms$family)) {
     return(out)
   }
+  lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
@@ -393,7 +393,7 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   if (!is.mixfamily(bterms$family)) {
     return(out)
   }
-  lpdf <- ifelse(normalize, "lpdf", "lupdf")
+  lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   n <- stan_nn(threads)
@@ -593,7 +593,7 @@ stan_ordinal_lpmf <- function(family, link) {
       )
     }
   }
-  # lpdf function for multiple merged thresholds
+  # lpmf function for multiple merged thresholds
   str_add(out) <- glue(
     "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
     "   * Args:\n",

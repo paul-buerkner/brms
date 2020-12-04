@@ -449,7 +449,10 @@ family_info.brmsfit <- function(x, y, ...) {
 # provides special handling for certain elements
 combine_family_info <- function(x, y, ...) {
   y <- as_one_character(y)
-  unite <- c("dpars", "type", "specials", "include", "const", "cats", "ad")
+  unite <- c(
+    "dpars", "type", "specials", "include", 
+    "const", "cats", "ad", "normalized"
+  )
   if (y %in% c("family", "link")) {
     x <- unlist(x)
   } else if (y %in% unite) {
@@ -1596,6 +1599,11 @@ pred_sigma <- function(bterms) {
 no_nu <- function(bterms) {
   # the multi_student_t family only has a single 'nu' parameter
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
+}
+
+# suffixes of Stan lpdfs or lpmfs for which only a normalized version exists
+always_normalized <- function(family) {
+  family_info(family, "normalized")
 }
 
 # prepare for calling family specific post-processing functions
