@@ -28,7 +28,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
                        prefix = "", suffix = "", broadcast = "vector", 
                        header_type = "", comment = "", px = list(),
                        normalize = TRUE) {
-  prior_only <- isTRUE(attr(prior, "") == "only")
+  prior_only <- isTRUE(attr(prior, "sample_prior") == "only")
   prior <- subset2(
     prior, class = class, coef = c(coef, ""), 
     group = c(group, ""), ls = px
