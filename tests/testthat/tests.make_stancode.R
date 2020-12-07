@@ -2106,9 +2106,12 @@ test_that("threaded Stan code is correct", {
   )
   
   # only parse models if cmdstan can be found on the system
-  found_cmdstan <- !is(try(cmdstan_version(), silent = TRUE), "try-error")
-  options(brms.parse_stancode = found_cmdstan && not_cran, 
-          brms.backend = "cmdstanr")
+  cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
+  found_cmdstan <- !is(cmdstan_version, "try-error")
+  options(
+    brms.parse_stancode = found_cmdstan && not_cran, 
+    brms.backend = "cmdstanr"
+  )
   threads <- threading(2, grainsize = 20)
   
   bform <- bf(
@@ -2161,7 +2164,15 @@ test_that("threaded Stan code is correct", {
   expect_match2(scode, "target += reduce_sum_static(partial_log_lik_lpmf,")
 })
 
-test_that("Un-normalized code is correct", {
+test_that("Un-normalized Stan code is correct", {
+  # only parse models if cmdstan >= 2.25 can be found on the system
+  cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
+  found_cmdstan <- !is(cmdstan_version, "try-error")
+  options(
+    brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.25" && not_cran, 
+    brms.backend = "cmdstanr"
+  )
+  
   scode <- make_stancode(
     count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
     data = epilepsy, family = poisson(),
@@ -2220,8 +2231,7 @@ test_that("Un-normalized code is correct", {
   scode <- make_stancode(
       y | vint(size) + vreal(size) ~ x, data = dat, family = beta_binomial2, 
       prior = prior(gamma(0.1, 0.1), class = "tau"),
-      stanvars = stanvars, normalize = FALSE, backend = "cmdstanr",
-      parse = T
+      stanvars = stanvars, normalize = FALSE, backend = "cmdstanr"
   )
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
