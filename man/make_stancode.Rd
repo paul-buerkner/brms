@@ -17,6 +17,7 @@ make_stancode(
   stan_funs = NULL,
   knots = NULL,
   threads = NULL,
+  normalize = TRUE,
   save_model = NULL,
   ...
 )
@@ -104,6 +105,12 @@ more control over the threading process, \code{threads} may also be a
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
 model that cannot be sped up by any other means.}
+
+\item{normalize}{Logical. Indicates whether normalization constants should
+be included in the Stan code (defaults to \code{TRUE}). Setting it
+to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
+sampling efficiency may be increased but some post processing functions
+such as \code{\link{bridge_sampler}} will not be available.}
 
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file

@@ -75,6 +75,12 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "usable in method 'bridge_sampler'."
     )
   }
+  if (!is_normalized(samples$model)) {
+    stop2(
+      "The Stan model has to be normalized to be ",
+      "usable in method 'bridge_sampler'."
+    )
+  }
   require_backend("rstan", samples)
   # otherwise bridge_sampler might not work in a new R session
   samples <- update_misc_env(samples)

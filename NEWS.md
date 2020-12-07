@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Turn off normalization in the Stan model via argument `normalize` 
+to increase sampling efficiency thanks to Andrew Johnson. (#1017, #1053)
 * Enable `posterior_predict` for truncated continuous models
 even if the required CDF or quantile functions are unavailable.
 

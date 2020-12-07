@@ -2,8 +2,9 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bterms, data) {
+stan_response <- function(bterms, data, normalize) {
   stopifnot(is.brmsterms(bterms))
+  lpdf <- stan_lpdf_name(normalize)
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
   multicol <- has_multicol(family)
@@ -196,7 +197,7 @@ stan_response <- function(bterms, data) {
         "  vector{Ybounds}[N{resp}] Yl{resp};  // latent variable\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(Y{resp}[Jme{resp}]",
+        "  target += normal_{lpdf}(Y{resp}[Jme{resp}]",
         " | Yl{resp}[Jme{resp}], noise{resp}[Jme{resp}]);\n"
       )
       str_add(out$pll_args) <- glue(", vector Yl{resp}")
@@ -229,7 +230,7 @@ stan_response <- function(bterms, data) {
 # intercepts in ordinal models require special treatment
 # and must be present even when using non-linear predictors
 # thus the relevant Stan code cannot be part of 'stan_fe'
-stan_thres <- function(bterms, data, prior, ...) {
+stan_thres <- function(bterms, data, prior, normalize, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   if (!is_ordinal(bterms)) {
@@ -270,12 +271,12 @@ stan_thres <- function(bterms, data, prior, ...) {
           prior, class = "Intercept", group = groups[i], 
           type = "real", prefix = "first_",
           suffix = glue("{p}{gr[i]}"), px = px, 
-          comment = "first threshold"
+          comment = "first threshold", normalize = normalize
         )
         str_add_list(out) <- stan_prior(
           prior, class = "delta", group = groups[i], 
           type = glue("real{bound}"), px = px, suffix = gr[i], 
-          comment = "distance between thresholds"
+          comment = "distance between thresholds", normalize = normalize
         )
       }
       str_add(out$tpar_def) <- 
@@ -298,7 +299,8 @@ stan_thres <- function(bterms, data, prior, ...) {
           coef = get_thres(bterms, group = groups[i]), 
           type = glue("{type}[nthres{resp}{grb[i]}]"),
           coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
-          comment = "temporary thresholds for centered predictors"
+          comment = "temporary thresholds for centered predictors",
+          normalize = normalize
         )
       }
     }
@@ -346,12 +348,13 @@ stan_thres <- function(bterms, data, prior, ...) {
 }
 
 # Stan code for the baseline functions of the Cox model
-stan_bhaz <- function(bterms, prior, threads, ...) {
+stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   if (!is_cox(bterms$family)) {
     return(out)
   }
+  lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
@@ -370,7 +373,7 @@ stan_bhaz <- function(bterms, prior, threads, ...) {
     "  simplex[Kbhaz{resp}] sbhaz{resp};  // baseline coefficients\n"
   )
   str_add(out$prior) <- glue(
-    "  target += dirichlet_lpdf(sbhaz{resp} | con_sbhaz{resp});\n"
+    "  target += dirichlet_{lpdf}(sbhaz{resp} | con_sbhaz{resp});\n"
   )
   str_add(out$model_def) <- glue(
     "  // compute values of baseline function\n",
@@ -385,11 +388,12 @@ stan_bhaz <- function(bterms, prior, threads, ...) {
 }
 
 # Stan code specific to mixture families
-stan_mixture <- function(bterms, data, prior, threads, ...) {
+stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   out <- list()
   if (!is.mixfamily(bterms$family)) {
     return(out)
   }
+  lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   n <- stan_nn(threads)
@@ -440,7 +444,7 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
       "  simplex[{nmix}] theta{p};  // mixing proportions\n"
     )
     str_add(out$prior) <- glue(
-      "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
+      "  target += dirichlet_{lpdf}(theta{p} | con_theta{p});\n"                
     )
     # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- "  // mixing proportions\n"
@@ -477,7 +481,8 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
         type = glue("{type}[nthres{p}{grb[i]}]"), 
         coef_type = coef_type, px = px, 
         prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
-        comment = "thresholds fixed over mixture components"
+        comment = "thresholds fixed over mixture components",
+        normalize = normalize
       )
     }
   }
@@ -588,7 +593,7 @@ stan_ordinal_lpmf <- function(family, link) {
       )
     }
   }
-  # lpdf function for multiple merged thresholds
+  # lpmf function for multiple merged thresholds
   str_add(out) <- glue(
     "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
     "   * Args:\n",

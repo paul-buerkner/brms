@@ -26,7 +26,8 @@
 stan_prior <- function(prior, class, coef = NULL, group = NULL, 
                        type = "real", dim = "", coef_type = "real",
                        prefix = "", suffix = "", broadcast = "vector", 
-                       header_type = "", comment = "", px = list()) {
+                       header_type = "", comment = "", px = list(),
+                       normalize = TRUE) {
   prior_only <- isTRUE(attr(prior, "sample_prior") == "only")
   prior <- subset2(
     prior, class = class, coef = c(coef, ""), 
@@ -119,7 +120,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           } else {
             coef_prior <- stan_target_prior(
               coef_prior, par_ij, broadcast = broadcast, 
-              bound = bound, resp = px$resp[1]
+              bound = bound, resp = px$resp[1], normalize = normalize
             )
             str_add(out$prior) <- paste0(tp(), coef_prior, ";\n") 
           }
@@ -160,7 +161,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     } else {
       target_base_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, bound = bound,
-        broadcast = broadcast, resp = px$resp[1]
+        broadcast = broadcast, resp = px$resp[1], normalize = normalize
       )
       str_add(out$prior) <- paste0(tp(), target_base_prior, ";\n")
     }
@@ -225,7 +226,7 @@ stan_base_prior <- function(prior) {
 # @param name of the response variable
 # @return a character string defining the prior in Stan language
 stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
-                              bound = "", resp = "") {
+                              bound = "", resp = "", normalize = TRUE) {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
     "^[^\\(]+(?=\\()", prior, perl = TRUE, simplify = FALSE
@@ -249,30 +250,34 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   if (nzchar(prior_args)) {
     str_add(prior_args, start = TRUE) <- " | "
   }
-  out <- glue("{prior_name}_lpdf({par}{prior_args})")
+  lpdf <- stan_lpdf_name(normalize)
+  out <- glue("{prior_name}_{lpdf}({par}{prior_args})")
   par_class <- unique(get_matches("^[^_]+", par))
   par_bound <- par_bounds(par_class, bound, resp = resp)
   prior_bound <- prior_bounds(prior_name)
   trunc_lb <- is.character(par_bound$lb) || par_bound$lb > prior_bound$lb
   trunc_ub <- is.character(par_bound$ub) || par_bound$ub < prior_bound$ub
-  if (trunc_lb || trunc_ub) {
-    wsp <- wsp(nsp = 4)
-    # scalar parameters are of length 1 but have no coefficients
-    ncoef <- max(1, ncoef)
-    if (trunc_lb && !trunc_ub) {
-      str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb}{prior_args})"
-      )
-    } else if (!trunc_lb && trunc_ub) {
-      str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub}{prior_args})"
-      )
-    } else if (trunc_lb && trunc_ub) {
-      str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * log_diff_exp(", 
-        "{prior_name}_lcdf({par_bound$ub}{prior_args}), ",
-        "{prior_name}_lcdf({par_bound$lb}{prior_args}))"
-      )
+  if (normalize) {
+    # obtain correct normalization constants for truncated priors
+    if (trunc_lb || trunc_ub) {
+      wsp <- wsp(nsp = 4)
+      # scalar parameters are of length 1 but have no coefficients
+      ncoef <- max(1, ncoef)
+      if (trunc_lb && !trunc_ub) {
+        str_add(out) <- glue(
+          "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb}{prior_args})"
+        )
+      } else if (!trunc_lb && trunc_ub) {
+        str_add(out) <- glue(
+          "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub}{prior_args})"
+        )
+      } else if (trunc_lb && trunc_ub) {
+        str_add(out) <- glue(
+          "\n{wsp}- {ncoef} * log_diff_exp(", 
+          "{prior_name}_lcdf({par_bound$ub}{prior_args}), ",
+          "{prior_name}_lcdf({par_bound$lb}{prior_args}))"
+        )
+      }
     }
   }
   out
@@ -307,9 +312,10 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
 
 # Stan code for global parameters of special priors
 # currently implemented are horseshoe and lasso
-stan_special_prior_global <- function(bterms, data, prior, ...) {
+stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
   out <- list()
   tp <- tp()
+  lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   prefix <- combine_prefix(px, keep_mu = TRUE)
@@ -333,9 +339,9 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
       str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
     }
     str_add(out$prior) <- glue(
-      "{tp}student_t_lpdf(hs_global{p} | hs_df_global{p}, 0, {hs_scale_global})\n",
-      "    - 1 * log(0.5);\n",
-      "{tp}inv_gamma_lpdf(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
+      "{tp}student_t_{lpdf}(hs_global{p} | hs_df_global{p}, 0, {hs_scale_global})",
+      str_if(normalize, "\n    - 1 * log(0.5)"), ";\n",
+      "{tp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
   }
   if (!is.null(special[["lasso_df"]])) {
@@ -349,7 +355,7 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
       "  real<lower=0> lasso_inv_lambda{p};\n"
     )
     str_add(out$prior) <- glue(
-      "{tp}chi_square_lpdf(lasso_inv_lambda{p} | lasso_df{p});\n"
+      "{tp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
     )
   }
   out
@@ -364,10 +370,12 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
 # @param center_X is the design matrix centered?
 # @param suffix optional suffix of the 'b' coefficient vector
 stan_special_prior_local <- function(prior, class, ncoef, px, 
-                                     center_X = FALSE, suffix = "") {
+                                     center_X = FALSE, suffix = "",
+                                     normalize = TRUE) {
   class <- as_one_character(class)
   stopifnot(class %in% c("b", "bsp"))
   out <- list()
+  lpdf <- stan_lpdf_name(normalize)
   p <- usc(combine_prefix(px))
   sp <- paste0(sub("^b", "", class), p)
   ct <- str_if(center_X, "c")
@@ -389,9 +397,9 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
     str_add(out$prior) <- glue(
-      "{tp}std_normal_lpdf(zb{sp});\n",
-      "{tp}student_t_lpdf(hs_local{sp} | hs_df{p}, 0, 1)\n",
-      "    - rows(hs_local{sp}) * log(0.5);\n"
+      "{tp}std_normal_{lpdf}(zb{sp});\n",
+      "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
+      str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
     )
   }
   out
@@ -406,7 +414,7 @@ stan_unchecked_prior <- function(prior) {
     return("")
   }
   prior <- subset2(prior, class = "")
-  collapse("  ", prior$prior, ";\n") 
+  collapse("  ", prior$prior, ";\n")
 }
 
 # Stan code to sample separately from priors
@@ -548,4 +556,14 @@ stan_extract_bounds <- function(x, bound = c("lower", "upper")) {
   x <- rm_wsp(x)
   regex <- glue("(?<={bound}=)[^,>]*")
   get_matches(regex, x, perl = TRUE, first = TRUE)
+}
+
+# choose the right suffix for Stan probability densities
+stan_lpdf_name <- function(normalize, int = FALSE) {
+  if (normalize) {
+    out <- ifelse(int, "lpmf", "lpdf")
+  } else {
+    out <- ifelse(int, "lupmf", "lupdf")
+  }
+  out
 }

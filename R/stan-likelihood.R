@@ -11,7 +11,7 @@ stan_log_lik <- function(x, ...) {
 # @param mix optional mixture component ID
 # @param ptheta are mixing proportions predicted?
 #' @export
-stan_log_lik.family <- function(x, bterms, data, threads, 
+stan_log_lik.family <- function(x, bterms, data, threads, normalize,
                                 mix = "", ptheta = FALSE, ...) {
   stopifnot(is.brmsterms(bterms))
   stopifnot(length(mix) == 1L)
@@ -22,7 +22,7 @@ stan_log_lik.family <- function(x, bterms, data, threads,
   log_lik_fun <- paste0("stan_log_lik_", prepare_family(bterms)$fun)
   ll <- do_call(log_lik_fun, log_lik_args)
   # incorporate other parts into the likelihood
-  args <- nlist(ll, bterms, data, resp, threads, mix, ptheta)
+  args <- nlist(ll, bterms, data, resp, threads, normalize, mix, ptheta)
   if (nzchar(mix)) {
     out <- do_call(stan_log_lik_mix, args)
   } else if (is.formula(bterms$adforms$cens)) {
@@ -94,22 +94,22 @@ stan_log_lik.mvbrmsterms <- function(x, ...) {
 }
 
 # default likelihood in Stan language
-stan_log_lik_general <- function(ll, bterms, data, threads, resp = "", ...) {
+stan_log_lik_general <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   require_n <- grepl(stan_nn_regex(), ll$args)
   n <- str_if(require_n, stan_nn(threads), stan_slice(threads))
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
   glue("{tp()}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n")
 }
 
 # censored likelihood in Stan language
-stan_log_lik_cens <- function(ll, bterms, data, threads, resp = "", ...) {
+stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
@@ -140,10 +140,10 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, resp = "", ...) {
 }
 
 # weighted likelihood in Stan language
-stan_log_lik_weights <- function(ll, bterms, data, threads, resp = "", ...) {
+stan_log_lik_weights <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   glue(
@@ -154,14 +154,14 @@ stan_log_lik_weights <- function(ll, bterms, data, threads, resp = "", ...) {
 
 # likelihood of a single mixture component
 stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads, 
-                             resp = "", ...) {
+                             normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   theta <- str_if(ptheta,
     glue("theta{mix}{resp}[n]"), 
     glue("log(theta{mix}{resp})")
   )
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
-  lpdf <- stan_log_lik_lpdf_name(bterms)
+  lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   if (is.formula(bterms$adforms$cens)) {
@@ -232,8 +232,21 @@ stan_log_lik_trunc <- function(ll, bterms, data, threads, resp = "",
   out
 }
 
-stan_log_lik_lpdf_name <- function(bterms) {
-  ifelse(use_int(bterms$family), "lpmf", "lpdf")
+stan_log_lik_lpdf_name <- function(bterms, normalize, dist = NULL) {
+  if (!is.null(dist) && !normalize) {
+    # some Stan lpdfs or lpmfs only exist as normalized versions
+    always_normalized <- always_normalized(bterms)
+    if (length(always_normalized)) {
+      always_normalized <- paste0(escape_all(always_normalized), "$")
+      normalize <- any(ulapply(always_normalized, grepl, x = dist))
+    }
+  }
+  if (normalize) {
+    out <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
+  } else {
+    out <- ifelse(use_int(bterms$family), "lupmf", "lupdf")
+  }
+  out
 }
 
 stan_log_lik_Y_name <- function(bterms) {

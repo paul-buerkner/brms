@@ -8,7 +8,9 @@
 #   ad: supported addition arguments
 #   include: names of user-defined Stan functions
 #     to be included in the Stan code
-#   specials: character vector specialities of some families
+#   normalized: suffixes of Stan lpdfs or lpmfs which only exist as normalized 
+#     versions; can also be "" in which case the family is always normalized
+#   specials: character vector specialties of some families
 
 .family_gaussian <- function() {
   list(
@@ -16,6 +18,7 @@
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
+    normalized = c("_time_hom", "_time_het", "_lagsar", "_errorsar", "_fcor"),
     specials = c("residuals", "rescor")
   )
 }
@@ -27,6 +30,7 @@
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
     include = "fun_logm1.stan",
+    normalized = c("_time_hom", "_time_het", "_lagsar", "_errorsar", "_fcor"),
     specials = c("residuals", "rescor")
   )
 }
@@ -83,7 +87,8 @@
     closed = c(NA, NA),
     ad = c("weights", "subset", "trials"), 
     specials = c("multinomial"),
-    include = "fun_multinomial_logit.stan"
+    include = "fun_multinomial_logit.stan",
+    normalized = ""
   )
 }
 
@@ -107,7 +112,8 @@
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset"), 
     specials = c("dirichlet"),
-    include = "fun_dirichlet_logit.stan"
+    include = "fun_dirichlet_logit.stan",
+    normalized = ""
   )
 }
 
@@ -247,7 +253,8 @@
     dpars = c("mu", "bs", "ndt", "bias"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "dec"),
-    include = "fun_wiener_diffusion.stan"
+    include = "fun_wiener_diffusion.stan",
+    normalized = ""
   )
 }
 
@@ -257,7 +264,8 @@
     dpars = c("mu", "sigma", "xi"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
-    include = c("fun_gen_extreme_value.stan", "fun_scale_xi.stan")
+    include = c("fun_gen_extreme_value.stan", "fun_scale_xi.stan"),
+    normalized = ""
   )
 }
 
@@ -267,7 +275,8 @@
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
-    include = c("fun_tan_half.stan", "fun_von_mises.stan")
+    include = c("fun_tan_half.stan", "fun_von_mises.stan"),
+    normalized = ""
   )
 }
 
@@ -277,7 +286,8 @@
     dpars = c("mu", "sigma", "quantile"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
-    include = "fun_asym_laplace.stan"
+    include = "fun_asym_laplace.stan",
+    normalized = ""
   )
 }
 
@@ -298,7 +308,8 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
     include = "fun_cox.stan",
-    specials = c("cox")
+    specials = c("cox"),
+    normalized = ""
   )
 }
 
@@ -311,7 +322,8 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "ordered_thres", "thres_minus_eta")
+    specials = c("ordinal", "ordered_thres", "thres_minus_eta"),
+    normalized = ""
   )
 }
 
@@ -324,7 +336,8 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "cs", "thres_minus_eta")
+    specials = c("ordinal", "cs", "thres_minus_eta"),
+    normalized = ""
   )
 }
 
@@ -336,8 +349,9 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "cs", "eta_minus_thres")
+    ad = c("weights", "subset", "thres", "cat"),
+    specials = c("ordinal", "cs", "eta_minus_thres"),
+    normalized = ""
   )
 }
 
@@ -350,7 +364,8 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "cs", "eta_minus_thres")
+    specials = c("ordinal", "cs", "eta_minus_thres"),
+    normalized = ""
   )
 }
 
@@ -360,7 +375,8 @@
     dpars = c("mu", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
-    include = "fun_hurdle_poisson.stan"
+    include = "fun_hurdle_poisson.stan",
+    normalized = ""
   )
 }
 
@@ -370,7 +386,8 @@
     dpars = c("mu", "shape", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
-    include = "fun_hurdle_negbinomial.stan"
+    include = "fun_hurdle_negbinomial.stan",
+    normalized = ""
   )
 }
 
@@ -380,7 +397,8 @@
     dpars = c("mu", "shape", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
-    include = "fun_hurdle_gamma.stan"
+    include = "fun_hurdle_gamma.stan",
+    normalized = ""
   )
 }
 
@@ -391,7 +409,8 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
     include = "fun_hurdle_lognormal.stan",
-    specials = "logscale"
+    specials = "logscale",
+    normalized = ""
   )
 }
 
@@ -401,7 +420,8 @@
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
-    include = "fun_zero_inflated_poisson.stan"
+    include = "fun_zero_inflated_poisson.stan",
+    normalized = ""
   )
 }
 
@@ -411,7 +431,8 @@
     dpars = c("mu", "shape", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
-    include = "fun_zero_inflated_negbinomial.stan"
+    include = "fun_zero_inflated_negbinomial.stan",
+    normalized = ""
   )
 }
 
@@ -424,7 +445,8 @@
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "trials", "cens", "trunc"),
-    include = "fun_zero_inflated_binomial.stan"
+    include = "fun_zero_inflated_binomial.stan",
+    normalized = ""
   )
 }
 
@@ -437,7 +459,8 @@
     dpars = c("mu", "phi", "zi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
     ad = c("weights", "subset", "cens", "trunc"),
-    include = "fun_zero_inflated_beta.stan"
+    include = "fun_zero_inflated_beta.stan",
+    normalized = ""
   )
 }
 
@@ -450,7 +473,8 @@
     dpars = c("mu", "phi", "zoi", "coi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
     ad = c("weights", "subset"),
-    include = "fun_zero_one_inflated_beta.stan"
+    include = "fun_zero_one_inflated_beta.stan",
+    normalized = ""
   )
 }
 

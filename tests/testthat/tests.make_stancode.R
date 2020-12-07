@@ -2110,9 +2110,12 @@ test_that("threaded Stan code is correct", {
   )
   
   # only parse models if cmdstan can be found on the system
-  found_cmdstan <- !is(try(cmdstan_version(), silent = TRUE), "try-error")
-  options(brms.parse_stancode = found_cmdstan && not_cran, 
-          brms.backend = "cmdstanr")
+  cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
+  found_cmdstan <- !is(cmdstan_version, "try-error")
+  options(
+    brms.parse_stancode = found_cmdstan && not_cran, 
+    brms.backend = "cmdstanr"
+  )
   threads <- threading(2, grainsize = 20)
   
   bform <- bf(
@@ -2120,11 +2123,11 @@ test_that("threaded Stan code is correct", {
     sigma ~ Trt + gp(Age)
   )
   scode <- make_stancode(bform, dat, family = student(), threads = threads)
-  expect_match2(scode, "real partial_log_lik(int[] seq, int start,")
+  expect_match2(scode, "real partial_log_lik_lpmf(int[] seq, int start,")
   expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[nn])")
   expect_match2(scode, "ptarget += student_t_lpdf(Y[start:end] | nu, mu, sigma);")
   expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start:end]]")
-  expect_match2(scode, "target += reduce_sum(partial_log_lik, seq, grainsize, Y,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y,")
   
   scode <- make_stancode(
     visit ~ cs(Trt) + Age, dat, family = sratio(), 
@@ -2150,8 +2153,8 @@ test_that("threaded Stan code is correct", {
   
   bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_count, seq_count,")
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_Exp, seq_Exp,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_count, seq_count,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_Exp, seq_Exp,")
   expect_match2(scode, 
     "ptarget += normal_id_glm_lpdf(Y_Exp[start:end] | Xc_Exp[start:end], Intercept_Exp, b_Exp, sigma_Exp);"
   )
@@ -2162,5 +2165,78 @@ test_that("threaded Stan code is correct", {
   )
   expect_match2(scode, "ps[1] = log(theta1) + poisson_log_lpmf(Y[nn] | mu1[n]);")
   expect_match2(scode, "ptarget += log_sum_exp(ps);")
-  expect_match2(scode, "target += reduce_sum_static(partial_log_lik,")
+  expect_match2(scode, "target += reduce_sum_static(partial_log_lik_lpmf,")
+})
+
+test_that("Un-normalized Stan code is correct", {
+  # only parse models if cmdstan >= 2.25 can be found on the system
+  cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
+  found_cmdstan <- !is(cmdstan_version, "try-error")
+  options(
+    brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.25" && not_cran, 
+    brms.backend = "cmdstanr"
+  )
+  
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+    data = epilepsy, family = poisson(),
+    prior = prior(student_t(5,0,10), class = b) +
+            prior(cauchy(0,2), class = sd),
+    normalize = FALSE
+  )
+  expect_match2(scode, "target += poisson_log_glm_lupmf(Y | Xc, mu, b);")
+  expect_match2(scode, "target += student_t_lupdf(b | 5, 0, 10);")
+  expect_match2(scode, "target += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
+  expect_match2(scode, "target += cauchy_lupdf(sd_1 | 0, 2);")
+  expect_match2(scode, "target += std_normal_lupdf(z_1[1]);")
+
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+    data = epilepsy, family = poisson(),
+    prior = prior(student_t(5,0,10), class = b) +
+            prior(cauchy(0,2), class = sd),
+    normalize = FALSE, threads = threading(2)
+  )
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Xc, b, Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
+  expect_match2(scode, "ptarget += poisson_log_glm_lupmf(Y[start:end] | Xc[start:end], mu, b);")
+  expect_match2(scode, "target += student_t_lupdf(b | 5, 0, 10);")
+  expect_match2(scode, "target += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
+  expect_match2(scode, "target += cauchy_lupdf(sd_1 | 0, 2);")
+  expect_match2(scode, "target += std_normal_lupdf(z_1[1]);")
+
+  # Check that brms custom distributions stay normalized
+  scode <- make_stancode(
+    rating ~ period + carry + cs(treat),
+    data = inhaler, family = sratio("cloglog"),
+    normalize = FALSE
+  )
+  expect_match2(scode, "target += sratio_cloglog_lpmf(Y[n] | mu[n], disc, Intercept - transpose(mucs[n]));")
+
+  # Check that user-specified custom distributions stay normalized
+  dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
+
+  beta_binomial2 <- custom_family(
+      "beta_binomial2",
+      dpars = c("mu", "tau"),
+      links = c("logit", "log"), 
+      lb = c(NA, 0),
+      type = "int", 
+      vars = c("vint1[n]", "vreal1[n]"),
+  )
+
+  stan_funs <- "
+      real beta_binomial2_lpmf(int y, real mu, real phi, int N, real R) {
+        return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+      }
+    "
+
+  stanvars <- stanvar(scode = stan_funs, block = "functions")
+
+  scode <- make_stancode(
+      y | vint(size) + vreal(size) ~ x, data = dat, family = beta_binomial2, 
+      prior = prior(gamma(0.1, 0.1), class = "tau"),
+      stanvars = stanvars, normalize = FALSE, backend = "cmdstanr"
+  )
+  expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
+  expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
 })

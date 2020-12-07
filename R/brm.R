@@ -141,6 +141,11 @@
 #'   parallelization is experimental! We recommend its use only if you are
 #'   experienced with Stan's \code{reduce_sum} function and have a slow running
 #'   model that cannot be sped up by any other means.
+#' @param normalize Logical. Indicates whether normalization constants should
+#'   be included in the Stan code (defaults to \code{TRUE}). Setting it
+#'   to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
+#'   sampling efficiency may be increased but some post processing functions
+#'   such as \code{\link{bridge_sampler}} will not be available.
 #' @param algorithm Character string naming the estimation approach to use.
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions,
@@ -397,7 +402,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1), 
-                threads = NULL, control = NULL,
+                threads = NULL, normalize = TRUE, control = NULL, 
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
@@ -415,6 +420,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   # validate arguments later passed to Stan
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
+  normalize <- as_one_logical(normalize)
   silent <- as_one_logical(silent)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)
@@ -468,7 +474,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     model <- .make_stancode(
       bterms, data = data, prior = prior, 
       stanvars = stanvars, save_model = save_model,
-      backend = backend, threads = threads
+      backend = backend, threads = threads, normalize = normalize
     )
     # initialize S3 object
     x <- brmsfit(
