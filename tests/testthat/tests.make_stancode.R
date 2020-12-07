@@ -2116,11 +2116,11 @@ test_that("threaded Stan code is correct", {
     sigma ~ Trt + gp(Age)
   )
   scode <- make_stancode(bform, dat, family = student(), threads = threads)
-  expect_match2(scode, "real partial_log_lik(int[] seq, int start,")
+  expect_match2(scode, "real partial_log_lik_lpmf(int[] seq, int start,")
   expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[nn])")
   expect_match2(scode, "ptarget += student_t_lpdf(Y[start:end] | nu, mu, sigma);")
   expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start:end]]")
-  expect_match2(scode, "target += reduce_sum(partial_log_lik, seq, grainsize, Y,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y,")
   
   scode <- make_stancode(
     visit ~ cs(Trt) + Age, dat, family = sratio(), 
@@ -2146,8 +2146,8 @@ test_that("threaded Stan code is correct", {
   
   bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_count, seq_count,")
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_Exp, seq_Exp,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_count, seq_count,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_Exp, seq_Exp,")
   expect_match2(scode, 
     "ptarget += normal_id_glm_lpdf(Y_Exp[start:end] | Xc_Exp[start:end], Intercept_Exp, b_Exp, sigma_Exp);"
   )
@@ -2158,7 +2158,7 @@ test_that("threaded Stan code is correct", {
   )
   expect_match2(scode, "ps[1] = log(theta1) + poisson_log_lpmf(Y[nn] | mu1[n]);")
   expect_match2(scode, "ptarget += log_sum_exp(ps);")
-  expect_match2(scode, "target += reduce_sum_static(partial_log_lik,")
+  expect_match2(scode, "target += reduce_sum_static(partial_log_lik_lpmf,")
 })
 
 test_that("Un-normalized code is correct", {
@@ -2182,7 +2182,7 @@ test_that("Un-normalized code is correct", {
             prior(cauchy(0,2), class = sd),
     normalize = FALSE, threads = threading(2)
   )
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Xc, b, Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_lpmf, seq, grainsize, Y, Xc, b, Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
   expect_match2(scode, "ptarget += poisson_log_glm_lupmf(Y[start:end] | Xc[start:end], mu, b);")
   expect_match2(scode, "target += student_t_lupdf(b | 5, 0, 10);")
   expect_match2(scode, "target += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
