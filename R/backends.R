@@ -170,7 +170,8 @@ fit_model <- function(model, backend, ...) {
   args[names(control)] <- control
   
   chains <- as_one_numeric(chains)
-  if (chains == 0) {
+  empty_model <- chains <= 0
+  if (empty_model) {
     # fit the model with minimal amount of draws
     # TODO: replace with a better solution
     chains <- 1
@@ -203,6 +204,10 @@ fit_model <- function(model, backend, ...) {
   out <- rstan::read_stan_csv(out$output_files())
   # allow updating the model without recompilation
   attributes(out)$CmdStanModel <- model
+  if (empty_model) {
+    # allow correct updating of an 'empty' model
+    out@sim <- list()
+  }
   out
 }
 
