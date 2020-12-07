@@ -2160,3 +2160,69 @@ test_that("threaded Stan code is correct", {
   expect_match2(scode, "ptarget += log_sum_exp(ps);")
   expect_match2(scode, "target += reduce_sum_static(partial_log_lik,")
 })
+
+test_that("Un-normalized code is correct", {
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+    data = epilepsy, family = poisson(),
+    prior = prior(student_t(5,0,10), class = b) +
+            prior(cauchy(0,2), class = sd),
+    normalize = FALSE
+  )
+  expect_match2(scode, "target += poisson_log_glm_lupmf(Y | Xc, mu, b);")
+  expect_match2(scode, "target += student_t_lupdf(b | 5, 0, 10);")
+  expect_match2(scode, "target += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
+  expect_match2(scode, "target += cauchy_lupdf(sd_1 | 0, 2);")
+  expect_match2(scode, "target += std_normal_lupdf(z_1[1]);")
+
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+    data = epilepsy, family = poisson(),
+    prior = prior(student_t(5,0,10), class = b) +
+            prior(cauchy(0,2), class = sd),
+    normalize = FALSE, threads = threading(2)
+  )
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Xc, b, Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
+  expect_match2(scode, "ptarget += poisson_log_glm_lupmf(Y[start:end] | Xc[start:end], mu, b);")
+  expect_match2(scode, "target += student_t_lupdf(b | 5, 0, 10);")
+  expect_match2(scode, "target += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
+  expect_match2(scode, "target += cauchy_lupdf(sd_1 | 0, 2);")
+  expect_match2(scode, "target += std_normal_lupdf(z_1[1]);")
+
+  # Check that brms custom distributions stay normalized
+  scode <- make_stancode(
+    rating ~ period + carry + cs(treat),
+    data = inhaler, family = sratio("cloglog"),
+    normalize = FALSE
+  )
+  expect_match2(scode, "target += sratio_cloglog_lpmf(Y[n] | mu[n], disc, Intercept - transpose(mucs[n]));")
+
+  # Check that user-specified custom distributions stay normalized
+  dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
+
+  beta_binomial2 <- custom_family(
+      "beta_binomial2",
+      dpars = c("mu", "tau"),
+      links = c("logit", "log"), 
+      lb = c(NA, 0),
+      type = "int", 
+      vars = c("vint1[n]", "vreal1[n]"),
+  )
+
+  stan_funs <- "
+      real beta_binomial2_lpmf(int y, real mu, real phi, int N, real R) {
+        return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+      }
+    "
+
+  stanvars <- stanvar(scode = stan_funs, block = "functions")
+
+  scode <- make_stancode(
+      y | vint(size) + vreal(size) ~ x, data = dat, family = beta_binomial2, 
+      prior = prior(gamma(0.1, 0.1), class = "tau"),
+      stanvars = stanvars, normalize = FALSE, backend = "cmdstanr",
+      parse = T
+  )
+  expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
+  expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
+})

@@ -106,7 +106,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
       partial_log_lik <- paste0(
         "// compute partial sums of the log-likelihood\n",
-        "real partial_log_lik", resp, "(int[] seq", resp, 
+        "real partial_log_lik_lpmf", resp, "(int[] seq", resp, 
         ", int start, int end", pll_args$typed, ") {\n",
         "  real ptarget = 0;\n",
         "  int N = end - start + 1;\n",
@@ -118,7 +118,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor[[i]]$partial_log_lik <- partial_log_lik
       static <- str_if(threads$static, "_static")
       scode_predictor[[i]]$model_lik <- paste0(
-        "  target += reduce_sum", static, "(partial_log_lik", resp, 
+        "  target += reduce_sum", static, "(partial_log_lik_lpmf", resp, 
         ", seq", resp, ", grainsize", pll_args$plain, ");\n"
       )
       str_add(scode_predictor[[i]]$tdata_def) <- glue(

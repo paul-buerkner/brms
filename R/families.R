@@ -1107,10 +1107,12 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   ub <- named_list(dpars, ub)
   is_mu <- "mu" == dpars
   link <- links[is_mu]
+  normalized <- ""
   out <- nlist(
     family = "custom", link, name, 
     dpars, lb, ub, type, vars, specials,
-    log_lik, posterior_predict, posterior_epred, env
+    log_lik, posterior_predict, posterior_epred, env,
+    normalized
   )
   if (length(dpars) > 1L) {
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
