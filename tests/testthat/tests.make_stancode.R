@@ -2182,7 +2182,7 @@ test_that("Un-normalized code is correct", {
             prior(cauchy(0,2), class = sd),
     normalize = FALSE, threads = threading(2)
   )
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_lpmf, seq, grainsize, Y, Xc, b, Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Xc, b, Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
   expect_match2(scode, "ptarget += poisson_log_glm_lupmf(Y[start:end] | Xc[start:end], mu, b);")
   expect_match2(scode, "target += student_t_lupdf(b | 5, 0, 10);")
   expect_match2(scode, "target += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
