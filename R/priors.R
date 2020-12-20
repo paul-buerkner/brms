@@ -145,8 +145,8 @@
 #'   These parameters are restricted to be non-negative and, by default, 
 #'   have a half student-t prior with 3 degrees of freedom and a 
 #'   scale parameter that depends on the standard deviation of the response 
-#'   after applying the link function. Minimally, the scale parameter is 10. 
-#'   This prior is used (a) to be only very weakly informative in order to influence
+#'   after applying the link function. Minimally, the scale parameter is 2.5. 
+#'   This prior is used (a) to be only weakly informative in order to influence
 #'   results as few as possible, while (b) providing at least some regularization
 #'   to considerably improve convergence and sampling efficiency.
 #'   To define a prior distribution only for standard deviations 
