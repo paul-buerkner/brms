@@ -144,7 +144,7 @@ Define priors for specific parameters or classes of parameters.
   represents the expected response value when all predictors 
   are at their means. To treat the intercept as an ordinary 
   population-level effect and avoid the centering parameterization, 
-  use \code{0 + intercept} on the right-hand side of the model formula.
+  use \code{0 + Intercept} on the right-hand side of the model formula.
   
   A special shrinkage prior to be applied on population-level effects is the
   (regularized) horseshoe prior and related priors. See
