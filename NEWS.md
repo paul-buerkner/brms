@@ -15,6 +15,8 @@ even if the required CDF or quantile functions are unavailable.
 * Allow usage of the `:` operator in autocorrelation terms.
 * Fix Stan code generation when specifying coefficient-level
 priors on spline terms.
+* Fix numerical issues occurring in edge cases during
+post-processing of Gaussian processes thanks to Marta Kołczyńska.
 
 
 # brms 2.14.4

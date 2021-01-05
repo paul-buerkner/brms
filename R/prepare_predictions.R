@@ -433,7 +433,9 @@ prepare_predictions_gp <- function(bterms, samples, sdata, data,
   }
   p <- usc(combine_prefix(bterms))
   if (is.null(nug)) {
-    nug <- ifelse(new, 1e-8, 1e-11)
+    # nug for old data must be the same as in the Stan code as even tiny 
+    # differences (e.g., 1e-12 vs. 1e-11) will matter for larger lscales
+    nug <- ifelse(new, 1e-8, 1e-12)
   }
   out <- named_list(gpef$label)
   for (i in seq_along(out)) {
@@ -490,7 +492,9 @@ prepare_predictions_gp <- function(bterms, samples, sdata, data,
   if (new && isNA(gpef$k[i])) {
     # in exact GPs old covariate values are required for predictions
     gp$x <- sdata[[paste0(Xgp_name, "_old")]]
-    gp$nug <- 1e-11
+    # nug for old data must be the same as in the Stan code as even tiny 
+    # differences (e.g., 1e-12 vs. 1e-11) will matter for larger lscales
+    gp$nug <- 1e-12
     # computing GPs for new data requires the old GP terms
     gp$yL <- .predictor_gp(gp)
     gp$x_new <- sdata[[Xgp_name]]
