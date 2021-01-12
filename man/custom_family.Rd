@@ -79,7 +79,7 @@ relevant if one wants to ensure compatibility with the methods
 \code{\link[brms:log_lik.brmsfit]{log_lik}},
 \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}, or
 \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
-By default, \code{env} is the enviroment from which 
+By default, \code{env} is the environment from which 
 \code{custom_family} is called.}
 }
 \value{

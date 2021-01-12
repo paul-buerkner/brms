@@ -14,7 +14,7 @@
 #' @param prob For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
 #'   indicating the desired probability mass to include in the intervals. The
 #'   default is \code{prob = 0.9} (\eqn{90}\% intervals).
-#' @param psis_object An optional object returend by \code{\link[loo]{psis}}. 
+#' @param psis_object An optional object returned by \code{\link[loo]{psis}}. 
 #'   If \code{psis_object} is missing then \code{\link[loo]{psis}} is executed 
 #'   internally, which may be time consuming for models fit to very large datasets. 
 #' @param ... Optional arguments passed to the underlying methods that is 

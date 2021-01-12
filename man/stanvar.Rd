@@ -19,7 +19,7 @@ Only required if \code{block = 'data'} and ignored otherwise.}
 
 \item{name}{Optional character string providing the desired variable 
 name of the object in \code{x}. If \code{NULL} (the default)
-the variable name is directly infered from \code{x}.}
+the variable name is directly inferred from \code{x}.}
 
 \item{scode}{Line of Stan code to define the variable
 in Stan language. If \code{block = 'data'}, the

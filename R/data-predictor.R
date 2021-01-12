@@ -110,7 +110,7 @@ data_sm <- function(bterms, data, basis = NULL) {
     knots <- get_knots(data)
     basis <- named_list(smterms)
     for (i in seq_along(smterms)) {
-      # the spline penality has changed in 2.8.7 (#646)
+      # the spline penalty has changed in 2.8.7 (#646)
       diagonal.penalty <- !require_old_default("2.8.7")
       basis[[i]] <- smoothCon(
         eval2(smterms[i]), data = data, 

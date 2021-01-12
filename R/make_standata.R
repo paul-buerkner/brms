@@ -238,7 +238,7 @@ standata_basis_sm <- function(x, data, ...) {
   if (length(smterms)) {
     knots <- get_knots(data)
     data <- rm_attr(data, "terms")
-    # the spline penality has changed in 2.8.7 (#646)
+    # the spline penalty has changed in 2.8.7 (#646)
     diagonal.penalty <- !require_old_default("2.8.7")
     gam_args <- list(
       data = data, knots = knots, 

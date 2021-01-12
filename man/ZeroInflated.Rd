@@ -31,7 +31,7 @@ pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
 \arguments{
 \item{x}{Vector of quantiles.}
 
-\item{zi}{zero-inflation propability}
+\item{zi}{zero-inflation probability}
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
