@@ -252,7 +252,7 @@
 #'   to \code{TRUE}.
 #'   
 #'   For log-linear models such as poisson models, \code{rate} may be used
-#'   in the \code{aterms} part to specify the denomintor of a response that
+#'   in the \code{aterms} part to specify the denominator of a response that
 #'   is expressed as a rate. The numerator is given by the actual response
 #'   variable and has a distribution according to the family as usual. Using
 #'   \code{rate(denom)} is equivalent to adding \code{offset(log(denom))} to
@@ -320,7 +320,7 @@
 #'   the variable passed to \code{dec} might also be a character vector 
 #'   consisting of \code{'lower'} and \code{'upper'}.
 #'
-#'   For custom families, it is possible to pass an abitrary number of real and
+#'   For custom families, it is possible to pass an arbitrary number of real and
 #'   integer vectors via the addition terms \code{vreal} and \code{vint},
 #'   respectively. An example is provided in
 #'   \code{vignette('brms_customfamilies')}.

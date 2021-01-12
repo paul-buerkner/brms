@@ -225,7 +225,7 @@ here as we assumed a fixed amount of 4 cores.
   parallelization and an empirical evaluation is in some cases
   advisable.
 - Enabling threading *usually* slows down any model to some extent and
-  this slowdown must be offset by sufficent cores per chain in order
+  this slowdown must be offset by sufficient cores per chain in order
   to really gain in execution speed.
 - Doubling the execution speed with few cores is a lot easier than
   obtaining larger speedups with even more cores.

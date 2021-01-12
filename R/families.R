@@ -91,7 +91,7 @@
 #'   ('generalized extreme value') allow for modeling extremes.}
 #'   
 #'   \item{Families \code{beta} and \code{dirichlet} can be used to model 
-#'   responses representing rates or propabilities.}
+#'   responses representing rates or probabilities.}
 #'   
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -988,7 +988,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
 #'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}, or
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
-#'   By default, \code{env} is the enviroment from which 
+#'   By default, \code{env} is the environment from which 
 #'   \code{custom_family} is called.
 #'   
 #' @details The corresponding probability density or mass \code{Stan} 

@@ -14,7 +14,7 @@ A brmfit object with adjusted parameter names.
 }
 \description{
 Rename parameters within the \code{stanfit} object after model fitting to
-ensure reasonable parameter names. This function is usally called
+ensure reasonable parameter names. This function is usually called
 automatically by \code{\link{brm}} and users will rarely be required to call
 it themselves.
 }

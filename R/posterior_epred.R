@@ -205,7 +205,7 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
 #'   \code{Est.Error} column contains uncertainty estimates (either standard
 #'   deviation or median absolute deviation depending on argument
 #'   \code{robust}). The remaining columns starting with \code{Q} contain
-#'   quantile estimates as specifed via argument \code{probs}.
+#'   quantile estimates as specified via argument \code{probs}.
 #'   
 #'   In multivariate models, an additional dimension is added to the output
 #'   which indexes along the different response variables.

@@ -252,7 +252,7 @@ Below, we list common use cases for the different families.
   ('generalized extreme value') allow for modeling extremes.}
   
   \item{Families \code{beta} and \code{dirichlet} can be used to model 
-  responses representing rates or propabilities.}
+  responses representing rates or probabilities.}
   
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}

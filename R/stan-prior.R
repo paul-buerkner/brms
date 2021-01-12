@@ -190,7 +190,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   if (prior_only && has_improper_prior) {
     stop2("Sampling from priors is not possible as ", 
           "some parameters have no proper priors. ",
-          "Error occured for parameter '", par, "'.")
+          "Error occurred for parameter '", par, "'.")
   }
   out
 }

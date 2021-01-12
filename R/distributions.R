@@ -1640,7 +1640,7 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
 #' @name ZeroInflated
 #' 
 #' @inheritParams StudentT
-#' @param zi zero-inflation propability
+#' @param zi zero-inflation probability
 #' @param mu,lambda location parameter
 #' @param shape,shape1,shape2 shape parameter
 #' @param size number of trials
@@ -1802,7 +1802,7 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
 #' @name Hurdle
 #' 
 #' @inheritParams StudentT
-#' @param hu hurdle propability
+#' @param hu hurdle probability
 #' @param mu,lambda location parameter
 #' @param shape shape parameter
 #' @param sigma,scale scale parameter
@@ -2093,7 +2093,7 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 # @param disc samples of the discrimination parameter
 # @param family a character string naming the family
 # @param link a character string naming the link
-# @return a matrix of probabilites P(x <= q)
+# @return a matrix of probabilities P(x <= q)
 pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   family <- as_one_character(family)
   link <- as_one_character(link)

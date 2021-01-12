@@ -31,7 +31,7 @@ phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
 \arguments{
 \item{x}{Vector of quantiles.}
 
-\item{hu}{hurdle propability}
+\item{hu}{hurdle probability}
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 

@@ -106,7 +106,7 @@ summary(fit1)
 
 On the top of the output, some general information on the model is
 given, such as family, formula, number of iterations and chains. Next,
-group-level effects are displayed seperately for each grouping factor in
+group-level effects are displayed separately for each grouping factor in
 terms of standard deviations and (in case of more than one group-level
 effect per grouping factor; not displayed here) correlations between
 group-level effects. On the bottom of the output, population-level

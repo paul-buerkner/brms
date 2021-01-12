@@ -178,7 +178,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
     stop2(
       "Response models of variables in 'mi' terms require " ,
       "specification of the addition argument 'mi'. See ?mi. ", 
-      "Error occured for ", collapse_comma(miss_mi), "."
+      "Error occurred for ", collapse_comma(miss_mi), "."
     )
   }
   out
@@ -202,7 +202,7 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
       stop2(
         "Variables in 'mi' terms should also be specified " ,
         "as response variables in the model. See ?mi. ", 
-        "Error occured for ", collapse_comma(miss_mi), "."
+        "Error occurred for ", collapse_comma(miss_mi), "."
       )
     }
     attr(out, "vars_mi") <- vars_mi
@@ -501,7 +501,7 @@ get_mo_values <- function(term, data) {
   } else {
     stop2(
       "Monotonic predictors must be integers or ordered ",
-      "factors. Error occured for variable '", term$term, "'."
+      "factors. Error occurred for variable '", term$term, "'."
     )
   }
   as.array(x)

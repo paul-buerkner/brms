@@ -170,7 +170,7 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
 
 #' Multi-Membership Covariates
 #' 
-#' Specify covarariates that vary over different levels 
+#' Specify covariates that vary over different levels 
 #' of multi-membership grouping factors thus requiring
 #' special treatment. This function is almost solely useful,
 #' when called in combination with \code{\link{mm}}. 
