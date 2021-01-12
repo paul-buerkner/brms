@@ -460,7 +460,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       get_data2_cov_ranef(formula)
     )
     prior <- validate_prior(
-      prior, bterms = bterms, data = data,
+      prior, formula = formula, data = data,
       sample_prior = sample_prior
     )
     stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
