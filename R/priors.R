@@ -1106,26 +1106,16 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #' @inheritParams set_prior
 #' @inheritParams brm
 #' @inheritParams brmsterms
-#' @param allow_autoscale logical, indicating whether autoscaling
-#'   by parameter sigma is allowed.
-#' @param require_nlpar_prior logical; indicating whether priors
-#'   are required on coefficients of nlpars.
-#' @param ... Other arguments passed to special prior functions
-#'   \code{validate_prior_special} required for priors that are
-#'   not natively supported by \pkg{Stan}.
+#' @param ... Other arguments passed to 'validate_prior_special*'
 #' @return An object of class \code{brmsprior}.
 #' @seealso \code{\link{get_prior}}, \code{\link{set_prior}}.
 #' @export
-validate_prior <- function(prior, formula, data,
-                           sample_prior = "no",
-                           allow_autoscale = TRUE,
-                           require_nlpar_prior = TRUE,
-                           ...) {
+validate_prior <- function(prior, formula, data, sample_prior = "no", ...) {
   bterms <- brmsterms(formula)
   sample_prior <- validate_sample_prior(sample_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
-    prior <- all_priors
+    prior <- all_priors  
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
   }
@@ -1165,12 +1155,7 @@ validate_prior <- function(prior, formula, data,
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
-  prior <- validate_prior_special(prior,
-                                  bterms = bterms,
-                                  data = data,
-                                  allow_autoscale = allow_autoscale,
-                                  require_nlpar_prior = require_nlpar_prior,
-                                  ...)
+  prior <- validate_prior_special(prior, bterms = bterms, data = data, ...)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
