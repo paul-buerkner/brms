@@ -48,6 +48,24 @@ compile_model <- function(model, backend, ...) {
   args <- list(...)
   args$model_code <- model
   message("Compiling Stan program...")
+  if (use_threading(threads)) {
+    if (rstan::stan_version() >= 2.25) {
+      if (!exists("rstan_threading")) {
+        message("\nrstan version ",
+                utils::packageVersion("rstan"),
+                " (Stan version ",
+                rstan::stan_version(), ")\n",
+                "Using threads_per_chain = ",
+                threads$threads,
+                " for within-chain threading.\n")
+        rstan_threading <<- TRUE
+      }
+      rstan::rstan_options(threads_per_chain = threads$threads)
+    } else {
+      stop2("Threading is not supported by backend 'rstan' version ",
+            utils::packageVersion("rstan"), ".")
+    }
+  }
   do_call(rstan::stan_model, args)
 }
 
@@ -83,7 +101,22 @@ fit_model <- function(model, backend, ...) {
   
   # some input checks and housekeeping
   if (use_threading(threads)) {
-    stop2("Threading is not yet supported by backend 'rstan'.")
+    if (rstan::stan_version() >= 2.25) {
+      if (!exists("rstan_threading")) {
+        message("\nrstan version ",
+                utils::packageVersion("rstan"),
+                " (Stan version ",
+                rstan::stan_version(), ")\n",
+                "Using threads_per_chain = ",
+                threads$threads,
+                " for within-chain threading.\n")
+        rstan_threading <<- TRUE
+      }
+      rstan::rstan_options(threads_per_chain = threads$threads)
+    } else {
+      stop2("Threading is not supported by backend 'rstan' version ",
+            utils::packageVersion("rstan"), ".")
+    }
   }
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
