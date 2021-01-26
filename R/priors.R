@@ -1119,8 +1119,7 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 validate_prior <- function(prior, formula, data,
                            sample_prior = "no",
                            allow_autoscale = TRUE,
-                           require_nlpar_prior = TRUE,
-                           ...) {
+                           require_nlpar_prior = TRUE) {
   bterms <- brmsterms(formula)
   sample_prior <- validate_sample_prior(sample_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
@@ -1168,9 +1167,9 @@ validate_prior <- function(prior, formula, data,
   prior <- validate_prior_special(prior,
                                   bterms = bterms,
                                   data = data,
+                                  sample_prior = sample_prior,
                                   allow_autoscale = allow_autoscale,
-                                  require_nlpar_prior = require_nlpar_prior,
-                                  ...)
+                                  require_nlpar_prior = require_nlpar_prior)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
@@ -1291,7 +1290,11 @@ check_prior_content <- function(prior) {
 
 # prepare special priors for use in Stan
 # required for priors that are not natively supported by Stan
-validate_prior_special <- function(x, ...) {
+validate_prior_special <- function(x, bterms, data,
+                                   prior = empty_prior(),
+                                   sample_prior = "no",
+                                   allow_autoscale = TRUE,
+                                   require_nlpar_prior = TRUE) {
   UseMethod("validate_prior_special")
 }
 
@@ -1345,7 +1348,10 @@ validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
 }
 
 #' @export
-validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
+validate_prior_special.brmsterms <- function(x, data,
+                                             prior = NULL,
+                                             allow_autoscale = TRUE,
+                                             ...) {
   data <- subset_data(data, x)
   if (is.null(prior)) {
     prior <- empty_prior()
