@@ -1110,9 +1110,6 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #'   by parameter sigma is allowed.
 #' @param require_nlpar_prior logical; indicating whether priors
 #'   are required on coefficients of nlpars.
-#' @param ... Other arguments passed to special prior functions
-#'   \code{validate_prior_special} required for priors that are
-#'   not natively supported by \pkg{Stan}.
 #' @return An object of class \code{brmsprior}.
 #' @seealso \code{\link{get_prior}}, \code{\link{set_prior}}.
 #' @export

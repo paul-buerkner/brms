@@ -10,8 +10,7 @@ validate_prior(
   data,
   sample_prior = "no",
   allow_autoscale = TRUE,
-  require_nlpar_prior = TRUE,
-  ...
+  require_nlpar_prior = TRUE
 )
 }
 \arguments{
@@ -45,10 +44,6 @@ by parameter sigma is allowed.}
 
 \item{require_nlpar_prior}{logical; indicating whether priors
 are required on coefficients of nlpars.}
-
-\item{...}{Other arguments passed to special prior functions
-\code{validate_prior_special} required for priors that are
-not natively supported by \pkg{Stan}.}
 }
 \value{
 An object of class \code{brmsprior}.
