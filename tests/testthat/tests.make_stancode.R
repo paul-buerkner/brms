@@ -2169,11 +2169,11 @@ test_that("threaded Stan code is correct", {
 })
 
 test_that("Un-normalized Stan code is correct", {
-  # only parse models if cmdstan >= 2.25 can be found on the system
+  # only parse models if cmdstan >= 2.26 can be found on the system
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
   found_cmdstan <- !is(cmdstan_version, "try-error")
   options(
-    brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.25" && not_cran, 
+    brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.26" && not_cran, 
     brms.backend = "cmdstanr"
   )
   

@@ -525,7 +525,7 @@ stan_ordinal_lpmf <- function(family, link) {
         "     }} else if (y == nthres + 1) {{\n",
         "       return log1m_inv_logit({th('nthres')});\n",
         "     }} else {{\n",
-        # TODO: replace with log_inv_logit_diff once rstan >= 2.25
+        # TODO: replace with log_inv_logit_diff once rstan >= 2.26
         "       return log_diff_exp(\n",
         "         log_inv_logit({th('y')}), \n",
         "         log_inv_logit({th('y - 1')})\n",

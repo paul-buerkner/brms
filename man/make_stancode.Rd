@@ -108,7 +108,7 @@ model that cannot be sped up by any other means.}
 
 \item{normalize}{Logical. Indicates whether normalization constants should
 be included in the Stan code (defaults to \code{TRUE}). Setting it
-to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
+to \code{FALSE} requires Stan version >= 2.26 to work. If \code{FALSE},
 sampling efficiency may be increased but some post processing functions
 such as \code{\link{bridge_sampler}} will not be available.}
 
