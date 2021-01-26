@@ -7,6 +7,7 @@ to increase sampling efficiency thanks to Andrew Johnson. (#1017, #1053)
 * Enable `posterior_predict` for truncated continuous models
 even if the required CDF or quantile functions are unavailable.
 * Update and export `validate_prior`to validate priors supplied by the user.
+* Add support for within-chain threading with `rstan (Stan >= 2.25)` backend.
 
 ### Bug Fixes
 

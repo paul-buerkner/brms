@@ -198,8 +198,7 @@
 #'   \code{\link[rstan:stan_model]{stan_model}}.
 #' @param ... Further arguments passed to Stan. 
 #'   For \code{backend = "rstan"} the arguments are passed to
-#'   \code{\link[rstan:stanmodel-method-sampling]{sampling}} or
-#'   \code{\link[rstan:stanmodel-method-vb]{vb}}.
+#'   \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 #'   For \code{backend = "cmdstanr"} the arguments are passed to the
 #'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
 #' 
