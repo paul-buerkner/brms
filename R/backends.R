@@ -50,16 +50,6 @@ compile_model <- function(model, backend, ...) {
   message("Compiling Stan program...")
   if (use_threading(threads)) {
     if (rstan::stan_version() >= 2.25) {
-      if (!exists("rstan_threading")) {
-        message("\nrstan version ",
-                utils::packageVersion("rstan"),
-                " (Stan version ",
-                rstan::stan_version(), ")\n",
-                "Using threads_per_chain = ",
-                threads$threads,
-                " for within-chain threading.\n")
-        rstan_threading <<- TRUE
-      }
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
@@ -104,16 +94,6 @@ fit_model <- function(model, backend, ...) {
   # some input checks and housekeeping
   if (use_threading(threads)) {
     if (rstan::stan_version() >= 2.25) {
-      if (!exists("rstan_threading")) {
-        message("\nrstan version ",
-                utils::packageVersion("rstan"),
-                " (Stan version ",
-                rstan::stan_version(), ")\n",
-                "Using threads_per_chain = ",
-                threads$threads,
-                " for within-chain threading.\n")
-        rstan_threading <<- TRUE
-      }
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
