@@ -60,6 +60,8 @@ compile_model <- function(model, backend, ...) {
                 " for within-chain threading.\n")
         rstan_threading <<- TRUE
       }
+      threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
+      on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
     } else {
       stop2("Threading is not supported by backend 'rstan' version ",
@@ -112,6 +114,8 @@ fit_model <- function(model, backend, ...) {
                 " for within-chain threading.\n")
         rstan_threading <<- TRUE
       }
+      threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
+      on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
     } else {
       stop2("Threading is not supported by backend 'rstan' version ",
