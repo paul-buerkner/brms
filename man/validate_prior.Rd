@@ -4,7 +4,15 @@
 \alias{validate_prior}
 \title{Validate priors supplied by the user}
 \usage{
-validate_prior(prior, formula, data, sample_prior = "no", ...)
+validate_prior(
+  prior,
+  formula,
+  data,
+  sample_prior = "no",
+  allow_autoscale = TRUE,
+  require_nlpar_prior = TRUE,
+  ...
+)
 }
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
@@ -32,7 +40,15 @@ samples are drawn solely from the priors ignoring the likelihood, which
 allows among others to generate samples from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
 
-\item{...}{Other arguments passed to 'validate_prior_special*'}
+\item{allow_autoscale}{logical, indicating whether autoscaling
+by parameter sigma is allowed.}
+
+\item{require_nlpar_prior}{logical; indicating whether priors
+are required on coefficients of nlpars.}
+
+\item{...}{Other arguments passed to special prior functions
+\code{validate_prior_special} required for priors that are
+not natively supported by \pkg{Stan}.}
 }
 \value{
 An object of class \code{brmsprior}.
