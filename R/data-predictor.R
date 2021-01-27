@@ -61,7 +61,8 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
                                basis = NULL, ...) {
-  c(data_fe(x, data),
+  out <- c(
+    data_fe(x, data),
     data_sp(x, data, data2 = data2, prior = prior, basis = basis$sp),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
@@ -69,9 +70,10 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
     data_gp(x, data, basis = basis$gp),
     data_ac(x, data, data2 = data2, basis = basis$ac),
     data_offset(x, data),
-    data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz),
-    data_prior(x, data, prior = prior)
+    data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   )
+  c(out) <- data_prior(x, data, prior = prior, sdata = out)
+  out
 }
 
 # prepare data for non-linear parameters for use in Stan
@@ -822,7 +824,7 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and lasso
-data_prior <- function(bterms, data, prior) {
+data_prior <- function(bterms, data, prior, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -841,6 +843,21 @@ data_prior <- function(bterms, data, prior) {
     }
     names(hs_data) <- paste0(hs_obj_names, p) 
     out <- c(out, hs_data)
+  }
+  if (!is.null(special[["R2D2_mean_R2"]])) {
+    # data for the R2D2 prior
+    R2D2_obj_names <- paste0("R2D2_", c("mean_R2", "prec_R2", "cons_D2"))
+    R2D2_data <- special[R2D2_obj_names]
+    # number of coefficients minus the intercept
+    K <- sdata[[paste0("K", p)]] - ifelse(stan_center_X(bterms), 1, 0)
+    if (length(R2D2_data$R2D2_cons_D2) == 1L) {
+      R2D2_data$R2D2_cons_D2 <- rep(R2D2_data$R2D2_cons_D2, K)
+    }
+    if (length(R2D2_data$R2D2_cons_D2) != K) {
+      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", K)
+    }
+    names(R2D2_data) <- paste0(R2D2_obj_names, p) 
+    out <- c(out, R2D2_data)
   }
   if (!is.null(special[["lasso_df"]])) {
     lasso_obj_names <- paste0("lasso_", c("df", "scale"))

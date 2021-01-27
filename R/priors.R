@@ -1437,6 +1437,14 @@ validate_prior_special.btl <- function(x, prior, data,
         prior_special <- c(prior_special, hs_att)
         prior_special$hs_autoscale <- 
           isTRUE(prior_special$hs_autoscale) && allow_autoscale
+      } else if (is_special_prior(b_prior, "R2D2")) {
+        R2D2 <- eval2(b_prior)
+        R2D2_obj_names <- c("mean_R2", "prec_R2", "cons_D2", "autoscale")
+        R2D2_att <- attributes(R2D2)[R2D2_obj_names]
+        names(R2D2_att) <- paste0("R2D2_", R2D2_obj_names)
+        prior_special <- c(prior_special, R2D2_att)
+        prior_special$R2D2_autoscale <- 
+          isTRUE(prior_special$R2D2_autoscale) && allow_autoscale
       } else if (is_special_prior(b_prior, "lasso")) {
         lasso <- eval2(b_prior)
         # the parameterization via double_exponential appears to be more
@@ -1896,6 +1904,31 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
   out
 }
 
+# TODO: document
+#' @export
+R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
+  out <- deparse(match.call(), width.cutoff = 500L)
+  mean_R2 <- as_one_numeric(mean_R2)
+  prec_R2 <- as_one_numeric(prec_R2)
+  cons_D2 <- as.numeric(cons_D2)
+  if (!(mean_R2 > 0 && mean_R2 < 1)) {
+    stop2("Invalid R2D2 prior: Mean of the R2 prior ",
+          "must be a single number in (0, 1).")
+  }
+  if (prec_R2 <= 0) {
+    stop2("Invalid R2D2 prior: Precision of the R2 prior ",
+          "must be a single positive number.")
+  }
+  if (any(cons_D2 <= 0)) {
+    stop2("Invalid R2D2 prior: Concentration of the D2 prior ",
+          "must be a vector of positive numbers.")
+  }
+  autoscale <- as_one_logical(autoscale)
+  att <- nlist(mean_R2, prec_R2, cons_D2, autoscale)
+  attributes(out)[names(att)] <- att
+  out
+}
+
 #' Set up a lasso prior in \pkg{brms}
 #' 
 #' Function used to set up a lasso prior for population-level effects 
@@ -1962,7 +1995,7 @@ lasso <- function(df = 1, scale = 1) {
 is_special_prior <- function(prior, target = NULL) {
   stopifnot(is.character(prior))
   if (is.null(target)) {
-    target <- c("horseshoe", "lasso") 
+    target <- c("horseshoe", "R2D2", "lasso") 
   }
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)
