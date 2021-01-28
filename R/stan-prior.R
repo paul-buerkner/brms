@@ -318,9 +318,8 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
   lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  prefix <- combine_prefix(px, keep_mu = TRUE)
-  special <- attributes(prior)$special[[prefix]]
-  if (!is.null(special[["hs_df"]])) {
+  special <- get_special_prior(prior, px)
+  if (!is.null(special$horseshoe)) {
     str_add(out$data) <- glue(
       "  // data for the horseshoe prior\n",
       "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
@@ -335,7 +334,7 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       "  real<lower=0> hs_slab{p};  // slab regularization parameter\n"
     )
     hs_scale_global <- glue("hs_scale_global{p}")
-    if (isTRUE(special[["hs_autoscale"]])) {
+    if (isTRUE(special$horseshoe$autoscale)) {
       str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
     }
     str_add(out$prior) <- glue(
@@ -344,7 +343,31 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       "{tp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
   }
-  if (!is.null(special[["lasso_df"]])) {
+  if (!is.null(special$R2D2)) {
+    str_add(out$data) <- glue(
+      "  // data for the R2D2 prior\n",
+      "  real<lower=0> R2D2_mean_R2{p};  // mean of the R2 prior\n",
+      "  real<lower=0> R2D2_prec_R2{p};  // precision of the R2 prior\n"
+    )
+    str_add(out$par) <- glue(
+      "  // R2D2 shrinkage parameters\n",
+      "  real<lower=0,upper=1> R2D2_R2{p};  // R2 parameter\n"
+    )
+    if (isTRUE(special$R2D2$autoscale)) {
+      var_mult <- glue("sigma{usc(px$resp)}^2 * ")
+    }
+    str_add(out$tpar_def) <- glue(
+      "  real R2D2_tau2{p};  // global R2D2 scale parameter\n"
+    )
+    str_add(out$tpar_comp) <- glue(
+      "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n"
+    )
+    str_add(out$prior) <- glue(
+      "{tp}beta_{lpdf}(R2D2_R2{p} | R2D2_mean_R2{p} * R2D2_prec_R2{p}, ",
+      "(1 - R2D2_mean_R2{p}) * R2D2_prec_R2{p});\n"
+    )
+  }
+  if (!is.null(special$lasso)) {
     str_add(out$data) <- glue(
       "  // data for the lasso prior\n",
       "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
@@ -380,9 +403,8 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
   sp <- paste0(sub("^b", "", class), p)
   ct <- str_if(center_X, "c")
   tp <- tp()
-  prefix <- combine_prefix(px, keep_mu = TRUE)
-  special <- attributes(prior)$special[[prefix]]
-  if (!is.null(special[["hs_df"]])) {
+  special <- get_special_prior(prior, px)
+  if (!is.null(special$horseshoe)) {
     str_add(out$par) <- glue(
       "  // local parameters for horseshoe prior\n",
       "  vector[K{ct}{sp}] zb{sp};\n",
@@ -392,7 +414,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       glue("hs_scale_slab{p}^2 * hs_slab{p}")
     )
-    str_add(out$tpar_prior) <- glue(
+    str_add(out$tpar_comp2) <- glue(
       "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
@@ -400,6 +422,32 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       "{tp}std_normal_{lpdf}(zb{sp});\n",
       "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
       str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
+    )
+  }
+  if (!is.null(special$R2D2)) {
+    if (class != "b") {
+      stop2("The R2D2 prior does not yet support special coefficient types.")
+    }
+    m1 <- str_if(center_X, " -1")
+    str_add(out$data) <- glue(
+      "  // concentration vector of the D2 prior\n",
+      "  vector<lower=0>[K{sp}{m1}] R2D2_cons_D2;\n"
+    )
+    str_add(out$par) <- glue(
+      "  // local parameters for the R2D2 prior\n",
+      "  vector[K{ct}{sp}] zb{sp};\n",
+      "  simplex[K{ct}{sp}] R2D2_phi{sp};\n"
+    )
+    R2D2_args <- sargs(
+      glue("zb{sp}"), glue("R2D2_phi{sp}"), glue("R2D2_tau2{p}")
+    )
+    str_add(out$tpar_comp2) <- glue(
+      "  // compute actual regression coefficients\n",
+      "  b{sp}{suffix} = R2D2({R2D2_args});\n"
+    )
+    str_add(out$prior) <- glue(
+      "{tp}std_normal_{lpdf}(zb{sp});\n",
+      "{tp}dirichlet_{lpdf}(R2D2_phi{sp} | R2D2_cons_D2{p});\n"
     )
   }
   out
@@ -541,13 +589,6 @@ stan_rngprior <- function(prior, par_declars, gen_quantities,
 # @param prior a vector of character strings
 stan_is_constant_prior <- function(prior) {
   grepl("^constant\\(", prior)
-}
-
-# indicate if the horseshoe prior is used in the predictor term
-stan_use_horseshoe <- function(bterms, prior) {
-  prefix <- combine_prefix(bterms, keep_mu = TRUE)
-  special <- attr(prior, "special")[[prefix]]
-  !is.null(special[["hs_df"]])
 }
 
 # extract Stan boundaries expression from a string

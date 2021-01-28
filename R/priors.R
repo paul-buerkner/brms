@@ -1425,7 +1425,7 @@ validate_prior_special.btl <- function(x, prior, data,
     }
   }
   # prepare special priors such as horseshoe or lasso
-  prior_special <- list()
+  special <- list()
   b_index <- which(find_rows(prior, class = "b", coef = "", ls = px))
   stopifnot(length(b_index) <= 1L)
   if (length(b_index)) {
@@ -1452,37 +1452,27 @@ validate_prior_special.btl <- function(x, prior, data,
         )
       }
       if (is_special_prior(b_prior, "horseshoe")) {
-        hs <- eval2(b_prior)
-        hs_obj_names <- c(
-          "df", "df_global", "df_slab", "scale_global", 
-          "scale_slab", "par_ratio", "autoscale"
-        )
-        hs_att <- attributes(hs)[hs_obj_names]
-        names(hs_att) <- paste0("hs_", hs_obj_names)
-        prior_special <- c(prior_special, hs_att)
-        prior_special$hs_autoscale <- 
-          isTRUE(prior_special$hs_autoscale) && allow_autoscale
+        special$horseshoe <- attributes(eval2(b_prior))
+        special$horseshoe$autoscale <- 
+          isTRUE(special$horseshoe$autoscale) && allow_autoscale
+      } else if (is_special_prior(b_prior, "R2D2")) {
+        special$R2D2 <- attributes(eval2(b_prior))
+        special$R2D2$autoscale <- 
+          isTRUE(special$R2D2$autoscale) && allow_autoscale
       } else if (is_special_prior(b_prior, "lasso")) {
-        lasso <- eval2(b_prior)
         # the parameterization via double_exponential appears to be more
         # efficient than an indirect parameterization via normal and 
         # exponential distributions; tested on 2017-06-09
         p <- usc(combine_prefix(px))
-        lasso_scale <- paste0(
-          "lasso_scale", p, " * lasso_inv_lambda", p
-        )
-        lasso_prior <- paste0(
-          "double_exponential(0, ", lasso_scale, ")"
-        )
+        lasso_scale <- paste0("lasso_scale", p, " * lasso_inv_lambda", p)
+        lasso_prior <- paste0("double_exponential(0, ", lasso_scale, ")")
         prior$prior[b_index] <- lasso_prior
-        lasso_att <- attributes(lasso)
-        prior_special$lasso_df <- lasso_att[["df"]]
-        prior_special$lasso_scale <- lasso_att[["scale"]]
+        special$lasso <- attributes(eval2(b_prior))
       }
     }
   }
   prefix <- combine_prefix(px, keep_mu = TRUE)
-  attributes(prior)$special[[prefix]] <- prior_special
+  attributes(prior)$special[[prefix]] <- special
   prior
 }
 
@@ -1921,6 +1911,57 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
   out
 }
 
+#' R2-D2 Priors in \pkg{brms}
+#' 
+#' Function used to set up R2D2 priors for population-level effects in
+#' \pkg{brms}. The function does not evaluate its arguments -- it exists purely
+#' to help set up the model.
+#' 
+#' @param mean_R2 mean of the Beta prior on the coefficient of determination R^2.
+#' @param prec_R2 precision of the Beta prior on the coefficient of determination R^2.
+#' @param cons_D2 concentration vector of the Dirichlet prior on the variance
+#'   decomposition parameters.
+#' @param autoscale Logical; indicating whether the horseshoe
+#'   prior should be scaled using the residual standard deviation
+#'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
+#'   Autoscaling is not applied for distributional parameters or 
+#'   when the model does not contain the parameter \code{sigma}.
+#'   
+#' @references
+#' Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020). 
+#'   Bayesian regression using a prior on the model fit: The R2-D2 shrinkage 
+#'   prior. Journal of the American Statistical Association.
+#'   \url{https://arxiv.org/pdf/1609.00046.pdf}
+#'   
+#' @seealso \code{\link{set_prior}}
+#'   
+#' @examples 
+#' set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))
+#' 
+#' @export
+R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
+  out <- deparse(match.call(), width.cutoff = 500L)
+  mean_R2 <- as_one_numeric(mean_R2)
+  prec_R2 <- as_one_numeric(prec_R2)
+  cons_D2 <- as.numeric(cons_D2)
+  if (!(mean_R2 > 0 && mean_R2 < 1)) {
+    stop2("Invalid R2D2 prior: Mean of the R2 prior ",
+          "must be a single number in (0, 1).")
+  }
+  if (prec_R2 <= 0) {
+    stop2("Invalid R2D2 prior: Precision of the R2 prior ",
+          "must be a single positive number.")
+  }
+  if (any(cons_D2 <= 0)) {
+    stop2("Invalid R2D2 prior: Concentration of the D2 prior ",
+          "must be a vector of positive numbers.")
+  }
+  autoscale <- as_one_logical(autoscale)
+  att <- nlist(mean_R2, prec_R2, cons_D2, autoscale)
+  attributes(out)[names(att)] <- att
+  out
+}
+
 #' Set up a lasso prior in \pkg{brms}
 #' 
 #' Function used to set up a lasso prior for population-level effects 
@@ -1987,10 +2028,22 @@ lasso <- function(df = 1, scale = 1) {
 is_special_prior <- function(prior, target = NULL) {
   stopifnot(is.character(prior))
   if (is.null(target)) {
-    target <- c("horseshoe", "lasso") 
+    target <- c("horseshoe", "R2D2", "lasso") 
   }
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)
+}
+
+# extract special prior information
+# @param prior a brmsprior object
+# @param px object from which the prefix can be extract
+get_special_prior <- function(prior, px = NULL) {
+  out <- attr(prior, "special")
+  if (!is.null(px)) {
+    prefix <- combine_prefix(px, keep_mu = TRUE)
+    out <- out[[prefix]]
+  }
+  out
 }
 
 # check if parameters should be samples only from the prior
