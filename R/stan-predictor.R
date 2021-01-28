@@ -314,11 +314,11 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     b_bound <- get_bound(prior, class = "b", px = px)
     b_type <- glue("vector{b_bound}[K{ct}{p}]")
     b_coef_type <- glue("real{b_bound}")
-    use_horseshoe <- stan_use_horseshoe(bterms, prior)
+    assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
     if (decomp == "none") {
       b_suffix <- ""
       b_comment <- "population-level effects"
-      if (use_horseshoe) {
+      if (assign_b_tpar) {
         str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
         str_add(out$pll_args) <- glue(", vector b{p}")
       } else {
@@ -336,7 +336,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       }
       b_suffix <- "Q"
       b_comment <- "regression coefficients at QR scale"
-      if (use_horseshoe) {
+      if (assign_b_tpar) {
         str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
         str_add(out$pll_args) <- glue(", vector bQ{p}")
       } else {
@@ -920,7 +920,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   }
   # prepare special effects coefficients
   bound <- get_bound(prior, class = "b", px = px)
-  if (stan_use_horseshoe(bterms, prior)) {
+  if (stan_assign_b_tpar(bterms, prior)) {
     str_add(out$tpar_def) <- glue(
       "  // special effects coefficients\n", 
       "  vector{bound}[Ksp{p}] bsp{p};\n"
@@ -1963,6 +1963,13 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
     !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
+}
+
+# indicate if the overall coefficients 'b' should be
+# assigned in the transformed parameters block 
+stan_assign_b_tpar <- function(bterms, prior) {
+  special <- get_special_prior(prior, bterms)
+  !is.null(special$horseshoe) || !is.null(special$R2D2)
 }
 
 # default Stan definitions for distributional parameters

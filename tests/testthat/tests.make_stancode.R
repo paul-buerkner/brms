@@ -161,6 +161,15 @@ test_that("special shrinkage priors appear in the Stan code", {
     )
   )
   
+  # R2D2 prior 
+  scode <- make_stancode(y ~ x1*x2, data = dat,
+                         prior = prior(R2D2(0.5, 10)),
+                         sample_prior = TRUE)
+  expect_match2(scode, "b = R2D2(zb, R2D2_phi, R2D2_tau2);")
+  expect_match2(scode, "target += dirichlet_lpdf(R2D2_phi | R2D2_cons_D2);")
+  expect_match2(scode, "target += beta_lpdf(R2D2_R2 | R2D2_mean_R2 * R2D2_prec_R2, (1 - R2D2_mean_R2) * R2D2_prec_R2);")
+  expect_match2(scode, "R2D2_tau2 = sigma^2 * R2D2_R2 / (1 - R2D2_R2);")
+  
   # lasso prior
   scode <- make_stancode(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)),
@@ -178,11 +187,13 @@ test_that("special shrinkage priors appear in the Stan code", {
   # horseshoe and lasso prior applied in a non-linear model
   hs_a1 <- horseshoe(7, scale_global = 2, df_global = 3)
   lasso_a2 <- lasso(2, scale = 10)
+  R2D2_a3 <- R2D2(0.5, 10)
   scode <- make_stancode(
-    bf(y ~ a1 + a2, a1 ~ x1, a2 ~ 0 + x2, nl = TRUE),
+    bf(y ~ a1 + a2 + a3, a1 ~ x1, a2 ~ 0 + x2, a3 ~ x2, nl = TRUE),
     data = dat, sample_prior = TRUE,
     prior = c(set_prior(hs_a1, nlpar = "a1"),
-              set_prior(lasso_a2, nlpar = "a2"))
+              set_prior(lasso_a2, nlpar = "a2"),
+              set_prior(R2D2_a3, nlpar = "a3"))
   )
   expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1;") 
   expect_match2(scode, "real<lower=0> hs_global_a1;") 
@@ -204,6 +215,7 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_match2(scode, 
     "target += double_exponential_lpdf(b_a2 | 0, lasso_scale_a2 * lasso_inv_lambda_a2);"
   )
+  expect_match2(scode, "b_a3 = R2D2(zb_a3, R2D2_phi_a3, R2D2_tau2_a3);")
   
   # check error messages
   expect_error(make_stancode(y ~ x1*x2, data = dat, 
