@@ -828,41 +828,36 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  prefix <- combine_prefix(px, keep_mu = TRUE)
-  special <- attr(prior, "special")[[prefix]]
-  if (!is.null(special[["hs_df"]])) {
+  special <- get_special_prior(prior, px)
+  if (!is.null(special$horseshoe)) {
     # data for the horseshoe prior
-    hs_obj_names <- paste0("hs_", 
-      c("df", "df_global", "df_slab", "scale_global", "scale_slab")
-    )
-    hs_data <- special[hs_obj_names]
-    if (is.null(special[["hs_par_ratio"]])) {
-      hs_data$hs_scale_global <- special$hs_scale_global
-    } else {
-      hs_data$hs_scale_global <- special$hs_par_ratio / sqrt(nrow(data))
+    hs_names <- c("df", "df_global", "df_slab", "scale_global", "scale_slab")
+    hs_data <- special$horseshoe[hs_names]
+    if (!is.null(special$horseshoe$par_ratio)) {
+      hs_data$scale_global <- special$horseshoe$par_ratio / sqrt(nrow(data))
     }
-    names(hs_data) <- paste0(hs_obj_names, p) 
+    names(hs_data) <- paste0("hs_", hs_names, p) 
     out <- c(out, hs_data)
   }
-  if (!is.null(special[["R2D2_mean_R2"]])) {
+  if (!is.null(special$R2D2)) {
     # data for the R2D2 prior
-    R2D2_obj_names <- paste0("R2D2_", c("mean_R2", "prec_R2", "cons_D2"))
-    R2D2_data <- special[R2D2_obj_names]
+    R2D2_names <- c("mean_R2", "prec_R2", "cons_D2")
+    R2D2_data <- special$R2D2[R2D2_names]
     # number of coefficients minus the intercept
     K <- sdata[[paste0("K", p)]] - ifelse(stan_center_X(bterms), 1, 0)
-    if (length(R2D2_data$R2D2_cons_D2) == 1L) {
-      R2D2_data$R2D2_cons_D2 <- rep(R2D2_data$R2D2_cons_D2, K)
+    if (length(R2D2_data$cons_D2) == 1L) {
+      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, K)
     }
-    if (length(R2D2_data$R2D2_cons_D2) != K) {
+    if (length(R2D2_data$cons_D2) != K) {
       stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", K)
     }
-    names(R2D2_data) <- paste0(R2D2_obj_names, p) 
+    names(R2D2_data) <- paste0("R2D2_", R2D2_names, p) 
     out <- c(out, R2D2_data)
   }
-  if (!is.null(special[["lasso_df"]])) {
-    lasso_obj_names <- paste0("lasso_", c("df", "scale"))
-    lasso_data <- special[lasso_obj_names]
-    names(lasso_data) <- paste0(lasso_obj_names, p) 
+  if (!is.null(special$lasso)) {
+    lasso_names <- c("df", "scale")
+    lasso_data <- special$lasso[lasso_names]
+    names(lasso_data) <- paste0("lasso_", lasso_names, p) 
     out <- c(out, lasso_data)
   }
   out

@@ -16,13 +16,12 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   } else if (any(links == "softplus")) {
     str_add(out$fun) <- "  #include 'fun_softplus.stan'\n"
   }
-  use_horseshoe <- ulapply(attr(prior, "special"), "[[", "hs_df")
-  if (any(nzchar(use_horseshoe))) {
+  special <- get_special_prior(prior)
+  if (!isNULL(lapply(special, "[[", "horseshoe"))) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
   }
-  use_R2D2 <- ulapply(attr(prior, "special"), "[[", "R2D2_mean_R2")
-  if (any(nzchar(use_R2D2))) {
-    str_add(out$fun) <- "  #include 'fun_R2D2.stan'\n"
+  if (!isNULL(lapply(special, "[[", "R2D2"))) {
+    str_add(out$fun) <- "  #include 'fun_r2d2.stan'\n"
   }
   if (nrow(ranef)) {
     r_funs <- NULL

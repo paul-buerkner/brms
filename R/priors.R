@@ -1400,7 +1400,7 @@ validate_prior_special.btl <- function(x, prior, data,
     }
   }
   # prepare special priors such as horseshoe or lasso
-  prior_special <- list()
+  special <- list()
   b_index <- which(find_rows(prior, class = "b", coef = "", ls = px))
   stopifnot(length(b_index) <= 1L)
   if (length(b_index)) {
@@ -1427,45 +1427,27 @@ validate_prior_special.btl <- function(x, prior, data,
         )
       }
       if (is_special_prior(b_prior, "horseshoe")) {
-        hs <- eval2(b_prior)
-        hs_obj_names <- c(
-          "df", "df_global", "df_slab", "scale_global", 
-          "scale_slab", "par_ratio", "autoscale"
-        )
-        hs_att <- attributes(hs)[hs_obj_names]
-        names(hs_att) <- paste0("hs_", hs_obj_names)
-        prior_special <- c(prior_special, hs_att)
-        prior_special$hs_autoscale <- 
-          isTRUE(prior_special$hs_autoscale) && allow_autoscale
+        special$horseshoe <- attributes(eval2(b_prior))
+        special$horseshoe$autoscale <- 
+          isTRUE(special$horseshoe$autoscale) && allow_autoscale
       } else if (is_special_prior(b_prior, "R2D2")) {
-        R2D2 <- eval2(b_prior)
-        R2D2_obj_names <- c("mean_R2", "prec_R2", "cons_D2", "autoscale")
-        R2D2_att <- attributes(R2D2)[R2D2_obj_names]
-        names(R2D2_att) <- paste0("R2D2_", R2D2_obj_names)
-        prior_special <- c(prior_special, R2D2_att)
-        prior_special$R2D2_autoscale <- 
-          isTRUE(prior_special$R2D2_autoscale) && allow_autoscale
+        special$R2D2 <- attributes(eval2(b_prior))
+        special$R2D2$autoscale <- 
+          isTRUE(special$R2D2$autoscale) && allow_autoscale
       } else if (is_special_prior(b_prior, "lasso")) {
-        lasso <- eval2(b_prior)
         # the parameterization via double_exponential appears to be more
         # efficient than an indirect parameterization via normal and 
         # exponential distributions; tested on 2017-06-09
         p <- usc(combine_prefix(px))
-        lasso_scale <- paste0(
-          "lasso_scale", p, " * lasso_inv_lambda", p
-        )
-        lasso_prior <- paste0(
-          "double_exponential(0, ", lasso_scale, ")"
-        )
+        lasso_scale <- paste0("lasso_scale", p, " * lasso_inv_lambda", p)
+        lasso_prior <- paste0("double_exponential(0, ", lasso_scale, ")")
         prior$prior[b_index] <- lasso_prior
-        lasso_att <- attributes(lasso)
-        prior_special$lasso_df <- lasso_att[["df"]]
-        prior_special$lasso_scale <- lasso_att[["scale"]]
+        special$lasso <- attributes(eval2(b_prior))
       }
     }
   }
   prefix <- combine_prefix(px, keep_mu = TRUE)
-  attributes(prior)$special[[prefix]] <- prior_special
+  attributes(prior)$special[[prefix]] <- special
   prior
 }
 
@@ -1904,7 +1886,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
   out
 }
 
-# TODO: document
+#' The R2-D2 Shrinkage Prior
 #' @export
 R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
   out <- deparse(match.call(), width.cutoff = 500L)
@@ -1999,6 +1981,18 @@ is_special_prior <- function(prior, target = NULL) {
   }
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)
+}
+
+# extract special prior information
+# @param prior a brmsprior object
+# @param px object from which the prefix can be extract
+get_special_prior <- function(prior, px = NULL) {
+  out <- attr(prior, "special")
+  if (!is.null(px)) {
+    prefix <- combine_prefix(px, keep_mu = TRUE)
+    out <- out[[prefix]]
+  }
+  out
 }
 
 # check if parameters should be samples only from the prior
