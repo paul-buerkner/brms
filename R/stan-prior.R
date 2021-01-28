@@ -359,7 +359,7 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
     str_add(out$tpar_def) <- glue(
       "  real R2D2_tau2{p};  // global R2D2 scale parameter\n"
     )
-    str_add(out$tpar_prior) <- glue(
+    str_add(out$tpar_comp) <- glue(
       "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n"
     )
     str_add(out$prior) <- glue(
@@ -414,7 +414,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       glue("hs_scale_slab{p}^2 * hs_slab{p}")
     )
-    str_add(out$tpar_prior) <- glue(
+    str_add(out$tpar_comp2) <- glue(
       "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
@@ -441,7 +441,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     R2D2_args <- sargs(
       glue("zb{sp}"), glue("R2D2_phi{sp}"), glue("R2D2_tau2{p}")
     )
-    str_add(out$tpar_prior) <- glue(
+    str_add(out$tpar_comp2) <- glue(
       "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = R2D2({R2D2_args});\n"
     )
