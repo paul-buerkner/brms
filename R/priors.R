@@ -1101,14 +1101,42 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
   paste0("student_t(", sargs(df, location, scale), ")")
 }
 
-# validate priors supplied by the user
-# @param ... passed to 'validate_prior_special*
-# @return a 'brmsprior' object
-validate_prior <- function(prior, bterms, data, sample_prior = "no", ...) {
+#' Validate Prior for \pkg{brms} Models
+#' 
+#' Validate priors supplied by the user. Return a complete
+#' set of priors for the given model, including default priors.
+#' 
+#' @inheritParams get_prior
+#' @inheritParams brm
+#' 
+#' @return An object of class \code{brmsprior}.
+#' 
+#' @seealso \code{\link{get_prior}}, \code{\link{set_prior}}.
+#' 
+#' @examples 
+#' prior1 <- prior(normal(0,10), class = b) + 
+#'   prior(cauchy(0,2), class = sd)
+#' validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
+#'                data = epilepsy, family = poisson())
+#' 
+#' @export
+validate_prior <- function(prior, formula, data, family = gaussian(),
+                           sample_prior = "no", knots = NULL, ...) {
+  formula <- validate_formula(formula, data = data, family = family)
+  bterms <- brmsterms(formula)
+  data <- validate_data(data, bterms = bterms, knots = knots)
+  .validate_prior(
+    prior, bterms = bterms, data = data,
+    sample_prior = sample_prior, ...
+  )
+}  
+
+# internal work function of 'validate_prior'
+.validate_prior <- function(prior, bterms, data, sample_prior, ...) {
   sample_prior <- validate_sample_prior(sample_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
-    prior <- all_priors  
+    prior <- all_priors
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
   }

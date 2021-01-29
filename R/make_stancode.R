@@ -34,7 +34,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   bterms <- brmsterms(formula)
   data <- validate_data(data, bterms = bterms, knots = knots)
-  prior <- validate_prior(
+  prior <- .validate_prior(
     prior, bterms = bterms, data = data,
     sample_prior = sample_prior
   )

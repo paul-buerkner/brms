@@ -110,3 +110,14 @@ test_that("set_prior alias functions produce equivalent results", {
   expect_equal(set_prior("normal(0, 1)", class = "sd"),
                prior_string("normal(0, 1)", class = "sd"))
 })
+
+test_that("external interface of validate_prior works correctly", {
+  prior1 <- prior(normal(0,10), class = b) + 
+    prior(cauchy(0,2), class = sd)
+  prior1 <- validate_prior(
+    prior1, count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = poisson()
+  )
+  expect_true(all(c("b", "Intercept", "sd") %in% prior1$class))
+  expect_equal(nrow(prior1), 9)
+})

@@ -34,7 +34,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   )
   bterms <- brmsterms(formula)
   data <- validate_data(data, bterms = bterms, knots = knots)
-  prior <- validate_prior(
+  prior <- .validate_prior(
     prior, bterms = bterms, data = data,
     sample_prior = sample_prior,
     require_nlpar_prior = FALSE
