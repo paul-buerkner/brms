@@ -2,19 +2,23 @@
 % Please edit documentation in R/priors.R
 \name{validate_prior}
 \alias{validate_prior}
-\title{Validate priors supplied by the user}
+\title{Validate Prior for \pkg{brms} Models}
 \usage{
 validate_prior(
   prior,
   formula,
   data,
+  family = gaussian(),
   sample_prior = "no",
-  allow_autoscale = TRUE,
-  require_nlpar_prior = TRUE
+  knots = NULL,
+  ...
 )
 }
 \arguments{
-\item{prior}{A character string defining a distribution in \pkg{Stan} language}
+\item{prior}{One or more \code{brmsprior} objects created by
+\code{\link{set_prior}} or related functions and combined using the
+\code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
+for more help.}
 
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},
 \code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
@@ -24,6 +28,15 @@ fitted. The details of model specification are explained in
 
 \item{data}{An object of class \code{data.frame} (or one that can be coerced
 to that class) containing data of all variables used in the model.}
+
+\item{family}{A description of the response distribution and link function to
+be used in the model. This can be a family function, a call to a family
+function or a character string naming the family. Every family function has
+a \code{link} argument allowing to specify the link function to be applied
+on the response variable. If not specified, default links are used. For
+details of supported families see \code{\link{brmsfamily}}. By default, a
+linear \code{gaussian} model is applied. In multivariate models,
+\code{family} might also be a list of families.}
 
 \item{sample_prior}{Indicate if samples from priors should be drawn
 additionally to the posterior samples. Options are \code{"no"} (the
@@ -39,17 +52,25 @@ samples are drawn solely from the priors ignoring the likelihood, which
 allows among others to generate samples from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
 
-\item{allow_autoscale}{logical, indicating whether autoscaling
-by parameter sigma is allowed.}
+\item{knots}{Optional list containing user specified knot values to be used
+for basis construction of smoothing terms. See
+\code{\link[mgcv:gamm]{gamm}} for more details.}
 
-\item{require_nlpar_prior}{logical; indicating whether priors
-are required on coefficients of nlpars.}
+\item{...}{Other arguments for internal usage only.}
 }
 \value{
 An object of class \code{brmsprior}.
 }
 \description{
-Validate priors supplied by the user
+Validate priors supplied by the user. Return a complete
+set of priors for the given model, including default priors.
+}
+\examples{
+prior1 <- prior(normal(0,10), class = b) + 
+  prior(cauchy(0,2), class = sd)
+validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
+               data = epilepsy, family = poisson())
+
 }
 \seealso{
 \code{\link{get_prior}}, \code{\link{set_prior}}.
