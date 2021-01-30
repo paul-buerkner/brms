@@ -112,6 +112,7 @@ change_fe <- function(bterms, data, pars) {
     bnames <- paste0(b, "_", fixef)
     lc(out) <- clist(pos, bnames)
     c(out) <- change_prior(b, pars, names = fixef)
+    c(out) <- change_special_prior_local(bterms, fixef, pars)
   }
   out
 }
@@ -401,6 +402,21 @@ change_re_levels <- function(ranef, pars)  {
   out
 }
 
+# rename parameters related to special priors
+change_special_prior_local <- function(bterms, coef, pars) {
+  out <- list()
+  p <- combine_prefix(bterms)
+  # rename parameters related to the R2D2 prior
+  pos_R2D2_phi <- grepl(paste0("^R2D2_phi", p), pars)
+  if (any(pos_R2D2_phi)) {
+    phi <- paste0("R2D2_phi", p)
+    new_phi <- paste0(phi, "_", coef)
+    lc(out) <- clist(pos_R2D2_phi, new_phi)
+    c(out) <- change_prior(phi, pars, names = coef, is_vector = TRUE)
+  }
+  out
+}
+
 # helps in renaming prior parameters
 # @param class the class of the parameters
 # @param pars names of all parameters in the model
@@ -419,6 +435,12 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
       pars[pos_priors]
     )
     if (is_vector) {
+      if (!is.null(names)) {
+        .names <- paste0("_", names)
+        for (i in seq_along(priors)) {
+          priors[i] <- gsub("\\[[[:digit:]]+\\]$", .names[i], priors[i])
+        }
+      }
       lc(out) <- clist(pos_priors, priors)
     } else {
       digits <- sapply(priors, function(prior) {
@@ -509,10 +531,11 @@ reorder_pars <- function(x) {
     "car", "sdcar", "cosy", "sd", "cor", "df", "sds", "sdgp", 
     "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
-    "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
+    "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", 
+    "lp"
   ))
   # reorder parameter classes
-  class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
+  class <- get_matches("^[^_]+", x$fit@sim$pars_oi)
   new_order <- order(
     factor(class, levels = all_classes),
     !grepl("_Intercept(_[[:digit:]]+)?$", x$fit@sim$pars_oi)

@@ -426,7 +426,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
   }
   if (!is.null(special$R2D2)) {
     if (class != "b") {
-      stop2("The R2D2 prior does not yet support special coefficient types.")
+      stop2("The R2D2 prior does not yet support special coefficient classes.")
     }
     m1 <- str_if(center_X, " -1")
     str_add(out$data) <- glue(
@@ -542,7 +542,7 @@ stan_rngprior <- function(prior, par_declars, gen_quantities,
     k <- which(grepl(paste0("^", all_pars[i]), D$par))
     D$dim[k] <- all_dims[i]
     D$bounds[k] <- all_bounds[i]
-    if (grepl("^((simo_)|(theta))", all_pars[i])) {
+    if (grepl("^((simo_)|(theta)|(R2D2_phi))", all_pars[i])) {
       D$type[k] <- all_types[i]
     }
   }
