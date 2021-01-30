@@ -851,6 +851,7 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
     if (length(R2D2_data$cons_D2) != K) {
       stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", K)
     }
+    R2D2_data$cons_D2 <- as.array(R2D2_data$cons_D2)
     names(R2D2_data) <- paste0("R2D2_", R2D2_names, p) 
     out <- c(out, R2D2_data)
   }

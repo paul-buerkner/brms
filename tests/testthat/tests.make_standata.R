@@ -815,6 +815,13 @@ test_that("make_standata includes data of special priors", {
   sdata <- make_standata(y ~ x1*x2, data = dat, prior = set_prior(hs))
   expect_equal(sdata$hs_scale_global, 0.1 / sqrt(nrow(dat)))
   
+  # R2D2 prior
+  sdata <- make_standata(y ~ x1*x2, data = dat,
+                         prior = prior(R2D2(0.5, 10)))
+  expect_equal(sdata$R2D2_mean_R2, 0.5)
+  expect_equal(sdata$R2D2_prec_R2, 10)
+  expect_equal(sdata$R2D2_cons_D2, as.array(rep(1, 3)))
+  
   # lasso prior
   sdata <- make_standata(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)))
