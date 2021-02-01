@@ -21,6 +21,8 @@ via function `R2D2` to be used in `set_prior`.
 priors on spline terms.
 * Fix numerical issues occurring in edge cases during
 post-processing of Gaussian processes thanks to Marta Kołczyńska.
+* Fix an error during post-processing of new levels in
+multi-membership terms thanks to Guilherme Mohor.
 
 
 # brms 2.14.4

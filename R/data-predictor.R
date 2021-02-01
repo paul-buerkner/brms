@@ -257,8 +257,15 @@ data_gr_local <- function(bterms, data, ranef) {
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       for (i in seq_along(gs)) {
-        J <- as.array(match(get(gs[i], data), levels))
-        out[[paste0("J_", idresp, "_", i)]] <- J
+        gdata <- get(gs[i], data)
+        J <- match(gdata, levels)
+        if (anyNA(J)) {
+          # occurs for new levels only
+          new_gdata <- gdata[!gdata %in% levels]
+          new_levels <- unique(new_gdata)
+          J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
+        }
+        out[[paste0("J_", idresp, "_", i)]] <- as.array(J)
         out[[paste0("W_", idresp, "_", i)]] <- as.array(weights[, i])
       }
     } else {
