@@ -714,28 +714,32 @@ prepare_predictions_ac <- function(bterms, samples, sdata, oos = NULL,
   if (has_ac_class(acef, "cosy")) {
     out$cosy <-  get_samples(samples, paste0("^cosy", p, "$"))
   }
+  if (has_ac_latent_residuals(bterms)) {
+    regex_err <- paste0("^err", p, "\\[")
+    has_err <- any(grepl(regex_err, colnames(samples)))
+    if (has_err && !new) {
+      out$err <- get_samples(samples, regex_err)
+    } else {
+      if (!use_ac_cov_time(acef)) {
+        stop2("Cannot predict new latent residuals ",
+              "when using cov = FALSE in autocor terms.")
+      }
+      # need to sample correlated residuals
+      out$err <- matrix(nrow = nrow(samples), ncol = length(out$Y))
+      out$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
+      for (i in seq_len(out$N_tg)) {
+        obs <- with(out, begin_tg[i]:end_tg[i])
+        zeros <- rep(0, length(obs))
+        cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+        .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+        out$err[, obs] <- rblapply(seq_rows(samples), .err)
+      }
+    }
+  }
   if (use_ac_cov_time(acef)) {
     # prepare predictions for the covariance structures of time-series models
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
     out$end_tg <- sdata[[paste0("end_tg", p)]]
-    if (has_cor_latent_residuals(bterms)) {
-      regex_err <- paste0("^err", p, "\\[")
-      has_err <- any(grepl(regex_err, colnames(samples)))
-      if (has_err && !new) {
-        out$err <- get_samples(samples, regex_err)
-      } else {
-        # need to sample correlated residuals
-        out$err <- matrix(nrow = nrow(samples), ncol = length(out$Y))
-        out$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
-        for (i in seq_len(out$N_tg)) {
-          obs <- with(out, begin_tg[i]:end_tg[i])
-          zeros <- rep(0, length(obs))
-          cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-          .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-          out$err[, obs] <- rblapply(seq_rows(samples), .err)
-        }
-      }
-    }
   }
   if (has_ac_class(acef, "sar")) {
     out$lagsar <- get_samples(samples, paste0("^lagsar", p, "$"))

@@ -701,6 +701,15 @@ test_that("Stan code for ARMA models is correct", {
   )
   expect_match2(scode, "vector[N] mu = Intercept + Xc * b + err;")
   expect_match2(scode, "target += cauchy_lpdf(sderr | 0, 10);")
+  
+  scode <- make_stancode(
+    y ~ x + ar(time), dat, family = poisson,
+    prior = prior(cauchy(0, 10), class = sderr)
+  )
+  expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
+  expect_match2(scode, "err = sderr * zerr;")
+  expect_match2(scode, "vector[N] mu = Intercept + Xc * b + err;")
+  expect_match2(scode, "target += cauchy_lpdf(sderr | 0, 10);")
 })
 
 test_that("Stan code for compound symmetry models is correct", {

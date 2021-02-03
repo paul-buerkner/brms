@@ -1212,8 +1212,33 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   n <- stan_nn(threads)
   slice <- stan_slice(threads)
   has_natural_residuals <- has_natural_residuals(bterms)
-  has_cor_latent_residuals <- has_cor_latent_residuals(bterms)
+  has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
   acef <- tidy_acef(bterms, data)
+  
+  if (has_ac_latent_residuals) {
+    # families that do not have natural residuals require latent
+    # residuals for residual-based autocor structures
+    err_msg <- "Latent residuals are not implemented"
+    if (is.btnl(bterms)) {
+      stop2(err_msg, " for non-linear models.")
+    }
+    str_add(out$par) <- glue(
+      "  vector[N{resp}] zerr{p};  // unscaled residuals\n"
+    )
+    str_add_list(out) <- stan_prior(
+      prior, class = "sderr", px = px, suffix = p,
+      type = "real<lower=0>", comment = "SD of residuals",
+      normalize = normalize
+    )
+    str_add(out$tpar_def) <- glue(
+      "  vector[N{resp}] err{p};  // actual residuals\n"
+    )
+    str_add(out$pll_args) <- glue(", vector err{p}")
+    str_add(out$prior) <- glue(
+      "  target += std_normal_{lpdf}(zerr{p});\n"
+    )
+    str_add(out$eta) <- glue(" + err{p}{slice}")
+  }
 
   # validity of the autocor terms has already been checked in 'tidy_acef'
   acef_arma <- subset2(acef, class = "arma")
@@ -1230,10 +1255,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
     if (!acef_arma$cov) {
-      err_msg <- "Please set cov = TRUE in ARMA correlation structures"
-      if (!has_natural_residuals) {
-        stop2(err_msg, " for this family.")
-      }
+      err_msg <- "Please set cov = TRUE in ARMA structures"
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when including known standard errors.")
       }
@@ -1242,12 +1264,29 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  int<lower=0> J_lag{p}[N{resp}];\n"                
       )
       str_add(out$model_def) <- glue(
-        "  // objects storing residuals\n",
+        "  // matrix storing lagged residuals\n",
         "  matrix[N{resp}, max_lag{p}] Err{p}",
-        " = rep_matrix(0, N{resp}, max_lag{p});\n",
-        "  vector[N{resp}] err{p};\n"
+        " = rep_matrix(0, N{resp}, max_lag{p});\n"
       )
-      Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
+      if (has_natural_residuals) {
+        str_add(out$model_def) <- glue(
+          "  vector[N{resp}] err{p};  // actual residuals\n"
+        )
+        Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y") 
+        comp_err <- glue("    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n")
+      } else {
+        if (acef_arma$q > 0) {
+          # AR and MA structures cannot be distinguished when
+          # using a single vector of latent residuals
+          stop2("Please set cov = TRUE when modeling MA structures ",
+                "for this family.")
+        }
+        str_add(out$tpar_comp) <- glue(
+          "  // compute ctime-series residuals\n",
+          "  err{p} = sderr{p} * zerr{p};\n"
+        )
+        comp_err <- ""
+      }
       add_ar <- str_if(acef_arma$p > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")             
       )
@@ -1258,7 +1297,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  // include ARMA terms\n",
         "  for (n in 1:N{resp}) {{\n",
         add_ma,
-        "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
+        comp_err,
         "    for (i in 1:J_lag{p}[n]) {{\n",
         "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
         "    }}\n",
@@ -1266,9 +1305,11 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  }}\n"
       )
     }
+    # no boundaries are required in the conditional formulation
+    # when natural residuals automatically define the scale
+    need_arma_bound <- acef_arma$cov || has_ac_latent_residuals
     if (acef_arma$p > 0) {
-      # no boundaries are required in the conditional formulation
-      ar_bound <- str_if(acef_arma$cov, "<lower=-1,upper=1>")
+      ar_bound <- str_if(need_arma_bound, "<lower=-1,upper=1>")
       str_add_list(out) <- stan_prior(
         prior, class = "ar", px = px, suffix = p,
         coef = seq_along(acef_arma$p),
@@ -1280,8 +1321,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       )
     }
     if (acef_arma$q > 0) {
-      # no boundaries are required in the conditional formulation
-      ma_bound <- str_if(acef_arma$cov, "<lower=-1,upper=1>")
+      ma_bound <- str_if(need_arma_bound, "<lower=-1,upper=1>")
       str_add_list(out) <- stan_prior(
         prior, class = "ma", px = px, suffix = p,
         coef = seq_along(acef_arma$q),
@@ -1358,32 +1398,12 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  // compute residual covariance matrix\n",
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
     )
-    if (has_cor_latent_residuals) {
-      err_msg <- "Latent residuals are not implemented"
-      if (is.btnl(bterms)) {
-        stop2(err_msg, " for non-linear models.")
-      }
-      str_add(out$par) <- glue(
-        "  vector[N{resp}] zerr{p};  // unscaled residuals\n"
-      )
-      str_add_list(out) <- stan_prior(
-        prior, class = "sderr", px = px, suffix = p,
-        type = "real<lower=0>", comment = "SD of residuals",
-        normalize = normalize
-      )
-      str_add(out$tpar_def) <- glue(
-        "  vector[N{resp}] err{p};  // actual residuals\n"
-      )
+    if (has_ac_latent_residuals) {
       str_add(out$tpar_comp) <- glue(
         "  // compute correlated time-series residuals\n",
         "  err{p} = scale_time_err(",
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
-      str_add(out$pll_args) <- glue(", vector err{p}")
-      str_add(out$prior) <- glue(
-        "  target += std_normal_{lpdf}(zerr{p});\n"
-      )
-      str_add(out$eta) <- glue(" + err{p}{slice}")
     }
   }
   

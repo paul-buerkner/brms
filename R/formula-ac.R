@@ -578,14 +578,10 @@ use_ac_cov_time <- function(x) {
   has_ac_subset(x, cov = TRUE, dim = "time")
 }
 
-# should natural residuals be modeled as correlated?
-has_cor_natural_residuals <- function(bterms) {
-  has_natural_residuals(bterms) && use_ac_cov(bterms)
-}
-
-# has the model correlated latent residuals
-has_cor_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) && use_ac_cov(bterms)
+# does the model need latent residuals for autocor structures?
+has_ac_latent_residuals <- function(bterms) {
+  !has_natural_residuals(bterms) &&
+    (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
 }
 
 # validate SAR matrices

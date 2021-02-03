@@ -968,7 +968,7 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
   if (has_ac_class(acef, "cosy")) {
     prior <- prior + brmsprior(class = "cosy", ls = px)
   }
-  if (has_cor_latent_residuals(bterms)) {
+  if (has_ac_latent_residuals(bterms)) {
     prior <- prior + 
       brmsprior(def_scale_prior, class = "sderr", ls = px)
   }

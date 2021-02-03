@@ -10,6 +10,7 @@ even if the required CDF or quantile functions are unavailable.
 * Add support for within-chain threading with `rstan (Stan >= 2.25)` backend.
 * Apply the R2-D2 shrinkage prior to population-level coefficients
 via function `R2D2` to be used in `set_prior`.
+* Extend support for `arma` correlation structures in non-normal families.
 
 ### Bug Fixes
 
