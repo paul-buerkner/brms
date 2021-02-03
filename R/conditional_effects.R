@@ -406,7 +406,7 @@ conditional_effects.brmsterms <- function(
     if (conv_cats_dpars(x$family)) {
       stop2("Please set 'categorical' to TRUE.")
     }
-    if (is_ordinal(x$family) && is.null(dpar)) {
+    if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {
       warning2(
         "Predictions are treated as continuous variables in ",
         "'conditional_effects' by default which is likely invalid ", 
