@@ -25,7 +25,7 @@ stan_predictor.btl <- function(x, ...) {
   stan_eta_combine(out, bterms = x, ...) 
 }
 
-# prepare Stan code for non-linear models
+# prepare Stan code for non-linear terms
 #' @export
 stan_predictor.btnl <- function(x, ...) {
   collapse_lists(
@@ -36,8 +36,6 @@ stan_predictor.btnl <- function(x, ...) {
   )
 }
 
-# Stan code for distributional parameters
-# @param rescor is this predictor part of a MV model estimating rescor?
 #' @export
 stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
   px <- check_prefix(x)
@@ -123,145 +121,145 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
   out <- lapply(x$terms, stan_predictor, prior = prior, threads = threads,
                 normalize = normalize, ...)
   out <- unlist(out, recursive = FALSE)
-  if (x$rescor) {
-    resp_type <- out[[1]]$resp_type
-    out <- collapse_lists(ls = out)
-    out$resp_type <- "vector"
-    adforms <- lapply(x$terms, "[[", "adforms")
-    adnames <- unique(ulapply(adforms, names))
-    adallowed <- c("se", "weights", "mi")
-    if (!all(adnames %in% adallowed))  {
-      stop2("Only ", collapse_comma(adallowed), " are supported ", 
-            "addition arguments when 'rescor' is estimated.")
-    }
-    # we already know at this point that all families are identical
-    family <- family_names(x)[1]
-    stopifnot(family %in% c("gaussian", "student"))
-    resp <- x$responses
-    nresp <- length(resp)
-    str_add(out$model_def) <- glue( 
-      "  // multivariate predictor array\n",
-      "  vector[nresp] Mu[N];\n"
-    )
-    str_add(out$model_comp_mvjoin) <- glue(
-      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
-    )
-    str_add(out$data) <- glue(
-      "  int<lower=1> nresp;  // number of responses\n",   
-      "  int nrescor;  // number of residual correlations\n"
-    )
-    str_add(out$pll_args) <- glue(", int nresp")
+  if (!x$rescor) {
+    return(out)
+  }
+  resp_type <- out[[1]]$resp_type
+  out <- collapse_lists(ls = out)
+  out$resp_type <- "vector"
+  adforms <- lapply(x$terms, "[[", "adforms")
+  adnames <- unique(ulapply(adforms, names))
+  adallowed <- c("se", "weights", "mi")
+  if (!all(adnames %in% adallowed))  {
+    stop2("Only ", collapse_comma(adallowed), " are supported ", 
+          "addition arguments when 'rescor' is estimated.")
+  }
+  # we already know at this point that all families are identical
+  family <- family_names(x)[1]
+  stopifnot(family %in% c("gaussian", "student"))
+  resp <- x$responses
+  nresp <- length(resp)
+  str_add(out$model_def) <- glue( 
+    "  // multivariate predictor array\n",
+    "  vector[nresp] Mu[N];\n"
+  )
+  str_add(out$model_comp_mvjoin) <- glue(
+    "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
+  )
+  str_add(out$data) <- glue(
+    "  int<lower=1> nresp;  // number of responses\n",   
+    "  int nrescor;  // number of residual correlations\n"
+  )
+  str_add(out$pll_args) <- glue(", int nresp")
+  str_add(out$tdata_def) <- glue(
+    "  vector[nresp] Y[N];  // response array\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  for (n in 1:N) {{\n",
+    "    Y[n] = {stan_vector(glue('Y_{resp}[n]'))};\n",
+    "  }}\n"
+  )
+  str_add(out$pll_args) <- ", vector[] Y"
+  if (any(adnames %in% "weights")) {
     str_add(out$tdata_def) <- glue(
-      "  vector[nresp] Y[N];  // response array\n"
+      "  // weights of the pointwise log-likelihood\n",
+      "  vector<lower=0>[N] weights = weights_{resp[1]};\n" 
     )
-    str_add(out$tdata_comp) <- glue(
-      "  for (n in 1:N) {{\n",
-      "    Y[n] = {stan_vector(glue('Y_{resp}[n]'))};\n",
-      "  }}\n"
-    )
-    str_add(out$pll_args) <- ", vector[] Y"
-    if (any(adnames %in% "weights")) {
-      str_add(out$tdata_def) <- glue(
-        "  // weights of the pointwise log-likelihood\n",
-        "  vector<lower=0>[N] weights = weights_{resp[1]};\n" 
+    str_add(out$pll_args) <- glue(", vector weights")
+  }
+  miforms <- rmNULL(lapply(adforms, "[[", "mi"))
+  if (length(miforms)) {
+    str_add(out$model_no_pll_def) <- "  vector[nresp] Yl[N] = Y;\n"
+    str_add(out$pll_args) <- ", vector[] Yl"
+    for (i in seq_along(miforms)) {
+      j <- match(names(miforms)[i], resp)
+      # needs to happen outside of reduce_sum 
+      # to maintain consistency of indexing Yl
+      str_add(out$model_no_pll_comp_mvjoin) <- glue(
+        "    Yl[n][{j}] = Yl_{resp[j]}[n];\n"
       )
-      str_add(out$pll_args) <- glue(", vector weights")
     }
-    miforms <- rmNULL(lapply(adforms, "[[", "mi"))
-    if (length(miforms)) {
-      str_add(out$model_no_pll_def) <- "  vector[nresp] Yl[N] = Y;\n"
-      str_add(out$pll_args) <- ", vector[] Yl"
-      for (i in seq_along(miforms)) {
-        j <- match(names(miforms)[i], resp)
-        # needs to happen outside of reduce_sum 
-        # to maintain consistency of indexing Yl
-        str_add(out$model_no_pll_comp_mvjoin) <- glue(
-          "    Yl[n][{j}] = Yl_{resp[j]}[n];\n"
-        )
-      }
-    }
+  }
+  str_add_list(out) <- stan_prior(
+    prior, class = "Lrescor", 
+    type = "cholesky_factor_corr[nresp]", header_type = "matrix",
+    comment = "parameters for multivariate linear models",
+    normalize = normalize
+  )
+  if (family == "student") {
     str_add_list(out) <- stan_prior(
-      prior, class = "Lrescor", 
-      type = "cholesky_factor_corr[nresp]", header_type = "matrix",
-      comment = "parameters for multivariate linear models",
-      normalize = normalize
+      prior, class = "nu", type = stan_dpar_types("nu"),
+      header_type = "real", normalize = normalize
     )
-    if (family == "student") {
-      str_add_list(out) <- stan_prior(
-        prior, class = "nu", type = stan_dpar_types("nu"),
-        header_type = "real", normalize = normalize
-      )
-    } 
-    sigma <- ulapply(x$terms, stan_sigma_transform, threads = threads)
-    if (any(grepl(stan_nn_regex(), sigma))) {
-      str_add(out$model_def) <- "  vector[nresp] sigma[N];\n"
-      str_add(out$model_comp_mvjoin) <- glue(
-        "    sigma[n] = {stan_vector(sigma)};\n"
-      )
-      if (family == "gaussian") {
-        str_add(out$model_def) <- glue(
-          "  // cholesky factor of residual covariance matrix\n",
-          "  matrix[nresp, nresp] LSigma[N];\n"
-        )
-        str_add(out$model_comp_mvjoin) <- glue(
-          "    LSigma[n] = diag_pre_multiply(sigma[n], Lrescor);\n"
-        )
-      } else if (family == "student") {
-        str_add(out$model_def) <- glue(
-          "  // residual covariance matrix\n",
-          "  matrix[nresp, nresp] Sigma[N];\n"
-        )
-        str_add(out$model_comp_mvjoin) <- glue(
-          "    Sigma[n] = multiply_lower_tri_self_transpose(", 
-          "diag_pre_multiply(sigma[n], Lrescor));\n" 
-        )
-      }
-    } else {
+  } 
+  sigma <- ulapply(x$terms, stan_sigma_transform, threads = threads)
+  if (any(grepl(stan_nn_regex(), sigma))) {
+    str_add(out$model_def) <- "  vector[nresp] sigma[N];\n"
+    str_add(out$model_comp_mvjoin) <- glue(
+      "    sigma[n] = {stan_vector(sigma)};\n"
+    )
+    if (family == "gaussian") {
       str_add(out$model_def) <- glue(
-        "  vector[nresp] sigma = {stan_vector(sigma)};\n"
+        "  // cholesky factor of residual covariance matrix\n",
+        "  matrix[nresp, nresp] LSigma[N];\n"
       )
-      if (family == "gaussian") {
-        str_add(out$model_def) <- glue(
-          "  // cholesky factor of residual covariance matrix\n",
-          "  matrix[nresp, nresp] LSigma = ",
-          "diag_pre_multiply(sigma, Lrescor);\n"
-        )
-      } else if (family == "student") {
-        str_add(out$model_def) <- glue(
-          "  // residual covariance matrix\n",
-          "  matrix[nresp, nresp] Sigma = ",
-          "multiply_lower_tri_self_transpose(", 
-          "diag_pre_multiply(sigma, Lrescor));\n"
-        )
-      }
+      str_add(out$model_comp_mvjoin) <- glue(
+        "    LSigma[n] = diag_pre_multiply(sigma[n], Lrescor);\n"
+      )
+    } else if (family == "student") {
+      str_add(out$model_def) <- glue(
+        "  // residual covariance matrix\n",
+        "  matrix[nresp, nresp] Sigma[N];\n"
+      )
+      str_add(out$model_comp_mvjoin) <- glue(
+        "    Sigma[n] = multiply_lower_tri_self_transpose(", 
+        "diag_pre_multiply(sigma[n], Lrescor));\n" 
+      )
     }
-    str_add(out$gen_def) <- glue(
-      "  // residual correlations\n",
-      "  corr_matrix[nresp] Rescor",
-      " = multiply_lower_tri_self_transpose(Lrescor);\n",
-      "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
+  } else {
+    str_add(out$model_def) <- glue(
+      "  vector[nresp] sigma = {stan_vector(sigma)};\n"
     )
-    str_add(out$gen_comp) <- stan_cor_gen_comp("rescor", "nresp")
-    out$model_comp_mvjoin <- paste0(
+    if (family == "gaussian") {
+      str_add(out$model_def) <- glue(
+        "  // cholesky factor of residual covariance matrix\n",
+        "  matrix[nresp, nresp] LSigma = ",
+        "diag_pre_multiply(sigma, Lrescor);\n"
+      )
+    } else if (family == "student") {
+      str_add(out$model_def) <- glue(
+        "  // residual covariance matrix\n",
+        "  matrix[nresp, nresp] Sigma = ",
+        "multiply_lower_tri_self_transpose(", 
+        "diag_pre_multiply(sigma, Lrescor));\n"
+      )
+    }
+  }
+  str_add(out$gen_def) <- glue(
+    "  // residual correlations\n",
+    "  corr_matrix[nresp] Rescor",
+    " = multiply_lower_tri_self_transpose(Lrescor);\n",
+    "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
+  )
+  str_add(out$gen_comp) <- stan_cor_gen_comp("rescor", "nresp")
+  out$model_comp_mvjoin <- paste0(
+    "  // combine univariate parameters\n",
+    "  for (n in 1:N) {\n", 
+    out$model_comp_mvjoin, 
+    "  }\n"
+  )
+  if (isTRUE(nzchar(out$model_no_pll_comp_mvjoin))) {
+    out$model_no_pll_comp_mvjoin <- paste0(
       "  // combine univariate parameters\n",
       "  for (n in 1:N) {\n", 
-      out$model_comp_mvjoin, 
+      out$model_no_pll_comp_mvjoin, 
       "  }\n"
     )
-    if (isTRUE(nzchar(out$model_no_pll_comp_mvjoin))) {
-      out$model_no_pll_comp_mvjoin <- paste0(
-        "  // combine univariate parameters\n",
-        "  for (n in 1:N) {\n", 
-        out$model_no_pll_comp_mvjoin, 
-        "  }\n"
-      )
-    }
-    out$model_log_lik <- stan_log_lik(
-      x, threads = threads, normalize = normalize, ...
-    )
-    out <- list(out)
   }
-  out
+  out$model_log_lik <- stan_log_lik(
+    x, threads = threads, normalize = normalize, ...
+  )
+  list(out)
 }
 
 # Stan code for population-level effects

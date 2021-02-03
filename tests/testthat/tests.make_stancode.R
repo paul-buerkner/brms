@@ -526,7 +526,7 @@ test_that("invalid combinations of modeling options are detected", {
   )
   expect_error(
     make_stancode(y1 | resp_se(wi) ~ y2 + ma(), data = data),
-    "Please set cov = TRUE in ARMA correlation structures"
+    "Please set cov = TRUE in ARMA structures"
   )
 })
 
