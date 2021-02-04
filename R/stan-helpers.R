@@ -66,6 +66,7 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     # TODO: include functions selectively
     str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
     str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
+    str_add(out$fun) <- "  #include 'fun_which_range.stan'\n"
   }
   acterms <- get_effect(bterms, "ac")
   acefs <- lapply(acterms, tidy_acef)

@@ -2141,13 +2141,14 @@ test_that("threaded Stan code is correct", {
   
   bform <- bf(
     count ~ Trt*Age + mo(Exp) + s(Age) + offset(Age) + (1+Trt|visit),
-    sigma ~ Trt + gp(Age)
+    sigma ~ Trt + gp(Age) + gp(volume, by = Trt)
   )
   scode <- make_stancode(bform, dat, family = student(), threads = threads)
   expect_match2(scode, "real partial_log_lik_lpmf(int[] seq, int start,")
   expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[nn])")
   expect_match2(scode, "ptarget += student_t_lpdf(Y[start:end] | nu, mu, sigma);")
   expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start:end]]")
+  expect_match2(scode, ".* gp_pred_sigma_2_1[Jgp_sigma_2_1[which_gp_sigma_2_1]];")
   expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y,")
   
   scode <- make_stancode(

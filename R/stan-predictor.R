@@ -1099,18 +1099,24 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
           "gp(Xgp{pi}_{J}, sdgp{pi}[{J}], lscale{pi}[{J}], zgp{pi}_{J})"
         )
       }
-      # adding to subsets of 'eta' prevents use of reduce_sum
-      # TODO: add all GP elements to 'eta' at the same time
+      slice2 <- ""
+      if (use_threading(threads)) {
+        str_add(out$model_comp_basic) <- cglue(
+          "  int which_gp{pi}_{J}[size_range({Igp}, start, end)] =", 
+          " which_range({Igp}, start, end);\n"
+        )
+        slice2 <- glue("[which_gp{pi}_{J}]")
+      }
+      # TODO: add all GP elements to 'eta' at the same time?
       eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-      eta <- glue("{eta}[{Igp}{slice}]")
+      eta <- glue("{eta}[{Igp}{slice2}]")
       str_add(out$model_no_pll_def) <- cglue(
         "  vector[{Nsubgp}[{J}]] gp_pred{pi}_{J} = {gp_call};\n"
       )
       str_add(out$pll_args) <- cglue(", vector gp_pred{pi}_{J}")
-      Cgp <- glue("Cgp{pi}_{J}{slice} .* ")
-      Jgp <- str_if(gr, glue("[Jgp{pi}_{J}{slice}]"), slice)
-      # compound '+=' statement currently causes a parser failure
-      str_add(out$model_comp_basic) <- glue(
+      Cgp <- glue("Cgp{pi}_{J}{slice2} .* ")
+      Jgp <- str_if(gr, glue("[Jgp{pi}_{J}{slice2}]"), slice)
+      str_add(out$model_comp_basic) <- cglue(
         "  {eta} += {Cgp}gp_pred{pi}_{J}{Jgp};\n"
       )
       str_add(out$prior) <- cglue(

@@ -26,6 +26,8 @@ post-processing of Gaussian processes thanks to Marta Kołczyńska.
 multi-membership terms thanks to Guilherme Mohor.
 * Fix a bug in the Stan code of threaded `wiener` drift diffusion
 models thanks to the GitHub user yanivabir. (#1085)
+* Fix a bug in the threaded Stan code for GPs with categorical
+`by` variables thanks to Reece Willoughby. (#1081)
 
 
 # brms 2.14.4
