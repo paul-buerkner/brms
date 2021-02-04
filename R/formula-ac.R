@@ -268,7 +268,7 @@ sar <- function(M, type = "lag") {
 #' 
 #' @param M Adjacency matrix of locations. All non-zero entries are treated as
 #'   if the two locations are adjacent. If \code{gr} is specified, the row names
-#'   of \code{W} have to match the levels of the grouping factor.
+#'   of \code{M} have to match the levels of the grouping factor.
 #' @param gr An optional grouping factor mapping observations to spatial
 #'   locations. If not specified, each observation is treated as a separate
 #'   location. It is recommended to always specify a grouping factor to allow
