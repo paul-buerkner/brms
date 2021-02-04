@@ -1,6 +1,6 @@
   /* how many elements are in a range of integers?
    * Args: 
-   *   x: an integer vector
+   *   x: an integer array
    *   start: start of the range (inclusive)
    *   end: end of the range (inclusive)
    * Returns: 
@@ -15,7 +15,7 @@
   }
   /* which elements are in a range of integers?
    * Args: 
-   *   x: an integer vector
+   *   x: an integer array
    *   start: start of the range (inclusive)
    *   end: end of the range (inclusive)
    * Returns: 
@@ -29,6 +29,20 @@
         out[j] = i;
         j += 1;
       }
+    }
+    return out;
+  }
+  /* adjust array values to x - start + 1
+   * Args: 
+   *   x: an integer array
+   *   start: start of the range of values in x (inclusive)
+   * Returns: 
+   *   an integer array
+   */ 
+  int[] start_at_one(int[] x, int start) {
+    int out[size(x)];
+    for (i in 1:size(x)) {
+      out[i] = x[i] - start + 1;
     }
     return out;
   }

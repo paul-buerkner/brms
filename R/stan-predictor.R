@@ -1109,7 +1109,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       }
       # TODO: add all GP elements to 'eta' at the same time?
       eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-      eta <- glue("{eta}[{Igp}{slice2}]")
+      eta <- glue("{eta}[start_at_one({Igp}{slice2}, start)]")
       str_add(out$model_no_pll_def) <- cglue(
         "  vector[{Nsubgp}[{J}]] gp_pred{pi}_{J} = {gp_call};\n"
       )

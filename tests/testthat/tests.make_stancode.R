@@ -2149,6 +2149,7 @@ test_that("threaded Stan code is correct", {
   expect_match2(scode, "ptarget += student_t_lpdf(Y[start:end] | nu, mu, sigma);")
   expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start:end]]")
   expect_match2(scode, ".* gp_pred_sigma_2_1[Jgp_sigma_2_1[which_gp_sigma_2_1]];")
+  expect_match2(scode, "sigma[start_at_one(Igp_sigma_2_2[which_gp_sigma_2_2], start)] +=")
   expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y,")
   
   scode <- make_stancode(
