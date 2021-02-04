@@ -24,6 +24,8 @@ priors on spline terms.
 post-processing of Gaussian processes thanks to Marta Kołczyńska.
 * Fix an error during post-processing of new levels in
 multi-membership terms thanks to Guilherme Mohor.
+* Fix a bug in the Stan code of threaded `wiener` drift diffusion
+models thanks to the GitHub user yanivabir. (#1085)
 
 
 # brms 2.14.4

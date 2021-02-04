@@ -619,9 +619,11 @@ stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
   sdist(lpdf, p$mu, p$shape)
 }
 
-stan_log_lik_wiener <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = 1,
+                                ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  p$dec <- paste0("dec", resp, "[n]")
+  n <- stan_nn(threads)
+  p$dec <- paste0("dec", resp, n)
   sdist("wiener_diffusion", p$dec, p$bs, p$ndt, p$bias, p$mu)
 }
 
