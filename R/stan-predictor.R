@@ -1100,16 +1100,18 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
         )
       }
       slice2 <- ""
+      Igp_sub <- Igp
       if (use_threading(threads)) {
         str_add(out$model_comp_basic) <- cglue(
           "  int which_gp{pi}_{J}[size_range({Igp}, start, end)] =", 
           " which_range({Igp}, start, end);\n"
         )
         slice2 <- glue("[which_gp{pi}_{J}]")
+        Igp_sub <- glue("start_at_one({Igp}{slice2}, start)")
       }
       # TODO: add all GP elements to 'eta' at the same time?
       eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-      eta <- glue("{eta}[start_at_one({Igp}{slice2}, start)]")
+      eta <- glue("{eta}[{Igp_sub}]")
       str_add(out$model_no_pll_def) <- cglue(
         "  vector[{Nsubgp}[{J}]] gp_pred{pi}_{J} = {gp_call};\n"
       )
