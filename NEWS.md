@@ -28,6 +28,8 @@ multi-membership terms thanks to Guilherme Mohor.
 models thanks to the GitHub user yanivabir. (#1085)
 * Fix a bug in the threaded Stan code for GPs with categorical
 `by` variables thanks to Reece Willoughby. (#1081)
+* Fix a bug in the threaded Stan code when using QR decomposition
+thanks to Steve Bronder. (#1086)
 
 
 # brms 2.14.4

@@ -290,7 +290,9 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       "  matrix[N{resp}, K{p}] X{p};",
       "  // population-level design matrix\n"
     )
-    str_add(out$pll_args) <- glue(", matrix X{ct}{p}")
+    if (decomp == "none") {
+      str_add(out$pll_args) <- glue(", matrix X{ct}{p}") 
+    }
     if (sparse) {
       if (decomp != "none") {
         stop2("Cannot use ", decomp, " decomposition for sparse matrices.")
@@ -341,7 +343,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
           coef_type = b_coef_type, px = px, suffix = glue("Q{p}"), 
-          comment = b_comment, normalize = normalize
+          header_type = "vector", comment = b_comment, 
+          normalize = normalize
         )
       }
       str_add(out$gen_def) <- glue(
@@ -440,6 +443,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
       "  XR{p}_inv = inverse(XR{p});\n"
     )
+    str_add(out$pll_args) <- glue(", matrix XQ{p}")
   }
   str_add(out$eta) <- stan_eta_fe(fixef, bterms, threads, primitive)
   out
