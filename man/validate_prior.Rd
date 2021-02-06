@@ -10,6 +10,7 @@ validate_prior(
   data,
   family = gaussian(),
   sample_prior = "no",
+  data2 = NULL,
   knots = NULL,
   ...
 )
@@ -51,6 +52,11 @@ samples for the intercept. If \code{sample_prior} is set to \code{"only"},
 samples are drawn solely from the priors ignoring the likelihood, which
 allows among others to generate samples from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
+
+\item{data2}{A named \code{list} of objects containing data, which
+cannot be passed via argument \code{data}. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See

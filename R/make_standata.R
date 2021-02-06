@@ -33,16 +33,19 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     autocor = autocor, cov_ranef = cov_ranef
   )
   bterms <- brmsterms(formula)
-  data <- validate_data(data, bterms = bterms, knots = knots)
-  prior <- .validate_prior(
-    prior, bterms = bterms, data = data,
-    sample_prior = sample_prior,
-    require_nlpar_prior = FALSE
-  )
   data2 <- validate_data2(
     data2, bterms = bterms, 
     get_data2_autocor(formula),
     get_data2_cov_ranef(formula)
+  )
+  data <- validate_data(
+    data, bterms = bterms, 
+    knots = knots, data2 = data2
+  )
+  prior <- .validate_prior(
+    prior, bterms = bterms, data = data,
+    sample_prior = sample_prior,
+    require_nlpar_prior = FALSE
   )
   stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)
@@ -137,18 +140,16 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   on.exit(options(.brmsfit_version = NULL))
   
   object <- exclude_terms(object, incl_autocor = incl_autocor)
-  newdata2 <- use_alias(newdata2, new_objects)
   formula <- update_re_terms(object$formula, re_formula)
   bterms <- brmsterms(formula)
-  data <- current_data(object, newdata, re_formula = re_formula, ...)
-  stanvars <- object$stanvars
-  threads <- object$threads
-  if (is.null(newdata2)) {
-    data2 <- object$data2
-  } else {
-    data2 <- validate_data2(newdata2, bterms = bterms)
-    stanvars <- add_newdata_stanvars(stanvars, data2)
-  }
+  
+  newdata2 <- use_alias(newdata2, new_objects)
+  data2 <- current_data2(object, newdata2)
+  data <- current_data(
+    object, newdata, newdata2 = data2, 
+    re_formula = re_formula, ...
+  )
+  stanvars <- add_newdata_stanvars(object$stanvars, data2)
   
   basis <- NULL
   if (!is.null(newdata)) {
@@ -159,7 +160,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   .make_standata(
     bterms, data = data, prior = object$prior,
     data2 = data2, stanvars = stanvars, 
-    threads = threads, basis = basis, ...
+    threads = object$threads, basis = basis, ...
   )
 }
 

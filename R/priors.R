@@ -477,7 +477,7 @@ prior_string <- function(prior, ...) {
 #' 
 #' @export
 get_prior <- function(formula, data, family = gaussian(), autocor = NULL, 
-                      knots = NULL, sparse = NULL, ...) {
+                      data2 = NULL, knots = NULL, sparse = NULL, ...) {
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
@@ -486,7 +486,14 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
     autocor = autocor, sparse = sparse
   )
   bterms <- brmsterms(formula)
-  data <- validate_data(data, bterms = bterms, knots = knots)
+  data2 <- validate_data2(
+    data2, bterms = bterms, 
+    get_data2_autocor(formula)
+  )
+  data <- validate_data(
+    data, bterms = bterms, 
+    data2 = data2, knots = knots
+  )
   .get_prior(bterms, data, ...)
 }
   
@@ -1118,10 +1125,15 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #' 
 #' @export
 validate_prior <- function(prior, formula, data, family = gaussian(),
-                           sample_prior = "no", knots = NULL, ...) {
+                           sample_prior = "no", data2 = NULL, knots = NULL, 
+                           ...) {
   formula <- validate_formula(formula, data = data, family = family)
   bterms <- brmsterms(formula)
-  data <- validate_data(data, bterms = bterms, knots = knots)
+  data2 <- validate_data2(data2, bterms = bterms)
+  data <- validate_data(
+    data, bterms = bterms, 
+    data2 = data2, knots = knots
+  )
   .validate_prior(
     prior, bterms = bterms, data = data,
     sample_prior = sample_prior, ...

@@ -17,7 +17,7 @@
 #'
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL,
+                          prior = NULL, autocor = NULL, data2 = NULL,
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
@@ -33,7 +33,15 @@ make_stancode <- function(formula, data, family = gaussian(),
     cov_ranef = cov_ranef
   )
   bterms <- brmsterms(formula)
-  data <- validate_data(data, bterms = bterms, knots = knots)
+  data2 <- validate_data2(
+    data2, bterms = bterms, 
+    get_data2_autocor(formula),
+    get_data2_cov_ranef(formula)
+  )
+  data <- validate_data(
+    data, bterms = bterms, 
+    data2 = data2, knots = knots
+  )
   prior <- .validate_prior(
     prior, bterms = bterms, data = data,
     sample_prior = sample_prior

@@ -11,6 +11,8 @@ even if the required CDF or quantile functions are unavailable.
 * Apply the R2-D2 shrinkage prior to population-level coefficients
 via function `R2D2` to be used in `set_prior`.
 * Extend support for `arma` correlation structures in non-normal families.
+* Extend scope of variables passed via `data2` for use in the 
+evaluation of most model terms.
 
 ### Bug Fixes
 

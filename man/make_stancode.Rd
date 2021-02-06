@@ -10,6 +10,7 @@ make_stancode(
   family = gaussian(),
   prior = NULL,
   autocor = NULL,
+  data2 = NULL,
   cov_ranef = NULL,
   sparse = NULL,
   sample_prior = "no",
@@ -54,6 +55,11 @@ a description of the available correlation structures. Defaults to
 \code{autocor} might also be a list of autocorrelation structures.
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
+
+\item{data2}{A named \code{list} of objects containing data, which
+cannot be passed via argument \code{data}. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
 
 \item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
 (within) covariance structure of the group-level effects. The names of the

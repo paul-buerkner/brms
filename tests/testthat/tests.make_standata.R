@@ -985,3 +985,20 @@ test_that("information for threading is handled correctly", {
   sdata <- make_standata(y ~ 1, dat, threads = threading(2, grainsize = 3))
   expect_equal(sdata$grainsize, 3)
 })
+
+test_that("variables in data2 can be used in population-level effects", {
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), x3 = rnorm(10))
+  foo <- function(..., idx = NULL) {
+    out <- cbind(...)
+    if (!is.null(idx)) {
+      out <- out[, idx, drop = FALSE]
+    }
+    out
+  }
+  sdata <- make_standata(y ~ foo(x1, x2, x3, idx = id), data = dat, 
+                         data2 = list(id = c(3, 1)))
+  target <- c("Intercept", "foox1x2x3idxEQidx3", "foox1x2x3idxEQidx1")
+  expect_equal(colnames(sdata$X), target)
+  expect_equivalent(sdata$X[, 2], dat$x3)
+  expect_equivalent(sdata$X[, 3], dat$x1)
+})
