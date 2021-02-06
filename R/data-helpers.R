@@ -10,7 +10,7 @@
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
-validate_data <- function(data, bterms, data2 = NULL, knots = NULL,
+validate_data <- function(data, bterms, data2 = list(), knots = NULL,
                           na.action = na.omit2, drop.unused.levels = TRUE, 
                           attr_terms = NULL) {
   if (missing(data)) {
@@ -45,7 +45,7 @@ validate_data <- function(data, bterms, data2 = NULL, knots = NULL,
   # ensure that 'data2' comes first in the search path 
   # during the evaluation of model.frame
   terms_env <- environment(all_vars_terms)
-  environment(all_vars_terms) <- as.environment(data2)
+  environment(all_vars_terms) <- as.environment(as.list(data2))
   parent.env(environment(all_vars_terms)) <- terms_env
   attributes(all_vars_terms)[names(attr_terms)] <- attr_terms
   # 'terms' prevents correct validation in 'model.frame'
