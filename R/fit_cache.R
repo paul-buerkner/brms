@@ -18,8 +18,10 @@ normalize_stancode <- function(x) {
 
 
 #' Check whether a given cached fit can be used without refitting.
+#' 
 #' Use with \code{verbose = TRUE} to get additional info on how the stored
 #' fit differs from the given data and code.
+#' 
 #' @param cached_fit old fit (e.g. loaded from file)
 #' @param sdata new Stan data (result of a call to \code{\link{make_standata}}).
 #'   pass \code{NULL} to avoid data check.

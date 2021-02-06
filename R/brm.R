@@ -191,14 +191,14 @@
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
 #' @param file_refit Modifies when the fit stored via the \code{file} parameter 
-#'   is re used. For \code{"never"} (default) the fit is always loaded if it 
+#'   is re-used. For \code{"never"} (default) the fit is always loaded if it 
 #'   exists and fitting is skipped. If set
 #'   to \code{"on_change"}, brms will refit the model if model, data or 
 #'   algorithm as passed to Stan differs 
 #'   from what is stored in the file. This also covers changes in priors,
 #'   \code{sample_prior}, \code{stanvars}, covariance structure, etc. 
 #'   If you believe there was a false
-#'   positive, you can use \code\link{brmsfit_needs_refit}(... verbose = TRUE)} 
+#'   positive, you can use \code{\link{brmsfit_needs_refit}} 
 #'   to see why refit is deemed necessary. Refit will not be triggered for 
 #'   changes in additional parameters of the fit (e.g. initial values, 
 #'   number of iterations,
