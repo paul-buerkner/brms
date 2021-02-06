@@ -550,22 +550,41 @@ stan_ordinal_lpmf <- function(family, link) {
       )
     }
   } else if (family %in% c("sratio", "cratio")) {
-    sc <- str_if(family == "sratio", "1 - ")
+    if (ilink == "inv_cloglog") {
+      qk <- (str_if(family == "sratio", "-exp({th('k')})",
+                         "log1m_exp(-exp({th('k')}))"))
+    } else if (ilink == "inv_logit") {
+      qk <- str_if(family == "sratio", "log1m_inv_logit({th('k')})",
+                   "log_inv_logit({th('k')})")
+    } else if (ilink == "Phi") {
+      # TODO: replace with more stable std_normal_lcdf once rstan >= 2.25
+      qk <- str_if(family == "sratio", "normal_lccdf({th('k')}|0,1)",
+                   "normal_lcdf({th('k')}|0,1)")
+    } else if (ilink == "Phi_approx") {
+      qk <- str_if(family == "sratio",
+                   "log1m_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})",
+                   "log_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})")
+    } else if (ilink == "inv_cauchit") {
+      qk <- str_if(family == "sratio",
+                   "cauchy_lccdf({th('k')}|0,1)",
+                   "cauchy_lcdf({th('k')}|0,1)")
+    }
+    qk <- glue(qk)
     str_add(out) <- glue(
       "     int nthres = num_elements(thres);\n",
       "     vector[nthres + 1] p;\n",
       "     vector[nthres] q;\n",
       "     int k = 1;\n",
       "     while (k <= min(y, nthres)) {{\n",
-      "       q[k] = {sc}{ilink}({th('k')});\n",
-      "       p[k] = 1 - q[k];\n",
-      "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n", 
+      "       q[k] = {qk};\n",
+      "       p[k] = log1m_exp(q[k]);\n",
+      "       for (kk in 1:(k - 1)) p[k] = p[k] + q[kk];\n", 
       "       k += 1;\n",
       "     }}\n",
       "     if (y == nthres + 1) {{\n",
-      "       p[nthres + 1] = prod(q);\n",
+      "       p[nthres + 1] = sum(q);\n",
       "     }}\n",
-      "     return log(p[y]);\n",
+      "     return p[y];\n",
       "   }}\n"
     )
   } else if (family == "acat") {
