@@ -767,9 +767,9 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "b_Intercept = Intercept + dot_product(means_X, b);")
   expect_match2(scode, "target += normal_lpdf(first_Intercept | 0, 2);")
   
-  scode <- make_stancode(y ~ x1, dat, family = cratio("probit_approx"))
-  expect_match2(scode, "real cratio_probit_approx_lpmf(int y")
-  expect_match2(scode, "q[k] = Phi_approx(disc * (mu - thres[k]));")
+  scode <- make_stancode(y ~ x1, dat, family = cratio("probit"))
+  expect_match2(scode, "real cratio_probit_lpmf(int y")
+  expect_match2(scode, "q[k] = normal_lcdf(disc * (mu - thres[k])|0,1);")
 
   scode <- make_stancode(y ~ x1 + cs(x2) + cs(g), dat, family = sratio())
   expect_match2(scode, "real sratio_logit_lpmf(int y")
@@ -785,12 +785,12 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "mucs[n, 1] = mucs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];")
   expect_match2(scode, "b_Intercept = Intercept + dot_product(means_X, b);")
   
-  scode <- make_stancode(y ~ x1 + (cse(x2)||g), dat, family = acat("probit"))
+  scode <- make_stancode(y ~ x1 + (cse(x2)||g), dat, family = acat("probit_approx"))
   expect_match2(scode, 
     paste("mucs[n, 3] = mucs[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
           "+ r_1_6[J_1[n]] * Z_1_6[n];"))
   expect_match2(scode, 
-    "target += acat_probit_lpmf(Y[n] | mu[n], disc, Intercept - transpose(mucs[n]));"
+    "target += acat_probit_approx_lpmf(Y[n] | mu[n], disc, Intercept - transpose(mucs[n]));"
   )
   
   # sum-to-zero thresholds
