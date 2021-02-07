@@ -12,6 +12,11 @@ even if the required CDF or quantile functions are unavailable.
 via function `R2D2` to be used in `set_prior`.
 * Extend support for `arma` correlation structures in non-normal families.
 
+### Other Changes
+
+* Improve numerical stability of ordinal sequential models 
+(families `sratio` and `cratio`) thanks to Andrew Johnson. (#1087)
+
 ### Bug Fixes
 
 * Allow fitting `multinomial` models with the 

@@ -551,23 +551,36 @@ stan_ordinal_lpmf <- function(family, link) {
     }
   } else if (family %in% c("sratio", "cratio")) {
     if (ilink == "inv_cloglog") {
-      qk <- (str_if(family == "sratio", "-exp({th('k')})",
-                         "log1m_exp(-exp({th('k')}))"))
+      qk <- str_if(
+        family == "sratio", 
+        "-exp({th('k')})",
+        "log1m_exp(-exp({th('k')}))"
+      )
     } else if (ilink == "inv_logit") {
-      qk <- str_if(family == "sratio", "log1m_inv_logit({th('k')})",
-                   "log_inv_logit({th('k')})")
+      qk <- str_if(
+        family == "sratio", 
+        "log1m_inv_logit({th('k')})",
+        "log_inv_logit({th('k')})"
+      )
     } else if (ilink == "Phi") {
       # TODO: replace with more stable std_normal_lcdf once rstan >= 2.25
-      qk <- str_if(family == "sratio", "normal_lccdf({th('k')}|0,1)",
-                   "normal_lcdf({th('k')}|0,1)")
+      qk <- str_if(
+        family == "sratio", 
+        "normal_lccdf({th('k')}|0,1)",
+        "normal_lcdf({th('k')}|0,1)"
+      )
     } else if (ilink == "Phi_approx") {
-      qk <- str_if(family == "sratio",
-                   "log1m_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})",
-                   "log_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})")
+      qk <- str_if(
+        family == "sratio",
+        "log1m_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})",
+        "log_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})"
+      )
     } else if (ilink == "inv_cauchit") {
-      qk <- str_if(family == "sratio",
-                   "cauchy_lccdf({th('k')}|0,1)",
-                   "cauchy_lcdf({th('k')}|0,1)")
+      qk <- str_if(
+        family == "sratio",
+        "cauchy_lccdf({th('k')}|0,1)",
+        "cauchy_lcdf({th('k')}|0,1)"
+      )
     }
     qk <- glue(qk)
     str_add(out) <- glue(
