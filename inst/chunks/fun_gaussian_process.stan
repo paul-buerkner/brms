@@ -13,12 +13,12 @@
     matrix[N, N] cov;
     if (Dls == 1) {
       // one dimensional or isotropic GP
-      cov = cov_exp_quad(x, sdgp, lscale[1]);
+      cov = gp_exp_quad_cov(x, sdgp, lscale[1]);
     } else {
       // multi-dimensional non-isotropic GP
-      cov = cov_exp_quad(x[, 1], sdgp, lscale[1]);
+      cov = gp_exp_quad_cov(x[, 1], sdgp, lscale[1]);
       for (d in 2:Dls) {
-        cov = cov .* cov_exp_quad(x[, d], 1, lscale[d]);
+        cov = cov .* gp_exp_quad_cov(x[, d], 1, lscale[d]);
       }
     }
     for (n in 1:N) {
