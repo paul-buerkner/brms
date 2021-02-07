@@ -723,6 +723,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   }
   req_vars <- all_vars(rhs(bterms$allvars))
   req_vars <- setdiff(req_vars, rsv_vars)
+  req_vars <- setdiff(req_vars, names(fit$data2))
   if (is.null(conditions)) {
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
