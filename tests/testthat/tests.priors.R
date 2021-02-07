@@ -36,8 +36,8 @@ test_that("print for class brmsprior works correctly", {
                 "b_x ~ normal(0,1)", fixed = TRUE)
   expect_output(print(set_prior("cauchy(0,1)", class = "sd", group = "x")), 
                 "sd_x ~ cauchy(0,1)", fixed = TRUE)
-  expect_output(print(set_prior("increment_log_prob(normal_log(0,1))")), 
-                "increment_log_prob(normal_log(0,1))", fixed = TRUE)
+  expect_output(print(set_prior("target += normal_lpdf(x | 0,1))", check = FALSE)), 
+                "target += normal_lpdf(x | 0,1))", fixed = TRUE)
 })
 
 test_that("get_prior returns correct nlpar names for random effects pars", {
