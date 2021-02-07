@@ -14,6 +14,11 @@ via function `R2D2` to be used in `set_prior`.
 * Extend scope of variables passed via `data2` for use in the 
 evaluation of most model terms.
 
+### Other Changes
+
+* Improve numerical stability of ordinal sequential models 
+(families `sratio` and `cratio`) thanks to Andrew Johnson. (#1087)
+
 ### Bug Fixes
 
 * Allow fitting `multinomial` models with the 
