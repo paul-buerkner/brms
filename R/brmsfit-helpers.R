@@ -675,6 +675,78 @@ arg_names <- function(method) {
   out
 }
 
+#' Check whether a given cached fit can be used without refitting.
+#' 
+#' Use with \code{verbose = TRUE} to get additional info on how the stored
+#' fit differs from the given data and code.
+#' 
+#' @param fit Old \code{brmsfit} object (e.g., loaded from file).
+#' @param sdata New Stan data (result of a call to \code{\link{make_standata}}).
+#'   Pass \code{NULL} to avoid data check.
+#' @param scode New Stan code (result of a call to \code{\link{make_stancode}}).
+#'   Pass \code{NULL} to avoid code check.
+#' @param algorithm Nww algorithm. Pass \code{NULL} to avoid algorithm check.
+#' @param silent Logical. If \code{TRUE}, no messages will be given.
+#' @param verbose Logical. If \code{TRUE} detailed report of the differences 
+#'   is printed to the console.
+#' @return A boolean indicating whether a refit is needed.
+#' @export
+brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, 
+                                algorithm = NULL, silent = FALSE, 
+                                verbose = FALSE) {
+  stopifnot(is.brmsfit(fit))
+  silent <- as_one_logical(silent)
+  verbose <- as_one_logical(verbose)
+  if (!is.null(scode)) {
+    scode <- as_one_character(scode)
+    cached_scode <- stancode(fit)
+  }
+  if (!is.null(sdata)) {
+    stopifnot(is.list(sdata))
+    cached_sdata <- standata(fit)
+  }
+  if (!is.null(algorithm)) {
+    algorithm <- as_one_character(algorithm)
+    stopifnot(!is.null(fit$algorithm))
+  }
+  
+  refit <- FALSE
+  if (!is.null(scode)) {
+    if (normalize_stancode(scode) != normalize_stancode(cached_scode)) {
+      if (!silent) {
+        message("Stan code changed beyond whitespace/comments.")
+        if (verbose) {
+          require_package("diffobj")
+          print(diffobj::diffChr(scode, cached_scode, format = "ansi8"))
+        }
+      }
+      refit <- TRUE
+    }
+  }
+  if (!is.null(sdata)) {
+    sdata_equality <- all.equal(sdata, cached_sdata, check.attributes = FALSE)
+    if (!isTRUE(sdata_equality)) {
+      if (!silent) {
+        message("The processed data for Stan changed.\n")
+        if (verbose) {
+          print(sdata_equality)
+        }
+      }
+      refit <- TRUE
+    }
+  }
+  if (!is.null(algorithm)) {
+    if (algorithm != fit$algorithm) {
+      if (!silent) {
+        message("Algorithm changed from '", fit$algorithm, 
+                "' to '", algorithm, "'.\n")
+      }
+      refit <- TRUE
+    }
+  }
+  refit
+}
+
 # read a brmsfit object from a file
 # @param file path to an rds file
 # @return a brmsfit object or NULL
