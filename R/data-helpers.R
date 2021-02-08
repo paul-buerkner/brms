@@ -10,8 +10,8 @@
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
-validate_data <- function(data, bterms, na.action = na.omit2,
-                          drop.unused.levels = TRUE, knots = NULL,
+validate_data <- function(data, bterms, data2 = list(), knots = NULL,
+                          na.action = na.omit2, drop.unused.levels = TRUE, 
                           attr_terms = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
@@ -26,18 +26,32 @@ validate_data <- function(data, bterms, na.action = na.omit2,
   if (!isTRUE(nrow(data) > 0L)) {
     stop2("Argument 'data' does not contain observations.")
   }
-  all_terms <- terms(bterms$allvars)
-  attributes(all_terms)[names(attr_terms)] <- attr_terms
   data <- data_rsv_intercept(data, bterms = bterms)
-  missing_vars <- setdiff(all_vars(all_terms), names(data))
+  all_vars_formula <- bterms$allvars
+  missing_vars <- setdiff(all_vars(all_vars_formula), names(data))
   if (length(missing_vars)) {
-    stop2("The following variables are missing in 'data':\n",
-          collapse_comma(missing_vars))
+    missing_vars2 <- setdiff(missing_vars, names(data2))
+    if (length(missing_vars2)) {
+      stop2("The following variables can neither be found in ",
+            "'data' nor in 'data2':\n", collapse_comma(missing_vars2)) 
+    }
+    # all initially missing variables can be found in 'data2'
+    # they are not necessarily of the length required for 'data'
+    # so need to be excluded from the evaluation of 'model.frame'
+    missing_vars_formula <- paste0(". ~ . ", collapse(" - ", missing_vars))
+    all_vars_formula <- update(all_vars_formula, missing_vars_formula)
   }
+  all_vars_terms <- terms(all_vars_formula)
+  # ensure that 'data2' comes first in the search path 
+  # during the evaluation of model.frame
+  terms_env <- environment(all_vars_terms)
+  environment(all_vars_terms) <- as.environment(as.list(data2))
+  parent.env(environment(all_vars_terms)) <- terms_env
+  attributes(all_vars_terms)[names(attr_terms)] <- attr_terms
   # 'terms' prevents correct validation in 'model.frame'
   attr(data, "terms") <- NULL
   data <- model.frame(
-    all_terms, data, na.action = na.pass,
+    all_vars_terms, data, na.action = na.pass,
     drop.unused.levels = drop.unused.levels
   )
   data <- na.action(data, bterms = bterms)
@@ -64,6 +78,7 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 # @return a validated named list of data objects
 validate_data2 <- function(data2, bterms, ...) {
   # TODO: specify spline-related matrices in 'data2'
+  # this requires adding another parser layer with bterms and data as input
   if (is.null(data2)) {
     data2 <- list()
   }
@@ -376,8 +391,8 @@ get_data_name <- function(data) {
 #' @export
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
-  resp = NULL, check_response = TRUE, incl_autocor = TRUE,
-  all_group_vars = NULL, req_vars = NULL, ...
+  newdata2 = NULL, resp = NULL, check_response = TRUE, 
+  incl_autocor = TRUE, all_group_vars = NULL, req_vars = NULL, ...
 ) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
@@ -551,6 +566,7 @@ validate_newdata <- function(
   newdata <- validate_data(
     newdata, bterms = bterms, na.action = na.pass, 
     drop.unused.levels = FALSE, attr_terms = attr_terms,
+    data2 = current_data2(object, newdata2),
     knots = get_knots(object$data)
   )
   newdata
@@ -585,7 +601,14 @@ fill_newdata <- function(newdata, vars, olddata = NULL, n = 1L) {
   newdata
 }
 
-# extract the current data set
+# validate new data2 
+validate_newdata2 <- function(newdata2, object, ...) {
+  stopifnot(is.brmsfit(object))
+  bterms <- brmsterms(object$formula)
+  validate_data2(newdata2, bterms = bterms, ...)
+}
+
+# extract the current data
 current_data <- function(object, newdata = NULL, ...) {
   stopifnot(is.brmsfit(object))
   if (is.null(newdata)) {
@@ -594,4 +617,15 @@ current_data <- function(object, newdata = NULL, ...) {
     data <- validate_newdata(newdata, object = object, ...)
   }
   data
+}
+
+# extract the current data2
+current_data2 <- function(object, newdata2 = NULL, ...) {
+  stopifnot(is.brmsfit(object))
+  if (is.null(newdata2)) {
+    data2 <- object$data2
+  } else {
+    data2 <- validate_newdata2(newdata2, object = object, ...)
+  }
+  data2
 }

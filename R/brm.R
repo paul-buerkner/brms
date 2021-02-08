@@ -450,15 +450,18 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
-    data_name <- substitute_name(data)
-    data <- validate_data(data, bterms = bterms, knots = knots)
-    attr(data, "data_name") <- data_name
     data2 <- validate_data2(
       data2, bterms = bterms, 
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
-    prior <- validate_prior(
+    data_name <- substitute_name(data)
+    data <- validate_data(
+      data, bterms = bterms, 
+      data2 = data2, knots = knots
+    )
+    attr(data, "data_name") <- data_name
+    prior <- .validate_prior(
       prior, bterms = bterms, data = data,
       sample_prior = sample_prior
     )

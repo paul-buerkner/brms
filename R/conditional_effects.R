@@ -406,7 +406,7 @@ conditional_effects.brmsterms <- function(
     if (conv_cats_dpars(x$family)) {
       stop2("Please set 'categorical' to TRUE.")
     }
-    if (is_ordinal(x$family) && is.null(dpar)) {
+    if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {
       warning2(
         "Predictions are treated as continuous variables in ",
         "'conditional_effects' by default which is likely invalid ", 
@@ -723,6 +723,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   }
   req_vars <- all_vars(rhs(bterms$allvars))
   req_vars <- setdiff(req_vars, rsv_vars)
+  req_vars <- setdiff(req_vars, names(fit$data2))
   if (is.null(conditions)) {
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars

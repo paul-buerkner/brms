@@ -9,6 +9,7 @@ get_prior(
   data,
   family = gaussian(),
   autocor = NULL,
+  data2 = NULL,
   knots = NULL,
   sparse = NULL,
   ...
@@ -41,6 +42,11 @@ a description of the available correlation structures. Defaults to
 \code{autocor} might also be a list of autocorrelation structures.
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
+
+\item{data2}{A named \code{list} of objects containing data, which
+cannot be passed via argument \code{data}. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See

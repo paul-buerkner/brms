@@ -325,9 +325,6 @@ Define priors for specific parameters or classes of parameters.
   Fixing parameters to constants is possible by using the \code{constant}
   function, for example, \code{constant(1)} to fix a parameter to 1.
   Broadcasting to vectors and matrices is done automatically.
-  A limitation of the current implementation is that the same parameter
-  vector cannot contain estimated and fixed values at the same time,
-  but this will be possible in the future.
 
   Often, it may not be immediately clear, which parameters are present in the
   model. To get a full list of parameters and parameter classes for which

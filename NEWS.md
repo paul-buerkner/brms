@@ -2,11 +2,22 @@
 
 ### New Features
 
-* Turn off normalization in the Stan model via argument `normalize` 
+* Turn off normalization in the Stan model via argument `normalize`.
 to increase sampling efficiency thanks to Andrew Johnson. (#1017, #1053)
 * Enable `posterior_predict` for truncated continuous models
 even if the required CDF or quantile functions are unavailable.
-* Add support for within-chain threading with `rstan (Stan >= 2.26)` backend.
+* Update and export `validate_prior` to validate priors supplied by the user.
+* Add support for within-chain threading with `rstan (Stan >= 2.25)` backend.
+* Apply the R2-D2 shrinkage prior to population-level coefficients
+via function `R2D2` to be used in `set_prior`.
+* Extend support for `arma` correlation structures in non-normal families.
+* Extend scope of variables passed via `data2` for use in the 
+evaluation of most model terms.
+
+### Other Changes
+
+* Improve numerical stability of ordinal sequential models 
+(families `sratio` and `cratio`) thanks to Andrew Johnson. (#1087)
 
 ### Bug Fixes
 
@@ -18,6 +29,14 @@ even if the required CDF or quantile functions are unavailable.
 priors on spline terms.
 * Fix numerical issues occurring in edge cases during
 post-processing of Gaussian processes thanks to Marta Kołczyńska.
+* Fix an error during post-processing of new levels in
+multi-membership terms thanks to Guilherme Mohor.
+* Fix a bug in the Stan code of threaded `wiener` drift diffusion
+models thanks to the GitHub user yanivabir. (#1085)
+* Fix a bug in the threaded Stan code for GPs with categorical
+`by` variables thanks to Reece Willoughby. (#1081)
+* Fix a bug in the threaded Stan code when using QR decomposition
+thanks to Steve Bronder. (#1086)
 
 
 # brms 2.14.4

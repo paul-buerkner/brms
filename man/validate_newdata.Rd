@@ -9,6 +9,7 @@ validate_newdata(
   object,
   re_formula = NULL,
   allow_new_levels = FALSE,
+  newdata2 = NULL,
   resp = NULL,
   check_response = TRUE,
   incl_autocor = TRUE,
@@ -29,6 +30,10 @@ if \code{NA}, include no group-level effects.}
 \item{allow_new_levels}{A flag indicating if new levels of group-level
 effects are allowed (defaults to \code{FALSE}). Only relevant if
 \code{newdata} is provided.}
+
+\item{newdata2}{A named \code{list} of objects containing new data, which
+cannot be passed via argument \code{newdata}. Required for some objects 
+used in autocorrelation structures, or \code{\link{stanvars}}.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
