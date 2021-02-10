@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Create a summary of a fitted model represented by a <code>brmsfit</code> object — summary.brmsfit • brms</title>
+<title>Create a summary of a fitted model represented by a brmsfit object — summary.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Create a summary of a fitted model represented by a <code>brmsfit</code> object — summary.brmsfit" />
+<meta property="og:title" content="Create a summary of a fitted model represented by a brmsfit object — summary.brmsfit" />
 <meta property="og:description" content="Create a summary of a fitted model represented by a brmsfit object" />
 <meta property="og:image" content="/logo.png" />
 
@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -132,19 +132,19 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -171,14 +171,21 @@
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>object</span>, <span class='kw'>priors</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.95</span>, <span class='kw'>mc_se</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='no'>...</span>)</pre>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  priors <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  prob <span class='op'>=</span> <span class='fl'>0.95</span>,
+  robust <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  mc_se <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>object</th>
-      <td><p>An object of class <code>brmsfit</code></p></td>
+      <td><p>An object of class <code>brmsfit</code>.</p></td>
     </tr>
     <tr>
       <th>priors</th>
@@ -189,6 +196,13 @@ in the summary. Default is <code>FALSE</code>.</p></td>
       <th>prob</th>
       <td><p>A value between 0 and 1 indicating the desired probability 
 to be covered by the uncertainty intervals. The default is 0.95.</p></td>
+    </tr>
+    <tr>
+      <th>robust</th>
+      <td><p>If <code>FALSE</code> (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If <code>TRUE</code>, the median and the 
+median absolute deviation (MAD) are applied instead.</p></td>
     </tr>
     <tr>
       <th>mc_se</th>
@@ -204,13 +218,13 @@ MCMC sampling should be shown in the summary. Defaults to <code>FALSE</code>.</p
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The convergence diagnostics <code>Rhat</code>, <code>Bulk_ESS</code>, and 
-<code>Tail_ESS</code> are described in detail in Vehtari et al. (2019).</p>
+<code>Tail_ESS</code> are described in detail in Vehtari et al. (2020).</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
-Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+Paul-Christian Bürkner (2020). Rank-normalization, folding, and
 localization: An improved R-hat for assessing convergence of
-MCMC. *arXiv preprint* `arXiv:1903.08008`.</p>
+MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -227,7 +241,7 @@ MCMC. *arXiv preprint* `arXiv:1903.08008`.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

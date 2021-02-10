@@ -82,7 +82,7 @@ the corresponding method for bridge objects." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ the corresponding method for bridge objects." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -175,7 +175,7 @@ the corresponding method for <code>bridge</code> objects.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>post_prob</span>(<span class='no'>x</span>, <span class='no'>...</span>, <span class='kw'>prior_prob</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>model_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+<span class='fu'>post_prob</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span>, prior_prob <span class='op'>=</span> <span class='cn'>NULL</span>, model_names <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -188,7 +188,7 @@ the corresponding method for <code>bridge</code> objects.</p>
       <th>...</th>
       <td><p>More <code>brmsfit</code> objects or further arguments
 passed to the underlying post-processing functions.
-In particular, see <code><a href='prepare_predictions.html'>prepare_predictions</a></code> for further
+In particular, see <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code> for further
 supported arguments.</p></td>
     </tr>
     <tr>
@@ -222,7 +222,7 @@ values as model names.</p></td>
   We thus recommend running <code>post_prob</code>
   multiple times to check the stability of the results.</p>
 <p>More details are provided under 
-  <code><a href='https://rdrr.io/pkg/bridgesampling/man/post_prob.html'>bridgesampling:post_prob</a></code>.</p>
+  <code><a href='https://rdrr.io/pkg/bridgesampling/man/post_prob.html'>bridgesampling::post_prob</a></code>.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p><code>
@@ -231,31 +231,33 @@ values as model names.</p></td>
 </code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># model with the treatment effect</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(
-  <span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> + <span class='no'>Trt</span>,
-  <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>negbinomial</a></span>(),
-  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>normal</span>(<span class='fl'>0</span>, <span class='fl'>1</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>b</span>),
-  <span class='kw'>save_all_pars</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
-)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span>
+  <span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>+</span> <span class='va'>Trt</span>,
+  data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>negbinomial</a></span><span class='op'>(</span><span class='op'>)</span>, 
+  prior <span class='op'>=</span> <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span>, class <span class='op'>=</span> <span class='va'>b</span><span class='op'>)</span>,
+  save_all_pars <span class='op'>=</span> <span class='cn'>TRUE</span>
+<span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'># model without the treatent effect</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(
-  <span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span>,
-  <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>negbinomial</a></span>(),
-  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>normal</span>(<span class='fl'>0</span>, <span class='fl'>1</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>b</span>),
-  <span class='kw'>save_all_pars</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
-)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span>
+  <span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span>,
+  data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>negbinomial</a></span><span class='op'>(</span><span class='op'>)</span>, 
+  prior <span class='op'>=</span> <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span>, class <span class='op'>=</span> <span class='va'>b</span><span class='op'>)</span>,
+  save_all_pars <span class='op'>=</span> <span class='cn'>TRUE</span>
+<span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
 
 <span class='co'># compute the posterior model probabilities</span>
-<span class='fu'>post_prob</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>)
+<span class='fu'>post_prob</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span><span class='op'>)</span>
 
 <span class='co'># specify prior model probabilities</span>
-<span class='fu'>post_prob</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>, <span class='kw'>prior_prob</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0.8</span>, <span class='fl'>0.2</span>))
-}</div></pre>
+<span class='fu'>post_prob</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span>, prior_prob <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.8</span>, <span class='fl'>0.2</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -271,7 +273,7 @@ values as model names.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

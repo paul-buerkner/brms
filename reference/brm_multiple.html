@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Run the same <span class="pkg">brms</span> model on multiple datasets — brm_multiple • brms</title>
+<title>Run the same brms model on multiple datasets — brm_multiple • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Run the same <span class="pkg">brms</span> model on multiple datasets — brm_multiple" />
+<meta property="og:title" content="Run the same brms model on multiple datasets — brm_multiple" />
 <meta property="og:description" content="Run the same brms model on multiple datasets and then combine the
 results into one fitted model object. This is useful in particular for
 multiple missing value imputation, where the same model is fitted on multiple
@@ -84,7 +84,7 @@ package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -136,19 +136,19 @@ package." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -178,26 +178,26 @@ imputed data sets. Models can be run in parallel using the <span class="pkg">fut
 package.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>brm_multiple</span>(
-  <span class='no'>formula</span>,
-  <span class='no'>data</span>,
-  <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
-  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>data2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"no"</span>, <span class='st'>"yes"</span>, <span class='st'>"only"</span>),
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>recompile</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>combine</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>fit</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)</pre>
+    <pre class="usage"><span class='fu'>brm_multiple</span><span class='op'>(</span>
+  <span class='va'>formula</span>,
+  <span class='va'>data</span>,
+  family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+  prior <span class='op'>=</span> <span class='cn'>NULL</span>,
+  data2 <span class='op'>=</span> <span class='cn'>NULL</span>,
+  autocor <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cov_ranef <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sample_prior <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"no"</span>, <span class='st'>"yes"</span>, <span class='st'>"only"</span><span class='op'>)</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  knots <span class='op'>=</span> <span class='cn'>NULL</span>,
+  stanvars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  stan_funs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  recompile <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  combine <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  fit <span class='op'>=</span> <span class='cn'>NA</span>,
+  seed <span class='op'>=</span> <span class='cn'>NA</span>,
+  file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -231,7 +231,7 @@ linear <code>gaussian</code> model is applied. In multivariate models,
       <th>prior</th>
       <td><p>One or more <code>brmsprior</code> objects created by
 <code><a href='set_prior.html'>set_prior</a></code> or related functions and combined using the
-<code>c</code> method or the <code>+</code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
+<code>c</code> method or the <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
 for more help.</p></td>
     </tr>
     <tr>
@@ -368,29 +368,34 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
   whether each of the original models converged, investigate
   <code>fit$rhats</code>, where <code>fit</code> denotes the output of
   <code>brm_multiple</code>.</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>mice</span>)
-<span class='no'>imp</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='http://stefvanbuuren.github.io/mice/reference/mice.html'>mice</a></span>(<span class='no'>nhanes2</span>)
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://github.com/amices/mice'>mice</a></span><span class='op'>)</span>
+<span class='va'>imp</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://amices.org/mice/reference/mice.html'>mice</a></span><span class='op'>(</span><span class='va'>nhanes2</span><span class='op'>)</span>
 
 <span class='co'># fit the model using mice and lm</span>
-<span class='no'>fit_imp1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/with.html'>with</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/lm.html'>lm</a></span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> + <span class='no'>hyp</span> + <span class='no'>chl</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='fu'><a href='http://stefvanbuuren.github.io/mice/reference/pool.html'>pool</a></span>(<span class='no'>fit_imp1</span>))
+<span class='va'>fit_imp1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/with.html'>with</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/lm.html'>lm</a></span><span class='op'>(</span><span class='va'>bmi</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>+</span> <span class='va'>hyp</span> <span class='op'>+</span> <span class='va'>chl</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>imp</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='fu'><a href='https://amices.org/mice/reference/pool.html'>pool</a></span><span class='op'>(</span><span class='va'>fit_imp1</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='co'># fit the model using brms</span>
-<span class='no'>fit_imp2</span> <span class='kw'>&lt;-</span> <span class='fu'>brm_multiple</span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> + <span class='no'>hyp</span> + <span class='no'>chl</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit_imp2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit_imp2</span>, <span class='kw'>pars</span> <span class='kw'>=</span> <span class='st'>"^b_"</span>)
+<span class='va'>fit_imp2</span> <span class='op'>&lt;-</span> <span class='fu'>brm_multiple</span><span class='op'>(</span><span class='va'>bmi</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>+</span> <span class='va'>hyp</span> <span class='op'>+</span> <span class='va'>chl</span>, data <span class='op'>=</span> <span class='va'>imp</span>, chains <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit_imp2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit_imp2</span>, pars <span class='op'>=</span> <span class='st'>"^b_"</span><span class='op'>)</span>
 <span class='co'># investigate convergence of the original models</span>
-<span class='no'>fit_imp2</span>$<span class='no'>rhats</span>
+<span class='va'>fit_imp2</span><span class='op'>$</span><span class='va'>rhats</span>
 
 <span class='co'># use the future package for parallelization</span>
-<span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>future</span>)
-<span class='fu'><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></span>(<span class='no'>multiprocess</span>)
-<span class='no'>fit_imp3</span> <span class='kw'>&lt;-</span> <span class='fu'>brm_multiple</span>(<span class='no'>bmi</span>~<span class='no'>age</span>+<span class='no'>hyp</span>+<span class='no'>chl</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit_imp3</span>)
-}</div></pre>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://github.com/HenrikBengtsson/future'>future</a></span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></span><span class='op'>(</span><span class='va'>multiprocess</span><span class='op'>)</span>
+<span class='va'>fit_imp3</span> <span class='op'>&lt;-</span> <span class='fu'>brm_multiple</span><span class='op'>(</span><span class='va'>bmi</span><span class='op'>~</span><span class='va'>age</span><span class='op'>+</span><span class='va'>hyp</span><span class='op'>+</span><span class='va'>chl</span>, data <span class='op'>=</span> <span class='va'>imp</span>, chains <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit_imp3</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -406,7 +411,7 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

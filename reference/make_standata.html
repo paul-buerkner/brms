@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Data for <span class="pkg">brms</span> Models — make_standata • brms</title>
+<title>Data for brms Models — make_standata • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Data for <span class="pkg">brms</span> Models — make_standata" />
+<meta property="og:title" content="Data for brms Models — make_standata" />
 <meta property="og:description" content="Generate data for brms models to be passed to Stan" />
 <meta property="og:image" content="/logo.png" />
 
@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -132,19 +132,19 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -170,19 +170,20 @@
     <p>Generate data for <span class="pkg">brms</span> models to be passed to <span class="pkg">Stan</span></p>
     </div>
 
-    <pre class="usage"><span class='fu'>make_standata</span>(
-  <span class='no'>formula</span>,
-  <span class='no'>data</span>,
-  <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
-  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>data2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='st'>"no"</span>,
-  <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)</pre>
+    <pre class="usage"><span class='fu'>make_standata</span><span class='op'>(</span>
+  <span class='va'>formula</span>,
+  <span class='va'>data</span>,
+  family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+  prior <span class='op'>=</span> <span class='cn'>NULL</span>,
+  autocor <span class='op'>=</span> <span class='cn'>NULL</span>,
+  data2 <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cov_ranef <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sample_prior <span class='op'>=</span> <span class='st'>"no"</span>,
+  stanvars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  threads <span class='op'>=</span> <span class='cn'>NULL</span>,
+  knots <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -215,7 +216,7 @@ linear <code>gaussian</code> model is applied. In multivariate models,
       <th>prior</th>
       <td><p>One or more <code>brmsprior</code> objects created by
 <code><a href='set_prior.html'>set_prior</a></code> or related functions and combined using the
-<code>c</code> method or the <code>+</code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
+<code>c</code> method or the <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
 for more help.</p></td>
     </tr>
     <tr>
@@ -271,6 +272,15 @@ distribution. In this case, all parameters must have proper priors.</p></td>
 <span class="pkg">Stan</span>'s program blocks.</p></td>
     </tr>
     <tr>
+      <th>threads</th>
+      <td><p>Number of threads to use in within-chain parallelization. For
+more control over the threading process, <code>threads</code> may also be a
+<code>brmsthreads</code> object created by <code><a href='threading.html'>threading</a></code>. Within-chain
+parallelization is experimental! We recommend its use only if you are
+experienced with Stan's <code>reduce_sum</code> function and have a slow running
+model that cannot be sped up by any other means.</p></td>
+    </tr>
+    <tr>
       <th>knots</th>
       <td><p>Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
@@ -286,11 +296,15 @@ for basis construction of smoothing terms. See
 
     <p>A named list of objects containing the required data 
   to fit a <span class="pkg">brms</span> model with <span class="pkg">Stan</span>.</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>sdata1</span> <span class='kw'>&lt;-</span> <span class='fu'>make_standata</span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-                        <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"cumulative"</span>)
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>sdata1</span>)</div><div class='output co'>#&gt; List of 12
+    <pre class="examples"><div class='input'><span class='va'>sdata1</span> <span class='op'>&lt;-</span> <span class='fu'>make_standata</span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>subject</span><span class='op'>)</span>, 
+                        data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='st'>"cumulative"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>sdata1</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; List of 12
 #&gt;  $ N         : int 572
 #&gt;  $ Y         : num [1:572(1d)] 1 1 1 1 1 1 1 1 1 1 ...
 #&gt;  $ nthres    : int 3
@@ -309,9 +323,10 @@ for basis construction of smoothing terms. See
 #&gt;  $ NC_1      : int 0
 #&gt;  $ prior_only: int 0
 #&gt;  - attr(*, "class")= chr "standata"</div><div class='input'>
-<span class='no'>sdata2</span> <span class='kw'>&lt;-</span> <span class='fu'>make_standata</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-                        <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>)
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>sdata2</span>)</div><div class='output co'>#&gt; List of 10
+<span class='va'>sdata2</span> <span class='op'>&lt;-</span> <span class='fu'>make_standata</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
+                        data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='st'>"poisson"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>sdata2</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; List of 10
 #&gt;  $ N         : int 236
 #&gt;  $ Y         : num [1:236(1d)] 5 3 2 4 7 5 6 40 5 14 ...
 #&gt;  $ K         : int 5
@@ -350,7 +365,7 @@ for basis construction of smoothing terms. See
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -90,19 +90,19 @@
 <ul class="nav navbar-nav navbar-right">
 <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -116,13 +116,13 @@
 
       
 
-      </header><div class="row">
+      </header><script src="brms_families_files/header-attrs-2.6.6/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Parameterization of Response Distributions in brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2020-05-27</h4>
+            <h4 class="date">2021-02-10</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_families.Rmd"><code>vignettes/brms_families.Rmd</code></a></small>
       <div class="hidden name"><code>brms_families.Rmd</code></div>
@@ -179,10 +179,10 @@ $$
 with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
 -->
 </div>
-<div id="survival-models" class="section level2">
+<div id="time-to-event-models" class="section level2">
 <h2 class="hasAnchor">
-<a href="#survival-models" class="anchor"></a>Survival models</h2>
-<p>With survival models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[
+<a href="#time-to-event-models" class="anchor"></a>Time-to-event models</h2>
+<p>With time-to-event models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[
 f(y) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
 \]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation on the log-scale. The density of the <strong>Gamma</strong> family is given by <span class="math display">\[
 f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1} 
@@ -192,7 +192,9 @@ f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}
 \exp\left(-\left(\frac{y}{s}\right)^\alpha\right)
 \]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter and <span class="math inline">\(s = \mu / \Gamma(1 + 1 / \alpha)\)</span> is the scale parameter to that <span class="math inline">\(\mu\)</span> is the mean of the distribution. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution. The density of the <strong>inverse.gaussian</strong> family is given by <span class="math display">\[
 f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
-\]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter.</p>
+\]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The <strong>cox</strong> family implements Cox proportional hazards model which assumes a hazard function of the form <span class="math inline">\(h(y) = h_0(y) \mu\)</span> with baseline hazard <span class="math inline">\(h_0(y)\)</span> expressed via M-splines (which integrate to I-splines) in order to ensure monotonicity. The density of the cox model is then given by <span class="math display">\[
+f(y) = h(y) S(y)
+\]</span> where <span class="math inline">\(S(y)\)</span> is the survival function implied by <span class="math inline">\(h(y)\)</span>.</p>
 </div>
 <div id="extreme-value-models" class="section level2">
 <h2 class="hasAnchor">
@@ -211,9 +213,9 @@ t(y) = \left(1 + \xi \left(\frac{y - \mu}{\sigma} \right)\right)^{-1 / \xi}
 <p>One family that is especially suited to model reaction times is the <strong>exgaussian</strong> (‘exponentially modified Gaussian’) family. Its density is given by</p>
 <p><span class="math display">\[
 f(y) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi + \sigma^2 / \beta - 2 y \right) \right) \text{erfc}\left(\frac{\xi + \sigma^2 / \beta - y}{\sqrt{2} \sigma} \right)
-\]</span> where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(\xi\)</span> is the mean of the Gaussian componenent, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function. We parameterize <span class="math inline">\(\mu = \xi + \beta\)</span> so that the main predictor term equals the mean of the distribution.</p>
-<p>Another family well suited for modelling response times is the <strong>shifted_lognormal</strong> distribution. It’s density equals that of the <strong>lognormal</strong> distribution except that the whole distribution is shifted to the right by a positive parameter called <em>ndt</em> (for consistency with the <strong>wiener</strong> diffusion model explained below).</p>
-<p>A family concerned with the combined modelling of reaction times and corresponding binary responses is the <strong>wiener</strong> diffusion model. It has four model parameters each with a natural interpreation. The parameter <span class="math inline">\(\alpha &gt; 0\)</span> describes the separation between two boundaries of the diffusion process, <span class="math inline">\(\tau &gt; 0\)</span> describes the non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary). The density for the reaction time at the upper boundary is given by</p>
+\]</span> where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(\xi\)</span> is the mean of the Gaussian component, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function. We parameterize <span class="math inline">\(\mu = \xi + \beta\)</span> so that the main predictor term equals the mean of the distribution.</p>
+<p>Another family well suited for modeling response times is the <strong>shifted_lognormal</strong> distribution. It’s density equals that of the <strong>lognormal</strong> distribution except that the whole distribution is shifted to the right by a positive parameter called <em>ndt</em> (for consistency with the <strong>wiener</strong> diffusion model explained below).</p>
+<p>A family concerned with the combined modeling of reaction times and corresponding binary responses is the <strong>wiener</strong> diffusion model. It has four model parameters each with a natural interpretation. The parameter <span class="math inline">\(\alpha &gt; 0\)</span> describes the separation between two boundaries of the diffusion process, <span class="math inline">\(\tau &gt; 0\)</span> describes the non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary). The density for the reaction time at the upper boundary is given by</p>
 <p><span class="math display">\[
 f(y) = \frac{\alpha}{(y-\tau)^3/2}
 \exp \! \left(- \delta \alpha \beta - \frac{\delta^2(y-\tau)}{2}\right)
@@ -267,7 +269,7 @@ f(y) = \frac{\prod_{k=1}^{y} g(\eta - \tau_{k})
 \]</span> For the logit link, this can be simplified to <span class="math display">\[
 f(y) = \frac{\exp \left(\sum_{k=1}^{y} (\eta - \tau_{k}) \right)}
   {\sum_{k=0}^K \exp\left(\sum_{j=1}^k (\eta - \tau_{j}) \right)}
-\]</span> The linear predictor <span class="math inline">\(\eta\)</span> can be generalized to also depend on the category <span class="math inline">\(k\)</span> for a subset of predictors. This leads to category specific effects (for details on how to specify them see <code><a href="../reference/brm.html">help(brm)</a></code>). Note that <strong>cumulative</strong> and <strong>sratio</strong> models use <span class="math inline">\(\tau - \eta\)</span>, whereas <strong>cratio</strong> and <strong>acat</strong> use <span class="math inline">\(\eta - \tau\)</span>. This is done to ensure that larger values of <span class="math inline">\(\eta\)</span> increase the probability of <em>higher</em> reponse categories.</p>
+\]</span> The linear predictor <span class="math inline">\(\eta\)</span> can be generalized to also depend on the category <span class="math inline">\(k\)</span> for a subset of predictors. This leads to category specific effects (for details on how to specify them see <code><a href="../reference/brm.html">help(brm)</a></code>). Note that <strong>cumulative</strong> and <strong>sratio</strong> models use <span class="math inline">\(\tau - \eta\)</span>, whereas <strong>cratio</strong> and <strong>acat</strong> use <span class="math inline">\(\eta - \tau\)</span>. This is done to ensure that larger values of <span class="math inline">\(\eta\)</span> increase the probability of <em>higher</em> response categories.</p>
 <p>The <strong>categorical</strong> family is currently only implemented with the multivariate logit link function and has density <span class="math display">\[
 f(y) = \mu_{y} = \frac{\exp(\eta_{y})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
 \]</span> Note that <span class="math inline">\(\eta\)</span> does also depend on the category <span class="math inline">\(k\)</span>. For reasons of identifiability, <span class="math inline">\(\eta_{1}\)</span> is set to <span class="math inline">\(0\)</span>. A generalization of the <strong>categorical</strong> family to more than one trial is the <strong>multinomial</strong> family with density <span class="math display">\[
@@ -278,7 +280,7 @@ f(y) = {N \choose y_{1}, y_{2}, \ldots, y_{K}}
 <div id="zero-inflated-and-hurdle-models" class="section level2">
 <h2 class="hasAnchor">
 <a href="#zero-inflated-and-hurdle-models" class="anchor"></a>Zero-inflated and hurdle models</h2>
-<p><strong>Zero-inflated</strong> and <strong>hurdle</strong> families extend existing families by adding special processes for responses that are zero. The densitiy of a <strong>zero-inflated</strong> family is given by <span class="math display">\[
+<p><strong>Zero-inflated</strong> and <strong>hurdle</strong> families extend existing families by adding special processes for responses that are zero. The density of a <strong>zero-inflated</strong> family is given by <span class="math display">\[
 f_z(y) = z + (1 - z) f(0) \quad \text{if } y = 0 \\
 f_z(y) = (1 - z) f(y) \quad \text{if } y &gt; 0
 \]</span> where <span class="math inline">\(z\)</span> denotes the zero-inflation probability. Currently implemented families are <strong>zero_inflated_poisson</strong>, <strong>zero_inflated_binomial</strong>, <strong>zero_inflated_negbinomial</strong>, and <strong>zero_inflated_beta</strong>.</p>
@@ -309,7 +311,7 @@ f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0, 1\}
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

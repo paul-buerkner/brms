@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -132,19 +132,19 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -171,18 +171,19 @@
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>log_lik</span>(
-  <span class='no'>object</span>,
-  <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>re_formula</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>subset</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>pointwise</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>combine</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>add_point_estimate</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='no'>...</span>
-)</pre>
+<span class='fu'>log_lik</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re_formula <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  pointwise <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  combine <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  add_point_estimate <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  cores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"mc.cores"</span>, <span class='fl'>1</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -244,8 +245,13 @@ or if the log-likelihoods should be returned separately.</p></td>
 with the <code><a href='loo_subsample.brmsfit.html'>loo_subsample</a></code> method.</p></td>
     </tr>
     <tr>
+      <th>cores</th>
+      <td><p>Number of cores (defaults to <code>1</code>).
+Can be set globally via the <code>mc.cores</code> option.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
-      <td><p>Further arguments passed to <code><a href='prepare_predictions.html'>prepare_predictions</a></code>
+      <td><p>Further arguments passed to <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code>
 that control several aspects of data validation and prediction.</p></td>
     </tr>
     </table>
@@ -260,6 +266,19 @@ that control several aspects of data validation and prediction.</p></td>
  If <code>pointwise = TRUE</code>, the output is a function
  with a <code>draws</code> attribute containing all relevant
  data and posterior samples.</p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p><code>NA</code> values within factors in <code>newdata</code>, 
+  are interpreted as if all dummy variables of this factor are 
+  zero. This allows, for instance, to make predictions of the grand mean 
+  when using sum coding.</p>
+<p>In multilevel models, it is possible to 
+allow new levels of grouping factors to be used in the predictions.
+This can be controlled via argument <code>allow_new_levels</code>.
+New levels can be sampled in multiple ways, which can be controlled
+via argument <code>sample_new_levels</code>. Both of these arguments are
+documented in <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code> along with several
+other useful arguments to control specific aspects of the predictions.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -276,7 +295,7 @@ that control several aspects of data validation and prediction.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

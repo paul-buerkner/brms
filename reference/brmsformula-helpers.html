@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Linear and Non-linear formulas in <span class="pkg">brms</span> — brmsformula-helpers • brms</title>
+<title>Linear and Non-linear formulas in brms — brmsformula-helpers • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Linear and Non-linear formulas in <span class="pkg">brms</span> — brmsformula-helpers" />
+<meta property="og:title" content="Linear and Non-linear formulas in brms — brmsformula-helpers" />
 <meta property="og:description" content="Helper functions to specify linear and non-linear
 formulas for use with brmsformula." />
 <meta property="og:image" content="/logo.png" />
@@ -81,7 +81,7 @@ formulas for use with brmsformula." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ formulas for use with brmsformula." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -172,26 +172,26 @@ formulas for use with brmsformula." />
 formulas for use with <code><a href='brmsformula.html'>brmsformula</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>nlf</span>(<span class='no'>formula</span>, <span class='no'>...</span>, <span class='kw'>flist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>loop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+    <pre class="usage"><span class='fu'>nlf</span><span class='op'>(</span><span class='va'>formula</span>, <span class='va'>...</span>, flist <span class='op'>=</span> <span class='cn'>NULL</span>, dpar <span class='op'>=</span> <span class='cn'>NULL</span>, resp <span class='op'>=</span> <span class='cn'>NULL</span>, loop <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
 
-<span class='fu'>lf</span>(
-  <span class='no'>...</span>,
-  <span class='kw'>flist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>center</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cmc</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>decomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
-)
+<span class='fu'>lf</span><span class='op'>(</span>
+  <span class='va'>...</span>,
+  flist <span class='op'>=</span> <span class='cn'>NULL</span>,
+  dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  center <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cmc <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  decomp <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span>
 
-<span class='fu'>acformula</span>(<span class='no'>autocor</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+<span class='fu'>acformula</span><span class='op'>(</span><span class='va'>autocor</span>, resp <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
 
-<span class='fu'>set_nl</span>(<span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+<span class='fu'>set_nl</span><span class='op'>(</span>nl <span class='op'>=</span> <span class='cn'>TRUE</span>, dpar <span class='op'>=</span> <span class='cn'>NULL</span>, resp <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
 
-<span class='fu'>set_rescor</span>(<span class='kw'>rescor</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='fu'>set_rescor</span><span class='op'>(</span>rescor <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
-<span class='fu'>set_mecor</span>(<span class='kw'>mecor</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+<span class='fu'>set_mecor</span><span class='op'>(</span>mecor <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -304,26 +304,30 @@ defined by <code><a href='me.html'>me</a></code> terms should be modeled. Defaul
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># add more formulas to the model</span>
-<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='fl'>1</span>) +
-  <span class='fu'>nlf</span>(<span class='no'>sigma</span> ~ <span class='no'>a</span> * <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span>(<span class='no'>b</span> * <span class='no'>x</span>)) +
-  <span class='fu'>lf</span>(<span class='no'>a</span> ~ <span class='no'>x</span>, <span class='no'>b</span> ~ <span class='no'>z</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g</span>)) +
-  <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>()</div><div class='output co'>#&gt; y ~ 1 
+<span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>nlf</span><span class='op'>(</span><span class='va'>sigma</span> <span class='op'>~</span> <span class='va'>a</span> <span class='op'>*</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>b</span> <span class='op'>*</span> <span class='va'>x</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>lf</span><span class='op'>(</span><span class='va'>a</span> <span class='op'>~</span> <span class='va'>x</span>, <span class='va'>b</span> <span class='op'>~</span> <span class='va'>z</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ 1 
 #&gt; sigma ~ a * exp(b * x)
 #&gt; a ~ x
 #&gt; b ~ z + (1 | g)</div><div class='input'>
 <span class='co'># specify 'nl' later on</span>
-<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>a</span> * <span class='fu'>inv_logit</span>(<span class='no'>x</span> * <span class='no'>b</span>)) +
-  <span class='fu'>lf</span>(<span class='no'>a</span> + <span class='no'>b</span> ~ <span class='no'>z</span>) +
-  <span class='fu'>set_nl</span>(<span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; y ~ a * inv_logit(x * b) 
+<span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>a</span> <span class='op'>*</span> <span class='fu'>inv_logit</span><span class='op'>(</span><span class='va'>x</span> <span class='op'>*</span> <span class='va'>b</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>lf</span><span class='op'>(</span><span class='va'>a</span> <span class='op'>+</span> <span class='va'>b</span> <span class='op'>~</span> <span class='va'>z</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>set_nl</span><span class='op'>(</span><span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ a * inv_logit(x * b) 
 #&gt; a ~ z
-#&gt; b ~ z</div><div class='input'>
+#&gt; b ~ z</div><div class='input'>  
 <span class='co'># specify a multivariate model</span>
-<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y1</span> ~ <span class='no'>x</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g</span>)) +
-  <span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y2</span> ~ <span class='no'>z</span>) +
-  <span class='fu'>set_rescor</span>(<span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; y1 ~ x + (1 | g) 
-#&gt; y2 ~ z </div><div class='input'>
+<span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y1</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y2</span> <span class='op'>~</span> <span class='va'>z</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>set_rescor</span><span class='op'>(</span><span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y1 ~ x + (1 | g) 
+#&gt; y2 ~ z </div><div class='input'>  
 <span class='co'># add autocorrelation terms</span>
-<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>) + <span class='fu'>acformula</span>(~ <span class='fu'><a href='arma.html'>arma</a></span>(<span class='kw'>p</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>q</span> <span class='kw'>=</span> <span class='fl'>1</span>) + <span class='fu'><a href='car.html'>car</a></span>(<span class='no'>W</span>))</div><div class='output co'>#&gt; y ~ x 
+<span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'>acformula</span><span class='op'>(</span><span class='op'>~</span> <span class='fu'><a href='arma.html'>arma</a></span><span class='op'>(</span>p <span class='op'>=</span> <span class='fl'>1</span>, q <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='car.html'>car</a></span><span class='op'>(</span><span class='va'>W</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x 
 #&gt; autocor ~ arma(p = 1, q = 1) + car(W)</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -340,7 +344,7 @@ defined by <code><a href='me.html'>me</a></code> terms should be modeled. Defaul
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

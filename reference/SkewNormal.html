@@ -82,7 +82,7 @@ standard deviation sigma, and skewness alpha." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ standard deviation sigma, and skewness alpha." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -174,40 +174,40 @@ skew-normal distribution with mean <code>mu</code>,
 standard deviation <code>sigma</code>, and skewness <code>alpha</code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>dskew_normal</span>(
-  <span class='no'>x</span>,
-  <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>alpha</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>xi</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>omega</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>log</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
-)
+    <pre class="usage"><span class='fu'>dskew_normal</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  mu <span class='op'>=</span> <span class='fl'>0</span>,
+  sigma <span class='op'>=</span> <span class='fl'>1</span>,
+  alpha <span class='op'>=</span> <span class='fl'>0</span>,
+  xi <span class='op'>=</span> <span class='cn'>NULL</span>,
+  omega <span class='op'>=</span> <span class='cn'>NULL</span>,
+  log <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span>
 
-<span class='fu'>pskew_normal</span>(
-  <span class='no'>q</span>,
-  <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>alpha</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>xi</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>omega</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>lower.tail</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>log.p</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
-)
+<span class='fu'>pskew_normal</span><span class='op'>(</span>
+  <span class='va'>q</span>,
+  mu <span class='op'>=</span> <span class='fl'>0</span>,
+  sigma <span class='op'>=</span> <span class='fl'>1</span>,
+  alpha <span class='op'>=</span> <span class='fl'>0</span>,
+  xi <span class='op'>=</span> <span class='cn'>NULL</span>,
+  omega <span class='op'>=</span> <span class='cn'>NULL</span>,
+  lower.tail <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  log.p <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span>
 
-<span class='fu'>qskew_normal</span>(
-  <span class='no'>p</span>,
-  <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>alpha</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>xi</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>omega</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>lower.tail</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>log.p</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>tol</span> <span class='kw'>=</span> <span class='fl'>1e-08</span>
-)
+<span class='fu'>qskew_normal</span><span class='op'>(</span>
+  <span class='va'>p</span>,
+  mu <span class='op'>=</span> <span class='fl'>0</span>,
+  sigma <span class='op'>=</span> <span class='fl'>1</span>,
+  alpha <span class='op'>=</span> <span class='fl'>0</span>,
+  xi <span class='op'>=</span> <span class='cn'>NULL</span>,
+  omega <span class='op'>=</span> <span class='cn'>NULL</span>,
+  lower.tail <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  log.p <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  tol <span class='op'>=</span> <span class='fl'>1e-08</span>
+<span class='op'>)</span>
 
-<span class='fu'>rskew_normal</span>(<span class='no'>n</span>, <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>alpha</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>xi</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>omega</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+<span class='fu'>rskew_normal</span><span class='op'>(</span><span class='va'>n</span>, mu <span class='op'>=</span> <span class='fl'>0</span>, sigma <span class='op'>=</span> <span class='fl'>1</span>, alpha <span class='op'>=</span> <span class='fl'>0</span>, xi <span class='op'>=</span> <span class='cn'>NULL</span>, omega <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -286,7 +286,7 @@ on the parameterization.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

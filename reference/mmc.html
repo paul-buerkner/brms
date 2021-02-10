@@ -47,7 +47,7 @@
 
 
 <meta property="og:title" content="Multi-Membership Covariates — mmc" />
-<meta property="og:description" content="Specify covarariates that vary over different levels 
+<meta property="og:description" content="Specify covariates that vary over different levels 
 of multi-membership grouping factors thus requiring
 special treatment. This function is almost solely useful,
 when called in combination with mm. 
@@ -85,7 +85,7 @@ very much like cbind." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -137,19 +137,19 @@ very much like cbind." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -172,15 +172,15 @@ very much like cbind." />
     </div>
 
     <div class="ref-description">
-    <p>Specify covarariates that vary over different levels 
+    <p>Specify covariates that vary over different levels 
 of multi-membership grouping factors thus requiring
 special treatment. This function is almost solely useful,
 when called in combination with <code><a href='mm.html'>mm</a></code>. 
 Outside of multi-membership terms it will behave
-very much like <code><a href='https://rdrr.io/r/base/cbind.html'>cbind</a></code>.</p>
+very much like <code><a href='https://amices.org/mice/reference/cbind.html'>cbind</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>mmc</span>(<span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>mmc</span><span class='op'>(</span><span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -200,18 +200,20 @@ corresponding to the grouping levels specified in <code><a href='mm.html'>mm</a>
     <div class='dont-index'><p><code><a href='mm.html'>mm</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># simulate some data</span>
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(
-  <span class='kw'>y</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>), <span class='kw'>x1</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>), <span class='kw'>x2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>),
-  <span class='kw'>g1</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fl'>1</span>:<span class='fl'>10</span>, <span class='fl'>100</span>, <span class='fl'>TRUE</span>), <span class='kw'>g2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fl'>1</span>:<span class='fl'>10</span>, <span class='fl'>100</span>, <span class='fl'>TRUE</span>)
-)
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  y <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span><span class='op'>)</span>, x1 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span><span class='op'>)</span>, x2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span><span class='op'>)</span>,
+  g1 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>10</span>, <span class='fl'>100</span>, <span class='cn'>TRUE</span><span class='op'>)</span>, g2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>10</span>, <span class='fl'>100</span>, <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='op'>)</span>
 
 <span class='co'># multi-membership model with level specific covariate values</span>
-<span class='no'>dat</span>$<span class='no'>xc</span> <span class='kw'>&lt;-</span> (<span class='no'>dat</span>$<span class='no'>x1</span> + <span class='no'>dat</span>$<span class='no'>x2</span>) / <span class='fl'>2</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='no'>xc</span> + (<span class='fl'>1</span> + <span class='fu'>mmc</span>(<span class='no'>x1</span>, <span class='no'>x2</span>) <span class='kw'>|</span> <span class='fu'><a href='mm.html'>mm</a></span>(<span class='no'>g1</span>, <span class='no'>g2</span>)), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit</span>)
-}</div></pre>
+<span class='va'>dat</span><span class='op'>$</span><span class='va'>xc</span> <span class='op'>&lt;-</span> <span class='op'>(</span><span class='va'>dat</span><span class='op'>$</span><span class='va'>x1</span> <span class='op'>+</span> <span class='va'>dat</span><span class='op'>$</span><span class='va'>x2</span><span class='op'>)</span> <span class='op'>/</span> <span class='fl'>2</span> 
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>xc</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='fu'>mmc</span><span class='op'>(</span><span class='va'>x1</span>, <span class='va'>x2</span><span class='op'>)</span> <span class='op'>|</span> <span class='fu'><a href='mm.html'>mm</a></span><span class='op'>(</span><span class='va'>g1</span>, <span class='va'>g2</span><span class='op'>)</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>dat</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -227,7 +229,7 @@ corresponding to the grouping levels specified in <code><a href='mm.html'>mm</a>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

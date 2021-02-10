@@ -82,7 +82,7 @@ loo::loo_model_weights." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ loo::loo_model_weights." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -175,7 +175,7 @@ or pseudo-BMA weighting. For more details, see
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>loo_model_weights</span>(<span class='no'>x</span>, <span class='no'>...</span>, <span class='kw'>model_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+<span class='fu'>loo_model_weights</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span>, model_names <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -188,7 +188,7 @@ or pseudo-BMA weighting. For more details, see
       <th>...</th>
       <td><p>More <code>brmsfit</code> objects or further arguments
 passed to the underlying post-processing functions.
-In particular, see <code><a href='prepare_predictions.html'>prepare_predictions</a></code> for further
+In particular, see <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code> for further
 supported arguments.</p></td>
     </tr>
     <tr>
@@ -204,15 +204,17 @@ values as model names.</p></td>
     <p>A named vector of model weights.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># model with population-level effects only</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span>,
+            data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='st'>"gaussian"</span><span class='op'>)</span>
 <span class='co'># model with an additional varying intercept for subjects</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)
-<span class='fu'>loo_model_weights</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>)
-}</div></pre>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>subject</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='st'>"gaussian"</span><span class='op'>)</span>
+<span class='fu'>loo_model_weights</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span><span class='op'>)</span>   
+<span class='op'>}</span>  
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -228,7 +230,7 @@ values as model names.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

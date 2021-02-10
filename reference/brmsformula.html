@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Set up a model formula for use in <span class="pkg">brms</span> — brmsformula • brms</title>
+<title>Set up a model formula for use in brms — brmsformula • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Set up a model formula for use in <span class="pkg">brms</span> — brmsformula" />
+<meta property="og:title" content="Set up a model formula for use in brms — brmsformula" />
 <meta property="og:description" content="Set up a model formula for use in the brms package
 allowing to define (potentially non-linear) additive multilevel 
 models for all parameters of the assumed response distribution." />
@@ -82,7 +82,7 @@ models for all parameters of the assumed response distribution." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ models for all parameters of the assumed response distribution." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -174,19 +174,20 @@ allowing to define (potentially non-linear) additive multilevel
 models for all parameters of the assumed response distribution.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>brmsformula</span>(
-  <span class='no'>formula</span>,
-  <span class='no'>...</span>,
-  <span class='kw'>flist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>family</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>nl</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>loop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>center</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cmc</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>decomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
-)</pre>
+    <pre class="usage"><span class='fu'>brmsformula</span><span class='op'>(</span>
+  <span class='va'>formula</span>,
+  <span class='va'>...</span>,
+  flist <span class='op'>=</span> <span class='cn'>NULL</span>,
+  family <span class='op'>=</span> <span class='cn'>NULL</span>,
+  autocor <span class='op'>=</span> <span class='cn'>NULL</span>,
+  nl <span class='op'>=</span> <span class='cn'>NULL</span>,
+  loop <span class='op'>=</span> <span class='cn'>NULL</span>,
+  center <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cmc <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  decomp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  unused <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -269,6 +270,13 @@ no decomposition. Other options currently available are
 <code>"QR"</code> for the QR decomposition that helps in fitting models
 with highly correlated predictors.</p></td>
     </tr>
+    <tr>
+      <th>unused</th>
+      <td><p>An optional <code>formula</code> which contains variables
+that are unused in the model but should still be stored in the
+model's data frame. This can be useful, for example,
+if those variables are required for post-processing the model.</p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
@@ -293,14 +301,14 @@ with highly correlated predictors.</p></td>
 <p><b>Group-level terms</b></p>  
 <p>Multiple grouping factors each with multiple group-level effects are
   possible. (Of course we can also run models without any group-level
-  effects.) Instead of <code>|</code> you may use <code>||</code> in grouping terms to
+  effects.) Instead of <code><a href='https://rdrr.io/r/base/Logic.html'>|</a></code> you may use <code><a href='https://rdrr.io/r/base/Logic.html'>||</a></code> in grouping terms to
   prevent correlations from being modeled. Equivalently, the <code>cor</code>
   argument of the <code><a href='gr.html'>gr</a></code> function can be used for this purpose, 
   for example, <code>(1 + x || g)</code> is equivalent to 
   <code>(1 + x | gr(g, cor = FALSE))</code>.</p>  
 <p>It is also possible to model different group-level terms of the same
   grouping factor as correlated (even across different formulas, e.g., in
-  non-linear models) by using <code>|&lt;ID&gt;|</code> instead of <code>|</code>. All
+  non-linear models) by using <code>|&lt;ID&gt;|</code> instead of <code><a href='https://rdrr.io/r/base/Logic.html'>|</a></code>. All
   group-level terms sharing the same ID will be modeled as correlated. If,
   for instance, one specifies the terms <code>(1+x|i|g)</code> and <code>(1+z|i|g)</code>
   somewhere in the formulas passed to <code>brmsformula</code>, correlations
@@ -405,7 +413,7 @@ with highly correlated predictors.</p></td>
 <p><b>Additional response information</b></p>  
 <p>Another special of the <span class="pkg">brms</span> formula syntax is the optional 
   <code>aterms</code> part, which may contain multiple terms of the form 
-  <code>fun(&lt;variable&gt;)</code> separated by <code>+</code> each providing special 
+  <code>fun(&lt;variable&gt;)</code> separated by <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> each providing special 
   information on the response variable. <code>fun</code> can be replaced with 
   either <code>se</code>, <code>weights</code>, <code>subset</code>, <code>cens</code>, <code>trunc</code>, 
   <code>trials</code>, <code>cat</code>, <code>dec</code>, <code>rate</code>, <code>vreal</code>, or
@@ -443,7 +451,7 @@ with highly correlated predictors.</p></td>
   predicted only for those observations for which <code>sub</code> evaluates
   to <code>TRUE</code>.</p>  
 <p>For log-linear models such as poisson models, <code>rate</code> may be used
-  in the <code>aterms</code> part to specify the denomintor of a response that
+  in the <code>aterms</code> part to specify the denominator of a response that
   is expressed as a rate. The numerator is given by the actual response
   variable and has a distribution according to the family as usual. Using
   <code>rate(denom)</code> is equivalent to adding <code><a href='https://rdrr.io/r/stats/offset.html'>offset(log(denom))</a></code> to
@@ -503,12 +511,12 @@ with highly correlated predictors.</p></td>
   will be treated as a response on the lower boundary. Alternatively,
   the variable passed to <code>dec</code> might also be a character vector 
   consisting of <code>'lower'</code> and <code>'upper'</code>.</p>
-<p>For custom families, it is possible to pass an abitrary number of real and
+<p>For custom families, it is possible to pass an arbitrary number of real and
   integer vectors via the addition terms <code>vreal</code> and <code>vint</code>,
   respectively. An example is provided in
   <code><a href='../articles/brms_customfamilies.html'>vignette('brms_customfamilies')</a></code>.</p>
 <p>Multiple addition terms may be specified at the same time using the
-  <code>+</code> operator. For example, the formula
+  <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. For example, the formula
   <code>formula = yi | se(sei) + cens(censored) ~ 1</code> implies a censored 
   meta-analytic model.</p>  
 <p>The addition argument <code>disp</code> (short for dispersion) 
@@ -711,93 +719,119 @@ with highly correlated predictors.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># multilevel model with smoothing terms</span>
-<span class='fu'>brmsformula</span>(<span class='no'>y</span> ~ <span class='no'>x1</span>*<span class='no'>x2</span> + <span class='fu'><a href='s.html'>s</a></span>(<span class='no'>z</span>) + (<span class='fl'>1</span>+<span class='no'>x1</span><span class='kw'>|</span><span class='fl'>1</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g2</span>))</div><div class='output co'>#&gt; y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2) </div><div class='input'>
+<span class='fu'>brmsformula</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x1</span><span class='op'>*</span><span class='va'>x2</span> <span class='op'>+</span> <span class='fu'><a href='s.html'>s</a></span><span class='op'>(</span><span class='va'>z</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>+</span><span class='va'>x1</span><span class='op'>|</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g2</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2) </div><div class='input'>
 <span class='co'># additionally predict 'sigma'</span>
-<span class='fu'>brmsformula</span>(<span class='no'>y</span> ~ <span class='no'>x1</span>*<span class='no'>x2</span> + <span class='fu'><a href='s.html'>s</a></span>(<span class='no'>z</span>) + (<span class='fl'>1</span>+<span class='no'>x1</span><span class='kw'>|</span><span class='fl'>1</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g2</span>),
-            <span class='no'>sigma</span> ~ <span class='no'>x1</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g2</span>))</div><div class='output co'>#&gt; y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2) 
-#&gt; sigma ~ x1 + (1 | g2)</div><div class='input'>
+<span class='fu'>brmsformula</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x1</span><span class='op'>*</span><span class='va'>x2</span> <span class='op'>+</span> <span class='fu'><a href='s.html'>s</a></span><span class='op'>(</span><span class='va'>z</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>+</span><span class='va'>x1</span><span class='op'>|</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g2</span><span class='op'>)</span>, 
+            <span class='va'>sigma</span> <span class='op'>~</span> <span class='va'>x1</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g2</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2) 
+#&gt; sigma ~ x1 + (1 | g2)</div><div class='input'>            
 <span class='co'># use the shorter alias 'bf'</span>
-(<span class='no'>formula1</span> <span class='kw'>&lt;-</span> <span class='fu'>brmsformula</span>(<span class='no'>y</span> ~ <span class='no'>x</span> + (<span class='no'>x</span><span class='kw'>|</span><span class='no'>g</span>)))</div><div class='output co'>#&gt; y ~ x + (x | g) </div><div class='input'>(<span class='no'>formula2</span> <span class='kw'>&lt;-</span> <span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>x</span> + (<span class='no'>x</span><span class='kw'>|</span><span class='no'>g</span>)))</div><div class='output co'>#&gt; y ~ x + (x | g) </div><div class='input'><span class='co'># will be TRUE</span>
-<span class='fu'><a href='https://rdrr.io/r/base/identical.html'>identical</a></span>(<span class='no'>formula1</span>, <span class='no'>formula2</span>)</div><div class='output co'>#&gt; [1] TRUE</div><div class='input'>
+<span class='op'>(</span><span class='va'>formula1</span> <span class='op'>&lt;-</span> <span class='fu'>brmsformula</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='va'>x</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x + (x | g) </div><div class='input'><span class='op'>(</span><span class='va'>formula2</span> <span class='op'>&lt;-</span> <span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='va'>x</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x + (x | g) </div><div class='input'><span class='co'># will be TRUE</span>
+<span class='fu'><a href='https://rdrr.io/r/base/identical.html'>identical</a></span><span class='op'>(</span><span class='va'>formula1</span>, <span class='va'>formula2</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; [1] TRUE</div><div class='input'>
 <span class='co'># incorporate censoring</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censor_variable</span>) ~ <span class='no'>predictors</span>)</div><div class='output co'>#&gt; y | cens(censor_variable) ~ predictors </div><div class='input'>
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>|</span> <span class='fu'>cens</span><span class='op'>(</span><span class='va'>censor_variable</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>predictors</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y | cens(censor_variable) ~ predictors </div><div class='input'>
 <span class='co'># define a simple non-linear model</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> + <span class='no'>a2</span> ~ <span class='fl'>1</span>, <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; y ~ a1 - a2^x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>a1</span> <span class='op'>-</span> <span class='va'>a2</span><span class='op'>^</span><span class='va'>x</span>, <span class='va'>a1</span> <span class='op'>+</span> <span class='va'>a2</span> <span class='op'>~</span> <span class='fl'>1</span>, nl <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ a1 - a2^x 
 #&gt; a1 ~ 1
 #&gt; a2 ~ 1</div><div class='input'>
 <span class='co'># predict a1 and a2 differently</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> ~ <span class='fl'>1</span>, <span class='no'>a2</span> ~ <span class='no'>x</span> + (<span class='no'>x</span><span class='kw'>|</span><span class='no'>g</span>), <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; y ~ a1 - a2^x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>a1</span> <span class='op'>-</span> <span class='va'>a2</span><span class='op'>^</span><span class='va'>x</span>, <span class='va'>a1</span> <span class='op'>~</span> <span class='fl'>1</span>, <span class='va'>a2</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='va'>x</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span>, nl <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ a1 - a2^x 
 #&gt; a1 ~ 1
 #&gt; a2 ~ x + (x | g)</div><div class='input'>
 <span class='co'># correlated group-level effects across parameters</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> ~ <span class='fl'>1</span> + (<span class='fl'>1</span> <span class='kw'>|</span><span class='fl'>2</span><span class='kw'>|</span> <span class='no'>g</span>), <span class='no'>a2</span> ~ <span class='no'>x</span> + (<span class='no'>x</span> <span class='kw'>|</span><span class='fl'>2</span><span class='kw'>|</span> <span class='no'>g</span>), <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; y ~ a1 - a2^x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>a1</span> <span class='op'>-</span> <span class='va'>a2</span><span class='op'>^</span><span class='va'>x</span>, <span class='va'>a1</span> <span class='op'>~</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>|</span><span class='fl'>2</span><span class='op'>|</span> <span class='va'>g</span><span class='op'>)</span>, <span class='va'>a2</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='va'>x</span> <span class='op'>|</span><span class='fl'>2</span><span class='op'>|</span> <span class='va'>g</span><span class='op'>)</span>, nl <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ a1 - a2^x 
 #&gt; a1 ~ 1 + (1 | 2 | g)
 #&gt; a2 ~ x + (x | 2 | g)</div><div class='input'><span class='co'># alternative but equivalent way to specify the above model</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> ~ <span class='fl'>1</span> + (<span class='fl'>1</span> <span class='kw'>|</span> <span class='fu'><a href='gr.html'>gr</a></span>(<span class='no'>g</span>, <span class='kw'>id</span> <span class='kw'>=</span> <span class='fl'>2</span>)),
-   <span class='no'>a2</span> ~ <span class='no'>x</span> + (<span class='no'>x</span> <span class='kw'>|</span> <span class='fu'><a href='gr.html'>gr</a></span>(<span class='no'>g</span>, <span class='kw'>id</span> <span class='kw'>=</span> <span class='fl'>2</span>)), <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; y ~ a1 - a2^x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>a1</span> <span class='op'>-</span> <span class='va'>a2</span><span class='op'>^</span><span class='va'>x</span>, <span class='va'>a1</span> <span class='op'>~</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>|</span> <span class='fu'><a href='gr.html'>gr</a></span><span class='op'>(</span><span class='va'>g</span>, id <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>, 
+   <span class='va'>a2</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='va'>x</span> <span class='op'>|</span> <span class='fu'><a href='gr.html'>gr</a></span><span class='op'>(</span><span class='va'>g</span>, id <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>, nl <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ a1 - a2^x 
 #&gt; a1 ~ 1 + (1 | gr(g, id = 2))
 #&gt; a2 ~ x + (x | gr(g, id = 2))</div><div class='input'>
 <span class='co'># define a multivariate model</span>
-<span class='fu'>bf</span>(<span class='fu'><a href='mvbind.html'>mvbind</a></span>(<span class='no'>y1</span>, <span class='no'>y2</span>) ~ <span class='no'>x</span> * <span class='no'>z</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g</span>))</div><div class='output co'>#&gt; y1 ~ x * z + (1 | g) 
+<span class='fu'>bf</span><span class='op'>(</span><span class='fu'><a href='mvbind.html'>mvbind</a></span><span class='op'>(</span><span class='va'>y1</span>, <span class='va'>y2</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>*</span> <span class='va'>z</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y1 ~ x * z + (1 | g) 
 #&gt; y2 ~ x * z + (1 | g) </div><div class='input'>
 <span class='co'># define a zero-inflated model </span>
 <span class='co'># also predicting the zero-inflation part</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>x</span> * <span class='no'>z</span> + (<span class='fl'>1</span>+<span class='no'>x</span><span class='kw'>|</span><span class='no'>ID1</span><span class='kw'>|</span><span class='no'>g</span>), <span class='no'>zi</span> ~ <span class='no'>x</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>ID1</span><span class='kw'>|</span><span class='no'>g</span>))</div><div class='output co'>#&gt; y ~ x * z + (1 + x | ID1 | g) 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>*</span> <span class='va'>z</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>+</span><span class='va'>x</span><span class='op'>|</span><span class='va'>ID1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span>, <span class='va'>zi</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>ID1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x * z + (1 + x | ID1 | g) 
 #&gt; zi ~ x + (1 | ID1 | g)</div><div class='input'>
 <span class='co'># specify a predictor as monotonic</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='fu'><a href='mo.html'>mo</a></span>(<span class='no'>x</span>) + <span class='no'>more_predictors</span>)</div><div class='output co'>#&gt; y ~ mo(x) + more_predictors </div><div class='input'>
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'><a href='mo.html'>mo</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span> <span class='va'>more_predictors</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ mo(x) + more_predictors </div><div class='input'>
 <span class='co'># for ordinal models only</span>
 <span class='co'># specify a predictor as category specific</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='fu'><a href='cs.html'>cs</a></span>(<span class='no'>x</span>) + <span class='no'>more_predictors</span>)</div><div class='output co'>#&gt; y ~ cs(x) + more_predictors </div><div class='input'><span class='co'># add a category specific group-level intercept</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='fu'><a href='cs.html'>cs</a></span>(<span class='no'>x</span>) + (<span class='fu'><a href='cs.html'>cs</a></span>(<span class='fl'>1</span>)<span class='kw'>|</span><span class='no'>g</span>))</div><div class='output co'>#&gt; y ~ cs(x) + (cs(1) | g) </div><div class='input'><span class='co'># specify parameter 'disc'</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>person</span> + <span class='no'>item</span>, <span class='no'>disc</span> ~ <span class='no'>item</span>)</div><div class='output co'>#&gt; y ~ person + item 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'><a href='cs.html'>cs</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span> <span class='va'>more_predictors</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ cs(x) + more_predictors </div><div class='input'><span class='co'># add a category specific group-level intercept</span>
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'><a href='cs.html'>cs</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fu'><a href='cs.html'>cs</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>)</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ cs(x) + (cs(1) | g) </div><div class='input'><span class='co'># specify parameter 'disc'</span>
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>person</span> <span class='op'>+</span> <span class='va'>item</span>, <span class='va'>disc</span> <span class='op'>~</span> <span class='va'>item</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ person + item 
 #&gt; disc ~ item</div><div class='input'>
 <span class='co'># specify variables containing measurement error</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='fu'><a href='me.html'>me</a></span>(<span class='no'>x</span>, <span class='no'>sdx</span>))</div><div class='output co'>#&gt; y ~ me(x, sdx) </div><div class='input'>
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'><a href='me.html'>me</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>sdx</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ me(x, sdx) </div><div class='input'>
 <span class='co'># specify predictors on all parameters of the wiener diffusion model</span>
 <span class='co'># the main formula models the drift rate 'delta'</span>
-<span class='fu'>bf</span>(<span class='no'>rt</span> <span class='kw'>|</span> <span class='fu'>dec</span>(<span class='no'>decision</span>) ~ <span class='no'>x</span>, <span class='no'>bs</span> ~ <span class='no'>x</span>, <span class='no'>ndt</span> ~ <span class='no'>x</span>, <span class='no'>bias</span> ~ <span class='no'>x</span>)</div><div class='output co'>#&gt; rt | dec(decision) ~ x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>rt</span> <span class='op'>|</span> <span class='fu'>dec</span><span class='op'>(</span><span class='va'>decision</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>x</span>, <span class='va'>bs</span> <span class='op'>~</span> <span class='va'>x</span>, <span class='va'>ndt</span> <span class='op'>~</span> <span class='va'>x</span>, <span class='va'>bias</span> <span class='op'>~</span> <span class='va'>x</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; rt | dec(decision) ~ x 
 #&gt; bs ~ x
 #&gt; ndt ~ x
 #&gt; bias ~ x</div><div class='input'>
 <span class='co'># fix the bias parameter to 0.5</span>
-<span class='fu'>bf</span>(<span class='no'>rt</span> <span class='kw'>|</span> <span class='fu'>dec</span>(<span class='no'>decision</span>) ~ <span class='no'>x</span>, <span class='kw'>bias</span> <span class='kw'>=</span> <span class='fl'>0.5</span>)</div><div class='output co'>#&gt; rt | dec(decision) ~ x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>rt</span> <span class='op'>|</span> <span class='fu'>dec</span><span class='op'>(</span><span class='va'>decision</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>x</span>, bias <span class='op'>=</span> <span class='fl'>0.5</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; rt | dec(decision) ~ x 
 #&gt; bias = 0.5</div><div class='input'>
 <span class='co'># specify different predictors for different mixture components</span>
-<span class='no'>mix</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='mixture.html'>mixture</a></span>(<span class='no'>gaussian</span>, <span class='no'>gaussian</span>)</div><div class='output co'>#&gt; <span class='message'>Setting order = 'mu' for mixtures of the same family.</span></div><div class='input'><span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='fl'>1</span>, <span class='no'>mu1</span> ~ <span class='no'>x</span>, <span class='no'>mu2</span> ~ <span class='no'>z</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='no'>mix</span>)</div><div class='output co'>#&gt; y ~ 1 
+<span class='va'>mix</span> <span class='op'>&lt;-</span> <span class='fu'><a href='mixture.html'>mixture</a></span><span class='op'>(</span><span class='va'>gaussian</span>, <span class='va'>gaussian</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>Setting order = 'mu' for mixtures of the same family.</span></div><div class='input'><span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fl'>1</span>, <span class='va'>mu1</span> <span class='op'>~</span> <span class='va'>x</span>, <span class='va'>mu2</span> <span class='op'>~</span> <span class='va'>z</span>, family <span class='op'>=</span> <span class='va'>mix</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ 1 
 #&gt; mu1 ~ x
 #&gt; mu2 ~ z</div><div class='input'>
 <span class='co'># fix both residual standard deviations to the same value</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='kw'>sigma2</span> <span class='kw'>=</span> <span class='st'>"sigma1"</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='no'>mix</span>)</div><div class='output co'>#&gt; y ~ x 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span>, sigma2 <span class='op'>=</span> <span class='st'>"sigma1"</span>, family <span class='op'>=</span> <span class='va'>mix</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x 
 #&gt; sigma2 = sigma1</div><div class='input'>
 <span class='co'># use the '+' operator to specify models</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='fl'>1</span>) +
-  <span class='fu'><a href='brmsformula-helpers.html'>nlf</a></span>(<span class='no'>sigma</span> ~ <span class='no'>a</span> * <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span>(<span class='no'>b</span> * <span class='no'>x</span>), <span class='no'>a</span> ~ <span class='no'>x</span>) +
-  <span class='fu'><a href='brmsformula-helpers.html'>lf</a></span>(<span class='no'>b</span> ~ <span class='no'>z</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g</span>), <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='st'>"sigma"</span>) +
-  <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>()</div><div class='output co'>#&gt; <span class='warning'>Warning: Arguments '...' and 'flist' in nlf() will be reworked at some point. Please avoid using them if possible.</span></div><div class='output co'>#&gt; <span class='warning'>Warning: Argument 'dpar' is no longer necessary and ignored.</span></div><div class='output co'>#&gt; y ~ 1 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='brmsformula-helpers.html'>nlf</a></span><span class='op'>(</span><span class='va'>sigma</span> <span class='op'>~</span> <span class='va'>a</span> <span class='op'>*</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>b</span> <span class='op'>*</span> <span class='va'>x</span><span class='op'>)</span>, <span class='va'>a</span> <span class='op'>~</span> <span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='brmsformula-helpers.html'>lf</a></span><span class='op'>(</span><span class='va'>b</span> <span class='op'>~</span> <span class='va'>z</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span>, dpar <span class='op'>=</span> <span class='st'>"sigma"</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: Arguments '...' and 'flist' in nlf() will be reworked at some point. Please avoid using them if possible.</span></div><div class='output co'>#&gt; <span class='warning'>Warning: Argument 'dpar' is no longer necessary and ignored.</span></div><div class='output co'>#&gt; y ~ 1 
 #&gt; sigma ~ a * exp(b * x)
 #&gt; a ~ x
-#&gt; b ~ z + (1 | g)</div><div class='input'>
+#&gt; b ~ z + (1 | g)</div><div class='input'>  
 <span class='co'># specify a multivariate model using the '+' operator</span>
-<span class='fu'>bf</span>(<span class='no'>y1</span> ~ <span class='no'>x</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g</span>)) +
-  <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>() + <span class='fu'><a href='cor_ar.html'>cor_ar</a></span>(~<span class='fl'>1</span><span class='kw'>|</span><span class='no'>g</span>) +
-  <span class='fu'>bf</span>(<span class='no'>y2</span> ~ <span class='no'>z</span>) + <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>()</div><div class='output co'>#&gt; <span class='warning'>Warning: Using 'cor_brms' objects for 'autocor' is deprecated. Please see ?cor_brms for details.</span></div><div class='output co'>#&gt; y1 ~ x + (1 | g) 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y1</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='cor_ar.html'>cor_ar</a></span><span class='op'>(</span><span class='op'>~</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>g</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>bf</span><span class='op'>(</span><span class='va'>y2</span> <span class='op'>~</span> <span class='va'>z</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: Using 'cor_brms' objects for 'autocor' is deprecated. Please see ?cor_brms for details.</span></div><div class='output co'>#&gt; y1 ~ x + (1 | g) 
 #&gt; autocor ~ arma(time = NA, gr = g, p = 1, q = 0, cov = FALSE)
-#&gt; y2 ~ z </div><div class='input'>
+#&gt; y2 ~ z </div><div class='input'>  
 <span class='co'># specify correlated residuals of a gaussian and a poisson model</span>
-<span class='no'>form1</span> <span class='kw'>&lt;-</span> <span class='fu'>bf</span>(<span class='no'>y1</span> ~ <span class='fl'>1</span> + <span class='no'>x</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>c</span><span class='kw'>|</span><span class='no'>obs</span>), <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>1</span>) + <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>()
-<span class='no'>form2</span> <span class='kw'>&lt;-</span> <span class='fu'>bf</span>(<span class='no'>y2</span> ~ <span class='fl'>1</span> + <span class='no'>x</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>c</span><span class='kw'>|</span><span class='no'>obs</span>)) + <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>()
-
+<span class='va'>form1</span> <span class='op'>&lt;-</span> <span class='fu'>bf</span><span class='op'>(</span><span class='va'>y1</span> <span class='op'>~</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>c</span><span class='op'>|</span><span class='va'>obs</span><span class='op'>)</span>, sigma <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>
+<span class='va'>form2</span> <span class='op'>&lt;-</span> <span class='fu'>bf</span><span class='op'>(</span><span class='va'>y2</span> <span class='op'>~</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='va'>x</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>c</span><span class='op'>|</span><span class='va'>obs</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span>
+  
 <span class='co'># model missing values in predictors</span>
-<span class='fu'>bf</span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> * <span class='fu'><a href='mi.html'>mi</a></span>(<span class='no'>chl</span>)) +
-  <span class='fu'>bf</span>(<span class='no'>chl</span> <span class='kw'>|</span> <span class='fu'><a href='mi.html'>mi</a></span>() ~ <span class='no'>age</span>) +
-  <span class='fu'><a href='brmsformula-helpers.html'>set_rescor</a></span>(<span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; bmi ~ age * mi(chl) 
-#&gt; chl | mi() ~ age </div><div class='input'>
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>bmi</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>*</span> <span class='fu'><a href='mi.html'>mi</a></span><span class='op'>(</span><span class='va'>chl</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>bf</span><span class='op'>(</span><span class='va'>chl</span> <span class='op'>|</span> <span class='fu'><a href='mi.html'>mi</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>age</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='brmsformula-helpers.html'>set_rescor</a></span><span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; bmi ~ age * mi(chl) 
+#&gt; chl | mi() ~ age </div><div class='input'>  
 <span class='co'># model sigma as a function of the mean</span>
-<span class='fu'>bf</span>(<span class='no'>y</span> ~ <span class='no'>eta</span>, <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>) +
-  <span class='fu'><a href='brmsformula-helpers.html'>lf</a></span>(<span class='no'>eta</span> ~ <span class='fl'>1</span> + <span class='no'>x</span>) +
-  <span class='fu'><a href='brmsformula-helpers.html'>nlf</a></span>(<span class='no'>sigma</span> ~ <span class='no'>tau</span> * <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span>(<span class='no'>eta</span>)) +
-  <span class='fu'><a href='brmsformula-helpers.html'>lf</a></span>(<span class='no'>tau</span> ~ <span class='fl'>1</span>)</div><div class='output co'>#&gt; y ~ eta 
+<span class='fu'>bf</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>eta</span>, nl <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='brmsformula-helpers.html'>lf</a></span><span class='op'>(</span><span class='va'>eta</span> <span class='op'>~</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='brmsformula-helpers.html'>nlf</a></span><span class='op'>(</span><span class='va'>sigma</span> <span class='op'>~</span> <span class='va'>tau</span> <span class='op'>*</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='va'>eta</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='brmsformula-helpers.html'>lf</a></span><span class='op'>(</span><span class='va'>tau</span> <span class='op'>~</span> <span class='fl'>1</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ eta 
 #&gt; eta ~ 1 + x
 #&gt; sigma ~ tau * sqrt(eta)
 #&gt; tau ~ 1</div><div class='input'>
@@ -817,7 +851,7 @@ with highly correlated predictors.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

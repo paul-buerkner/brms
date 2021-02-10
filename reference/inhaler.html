@@ -84,7 +84,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -136,19 +136,19 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -178,13 +178,13 @@
   accompanying each device, using a 4-point ordinal scale.</p>
     </div>
 
-    <pre class="usage"><span class='no'>inhaler</span></pre>
+    <pre class="usage"><span class='va'>inhaler</span></pre>
 
 
     <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
 
     <p>A data frame of 572 observations containing 
-  information on the following 5 variables.</p><dl'>
+  information on the following 5 variables.</p><dl>
  <dt>subject</dt><dd><p>The subject number</p></dd>
  <dt>rating</dt><dd><p>The rating of the inhaler instructions 
    on a scale ranging from 1 to 4</p></dd>
@@ -199,25 +199,27 @@
 
     <p>Ezzet, F., &amp; Whitehead, J. (1991). 
   A random effects model for ordinal responses from a crossover trial. 
-  <em>Statistics in Medicine, 10(6)</em>, 901-907.</p>
+  <em>Statistics in Medicine</em>, 10(6), 901-907.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## ordinal regression with family "sratio"</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>sratio</a></span>(),
-            <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span>(<span class='st'>"normal(0,5)"</span>))
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit1</span>)
-
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span>, 
+            data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>sratio</a></span><span class='op'>(</span><span class='op'>)</span>, 
+            prior <span class='op'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span><span class='op'>(</span><span class='st'>"normal(0,5)"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span> 
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
+       
 <span class='co'>## ordinal regression with family "cumulative" </span>
 <span class='co'>## and random intercept over subjects             </span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span>(<span class='st'>"normal(0,5)"</span>))
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit2</span>)
-}</div></pre>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>subject</span><span class='op'>)</span>, 
+              data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span><span class='op'>(</span><span class='op'>)</span>, 
+              prior <span class='op'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span><span class='op'>(</span><span class='st'>"normal(0,5)"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span> 
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -233,7 +235,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

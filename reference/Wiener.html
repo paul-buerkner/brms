@@ -83,7 +83,7 @@ drift rate delta." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -135,19 +135,19 @@ drift rate delta." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -176,9 +176,26 @@ non-decision time <code>tau</code>, bias  <code>beta</code> and
 drift rate <code>delta</code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>dwiener</span>(<span class='no'>x</span>, <span class='no'>alpha</span>, <span class='no'>tau</span>, <span class='no'>beta</span>, <span class='no'>delta</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>log</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+    <pre class="usage"><span class='fu'>dwiener</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>alpha</span>,
+  <span class='va'>tau</span>,
+  <span class='va'>beta</span>,
+  <span class='va'>delta</span>,
+  resp <span class='op'>=</span> <span class='fl'>1</span>,
+  log <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  backend <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"wiener_backend"</span>, <span class='st'>"Rwiener"</span><span class='op'>)</span>
+<span class='op'>)</span>
 
-<span class='fu'>rwiener</span>(<span class='no'>n</span>, <span class='no'>alpha</span>, <span class='no'>tau</span>, <span class='no'>beta</span>, <span class='no'>delta</span>, <span class='kw'>types</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"q"</span>, <span class='st'>"resp"</span>))</pre>
+<span class='fu'>rwiener</span><span class='op'>(</span>
+  <span class='va'>n</span>,
+  <span class='va'>alpha</span>,
+  <span class='va'>tau</span>,
+  <span class='va'>beta</span>,
+  <span class='va'>delta</span>,
+  types <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"q"</span>, <span class='st'>"resp"</span><span class='op'>)</span>,
+  backend <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"wiener_backend"</span>, <span class='st'>"Rwiener"</span><span class='op'>)</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -215,6 +232,13 @@ where <code>TRUE</code> indicates <code>"upper"</code> and
       <td><p>Logical; If <code>TRUE</code>, values are returned on the log scale.</p></td>
     </tr>
     <tr>
+      <th>backend</th>
+      <td><p>Name of the package to use as backend for the computations.
+Either <code>"Rwiener"</code> (the default) or <code>"rtdists"</code>.
+Can be set globally for the current <span style="R">R</span> session via the
+<code>"wiener_backend"</code> option (see <code><a href='https://rdrr.io/r/base/options.html'>options</a></code>).</p></td>
+    </tr>
+    <tr>
       <th>n</th>
       <td><p>Number of samples to draw from the distribution.</p></td>
     </tr>
@@ -229,11 +253,13 @@ return only one of the two types.</p></td>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>These are wrappers around functions of the <span class="pkg">RWiener</span> package.  
-See <code><a href='../articles/brms_families.html'>vignette("brms_families")</a></code> for details on the parameterization.</p>
+    <p>These are wrappers around functions of the <span class="pkg">RWiener</span> or <span class="pkg">rtdists</span>
+package (depending on the chosen <code>backend</code>). See
+<code><a href='../articles/brms_families.html'>vignette("brms_families")</a></code> for details on the parameterization.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code>wienerdist</code></p></div>
+    <div class='dont-index'><p><code>wienerdist</code>,
+  <code><a href='https://rdrr.io/pkg/rtdists/man/Diffusion.html'>Diffusion</a></code></p></div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -250,7 +276,7 @@ See <code><a href='../articles/brms_families.html'>vignette("brms_families")</a>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

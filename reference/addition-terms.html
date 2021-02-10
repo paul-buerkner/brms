@@ -82,7 +82,7 @@ known measurement error." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ known measurement error." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -174,31 +174,31 @@ in <span class="pkg">brms</span> models, such as censoring, truncation, or
 known measurement error.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>resp_se</span>(<span class='no'>x</span>, <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+    <pre class="usage"><span class='fu'>resp_se</span><span class='op'>(</span><span class='va'>x</span>, sigma <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
-<span class='fu'>resp_weights</span>(<span class='no'>x</span>, <span class='kw'>scale</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'>resp_weights</span><span class='op'>(</span><span class='va'>x</span>, scale <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
-<span class='fu'>resp_trials</span>(<span class='no'>x</span>)
+<span class='fu'>resp_trials</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
 
-<span class='fu'>resp_thres</span>(<span class='no'>x</span>, <span class='kw'>gr</span> <span class='kw'>=</span> <span class='fl'>NA</span>)
+<span class='fu'>resp_thres</span><span class='op'>(</span><span class='va'>x</span>, gr <span class='op'>=</span> <span class='cn'>NA</span><span class='op'>)</span>
 
-<span class='fu'>resp_cat</span>(<span class='no'>x</span>)
+<span class='fu'>resp_cat</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
 
-<span class='fu'>resp_dec</span>(<span class='no'>x</span>)
+<span class='fu'>resp_dec</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
 
-<span class='fu'>resp_cens</span>(<span class='no'>x</span>, <span class='kw'>y2</span> <span class='kw'>=</span> <span class='fl'>NA</span>)
+<span class='fu'>resp_cens</span><span class='op'>(</span><span class='va'>x</span>, y2 <span class='op'>=</span> <span class='cn'>NA</span><span class='op'>)</span>
 
-<span class='fu'>resp_trunc</span>(<span class='kw'>lb</span> <span class='kw'>=</span> -<span class='fl'>Inf</span>, <span class='kw'>ub</span> <span class='kw'>=</span> <span class='fl'>Inf</span>)
+<span class='fu'>resp_trunc</span><span class='op'>(</span>lb <span class='op'>=</span> <span class='op'>-</span><span class='cn'>Inf</span>, ub <span class='op'>=</span> <span class='cn'>Inf</span><span class='op'>)</span>
 
-<span class='fu'>resp_mi</span>(<span class='kw'>sdy</span> <span class='kw'>=</span> <span class='fl'>NA</span>)
+<span class='fu'>resp_mi</span><span class='op'>(</span>sdy <span class='op'>=</span> <span class='cn'>NA</span><span class='op'>)</span>
 
-<span class='fu'>resp_rate</span>(<span class='no'>denom</span>)
+<span class='fu'>resp_rate</span><span class='op'>(</span><span class='va'>denom</span><span class='op'>)</span>
 
-<span class='fu'>resp_subset</span>(<span class='no'>x</span>)
+<span class='fu'>resp_subset</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
 
-<span class='fu'>resp_vreal</span>(<span class='no'>...</span>)
+<span class='fu'>resp_vreal</span><span class='op'>(</span><span class='va'>...</span><span class='op'>)</span>
 
-<span class='fu'>resp_vint</span>(<span class='no'>...</span>)</pre>
+<span class='fu'>resp_vint</span><span class='op'>(</span><span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -285,37 +285,39 @@ For <code>resp_vint</code>, vectors of integer values.</p></td>
   <code><a href='brmsformula.html'>brmsformula</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## Random effects meta-analysis</span>
-<span class='no'>nstudies</span> <span class='kw'>&lt;-</span> <span class='fl'>20</span>
-<span class='no'>true_effects</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>nstudies</span>, <span class='fl'>0.5</span>, <span class='fl'>0.2</span>)
-<span class='no'>sei</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Uniform.html'>runif</a></span>(<span class='no'>nstudies</span>, <span class='fl'>0.05</span>, <span class='fl'>0.3</span>)
-<span class='no'>outcomes</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>nstudies</span>, <span class='no'>true_effects</span>, <span class='no'>sei</span>)
-<span class='no'>data1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='no'>outcomes</span>, <span class='no'>sei</span>)
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>outcomes</span> <span class='kw'>|</span> <span class='fu'>se</span>(<span class='no'>sei</span>, <span class='kw'>sigma</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>) ~ <span class='fl'>1</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
+<span class='va'>nstudies</span> <span class='op'>&lt;-</span> <span class='fl'>20</span>
+<span class='va'>true_effects</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>nstudies</span>, <span class='fl'>0.5</span>, <span class='fl'>0.2</span><span class='op'>)</span>
+<span class='va'>sei</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Uniform.html'>runif</a></span><span class='op'>(</span><span class='va'>nstudies</span>, <span class='fl'>0.05</span>, <span class='fl'>0.3</span><span class='op'>)</span>
+<span class='va'>outcomes</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>nstudies</span>, <span class='va'>true_effects</span>, <span class='va'>sei</span><span class='op'>)</span>
+<span class='va'>data1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>outcomes</span>, <span class='va'>sei</span><span class='op'>)</span>
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>outcomes</span> <span class='op'>|</span> <span class='fu'>se</span><span class='op'>(</span><span class='va'>sei</span>, sigma <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>~</span> <span class='fl'>1</span>,
+            data <span class='op'>=</span> <span class='va'>data1</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'>## Probit regression using the binomial family</span>
-<span class='no'>n</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fl'>1</span>:<span class='fl'>10</span>, <span class='fl'>100</span>, <span class='fl'>TRUE</span>)  <span class='co'># number of trials</span>
-<span class='no'>success</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span>(<span class='fl'>100</span>, <span class='kw'>size</span> <span class='kw'>=</span> <span class='no'>n</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.4</span>)
-<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>)
-<span class='no'>data2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='no'>n</span>, <span class='no'>success</span>, <span class='no'>x</span>)
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>success</span> <span class='kw'>|</span> <span class='fu'>trials</span>(<span class='no'>n</span>) ~ <span class='no'>x</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data2</span>,
-            <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>binomial</a></span>(<span class='st'>"probit"</span>))
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
+<span class='va'>n</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>10</span>, <span class='fl'>100</span>, <span class='cn'>TRUE</span><span class='op'>)</span>  <span class='co'># number of trials</span>
+<span class='va'>success</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='fl'>100</span>, size <span class='op'>=</span> <span class='va'>n</span>, prob <span class='op'>=</span> <span class='fl'>0.4</span><span class='op'>)</span>
+<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span><span class='op'>)</span>
+<span class='va'>data2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>success</span>, <span class='va'>x</span><span class='op'>)</span>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>success</span> <span class='op'>|</span> <span class='fu'>trials</span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>x</span>, data <span class='op'>=</span> <span class='va'>data2</span>,
+            family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>binomial</a></span><span class='op'>(</span><span class='st'>"probit"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
 
 <span class='co'>## Survival regression modeling the time between the first </span>
 <span class='co'>## and second recurrence of an infection in kidney patients.</span>
-<span class='no'>fit3</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> * <span class='no'>sex</span> + <span class='no'>disease</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span>())
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit3</span>)
+<span class='va'>fit3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>time</span> <span class='op'>|</span> <span class='fu'>cens</span><span class='op'>(</span><span class='va'>censored</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>*</span> <span class='va'>sex</span> <span class='op'>+</span> <span class='va'>disease</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>, 
+            data <span class='op'>=</span> <span class='va'>kidney</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>
 
 <span class='co'>## Poisson model with truncated counts  </span>
-<span class='no'>fit4</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> <span class='kw'>|</span> <span class='fu'><a href='https://rdrr.io/r/base/Round.html'>trunc</a></span>(<span class='kw'>ub</span> <span class='kw'>=</span> <span class='fl'>104</span>) ~ <span class='no'>zBase</span> * <span class='no'>Trt</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>())
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit4</span>)
-}</div></pre>
+<span class='va'>fit4</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>|</span> <span class='fu'><a href='https://rdrr.io/r/base/Round.html'>trunc</a></span><span class='op'>(</span>ub <span class='op'>=</span> <span class='fl'>104</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span>, 
+            data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit4</span><span class='op'>)</span>
+<span class='op'>}</span>
+  
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -331,7 +333,7 @@ For <code>resp_vint</code>, vectors of integer values.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

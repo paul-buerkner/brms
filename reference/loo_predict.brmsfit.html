@@ -81,7 +81,7 @@ function of the loo package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ function of the loo package." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -173,27 +173,27 @@ function of the <span class="pkg">loo</span> package.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>loo_predict</span>(
-  <span class='no'>object</span>,
-  <span class='kw'>type</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"mean"</span>, <span class='st'>"var"</span>, <span class='st'>"quantile"</span>),
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
-  <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)
+<span class='fu'>loo_predict</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  type <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"mean"</span>, <span class='st'>"var"</span>, <span class='st'>"quantile"</span><span class='op'>)</span>,
+  probs <span class='op'>=</span> <span class='fl'>0.5</span>,
+  psis_object <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
 <span class='co'># S3 method for brmsfit</span>
-<span class='fu'>loo_linpred</span>(
-  <span class='no'>object</span>,
-  <span class='kw'>type</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"mean"</span>, <span class='st'>"var"</span>, <span class='st'>"quantile"</span>),
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
-  <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)
+<span class='fu'>loo_linpred</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  type <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"mean"</span>, <span class='st'>"var"</span>, <span class='st'>"quantile"</span><span class='op'>)</span>,
+  probs <span class='op'>=</span> <span class='fl'>0.5</span>,
+  psis_object <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
 <span class='co'># S3 method for brmsfit</span>
-<span class='fu'>loo_predictive_interval</span>(<span class='no'>object</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.9</span>, <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>loo_predictive_interval</span><span class='op'>(</span><span class='va'>object</span>, prob <span class='op'>=</span> <span class='fl'>0.9</span>, psis_object <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -215,7 +215,7 @@ Only used if <code>type = quantile</code>.</p></td>
     </tr>
     <tr>
       <th>psis_object</th>
-      <td><p>An optional object returend by <code><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></code>. 
+      <td><p>An optional object returned by <code><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></code>. 
 If <code>psis_object</code> is missing then <code><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></code> is executed 
 internally, which may be time consuming for models fit to very large datasets.</p></td>
     </tr>
@@ -254,22 +254,24 @@ default is <code>prob = 0.9</code> (\(90\)% intervals).</p></td>
   column names.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## data from help("lm")</span>
-<span class='no'>ctl</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>4.17</span>,<span class='fl'>5.58</span>,<span class='fl'>5.18</span>,<span class='fl'>6.11</span>,<span class='fl'>4.50</span>,<span class='fl'>4.61</span>,<span class='fl'>5.17</span>,<span class='fl'>4.53</span>,<span class='fl'>5.33</span>,<span class='fl'>5.14</span>)
-<span class='no'>trt</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>4.81</span>,<span class='fl'>4.17</span>,<span class='fl'>4.41</span>,<span class='fl'>3.59</span>,<span class='fl'>5.87</span>,<span class='fl'>3.83</span>,<span class='fl'>6.03</span>,<span class='fl'>4.89</span>,<span class='fl'>4.32</span>,<span class='fl'>4.69</span>)
-<span class='no'>d</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(
-  <span class='kw'>weight</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='no'>ctl</span>, <span class='no'>trt</span>),
-  <span class='kw'>group</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/gl.html'>gl</a></span>(<span class='fl'>2</span>, <span class='fl'>10</span>, <span class='fl'>20</span>, <span class='kw'>labels</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"Ctl"</span>, <span class='st'>"Trt"</span>))
-)
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>weight</span> ~ <span class='no'>group</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>d</span>)
-<span class='fu'>loo_predictive_interval</span>(<span class='no'>fit</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.8</span>)
+<span class='va'>ctl</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>4.17</span>,<span class='fl'>5.58</span>,<span class='fl'>5.18</span>,<span class='fl'>6.11</span>,<span class='fl'>4.50</span>,<span class='fl'>4.61</span>,<span class='fl'>5.17</span>,<span class='fl'>4.53</span>,<span class='fl'>5.33</span>,<span class='fl'>5.14</span><span class='op'>)</span>
+<span class='va'>trt</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>4.81</span>,<span class='fl'>4.17</span>,<span class='fl'>4.41</span>,<span class='fl'>3.59</span>,<span class='fl'>5.87</span>,<span class='fl'>3.83</span>,<span class='fl'>6.03</span>,<span class='fl'>4.89</span>,<span class='fl'>4.32</span>,<span class='fl'>4.69</span><span class='op'>)</span>
+<span class='va'>d</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  weight <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='va'>ctl</span>, <span class='va'>trt</span><span class='op'>)</span>, 
+  group <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/gl.html'>gl</a></span><span class='op'>(</span><span class='fl'>2</span>, <span class='fl'>10</span>, <span class='fl'>20</span>, labels <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Ctl"</span>, <span class='st'>"Trt"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>)</span> 
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>weight</span> <span class='op'>~</span> <span class='va'>group</span>, data <span class='op'>=</span> <span class='va'>d</span><span class='op'>)</span>
+<span class='fu'>loo_predictive_interval</span><span class='op'>(</span><span class='va'>fit</span>, prob <span class='op'>=</span> <span class='fl'>0.8</span><span class='op'>)</span>
 
 <span class='co'>## optionally log-weights can be pre-computed and reused</span>
-<span class='no'>psis</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>loo</span><span class='kw ns'>::</span><span class='fu'><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></span>(-<span class='fu'><a href='log_lik.brmsfit.html'>log_lik</a></span>(<span class='no'>fit</span>), <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fl'>2</span>)
-<span class='fu'>loo_predictive_interval</span>(<span class='no'>fit</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.8</span>, <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='no'>psis</span>)
-<span class='fu'>loo_predict</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"var"</span>, <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='no'>psis</span>)
-}</div></pre>
+<span class='va'>psis</span> <span class='op'>&lt;-</span> <span class='fu'>loo</span><span class='fu'>::</span><span class='fu'><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></span><span class='op'>(</span><span class='op'>-</span><span class='fu'><a href='log_lik.brmsfit.html'>log_lik</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>, cores <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'>loo_predictive_interval</span><span class='op'>(</span><span class='va'>fit</span>, prob <span class='op'>=</span> <span class='fl'>0.8</span>, psis_object <span class='op'>=</span> <span class='va'>psis</span><span class='op'>)</span>
+<span class='fu'>loo_predict</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"var"</span>, psis_object <span class='op'>=</span> <span class='va'>psis</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -285,7 +287,7 @@ default is <code>prob = 0.9</code> (\(90\)% intervals).</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

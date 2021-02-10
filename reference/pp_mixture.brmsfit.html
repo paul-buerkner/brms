@@ -82,7 +82,7 @@ estimates." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ estimates." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -175,21 +175,21 @@ estimates.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>pp_mixture</span>(
-  <span class='no'>x</span>,
-  <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>re_formula</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>subset</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>log</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>summary</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>robust</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0.025</span>, <span class='fl'>0.975</span>),
-  <span class='no'>...</span>
-)
+<span class='fu'>pp_mixture</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re_formula <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  log <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  summary <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  robust <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  probs <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.025</span>, <span class='fl'>0.975</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
-<span class='fu'>pp_mixture</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>pp_mixture</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -253,7 +253,7 @@ function. Only used if <code>summary</code> is <code>TRUE</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Further arguments passed to <code><a href='prepare_predictions.html'>prepare_predictions</a></code>
+      <td><p>Further arguments passed to <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code>
 that control several aspects of data validation and prediction.</p></td>
     </tr>
     </table>
@@ -280,35 +280,37 @@ $$P(Yn) = \sum (k=1,...,K) P(Yn | Kn = k) P(Kn = k)$$
 is a normalizing constant.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## simulate some data</span>
-<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span>(<span class='fl'>1234</span>)
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(
-  <span class='kw'>y</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>), <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>50</span>, <span class='fl'>2</span>)),
-  <span class='kw'>x</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>150</span>)
-)
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>1234</span><span class='op'>)</span>
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  y <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>50</span>, <span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>, 
+  x <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>150</span><span class='op'>)</span>
+<span class='op'>)</span>
 <span class='co'>## fit a simple normal mixture model</span>
-<span class='no'>mix</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='mixture.html'>mixture</a></span>(<span class='no'>gaussian</span>, <span class='kw'>nmix</span> <span class='kw'>=</span> <span class='fl'>2</span>)
-<span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(
-  <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>normal</span>(<span class='fl'>0</span>, <span class='fl'>5</span>), <span class='no'>Intercept</span>, <span class='kw'>nlpar</span> <span class='kw'>=</span> <span class='no'>mu1</span>),
-  <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>normal</span>(<span class='fl'>0</span>, <span class='fl'>5</span>), <span class='no'>Intercept</span>, <span class='kw'>nlpar</span> <span class='kw'>=</span> <span class='no'>mu2</span>),
-  <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'><a href='brmsfamily.html'>dirichlet</a></span>(<span class='fl'>2</span>, <span class='fl'>2</span>), <span class='no'>theta</span>)
-)
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>), <span class='no'>dat</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='no'>mix</span>,
-            <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>inits</span> <span class='kw'>=</span> <span class='fl'>0</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
-
+<span class='va'>mix</span> <span class='op'>&lt;-</span> <span class='fu'><a href='mixture.html'>mixture</a></span><span class='op'>(</span><span class='va'>gaussian</span>, nmix <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='va'>prior</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span>
+  <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>5</span><span class='op'>)</span>, <span class='va'>Intercept</span>, nlpar <span class='op'>=</span> <span class='va'>mu1</span><span class='op'>)</span>,
+  <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>5</span><span class='op'>)</span>, <span class='va'>Intercept</span>, nlpar <span class='op'>=</span> <span class='va'>mu2</span><span class='op'>)</span>,
+  <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'><a href='brmsfamily.html'>dirichlet</a></span><span class='op'>(</span><span class='fl'>2</span>, <span class='fl'>2</span><span class='op'>)</span>, <span class='va'>theta</span><span class='op'>)</span>
+<span class='op'>)</span>
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span><span class='op'>)</span>, <span class='va'>dat</span>, family <span class='op'>=</span> <span class='va'>mix</span>,
+            prior <span class='op'>=</span> <span class='va'>prior</span>, chains <span class='op'>=</span> <span class='fl'>2</span>, inits <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
+   
 <span class='co'>## compute the membership probabilities         </span>
-<span class='no'>ppm</span> <span class='kw'>&lt;-</span> <span class='fu'>pp_mixture</span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>ppm</span>)
+<span class='va'>ppm</span> <span class='op'>&lt;-</span> <span class='fu'>pp_mixture</span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>ppm</span><span class='op'>)</span>
 
 <span class='co'>## extract point estimates for each observation</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>ppm</span>[, <span class='fl'>1</span>, ])
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>ppm</span><span class='op'>[</span>, <span class='fl'>1</span>, <span class='op'>]</span><span class='op'>)</span>
 
 <span class='co'>## classify every observation according to </span>
 <span class='co'>## the most likely component</span>
-<span class='fu'><a href='https://rdrr.io/r/base/apply.html'>apply</a></span>(<span class='no'>ppm</span>[, <span class='fl'>1</span>, ], <span class='fl'>1</span>, <span class='no'>which.max</span>)
-}</div></pre>
+<span class='fu'><a href='https://rdrr.io/r/base/apply.html'>apply</a></span><span class='op'>(</span><span class='va'>ppm</span><span class='op'>[</span>, <span class='fl'>1</span>, <span class='op'>]</span>, <span class='fl'>1</span>, <span class='va'>which.max</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -324,7 +326,7 @@ is a normalizing constant.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

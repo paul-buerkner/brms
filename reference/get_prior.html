@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Overview on Priors for <span class="pkg">brms</span> Models — get_prior • brms</title>
+<title>Overview on Priors for brms Models — get_prior • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Overview on Priors for <span class="pkg">brms</span> Models — get_prior" />
+<meta property="og:title" content="Overview on Priors for brms Models — get_prior" />
 <meta property="og:description" content="Get information on all parameters (and parameter classes) for which priors 
 may be specified including default priors." />
 <meta property="og:image" content="/logo.png" />
@@ -81,7 +81,7 @@ may be specified including default priors." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ may be specified including default priors." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -172,15 +172,16 @@ may be specified including default priors." />
 may be specified including default priors.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>get_prior</span>(
-  <span class='no'>formula</span>,
-  <span class='no'>data</span>,
-  <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
-  <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)</pre>
+    <pre class="usage"><span class='fu'>get_prior</span><span class='op'>(</span>
+  <span class='va'>formula</span>,
+  <span class='va'>data</span>,
+  family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+  autocor <span class='op'>=</span> <span class='cn'>NULL</span>,
+  data2 <span class='op'>=</span> <span class='cn'>NULL</span>,
+  knots <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -221,6 +222,13 @@ It is now recommend to specify autocorrelation terms directly
 within <code>formula</code>. See <code><a href='brmsformula.html'>brmsformula</a></code> for more details.</p></td>
     </tr>
     <tr>
+      <th>data2</th>
+      <td><p>A named <code>list</code> of objects containing data, which
+cannot be passed via argument <code>data</code>. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.</p></td>
+    </tr>
+    <tr>
       <th>knots</th>
       <td><p>Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
@@ -253,33 +261,47 @@ decreased. It is now recommended to use the <code>sparse</code> argument of
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'>## get all parameters and parameters classes to define priors on</span>
-(<span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'>get_prior</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>obs</span>),
-                    <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>()))</div><div class='output co'>#&gt;                     prior     class       coef   group resp dpar nlpar bound
-#&gt; 1                                 b                                         
-#&gt; 2                                 b       Trt1                              
-#&gt; 3                                 b       zAge                              
-#&gt; 4                                 b      zBase                              
-#&gt; 5                                 b zBase:Trt1                              
-#&gt; 6  student_t(3, 1.4, 2.5) Intercept                                         
-#&gt; 7    student_t(3, 0, 2.5)        sd                                         
-#&gt; 8                                sd                obs                      
-#&gt; 9                                sd  Intercept     obs                      
-#&gt; 10                               sd            patient                      
-#&gt; 11                               sd  Intercept patient                      </div><div class='input'>
+<span class='op'>(</span><span class='va'>prior</span> <span class='op'>&lt;-</span> <span class='fu'>get_prior</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>obs</span><span class='op'>)</span>,
+                    data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>   
+</div><div class='output co'>#&gt;                   prior     class       coef   group resp dpar nlpar bound
+#&gt;                  (flat)         b                                         
+#&gt;                  (flat)         b       Trt1                              
+#&gt;                  (flat)         b       zAge                              
+#&gt;                  (flat)         b      zBase                              
+#&gt;                  (flat)         b zBase:Trt1                              
+#&gt;  student_t(3, 1.4, 2.5) Intercept                                         
+#&gt;    student_t(3, 0, 2.5)        sd                                         
+#&gt;    student_t(3, 0, 2.5)        sd                obs                      
+#&gt;    student_t(3, 0, 2.5)        sd  Intercept     obs                      
+#&gt;    student_t(3, 0, 2.5)        sd            patient                      
+#&gt;    student_t(3, 0, 2.5)        sd  Intercept patient                      
+#&gt;        source
+#&gt;       default
+#&gt;  (vectorized)
+#&gt;  (vectorized)
+#&gt;  (vectorized)
+#&gt;  (vectorized)
+#&gt;       default
+#&gt;       default
+#&gt;  (vectorized)
+#&gt;  (vectorized)
+#&gt;  (vectorized)
+#&gt;  (vectorized)</div><div class='input'>         
 <span class='co'>## define a prior on all population-level effects a once</span>
-<span class='no'>prior</span>$<span class='no'>prior</span>[<span class='fl'>1</span>] <span class='kw'>&lt;-</span> <span class='st'>"normal(0,10)"</span>
+<span class='va'>prior</span><span class='op'>$</span><span class='va'>prior</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='st'>"normal(0,10)"</span>
 
 <span class='co'>## define a specific prior on the population-level effect of Trt</span>
-<span class='no'>prior</span>$<span class='no'>prior</span>[<span class='fl'>5</span>] <span class='kw'>&lt;-</span> <span class='st'>"student_t(10, 0, 5)"</span>
+<span class='va'>prior</span><span class='op'>$</span><span class='va'>prior</span><span class='op'>[</span><span class='fl'>5</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='st'>"student_t(10, 0, 5)"</span>       
 
 <span class='co'>## verify that the priors indeed found their way into Stan's model code</span>
-<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>obs</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
+<span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>obs</span><span class='op'>)</span>,
+              data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span>, 
+              prior <span class='op'>=</span> <span class='va'>prior</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; // generated with brms 2.14.11
 #&gt; functions {
 #&gt; }
 #&gt; data {
-#&gt;   int&lt;lower=1&gt; N;  // number of observations
+#&gt;   int&lt;lower=1&gt; N;  // total number of observations
 #&gt;   int Y[N];  // response variable
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
@@ -321,13 +343,17 @@ decreased. It is now recommended to use the <code>sparse</code> argument of
 #&gt;   r_2_1 = (sd_2[1] * (z_2[1]));
 #&gt; }
 #&gt; model {
-#&gt;   // initialize linear predictor term
-#&gt;   vector[N] mu = Intercept + Xc * b;
-#&gt;   for (n in 1:N) {
-#&gt;     // add more terms to the linear predictor
-#&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n];
+#&gt;   // likelihood including constants
+#&gt;   if (!prior_only) {
+#&gt;     // initialize linear predictor term
+#&gt;     vector[N] mu = Intercept + rep_vector(0.0, N);
+#&gt;     for (n in 1:N) {
+#&gt;       // add more terms to the linear predictor
+#&gt;       mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n];
+#&gt;     }
+#&gt;     target += poisson_log_glm_lpmf(Y | Xc, mu, b);
 #&gt;   }
-#&gt;   // priors including all constants
+#&gt;   // priors including constants
 #&gt;   target += normal_lpdf(b[1] | 0,10);
 #&gt;   target += normal_lpdf(b[2] | 0,10);
 #&gt;   target += normal_lpdf(b[3] | 0,10);
@@ -339,10 +365,6 @@ decreased. It is now recommended to use the <code>sparse</code> argument of
 #&gt;   target += student_t_lpdf(sd_2 | 3, 0, 2.5)
 #&gt;     - 1 * student_t_lccdf(0 | 3, 0, 2.5);
 #&gt;   target += std_normal_lpdf(z_2[1]);
-#&gt;   // likelihood including all constants
-#&gt;   if (!prior_only) {
-#&gt;     target += poisson_log_lpmf(Y | mu);
-#&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
@@ -364,7 +386,7 @@ decreased. It is now recommended to use the <code>sparse</code> argument of
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

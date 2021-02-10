@@ -48,7 +48,7 @@
 
 <meta property="og:title" content="Rename Parameters — rename_pars" />
 <meta property="og:description" content="Rename parameters within the stanfit object after model fitting to
-ensure reasonable parameter names. This function is usally called
+ensure reasonable parameter names. This function is usually called
 automatically by brm and users will rarely be required to call
 it themselves." />
 <meta property="og:image" content="/logo.png" />
@@ -83,7 +83,7 @@ it themselves." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -135,19 +135,19 @@ it themselves." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -171,12 +171,12 @@ it themselves." />
 
     <div class="ref-description">
     <p>Rename parameters within the <code>stanfit</code> object after model fitting to
-ensure reasonable parameter names. This function is usally called
+ensure reasonable parameter names. This function is usually called
 automatically by <code><a href='brm.html'>brm</a></code> and users will rarely be required to call
 it themselves.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>rename_pars</span>(<span class='no'>x</span>)</pre>
+    <pre class="usage"><span class='fu'>rename_pars</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -192,18 +192,20 @@ it themselves.</p>
     <p>A brmfit object with adjusted parameter names.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># fit a model manually via rstan</span>
-<span class='no'>scode</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='no'>sdata</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='no'>stanfit</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>rstan</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span>(<span class='kw'>model_code</span> <span class='kw'>=</span> <span class='no'>scode</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>sdata</span>)
+<span class='va'>scode</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='va'>sdata</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='va'>stanfit</span> <span class='op'>&lt;-</span> <span class='fu'>rstan</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span><span class='op'>(</span>model_code <span class='op'>=</span> <span class='va'>scode</span>, data <span class='op'>=</span> <span class='va'>sdata</span><span class='op'>)</span>
 
 <span class='co'># feed the Stan model back into brms</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>empty</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='no'>fit</span>$<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='no'>stanfit</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'>rename_pars</span>(<span class='no'>fit</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit</span>)
-}</div></pre>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span>, empty <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>fit</span><span class='op'>$</span><span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='va'>stanfit</span>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rename_pars</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -219,7 +221,7 @@ it themselves.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

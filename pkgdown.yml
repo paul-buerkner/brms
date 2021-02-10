@@ -1,5 +1,5 @@
-pandoc: 2.7.3
-pkgdown: 1.5.1
+pandoc: 2.11.2
+pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   brms_customfamilies: brms_customfamilies.html
@@ -10,5 +10,6 @@ articles:
   brms_multivariate: brms_multivariate.html
   brms_nonlinear: brms_nonlinear.html
   brms_phylogenetics: brms_phylogenetics.html
-last_built: 2020-05-27T20:30Z
+  brms_threading: brms_threading.html
+last_built: 2021-02-10T18:04Z
 

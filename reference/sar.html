@@ -82,7 +82,7 @@ model with SAR terms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ model with SAR terms." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -174,7 +174,7 @@ function does not evaluate its arguments -- it exists purely to help set up a
 model with SAR terms.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>sar</span>(<span class='no'>M</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"lag"</span>)</pre>
+    <pre class="usage"><span class='fu'>sar</span><span class='op'>(</span><span class='va'>M</span>, type <span class='op'>=</span> <span class='st'>"lag"</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -214,20 +214,22 @@ provided in the 'Details' section.</p></td>
     <div class='dont-index'><p><code><a href='autocor-terms.html'>autocor-terms</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='no'>oldcol</span>, <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"spdep"</span>)
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>CRIME</span> ~ <span class='no'>INC</span> + <span class='no'>HOVAL</span> + <span class='fu'>sar</span>(<span class='no'>COL.nb</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"lag"</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>COL.OLD</span>, <span class='kw'>data2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>COL.nb</span> <span class='kw'>=</span> <span class='no'>COL.nb</span>),
-            <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fl'>2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit1</span>)
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>oldcol</span>, package <span class='op'>=</span> <span class='st'>"spdep"</span><span class='op'>)</span>
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>CRIME</span> <span class='op'>~</span> <span class='va'>INC</span> <span class='op'>+</span> <span class='va'>HOVAL</span> <span class='op'>+</span> <span class='fu'>sar</span><span class='op'>(</span><span class='va'>COL.nb</span>, type <span class='op'>=</span> <span class='st'>"lag"</span><span class='op'>)</span>, 
+            data <span class='op'>=</span> <span class='va'>COL.OLD</span>, data2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>COL.nb <span class='op'>=</span> <span class='va'>COL.nb</span><span class='op'>)</span>,
+            chains <span class='op'>=</span> <span class='fl'>2</span>, cores <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>CRIME</span> ~ <span class='no'>INC</span> + <span class='no'>HOVAL</span> + <span class='fu'>sar</span>(<span class='no'>COL.nb</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"error"</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>COL.OLD</span>, <span class='kw'>data2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>COL.nb</span> <span class='kw'>=</span> <span class='no'>COL.nb</span>),
-            <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fl'>2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit2</span>)
-}</div></pre>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>CRIME</span> <span class='op'>~</span> <span class='va'>INC</span> <span class='op'>+</span> <span class='va'>HOVAL</span> <span class='op'>+</span> <span class='fu'>sar</span><span class='op'>(</span><span class='va'>COL.nb</span>, type <span class='op'>=</span> <span class='st'>"error"</span><span class='op'>)</span>, 
+            data <span class='op'>=</span> <span class='va'>COL.OLD</span>, data2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>COL.nb <span class='op'>=</span> <span class='va'>COL.nb</span><span class='op'>)</span>,
+            chains <span class='op'>=</span> <span class='fl'>2</span>, cores <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -243,7 +245,7 @@ provided in the 'Details' section.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Predictors with Measurement Error in <span class="pkg">brms</span> Models — me • brms</title>
+<title>Predictors with Measurement Error in brms Models — me • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Predictors with Measurement Error in <span class="pkg">brms</span> Models — me" />
+<meta property="og:title" content="Predictors with Measurement Error in brms Models — me" />
 <meta property="og:description" content="Specify predictors with measurement error. The function does not evaluate its
 arguments -- it exists purely to help set up a model." />
 <meta property="og:image" content="/logo.png" />
@@ -81,7 +81,7 @@ arguments -- it exists purely to help set up a model." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ arguments -- it exists purely to help set up a model." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -172,7 +172,7 @@ arguments -- it exists purely to help set up a model." />
 arguments -- it exists purely to help set up a model.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>me</span>(<span class='no'>x</span>, <span class='no'>sdx</span>, <span class='kw'>gr</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>me</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>sdx</span>, gr <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -206,23 +206,25 @@ to your model formula object (see examples).</p>
     <div class='dont-index'><p><code><a href='brmsformula.html'>brmsformula</a></code>, <code><a href='brmsformula-helpers.html'>brmsformula-helpers</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># sample some data</span>
-<span class='no'>N</span> <span class='kw'>&lt;-</span> <span class='fl'>100</span>
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(
-  <span class='kw'>y</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>N</span>), <span class='kw'>x1</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>N</span>),
-  <span class='kw'>x2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>N</span>), <span class='kw'>sdx</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>abs</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>N</span>, <span class='fl'>1</span>))
- )
+<span class='va'>N</span> <span class='op'>&lt;-</span> <span class='fl'>100</span>
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  y <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>N</span><span class='op'>)</span>, x1 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>N</span><span class='op'>)</span>, 
+  x2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>N</span><span class='op'>)</span>, sdx <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>abs</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>N</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+ <span class='op'>)</span>
 <span class='co'># fit a simple error-in-variables model </span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>me</span>(<span class='no'>x1</span>, <span class='no'>sdx</span>) + <span class='fu'>me</span>(<span class='no'>x2</span>, <span class='no'>sdx</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>,
-           <span class='kw'>save_mevars</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x1</span>, <span class='va'>sdx</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x2</span>, <span class='va'>sdx</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>dat</span>, 
+           save_mevars <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'># turn off modeling of correlations</span>
-<span class='no'>bform</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='fu'>me</span>(<span class='no'>x1</span>, <span class='no'>sdx</span>) + <span class='fu'>me</span>(<span class='no'>x2</span>, <span class='no'>sdx</span>)) + <span class='fu'><a href='brmsformula-helpers.html'>set_mecor</a></span>(<span class='fl'>FALSE</span>)
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>bform</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>, <span class='kw'>save_mevars</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-}</div></pre>
+<span class='va'>bform</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x1</span>, <span class='va'>sdx</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x2</span>, <span class='va'>sdx</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='brmsformula-helpers.html'>set_mecor</a></span><span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>bform</span>, data <span class='op'>=</span> <span class='va'>dat</span>, save_mevars <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='op'>}</span> 
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -238,7 +240,7 @@ to your model formula object (see examples).</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

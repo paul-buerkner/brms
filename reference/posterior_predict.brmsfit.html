@@ -86,7 +86,7 @@ both methods averaged across samples should be very similar." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -138,19 +138,19 @@ both methods averaged across samples should be very similar." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -183,20 +183,21 @@ both methods averaged across samples should be very similar.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>posterior_predict</span>(
-  <span class='no'>object</span>,
-  <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>re_formula</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>re.form</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>transform</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>negative_rt</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>subset</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sort</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>ntrys</span> <span class='kw'>=</span> <span class='fl'>5</span>,
-  <span class='no'>...</span>
-)</pre>
+<span class='fu'>posterior_predict</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re_formula <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re.form <span class='op'>=</span> <span class='cn'>NULL</span>,
+  transform <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  negative_rt <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sort <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  ntrys <span class='op'>=</span> <span class='fl'>5</span>,
+  cores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"mc.cores"</span>, <span class='fl'>1</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -267,59 +268,73 @@ for truncated discrete models only
 (defaults to <code>5</code>). See Details for more information.</p></td>
     </tr>
     <tr>
+      <th>cores</th>
+      <td><p>Number of cores (defaults to <code>1</code>).
+Can be set globally via the <code>mc.cores</code> option.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
-      <td><p>Further arguments passed to <code><a href='prepare_predictions.html'>prepare_predictions</a></code>
+      <td><p>Further arguments passed to <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code>
 that control several aspects of data validation and prediction.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>An <code>array</code> of predicted response values. If <code>summary =
-  FALSE</code>, the output is as an S x N matrix, where S is the number of
-  posterior samples and N is the number of observations. In multivariate
-  models, an additional dimension is added to the output which indexes along
-  the different response variables.</p>
+    <p>An <code>array</code> of predicted response values. In univariate models,
+  the output is as an S x N matrix, where S is the number of posterior
+  samples and N is the number of observations. In multivariate models, an
+  additional dimension is added to the output which indexes along the
+  different response variables.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p><code>NA</code> values within factors in <code>newdata</code>, 
   are interpreted as if all dummy variables of this factor are 
   zero. This allows, for instance, to make predictions of the grand mean 
   when using sum coding.</p>
-<p>For truncated discrete models only: In the absence of any general algorithm
-  to sample from truncated discrete distributions, rejection sampling is
-  applied in this special case. This means that values are sampled until a
-  value lies within the defined truncation boundaries. In practice, this
-  procedure may be rather slow (especially in <span style="R">R</span>). Thus, we try to do
-  approximate rejection sampling by sampling each value <code>ntrys</code> times
-  and then select a valid value. If all values are invalid, the closest
-  boundary is used, instead. If there are more than a few of these
-  pathological cases, a warning will occur suggesting to increase argument
-  <code>ntrys</code>.</p>
+<p>In multilevel models, it is possible to 
+allow new levels of grouping factors to be used in the predictions.
+This can be controlled via argument <code>allow_new_levels</code>.
+New levels can be sampled in multiple ways, which can be controlled
+via argument <code>sample_new_levels</code>. Both of these arguments are
+documented in <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code> along with several
+other useful arguments to control specific aspects of the predictions.</p>
+<p>For truncated discrete models only: In the absence of any general
+  algorithm to sample from truncated discrete distributions, rejection
+  sampling is applied in this special case. This means that values are
+  sampled until a value lies within the defined truncation boundaries. In
+  practice, this procedure may be rather slow (especially in <span style="R">R</span>). Thus, we
+  try to do approximate rejection sampling by sampling each value
+  <code>ntrys</code> times and then select a valid value. If all values are
+  invalid, the closest boundary is used, instead. If there are more than a
+  few of these pathological cases, a warning will occur suggesting to
+  increase argument <code>ntrys</code>.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## fit a model</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> + <span class='no'>sex</span> + (<span class='fl'>1</span> + <span class='no'>age</span> <span class='kw'>||</span> <span class='no'>patient</span>),
-           <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"exponential"</span>, <span class='kw'>inits</span> <span class='kw'>=</span> <span class='st'>"0"</span>)
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>time</span> <span class='op'>|</span> <span class='fu'>cens</span><span class='op'>(</span><span class='va'>censored</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>+</span> <span class='va'>sex</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='va'>age</span> <span class='op'>||</span> <span class='va'>patient</span><span class='op'>)</span>, 
+           data <span class='op'>=</span> <span class='va'>kidney</span>, family <span class='op'>=</span> <span class='st'>"exponential"</span>, inits <span class='op'>=</span> <span class='st'>"0"</span><span class='op'>)</span>
 
 <span class='co'>## predicted responses</span>
-<span class='no'>pp</span> <span class='kw'>&lt;-</span> <span class='fu'>posterior_predict</span>(<span class='no'>fit</span>)
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>pp</span>)
+<span class='va'>pp</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_predict</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>pp</span><span class='op'>)</span>
 
 <span class='co'>## predicted responses excluding the group-level effect of age</span>
-<span class='no'>pp</span> <span class='kw'>&lt;-</span> <span class='fu'>posterior_predict</span>(<span class='no'>fit</span>, <span class='kw'>re_formula</span> <span class='kw'>=</span> ~ (<span class='fl'>1</span> <span class='kw'>|</span> <span class='no'>patient</span>))
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>pp</span>)
+<span class='va'>pp</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_predict</span><span class='op'>(</span><span class='va'>fit</span>, re_formula <span class='op'>=</span> <span class='op'>~</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>|</span> <span class='va'>patient</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>pp</span><span class='op'>)</span>
 
 <span class='co'>## predicted responses of patient 1 for new data</span>
-<span class='no'>newdata</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(
-  <span class='kw'>sex</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"male"</span>, <span class='st'>"female"</span>)),
-  <span class='kw'>age</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>20</span>, <span class='fl'>50</span>),
-  <span class='kw'>patient</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1</span>, <span class='fl'>1</span>)
-)
-<span class='no'>pp</span> <span class='kw'>&lt;-</span> <span class='fu'>posterior_predict</span>(<span class='no'>fit</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='no'>newdata</span>)
-<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span>(<span class='no'>pp</span>)
-}</div></pre>
+<span class='va'>newdata</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  sex <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"male"</span>, <span class='st'>"female"</span><span class='op'>)</span><span class='op'>)</span>,
+  age <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>20</span>, <span class='fl'>50</span><span class='op'>)</span>,
+  patient <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>1</span><span class='op'>)</span>
+<span class='op'>)</span>
+<span class='va'>pp</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_predict</span><span class='op'>(</span><span class='va'>fit</span>, newdata <span class='op'>=</span> <span class='va'>newdata</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>pp</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -335,7 +350,7 @@ that control several aspects of data validation and prediction.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

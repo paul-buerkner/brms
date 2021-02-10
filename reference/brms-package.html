@@ -50,11 +50,11 @@
 <meta property="og:description" content="
    Stan Development Team
 The brms package provides an interface to fit Bayesian generalized
-multivariate (non-)linear multilevel models using Stan, which is a 
-C++ package for obtaining full Bayesian inference (see http://mc-stan.org/).
-The formula syntax is an extended version of the syntax applied in the 
-lme4 package to provide a familiar and simple interface for 
-performing regression analyses." />
+multivariate (non-)linear multilevel models using Stan, which is a C++
+package for obtaining full Bayesian inference (see
+https://mc-stan.org/). The formula syntax is an extended version of the
+syntax applied in the lme4 package to provide a familiar and simple
+interface for performing regression analyses." />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -87,7 +87,7 @@ performing regression analyses." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -139,19 +139,19 @@ performing regression analyses." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -174,14 +174,14 @@ performing regression analyses." />
     </div>
 
     <div class="ref-description">
-    <p><img src='figures/stanlogo.png' width="50px" alt="http://mc-stan.org/about/logo/" />
+    <p><img src='figures/stanlogo.png' width="50px" alt="https://mc-stan.org/about/logo/" />
    <em>Stan Development Team</em></p>
 <p>The <span class="pkg">brms</span> package provides an interface to fit Bayesian generalized
-multivariate (non-)linear multilevel models using <span class="pkg">Stan</span>, which is a 
-C++ package for obtaining full Bayesian inference (see <a href='http://mc-stan.org/'>http://mc-stan.org/</a>).
-The formula syntax is an extended version of the syntax applied in the 
-<span class="pkg">lme4</span> package to provide a familiar and simple interface for 
-performing regression analyses.</p>
+multivariate (non-)linear multilevel models using <span class="pkg">Stan</span>, which is a C++
+package for obtaining full Bayesian inference (see
+<a href='https://mc-stan.org/'>https://mc-stan.org/</a>). The formula syntax is an extended version of the
+syntax applied in the <span class="pkg">lme4</span> package to provide a familiar and simple
+interface for performing regression analyses.</p>
     </div>
 
 
@@ -202,15 +202,15 @@ To get an overview on the estimated parameters,
 are perfectly suited. Detailed visual analyses can be performed by applying 
 the <code><a href='pp_check.brmsfit.html'>pp_check</a></code> and <code><a href='mcmc_plot.brmsfit.html'>stanplot</a></code> methods, which both
 rely on the <span class="pkg"><a href='https://mc-stan.org/bayesplot/reference/bayesplot-package.html'>bayesplot</a></span> package.
-Model comparsions can be done via <code><a href='loo.brmsfit.html'>loo</a></code> and <code><a href='waic.brmsfit.html'>waic</a></code>, 
+Model comparisons can be done via <code><a href='loo.brmsfit.html'>loo</a></code> and <code><a href='waic.brmsfit.html'>waic</a></code>, 
 which make use of the <span class="pkg"><a href='https://mc-stan.org/loo/reference/loo-package.html'>loo</a></span> package as well as
 via <code><a href='bayes_factor.brmsfit.html'>bayes_factor</a></code> which relies on the <span class="pkg">bridgesampling</span> package. 
 For a full list of methods to apply, type <code><a href='https://rdrr.io/r/utils/methods.html'>methods(class = "brmsfit")</a></code>.</p>
-<p>Because <span class="pkg">brms</span> is based on <span class="pkg">Stan</span>, a C++ compiler is required. 
-The program Rtools (available on <a href='https://cran.r-project.org/bin/windows/Rtools/'>https://cran.r-project.org/bin/windows/Rtools/</a>) 
-comes with a C++ compiler for Windows. On Mac, you should use Xcode.
-For further instructions on how to get the compilers running, see the
-prerequisites section at the
+<p>Because <span class="pkg">brms</span> is based on <span class="pkg">Stan</span>, a C++ compiler is required. The
+program Rtools (available on
+<a href='https://cran.r-project.org/bin/windows/Rtools/'>https://cran.r-project.org/bin/windows/Rtools/</a>) comes with a C++
+compiler for Windows. On Mac, you should use Xcode. For further instructions
+on how to get the compilers running, see the prerequisites section at the
 <a href='https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started'>RStan-Getting-Started</a>
 page.</p>
 <p>When comparing other packages fitting multilevel models to <span class="pkg">brms</span>, keep 
@@ -233,9 +233,9 @@ Models Using Stan. <em>Journal of Statistical Software</em>, 80(1), 1-28.
 with the R Package brms. <em>The R Journal</em>. 10(1), 395–411. 
 <code>doi:10.32614/RJ-2018-017</code></p>
 <p>The Stan Development Team. <em>Stan Modeling Language User's Guide and
-Reference Manual</em>. <a href='http://mc-stan.org/users/documentation'>http://mc-stan.org/users/documentation</a>.</p>
-<p>Stan Development Team (2018). RStan: the R interface to Stan. R package
-version 2.18.1. <a href='http://mc-stan.org'>http://mc-stan.org</a></p>
+Reference Manual</em>. <a href='https://mc-stan.org/users/documentation/'>https://mc-stan.org/users/documentation/</a>.</p>
+<p>Stan Development Team (2020). RStan: the R interface to Stan. R package
+version 2.21.2. <a href='https://mc-stan.org/'>https://mc-stan.org/</a></p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p><code><a href='brm.html'>brm</a></code>, 
@@ -258,7 +258,7 @@ version 2.18.1. <a href='http://mc-stan.org'>http://mc-stan.org</a></p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

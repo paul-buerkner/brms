@@ -92,7 +92,7 @@ posterior predictive checks and leave-one-out cross-validation." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -144,19 +144,19 @@ posterior predictive checks and leave-one-out cross-validation." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -194,42 +194,45 @@ In addition, model fit can easily be assessed and compared with
 posterior predictive checks and leave-one-out cross-validation.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>brm</span>(
-  <span class='no'>formula</span>,
-  <span class='no'>data</span>,
-  <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
-  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>data2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='st'>"no"</span>,
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>fit</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>save_ranef</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>save_mevars</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>save_all_pars</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>inits</span> <span class='kw'>=</span> <span class='st'>"random"</span>,
-  <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>4</span>,
-  <span class='kw'>iter</span> <span class='kw'>=</span> <span class='fl'>2000</span>,
-  <span class='kw'>warmup</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Round.html'>floor</a></span>(<span class='no'>iter</span>/<span class='fl'>2</span>),
-  <span class='kw'>thin</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span>(<span class='st'>"mc.cores"</span>, <span class='fl'>1L</span>),
-  <span class='kw'>control</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>algorithm</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"sampling"</span>, <span class='st'>"meanfield"</span>, <span class='st'>"fullrank"</span>),
-  <span class='kw'>future</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span>(<span class='st'>"future"</span>, <span class='fl'>FALSE</span>),
-  <span class='kw'>silent</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>save_model</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stan_model_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>save_dso</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>empty</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>rename</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='no'>...</span>
-)</pre>
+    <pre class="usage"><span class='fu'>brm</span><span class='op'>(</span>
+  <span class='va'>formula</span>,
+  <span class='va'>data</span>,
+  family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+  prior <span class='op'>=</span> <span class='cn'>NULL</span>,
+  autocor <span class='op'>=</span> <span class='cn'>NULL</span>,
+  data2 <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cov_ranef <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sample_prior <span class='op'>=</span> <span class='st'>"no"</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  knots <span class='op'>=</span> <span class='cn'>NULL</span>,
+  stanvars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  stan_funs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  fit <span class='op'>=</span> <span class='cn'>NA</span>,
+  save_pars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  save_ranef <span class='op'>=</span> <span class='cn'>NULL</span>,
+  save_mevars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  save_all_pars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  inits <span class='op'>=</span> <span class='st'>"random"</span>,
+  chains <span class='op'>=</span> <span class='fl'>4</span>,
+  iter <span class='op'>=</span> <span class='fl'>2000</span>,
+  warmup <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Round.html'>floor</a></span><span class='op'>(</span><span class='va'>iter</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>)</span>,
+  thin <span class='op'>=</span> <span class='fl'>1</span>,
+  cores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"mc.cores"</span>, <span class='fl'>1</span><span class='op'>)</span>,
+  threads <span class='op'>=</span> <span class='cn'>NULL</span>,
+  normalize <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  control <span class='op'>=</span> <span class='cn'>NULL</span>,
+  algorithm <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"brms.algorithm"</span>, <span class='st'>"sampling"</span><span class='op'>)</span>,
+  backend <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"brms.backend"</span>, <span class='st'>"rstan"</span><span class='op'>)</span>,
+  future <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"future"</span>, <span class='cn'>FALSE</span><span class='op'>)</span>,
+  silent <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  seed <span class='op'>=</span> <span class='cn'>NA</span>,
+  save_model <span class='op'>=</span> <span class='cn'>NULL</span>,
+  stan_model_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  empty <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  rename <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -262,7 +265,7 @@ linear <code>gaussian</code> model is applied. In multivariate models,
       <th>prior</th>
       <td><p>One or more <code>brmsprior</code> objects created by
 <code><a href='set_prior.html'>set_prior</a></code> or related functions and combined using the
-<code>c</code> method or the <code>+</code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
+<code>c</code> method or the <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
 for more help.</p></td>
     </tr>
     <tr>
@@ -349,26 +352,33 @@ recommended to use this argument directly, but to call the
 <code><a href='update.brmsfit.html'>update</a></code> method, instead.</p></td>
     </tr>
     <tr>
+      <th>save_pars</th>
+      <td><p>An object generated by <code><a href='save_pars.html'>save_pars</a></code> controlling
+which parameters should be saved in the model. The argument has no
+impact on the model fitting itself.</p></td>
+    </tr>
+    <tr>
       <th>save_ranef</th>
-      <td><p>A flag to indicate if group-level effects for each level of
-the grouping factor(s) should be saved (default is <code>TRUE</code>). Set to
-<code>FALSE</code> to save memory. The argument has no impact on the model
-fitting itself.</p></td>
+      <td><p>(Deprecated) A flag to indicate if group-level effects for
+each level of the grouping factor(s) should be saved (default is
+<code>TRUE</code>). Set to <code>FALSE</code> to save memory. The argument has no
+impact on the model fitting itself.</p></td>
     </tr>
     <tr>
       <th>save_mevars</th>
-      <td><p>A flag to indicate if samples of latent noise-free
-variables obtained by using <code>me</code> and <code>mi</code> terms should be saved
-(default is <code>FALSE</code>). Saving these samples allows to better use
-methods such as <code>predict</code> with the latent variables but leads to very
-large <span style="R">R</span> objects even for models of moderate size and complexity.</p></td>
+      <td><p>(Deprecated) A flag to indicate if samples of latent
+noise-free variables obtained by using <code>me</code> and <code>mi</code> terms should
+be saved (default is <code>FALSE</code>). Saving these samples allows to better
+use methods such as <code>predict</code> with the latent variables but leads to
+very large <span style="R">R</span> objects even for models of moderate size and complexity.</p></td>
     </tr>
     <tr>
       <th>save_all_pars</th>
-      <td><p>A flag to indicate if samples from all variables defined
-in Stan's <code>parameters</code> block should be saved (default is
-<code>FALSE</code>). Saving these samples is required in order to apply the
-methods <code>bridge_sampler</code>, <code>bayes_factor</code>, and <code>post_prob</code>.</p></td>
+      <td><p>(Deprecated) A flag to indicate if samples from all
+variables defined in Stan's <code>parameters</code> block should be saved
+(default is <code>FALSE</code>). Saving these samples is required in order to
+apply the methods <code>bridge_sampler</code>, <code>bayes_factor</code>, and
+<code>post_prob</code>.</p></td>
     </tr>
     <tr>
       <th>inits</th>
@@ -381,7 +391,11 @@ constant. Generally, setting <code>inits = "0"</code> is worth a try, if chains
 do not behave well. Alternatively, <code>inits</code> can be a list of lists
 containing the initial values, or a function (or function name) generating
 initial values. The latter options are mainly implemented for internal
-testing.</p></td>
+testing but are available to users if necessary. If specifying initial 
+values using a list or a function then currently the parameter names must
+correspond to the names used in the generated Stan code (not the names
+used in <span style="R">R</span>). For more details on specifying initial values you can consult 
+the documentation of the selected <code>backend</code>.</p></td>
     </tr>
     <tr>
       <th>chains</th>
@@ -414,6 +428,23 @@ chains). For non-Windows OS in non-interactive <span style="R">R</span> sessions
 instead of PSOCK clusters.</p></td>
     </tr>
     <tr>
+      <th>threads</th>
+      <td><p>Number of threads to use in within-chain parallelization. For
+more control over the threading process, <code>threads</code> may also be a
+<code>brmsthreads</code> object created by <code><a href='threading.html'>threading</a></code>. Within-chain
+parallelization is experimental! We recommend its use only if you are
+experienced with Stan's <code>reduce_sum</code> function and have a slow running
+model that cannot be sped up by any other means.</p></td>
+    </tr>
+    <tr>
+      <th>normalize</th>
+      <td><p>Logical. Indicates whether normalization constants should
+be included in the Stan code (defaults to <code>TRUE</code>). Setting it
+to <code>FALSE</code> requires Stan version &gt;= 2.25 to work. If <code>FALSE</code>,
+sampling efficiency may be increased but some post processing functions
+such as <code><a href='bridge_sampler.brmsfit.html'>bridge_sampler</a></code> will not be available.</p></td>
+    </tr>
+    <tr>
       <th>control</th>
       <td><p>A named <code>list</code> of parameters to control the sampler's
 behavior. It defaults to <code>NULL</code> so all the default values are used.
@@ -423,11 +454,23 @@ section below. For a comprehensive overview see
     </tr>
     <tr>
       <th>algorithm</th>
-      <td><p>Character string indicating the estimation approach to use.
-Can be <code>"sampling"</code> for MCMC (the default), <code>"meanfield"</code> for
-variational inference with independent normal distributions, or
+      <td><p>Character string naming the estimation approach to use.
+Options are <code>"sampling"</code> for MCMC (the default), <code>"meanfield"</code> for
+variational inference with independent normal distributions,
 <code>"fullrank"</code> for variational inference with a multivariate normal
-distribution.</p></td>
+distribution, or <code>"fixed_param"</code> for sampling from fixed parameter
+values. Can be set globally for the current <span style="R">R</span> session via the
+<code>"brms.algorithm"</code> option (see <code><a href='https://rdrr.io/r/base/options.html'>options</a></code>).</p></td>
+    </tr>
+    <tr>
+      <th>backend</th>
+      <td><p>Character string naming the package to use as the backend for
+fitting the Stan model. Options are <code>"rstan"</code> (the default) or
+<code>"cmdstanr"</code>. Can be set globally for the current <span style="R">R</span> session via the
+<code>"brms.backend"</code> option (see <code><a href='https://rdrr.io/r/base/options.html'>options</a></code>). Details on the
+<span class="pkg">rstan</span> and <span class="pkg">cmdstanr</span> packages are available at
+<a href='https://mc-stan.org/rstan/'>https://mc-stan.org/rstan/</a> and <a href='https://mc-stan.org/cmdstanr/'>https://mc-stan.org/cmdstanr/</a>,
+respectively.</p></td>
     </tr>
     <tr>
       <th>future</th>
@@ -439,11 +482,11 @@ session via the <code>future</code> option. The execution type is controlled via
     </tr>
     <tr>
       <th>silent</th>
-      <td><p>logical; If <code>TRUE</code> (the default), most of the
+      <td><p>Logical; If <code>TRUE</code> (the default), most of the
 informational messages of compiler and sampler are suppressed. The actual
 sampling progress is still printed. Set <code>refresh = 0</code> to turn this off
-as well. To stop Stan from opening additional progress bars, set
-<code>open_progress = FALSE</code>.</p></td>
+as well. If using <code>backend = "rstan"</code> you can also set
+<code>open_progress = FALSE</code> to prevent opening additional progress bars.</p></td>
     </tr>
     <tr>
       <th>seed</th>
@@ -461,14 +504,6 @@ named after the string supplied in <code>save_model</code>.</p></td>
       <th>stan_model_args</th>
       <td><p>A <code>list</code> of further arguments passed to
 <code><a href='https://rdrr.io/pkg/rstan/man/stan_model.html'>stan_model</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>save_dso</th>
-      <td><p>(Deprecated) Logical, defaulting to <code>TRUE</code>, indicating
-whether the dynamic shared object (DSO) compiled from the C++ code for the
-model will be saved or not. If <code>TRUE</code>, we can draw samples from the
-same model in another <span style="R">R</span> session using the saved DSO (i.e., without
-compiling the C++ code again).</p></td>
     </tr>
     <tr>
       <th>file</th>
@@ -494,8 +529,11 @@ Stan model outside of <span class="pkg">brms</span> and want to feed it back int
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Further arguments passed to Stan that is to
-<code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-sampling.html'>sampling</a></code> or <code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-vb.html'>vb</a></code>.</p></td>
+      <td><p>Further arguments passed to Stan. 
+For <code>backend = "rstan"</code> the arguments are passed to
+<code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-sampling.html'>sampling</a></code> or <code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-vb.html'>vb</a></code>.
+For <code>backend = "cmdstanr"</code> the arguments are passed to the
+<code><a href='https://mc-stan.org/cmdstanr/reference/model-method-sample.html'>cmdstanr::sample</a></code> or <code><a href='https://mc-stan.org/cmdstanr/reference/model-method-variational.html'>cmdstanr::variational</a></code> method.</p></td>
     </tr>
     </table>
 
@@ -562,114 +600,124 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 
     <div class='dont-index'><p><code><a href='brms-package.html'>brms</a></code>, <code><a href='brmsformula.html'>brmsformula</a></code>,
 <code><a href='brmsfamily.html'>brmsfamily</a></code>, <code><a href='brmsfit-class.html'>brmsfit</a></code></p></div>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># Poisson regression for the number of seizures in epileptic patients</span>
-<span class='co'># using student_t priors for population-level effects</span>
-<span class='co'># and half cauchy priors for standard deviations of group-level effects</span>
-<span class='no'>bprior1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>student_t</span>(<span class='fl'>5</span>,<span class='fl'>0</span>,<span class='fl'>10</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>b</span>) +
-  <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>cauchy</span>(<span class='fl'>0</span>,<span class='fl'>2</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>sd</span>)
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>(), <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>bprior1</span>)
+<span class='co'># using normal priors for population-level effects</span>
+<span class='co'># and half-cauchy priors for standard deviations of group-level effects</span>
+<span class='va'>prior1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>10</span><span class='op'>)</span>, class <span class='op'>=</span> <span class='va'>b</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>cauchy</span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>2</span><span class='op'>)</span>, class <span class='op'>=</span> <span class='va'>sd</span><span class='op'>)</span>
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span>, prior <span class='op'>=</span> <span class='va'>prior1</span><span class='op'>)</span>
 
 <span class='co'># generate a summary of the results</span>
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'># plot the MCMC chains as well as the posterior distributions</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit1</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit1</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
 <span class='co'># predict responses based on the fitted model</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span>(<span class='no'>fit1</span>))
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='co'># plot conditional effects for each predictor</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
 <span class='co'># investigate model fit</span>
-<span class='fu'><a href='loo.brmsfit.html'>loo</a></span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='pp_check.brmsfit.html'>pp_check</a></span>(<span class='no'>fit1</span>)
+<span class='fu'><a href='loo.brmsfit.html'>loo</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
+<span class='fu'><a href='pp_check.brmsfit.html'>pp_check</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 
 <span class='co'># Ordinal regression modeling patient's rating of inhaler instructions</span>
 <span class='co'># category specific effects are estimated for variable 'treat'</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>rating</span> ~ <span class='no'>period</span> + <span class='no'>carry</span> + <span class='fu'><a href='cs.html'>cs</a></span>(<span class='no'>treat</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>sratio</a></span>(<span class='st'>"logit"</span>),
-            <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span>(<span class='st'>"normal(0,5)"</span>), <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit2</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='waic.brmsfit.html'>WAIC</a></span>(<span class='no'>fit2</span>)
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span> <span class='op'>+</span> <span class='fu'><a href='cs.html'>cs</a></span><span class='op'>(</span><span class='va'>treat</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>sratio</a></span><span class='op'>(</span><span class='st'>"logit"</span><span class='op'>)</span>,
+            prior <span class='op'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span><span class='op'>(</span><span class='st'>"normal(0,5)"</span><span class='op'>)</span>, chains <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit2</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
+<span class='fu'><a href='waic.brmsfit.html'>WAIC</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
 
 
 <span class='co'># Survival regression modeling the time between the first</span>
 <span class='co'># and second recurrence of an infection in kidney patients.</span>
-<span class='no'>fit3</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> * <span class='no'>sex</span> + <span class='no'>disease</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span>())
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit3</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit3</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit3</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='va'>fit3</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='va'>time</span> <span class='op'>|</span> <span class='fu'>cens</span><span class='op'>(</span><span class='va'>censored</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>*</span> <span class='va'>sex</span> <span class='op'>+</span> <span class='va'>disease</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>kidney</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit3</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
 
 <span class='co'># Probit regression using the binomial family</span>
-<span class='no'>ntrials</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fl'>1</span>:<span class='fl'>10</span>, <span class='fl'>100</span>, <span class='fl'>TRUE</span>)
-<span class='no'>success</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span>(<span class='fl'>100</span>, <span class='kw'>size</span> <span class='kw'>=</span> <span class='no'>ntrials</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.4</span>)
-<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>)
-<span class='no'>data4</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='no'>ntrials</span>, <span class='no'>success</span>, <span class='no'>x</span>)
-<span class='no'>fit4</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>success</span> <span class='kw'>|</span> <span class='fu'>trials</span>(<span class='no'>ntrials</span>) ~ <span class='no'>x</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data4</span>,
-            <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>binomial</a></span>(<span class='st'>"probit"</span>))
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit4</span>)
+<span class='va'>ntrials</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>10</span>, <span class='fl'>100</span>, <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>success</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='fl'>100</span>, size <span class='op'>=</span> <span class='va'>ntrials</span>, prob <span class='op'>=</span> <span class='fl'>0.4</span><span class='op'>)</span>
+<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span><span class='op'>)</span>
+<span class='va'>data4</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>ntrials</span>, <span class='va'>success</span>, <span class='va'>x</span><span class='op'>)</span>
+<span class='va'>fit4</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='va'>success</span> <span class='op'>|</span> <span class='fu'>trials</span><span class='op'>(</span><span class='va'>ntrials</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>x</span>, data <span class='op'>=</span> <span class='va'>data4</span>,
+            family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>binomial</a></span><span class='op'>(</span><span class='st'>"probit"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit4</span><span class='op'>)</span>
 
 
-<span class='co'># Simple non-linear gaussian model</span>
-<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>)
-<span class='no'>y</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>, <span class='kw'>mean</span> <span class='kw'>=</span> <span class='fl'>2</span> - <span class='fl'>1.5</span>^<span class='no'>x</span>, <span class='kw'>sd</span> <span class='kw'>=</span> <span class='fl'>1</span>)
-<span class='no'>data5</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='no'>x</span>, <span class='no'>y</span>)
-<span class='no'>bprior5</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>normal</span>(<span class='fl'>0</span>, <span class='fl'>2</span>), <span class='kw'>nlpar</span> <span class='kw'>=</span> <span class='no'>a1</span>) +
-  <span class='fu'><a href='set_prior.html'>prior</a></span>(<span class='fu'>normal</span>(<span class='fl'>0</span>, <span class='fl'>2</span>), <span class='kw'>nlpar</span> <span class='kw'>=</span> <span class='no'>a2</span>)
-<span class='no'>fit5</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> + <span class='no'>a2</span> ~ <span class='fl'>1</span>, <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data5</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>bprior5</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit5</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit5</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='co'># Non-linear Gaussian model</span>
+<span class='va'>fit5</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span>
+  <span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>cum</span> <span class='op'>~</span> <span class='va'>ult</span> <span class='op'>*</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='op'>-</span><span class='op'>(</span><span class='va'>dev</span><span class='op'>/</span><span class='va'>theta</span><span class='op'>)</span><span class='op'>^</span><span class='va'>omega</span><span class='op'>)</span><span class='op'>)</span>,
+     <span class='va'>ult</span> <span class='op'>~</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>AY</span><span class='op'>)</span>, <span class='va'>omega</span> <span class='op'>~</span> <span class='fl'>1</span>, <span class='va'>theta</span> <span class='op'>~</span> <span class='fl'>1</span>, 
+     nl <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
+  data <span class='op'>=</span> <span class='va'>loss</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+  prior <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span>
+    <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>5000</span>, <span class='fl'>1000</span><span class='op'>)</span>, nlpar <span class='op'>=</span> <span class='st'>"ult"</span><span class='op'>)</span>,
+    <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>2</span><span class='op'>)</span>, nlpar <span class='op'>=</span> <span class='st'>"omega"</span><span class='op'>)</span>,
+    <span class='fu'><a href='set_prior.html'>prior</a></span><span class='op'>(</span><span class='fu'>normal</span><span class='op'>(</span><span class='fl'>45</span>, <span class='fl'>10</span><span class='op'>)</span>, nlpar <span class='op'>=</span> <span class='st'>"theta"</span><span class='op'>)</span>
+  <span class='op'>)</span>,
+  control <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>adapt_delta <span class='op'>=</span> <span class='fl'>0.9</span><span class='op'>)</span>
+<span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit5</span><span class='op'>)</span>
+<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit5</span><span class='op'>)</span>
 
 
 <span class='co'># Normal model with heterogeneous variances</span>
-<span class='no'>data_het</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(
-  <span class='kw'>y</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>50</span>), <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>50</span>, <span class='fl'>1</span>, <span class='fl'>2</span>)),
-  <span class='kw'>x</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"a"</span>, <span class='st'>"b"</span>), <span class='kw'>each</span> <span class='kw'>=</span> <span class='fl'>50</span>))
-)
-<span class='no'>fit6</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='no'>sigma</span> ~ <span class='fl'>0</span> + <span class='no'>x</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data_het</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit6</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit6</span>)
-<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit6</span>)
+<span class='va'>data_het</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  y <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>50</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>50</span>, <span class='fl'>1</span>, <span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>,
+  x <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"a"</span>, <span class='st'>"b"</span><span class='op'>)</span>, each <span class='op'>=</span> <span class='fl'>50</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>)</span>
+<span class='va'>fit6</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span>, <span class='va'>sigma</span> <span class='op'>~</span> <span class='fl'>0</span> <span class='op'>+</span> <span class='va'>x</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>data_het</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit6</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit6</span><span class='op'>)</span>
+<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit6</span><span class='op'>)</span>
 
 <span class='co'># extract estimated residual SDs of both groups</span>
-<span class='no'>sigmas</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span>(<span class='fu'><a href='posterior_samples.brmsfit.html'>posterior_samples</a></span>(<span class='no'>fit6</span>, <span class='st'>"^b_sigma_"</span>))
-<span class='fu'>ggplot</span>(<span class='fu'><a href='https://rdrr.io/r/utils/stack.html'>stack</a></span>(<span class='no'>sigmas</span>), <span class='fu'>aes</span>(<span class='no'>values</span>)) +
-  <span class='fu'>geom_density</span>(<span class='fu'>aes</span>(<span class='kw'>fill</span> <span class='kw'>=</span> <span class='no'>ind</span>))
+<span class='va'>sigmas</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='fu'><a href='posterior_samples.brmsfit.html'>posterior_samples</a></span><span class='op'>(</span><span class='va'>fit6</span>, <span class='st'>"^b_sigma_"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>ggplot</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/utils/stack.html'>stack</a></span><span class='op'>(</span><span class='va'>sigmas</span><span class='op'>)</span>, <span class='fu'>aes</span><span class='op'>(</span><span class='va'>values</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>geom_density</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>fill <span class='op'>=</span> <span class='va'>ind</span><span class='op'>)</span><span class='op'>)</span>
 
 
 <span class='co'># Quantile regression predicting the 25%-quantile</span>
-<span class='no'>fit7</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='kw'>quantile</span> <span class='kw'>=</span> <span class='fl'>0.25</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data_het</span>,
-            <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>asym_laplace</a></span>())
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit7</span>)
-<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit7</span>)
+<span class='va'>fit7</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span>, quantile <span class='op'>=</span> <span class='fl'>0.25</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>data_het</span>,
+            family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>asym_laplace</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit7</span><span class='op'>)</span>
+<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit7</span><span class='op'>)</span>
 
 
 <span class='co'># use the future package for more flexible parallelization</span>
-<span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>future</span>)
-<span class='fu'><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></span>(<span class='no'>multiprocess</span>)
-<span class='no'>fit7</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/update.html'>update</a></span>(<span class='no'>fit7</span>, <span class='kw'>future</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://github.com/HenrikBengtsson/future'>future</a></span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></span><span class='op'>(</span><span class='va'>multiprocess</span><span class='op'>)</span>
+<span class='va'>fit7</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/update.html'>update</a></span><span class='op'>(</span><span class='va'>fit7</span>, future <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
 
 <span class='co'># fit a model manually via rstan</span>
-<span class='no'>scode</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='no'>sdata</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='no'>stanfit</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>rstan</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span>(<span class='kw'>model_code</span> <span class='kw'>=</span> <span class='no'>scode</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>sdata</span>)
+<span class='va'>scode</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='va'>sdata</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='va'>stanfit</span> <span class='op'>&lt;-</span> <span class='fu'>rstan</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span><span class='op'>(</span>model_code <span class='op'>=</span> <span class='va'>scode</span>, data <span class='op'>=</span> <span class='va'>sdata</span><span class='op'>)</span>
 <span class='co'># feed the Stan model back into brms</span>
-<span class='no'>fit8</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>empty</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='no'>fit8</span>$<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='no'>stanfit</span>
-<span class='no'>fit8</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='rename_pars.html'>rename_pars</a></span>(<span class='no'>fit8</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit8</span>)
-}</div></pre>
+<span class='va'>fit8</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span>, empty <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>fit8</span><span class='op'>$</span><span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='va'>stanfit</span>
+<span class='va'>fit8</span> <span class='op'>&lt;-</span> <span class='fu'><a href='rename_pars.html'>rename_pars</a></span><span class='op'>(</span><span class='va'>fit8</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit8</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -685,7 +733,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

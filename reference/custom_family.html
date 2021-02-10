@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Custom Families in <span class="pkg">brms</span> Models — custom_family • brms</title>
+<title>Custom Families in brms Models — custom_family • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Custom Families in <span class="pkg">brms</span> Models — custom_family" />
+<meta property="og:title" content="Custom Families in brms Models — custom_family" />
 <meta property="og:description" content="Define custom families (i.e. response distribution) for use in 
 brms models. It allows users to benefit from the modeling 
 flexibility of brms, while applying their self-defined likelihood
@@ -86,7 +86,7 @@ For a list of built-in families see brmsfamily." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -138,19 +138,19 @@ For a list of built-in families see brmsfamily." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -182,23 +182,23 @@ See <code><a href='../articles/brms_customfamilies.html'>vignette("brms_customfa
 For a list of built-in families see <code><a href='brmsfamily.html'>brmsfamily</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>custom_family</span>(
-  <span class='no'>name</span>,
-  <span class='kw'>dpars</span> <span class='kw'>=</span> <span class='st'>"mu"</span>,
-  <span class='kw'>links</span> <span class='kw'>=</span> <span class='st'>"identity"</span>,
-  <span class='kw'>type</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"real"</span>, <span class='st'>"int"</span>),
-  <span class='kw'>lb</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>ub</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>vars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>specials</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>threshold</span> <span class='kw'>=</span> <span class='st'>"flexible"</span>,
-  <span class='kw'>log_lik</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>posterior_predict</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>posterior_epred</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>predict</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>fitted</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>env</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sys.parent.html'>parent.frame</a></span>()
-)</pre>
+    <pre class="usage"><span class='fu'>custom_family</span><span class='op'>(</span>
+  <span class='va'>name</span>,
+  dpars <span class='op'>=</span> <span class='st'>"mu"</span>,
+  links <span class='op'>=</span> <span class='st'>"identity"</span>,
+  type <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"real"</span>, <span class='st'>"int"</span><span class='op'>)</span>,
+  lb <span class='op'>=</span> <span class='cn'>NA</span>,
+  ub <span class='op'>=</span> <span class='cn'>NA</span>,
+  vars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  specials <span class='op'>=</span> <span class='cn'>NULL</span>,
+  threshold <span class='op'>=</span> <span class='st'>"flexible"</span>,
+  log_lik <span class='op'>=</span> <span class='cn'>NULL</span>,
+  posterior_predict <span class='op'>=</span> <span class='cn'>NULL</span>,
+  posterior_epred <span class='op'>=</span> <span class='cn'>NULL</span>,
+  predict <span class='op'>=</span> <span class='cn'>NULL</span>,
+  fitted <span class='op'>=</span> <span class='cn'>NULL</span>,
+  env <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sys.parent.html'>parent.frame</a></span><span class='op'>(</span><span class='op'>)</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -288,7 +288,7 @@ relevant if one wants to ensure compatibility with the methods
 <code><a href='log_lik.brmsfit.html'>log_lik</a></code>,
 <code><a href='posterior_predict.brmsfit.html'>posterior_predict</a></code>, or
 <code><a href='posterior_epred.brmsfit.html'>posterior_epred</a></code>.
-By default, <code>env</code> is the enviroment from which 
+By default, <code>env</code> is the environment from which 
 <code>custom_family</code> is called.</p></td>
     </tr>
     </table>
@@ -310,40 +310,42 @@ By default, <code>env</code> is the enviroment from which
     <div class='dont-index'><p><code><a href='brmsfamily.html'>brmsfamily</a></code>, <code><a href='stanvar.html'>stanvar</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## demonstrate how to fit a beta-binomial model</span>
 <span class='co'>## generate some fake data</span>
-<span class='no'>phi</span> <span class='kw'>&lt;-</span> <span class='fl'>0.7</span>
-<span class='no'>n</span> <span class='kw'>&lt;-</span> <span class='fl'>300</span>
-<span class='no'>z</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='no'>n</span>, <span class='kw'>sd</span> <span class='kw'>=</span> <span class='fl'>0.2</span>)
-<span class='no'>ntrials</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fl'>1</span>:<span class='fl'>10</span>, <span class='no'>n</span>, <span class='kw'>replace</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='no'>eta</span> <span class='kw'>&lt;-</span> <span class='fl'>1</span> + <span class='no'>z</span>
-<span class='no'>mu</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span>(<span class='no'>eta</span>) / (<span class='fl'>1</span> + <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span>(<span class='no'>eta</span>))
-<span class='no'>a</span> <span class='kw'>&lt;-</span> <span class='no'>mu</span> * <span class='no'>phi</span>
-<span class='no'>b</span> <span class='kw'>&lt;-</span> (<span class='fl'>1</span> - <span class='no'>mu</span>) * <span class='no'>phi</span>
-<span class='no'>p</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Beta.html'>rbeta</a></span>(<span class='no'>n</span>, <span class='no'>a</span>, <span class='no'>b</span>)
-<span class='no'>y</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span>(<span class='no'>n</span>, <span class='no'>ntrials</span>, <span class='no'>p</span>)
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='no'>y</span>, <span class='no'>z</span>, <span class='no'>ntrials</span>)
+<span class='va'>phi</span> <span class='op'>&lt;-</span> <span class='fl'>0.7</span>
+<span class='va'>n</span> <span class='op'>&lt;-</span> <span class='fl'>300</span>
+<span class='va'>z</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span>, sd <span class='op'>=</span> <span class='fl'>0.2</span><span class='op'>)</span>
+<span class='va'>ntrials</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>10</span>, <span class='va'>n</span>, replace <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>eta</span> <span class='op'>&lt;-</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='va'>z</span>
+<span class='va'>mu</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>eta</span><span class='op'>)</span> <span class='op'>/</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>eta</span><span class='op'>)</span><span class='op'>)</span>
+<span class='va'>a</span> <span class='op'>&lt;-</span> <span class='va'>mu</span> <span class='op'>*</span> <span class='va'>phi</span>
+<span class='va'>b</span> <span class='op'>&lt;-</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>-</span> <span class='va'>mu</span><span class='op'>)</span> <span class='op'>*</span> <span class='va'>phi</span>
+<span class='va'>p</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Beta.html'>rbeta</a></span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>a</span>, <span class='va'>b</span><span class='op'>)</span>
+<span class='va'>y</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>ntrials</span>, <span class='va'>p</span><span class='op'>)</span>
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>y</span>, <span class='va'>z</span>, <span class='va'>ntrials</span><span class='op'>)</span>
 
 <span class='co'># define a custom family</span>
-<span class='no'>beta_binomial2</span> <span class='kw'>&lt;-</span> <span class='fu'>custom_family</span>(
-  <span class='st'>"beta_binomial2"</span>, <span class='kw'>dpars</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"mu"</span>, <span class='st'>"phi"</span>),
-  <span class='kw'>links</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"logit"</span>, <span class='st'>"log"</span>), <span class='kw'>lb</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>NA</span>, <span class='fl'>0</span>),
-  <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"int"</span>, <span class='kw'>vars</span> <span class='kw'>=</span> <span class='st'>"trials[n]"</span>
-)
+<span class='va'>beta_binomial2</span> <span class='op'>&lt;-</span> <span class='fu'>custom_family</span><span class='op'>(</span>
+  <span class='st'>"beta_binomial2"</span>, dpars <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"mu"</span>, <span class='st'>"phi"</span><span class='op'>)</span>,
+  links <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"logit"</span>, <span class='st'>"log"</span><span class='op'>)</span>, lb <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fl'>0</span><span class='op'>)</span>,
+  type <span class='op'>=</span> <span class='st'>"int"</span>, vars <span class='op'>=</span> <span class='st'>"trials[n]"</span>
+<span class='op'>)</span>
 
 <span class='co'># define the corresponding Stan density function</span>
-<span class='no'>stan_funs</span> <span class='kw'>&lt;-</span> <span class='st'>"
+<span class='va'>stan_funs</span> <span class='op'>&lt;-</span> <span class='st'>"
   real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
   }
 "</span>
 
 <span class='co'># fit the model</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> <span class='kw'>|</span> <span class='fu'>trials</span>(<span class='no'>ntrials</span>) ~ <span class='no'>z</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>,
-           <span class='kw'>family</span> <span class='kw'>=</span> <span class='no'>beta_binomial2</span>, <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='no'>stan_funs</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit</span>)
-}</div></pre>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>|</span> <span class='fu'>trials</span><span class='op'>(</span><span class='va'>ntrials</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>z</span>, data <span class='op'>=</span> <span class='va'>dat</span>, 
+           family <span class='op'>=</span> <span class='va'>beta_binomial2</span>, stan_funs <span class='op'>=</span> <span class='va'>stan_funs</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -359,7 +361,7 @@ By default, <code>env</code> is the enviroment from which
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

@@ -85,7 +85,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -137,19 +137,19 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -180,13 +180,13 @@
   type is provided.</p>
     </div>
 
-    <pre class="usage"><span class='no'>kidney</span></pre>
+    <pre class="usage"><span class='va'>kidney</span></pre>
 
 
     <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
 
     <p>A data frame of 76 observations containing 
-  information on the following 7 variables.</p><dl'>
+  information on the following 7 variables.</p><dl>
  <dt>time</dt><dd><p>The time to first or second recurrence of the infection, 
    or the time of censoring</p></dd>
  <dt>recur</dt><dd><p>A factor of levels <code>1</code> or <code>2</code> 
@@ -206,23 +206,25 @@
 
     <p>McGilchrist, C. A., &amp; Aisbett, C. W. (1991). 
   Regression with frailty in survival analysis. 
-  <em>Biometrics, 47(2)</em>, 461-466.</p>
+  <em>Biometrics</em>, 47(2), 461-466.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'>## performing surivival analysis using the "weibull" family</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> + <span class='no'>sex</span> + <span class='no'>disease</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='no'>weibull</span>, <span class='kw'>inits</span> <span class='kw'>=</span> <span class='st'>"0"</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit1</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>time</span> <span class='op'>|</span> <span class='fu'>cens</span><span class='op'>(</span><span class='va'>censored</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>+</span> <span class='va'>sex</span> <span class='op'>+</span> <span class='va'>disease</span>, 
+            data <span class='op'>=</span> <span class='va'>kidney</span>, family <span class='op'>=</span> <span class='va'>weibull</span>, inits <span class='op'>=</span> <span class='st'>"0"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span> 
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'>## adding random intercepts over patients</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> + <span class='no'>sex</span> + <span class='no'>disease</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>weibull</a></span>(), <span class='kw'>inits</span> <span class='kw'>=</span> <span class='st'>"0"</span>,
-            <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span>(<span class='st'>"cauchy(0,2)"</span>, <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"sd"</span>))
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit2</span>)
-}</div></pre>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>time</span> <span class='op'>|</span> <span class='fu'>cens</span><span class='op'>(</span><span class='va'>censored</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>age</span> <span class='op'>+</span> <span class='va'>sex</span> <span class='op'>+</span> <span class='va'>disease</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>, 
+            data <span class='op'>=</span> <span class='va'>kidney</span>, family <span class='op'>=</span> <span class='fu'><a href='brmsfamily.html'>weibull</a></span><span class='op'>(</span><span class='op'>)</span>, inits <span class='op'>=</span> <span class='st'>"0"</span>,
+            prior <span class='op'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span><span class='op'>(</span><span class='st'>"cauchy(0,2)"</span>, class <span class='op'>=</span> <span class='st'>"sd"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span> 
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>         
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -238,7 +240,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

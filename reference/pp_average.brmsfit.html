@@ -83,7 +83,7 @@ marginal likelihoods." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -135,19 +135,19 @@ marginal likelihoods." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -177,21 +177,21 @@ marginal likelihoods.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>pp_average</span>(
-  <span class='no'>x</span>,
-  <span class='no'>...</span>,
-  <span class='kw'>weights</span> <span class='kw'>=</span> <span class='st'>"stacking"</span>,
-  <span class='kw'>method</span> <span class='kw'>=</span> <span class='st'>"posterior_predict"</span>,
-  <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>summary</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0.025</span>, <span class='fl'>0.975</span>),
-  <span class='kw'>robust</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>model_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>control</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
-)
+<span class='fu'>pp_average</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>...</span>,
+  weights <span class='op'>=</span> <span class='st'>"stacking"</span>,
+  method <span class='op'>=</span> <span class='st'>"posterior_predict"</span>,
+  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
+  summary <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  probs <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.025</span>, <span class='fl'>0.975</span><span class='op'>)</span>,
+  robust <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  model_names <span class='op'>=</span> <span class='cn'>NULL</span>,
+  control <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  seed <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span>
 
-<span class='fu'>pp_average</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>pp_average</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -204,7 +204,7 @@ marginal likelihoods.</p>
       <th>...</th>
       <td><p>More <code>brmsfit</code> objects or further arguments
 passed to the underlying post-processing functions.
-In particular, see <code><a href='prepare_predictions.html'>prepare_predictions</a></code> for further
+In particular, see <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code> for further
 supported arguments.</p></td>
     </tr>
     <tr>
@@ -214,11 +214,11 @@ of <code>"loo"</code>, <code>"waic"</code>, <code>"kfold"</code>, <code>"stackin
 default), or <code>"bma"</code>, <code>"pseudobma"</code>, For the former three
 options, Akaike weights will be computed based on the information criterion
 values returned by the respective methods. For <code>"stacking"</code> and
-<code>"pseudobma"</code> method <code><a href='loo_model_weights.brmsfit.html'>loo_model_weights</a></code> will be used to
+<code>"pseudobma"</code>, method <code><a href='loo_model_weights.brmsfit.html'>loo_model_weights</a></code> will be used to
 obtain weights. For <code>"bma"</code>, method <code><a href='post_prob.brmsfit.html'>post_prob</a></code> will be
 used to compute Bayesian model averaging weights based on log marginal
 likelihood values (make sure to specify reasonable priors in this case).
-Some method, <code>weights</code> may also be a numeric vector of
+For some methods, <code>weights</code> may also be a numeric vector of
 pre-specified weights.</p></td>
     </tr>
     <tr>
@@ -280,22 +280,24 @@ to make results reproducible.</p></td>
     <div class='dont-index'><p><code><a href='model_weights.brmsfit.html'>model_weights</a></code>, <code><a href='posterior_average.brmsfit.html'>posterior_average</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># model with 'treat' as predictor</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span>, data <span class='op'>=</span> <span class='va'>inhaler</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'># model without 'treat' as predictor</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>period</span> + <span class='no'>carry</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span>, data <span class='op'>=</span> <span class='va'>inhaler</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
 
 <span class='co'># compute model-averaged predicted values</span>
-(<span class='no'>df</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span>(<span class='no'>inhaler</span>[, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"treat"</span>, <span class='st'>"period"</span>, <span class='st'>"carry"</span>)]))
-<span class='fu'>pp_average</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='no'>df</span>)
+<span class='op'>(</span><span class='va'>df</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='va'>inhaler</span><span class='op'>[</span>, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"treat"</span>, <span class='st'>"period"</span>, <span class='st'>"carry"</span><span class='op'>)</span><span class='op'>]</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>pp_average</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span>, newdata <span class='op'>=</span> <span class='va'>df</span><span class='op'>)</span>
 
 <span class='co'># compute model-averaged fitted values</span>
-<span class='fu'>pp_average</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>, <span class='kw'>method</span> <span class='kw'>=</span> <span class='st'>"fitted"</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='no'>df</span>)
-}</div></pre>
+<span class='fu'>pp_average</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span>, method <span class='op'>=</span> <span class='st'>"fitted"</span>, newdata <span class='op'>=</span> <span class='va'>df</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -311,7 +313,7 @@ to make results reproducible.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

@@ -82,7 +82,7 @@ cbind." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ cbind." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -171,17 +171,17 @@ cbind." />
     <div class="ref-description">
     <p>Can be used to specify a multivariate <span class="pkg">brms</span> model within a single
 formula. Outside of <code><a href='brmsformula.html'>brmsformula</a></code>, it just behaves like
-<code><a href='https://rdrr.io/r/base/cbind.html'>cbind</a></code>.</p>
+<code><a href='https://amices.org/mice/reference/cbind.html'>cbind</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>mvbind</span>(<span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>mvbind</span><span class='op'>(</span><span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>...</th>
-      <td><p>Same as in <code><a href='https://rdrr.io/r/base/cbind.html'>cbind</a></code></p></td>
+      <td><p>Same as in <code><a href='https://amices.org/mice/reference/cbind.html'>cbind</a></code></p></td>
     </tr>
     </table>
 
@@ -190,7 +190,8 @@ formula. Outside of <code><a href='brmsformula.html'>brmsformula</a></code>, it 
     <div class='dont-index'><p><code><a href='brmsformula.html'>brmsformula</a></code>, <code><a href='mvbrmsformula.html'>mvbrmsformula</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='fu'>mvbind</span>(<span class='no'>y1</span>, <span class='no'>y2</span>) ~ <span class='no'>x</span>)</div><div class='output co'>#&gt; y1 ~ x 
+    <pre class="examples"><div class='input'><span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='fu'>mvbind</span><span class='op'>(</span><span class='va'>y1</span>, <span class='va'>y2</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>x</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y1 ~ x 
 #&gt; y2 ~ x </div><div class='input'>
 </div></pre>
   </div>
@@ -208,7 +209,7 @@ formula. Outside of <code><a href='brmsformula.html'>brmsformula</a></code>, it 
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

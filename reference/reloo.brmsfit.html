@@ -83,7 +83,7 @@ future package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -135,19 +135,19 @@ future package." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -165,7 +165,7 @@ future package." />
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Compute exact cross-validation for problematic observations</h1>
-    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/loo.R'><code>R/loo.R</code></a></small>
+    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/reloo.R'><code>R/reloo.R</code></a></small>
     <div class="hidden name"><code>reloo.brmsfit.Rd</code></div>
     </div>
 
@@ -177,20 +177,20 @@ Models for problematic observations can be run in parallel using the
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>reloo</span>(
-  <span class='no'>x</span>,
-  <span class='no'>loo</span>,
-  <span class='kw'>k_threshold</span> <span class='kw'>=</span> <span class='fl'>0.7</span>,
-  <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>check</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='no'>...</span>
-)
+<span class='fu'>reloo</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>loo</span>,
+  k_threshold <span class='op'>=</span> <span class='fl'>0.7</span>,
+  newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  check <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
 <span class='co'># S3 method for loo</span>
-<span class='fu'>reloo</span>(<span class='no'>x</span>, <span class='no'>fit</span>, <span class='no'>...</span>)
+<span class='fu'>reloo</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>fit</span>, <span class='va'>...</span><span class='op'>)</span>
 
-<span class='fu'>reloo</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>reloo</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -206,7 +206,7 @@ on the method.</p></td>
     </tr>
     <tr>
       <th>k_threshold</th>
-      <td><p>The threshold at which pareto \(k\) 
+      <td><p>The threshold at which Pareto \(k\) 
 estimates are treated as problematic. Defaults to <code>0.7</code>. 
 See <code><a href='https://mc-stan.org/loo/reference/pareto-k-diagnostic.html'>pareto_k_ids</a></code>
 for more details.</p></td>
@@ -262,13 +262,15 @@ original <code>loo</code> object.</p>
     <div class='dont-index'><p><code><a href='loo.brmsfit.html'>loo</a></code>, <code><a href='kfold.brmsfit.html'>kfold</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>())
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
 <span class='co'># throws warning about some pareto k estimates being too high</span>
-(<span class='no'>loo1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='loo.brmsfit.html'>loo</a></span>(<span class='no'>fit1</span>))
-(<span class='no'>reloo1</span> <span class='kw'>&lt;-</span> <span class='fu'>reloo</span>(<span class='no'>fit1</span>, <span class='kw'>loo</span> <span class='kw'>=</span> <span class='no'>loo1</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>))
-}</div></pre>
+<span class='op'>(</span><span class='va'>loo1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='loo.brmsfit.html'>loo</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>(</span><span class='va'>reloo1</span> <span class='op'>&lt;-</span> <span class='fu'>reloo</span><span class='op'>(</span><span class='va'>fit1</span>, loo <span class='op'>=</span> <span class='va'>loo1</span>, chains <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -284,7 +286,7 @@ original <code>loo</code> object.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

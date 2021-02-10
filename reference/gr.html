@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Set up basic grouping terms in <span class="pkg">brms</span> — gr • brms</title>
+<title>Set up basic grouping terms in brms — gr • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Set up basic grouping terms in <span class="pkg">brms</span> — gr" />
+<meta property="og:title" content="Set up basic grouping terms in brms — gr" />
 <meta property="og:description" content="Function used to set up a basic grouping term in brms.
 The function does not evaluate its arguments --
 it exists purely to help set up a model with grouping terms.
@@ -84,7 +84,7 @@ and there is usually no need to call it directly." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -136,19 +136,19 @@ and there is usually no need to call it directly." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -178,7 +178,7 @@ it exists purely to help set up a model with grouping terms.
 and there is usually no need to call it directly.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>gr</span>(<span class='no'>...</span>, <span class='kw'>by</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>cor</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>id</span> <span class='kw'>=</span> <span class='fl'>NA</span>, <span class='kw'>cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)</pre>
+    <pre class="usage"><span class='fu'>gr</span><span class='op'>(</span><span class='va'>...</span>, by <span class='op'>=</span> <span class='cn'>NULL</span>, cor <span class='op'>=</span> <span class='cn'>TRUE</span>, id <span class='op'>=</span> <span class='cn'>NA</span>, cov <span class='op'>=</span> <span class='cn'>NULL</span>, dist <span class='op'>=</span> <span class='st'>"gaussian"</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -226,19 +226,21 @@ Currently <code>"gaussian"</code> is the only option.</p></td>
     <div class='dont-index'><p><code><a href='brmsformula.html'>brmsformula</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># model using basic lme4-style formula</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'># equivalent model using 'gr' which is called anyway internally</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='fu'>gr</span>(<span class='no'>patient</span>)), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='fu'>gr</span><span class='op'>(</span><span class='va'>patient</span><span class='op'>)</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
 
 <span class='co'># include Trt as a by variable</span>
-<span class='no'>fit3</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='fu'>gr</span>(<span class='no'>patient</span>, <span class='kw'>by</span> <span class='kw'>=</span> <span class='no'>Trt</span>)), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit3</span>)
-}</div></pre>
+<span class='va'>fit3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='fu'>gr</span><span class='op'>(</span><span class='va'>patient</span>, by <span class='op'>=</span> <span class='va'>Trt</span><span class='op'>)</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -254,7 +256,7 @@ Currently <code>"gaussian"</code> is the only option.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

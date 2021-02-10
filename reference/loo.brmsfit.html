@@ -82,7 +82,7 @@ For more details see loo." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -134,19 +134,19 @@ For more details see loo." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -175,17 +175,19 @@ For more details see <code><a href='https://mc-stan.org/loo/reference/loo.html'>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>loo</span>(
-  <span class='no'>x</span>,
-  <span class='no'>...</span>,
-  <span class='kw'>compare</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>pointwise</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>reloo</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>k_threshold</span> <span class='kw'>=</span> <span class='fl'>0.7</span>,
-  <span class='kw'>reloo_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>model_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
-)</pre>
+<span class='fu'>loo</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>...</span>,
+  compare <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  pointwise <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  moment_match <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  reloo <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  k_threshold <span class='op'>=</span> <span class='fl'>0.7</span>,
+  moment_match_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  reloo_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  model_names <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -198,7 +200,7 @@ For more details see <code><a href='https://mc-stan.org/loo/reference/loo.html'>
       <th>...</th>
       <td><p>More <code>brmsfit</code> objects or further arguments
 passed to the underlying post-processing functions.
-In particular, see <code><a href='prepare_predictions.html'>prepare_predictions</a></code> for further
+In particular, see <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code> for further
 supported arguments.</p></td>
     </tr>
     <tr>
@@ -221,6 +223,11 @@ requires much less working memory. Accordingly, if one runs
 into memory issues, <code>pointwise = TRUE</code> is the way to go.</p></td>
     </tr>
     <tr>
+      <th>moment_match</th>
+      <td><p>Logical; Indicate whether <code><a href='loo_moment_match.brmsfit.html'>loo_moment_match</a></code> 
+should be applied on problematic observations. Defaults to <code>FALSE</code>.</p></td>
+    </tr>
+    <tr>
       <th>reloo</th>
       <td><p>Logical; Indicate whether <code><a href='reloo.brmsfit.html'>reloo</a></code> 
 should be applied on problematic observations. Defaults to <code>FALSE</code>.</p></td>
@@ -231,6 +238,11 @@ should be applied on problematic observations. Defaults to <code>FALSE</code>.</
 estimates are treated as problematic. Defaults to <code>0.7</code>. 
 Only used if argument <code>reloo</code> is <code>TRUE</code>.
 See <code><a href='https://mc-stan.org/loo/reference/pareto-k-diagnostic.html'>pareto_k_ids</a></code> for more details.</p></td>
+    </tr>
+    <tr>
+      <th>moment_match_args</th>
+      <td><p>Optional <code>list</code> of additional arguments passed to
+<code><a href='loo_moment_match.brmsfit.html'>loo_moment_match</a></code>.</p></td>
     </tr>
     <tr>
       <th>reloo_args</th>
@@ -268,20 +280,22 @@ and widely applicable information criterion in singular learning theory.
 The Journal of Machine Learning Research, 11, 3571-3594.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># model with population-level effects only</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
-(<span class='no'>loo1</span> <span class='kw'>&lt;-</span> <span class='fu'>loo</span>(<span class='no'>fit1</span>))
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span>,
+            data <span class='op'>=</span> <span class='va'>inhaler</span><span class='op'>)</span>
+<span class='op'>(</span><span class='va'>loo1</span> <span class='op'>&lt;-</span> <span class='fu'>loo</span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='co'># model with an additional varying intercept for subjects</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
-(<span class='no'>loo2</span> <span class='kw'>&lt;-</span> <span class='fu'>loo</span>(<span class='no'>fit2</span>))
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>subject</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>inhaler</span><span class='op'>)</span>
+<span class='op'>(</span><span class='va'>loo2</span> <span class='op'>&lt;-</span> <span class='fu'>loo</span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span><span class='op'>)</span>   
 
 <span class='co'># compare both models</span>
-<span class='fu'><a href='loo_compare.brmsfit.html'>loo_compare</a></span>(<span class='no'>loo1</span>, <span class='no'>loo2</span>)
-}</div></pre>
+<span class='fu'><a href='loo_compare.brmsfit.html'>loo_compare</a></span><span class='op'>(</span><span class='va'>loo1</span>, <span class='va'>loo2</span><span class='op'>)</span>                      
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -297,7 +311,7 @@ The Journal of Machine Learning Research, 11, 3571-3594.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

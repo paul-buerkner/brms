@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Posterior Predictive Checks for <code>brmsfit</code> Objects — pp_check.brmsfit • brms</title>
+<title>Posterior Predictive Checks for brmsfit Objects — pp_check.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Posterior Predictive Checks for <code>brmsfit</code> Objects — pp_check.brmsfit" />
+<meta property="og:title" content="Posterior Predictive Checks for brmsfit Objects — pp_check.brmsfit" />
 <meta property="og:description" content="Perform posterior predictive checks with the help
 of the bayesplot package." />
 <meta property="og:image" content="/logo.png" />
@@ -81,7 +81,7 @@ of the bayesplot package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ of the bayesplot package." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -173,17 +173,17 @@ of the <span class="pkg">bayesplot</span> package.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>pp_check</span>(
-  <span class='no'>object</span>,
-  <span class='no'>type</span>,
-  <span class='no'>nsamples</span>,
-  <span class='kw'>group</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>x</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>subset</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)</pre>
+<span class='fu'>pp_check</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  <span class='va'>type</span>,
+  <span class='va'>nsamples</span>,
+  group <span class='op'>=</span> <span class='cn'>NULL</span>,
+  x <span class='op'>=</span> <span class='cn'>NULL</span>,
+  newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -257,21 +257,23 @@ documentation of the <span class="pkg"><a href='https://mc-stan.org/bayesplot/re
 package.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>fit</span> <span class='kw'>&lt;-</span>  <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>
-            + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>obs</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>())
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>fit</span> <span class='op'>&lt;-</span>  <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span>
+            <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>obs</span><span class='op'>)</span>,
+            data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
 
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>)  <span class='co'># shows dens_overlay plot by default</span>
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"error_hist"</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>11</span>)
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"scatter_avg"</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>100</span>)
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"stat_2d"</span>)
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"rootogram"</span>)
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"loo_pit"</span>)
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>  <span class='co'># shows dens_overlay plot by default</span>
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"error_hist"</span>, nsamples <span class='op'>=</span> <span class='fl'>11</span><span class='op'>)</span>
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"scatter_avg"</span>, nsamples <span class='op'>=</span> <span class='fl'>100</span><span class='op'>)</span>
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"stat_2d"</span><span class='op'>)</span>
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"rootogram"</span><span class='op'>)</span>
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"loo_pit"</span><span class='op'>)</span>
 
 <span class='co'>## get an overview of all valid types</span>
-<span class='fu'>pp_check</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"xyz"</span>)
-}</div></pre>
+<span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>fit</span>, type <span class='op'>=</span> <span class='st'>"xyz"</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -287,7 +289,7 @@ package.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

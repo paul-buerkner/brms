@@ -81,7 +81,7 @@ fitted with brms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ fitted with brms." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -173,20 +173,21 @@ fitted with <span class="pkg">brms</span>.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>conditional_smooths</span>(
-  <span class='no'>x</span>,
-  <span class='kw'>smooths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>int_conditions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0.025</span>, <span class='fl'>0.975</span>),
-  <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>resolution</span> <span class='kw'>=</span> <span class='fl'>100</span>,
-  <span class='kw'>too_far</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>subset</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)
+<span class='fu'>conditional_smooths</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  smooths <span class='op'>=</span> <span class='cn'>NULL</span>,
+  int_conditions <span class='op'>=</span> <span class='cn'>NULL</span>,
+  prob <span class='op'>=</span> <span class='fl'>0.95</span>,
+  spaghetti <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  resolution <span class='op'>=</span> <span class='fl'>100</span>,
+  too_far <span class='op'>=</span> <span class='fl'>0</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
+  probs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
-<span class='fu'>conditional_smooths</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>conditional_smooths</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -216,9 +217,9 @@ If <code>NULL</code> (the default), predictions are evaluated at the
 all categories for factor-like predictors.</p></td>
     </tr>
     <tr>
-      <th>probs</th>
-      <td><p>The quantiles to be used in the computation of credible
-intervals (defaults to 2.5 and 97.5 percent quantiles)</p></td>
+      <th>prob</th>
+      <td><p>A value between 0 and 1 indicating the desired probability 
+to be covered by the uncertainty intervals. The default is 0.95.</p></td>
     </tr>
     <tr>
       <th>spaghetti</th>
@@ -226,7 +227,7 @@ intervals (defaults to 2.5 and 97.5 percent quantiles)</p></td>
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If <code>TRUE</code>, it is recommended 
 to set argument <code>nsamples</code> to a relatively small value 
-(e.g. <code>100</code>) in order to reduce computation time.</p></td>
+(e.g., <code>100</code>) in order to reduce computation time.</p></td>
     </tr>
     <tr>
       <th>resolution</th>
@@ -261,6 +262,11 @@ If <code>NULL</code> (the default) all samples are used.
 Ignored if <code>subset</code> is not <code>NULL</code>.</p></td>
     </tr>
     <tr>
+      <th>probs</th>
+      <td><p>(Deprecated) The quantiles to be used in the computation of
+uncertainty intervals. Please use argument <code>prob</code> instead.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
       <td><p>Currently ignored.</p></td>
     </tr>
@@ -278,21 +284,23 @@ more details and documentation of the related plotting function.</p>
   either contour or raster plots.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span>(<span class='fl'>0</span>)
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>mgcv</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/mgcv/man/gamSim.html'>gamSim</a></span>(<span class='fl'>1</span>, <span class='kw'>n</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>scale</span> <span class='kw'>=</span> <span class='fl'>2</span>)
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'><a href='s.html'>s</a></span>(<span class='no'>x0</span>) + <span class='fu'><a href='s.html'>s</a></span>(<span class='no'>x1</span>) + <span class='fu'><a href='s.html'>s</a></span>(<span class='no'>x2</span>) + <span class='fu'><a href='s.html'>s</a></span>(<span class='no'>x3</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>)
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>0</span><span class='op'>)</span> 
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'>mgcv</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/mgcv/man/gamSim.html'>gamSim</a></span><span class='op'>(</span><span class='fl'>1</span>, n <span class='op'>=</span> <span class='fl'>200</span>, scale <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'><a href='s.html'>s</a></span><span class='op'>(</span><span class='va'>x0</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='s.html'>s</a></span><span class='op'>(</span><span class='va'>x1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='s.html'>s</a></span><span class='op'>(</span><span class='va'>x2</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='s.html'>s</a></span><span class='op'>(</span><span class='va'>x3</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>dat</span><span class='op'>)</span>
 <span class='co'># show all smooth terms</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'>conditional_smooths</span>(<span class='no'>fit</span>), <span class='kw'>rug</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'>conditional_smooths</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>, rug <span class='op'>=</span> <span class='cn'>TRUE</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 <span class='co'># show only the smooth term s(x2)</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'>conditional_smooths</span>(<span class='no'>fit</span>, <span class='kw'>smooths</span> <span class='kw'>=</span> <span class='st'>"s(x2)"</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'>conditional_smooths</span><span class='op'>(</span><span class='va'>fit</span>, smooths <span class='op'>=</span> <span class='st'>"s(x2)"</span><span class='op'>)</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
 <span class='co'># fit and plot a two-dimensional smooth term</span>
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'><a href='s.html'>t2</a></span>(<span class='no'>x0</span>, <span class='no'>x2</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>)
-<span class='no'>ms</span> <span class='kw'>&lt;-</span> <span class='fu'>conditional_smooths</span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>ms</span>, <span class='kw'>stype</span> <span class='kw'>=</span> <span class='st'>"contour"</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>ms</span>, <span class='kw'>stype</span> <span class='kw'>=</span> <span class='st'>"raster"</span>)
-}</div></pre>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'><a href='s.html'>t2</a></span><span class='op'>(</span><span class='va'>x0</span>, <span class='va'>x2</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>dat</span><span class='op'>)</span>
+<span class='va'>ms</span> <span class='op'>&lt;-</span> <span class='fu'>conditional_smooths</span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>ms</span>, stype <span class='op'>=</span> <span class='st'>"contour"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>ms</span>, stype <span class='op'>=</span> <span class='st'>"raster"</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -308,7 +316,7 @@ more details and documentation of the related plotting function.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

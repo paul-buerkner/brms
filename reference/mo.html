@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Monotonic Predictors in <span class="pkg">brms</span> Models — mo • brms</title>
+<title>Monotonic Predictors in brms Models — mo • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Monotonic Predictors in <span class="pkg">brms</span> Models — mo" />
+<meta property="og:title" content="Monotonic Predictors in brms Models — mo" />
 <meta property="og:description" content="Specify a monotonic predictor term in brms. The function does not
 evaluate its arguments -- it exists purely to help set up a model." />
 <meta property="og:image" content="/logo.png" />
@@ -81,7 +81,7 @@ evaluate its arguments -- it exists purely to help set up a model." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ evaluate its arguments -- it exists purely to help set up a model." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -172,7 +172,7 @@ evaluate its arguments -- it exists purely to help set up a model." />
 evaluate its arguments -- it exists purely to help set up a model.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>mo</span>(<span class='no'>x</span>)</pre>
+    <pre class="usage"><span class='fu'>mo</span><span class='op'>(</span><span class='va'>x</span>, id <span class='op'>=</span> <span class='cn'>NA</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -181,48 +181,61 @@ evaluate its arguments -- it exists purely to help set up a model.</p>
       <th>x</th>
       <td><p>An integer variable or an ordered factor to be modeled as monotonic.</p></td>
     </tr>
+    <tr>
+      <th>id</th>
+      <td><p>Optional character string. All monotonic terms
+with the same <code>id</code> within one formula  will be modeled as
+having the same simplex (shape) parameter vector. If all monotonic terms
+of the same predictor have the same <code>id</code>, the resulting
+predictions will be conditionally monotonic for all values of
+interacting covariates (Bürkner &amp; Charpentier, 2020).</p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>For detailed documentation see <code><a href='brmsformula.html'>help(brmsformula)</a></code>
-  as well as <code><a href='../articles/brms_monotonic.html'>vignette("brms_monotonic")</a></code>.</p>
+    <p>See Bürkner and Charpentier (2020) for the underlying theory. For
+  detailed documentation of the formula syntax used for monotonic terms, 
+  see <code><a href='brmsformula.html'>help(brmsformula)</a></code> as well as <code><a href='../articles/brms_monotonic.html'>vignette("brms_monotonic")</a></code>.</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
-    <p>Bürkner P. C. &amp; Charpentier, E. (in review). Monotonic Effects: A Principled 
-Approach for Including Ordinal Predictors in Regression Models. PsyArXiv 
-preprint.</p>
+    <p>Bürkner P. C. &amp; Charpentier E. (2020). Modeling Monotonic Effects of Ordinal
+Predictors in Regression Models. British Journal of Mathematical and 
+Statistical Psychology. doi:10.1111/bmsp.12195</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p><code><a href='brmsformula.html'>brmsformula</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'>
-<span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+    <pre class="examples"><div class='input'>  
+<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='co'># generate some data</span>
-<span class='no'>income_options</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"below_20"</span>, <span class='st'>"20_to_40"</span>, <span class='st'>"40_to_100"</span>, <span class='st'>"greater_100"</span>)
-<span class='no'>income</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='no'>income_options</span>, <span class='fl'>100</span>, <span class='fl'>TRUE</span>),
-                 <span class='kw'>levels</span> <span class='kw'>=</span> <span class='no'>income_options</span>, <span class='kw'>ordered</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='no'>mean_ls</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>30</span>, <span class='fl'>60</span>, <span class='fl'>70</span>, <span class='fl'>75</span>)
-<span class='no'>ls</span> <span class='kw'>&lt;-</span> <span class='no'>mean_ls</span>[<span class='no'>income</span>] + <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span>(<span class='fl'>100</span>, <span class='kw'>sd</span> <span class='kw'>=</span> <span class='fl'>7</span>)
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='no'>income</span>, <span class='no'>ls</span>)
+<span class='va'>income_options</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"below_20"</span>, <span class='st'>"20_to_40"</span>, <span class='st'>"40_to_100"</span>, <span class='st'>"greater_100"</span><span class='op'>)</span>
+<span class='va'>income</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='va'>income_options</span>, <span class='fl'>100</span>, <span class='cn'>TRUE</span><span class='op'>)</span>, 
+                 levels <span class='op'>=</span> <span class='va'>income_options</span>, ordered <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>mean_ls</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>30</span>, <span class='fl'>60</span>, <span class='fl'>70</span>, <span class='fl'>75</span><span class='op'>)</span>
+<span class='va'>ls</span> <span class='op'>&lt;-</span> <span class='va'>mean_ls</span><span class='op'>[</span><span class='va'>income</span><span class='op'>]</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>100</span>, sd <span class='op'>=</span> <span class='fl'>7</span><span class='op'>)</span>
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>income</span>, <span class='va'>ls</span><span class='op'>)</span>
 
 <span class='co'># fit a simple monotonic model</span>
-<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>ls</span> ~ <span class='fu'>mo</span>(<span class='no'>income</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>)
-
-<span class='co'># summarise the model</span>
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit1</span>, <span class='kw'>N</span> <span class='kw'>=</span> <span class='fl'>6</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>ls</span> <span class='op'>~</span> <span class='fu'>mo</span><span class='op'>(</span><span class='va'>income</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>dat</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>fit1</span>, N <span class='op'>=</span> <span class='fl'>6</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
 <span class='co'># model interaction with other variables</span>
-<span class='no'>dat</span>$<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"a"</span>, <span class='st'>"b"</span>, <span class='st'>"c"</span>), <span class='fl'>100</span>, <span class='fl'>TRUE</span>)
-<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>ls</span> ~ <span class='fu'>mo</span>(<span class='no'>income</span>)*<span class='no'>x</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>)
+<span class='va'>dat</span><span class='op'>$</span><span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"a"</span>, <span class='st'>"b"</span>, <span class='st'>"c"</span><span class='op'>)</span>, <span class='fl'>100</span>, <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>ls</span> <span class='op'>~</span> <span class='fu'>mo</span><span class='op'>(</span><span class='va'>income</span><span class='op'>)</span><span class='op'>*</span><span class='va'>x</span>, data <span class='op'>=</span> <span class='va'>dat</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
-<span class='co'># summarise the model</span>
-<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit2</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-}</div></pre>
+<span class='co'># ensure conditional monotonicity</span>
+<span class='va'>fit3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>ls</span> <span class='op'>~</span> <span class='fu'>mo</span><span class='op'>(</span><span class='va'>income</span>, id <span class='op'>=</span> <span class='st'>"i"</span><span class='op'>)</span><span class='op'>*</span><span class='va'>x</span>, data <span class='op'>=</span> <span class='va'>dat</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='op'>}</span> 
+ 
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -238,7 +251,7 @@ preprint.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

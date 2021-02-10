@@ -81,7 +81,7 @@ cross-validation via kfold." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ cross-validation via kfold." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -172,7 +172,7 @@ cross-validation via kfold." />
 cross-validation via <code><a href='kfold.brmsfit.html'>kfold</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>kfold_predict</span>(<span class='no'>x</span>, <span class='kw'>method</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"predict"</span>, <span class='st'>"fitted"</span>), <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>kfold_predict</span><span class='op'>(</span><span class='va'>x</span>, method <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"predict"</span>, <span class='st'>"fitted"</span><span class='op'>)</span>, resp <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -195,7 +195,7 @@ are performed only for the specified response variables.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Further arguments passed to <code><a href='prepare_predictions.html'>prepare_predictions</a></code>
+      <td><p>Further arguments passed to <code><a href='prepare_predictions.brmsfit.html'>prepare_predictions</a></code>
 that control several aspects of data validation and prediction.</p></td>
     </tr>
     </table>
@@ -211,23 +211,25 @@ that control several aspects of data validation and prediction.</p></td>
     <div class='dont-index'><p><code><a href='kfold.brmsfit.html'>kfold</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-           <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>())
-
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
+           data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+            
 <span class='co'># perform k-fold cross validation</span>
-(<span class='no'>kf</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='kfold.brmsfit.html'>kfold</a></span>(<span class='no'>fit</span>, <span class='kw'>save_fits</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>))
+<span class='op'>(</span><span class='va'>kf</span> <span class='op'>&lt;-</span> <span class='fu'><a href='kfold.brmsfit.html'>kfold</a></span><span class='op'>(</span><span class='va'>fit</span>, save_fits <span class='op'>=</span> <span class='cn'>TRUE</span>, chains <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='co'># define a loss function</span>
-<span class='no'>rmse</span> <span class='kw'>&lt;-</span> <span class='kw'>function</span>(<span class='no'>y</span>, <span class='no'>yrep</span>) {
-  <span class='no'>yrep_mean</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/colSums.html'>colMeans</a></span>(<span class='no'>yrep</span>)
-  <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span>((<span class='no'>yrep_mean</span> - <span class='no'>y</span>)^<span class='fl'>2</span>))
-}
+<span class='va'>rmse</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>y</span>, <span class='va'>yrep</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='va'>yrep_mean</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/colSums.html'>colMeans</a></span><span class='op'>(</span><span class='va'>yrep</span><span class='op'>)</span>
+  <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span><span class='op'>(</span><span class='op'>(</span><span class='va'>yrep_mean</span> <span class='op'>-</span> <span class='va'>y</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>}</span>
 
 <span class='co'># predict responses and evaluate the loss</span>
-<span class='no'>kfp</span> <span class='kw'>&lt;-</span> <span class='fu'>kfold_predict</span>(<span class='no'>kf</span>)
-<span class='fu'>rmse</span>(<span class='kw'>y</span> <span class='kw'>=</span> <span class='no'>kfp</span>$<span class='no'>y</span>, <span class='kw'>yrep</span> <span class='kw'>=</span> <span class='no'>kfp</span>$<span class='no'>yrep</span>)
-}</div></pre>
+<span class='va'>kfp</span> <span class='op'>&lt;-</span> <span class='fu'>kfold_predict</span><span class='op'>(</span><span class='va'>kf</span><span class='op'>)</span>
+<span class='fu'>rmse</span><span class='op'>(</span>y <span class='op'>=</span> <span class='va'>kfp</span><span class='op'>$</span><span class='va'>y</span>, yrep <span class='op'>=</span> <span class='va'>kfp</span><span class='op'>$</span><span class='va'>yrep</span><span class='op'>)</span>
+<span class='op'>}</span>
+  
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -243,7 +245,7 @@ that control several aspects of data validation and prediction.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

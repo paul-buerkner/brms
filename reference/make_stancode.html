@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Stan Code for <span class="pkg">brms</span> Models — make_stancode • brms</title>
+<title>Stan Code for brms Models — make_stancode • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Stan Code for <span class="pkg">brms</span> Models — make_stancode" />
+<meta property="og:title" content="Stan Code for brms Models — make_stancode" />
 <meta property="og:description" content="Generate Stan code for brms models" />
 <meta property="og:image" content="/logo.png" />
 
@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -132,19 +132,19 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -170,21 +170,24 @@
     <p>Generate Stan code for <span class="pkg">brms</span> models</p>
     </div>
 
-    <pre class="usage"><span class='fu'>make_stancode</span>(
-  <span class='no'>formula</span>,
-  <span class='no'>data</span>,
-  <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
-  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='st'>"no"</span>,
-  <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>save_model</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>...</span>
-)</pre>
+    <pre class="usage"><span class='fu'>make_stancode</span><span class='op'>(</span>
+  <span class='va'>formula</span>,
+  <span class='va'>data</span>,
+  family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+  prior <span class='op'>=</span> <span class='cn'>NULL</span>,
+  autocor <span class='op'>=</span> <span class='cn'>NULL</span>,
+  data2 <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cov_ranef <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sample_prior <span class='op'>=</span> <span class='st'>"no"</span>,
+  stanvars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  stan_funs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  knots <span class='op'>=</span> <span class='cn'>NULL</span>,
+  threads <span class='op'>=</span> <span class='cn'>NULL</span>,
+  normalize <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  save_model <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -217,7 +220,7 @@ linear <code>gaussian</code> model is applied. In multivariate models,
       <th>prior</th>
       <td><p>One or more <code>brmsprior</code> objects created by
 <code><a href='set_prior.html'>set_prior</a></code> or related functions and combined using the
-<code>c</code> method or the <code>+</code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
+<code>c</code> method or the <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. See also  <code><a href='get_prior.html'>get_prior</a></code>
 for more help.</p></td>
     </tr>
     <tr>
@@ -230,6 +233,13 @@ a description of the available correlation structures. Defaults to
 <code>autocor</code> might also be a list of autocorrelation structures.
 It is now recommend to specify autocorrelation terms directly
 within <code>formula</code>. See <code><a href='brmsformula.html'>brmsformula</a></code> for more details.</p></td>
+    </tr>
+    <tr>
+      <th>data2</th>
+      <td><p>A named <code>list</code> of objects containing data, which
+cannot be passed via argument <code>data</code>. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.</p></td>
     </tr>
     <tr>
       <th>cov_ranef</th>
@@ -288,6 +298,23 @@ for basis construction of smoothing terms. See
 <code><a href='https://rdrr.io/pkg/mgcv/man/gamm.html'>gamm</a></code> for more details.</p></td>
     </tr>
     <tr>
+      <th>threads</th>
+      <td><p>Number of threads to use in within-chain parallelization. For
+more control over the threading process, <code>threads</code> may also be a
+<code>brmsthreads</code> object created by <code><a href='threading.html'>threading</a></code>. Within-chain
+parallelization is experimental! We recommend its use only if you are
+experienced with Stan's <code>reduce_sum</code> function and have a slow running
+model that cannot be sped up by any other means.</p></td>
+    </tr>
+    <tr>
+      <th>normalize</th>
+      <td><p>Logical. Indicates whether normalization constants should
+be included in the Stan code (defaults to <code>TRUE</code>). Setting it
+to <code>FALSE</code> requires Stan version &gt;= 2.25 to work. If <code>FALSE</code>,
+sampling efficiency may be increased but some post processing functions
+such as <code><a href='bridge_sampler.brmsfit.html'>bridge_sampler</a></code> will not be available.</p></td>
+    </tr>
+    <tr>
       <th>save_model</th>
       <td><p>Either <code>NULL</code> or a character string. In the latter
 case, the model's Stan code is saved via <code><a href='https://rdrr.io/r/base/cat.html'>cat</a></code> in a text file
@@ -305,8 +332,9 @@ named after the string supplied in <code>save_model</code>.</p></td>
   to fit a <span class="pkg">brms</span> model.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>make_stancode</span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"cumulative"</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
+    <pre class="examples"><div class='input'><span class='fu'>make_stancode</span><span class='op'>(</span><span class='va'>rating</span> <span class='op'>~</span> <span class='va'>treat</span> <span class='op'>+</span> <span class='va'>period</span> <span class='op'>+</span> <span class='va'>carry</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>subject</span><span class='op'>)</span>, 
+              data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='st'>"cumulative"</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; // generated with brms 2.14.11
 #&gt; functions {
 #&gt;   /* cumulative-logit log-PDF for a single response
 #&gt;    * Args:
@@ -319,16 +347,16 @@ named after the string supplied in <code>save_model</code>.</p></td>
 #&gt;    */
 #&gt;    real cumulative_logit_lpmf(int y, real mu, real disc, vector thres) {
 #&gt;      int nthres = num_elements(thres);
-#&gt;      real p;
 #&gt;      if (y == 1) {
-#&gt;        p = inv_logit(disc * (thres[1] - mu));
+#&gt;        return log_inv_logit(disc * (thres[1] - mu));
 #&gt;      } else if (y == nthres + 1) {
-#&gt;        p = 1 - inv_logit(disc * (thres[nthres] - mu));
+#&gt;        return log1m_inv_logit(disc * (thres[nthres] - mu));
 #&gt;      } else {
-#&gt;        p = inv_logit(disc * (thres[y] - mu)) -
-#&gt;            inv_logit(disc * (thres[y - 1] - mu));
+#&gt;        return log_diff_exp(
+#&gt;          log_inv_logit(disc * (thres[y] - mu)), 
+#&gt;          log_inv_logit(disc * (thres[y - 1] - mu))
+#&gt;        );
 #&gt;      }
-#&gt;      return log(p);
 #&gt;    }
 #&gt;   /* cumulative-logit log-PDF for a single response and merged thresholds
 #&gt;    * Args:
@@ -357,7 +385,7 @@ named after the string supplied in <code>save_model</code>.</p></td>
 #&gt;    }
 #&gt; }
 #&gt; data {
-#&gt;   int&lt;lower=1&gt; N;  // number of observations
+#&gt;   int&lt;lower=1&gt; N;  // total number of observations
 #&gt;   int Y[N];  // response variable
 #&gt;   int&lt;lower=2&gt; nthres;  // number of thresholds
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
@@ -391,34 +419,35 @@ named after the string supplied in <code>save_model</code>.</p></td>
 #&gt;   r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
-#&gt;   // initialize linear predictor term
-#&gt;   vector[N] mu = Xc * b;
-#&gt;   for (n in 1:N) {
-#&gt;     // add more terms to the linear predictor
-#&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
-#&gt;   }
-#&gt;   // priors including all constants
-#&gt;   target += student_t_lpdf(Intercept | 3, 0, 2.5);
-#&gt;   target += student_t_lpdf(sd_1 | 3, 0, 2.5)
-#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 2.5);
-#&gt;   target += std_normal_lpdf(z_1[1]);
-#&gt;   // likelihood including all constants
+#&gt;   // likelihood including constants
 #&gt;   if (!prior_only) {
+#&gt;     // initialize linear predictor term
+#&gt;     vector[N] mu = Xc * b;
+#&gt;     for (n in 1:N) {
+#&gt;       // add more terms to the linear predictor
+#&gt;       mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+#&gt;     }
 #&gt;     for (n in 1:N) {
 #&gt;       target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);
 #&gt;     }
 #&gt;   }
+#&gt;   // priors including constants
+#&gt;   target += student_t_lpdf(Intercept | 3, 0, 2.5);
+#&gt;   target += student_t_lpdf(sd_1 | 3, 0, 2.5)
+#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+#&gt;   target += std_normal_lpdf(z_1[1]);
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // compute actual thresholds
 #&gt;   vector[nthres] b_Intercept = Intercept + dot_product(means_X, b);
 #&gt; }</div><div class='input'>
-<span class='fu'>make_stancode</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
+<span class='fu'>make_stancode</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
+              data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='st'>"poisson"</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; // generated with brms 2.14.11
 #&gt; functions {
 #&gt; }
 #&gt; data {
-#&gt;   int&lt;lower=1&gt; N;  // number of observations
+#&gt;   int&lt;lower=1&gt; N;  // total number of observations
 #&gt;   int Y[N];  // response variable
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
@@ -450,21 +479,21 @@ named after the string supplied in <code>save_model</code>.</p></td>
 #&gt;   r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
-#&gt;   // initialize linear predictor term
-#&gt;   vector[N] mu = Intercept + Xc * b;
-#&gt;   for (n in 1:N) {
-#&gt;     // add more terms to the linear predictor
-#&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+#&gt;   // likelihood including constants
+#&gt;   if (!prior_only) {
+#&gt;     // initialize linear predictor term
+#&gt;     vector[N] mu = Intercept + rep_vector(0.0, N);
+#&gt;     for (n in 1:N) {
+#&gt;       // add more terms to the linear predictor
+#&gt;       mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+#&gt;     }
+#&gt;     target += poisson_log_glm_lpmf(Y | Xc, mu, b);
 #&gt;   }
-#&gt;   // priors including all constants
+#&gt;   // priors including constants
 #&gt;   target += student_t_lpdf(Intercept | 3, 1.4, 2.5);
 #&gt;   target += student_t_lpdf(sd_1 | 3, 0, 2.5)
 #&gt;     - 1 * student_t_lccdf(0 | 3, 0, 2.5);
 #&gt;   target += std_normal_lpdf(z_1[1]);
-#&gt;   // likelihood including all constants
-#&gt;   if (!prior_only) {
-#&gt;     target += poisson_log_lpmf(Y | mu);
-#&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
@@ -486,7 +515,7 @@ named after the string supplied in <code>save_model</code>.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

@@ -81,7 +81,7 @@ predictors including two-way interaction effects." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -133,19 +133,19 @@ predictors including two-way interaction effects." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -173,50 +173,51 @@ predictors including two-way interaction effects.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>conditional_effects</span>(
-  <span class='no'>x</span>,
-  <span class='kw'>effects</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>conditions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>int_conditions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>re_formula</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
-  <span class='kw'>robust</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0.025</span>, <span class='fl'>0.975</span>),
-  <span class='kw'>method</span> <span class='kw'>=</span> <span class='st'>"posterior_epred"</span>,
-  <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>surface</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>categorical</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>ordinal</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>transform</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>resolution</span> <span class='kw'>=</span> <span class='fl'>100</span>,
-  <span class='kw'>select_points</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>too_far</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='no'>...</span>
-)
+<span class='fu'>conditional_effects</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  effects <span class='op'>=</span> <span class='cn'>NULL</span>,
+  conditions <span class='op'>=</span> <span class='cn'>NULL</span>,
+  int_conditions <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re_formula <span class='op'>=</span> <span class='cn'>NA</span>,
+  prob <span class='op'>=</span> <span class='fl'>0.95</span>,
+  robust <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  method <span class='op'>=</span> <span class='st'>"posterior_epred"</span>,
+  spaghetti <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  surface <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  categorical <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  ordinal <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  transform <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resolution <span class='op'>=</span> <span class='fl'>100</span>,
+  select_points <span class='op'>=</span> <span class='fl'>0</span>,
+  too_far <span class='op'>=</span> <span class='fl'>0</span>,
+  probs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
-<span class='fu'>conditional_effects</span>(<span class='no'>x</span>, <span class='no'>...</span>)
+<span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for brms_conditional_effects</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(
-  <span class='no'>x</span>,
-  <span class='kw'>ncol</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>rug</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>mean</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>jitter_width</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>stype</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"contour"</span>, <span class='st'>"raster"</span>),
-  <span class='kw'>line_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>cat_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>errorbar_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>surface_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>spaghetti_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>point_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>rug_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>facet_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
-  <span class='kw'>theme</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>plot</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='no'>...</span>
-)</pre>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  ncol <span class='op'>=</span> <span class='cn'>NULL</span>,
+  points <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  rug <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  mean <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  jitter_width <span class='op'>=</span> <span class='fl'>0</span>,
+  stype <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"contour"</span>, <span class='st'>"raster"</span><span class='op'>)</span>,
+  line_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  cat_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  errorbar_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  surface_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  spaghetti_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  point_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  rug_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  facet_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  theme <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ask <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  plot <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -227,12 +228,12 @@ predictors including two-way interaction effects.</p>
     </tr>
     <tr>
       <th>effects</th>
-      <td><p>An optional character vector naming effects
-(main effects or interactions) for which to compute conditional plots.
-Interactions are specified by a <code>:</code> between variable names.
-If <code>NULL</code> (the default), plots are generated for all main effects
-and two-way interactions estimated in the model. When specifying
-<code>effects</code> manually, <em>all</em> two-way interactions may be plotted
+      <td><p>An optional character vector naming effects (main effects or
+interactions) for which to compute conditional plots. Interactions are
+specified by a <code><a href='https://rdrr.io/r/base/Colon.html'>:</a></code> between variable names. If <code>NULL</code> (the
+default), plots are generated for all main effects and two-way interactions
+estimated in the model. When specifying <code>effects</code> manually, <em>all</em>
+two-way interactions (including grouping variables) may be plotted
 even if not originally modeled.</p></td>
     </tr>
     <tr>
@@ -245,7 +246,7 @@ is not given, the row names will be used for this purpose instead.
 It is recommended to only define a few rows in order to keep the plots clear.
 See <code><a href='make_conditions.html'>make_conditions</a></code> for an easy way to define conditions.
 If <code>NULL</code> (the default), numeric variables will be conditionalized by
-using their means and factors will get their reference level assigned.
+using their means and factors will get their first level assigned.
 <code>NA</code> values within factors are interpreted as if all dummy
 variables of this factor are zero. This allows, for instance, to make
 predictions of the grand mean when using sum coding.</p></td>
@@ -266,19 +267,19 @@ all categories for factor-like predictors.</p></td>
     </tr>
     <tr>
       <th>re_formula</th>
-      <td><p>A formula containing random effects to be considered 
-in the conditional predictions. If <code>NULL</code>, include all random effects; 
-if <code>NA</code> (default), include no random effects.</p></td>
+      <td><p>A formula containing group-level effects to be considered
+in the conditional predictions. If <code>NULL</code>, include all group-level
+effects; if <code>NA</code> (default), include no group-level effects.</p></td>
+    </tr>
+    <tr>
+      <th>prob</th>
+      <td><p>A value between 0 and 1 indicating the desired probability 
+to be covered by the uncertainty intervals. The default is 0.95.</p></td>
     </tr>
     <tr>
       <th>robust</th>
       <td><p>If <code>TRUE</code> (the default) the median is used as the 
 measure of central tendency. If <code>FALSE</code> the mean is used instead.</p></td>
-    </tr>
-    <tr>
-      <th>probs</th>
-      <td><p>The quantiles to be used in the computation of credible
-intervals (defaults to 2.5 and 97.5 percent quantiles)</p></td>
     </tr>
     <tr>
       <th>method</th>
@@ -293,7 +294,7 @@ function documentations.</p></td>
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If <code>TRUE</code>, it is recommended 
 to set argument <code>nsamples</code> to a relatively small value 
-(e.g. <code>100</code>) in order to reduce computation time.</p></td>
+(e.g., <code>100</code>) in order to reduce computation time.</p></td>
     </tr>
     <tr>
       <th>surface</th>
@@ -310,7 +311,7 @@ of response categories. Defaults to <code>FALSE</code>.</p></td>
     </tr>
     <tr>
       <th>ordinal</th>
-      <td><p>Deprecated! Please use argument <code>categorical</code>.
+      <td><p>(Deprecated) Please use argument <code>categorical</code>.
 Logical. Indicates if effects in ordinal models
 should be visualized as a raster with the response categories
 on the y-axis. Defaults to <code>FALSE</code>.</p></td>
@@ -353,10 +354,14 @@ from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.</p></td>
     </tr>
     <tr>
+      <th>probs</th>
+      <td><p>(Deprecated) The quantiles to be used in the computation of
+uncertainty intervals. Please use argument <code>prob</code> instead.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
       <td><p>Further arguments such as <code>subset</code> or <code>nsamples</code>
-passed to <code><a href='posterior_predict.brmsfit.html'>posterior_predict</a></code> or 
-<code><a href='posterior_epred.brmsfit.html'>posterior_epred</a></code>.</p></td>
+passed to <code><a href='posterior_predict.brmsfit.html'>posterior_predict</a></code> or <code><a href='posterior_epred.brmsfit.html'>posterior_epred</a></code>.</p></td>
     </tr>
     <tr>
       <th>ncol</th>
@@ -366,8 +371,8 @@ on the number of rows of <code>conditions</code>.</p></td>
     </tr>
     <tr>
       <th>points</th>
-      <td><p>Logical; indicating whether the original data points
-should be added via <code><a href='https://ggplot2.tidyverse.org/reference/geom_jitter.html'>geom_jitter</a></code>.
+      <td><p>Logical. Indicates if the original data points
+should be added via <code>geom_jitter</code>.
 Default is <code>FALSE</code>. Note that only those data points will be added
 that match the specified conditions defined in <code>conditions</code>.
 For categorical predictors, the conditions have to match exactly. 
@@ -376,14 +381,14 @@ determine, which points do match a condition.</p></td>
     </tr>
     <tr>
       <th>rug</th>
-      <td><p>Logical; indicating whether a rug representation of predictor
-values should be added via <code><a href='https://ggplot2.tidyverse.org/reference/geom_rug.html'>geom_rug</a></code>.
+      <td><p>Logical. Indicates if a rug representation of predictor
+values should be added via <code>geom_rug</code>.
 Default is <code>FALSE</code>. Depends on <code>select_points</code> in the same
 way as <code>points</code> does.</p></td>
     </tr>
     <tr>
       <th>mean</th>
-      <td><p>Logical; only relevant for spaghetti plots.
+      <td><p>Logical. Only relevant for spaghetti plots.
 If <code>TRUE</code> (the default), display the mean regression 
 line on top of the regression lines for each sample.</p></td>
     </tr>
@@ -403,51 +408,51 @@ Either <code>"contour"</code> or <code>"raster"</code>.</p></td>
       <th>line_args</th>
       <td><p>Only used in plots of continuous predictors:
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_smooth.html'>geom_smooth</a></code>.</p></td>
+<code>geom_smooth</code>.</p></td>
     </tr>
     <tr>
       <th>cat_args</th>
       <td><p>Only used in plots of categorical predictors:
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_point.html'>geom_point</a></code>.</p></td>
+<code>geom_point</code>.</p></td>
     </tr>
     <tr>
       <th>errorbar_args</th>
       <td><p>Only used in plots of categorical predictors:
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_linerange.html'>geom_errorbar</a></code>.</p></td>
+<code>geom_errorbar</code>.</p></td>
     </tr>
     <tr>
       <th>surface_args</th>
       <td><p>Only used in surface plots:
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_contour.html'>geom_contour</a></code> or
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_tile.html'>geom_raster</a></code>
+<code>geom_contour</code> or
+<code>geom_raster</code>
 (depending on argument <code>stype</code>).</p></td>
     </tr>
     <tr>
       <th>spaghetti_args</th>
       <td><p>Only used in spaghetti plots:
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_smooth.html'>geom_smooth</a></code>.</p></td>
+<code>geom_smooth</code>.</p></td>
     </tr>
     <tr>
       <th>point_args</th>
       <td><p>Only used if <code>points = TRUE</code>: 
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_jitter.html'>geom_jitter</a></code>.</p></td>
+<code>geom_jitter</code>.</p></td>
     </tr>
     <tr>
       <th>rug_args</th>
       <td><p>Only used if <code>rug = TRUE</code>: 
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/geom_rug.html'>geom_rug</a></code>.</p></td>
+<code>geom_rug</code>.</p></td>
     </tr>
     <tr>
       <th>facet_args</th>
       <td><p>Only used if if multiple condtions are provided: 
 A named list of arguments passed to 
-<code><a href='https://ggplot2.tidyverse.org/reference/facet_wrap.html'>facet_wrap</a></code>.</p></td>
+<code>facet_wrap</code>.</p></td>
     </tr>
     <tr>
       <th>theme</th>
@@ -472,7 +477,7 @@ Defaults to <code>TRUE</code>.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>An object of class <code>'brms_conditional_effects'</code>, which is a
+    <p>An object of class <code>'brms_conditional_effects'</code> which is a
   named list with one data.frame per effect containing all information
   required to generate conditional effects plots. Among others, these
   data.frames contain some special variables, namely <code>estimate__</code>
@@ -486,70 +491,70 @@ Defaults to <code>TRUE</code>.</p></td>
   customized using the <span class="pkg">ggplot2</span> package.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>When creating <code>conditional_effects</code> for a particular predictor 
-  (or interaction of two predictors), one has to choose the values of all 
-  other predictors to condition on. 
-  By default, the mean is used for continuous variables
-  and the reference category is used for factors, but you may change these
-  values via argument <code>conditions</code>. 
-  This also has an implication for the <code>points</code> argument: 
-  In the created plots, only those points will be shown that correspond 
-  to the factor levels actually used in the conditioning, in order not 
-  to create the false impression of bad model fit, where it is just 
-  due to conditioning on certain factor levels.</p>  
-<p>To fully change colors of the created plots, 
-  one has to amend both <code>scale_colour</code> and <code>scale_fill</code>.
-  See <code><a href='https://ggplot2.tidyverse.org/reference/scale_grey.html'>scale_colour_grey</a></code> or
-  <code><a href='https://ggplot2.tidyverse.org/reference/scale_gradient.html'>scale_colour_gradient</a></code>
-  for more details.</p>
+    <p>When creating <code>conditional_effects</code> for a particular predictor
+  (or interaction of two predictors), one has to choose the values of all
+  other predictors to condition on. By default, the mean is used for
+  continuous variables and the reference category is used for factors, but
+  you may change these values via argument <code>conditions</code>. This also has
+  an implication for the <code>points</code> argument: In the created plots, only
+  those points will be shown that correspond to the factor levels actually
+  used in the conditioning, in order not to create the false impression of
+  bad model fit, where it is just due to conditioning on certain factor
+  levels.</p>  
+<p>To fully change colors of the created plots, one has to amend both
+  <code>scale_colour</code> and <code>scale_fill</code>. See
+  <code><a href='https://ggplot2.tidyverse.org/reference/scale_grey.html'>scale_colour_grey</a></code> or <code><a href='https://ggplot2.tidyverse.org/reference/scale_gradient.html'>scale_colour_gradient</a></code> for
+  more details.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span> <span class='kw'>|</span> <span class='no'>patient</span>),
-           <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>())
-
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>|</span> <span class='va'>patient</span><span class='op'>)</span>,
+           data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span> 
+           
 <span class='co'>## plot all conditional effects</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'>conditional_effects</span>(<span class='no'>fit</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 
 <span class='co'>## change colours to grey scale</span>
-<span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>ggplot2</span>)
-<span class='no'>me</span> <span class='kw'>&lt;-</span> <span class='fu'>conditional_effects</span>(<span class='no'>fit</span>, <span class='st'>"zBase:Trt"</span>)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>me</span>, <span class='kw'>plot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)<span class='kw'>[[</span><span class='fl'>1</span>]] +
-  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_grey.html'>scale_color_grey</a></span>() +
-  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_grey.html'>scale_fill_grey</a></span>()
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://ggplot2.tidyverse.org'>ggplot2</a></span><span class='op'>)</span>
+<span class='va'>me</span> <span class='op'>&lt;-</span> <span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit</span>, <span class='st'>"zBase:Trt"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>me</span>, plot <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span> <span class='op'>+</span> 
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_grey.html'>scale_color_grey</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_grey.html'>scale_fill_grey</a></span><span class='op'>(</span><span class='op'>)</span>
 
 <span class='co'>## only plot the conditional interaction effect of 'zBase:Trt'</span>
 <span class='co'>## for different values for 'zAge'</span>
-<span class='no'>conditions</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>zAge</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>, <span class='fl'>0</span>, <span class='fl'>1</span>))
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'>conditional_effects</span>(<span class='no'>fit</span>, <span class='kw'>effects</span> <span class='kw'>=</span> <span class='st'>"zBase:Trt"</span>,
-                         <span class='kw'>conditions</span> <span class='kw'>=</span> <span class='no'>conditions</span>))
-
-<span class='co'>## also incorporate random effects variance over patients</span>
+<span class='va'>conditions</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>zAge <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>-</span><span class='fl'>1</span>, <span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit</span>, effects <span class='op'>=</span> <span class='st'>"zBase:Trt"</span>, 
+                         conditions <span class='op'>=</span> <span class='va'>conditions</span><span class='op'>)</span><span class='op'>)</span>
+                      
+<span class='co'>## also incorporate group-level effects variance over patients</span>
 <span class='co'>## also add data points and a rug representation of predictor values</span>
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'>conditional_effects</span>(<span class='no'>fit</span>, <span class='kw'>effects</span> <span class='kw'>=</span> <span class='st'>"zBase:Trt"</span>,
-                         <span class='kw'>conditions</span> <span class='kw'>=</span> <span class='no'>conditions</span>, <span class='kw'>re_formula</span> <span class='kw'>=</span> <span class='kw'>NULL</span>),
-     <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>rug</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit</span>, effects <span class='op'>=</span> <span class='st'>"zBase:Trt"</span>, 
+                         conditions <span class='op'>=</span> <span class='va'>conditions</span>, re_formula <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>, 
+     points <span class='op'>=</span> <span class='cn'>TRUE</span>, rug <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+ 
 <span class='co'>## change handling of two-way interactions</span>
-<span class='no'>int_conditions</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(
-  <span class='kw'>zBase</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/setNames.html'>setNames</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>2</span>, <span class='fl'>1</span>, <span class='fl'>0</span>), <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"b"</span>, <span class='st'>"c"</span>, <span class='st'>"a"</span>))
-)
-<span class='fu'>conditional_effects</span>(<span class='no'>fit</span>, <span class='kw'>effects</span> <span class='kw'>=</span> <span class='st'>"Trt:zBase"</span>,
-                    <span class='kw'>int_conditions</span> <span class='kw'>=</span> <span class='no'>int_conditions</span>)
-<span class='fu'>conditional_effects</span>(<span class='no'>fit</span>, <span class='kw'>effects</span> <span class='kw'>=</span> <span class='st'>"Trt:zBase"</span>,
-                    <span class='kw'>int_conditions</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>zBase</span> <span class='kw'>=</span> <span class='no'>quantile</span>))
-
+<span class='va'>int_conditions</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>
+  zBase <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/setNames.html'>setNames</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>-</span><span class='fl'>2</span>, <span class='fl'>1</span>, <span class='fl'>0</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"b"</span>, <span class='st'>"c"</span>, <span class='st'>"a"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>)</span>
+<span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit</span>, effects <span class='op'>=</span> <span class='st'>"Trt:zBase"</span>,
+                    int_conditions <span class='op'>=</span> <span class='va'>int_conditions</span><span class='op'>)</span>
+<span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit</span>, effects <span class='op'>=</span> <span class='st'>"Trt:zBase"</span>,
+                    int_conditions <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>zBase <span class='op'>=</span> <span class='va'>quantile</span><span class='op'>)</span><span class='op'>)</span>        
+     
 <span class='co'>## fit a model to illustrate how to plot 3-way interactions</span>
-<span class='no'>fit3way</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> * <span class='no'>zBase</span> * <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
-<span class='no'>conditions</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_conditions.html'>make_conditions</a></span>(<span class='no'>fit3way</span>, <span class='st'>"zAge"</span>)
-<span class='fu'>conditional_effects</span>(<span class='no'>fit3way</span>, <span class='st'>"zBase:Trt"</span>, <span class='kw'>conditions</span> <span class='kw'>=</span> <span class='no'>conditions</span>)
+<span class='va'>fit3way</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>*</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
+<span class='va'>conditions</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_conditions.html'>make_conditions</a></span><span class='op'>(</span><span class='va'>fit3way</span>, <span class='st'>"zAge"</span><span class='op'>)</span>
+<span class='fu'>conditional_effects</span><span class='op'>(</span><span class='va'>fit3way</span>, <span class='st'>"zBase:Trt"</span>, conditions <span class='op'>=</span> <span class='va'>conditions</span><span class='op'>)</span>
 <span class='co'>## only include points close to the specified values of zAge</span>
-<span class='no'>me</span> <span class='kw'>&lt;-</span> <span class='fu'>conditional_effects</span>(
-  <span class='no'>fit3way</span>, <span class='st'>"zBase:Trt"</span>, <span class='kw'>conditions</span> <span class='kw'>=</span> <span class='no'>conditions</span>,
-  <span class='kw'>select_points</span> <span class='kw'>=</span> <span class='fl'>0.1</span>
-)
-<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>me</span>, <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-}</div></pre>
+<span class='va'>me</span> <span class='op'>&lt;-</span> <span class='fu'>conditional_effects</span><span class='op'>(</span>
+  <span class='va'>fit3way</span>, <span class='st'>"zBase:Trt"</span>, conditions <span class='op'>=</span> <span class='va'>conditions</span>, 
+  select_points <span class='op'>=</span> <span class='fl'>0.1</span>
+<span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>me</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -565,7 +570,7 @@ Defaults to <code>TRUE</code>.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

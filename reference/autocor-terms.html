@@ -86,7 +86,7 @@ autocorrelation terms, see cor_brms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
       </span>
     </div>
 
@@ -138,19 +138,19 @@ autocorrelation terms, see cor_brms." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
-    <span class="fa fa-twitter"></span>
+    <span class="fas fa-twitter"></span>
      
   </a>
 </li>
 <li>
   <a href="https://github.com/stan-dev/brms">
-    <span class="fa fa-github"></span>
+    <span class="fas fa-github"></span>
      
   </a>
 </li>
 <li>
   <a href="http://discourse.mc-stan.org/">
-    <span class="fa fa-users"></span>
+    <span class="fas fa-users"></span>
      
   </a>
 </li>
@@ -199,13 +199,16 @@ terms.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># specify autocor terms within the formula</span>
-<span class='no'>y</span> ~ <span class='no'>x</span> + <span class='fu'><a href='arma.html'>arma</a></span>(<span class='kw'>p</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>q</span> <span class='kw'>=</span> <span class='fl'>1</span>) + <span class='fu'><a href='car.html'>car</a></span>(<span class='no'>M</span>)</div><div class='output co'>#&gt; y ~ x + arma(p = 1, q = 1) + car(M)
-#&gt; &lt;environment: 0x00000000372d0748&gt;</div><div class='input'>
+<span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='fu'><a href='arma.html'>arma</a></span><span class='op'>(</span>p <span class='op'>=</span> <span class='fl'>1</span>, q <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='car.html'>car</a></span><span class='op'>(</span><span class='va'>M</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x + arma(p = 1, q = 1) + car(M)
+#&gt; &lt;environment: 0x000000004aeb9be8&gt;</div><div class='input'>
 <span class='co'># specify autocor terms in the 'autocor' argument</span>
-<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='kw'>autocor</span> <span class='kw'>=</span> ~ <span class='fu'><a href='arma.html'>arma</a></span>(<span class='kw'>p</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>q</span> <span class='kw'>=</span> <span class='fl'>1</span>) + <span class='fu'><a href='car.html'>car</a></span>(<span class='no'>M</span>))</div><div class='output co'>#&gt; y ~ x 
+<span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span>, autocor <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='arma.html'>arma</a></span><span class='op'>(</span>p <span class='op'>=</span> <span class='fl'>1</span>, q <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='car.html'>car</a></span><span class='op'>(</span><span class='va'>M</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x 
 #&gt; autocor ~ arma(p = 1, q = 1) + car(M)</div><div class='input'>
 <span class='co'># specify autocor terms via 'acformula'</span>
-<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>) + <span class='fu'><a href='brmsformula-helpers.html'>acformula</a></span>(~ <span class='fu'><a href='arma.html'>arma</a></span>(<span class='kw'>p</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>q</span> <span class='kw'>=</span> <span class='fl'>1</span>) + <span class='fu'><a href='car.html'>car</a></span>(<span class='no'>M</span>))</div><div class='output co'>#&gt; y ~ x 
+<span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='brmsformula-helpers.html'>acformula</a></span><span class='op'>(</span><span class='op'>~</span> <span class='fu'><a href='arma.html'>arma</a></span><span class='op'>(</span>p <span class='op'>=</span> <span class='fl'>1</span>, q <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='car.html'>car</a></span><span class='op'>(</span><span class='va'>M</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; y ~ x 
 #&gt; autocor ~ arma(p = 1, q = 1) + car(M)</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -222,7 +225,7 @@ terms.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
