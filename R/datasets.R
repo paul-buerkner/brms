@@ -24,6 +24,10 @@
 #'    and \code{PKD} specifying the type of disease}
 #' }
 #' 
+#' @source McGilchrist, C. A., & Aisbett, C. W. (1991). 
+#'   Regression with frailty in survival analysis. 
+#'   \emph{Biometrics}, 47(2), 461-466.
+#' 
 #' @examples 
 #' \dontrun{
 #' ## performing surivival analysis using the "weibull" family
@@ -40,9 +44,6 @@
 #' plot(fit2)         
 #' }
 #' 
-#' @source McGilchrist, C. A., & Aisbett, C. W. (1991). 
-#'   Regression with frailty in survival analysis. 
-#'   \emph{Biometrics, 47(2)}, 461-466.
 "kidney"
 
 
@@ -66,6 +67,10 @@
 #'  \item{carry}{A contrast to indicate possible carry over effects}
 #' } 
 #' 
+#' @source Ezzet, F., & Whitehead, J. (1991). 
+#'   A random effects model for ordinal responses from a crossover trial. 
+#'   \emph{Statistics in Medicine}, 10(6), 901-907.
+#'   
 #' @examples
 #' \dontrun{
 #' ## ordinal regression with family "sratio"
@@ -84,9 +89,6 @@
 #' plot(fit2)
 #' }
 #' 
-#' @source Ezzet, F., & Whitehead, J. (1991). 
-#'   A random effects model for ordinal responses from a crossover trial. 
-#'   \emph{Statistics in Medicine, 10(6)}, 901-907.
 "inhaler"
 
 
@@ -114,7 +116,15 @@
 #'  \item{zAge}{Standardized \code{Age}}
 #'  \item{zBase}{Standardized \code{Base}}
 #' } 
-#' 
+#'  
+#' @source Thall, P. F., & Vail, S. C. (1990). 
+#'  Some covariance models for longitudinal count data with overdispersion. 
+#'  \emph{Biometrics, 46(2)}, 657-671. \cr
+#'    
+#' Breslow, N. E., & Clayton, D. G. (1993). 
+#'  Approximate inference in generalized linear mixed models. 
+#'  \emph{Journal of the American Statistical Association}, 88(421), 9-25.
+#'  
 #' @examples
 #' \dontrun{
 #' ## poisson regression without random effects. 
@@ -131,12 +141,54 @@
 #' summary(fit2) 
 #' plot(fit2)
 #' }
-#'  
-#' @source Thall, P. F., & Vail, S. C. (1990). 
-#'  Some covariance models for longitudinal count data with overdispersion. 
-#'  \emph{Biometrics, 46(2)}, 657-671. \cr
-#'    
-#' Breslow, N. E., & Clayton, D. G. (1993). 
-#'  Approximate inference in generalized linear mixed models. 
-#'  \emph{Journal of the American Statistical Association, 88(421)}, 9-25.
+#' 
 "epilepsy"
+
+#' Cumulative Insurance Loss Payments
+#' 
+#' @description This dataset, discussed in Gesmann & Morris (2020), contains
+#'   cumulative insurance loss payments over the course of ten years.
+#' 
+#' @format A data frame of 55 observations containing information 
+#'   on the following 4 variables. 
+#' \describe{
+#'  \item{AY}{Origin year of the insurance (1991 to 2000)}
+#'  \item{dev}{Deviation from the origin year in months}
+#'  \item{cum}{Cumulative loss payments} 
+#'  \item{premium}{Achieved premiums for the given origin year}
+#' } 
+#' 
+#' @source Gesmann M. & Morris J. (2020). Hierarchical Compartmental Reserving 
+#'   Models. \emph{CAS Research Papers}.
+#' 
+#' @examples 
+#' \dontrun{
+#' # non-linear model to predict cumulative loss payments
+#' fit_loss <- brm(
+#'   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+#'      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+#'      nl = TRUE),
+#'   data = loss, family = gaussian(),
+#'   prior = c(
+#'     prior(normal(5000, 1000), nlpar = "ult"),
+#'     prior(normal(1, 2), nlpar = "omega"),
+#'     prior(normal(45, 10), nlpar = "theta")
+#'   ),
+#'   control = list(adapt_delta = 0.9)
+#' )
+#' 
+#' # basic summaries
+#' summary(fit_loss)
+#' conditional_effects(fit_loss)
+#' 
+#' # plot predictions per origin year
+#' conditions <- data.frame(AY = unique(loss$AY))
+#' rownames(conditions) <- unique(loss$AY)
+#' me_loss <- conditional_effects(
+#'   fit_loss, conditions = conditions, 
+#'   re_formula = NULL, method = "predict"
+#' )
+#' plot(me_loss, ncol = 5, points = TRUE)
+#' }
+#' 
+"loss"

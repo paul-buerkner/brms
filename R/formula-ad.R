@@ -218,7 +218,7 @@ eval_rhs <- function(formula, data = NULL) {
 }
 
 # get expression for a variable of an addition term
-# @param x list with potentail $adforms elements
+# @param x list with potential $adforms elements
 # @param ad name of the addition term
 # @param target name of the element to extract
 # @type type of the element to extract

@@ -8,7 +8,7 @@
 \method{posterior_interval}{brmsfit}(object, pars = NA, prob = 0.95, ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{pars}{Names of parameters for which posterior samples should be 
 returned, as given by a character vector or regular expressions. 
@@ -18,7 +18,7 @@ By default, all posterior samples of all parameters are extracted.}
 to be covered by the uncertainty intervals. The default is 0.95.}
 
 \item{...}{More arguments passed to 
-\code{\link[brms:as.matrix.brmsfit]{as.matrix.brmsfit}}.}
+\code{\link{as.matrix.brmsfit}}.}
 }
 \value{
 A \code{matrix} with lower and upper interval bounds

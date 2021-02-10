@@ -10,8 +10,8 @@
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
-validate_data <- function(data, bterms, na.action = na.omit2,
-                          drop.unused.levels = TRUE, knots = NULL,
+validate_data <- function(data, bterms, data2 = list(), knots = NULL,
+                          na.action = na.omit2, drop.unused.levels = TRUE, 
                           attr_terms = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
@@ -26,31 +26,42 @@ validate_data <- function(data, bterms, na.action = na.omit2,
   if (!isTRUE(nrow(data) > 0L)) {
     stop2("Argument 'data' does not contain observations.")
   }
-  terms_all <- terms(bterms$allvars)
-  attributes(terms_all)[names(attr_terms)] <- attr_terms
   data <- data_rsv_intercept(data, bterms = bterms)
-  missing_vars <- setdiff(all.vars(terms_all), names(data))
+  all_vars_formula <- bterms$allvars
+  missing_vars <- setdiff(all_vars(all_vars_formula), names(data))
   if (length(missing_vars)) {
-    stop2("The following variables are missing in 'data':\n",
-          collapse_comma(missing_vars))
+    missing_vars2 <- setdiff(missing_vars, names(data2))
+    if (length(missing_vars2)) {
+      stop2("The following variables can neither be found in ",
+            "'data' nor in 'data2':\n", collapse_comma(missing_vars2)) 
+    }
+    # all initially missing variables can be found in 'data2'
+    # they are not necessarily of the length required for 'data'
+    # so need to be excluded from the evaluation of 'model.frame'
+    missing_vars_formula <- paste0(". ~ . ", collapse(" - ", missing_vars))
+    all_vars_formula <- update(all_vars_formula, missing_vars_formula)
   }
-  for (v in intersect(vars_keep_na(bterms), names(data))) {
-    attr(data[[v]], "keep_na") <- TRUE
-  }
+  all_vars_terms <- terms(all_vars_formula)
+  # ensure that 'data2' comes first in the search path 
+  # during the evaluation of model.frame
+  terms_env <- environment(all_vars_terms)
+  environment(all_vars_terms) <- as.environment(as.list(data2))
+  parent.env(environment(all_vars_terms)) <- terms_env
+  attributes(all_vars_terms)[names(attr_terms)] <- attr_terms
   # 'terms' prevents correct validation in 'model.frame'
   attr(data, "terms") <- NULL
   data <- model.frame(
-    terms_all, data, na.action = na.action,
+    all_vars_terms, data, na.action = na.pass,
     drop.unused.levels = drop.unused.levels
   )
+  data <- na.action(data, bterms = bterms)
   if (any(grepl("__|_$", colnames(data)))) {
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
   }
   if (!isTRUE(nrow(data) > 0L)) {
-    stop2("All observations in the data were removed presumably because of ",
-          "NA values. If you are using the 'subset' addition term, please ",
-          "make sure that variables are not NA even if locally unused.") 
+    stop2("All observations in the data were removed ", 
+          "presumably because of NA values.") 
   }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
@@ -67,6 +78,7 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 # @return a validated named list of data objects
 validate_data2 <- function(data2, bterms, ...) {
   # TODO: specify spline-related matrices in 'data2'
+  # this requires adding another parser layer with bterms and data as input
   if (is.null(data2)) {
     data2 <- list()
   }
@@ -167,11 +179,11 @@ combine_groups <- function(data, ...) {
   for (i in seq_along(group)) {
     sgroup <- unlist(strsplit(group[[i]], ":"))
     if (length(sgroup) > 1L && !group[[i]] %in% names(data)) {
-      new.var <- get(sgroup[1], data)
+      new_var <- get(sgroup[1], data)
       for (j in 2:length(sgroup)) {
-        new.var <- paste0(new.var, "_", get(sgroup[j], data))
+        new_var <- paste0(new_var, "_", get(sgroup[j], data))
       }
-      data[[group[[i]]]] <- new.var
+      data[[group[[i]]]] <- new_var
     }
   } 
   data
@@ -179,19 +191,19 @@ combine_groups <- function(data, ...) {
 
 # hard code factor contrasts to be independent of the global "contrasts" option
 # @param data data.frame to be updated
-# @param optdata: optional data.frame from which contrasts are taken if present
+# @param olddata: optional data.frame from which contrasts are taken if present
 # @param ignore: names of variables for which not to fix contrasts
 # @return 'data' with amended contrasts attributes
-fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
+fix_factor_contrasts <- function(data, olddata = NULL, ignore = NULL) {
   stopifnot(is(data, "data.frame"))
-  stopifnot(is.null(optdata) || is.list(optdata))
-  optdata <- as.data.frame(optdata)  # fixes issue #105
+  stopifnot(is.null(olddata) || is.list(olddata))
+  olddata <- as.data.frame(olddata)  # fixes issue #105
   for (i in seq_along(data)) {
     needs_contrast <- is.factor(data[[i]]) && !names(data)[i] %in% ignore
     if (needs_contrast && is.null(attr(data[[i]], "contrasts"))) {
-      old_contrasts <- attr(optdata[[names(data)[i]]], "contrasts")
+      old_contrasts <- attr(olddata[[names(data)[i]]], "contrasts")
       if (!is.null(old_contrasts)) {
-        # take contrasts from optdata
+        # take contrasts from olddata
         contrasts(data[[i]]) <- old_contrasts
       } else if (length(unique(data[[i]])) > 1L) {
         # avoid error when supplying only a single level
@@ -249,18 +261,82 @@ subset_data <- function(data, bterms) {
     if (anyNA(subset)) {
       stop2("Subset variables may not contain NAs.")
     }
+    # cross-formula indexing is not yet working for subsetted models
+    sp_terms <- ulapply(get_effect(bterms, "sp"), all_terms)
+    sp_matches <- get_matches_expr(regex_sp(c("mi", "me")), sp_terms)
+    if (length(sp_matches)) {
+      stop2("Cannot use mi() or me() terms in subsetted formulas.")
+    }
     data <- data[subset, , drop = FALSE]
   }
   if (!NROW(data)) {
     stop2(
       "All rows of 'data' were removed via 'subset'. ",
       "Please make sure that variables do not contain NAs ",
-      "even in rows unused by the subsetted model. ",
+      "for observations in which they are supposed to be used. ",
       "Please also make sure that each subset variable is ",
       "TRUE for at least one observation."
     )
   }
   data
+}
+
+# like stats:::na.omit.data.frame but allows to certain NA values
+na.omit2 <- function(object, bterms, ...) {
+  stopifnot(is.data.frame(object))
+  nobs <- nrow(object)
+  if (is.mvbrmsterms(bterms)) {
+    responses <- names(bterms$terms)
+    subsets <- lapply(bterms$terms, get_ad_values, "subset", "subset", object)
+    vars_sub <- lapply(bterms$terms, function(x) all_vars(x$allvars)) 
+  }
+  vars_keep_na <- vars_keep_na(bterms)
+  omit <- logical(nobs)
+  for (v in names(object)) {
+    x <- object[[v]]
+    vars_v <- all_vars(v)
+    keep_all_na <- all(vars_v %in% vars_keep_na)
+    if (!is.atomic(x) || keep_all_na) {
+      next
+    }
+    if (!is.mvbrmsterms(bterms)) {
+      # remove all NAs in this variable
+      keep_na <- rep(FALSE, nobs)
+    } else {
+      # allow to retain NAs in subsetted variables
+      keep_na <- rep(TRUE, nobs)
+      for (r in responses) {
+        if (any(vars_v %in% vars_sub[[r]])) {
+          if (!is.null(subsets[[r]])) {
+            # keep NAs ignored because of 'subset'
+            keep_na <- keep_na & !subsets[[r]]
+          } else {
+            # remove all NAs in this variable
+            keep_na <- keep_na & FALSE
+          }
+        }
+      }
+    }
+    is_na <- is.na(x)
+    d <- dim(is_na)
+    if (is.null(d) || length(d) != 2L) {
+      omit <- omit | (is_na & !keep_na)
+    } else {
+      for (ii in seq_len(d[2L])) {
+        omit <- omit | (is_na[, ii] & !keep_na)
+      } 
+    }
+  }
+  if (any(omit > 0L)) {
+    out <- object[!omit, , drop = FALSE]
+    temp <- setNames(seq(omit)[omit], attr(object, "row.names")[omit])
+    attr(temp, "class") <- "omit"
+    attr(out, "na.action") <- temp
+    warning2("Rows containing NAs were excluded from the model.")
+  } else {
+    out <- object
+  }
+  out
 }
 
 # get a single value per group 
@@ -305,6 +381,9 @@ get_data_name <- function(data) {
 #'   be checked as well. Defaults to \code{TRUE}.
 #' @param all_group_vars Optional names of grouping variables to be validated.
 #'   Defaults to all grouping variables in the model.
+#' @param req_vars Optional names of variables required in \code{newdata}.
+#'   If \code{NULL} (the default), all variables in the original data
+#'   are required (unless ignored for some other reason).
 #' @param ... Currently ignored.
 #' 
 #' @return A validated \code{'data.frame'} based on \code{newdata}.
@@ -312,8 +391,8 @@ get_data_name <- function(data) {
 #' @export
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
-  resp = NULL, check_response = TRUE, incl_autocor = TRUE,
-  all_group_vars = NULL, ...
+  newdata2 = NULL, resp = NULL, check_response = TRUE, 
+  incl_autocor = TRUE, all_group_vars = NULL, req_vars = NULL, ...
 ) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
@@ -324,17 +403,27 @@ validate_newdata <- function(
   resp <- validate_resp(resp, object)
   new_formula <- update_re_terms(formula(object), re_formula)
   bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
+ 
+  # fill values of not required variables
+  all_vars <- all.vars(bterms$allvars)
+  if (is.null(req_vars)) {
+    req_vars <- all_vars
+  } else {
+    req_vars <- as.character(req_vars)
+    req_vars <- intersect(req_vars, all_vars)
+  }
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {
     # variables not used in the included model parts
     # do not need to be specified in newdata
     resp <- validate_resp(resp, bterms$responses)
-    reqvars <- allvars_formula(lapply(bterms$terms[resp], "[[", "allvars"))
-    not_reqvars <- setdiff(all.vars(bterms$allvars), all.vars(reqvars))
-    not_reqvars <- setdiff(not_reqvars, names(newdata))
-    if (length(not_reqvars)) {
-      newdata[, not_reqvars] <- NA
-    }
+    form_req_vars <- lapply(bterms$terms[resp], "[[", "allvars")
+    form_req_vars <- allvars_formula(form_req_vars)
+    req_vars <- intersect(req_vars, all.vars(form_req_vars))
   }
+  not_req_vars <- setdiff(all_vars, req_vars)
+  not_req_vars <- setdiff(not_req_vars, names(newdata))
+  newdata <- fill_newdata(newdata, not_req_vars, object$data)
+  # check response and addition variables
   only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
   # always require 'dec' variables to be specified
@@ -345,7 +434,7 @@ validate_newdata <- function(
       stop2("Response variables must be specified in 'newdata'.\n",
             "Missing variables: ", collapse_comma(missing_resp))
     } else {
-      newdata[, missing_resp] <- NA
+      newdata <- fill_newdata(newdata, missing_resp)
     }
   }
   # censoring and weighting vars are unused in post-processing methods
@@ -371,7 +460,7 @@ validate_newdata <- function(
     # by the user if new levels are allowed
     mis_group_vars <- new_group_vars[!grepl(":", new_group_vars)]
     mis_group_vars <- setdiff(mis_group_vars, names(newdata))
-    newdata[, mis_group_vars] <- NA
+    newdata <- fill_newdata(newdata, mis_group_vars)
   }
   newdata <- combine_groups(newdata, new_group_vars)
   # validate factor levels in newdata
@@ -448,9 +537,7 @@ validate_newdata <- function(
   used_vars <- union(used_vars, rsv_vars(bterms))
   all_vars <- all.vars(str2formula(names(mf)))
   unused_vars <- setdiff(all_vars, used_vars)
-  if (length(unused_vars)) {
-    newdata[, unused_vars] <- NA
-  }
+  newdata <- fill_newdata(newdata, unused_vars)
   # validate grouping factors
   new_ranef <- tidy_ranef(bterms, data = mf)
   new_meef <- tidy_meef(bterms, data = mf)
@@ -479,12 +566,49 @@ validate_newdata <- function(
   newdata <- validate_data(
     newdata, bterms = bterms, na.action = na.pass, 
     drop.unused.levels = FALSE, attr_terms = attr_terms,
+    data2 = current_data2(object, newdata2),
     knots = get_knots(object$data)
   )
   newdata
 }
 
-# extract the current data set
+# fill newdata with values for not required variables
+# @param newdata data.frame to be filled
+# @param vars character vector of not required variables
+# @param olddata optional data.frame to take values from
+# @param n row number of olddata to extract values from
+fill_newdata <- function(newdata, vars, olddata = NULL, n = 1L) {
+  stopifnot(is.data.frame(newdata), is.character(vars))
+  vars <- setdiff(vars, names(newdata))
+  if (is.null(olddata)) {
+    if (length(vars)) {
+      newdata[, vars] <- NA 
+    }
+    return(newdata)
+  }
+  stopifnot(is.data.frame(olddata), length(n) == 1L)
+  for (v in vars) {
+    # using NA for variables is not safe in all cases
+    # for example when processing splines using mgcv
+    # hence it is safer to use existing data values
+    cval <- olddata[n, v] %||% NA
+    if (length(dim(cval)) == 2L) {
+      # matrix columns don't have automatic broadcasting apparently
+      cval <- matrix(cval, nrow(newdata), ncol(cval), byrow = TRUE)
+    }
+    newdata[[v]] <- cval
+  }
+  newdata
+}
+
+# validate new data2 
+validate_newdata2 <- function(newdata2, object, ...) {
+  stopifnot(is.brmsfit(object))
+  bterms <- brmsterms(object$formula)
+  validate_data2(newdata2, bterms = bterms, ...)
+}
+
+# extract the current data
 current_data <- function(object, newdata = NULL, ...) {
   stopifnot(is.brmsfit(object))
   if (is.null(newdata)) {
@@ -493,4 +617,15 @@ current_data <- function(object, newdata = NULL, ...) {
     data <- validate_newdata(newdata, object = object, ...)
   }
   data
+}
+
+# extract the current data2
+current_data2 <- function(object, newdata2 = NULL, ...) {
+  stopifnot(is.brmsfit(object))
+  if (is.null(newdata2)) {
+    data2 <- object$data2
+  } else {
+    data2 <- validate_newdata2(newdata2, object = object, ...)
+  }
+  data2
 }

@@ -36,8 +36,8 @@ test_that("print for class brmsprior works correctly", {
                 "b_x ~ normal(0,1)", fixed = TRUE)
   expect_output(print(set_prior("cauchy(0,1)", class = "sd", group = "x")), 
                 "sd_x ~ cauchy(0,1)", fixed = TRUE)
-  expect_output(print(set_prior("increment_log_prob(normal_log(0,1))")), 
-                "increment_log_prob(normal_log(0,1))", fixed = TRUE)
+  expect_output(print(set_prior("target += normal_lpdf(x | 0,1))", check = FALSE)), 
+                "target += normal_lpdf(x | 0,1))", fixed = TRUE)
 })
 
 test_that("get_prior returns correct nlpar names for random effects pars", {
@@ -109,4 +109,15 @@ test_that("set_prior alias functions produce equivalent results", {
                prior_(~normal(0, 1), class = ~sd, nlpar = quote(a)))
   expect_equal(set_prior("normal(0, 1)", class = "sd"),
                prior_string("normal(0, 1)", class = "sd"))
+})
+
+test_that("external interface of validate_prior works correctly", {
+  prior1 <- prior(normal(0,10), class = b) + 
+    prior(cauchy(0,2), class = sd)
+  prior1 <- validate_prior(
+    prior1, count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = poisson()
+  )
+  expect_true(all(c("b", "Intercept", "sd") %in% prior1$class))
+  expect_equal(nrow(prior1), 9)
 })

@@ -9,10 +9,12 @@ validate_newdata(
   object,
   re_formula = NULL,
   allow_new_levels = FALSE,
+  newdata2 = NULL,
   resp = NULL,
   check_response = TRUE,
   incl_autocor = TRUE,
   all_group_vars = NULL,
+  req_vars = NULL,
   ...
 )
 }
@@ -29,6 +31,10 @@ if \code{NA}, include no group-level effects.}
 effects are allowed (defaults to \code{FALSE}). Only relevant if
 \code{newdata} is provided.}
 
+\item{newdata2}{A named \code{list} of objects containing new data, which
+cannot be passed via argument \code{newdata}. Required for some objects 
+used in autocorrelation structures, or \code{\link{stanvars}}.}
+
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
@@ -41,6 +47,10 @@ Defaults to \code{TRUE}.}
 
 \item{all_group_vars}{Optional names of grouping variables to be validated.
 Defaults to all grouping variables in the model.}
+
+\item{req_vars}{Optional names of variables required in \code{newdata}.
+If \code{NULL} (the default), all variables in the original data
+are required (unless ignored for some other reason).}
 
 \item{...}{Currently ignored.}
 }

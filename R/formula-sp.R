@@ -104,16 +104,23 @@ mi <- function(x) {
 #' evaluate its arguments -- it exists purely to help set up a model.
 #' 
 #' @param x An integer variable or an ordered factor to be modeled as monotonic.
+#' @param id Optional character string. All monotonic terms
+#'  with the same \code{id} within one formula  will be modeled as
+#'  having the same simplex (shape) parameter vector. If all monotonic terms
+#'  of the same predictor have the same \code{id}, the resulting
+#'  predictions will be conditionally monotonic for all values of
+#'  interacting covariates (Bürkner & Charpentier, 2020).
 #'  
-#' @details For detailed documentation see \code{help(brmsformula)}
-#'   as well as \code{vignette("brms_monotonic")}.
+#' @details See Bürkner and Charpentier (2020) for the underlying theory. For
+#'   detailed documentation of the formula syntax used for monotonic terms, 
+#'   see \code{help(brmsformula)} as well as \code{vignette("brms_monotonic")}.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 
 #' @references 
-#' Bürkner P. C. & Charpentier, E. (in review). Monotonic Effects: A Principled 
-#' Approach for Including Ordinal Predictors in Regression Models. PsyArXiv 
-#' preprint.
+#' Bürkner P. C. & Charpentier E. (2020). Modeling Monotonic Effects of Ordinal
+#' Predictors in Regression Models. British Journal of Mathematical and 
+#' Statistical Psychology. doi:10.1111/bmsp.12195
 #'   
 #' @examples   
 #' \dontrun{
@@ -127,8 +134,6 @@ mi <- function(x) {
 #' 
 #' # fit a simple monotonic model
 #' fit1 <- brm(ls ~ mo(income), data = dat)
-#' 
-#' # summarise the model
 #' summary(fit1)
 #' plot(fit1, N = 6)
 #' plot(conditional_effects(fit1), points = TRUE)
@@ -136,18 +141,22 @@ mi <- function(x) {
 #' # model interaction with other variables
 #' dat$x <- sample(c("a", "b", "c"), 100, TRUE)
 #' fit2 <- brm(ls ~ mo(income)*x, data = dat)
-#' 
-#' # summarise the model
 #' summary(fit2)
 #' plot(conditional_effects(fit2), points = TRUE)
+#' 
+#' # ensure conditional monotonicity
+#' fit3 <- brm(ls ~ mo(income, id = "i")*x, data = dat)
+#' summary(fit3)
+#' plot(conditional_effects(fit3), points = TRUE)
 #' } 
 #'  
 #' @export
-mo <- function(x) {
+mo <- function(x, id = NA) {
   # use 'term' for consistency with other special terms
   term <- deparse(substitute(x))
+  id <- as_one_character(id, allow_na = TRUE)
   label <- deparse(match.call())
-  out <- nlist(term, label)
+  out <- nlist(term, id, label)
   class(out) <- c("mo_term", "sp_term")
   out
 }
@@ -169,7 +178,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
     stop2(
       "Response models of variables in 'mi' terms require " ,
       "specification of the addition argument 'mi'. See ?mi. ", 
-      "Error occured for ", collapse_comma(miss_mi), "."
+      "Error occurred for ", collapse_comma(miss_mi), "."
     )
   }
   out
@@ -193,7 +202,7 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
       stop2(
         "Variables in 'mi' terms should also be specified " ,
         "as response variables in the model. See ?mi. ", 
-        "Error occured for ", collapse_comma(miss_mi), "."
+        "Error occurred for ", collapse_comma(miss_mi), "."
       )
     }
     attr(out, "vars_mi") <- vars_mi
@@ -299,7 +308,7 @@ tidy_spef <- function(x, data) {
   out <- data.frame(term = rm_wsp(colnames(mm)), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
   calls_cols <- paste0("calls_", all_sp_types())
-  for (col in c(calls_cols, "joint_call", "vars_mi", "Imo")) {
+  for (col in c(calls_cols, "joint_call", "vars_mi", "ids_mo", "Imo")) {
     out[[col]] <- vector("list", nrow(out))
   }
   kmo <- 0
@@ -311,6 +320,7 @@ tidy_spef <- function(x, data) {
       out$calls_mo[[i]] <- terms_split[[i]][take_mo]
       nmo <- length(out$calls_mo[[i]])
       out$Imo[[i]] <- (kmo + 1):(kmo + nmo)
+      out$ids_mo[[i]] <- rep(NA, nmo)
       kmo <- kmo + nmo
       for (j in seq_along(out$calls_mo[[i]])) {
         mo_term <- out$calls_mo[[i]][[j]]
@@ -318,6 +328,7 @@ tidy_spef <- function(x, data) {
         if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_term)) {
           stop2("The monotonic term '",  mo_term, "' is invalid.")
         }
+        out$ids_mo[[i]][[j]] <- eval2(mo_term)[["id"]]
       }
     }
     # prepare me terms
@@ -349,9 +360,19 @@ tidy_spef <- function(x, data) {
 
 # extract names of monotonic simplex parameters 
 # @param spef output of tidy_spef
-get_simo_labels <- function(spef) {
-  fun <- function(i) paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
-  ulapply(which(lengths(spef$Imo) > 0), fun)
+# @param use_id use the 'id' argument to construct simo labels?
+# @return a character vector of length nrow(spef)
+get_simo_labels <- function(spef, use_id = FALSE) {
+  out <- named_list(spef$term)
+  I <- which(lengths(spef$Imo) > 0)
+  for (i in I) {
+    # use the ID as label if specified
+    out[[i]] <- ifelse(
+      use_id & !is.na(spef$ids_mo[[i]]), spef$ids_mo[[i]],
+      paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+    )
+  }
+  unlist(out)
 }
 
 # standard errors of variables with missing values
@@ -480,7 +501,7 @@ get_mo_values <- function(term, data) {
   } else {
     stop2(
       "Monotonic predictors must be integers or ordered ",
-      "factors. Error occured for variable '", term$term, "'."
+      "factors. Error occurred for variable '", term$term, "'."
     )
   }
   as.array(x)

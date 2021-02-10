@@ -20,7 +20,7 @@ A data frame of 572 observations containing
 \source{
 Ezzet, F., & Whitehead, J. (1991). 
   A random effects model for ordinal responses from a crossover trial. 
-  \emph{Statistics in Medicine, 10(6)}, 901-907.
+  \emph{Statistics in Medicine}, 10(6), 901-907.
 }
 \usage{
 inhaler

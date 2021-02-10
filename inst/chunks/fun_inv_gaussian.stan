@@ -45,6 +45,6 @@
    *   log(P(Y > y)) 
    */ 
    real inv_gaussian_lccdf(real y, real mu, real shape) { 
-     return log(1 - Phi(sqrt(shape) / sqrt(y) * (y / mu - 1)) - 
+     return log1m(Phi(sqrt(shape) / sqrt(y) * (y / mu - 1)) - 
               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt(y) * (y / mu + 1)));
    }

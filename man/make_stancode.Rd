@@ -10,12 +10,15 @@ make_stancode(
   family = gaussian(),
   prior = NULL,
   autocor = NULL,
+  data2 = NULL,
   cov_ranef = NULL,
   sparse = NULL,
   sample_prior = "no",
   stanvars = NULL,
   stan_funs = NULL,
   knots = NULL,
+  threads = NULL,
+  normalize = TRUE,
   save_model = NULL,
   ...
 )
@@ -52,6 +55,11 @@ a description of the available correlation structures. Defaults to
 \code{autocor} might also be a list of autocorrelation structures.
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
+
+\item{data2}{A named \code{list} of objects containing data, which
+cannot be passed via argument \code{data}. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
 
 \item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
 (within) covariance structure of the group-level effects. The names of the
@@ -96,6 +104,19 @@ block of the generated \pkg{Stan} code. It is now recommended to use the
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{threads}{Number of threads to use in within-chain parallelization. For
+more control over the threading process, \code{threads} may also be a
+\code{brmsthreads} object created by \code{\link{threading}}. Within-chain
+parallelization is experimental! We recommend its use only if you are
+experienced with Stan's \code{reduce_sum} function and have a slow running
+model that cannot be sped up by any other means.}
+
+\item{normalize}{Logical. Indicates whether normalization constants should
+be included in the Stan code (defaults to \code{TRUE}). Setting it
+to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
+sampling efficiency may be increased but some post processing functions
+such as \code{\link{bridge_sampler}} will not be available.}
 
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file

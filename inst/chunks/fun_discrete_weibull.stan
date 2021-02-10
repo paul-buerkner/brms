@@ -11,9 +11,9 @@
   }
   // discrete Weibull log-CDF for a single response
   real discrete_weibull_lcdf(int y, real mu, real shape) {
-    return log(1 - mu^(y + 1)^shape);
+    return log1m(mu^(y + 1)^shape);
   }
   // discrete Weibull log-CCDF for a single response
   real discrete_weibull_lccdf(int y, real mu, real shape) {
-    return log(mu) * (y + 1)^shape;
+    return lmultiply((y + 1)^shape, mu);
   }

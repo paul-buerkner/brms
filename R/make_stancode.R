@@ -17,12 +17,12 @@
 #'
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL,
+                          prior = NULL, autocor = NULL, data2 = NULL,
                           cov_ranef = NULL, sparse = NULL, 
-                          sample_prior = "no", 
-                          stanvars = NULL, stan_funs = NULL, 
-                          knots = NULL, save_model = NULL, 
-                          ...) {
+                          sample_prior = "no", stanvars = NULL, 
+                          stan_funs = NULL, knots = NULL, 
+                          threads = NULL, normalize = TRUE,
+                          save_model = NULL, ...) {
   
   if (is.brmsfit(formula)) {
     stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
@@ -33,37 +33,136 @@ make_stancode <- function(formula, data, family = gaussian(),
     cov_ranef = cov_ranef
   )
   bterms <- brmsterms(formula)
-  data <- validate_data(data, bterms = bterms, knots = knots)
-  prior <- validate_prior(
+  data2 <- validate_data2(
+    data2, bterms = bterms, 
+    get_data2_autocor(formula),
+    get_data2_cov_ranef(formula)
+  )
+  data <- validate_data(
+    data, bterms = bterms, 
+    data2 = data2, knots = knots
+  )
+  prior <- .validate_prior(
     prior, bterms = bterms, data = data,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
+  threads <- validate_threads(threads)
   
  .make_stancode(
    bterms, data = data, prior = prior, 
-   stanvars = stanvars, save_model = save_model,
+   stanvars = stanvars, threads = threads,
+   normalize = normalize, save_model = save_model,
    ...
  ) 
 }
 
-.make_stancode <- function(bterms, data, prior, stanvars,
-                           save_model = NULL, parse = TRUE, 
-                           silent = TRUE, ...) {
- 
+# internal work function of 'make_stancode'
+# @param parse parse the Stan model for automatic syntax checking
+# @param backend name of the backend used for parsing
+# @param silent silence parsing messages
+.make_stancode <- function(bterms, data, prior, stanvars, 
+                           threads = threading(), normalize = TRUE,
+                           parse = getOption("brms.parse_stancode", FALSE), 
+                           backend = getOption("brms.backend", "rstan"),
+                           silent = TRUE, save_model = NULL, ...) {
+  normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)
+  backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
   scode_predictor <- stan_predictor(
-    bterms, data = data, prior = prior, 
-    ranef = ranef, meef = meef,
-    stanvars = stanvars
+    bterms, data = data, prior = prior,
+    normalize = normalize, ranef = ranef, meef = meef,
+    stanvars = stanvars, threads = threads
   )
-  scode_ranef <- stan_re(ranef, prior = prior)
-  scode_llh <- stan_llh(bterms, data = data)
-  scode_global_defs <- stan_global_defs(bterms, prior = prior, ranef = ranef)
-  scode_Xme <- stan_Xme(meef, prior = prior)
+  scode_ranef <- stan_re(
+    ranef, prior = prior, threads = threads, normalize = normalize
+  )
+  scode_Xme <- stan_Xme(
+    meef, prior = prior, threads = threads, normalize = normalize
+  )
+  scode_global_defs <- stan_global_defs(
+    bterms, prior = prior, ranef = ranef, threads = threads
+  )
+  
+  # extend Stan's likelihood part
+  if (use_threading(threads)) {
+    # threading is activated
+    for (i in seq_along(scode_predictor)) {
+      resp <- usc(names(scode_predictor)[i])
+      pll_args <- stan_clean_pll_args(
+        scode_predictor[[i]]$pll_args,
+        scode_ranef$pll_args,
+        scode_Xme$pll_args
+      )
+      partial_log_lik <- paste0(
+        scode_predictor[[i]]$pll_def,
+        scode_predictor[[i]]$model_def,
+        scode_predictor[[i]]$model_comp_basic,
+        scode_predictor[[i]]$model_comp_eta_loop,
+        scode_predictor[[i]]$model_comp_dpar_link,
+        scode_predictor[[i]]$model_comp_mu_link,
+        scode_predictor[[i]]$model_comp_dpar_trans,
+        scode_predictor[[i]]$model_comp_mix,
+        scode_predictor[[i]]$model_comp_arma,
+        scode_predictor[[i]]$model_comp_catjoin,
+        scode_predictor[[i]]$model_comp_mvjoin,
+        scode_predictor[[i]]$model_log_lik
+      )
+      partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
+      partial_log_lik <- paste0(
+        "// compute partial sums of the log-likelihood\n",
+        "real partial_log_lik_lpmf", resp, "(int[] seq", resp, 
+        ", int start, int end", pll_args$typed, ") {\n",
+        "  real ptarget = 0;\n",
+        "  int N = end - start + 1;\n",
+        partial_log_lik, 
+        "  return ptarget;\n",
+        "}\n"
+      )
+      partial_log_lik <- wsp_per_line(partial_log_lik, 2)
+      scode_predictor[[i]]$partial_log_lik <- partial_log_lik
+      static <- str_if(threads$static, "_static")
+      scode_predictor[[i]]$model_lik <- paste0(
+        "  target += reduce_sum", static, "(partial_log_lik_lpmf", resp, 
+        ", seq", resp, ", grainsize", pll_args$plain, ");\n"
+      )
+      str_add(scode_predictor[[i]]$tdata_def) <- glue(
+        "  int seq{resp}[N{resp}] = sequence(1, N{resp});\n"
+      )
+    }
+    scode_predictor <- collapse_lists(ls = scode_predictor)
+    scode_predictor$model_lik <- paste0(
+      scode_predictor$model_no_pll_def,
+      scode_predictor$model_no_pll_comp_basic,
+      scode_predictor$model_no_pll_comp_mvjoin,
+      scode_predictor$model_lik
+    )
+    str_add(scode_predictor$data) <- 
+      "  int grainsize;  // grainsize for threading\n" 
+  } else {
+    # threading is not activated
+    scode_predictor <- collapse_lists(ls = scode_predictor)
+    scode_predictor$model_lik <- paste0(
+      scode_predictor$model_no_pll_def,
+      scode_predictor$model_def,
+      scode_predictor$model_no_pll_comp_basic,
+      scode_predictor$model_comp_basic,
+      scode_predictor$model_comp_eta_loop,
+      scode_predictor$model_comp_dpar_link,
+      scode_predictor$model_comp_mu_link,
+      scode_predictor$model_comp_dpar_trans,
+      scode_predictor$model_comp_mix,
+      scode_predictor$model_comp_arma,
+      scode_predictor$model_comp_catjoin,
+      scode_predictor$model_no_pll_comp_mvjoin,
+      scode_predictor$model_comp_mvjoin,
+      scode_predictor$model_log_lik
+    )
+  }
+  scode_predictor$model_lik <- wsp_per_line(scode_predictor$model_lik, 2)
     
   # get priors for all parameters in the model
   scode_prior <- paste0(
@@ -72,17 +171,21 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_Xme$prior,
     stan_unchecked_prior(prior)
   )
+  
   # generate functions block
   scode_functions <- paste0(
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
       scode_global_defs$fun,
       collapse_stanvars(stanvars, "functions"),
+      scode_predictor$partial_log_lik,
     "}\n"
   )
+  
   # generate data block
   scode_data <- paste0(
     "data {\n",
+    "  int<lower=1> N;  // total number of observations\n",
     scode_predictor$data,
     scode_ranef$data,
     scode_Xme$data,
@@ -90,6 +193,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     collapse_stanvars(stanvars, "data"),
     "}\n"
   )
+  
   # generate transformed parameters block
   scode_transformed_data <- paste0(
     "transformed data {\n",
@@ -100,12 +204,14 @@ make_stancode <- function(formula, data, family = gaussian(),
        collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
+  
   # generate parameters block
   scode_parameters <- paste0(
     scode_predictor$par,
     scode_ranef$par,
     scode_Xme$par
   )
+  # prepare additional sampling from priors
   scode_rngprior <- stan_rngprior(
     prior = scode_prior,
     par_declars = scode_parameters,
@@ -120,6 +226,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       collapse_stanvars(stanvars, "parameters"),
     "}\n"
   )
+  
   # generate transformed parameters block
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
@@ -131,32 +238,24 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef$tpar_prior,
       scode_Xme$tpar_prior,
       scode_predictor$tpar_comp,
+      scode_predictor$tpar_comp2,
       scode_ranef$tpar_comp,
       scode_Xme$tpar_comp,
       collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
-  # generate model block
+  
+  # combine likelihood with prior part
+  not_const <- str_if(!normalize, " not")
   scode_model <- paste0(
     "model {\n",
-      scode_predictor$model_def,
       collapse_stanvars(stanvars, "model", "start"),
-      scode_predictor$model_comp_basic,
-      scode_predictor$model_comp_eta_loop,
-      scode_predictor$model_comp_dpar_link,
-      scode_predictor$model_comp_mu_link,
-      scode_predictor$model_comp_dpar_trans,
-      scode_predictor$model_comp_mix,
-      scode_predictor$model_comp_arma,
-      scode_predictor$model_comp_catjoin,
-      scode_predictor$model_comp_mvjoin,
-      "  // priors including all constants\n", 
-      scode_prior, 
-      "  // likelihood including all constants\n",
+      "  // likelihood", not_const, " including constants\n",
       "  if (!prior_only) {\n",
-      scode_llh, 
+      scode_predictor$model_lik,
       "  }\n", 
-      scode_rngprior$model,
+      "  // priors", not_const, " including constants\n",
+      scode_prior, 
       collapse_stanvars(stanvars, "model", "end"),
     "}\n"
   )
@@ -186,26 +285,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_generated_quantities
   )
   
-  if (parse) { 
-    # expand '#include' statements by calling rstan::stanc_builder
-    temp_file <- tempfile(fileext = ".stan")
-    cat(scode, file = temp_file) 
-    isystem <- system.file("chunks", package = "brms")
-    # get rid of diagnostic messages from parser
-    scode <- eval_silent(
-      rstan::stanc_builder(
-        file = temp_file, isystem = isystem,
-        obfuscate_model_name = TRUE
-      ),
-      type = "message", 
-      try = TRUE, 
-      silent = silent
-    )
-    scode <- scode$model_code
-    str_add(scode) <- "\n"
-    if (is.character(save_model)) {
-      cat(scode, file = save_model)
-    }
+  scode <- expand_include_statements(scode)
+  if (parse) {
+    scode <- parse_model(scode, backend, silent = silent)
+  }
+  if (is.character(save_model)) {
+    cat(scode, file = save_model)
   }
   class(scode) <- c("character", "brmsmodel")
   scode
@@ -244,4 +329,29 @@ stancode.brmsfit <- function(object, version = TRUE, ...) {
 #' @export
 stancode <- function(object, ...) {
   UseMethod("stancode")
+}
+
+# expand '#include' statements
+# This could also be done automatically by Stan at compilation time
+# but would result in Stan code that is not self-contained until compilation
+# @param model Stan code potentially including '#include' statements
+# @return Stan code with '#include' statements expanded
+expand_include_statements <- function(model) {
+  path <- system.file("chunks", package = "brms")
+  includes <- get_matches("#include '[^']+'", model)
+  # removal of duplicates could make code generation easier in the future
+  includes <- unique(includes)
+  files <- gsub("(#include )|(')", "", includes)
+  for (i in seq_along(includes)) {
+    code <- readLines(paste0(path, "/", files[i]))
+    code <- paste0(code, collapse = "\n")
+    pattern <- paste0(" *", escape_all(includes[i]))
+    model <- sub(pattern, code, model)
+  }
+  model
+}
+
+# check if Stan code includes normalization constants
+is_normalized <- function(stancode) {
+  !grepl("_lup(d|m)f\\(", stancode)
 }

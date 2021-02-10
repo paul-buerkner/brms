@@ -16,7 +16,8 @@ brmsformula(
   center = NULL,
   cmc = NULL,
   sparse = NULL,
-  decomp = NULL
+  decomp = NULL,
+  unused = NULL
 )
 }
 \arguments{
@@ -75,6 +76,11 @@ population-level design matrix. Defaults to \code{NULL} that is
 no decomposition. Other options currently available are
 \code{"QR"} for the QR decomposition that helps in fitting models
 with highly correlated predictors.}
+
+\item{unused}{An optional \code{formula} which contains variables
+that are unused in the model but should still be stored in the
+model's data frame. This can be useful, for example,
+if those variables are required for post-processing the model.}
 }
 \value{
 An object of class \code{brmsformula}, which
@@ -275,7 +281,7 @@ models for all parameters of the assumed response distribution.
   to \code{TRUE}.
   
   For log-linear models such as poisson models, \code{rate} may be used
-  in the \code{aterms} part to specify the denomintor of a response that
+  in the \code{aterms} part to specify the denominator of a response that
   is expressed as a rate. The numerator is given by the actual response
   variable and has a distribution according to the family as usual. Using
   \code{rate(denom)} is equivalent to adding \code{offset(log(denom))} to
@@ -343,7 +349,7 @@ models for all parameters of the assumed response distribution.
   the variable passed to \code{dec} might also be a character vector 
   consisting of \code{'lower'} and \code{'upper'}.
 
-  For custom families, it is possible to pass an abitrary number of real and
+  For custom families, it is possible to pass an arbitrary number of real and
   integer vectors via the addition terms \code{vreal} and \code{vint},
   respectively. An example is provided in
   \code{vignette('brms_customfamilies')}.

@@ -15,6 +15,7 @@
   subset = NULL,
   sort = FALSE,
   ntrys = 5,
+  cores = getOption("mc.cores", 1),
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
@@ -63,6 +64,9 @@ time series (\code{TRUE}).}
 for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
 
+\item{cores}{Number of cores (defaults to \code{1}).
+Can be set globally via the \code{mc.cores} option.}
+
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
@@ -86,14 +90,14 @@ An \code{array} of predicted response values.
   If \code{summary = TRUE} the output depends on the family: For categorical
   and ordinal families, the output is an N x C matrix, where N is the number
   of observations, C is the number of categories, and the values are
-  predicted category probabilites. For all other families, the output is a N
+  predicted category probabilities. For all other families, the output is a N
   x E matrix where E = \code{2 + length(probs)} is the number of summary
   statistics: The \code{Estimate} column contains point estimates (either
   mean or median depending on argument \code{robust}), while the
   \code{Est.Error} column contains uncertainty estimates (either standard
   deviation or median absolute deviation depending on argument
   \code{robust}). The remaining columns starting with \code{Q} contain
-  quantile estimates as specifed via argument \code{probs}.
+  quantile estimates as specified via argument \code{probs}.
 }
 \description{
 This method is an alias of \code{\link{posterior_predict.brmsfit}}

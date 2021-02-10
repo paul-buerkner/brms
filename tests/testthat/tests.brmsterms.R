@@ -81,3 +81,8 @@ test_that("update_re_terms works correctly", {
   expect_equal(update_re_terms(bf(y ~ x, x ~ z + (1|g), nl = TRUE), ~ (1|g)),
                bf(y ~ x, x ~ z + (1|gr(g)), nl = TRUE))
 })
+
+test_that("unused variables are correctly incorporated", {
+  bterms <- brmsterms(bf(y ~ 1, unused = ~ x))
+  expect_true("x" %in% all.vars(bterms$allvars))
+})

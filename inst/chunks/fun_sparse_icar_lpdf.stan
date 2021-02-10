@@ -20,7 +20,7 @@
     real tau;  // precision parameter
     row_vector[Nloc] phit_D;  // phi' * D
     row_vector[Nloc] phit_W;  // phi' * W
-    tau = 1 / sdcar^2;
+    tau = inv_square(sdcar);
     phit_D = (phi .* Nneigh)';
     phit_W = rep_row_vector(0, Nloc);
     for (i in 1:Nedges) {

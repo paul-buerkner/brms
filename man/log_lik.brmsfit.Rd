@@ -16,6 +16,7 @@
   pointwise = FALSE,
   combine = TRUE,
   add_point_estimate = FALSE,
+  cores = getOption("mc.cores", 1),
   ...
 )
 }
@@ -58,6 +59,9 @@ or if the log-likelihoods should be returned separately.}
 \item{add_point_estimate}{For internal use only. Ensures compatibility 
 with the \code{\link{loo_subsample}} method.}
 
+\item{cores}{Number of cores (defaults to \code{1}).
+Can be set globally via the \code{mc.cores} option.}
+
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
@@ -73,4 +77,18 @@ Usually, an S x N matrix containing the pointwise log-likelihood
 }
 \description{
 Compute the Pointwise Log-Likelihood
+}
+\details{
+\code{NA} values within factors in \code{newdata}, 
+  are interpreted as if all dummy variables of this factor are 
+  zero. This allows, for instance, to make predictions of the grand mean 
+  when using sum coding.
+
+In multilevel models, it is possible to 
+allow new levels of grouping factors to be used in the predictions.
+This can be controlled via argument \code{allow_new_levels}.
+New levels can be sampled in multiple ways, which can be controlled
+via argument \code{sample_new_levels}. Both of these arguments are
+documented in \code{\link{prepare_predictions}} along with several
+other useful arguments to control specific aspects of the predictions.
 }

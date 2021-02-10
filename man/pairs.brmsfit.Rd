@@ -20,7 +20,7 @@ regular expressions (\code{FALSE}). Default is \code{FALSE}.}
 \item{exact_match}{Deprecated alias of argument \code{fixed}.}
 
 \item{...}{Further arguments to be passed to 
-\code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.}
+\code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.}
 }
 \description{
 A \code{\link[graphics:pairs]{pairs}} 
@@ -28,7 +28,7 @@ method that is customized for MCMC output.
 }
 \details{
 For a detailed description see  
-  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
+  \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
 }
 \examples{
 \dontrun{

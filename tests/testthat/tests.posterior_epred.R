@@ -14,6 +14,7 @@ test_that("posterior_epred helper functions run without errors", {
   fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
   fit <- add_samples(fit, "xi", dist = "unif", min = -1, max = 0.5)
   fit <- add_samples(fit, "ndt", dist = "exp")
+  fit$formula$formula <- update(fit$formula$formula, .~. - arma(visit, patient))
   prep <- brms:::prepare_predictions(fit)
   prep$dpars$mu <- brms:::get_dpar(prep, "mu")
   prep$dpars$sigma <- brms:::get_dpar(prep, "sigma")

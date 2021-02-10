@@ -21,7 +21,7 @@ A \code{brmsfit} object.
 }
 \description{
 Combine multiple \code{brmsfit} objects, which fitted the same model.
-This is usefuly for instance when having manually run models in parallel.
+This is usefully for instance when having manually run models in parallel.
 }
 \details{
 This function just takes the first model and replaces 

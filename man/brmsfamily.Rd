@@ -19,6 +19,7 @@
 \alias{dirichlet}
 \alias{von_mises}
 \alias{asym_laplace}
+\alias{cox}
 \alias{hurdle_poisson}
 \alias{hurdle_negbinomial}
 \alias{hurdle_gamma}
@@ -99,6 +100,8 @@ dirichlet(link = "logit", link_phi = "log", refcat = NULL)
 von_mises(link = "tan_half", link_kappa = "log")
 
 asym_laplace(link = "identity", link_sigma = "log", link_quantile = "logit")
+
+cox(link = "log", bhaz = NULL)
 
 hurdle_poisson(link = "log")
 
@@ -240,15 +243,16 @@ Below, we list common use cases for the different families.
   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
   leads to ordinal regression.} 
   
-  \item{Families \code{Gamma}, \code{weibull}, \code{exponential}, 
-  \code{lognormal}, \code{frechet}, and \code{inverse.gaussian} can be 
-  used (among others) for survival regression.}
+  \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
+  \code{lognormal}, \code{frechet}, \code{inverse.gaussian}, and \code{cox}
+  (Cox proportional hazards model) can be used (among others) for
+  time-to-event regression also known as survival regression.}
   
   \item{Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
   ('generalized extreme value') allow for modeling extremes.}
   
   \item{Families \code{beta} and \code{dirichlet} can be used to model 
-  responses representing rates or propabilities.}
+  responses representing rates or probabilities.}
   
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -309,6 +313,9 @@ Below, we list common use cases for the different families.
   
   \item{Family \code{von_mises} supports \code{tan_half} and 
   \code{identity}.}
+  
+  \item{Family \code{cox} supports \code{log}, \code{identity},
+  and \code{softplus} for the proportional hazards parameter.}
   
   \item{Family \code{wiener} supports \code{identity}, \code{log}, 
   and \code{softplus} for the main parameter which represents the

@@ -14,14 +14,13 @@
                                real rho, matrix W, vector eigenW) {
     int N = rows(y);
     real K = rows(y);  // avoid integer division warning
-    real inv_sigma2 = 1 / square(sigma);
-    matrix[N, N] W_tilde = -rho * W;
+    real inv_sigma2 = inv_square(sigma);
+    matrix[N, N] W_tilde = add_diag(-rho * W, 1);
     vector[N] half_pred;
     real log_det;
-    for (n in 1:N) W_tilde[n, n] += 1;
     half_pred = W_tilde * (y - mu);
     log_det = sum(log1m(rho * eigenW));
     return - K / 2 * log(nu) + lgamma((nu + K) / 2) - lgamma(nu / 2) +
       0.5 * K * log(inv_sigma2) + log_det -
-      (nu + K) / 2 * log(1 + dot_self(half_pred) * inv_sigma2 / nu);
+      (nu + K) / 2 * log1p(dot_self(half_pred) * inv_sigma2 / nu);
   }

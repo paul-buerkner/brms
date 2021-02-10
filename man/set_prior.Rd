@@ -86,7 +86,7 @@ Define priors for specific parameters or classes of parameters.
   Below, we explain its usage and list some common 
   prior distributions for parameters. 
   A complete overview on possible prior distributions is given 
-  in the Stan Reference Manual available at \url{http://mc-stan.org/}.
+  in the Stan Reference Manual available at \url{https://mc-stan.org/}.
   
   To combine multiple priors, use \code{c(...)} or the \code{+} operator 
   (see 'Examples'). \pkg{brms} does not check if the priors are written 
@@ -144,7 +144,7 @@ Define priors for specific parameters or classes of parameters.
   represents the expected response value when all predictors 
   are at their means. To treat the intercept as an ordinary 
   population-level effect and avoid the centering parameterization, 
-  use \code{0 + intercept} on the right-hand side of the model formula.
+  use \code{0 + Intercept} on the right-hand side of the model formula.
   
   A special shrinkage prior to be applied on population-level effects is the
   (regularized) horseshoe prior and related priors. See
@@ -186,8 +186,8 @@ Define priors for specific parameters or classes of parameters.
   These parameters are restricted to be non-negative and, by default, 
   have a half student-t prior with 3 degrees of freedom and a 
   scale parameter that depends on the standard deviation of the response 
-  after applying the link function. Minimally, the scale parameter is 10. 
-  This prior is used (a) to be only very weakly informative in order to influence
+  after applying the link function. Minimally, the scale parameter is 2.5. 
+  This prior is used (a) to be only weakly informative in order to influence
   results as few as possible, while (b) providing at least some regularization
   to considerably improve convergence and sampling efficiency.
   To define a prior distribution only for standard deviations 
@@ -325,9 +325,6 @@ Define priors for specific parameters or classes of parameters.
   Fixing parameters to constants is possible by using the \code{constant}
   function, for example, \code{constant(1)} to fix a parameter to 1.
   Broadcasting to vectors and matrices is done automatically.
-  A limitation of the current implementation is that the same parameter
-  vector cannot contain estimated and fixed values at the same time,
-  but this will be possible in the future.
 
   Often, it may not be immediately clear, which parameters are present in the
   model. To get a full list of parameters and parameter classes for which

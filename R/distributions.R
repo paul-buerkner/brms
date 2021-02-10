@@ -77,7 +77,7 @@ rstudent_t <- function(n, df, mu = 0, sigma = 1) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'   
-#' @details See the Stan user's manual \url{http://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
 #' for details on the parameterization
 #'   
 #' @export
@@ -143,7 +143,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'   
-#' @details See the Stan user's manual \url{http://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
 #'   for details on the parameterization
 #'   
 #' @export
@@ -1460,15 +1460,22 @@ rdirichlet <- function(n, alpha) {
 #'   return both the response times \code{"q"} and the dichotomous 
 #'   responses \code{"resp"}. If either \code{"q"} or \code{"resp"}, 
 #'   return only one of the two types.
+#' @param backend Name of the package to use as backend for the computations.
+#'   Either \code{"Rwiener"} (the default) or \code{"rtdists"}.
+#'   Can be set globally for the current \R session via the
+#'   \code{"wiener_backend"} option (see \code{\link{options}}).
 #'   
-#' @details These are wrappers around functions of the \pkg{RWiener} package.  
-#' See \code{vignette("brms_families")} for details on the parameterization.
+#' @details 
+#' These are wrappers around functions of the \pkg{RWiener} or \pkg{rtdists}
+#' package (depending on the chosen \code{backend}). See
+#' \code{vignette("brms_families")} for details on the parameterization.
 #' 
-#' @seealso \code{\link[RWiener:wienerdist]{wienerdist}}
+#' @seealso \code{\link[RWiener:wienerdist]{wienerdist}},
+#'   \code{\link[rtdists:Diffusion]{Diffusion}}
 #' 
 #' @export
-dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
-  require_package("RWiener")
+dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE,
+                    backend = getOption("wiener_backend", "Rwiener")) {
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
@@ -1476,37 +1483,80 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
   if (!is.character(resp)) {
     resp <- ifelse(resp, "upper", "lower") 
   }
-  # vectorized version of RWiener::dwiener
+  log <- as_one_logical(log)
+  backend <- match.arg(backend, c("Rwiener", "rtdists"))
+  .dwiener <- paste0(".dwiener_", backend)
+  args <- nlist(x, alpha, tau, beta, delta, resp)
+  args <- as.list(do_call(expand, args))
+  args$log <- log
+  do_call(.dwiener, args)
+}
+
+# dwiener using Rwiener as backend 
+.dwiener_Rwiener <- function(x, alpha, tau, beta, delta, resp, log) {
+  require_package("RWiener")
   .dwiener <- Vectorize(
     RWiener::dwiener, 
-    c("alpha", "tau", "beta", "delta")
+    c("q", "alpha", "tau", "beta", "delta", "resp")
   )
   args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
   do_call(.dwiener, args)
 }
 
+# dwiener using rtdists as backend
+.dwiener_rtdists <- function(x, alpha, tau, beta, delta, resp, log) {
+  require_package("rtdists")
+  args <- list(
+    rt = x, response = resp, a = alpha, 
+    t0 = tau, z = beta * alpha, v = delta
+  )
+  out <- do_call(rtdists::ddiffusion, args)
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
 #' @rdname Wiener
 #' @export
-rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
-  require_package("RWiener")
-  stopifnot(all(types %in% c("q", "resp")))
+rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
+                    backend = getOption("wiener_backend", "Rwiener")) {
+  n <- as_one_numeric(n)
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
   delta <- as.numeric(delta)
+  types <- match.arg(types, several.ok = TRUE)
+  backend <- match.arg(backend, c("Rwiener", "rtdists"))
+  .rwiener <- paste0(".rwiener_", backend)
+  args <- nlist(n, alpha, tau, beta, delta, types)
+  do_call(.rwiener, args)
+}
+
+# rwiener using Rwiener as backend 
+.rwiener_Rwiener <- function(n, alpha, tau, beta, delta, types) {
+  require_package("RWiener")
   max_len <- max(lengths(list(alpha, tau, beta, delta)))
-  n <- n[1]
   if (max_len > 1L) {
     if (!n %in% c(1, max_len)) {
       stop2("Can only sample exactly once for each condition.")
     }
     n <- 1
   }
+  # helper function to return a numeric vector instead
+  # of a data.frame with two columns as for RWiener::rwiener
+  .rwiener_num <- function(n, alpha, tau, beta, delta, types) {
+    out <- RWiener::rwiener(n, alpha, tau, beta, delta)
+    out$resp <- ifelse(out$resp == "upper", 1, 0)
+    if (length(types) == 1L) {
+      out <- out[[types]]
+    }
+    out
+  }
+  # vectorized version of .rwiener_num
   .rwiener <- function(...) {
-    # vectorized version of RWiener::rwiener
-    # returns a numeric vector
     fun <- Vectorize(
-      rwiener_num, 
+      .rwiener_num, 
       c("alpha", "tau", "beta", "delta"),
       SIMPLIFY = FALSE
     )
@@ -1516,11 +1566,23 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
   do_call(.rwiener, args)
 }
 
-# helper function to return a numeric vector instead
-# of a data.frame with two columns as for RWiener::rwiener
-rwiener_num <- function(n, alpha, tau, beta, delta, types) {
-  out <- RWiener::rwiener(n, alpha, tau, beta, delta)
-  out[["resp"]] <- ifelse(out[["resp"]] == "upper", 1, 0)
+# rwiener using rtdists as backend 
+.rwiener_rtdists <- function(n, alpha, tau, beta, delta, types) {
+  require_package("rtdists")
+  max_len <- max(lengths(list(alpha, tau, beta, delta)))
+  if (max_len > 1L) {
+    if (!n %in% c(1, max_len)) {
+      stop2("Can only sample exactly once for each condition.")
+    }
+    n <- max_len
+  }
+  out <- rtdists::rdiffusion(
+    n, a = alpha, t0 = tau, z = beta * alpha, v = delta
+  )
+  # TODO: use column names of rtdists in the output?
+  names(out)[names(out) == "rt"] <- "q"
+  names(out)[names(out) == "response"] <- "resp"
+  out$resp <- ifelse(out$resp == "upper", 1, 0)
   if (length(types) == 1L) {
     out <- out[[types]]
   }
@@ -1578,7 +1640,7 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
 #' @name ZeroInflated
 #' 
 #' @inheritParams StudentT
-#' @param zi zero-inflation propability
+#' @param zi zero-inflation probability
 #' @param mu,lambda location parameter
 #' @param shape,shape1,shape2 shape parameter
 #' @param size number of trials
@@ -1740,7 +1802,7 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
 #' @name Hurdle
 #' 
 #' @inheritParams StudentT
-#' @param hu hurdle propability
+#' @param hu hurdle probability
 #' @param mu,lambda location parameter
 #' @param shape shape parameter
 #' @param sigma,scale scale parameter
@@ -1904,7 +1966,7 @@ dcategorical <- function(x, eta, log = FALSE) {
   } else {
     out <- softmax(eta)
   }
-  out[, x]
+  out[, x, drop = FALSE]
 }
 
 # CDF of the categorical distribution with the softmax transform
@@ -1913,7 +1975,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 # @param log.p return values on the log scale?
 pcategorical <- function(q, eta, log.p = FALSE) {
   p <- dcategorical(seq_len(max(q)), eta = eta)
-  out <- do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  out <- cblapply(q, function(j) rowSums(p[, 1:j, drop = FALSE]))
   if (log.p) {
     out <- log(out)
   }
@@ -2031,14 +2093,14 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 # @param disc samples of the discrimination parameter
 # @param family a character string naming the family
 # @param link a character string naming the link
-# @return a matrix of probabilites P(x <= q)
+# @return a matrix of probabilities P(x <= q)
 pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   family <- as_one_character(family)
   link <- as_one_character(link)
   args <- nlist(x = seq_len(max(q)), eta, thres, disc, link)
   p <- do_call(paste0("d", family), args)
   .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
-  do_call(cbind, lapply(q, .fun))
+  cblapply(q, .fun)
 }
 
 # helper functions to shift arbitrary distributions

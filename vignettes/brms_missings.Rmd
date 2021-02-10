@@ -182,7 +182,7 @@ conditional_effects(fit_imp2, "age:chl", resp = "bmi")
 The results look pretty similar to those obtained from multiple imputation, but
 be aware that this may not be generally the case. In multiple imputation, the
 default is to impute all variables based on all other variables, while in the
-'one-step' approach, we have to explictly specify the variables used in the
+'one-step' approach, we have to explicitly specify the variables used in the
 imputation. Thus, arguably, multiple imputation is easier to apply. An obvious
 advantage of the 'one-step' approach is that the model needs to be fitted only
 once instead of `m` times. Also, within the **brms** framework, we can use

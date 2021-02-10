@@ -39,7 +39,7 @@ Can by either \code{"mean"} (default), \code{"var"}, or
 \item{probs}{A vector of quantiles to compute. 
 Only used if \code{type = quantile}.}
 
-\item{psis_object}{An optional object returend by \code{\link[loo]{psis}}. 
+\item{psis_object}{An optional object returned by \code{\link[loo]{psis}}. 
 If \code{psis_object} is missing then \code{\link[loo]{psis}} is executed 
 internally, which may be time consuming for models fit to very large datasets.}
 

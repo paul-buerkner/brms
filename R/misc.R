@@ -375,6 +375,27 @@ cblapply <- function(X, FUN, ...) {
   do_call(cbind, lapply(X, FUN, ...))
 }
 
+# parallel lapply sensitive to the operating system
+plapply <- function(X, FUN, cores = 1, ...) {
+  if (cores == 1) {
+    out <- lapply(X, FUN, ...)
+  } else {
+    if (!os_is_windows()) {
+      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = cores, ...)
+    } else {
+      cl <- parallel::makePSOCKcluster(cores)
+      on.exit(parallel::stopCluster(cl))
+      out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
+    }
+  }
+  out
+}
+
+# check if the operating system is Windows
+os_is_windows <- function() {
+  isTRUE(Sys.info()[['sysname']] == "Windows")
+}
+
 # find variables in a character string or expression
 all_vars <- function(expr, ...) {
   if (is.character(expr)) {
@@ -470,39 +491,6 @@ zero_length_transformer <- function(text, envir) {
 # collapse strings evaluated with glue
 cglue <- function(..., envir = parent.frame()) {
   glue(..., envir = envir, collapse = "")
-}
-
-# like stats:::na.omit.data.frame but allows to ignore variables
-# keeps NAs in variables with attribute keep_na = TRUE
-na.omit2 <- function(object, ...) {
-  stopifnot(is.data.frame(object))
-  omit <- logical(nrow(object))
-  for (j in seq_along(object)) {
-    x <- object[[j]]
-    keep_na <- isTRUE(attr(x, "keep_na", TRUE))
-    if (!is.atomic(x) || keep_na) {
-      next
-    } 
-    x <- is.na(x)
-    d <- dim(x)
-    if (is.null(d) || length(d) != 2L) {
-      omit <- omit | x
-    } else {
-      for (ii in seq_len(d[2L])) {
-        omit <- omit | x[, ii]
-      } 
-    } 
-  }
-  if (any(omit > 0L)) {
-    out <- object[!omit, , drop = FALSE]
-    temp <- setNames(seq(omit)[omit], attr(object, "row.names")[omit])
-    attr(temp, "class") <- "omit"
-    attr(out, "na.action") <- temp
-    warning2("Rows containing NAs were excluded from the model.")
-  } else {
-    out <- object
-  }
-  out
 }
 
 # check if a certain package is installed
@@ -667,6 +655,7 @@ do_call <- function(what, args, pkg = NULL) {
   eval2(call, envir = args, enclos = parent.frame())
 }
 
+# create an empty data frame
 empty_data_frame <- function() {
   as.data.frame(matrix(nrow = 0, ncol = 0))
 }
@@ -693,7 +682,7 @@ empty_data_frame <- function() {
 # deparse 'x' if it is no string
 deparse_no_string <- function(x) {
   if (!is.character(x)) {
-    x <- deparse(x)
+    x <- deparse_combine(x)
   }
   x
 }
@@ -905,9 +894,9 @@ round_largest_remainder <- function(x) {
   out
 }
 
-# add leading and trailing whitespaces
+# add leading and trailing white spaces
 # @param x object accepted by paste
-# @param nsp number of whitespaces to add
+# @param nsp number of white spaces to add
 wsp <- function(x = "", nsp = 1) {
   sp <- collapse(rep(" ", nsp))
   if (length(x)) {
@@ -918,9 +907,21 @@ wsp <- function(x = "", nsp = 1) {
   out
 }
 
+# add white space per line the the strings
+# @param x object accepted by paste
+# @param nsp number of white spaces to add
+wsp_per_line <- function(x, nsp) {
+  sp <- collapse(rep(" ", nsp))
+  x <- paste0(sp, x)
+  x <- gsub("\\n(?=.+)", paste0("\n", sp), x, perl = TRUE)
+  x
+}
+
 # remove whitespaces from strings
 rm_wsp <- function(x) {
-  gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  out <- gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  dim(out) <- dim(x)
+  out
 }
 
 # limit the number of characters of a vector
@@ -970,6 +971,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   }
   warning2(msg)
   invisible(NULL)
+}
+
+# check if verbose mode is activated
+is_verbose <- function() {
+  as_one_logical(getOption("brms.verbose", FALSE))
 }
 
 viridis6 <- function() {

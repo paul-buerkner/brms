@@ -355,9 +355,6 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   } else {
     out <- x
   }
-  if (dpar == "sigma") {
-    out <- add_sigma_se(out, prep, i = i)
-  }
   out
 }
 
@@ -490,17 +487,41 @@ get_se <- function(prep, i = NULL) {
 }
 
 # add user defined standard errors to 'sigma'
+# @param sigma draws of the 'sigma' parameter
 add_sigma_se <- function(sigma, prep, i = NULL) {
-  needs_se <- "se" %in% names(prep$data) && 
-    !isTRUE(attr(sigma, "se_added")) &&
-    !isTRUE(grepl("_cov$", prep$family$fun))
-  if (needs_se) {
-    # 'se' will be incorporated directly into 'sigma'
-    sigma <- sqrt(get_se(prep, i = i)^2 + sigma^2)
-    # make sure not to add 'se' twice
-    attr(sigma, "se_added") <- TRUE
+  if ("se" %in% names(prep$data)) {
+    se <- get_se(prep, i = i)
+    sigma <- sqrt(se^2 + sigma^2)
   } 
   sigma
+}
+
+# extract user-defined rate denominators
+get_rate_denom <- function(prep, i = NULL) {
+  stopifnot(is.brmsprep(prep))
+  denom <- as.vector(prep$data[["denom"]])
+  if (!is.null(denom)) {
+    if (!is.null(i)) {
+      denom <- denom[i]
+    }
+    if (length(denom) > 1L) {
+      dim <- c(prep$nsamples, length(denom))
+      denom <- as_draws_matrix(denom, dim = dim)
+    }
+  } else {
+    denom <- 1
+  }
+  denom
+}
+
+# multiply a parameter with the 'rate' denominator
+# @param dpar draws of the distributional parameter
+multiply_dpar_rate_denom <- function(dpar, prep, i = NULL) {
+  if ("denom" %in% names(prep$data)) {
+    denom <- get_rate_denom(prep, i = i)
+    dpar <- dpar * denom
+  }
+  dpar
 }
 
 # return samples of ordinal thresholds for observation i
@@ -614,29 +635,37 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
 
 # reorder observations to be in the initial user-defined order
 # currently only relevant for autocorrelation models 
-# @param eta 'nsamples' x 'nobs' matrix
+# @param eta 'nsamples' x 'nobs' matrix or array
 # @param old_order optional vector to retrieve the initial data order
 # @param sort keep the new order as defined by the time-series?
 # @return the 'eta' matrix with possibly reordered columns
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   stopifnot(length(dim(eta)) %in% c(2L, 3L))
-  if (!is.null(old_order) && !sort) {
-    if (isTRUE(length(old_order) == ncol(eta))) {
-      if (length(dim(eta)) == 3L) {
-        eta <- eta[, old_order, , drop = FALSE]   
-      } else {
-        eta <- eta[, old_order, drop = FALSE]   
-      }
-    } else {
-      warning2("Cannot recover the original observation order.")
-    }
+  if (is.null(old_order) || sort) {
+    return(eta)
   }
-  eta
+  stopifnot(length(old_order) == NCOL(eta))
+  p(eta, old_order, row = FALSE)
+}
+
+# update .MISC environment of the stanfit object
+# allows to call log_prob and other C++ using methods
+# on objects not created in the current R session
+update_misc_env <- function(x) {
+  stopifnot(is.brmsfit(x))
+  if (!isTRUE(x$backend == "rstan")) {
+    # .MISC env is only relevant for rstan
+    return(x)
+  }
+  # TODO: detect when updating .MISC is not required
+  # TODO: find a more efficient way to update .MISC
+  x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
+  x
 }
 
 # extract argument names of a post-processing method
 arg_names <- function(method) {
-  opts <- c("posterior_predict", "pp_expect", "log_lik")
+  opts <- c("posterior_predict", "posterior_epred", "log_lik")
   method <- match.arg(method, opts)
   out <- names(formals(paste0(method, ".brmsfit")))
   c(out) <- names(formals(prepare_predictions.brmsfit))
@@ -651,6 +680,13 @@ arg_names <- function(method) {
 # @return a brmsfit object or NULL
 read_brmsfit <- function(file) {
   file <- check_brmsfit_file(file)
+  dir <- dirname(file)
+  if (!dir.exists(dir)) {
+    stop2(
+      "The directory '", dir, "' does not exist. Please choose an ",
+      "existing directory where the model can be saved after fitting."
+    )
+  }
   x <- suppressWarnings(try(readRDS(file), silent = TRUE))
   if (!is(x, "try-error")) {
     if (!is.brmsfit(x)) {

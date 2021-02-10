@@ -131,7 +131,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     futures[[i]] <- future::future(
       update(fit, newdata = data[[i]], data2 = data2[[i]],
              recompile = recompile, ...),
-      packages = "brms"
+      packages = "brms", seed = TRUE
     )
   }
   for (i in seq_along(data)) {
@@ -157,7 +157,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
 #' Combine Models fitted with \pkg{brms}
 #' 
 #' Combine multiple \code{brmsfit} objects, which fitted the same model.
-#' This is usefuly for instance when having manually run models in parallel.
+#' This is usefully for instance when having manually run models in parallel.
 #' 
 #' @param ... One or more \code{brmsfit} objects.
 #' @param mlist Optional list of one or more \code{brmsfit} objects.

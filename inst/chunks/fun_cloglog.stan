@@ -5,5 +5,5 @@
    *   a scalar in (-Inf, Inf)
    */ 
    real cloglog(real p) { 
-     return log(-log(1 - p)); 
+     return log(-log1m(p)); 
    }

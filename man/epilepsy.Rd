@@ -29,7 +29,7 @@ Thall, P. F., & Vail, S. C. (1990).
    
 Breslow, N. E., & Clayton, D. G. (1993). 
  Approximate inference in generalized linear mixed models. 
- \emph{Journal of the American Statistical Association, 88(421)}, 9-25.
+ \emph{Journal of the American Statistical Association}, 88(421), 9-25.
 }
 \usage{
 epilepsy
@@ -57,6 +57,6 @@ fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 summary(fit2) 
 plot(fit2)
 }
- 
+
 }
 \keyword{datasets}

@@ -116,30 +116,37 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   # make sure potentially updated priors pass 'validate_prior'
   attr(dots$prior, "allow_invalid_prior") <- TRUE
-  if (is.null(dots$sample_prior)) {
+  if (!"sample_prior" %in% names(dots)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
       has_prior_pars <- any(grepl("^prior_", parnames(object)))
       dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }
-  if (is.null(dots$data2)) {
+  # do not use 'is.null' to allow updating arguments to NULL
+  if (!"data2" %in% names(dots)) {
     dots$data2 <- object$data2
   }
-  if (is.null(dots$stanvars)) {
+  if (!"stanvars" %in% names(dots)) {
     dots$stanvars <- object$stanvars
   }
-  if (is.null(dots$save_ranef)) {
-    dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
+  if (!"algorithm" %in% names(dots)) {
+    dots$algorithm <- object$algorithm
   }
-  if (is.null(dots$save_mevars)) {
-    dots$save_mevars <- isTRUE(attr(object$exclude, "save_mevars"))
+  if (!"backend" %in% names(dots)) {
+    dots$backend <- object$backend
   }
-  if (is.null(dots$save_all_pars)) {
-    dots$save_all_pars <- isTRUE(attr(object$exclude, "save_all_pars"))
+  if (!"threads" %in% names(dots)) {
+    dots$threads <- object$threads
   }
-  if (is.null(dots$knots)) {
+  if (!"save_pars" %in% names(dots)) {
+    dots$save_pars <- object$save_pars
+  }
+  if (!"knots" %in% names(dots)) {
     dots$knots <- attr(object$data, "knots")
+  }
+  if (!"normalize" %in% names(dots)) {
+    dots$normalize <- is_normalized(object$model)
   }
   
   # update arguments controlling the sampling process
@@ -160,7 +167,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     # stan code may differ just because of the version number (#288)
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
-    recompile <- !is_equal(new_stancode, old_stancode)
+    recompile <- !is_equal(new_stancode, old_stancode) ||
+      !is_equal(dots$backend, object$backend)
     if (recompile) {
       message("The desired updates require recompiling the model") 
     }
@@ -185,22 +193,21 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
-    if (!is.null(dots$sample_prior)) {
+    object$threads <- validate_threads(dots$threads)
+    if ("sample_prior" %in% names(dots)) {
       dots$sample_prior <- validate_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
-    object$exclude <- exclude_pars(
-      object, save_ranef = dots$save_ranef, 
+    object$save_pars <- validate_save_pars(
+      save_pars = dots$save_pars, 
+      save_ranef = dots$save_ranef, 
       save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
-    if (!is.null(dots$algorithm)) {
-      aopts <- c("sampling", "meanfield", "fullrank")
-      algorithm <- match.arg(dots$algorithm, aopts)
-      dots$algorithm <- object$algorithm <- algorithm
-    } else if (!is.null(object$algorithm)) {
-      dots$algorithm <- object$algorithm
-    }
+    algorithm <- match.arg(dots$algorithm, algorithm_choices())
+    dots$algorithm <- object$algorithm <- algorithm
+    # can only avoid recompilation when using the old backend
+    dots$backend <- object$backend
     if (!testmode) {
       dots$fit <- object
       object <- do_call(brm, dots)

@@ -28,7 +28,7 @@
 #'   should be plotted to a new page. 
 #'   Only used if \code{plot} is \code{TRUE}.
 #' @param ... Further arguments passed to 
-#'   \code{\link[bayesplot:mcmc_combo]{mcmc_combo}}.
+#'   \code{\link[bayesplot:MCMC-combos]{mcmc_combo}}.
 #' 
 #' @return An invisible list of 
 #'   \code{\link[gtable:gtable]{gtable}} objects.
@@ -238,10 +238,10 @@ stanplot.brmsfit <- function(object, ...) {
 #' @param x An object of class \code{brmsfit}
 #' @inheritParams plot.brmsfit
 #' @param ... Further arguments to be passed to 
-#'   \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
+#'   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
 #'  
 #' @details For a detailed description see  
-#'   \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
+#'   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
 #'  
 #' @examples 
 #' \dontrun{

@@ -6,12 +6,12 @@
 #' @aliases marginal_effects marginal_effects.brmsfit
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param effects An optional character vector naming effects
-#'   (main effects or interactions) for which to compute conditional plots.
-#'   Interactions are specified by a \code{:} between variable names.
-#'   If \code{NULL} (the default), plots are generated for all main effects
-#'   and two-way interactions estimated in the model. When specifying
-#'   \code{effects} manually, \emph{all} two-way interactions may be plotted
+#' @param effects An optional character vector naming effects (main effects or
+#'   interactions) for which to compute conditional plots. Interactions are
+#'   specified by a \code{:} between variable names. If \code{NULL} (the
+#'   default), plots are generated for all main effects and two-way interactions
+#'   estimated in the model. When specifying \code{effects} manually, \emph{all}
+#'   two-way interactions (including grouping variables) may be plotted
 #'   even if not originally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
 #'   to condition on. Each effect defined in \code{effects} will
@@ -21,7 +21,7 @@
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   See \code{\link{make_conditions}} for an easy way to define conditions.
 #'   If \code{NULL} (the default), numeric variables will be conditionalized by
-#'   using their means and factors will get their reference level assigned.
+#'   using their means and factors will get their first level assigned.
 #'   \code{NA} values within factors are interpreted as if all dummy
 #'   variables of this factor are zero. This allows, for instance, to make
 #'   predictions of the grand mean when using sum coding.
@@ -36,13 +36,15 @@
 #'   If \code{NULL} (the default), predictions are evaluated at the 
 #'   \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 #'   all categories for factor-like predictors.
-#' @param re_formula A formula containing random effects to be considered 
-#'   in the conditional predictions. If \code{NULL}, include all random effects; 
-#'   if \code{NA} (default), include no random effects.
+#' @param re_formula A formula containing group-level effects to be considered
+#'   in the conditional predictions. If \code{NULL}, include all group-level
+#'   effects; if \code{NA} (default), include no group-level effects.
 #' @param robust If \code{TRUE} (the default) the median is used as the 
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
-#' @param probs The quantiles to be used in the computation of credible
-#'   intervals (defaults to 2.5 and 97.5 percent quantiles)
+#' @param prob A value between 0 and 1 indicating the desired probability 
+#'   to be covered by the uncertainty intervals. The default is 0.95.
+#' @param probs (Deprecated) The quantiles to be used in the computation of
+#'   uncertainty intervals. Please use argument \code{prob} instead.
 #' @param method Method used to obtain predictions. Can be set to 
 #'   \code{"posterior_epred"} (the default), \code{"posterior_predict"},
 #'   or \code{"posterior_linpred"}. For more details, see the respective
@@ -51,7 +53,7 @@
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
 #'   to set argument \code{nsamples} to a relatively small value 
-#'   (e.g. \code{100}) in order to reduce computation time.
+#'   (e.g., \code{100}) in order to reduce computation time.
 #' @param surface Logical. Indicates if interactions or 
 #'   two-dimensional smooths should be visualized as a surface. 
 #'   Defaults to \code{FALSE}. The surface type can be controlled 
@@ -59,7 +61,7 @@
 #' @param categorical Logical. Indicates if effects of categorical 
 #'   or ordinal models should be shown in terms of probabilities
 #'   of response categories. Defaults to \code{FALSE}.
-#' @param ordinal Deprecated! Please use argument \code{categorical}.
+#' @param ordinal (Deprecated) Please use argument \code{categorical}.
 #'   Logical. Indicates if effects in ordinal models
 #'   should be visualized as a raster with the response categories
 #'   on the y-axis. Defaults to \code{FALSE}.
@@ -89,24 +91,23 @@
 #'   from the values in \code{conditions} are excluded. 
 #'   By default, all points are used.
 #' @param ... Further arguments such as \code{subset} or \code{nsamples}
-#'   passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
-#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
+#'   passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{conditions}.
-#' @param points Logical; indicating whether the original data points
-#'   should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#' @param points Logical. Indicates if the original data points
+#'   should be added via \code{\link{geom_jitter}}.
 #'   Default is \code{FALSE}. Note that only those data points will be added
 #'   that match the specified conditions defined in \code{conditions}.
 #'   For categorical predictors, the conditions have to match exactly. 
 #'   For numeric predictors, argument \code{select_points} is used to
 #'   determine, which points do match a condition.
-#' @param rug Logical; indicating whether a rug representation of predictor
-#'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#' @param rug Logical. Indicates if a rug representation of predictor
+#'   values should be added via \code{\link{geom_rug}}.
 #'   Default is \code{FALSE}. Depends on \code{select_points} in the same
 #'   way as \code{points} does.
-#' @param mean Logical; only relevant for spaghetti plots.
+#' @param mean Logical. Only relevant for spaghetti plots.
 #'   If \code{TRUE} (the default), display the mean regression 
 #'   line on top of the regression lines for each sample.
 #' @param jitter_width Only used if \code{points = TRUE}: 
@@ -117,32 +118,32 @@
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @param line_args Only used in plots of continuous predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#'   \code{\link{geom_smooth}}.
 #' @param cat_args Only used in plots of categorical predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_point]{geom_point}}.
+#'   \code{\link{geom_point}}.
 #' @param errorbar_args Only used in plots of categorical predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.
+#'   \code{\link{geom_errorbar}}.
 #' @param surface_args Only used in surface plots:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_contour]{geom_contour}} or
-#'   \code{\link[ggplot2:geom_raster]{geom_raster}}
+#'   \code{\link{geom_contour}} or
+#'   \code{\link{geom_raster}}
 #'   (depending on argument \code{stype}).
 #' @param spaghetti_args Only used in spaghetti plots:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#'   \code{\link{geom_smooth}}.
 #' @param point_args Only used if \code{points = TRUE}: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#'   \code{\link{geom_jitter}}.
 #' @param rug_args Only used if \code{rug = TRUE}: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#'   \code{\link{geom_rug}}.
 #' @param facet_args Only used if if multiple condtions are provided: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:facet_wrap]{facet_wrap}}.
+#'   \code{\link{facet_wrap}}.
 #' 
-#' @return An object of class \code{'brms_conditional_effects'}, which is a
+#' @return An object of class \code{'brms_conditional_effects'} which is a
 #'   named list with one data.frame per effect containing all information
 #'   required to generate conditional effects plots. Among others, these
 #'   data.frames contain some special variables, namely \code{estimate__}
@@ -153,26 +154,24 @@
 #'   rows).
 #'   
 #'   The corresponding \code{plot} method returns a named 
-#'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
+#'   list of \code{\link{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
 #'   
-#' @details When creating \code{conditional_effects} for a particular predictor 
-#'   (or interaction of two predictors), one has to choose the values of all 
-#'   other predictors to condition on. 
-#'   By default, the mean is used for continuous variables
-#'   and the reference category is used for factors, but you may change these
-#'   values via argument \code{conditions}. 
-#'   This also has an implication for the \code{points} argument: 
-#'   In the created plots, only those points will be shown that correspond 
-#'   to the factor levels actually used in the conditioning, in order not 
-#'   to create the false impression of bad model fit, where it is just 
-#'   due to conditioning on certain factor levels.
+#' @details When creating \code{conditional_effects} for a particular predictor
+#'   (or interaction of two predictors), one has to choose the values of all
+#'   other predictors to condition on. By default, the mean is used for
+#'   continuous variables and the reference category is used for factors, but
+#'   you may change these values via argument \code{conditions}. This also has
+#'   an implication for the \code{points} argument: In the created plots, only
+#'   those points will be shown that correspond to the factor levels actually
+#'   used in the conditioning, in order not to create the false impression of
+#'   bad model fit, where it is just due to conditioning on certain factor
+#'   levels.
 #'   
-#'   To fully change colors of the created plots, 
-#'   one has to amend both \code{scale_colour} and \code{scale_fill}.
-#'   See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
-#'   \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
-#'   for more details.
+#'   To fully change colors of the created plots, one has to amend both
+#'   \code{scale_colour} and \code{scale_fill}. See
+#'   \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}} for
+#'   more details.
 #' 
 #' @examples 
 #' \dontrun{
@@ -195,7 +194,7 @@
 #' plot(conditional_effects(fit, effects = "zBase:Trt", 
 #'                          conditions = conditions))
 #'                       
-#' ## also incorporate random effects variance over patients
+#' ## also incorporate group-level effects variance over patients
 #' ## also add data points and a rug representation of predictor values
 #' plot(conditional_effects(fit, effects = "zBase:Trt", 
 #'                          conditions = conditions, re_formula = NULL), 
@@ -225,12 +224,14 @@
 #' @export
 conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                         int_conditions = NULL, re_formula = NA, 
-                                        robust = TRUE, probs = c(0.025, 0.975),
+                                        prob = 0.95, robust = TRUE, 
                                         method = "posterior_epred",
                                         spaghetti = FALSE, surface = FALSE,
                                         categorical = FALSE, ordinal = FALSE,
                                         transform = NULL, resolution = 100, 
-                                        select_points = 0, too_far = 0, ...) {
+                                        select_points = 0, too_far = 0,
+                                        probs = NULL, ...) {
+  probs <- validate_ci_bounds(prob, probs = probs)
   method <- validate_pp_method(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
@@ -240,9 +241,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- brmsterms(new_formula)
-  if (length(probs) != 2L) {
-    stop2("Arguments 'probs' must be of length 2.")
-  }
+  
   if (!is.null(transform) && method != "posterior_predict") {
     stop2("'transform' is only allowed if 'method = posterior_predict'.")
   }
@@ -307,31 +306,32 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     x, conditions = conditions, effects = effects, 
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_vars <- get_int_vars(bterms)
   int_conditions <- lapply(int_conditions, 
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
+  int_vars <- get_int_vars(bterms)
+  group_vars <- get_group_vars(bterms)
   out <- list()
   for (i in seq_along(effects)) {
     eff <- effects[[i]]
-    marg_data <- prepare_marg_data(
+    cond_data <- prepare_cond_data(
       mf[, eff, drop = FALSE], conditions = conditions, 
       int_conditions = int_conditions, int_vars = int_vars,
-      surface = surface, resolution = resolution, 
-      reorder = use_def_effects
+      group_vars = group_vars, surface = surface, 
+      resolution = resolution, reorder = use_def_effects
     )
     if (surface && length(eff) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
-        g1 = marg_data[[eff[1]]], 
-        g2 = marg_data[[eff[2]]], 
+        g1 = cond_data[[eff[1]]], 
+        g2 = cond_data[[eff[2]]], 
         d1 = mf[, eff[1]],
         d2 = mf[, eff[2]],
         dist = too_far)
-      marg_data <- marg_data[!ex_too_far, ]  
+      cond_data <- cond_data[!ex_too_far, ]  
     }
     c(out) <- conditional_effects(
-      bterms, fit = x, marg_data = marg_data, method = method, 
+      bterms, fit = x, cond_data = cond_data, method = method, 
       surface = surface, spaghetti = spaghetti, categorical = categorical, 
       ordinal = ordinal, re_formula = re_formula, transform = transform, 
       conditions = conditions, int_conditions = int_conditions, 
@@ -363,16 +363,16 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
 # @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
 conditional_effects.brmsterms <- function(
-  x, fit, marg_data, int_conditions, method, surface, 
+  x, fit, cond_data, int_conditions, method, surface, 
   spaghetti, categorical, ordinal, probs, robust, 
   dpar = NULL, resp = NULL, ...
 ) {
   stopifnot(is.brmsfit(fit))
-  effects <- attr(marg_data, "effects")
-  types <- attr(marg_data, "types")
+  effects <- attr(cond_data, "effects")
+  types <- attr(cond_data, "types")
   catscale <- NULL
   pred_args <- list(
-    fit, newdata = marg_data, allow_new_levels = TRUE, 
+    fit, newdata = cond_data, allow_new_levels = TRUE, 
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
@@ -381,7 +381,7 @@ conditional_effects.brmsterms <- function(
     pred_args$transform <- NULL
   }
   out <- do_call(method, pred_args)
-  rownames(marg_data) <- NULL
+  rownames(cond_data) <- NULL
   
   if (categorical || ordinal) {
     if (method != "posterior_epred") {
@@ -394,18 +394,19 @@ conditional_effects.brmsterms <- function(
     if (categorical && ordinal) {
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
     }
-    catscale <- if (is_multinomial(x)) "Count" else "Probability"
+    catscale <- str_if(is_multinomial(x), "Count", "Probability")
     cats <- dimnames(out)[[3]]
     if (is.null(cats)) cats <- seq_dim(out, 3)
-    cats <- factor(rep(cats, each = ncol(out)), levels = cats)
-    marg_data <- cbind(marg_data, cats__ = cats)
+    cond_data <- repl(cond_data, length(cats))
+    cond_data <- do_call(rbind, cond_data)
+    cond_data$cats__ <- factor(rep(cats, each = ncol(out)), levels = cats)
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
     if (conv_cats_dpars(x$family)) {
       stop2("Please set 'categorical' to TRUE.")
     }
-    if (is_ordinal(x$family) && is.null(dpar)) {
+    if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {
       warning2(
         "Predictions are treated as continuous variables in ",
         "'conditional_effects' by default which is likely invalid ", 
@@ -417,20 +418,21 @@ conditional_effects.brmsterms <- function(
     }
   }
   
+  cond_data <- add_effects__(cond_data, effects)
   first_numeric <- types[1] %in% "numeric"
   second_numeric <- types[2] %in% "numeric"
   both_numeric <- first_numeric && second_numeric
   if (second_numeric && !surface) {
-    # can only be converted to factor after having called method
-    mde2 <- round(marg_data[[effects[2]]], 2)
+    # only convert 'effect2__' to factor so that the original
+    # second effect variable remains unchanged in the data
+    mde2 <- round(cond_data[[effects[2]]], 2)
     levels2 <- sort(unique(mde2), TRUE)
-    marg_data[[effects[2]]] <- factor(mde2, levels = levels2)
+    cond_data$effect2__ <- factor(mde2, levels = levels2)
     labels2 <- names(int_conditions[[effects[2]]])
     if (length(labels2) == length(levels2)) {
-      levels(marg_data[[effects[2]]]) <- labels2
+      levels(cond_data$effect2__) <- labels2
     }
   }
-  marg_data <- add_effects__(marg_data, effects)
   
   spag <- NULL
   if (first_numeric && spaghetti) {
@@ -444,11 +446,11 @@ conditional_effects.brmsterms <- function(
     sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
       # samples should be unique across plotting groups
-      sample <- paste0(sample, "_", marg_data[[effects[2]]])
+      sample <- paste0(sample, "_", cond_data[[effects[2]]])
     }
     spag <- data.frame(as.numeric(t(spag)), factor(sample))
     colnames(spag) <- c("estimate__", "sample__")
-    spag <- cbind(marg_data, spag)
+    spag <- cbind(cond_data, spag)
   }
   
   out <- posterior_summary(out, probs = probs, robust = robust)
@@ -456,7 +458,7 @@ conditional_effects.brmsterms <- function(
     out <- do_call(rbind, array2list(out))
   }
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
-  out <- cbind(marg_data, out)
+  out <- cbind(cond_data, out)
   response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
   attr(out, "effects") <- effects
   attr(out, "response") <- response
@@ -517,13 +519,17 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
     out <- c(out, get_all_effects(x$nlpars[[nlp]]))
   }
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
-  if (length(out) && comb_all) {
+  if (comb_all) {
+    # allow to combine all variables with each other
     out <- unique(unlist(out))
-    int <- expand.grid(out, out, stringsAsFactors = FALSE)
-    int <- int[int[, 1] != int[, 2], ]
-    int <- as.list(as.data.frame(t(int), stringsAsFactors = FALSE))
-    int <- unique(unname(lapply(int, sort)))
-    out <- c(as.list(out), int)
+    out <- c(out, get_group_vars(x))
+    if (length(out)) {
+      int <- expand.grid(out, out, stringsAsFactors = FALSE)
+      int <- int[int[, 1] != int[, 2], ]
+      int <- as.list(as.data.frame(t(int), stringsAsFactors = FALSE))
+      int <- unique(unname(lapply(int, sort)))
+      out <- c(as.list(out), int)
+    } 
   }
   unique(out[lengths(out) <= 2L])
 }
@@ -718,6 +724,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   }
   req_vars <- all_vars(rhs(bterms$allvars))
   req_vars <- setdiff(req_vars, rsv_vars)
+  req_vars <- setdiff(req_vars, names(fit$data2))
   if (is.null(conditions)) {
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
@@ -781,11 +788,14 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       "part of the model:\n", collapse_comma(unused_vars)
     )
   }
-  validate_newdata(
+  cond__ <- conditions$cond__
+  conditions <- validate_newdata(
     conditions, fit, re_formula = re_formula,
     allow_new_levels = TRUE, check_response = FALSE,
     incl_autocor = FALSE
   )
+  conditions$cond__ <- cond__
+  conditions
 }
 
 # prepare data to be used in conditional_effects
@@ -793,23 +803,25 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
 # @param conditions see argument 'conditions' of conditional_effects
 # @param int_conditions see argument 'int_conditions' of conditional_effects
 # @param int_vars names of variables being treated as integers
+# @param group_vars names of grouping variables
 # @param surface generate surface plots later on?
 # @param resolution number of distinct points at which to evaluate
 #   the predictors of interest
 # @param reorder reorder predictors so that numeric ones come first?
-prepare_marg_data <- function(data, conditions, int_conditions = NULL,
-                              int_vars = NULL, surface = FALSE, 
-                              resolution = 100, reorder = TRUE) {
+prepare_cond_data <- function(data, conditions, int_conditions = NULL,
+                              int_vars = NULL, group_vars = NULL, 
+                              surface = FALSE, resolution = 100, 
+                              reorder = TRUE) {
   effects <- names(data)
   stopifnot(length(effects) %in% c(1L, 2L))
-  pred_types <- ifelse(ulapply(data, is_like_factor), "factor", "numeric")
+  is_factor <- ulapply(data, is_like_factor) | names(data) %in% group_vars
+  types <- ifelse(is_factor, "factor", "numeric")
   # numeric effects should come first
   if (reorder) {
-    new_order <- order(pred_types, decreasing = TRUE)
+    new_order <- order(types, decreasing = TRUE)
     effects <- effects[new_order]
-    pred_types <- pred_types[new_order]
+    types <- types[new_order]
   }
-  mono <- effects %in% int_vars
   # handle first predictor
   if (effects[1] %in% names(int_conditions)) {
     # first predictor has pre-specified conditions
@@ -818,18 +830,18 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
       int_cond <- int_cond(data[[effects[1]]])
     }
     values <- int_cond
-  } else if (pred_types[1] == "numeric") {
+  } else if (types[1] == "factor") {
+    # first predictor is factor-like
+    values <- factor(unique(data[[effects[1]]]))
+  } else {
     # first predictor is numeric
     min1 <- min(data[[effects[1]]], na.rm = TRUE)
     max1 <- max(data[[effects[1]]], na.rm = TRUE)
-    if (mono[1]) {
+    if (effects[1] %in% int_vars) {
       values <- seq(min1, max1, by = 1)
     } else {
       values <- seq(min1, max1, length.out = resolution)
     }
-  } else {
-    # first predictor is factor-like
-    values <- unique(data[[effects[1]]])
   }
   if (length(effects) == 2L) {
     # handle second predictor
@@ -841,18 +853,21 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
         int_cond <- int_cond(data[[effects[2]]])
       }
       values[[2]] <- int_cond
-    } else if (pred_types[2] == "numeric") {
+    } else if (types[2] == "factor") {
+      # second predictor is factor-like
+      values[[2]] <- factor(unique(data[[effects[2]]]))
+    } else {
       # second predictor is numeric
       if (surface) {
         min2 <- min(data[[effects[2]]], na.rm = TRUE)
         max2 <- max(data[[effects[2]]], na.rm = TRUE)
-        if (mono[2]) {
+        if (effects[2] %in% int_vars) {
           values[[2]] <- seq(min2, max2, by = 1)
         } else {
           values[[2]] <- seq(min2, max2, length.out = resolution)
         }
       } else {
-        if (mono[2]) {
+        if (effects[2] %in% int_vars) {
           median2 <- median(data[[effects[2]]])
           mad2 <- mad(data[[effects[2]]])
           values[[2]] <- round((-1:1) * mad2 + median2)
@@ -862,9 +877,6 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
           values[[2]] <- (-1:1) * sd2 + mean2
         }
       }
-    } else {
-      # second predictor is factor-like
-      values[[2]] <- unique(data[[effects[2]]]) 
     }
     data <- do_call(expand.grid, values)
   } else {
@@ -875,22 +887,15 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   data <- unique(data)
   data <- data[do_call(order, as.list(data)), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
-  marg_vars <- setdiff(names(conditions), effects)
+  cond_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
   for (j in seq_rows(conditions)) {
-    for (v in marg_vars) {
-      cval <- conditions[j, v]
-      if (length(dim(cval)) == 2L) {
-        # matrix columns don't have automatic broadcasting apparently
-        cval <- matrix(cval, nrow(data[[j]]), ncol(cval), byrow = TRUE)
-      }
-      data[[j]][[v]] <- cval
-    }
+    data[[j]] <- fill_newdata(data[[j]], cond_vars, conditions, n = j)
     data[[j]]$cond__ <- cond__[j]
   }
   data <- do_call(rbind, data)
   data$cond__ <- factor(data$cond__, cond__)
-  structure(data, effects = effects, types = pred_types, mono = mono)
+  structure(data, effects = effects, types = types)
 }
 
 # which variables in 'vars' are specified in 'data'?

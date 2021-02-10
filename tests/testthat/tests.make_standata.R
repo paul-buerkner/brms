@@ -230,18 +230,40 @@ test_that("make_standata handles multivariate models", {
     "Zs_y2_1_1", "Y_y2", "con_theta_x", "X_mu2_x"
   )
   expect_true(all(sdata_names %in% names(sdata)))
-  expect_equal(sdata$con_theta_x, c(2, 1))
+  expect_equal(sdata$con_theta_x, as.array(c(2, 1)))
+})
+
+test_that("make_standata removes NAs correctly", {
+  dat <- data.frame(y = c(rnorm(9), NA))
+  sdata <- suppressWarnings(make_standata(y ~ 1, dat))
+  expect_equal(as.numeric(sdata$Y), dat$y[1:9])
+})
+
+test_that("make_standata handles the 'subset' addition argument correctly", {
+  dat1 <- data.frame(
+    y1 = rnorm(15), y2 = NA,
+    x1 = rnorm(15), x2 = NA, x3 = rnorm(15),
+    sub1 = 1, sub2 = 0
+  )
+  dat2 <- data.frame(
+    y1 = NA, y2 = rnorm(10),
+    x1 = NA, x2 = rnorm(10), x3 = NA,
+    sub1 = 0, sub2 = 1
+  )
+  dat <- rbind(dat1, dat2)
   
-  # test addition argument 'subset'
-  bform <- bf(y1 | subset(censi) ~ x + y2 + (x|2|g)) + 
-    (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
+  bform <- 
+    bf(y1 | subset(sub1) ~ x1*x3 + sin(x1), family = gaussian()) +
+    bf(y2 | subset(sub2) ~ x2, family = gaussian()) +
+    set_rescor(FALSE)
+  
   sdata <- make_standata(bform, dat)
-  nsub <- sum(dat$censi)
-  expect_equal(sdata$N_y1, nsub)
-  expect_equal(sdata$N_y2, nrow(dat))
-  expect_equal(length(sdata$Y_y1), nsub)
-  expect_equal(nrow(sdata$X_y1), nsub)
-  expect_equal(length(sdata$Z_1_y1_2), nsub)
+  nsub1 <- sum(dat$sub1)
+  nsub2 <- sum(dat$sub2)
+  expect_equal(sdata$N_y1, nsub1)
+  expect_equal(sdata$N_y2, nsub2)
+  expect_equal(length(sdata$Y_y1), nsub1)
+  expect_equal(nrow(sdata$X_y2), nsub2)
 })
 
 test_that("make_standata returns correct data for ARMA terms", {
@@ -367,6 +389,15 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   expect_equal(sdata$con_simo_1, as.array(c(1, 0.5, 2)))
   expect_equal(sdata$con_simo_3, as.array(c(1, 0.5, 2)))
   
+  # test issue #924 (conditional monotonicity)
+  prior <- c(prior(dirichlet(c(1, 0.5, 2)), simo, coef = "v"),
+             prior(dirichlet(c(1,3)), simo, coef = "w"))
+  sdata <- make_standata(y ~ y*mo(x1, id = "v")*mo(x2, id = "w"), 
+                         data, prior = prior)
+  expect_equal(sdata$con_simo_1, as.array(c(1, 0.5, 2)))
+  expect_equal(sdata$con_simo_2, as.array(c(1, 3)))
+  expect_true(!"sdata$con_simo_3" %in% names(sdata))
+  
   expect_error(
     make_standata(y ~ mo(z), data = data),
     "Monotonic predictors must be integers or ordered factors"
@@ -375,8 +406,7 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simo", coef = "mox21"))
   expect_error(
     make_standata(y ~ mo(x2), data = data, prior = prior),
-    "Invalid Dirichlet prior for the simplex of coefficient 'mox21'", 
-    fixed = TRUE
+    "Invalid Dirichlet prior"
   )
 })
 
@@ -467,7 +497,7 @@ test_that("make_standata handles category specific effects", {
                          data = inhaler, family = cratio())
   expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
   expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
-                             family = "cumulative"), "require families")
+                             family = "cumulative"), "not supported")
   expect_error(make_standata(rating ~ 1 + (treat + cse(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")
@@ -592,18 +622,28 @@ test_that("make_standata handles multi-membership models", {
 
 test_that("by variables in grouping terms are handled correctly", {
   gvar <- c("1A", "1B", "2A", "2B", "3A", "3B", "10", "100", "2", "3")
+  gvar <- rep(gvar, each = 10)
+  g_order <- order(gvar)
+  byvar <- c(0, 4.5, 3, 2, "x 1")
+  byvar <- factor(rep(byvar, each = 20))
   dat <- data.frame(
     y = rnorm(100), x = rnorm(100),
-    g = rep(gvar, each = 10),
-    z = factor(rep(c(0, 4.5, 3, 2, "x 1"), each = 20)),
-    z2 = factor(1:2)
+    g = gvar,
+    g2 = gvar[g_order],
+    z = byvar,
+    z2 = byvar[g_order],
+    z3 = factor(1:2)
   )
   sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)
   expect_equal(sdata$Nby_1, 5)
   expect_equal(sdata$Jby_1, as.array(c(2, 2, 1, 1, 5, 4, 4, 5, 3, 3)))
   
-  expect_error(make_standata(y ~ x + (1|gr(g, by = z2)), dat),
-               "Some levels of 'g' correspond to multiple levels of 'z2'")
+  sdata <- make_standata(y ~ x + (x | mm(g, g2, by = cbind(z, z2))), dat)
+  expect_equal(sdata$Nby_1, 5)
+  expect_equal(sdata$Jby_1, as.array(c(2, 2, 1, 1, 5, 4, 4, 5, 3, 3)))
+  
+  expect_error(make_standata(y ~ x + (1|gr(g, by = z3)), dat),
+               "Some levels of 'g' correspond to multiple levels of 'z3'")
 })
 
 test_that("make_standata handles calls to the 'poly' function", {
@@ -651,13 +691,13 @@ test_that("make_standata includes data for mixture models", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   form <- bf(y ~ x, mu1 ~ 1, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data)
-  expect_equal(sdata$con_theta, c(1, 1))
+  expect_equal(sdata$con_theta, as.array(c(1, 1)))
   expect_equal(dim(sdata$X_mu1), c(10, 1))
   expect_equal(dim(sdata$X_mu2), c(10, 2))
   
   form <- bf(y ~ x, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data, prior = prior(dirichlet(10, 2), theta))
-  expect_equal(sdata$con_theta, c(10, 2))
+  expect_equal(sdata$con_theta, as.array(c(10, 2)))
   
   form <- bf(y ~ x, theta1 = 1, theta2 = 3, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data)
@@ -775,6 +815,13 @@ test_that("make_standata includes data of special priors", {
   sdata <- make_standata(y ~ x1*x2, data = dat, prior = set_prior(hs))
   expect_equal(sdata$hs_scale_global, 0.1 / sqrt(nrow(dat)))
   
+  # R2D2 prior
+  sdata <- make_standata(y ~ x1*x2, data = dat,
+                         prior = prior(R2D2(0.5, 10)))
+  expect_equal(sdata$R2D2_mean_R2, 0.5)
+  expect_equal(sdata$R2D2_prec_R2, 10)
+  expect_equal(sdata$R2D2_cons_D2, as.array(rep(1, 3)))
+  
   # lasso prior
   sdata <- make_standata(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)))
@@ -880,9 +927,11 @@ test_that("data for multinomial and dirichlet models is correct", {
 test_that("make_standata handles cox models correctly", {
   data <- data.frame(y = rexp(100), x = rnorm(100))
   bform <- bf(y ~ x)
-  sdata <- make_standata(bform, data, brmsfamily("cox"))
-  expect_equal(dim(sdata$Zbhaz), c(100, 4))
-  expect_equal(dim(sdata$Zcbhaz), c(100, 4))
+  bprior <- prior(dirichlet(3), sbhaz)
+  sdata <- make_standata(bform, data, brmsfamily("cox"), prior = bprior)
+  expect_equal(dim(sdata$Zbhaz), c(100, 5))
+  expect_equal(dim(sdata$Zcbhaz), c(100, 5))
+  expect_equal(sdata$con_sbhaz, as.array(rep(3, 5)))
   
   sdata <- make_standata(bform, data, brmsfamily("cox", bhaz = list(df = 6)))
   expect_equal(dim(sdata$Zbhaz), c(100, 6))
@@ -929,4 +978,27 @@ test_that("make_standata handles grouped ordinal thresholds correctly", {
   sdata <- make_standata(y | thres(6, gr = gr) ~ x, dat, cumulative())
   expect_equal(sdata$nthres, as.array(c(6, 6)))
   expect_equal(sdata$ngrthres, 2)
+})
+
+test_that("information for threading is handled correctly", {
+  dat <- data.frame(y = 1:10)
+  sdata <- make_standata(y ~ 1, dat, threads = threading(2, grainsize = 3))
+  expect_equal(sdata$grainsize, 3)
+})
+
+test_that("variables in data2 can be used in population-level effects", {
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), x3 = rnorm(10))
+  foo <- function(..., idx = NULL) {
+    out <- cbind(...)
+    if (!is.null(idx)) {
+      out <- out[, idx, drop = FALSE]
+    }
+    out
+  }
+  sdata <- make_standata(y ~ foo(x1, x2, x3, idx = id), data = dat, 
+                         data2 = list(id = c(3, 1)))
+  target <- c("Intercept", "foox1x2x3idxEQidx3", "foox1x2x3idxEQidx1")
+  expect_equal(colnames(sdata$X), target)
+  expect_equivalent(sdata$X[, 2], dat$x3)
+  expect_equivalent(sdata$X[, 3], dat$x1)
 })

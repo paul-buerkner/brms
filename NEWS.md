@@ -1,3 +1,155 @@
+# brms 2.14.4++
+
+### New Features
+
+* Turn off normalization in the Stan model via argument `normalize`.
+to increase sampling efficiency thanks to Andrew Johnson. (#1017, #1053)
+* Enable `posterior_predict` for truncated continuous models
+even if the required CDF or quantile functions are unavailable.
+* Update and export `validate_prior` to validate priors supplied by the user.
+* Add support for within-chain threading with `rstan (Stan >= 2.25)` backend.
+* Apply the R2-D2 shrinkage prior to population-level coefficients
+via function `R2D2` to be used in `set_prior`.
+* Extend support for `arma` correlation structures in non-normal families.
+* Extend scope of variables passed via `data2` for use in the 
+evaluation of most model terms.
+
+### Other Changes
+
+* Improve numerical stability of ordinal sequential models 
+(families `sratio` and `cratio`) thanks to Andrew Johnson. (#1087)
+
+### Bug Fixes
+
+* Allow fitting `multinomial` models with the 
+`cmdstanr` backend thanks to Andrew Johnson. (#1033)
+* Allow user-defined Stan functions in threaded models. (#1034)
+* Allow usage of the `:` operator in autocorrelation terms.
+* Fix Stan code generation when specifying coefficient-level
+priors on spline terms.
+* Fix numerical issues occurring in edge cases during
+post-processing of Gaussian processes thanks to Marta Kołczyńska.
+* Fix an error during post-processing of new levels in
+multi-membership terms thanks to Guilherme Mohor.
+* Fix a bug in the Stan code of threaded `wiener` drift diffusion
+models thanks to the GitHub user yanivabir. (#1085)
+* Fix a bug in the threaded Stan code for GPs with categorical
+`by` variables thanks to Reece Willoughby. (#1081)
+* Fix a bug in the threaded Stan code when using QR decomposition
+thanks to Steve Bronder. (#1086)
+
+
+# brms 2.14.4
+
+### New Features
+
+* Support `projpred` version 2.0 for variable selection in generalized
+linear and additive multilevel models thanks to Alejandro Catalina.
+* Support `by` variables in multi-membership terms.
+* Use Bayesian bootstrap in `loo_R2`.
+
+### Bug Fixes
+
+* Allow non-linear terms in threaded models.
+* Allow multi-membership terms in threaded models.
+* Allow `se` addition terms in threaded models.
+* Allow `categorical` families in threaded models.
+* Fix updating of parameters in `loo_moment_match`.
+* Fix facet labels in `conditional_effects` thanks 
+to Isaac Petersen. (#1014)
+
+
+# brms 2.14.0
+
+### New Features
+
+* Experimentally support within-chain parallelization via `reduce_sum`
+using argument `threads` in `brm` thanks to Sebastian Weber. (#892)
+* Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
+* No longer remove `NA` values in `data` if there are unused because of
+the `subset` addition argument. (#895)
+* Combine `by` variables and within-group correlation matrices
+in group-level terms. (#674)
+* Add argument `robust` to the `summary` method. (#976)
+* Parallelize evaluation of the `posterior_predict` and `log_lik` 
+methods via argument `cores`. (#819)
+* Compute effective number of parameters in `kfold`.
+* Show prior sources and vectorization in the `print` output 
+of `brmsprior` objects. (#761)
+* Store unused variables in the model's data frame via 
+argument `unused` of function `brmsformula`.
+* Support posterior mean predictions in `emmeans` via 
+`dpar = "mean"` thanks to Russell V. Lenth. (#993)
+* Improve control of which parameters should be saved via 
+function `save_pars` and corresponding argument in `brm`. (#746)
+* Add method `posterior_smooths` to computing predictions
+of individual smooth terms. (#738)
+* Allow to display grouping variables in `conditional_effects` 
+using the `effects` argument. (#1012)
+
+### Other Changes
+
+* Improve sampling efficiency for a lot of models by using Stan's
+GLM-primitives even in non-GLM cases. (#984)
+* Improve sampling efficiency of multilevel models with 
+within-group covariances thanks to David Westergaard. (#977)
+* Deprecate argument `probs` in the `conditional_effects` method
+in favor of argument `prob`.
+
+### Bug Fixes
+
+* Fix a problem in `pp_check` inducing wronger observation
+orders in time series models thanks to Fiona Seaton. (#1007)
+* Fix multiple problems with `loo_moment_match` that prevented
+it from working for some more complex models.
+
+
+# brms 2.13.5
+
+### New Features
+
+* Support the Cox proportional hazards model for 
+time-to-event data via family `cox`. (#230, #962)
+* Support method `loo_moment_match`, which can be used to
+update a `loo` object when Pareto k estimates are large.
+
+### Other Changes
+
+* Improve the prediction behavior in post-processing methods 
+when sampling new levels of grouping factors via 
+`sample_new_levels = "uncertainty"`. (#956)
+
+### Bug Fixes
+
+* Fix minor problems with MKL on CRAN.
+
+
+# brms 2.13.3
+
+### New Features
+
+* Fix shape parameters across multiple monotonic terms via argument
+`id` in function `mo` to ensure conditionally monotonic effects. (#924)
+* Support package `rtdists` as additional backend of `wiener`
+distribution functions thanks to the help of Henrik Singmann. (#385)
+
+### Bug Fixes
+
+* Fix generated Stan Code of models with improper global priors and
+`constant` priors on some coefficients thanks to Frank Weber. (#919)
+* Fix a bug in `conditional_effects` occurring for categorical
+models with matrix predictors thanks to Jamie Cranston. (#933)
+
+### Other Changes
+
+* Adjust behavior of the `rate` addition term so that it also
+affects the `shape` parameter in `negbinomial` models thanks to
+Edward Abraham. (#915)
+* Adjust the default inverse-gamma prior on length-scale parameters
+of Gaussian processes to be less extreme in edge cases thanks
+to Topi Paananen.
+
+
 # brms 2.13.0
 
 ### New Features
@@ -114,7 +266,7 @@ thanks to Andrew Milne. (#830)
 argument `resp_thres`. (#675)
 * Support method `loo_subsample` for performing approximate
 leave-one-out cross-validation for large data.
-* Allow storing more model fit critera via `add_criterion`. (#793)
+* Allow storing more model fit criteria via `add_criterion`. (#793)
 
 ### Bug Fixes
 
@@ -221,7 +373,7 @@ improve their interpretability. (#578)
 * No longer support the `cor_arr` and `cor_bsts` correlation 
 structures after a year of deprecation.
 * Refactor internal evaluation of special predictor terms.
-* Improve penality of splines thanks to Ben Goodrich
+* Improve penalty of splines thanks to Ben Goodrich
 and Ruben Arslan.
 
 ### Bug Fixes
@@ -287,7 +439,7 @@ univariate models thanks to Vassilis Kehayas. (#589)
 * Fix Stan code for t-distributed varying effects 
 thanks to Ozgur Asar.
 * Fix an error in the post-processing of monotonic effects
-occuring for multivariate models thanks to James Rae. (#598)
+occurring for multivariate models thanks to James Rae. (#598)
 * Fix lower bounds in truncated discrete models.
 * Fix checks of the original data in `kfold` thanks to
 the GitHub user gcolitti. (#602)
@@ -685,13 +837,13 @@ Luedecke. (#393)
       and arguments from the package. (#278)
 * No longer support certain prior specifications,
       which were previously labeled as deprecated.
-* Remove the depreacted addition term 
+* Remove the deprecated addition term 
       `disp` from the package.
 * Remove old versions of methods `fixef`,
       `ranef`, `coef`, and `VarCorr`.
 * No longer support models fitted with `brms` < 1.0, 
       which used the multivariate `'trait'` syntax
-      orginally deprecated in `brms` 1.0.
+      originally deprecated in `brms` 1.0.
 * Make posterior sample extraction in the 
       `summary` method cleaner and less error prone.
 * No longer fix the seed for random number generation 
@@ -740,7 +892,7 @@ Luedecke. (#393)
       of `fitted` when returning linear predictors
       of ordinal models thanks to the GitHub user atrolle. (#274)
 * Fix problems in `marginal_smooths`
-      occuring for multi-membership models thanks to
+      occurring for multi-membership models thanks to
       Hans Tierens.
 
 
@@ -916,7 +1068,7 @@ Luedecke. (#393)
       values for truncated discrete models based
       on new data thanks to Nathan Doogan.
 * Fix unexpected errors when passing
-      models, which did not properly initiliaze,
+      models, which did not properly initialize,
       to various post-processing methods.
 * Do not accidently drop the second 
       dimension of matrices in `summary.brmsfit` 
@@ -966,9 +1118,9 @@ Luedecke. (#393)
 ### Bug fixes
     
 * Fix an unexpected error in `marginal_effects`
-      occuring for some models with autocorrelation terms 
+      occurring for some models with autocorrelation terms 
       thanks to Markus Gesmann.
-* Fix multiple problems occuring for models with  
+* Fix multiple problems occurring for models with  
       the `cor_bsts` structure thanks to Andrew Ellis.
 
 
@@ -1028,7 +1180,7 @@ Luedecke. (#393)
       all auxiliary parameters.
 * Introduce argument `negative_rt` in
       `predict` and `posterior_predict` to 
-      distinquish responses on the upper and lower 
+      distinguish responses on the upper and lower 
       boundary in `wiener` diffusion models
       thanks to Guido Biele.
 * Introduce method `control_params` to
@@ -1061,7 +1213,7 @@ Luedecke. (#393)
 ### Bug fixes
     
 * Fix problems with the inclusion of offsets
-      occuring for more complicated formulas thanks to 
+      occurring for more complicated formulas thanks to 
       Christian Stock.
 * Fix a bug that led to invalid Stan code when 
       sampling from priors in intercept only models thanks 
@@ -1354,7 +1506,7 @@ Luedecke. (#393)
      
 * Better mimic `mgcv` when parsing smooth terms
       to make sure all arguments are correctly handled.
-* Avoid an error occuring during the prediction 
+* Avoid an error occurring during the prediction 
       of new data when grouping factors with only a single 
       factor level were supplied thanks to Tom Wallis.
 * Fix `marginal_effects` to consistently 
@@ -1365,7 +1517,7 @@ Luedecke. (#393)
       is necessary thanks to Raphael P.H.
 * Allow to correctly `update` the `sample_prior`
       argument to value `"only"`.
-* Fix an unexpected error occuring in many S3 methods
+* Fix an unexpected error occurring in many S3 methods
       when the thinning rate is not a divisor of the total
       number of posterior samples thanks to Paul Zerr.
 
@@ -1426,7 +1578,7 @@ Luedecke. (#393)
 * Center design matrices inside the Stan code
       instead of inside `make_standata`.
 * Get rid of several warning messages
-      occuring on CRAN.
+      occurring on CRAN.
 
 
 
@@ -1496,7 +1648,7 @@ sampling from priors in non-linear models thanks to Tom Wallis.
 `logLik.brmsfit` thanks to Tom Wallis.
 * Ensure full compatibility of the `ranef` and `coef` methods with non-linear
 models.
-* Fix problems that occasionally occured when handling `dplyr` datasets thanks
+* Fix problems that occasionally occurred when handling `dplyr` datasets thanks
 to the GitHub user Atan1988.
 
 
@@ -1603,7 +1755,7 @@ model formulas thanks to Emmanuel Charpentier.
 parameters in non-linear models thanks to Emmanuel Charpentier.
 * Fix a bug that prohibited to use nested grouping factors in non-linear models
 thanks to Tom Wallis.
-* Fix a bug in the linear predictor computation within `R`, occuring for ordinal
+* Fix a bug in the linear predictor computation within `R`, occurring for ordinal
 models with multiple category specific effects. This could lead to incorrect
 outputs of `predict`, `fitted`, and `logLik` for these models.
 * Make sure that the global `"contrasts"` option is not used when
@@ -1719,7 +1871,7 @@ respective grouping factor levels.
 * Fix a bug in the `hypothesis` method that could cause valid model parameters
 to be falsely reported as invalid.
 * Fix a bug in the `prior_samples` method that could cause prior samples of
-parameters of the same class to be artifically correlated.
+parameters of the same class to be artificially correlated.
 * Fix `Stan` code of linear models with moving-average effects and non-identity
 link functions so that they no longer contain code related solely to
 autoregressive effects.
@@ -1772,7 +1924,7 @@ method.
 generated by `brms`.
 * Rename the `brmdata` function to `make_standata`. The former remains usable as
 a deprecated alias.
-* Improve documenation to better explain differences in autoregressive effects
+* Improve documentation to better explain differences in autoregressive effects
 across R packages.
 
 ### Bug fixes

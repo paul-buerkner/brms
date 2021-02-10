@@ -5,7 +5,14 @@
 \alias{loo_R2}
 \title{Compute a LOO-adjusted R-squared for regression models}
 \usage{
-\method{loo_R2}{brmsfit}(object, resp = NULL, ...)
+\method{loo_R2}{brmsfit}(
+  object,
+  resp = NULL,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -13,14 +20,29 @@
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
+\item{summary}{Should summary statistics be returned
+instead of the raw values? Default is \code{TRUE}.}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deviation (MAD) are applied instead.
+Only used if \code{summary} is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
+
 \item{...}{Further arguments passed to 
 \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
 \code{\link[brms:log_lik.brmsfit]{log_lik}},
 which are used in the computation of the R-squared values.}
 }
 \value{
-A real value per response variable indicating 
-the LOO-adjusted R-squared.
+If \code{summary = TRUE}, an M x C matrix is returned
+ (M = number of response variables and c = \code{length(probs) + 2}) 
+ containing summary statistics of the LOO-adjusted R-squared values.
+ If \code{summary = FALSE}, the posterior samples of the LOO-adjusted
+ R-squared values are returned in an S x M matrix (S is the number of samples).
 }
 \description{
 Compute a LOO-adjusted R-squared for regression models

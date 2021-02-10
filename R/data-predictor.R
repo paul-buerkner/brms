@@ -25,25 +25,27 @@ data_predictor.mvbrmsterms <- function(x, data, basis = NULL, ...) {
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, prior, ranef, 
+data_predictor.brmsterms <- function(x, data, data2, prior, ranef, 
                                      basis = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, ranef, prior, ...)
+  args_eff <- nlist(data, data2, ranef, prior, ...)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
-    out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
+    if (is.numeric(x$fdpars[[dp]]$value)) {
+      out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value 
+    }
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], basis = basis$nlpars[[nlp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   c(out) <- data_gr_local(x, data = data, ranef = ranef)
-  c(out) <- data_mixture(x, prior = prior)
+  c(out) <- data_mixture(x, data2 = data2, prior = prior)
   out
 }
 
@@ -59,17 +61,19 @@ data_predictor.brmsterms <- function(x, data, prior, ranef,
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
                                basis = NULL, ...) {
-  c(data_fe(x, data),
-    data_sp(x, data, prior = prior, basis = basis$sp),
+  out <- c(
+    data_fe(x, data),
+    data_sp(x, data, data2 = data2, prior = prior, basis = basis$sp),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
     data_sm(x, data, basis = basis$sm),
     data_gp(x, data, basis = basis$gp),
     data_ac(x, data, data2 = data2, basis = basis$ac),
     data_offset(x, data),
-    data_bhaz(x, data, basis = basis$bhaz),
-    data_prior(x, data, prior = prior)
+    data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   )
+  c(out) <- data_prior(x, data, prior = prior, sdata = out)
+  out
 }
 
 # prepare data for non-linear parameters for use in Stan
@@ -108,7 +112,7 @@ data_sm <- function(bterms, data, basis = NULL) {
     knots <- get_knots(data)
     basis <- named_list(smterms)
     for (i in seq_along(smterms)) {
-      # the spline penality has changed in 2.8.7 (#646)
+      # the spline penalty has changed in 2.8.7 (#646)
       diagonal.penalty <- !require_old_default("2.8.7")
       basis[[i]] <- smoothCon(
         eval2(smterms[i]), data = data, 
@@ -230,7 +234,6 @@ data_gr_local <- function(bterms, data, ranef) {
     levels <- attr(ranef, "levels")[[group]]
     if (id_ranef$gtype[1] == "mm") {
       # multi-membership grouping term
-      stopifnot(!nzchar(id_ranef$by[1]))
       gs <- id_ranef$gcall[[1]]$groups
       ngs <- length(gs)
       weights <- id_ranef$gcall[[1]]$weights
@@ -254,8 +257,15 @@ data_gr_local <- function(bterms, data, ranef) {
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       for (i in seq_along(gs)) {
-        J <- as.array(match(get(gs[i], data), levels))
-        out[[paste0("J_", idresp, "_", i)]] <- J
+        gdata <- get(gs[i], data)
+        J <- match(gdata, levels)
+        if (anyNA(J)) {
+          # occurs for new levels only
+          new_gdata <- gdata[!gdata %in% levels]
+          new_levels <- unique(new_gdata)
+          J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
+        }
+        out[[paste0("J_", idresp, "_", i)]] <- as.array(J)
         out[[paste0("W_", idresp, "_", i)]] <- as.array(weights[, i])
       }
     } else {
@@ -316,7 +326,7 @@ data_gr_global <- function(ranef, data2) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, prior = brmsprior(), basis = NULL) {
+data_sp <- function(bterms, data, data2, prior, basis = NULL) {
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -346,22 +356,20 @@ data_sp <- function(bterms, data, prior = brmsprior(), basis = NULL) {
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters
-    simo_coef <- get_simo_labels(spef)
-    for (i in seq_along(simo_coef)) {
-      simo_prior <- subset2(prior, 
-        class = "simo", coef = simo_coef[i], ls = px
-      )
-      simo_prior <- simo_prior$prior
-      if (isTRUE(nzchar(simo_prior))) {
-        simo_prior <- eval_dirichlet(simo_prior)
-        if (length(simo_prior) != Jmo[i]) {
-          stop2("Invalid Dirichlet prior for the simplex of coefficient '",
-                simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
-        }
-      } else {
-        simo_prior <- rep(1, Jmo[i])
+    simo_coef <- get_simo_labels(spef, use_id = TRUE)
+    ids <- unlist(spef$ids_mo)
+    for (j in seq_along(simo_coef)) {
+      # index of first ID appearance
+      j_id <- match(ids[j], ids)
+      if (is.na(ids[j]) || j_id == j) {
+        # only evaluate priors without ID or first appearance of the ID
+        # all other parameters will be copied over in the Stan code
+        simo_prior <- subset2(prior, 
+          class = "simo", coef = simo_coef[j], ls = px
+        )
+        con_simo <- eval_dirichlet(simo_prior$prior, Jmo[j], data2)
+        out[[paste0("con_simo", p, "_", j)]] <- as.array(con_simo)
       }
-      out[[paste0("con_simo", p, "_", i)]] <- as.array(simo_prior)
     }
   }
   out
@@ -572,6 +580,8 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
   if (internal) {
     # required for centering of approximate GPs with new data
     out[[paste0("cmeans", sfx)]] <- cmeans
+    # required to compute inverse-gamma priors for length-scales
+    out[[paste0("Xgp_prior", sfx)]] <- Xgp
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables
@@ -821,30 +831,41 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and lasso
-data_prior <- function(bterms, data, prior) {
+data_prior <- function(bterms, data, prior, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  prefix <- combine_prefix(px, keep_mu = TRUE)
-  special <- attr(prior, "special")[[prefix]]
-  if (!is.null(special[["hs_df"]])) {
+  special <- get_special_prior(prior, px)
+  if (!is.null(special$horseshoe)) {
     # data for the horseshoe prior
-    hs_obj_names <- paste0("hs_", 
-      c("df", "df_global", "df_slab", "scale_global", "scale_slab")
-    )
-    hs_data <- special[hs_obj_names]
-    if (is.null(special[["hs_par_ratio"]])) {
-      hs_data$hs_scale_global <- special$hs_scale_global
-    } else {
-      hs_data$hs_scale_global <- special$hs_par_ratio / sqrt(nrow(data))
+    hs_names <- c("df", "df_global", "df_slab", "scale_global", "scale_slab")
+    hs_data <- special$horseshoe[hs_names]
+    if (!is.null(special$horseshoe$par_ratio)) {
+      hs_data$scale_global <- special$horseshoe$par_ratio / sqrt(nrow(data))
     }
-    names(hs_data) <- paste0(hs_obj_names, p) 
+    names(hs_data) <- paste0("hs_", hs_names, p) 
     out <- c(out, hs_data)
   }
-  if (!is.null(special[["lasso_df"]])) {
-    lasso_obj_names <- paste0("lasso_", c("df", "scale"))
-    lasso_data <- special[lasso_obj_names]
-    names(lasso_data) <- paste0(lasso_obj_names, p) 
+  if (!is.null(special$R2D2)) {
+    # data for the R2D2 prior
+    R2D2_names <- c("mean_R2", "prec_R2", "cons_D2")
+    R2D2_data <- special$R2D2[R2D2_names]
+    # number of coefficients minus the intercept
+    K <- sdata[[paste0("K", p)]] - ifelse(stan_center_X(bterms), 1, 0)
+    if (length(R2D2_data$cons_D2) == 1L) {
+      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, K)
+    }
+    if (length(R2D2_data$cons_D2) != K) {
+      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", K)
+    }
+    R2D2_data$cons_D2 <- as.array(R2D2_data$cons_D2)
+    names(R2D2_data) <- paste0("R2D2_", R2D2_names, p) 
+    out <- c(out, R2D2_data)
+  }
+  if (!is.null(special$lasso)) {
+    lasso_names <- c("df", "scale")
+    lasso_data <- special$lasso[lasso_names]
+    names(lasso_data) <- paste0("lasso_", lasso_names, p) 
     out <- c(out, lasso_data)
   }
   out
@@ -898,9 +919,12 @@ smoothCon <- function(object, data, ...) {
   data <- rm_attr(data, "terms")
   vars <- setdiff(c(object$term, object$by), "NA")
   for (v in vars) {
-    # allow factor-like variables #562
     if (is_like_factor(data[[v]])) {
+      # allow factor-like variables #562
       data[[v]] <- as.factor(data[[v]])
+    } else if (inherits(data[[v]], "difftime")) {
+      # mgcv cannot handle 'difftime' variables
+      data[[v]] <- as.numeric(data[[v]])
     }
   }
   mgcv::smoothCon(object, data = data, ...)

@@ -1,6 +1,6 @@
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
 #'
-#' @param object An object of class \code{brmsfit}
+#' @param object An object of class \code{brmsfit}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
 #' @param prob A value between 0 and 1 indicating the desired probability 
@@ -8,26 +8,25 @@
 #' @param mc_se Logical; Indicating if the uncertainty caused by the 
 #'   MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.
 #' @param ... Other potential arguments
+#' @inheritParams posterior_summary
 #' 
 #' @details The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and 
-#' \code{Tail_ESS} are described in detail in Vehtari et al. (2019).
+#' \code{Tail_ESS} are described in detail in Vehtari et al. (2020).
 #' 
 #' @references 
 #' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
-#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' Paul-Christian Bürkner (2020). Rank-normalization, folding, and
 #' localization: An improved R-hat for assessing convergence of
-#' MCMC. *arXiv preprint* `arXiv:1903.08008`.
+#' MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221
 #' 
 #' @method summary brmsfit
 #' @importMethodsFrom rstan summary
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
-                            mc_se = FALSE, ...) {
+                            robust = FALSE, mc_se = FALSE, ...) {
   priors <- as_one_logical(priors)
-  prob <- as_one_numeric(prob)
-  if (prob < 0 || prob > 1) {
-    stop2("'prob' must be a single numeric value in [0, 1].")
-  }
+  probs <- validate_ci_bounds(prob)
+  robust <- as_one_logical(robust)
   mc_se <- as_one_logical(mc_se)
   if (mc_se) {
     warning2("Argument 'mc_se' is currently deactivated but ", 
@@ -62,25 +61,30 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # compute a summary for given set of parameters
-  .summary <- function(object, pars, prob) {
+  .summary <- function(object, pars, probs, robust) {
     # TODO: use rstan::monitor instead once it is clean and stable
     sims <- as.array(object, pars = pars, fixed = TRUE)
     parnames <- dimnames(sims)[[3]]
-    probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
     valid <- rep(NA, length(parnames))
     out <- named_list(parnames)
     for (i in seq_along(out)) {
       sims_i <- sims[, , i]
       valid[i] <- all(is.finite(sims_i))
+      if (robust) {
+        est <- median(sims_i)
+        est_error <- mad(sims_i) 
+      } else {
+        est <- mean(sims_i)
+        est_error <- sd(sims_i) 
+      }
       quan <- unname(quantile(sims_i, probs = probs))
-      mean <- mean(sims_i)
-      sd <- sd(sims_i)
       rhat <- rstan::Rhat(sims_i)
       ess_bulk <- round(rstan::ess_bulk(sims_i))
       ess_tail <- round(rstan::ess_tail(sims_i))
-      out[[i]] <- c(mean, sd, quan, rhat, ess_bulk, ess_tail)
+      out[[i]] <- c(est, est_error, quan, rhat, ess_bulk, ess_tail)
     }
     out <- do_call(rbind, out)
+    prob <- probs[2] - probs[1]
     CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
     # TODO: align column names with summary outputs of other methods
     colnames(out) <- c(
@@ -97,7 +101,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   pars <- parnames(object)
   excl_regex <- "^(r|s|z|zs|zgp|Xme|L|Lrescor|prior|lp)(_|$)"
   pars <- pars[!grepl(excl_regex, pars)]
-  fit_summary <- .summary(object, pars = pars, prob = prob)
+  fit_summary <- .summary(object, pars, probs, robust)
   if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]
     if (any(Rhats > 1.05, na.rm = TRUE)) {
@@ -426,6 +430,26 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
   x 
 }
 
+# validate bounds of credible intervals
+# @return a numeric vector of length 2
+validate_ci_bounds <- function(prob, probs = NULL) {
+  if (!is.null(probs)) {
+    # deprecated as of version 2.13.7
+    warning2("Argument 'probs' is deprecated. Please use 'prob' instead.")
+    if (length(probs) != 2L) {
+      stop2("Arguments 'probs' must be of length 2.")
+    }
+    probs <- as.numeric(probs)
+  } else {
+    prob <- as_one_numeric(prob)
+    if (prob < 0 || prob > 1) {
+      stop2("'prob' must be a single numeric value in [0, 1].")
+    }
+    probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
+  }
+  probs
+}
+
 #' Table Creation for Posterior Samples
 #' 
 #' Create a table for unique values of posterior samples. 
@@ -482,7 +506,7 @@ posterior_table <- function(x, levels = NULL) {
 #'   returned, as given by a character vector or regular expressions. 
 #'   By default, all posterior samples of all parameters are extracted.
 #' @param ... More arguments passed to 
-#'   \code{\link[brms:as.matrix.brmsfit]{as.matrix.brmsfit}}.
+#'   \code{\link{as.matrix.brmsfit}}.
 #' 
 #' @return A \code{matrix} with lower and upper interval bounds
 #'   as columns and as many rows as selected parameters.

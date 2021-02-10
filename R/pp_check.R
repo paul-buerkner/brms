@@ -31,7 +31,7 @@
 #' 
 #' @details For a detailed explanation of each of the ppc functions, 
 #' see the \code{\link[bayesplot:PPC-overview]{PPC}} 
-#' documentation of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} 
+#' documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} 
 #' package.
 #' 
 #' @examples
@@ -132,10 +132,17 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
     object, newdata = newdata, resp = resp, 
-    subset = subset, sort = FALSE, ...
+    subset = subset, ...
   )
   yrep <- do_call(method, pred_args)
 
+  if (anyNA(y)) {
+    warning2("NA responses are not shown in 'pp_check'.")
+    take <- !is.na(y)
+    y <- y[take]
+    yrep <- yrep[, take, drop = FALSE]
+  }
+  
   data <- current_data(
     object, newdata = newdata, resp = resp, 
     re_formula = NA, check_response = TRUE, ...

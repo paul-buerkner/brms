@@ -14,7 +14,7 @@ corresponding to the grouping levels specified in \code{\link{mm}}.}
 A matrix with covariates as columns.
 }
 \description{
-Specify covarariates that vary over different levels 
+Specify covariates that vary over different levels 
 of multi-membership grouping factors thus requiring
 special treatment. This function is almost solely useful,
 when called in combination with \code{\link{mm}}. 

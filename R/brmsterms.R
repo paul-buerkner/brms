@@ -128,6 +128,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$dpars[[dp]]$respform <- y$respform
       y$dpars[[dp]]$adforms <- y$adforms
     }
+    check_cs(y$dpars[[dp]])
   }
   
   y$nlpars <- named_list(nlpars)
@@ -146,6 +147,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       }
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$resp <- resp
+      check_cs(y$nlpars[[nlp]])
     }
     used_nlpars <- ulapply(c(y$dpars, y$nlpars), "[[", "used_nlpars")
     unused_nlpars <- setdiff(nlpars, used_nlpars)
@@ -192,17 +194,14 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
     y$fdpars[[dp]] <- list(value = x$pfix[[dp]], dpar = dp)
   }
   check_fdpars(y$fdpars)
-  # check for illegal use of cs terms
-  if (has_cs(y) && !(is.null(family) || allow_cs(family))) {
-    stop2("Category specific effects require families ", 
-          "'sratio', 'cratio', or 'acat'.")
-  }
   
   # make a formula containing all required variables
+  unused_vars <- all_vars(attr(x$formula, "unused"))
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
   y$allvars <- allvars_formula(
     lhsvars, advars, lapply(y$dpars, get_allvars), 
-    lapply(y$nlpars, get_allvars), y$time$allvars
+    lapply(y$nlpars, get_allvars), y$time$allvars,
+    unused_vars
   )
   if (check_response) {
     y$allvars <- update(y$respform, y$allvars) 
@@ -229,7 +228,7 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
-  out$respform <- formula(paste0("cbind(", out$respform, ") ~ 1"))
+  out$respform <- formula(paste0("mvbind(", out$respform, ") ~ 1"))
   out$responses <- ulapply(out$terms, "[[", "resp")
   out$rescor <- x$rescor
   out$mecor <- x$mecor
@@ -297,7 +296,11 @@ terms_ad <- function(formula, family = NULL, check_response = TRUE) {
     ad <- get_matches("(?<=\\|)[^~]*(?=~)", str_formula, perl = TRUE)
     valid_ads <- family_info(family, "ad")
     if (length(ad)) {
-      ad_terms <- attr(terms(formula(paste("~", ad))), "term.labels")
+      ad_terms <- terms(str2formula(ad))
+      if (length(attr(ad_terms, "offset"))) {
+        stop2("Offsets are not allowed in addition terms.")
+      }
+      ad_terms <- attr(ad_terms, "term.labels")
       for (a in ad_funs) {
         matches <- grep(paste0("^(resp_)?", a, "\\(.*\\)$"), ad_terms)
         if (length(matches) == 1L) {
@@ -786,6 +789,15 @@ has_terms <- function(formula) {
     length(attr(terms, "offset")) 
 }
 
+# has a linear formula any terms except overall effects?
+has_special_terms <- function(x) {
+  if (!is.btl(x)) {
+    return(FALSE)
+  }
+  special_terms <- c("sp", "sm", "gp", "ac", "cs", "offset")
+  NROW(x[["re"]]) > 0 || any(lengths(x[special_terms]))
+}
+
 # indicate if the predictor term belongs to a non-linear parameter
 is_nlpar <- function(x) {
   isTRUE(nzchar(x[["nlpar"]]))
@@ -907,7 +919,7 @@ regex_sp <- function(type = "all") {
     type <- names(funs)
   }
   funs <- funs[type]
-  allow_colon <- c("cs", "mmc")
+  allow_colon <- c("cs", "mmc", "ac")
   inner <- ifelse(names(funs) %in% allow_colon, ".*", "[^:]*")
   out <- paste0("^(", funs, ")\\(", inner, "\\)$")
   paste0("(", out, ")", collapse = "|")
@@ -1015,10 +1027,25 @@ rsv_vars <- function(bterms) {
   out
 }
 
-# check if category specific effects are present in the model
+# are category specific effects present?
 has_cs <- function(bterms) {
   length(get_effect(bterms, target = "cs")) > 0L ||
     any(get_re(bterms)$type %in% "cs")
+}
+
+# check if category specific effects are allowed
+check_cs <- function(bterms) {
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  if (has_cs(bterms)) {
+    if (!is_equal(dpar_class(bterms$dpar), "mu")) {
+      stop2("Category specific effects are only supported ", 
+            "for the main parameter 'mu'.")
+    }
+    if (!(is.null(bterms$family) || allow_cs(bterms$family))) {
+      stop2("Category specific effects are not supported for this family.")
+    }
+  }
+  invisible(NULL)
 }
 
 # extract elements from objects

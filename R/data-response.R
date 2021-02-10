@@ -6,6 +6,7 @@
 #' @param resp Optional names of response variables for which to extract values.
 #' @param warn For internal use only.
 #' @param ... Further arguments passed to \code{\link{standata}}.
+#' @inheritParams posterior_predict.brmsfit
 #' 
 #' @return Returns a vector of response values for univariate models and a
 #'   matrix of response values with one column per response variable for
@@ -13,9 +14,10 @@
 #' 
 #' @keywords internal
 #' @export
-get_y <- function(x, resp = NULL, warn = FALSE, ...) {
+get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x)
+  sort <- as_one_logical(sort)
   warn <- as_one_logical(warn)
   args <- list(x, resp = resp, ...)
   args$re_formula <- NA
@@ -35,7 +37,11 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   } else {
     out <- sdata[[Ynames]]
   }
-  attr(out, "old_order") <- attr(sdata, "old_order")
+  old_order <- attr(sdata, "old_order")
+  if (!is.null(old_order) && !sort) {
+    stopifnot(length(old_order) == NROW(out))
+    out <- p(out, old_order)
+  }
   out
 }
 
@@ -418,7 +424,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
 }
 
 # data specific for mixture models
-data_mixture <- function(bterms, prior = brmsprior()) {
+data_mixture <- function(bterms, data2, prior) {
   stopifnot(is.brmsterms(bterms))
   out <- list()
   if (is.mixfamily(bterms$family)) {
@@ -428,16 +434,8 @@ data_mixture <- function(bterms, prior = brmsprior()) {
       # estimate mixture probabilities directly
       take <- find_rows(prior, class = "theta", resp = bterms$resp)
       theta_prior <- prior$prior[take]
-      if (isTRUE(nzchar(theta_prior))) {
-        theta_prior <- eval_dirichlet(theta_prior)
-        if (length(theta_prior) != length(families)) {
-          stop2("Invalid dirichlet prior for the ", 
-                "mixture probabilities 'theta'.")
-        }
-        out$con_theta <- theta_prior
-      } else {
-        out$con_theta <- rep(1, length(families)) 
-      }
+      con_theta <- eval_dirichlet(theta_prior, length(families), data2)
+      out$con_theta <- as.array(con_theta)
       p <- usc(combine_prefix(bterms))
       names(out) <- paste0(names(out), p)
     }
@@ -446,7 +444,7 @@ data_mixture <- function(bterms, prior = brmsprior()) {
 }
 
 # data for the baseline functions of Cox models
-data_bhaz <- function(bterms, data, basis = NULL) {
+data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
   out <- list()
   if (!is_cox(bterms$family)) {
     return(out) 
@@ -457,6 +455,9 @@ data_bhaz <- function(bterms, data, basis = NULL) {
   out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs) 
   out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
+  sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bterms$resp)
+  con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
+  out$con_sbhaz <- as.array(con_sbhaz)
   out
 }
 

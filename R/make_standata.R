@@ -22,8 +22,8 @@
 #' @export
 make_standata <- function(formula, data, family = gaussian(), prior = NULL, 
                           autocor = NULL, data2 = NULL, cov_ranef = NULL, 
-                          sample_prior = "no", stanvars = NULL, knots = NULL, 
-                          ...) {
+                          sample_prior = "no", stanvars = NULL,
+                          threads = NULL, knots = NULL, ...) {
 
   if (is.brmsfit(formula)) {
     stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
@@ -33,22 +33,26 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     autocor = autocor, cov_ranef = cov_ranef
   )
   bterms <- brmsterms(formula)
-  data <- validate_data(data, bterms = bterms, knots = knots)
-  prior <- validate_prior(
-    prior, bterms = bterms, data = data,
-    sample_prior = sample_prior,
-    require_nlpar_prior = FALSE
-  )
   data2 <- validate_data2(
     data2, bterms = bterms, 
     get_data2_autocor(formula),
     get_data2_cov_ranef(formula)
   )
+  data <- validate_data(
+    data, bterms = bterms, 
+    knots = knots, data2 = data2
+  )
+  prior <- .validate_prior(
+    prior, bterms = bterms, data = data,
+    sample_prior = sample_prior,
+    require_nlpar_prior = FALSE
+  )
   stanvars <- validate_stanvars(stanvars)
+  threads <- validate_threads(threads)
   .make_standata(
     bterms, data = data, prior = prior,
     data2 = data2, stanvars = stanvars,
-    ...
+    threads = threads, ...
   )
 }
 
@@ -60,8 +64,9 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 # @param ... currently ignored
 # @return names list of data passed to Stan
 .make_standata <- function(bterms, data, prior, stanvars, data2, 
-                           check_response = TRUE, only_response = FALSE, 
-                           internal = FALSE, basis = NULL, ...) {
+                           threads = threading(), check_response = TRUE, 
+                           only_response = FALSE, internal = FALSE,
+                           basis = NULL, ...) {
   
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
@@ -82,7 +87,14 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     c(out) <- data_gr_global(ranef, data2 = data2)
     c(out) <- data_Xme(meef, data = data)
   }
-  out$prior_only <- as.integer(is_equal(get_sample_prior(prior), "only"))
+  out$prior_only <- as.integer(is_prior_only(prior))
+  if (use_threading(threads)) {
+    out$grainsize <- threads$grainsize
+    if (is.null(out$grainsize)) {
+      out$grainsize <- ceiling(out$N / (2 * threads$threads))
+      out$grainsize <- max(100, out$grainsize)
+    }
+  }
   if (is.stanvars(stanvars)) {
     stanvars <- subset_stanvars(stanvars, block = "data")
     inv_names <- intersect(names(stanvars), names(out))
@@ -128,17 +140,16 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   on.exit(options(.brmsfit_version = NULL))
   
   object <- exclude_terms(object, incl_autocor = incl_autocor)
-  newdata2 <- use_alias(newdata2, new_objects)
   formula <- update_re_terms(object$formula, re_formula)
   bterms <- brmsterms(formula)
-  data <- current_data(object, newdata, re_formula = re_formula, ...)
-  stanvars <- object$stanvars
-  if (is.null(newdata2)) {
-    data2 <- object$data2
-  } else {
-    data2 <- validate_data2(newdata2, bterms = bterms)
-    stanvars <- add_newdata_stanvars(stanvars, data2)
-  }
+  
+  newdata2 <- use_alias(newdata2, new_objects)
+  data2 <- current_data2(object, newdata2)
+  data <- current_data(
+    object, newdata, newdata2 = data2, 
+    re_formula = re_formula, ...
+  )
+  stanvars <- add_newdata_stanvars(object$stanvars, data2)
   
   basis <- NULL
   if (!is.null(newdata)) {
@@ -148,8 +159,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   .make_standata(
     bterms, data = data, prior = object$prior,
-    data2 = data2, stanvars = stanvars, basis = basis,
-    ...
+    data2 = data2, stanvars = stanvars, 
+    threads = object$threads, basis = basis, ...
   )
 }
 
@@ -228,7 +239,7 @@ standata_basis_sm <- function(x, data, ...) {
   if (length(smterms)) {
     knots <- get_knots(data)
     data <- rm_attr(data, "terms")
-    # the spline penality has changed in 2.8.7 (#646)
+    # the spline penalty has changed in 2.8.7 (#646)
     diagonal.penalty <- !require_old_default("2.8.7")
     gam_args <- list(
       data = data, knots = knots, 

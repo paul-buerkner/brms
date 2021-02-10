@@ -12,11 +12,11 @@
 #' @param ... Additional arguments passed to 
 #'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.
 #' 
-#' @details Computing the marginal likelihood requires samples 
-#'   of all variables defined in Stan's \code{parameters} block
-#'   to be saved. Otherwise \code{bridge_sampler} cannot be computed.
-#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
-#'   if you are planning to apply \code{bridge_sampler} to your models.
+#' @details Computing the marginal likelihood requires samples of all variables
+#'   defined in Stan's \code{parameters} block to be saved. Otherwise
+#'   \code{bridge_sampler} cannot be computed. Thus, please set \code{save_pars
+#'   = save_pars(all = TRUE)} in the call to \code{brm}, if you are planning to
+#'   apply \code{bridge_sampler} to your models.
 #'   
 #'   The computation of marginal likelihoods based on bridge sampling requires
 #'   a lot more posterior samples than usual. A good conservative 
@@ -28,11 +28,11 @@
 #'   multiple times to check the stability of the results.
 #' 
 #'   More details are provided under
-#'   \code{\link[bridgesampling:bridge_sampler]{bridgesampling:bridge_sampler}}.
+#'   \code{\link[bridgesampling:bridge_sampler]{bridgesampling::bridge_sampler}}.
 #'   
 #' @seealso \code{
-#'   \link[brms:bayes_factor]{bayes_factor},
-#'   \link[brms:post_prob]{post_prob}
+#'   \link[brms:bayes_factor.brmsfit]{bayes_factor},
+#'   \link[brms:post_prob.brmsfit]{post_prob}
 #' }
 #' 
 #' @examples 
@@ -42,7 +42,7 @@
 #'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
-#'   save_all_pars = TRUE
+#'   save_pars = save_pars(all = TRUE)
 #' )
 #' summary(fit1)
 #' bridge_sampler(fit1)
@@ -52,7 +52,7 @@
 #'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
-#'   save_all_pars = TRUE
+#'   save_pars = save_pars(all = TRUE)
 #' )
 #' summary(fit2)
 #' bridge_sampler(fit2)
@@ -75,13 +75,20 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "usable in method 'bridge_sampler'."
     )
   }
+  if (!is_normalized(samples$model)) {
+    stop2(
+      "The Stan model has to be normalized to be ",
+      "usable in method 'bridge_sampler'."
+    )
+  }
+  require_backend("rstan", samples)
   # otherwise bridge_sampler might not work in a new R session
-  samples$fit@.MISC <- suppressMessages(brm(fit = samples, chains = 0))$fit@.MISC
+  samples <- update_misc_env(samples)
   out <- try(bridge_sampler(samples$fit, ...))
   if (is(out, "try-error")) {
     stop2(
       "Bridgesampling failed. Perhaps you did not set ", 
-      "'save_all_pars' to TRUE when fitting your model?"
+      "'save_pars = save_pars(all = TRUE)' when fitting your model?"
     )
   }
   out
@@ -97,7 +104,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' @param x2 Another \code{brmsfit} object based on the same responses.
 #' @param log Report Bayes factors on the log-scale?
 #' @param ... Additional arguments passed to 
-#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#'   \code{\link[brms:bridge_sampler.brmsfit]{bridge_sampler}}.
 #' 
 #' @details Computing the marginal likelihood requires samples 
 #'   of all variables defined in Stan's \code{parameters} block
@@ -115,11 +122,11 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #'   multiple times to check the stability of the results.
 #' 
 #'   More details are provided under 
-#'   \code{\link[bridgesampling:bayes_factor]{bridgesampling:bayes_factor}}.
+#'   \code{\link[bridgesampling:bf]{bridgesampling::bayes_factor}}.
 #'  
 #' @seealso \code{
-#'   \link[brms:bridge_sampler]{bridge_sampler},
-#'   \link[brms:post_prob]{post_prob}
+#'   \link[brms:bridge_sampler.brmsfit]{bridge_sampler},
+#'   \link[brms:post_prob.brmsfit]{post_prob}
 #' }
 #' 
 #' @examples 
@@ -191,11 +198,11 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #'   multiple times to check the stability of the results.
 #' 
 #'   More details are provided under 
-#'   \code{\link[bridgesampling:post_prob]{bridgesampling:post_prob}}. 
+#'   \code{\link[bridgesampling:post_prob]{bridgesampling::post_prob}}. 
 #'   
 #' @seealso \code{
-#'   \link[brms:bridge_sampler]{bridge_sampler},
-#'   \link[brms:bayes_factor]{bayes_factor}
+#'   \link[brms:bridge_sampler.brmsfit]{bridge_sampler},
+#'   \link[brms:bayes_factor.brmsfit]{bayes_factor}
 #' }
 #' 
 #' @examples 

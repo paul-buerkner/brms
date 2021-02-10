@@ -268,7 +268,7 @@ sar <- function(M, type = "lag") {
 #' 
 #' @param M Adjacency matrix of locations. All non-zero entries are treated as
 #'   if the two locations are adjacent. If \code{gr} is specified, the row names
-#'   of \code{W} have to match the levels of the grouping factor.
+#'   of \code{M} have to match the levels of the grouping factor.
 #' @param gr An optional grouping factor mapping observations to spatial
 #'   locations. If not specified, each observation is treated as a separate
 #'   location. It is recommended to always specify a grouping factor to allow
@@ -288,7 +288,7 @@ sar <- function(M, type = "lag") {
 #'   implemented based on the case study of Max Joseph
 #'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
 #'   \code{bym2} type is implemented based on the case study of Mitzi Morris
-#'   (\url{http://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
+#'   (\url{https://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 #'   
 #' @examples
 #' \dontrun{
@@ -578,14 +578,10 @@ use_ac_cov_time <- function(x) {
   has_ac_subset(x, cov = TRUE, dim = "time")
 }
 
-# should natural residuals be modeled as correlated?
-has_cor_natural_residuals <- function(bterms) {
-  has_natural_residuals(bterms) && use_ac_cov(bterms)
-}
-
-# has the model correlated latent residuals
-has_cor_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) && use_ac_cov(bterms)
+# does the model need latent residuals for autocor structures?
+has_ac_latent_residuals <- function(bterms) {
+  !has_natural_residuals(bterms) &&
+    (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
 }
 
 # validate SAR matrices

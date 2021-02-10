@@ -34,6 +34,6 @@ distribution with location vector \code{mu}, covariance matrix \code{Sigma},
 and degrees of freedom \code{df}.
 }
 \details{
-See the Stan user's manual \url{http://mc-stan.org/documentation/}
+See the Stan user's manual \url{https://mc-stan.org/documentation/}
   for details on the parameterization
 }
