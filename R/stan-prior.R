@@ -431,7 +431,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     m1 <- str_if(center_X, " -1")
     str_add(out$data) <- glue(
       "  // concentration vector of the D2 prior\n",
-      "  vector<lower=0>[K{sp}{m1}] R2D2_cons_D2;\n"
+      "  vector<lower=0>[K{sp}{m1}] R2D2_cons_D2{sp};\n"
     )
     str_add(out$par) <- glue(
       "  // local parameters for the R2D2 prior\n",
