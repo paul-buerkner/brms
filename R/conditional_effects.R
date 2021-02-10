@@ -418,20 +418,21 @@ conditional_effects.brmsterms <- function(
     }
   }
   
+  cond_data <- add_effects__(cond_data, effects)
   first_numeric <- types[1] %in% "numeric"
   second_numeric <- types[2] %in% "numeric"
   both_numeric <- first_numeric && second_numeric
   if (second_numeric && !surface) {
-    # can only be converted to factor after having called method
+    # only convert 'effect2__' to factor so that the original
+    # second effect variable remains unchanged in the data
     mde2 <- round(cond_data[[effects[2]]], 2)
     levels2 <- sort(unique(mde2), TRUE)
-    cond_data[[effects[2]]] <- factor(mde2, levels = levels2)
+    cond_data$effect2__ <- factor(mde2, levels = levels2)
     labels2 <- names(int_conditions[[effects[2]]])
     if (length(labels2) == length(levels2)) {
-      levels(cond_data[[effects[2]]]) <- labels2
+      levels(cond_data$effect2__) <- labels2
     }
   }
-  cond_data <- add_effects__(cond_data, effects)
   
   spag <- NULL
   if (first_numeric && spaghetti) {
