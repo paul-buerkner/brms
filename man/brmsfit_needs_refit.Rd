@@ -22,7 +22,7 @@ Pass \code{NULL} to avoid data check.}
 \item{scode}{New Stan code (result of a call to \code{\link{make_stancode}}).
 Pass \code{NULL} to avoid code check.}
 
-\item{algorithm}{Nww algorithm. Pass \code{NULL} to avoid algorithm check.}
+\item{algorithm}{New algorithm. Pass \code{NULL} to avoid algorithm check.}
 
 \item{silent}{Logical. If \code{TRUE}, no messages will be given.}
 

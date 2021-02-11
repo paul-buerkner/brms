@@ -685,7 +685,7 @@ arg_names <- function(method) {
 #'   Pass \code{NULL} to avoid data check.
 #' @param scode New Stan code (result of a call to \code{\link{make_stancode}}).
 #'   Pass \code{NULL} to avoid code check.
-#' @param algorithm Nww algorithm. Pass \code{NULL} to avoid algorithm check.
+#' @param algorithm New algorithm. Pass \code{NULL} to avoid algorithm check.
 #' @param silent Logical. If \code{TRUE}, no messages will be given.
 #' @param verbose Logical. If \code{TRUE} detailed report of the differences 
 #'   is printed to the console.
