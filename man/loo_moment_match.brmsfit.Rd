@@ -72,6 +72,6 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 
 }
 \references{
-Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2020). 
-  Implicitly Adaptive Importance Sampling. preprint arXiv:1906.08850
+Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2021). 
+  Implicitly Adaptive Importance Sampling. Statistics and Computing.
 }
