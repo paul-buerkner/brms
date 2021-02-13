@@ -225,7 +225,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       groups <- get_thres_groups(x)
       out$ngrthres <- length(groups)
       grthres <- get_ad_values(x, "thres", "gr", data)
-      grthres <- factor(grthres, levels = groups)
+      grthres <- factor(rename(grthres), levels = groups)
       # create an matrix of threshold indices per observation
       Jgrthres <- match(grthres, groups)
       nthres <- as.array(rep(NA, length(groups)))
