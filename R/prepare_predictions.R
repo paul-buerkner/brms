@@ -1115,19 +1115,21 @@ is.bprepnl <- function(x) {
 #' @param allow_new_levels A flag indicating if new levels of group-level
 #'   effects are allowed (defaults to \code{FALSE}). Only relevant if
 #'   \code{newdata} is provided.
-#' @param sample_new_levels Indicates how to sample new levels for grouping
-#'   factors specified in \code{re_formula}. This argument is only relevant if
-#'   \code{newdata} is provided and \code{allow_new_levels} is set to
-#'   \code{TRUE}. If \code{"uncertainty"} (default), a posterior estimate 
-#'   for a new level is drawn from one of the k posterior samples from the existing 
-#'   levels.  Each posterior sample k for a new level may be drawn from a different
-#'.  existing level. If \code{"gaussian"}, sample new levels from the (multivariate)
-#'   normal distribution implied by the group-level standard deviations and
-#'   correlations. This options may be useful for conducting Bayesian power
-#'   analysis or predicting new levels in situations where relatively few 
-#'   levels where observed in the old_data. If \code{"old_levels"}, directly 
-#'   sample new levels from the existing levels, where a new level is assigned 
-#'   the posterior samples of the same existing level for all k. 
+#'@param sample_new_levels Indicates how to sample new levels for grouping
+#'  factors specified in \code{re_formula}. This argument is only relevant if
+#'  \code{newdata} is provided and \code{allow_new_levels} is set to
+#'  \code{TRUE}. If \code{"uncertainty"} (default), each posterior sample for a
+#'  new level is drawn from the posterior samples of a randomly chosen existing
+#'  level. Each posterior sample for a new level may be drawn from a different
+#'  existing level such that the resulting set of new posterior samples
+#'  represents the variation across existing levels. If \code{"gaussian"},
+#'  sample new levels from the (multivariate) normal distribution implied by the
+#'  group-level standard deviations and correlations. This options may be useful
+#'  for conducting Bayesian power analysis or predicting new levels in
+#'  situations where relatively few levels where observed in the old_data. If
+#'  \code{"old_levels"}, directly sample new levels from the existing levels,
+#'  where a new level is assigned all of the posterior samples of the same
+#'  (randomly chosen) existing level.
 #' @param newdata2 A named \code{list} of objects containing new data, which
 #'   cannot be passed via argument \code{newdata}. Required for some objects 
 #'   used in autocorrelation structures, or \code{\link{stanvars}}.
