@@ -48,13 +48,18 @@ effects are allowed (defaults to \code{FALSE}). Only relevant if
 \item{sample_new_levels}{Indicates how to sample new levels for grouping
 factors specified in \code{re_formula}. This argument is only relevant if
 \code{newdata} is provided and \code{allow_new_levels} is set to
-\code{TRUE}. If \code{"uncertainty"} (default), include group-level
-uncertainty in the predictions based on the variation of the existing
-levels. If \code{"gaussian"}, sample new levels from the (multivariate)
-normal distribution implied by the group-level standard deviations and
-correlations. This options may be useful for conducting Bayesian power
-analysis. If \code{"old_levels"}, directly sample new levels from the
-existing levels.}
+\code{TRUE}. If \code{"uncertainty"} (default), each posterior sample for a
+new level is drawn from the posterior samples of a randomly chosen existing
+level. Each posterior sample for a new level may be drawn from a different
+existing level such that the resulting set of new posterior samples
+represents the variation across existing levels. If \code{"gaussian"},
+sample new levels from the (multivariate) normal distribution implied by the
+group-level standard deviations and correlations. This options may be useful
+for conducting Bayesian power analysis or predicting new levels in
+situations where relatively few levels where observed in the old_data. If
+\code{"old_levels"}, directly sample new levels from the existing levels,
+where a new level is assigned all of the posterior samples of the same
+(randomly chosen) existing level.}
 
 \item{incl_autocor}{A flag indicating if correlation structures originally
 specified via \code{autocor} should be included in the predictions.
