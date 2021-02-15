@@ -1118,13 +1118,16 @@ is.bprepnl <- function(x) {
 #' @param sample_new_levels Indicates how to sample new levels for grouping
 #'   factors specified in \code{re_formula}. This argument is only relevant if
 #'   \code{newdata} is provided and \code{allow_new_levels} is set to
-#'   \code{TRUE}. If \code{"uncertainty"} (default), include group-level
-#'   uncertainty in the predictions based on the variation of the existing
-#'   levels. If \code{"gaussian"}, sample new levels from the (multivariate)
+#'   \code{TRUE}. If \code{"uncertainty"} (default), a posterior estimate 
+#'   for a new level is drawn from one of the k posterior samples from the existing 
+#'   levels.  Each posterior sample k for a new level may be drawn from a different
+#'.  existing level. If \code{"gaussian"}, sample new levels from the (multivariate)
 #'   normal distribution implied by the group-level standard deviations and
 #'   correlations. This options may be useful for conducting Bayesian power
-#'   analysis. If \code{"old_levels"}, directly sample new levels from the
-#'   existing levels.
+#'   analysis or predicting new levels in situations where relatively few 
+#'   levels where observed in the old_data. If \code{"old_levels"}, directly 
+#'   sample new levels from the existing levels, where a new level is assigned 
+#'   the posterior samples of the same existing level for all k. 
 #' @param newdata2 A named \code{list} of objects containing new data, which
 #'   cannot be passed via argument \code{newdata}. Required for some objects 
 #'   used in autocorrelation structures, or \code{\link{stanvars}}.
