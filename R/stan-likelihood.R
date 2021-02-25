@@ -822,7 +822,7 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", ...) {
   # insert the response name into the 'vars' strings
   # addition terms contain the response in their variable name
   var_names <- sub("\\[.+$", "", family$vars)
-  var_indices <- sub("^.+(?=\\[)", "", family$vars, perl = TRUE)
+  var_indices <- get_matches("\\[.+$", family$vars, first = TRUE)
   is_var_adterms <- var_names %in% c("se", "trials", "dec") |
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
