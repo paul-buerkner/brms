@@ -675,7 +675,14 @@ arg_names <- function(method) {
   out
 }
 
-#' Check whether a given cached fit can be used without refitting.
+#' Check if cached fit can be used.
+#' 
+#' Checks whether a given cached fit can be used without refitting when 
+#' \code{file_refit = "on_change"} is used.
+#' This function is internal and exposed only to facilitate debugging problems 
+#' with cached fits. The function may change or be removed in future versions
+#' and scripts should not use it.
+#' 
 #' 
 #' Use with \code{verbose = TRUE} to get additional info on how the stored
 #' fit differs from the given data and code.
@@ -691,6 +698,7 @@ arg_names <- function(method) {
 #'   is printed to the console.
 #' @return A boolean indicating whether a refit is needed.
 #' @export
+#' @keywords internal
 brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, 
                                 algorithm = NULL, silent = FALSE, 
                                 verbose = FALSE) {

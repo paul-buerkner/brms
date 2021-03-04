@@ -2,7 +2,7 @@
 % Please edit documentation in R/brmsfit-helpers.R
 \name{brmsfit_needs_refit}
 \alias{brmsfit_needs_refit}
-\title{Check whether a given cached fit can be used without refitting.}
+\title{Check if cached fit can be used.}
 \usage{
 brmsfit_needs_refit(
   fit,
@@ -33,6 +33,14 @@ is printed to the console.}
 A boolean indicating whether a refit is needed.
 }
 \description{
+Checks whether a given cached fit can be used without refitting when 
+\code{file_refit = "on_change"} is used.
+This function is internal and exposed only to facilitate debugging problems 
+with cached fits. The function may change or be removed in future versions
+and scripts should not use it.
+}
+\details{
 Use with \code{verbose = TRUE} to get additional info on how the stored
 fit differs from the given data and code.
 }
+\keyword{internal}
