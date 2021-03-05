@@ -683,10 +683,6 @@ arg_names <- function(method) {
 #' with cached fits. The function may change or be removed in future versions
 #' and scripts should not use it.
 #' 
-#' 
-#' Use with \code{verbose = TRUE} to get additional info on how the stored
-#' fit differs from the given data and code.
-#' 
 #' @param fit Old \code{brmsfit} object (e.g., loaded from file).
 #' @param sdata New Stan data (result of a call to \code{\link{make_standata}}).
 #'   Pass \code{NULL} to avoid data check.
@@ -697,6 +693,11 @@ arg_names <- function(method) {
 #' @param verbose Logical. If \code{TRUE} detailed report of the differences 
 #'   is printed to the console.
 #' @return A boolean indicating whether a refit is needed.
+#' 
+#' @details 
+#' Use with \code{verbose = TRUE} to get additional info on how the stored
+#' fit differs from the given data and code.
+#' 
 #' @export
 #' @keywords internal
 brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, 

@@ -80,7 +80,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   file_refit <- match.arg(file_refit, c("never", "on_change"))
   if (!is.null(file)) {
     if(file_refit == "on_change") {
-      stop2("file_refit = 'on_change' not supported for brm_multiple (yet)")
+      stop2("file_refit = 'on_change' is not supported for brm_multiple yet.")
     }
     # optionally load saved model object
     if (!combine) {
