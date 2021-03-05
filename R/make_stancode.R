@@ -355,3 +355,20 @@ expand_include_statements <- function(model) {
 is_normalized <- function(stancode) {
   !grepl("_lup(d|m)f\\(", stancode)
 }
+
+# Normalizes Stan code to avoid triggering refit after whitespace and
+# comment changes in the generated code.
+# In some distant future, StanC3 may provide its own normalizing functions,
+# until then this is a set of regex hacks.
+# @param x a string containing the Stan code
+normalize_stancode <- function(x) {
+  x <- as_one_character(x)
+  # Remove single-line comments
+  x <- gsub("//[^\n\r]*[\n\r]", " ", x)
+  x <- gsub("//[^\n\r]*$", " ", x)
+  # Remove multi-line comments
+  x <- gsub("/\\*([^*]*(\\*[^/])?)*\\*/", " ", x)
+  # Standardize whitespace (including newlines)
+  x <- gsub("[[:space:]]+"," ", x)
+  trimws(x)
+}

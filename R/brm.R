@@ -185,10 +185,23 @@
 #'   fitted model object is saved via \code{\link{saveRDS}} in a file named
 #'   after the string supplied in \code{file}. The \code{.rds} extension is
 #'   added automatically. If the file already exists, \code{brm} will load and
-#'   return the saved model object instead of refitting the model. As existing
+#'   return the saved model object instead of refitting the model. 
+#'   Unless you specify the \code{file_refit} argument as well, the existing
 #'   files won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
+#' @param file_refit Modifies when the fit stored via the \code{file} parameter
+#'   is re-used. For \code{"never"} (default) the fit is always loaded if it
+#'   exists and fitting is skipped. If set to \code{"on_change"}, brms will
+#'   refit the model if model, data or algorithm as passed to Stan differ from
+#'   what is stored in the file. This also covers changes in priors,
+#'   \code{sample_prior}, \code{stanvars}, covariance structure, etc. If you
+#'   believe there was a false positive, you can use
+#'   \code{\link{brmsfit_needs_refit}} to see why refit is deemed necessary.
+#'   Refit will not be triggered for changes in additional parameters of the fit
+#'   (e.g., initial values, number of iterations, control arguments, ...). A
+#'   known limitation is that a refit will be triggered if within-chain
+#'   parallelization is switched on/off.
 #' @param empty Logical. If \code{TRUE}, the Stan model is not created
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created
@@ -406,10 +419,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, empty = FALSE, rename = TRUE, ...) {
+                file = NULL, file_refit = "never", empty = FALSE, 
+                rename = TRUE, ...) {
   
   # optionally load brmsfit from file
-  if (!is.null(file)) {
+  # Loading here only when we should directly load the file.
+  # The "on_change" option needs sdata and scode to be built
+  file_refit <- match.arg(file_refit, c("never", "on_change"))
+  if (!is.null(file) && file_refit == "never") {
     x <- read_brmsfit(file)
     if (!is.null(x)) {
       return(x)
@@ -437,8 +454,20 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # re-use existing model
     x <- fit
     x$criteria <- list()
-    backend <- x$backend
     sdata <- standata(x)
+    if (!is.null(file) && file_refit == "on_change") {
+      x_from_file <- read_brmsfit(file)
+      if (!is.null(x_from_file)) {
+        needs_refit <- brmsfit_needs_refit(
+          x_from_file, scode = stancode(x), sdata = sdata,
+          algorithm = algorithm, silent = silent
+        )
+        if (!needs_refit) {
+          return(x_from_file)
+        }
+      }
+    }
+    backend <- x$backend
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
   } else {  
@@ -478,6 +507,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       stanvars = stanvars, save_model = save_model,
       backend = backend, threads = threads, normalize = normalize
     )
+    
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior, 
@@ -492,10 +522,25 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       bterms, data = data, prior = prior, data2 = data2, 
       stanvars = stanvars, threads = threads
     )
+    
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot
       return(x)
     }
+    
+    if (!is.null(file) && file_refit == "on_change") {
+      x_from_file <- read_brmsfit(file)
+      if (!is.null(x_from_file)) {
+        needs_refit <- brmsfit_needs_refit(
+          x_from_file, scode = model, sdata = sdata,
+          algorithm = algorithm, silent = silent
+        )
+        if (!needs_refit) {
+          return(x_from_file)
+        }
+      }
+    }
+    
     # compile the Stan model
     compile_args <- stan_model_args
     compile_args$model <- model

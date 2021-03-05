@@ -22,6 +22,7 @@ brm_multiple(
   fit = NA,
   seed = NA,
   file = NULL,
+  file_refit = "never",
   ...
 )
 }
@@ -134,10 +135,24 @@ randomly.}
 fitted model object is saved via \code{\link{saveRDS}} in a file named
 after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
-return the saved model object instead of refitting the model. As existing
+return the saved model object instead of refitting the model. 
+Unless you specify the \code{file_refit} argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
+
+\item{file_refit}{Modifies when the fit stored via the \code{file} parameter
+is re-used. For \code{"never"} (default) the fit is always loaded if it
+exists and fitting is skipped. If set to \code{"on_change"}, brms will
+refit the model if model, data or algorithm as passed to Stan differ from
+what is stored in the file. This also covers changes in priors,
+\code{sample_prior}, \code{stanvars}, covariance structure, etc. If you
+believe there was a false positive, you can use
+\code{\link{brmsfit_needs_refit}} to see why refit is deemed necessary.
+Refit will not be triggered for changes in additional parameters of the fit
+(e.g., initial values, number of iterations, control arguments, ...). A
+known limitation is that a refit will be triggered if within-chain
+parallelization is switched on/off.}
 
 \item{...}{Further arguments passed to \code{\link{brm}}.}
 }
