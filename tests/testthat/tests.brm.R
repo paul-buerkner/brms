@@ -2,6 +2,46 @@
 # cannot actually run brms models in tests as it takes way too long
 context("Tests for brms error messages")
 
+test_that("brm works fully with mock backend", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
+  
+  # Positive control - forced error gets thrown and propagated
+  expect_error(brm(y ~ x + (1|g), dat, backend = "mock", 
+                   stan_model_args = list(compile_error = "Test error")),
+               "Test error")
+  
+  # Positive control - bad Stan code from stanvars gets an error
+  expect_error(brm(y ~ x + (1|g), dat, backend = "mock", 
+                   stanvars = stanvar(scode = "invalid;", block = "model")),
+               "failed to parse Stan model")
+  
+  
+  # Testing some models
+  mock_fit <- brm(y ~ x + (1|g), dat, stanfit = 1, backend = "mock", rename = FALSE)
+  expect_equal(mock_fit$fit, 1)
+  
+})
+
+test_that("brm(file = xx) works fully with mock backend", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
+  
+  f <- tempfile(fileext = ".rds")
+  mock_fit1 <- brm(y ~ x + (1|g), dat, stanfit = "stored", backend = "mock", 
+                   rename = FALSE,
+                   file = f)
+  expect_true(file.exists(f))
+  
+  # In default settings, even using different data/model should result in the 
+  # model being loaded from file
+  changed_data <- dplyr::sample_frac(dat, 0.8)
+  mock_fit2 <- brm(y ~ x + 0, changed_data, stanfit = "new", backend = "mock", 
+                   rename = FALSE,
+                   file = f)
+  expect_equal(mock_fit2$fit, "stored")
+  
+})
+
+
 test_that("brm produces expected errors", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
   
@@ -59,3 +99,4 @@ test_that("brm produces expected errors", {
   expect_error(brm(y ~ x, dat, family = "ordinal"),
               "ordinal is not a supported family")
 })
+
