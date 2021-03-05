@@ -32,6 +32,21 @@ parse_model <- function(model, backend, ...) {
   collapse(out$code(), "\n")
 }
 
+.parse_model_mock <- function(model, silent = TRUE, parse_error = NULL,
+                              parse_check = "rstan", ...) {
+  if(!is.null(parse_error)) {
+    stop2(parse_error)
+  } else if(parse_check == "rstan") {
+    .parse_model_rstan(model, silent = silent, ...)
+  } else if(parse_check == "cmdstanr") {
+    .parse_model_cmdstanr(model, silent = silent, ...)
+  } else if(is.null(parse_check)) {
+    "mock_code"
+  } else {
+    stop2("Unknown parse_check value")
+  }
+}
+
 # compile Stan model
 # @param model Stan model code
 # @return validated Stan model code
@@ -80,6 +95,23 @@ compile_model <- function(model, backend, ...) {
     do_call(cmdstanr::cmdstan_model, args),
     type = "message", try = TRUE, silent = silent >= 2
   )
+}
+
+
+
+.compile_model_mock <- function(model, threads, compile_check = "rstan",
+                                compile_error = NULL, ...) {
+  if(!is.null(compile_error)) {
+    stop2(compile_error)
+  } else if(compile_check == "rstan") {
+    .parse_model_rstan(model, silent = TRUE, ...)
+  } else if(compile_check == "cmdstanr") {
+    .parse_model_cmdstanr(model, silent = TRUE, ...)
+  } else if(is.null(compile_check)) {
+    list()
+  } else {
+    stop2("Unknown compile_check value")
+  }
 }
 
 # fit Stan model
@@ -245,6 +277,17 @@ fit_model <- function(model, backend, ...) {
   out
 }
 
+
+.fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
+chains, cores, threads, inits, exclude, seed, 
+control, silent, future, stanfit, ...) {
+  if(is.function(stanfit)) {
+    stanfit()
+  } else {
+    stanfit
+  }
+}
+
 # extract the compiled model
 # @param x brmsfit object
 compiled_model <- function(x) {
@@ -254,6 +297,8 @@ compiled_model <- function(x) {
     out <- rstan::get_stanmodel(x$fit)
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$CmdStanModel
+  } else if(backend == "mock") {
+    stop2("Compiled models not supported in mock backend")
   }
   out
 }
@@ -280,7 +325,7 @@ elapsed_time <- function(x) {
 
 # supported Stan backends
 backend_choices <- function() {
-  c("rstan", "cmdstanr")
+  c("rstan", "cmdstanr", "mock")
 }
 
 # supported Stan algorithms
