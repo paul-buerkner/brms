@@ -54,6 +54,7 @@ Suggests:
     arm,
     statmod,
     digest,
+    diffobj,
     R.rsp,
     knitr,
     rmarkdown
