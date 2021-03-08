@@ -29,7 +29,7 @@ brm(
   thin = 1,
   cores = getOption("mc.cores", 1),
   threads = NULL,
-  normalize = TRUE,
+  normalize = getOption("brms.normalize", TRUE),
   control = NULL,
   algorithm = getOption("brms.algorithm", "sampling"),
   backend = getOption("brms.backend", "rstan"),
@@ -201,7 +201,9 @@ model that cannot be sped up by any other means.}
 be included in the Stan code (defaults to \code{TRUE}). Setting it
 to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
 sampling efficiency may be increased but some post processing functions
-such as \code{\link{bridge_sampler}} will not be available.}
+such as \code{\link{bridge_sampler}} will not be available. Can be 
+controlled globally for the current \R session via the `brms.normalize`
+option.}
 
 \item{control}{A named \code{list} of parameters to control the sampler's
 behavior. It defaults to \code{NULL} so all the default values are used.

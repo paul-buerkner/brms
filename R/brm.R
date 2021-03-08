@@ -145,7 +145,9 @@
 #'   be included in the Stan code (defaults to \code{TRUE}). Setting it
 #'   to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
 #'   sampling efficiency may be increased but some post processing functions
-#'   such as \code{\link{bridge_sampler}} will not be available.
+#'   such as \code{\link{bridge_sampler}} will not be available. Can be 
+#'   controlled globally for the current \R session via the `brms.normalize`
+#'   option.
 #' @param algorithm Character string naming the estimation approach to use.
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions,
@@ -413,8 +415,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 save_mevars = NULL, save_all_pars = NULL, 
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
-                cores = getOption("mc.cores", 1), 
-                threads = NULL, normalize = TRUE, control = NULL, 
+                cores = getOption("mc.cores", 1), threads = NULL,
+                normalize = getOption("brms.normalize", TRUE),
+                control = NULL, 
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 

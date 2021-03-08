@@ -18,7 +18,7 @@ make_stancode(
   stan_funs = NULL,
   knots = NULL,
   threads = NULL,
-  normalize = TRUE,
+  normalize = getOption("brms.normalize", TRUE),
   save_model = NULL,
   ...
 )
@@ -116,7 +116,9 @@ model that cannot be sped up by any other means.}
 be included in the Stan code (defaults to \code{TRUE}). Setting it
 to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
 sampling efficiency may be increased but some post processing functions
-such as \code{\link{bridge_sampler}} will not be available.}
+such as \code{\link{bridge_sampler}} will not be available. Can be 
+controlled globally for the current \R session via the `brms.normalize`
+option.}
 
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file

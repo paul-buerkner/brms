@@ -21,7 +21,8 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
-                          threads = NULL, normalize = TRUE,
+                          threads = NULL, 
+                          normalize = getOption("brms.normalize", TRUE),
                           save_model = NULL, ...) {
   
   if (is.brmsfit(formula)) {
@@ -62,7 +63,8 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars, 
-                           threads = threading(), normalize = TRUE,
+                           threads = threading(), 
+                           normalize = getOption("brms.normalize", TRUE),
                            parse = getOption("brms.parse_stancode", FALSE), 
                            backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {
