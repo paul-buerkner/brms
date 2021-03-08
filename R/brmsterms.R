@@ -752,7 +752,7 @@ plus_rhs <- function(x) {
 # @param update a flag to indicate whether updating should be allowed.
 #   Defaults to FALSE to maintain backwards compatibility
 # @return a formula object 
-combine_formulas <- function(formula1, formula2, lhs, update = FALSE) {
+combine_formulas <- function(formula1, formula2, lhs = "", update = FALSE) {
   stopifnot(is.formula(formula1))
   stopifnot(is.null(formula2) || is.formula(formula2))
   lhs <- as_one_character(lhs)

@@ -38,7 +38,8 @@ NULL
 recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, 
                                   nlpar = NULL, ...) {
   bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-  trms <- attr(model.frame(bterms$fe, data = object$data), "terms")
+  form <- combine_formulas(bterms$fe, bterms$offset, update = TRUE)
+  trms <- attr(model.frame(form, data = object$data), "terms")
   # brms has no call component so the call is just a dummy
   emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
 }

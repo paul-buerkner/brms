@@ -39,6 +39,8 @@ models thanks to the GitHub user yanivabir. (#1085)
 `by` variables thanks to Reece Willoughby. (#1081)
 * Fix a bug in the threaded Stan code when using QR decomposition
 thanks to Steve Bronder. (#1086)
+* Include offsets in `emmeans` related methods thanks to 
+Russell V. Lenth. (#1096)
 
 
 # brms 2.14.4
