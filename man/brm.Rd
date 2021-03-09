@@ -34,7 +34,7 @@ brm(
   algorithm = getOption("brms.algorithm", "sampling"),
   backend = getOption("brms.backend", "rstan"),
   future = getOption("future", FALSE),
-  silent = TRUE,
+  silent = 1,
   seed = NA,
   save_model = NULL,
   stan_model_args = list(),
@@ -233,8 +233,10 @@ package is used for parallel execution of the chains and argument
 session via the \code{future} option. The execution type is controlled via
 \code{\link[future:plan]{plan}} (see the examples section below).}
 
-\item{silent}{Logical; If \code{TRUE} (the default), most of the
-informational messages of compiler and sampler are suppressed. The actual
+\item{silent}{Verbosity level between \code{0} and \code{2}.
+If \code{1} (the default), most of the
+informational messages of compiler and sampler are suppressed.
+If \code{2}, even more messages are suppressed. The actual
 sampling progress is still printed. Set \code{refresh = 0} to turn this off
 as well. If using \code{backend = "rstan"} you can also set
 \code{open_progress = FALSE} to prevent opening additional progress bars.}

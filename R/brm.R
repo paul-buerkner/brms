@@ -172,8 +172,10 @@
 #'   \code{cores} will be ignored. Can be set globally for the current \R
 #'   session via the \code{future} option. The execution type is controlled via
 #'   \code{\link[future:plan]{plan}} (see the examples section below).
-#' @param silent Logical; If \code{TRUE} (the default), most of the
-#'   informational messages of compiler and sampler are suppressed. The actual
+#' @param silent Verbosity level between \code{0} and \code{2}.
+#'   If \code{1} (the default), most of the
+#'   informational messages of compiler and sampler are suppressed.
+#'   If \code{2}, even more messages are suppressed. The actual
 #'   sampling progress is still printed. Set \code{refresh = 0} to turn this off
 #'   as well. If using \code{backend = "rstan"} you can also set
 #'   \code{open_progress = FALSE} to prevent opening additional progress bars.
@@ -420,7 +422,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 control = NULL, 
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
-                future = getOption("future", FALSE), silent = TRUE, 
+                future = getOption("future", FALSE), silent = 1, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_refit = "never", empty = FALSE, 
                 rename = TRUE, ...) {
@@ -440,7 +442,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
   normalize <- as_one_logical(normalize)
-  silent <- as_one_logical(silent)
+  silent <- validate_silent(silent)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)
   thin <- as_one_numeric(thin)
@@ -549,6 +551,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     compile_args$model <- model
     compile_args$backend <- backend
     compile_args$threads <- threads
+    compile_args$silent <- silent
     model <- do_call(compile_model, compile_args)
   }
   

@@ -15,6 +15,8 @@ via function `R2D2` to be used in `set_prior`.
 evaluation of most model terms.
 * Refit models previously stored on disc only when necessary thanks to
 Martin Modrak. The behavior can be controlled via `file_refit`. (#1058)
+* Allow for a finer tuning of informational messages printed in `brm`
+via the `silent` argument. (#1076)
 
 ### Other Changes
 

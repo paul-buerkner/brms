@@ -72,9 +72,9 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          data2 = NULL, autocor = NULL, cov_ranef = NULL, 
                          sample_prior = c("no", "yes", "only"), 
                          sparse = NULL, knots = NULL, stanvars = NULL,
-                         stan_funs = NULL, recompile = FALSE,
-                         combine = TRUE, fit = NA,
-                         seed = NA, file = NULL, file_refit = "never", ...) {
+                         stan_funs = NULL, silent = 1, recompile = FALSE,
+                         combine = TRUE, fit = NA, seed = NA, 
+                         file = NULL, file_refit = "never", ...) {
   
   combine <- as_one_logical(combine)
   file_refit <- match.arg(file_refit, c("never", "on_change"))
@@ -92,6 +92,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     }
   }
   
+  silent <- validate_silent(silent)
   recompile <- as_one_logical(recompile)
   data_name <- substitute_name(data)
   if (inherits(data, "mids")) {
@@ -116,10 +117,12 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     args <- nlist(
       formula, data = data[[1]], family, prior, data2 = data2[[1]], 
       autocor, cov_ranef, sample_prior, sparse, knots, stanvars, 
-      stan_funs, seed, ...
+      stan_funs, silent, seed, ...
     )
     args$chains <- 0
-    message("Compiling the C++ model")
+    if (silent < 2) {
+      message("Compiling the C++ model")
+    }
     fit <- suppressMessages(do_call(brm, args))
   }
   
@@ -134,12 +137,14 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   for (i in seq_along(data)) {
     futures[[i]] <- future::future(
       update(fit, newdata = data[[i]], data2 = data2[[i]],
-             recompile = recompile, ...),
+             recompile = recompile, silent = silent, ...),
       packages = "brms", seed = TRUE
     )
   }
   for (i in seq_along(data)) {
-    message("Fitting imputed model ", i)
+    if (silent < 2) {
+      message("Fitting imputed model ", i) 
+    }
     fits[[i]] <- future::value(futures[[i]]) 
     rhats[[i]] <- data.frame(as.list(rhat(fits[[i]])))
     if (any(rhats[[i]] > 1.1, na.rm = TRUE)) {

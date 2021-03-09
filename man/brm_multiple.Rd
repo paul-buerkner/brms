@@ -17,6 +17,7 @@ brm_multiple(
   knots = NULL,
   stanvars = NULL,
   stan_funs = NULL,
+  silent = 1,
   recompile = FALSE,
   combine = TRUE,
   fit = NA,
@@ -109,6 +110,14 @@ for basis construction of smoothing terms. See
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
 \code{stanvars} argument for this purpose instead.}
+
+\item{silent}{Verbosity level between \code{0} and \code{2}.
+If \code{1} (the default), most of the
+informational messages of compiler and sampler are suppressed.
+If \code{2}, even more messages are suppressed. The actual
+sampling progress is still printed. Set \code{refresh = 0} to turn this off
+as well. If using \code{backend = "rstan"} you can also set
+\code{open_progress = FALSE} to prevent opening additional progress bars.}
 
 \item{recompile}{Logical, indicating whether the Stan model should be
 recompiled for every imputed data set. Defaults to \code{FALSE}. If
