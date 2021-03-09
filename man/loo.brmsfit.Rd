@@ -16,6 +16,7 @@
   moment_match = FALSE,
   reloo = FALSE,
   k_threshold = 0.7,
+  save_psis = FALSE,
   moment_match_args = list(),
   reloo_args = list(),
   model_names = NULL
@@ -52,6 +53,9 @@ should be applied on problematic observations. Defaults to \code{FALSE}.}
 estimates are treated as problematic. Defaults to \code{0.7}. 
 Only used if argument \code{reloo} is \code{TRUE}.
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.}
+
+\item{save_psis}{Should the \code{"psis"} object created internally be saved
+in the returned object? For more details see \code{\link[loo:loo]{loo}}.}
 
 \item{moment_match_args}{Optional \code{list} of additional arguments passed to
 \code{\link{loo_moment_match}}.}
