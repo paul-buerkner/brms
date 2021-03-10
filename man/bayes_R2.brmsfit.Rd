@@ -65,6 +65,6 @@ bayes_R2(fit, newdata = nd)
 \references{
 Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2018).
   R-squared for Bayesian regression models, \emph{The American Statistician}.
-  \url{https://doi.org/10.1080/00031305.2018.1549100}. (Preprint available at
-  \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf}.)
+  \code{10.1080/00031305.2018.1549100} (Preprint available at
+  \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf})
 }
