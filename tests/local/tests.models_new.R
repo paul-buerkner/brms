@@ -9,7 +9,7 @@ test_that("Poisson model from brm doc works correctly", {
     data = epilepsy, family = poisson(),
     prior = prior(student_t(5,0,10), class = b) +
       prior(cauchy(0,2), class = sd),
-    save_all_pars = TRUE, refresh = 0,
+    save_pars = save_pars(all = TRUE), refresh = 0,
     backend = "rstan"
   )
   print(fit1)
@@ -210,7 +210,7 @@ test_that("bridgesampling methods work correctly", {
     count ~ zAge + zBase + Trt,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
-    save_all_pars = TRUE, refresh = 0,
+    save_pars = save_pars(all = TRUE), refresh = 0,
     backend = "rstan"
   )
   print(fit1)
@@ -219,7 +219,7 @@ test_that("bridgesampling methods work correctly", {
     count ~ zAge + zBase,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
-    save_all_pars = TRUE, refresh = 0,
+    save_pars = save_pars(all = TRUE), refresh = 0,
     backend = "rstan"
   )
   print(fit2)
@@ -478,7 +478,7 @@ test_that("generalized extreme value models work correctly", {
     bf(SeaLevel ~ cYear + SOI,
        sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI),
     data = fremantle, family = gen_extreme_value(),
-    knots = knots, init_r = 0.5, chains = 4,
+    knots = knots, inits = 0.5, chains = 4,
     control = list(adapt_delta = 0.95), refresh = 0
   )
   print(fit_gev)
