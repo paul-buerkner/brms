@@ -44,8 +44,8 @@ recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL,
   emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
 }
 
-# Calculate the basis for making predictions. This is essentially the
-# inside of the predict() function with new data on the link scale. 
+# Calculate the basis for making predictions. In some sense, this is
+# similar to the fitted() function with new data on the link scale. 
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
 emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, 
