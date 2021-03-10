@@ -1014,7 +1014,8 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   backports::import(pkgname)
   # dynamically register the 'recover_data' and 'emm_basis'
   # methods needed by 'emmeans', if that package is installed
-  if (requireNamespace("emmeans", quietly = TRUE) && compareVersion(as.character(packageVersion("emmeans")), "1.4.2") > 0) {
+  if (requireNamespace("emmeans", quietly = TRUE) && 
+      packageVersion("emmeans") >= "1.4.0") {
     emmeans::.emm_register("brmsfit", pkgname)
   }
   invisible(NULL)
