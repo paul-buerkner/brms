@@ -1060,7 +1060,7 @@ check_accidental_helper_functions <- function(formula) {
   matches <- get_matches(regex, terms, first = TRUE)
   matches <- sub("\\($", "", matches)
   for (m in matches) {
-    loc <- find(m, mode = "function")
+    loc <- utils::find(m, mode = "function")
     if (is_equal(loc[1], "package:brms")) {
       stop2("Function '", m, "' should not be part of the right-hand side ",
             "of a formula. See help('brmsformula-helpers') for the correct syntax.")
