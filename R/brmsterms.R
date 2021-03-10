@@ -241,6 +241,7 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
 # @return a 'btl' object
 terms_lf <- function(formula) {
   formula <- rhs(as.formula(formula))
+  check_accidental_helper_functions(formula)
   y <- nlist(formula)
   types <- setdiff(all_term_types(), excluded_term_types(formula))
   for (t in types) {
@@ -1046,6 +1047,26 @@ check_cs <- function(bterms) {
     }
   }
   invisible(NULL)
+}
+
+# check for the presence of helper functions accidentally used
+# within a formula instead of added to bf(). See #1103
+check_accidental_helper_functions <- function(formula) {
+  terms <- all_terms(formula)
+  # see help("brmsformula-helpers") for the list of functions
+  funs <- c("nlf", "lf", "acformula", "set_nl", "set_rescor", "set_mecor")
+  regex <- paste0("(", funs, ")", collapse = "|")
+  regex <- paste0("^(", regex, ")\\(")
+  matches <- get_matches(regex, terms, first = TRUE)
+  matches <- sub("\\($", "", matches)
+  for (m in matches) {
+    loc <- find(m, mode = "function")
+    if (is_equal(loc[1], "package:brms")) {
+      stop2("Function '", m, "' should not be part of the right-hand side ",
+            "of a formula. See help('brmsformula-helpers') for the correct syntax.")
+    }
+  }
+  invisible(TRUE)
 }
 
 # extract elements from objects
