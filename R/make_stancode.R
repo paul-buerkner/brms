@@ -97,7 +97,8 @@ make_stancode <- function(formula, data, family = gaussian(),
       pll_args <- stan_clean_pll_args(
         scode_predictor[[i]]$pll_args,
         scode_ranef$pll_args,
-        scode_Xme$pll_args
+        scode_Xme$pll_args,
+        collapse_stanvars_pll_args(stanvars)
       )
       partial_log_lik <- paste0(
         scode_predictor[[i]]$pll_def,

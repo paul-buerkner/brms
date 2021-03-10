@@ -23,6 +23,10 @@
 #' @param position Name of the position within the block where the
 #'  Stan code should be placed. Currently allowed are \code{'start'}
 #'  (the default) and \code{'end'} of the block.
+#' @param pll_args Optional Stan code to be put into the header
+#'  of \code{partial_log_lik} functions. This ensures that the variables
+#'  specified in \code{scode} can be used in the likelihood even when
+#'  within-chain parallelization is activated via \code{\link{threading}}.
 #'  
 #' @return An object of class \code{stanvars}.
 #' 
@@ -46,10 +50,18 @@
 #'                     block = "parameters")
 #' make_stancode(count ~ Trt + zBase, epilepsy,
 #'               prior = bprior, stanvars = stanvars)
+#'               
+#' # ensure that 'tau' is passed to the likelihood of a threaded model
+#' # not necessary for this example but may be necessary in other cases
+#' stanvars <- stanvar(scode = "real<lower=0> tau;", 
+#'                     block = "parameters", pll_args = "real tau")
+#' make_stancode(count ~ Trt + zBase, epilepsy,
+#'               stanvars = stanvars, threads = threading(2))
 #' 
 #' @export
 stanvar <- function(x = NULL, name = NULL, scode = NULL,
-                    block = "data", position = "start") {
+                    block = "data", position = "start",
+                    pll_args = NULL) {
   vblocks <- c(
     "data", "tdata", "parameters", "tparameters", 
     "model", "genquant", "functions"
@@ -99,6 +111,34 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
       }
       scode <- paste0("  ", scode, ";")
     }
+    if (is.null(pll_args)) {
+      # infer pll_args from x
+      if (is.integer(x)) {
+        if (length(x) == 1L) {
+          pll_type <- "int"
+        } else {
+          pll_type <- "int[]"
+        }
+      } else if (is.vector(x)) {
+        if (length(x) == 1L) {
+          pll_type <- "real"
+        } else {
+          pll_type <- "vector"
+        }
+      } else if (is.array(x)) {
+        if (length(dim(x)) == 1L) {
+          pll_type <- "vector"
+        } else if (is.matrix(x)) {
+          pll_type <- "matrix"
+        }
+      }
+      if (!is.null(pll_type)) {
+        pll_args <- paste0(pll_type, " ", name)
+      } else {
+        # don't throw an error because most people will not use threading
+        pll_args <- character(0)
+      }
+    }
   } else {
     x <- NULL
     if (is.null(name)) {
@@ -108,11 +148,13 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
     if (is.null(scode)) {
       stop2("Argument 'scode' is required if block is not 'data'.")
     }
+    scode <- as.character(scode)
+    pll_args <- as.character(pll_args)
   }
   if (position == "end" && block %in% c("functions", "data", "model")) {
     stop2("Position '", position, "' is not sensible for block '", block, "'.")
   }
-  out <- nlist(name, sdata = x, scode, block, position)
+  out <- nlist(name, sdata = x, scode, block, position, pll_args)
   structure(setNames(list(out), name), class = "stanvars")
 }
 
@@ -140,6 +182,19 @@ collapse_stanvars <- function(x, block = NULL, position = NULL) {
     return("")
   }
   collapse(ulapply(x, "[[", "scode"), "\n")
+}
+
+# collapse partial lpg-lik code provided in a stanvars object
+collapse_stanvars_pll_args <- function(x) {
+  x <- validate_stanvars(x)
+  if (!length(x)) {
+    return(character(0))
+  }
+  out <- ulapply(x, "[[", "pll_args")
+  if (!length(out)) {
+    return("")
+  }
+  collapse(", ", out)
 }
 
 # validate 'stanvars' objects

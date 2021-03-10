@@ -10,7 +10,8 @@ stanvar(
   name = NULL,
   scode = NULL,
   block = "data",
-  position = "start"
+  position = "start",
+  pll_args = NULL
 )
 }
 \arguments{
@@ -34,6 +35,11 @@ which the variable should be defined. Can be \code{'data'},
 \item{position}{Name of the position within the block where the
 Stan code should be placed. Currently allowed are \code{'start'}
 (the default) and \code{'end'} of the block.}
+
+\item{pll_args}{Optional Stan code to be put into the header
+of \code{partial_log_lik} functions. This ensures that the variables
+specified in \code{scode} can be used in the likelihood even when
+within-chain parallelization is activated via \code{\link{threading}}.}
 }
 \value{
 An object of class \code{stanvars}.
@@ -64,5 +70,12 @@ stanvars <- stanvar(scode = "real<lower=0> tau;",
                     block = "parameters")
 make_stancode(count ~ Trt + zBase, epilepsy,
               prior = bprior, stanvars = stanvars)
+              
+# ensure that 'tau' is passed to the likelihood of a threaded model
+# not necessary for this example but may be necessary in other cases
+stanvars <- stanvar(scode = "real<lower=0> tau;", 
+                    block = "parameters", pll_args = "real tau")
+make_stancode(count ~ Trt + zBase, epilepsy,
+              stanvars = stanvars, threads = threading(2))
 
 }

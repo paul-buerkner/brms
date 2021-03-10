@@ -17,6 +17,8 @@ evaluation of most model terms.
 Martin Modrak. The behavior can be controlled via `file_refit`. (#1058)
 * Allow for a finer tuning of informational messages printed in `brm`
 via the `silent` argument. (#1076)
+* Allow user-defined Stan variables (specified via `stanvars`) to be used 
+inside threaded log-likelihoods. (#1111)
 
 ### Other Changes
 

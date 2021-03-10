@@ -488,7 +488,7 @@ stan_log_lik_skew_normal <- function(bterms, resp = "", mix = "",
   sdist("skew_normal", p$mu, p$omega, p$alpha)
 }
 
-stan_log_lik_poisson <- function(bterms, resp = "", mix = "", threads = 1,
+stan_log_lik_poisson <- function(bterms, resp = "", mix = "", threads = NULL,
                                  ...) {
   if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
@@ -503,7 +503,7 @@ stan_log_lik_poisson <- function(bterms, resp = "", mix = "", threads = 1,
   out
 }
 
-stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = 1,
+stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = NULL,
                                      ...) {
   if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
@@ -520,7 +520,7 @@ stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = 1,
   out
 }
 
-stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = 1, 
+stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = NULL, 
                                    ...) {
   if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
@@ -537,7 +537,7 @@ stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = 1,
   }
 }
 
-stan_log_lik_binomial <- function(bterms, resp = "", mix = "", threads = 1, 
+stan_log_lik_binomial <- function(bterms, resp = "", mix = "", threads = NULL, 
                                   ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
@@ -547,7 +547,7 @@ stan_log_lik_binomial <- function(bterms, resp = "", mix = "", threads = 1,
   sdist(lpdf, p$trials, p$mu)
 }
 
-stan_log_lik_bernoulli <- function(bterms, resp = "", mix = "", threads = 1, 
+stan_log_lik_bernoulli <- function(bterms, resp = "", mix = "", threads = NULL, 
                                    ...) {
   if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
@@ -619,7 +619,7 @@ stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
   sdist(lpdf, p$mu, p$shape)
 }
 
-stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = 1,
+stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
                                 ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   n <- stan_nn(threads)
@@ -645,7 +645,7 @@ stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
   sdist(lpdf, p$mu, p$kappa)
 }
 
-stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = 1,
+stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
                              ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   n <- stan_nn(threads)
@@ -659,7 +659,7 @@ stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = 1,
 }
 
 stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
-                                    threads = 1, ...) {
+                                    threads = NULL, ...) {
   if (use_glm_primitive(bterms, allow_special_terms = FALSE)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
     out <- sdist("ordered_logistic_glm", p$x, p$beta, p$alpha)
@@ -779,7 +779,7 @@ stan_log_lik_zero_inflated_negbinomial <- function(bterms, resp = "", mix = "",
 }
 
 stan_log_lik_zero_inflated_binomial <- function(bterms, resp = "", mix = "",
-                                                threads = 1, ...) {
+                                                threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   n <- stan_nn(threads)
   p$trials <- paste0("trials", resp, n)
@@ -810,8 +810,7 @@ stan_log_lik_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "",
   sdist(lpdf, p$mu, p$sigma, p$quantile, p$zi)
 }
 
-stan_log_lik_custom <- function(bterms, resp = "", mix = "", ...) {
-  # TODO: support reduce_sum
+stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
   dpars <- paste0(family$dpars, mix)
@@ -821,8 +820,10 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", ...) {
   }
   # insert the response name into the 'vars' strings
   # addition terms contain the response in their variable name
+  n <- stan_nn(threads)
   var_names <- sub("\\[.+$", "", family$vars)
   var_indices <- get_matches("\\[.+$", family$vars, first = TRUE)
+  var_indices <- ifelse(var_indices %in% "[n]", n, var_indices)
   is_var_adterms <- var_names %in% c("se", "trials", "dec") |
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
@@ -866,7 +867,7 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
 # @param bterms a btl object
 # @param resp optional name of the response variable
 # @return a named list of Stan code snippets
-args_glm_primitive <- function(bterms, resp = "", threads = 1) {
+args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
   stopifnot(is.btl(bterms))
   decomp <- get_decomp(bterms$fe)
   center_X <- stan_center_X(bterms)
