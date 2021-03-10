@@ -19,6 +19,7 @@
 #'  which the variable should be defined. Can be \code{'data'},
 #'  \code{'tdata'} (transformed data), \code{'parameters'},
 #'  \code{'tparameters'} (transformed parameters), \code{'model'},
+#'  \code{'likelihood'} (part of the model block where the likelihood is given),
 #'  \code{'genquant'} (generated quantities) or \code{'functions'}.
 #' @param position Name of the position within the block where the
 #'  Stan code should be placed. Currently allowed are \code{'start'}
@@ -64,7 +65,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
                     pll_args = NULL) {
   vblocks <- c(
     "data", "tdata", "parameters", "tparameters", 
-    "model", "genquant", "functions"
+    "model", "genquant", "functions", "likelihood"
   )
   block <- match.arg(block, vblocks)
   vpositions <- c("start", "end")
@@ -109,7 +110,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
           "manually via argument 'scode'."
         )
       }
-      scode <- paste0("  ", scode, ";")
+      scode <- paste0(scode, ";")
     }
     if (is.null(pll_args)) {
       # infer pll_args from x
@@ -181,7 +182,7 @@ collapse_stanvars <- function(x, block = NULL, position = NULL) {
   if (!length(x)) {
     return("")
   }
-  collapse(ulapply(x, "[[", "scode"), "\n")
+  collapse(wsp(nsp = 2), ulapply(x, "[[", "scode"), "\n")
 }
 
 # collapse partial lpg-lik code provided in a stanvars object

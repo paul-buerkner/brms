@@ -1931,8 +1931,8 @@ test_that("argument 'stanvars' is handled correctly", {
   
   # define a multi_normal prior with known covariance matrix
   bprior <- prior(multi_normal(M, V), class = "b")
-  stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
-    stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
+  stanvars <- stanvar(rep(0, 2), "M", scode = "vector[K] M;") +
+    stanvar(diag(2), "V", scode = "matrix[K, K] V;") 
   scode <- make_stancode(count ~ Trt + zBase, epilepsy,
                          prior = bprior, stanvars = stanvars)
   expect_match2(scode, "vector[K] M;")
@@ -1953,8 +1953,7 @@ test_that("argument 'stanvars' is handled correctly", {
   stanvars <- stanvar(foo) +
     stanvar(scode = "real<lower=0> tau;", 
             block = "parameters", pll_args = "real tau")
-    
-  scode <- make_stancode(count ~ 1, epilepsy, family = poisson(),
+  scode <- make_stancode(count ~ 1, data = epilepsy, family = poisson(),
                          stanvars = stanvars, threads = threading(2),
                          parse = FALSE)
   expect_match2(scode, 
@@ -1964,8 +1963,20 @@ test_that("argument 'stanvars' is handled correctly", {
     "reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Intercept, foo, tau)"
   )
   
+  # specify Stan code in the likelihood part of the model block
+  stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
+  scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy, 
+                         stanvars = stanvars)
+  expect_match2(scode, "mu += 1.0;")
+  
+  stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
+  scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy,
+                         stanvars = stanvars, threads = 2)
+  expect_match2(scode, "mu += 1.0;")
+  
+  
   # add transformation at the end of a block
-  stanvars <- stanvar(scode = "  r_1_1 = r_1_1 * 2;", 
+  stanvars <- stanvar(scode = "r_1_1 = r_1_1 * 2;", 
                       block = "tparameters", position = "end")
   scode <- make_stancode(count ~ Trt + (1 | patient), epilepsy,
                          stanvars = stanvars)

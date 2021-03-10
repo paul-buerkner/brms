@@ -30,6 +30,7 @@ Stan code is inferred based on the class of \code{x} by default.}
 which the variable should be defined. Can be \code{'data'},
 \code{'tdata'} (transformed data), \code{'parameters'},
 \code{'tparameters'} (transformed parameters), \code{'model'},
+\code{'likelihood'} (part of the model block where the likelihood is given),
 \code{'genquant'} (generated quantities) or \code{'functions'}.}
 
 \item{position}{Name of the position within the block where the

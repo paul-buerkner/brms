@@ -103,6 +103,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- paste0(
         scode_predictor[[i]]$pll_def,
         scode_predictor[[i]]$model_def,
+        collapse_stanvars(stanvars, "likelihood", "start"),
         scode_predictor[[i]]$model_comp_basic,
         scode_predictor[[i]]$model_comp_eta_loop,
         scode_predictor[[i]]$model_comp_dpar_link,
@@ -112,7 +113,8 @@ make_stancode <- function(formula, data, family = gaussian(),
         scode_predictor[[i]]$model_comp_arma,
         scode_predictor[[i]]$model_comp_catjoin,
         scode_predictor[[i]]$model_comp_mvjoin,
-        scode_predictor[[i]]$model_log_lik
+        scode_predictor[[i]]$model_log_lik,
+        collapse_stanvars(stanvars, "likelihood", "end")
       )
       partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
       partial_log_lik <- paste0(
@@ -151,6 +153,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_predictor$model_lik <- paste0(
       scode_predictor$model_no_pll_def,
       scode_predictor$model_def,
+      collapse_stanvars(stanvars, "likelihood", "start"),
       scode_predictor$model_no_pll_comp_basic,
       scode_predictor$model_comp_basic,
       scode_predictor$model_comp_eta_loop,
@@ -162,7 +165,8 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$model_comp_catjoin,
       scode_predictor$model_no_pll_comp_mvjoin,
       scode_predictor$model_comp_mvjoin,
-      scode_predictor$model_log_lik
+      scode_predictor$model_log_lik,
+      collapse_stanvars(stanvars, "likelihood", "end")
     )
   }
   scode_predictor$model_lik <- wsp_per_line(scode_predictor$model_lik, 2)
