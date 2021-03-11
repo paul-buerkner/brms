@@ -21,6 +21,6 @@ addons:
       - libgsl-dev
       - libgdal-dev
       - libproj-dev
-  
+
 after_success:
   - travis_wait 30 Rscript -e 'covr::codecov()'
