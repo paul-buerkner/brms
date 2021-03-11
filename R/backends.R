@@ -100,13 +100,13 @@ compile_model <- function(model, backend, ...) {
 
 
 .compile_model_mock <- function(model, threads, compile_check = "rstan",
-                                compile_error = NULL, ...) {
+                                compile_error = NULL, silent = 1, ...) {
   if(!is.null(compile_error)) {
     stop2(compile_error)
   } else if(compile_check == "rstan") {
-    .parse_model_rstan(model, silent = TRUE, ...)
+    .parse_model_rstan(model, silent = silent, ...)
   } else if(compile_check == "cmdstanr") {
-    .parse_model_cmdstanr(model, silent = TRUE, ...)
+    .parse_model_cmdstanr(model, silent = silent, ...)
   } else if(is.null(compile_check)) {
     list()
   } else {

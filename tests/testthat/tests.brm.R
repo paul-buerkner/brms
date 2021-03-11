@@ -30,6 +30,11 @@ test_that("brm(file = xx) works fully with mock backend", {
                    rename = FALSE,
                    file = f)
   expect_true(file.exists(f))
+
+  mock_fit2 <- brm(y ~ x + (1|g), dat, stanfit = "new", backend = "mock", 
+                   rename = FALSE,
+                   file = f)
+  expect_equal(mock_fit2$fit, "stored")
   
   # In default settings, even using different data/model should result in the 
   # model being loaded from file
@@ -38,6 +43,33 @@ test_that("brm(file = xx) works fully with mock backend", {
                    rename = FALSE,
                    file = f)
   expect_equal(mock_fit2$fit, "stored")
+  
+  # Now test using file_refit = "on_change" which should be more clever
+  # No change
+  mock_fit2 <- brm(y ~ x + (1|g), dat, stanfit = "new", backend = "mock", 
+                   rename = FALSE,
+                   file = f)
+  expect_equal(mock_fit2$fit, "stored")
+  
+  
+  # Change data, but not code
+  mock_fit2 <- brm(y ~ x + (1|g), changed_data, stanfit = "new", backend = "mock", 
+                   rename = FALSE,
+                   file = f, file_refit = "on_change")
+  expect_equal(mock_fit2$fit, "new")
+  
+  # Change code but not data
+  mock_fit2 <- brm(y ~ x + (1|g), dat, stanfit = "new", backend = "mock", 
+                   rename = FALSE,
+                   file = f, file_refit = "on_change",
+                   prior = prior(normal(0,2), class = sd))
+  expect_equal(mock_fit2$fit, "new")
+
+  # Change both
+  mock_fit2 <- brm(y ~ x + 0, changed_data, stanfit = "new", backend = "mock", 
+                   rename = FALSE,
+                   file = f, file_refit = "on_change")
+  expect_equal(mock_fit2$fit, "new")
   
 })
 
