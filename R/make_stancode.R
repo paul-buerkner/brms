@@ -21,7 +21,8 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
-                          threads = NULL, normalize = TRUE,
+                          threads = NULL, 
+                          normalize = getOption("brms.normalize", TRUE),
                           save_model = NULL, ...) {
   
   if (is.brmsfit(formula)) {
@@ -62,7 +63,8 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars, 
-                           threads = threading(), normalize = TRUE,
+                           threads = threading(), 
+                           normalize = getOption("brms.normalize", TRUE),
                            parse = getOption("brms.parse_stancode", FALSE), 
                            backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {
@@ -95,11 +97,13 @@ make_stancode <- function(formula, data, family = gaussian(),
       pll_args <- stan_clean_pll_args(
         scode_predictor[[i]]$pll_args,
         scode_ranef$pll_args,
-        scode_Xme$pll_args
+        scode_Xme$pll_args,
+        collapse_stanvars_pll_args(stanvars)
       )
       partial_log_lik <- paste0(
         scode_predictor[[i]]$pll_def,
         scode_predictor[[i]]$model_def,
+        collapse_stanvars(stanvars, "likelihood", "start"),
         scode_predictor[[i]]$model_comp_basic,
         scode_predictor[[i]]$model_comp_eta_loop,
         scode_predictor[[i]]$model_comp_dpar_link,
@@ -109,7 +113,8 @@ make_stancode <- function(formula, data, family = gaussian(),
         scode_predictor[[i]]$model_comp_arma,
         scode_predictor[[i]]$model_comp_catjoin,
         scode_predictor[[i]]$model_comp_mvjoin,
-        scode_predictor[[i]]$model_log_lik
+        scode_predictor[[i]]$model_log_lik,
+        collapse_stanvars(stanvars, "likelihood", "end")
       )
       partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
       partial_log_lik <- paste0(
@@ -148,6 +153,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_predictor$model_lik <- paste0(
       scode_predictor$model_no_pll_def,
       scode_predictor$model_def,
+      collapse_stanvars(stanvars, "likelihood", "start"),
       scode_predictor$model_no_pll_comp_basic,
       scode_predictor$model_comp_basic,
       scode_predictor$model_comp_eta_loop,
@@ -159,7 +165,8 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$model_comp_catjoin,
       scode_predictor$model_no_pll_comp_mvjoin,
       scode_predictor$model_comp_mvjoin,
-      scode_predictor$model_log_lik
+      scode_predictor$model_log_lik,
+      collapse_stanvars(stanvars, "likelihood", "end")
     )
   }
   scode_predictor$model_lik <- wsp_per_line(scode_predictor$model_lik, 2)
@@ -354,4 +361,21 @@ expand_include_statements <- function(model) {
 # check if Stan code includes normalization constants
 is_normalized <- function(stancode) {
   !grepl("_lup(d|m)f\\(", stancode)
+}
+
+# Normalizes Stan code to avoid triggering refit after whitespace and
+# comment changes in the generated code.
+# In some distant future, StanC3 may provide its own normalizing functions,
+# until then this is a set of regex hacks.
+# @param x a string containing the Stan code
+normalize_stancode <- function(x) {
+  x <- as_one_character(x)
+  # Remove single-line comments
+  x <- gsub("//[^\n\r]*[\n\r]", " ", x)
+  x <- gsub("//[^\n\r]*$", " ", x)
+  # Remove multi-line comments
+  x <- gsub("/\\*([^*]*(\\*[^/])?)*\\*/", " ", x)
+  # Standardize whitespace (including newlines)
+  x <- gsub("[[:space:]]+"," ", x)
+  trimws(x)
 }

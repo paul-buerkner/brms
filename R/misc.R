@@ -257,6 +257,17 @@ as_one_logical <- function(x, allow_na = FALSE) {
   x
 }
 
+# coerce 'x' to a single integer value
+as_one_integer <- function(x, allow_na = FALSE) {
+  s <- substitute(x)
+  x <- SW(as.integer(x))
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
+    s <- deparse_combine(s, max_char = 100L)
+    stop2("Cannot coerce '", s, "' to a single integer value.")
+  }
+  x
+}
+
 # coerce 'x' to a single numeric value
 as_one_numeric <- function(x, allow_na = FALSE) {
   s <- substitute(x)
@@ -1003,7 +1014,8 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   backports::import(pkgname)
   # dynamically register the 'recover_data' and 'emm_basis'
   # methods needed by 'emmeans', if that package is installed
-  if (requireNamespace("emmeans", quietly = TRUE)) {
+  if (requireNamespace("emmeans", quietly = TRUE) && 
+      utils::packageVersion("emmeans") >= "1.4.0") {
     emmeans::.emm_register("brmsfit", pkgname)
   }
   invisible(NULL)

@@ -42,6 +42,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots <- list(...)
   testmode <- isTRUE(dots[["testmode"]])
   dots$testmode <- NULL
+  silent <- dots[["silent"]]
+  if (!is.null(silent)) {
+    silent <- validate_silent(silent)
+  } else {
+    silent <- 1L
+  }
   object <- restructure(object)
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
@@ -87,8 +93,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
         dots$formula <- update(object$formula, dots$formula, mode = "keep")
       } else {
         dots$formula <- update(object$formula, dots$formula, mode = "replace")
-        message("Argument 'formula.' will completely replace the ", 
-                "original formula in non-linear models.")
+        if (silent < 2) {
+          message("Argument 'formula.' will completely replace the ", 
+                  "original formula in non-linear models.") 
+        }
       }
     } else {
       mvars <- all.vars(dots$formula$formula)
@@ -169,7 +177,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     old_stancode <- stancode(object, version = FALSE)
     recompile <- !is_equal(new_stancode, old_stancode) ||
       !is_equal(dots$backend, object$backend)
-    if (recompile) {
+    if (recompile && silent < 2) {
       message("The desired updates require recompiling the model") 
     }
   }

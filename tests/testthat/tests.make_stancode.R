@@ -1931,14 +1931,14 @@ test_that("argument 'stanvars' is handled correctly", {
   
   # define a multi_normal prior with known covariance matrix
   bprior <- prior(multi_normal(M, V), class = "b")
-  stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
-    stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
+  stanvars <- stanvar(rep(0, 2), "M", scode = "vector[K] M;") +
+    stanvar(diag(2), "V", scode = "matrix[K, K] V;") 
   scode <- make_stancode(count ~ Trt + zBase, epilepsy,
                          prior = bprior, stanvars = stanvars)
   expect_match2(scode, "vector[K] M;")
   expect_match2(scode, "matrix[K, K] V;")
   
-  # define a hierachical prior on the regression coefficients
+  # define a hierarchical prior on the regression coefficients
   bprior <- set_prior("normal(0, tau)", class = "b") +
     set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
   stanvars <- stanvar(scode = "real<lower=0> tau;", 
@@ -1948,8 +1948,35 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
   
+  # ensure that variables are passed to the likelihood of a threaded model
+  foo <- 0.5
+  stanvars <- stanvar(foo) +
+    stanvar(scode = "real<lower=0> tau;", 
+            block = "parameters", pll_args = "real tau")
+  scode <- make_stancode(count ~ 1, data = epilepsy, family = poisson(),
+                         stanvars = stanvars, threads = threading(2),
+                         parse = FALSE)
+  expect_match2(scode, 
+    "partial_log_lik_lpmf(int[] seq, int start, int end, int[] Y, real Intercept, real foo, real tau)"
+  )
+  expect_match2(scode, 
+    "reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Intercept, foo, tau)"
+  )
+  
+  # specify Stan code in the likelihood part of the model block
+  stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
+  scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy, 
+                         stanvars = stanvars)
+  expect_match2(scode, "mu += 1.0;")
+  
+  stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
+  scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy,
+                         stanvars = stanvars, threads = 2)
+  expect_match2(scode, "mu += 1.0;")
+  
+  
   # add transformation at the end of a block
-  stanvars <- stanvar(scode = "  r_1_1 = r_1_1 * 2;", 
+  stanvars <- stanvar(scode = "r_1_1 = r_1_1 * 2;", 
                       block = "tparameters", position = "end")
   scode <- make_stancode(count ~ Trt + (1 | patient), epilepsy,
                          stanvars = stanvars)
@@ -2274,4 +2301,43 @@ test_that("Un-normalized Stan code is correct", {
   )
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
+})
+
+test_that("Normalizing Stan code works correctly", {
+  expect_equal(
+    normalize_stancode("// a\nb;\n  b + c = 4; // kde\ndata"),
+    normalize_stancode("// dasflkjldl\n   // adsfadsfa\n b;\n\n  \n  \t\rb + c = 4;\ndata")
+  )
+  expect_equal(
+    normalize_stancode("data /* adfa */ {\nint a;\n /* asdddede \n asdfas \n asf */}\n"),
+    normalize_stancode("data {\nint a;\n} /* aa \n adfasdf \n asdfadsf ddd */\n")
+  )
+  expect_equal(
+    normalize_stancode("data \n {\nint a;\n\n }  \t\n"),
+    normalize_stancode("data {\nint a;\n} \n")
+  )
+  expect_equal(
+    normalize_stancode("/* \n\n */\na*/"),
+    normalize_stancode("a*/")
+  )
+  expect_equal(
+    normalize_stancode("//adsfadf \ra // asdfasdf\r\n"),
+    normalize_stancode("a")
+  )
+  expect_equal(
+    normalize_stancode("/* * \n * \n * fg / */hhh"),
+    normalize_stancode("hhh")
+  )
+  expect_equal(
+    normalize_stancode("a //b"),
+    normalize_stancode("a")
+  )
+  expect_false(normalize_stancode("// a\ndata {\nint a;\n}\n") ==
+                 normalize_stancode("// a\ndata {\nint b;\n}\n"))
+  # should not remove single whitespace
+  expect_false(normalize_stancode("da ta") ==
+                 normalize_stancode("data"))
+  # should handle wrong nested comments
+  expect_false(normalize_stancode("/* \n\n */\na*/") ==
+                 normalize_stancode("b*/"))
 })

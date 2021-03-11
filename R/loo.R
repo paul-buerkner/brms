@@ -27,6 +27,8 @@
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   Only used if argument \code{reloo} is \code{TRUE}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
+#' @param save_psis Should the \code{"psis"} object created internally be saved
+#'   in the returned object? For more details see \code{\link[loo:loo]{loo}}.
 #' @param moment_match_args Optional \code{list} of additional arguments passed to
 #'   \code{\link{loo_moment_match}}.
 #' @param reloo_args Optional \code{list} of additional arguments passed to
@@ -78,14 +80,14 @@
 #' @export
 loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, moment_match = FALSE,
-                         reloo = FALSE, k_threshold = 0.7,
+                         reloo = FALSE, k_threshold = 0.7, save_psis = FALSE,
                          moment_match_args = list(), reloo_args = list(), 
                          model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo", pointwise, compare, 
-    resp, k_threshold, moment_match, reloo, 
-    moment_match_args, reloo_args
+    resp, k_threshold, save_psis, moment_match, 
+    reloo, moment_match_args, reloo_args
   )
   do_call(compute_loolist, args)
 }
@@ -93,7 +95,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 #' @export
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                         pointwise = FALSE, moment_match = FALSE,
-                        reloo = FALSE, k_threshold = 0.7,
+                        reloo = FALSE, k_threshold = 0.7, save_psis = FALSE,
                         moment_match_args = list(), reloo_args = list(), 
                         model_names = NULL) {
   cl <- match.call()
@@ -253,10 +255,11 @@ loo_criteria <- function() {
 # compute 'loo' criterion using the 'loo' package
 .loo <- function(x, pointwise, k_threshold, moment_match, reloo, 
                  moment_match_args, reloo_args, newdata, 
-                 resp, model_name, ...) {
+                 resp, model_name, save_psis, ...) {
   loo_args <- prepare_loo_args(
     x, newdata = newdata, resp = resp, 
-    pointwise = pointwise, ...
+    pointwise = pointwise, save_psis = save_psis, 
+    ...
   )
   out <- SW(do_call("loo", loo_args, pkg = "loo"))
   if (moment_match) {
