@@ -90,11 +90,14 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   # split dots for use in log_lik and update
   dots <- list(...)
   ll_arg_names <- arg_names("log_lik")
-  ll_args <- dots[intersect(names(dots), ll_arg_names)]
+  ll_arg_names <- intersect(names(dots), ll_arg_names)
+  ll_args <- dots[ll_arg_names]
   ll_args$allow_new_levels <- TRUE
   ll_args$resp <- resp
   ll_args$combine <- TRUE
-  up_args <- dots[setdiff(names(dots), ll_arg_names)]
+  # cores is used in both log_lik and update
+  up_arg_names <- setdiff(names(dots), setdiff(ll_arg_names, "cores"))
+  up_args <- dots[up_arg_names]
   up_args$refresh <- 0
   
   .reloo <- function(j) {
