@@ -38,13 +38,14 @@ NULL
 recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, 
                                   nlpar = NULL, ...) {
   bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-  trms <- attr(model.frame(bterms$fe, data = object$data), "terms")
+  form <- combine_formulas(bterms$fe, bterms$offset, update = TRUE)
+  trms <- attr(model.frame(form, data = object$data), "terms")
   # brms has no call component so the call is just a dummy
   emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
 }
 
-# Calculate the basis for making predictions. This is essentially the
-# inside of the predict() function with new data on the link scale. 
+# Calculate the basis for making predictions. In some sense, this is
+# similar to the fitted() function with new data on the link scale. 
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
 emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, 

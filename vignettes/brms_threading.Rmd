@@ -179,8 +179,6 @@ complicated in various ways. This vignette aims to introduce the user to
 within-chain parallelization with **brms**, since its efficient use depends on
 various aspects specific to the users model.
 
-CmdStan used to create this document: `r basename(cmdstanr::cmdstan_path())`
-
 ## Quick summary
 
 Assuming you have a **brms** model which you wish to evaluate faster by using

@@ -1080,6 +1080,9 @@ plus_brmsformula <- function(e1, e2) {
     e1 <- mvbf(e1, e2)
   } else if (inherits(e2, "setrescor")) {
     stop2("Setting 'rescor' is only possible in multivariate models.")
+  } else if (is.ac_term(e2)) {
+    stop2("Autocorrelation terms can only be specified on the right-hand ",
+          "side of a formula, not added to a 'brmsformula' object.")
   } else if (!is.null(e2)) {
     e1 <- bf(e1, e2)
   }
@@ -1102,6 +1105,9 @@ plus_mvbrmsformula <- function(e1, e2) {
     e1$mecor <- e2[1]
   } else if (is.brmsformula(e2)) {
     e1 <- mvbf(e1, e2)
+  } else if (is.ac_term(e2)) {
+    stop2("Autocorrelation terms can only be specified on the right-hand ",
+          "side of a formula, not added to a 'mvbrmsformula' object.")
   } else if (!is.null(e2)) {
     resp <- attr(e2, "resp", TRUE)
     if (is.null(resp)) {

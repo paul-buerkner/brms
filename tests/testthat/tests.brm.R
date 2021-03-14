@@ -33,6 +33,8 @@ test_that("brm produces expected errors", {
                "The term 'x:cs(g)' is invalid")
   expect_error(brm(y~me(x, 2 * g)*me(x, g), dat),
                "Variable 'x' is used in different calls to 'me'")
+  expect_error(brm(y ~ 1 + set_rescor(TRUE), data = dat),
+               "Function 'set_rescor' should not be part")
   
   # autocorrelation
   expect_error(brm(y ~ ar(x+y, g), dat), 
@@ -41,6 +43,8 @@ test_that("brm produces expected errors", {
                "Illegal grouping term 'g1/g2'")
   expect_error(brm(y ~ ma(x), dat, poisson()),
                "Please set cov = TRUE")
+  expect_error(brm(bf(y ~ 1) + arma(x), dat),
+               "Autocorrelation terms can only be specified")
   
   # ordinal models
   expect_error(brm(rating ~ treat + (cs(period)|subject),

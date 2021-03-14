@@ -241,6 +241,7 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
 # @return a 'btl' object
 terms_lf <- function(formula) {
   formula <- rhs(as.formula(formula))
+  check_accidental_helper_functions(formula)
   y <- nlist(formula)
   types <- setdiff(all_term_types(), excluded_term_types(formula))
   for (t in types) {
@@ -752,7 +753,7 @@ plus_rhs <- function(x) {
 # @param update a flag to indicate whether updating should be allowed.
 #   Defaults to FALSE to maintain backwards compatibility
 # @return a formula object 
-combine_formulas <- function(formula1, formula2, lhs, update = FALSE) {
+combine_formulas <- function(formula1, formula2, lhs = "", update = FALSE) {
   stopifnot(is.formula(formula1))
   stopifnot(is.null(formula2) || is.formula(formula2))
   lhs <- as_one_character(lhs)
@@ -1046,6 +1047,26 @@ check_cs <- function(bterms) {
     }
   }
   invisible(NULL)
+}
+
+# check for the presence of helper functions accidentally used
+# within a formula instead of added to bf(). See #1103
+check_accidental_helper_functions <- function(formula) {
+  terms <- all_terms(formula)
+  # see help("brmsformula-helpers") for the list of functions
+  funs <- c("nlf", "lf", "acformula", "set_nl", "set_rescor", "set_mecor")
+  regex <- paste0("(", funs, ")", collapse = "|")
+  regex <- paste0("^(", regex, ")\\(")
+  matches <- get_matches(regex, terms, first = TRUE)
+  matches <- sub("\\($", "", matches)
+  for (m in matches) {
+    loc <- utils::find(m, mode = "function")
+    if (is_equal(loc[1], "package:brms")) {
+      stop2("Function '", m, "' should not be part of the right-hand side ",
+            "of a formula. See help('brmsformula-helpers') for the correct syntax.")
+    }
+  }
+  invisible(TRUE)
 }
 
 # extract elements from objects

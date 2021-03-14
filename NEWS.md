@@ -1,4 +1,4 @@
-# brms 2.14.4++
+# brms 2.15.0
 
 ### New Features
 
@@ -13,6 +13,12 @@ via function `R2D2` to be used in `set_prior`.
 * Extend support for `arma` correlation structures in non-normal families.
 * Extend scope of variables passed via `data2` for use in the 
 evaluation of most model terms.
+* Refit models previously stored on disc only when necessary thanks to
+Martin Modrak. The behavior can be controlled via `file_refit`. (#1058)
+* Allow for a finer tuning of informational messages printed in `brm`
+via the `silent` argument. (#1076)
+* Allow `stanvars` to alter distributional parameters. (#1061)
+* Allow `stanvars` to be used inside threaded likelihoods. (#1111)
 
 ### Other Changes
 
@@ -37,6 +43,8 @@ models thanks to the GitHub user yanivabir. (#1085)
 `by` variables thanks to Reece Willoughby. (#1081)
 * Fix a bug in the threaded Stan code when using QR decomposition
 thanks to Steve Bronder. (#1086)
+* Include offsets in `emmeans` related methods thanks to 
+Russell V. Lenth. (#1096)
 
 
 # brms 2.14.4

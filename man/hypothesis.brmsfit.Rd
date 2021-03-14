@@ -23,7 +23,10 @@ hypothesis(x, ...)
 }
 \arguments{
 \item{x}{An \code{R} object. If it is no \code{brmsfit} object,
-it must be coercible to a \code{data.frame}.}
+it must be coercible to a \code{data.frame}.
+In the latter case, the variables used in the \code{hypothesis} argument 
+need to correspond to column names of \code{x}, while the rows
+are treated as representing posterior draws of the variables.}
 
 \item{hypothesis}{A character vector specifying one or more 
 non-linear hypothesis concerning parameters of the model.}
@@ -144,6 +147,7 @@ hypothesis(fit, "age = 0", scope = "coef", group = "patient")
 
 ## use the default method
 dat <- as.data.frame(fit)
+str(dat)
 hypothesis(dat, "b_age > 0")
 }
 

@@ -17,11 +17,13 @@ brm_multiple(
   knots = NULL,
   stanvars = NULL,
   stan_funs = NULL,
+  silent = 1,
   recompile = FALSE,
   combine = TRUE,
   fit = NA,
   seed = NA,
   file = NULL,
+  file_refit = "never",
   ...
 )
 }
@@ -109,6 +111,14 @@ self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
 \code{stanvars} argument for this purpose instead.}
 
+\item{silent}{Verbosity level between \code{0} and \code{2}.
+If \code{1} (the default), most of the
+informational messages of compiler and sampler are suppressed.
+If \code{2}, even more messages are suppressed. The actual
+sampling progress is still printed. Set \code{refresh = 0} to turn this off
+as well. If using \code{backend = "rstan"} you can also set
+\code{open_progress = FALSE} to prevent opening additional progress bars.}
+
 \item{recompile}{Logical, indicating whether the Stan model should be
 recompiled for every imputed data set. Defaults to \code{FALSE}. If
 \code{NULL}, \code{brm_multiple} tries to figure out internally, if recompilation
@@ -134,10 +144,24 @@ randomly.}
 fitted model object is saved via \code{\link{saveRDS}} in a file named
 after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
-return the saved model object instead of refitting the model. As existing
+return the saved model object instead of refitting the model. 
+Unless you specify the \code{file_refit} argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
+
+\item{file_refit}{Modifies when the fit stored via the \code{file} parameter
+is re-used. For \code{"never"} (default) the fit is always loaded if it
+exists and fitting is skipped. If set to \code{"on_change"}, brms will
+refit the model if model, data or algorithm as passed to Stan differ from
+what is stored in the file. This also covers changes in priors,
+\code{sample_prior}, \code{stanvars}, covariance structure, etc. If you
+believe there was a false positive, you can use
+\code{\link{brmsfit_needs_refit}} to see why refit is deemed necessary.
+Refit will not be triggered for changes in additional parameters of the fit
+(e.g., initial values, number of iterations, control arguments, ...). A
+known limitation is that a refit will be triggered if within-chain
+parallelization is switched on/off.}
 
 \item{...}{Further arguments passed to \code{\link{brm}}.}
 }
