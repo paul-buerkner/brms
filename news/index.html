@@ -79,7 +79,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -164,9 +164,9 @@
       <small>Source: <a href='https://github.com/paul-buerkner/brms/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
-    <div id="brms-2144" class="section level1">
-<h1 class="page-header" data-toc-text="2.14.4">
-<a href="#brms-2144" class="anchor"></a>brms 2.14.4++<small> 2020-11-03 </small>
+    <div id="brms-2150" class="section level1">
+<h1 class="page-header" data-toc-text="2.15.0">
+<a href="#brms-2150" class="anchor"></a>brms 2.15.0<small> 2021-03-14 </small>
 </h1>
 <div id="new-features" class="section level3">
 <h3 class="hasAnchor">
@@ -179,6 +179,10 @@
 <li>Apply the R2-D2 shrinkage prior to population-level coefficients via function <code>R2D2</code> to be used in <code>set_prior</code>.</li>
 <li>Extend support for <code>arma</code> correlation structures in non-normal families.</li>
 <li>Extend scope of variables passed via <code>data2</code> for use in the evaluation of most model terms.</li>
+<li>Refit models previously stored on disc only when necessary thanks to Martin Modrak. The behavior can be controlled via <code>file_refit</code>. (<a href='https://github.com/paul-buerkner/brms/issues/1058'>#1058</a>)</li>
+<li>Allow for a finer tuning of informational messages printed in <code>brm</code> via the <code>silent</code> argument. (<a href='https://github.com/paul-buerkner/brms/issues/1076'>#1076</a>)</li>
+<li>Allow <code>stanvars</code> to alter distributional parameters. (<a href='https://github.com/paul-buerkner/brms/issues/1061'>#1061</a>)</li>
+<li>Allow <code>stanvars</code> to be used inside threaded likelihoods. (<a href='https://github.com/paul-buerkner/brms/issues/1111'>#1111</a>)</li>
 </ul>
 </div>
 <div id="other-changes" class="section level3">
@@ -201,12 +205,13 @@
 <li>Fix a bug in the Stan code of threaded <code>wiener</code> drift diffusion models thanks to the GitHub user yanivabir. (<a href='https://github.com/paul-buerkner/brms/issues/1085'>#1085</a>)</li>
 <li>Fix a bug in the threaded Stan code for GPs with categorical <code>by</code> variables thanks to Reece Willoughby. (<a href='https://github.com/paul-buerkner/brms/issues/1081'>#1081</a>)</li>
 <li>Fix a bug in the threaded Stan code when using QR decomposition thanks to Steve Bronder. (<a href='https://github.com/paul-buerkner/brms/issues/1086'>#1086</a>)</li>
+<li>Include offsets in <code>emmeans</code> related methods thanks to Russell V. Lenth. (<a href='https://github.com/paul-buerkner/brms/issues/1096'>#1096</a>)</li>
 </ul>
 </div>
 </div>
-    <div id="brms-2144-1" class="section level1">
+    <div id="brms-2144" class="section level1">
 <h1 class="page-header" data-toc-text="2.14.4">
-<a href="#brms-2144-1" class="anchor"></a>brms 2.14.4<small> 2020-11-03 </small>
+<a href="#brms-2144" class="anchor"></a>brms 2.14.4<small> 2020-11-03 </small>
 </h1>
 <div id="new-features-1" class="section level3">
 <h3 class="hasAnchor">
@@ -655,7 +660,7 @@
 <ul>
 <li>Fit factor smooth interactions thanks to Simon Wood.</li>
 <li>Specify separate priors for thresholds in ordinal models. (<a href='https://github.com/paul-buerkner/brms/issues/524'>#524</a>)</li>
-<li>Pass additional arguments to <code><a href="https://rdrr.io/pkg/rstan/man/stan_model.html">rstan::stan_model</a></code> via argument <code>stan_model_args</code> in <code>brm</code>. (<a href='https://github.com/paul-buerkner/brms/issues/525'>#525</a>)</li>
+<li>Pass additional arguments to <code><a href="https://mc-stan.org/rstan/reference/stan_model.html">rstan::stan_model</a></code> via argument <code>stan_model_args</code> in <code>brm</code>. (<a href='https://github.com/paul-buerkner/brms/issues/525'>#525</a>)</li>
 <li>Save model objects via argument <code>file</code> in <code>add_ic</code> after adding model fit criteria. (<a href='https://github.com/paul-buerkner/brms/issues/478'>#478</a>)</li>
 <li>Compute density ratios based on MCMC samples via <code>density_ratio</code>.</li>
 <li>Ignore offsets in various post-processing methods via argument <code>offset</code>.</li>
@@ -1661,7 +1666,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Do not remove bad behaving chains anymore as they may point to general convergence problems that are dangerous to ignore.</li>
 <li>Improve flexibility of the <code>theme</code> argument in all plotting functions.</li>
 <li>Only show the legend once per page, when computing trace and density plots with the <code>plot</code> method.</li>
-<li>Move code of self-defined <code>Stan</code> functions to <code>inst/chunks</code> and incorporate them into the models using <code><a href="https://rdrr.io/pkg/rstan/man/stanc.html">rstan::stanc_builder</a></code>. Also, add unit tests for these functions.</li>
+<li>Move code of self-defined <code>Stan</code> functions to <code>inst/chunks</code> and incorporate them into the models using <code><a href="https://mc-stan.org/rstan/reference/stanc.html">rstan::stanc_builder</a></code>. Also, add unit tests for these functions.</li>
 </ul>
 </div>
 <div id="bug-fixes-39" class="section level3">

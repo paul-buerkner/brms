@@ -84,7 +84,7 @@ package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -191,11 +191,13 @@ package.</p>
   knots <span class='op'>=</span> <span class='cn'>NULL</span>,
   stanvars <span class='op'>=</span> <span class='cn'>NULL</span>,
   stan_funs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  silent <span class='op'>=</span> <span class='fl'>1</span>,
   recompile <span class='op'>=</span> <span class='cn'>FALSE</span>,
   combine <span class='op'>=</span> <span class='cn'>TRUE</span>,
   fit <span class='op'>=</span> <span class='cn'>NA</span>,
   seed <span class='op'>=</span> <span class='cn'>NA</span>,
   file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  file_refit <span class='op'>=</span> <span class='st'>"never"</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
@@ -310,6 +312,16 @@ block of the generated <span class="pkg">Stan</span> code. It is now recommended
 <code>stanvars</code> argument for this purpose instead.</p></td>
     </tr>
     <tr>
+      <th>silent</th>
+      <td><p>Verbosity level between <code>0</code> and <code>2</code>.
+If <code>1</code> (the default), most of the
+informational messages of compiler and sampler are suppressed.
+If <code>2</code>, even more messages are suppressed. The actual
+sampling progress is still printed. Set <code>refresh = 0</code> to turn this off
+as well. If using <code>backend = "rstan"</code> you can also set
+<code>open_progress = FALSE</code> to prevent opening additional progress bars.</p></td>
+    </tr>
+    <tr>
       <th>recompile</th>
       <td><p>Logical, indicating whether the Stan model should be
 recompiled for every imputed data set. Defaults to <code>FALSE</code>. If
@@ -344,10 +356,26 @@ randomly.</p></td>
 fitted model object is saved via <code><a href='https://rdrr.io/r/base/readRDS.html'>saveRDS</a></code> in a file named
 after the string supplied in <code>file</code>. The <code>.rds</code> extension is
 added automatically. If the file already exists, <code>brm</code> will load and
-return the saved model object instead of refitting the model. As existing
+return the saved model object instead of refitting the model. 
+Unless you specify the <code>file_refit</code> argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the <code>brmsfit</code> object for later usage.</p></td>
+    </tr>
+    <tr>
+      <th>file_refit</th>
+      <td><p>Modifies when the fit stored via the <code>file</code> parameter
+is re-used. For <code>"never"</code> (default) the fit is always loaded if it
+exists and fitting is skipped. If set to <code>"on_change"</code>, brms will
+refit the model if model, data or algorithm as passed to Stan differ from
+what is stored in the file. This also covers changes in priors,
+<code>sample_prior</code>, <code>stanvars</code>, covariance structure, etc. If you
+believe there was a false positive, you can use
+<code><a href='brmsfit_needs_refit.html'>brmsfit_needs_refit</a></code> to see why refit is deemed necessary.
+Refit will not be triggered for changes in additional parameters of the fit
+(e.g., initial values, number of iterations, control arguments, ...). A
+known limitation is that a refit will be triggered if within-chain
+parallelization is switched on/off.</p></td>
     </tr>
     <tr>
       <th>...</th>

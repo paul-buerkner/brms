@@ -92,7 +92,7 @@ posterior predictive checks and leave-one-out cross-validation." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -219,16 +219,17 @@ posterior predictive checks and leave-one-out cross-validation.</p>
   thin <span class='op'>=</span> <span class='fl'>1</span>,
   cores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"mc.cores"</span>, <span class='fl'>1</span><span class='op'>)</span>,
   threads <span class='op'>=</span> <span class='cn'>NULL</span>,
-  normalize <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  normalize <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"brms.normalize"</span>, <span class='cn'>TRUE</span><span class='op'>)</span>,
   control <span class='op'>=</span> <span class='cn'>NULL</span>,
   algorithm <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"brms.algorithm"</span>, <span class='st'>"sampling"</span><span class='op'>)</span>,
   backend <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"brms.backend"</span>, <span class='st'>"rstan"</span><span class='op'>)</span>,
   future <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"future"</span>, <span class='cn'>FALSE</span><span class='op'>)</span>,
-  silent <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  silent <span class='op'>=</span> <span class='fl'>1</span>,
   seed <span class='op'>=</span> <span class='cn'>NA</span>,
   save_model <span class='op'>=</span> <span class='cn'>NULL</span>,
   stan_model_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
   file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  file_refit <span class='op'>=</span> <span class='st'>"never"</span>,
   empty <span class='op'>=</span> <span class='cn'>FALSE</span>,
   rename <span class='op'>=</span> <span class='cn'>TRUE</span>,
   <span class='va'>...</span>
@@ -442,7 +443,9 @@ model that cannot be sped up by any other means.</p></td>
 be included in the Stan code (defaults to <code>TRUE</code>). Setting it
 to <code>FALSE</code> requires Stan version &gt;= 2.25 to work. If <code>FALSE</code>,
 sampling efficiency may be increased but some post processing functions
-such as <code><a href='bridge_sampler.brmsfit.html'>bridge_sampler</a></code> will not be available.</p></td>
+such as <code><a href='bridge_sampler.brmsfit.html'>bridge_sampler</a></code> will not be available. Can be 
+controlled globally for the current <span style="R">R</span> session via the `brms.normalize`
+option.</p></td>
     </tr>
     <tr>
       <th>control</th>
@@ -450,7 +453,7 @@ such as <code><a href='bridge_sampler.brmsfit.html'>bridge_sampler</a></code> wi
 behavior. It defaults to <code>NULL</code> so all the default values are used.
 The most important control parameters are discussed in the 'Details'
 section below. For a comprehensive overview see
-<code><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></code>.</p></td>
+<code><a href='https://mc-stan.org/rstan/reference/stan.html'>stan</a></code>.</p></td>
     </tr>
     <tr>
       <th>algorithm</th>
@@ -482,8 +485,10 @@ session via the <code>future</code> option. The execution type is controlled via
     </tr>
     <tr>
       <th>silent</th>
-      <td><p>Logical; If <code>TRUE</code> (the default), most of the
-informational messages of compiler and sampler are suppressed. The actual
+      <td><p>Verbosity level between <code>0</code> and <code>2</code>.
+If <code>1</code> (the default), most of the
+informational messages of compiler and sampler are suppressed.
+If <code>2</code>, even more messages are suppressed. The actual
 sampling progress is still printed. Set <code>refresh = 0</code> to turn this off
 as well. If using <code>backend = "rstan"</code> you can also set
 <code>open_progress = FALSE</code> to prevent opening additional progress bars.</p></td>
@@ -503,7 +508,7 @@ named after the string supplied in <code>save_model</code>.</p></td>
     <tr>
       <th>stan_model_args</th>
       <td><p>A <code>list</code> of further arguments passed to
-<code><a href='https://rdrr.io/pkg/rstan/man/stan_model.html'>stan_model</a></code>.</p></td>
+<code><a href='https://mc-stan.org/rstan/reference/stan_model.html'>stan_model</a></code>.</p></td>
     </tr>
     <tr>
       <th>file</th>
@@ -511,10 +516,26 @@ named after the string supplied in <code>save_model</code>.</p></td>
 fitted model object is saved via <code><a href='https://rdrr.io/r/base/readRDS.html'>saveRDS</a></code> in a file named
 after the string supplied in <code>file</code>. The <code>.rds</code> extension is
 added automatically. If the file already exists, <code>brm</code> will load and
-return the saved model object instead of refitting the model. As existing
+return the saved model object instead of refitting the model. 
+Unless you specify the <code>file_refit</code> argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the <code>brmsfit</code> object for later usage.</p></td>
+    </tr>
+    <tr>
+      <th>file_refit</th>
+      <td><p>Modifies when the fit stored via the <code>file</code> parameter
+is re-used. For <code>"never"</code> (default) the fit is always loaded if it
+exists and fitting is skipped. If set to <code>"on_change"</code>, brms will
+refit the model if model, data or algorithm as passed to Stan differ from
+what is stored in the file. This also covers changes in priors,
+<code>sample_prior</code>, <code>stanvars</code>, covariance structure, etc. If you
+believe there was a false positive, you can use
+<code><a href='brmsfit_needs_refit.html'>brmsfit_needs_refit</a></code> to see why refit is deemed necessary.
+Refit will not be triggered for changes in additional parameters of the fit
+(e.g., initial values, number of iterations, control arguments, ...). A
+known limitation is that a refit will be triggered if within-chain
+parallelization is switched on/off.</p></td>
     </tr>
     <tr>
       <th>empty</th>
@@ -531,7 +552,7 @@ Stan model outside of <span class="pkg">brms</span> and want to feed it back int
       <th>...</th>
       <td><p>Further arguments passed to Stan. 
 For <code>backend = "rstan"</code> the arguments are passed to
-<code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-sampling.html'>sampling</a></code> or <code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-vb.html'>vb</a></code>.
+<code><a href='https://mc-stan.org/rstan/reference/stanmodel-method-sampling.html'>sampling</a></code> or <code><a href='https://mc-stan.org/rstan/reference/stanmodel-method-vb.html'>vb</a></code>.
 For <code>backend = "cmdstanr"</code> the arguments are passed to the
 <code><a href='https://mc-stan.org/cmdstanr/reference/model-method-sample.html'>cmdstanr::sample</a></code> or <code><a href='https://mc-stan.org/cmdstanr/reference/model-method-variational.html'>cmdstanr::variational</a></code> method.</p></td>
     </tr>
@@ -587,7 +608,7 @@ For <code>backend = "cmdstanr"</code> the arguments are passed to the
   <code>max_treedepth</code>, which can be accomplished by writing <code>control =
   list(max_treedepth = &lt;x&gt;)</code> with a positive integer <code>&lt;x&gt;</code> that should
   usually be larger than the current default of <code>10</code>. For more details
-  on the <code>control</code> argument see <code><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></code>.</p>
+  on the <code>control</code> argument see <code><a href='https://mc-stan.org/rstan/reference/stan.html'>stan</a></code>.</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
@@ -709,7 +730,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='co'># fit a model manually via rstan</span>
 <span class='va'>scode</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
 <span class='va'>sdata</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
-<span class='va'>stanfit</span> <span class='op'>&lt;-</span> <span class='fu'>rstan</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span><span class='op'>(</span>model_code <span class='op'>=</span> <span class='va'>scode</span>, data <span class='op'>=</span> <span class='va'>sdata</span><span class='op'>)</span>
+<span class='va'>stanfit</span> <span class='op'>&lt;-</span> <span class='fu'>rstan</span><span class='fu'>::</span><span class='fu'><a href='https://mc-stan.org/rstan/reference/stan.html'>stan</a></span><span class='op'>(</span>model_code <span class='op'>=</span> <span class='va'>scode</span>, data <span class='op'>=</span> <span class='va'>sdata</span><span class='op'>)</span>
 <span class='co'># feed the Stan model back into brms</span>
 <span class='va'>fit8</span> <span class='op'>&lt;-</span> <span class='fu'>brm</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span>, empty <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='va'>fit8</span><span class='op'>$</span><span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='va'>stanfit</span>

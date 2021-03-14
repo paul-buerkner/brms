@@ -82,7 +82,7 @@ developer, you will rarely need to call prepare_predictions directly." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -229,13 +229,18 @@ effects are allowed (defaults to <code>FALSE</code>). Only relevant if
       <td><p>Indicates how to sample new levels for grouping
 factors specified in <code>re_formula</code>. This argument is only relevant if
 <code>newdata</code> is provided and <code>allow_new_levels</code> is set to
-<code>TRUE</code>. If <code>"uncertainty"</code> (default), include group-level
-uncertainty in the predictions based on the variation of the existing
-levels. If <code>"gaussian"</code>, sample new levels from the (multivariate)
-normal distribution implied by the group-level standard deviations and
-correlations. This options may be useful for conducting Bayesian power
-analysis. If <code>"old_levels"</code>, directly sample new levels from the
-existing levels.</p></td>
+<code>TRUE</code>. If <code>"uncertainty"</code> (default), each posterior sample for a
+new level is drawn from the posterior samples of a randomly chosen existing
+level. Each posterior sample for a new level may be drawn from a different
+existing level such that the resulting set of new posterior samples
+represents the variation across existing levels. If <code>"gaussian"</code>,
+sample new levels from the (multivariate) normal distribution implied by the
+group-level standard deviations and correlations. This options may be useful
+for conducting Bayesian power analysis or predicting new levels in
+situations where relatively few levels where observed in the old_data. If
+<code>"old_levels"</code>, directly sample new levels from the existing levels,
+where a new level is assigned all of the posterior samples of the same
+(randomly chosen) existing level.</p></td>
     </tr>
     <tr>
       <th>incl_autocor</th>

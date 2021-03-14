@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -193,7 +193,10 @@
     <tr>
       <th>x</th>
       <td><p>An <code>R</code> object. If it is no <code>brmsfit</code> object,
-it must be coercible to a <code>data.frame</code>.</p></td>
+it must be coercible to a <code>data.frame</code>.
+In the latter case, the variables used in the <code>hypothesis</code> argument 
+need to correspond to column names of <code>x</code>, while the rows
+are treated as representing posterior draws of the variables.</p></td>
     </tr>
     <tr>
       <th>hypothesis</th>
@@ -332,6 +335,7 @@ to make results reproducible.</p></td>
 
 <span class='co'>## use the default method</span>
 <span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>dat</span><span class='op'>)</span>
 <span class='fu'>hypothesis</span><span class='op'>(</span><span class='va'>dat</span>, <span class='st'>"b_age &gt; 0"</span><span class='op'>)</span>
 <span class='op'>}</span>
 

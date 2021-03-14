@@ -83,7 +83,7 @@ it themselves." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -196,7 +196,7 @@ it themselves.</p>
 <span class='co'># fit a model manually via rstan</span>
 <span class='va'>scode</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
 <span class='va'>sdata</span> <span class='op'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span><span class='op'>)</span>
-<span class='va'>stanfit</span> <span class='op'>&lt;-</span> <span class='fu'>rstan</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span><span class='op'>(</span>model_code <span class='op'>=</span> <span class='va'>scode</span>, data <span class='op'>=</span> <span class='va'>sdata</span><span class='op'>)</span>
+<span class='va'>stanfit</span> <span class='op'>&lt;-</span> <span class='fu'>rstan</span><span class='fu'>::</span><span class='fu'><a href='https://mc-stan.org/rstan/reference/stan.html'>stan</a></span><span class='op'>(</span>model_code <span class='op'>=</span> <span class='va'>scode</span>, data <span class='op'>=</span> <span class='va'>sdata</span><span class='op'>)</span>
 
 <span class='co'># feed the Stan model back into brms</span>
 <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, data <span class='op'>=</span> <span class='va'>epilepsy</span>, empty <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>

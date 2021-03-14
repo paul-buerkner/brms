@@ -83,7 +83,7 @@ changing priors, or for defining custom Stan functions." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -181,7 +181,8 @@ changing priors, or for defining custom Stan functions.</p>
   name <span class='op'>=</span> <span class='cn'>NULL</span>,
   scode <span class='op'>=</span> <span class='cn'>NULL</span>,
   block <span class='op'>=</span> <span class='st'>"data"</span>,
-  position <span class='op'>=</span> <span class='st'>"start"</span>
+  position <span class='op'>=</span> <span class='st'>"start"</span>,
+  pll_args <span class='op'>=</span> <span class='cn'>NULL</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -210,6 +211,7 @@ Stan code is inferred based on the class of <code>x</code> by default.</p></td>
 which the variable should be defined. Can be <code>'data'</code>,
 <code>'tdata'</code> (transformed data), <code>'parameters'</code>,
 <code>'tparameters'</code> (transformed parameters), <code>'model'</code>,
+<code>'likelihood'</code> (part of the model block where the likelihood is given),
 <code>'genquant'</code> (generated quantities) or <code>'functions'</code>.</p></td>
     </tr>
     <tr>
@@ -217,6 +219,13 @@ which the variable should be defined. Can be <code>'data'</code>,
       <td><p>Name of the position within the block where the
 Stan code should be placed. Currently allowed are <code>'start'</code>
 (the default) and <code>'end'</code> of the block.</p></td>
+    </tr>
+    <tr>
+      <th>pll_args</th>
+      <td><p>Optional Stan code to be put into the header
+of <code>partial_log_lik</code> functions. This ensures that the variables
+specified in <code>scode</code> can be used in the likelihood even when
+within-chain parallelization is activated via <code><a href='threading.html'>threading</a></code>.</p></td>
     </tr>
     </table>
 
@@ -229,7 +238,7 @@ Stan code should be placed. Currently allowed are <code>'start'</code>
 <span class='va'>stanvars</span> <span class='op'>&lt;-</span> <span class='fu'>stanvar</span><span class='op'>(</span><span class='fl'>5</span>, name <span class='op'>=</span> <span class='st'>"mean_intercept"</span><span class='op'>)</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span>, <span class='va'>epilepsy</span>, prior <span class='op'>=</span> <span class='va'>bprior</span>, 
               stanvars <span class='op'>=</span> <span class='va'>stanvars</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; // generated with brms 2.14.11
+</div><div class='output co'>#&gt; // generated with brms 2.15.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -276,7 +285,7 @@ Stan code should be placed. Currently allowed are <code>'start'</code>
   <span class='fu'>stanvar</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/diag.html'>diag</a></span><span class='op'>(</span><span class='fl'>2</span><span class='op'>)</span>, <span class='st'>"V"</span>, scode <span class='op'>=</span> <span class='st'>"  matrix[K, K] V;"</span><span class='op'>)</span> 
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='va'>zBase</span>, <span class='va'>epilepsy</span>,
               prior <span class='op'>=</span> <span class='va'>bprior</span>, stanvars <span class='op'>=</span> <span class='va'>stanvars</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; // generated with brms 2.14.11
+</div><div class='output co'>#&gt; // generated with brms 2.15.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -285,8 +294,8 @@ Stan code should be placed. Currently allowed are <code>'start'</code>
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
 #&gt;   int prior_only;  // should the likelihood be ignored?
-#&gt;   vector[K] M;
-#&gt;   matrix[K, K] V;
+#&gt;     vector[K] M;
+#&gt;     matrix[K, K] V;
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
@@ -326,7 +335,7 @@ Stan code should be placed. Currently allowed are <code>'start'</code>
                     block <span class='op'>=</span> <span class='st'>"parameters"</span><span class='op'>)</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='va'>zBase</span>, <span class='va'>epilepsy</span>,
               prior <span class='op'>=</span> <span class='va'>bprior</span>, stanvars <span class='op'>=</span> <span class='va'>stanvars</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; // generated with brms 2.14.11
+</div><div class='output co'>#&gt; // generated with brms 2.15.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -349,7 +358,7 @@ Stan code should be placed. Currently allowed are <code>'start'</code>
 #&gt;   vector[Kc] b;  // population-level effects
 #&gt;   real Intercept;  // temporary intercept for centered predictors
 #&gt;   real&lt;lower=0&gt; sigma;  // residual SD
-#&gt; real&lt;lower=0&gt; tau;
+#&gt;   real&lt;lower=0&gt; tau;
 #&gt; }
 #&gt; transformed parameters {
 #&gt; }
@@ -364,6 +373,76 @@ Stan code should be placed. Currently allowed are <code>'start'</code>
 #&gt;   target += student_t_lpdf(sigma | 3, 0, 4.4)
 #&gt;     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
 #&gt;   target += normal_lpdf(tau | 0, 10);
+#&gt; }
+#&gt; generated quantities {
+#&gt;   // actual population-level intercept
+#&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
+#&gt; }</div><div class='input'>              
+<span class='co'># ensure that 'tau' is passed to the likelihood of a threaded model</span>
+<span class='co'># not necessary for this example but may be necessary in other cases</span>
+<span class='va'>stanvars</span> <span class='op'>&lt;-</span> <span class='fu'>stanvar</span><span class='op'>(</span>scode <span class='op'>=</span> <span class='st'>"real&lt;lower=0&gt; tau;"</span>, 
+                    block <span class='op'>=</span> <span class='st'>"parameters"</span>, pll_args <span class='op'>=</span> <span class='st'>"real tau"</span><span class='op'>)</span>
+<span class='fu'><a href='make_stancode.html'>make_stancode</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='va'>zBase</span>, <span class='va'>epilepsy</span>,
+              stanvars <span class='op'>=</span> <span class='va'>stanvars</span>, threads <span class='op'>=</span> <span class='fu'><a href='threading.html'>threading</a></span><span class='op'>(</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; // generated with brms 2.15.0
+#&gt; functions {
+#&gt;   /* integer sequence of values
+#&gt;    * Args: 
+#&gt;    *   start: starting integer
+#&gt;    *   end: ending integer
+#&gt;    * Returns: 
+#&gt;    *   an integer sequence from start to end
+#&gt;    */ 
+#&gt;   int[] sequence(int start, int end) { 
+#&gt;     int seq[end - start + 1];
+#&gt;     for (n in 1:num_elements(seq)) {
+#&gt;       seq[n] = n + start - 1;
+#&gt;     }
+#&gt;     return seq; 
+#&gt;   } 
+#&gt;   // compute partial sums of the log-likelihood
+#&gt;   real partial_log_lik_lpmf(int[] seq, int start, int end, vector Y, matrix Xc, vector b, real Intercept, real sigma, real tau) {
+#&gt;     real ptarget = 0;
+#&gt;     int N = end - start + 1;
+#&gt;     ptarget += normal_id_glm_lpdf(Y[start:end] | Xc[start:end], Intercept, b, sigma);
+#&gt;     return ptarget;
+#&gt;   }
+#&gt; }
+#&gt; data {
+#&gt;   int&lt;lower=1&gt; N;  // total number of observations
+#&gt;   vector[N] Y;  // response variable
+#&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
+#&gt;   matrix[N, K] X;  // population-level design matrix
+#&gt;   int grainsize;  // grainsize for threading
+#&gt;   int prior_only;  // should the likelihood be ignored?
+#&gt; }
+#&gt; transformed data {
+#&gt;   int Kc = K - 1;
+#&gt;   matrix[N, Kc] Xc;  // centered version of X without an intercept
+#&gt;   vector[Kc] means_X;  // column means of X before centering
+#&gt;   int seq[N] = sequence(1, N);
+#&gt;   for (i in 2:K) {
+#&gt;     means_X[i - 1] = mean(X[, i]);
+#&gt;     Xc[, i - 1] = X[, i] - means_X[i - 1];
+#&gt;   }
+#&gt; }
+#&gt; parameters {
+#&gt;   vector[Kc] b;  // population-level effects
+#&gt;   real Intercept;  // temporary intercept for centered predictors
+#&gt;   real&lt;lower=0&gt; sigma;  // residual SD
+#&gt;   real&lt;lower=0&gt; tau;
+#&gt; }
+#&gt; transformed parameters {
+#&gt; }
+#&gt; model {
+#&gt;   // likelihood including constants
+#&gt;   if (!prior_only) {
+#&gt;     target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Xc, b, Intercept, sigma, tau);
+#&gt;   }
+#&gt;   // priors including constants
+#&gt;   target += student_t_lpdf(Intercept | 3, 4, 4.4);
+#&gt;   target += student_t_lpdf(sigma | 3, 0, 4.4)
+#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept

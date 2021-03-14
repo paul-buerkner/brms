@@ -82,7 +82,7 @@ For more details see loo." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -184,6 +184,7 @@ For more details see <code><a href='https://mc-stan.org/loo/reference/loo.html'>
   moment_match <span class='op'>=</span> <span class='cn'>FALSE</span>,
   reloo <span class='op'>=</span> <span class='cn'>FALSE</span>,
   k_threshold <span class='op'>=</span> <span class='fl'>0.7</span>,
+  save_psis <span class='op'>=</span> <span class='cn'>FALSE</span>,
   moment_match_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
   reloo_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
   model_names <span class='op'>=</span> <span class='cn'>NULL</span>
@@ -238,6 +239,11 @@ should be applied on problematic observations. Defaults to <code>FALSE</code>.</
 estimates are treated as problematic. Defaults to <code>0.7</code>. 
 Only used if argument <code>reloo</code> is <code>TRUE</code>.
 See <code><a href='https://mc-stan.org/loo/reference/pareto-k-diagnostic.html'>pareto_k_ids</a></code> for more details.</p></td>
+    </tr>
+    <tr>
+      <th>save_psis</th>
+      <td><p>Should the <code>"psis"</code> object created internally be saved
+in the returned object? For more details see <code><a href='https://mc-stan.org/loo/reference/loo.html'>loo</a></code>.</p></td>
     </tr>
     <tr>
       <th>moment_match_args</th>

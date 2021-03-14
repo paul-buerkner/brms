@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -116,13 +116,13 @@
 
       
 
-      </header><script src="brms_missings_files/header-attrs-2.6.6/header-attrs.js"></script><div class="row">
+      </header><script src="brms_missings_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Handle Missing Values with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2021-02-10</h4>
+            <h4 class="date">2021-03-14</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_missings.Rmd"><code>vignettes/brms_missings.Rmd</code></a></small>
       <div class="hidden name"><code>brms_missings.Rmd</code></div>
@@ -168,14 +168,14 @@ Samples: 10 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    13.04      8.22    -2.40    29.87 1.12       58      215
-age           2.15      4.88    -7.96    11.54 1.06      123      267
-chl           0.09      0.04     0.00     0.18 1.15       46      151
-age:chl      -0.02      0.02    -0.07     0.03 1.09       80      207
+Intercept    14.59      7.88    -0.92    29.98 1.13       51      269
+age           0.13      4.65    -8.57     9.68 1.07      108     1583
+chl           0.09      0.04     0.01     0.18 1.15       44      212
+age:chl      -0.02      0.02    -0.06     0.02 1.07      101     2242
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     3.28      0.65     2.22     4.71 1.27       28      145
+sigma     3.21      0.61     2.18     4.57 1.23       31      113
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -188,11 +188,11 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">fit_imp1</span><span class="op">$</span><span class="va">rhats</span>, <span class="fl">2</span><span class="op">)</span></code></pre></div>
 <pre><code>  b_Intercept b_age b_chl b_age.chl sigma lp__
-1           1     1     1         1     1 1.01
-2           1     1     1         1     1 1.00
-3           1     1     1         1     1 1.00
-4           1     1     1         1     1 1.01
-5           1     1     1         1     1 1.00</code></pre>
+1           1  1.00     1      1.00  1.00 1.00
+2           1  1.00     1      1.00  1.01 1.01
+3           1  1.00     1      1.00  1.00 1.00
+4           1  1.00     1      1.00  1.00 1.01
+5           1  1.01     1      1.01  1.00 1.00</code></pre>
 <p>The convergence of each of the submodels looks good. Accordingly, we can proceed with further post-processing and interpretation of the results. For instance, we could investigate the combined effect of <code>age</code> and <code>chl</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_imp1</span>, <span class="st">"age:chl"</span><span class="op">)</span></code></pre></div>
@@ -226,17 +226,17 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-bmi_Intercept    13.78      8.74    -3.23    31.22 1.00     1728     2253
-chl_Intercept   142.22     25.63    92.45   193.80 1.00     2336     2537
-bmi_age           2.78      5.52    -8.24    13.66 1.00     1502     2021
-chl_age          28.41     13.76     0.71    56.56 1.00     2246     2330
-bmi_michl         0.10      0.05     0.01     0.19 1.00     1793     2142
-bmi_michl:age    -0.03      0.02    -0.08     0.02 1.00     1539     2071
+bmi_Intercept    13.68      8.44    -3.15    30.25 1.00     1869     2026
+chl_Intercept   141.47     25.25    91.75   192.40 1.00     2118     2344
+bmi_age           2.73      5.29    -7.40    13.41 1.00     1465     2228
+chl_age          28.70     13.60     1.25    54.89 1.00     2051     2080
+bmi_michl         0.10      0.04     0.01     0.18 1.00     1979     2050
+bmi_michl:age    -0.03      0.02    -0.08     0.02 1.00     1558     2373
 
 Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma_bmi     3.40      0.78     2.25     5.21 1.00     1600     2725
-sigma_chl    40.59      7.89    28.64    59.07 1.00     2066     2482
+sigma_bmi     3.34      0.76     2.21     5.13 1.00     1482     2145
+sigma_chl    40.58      7.91    28.82    59.79 1.00     2269     2271
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

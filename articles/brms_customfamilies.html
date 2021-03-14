@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.14.11</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
       </span>
     </div>
 
@@ -116,13 +116,13 @@
 
       
 
-      </header><script src="brms_customfamilies_files/header-attrs-2.6.6/header-attrs.js"></script><div class="row">
+      </header><script src="brms_customfamilies_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Define Custom Response Distributions with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2021-02-10</h4>
+            <h4 class="date">2021-03-14</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_customfamilies.Rmd"><code>vignettes/brms_customfamilies.Rmd</code></a></small>
       <div class="hidden name"><code>brms_customfamilies.Rmd</code></div>
@@ -175,14 +175,14 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 Group-Level Effects: 
 ~herd (Number of levels: 15) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.76      0.23     0.40     1.30 1.00     1316     1922
+sd(Intercept)     0.76      0.22     0.40     1.26 1.00     1434     2109
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.40      0.26    -1.92    -0.90 1.00     2321     2226
-period2      -1.00      0.30    -1.60    -0.44 1.00     4027     3383
-period3      -1.13      0.33    -1.82    -0.50 1.00     4274     2875
-period4      -1.62      0.45    -2.56    -0.80 1.00     4486     2518
+Intercept    -1.40      0.26    -1.93    -0.90 1.00     2392     2371
+period2      -1.00      0.31    -1.63    -0.40 1.00     5203     3253
+period3      -1.14      0.33    -1.80    -0.51 1.00     4736     3063
+period4      -1.62      0.45    -2.56    -0.81 1.00     3973     2678
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -249,18 +249,18 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 Group-Level Effects: 
 ~herd (Number of levels: 15) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.38      0.25     0.02     0.95 1.00      945     1859
+sd(Intercept)     0.39      0.26     0.02     0.98 1.00      838     1271
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.34      0.26    -1.87    -0.84 1.00     3294     2025
-period2      -1.00      0.41    -1.82    -0.20 1.00     4085     2686
-period3      -1.25      0.43    -2.16    -0.44 1.00     3816     2836
-period4      -1.55      0.51    -2.61    -0.63 1.00     3243     2808
+Intercept    -1.34      0.27    -1.89    -0.84 1.00     2052     1021
+period2      -1.00      0.40    -1.82    -0.22 1.00     3551     2855
+period3      -1.26      0.46    -2.22    -0.37 1.00     3619     2813
+period4      -1.55      0.53    -2.64    -0.58 1.00     3080     2103
 
 Family Specific Parameters: 
     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-phi    17.73     17.79     5.36    55.33 1.00     1344      838
+phi    17.74     16.82     5.41    59.88 1.00     1514     1115
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -291,18 +291,18 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 56 log-likelihood matrix
 
          Estimate   SE
-elpd_loo    -99.9 10.3
-p_loo        22.1  4.5
-looic       199.8 20.6
+elpd_loo   -100.4 10.3
+p_loo        22.5  4.5
+looic       200.7 20.5
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     43    76.8%   1404      
- (0.5, 0.7]   (ok)        6    10.7%   513       
-   (0.7, 1]   (bad)       6    10.7%   41        
-   (1, Inf)   (very bad)  1     1.8%   12        
+(-Inf, 0.5]   (good)     44    78.6%   1003      
+ (0.5, 0.7]   (ok)        8    14.3%   343       
+   (0.7, 1]   (bad)       3     5.4%   50        
+   (1, Inf)   (very bad)  1     1.8%   24        
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
@@ -310,24 +310,24 @@ Output of model 'fit2':
 Computed from 4000 by 56 log-likelihood matrix
 
          Estimate   SE
-elpd_loo    -94.5  8.2
-p_loo        10.3  1.9
-looic       189.0 16.4
+elpd_loo    -94.9  8.2
+p_loo        10.7  1.9
+looic       189.8 16.5
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     53    94.6%   439       
- (0.5, 0.7]   (ok)        1     1.8%   1857      
-   (0.7, 1]   (bad)       2     3.6%   115       
+(-Inf, 0.5]   (good)     48    85.7%   875       
+ (0.5, 0.7]   (ok)        7    12.5%   288       
+   (0.7, 1]   (bad)       1     1.8%   655       
    (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit2  0.0       0.0   
-fit1 -5.4       4.5   </code></pre>
+fit1 -5.5       4.4   </code></pre>
 <p>Since larger <code>ELPD</code> values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.</p>
 <p>Next, we will define the function necessary for the <code>posterior_predict</code> method:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
