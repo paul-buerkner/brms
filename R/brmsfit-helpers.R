@@ -19,7 +19,7 @@ stopifnot_resp <- function(x, resp = NULL) {
 }
 
 # apply a link function 
-# @param x an arrary of arbitrary dimension
+# @param x an array of arbitrary dimension
 # @param link character string defining the link
 link <- function(x, link) {
   switch(link, 
@@ -42,7 +42,7 @@ link <- function(x, link) {
 }
 
 # apply an inverse link function
-# @param x an arrary of arbitrary dimension
+# @param x an array of arbitrary dimension
 # @param link a character string defining the link
 ilink <- function(x, link) {
   switch(link, 
