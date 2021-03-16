@@ -1165,7 +1165,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   # check for invalid priors
   # it is good to let the user know beforehand that some of their priors
-  # were invalid in the model to avoid unecessary refits
+  # were invalid in the model to avoid unnecessary refits
   if (nrow(prior)) {
     valid_ids <- which(duplicated(rbind(all_priors, prior)))
     invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
@@ -1185,7 +1185,11 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
-  prior <- validate_prior_special(prior, bterms = bterms, data = data, ...)
+  # don't require priors on nlpars if some priors are not checked (#1124)
+  prior <- validate_prior_special(
+    prior, bterms = bterms, data = data,
+    require_nlpar_prior = !any(no_checks), ...
+  )
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
