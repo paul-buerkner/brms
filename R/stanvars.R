@@ -152,7 +152,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
     scode <- as.character(scode)
     pll_args <- as.character(pll_args)
   }
-  if (position == "end" && block %in% c("functions", "data", "model")) {
+  if (position == "end" && block %in% c("functions", "data")) {
     stop2("Position '", position, "' is not sensible for block '", block, "'.")
   }
   out <- nlist(name, sdata = x, scode, block, position, pll_args)
