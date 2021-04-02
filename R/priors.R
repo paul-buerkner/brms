@@ -1141,8 +1141,10 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 }  
 
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bterms, data, sample_prior, ...) {
+.validate_prior <- function(prior, bterms, data, sample_prior,
+                            require_nlpar_prior = TRUE, ...) {
   sample_prior <- validate_sample_prior(sample_prior)
+  require_nlpar_prior <- as_one_logical(require_nlpar_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors
@@ -1186,9 +1188,10 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
   # don't require priors on nlpars if some priors are not checked (#1124)
+  require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
   prior <- validate_prior_special(
     prior, bterms = bterms, data = data,
-    require_nlpar_prior = !any(no_checks), ...
+    require_nlpar_prior = require_nlpar_prior, ...
   )
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
