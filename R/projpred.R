@@ -87,7 +87,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (length(bterms$nlpars) > 0L) {
     stop2("Projpred does not support non-linear models.")
   }
-  not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset"))
+  not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset", "sm"))
   if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
     stop2("Projpred only supports standard multilevel terms and offsets.")
   }
