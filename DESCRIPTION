@@ -10,7 +10,12 @@ Authors@R:
       person("Jonah", "Gabry", role = c("ctb")),
       person("Sebastian", "Weber", role = c("ctb")),
       person("Andrew", "Johnson", role = c("ctb")),
-      person("Martin", "Modrak", role = c("ctb")))
+      person("Martin", "Modrak", role = c("ctb")),
+      person(given = "Hamada S.",
+             family = "Badr",
+             email = "badr@jhu.edu",
+             role = c("ctb"),
+             comment = c(ORCID = "0000-0002-9808-2344")))
 Depends: 
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
