@@ -726,33 +726,40 @@ posterior_epred_trunc_binomial <- function(prep, lb, ub) {
 
 posterior_epred_trunc_poisson <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(lambda = prep$dpars$mu)
+  args <- list(lambda = mu)
   posterior_epred_trunc_discrete(dist = "pois", args = args, lb = lb, ub = ub)
 }
 
 posterior_epred_trunc_negbinomial <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = prep$dpars$mu, size = prep$dpars$shape)
+  shape <- multiply_dpar_rate_denom(prep$dpars$shape, prep)
+  args <- list(mu = mu, size = shape)
   posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
 posterior_epred_trunc_negbinomial2 <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = prep$dpars$mu, size = 1 / prep$dpars$sigma)
+  shape <- multiply_dpar_rate_denom(1 / prep$dpars$sigma, prep)
+  args <- list(mu = mu, size = shape)
   posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
 posterior_epred_trunc_geometric <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = prep$dpars$mu, size = 1)
+  shape <- multiply_dpar_rate_denom(1, prep, i = i)
+  args <- list(mu = mu, size = shape)
   posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
