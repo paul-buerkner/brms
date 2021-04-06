@@ -2035,7 +2035,7 @@ stan_dpar_types <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
   default_types <- list(
     sigma = list(
       type = "real<lower=0>", 
-      comment = "residual SD"
+      comment = "dispersion parameter"
     ),
     shape = list(
       type = "real<lower=0>", 

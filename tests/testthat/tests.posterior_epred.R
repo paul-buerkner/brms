@@ -119,6 +119,9 @@ test_that("posterior_epred helper functions run without errors", {
   mu <- brms:::posterior_epred_trunc_negbinomial(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
+  mu <- brms:::posterior_epred_trunc_negbinomial2(prep, lb = lb, ub = ub)
+  expect_equal(dim(mu), c(nsamples, nobs))
+  
   mu <- brms:::posterior_epred_trunc_geometric(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   

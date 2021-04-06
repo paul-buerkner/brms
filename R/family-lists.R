@@ -134,6 +134,16 @@
     ad = c("weights", "subset", "cens", "trunc", "rate")
   )
 }
+
+# as negbinomial but with sigma = 1 / shape parameterization
+.family_negbinomial2 <- function() {
+  list(
+    links = c("log", "identity", "sqrt", "softplus"),
+    dpars = c("mu", "sigma"), type = "int", 
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "rate")
+  )
+}
  
 .family_geometric <- function() {
   list(

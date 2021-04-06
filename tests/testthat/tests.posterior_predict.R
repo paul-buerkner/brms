@@ -162,6 +162,9 @@ test_that("posterior_predict for count and survival models runs without errors",
   pred <- brms:::posterior_predict_negbinomial(i, prep = prep)
   expect_equal(length(pred), ns)
   
+  pred <- brms:::posterior_predict_negbinomial2(i, prep = prep)
+  expect_equal(length(pred), ns)
+  
   pred <- brms:::posterior_predict_geometric(i, prep = prep)
   expect_equal(length(pred), ns)
   

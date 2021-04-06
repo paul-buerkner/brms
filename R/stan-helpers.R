@@ -192,7 +192,7 @@ stan_has_built_in_fun <- function(family, cens_or_trunc = FALSE) {
     logit_dpars <- character(0)
   } else {
     log_families <- c(
-      "poisson", "negbinomial", "geometric", "com_poisson",
+      "poisson", "negbinomial", "negbinomial2", "geometric", "com_poisson",
       "zero_inflated_poisson", "zero_inflated_negbinomial",
       "hurdle_poisson", "hurdle_negbinomial", "cox"
     )

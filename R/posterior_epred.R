@@ -360,6 +360,10 @@ posterior_epred_negbinomial <- function(prep) {
   multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
+posterior_epred_negbinomial2 <- function(prep) {
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
+}
+
 posterior_epred_geometric <- function(prep) {
   multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
@@ -736,6 +740,14 @@ posterior_epred_trunc_negbinomial <- function(prep, lb, ub) {
   posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
+posterior_epred_trunc_negbinomial2 <- function(prep, lb, ub) {
+  lb <- ifelse(lb < -1, -1, lb)
+  max_value <- 3 * max(prep$dpars$mu)
+  ub <- ifelse(ub > max_value, max_value, ub)
+  args <- list(mu = prep$dpars$mu, size = 1 / prep$dpars$sigma)
+  posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
+}
+
 posterior_epred_trunc_geometric <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
   max_value <- 3 * max(prep$dpars$mu)
@@ -774,8 +786,8 @@ posterior_epred_trunc_discrete <- function(dist, args, lb, ub) {
     m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
   }
   rm(mk)
-  m1 <- do_call(cbind, m1)
-  m1 / (do_call(cdf, c(list(ub), args)) - do_call(cdf, c(list(lb), args)))
+  m1 <- do.call(cbind, m1)
+  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb), args)))
 }
 
 #' @export

@@ -339,6 +339,11 @@ test_that("Stan GLM primitives are applied correctly", {
     "neg_binomial_2_log_glm_lpmf(Y | Xc, Intercept, b, shape)"
   )
   
+  scode <- make_stancode(y ~ x, dat, family = brmsfamily("negbinomial2"))
+  expect_match2(scode, 
+    "neg_binomial_2_log_glm_lpmf(Y | Xc, Intercept, b, inv(sigma))"
+  )
+  
   scode <- make_stancode(y ~ 0 + x, dat, family = gaussian)
   expect_match2(scode, "normal_id_glm_lpdf(Y | X, 0, b, sigma)")
   
@@ -1459,6 +1464,9 @@ test_that("Stan code of addition term 'rate' is correct", {
   
   scode <- make_stancode(y | rate(time) ~ x, data, negbinomial())
   expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape * denom);")
+  
+  scode <- make_stancode(y | rate(time) ~ x, data, brmsfamily("negbinomial2"))
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, inv(sigma) * denom);")
   
   scode <- make_stancode(y | rate(time) + cens(1) ~ x, data, geometric())
   expect_match2(scode, "target += neg_binomial_2_lpmf(Y[n] | mu[n] * denom[n], 1 * denom[n]);")

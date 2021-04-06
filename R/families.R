@@ -496,6 +496,15 @@ negbinomial <- function(link = "log", link_shape = "log") {
               link_shape = link_shape)
 }
 
+# not yet officially supported
+# @rdname brmsfamily
+# @export
+negbinomial2 <- function(link = "log", link_sigma = "log") {
+  slink <- substitute(link)
+  .brmsfamily("negbinomial2", link = link, slink = slink,
+              link_sigma = link_sigma)
+}
+
 #' @rdname brmsfamily
 #' @export
 geometric <- function(link = "log") {
@@ -1664,6 +1673,7 @@ family_bounds.mvbrmsterms <- function(x, ...) {
   lapply(x$terms, family_bounds, ...)
 }
 
+# bounds of likelihood families
 # @return a list with elements 'lb' and 'ub'
 #' @export
 family_bounds.brmsterms <- function(x, ...) {
@@ -1672,9 +1682,11 @@ family_bounds.brmsterms <- function(x, ...) {
     return(list(lb = -Inf, ub = Inf))
   }
   resp <- usc(x$resp)
+  # TODO: define in family-lists.R
   pos_families <- c(
-    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
-    "exponential", "lognormal", "frechet", "inverse.gaussian", 
+    "poisson", "negbinomial", "negbinomial2", "geometric", 
+    "gamma", "weibull", "exponential", "lognormal", 
+    "frechet", "inverse.gaussian", 
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "zero_inflated_poisson", 
     "zero_inflated_negbinomial"

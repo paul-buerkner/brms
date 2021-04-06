@@ -186,7 +186,8 @@ test_that("log_lik for count and survival models works correctly", {
     shape = rgamma(ns, 4),
     xi = runif(ns, -1, 0.5)
   )
-  prep$dpars$nu <- prep$dpars$sigma <- prep$dpars$shape + 1
+  prep$dpars$sigma <- 1 / prep$dpars$shape
+  prep$dpars$nu <- prep$dpars$shape + 1
   prep$data <- list(
     Y = rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1)), 
     trials = trials
@@ -217,6 +218,9 @@ test_that("log_lik for count and survival models works correctly", {
     size = prep$dpars$shape, log = TRUE
   )
   ll <- brms:::log_lik_negbinomial(i, prep = prep)
+  expect_equal(ll, ll_nbinom)
+  
+  ll <- brms:::log_lik_negbinomial2(i, prep = prep)
   expect_equal(ll, ll_nbinom)
   
   ll_geo <- dnbinom(
@@ -275,7 +279,7 @@ test_that("log_lik for count and survival models works correctly", {
   prep$data$Y[i] <- 0
   ll_gen_extreme_value <- SW(dgen_extreme_value(
     x = prep$data$Y[i], mu = prep$dpars$mu[, i],
-    sigma = prep$dpars$nu, xi = prep$dpars$xi, log = TRUE
+    sigma = prep$dpars$sigma, xi = prep$dpars$xi, log = TRUE
   ))
   ll <- SW(brms:::log_lik_gen_extreme_value(i, prep = prep))
   expect_equal(ll, ll_gen_extreme_value)
