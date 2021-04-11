@@ -47,7 +47,7 @@ real log_Z_com_poisson(real log_mu, real nu) {
   }
   // direct computation of the truncated series
   // check if the Mth term of the series is small enough
-  if (nu * (M * log_mu - lgamma(M + 1)) > -36.0) {
+  if (M * log_mu - nu*lgamma(M + 1) > -36.0) {
     reject("nu is too close to zero.");
   }
   // first 2 terms of the series
