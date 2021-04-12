@@ -73,7 +73,17 @@ posterior_epred.mvbrmsprep <- function(object, ...) {
 
 #' @export
 posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort, 
-                                     summary, robust, probs, ...) {
+                                     summary, robust, probs,
+                                     incl_thres = FALSE, ...) {
+  incl_thres <- as_one_logical(incl_thres)
+  if (incl_thres && !is_ordinal(object$family)) {
+    warning2("Argument 'incl_thres' is set to FALSE for non-ordinal families.")
+    incl_thres <- FALSE
+  }
+  if (incl_thres && scale == "response") {
+    warning2("Argument 'incl_thres' is set to FALSE if scale == \"response\".")
+    incl_thres <- FALSE
+  }
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
   if (length(dpar)) {
@@ -154,6 +164,13 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
   }
   colnames(out) <- NULL
   out <- reorder_obs(out, object$old_order, sort = sort)
+  if (incl_thres) {
+    out <- sapply(seq_len(ncol(out)), function(i) {
+      sweep(object$thres$thres, 1, as.array(out[, i])) # Shorter (but lacks sweep()'s recycling checks): `object$thres$thres - out[, i]`
+    }, simplify = "array")
+    out <- aperm(out, perm = c(1, 3, 2))
+    dimnames(out) <- NULL
+  }
   if (summary) {
     # only for compatibility with the 'fitted' method
     out <- posterior_summary(out, probs = probs, robust = robust)
@@ -264,6 +281,12 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  Only implemented for compatibility with the 
 #'  \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
 #'  generic. 
+#' @param incl_thres For ordinal families only: A single logical value
+#'   indicating whether to take the thresholds (intercepts) into account
+#'   (\code{TRUE}) or not (\code{FALSE}). Thereby, "taking the thresholds into
+#'   account" means to substract the threshold-excluding linear predictor from
+#'   the thresholds instead of simply returning the threshold-excluding linear
+#'   predictor.
 #' 
 #' @seealso \code{\link{posterior_epred.brmsfit}}
 #'  
@@ -286,7 +309,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
   re.form = NULL, resp = NULL, dpar = NULL, nlpar = NULL, 
-  nsamples = NULL, subset = NULL, sort = FALSE, ...
+  nsamples = NULL, subset = NULL, sort = FALSE, incl_thres = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -307,7 +330,7 @@ posterior_linpred.brmsfit <- function(
   )
   posterior_epred(
     prep, scale = scale, dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE
+    nlpar = nlpar, sort = sort, summary = FALSE, incl_thres = incl_thres
   )
 }
 

@@ -17,6 +17,7 @@
   nsamples = NULL,
   subset = NULL,
   sort = FALSE,
+  incl_thres = FALSE,
   ...
 )
 }
@@ -64,6 +65,13 @@ If \code{NULL} (the default), all samples are used.}
 Indicating whether to return predicted values in the original 
 order (\code{FALSE}; default) or in the order of the 
 time series (\code{TRUE}).}
+
+\item{incl_thres}{For ordinal families only: A single logical value
+indicating whether to take the thresholds (intercepts) into account
+(\code{TRUE}) or not (\code{FALSE}). Thereby, "taking the thresholds into
+account" means to substract the threshold-excluding linear predictor from
+the thresholds instead of simply returning the threshold-excluding linear
+predictor.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
