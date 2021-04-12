@@ -4,7 +4,7 @@
 
 * Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
 substract the threshold-excluding linear predictor from the thresholds in case
-of an ordinal family. (#<ENTER PR NUMBER HERE>)
+of an ordinal family. (#1137)
 
 # brms 2.15.0
 
