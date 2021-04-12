@@ -1,3 +1,11 @@
+# brms 2.15.1
+
+### New Features
+
+* Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
+substract the threshold-excluding linear predictor from the thresholds in case
+of an ordinal family. (#<ENTER PR NUMBER HERE>)
+
 # brms 2.15.0
 
 ### New Features
