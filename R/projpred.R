@@ -72,7 +72,7 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @export get_refmodel
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 folds = NULL, ...) {
+                                 folds = NULL, cvfun = NULL, ...) {
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {
@@ -122,13 +122,15 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # extract a list of K-fold sub-models
-  cvfun <- function(folds) {
-    cvres <- kfold(
-      object, K = max(folds),
-      save_fits = TRUE, folds = folds
-    )
-    fits <- cvres$fits[, "fit"]
-    return(fits)
+  if (is.null(cvfun)) {
+    cvfun <- function(folds) {
+      cvres <- kfold(
+        object, K = max(folds),
+        save_fits = TRUE, folds = folds
+      )
+      fits <- cvres$fits[, "fit"]
+      return(fits)
+    }
   }
   
   # using default prediction functions from projpred is fine
