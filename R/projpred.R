@@ -73,6 +73,10 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
                                  folds = NULL, cvfun = NULL, ...) {
+  if (is.null(object$elapsed_time)) {
+    object$elapsed_time <- rstan::get_elapsed_time(object$fit)
+  }
+
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {
