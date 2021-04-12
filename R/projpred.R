@@ -122,7 +122,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # extract a list of K-fold sub-models
-  if (is.null(cvfun)) {
+  if (!inherits(cvfun, "function")) {
     cvfun <- function(folds) {
       cvres <- kfold(
         object, K = max(folds),
