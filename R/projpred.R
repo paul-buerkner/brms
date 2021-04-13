@@ -138,8 +138,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   args <- nlist(
     object, data, formula, family, folds, dis,
     ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
-    cvfun = cvfun, extract_model_data = extract_model_data,
-    fit_elapsed_time = elapsed_time(object), ...
+    cvfun = cvfun, extract_model_data = extract_model_data, ...
   )
   do_call(projpred::init_refmodel, args)
 }
