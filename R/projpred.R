@@ -73,10 +73,6 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
                                  folds = NULL, cvfun = NULL, ...) {
-  if (is.null(object$elapsed_time)) {
-    object$elapsed_time <- rstan::get_elapsed_time(object$fit)
-  }
-
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {
@@ -142,7 +138,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   args <- nlist(
     object, data, formula, family, folds, dis,
     ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
-    cvfun = cvfun, extract_model_data = extract_model_data, ...
+    cvfun = cvfun, extract_model_data = extract_model_data,
+    fit_elapsed_time = elapsed_time(object), ...
   )
   do_call(projpred::init_refmodel, args)
 }
