@@ -1059,6 +1059,8 @@ check_accidental_helper_functions <- function(formula) {
   regex <- paste0("^(", regex, ")\\(")
   matches <- get_matches(regex, terms, first = TRUE)
   matches <- sub("\\($", "", matches)
+  matches <- unique(matches)
+  matches <- matches[nzchar(matches)]
   for (m in matches) {
     loc <- utils::find(m, mode = "function")
     if (is_equal(loc[1], "package:brms")) {
