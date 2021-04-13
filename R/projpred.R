@@ -62,7 +62,12 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @inheritParams posterior_predict.brmsfit
 #' @param folds Only used for k-fold variable selection. A vector of fold
 #' indices for each data point in data.
-#' @param ... Further arguments currently ignored.
+#' @param cvfun Optional cross-validation function
+#' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+#' If \code{NULL} (the default), \code{cvfun} is defined internally
+#' based on \code{\link{kfold.brmsfit}}.
+#' @param ... Further arguments passed to 
+#' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
 #' @return A \code{refmodel} object to be used in
 #'   \code{\link[projpred:varsel]{varsel}} and related variable selection
