@@ -5,7 +5,14 @@
 \alias{get_refmodel}
 \title{Get Reference Models}
 \usage{
-\method{get_refmodel}{brmsfit}(object, newdata = NULL, resp = NULL, folds = NULL, ...)
+\method{get_refmodel}{brmsfit}(
+  object,
+  newdata = NULL,
+  resp = NULL,
+  folds = NULL,
+  cvfun = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
