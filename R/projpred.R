@@ -62,7 +62,12 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @inheritParams posterior_predict.brmsfit
 #' @param folds Only used for k-fold variable selection. A vector of fold
 #' indices for each data point in data.
-#' @param ... Further arguments currently ignored.
+#' @param cvfun Optional cross-validation function
+#' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+#' If \code{NULL} (the default), \code{cvfun} is defined internally
+#' based on \code{\link{kfold.brmsfit}}.
+#' @param ... Further arguments passed to 
+#' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
 #' @return A \code{refmodel} object to be used in
 #'   \code{\link[projpred:varsel]{varsel}} and related variable selection
@@ -72,7 +77,7 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @export get_refmodel
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 folds = NULL, ...) {
+                                 folds = NULL, cvfun = NULL, ...) {
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {
@@ -122,13 +127,20 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # extract a list of K-fold sub-models
-  cvfun <- function(folds) {
-    cvres <- kfold(
-      object, K = max(folds),
-      save_fits = TRUE, folds = folds
-    )
-    fits <- cvres$fits[, "fit"]
-    return(fits)
+  if (is.null(cvfun)) {
+    cvfun <- function(folds, ...) {
+      cvres <- kfold(
+        object, K = max(folds),
+        save_fits = TRUE, folds = folds,
+        ...
+      )
+      fits <- cvres$fits[, "fit"]
+      return(fits)
+    }
+  } else {
+    if (!is.function(cvfun)) {
+      stop2("'cvfun' should be a function.")
+    }
   }
   
   # using default prediction functions from projpred is fine

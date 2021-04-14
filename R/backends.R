@@ -253,6 +253,20 @@ compiled_model <- function(x) {
   out
 }
 
+# extract the elapsed time during model fitting
+# @param x brmsfit object
+elapsed_time <- function(x) {
+  stopifnot(is.brmsfit(x))
+  backend <- x$backend %||% "rstan"
+  if (backend == "rstan") {
+    out <- rstan::get_elapsed_time(x$fit)
+  } else if (backend == "cmdstanr") {
+    # TODO: is this stored somewhere?
+    out <- NA
+  }
+  out
+}
+
 # supported Stan backends
 backend_choices <- function() {
   c("rstan", "cmdstanr")
