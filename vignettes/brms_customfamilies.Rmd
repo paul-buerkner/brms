@@ -231,7 +231,7 @@ We could define the complete log-likelihood function in R directly, or we can
 expose the self-defined **Stan** functions and apply them. The latter approach
 is usually more convenient, but the former is more stable and the only option
 when implementing custom families in other R packages building upon **brms**.
-For the purpose of the present vignette, we will go with the latter approach
+For the purpose of the present vignette, we will go with the latter approach.
 
 ```{r}
 expose_functions(fit2, vectorize = TRUE)
@@ -329,7 +329,7 @@ information about your family (you will find lots of examples for other families
 there).
 * In `families.R`, add family function `foo` which should be a simple wrapper
 around `.brmsfamily`.
-* In `stan-likelihood.R`, add function `stan_llh_foo` which provides the
+* In `stan-likelihood.R`, add function `stan_log_lik_foo` which provides the
 likelihood of the family in Stan language.
 * If necessary, add self-defined Stan functions in separate files under
 `inst/chunks`.
