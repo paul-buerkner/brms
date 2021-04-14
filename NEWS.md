@@ -1,10 +1,13 @@
-# brms 2.15.1
+# brms 2.15.0++
 
 ### New Features
 
+* Expose function `get_dpar` for use in the post-processing 
+of custom families thank to Martin Modrak. (#1131)
 * Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
 substract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
+
 
 # brms 2.15.0
 

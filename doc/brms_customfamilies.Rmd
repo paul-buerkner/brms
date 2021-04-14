@@ -85,7 +85,7 @@ fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
 ```
 
 In the summary output, we see that the incidence probability varies
-substantially over herds, but reduces over the cource of the time as indicated
+substantially over herds, but reduces over the course of the time as indicated
 by the negative coefficients of `period`.
 
 ```{r fit1_summary}
@@ -111,7 +111,7 @@ $$
 p_i \sim \text{Beta}(\alpha_i, \beta_i)
 $$
 
-The $\alpha$ and $\beta$ parameters are both hard to interprete and generally
+The $\alpha$ and $\beta$ parameters are both hard to interpret and generally
 not recommended for use in regression models. Thus, we will apply a different
 parameterization with parameters $\mu \in [0, 1]$ and $\phi > 0$, which we will
 call $\text{Beta2}$:
@@ -138,8 +138,8 @@ The beta-binomial distribution is not natively supported in **brms** and so we
 will have to define it ourselves using the `custom_family` function. This
 function requires the family's name, the names of its parameters (`mu` and `phi`
 in our case), corresponding link functions (only applied if parameters are
-prediced), their theoretical lower and upper bounds (only applied if parameters
-are not predicted), information on whether the distribuion is discrete or
+predicted), their theoretical lower and upper bounds (only applied if parameters
+are not predicted), information on whether the distribution is discrete or
 continuous, and finally, whether additional non-parameter variables need to be
 passed to the distribution. For our beta-binomial example, this results in the
 following custom family:
@@ -179,10 +179,10 @@ stanvars <- stanvar(scode = stan_funs, block = "functions")
 
 To provide information about the number of trials (an integer variable), we are
 going to use the addition argument `vint()`, which can only be used in custom
-families. Simiarily, if we needed to include additional vectors of real data, we
+families. Similarly, if we needed to include additional vectors of real data, we
 would use `vreal()`. Actually, for this particular example, we could more
 elegantly apply the addition argument `trials()` instead of `vint()`as in the
-basic binomial model. However, since the present vignette is ment to give a
+basic binomial model. However, since the present vignette is meant to give a
 general overview of the topic, we will go with the more general method.
 
 We now have all components together to fit our custom beta-binomial model:
@@ -196,7 +196,7 @@ fit2 <- brm(
 
 The summary output reveals that the uncertainty in the coefficients of `period`
 is somewhat larger than in the basic binomial model, which is the result of
-including the overdispersion parameter `phi` in the model. Aparat from that, the
+including the overdispersion parameter `phi` in the model. Apart from that, the
 results looks pretty similar.
 
 ```{r summary_fit2}
@@ -206,8 +206,8 @@ summary(fit2)
 
 ## Post-Processing Custom Family Models
 
-Some post-proecssing methods such as `summary` or `plot` work out of the box for
-custom family models. However, there are three particularily important methods,
+Some post-processing methods such as `summary` or `plot` work out of the box for
+custom family models. However, there are three particularly important methods,
 which require additional input by the user. These are `posterior_epred`,
 `posterior_predict` and `log_lik` computing predicted mean values, predicted
 response values, and log-likelihood values, respectively. They are not only
@@ -227,30 +227,31 @@ number of posterior samples and $N =$ number of observations) if they are
 predicted (as is `mu` in our example) and a vector of size $N$ if the are not
 predicted (as is `phi`).
 
-We could define the complete log-likelihood function R directly, or we can
+We could define the complete log-likelihood function in R directly, or we can
 expose the self-defined **Stan** functions and apply them. The latter approach
 is usually more convenient, but the former is more stable and the only option
 when implementing custom families in other R packages building upon **brms**.
-For the purpose of the present vignette, we will go with the latter approach
+For the purpose of the present vignette, we will go with the latter approach.
 
 ```{r}
 expose_functions(fit2, vectorize = TRUE)
 ```
 
-and define the required `log_lik` functions with a few lines of code[^phi].
+and define the required `log_lik` functions with a few lines of code.
 
 ```{r log_lik}
 log_lik_beta_binomial2 <- function(i, prep) {
-  mu <- prep$dpars$mu[, i]
-  phi <- prep$dpars$phi
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  phi <- brms::get_dpar(prep, "phi", i = i)
   trials <- prep$data$vint1[i]
   y <- prep$data$Y[i]
   beta_binomial2_lpmf(y, mu, phi, trials)
 }
 ```
 
-[^phi]: The presented post-processing functions need to be adjusted if you
-predict `phi` in your model as well by writing `phi <- prep$dpars$phi[, i]`.
+The `get_dpar` function will do the necessary transformations to handle both
+the case when the distributional parameters are predicted separately for each
+row and when they are the same for the whole fit.
 
 With that being done, all of the post-processing methods requiring `log_lik`
 will work as well. For instance, model comparison can simply be performed via
@@ -267,8 +268,8 @@ Next, we will define the function necessary for the `posterior_predict` method:
 
 ```{r posterior_predict}
 posterior_predict_beta_binomial2 <- function(i, prep, ...) {
-  mu <- prep$dpars$mu[, i]
-  phi <- prep$dpars$phi
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  phi <- brms::get_dpar(prep, "phi", i = i)
   trials <- prep$data$vint1[i]
   beta_binomial2_rng(mu, phi, trials)
 }
@@ -276,7 +277,7 @@ posterior_predict_beta_binomial2 <- function(i, prep, ...) {
 
 The `posterior_predict` function looks pretty similar to the corresponding
 `log_lik` function, except that we are now creating random draws of the
-response instead of log-liklihood values. Again, we are using an exposed
+response instead of log-likelihood values. Again, we are using an exposed
 **Stan** function for convenience. Make sure to add a `...` argument to your
 `posterior_predict` function even if you are not using it, since some families
 require additional arguments. With `posterior_predict` to be working, we can
@@ -295,7 +296,7 @@ in line.
 
 ```{r posterior_epred}
 posterior_epred_beta_binomial2 <- function(prep) {
-  mu <- prep$dpars$mu
+  mu <- brms::get_dpar(prep, "mu")
   trials <- prep$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
   mu * trials
@@ -315,7 +316,7 @@ above plot indicates probabilities.
 
 ## Turning a Custom Family into a Native Family
 
-Family functions built natively into **brms** are saver to use and more
+Family functions built natively into **brms** are safer to use and more
 convenient, as they require much less user input. If you think that your custom
 family is general enough to be useful to other users, please feel free to open
 an issue on [GitHub](https://github.com/paul-buerkner/brms/issues) so that we
@@ -328,7 +329,7 @@ information about your family (you will find lots of examples for other families
 there).
 * In `families.R`, add family function `foo` which should be a simple wrapper
 around `.brmsfamily`.
-* In `stan-likelihood.R`, add function `stan_llh_foo` which provides the
+* In `stan-likelihood.R`, add function `stan_log_lik_foo` which provides the
 likelihood of the family in Stan language.
 * If necessary, add self-defined Stan functions in separate files under
 `inst/chunks`.
