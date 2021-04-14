@@ -30,7 +30,6 @@ real log_Z_com_poisson(real log_mu, real nu) {
   int k = 2;
   int M = 10000;
   int converged = 0;
-  int num_terms = 50;
   if (nu == 1) {
     return exp(log_mu);
   }
