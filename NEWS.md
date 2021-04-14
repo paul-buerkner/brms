@@ -2,7 +2,7 @@
 
 ### New Features
 
-* Expose the `get_dpar` function for use in the post-processing 
+* Expose function `get_dpar` for use in the post-processing 
 of custom families thank to Martin Modrak. (#1131)
 
 
