@@ -61,7 +61,7 @@ real log_Z_com_poisson(real log_mu, real nu) {
     }
     k += 1;
   }
-  log_Z = log_sum_exp(log_Z_terms[1:i]);
+  log_Z = log_sum_exp(log_Z_terms[1:k]);
   return log_Z;
 }
 // COM Poisson log-PMF for a single response (log parameterization)
