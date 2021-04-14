@@ -9,8 +9,8 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
   real c_2 = (nu2-1)/1152*(nu2 + 23);
   real c_3 = (nu2-1)/414720* (5*square(nu2) - 298*nu2 + 11237);
   if(nu < 1){//TODO: check this makes sense. Could do away with.
-    print("Approximation doesn't work great when nu < 1, returning without residuals");
-    return(lcte);
+  print("Approximation doesn't work great when nu < 1, returning without residuals");
+  return(lcte);
   }
   log_resids[1] = 0;
   log_resids[2] = log(c_1) - 1 * (log(nu) + log_mu/nu);
@@ -25,11 +25,12 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
 // Args:
 //   log_mu: log location parameter
 //   shape: positive shape parameter
-real log_Z_com_poisson(real log_mu, real nu) {
+real log_Z_com_poisson(real log_mu, real nu, real eps) {
   real log_Z;
   int k = 2;
   int M = 10000;
-  int converged = 0;
+  real leps = log(eps);
+  vector[M] log_Z_terms;
   if (nu == 1) {
     return exp(log_mu);
   }
@@ -50,16 +51,11 @@ real log_Z_com_poisson(real log_mu, real nu) {
     reject("nu is too close to zero.");
   }
   // first 2 terms of the series
- log_Z_terms[1] = log1p_exp(log_mu);
-  while (converged == 0) {
-    if(k >= M) break;
-    // adding terms in batches simplifies the AD tape
-    log_Z_terms[k] = k * log_mu - nu * lgamma(k + 1);
-    if (log_Z_terms[k] < leps) {
-      converged = 1;
-      break;
-    }
+  log_Z_terms[1] = 0;
+  log_Z_terms[2] = log_mu;
+  while (log_Z_terms[k] >= leps && k < M) {
     k += 1;
+    log_Z_terms[k] = (k - 1) * log_mu - nu * lgamma(k);
   }
   log_Z = log_sum_exp(log_Z_terms[1:k]);
   return log_Z;
