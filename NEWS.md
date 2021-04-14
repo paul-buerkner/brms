@@ -1,3 +1,11 @@
+# brms 2.15.0++
+
+### New Features
+
+* Expose function `get_dpar` for use in the post-processing 
+of custom families thank to Martin Modrak. (#1131)
+
+
 # brms 2.15.0
 
 ### New Features

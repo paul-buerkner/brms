@@ -323,19 +323,46 @@ get_cor_matrix_ident <- function(nsamples, nobs) {
   out
 }
 
-# get samples of a distributional parameter
-# @param prep a 'brmsprep' or 'mvbrmsprep' object
-# @param dpar name of the distributional parameter
-# @param i the current observation number
-# @param ilink should the inverse link function be applied?
-#   if NULL the value is chosen internally
-# @return 
-#   If the parameter is predicted and i is NULL or 
-#   length(i) > 1, an S x N matrix.
-#   If the parameter it not predicted or length(i) == 1,
-#   a vector of length S.
+#' Samples of a Distributional Parameter
+#' 
+#' Get samples of a distributional parameter from a \code{brmsprep} or 
+#' \code{mvbrmsprep} object. This function is primarily useful when developing
+#' custom families or packages depending on \pkg{brms}. 
+#' This function lets callers easily handle both the case when the
+#' distributional parameter is predicted directly, via a (non-)linear
+#' predictor or fixed to a constant. See the vignette
+#' \code{vignette("brms_customfamilies")} for an example use case.
+#' 
+#' @param prep A 'brmsprep' or 'mvbrmsprep' object created by
+#'   \code{\link[brms:prepare_predictions.brmsfit]{prepare_predictions}}.
+#' @param dpar Name of the distributional parameter.
+#' @param i The observation numbers for which predictions shall be extracted.
+#'   If \code{NULL} (the default), all observation will be extracted.
+#'   Ignored if \code{dpar} is not predicted.
+#' @param ilink Should the inverse link function be applied?
+#'   If \code{NULL} (the default), the value is chosen internally.
+#'   In particular, \code{ilink} is \code{TRUE} by default for custom
+#'   families.
+#' @return 
+#'   If the parameter is predicted and \code{i} is \code{NULL} or
+#'   \code{length(i) > 1}, an \code{S x N} matrix. If the parameter it not
+#'   predicted or \code{length(i) == 1}, a vector of length \code{S}. Here
+#'   \code{S} is the number of samples and \code{N} is the number of
+#'   observations or length of \code{i} if specified.
+#'   
+#' @examples
+#' \dontrun{
+#' posterior_predict_my_dist <- function(i, prep, ...) {
+#'   mu <- brms::get_dpar(prep, "mu", i = i)
+#'   mypar <- brms::get_dpar(prep, "mypar", i = i)
+#'   my_rng(mu, mypar)
+#' }
+#' } 
+#' 
+#' @export
 get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
+  dpar <- as_one_character(dpar)
   x <- prep$dpars[[dpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
@@ -343,6 +370,8 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
     out <- predictor(x, i = i, fprep = prep)
     if (is.null(ilink)) {
       ilink <- apply_dpar_ilink(dpar, family = prep$family)
+    } else {
+      ilink <- as_one_logical(ilink) 
     }
     if (ilink) {
       out <- ilink(out, x$family$link)
