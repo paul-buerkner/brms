@@ -50,17 +50,16 @@ real log_Z_com_poisson(real log_mu, real nu) {
     reject("nu is too close to zero.");
   }
   // first 2 terms of the series
-  log_Z_terms[1] = log1p_exp(log_mu);
+ log_Z_terms[1] = log1p_exp(log_mu);
   while (converged == 0) {
     if(k >= M) break;
     // adding terms in batches simplifies the AD tape
-    log_Z_terms[i + 1] = k * log_mu - nu*lgamma(k + 1);
-    k += 1;
-    if (log_Z_terms[i + 1] <= leps) {
+    log_Z_terms[k] = k * log_mu - nu * lgamma(k + 1);
+    if (log_Z_terms[k] < leps) {
       converged = 1;
       break;
     }
-    i += 1;
+    k += 1;
   }
   log_Z = log_sum_exp(log_Z_terms[1:i]);
   return log_Z;
