@@ -10,7 +10,7 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
   real c_2 = (nu2-1)/1152*(nu2 + 23);
   real c_3 = (nu2-1)/414720* (5*square(nu2) - 298*nu2 + 11237);
   resids[1] = 1;
-  resids[2] = c_1 * exp(-1 * log_common) ;
+  resids[2] = c_1 * exp(-1 * log_common);
   resids[3] = c_2 * exp(-2 * log_common);
   resids[4] = c_3 * exp(-3 * log_common);
   ans = lcte + log(sum(resids));
