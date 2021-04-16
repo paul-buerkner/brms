@@ -39,7 +39,6 @@ real log_Z_com_poisson(real log_mu, real nu, real eps) {
     reject("nu must be finite");
   }
   if (log_mu * nu >= log(1.5) && log_mu >= log(1.5)) {
-    // TODO:  need to figure out if this is really the condition.
     return log_Z_com_poisson_approx(log_mu, nu);
   }
   // direct computation of the truncated series
