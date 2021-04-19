@@ -229,10 +229,15 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
+  # a lot of metadata is not stored via rstan::read_stan_csv
+  metadata <- cmdstanr::read_cmdstan_csv(
+    out$output_files(), variables = "", sampler_diagnostics = ""
+  )
   # transform into stanfit object for consistent output structure
   out <- rstan::read_stan_csv(out$output_files())
   # allow updating the model without recompilation
   attributes(out)$CmdStanModel <- model
+  attributes(out)$metadata <- metadata
   if (empty_model) {
     # allow correct updating of an 'empty' model
     out@sim <- list()
@@ -260,9 +265,15 @@ elapsed_time <- function(x) {
   backend <- x$backend %||% "rstan"
   if (backend == "rstan") {
     out <- rstan::get_elapsed_time(x$fit)
+    out <- data.frame(
+      chain_id = seq_len(nrow(out)),
+      warmup = out[, "warmup"],
+      sampling = out[, "sample"]
+    )
+    out$total <- out$warmup + out$sampling
+    rownames(out) <- NULL 
   } else if (backend == "cmdstanr") {
-    # TODO: is this stored somewhere?
-    out <- NA
+    out <- attributes(x$fit)$metadata$time$chains
   }
   out
 }
