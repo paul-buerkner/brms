@@ -5,6 +5,11 @@
 * Expose function `get_dpar` for use in the post-processing 
 of custom families thank to Martin Modrak. (#1131)
 
+### Other Changes
+
+* Remove use of `cbind` to express multivariate models after 
+over two years of deprecation (please use `mvbind` instead).
+
 
 # brms 2.15.0
 

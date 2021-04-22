@@ -59,7 +59,3 @@ test_that("update_adterms works correctly", {
   )
 })
 
-test_that("deprecated 'cbind' syntax still works", {
-  expect_equal(suppressWarnings(bf(cbind(y1, y2) ~ x)), bf(mvbind(y1, y2) ~ x))
-})
-
