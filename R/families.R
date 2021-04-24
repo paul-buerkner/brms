@@ -288,7 +288,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     out$threshold <- match.arg(threshold, thres_options)
   }
   if (conv_cats_dpars(out$family)) {
-    if (!is.null(refcat)) {
+    if (!has_joint_link(out$family)) {
+      out$refcat <- NA
+    } else if (!is.null(refcat)) {
       out$refcat <- as_one_character(refcat, allow_na = TRUE) 
     }
   }
@@ -621,6 +623,14 @@ dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily("dirichlet", link = link, slink = slink,
               link_phi = link_phi, refcat = refcat)
+}
+
+# not yet exported
+# @rdname brmsfamily
+# @export
+dirichlet2 <- function(link = "log") {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet2", link = link, slink = slink, refcat = NA)
 }
 
 #' @rdname brmsfamily
@@ -1236,12 +1246,26 @@ dpar_family <- function(family, dpar, ...) {
 
 #' @export
 dpar_family.default <- function(family, dpar, ...) {
-  dp_class <- dpar_class(dpar)
-  if (dp_class != "mu" || conv_cats_dpars(family)) {
+  dp_class <- dpar_class(dpar, family)
+  if (dp_class == "mu") {
+    if (conv_cats_dpars(family)) {
+      link <- NULL
+      if (!has_joint_link(family)) {
+        link <- family$link
+      }
+      # joint links are applied directly in the likelihood function
+      # so link is treated as 'identity'
+      out <- .dpar_family(dpar, link)
+    } else {
+      # standard single mu parameters just store the original family
+      out <- family 
+    }
+  } else {
+    # link_<dp_class> is always defined for non-mu parameters
     link <- family[[paste0("link_", dp_class)]]
-    family <- .dpar_family(dpar, link)
+    out <- .dpar_family(dpar, link)
   }
-  family
+  out
 }
 
 #' @export
@@ -1460,6 +1484,11 @@ is_polytomous <- function(family) {
 
 is_cox <- function(family) {
   "cox" %in% family_info(family, "specials")
+}
+
+# has joint link function over multiple inputs
+has_joint_link <- function(family) {
+  "joint_link" %in% family_info(family, "specials")
 }
 
 allow_factors <- function(family) {

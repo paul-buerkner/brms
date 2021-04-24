@@ -566,10 +566,9 @@ subset_thres <- function(prep, i) {
 }
 
 # helper function of 'get_dpar' to decide if
-# the link function should be applied by default
+# the link function should be applied direclty
 apply_dpar_ilink <- function(dpar, family) {
-  !(is_polytomous(family) && dpar_class(dpar) == "mu") ||
-    is.customfamily(family)
+  !(has_joint_link(family) && dpar_class(dpar, family) == "mu")
 }
 
 # insert zeros for the predictor term of the reference category

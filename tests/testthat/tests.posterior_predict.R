@@ -321,6 +321,14 @@ test_that("posterior_predict for categorical and related models runs without err
   pred <- brms:::posterior_predict_dirichlet(i = sample(1:nobs, 1), prep = prep)
   expect_equal(dim(pred), c(ns, ncat))
   expect_equal(rowSums(pred), rep(1, nrow(pred)))
+  
+  prep$family <- brmsfamily("dirichlet2")
+  prep$dpars$mu1 <- rexp(ns, 10)
+  prep$dpars$mu2 <- rexp(ns, 10)
+  prep$dpars$mu3 <- rexp(ns, 10)
+  pred <- brms:::posterior_predict_dirichlet2(i = sample(1:nobs, 1), prep = prep)
+  expect_equal(dim(pred), c(ns, ncat))
+  expect_equal(rowSums(pred), rep(1, nrow(pred)))
 })
 
 test_that("truncated posterior_predict run without errors", {

@@ -513,6 +513,18 @@ posterior_epred_dirichlet <- function(prep) {
   out
 }
 
+posterior_epred_dirichlet2 <- function(prep) {
+  mu <- prep$dpars[grepl("^mu", names(prep$dpars))]
+  mu <- abind(mu, along = 3)
+  sums_mu <- apply(mu, 1:2, sum)
+  cats <- seq_len(prep$data$ncat)
+  for (i in cats) {
+    mu[, , i] <- mu[, , i] / sums_mu
+  }
+  dimnames(mu)[[3]] <- prep$cats
+  mu
+}
+
 posterior_epred_cumulative <- function(prep) {
   posterior_epred_ordinal(prep)
 }

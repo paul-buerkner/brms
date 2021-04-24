@@ -727,6 +727,12 @@ stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
   sdist("dirichlet_logit", mu, phi)
 }
 
+stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
+  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
+  sdist("dirichlet", mu)
+}
+
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)

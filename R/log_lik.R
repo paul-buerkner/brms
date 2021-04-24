@@ -783,6 +783,13 @@ log_lik_dirichlet <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_dirichlet2 <- function(i, prep) {
+  mu_dpars <- str_subset(names(prep$dpars), "^mu")
+  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  out <- ddirichlet(prep$data$Y[i, ], alpha = mu, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_cumulative <- function(i, prep) {
   disc <- get_dpar(prep, "disc", i = i)
   mu <- get_dpar(prep, "mu", i = i)
