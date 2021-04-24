@@ -23,14 +23,10 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{transform}{(Deprecated) Logical; if \code{FALSE}
+\item{transform}{Logical; if \code{FALSE}
 (the default), samples of the linear predictor are returned.
 If \code{TRUE}, samples of transformed linear predictor,
-that is, the mean of the posterior predictive distribution
-are returned instead (see \code{\link{posterior_epred}} for details).
-Only implemented for compatibility with the 
-\code{\link[rstantools:posterior_linpred]{posterior_linpred}}
-generic.}
+that is, after applying the link function are returned.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.
@@ -47,8 +43,9 @@ if \code{NA}, include no group-level effects.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{dpar}{Optional name of a predicted distributional parameter.
-If specified, expected predictions of this parameters are returned.}
+\item{dpar}{Name of a predicted distributional parameter
+for which samples are to be returned. By default, samples
+of the main distributional parameter(s) \code{"mu"} are returned.}
 
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}

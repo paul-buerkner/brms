@@ -135,6 +135,7 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
         out <- posterior_epred_fun(object)
       }
     } else {
+      # return results on the linear scale
       if (conv_cats_dpars(object$family)) {
         mus <- dpars[grepl("^mu", dpars)] 
       } else {
@@ -256,14 +257,13 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' @inheritParams posterior_epred.brmsfit
 #' @param object An object of class \code{brmsfit}.
-#' @param transform (Deprecated) Logical; if \code{FALSE}
+#' @param transform Logical; if \code{FALSE}
 #'  (the default), samples of the linear predictor are returned.
 #'  If \code{TRUE}, samples of transformed linear predictor,
-#'  that is, the mean of the posterior predictive distribution
-#'  are returned instead (see \code{\link{posterior_epred}} for details).
-#'  Only implemented for compatibility with the 
-#'  \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
-#'  generic. 
+#'  that is, after applying the link function are returned.
+#' @param dpar Name of a predicted distributional parameter
+#'  for which samples are to be returned. By default, samples
+#'  of the main distributional parameter(s) \code{"mu"} are returned.
 #' 
 #' @seealso \code{\link{posterior_epred.brmsfit}}
 #'  
@@ -295,9 +295,13 @@ posterior_linpred.brmsfit <- function(
   scale <- "linear"
   transform <- as_one_logical(transform)
   if (transform) {
-    warning2("posterior_linpred(transform = TRUE) is deprecated. Please ",
-             "use posterior_epred() instead, without the 'transform' argument.")
     scale <- "response"
+    # if transform, return inv-link samples of only a single
+    # distributional or non-linear parameter for consistency
+    # of brms and rstanarm
+    if (is.null(dpar) && is.null(nlpar)) {
+      dpar <- "mu"
+    }
   }
   contains_samples(object)
   object <- restructure(object)
