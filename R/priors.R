@@ -1085,7 +1085,7 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
     link <- "log"
   }
   tlinks <- c("identity", "log", "inverse", "sqrt", "1/mu^2")
-  if (link %in% tlinks && !is_like_factor(y)) {
+  if (link %in% tlinks && !is_like_factor(y) && !conv_cats_dpars(x)) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(y)
       y <- ifelse(y == 0, y + 0.1, y) 
@@ -1378,23 +1378,25 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         prior, class = cl, coef = "",
         dpar = "", nlpar = "", resp = x$resp
       ))
-      if (any(nzchar(prior$prior[gi]))) {
+      prior$remove[gi] <- TRUE
+      if (!any(nzchar(prior$prior[gi]))) {
+        next
+      } else {
         # allowing global priors in categorical models implies conceptual problems 
         # in the specification of default priors as it becomes unclear on which 
         # prior level they should be defined
         warning2("Specifying global priors for regression coefficients in ", 
                  "categorical models is deprecated. Please specify priors ",
                  "separately for each response category.")
-      }
-      prior$remove[gi] <- TRUE
-      for (dp in names(x$dpars)) {
-        rows <- which(find_rows(
-          prior, class = cl, coef = "",
-          dpar = dp, nlpar = "", resp = x$resp
-        ))
-        for (dpi in rows) {
-          if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
-            prior$prior[dpi] <- prior$prior[gi]
+        for (dp in names(x$dpars)) {
+          rows <- which(find_rows(
+            prior, class = cl, coef = "",
+            dpar = dp, nlpar = "", resp = x$resp
+          ))
+          for (dpi in rows) {
+            if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
+              prior$prior[dpi] <- prior$prior[gi]
+            }
           }
         }
       }
