@@ -4,6 +4,7 @@
 # @param row indicating if rows or cols should be indexed
 #   only relevant if x has two or three dimensions
 p <- function(x, i = NULL, row = TRUE) {
+  # TODO: replace by "slice"
   if (isTRUE(length(dim(x)) > 3L)) {
     stop2("'p' can only handle objects up to 3 dimensions.")
   }
@@ -60,17 +61,27 @@ extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   out
 }
 
-# savely extract columns without dropping other dimensions
+# extract slices of one array dimension without dropping other dimensions
 # @param x an array
-# @param i colum index
-extract_col <- function(x, i) {
-  ldim <- length(dim(x))
-  if (ldim < 2L) {
+# @param dim dimension from which to take the slice
+# @param i slice index
+slice <- function(x, dim, i) {
+  ndim <- length(dim(x))
+  commas1 <- collapse(rep(", ", dim - 1))
+  commas2 <- collapse(rep(", ", ndim - dim))
+  expr <- paste0("extract(x, ", commas1, i, commas2, ", drop_dim = ", dim, ")")
+  eval2(expr)
+}
+
+# slice out columns without dropping other dimensions
+# @param x an array; a vector or 1D array is treated as already sliced
+# @param i column index
+slice_col <- function(x, i) {
+  if (length(dim(x)) < 2L) {
+    # a vector or 1D array is treated as already sliced
     return(x)
   }
-  commas <- collapse(rep(", ", ldim - 2))
-  expr <- paste0("extract(x, , i", commas, ", drop_dim = 2)")
-  eval2(expr)
+  slice(x, 2, i)
 }
 
 seq_rows <- function(x) {

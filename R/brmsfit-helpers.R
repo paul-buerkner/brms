@@ -377,10 +377,10 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
       out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
-      out <- extract_col(out, 1)
+      out <- slice_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- extract_col(x, i)
+    out <- slice_col(x, i)
   } else {
     out <- x
   }
@@ -402,10 +402,10 @@ get_nlpar <- function(prep, nlpar, i = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
     if (length(i) == 1L) {
-      out <- extract_col(out, 1)
+      out <- slice_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- extract_col(x, i)
+    out <- slice_col(x, i)
   } else {
     out <- x
   }
@@ -450,11 +450,11 @@ get_Mu <- function(prep, i = NULL) {
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- do_call(abind, c(Mu, along = 3))
+      Mu <- abind::abind(Mu, along = 3)
     }
   } else {
     stopifnot(!is.null(i))
-    Mu <- extract_col(Mu, i)
+    Mu <- slice_col(Mu, i)
   }
   Mu
 }
@@ -491,7 +491,7 @@ get_Sigma <- function(prep, i = NULL) {
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
-      Sigma <- extract_col(Sigma, i)
+      Sigma <- slice_col(Sigma, i)
     }
   }
   Sigma

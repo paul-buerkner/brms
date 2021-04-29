@@ -501,7 +501,7 @@ posterior_epred_zero_one_inflated_beta <- function(prep) {
 
 posterior_epred_categorical <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
   eta <- abind(prep$dpars, along = 3)
@@ -599,17 +599,19 @@ posterior_epred_mixture <- function(prep) {
 # compute 'posterior_epred' for ordinal models
 posterior_epred_ordinal <- function(prep) {
   dens <- get(paste0("d", prep$family$family), mode = "function")
-  ncat_max <- max(prep$data$nthres) + 1
-  nact_min <- min(prep$data$nthres) + 1
+  # the linear scale has one column less than the response scale
+  adjust <- ifelse(prep$family$link == "identity", 0, 1)
+  ncat_max <- max(prep$data$nthres) + adjust
+  nact_min <- min(prep$data$nthres) + adjust
   zero_mat <- matrix(0, nrow = prep$nsamples, ncol = ncat_max - nact_min)
   args <- list(link = prep$family$link)
   out <- vector("list", prep$nobs)
   for (i in seq_along(out)) {
     args_i <- args
-    args_i$eta <- extract_col(prep$dpars$mu, i)
-    args_i$disc <- extract_col(prep$dpars$disc, i)
+    args_i$eta <- slice_col(prep$dpars$mu, i)
+    args_i$disc <- slice_col(prep$dpars$disc, i)
     args_i$thres <- subset_thres(prep, i)
-    ncat_i <- NCOL(args_i$thres) + 1
+    ncat_i <- NCOL(args_i$thres) + adjust
     args_i$x <- seq_len(ncat_i)
     out[[i]] <- do_call(dens, args_i)
     if (ncat_i < ncat_max) {
