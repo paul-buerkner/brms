@@ -69,7 +69,7 @@ slice <- function(x, dim, i) {
   ndim <- length(dim(x))
   commas1 <- collapse(rep(", ", dim - 1))
   commas2 <- collapse(rep(", ", ndim - dim))
-  expr <- paste0("extract(x, ", commas1, i, commas2, ", drop_dim = ", dim, ")")
+  expr <- paste0("extract(x, ", commas1, "i", commas2, ", drop_dim = ", dim, ")")
   eval2(expr)
 }
 
