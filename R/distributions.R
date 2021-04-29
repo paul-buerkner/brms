@@ -2005,18 +2005,31 @@ dmultinomial <- function(x, eta, log = FALSE) {
 
 # density of the cumulative distribution
 dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
-  eta <- ilink(disc * (thres - eta), link)
-  ncat <- ncol(eta) + 1
-  rows <- list(eta[, 1])
-  if (ncat > 2) {
-    .fun <- function(k) {
-      eta[, k] - eta[, k - 1]
-    }
-    rows <- c(rows, lapply(2:(ncat - 1), .fun))
+  eta <- disc * (thres - eta)
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_cumulative(eta, link = link)
   }
-  rows <- c(rows, list(1 - eta[, ncat - 1]))
-  p <- do_call(cbind, rows)
-  p[, x, drop = FALSE]
+  out[, x, drop = FALSE] 
+}
+
+# generic inverse link function for the cumulative family
+inv_link_cumulative <- function(x, link) {
+  y <- ilink(x, link)
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  out <- vector("list", ncat)
+  out[[1]] <- slice(y, ndim, 1)
+  if (ncat > 2) {
+    .diff <- function(k) {
+      slice(y, ndim, k) - slice(y, ndim, k - 1)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .diff)
+  }
+  out[[ncat]] <- 1 - slice(y, ndim, ncat - 1)
+  abind::abind(out, along = ndim)
 }
 
 # density of the sratio distribution
