@@ -14,10 +14,10 @@
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
+  incl_thres = NULL,
   nsamples = NULL,
   subset = NULL,
   sort = FALSE,
-  incl_thres = FALSE,
   ...
 )
 }
@@ -51,6 +51,11 @@ of the main distributional parameter(s) \code{"mu"} are returned.}
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}
 
+\item{incl_thres}{Logical; only relevant for ordinal models when
+\code{transform} is \code{FALSE}, and ignored otherwise. Shall the
+thresholds and category-specific effects be included in the linear
+predictor? For backwards compatibility, the default is to not include them.}
+
 \item{nsamples}{Positive integer indicating how many posterior samples should
 be used. If \code{NULL} (the default) all samples are used. Ignored if
 \code{subset} is not \code{NULL}.}
@@ -62,13 +67,6 @@ If \code{NULL} (the default), all samples are used.}
 Indicating whether to return predicted values in the original 
 order (\code{FALSE}; default) or in the order of the 
 time series (\code{TRUE}).}
-
-\item{incl_thres}{For ordinal families only: A single logical value
-indicating whether to take the thresholds (intercepts) into account
-(\code{TRUE}) or not (\code{FALSE}). Thereby, "taking the thresholds into
-account" means to substract the threshold-excluding linear predictor from
-the thresholds instead of simply returning the threshold-excluding linear
-predictor.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

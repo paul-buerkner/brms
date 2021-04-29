@@ -59,8 +59,8 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = "response", dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE
+    prep,  dpar = dpar, nlpar = nlpar, sort = sort,
+    scale = "response", summary = FALSE
   )
 }
 
@@ -72,18 +72,10 @@ posterior_epred.mvbrmsprep <- function(object, ...) {
 }
 
 #' @export
-posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort, 
-                                     summary, robust, probs,
-                                     incl_thres = FALSE, ...) {
-  incl_thres <- as_one_logical(incl_thres)
-  if (incl_thres && !is_ordinal(object$family)) {
-    warning2("Argument 'incl_thres' is set to FALSE for non-ordinal families.")
-    incl_thres <- FALSE
-  }
-  if (incl_thres && scale == "response") {
-    warning2("Argument 'incl_thres' is set to FALSE if scale == \"response\".")
-    incl_thres <- FALSE
-  }
+posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
+                                     scale = "response", incl_thres = NULL, 
+                                     summary = FALSE, robust = FALSE, 
+                                     probs = c(0.025, 0.975), ...) {
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
   if (length(dpar)) {
@@ -129,8 +121,18 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
     }
     out <- get_nlpar(object, nlpar = nlpar)
   } else {
-    # predict the mean of the response distribution
+    # no dpar or nlpar specified
+    incl_thres <- as_one_logical(incl_thres %||% FALSE)
+    if (scale == "linear" && incl_thres && is_ordinal(object$family)) {
+      # extract linear predictor array with thresholds etc. included
+      if (is.mixfamily(object$family)) {
+        stop2("'incl_thres' is not supported for mixture models.")
+      }
+      object$family$link <- "identity"
+      scale <- "response"
+    }
     if (scale == "response") {
+      # predict the mean of the response distribution
       for (nlp in nlpars) {
         object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
       }
@@ -146,16 +148,17 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
       }
     } else {
       # return results on the linear scale
+      # extract all 'mu' parameters
       if (conv_cats_dpars(object$family)) {
-        mus <- dpars[grepl("^mu", dpars)] 
+        out <- dpars[grepl("^mu", dpars)] 
       } else {
-        mus <- dpars[dpar_class(dpars) %in% "mu"]
+        out <- dpars[dpar_class(dpars) %in% "mu"]
       }
-      if (length(mus) == 1L) {
-        out <- get_dpar(object, dpar = mus, ilink = FALSE)
+      if (length(out) == 1L) {
+        out <- get_dpar(object, dpar = out, ilink = FALSE)
       } else {
         # multiple mu parameters in categorical or mixture models
-        out <- lapply(mus, get_dpar, prep = object, ilink = FALSE)
+        out <- lapply(out, get_dpar, prep = object, ilink = FALSE)
         out <- abind::abind(out, along = 3)
       }
     }
@@ -165,13 +168,6 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
   }
   colnames(out) <- NULL
   out <- reorder_obs(out, object$old_order, sort = sort)
-  if (incl_thres) {
-    out <- sapply(seq_len(ncol(out)), function(i) {
-      sweep(object$thres$thres, 1, as.array(out[, i])) # Shorter (but lacks sweep()'s recycling checks): `object$thres$thres - out[, i]`
-    }, simplify = "array")
-    out <- aperm(out, perm = c(1, 3, 2))
-    dimnames(out) <- NULL
-  }
   if (summary) {
     # only for compatibility with the 'fitted' method
     out <- posterior_summary(out, probs = probs, robust = robust)
@@ -261,7 +257,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = scale, dpar = dpar, nlpar = nlpar, sort = sort, 
+    prep, dpar = dpar, nlpar = nlpar, sort = sort, scale = scale, 
     summary = summary, robust = robust, probs = probs
   )
 }
@@ -281,12 +277,10 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @param dpar Name of a predicted distributional parameter
 #'  for which samples are to be returned. By default, samples
 #'  of the main distributional parameter(s) \code{"mu"} are returned.
-#' @param incl_thres For ordinal families only: A single logical value
-#'   indicating whether to take the thresholds (intercepts) into account
-#'   (\code{TRUE}) or not (\code{FALSE}). Thereby, "taking the thresholds into
-#'   account" means to substract the threshold-excluding linear predictor from
-#'   the thresholds instead of simply returning the threshold-excluding linear
-#'   predictor.
+#' @param incl_thres Logical; only relevant for ordinal models when
+#'   \code{transform} is \code{FALSE}, and ignored otherwise. Shall the
+#'   thresholds and category-specific effects be included in the linear
+#'   predictor? For backwards compatibility, the default is to not include them.
 #' 
 #' @seealso \code{\link{posterior_epred.brmsfit}}
 #'  
@@ -309,7 +303,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
   re.form = NULL, resp = NULL, dpar = NULL, nlpar = NULL, 
-  nsamples = NULL, subset = NULL, sort = FALSE, incl_thres = FALSE, ...
+  incl_thres = NULL, nsamples = NULL, subset = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -333,8 +327,8 @@ posterior_linpred.brmsfit <- function(
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = scale, dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE, incl_thres = incl_thres
+    prep, dpar = dpar, nlpar = nlpar, sort = sort,
+    scale = scale, incl_thres = incl_thres, summary = FALSE
   )
 }
 
