@@ -657,6 +657,8 @@ test_that("Stan code for dirichlet models is correct", {
   names(dat) <- c("y1", "y2", "y3")
   dat$x <- rnorm(N)
   dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  # dirichlet in probability-sum(alpha) concentration
   prior <- prior(normal(0, 5), class = "b", dpar = "muy3") +
     prior(exponential(10), "phi")
   scode <- make_stancode(bf(y ~ 1, muy3 ~ x), data = dat, 
@@ -672,6 +674,18 @@ test_that("Stan code for dirichlet models is correct", {
   expect_match2(scode, "target += dirichlet_logit_lpdf(Y[n] | mu[n], phi[n]);")
   expect_match2(scode, "vector[N] phi = Intercept_phi + Xc_phi * b_phi;")
   expect_match2(scode, "phi[n] = exp(phi[n]);")
+  
+  # dirichlet2 in alpha parameterization
+  prior <- prior(normal(0, 5), class = "b", dpar = "muy3")
+  scode <- make_stancode(bf(y ~ 1, muy3 ~ x), data = dat, 
+                         family = brmsfamily("dirichlet2"), prior = prior)
+  expect_match2(scode, "vector[ncat] Y[N];")
+  expect_match2(scode, "muy3[n] = exp(muy3[n]);")
+  expect_match2(scode, "target += dirichlet_lpdf(Y[n] | mu[n]);")
+  expect_match2(scode, "muy3 = Intercept_muy3 + Xc_muy3 * b_muy3;")
+  expect_match2(scode, "mu[n] = transpose([muy1[n], muy2[n], muy3[n]]);")
+  expect_match2(scode, "target += normal_lpdf(b_muy3 | 0, 5);")
+  expect_match2(scode, "target += student_t_lpdf(Intercept_muy1 | 3, 0, 2.5);")
 })
 
 test_that("Stan code for ARMA models is correct", {

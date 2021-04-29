@@ -403,7 +403,7 @@ conditional_effects.brmsterms <- function(
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
-    if (conv_cats_dpars(x$family)) {
+    if (conv_cats_dpars(x$family) && is.null(dpar)) {
       stop2("Please set 'categorical' to TRUE.")
     }
     if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {

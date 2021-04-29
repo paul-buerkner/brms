@@ -841,6 +841,12 @@ posterior_predict_dirichlet <- function(i, prep, ...) {
   rdirichlet(prep$nsamples, alpha = alpha)
 }
 
+posterior_predict_dirichlet2 <- function(i, prep, ...) {
+  mu_dpars <- str_subset(names(prep$dpars), "^mu")
+  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  rdirichlet(prep$nsamples, alpha = mu)
+}
+
 posterior_predict_cumulative <- function(i, prep, ...) {
   posterior_predict_ordinal(i = i, prep = prep)
 }

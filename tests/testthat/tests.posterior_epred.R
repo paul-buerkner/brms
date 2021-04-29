@@ -184,4 +184,12 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
   prep$family <- dirichlet()
   pred <- brms:::posterior_epred_dirichlet(prep = prep)
   expect_equal(dim(pred), c(ns, nobs, ncat))
+  
+  prep$family <- brmsfamily("dirichlet2")
+  prep$dpars$mu1 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu2 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu3 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  pred <- brms:::posterior_epred_dirichlet2(prep = prep)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
 })
+

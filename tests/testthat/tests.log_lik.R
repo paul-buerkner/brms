@@ -434,6 +434,13 @@ test_that("log_lik for categorical and related models runs without erros", {
   prep$family <- dirichlet()
   ll <- sapply(1:nobs, brms:::log_lik_dirichlet, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
+  
+  prep$family <- brmsfamily("dirichlet2")
+  prep$dpars$mu1 <- rexp(ns, 10)
+  prep$dpars$mu2 <- rexp(ns, 10)
+  prep$dpars$mu3 <- rexp(ns, 10)
+  ll <- sapply(1:nobs, brms:::log_lik_dirichlet2, prep = prep)
+  expect_equal(dim(ll), c(ns, nobs))
 })
 
 test_that("censored and truncated log_lik run without errors", {

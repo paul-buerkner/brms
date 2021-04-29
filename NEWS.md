@@ -8,6 +8,13 @@ of custom families thank to Martin Modrak. (#1131)
 substract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
 
+### Other Changes
+
+* Remove use of `cbind` to express multivariate models after 
+over two years of deprecation (please use `mvbind` instead).
+* Method `posterior_linpred(transform = TRUE)` is now equal
+to `posterior_epred(dpar = "mu")` and no longer deprecated.
+
 
 # brms 2.15.0
 

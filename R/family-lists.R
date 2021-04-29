@@ -75,7 +75,7 @@
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights", "subset"), 
-    specials = c("categorical")
+    specials = c("categorical", "joint_link")
   )
 }
 
@@ -86,7 +86,7 @@
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights", "subset", "trials"), 
-    specials = c("multinomial"),
+    specials = c("multinomial", "joint_link"),
     include = "fun_multinomial_logit.stan",
     normalized = ""
   )
@@ -107,12 +107,25 @@
 .family_dirichlet <- function() {
   list(
     links = "logit", 
-    dpars = "phi",  # more dpars are determind based on the data
+    dpars = "phi",  # more dpars are determined based on the data
+    type = "real", ybounds = c(0, 1), 
+    closed = c(FALSE, FALSE),
+    ad = c("weights", "subset"), 
+    specials = c("dirichlet", "joint_link"),
+    include = "fun_dirichlet_logit.stan",
+    normalized = ""
+  )
+}
+
+.family_dirichlet2 <- function() {
+  list(
+    links = c("log", "softplus", "identity", "logm1"), 
+    dpars = NULL,  # is determind based on the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset"), 
     specials = c("dirichlet"),
-    include = "fun_dirichlet_logit.stan",
+    include = "fun_logm1.stan",
     normalized = ""
   )
 }
@@ -332,7 +345,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "ordered_thres", "thres_minus_eta"),
+    specials = c("ordinal", "ordered_thres", "thres_minus_eta", "joint_link"),
     normalized = ""
   )
 }
@@ -346,7 +359,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "cs", "thres_minus_eta"),
+    specials = c("ordinal", "cs", "thres_minus_eta", "joint_link"),
     normalized = ""
   )
 }
@@ -360,7 +373,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"),
-    specials = c("ordinal", "cs", "eta_minus_thres"),
+    specials = c("ordinal", "cs", "eta_minus_thres", "joint_link"),
     normalized = ""
   )
 }
@@ -374,7 +387,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "cs", "eta_minus_thres"),
+    specials = c("ordinal", "cs", "eta_minus_thres", "joint_link"),
     normalized = ""
   )
 }
