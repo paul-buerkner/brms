@@ -12,6 +12,11 @@ over two years of deprecation (please use `mvbind` instead).
 * Method `posterior_linpred(transform = TRUE)` is now equal
 to `posterior_epred(dpar = "mu")` and no longer deprecated.
 
+### Bug Fixes
+
+* Fix an issue in the post-processing of non-normal ARMA models
+thanks to Thomas Buehrens. (#1149)
+
 
 # brms 2.15.0
 
