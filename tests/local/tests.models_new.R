@@ -564,7 +564,6 @@ test_that(paste(
   thres_minus_eta_ch <- array(thres_minus_eta_ch,
                               dim = c(nrow(thres), ncol(eta), ncol(thres)))
   disc <- bprep$dpars$disc$fe$b %*% t(bprep$dpars$disc$fe$X)
-  stopifnot(identical(exp(disc), brms:::ilink(disc, family(fit)$link_disc)))
   disc <- exp(disc)
   thres_minus_eta_ch <- apply(thres_minus_eta_ch, 3, "*", disc)
   thres_minus_eta_ch <- array(thres_minus_eta_ch,
