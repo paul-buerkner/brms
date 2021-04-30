@@ -1998,7 +1998,7 @@ test_that("argument 'stanvars' is handled correctly", {
   
   stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
   scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy,
-                         stanvars = stanvars, threads = 2)
+                         stanvars = stanvars, threads = 2, parse = FALSE)
   expect_match2(scode, "mu += 1.0;")
   
   
