@@ -960,19 +960,14 @@ test_that("ordinal model with grouped thresholds works correctly", {
   ce <- conditional_effects(fit, categorical = TRUE)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
-  # TODO: The unmatching group/threshold combinations seem to have been assigned
-  # a value of zero which is probably misleading (NA or a completely different
-  # structure (e.g. a list, see the check below) might be better; if both is not
-  # an option, perhaps disallow grouped thresholds for `incl_thres = TRUE`):
-  stopifnot(!any(thres_minus_eta == 0))
-  ### Assigning NA might be an option:
-  thres_minus_eta[which(thres_minus_eta == 0, arr.ind = TRUE)] <- NA
-  ###
   bprep <- prepare_predictions(fit)
   thres <- bprep$thres$thres
   eta <- posterior_linpred(fit)
   gr_unq <- unique(family(fit)$thres$group)
   gr_vec <- fit$data$gr
+  nthres_max <- max(
+    by(family(fit)$thres, family(fit)$thres$group, function(x) max(x$thres))
+  )
   thres_minus_eta_ch <- lapply(setNames(nm = gr_unq), function(gr) {
     thres_gr_nms <- grepl(paste0("^b_Intercept\\[", gr, ","), colnames(thres))
     thres_gr <- thres[, thres_gr_nms]
@@ -982,17 +977,25 @@ test_that("ordinal model with grouped thresholds works correctly", {
       thres_minus_eta_ch_gr,
       dim = c(nrow(thres_gr), ncol(eta_gr), ncol(thres_gr))
     )
+    if (ncol(thres_gr) < nthres_max) {
+      dim_NA <- c(
+        dim(thres_minus_eta_ch_gr)[-3],
+        nthres_max - dim(thres_minus_eta_ch_gr)[3]
+      )
+      thres_minus_eta_ch_gr <- abind::abind(thres_minus_eta_ch_gr,
+                                            array(dim = dim_NA))
+    }
     dimnames(thres_minus_eta_ch_gr) <- list(
       NULL,
       NULL,
-      as.character(seq_len(ncol(thres_gr)))
+      as.character(seq_len(nthres_max))
     )
     return(thres_minus_eta_ch_gr)
   })
-  ### TODO: Decide for an output format and then make the following
-  ### expect_identical() call work:
-  # expect_identical(thres_minus_eta, thres_minus_eta_ch)
-  ### 
+  new_arrnms <- dimnames(thres_minus_eta_ch[[1]])
+  thres_minus_eta_ch <- abind::abind(thres_minus_eta_ch, along = 2)
+  dimnames(thres_minus_eta_ch) <- new_arrnms
+  expect_identical(thres_minus_eta, thres_minus_eta_ch)
 })
 
 test_that("Fixing parameters to constants works correctly", {
