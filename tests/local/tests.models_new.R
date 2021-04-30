@@ -550,6 +550,45 @@ test_that("disc parameter in ordinal models is handled correctly", {
   )[[3]])
 })
 
+test_that(paste(
+  "Argument `incl_thres` of posterior_linpred() works correctly (for",
+  "non-grouped thresholds)"
+), {
+  # The first part of this test uses `fit` from above. This is probably bad
+  # practice. Repeat `fit` here if you want.
+  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+  bprep <- prepare_predictions(fit)
+  thres <- bprep$thres$thres
+  eta <- posterior_linpred(fit)
+  thres_minus_eta_ch <- apply(thres, 2, "-", eta)
+  thres_minus_eta_ch <- array(thres_minus_eta_ch,
+                              dim = c(nrow(thres), ncol(eta), ncol(thres)))
+  dimnames(thres_minus_eta_ch) <- list(NULL,
+                                       NULL,
+                                       as.character(seq_len(ncol(thres))))
+  # TODO: Fails (probably due to `disc ~ 1`):
+  expect_identical(thres_minus_eta, thres_minus_eta_ch)
+  
+  # Without `disc ~ 1`:
+  fit <- brm(
+    bf(rating ~ period + carry + treat + (1|subject)),
+    data = inhaler, family = cumulative(),
+    prior = prior(normal(0,5)),
+    chains = 2, refresh = 0
+  )
+  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+  bprep <- prepare_predictions(fit)
+  thres <- bprep$thres$thres
+  eta <- posterior_linpred(fit)
+  thres_minus_eta_ch <- apply(thres, 2, "-", eta)
+  thres_minus_eta_ch <- array(thres_minus_eta_ch,
+                              dim = c(nrow(thres), ncol(eta), ncol(thres)))
+  dimnames(thres_minus_eta_ch) <- list(NULL,
+                                       NULL,
+                                       as.character(seq_len(ncol(thres))))
+  expect_identical(thres_minus_eta, thres_minus_eta_ch)
+})
+
 test_that("Mixture models work correctly", {
   set.seed(12346)
   dat <- data.frame(
@@ -916,6 +955,39 @@ test_that("ordinal model with grouped thresholds works correctly", {
   expect_range(waic(fit)$estimates[3, 1], 350, 400)
   ce <- conditional_effects(fit, categorical = TRUE)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
+  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+  # TODO: The unmatching group/threshold combinations seem to have been assigned
+  # a value of zero which is probably misleading (NA or a completely different
+  # structure (e.g. a list, see the check below) might be better; if both is not
+  # an option, perhaps disallow grouped thresholds for `incl_thres = TRUE`):
+  stopifnot(!any(thres_minus_eta == 0))
+  ### Assigning NA might be an option:
+  thres_minus_eta[which(thres_minus_eta == 0, arr.ind = TRUE)] <- NA
+  ###
+  bprep <- prepare_predictions(fit)
+  thres <- bprep$thres$thres
+  eta <- posterior_linpred(fit)
+  gr_unq <- unique(family(fit)$thres$group)
+  gr_vec <- fit$data$gr
+  thres_minus_eta_ch <- lapply(setNames(nm = gr_unq), function(gr) {
+    thres_gr_nms <- grepl(paste0("^b_Intercept\\[", gr, ","), colnames(thres))
+    thres_gr <- thres[, thres_gr_nms]
+    eta_gr <- eta[, gr_vec == gr, drop = FALSE]
+    thres_minus_eta_ch_gr <- apply(thres_gr, 2, "-", eta_gr)
+    thres_minus_eta_ch_gr <- array(
+      thres_minus_eta_ch_gr,
+      dim = c(nrow(thres_gr), ncol(eta_gr), ncol(thres_gr))
+    )
+    dimnames(thres_minus_eta_ch_gr) <- list(
+      NULL,
+      NULL,
+      as.character(seq_len(ncol(thres_gr)))
+    )
+  })
+  ### TODO: Decide for an output format and then make the following
+  ### expect_identical() call work:
+  # expect_identical(thres_minus_eta, thres_minus_eta_ch)
+  ### 
 })
 
 test_that("Fixing parameters to constants works correctly", {
