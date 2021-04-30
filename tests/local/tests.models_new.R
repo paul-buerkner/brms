@@ -112,7 +112,7 @@ test_that("ARMA models work correctly", {
   N <- 100
   y <- arima.sim(list(ar = c(0.7, -0.5, 0.04, 0.2, -0.4)), N)
   dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
-
+  
   fit_ar <- brm(
     y ~ x + ar(p = 5), data = dat,
     prior = prior(normal(0, 5), class = "ar"),
@@ -124,12 +124,12 @@ test_that("ARMA models work correctly", {
   expect_range(ar[3], -0.2, 0.25)
   expect_range(ar[5], -0.6, -0.1)
   expect_ggplot(plot(conditional_effects(fit_ar))[[1]])
-
+  
   fit_ma <- brm(y ~ x + ma(q = 1), data = dat,
                 chains = 2, refresh = 0)
   print(fit_ma)
   expect_gt(LOO(fit_ma)$estimates[3, 1], LOO(fit_ar)$estimates[3, 1])
-
+  
   fit_arma <- brm(
     y ~ x + (1|g) + arma(gr = g, cov = TRUE), data = dat,
     prior = prior(normal(0, 5), class = "ar") +
@@ -140,7 +140,7 @@ test_that("ARMA models work correctly", {
   expect_range(waic(fit_arma)$estimates[3, 1], 250, 350)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
   expect_ggplot(plot(conditional_effects(fit_arma), plot = FALSE)[[1]])
-
+  
   fit_arma_pois <- brm(
     count ~ Trt + (1 | patient) + arma(visit, patient, cov = TRUE),
     data = epilepsy, family = poisson(),
@@ -156,7 +156,7 @@ test_that("Models from hypothesis doc work correctly", {
   prior <- c(set_prior("normal(0,2)", class = "b"),
              set_prior("student_t(10,0,1)", class = "sigma"),
              set_prior("student_t(10,0,1)", class = "sd"))
-
+  
   ## fit a linear mixed effects models
   fit <- brm(time ~ age + sex + disease + (1 + age|patient),
              data = kidney, family = lognormal(),
@@ -164,17 +164,17 @@ test_that("Models from hypothesis doc work correctly", {
              control = list(adapt_delta = 0.95),
              refresh = 0)
   print(fit)
-
+  
   ## perform two-sided hypothesis testing
   hyp1 <- hypothesis(fit, "sexfemale = age + diseasePKD")
   expect_range(hyp1$hypothesis$Estimate, 0.6, 0.74)
   expect_range(hyp1$hypothesis$Evid.Ratio, 1, 5)
   expect_true(is(plot(hyp1)[[1]], "ggplot"))
-
+  
   ## perform one-sided hypothesis testing
   hyp2 <- hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
   expect_range(hyp2$hypothesis$Evid.Ratio, 300)
-
+  
   ## test more than one hypothesis at once
   hyp3 <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
   hyp3 <- hypothesis(fit, hyp3)
@@ -223,7 +223,7 @@ test_that("bridgesampling methods work correctly", {
     backend = "rstan"
   )
   print(fit2)
-
+  
   # compute the bayes factor
   expect_gt(bayes_factor(fit2, fit1)$bf, 1)
   # compute the posterior model probabilities
@@ -248,16 +248,16 @@ test_that("varying slopes without overall effects work", {
   expect_range(reloo1$estimates[3, 1], 1600, 1700)
   reloo2 <- LOO(fit1, reloo = TRUE, chains = 1, iter = 100)
   expect_range(reloo2$estimates[3, 1], 1600, 1700)
-
+  
   conditions <- data.frame(zAge = 0, zBase = 0, Trt = 0)
   ce <- conditional_effects(fit1, conditions = conditions)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-
+  
   conditions <- data.frame(zAge = 0, zBase = 0,
                            Trt = 0, visit = c(1:4, NA))
   ce <- conditional_effects(fit1, conditions = conditions, re_formula = NULL)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-
+  
   expect_range(WAIC(fit1)$estimates[3, 1], 1500, 1600)
   expect_equal(dim(predict(fit1)), c(nobs(fit1), 4))
 })
@@ -272,17 +272,17 @@ test_that("multivariate normal models work correctly", {
   id <- sample(1:10, N, replace = TRUE)
   tim <- sample(1:N, N)
   data <- data.frame(y1, y2, x, month, id, tim)
-
+  
   fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + 
                    (1|x|id) + arma(tim, id, q = 0),
-                  data = data,
-                  prior = c(prior_(~normal(0,5), resp = "y1"),
-                            prior_(~normal(0,5), resp = "y2"),
-                            prior_(~lkj(5), class = "rescor")),
-                  sample_prior = TRUE,
-                  iter = 1000, chains = 2, refresh = 0)
+                 data = data,
+                 prior = c(prior_(~normal(0,5), resp = "y1"),
+                           prior_(~normal(0,5), resp = "y2"),
+                           prior_(~lkj(5), class = "rescor")),
+                 sample_prior = TRUE,
+                 iter = 1000, chains = 2, refresh = 0)
   print(fit_mv1)
-
+  
   expect_equal(dim(predict(fit_mv1)), c(300, 4, 2))
   expect_equal(dim(fitted(fit_mv1)), c(300, 4, 2))
   newdata <- data.frame(month = 1, y1 = 0, y2 = 0, x = 0, id = 1, tim = 1)
@@ -290,7 +290,7 @@ test_that("multivariate normal models work correctly", {
   cs <- conditional_smooths(fit_mv1, nsamples = 750)
   expect_equal(length(cs), 2)
   expect_ggplot(plot(cs, ask = FALSE)[[2]])
-
+  
   fit_mv2 <- brm(mvbind(y1, y2) ~ 1, data = data,
                  prior = prior_(~lkj(5), class = "rescor"),
                  sample_prior = TRUE, iter = 1000, refresh = 0)
@@ -304,7 +304,7 @@ test_that("generalized multivariate models work correctly", {
   bform <- (bf(tarsus ~ sex + (1|p|fosternest)) + skew_normal()) +
     (bf(back ~ s(tarsus, by = sex) + (1|p|fosternest)) + gaussian())
   fit_mv <- brm(bform, BTdata, chains = 2, iter = 1000, refresh = 0)
-
+  
   print(fit_mv)
   expect_ggplot(pp_check(fit_mv, resp = "back"))
   expect_range(waic(fit_mv)$estimates[3, 1], 4300, 4400)
@@ -325,7 +325,7 @@ test_that("ZI and HU models work correctly", {
   print(fit_hu)
   expect_equal(dim(predict(fit_hu)), c(nobs(fit_hu), 4))
   expect_ggplot(plot(conditional_effects(fit_hu), ask = FALSE)[[2]])
-
+  
   fit_zi <- brm(
     bf(count ~ zAge + zBase * Trt + (1|patient), zi ~ Trt),
     data = epilepsy, family = zero_inflated_negbinomial(),
@@ -340,7 +340,7 @@ test_that("ZI and HU models work correctly", {
   expect_ggplot(plot(conditional_effects(fit_zi), ask = FALSE)[[2]])
   waic_zi <- WAIC(fit_hu, fit_zi, nsamples = 100)
   expect_equal(dim(waic_zi$ic_diffs__), c(1, 2))
-
+  
   ## zero_inflated beta model
   data("GasolineYield", package = "betareg")
   dat <- GasolineYield
@@ -404,7 +404,7 @@ test_that("Nested non-linear models work correctly", {
     prior(normal(0, 1), nlpar = "b")
   fit <- brm(bform, dat, prior = bprior, family = Beta(), refresh = 0)
   print(fit)
-
+  
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(bayes_R2(fit)[, 1], 0.2, 0.55)
@@ -420,20 +420,20 @@ test_that("Multivariate GAMMs work correctly", {
     control = list(adapt_delta = 0.95), refresh = 0
   )
   print(fit_gam)
-
+  
   ce <- conditional_effects(fit_gam)
   expect_ggplot(plot(ce, ask = FALSE, rug = TRUE, points = TRUE)[[1]])
   ce <- conditional_effects(fit_gam, surface = TRUE, too_far = 0.05)
   expect_ggplot(plot(ce, ask = FALSE, rug = TRUE)[[1]])
-
+  
   cs <- conditional_smooths(fit_gam, resolution = 25)
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
   cs <- conditional_smooths(fit_gam, resolution = 100, too_far = 0.05)
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
-
+  
   expect_range(loo(fit_gam)$estimates[3, 1], 830, 870)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
-
+  
   newd <- data.frame(x0 = (0:30)/30, x1 = (0:30)/30,
                      x2 = (0:30)/30, x3 = (0:30)/30)
   prfi <- cbind(predict(fit_gam, newd), fitted(fit_gam, newdata = newd))
@@ -446,16 +446,16 @@ test_that("GAMMs with factor variable in 'by' work correctly", {
   fit_gam2 <- brm(y ~ fac + s(x2, by = fac, k = 4), dat,
                   chains = 2, refresh = 0)
   print(fit_gam2)
-
+  
   ce <- conditional_effects(fit_gam2, "x2:fac")
   expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
   cs <- conditional_smooths(fit_gam2, res = 10)
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
-
+  
   fit_gam3 <- brm(y ~ fac + t2(x1, x2, by = fac), dat,
                   chains = 2, refresh = 0)
   print(fit_gam3)
-
+  
   ce <- conditional_effects(fit_gam3, "x2:fac")
   expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
   cs <- conditional_smooths(fit_gam3, too_far = 0.1)
@@ -473,7 +473,7 @@ test_that("generalized extreme value models work correctly", {
       max(Year) + c(0, 10)) - median(Year)
     )
   )
-
+  
   fit_gev <- brm(
     bf(SeaLevel ~ cYear + SOI,
        sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI),
@@ -482,7 +482,7 @@ test_that("generalized extreme value models work correctly", {
     control = list(adapt_delta = 0.95), refresh = 0
   )
   print(fit_gev)
-
+  
   prfi <- cbind(predict(fit_gev), fitted(fit_gev))
   expect_range(prfi[, 1], prfi[, 5] - 0.03, prfi[, 5] + 0.03)
   # expect_range(loo(fit_gev)$estimates[3, 1], -115, -95)
@@ -497,7 +497,7 @@ test_that("update works correctly for some special cases", {
   expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt1"))
   fit3 <- update(fit2, ~ . - Trt, newdata = epilepsy, refresh = 0)
   expect_equal(rownames(fixef(fit3)), c("Intercept"))
-
+  
   # test that family is correctly updated
   fit4 <- update(fit1, family = student(), refresh = 0)
   expect_equal(family(fit4)$family, "student")
@@ -512,7 +512,7 @@ test_that("Wiener diffusion models work correctly", {
   x <- rnorm(100, mean = 1)
   dat <- rwiener(n = 1, alpha = 2, tau = .3, beta = .5, delta = .5 + x)
   dat$x <- x
-
+  
   fit_d1 <- brm(bf(q | dec(resp) ~ x), dat,
                 family = wiener(), refresh = 0)
   print(fit_d1)
@@ -520,7 +520,7 @@ test_that("Wiener diffusion models work correctly", {
   expect_ggplot(pp_check(fit_d1))
   pp <- posterior_predict(fit_d1, nsamples = 10, negative_rt = TRUE)
   expect_true(min(pp) < 0)
-
+  
   fit_d2 <- brm(bf(q | dec(resp) ~ x, ndt ~ x),
                 dat, family = wiener(), refresh = 0)
   print(fit_d2)
@@ -528,7 +528,7 @@ test_that("Wiener diffusion models work correctly", {
   expect_ggplot(pp_check(fit_d2))
   pred <- predict(fit_d2, nsamples = 10, negative_rt = TRUE, summary = FALSE)
   expect_true(any(pred < 0))
-
+  
   waic_d <- WAIC(fit_d1, fit_d2)
   expect_equal(dim(waic_d$ic_diffs__), c(1, 2))
 })
@@ -536,9 +536,9 @@ test_that("Wiener diffusion models work correctly", {
 test_that("disc parameter in ordinal models is handled correctly", {
   fit <- brm(
     bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
-     data = inhaler, family = cumulative(),
-     prior = prior(normal(0,5)),
-     chains = 2, refresh = 0
+    data = inhaler, family = cumulative(),
+    prior = prior(normal(0,5)),
+    chains = 2, refresh = 0
   )
   print(fit)
   expect_range(waic(fit)$estimates[3, 1], 870, 920)
@@ -567,7 +567,7 @@ test_that("Mixture models work correctly", {
     prior(normal(5, 5), Intercept, dpar = mu2),
     prior(normal(10, 5), Intercept, dpar = mu3)
   )
-
+  
   fit1 <- brm(
     bform1, data = dat, family = mixfam,
     prior = c(prior, prior(dirichlet(1, 1, 1), theta)),
@@ -577,7 +577,7 @@ test_that("Mixture models work correctly", {
   expect_ggplot(pp_check(fit1))
   loo1 <- LOO(fit1)
   expect_equal(dim(pp_mixture(fit1)), c(nobs(fit1), 4, 3))
-
+  
   bform2 <- bf(bform1, theta1 = 1, theta2 = 1, theta3 = 1)
   fit2 <- brm(
     bform2, data = dat, family = mixfam,
@@ -589,7 +589,7 @@ test_that("Mixture models work correctly", {
   loo2 <- LOO(fit2)
   expect_gt(loo2$estimates[3, 1], loo1$estimates[3, 1])
   expect_equal(dim(pp_mixture(fit2)), c(nobs(fit2), 4, 3))
-
+  
   # MCMC chains get stuck when fitting this model
   # bform3 <- bf(bform1, theta1 ~ z, theta2 ~ 1)
   # prior3 <- prior +
@@ -621,7 +621,7 @@ test_that("Gaussian processes work correctly", {
   ce <- conditional_effects(fit1, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
-
+  
   # multivariate GPs
   fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, refresh = 0)
   print(fit2)
@@ -632,7 +632,7 @@ test_that("Gaussian processes work correctly", {
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit2)$estimates[3, 1], 100, 200)
-
+  
   # GP with continuous 'by' variable
   fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2, refresh = 0)
   print(fit3)
