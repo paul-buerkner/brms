@@ -37,6 +37,7 @@ link <- function(x, link) {
     "cloglog" = cloglog(x), 
     "probit_approx" = qnorm(x),
     "softplus" = log_expm1(x),
+    "squareplus" = (x^2 - 1) / x,
     stop2("Link '", link, "' not supported.")
   )
 }
@@ -60,6 +61,7 @@ ilink <- function(x, link) {
     "cloglog" = inv_cloglog(x), 
     "probit_approx" = pnorm(x),
     "softplus" = log1p_exp(x),
+    "squareplus" = (x + sqrt(x^2 + 4)) / 2,
     stop2("Link '", link, "' not supported.")
   )
 }

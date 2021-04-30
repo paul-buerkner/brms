@@ -1751,7 +1751,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
       )
       str_add(out$tpar_comp) <- glue(
         "  // compute actual latent values\n",
-        "  Xme{i} = rep_matrix(transpose(meanme_{i}), {Nme}) ", 
+        "  Xme{i} = rep_matrix(transpose(meanme_{i}), {Nme})", 
         " + transpose(diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i});\n"
       )
       str_add(out$tpar_def) <- cglue(

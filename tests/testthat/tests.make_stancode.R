@@ -443,6 +443,11 @@ test_that("self-defined functions appear in the Stan code", {
                          family = brmsfamily("poisson", "softplus"))
   expect_match2(scode, "real log_expm1(real x)")
   
+  # squareplus link
+  scode <- make_stancode(rating ~ treat, data = inhaler,
+                         family = brmsfamily("poisson", "squareplus"))
+  expect_match2(scode, "real squareplus(real x)")
+  
   # tan_half link
   expect_match2(make_stancode(rating ~ treat, data = inhaler,
                               family = von_mises("tan_half")),

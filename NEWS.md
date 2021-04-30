@@ -4,6 +4,8 @@
 
 * Expose function `get_dpar` for use in the post-processing 
 of custom families thank to Martin Modrak. (#1131)
+* Support the `squareplus` link function in all families and
+distributional parameters that also allow for the `log` link function.
 
 ### Other Changes
 
