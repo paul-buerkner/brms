@@ -987,6 +987,7 @@ test_that("ordinal model with grouped thresholds works correctly", {
       NULL,
       as.character(seq_len(ncol(thres_gr)))
     )
+    return(thres_minus_eta_ch_gr)
   })
   ### TODO: Decide for an output format and then make the following
   ### expect_identical() call work:
