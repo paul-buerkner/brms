@@ -4,6 +4,8 @@
 
 * Expose function `get_dpar` for use in the post-processing 
 of custom families thank to Martin Modrak. (#1131)
+* Support the `squareplus` link function in all families and
+distributional parameters that also allow for the `log` link function.
 * Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
 substract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
@@ -14,6 +16,11 @@ of an ordinal family. (#1137)
 over two years of deprecation (please use `mvbind` instead).
 * Method `posterior_linpred(transform = TRUE)` is now equal
 to `posterior_epred(dpar = "mu")` and no longer deprecated.
+
+### Bug Fixes
+
+* Fix an issue in the post-processing of non-normal ARMA models
+thanks to Thomas Buehrens. (#1149)
 
 
 # brms 2.15.0

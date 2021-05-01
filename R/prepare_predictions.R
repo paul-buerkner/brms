@@ -714,6 +714,11 @@ prepare_predictions_ac <- function(bterms, samples, sdata, oos = NULL,
   if (has_ac_class(acef, "cosy")) {
     out$cosy <-  get_samples(samples, paste0("^cosy", p, "$"))
   }
+  if (use_ac_cov_time(acef)) {
+    # prepare predictions for the covariance structures of time-series models
+    out$begin_tg <- sdata[[paste0("begin_tg", p)]]
+    out$end_tg <- sdata[[paste0("end_tg", p)]]
+  }
   if (has_ac_latent_residuals(bterms)) {
     regex_err <- paste0("^err", p, "\\[")
     has_err <- any(grepl(regex_err, colnames(samples)))
@@ -735,11 +740,6 @@ prepare_predictions_ac <- function(bterms, samples, sdata, oos = NULL,
         out$err[, obs] <- rblapply(seq_rows(samples), .err)
       }
     }
-  }
-  if (use_ac_cov_time(acef)) {
-    # prepare predictions for the covariance structures of time-series models
-    out$begin_tg <- sdata[[paste0("begin_tg", p)]]
-    out$end_tg <- sdata[[paste0("end_tg", p)]]
   }
   if (has_ac_class(acef, "sar")) {
     out$lagsar <- get_samples(samples, paste0("^lagsar", p, "$"))

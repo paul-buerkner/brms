@@ -1,7 +1,8 @@
-# unless otherwise specifiedm functions return a named list 
+# unless otherwise specified, functions return a named list 
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
+# TODO: refactor to not require extraction of information from all model parts
 stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
@@ -9,12 +10,15 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- families[unique_combs]
   links <- links[unique_combs]
   out <- list()
+  # TODO: detect these links in all dpars not just in 'mu'
   if (any(links == "cauchit")) {
     str_add(out$fun) <- "  #include 'fun_cauchit.stan'\n"
   } else if (any(links == "cloglog")) {
     str_add(out$fun) <- "  #include 'fun_cloglog.stan'\n"
   } else if (any(links == "softplus")) {
     str_add(out$fun) <- "  #include 'fun_softplus.stan'\n"
+  } else if (any(links == "squareplus")) {
+    str_add(out$fun) <- "  #include 'fun_squareplus.stan'\n"
   }
   special <- get_special_prior(prior)
   if (!isNULL(lapply(special, "[[", "horseshoe"))) {
@@ -131,7 +135,8 @@ stan_link <- function(link) {
     cauchit = "cauchit",
     tan_half = "tan_half",
     log1p = "log1p",
-    softplus = "log_expm1"
+    softplus = "log_expm1",
+    squareplus = "inv_squareplus"
   )
 }
 
@@ -152,7 +157,8 @@ stan_ilink <- function(link) {
     cauchit = "inv_cauchit",
     tan_half = "inv_tan_half",
     log1p = "expm1",
-    softplus = "log1p_exp"
+    softplus = "log1p_exp",
+    squareplus = "squareplus"
   )
 }
 

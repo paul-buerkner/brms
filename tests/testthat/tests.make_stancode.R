@@ -443,6 +443,11 @@ test_that("self-defined functions appear in the Stan code", {
                          family = brmsfamily("poisson", "softplus"))
   expect_match2(scode, "real log_expm1(real x)")
   
+  # squareplus link
+  scode <- make_stancode(rating ~ treat, data = inhaler,
+                         family = brmsfamily("poisson", "squareplus"))
+  expect_match2(scode, "real squareplus(real x)")
+  
   # tan_half link
   expect_match2(make_stancode(rating ~ treat, data = inhaler,
                               family = von_mises("tan_half")),
@@ -1993,7 +1998,7 @@ test_that("argument 'stanvars' is handled correctly", {
   
   stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
   scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy,
-                         stanvars = stanvars, threads = 2)
+                         stanvars = stanvars, threads = 2, parse = FALSE)
   expect_match2(scode, "mu += 1.0;")
   
   
