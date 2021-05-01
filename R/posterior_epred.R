@@ -597,7 +597,9 @@ posterior_epred_ordinal <- function(prep) {
   adjust <- ifelse(prep$family$link == "identity", 0, 1)
   ncat_max <- max(prep$data$nthres) + adjust
   nact_min <- min(prep$data$nthres) + adjust
-  na_mat <- matrix(NA, nrow = prep$nsamples, ncol = ncat_max - nact_min)
+  init_mat <- matrix(ifelse(prep$family$link == "identity", NA, 0),
+                     nrow = prep$nsamples,
+                     ncol = ncat_max - nact_min)
   args <- list(link = prep$family$link)
   out <- vector("list", prep$nobs)
   for (i in seq_along(out)) {
@@ -610,7 +612,7 @@ posterior_epred_ordinal <- function(prep) {
     out[[i]] <- do_call(dens, args_i)
     if (ncat_i < ncat_max) {
       sel <- seq_len(ncat_max - ncat_i)
-      out[[i]] <- cbind(out[[i]], na_mat[, sel])
+      out[[i]] <- cbind(out[[i]], init_mat[, sel])
     }
   }
   out <- abind(out, along = 3)
