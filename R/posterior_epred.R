@@ -508,7 +508,7 @@ posterior_epred_categorical <- function(prep) {
 
 posterior_epred_multinomial <- function(prep) {
   get_counts <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta) * trials[i]
   }
   eta <- abind(prep$dpars, along = 3)
@@ -522,7 +522,7 @@ posterior_epred_multinomial <- function(prep) {
 
 posterior_epred_dirichlet <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
   eta <- prep$dpars[grepl("^mu", names(prep$dpars))]
