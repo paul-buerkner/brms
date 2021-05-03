@@ -2158,38 +2158,70 @@ inv_link_cratio <- function(x, link) {
 }
 
 # density of the acat distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dacat <- function(x, eta, thres, disc = 1, link = "logit") {
   eta <- disc * (eta - thres)
-  ncat <- ncol(eta) + 1
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_acat(eta, link = link)
+  }
+  out[, x, drop = FALSE]
+}
+
+# generic inverse link function for the acat family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` (see dacat()).
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `ncat`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) containing the values
+#   of the inverse-link function applied to `x`.
+inv_link_acat <- function(x, link) {
+  ncat <- ncol(x) + 1
   if (link == "logit") { 
     # faster evaluation in this case
     p <- cbind(
-      rep(1, nrow(eta)), exp(eta[, 1]), 
-      matrix(NA, nrow = nrow(eta), ncol = ncat - 2)
+      rep(1, nrow(x)), exp(x[, 1]), 
+      matrix(NA, nrow = nrow(x), ncol = ncat - 2)
     )
     if (ncat > 2) {
       .fun <- function(k) {
-        rowSums(eta[, 1:(k - 1)])
+        rowSums(x[, 1:(k - 1)])
       }
       p[, 3:ncat] <- exp(sapply(3:ncat, .fun))
     }
   } else {
-    eta <- ilink(eta, link)
+    x <- ilink(x, link)
     p <- cbind(
-      apply(1 - eta[, 1:(ncat - 1)], 1, prod), 
-      matrix(0, nrow = nrow(eta), ncol = ncat - 1)
+      apply(1 - x[, 1:(ncat - 1)], 1, prod), 
+      matrix(0, nrow = nrow(x), ncol = ncat - 1)
     )
     if (ncat > 2) {
       .fun <- function(k) {
-        apply(as.matrix(eta[, 1:(k - 1)]), 1, prod) * 
-          apply(as.matrix(1 - eta[, k:(ncat - 1)]), 1, prod)
+        apply(as.matrix(x[, 1:(k - 1)]), 1, prod) * 
+          apply(as.matrix(1 - x[, k:(ncat - 1)]), 1, prod)
       }
       p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), .fun)
     }
-    p[, ncat] <- apply(eta[, 1:(ncat - 1)], 1, prod)
+    p[, ncat] <- apply(x[, 1:(ncat - 1)], 1, prod)
   }
-  p <- p / rowSums(p)
-  p[, x, drop = FALSE]
+  p / rowSums(p)
 }
 
 # CDF for ordinal distributions
