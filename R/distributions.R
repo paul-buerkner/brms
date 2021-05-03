@@ -2043,19 +2043,19 @@ dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
 inv_link_cumulative <- function(x, link) {
-  y <- ilink(x, link)
+  x <- ilink(x, link)
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
   out <- vector("list", ncat)
-  out[[1]] <- slice(y, ndim, 1)
+  out[[1]] <- slice(x, ndim, 1)
   if (ncat > 2) {
     .diff <- function(k) {
-      slice(y, ndim, k) - slice(y, ndim, k - 1)
+      slice(x, ndim, k) - slice(x, ndim, k - 1)
     }
     mid_cats <- 2:(ncat - 1)
     out[mid_cats] <- lapply(mid_cats, .diff)
   }
-  out[[ncat]] <- 1 - slice(y, ndim, ncat - 1)
+  out[[ncat]] <- 1 - slice(x, ndim, ncat - 1)
   abind::abind(out, along = ndim)
 }
 
