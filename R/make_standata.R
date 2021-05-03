@@ -112,7 +112,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
       tidy_meef(bterms, data), tidy_ranef(bterms, data)
     )
   }
-  structure(out, class = "standata")
+  structure(out, class = c("standata", "list"))
 }
 
 #' Extract data passed to Stan
