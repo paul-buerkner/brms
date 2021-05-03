@@ -2060,19 +2060,52 @@ inv_link_cumulative <- function(x, link) {
 }
 
 # density of the sratio distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
-  eta <- ilink(disc * (thres - eta), link)
-  ncat <- ncol(eta) + 1
-  rows <- list(eta[, 1])
+  eta <- disc * (thres - eta)
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_sratio(eta, link = link)
+  }
+  out[, x, drop = FALSE]
+}
+
+# generic inverse link function for the sratio family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` (see dsratio()).
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `ncat`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) containing the values
+#   of the inverse-link function applied to `x`.
+inv_link_sratio <- function(x, link) {
+  x <- ilink(x, link)
+  ncat <- ncol(x) + 1
+  rows <- list(x[, 1])
   if (ncat > 2) {
     .fun <- function(k) {
-      (eta[, k]) * apply(as.matrix(1 - eta[, 1:(k - 1)]), 1, prod)
+      (x[, k]) * apply(as.matrix(1 - x[, 1:(k - 1)]), 1, prod)
     }
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
-  rows <- c(rows, list(apply(1 - eta, 1, prod)))
-  p <- do_call(cbind, rows)
-  p[, x, drop = FALSE]
+  rows <- c(rows, list(apply(1 - x, 1, prod)))
+  do_call(cbind, rows)
 }
 
 # density of the cratio distribution
