@@ -2004,6 +2004,20 @@ dmultinomial <- function(x, eta, log = FALSE) {
 }
 
 # density of the cumulative distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
   eta <- disc * (thres - eta)
   if (link == "identity") {
@@ -2015,6 +2029,19 @@ dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
 }
 
 # generic inverse link function for the cumulative family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` for one observation (see dcumulative()) or an array
+#   (S x N x `ncat - 1`) containing the same values as the matrix just
+#   described, but for N observations.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
 inv_link_cumulative <- function(x, link) {
   y <- ilink(x, link)
   ndim <- length(dim(x))
