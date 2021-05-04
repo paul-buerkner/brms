@@ -198,3 +198,80 @@ test_that("wiener distribution functions run without errors", {
   expect_equal(names(r1), names(r2))
   expect_equal(dim(r1), dim(r2))
 })
+
+test_that("d<ordinal_family>() works correctly", {
+  # This test corresponds to a single observation.
+  set.seed(1234)
+  ndraws <- 5
+  ncat <- 3
+  thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+  # Emulate no category-specific effects (i.e., only a single vector of linear
+  # predictors) as well as category-specific effects (i.e., a matrix of linear
+  # predictors):
+  eta_test_list <- list(rnorm(ndraws),
+                        matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws))
+  for (eta_test in eta_test_list) {
+    for (link in c("logit", "probit", "cauchit", "cloglog")) {
+      invlinkfun <- switch(link,
+                           "logit" = plogis,
+                           "probit" = pnorm,
+                           "cauchit" = pcauchy,
+                           "cloglog" = inv_cloglog)
+      F_thres_eta <- invlinkfun(if (is.matrix(eta_test)) {
+        stopifnot(identical(dim(eta_test), dim(thres_test)))
+        thres_test - eta_test
+      } else {
+        # Just to try something different:
+        sweep(thres_test, 1, as.array(eta_test))
+      })
+      F_eta_thres <- invlinkfun(if (is.matrix(eta_test)) {
+        stopifnot(identical(dim(eta_test), dim(thres_test)))
+        eta_test - thres_test
+      } else {
+        # Just to try something different:
+        sweep(-thres_test, 1, as.array(eta_test),
+              FUN = "+")
+      })
+      S_thres_eta_cumprod <- t(apply(1 - F_thres_eta, 1, cumprod))
+      F_eta_thres_cumprod <- t(apply(F_eta_thres, 1, cumprod))
+      S_eta_thres_cumprod_rev <- t(apply(
+        1 - F_eta_thres[, rev(seq_len(ncat - 1)), drop = FALSE],
+        1, cumprod
+      ))
+      S_eta_thres_cumprod_rev <- S_eta_thres_cumprod_rev[,
+                                                         rev(seq_len(ncat - 1)),
+                                                         drop = FALSE]
+      
+      # cumulative():
+      d_cumul <- dcumulative(seq_len(ncat),
+                             eta_test, thres_test, link = link)
+      d_cumul_ch <- cbind(F_thres_eta, 1) - cbind(0, F_thres_eta)
+      dimnames(d_cumul_ch) <- list(NULL, NULL)
+      expect_equal(d_cumul, d_cumul_ch)
+      
+      # sratio():
+      d_sratio <- dsratio(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+      d_sratio_ch <- cbind(F_thres_eta, 1) *
+        cbind(1, S_thres_eta_cumprod)
+      dimnames(d_sratio_ch) <- list(NULL, NULL)
+      expect_equal(d_sratio, d_sratio_ch)
+      
+      # cratio():
+      d_cratio <- dcratio(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+      d_cratio_ch <- cbind(1 - F_eta_thres, 1) *
+        cbind(1, F_eta_thres_cumprod)
+      dimnames(d_cratio_ch) <- list(NULL, NULL)
+      expect_equal(d_cratio, d_cratio_ch)
+      
+      # acat():
+      d_acat <- dacat(seq_len(ncat),
+                      eta_test, thres_test, link = link)
+      d_acat_ch <- cbind(1, F_eta_thres_cumprod) *
+        cbind(S_eta_thres_cumprod_rev, 1)
+      d_acat_ch <- d_acat_ch / rowSums(d_acat_ch)
+      expect_equal(d_acat, d_acat_ch)
+    }
+  }
+})
