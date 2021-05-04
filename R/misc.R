@@ -65,11 +65,13 @@ extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
 # @param x an array
 # @param dim dimension from which to take the slice
 # @param i slice index
-slice <- function(x, dim, i) {
+# @param drop Logical (length 1) indicating whether to drop dimension `dim`.
+slice <- function(x, dim, i, drop = TRUE) {
   ndim <- length(dim(x))
   commas1 <- collapse(rep(", ", dim - 1))
   commas2 <- collapse(rep(", ", ndim - dim))
-  expr <- paste0("extract(x, ", commas1, "i", commas2, ", drop_dim = dim)")
+  drop_dim <- ifelse(drop, ", drop_dim = dim", "")
+  expr <- paste0("extract(x, ", commas1, "i", commas2, drop_dim, ")")
   eval2(expr)
 }
 
