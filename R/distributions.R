@@ -2088,24 +2088,33 @@ dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
 # 
 # @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) with values of
-#   `disc * (thres - eta)` (see dsratio()).
+#   `disc * (thres - eta)` for one observation (see dsratio()) or an array
+#   (S x N x `ncat - 1`) containing the same values as the matrix just
+#   described, but for N observations.
 # @param link Character vector (length 1) giving the name of the link function.
 # 
-# @return A matrix (S x `ncat`, with S denoting the number of posterior draws
-#   and `ncat` denoting the number of response categories) containing the values
-#   of the inverse-link function applied to `x`.
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
 inv_link_sratio <- function(x, link) {
   x <- ilink(x, link)
-  ncat <- ncol(x) + 1
-  rows <- list(x[, 1])
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  marg_othdim <- seq_along(dim(x))[-ndim]
+  out <- vector("list", ncat)
+  out[[1]] <- slice(x, ndim, 1)
   if (ncat > 2) {
-    .fun <- function(k) {
-      (x[, k]) * apply(as.matrix(1 - x[, 1:(k - 1)]), 1, prod)
+    .condprod <- function(k) {
+      slice(x, ndim, k) *
+        apply(1 - slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
     }
-    rows <- c(rows, lapply(2:(ncat - 1), .fun))
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .condprod)
   }
-  rows <- c(rows, list(apply(1 - x, 1, prod)))
-  do_call(cbind, rows)
+  out[[ncat]] <- apply(1 - x, marg_othdim, prod)
+  abind::abind(out, along = ndim)
 }
 
 # density of the cratio distribution
@@ -2137,24 +2146,33 @@ dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
 # 
 # @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) with values of
-#   `disc * (thres - eta)` (see dcratio()).
+#   `disc * (thres - eta)` for one observation (see dcratio()) or an array
+#   (S x N x `ncat - 1`) containing the same values as the matrix just
+#   described, but for N observations.
 # @param link Character vector (length 1) giving the name of the link function.
 # 
-# @return A matrix (S x `ncat`, with S denoting the number of posterior draws
-#   and `ncat` denoting the number of response categories) containing the values
-#   of the inverse-link function applied to `x`.
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
 inv_link_cratio <- function(x, link) {
   x <- ilink(x, link)
-  ncat <- ncol(x) + 1
-  rows <- list(1 - x[, 1])
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  marg_othdim <- seq_along(dim(x))[-ndim]
+  out <- vector("list", ncat)
+  out[[1]] <- 1 - slice(x, ndim, 1)
   if (ncat > 2) {
-    .fun <- function(k) {
-      (1 - x[, k]) * apply(as.matrix(x[, 1:(k - 1)]), 1, prod)
+    .condprod <- function(k) {
+      (1 - slice(x, ndim, k)) *
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
     }
-    rows <- c(rows, lapply(2:(ncat - 1), .fun))
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .condprod)
   }
-  rows <- c(rows, list(apply(x, 1, prod)))
-  do_call(cbind, rows)
+  out[[ncat]] <- apply(x, marg_othdim, prod)
+  abind::abind(out, along = ndim)
 }
 
 # density of the acat distribution
@@ -2193,35 +2211,39 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 #   and `ncat` denoting the number of response categories) containing the values
 #   of the inverse-link function applied to `x`.
 inv_link_acat <- function(x, link) {
-  ncat <- ncol(x) + 1
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  marg_othdim <- seq_along(dim(x))[-ndim]
+  out <- vector("list", ncat)
   if (link == "logit") { 
     # faster evaluation in this case
-    p <- cbind(
-      rep(1, nrow(x)), exp(x[, 1]), 
-      matrix(NA, nrow = nrow(x), ncol = ncat - 2)
-    )
+    out[[1]] <- array(1, dim = dim(x)[-ndim])
+    out[[2]] <- exp(slice(x, ndim, 1))
     if (ncat > 2) {
-      .fun <- function(k) {
-        rowSums(x[, 1:(k - 1)])
+      .catsum <- function(k) {
+        exp(apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, sum))
       }
-      p[, 3:ncat] <- exp(sapply(3:ncat, .fun))
+      remaincats <- 3:ncat
+      out[remaincats] <- lapply(remaincats, .catsum)
     }
   } else {
     x <- ilink(x, link)
-    p <- cbind(
-      apply(1 - x[, 1:(ncat - 1)], 1, prod), 
-      matrix(0, nrow = nrow(x), ncol = ncat - 1)
-    )
+    out[[1]] <- apply(1 - x, marg_othdim, prod)
     if (ncat > 2) {
-      .fun <- function(k) {
-        apply(as.matrix(x[, 1:(k - 1)]), 1, prod) * 
-          apply(as.matrix(1 - x[, k:(ncat - 1)]), 1, prod)
+      .othercatprod <- function(k) {
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod) * 
+          apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_othdim, prod)
       }
-      p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), .fun)
+      mid_cats <- 2:(ncat - 1)
+      out[mid_cats] <- lapply(mid_cats, .othercatprod)
     }
-    p[, ncat] <- apply(x[, 1:(ncat - 1)], 1, prod)
+    out[[ncat]] <- apply(x, marg_othdim, prod)
   }
-  p / rowSums(p)
+  out <- abind::abind(out, along = ndim)
+  catsum <- apply(out, seq_along(dim(out))[-ndim], sum)
+  sapply(seq_len(dim(out)[ndim]), function(k) {
+    slice(out, ndim, k) / catsum
+  }, simplify = "array")
 }
 
 # CDF for ordinal distributions
