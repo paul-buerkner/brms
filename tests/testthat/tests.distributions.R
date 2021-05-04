@@ -275,3 +275,67 @@ test_that("d<ordinal_family>() works correctly", {
     }
   }
 })
+
+test_that("inv_link_<ordinal_family>() works correctly for arrays", {
+  set.seed(1234)
+  ndraws <- 5
+  nobs <- 4
+  ncat <- 3
+  x_test <- array(rnorm(ndraws * nobs * (ncat - 1)),
+                  dim = c(ndraws, nobs, ncat - 1))
+  nx_test <- -x_test
+  exp_nx_cumprod <- aperm(apply(exp(nx_test), c(1, 2), cumprod),
+                          perm = c(2, 3, 1))
+  for (link in c("logit", "probit", "cauchit", "cloglog")) {
+    invlinkfun <- switch(link,
+                         "logit" = plogis,
+                         "probit" = pnorm,
+                         "cauchit" = pcauchy,
+                         "cloglog" = inv_cloglog)
+    F_x <- invlinkfun(x_test)
+    F_nx <- invlinkfun(nx_test)
+    S_x_cumprod <- aperm(apply(1 - F_x, c(1, 2), cumprod), perm = c(2, 3, 1))
+    F_nx_cumprod <- aperm(apply(F_nx, c(1, 2), cumprod), perm = c(2, 3, 1))
+    S_nx_cumprod_rev <- aperm(apply(
+      1 - F_nx[, , rev(seq_len(ncat - 1)), drop = FALSE],
+      c(1, 2), cumprod
+    ), perm = c(2, 3, 1))
+    S_nx_cumprod_rev <- S_nx_cumprod_rev[,
+                                         ,
+                                         rev(seq_len(ncat - 1)),
+                                         drop = FALSE]
+    ones_arr <- array(1, dim = c(ndraws, nobs, 1))
+    zeros_arr <- array(0, dim = c(ndraws, nobs, 1))
+    
+    # cumulative():
+    il_cumul <- inv_link_cumulative(x_test, link = link)
+    il_cumul_ch <- abind::abind(F_x, ones_arr) - abind::abind(zeros_arr, F_x)
+    expect_equal(il_cumul, il_cumul_ch)
+    
+    # sratio():
+    il_sratio <- inv_link_sratio(x_test, link = link)
+    il_sratio_ch <- abind::abind(F_x, ones_arr) *
+      abind::abind(ones_arr, S_x_cumprod)
+    expect_equal(il_sratio, il_sratio_ch)
+    
+    # cratio():
+    il_cratio <- inv_link_cratio(nx_test, link = link)
+    il_cratio_ch <- abind::abind(1 - F_nx, ones_arr) *
+      abind::abind(ones_arr, F_nx_cumprod)
+    expect_equal(il_cratio, il_cratio_ch)
+    
+    # acat():
+    il_acat <- inv_link_acat(nx_test, link = link)
+    if (link == "logit") {
+      il_acat_ch <- abind::abind(ones_arr, exp_nx_cumprod)
+    } else {
+      il_acat_ch <- abind::abind(ones_arr, F_nx_cumprod) *
+        abind::abind(S_nx_cumprod_rev, ones_arr)
+    }
+    catsum <- apply(il_acat_ch, c(1, 2), sum)
+    il_acat_ch <- sapply(seq_len(ncat), function(k) {
+      il_acat_ch[, , k] / catsum
+    }, simplify = "array")
+    expect_equal(il_acat, il_acat_ch)
+  }
+})
