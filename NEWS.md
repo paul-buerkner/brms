@@ -6,6 +6,9 @@
 of custom families thank to Martin Modrak. (#1131)
 * Support the `squareplus` link function in all families and
 distributional parameters that also allow for the `log` link function.
+* Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
+substract the threshold-excluding linear predictor from the thresholds in case
+of an ordinal family. (#1137)
 
 ### Other Changes
 

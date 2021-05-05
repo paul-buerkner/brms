@@ -2004,86 +2004,244 @@ dmultinomial <- function(x, eta, log = FALSE) {
 }
 
 # density of the cumulative distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
-  eta <- ilink(disc * (thres - eta), link)
-  ncat <- ncol(eta) + 1
-  rows <- list(eta[, 1])
-  if (ncat > 2) {
-    .fun <- function(k) {
-      eta[, k] - eta[, k - 1]
-    }
-    rows <- c(rows, lapply(2:(ncat - 1), .fun))
+  eta <- disc * (thres - eta)
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_cumulative(eta, link = link)
   }
-  rows <- c(rows, list(1 - eta[, ncat - 1]))
-  p <- do_call(cbind, rows)
-  p[, x, drop = FALSE]
+  out[, x, drop = FALSE] 
+}
+
+# generic inverse link function for the cumulative family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` for one observation (see dcumulative()) or an array
+#   (S x N x `ncat - 1`) containing the same values as the matrix just
+#   described, but for N observations.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
+inv_link_cumulative <- function(x, link) {
+  x <- ilink(x, link)
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  out <- vector("list", ncat)
+  out[[1]] <- slice(x, ndim, 1)
+  if (ncat > 2) {
+    .diff <- function(k) {
+      slice(x, ndim, k) - slice(x, ndim, k - 1)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .diff)
+  }
+  out[[ncat]] <- 1 - slice(x, ndim, ncat - 1)
+  abind::abind(out, along = ndim)
 }
 
 # density of the sratio distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
-  eta <- ilink(disc * (thres - eta), link)
-  ncat <- ncol(eta) + 1
-  rows <- list(eta[, 1])
-  if (ncat > 2) {
-    .fun <- function(k) {
-      (eta[, k]) * apply(as.matrix(1 - eta[, 1:(k - 1)]), 1, prod)
-    }
-    rows <- c(rows, lapply(2:(ncat - 1), .fun))
+  eta <- disc * (thres - eta)
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_sratio(eta, link = link)
   }
-  rows <- c(rows, list(apply(1 - eta, 1, prod)))
-  p <- do_call(cbind, rows)
-  p[, x, drop = FALSE]
+  out[, x, drop = FALSE]
+}
+
+# generic inverse link function for the sratio family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` for one observation (see dsratio()) or an array
+#   (S x N x `ncat - 1`) containing the same values as the matrix just
+#   described, but for N observations.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
+inv_link_sratio <- function(x, link) {
+  x <- ilink(x, link)
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  marg_othdim <- seq_along(dim(x))[-ndim]
+  out <- vector("list", ncat)
+  out[[1]] <- slice(x, ndim, 1)
+  if (ncat > 2) {
+    .condprod <- function(k) {
+      slice(x, ndim, k) *
+        apply(1 - slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .condprod)
+  }
+  out[[ncat]] <- apply(1 - x, marg_othdim, prod)
+  abind::abind(out, along = ndim)
 }
 
 # density of the cratio distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
-  eta <- ilink(disc * (eta - thres), link)
-  ncat <- ncol(eta) + 1
-  rows <- list(1 - eta[, 1])
-  if (ncat > 2) {
-    .fun <- function(k) {
-      (1 - eta[, k]) * apply(as.matrix(eta[, 1:(k - 1)]), 1, prod)
-    }
-    rows <- c(rows, lapply(2:(ncat - 1), .fun))
+  eta <- disc * (eta - thres)
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_cratio(eta, link = link)
   }
-  rows <- c(rows, list(apply(eta, 1, prod)))
-  p <- do_call(cbind, rows)
-  p[, x, drop = FALSE]
+  out[, x, drop = FALSE]
+}
+
+# generic inverse link function for the cratio family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` for one observation (see dcratio()) or an array
+#   (S x N x `ncat - 1`) containing the same values as the matrix just
+#   described, but for N observations.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
+inv_link_cratio <- function(x, link) {
+  x <- ilink(x, link)
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  marg_othdim <- seq_along(dim(x))[-ndim]
+  out <- vector("list", ncat)
+  out[[1]] <- 1 - slice(x, ndim, 1)
+  if (ncat > 2) {
+    .condprod <- function(k) {
+      (1 - slice(x, ndim, k)) *
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .condprod)
+  }
+  out[[ncat]] <- apply(x, marg_othdim, prod)
+  abind::abind(out, along = ndim)
 }
 
 # density of the acat distribution
+# 
+# @param x Integer vector containing response category indices to return the
+#   "densities" (probability masses) for.
+# @param eta Vector (length S, with S denoting the number of posterior draws) of
+#   linear predictor draws.
+# @param thres Matrix (S x `ncat - 1`, with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) of threshold
+#   draws.
+# @param disc Vector (length S, with S denoting the number of posterior draws,
+#   or length 1 for recycling) of discrimination parameter draws.
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `length(x)`) containing the values of the inverse-link
+#   function applied to `disc * (thres - eta)`.
 dacat <- function(x, eta, thres, disc = 1, link = "logit") {
   eta <- disc * (eta - thres)
-  ncat <- ncol(eta) + 1
+  if (link == "identity") {
+    out <- eta
+  } else {
+    out <- inv_link_acat(eta, link = link)
+  }
+  out[, x, drop = FALSE]
+}
+
+# generic inverse link function for the acat family
+# 
+# @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) with values of
+#   `disc * (thres - eta)` (see dacat()).
+# @param link Character vector (length 1) giving the name of the link function.
+# 
+# @return A matrix (S x `ncat`, with S denoting the number of posterior draws
+#   and `ncat` denoting the number of response categories) containing the values
+#   of the inverse-link function applied to `x`.
+inv_link_acat <- function(x, link) {
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim] + 1
+  marg_othdim <- seq_along(dim(x))[-ndim]
+  out <- vector("list", ncat)
   if (link == "logit") { 
     # faster evaluation in this case
-    p <- cbind(
-      rep(1, nrow(eta)), exp(eta[, 1]), 
-      matrix(NA, nrow = nrow(eta), ncol = ncat - 2)
-    )
+    out[[1]] <- array(1, dim = dim(x)[-ndim])
+    out[[2]] <- exp(slice(x, ndim, 1))
     if (ncat > 2) {
-      .fun <- function(k) {
-        rowSums(eta[, 1:(k - 1)])
+      .catsum <- function(k) {
+        exp(apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, sum))
       }
-      p[, 3:ncat] <- exp(sapply(3:ncat, .fun))
+      remaincats <- 3:ncat
+      out[remaincats] <- lapply(remaincats, .catsum)
     }
   } else {
-    eta <- ilink(eta, link)
-    p <- cbind(
-      apply(1 - eta[, 1:(ncat - 1)], 1, prod), 
-      matrix(0, nrow = nrow(eta), ncol = ncat - 1)
-    )
+    x <- ilink(x, link)
+    out[[1]] <- apply(1 - x, marg_othdim, prod)
     if (ncat > 2) {
-      .fun <- function(k) {
-        apply(as.matrix(eta[, 1:(k - 1)]), 1, prod) * 
-          apply(as.matrix(1 - eta[, k:(ncat - 1)]), 1, prod)
+      .othercatprod <- function(k) {
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod) * 
+          apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_othdim, prod)
       }
-      p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), .fun)
+      mid_cats <- 2:(ncat - 1)
+      out[mid_cats] <- lapply(mid_cats, .othercatprod)
     }
-    p[, ncat] <- apply(eta[, 1:(ncat - 1)], 1, prod)
+    out[[ncat]] <- apply(x, marg_othdim, prod)
   }
-  p <- p / rowSums(p)
-  p[, x, drop = FALSE]
+  out <- abind::abind(out, along = ndim)
+  catsum <- apply(out, marg_othdim, sum)
+  sweep(out, marg_othdim, catsum, "/")
 }
 
 # CDF for ordinal distributions

@@ -59,8 +59,8 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = "response", dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE
+    prep,  dpar = dpar, nlpar = nlpar, sort = sort,
+    scale = "response", summary = FALSE
   )
 }
 
@@ -72,8 +72,10 @@ posterior_epred.mvbrmsprep <- function(object, ...) {
 }
 
 #' @export
-posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort, 
-                                     summary, robust, probs, ...) {
+posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
+                                     scale = "response", incl_thres = NULL, 
+                                     summary = FALSE, robust = FALSE, 
+                                     probs = c(0.025, 0.975), ...) {
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
   if (length(dpar)) {
@@ -119,8 +121,18 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
     }
     out <- get_nlpar(object, nlpar = nlpar)
   } else {
-    # predict the mean of the response distribution
+    # no dpar or nlpar specified
+    incl_thres <- as_one_logical(incl_thres %||% FALSE)
+    if (scale == "linear" && incl_thres && is_ordinal(object$family)) {
+      # extract linear predictor array with thresholds etc. included
+      if (is.mixfamily(object$family)) {
+        stop2("'incl_thres' is not supported for mixture models.")
+      }
+      object$family$link <- "identity"
+      scale <- "response"
+    }
     if (scale == "response") {
+      # predict the mean of the response distribution
       for (nlp in nlpars) {
         object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
       }
@@ -136,16 +148,17 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
       }
     } else {
       # return results on the linear scale
+      # extract all 'mu' parameters
       if (conv_cats_dpars(object$family)) {
-        mus <- dpars[grepl("^mu", dpars)] 
+        out <- dpars[grepl("^mu", dpars)] 
       } else {
-        mus <- dpars[dpar_class(dpars) %in% "mu"]
+        out <- dpars[dpar_class(dpars) %in% "mu"]
       }
-      if (length(mus) == 1L) {
-        out <- get_dpar(object, dpar = mus, ilink = FALSE)
+      if (length(out) == 1L) {
+        out <- get_dpar(object, dpar = out, ilink = FALSE)
       } else {
         # multiple mu parameters in categorical or mixture models
-        out <- lapply(mus, get_dpar, prep = object, ilink = FALSE)
+        out <- lapply(out, get_dpar, prep = object, ilink = FALSE)
         out <- abind::abind(out, along = 3)
       }
     }
@@ -244,7 +257,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = scale, dpar = dpar, nlpar = nlpar, sort = sort, 
+    prep, dpar = dpar, nlpar = nlpar, sort = sort, scale = scale, 
     summary = summary, robust = robust, probs = probs
   )
 }
@@ -264,6 +277,10 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @param dpar Name of a predicted distributional parameter
 #'  for which samples are to be returned. By default, samples
 #'  of the main distributional parameter(s) \code{"mu"} are returned.
+#' @param incl_thres Logical; only relevant for ordinal models when
+#'   \code{transform} is \code{FALSE}, and ignored otherwise. Shall the
+#'   thresholds and category-specific effects be included in the linear
+#'   predictor? For backwards compatibility, the default is to not include them.
 #' 
 #' @seealso \code{\link{posterior_epred.brmsfit}}
 #'  
@@ -286,7 +303,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
   re.form = NULL, resp = NULL, dpar = NULL, nlpar = NULL, 
-  nsamples = NULL, subset = NULL, sort = FALSE, ...
+  incl_thres = NULL, nsamples = NULL, subset = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -310,8 +327,8 @@ posterior_linpred.brmsfit <- function(
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = scale, dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE
+    prep, dpar = dpar, nlpar = nlpar, sort = sort,
+    scale = scale, incl_thres = incl_thres, summary = FALSE
   )
 }
 
@@ -478,7 +495,7 @@ posterior_epred_zero_one_inflated_beta <- function(prep) {
 
 posterior_epred_categorical <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
   eta <- abind(prep$dpars, along = 3)
@@ -491,7 +508,7 @@ posterior_epred_categorical <- function(prep) {
 
 posterior_epred_multinomial <- function(prep) {
   get_counts <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta) * trials[i]
   }
   eta <- abind(prep$dpars, along = 3)
@@ -505,7 +522,7 @@ posterior_epred_multinomial <- function(prep) {
 
 posterior_epred_dirichlet <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
   eta <- prep$dpars[grepl("^mu", names(prep$dpars))]
@@ -576,22 +593,26 @@ posterior_epred_mixture <- function(prep) {
 # compute 'posterior_epred' for ordinal models
 posterior_epred_ordinal <- function(prep) {
   dens <- get(paste0("d", prep$family$family), mode = "function")
-  ncat_max <- max(prep$data$nthres) + 1
-  nact_min <- min(prep$data$nthres) + 1
-  zero_mat <- matrix(0, nrow = prep$nsamples, ncol = ncat_max - nact_min)
+  # the linear scale has one column less than the response scale
+  adjust <- ifelse(prep$family$link == "identity", 0, 1)
+  ncat_max <- max(prep$data$nthres) + adjust
+  nact_min <- min(prep$data$nthres) + adjust
+  init_mat <- matrix(ifelse(prep$family$link == "identity", NA, 0),
+                     nrow = prep$nsamples,
+                     ncol = ncat_max - nact_min)
   args <- list(link = prep$family$link)
   out <- vector("list", prep$nobs)
   for (i in seq_along(out)) {
     args_i <- args
-    args_i$eta <- extract_col(prep$dpars$mu, i)
-    args_i$disc <- extract_col(prep$dpars$disc, i)
+    args_i$eta <- slice_col(prep$dpars$mu, i)
+    args_i$disc <- slice_col(prep$dpars$disc, i)
     args_i$thres <- subset_thres(prep, i)
-    ncat_i <- NCOL(args_i$thres) + 1
+    ncat_i <- NCOL(args_i$thres) + adjust
     args_i$x <- seq_len(ncat_i)
     out[[i]] <- do_call(dens, args_i)
     if (ncat_i < ncat_max) {
       sel <- seq_len(ncat_max - ncat_i)
-      out[[i]] <- cbind(out[[i]], zero_mat[, sel])
+      out[[i]] <- cbind(out[[i]], init_mat[, sel])
     }
   }
   out <- abind(out, along = 3)
