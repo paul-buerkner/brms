@@ -550,34 +550,7 @@ test_that("disc parameter in ordinal models is handled correctly", {
   )[[3]])
 })
 
-test_that(paste(
-  "Argument `incl_thres` of posterior_linpred() works correctly (for",
-  "non-grouped thresholds)"
-), {
-  fit <- brm(
-    bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
-    data = inhaler, family = cumulative(),
-    prior = prior(normal(0,5)),
-    chains = 2, refresh = 0
-  )
-  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
-  bprep <- prepare_predictions(fit)
-  thres <- bprep$thres$thres
-  eta <- posterior_linpred(fit)
-  thres_minus_eta_ch <- apply(thres, 2, "-", eta)
-  thres_minus_eta_ch <- array(thres_minus_eta_ch,
-                              dim = c(nrow(thres), ncol(eta), ncol(thres)))
-  disc <- bprep$dpars$disc$fe$b %*% t(bprep$dpars$disc$fe$X)
-  disc <- exp(disc)
-  thres_minus_eta_ch <- apply(thres_minus_eta_ch, 3, "*", disc)
-  thres_minus_eta_ch <- array(thres_minus_eta_ch,
-                              dim = c(nrow(thres), ncol(eta), ncol(thres)))
-  dimnames(thres_minus_eta_ch) <- list(NULL,
-                                       NULL,
-                                       as.character(seq_len(ncol(thres))))
-  expect_identical(thres_minus_eta, thres_minus_eta_ch)
-  
-  # Without `disc ~ 1`:
+test_that("Argument `incl_thres` works correctly for non-grouped thresholds", {
   fit <- brm(
     bf(rating ~ period + carry + treat + (1|subject)),
     data = inhaler, family = cumulative(),
@@ -591,9 +564,8 @@ test_that(paste(
   thres_minus_eta_ch <- apply(thres, 2, "-", eta)
   thres_minus_eta_ch <- array(thres_minus_eta_ch,
                               dim = c(nrow(thres), ncol(eta), ncol(thres)))
-  dimnames(thres_minus_eta_ch) <- list(NULL,
-                                       NULL,
-                                       as.character(seq_len(ncol(thres))))
+  dimnames(thres_minus_eta_ch) <- 
+    list(NULL, NULL, as.character(seq_len(ncol(thres))))
   expect_identical(thres_minus_eta, thres_minus_eta_ch)
 })
 
@@ -963,6 +935,8 @@ test_that("ordinal model with grouped thresholds works correctly", {
   expect_range(waic(fit)$estimates[3, 1], 350, 400)
   ce <- conditional_effects(fit, categorical = TRUE)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
+  
+  # test incl_thres = TRUE
   thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
   bprep <- prepare_predictions(fit)
   thres <- bprep$thres$thres
@@ -986,14 +960,11 @@ test_that("ordinal model with grouped thresholds works correctly", {
         dim(thres_minus_eta_ch_gr)[-3],
         nthres_max - dim(thres_minus_eta_ch_gr)[3]
       )
-      thres_minus_eta_ch_gr <- abind::abind(thres_minus_eta_ch_gr,
-                                            array(dim = dim_NA))
+      thres_minus_eta_ch_gr <- 
+        abind::abind(thres_minus_eta_ch_gr, array(dim = dim_NA))
     }
-    dimnames(thres_minus_eta_ch_gr) <- list(
-      NULL,
-      NULL,
-      as.character(seq_len(nthres_max))
-    )
+    dimnames(thres_minus_eta_ch_gr) <- 
+      list(NULL, NULL, as.character(seq_len(nthres_max)))
     return(thres_minus_eta_ch_gr)
   })
   new_arrnms <- dimnames(thres_minus_eta_ch[[1]])
