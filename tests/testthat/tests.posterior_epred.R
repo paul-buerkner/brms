@@ -193,3 +193,22 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
   expect_equal(dim(pred), c(ns, nobs, ncat))
 })
 
+test_that("posterior_epred() can be reproduced by using d<family>()", {
+  fit4 <- rename_pars(brmsfit_example4)
+  epred4 <- posterior_epred(fit4)
+  
+  eta4 <- posterior_linpred(fit4)
+  bprep4 <- prepare_predictions(fit4)
+  thres4 <- bprep4$thres$thres
+  disc4 <- bprep4$dpars$disc$fe$b %*% t(bprep4$dpars$disc$fe$X)
+  disc4 <- exp(disc4)
+  epred4_ch <- aperm(sapply(seq_len(dim(eta4)[2]), function(i) {
+    dsratio(seq_len(ncol(thres4) + 1),
+            eta4[, i, ],
+            thres4,
+            disc4[, i])
+  }, simplify = "array"), perm = c(1, 3, 2))
+  
+  expect_equivalent(epred4, epred4_ch)
+})
+
