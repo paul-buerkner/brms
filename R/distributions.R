@@ -2240,10 +2240,9 @@ inv_link_acat <- function(x, link) {
     out[[ncat]] <- apply(x, marg_othdim, prod)
   }
   out <- abind::abind(out, along = ndim)
-  catsum <- apply(out, seq_along(dim(out))[-ndim], sum)
-  sapply(seq_len(dim(out)[ndim]), function(k) {
-    slice(out, ndim, k) / catsum
-  }, simplify = "array")
+  none_cat_dims <- seq_along(dim(out))[-ndim]
+  catsum <- apply(out, none_cat_dims, sum)
+  sweep(out, none_cat_dims, catsum, "/")
 }
 
 # CDF for ordinal distributions

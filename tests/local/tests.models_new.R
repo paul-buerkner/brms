@@ -554,8 +554,12 @@ test_that(paste(
   "Argument `incl_thres` of posterior_linpred() works correctly (for",
   "non-grouped thresholds)"
 ), {
-  # The first part of this test uses `fit` from above. This is probably bad
-  # practice. Repeat `fit` here if you want.
+  fit <- brm(
+    bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
+    data = inhaler, family = cumulative(),
+    prior = prior(normal(0,5)),
+    chains = 2, refresh = 0
+  )
   thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
   bprep <- prepare_predictions(fit)
   thres <- bprep$thres$thres
