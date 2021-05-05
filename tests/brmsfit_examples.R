@@ -102,6 +102,7 @@ brmsfit_example7 <- brm(
 # brmsfit_example4 <- brms:::brmsfit_example4
 # brmsfit_example5 <- brms:::brmsfit_example5
 # brmsfit_example6 <- brms:::brmsfit_example6
+# brmsfit_example7 <- brms:::brmsfit_example7
 
 usethis::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3, 

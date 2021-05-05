@@ -194,7 +194,7 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
 })
 
 test_that("posterior_epred() can be reproduced by using d<family>()", {
-  fit4 <- rename_pars(brmsfit_example4)
+  fit4 <- rename_pars(brms:::brmsfit_example4)
   epred4 <- posterior_epred(fit4)
   
   eta4 <- posterior_linpred(fit4)
