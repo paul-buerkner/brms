@@ -240,8 +240,8 @@ isNA <- function(x) {
   length(x) == 1L && is.na(x)
 }
 
-is_equal <- function(x, y, ...) {
-  isTRUE(all.equal(x, y, ...))
+is_equal <- function(x, y, check.attributes = FALSE, ...) {
+  isTRUE(all.equal(x, y, check.attributes = check.attributes, ...))
 }
 
 # check if 'x' will behave like a factor in design matrices
