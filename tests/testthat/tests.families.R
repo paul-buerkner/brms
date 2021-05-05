@@ -71,3 +71,14 @@ test_that("mixture returns expected results and errors", {
   expect_error(mixture(poisson, binomial, order = "x"),
                "Argument 'order' is invalid")
 })
+
+test_that(paste(
+  "Families sratio() and cratio() are equivalent for symmetric distribution",
+  "functions"
+), {
+  fit4 <- rename_pars(brmsfit_example4)
+  draws_sratio <- as.matrix(fit4)
+  fit7 <- rename_pars(brmsfit_example7)
+  draws_cratio <- as.matrix(fit7)
+  expect_equal(draws_sratio, draws_cratio)
+})

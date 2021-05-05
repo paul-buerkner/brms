@@ -319,3 +319,49 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
     expect_equivalent(il_acat, il_acat_ch)
   }
 })
+
+test_that(paste(
+  "dsratio() and dcratio() give the same results for symmetric distribution",
+  "functions and that dcumulative() and dsratio() give the same results for",
+  "the cloglog link"
+), {
+  source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
+  for (eta_test in eta_test_list) {
+    for (link in c("logit", "probit", "cauchit", "cloglog")) {
+      d_cumul <- dcumulative(seq_len(ncat),
+                             eta_test, thres_test, link = link)
+      d_sratio <- dsratio(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+      d_cratio <- dcratio(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+      if (link != "cloglog") {
+        expect_equal(d_sratio, d_cratio)
+        expect_false(isTRUE(all.equal(d_sratio, d_cumul)))
+      } else {
+        expect_false(isTRUE(all.equal(d_sratio, d_cratio)))
+        expect_equal(d_sratio, d_cumul)
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "inv_link_sratio() and inv_link_cratio() applied to arrays give the same",
+  "results for symmetric distribution functions and that inv_link_cumulative()",
+  "and inv_link_sratio() applied to arrays give the same results for the",
+  "cloglog link"
+), {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
+  for (link in c("logit", "probit", "cauchit", "cloglog")) {
+    il_cumul <- inv_link_cumulative(x_test, link = link)
+    il_sratio <- inv_link_sratio(x_test, link = link)
+    il_cratio <- inv_link_cratio(nx_test, link = link)
+    if (link != "cloglog") {
+      expect_equal(il_sratio, il_cratio)
+      expect_false(isTRUE(all.equal(il_sratio, il_cumul)))
+    } else {
+      expect_false(isTRUE(all.equal(il_sratio, il_cratio)))
+      expect_equal(il_sratio, il_cumul)
+    }
+  }
+})
