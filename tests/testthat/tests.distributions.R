@@ -200,16 +200,7 @@ test_that("wiener distribution functions run without errors", {
 })
 
 test_that("d<ordinal_family>() works correctly", {
-  # This test corresponds to a single observation.
-  set.seed(1234)
-  ndraws <- 5
-  ncat <- 3
-  thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
-  # Emulate no category-specific effects (i.e., only a single vector of linear
-  # predictors) as well as category-specific effects (i.e., a matrix of linear
-  # predictors):
-  eta_test_list <- list(rnorm(ndraws),
-                        matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws))
+  source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
   for (eta_test in eta_test_list) {
     for (link in c("logit", "probit", "cauchit", "cloglog")) {
       invlinkfun <- switch(link,
@@ -276,15 +267,7 @@ test_that("d<ordinal_family>() works correctly", {
 })
 
 test_that("inv_link_<ordinal_family>() works correctly for arrays", {
-  set.seed(1234)
-  ndraws <- 5
-  nobs <- 4
-  ncat <- 3
-  x_test <- array(rnorm(ndraws * nobs * (ncat - 1)),
-                  dim = c(ndraws, nobs, ncat - 1))
-  nx_test <- -x_test
-  exp_nx_cumprod <- aperm(apply(exp(nx_test), c(1, 2), cumprod),
-                          perm = c(2, 3, 1))
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
   for (link in c("logit", "probit", "cauchit", "cloglog")) {
     invlinkfun <- switch(link,
                          "logit" = plogis,
