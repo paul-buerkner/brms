@@ -57,12 +57,12 @@ brmsfit_example3 <- brm(
   stan_model_args = stan_model_args, rename = FALSE
 )
 
-seed4 <- .Random.seed
 brmsfit_example4 <- brm(
   bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
   data = dat2, family = sratio(),
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, rename = FALSE
+  stan_model_args = stan_model_args, rename = FALSE,
+  seed = 533273
 )
 
 brmsfit_example5 <- brm(
@@ -85,15 +85,13 @@ brmsfit_example6 <- brm(
   stan_model_args = stan_model_args, rename = FALSE
 )
 
-seed_backup <- .Random.seed
-.Random.seed <- seed4
 brmsfit_example7 <- brm(
   bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
   data = dat2, family = cratio(),
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, rename = FALSE
+  stan_model_args = stan_model_args, rename = FALSE,
+  seed = 533273
 )
-.Random.seed <- seed_backup
 
 # easy loading of unchanged models to avoid refitting all of them
 # brmsfit_example1 <- brms:::brmsfit_example1
