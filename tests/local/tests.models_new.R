@@ -999,3 +999,39 @@ test_that("projpred methods can be run", {
   cv_vs <- cv_varsel(fit)
   expect_is(vs, "vsel")
 })
+
+test_that(paste(
+  "Families sratio() and cratio() are equivalent for symmetric distribution",
+  "functions (here only testing the logit link)"
+), {
+  set.seed(1234)
+  dat2 <- data.frame(
+    rating = sample(1:4, 50, TRUE), 
+    subject = rep(1:10, 5),
+    x1 = rnorm(50), 
+    x2 = rnorm(50),
+    x3 = rnorm(50)
+  )
+  warmup <- 150
+  iter <- 200
+  chains <- 1
+  stan_model_args <- list(save_dso = FALSE)
+  
+  fit_sratio <- SW(brm(
+    bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
+    data = dat2, family = sratio(),
+    warmup = warmup, iter = iter, chains = chains,
+    stan_model_args = stan_model_args, seed = 533273
+  ))
+  draws_sratio <- as.matrix(fit_sratio)
+  
+  fit_cratio <- SW(brm(
+    bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
+    data = dat2, family = cratio(),
+    warmup = warmup, iter = iter, chains = chains,
+    stan_model_args = stan_model_args, seed = 533273
+  ))
+  draws_cratio <- as.matrix(fit_cratio)
+  
+  expect_equal(draws_sratio, draws_cratio)
+})

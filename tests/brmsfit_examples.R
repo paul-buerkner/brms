@@ -61,8 +61,7 @@ brmsfit_example4 <- brm(
   bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
   data = dat2, family = sratio(),
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, rename = FALSE,
-  seed = 533273
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 brmsfit_example5 <- brm(
@@ -85,14 +84,6 @@ brmsfit_example6 <- brm(
   stan_model_args = stan_model_args, rename = FALSE
 )
 
-brmsfit_example7 <- brm(
-  bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
-  data = dat2, family = cratio(),
-  warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, rename = FALSE,
-  seed = 533273
-)
-
 # easy loading of unchanged models to avoid refitting all of them
 # brmsfit_example1 <- brms:::brmsfit_example1
 # brmsfit_example2 <- brms:::brmsfit_example2
@@ -100,11 +91,9 @@ brmsfit_example7 <- brm(
 # brmsfit_example4 <- brms:::brmsfit_example4
 # brmsfit_example5 <- brms:::brmsfit_example5
 # brmsfit_example6 <- brms:::brmsfit_example6
-# brmsfit_example7 <- brms:::brmsfit_example7
 
 usethis::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3, 
   brmsfit_example4, brmsfit_example5, brmsfit_example6,
-  brmsfit_example7,
   internal = TRUE, overwrite = TRUE
 )
