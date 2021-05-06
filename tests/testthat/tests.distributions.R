@@ -200,122 +200,73 @@ test_that("wiener distribution functions run without errors", {
 })
 
 test_that("d<ordinal_family>() works correctly", {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
   source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
   for (eta_test in eta_test_list) {
+    thres_eta <- if (is.matrix(eta_test)) {
+      stopifnot(identical(dim(eta_test), dim(thres_test)))
+      thres_test - eta_test
+    } else {
+      # Just to try something different:
+      sweep(thres_test, 1, as.array(eta_test))
+    }
+    eta_thres <- if (is.matrix(eta_test)) {
+      stopifnot(identical(dim(eta_test), dim(thres_test)))
+      eta_test - thres_test
+    } else {
+      # Just to try something different:
+      sweep(-thres_test, 1, as.array(eta_test), FUN = "+")
+    }
     for (link in c("logit", "probit", "cauchit", "cloglog")) {
-      invlinkfun <- switch(link,
-                           "logit" = plogis,
-                           "probit" = pnorm,
-                           "cauchit" = pcauchy,
-                           "cloglog" = inv_cloglog)
-      F_thres_eta <- invlinkfun(if (is.matrix(eta_test)) {
-        stopifnot(identical(dim(eta_test), dim(thres_test)))
-        thres_test - eta_test
-      } else {
-        # Just to try something different:
-        sweep(thres_test, 1, as.array(eta_test))
-      })
-      F_eta_thres <- invlinkfun(if (is.matrix(eta_test)) {
-        stopifnot(identical(dim(eta_test), dim(thres_test)))
-        eta_test - thres_test
-      } else {
-        # Just to try something different:
-        sweep(-thres_test, 1, as.array(eta_test),
-              FUN = "+")
-      })
-      S_thres_eta_cumprod <- t(apply(1 - F_thres_eta, 1, cumprod))
-      F_eta_thres_cumprod <- t(apply(F_eta_thres, 1, cumprod))
-      S_eta_thres_cumprod_rev <- t(apply(
-        1 - F_eta_thres[, rev(seq_len(ncat - 1)), drop = FALSE],
-        1, cumprod
-      ))
-      S_eta_thres_cumprod_rev <- 
-        S_eta_thres_cumprod_rev[, rev(seq_len(ncat - 1)), drop = FALSE]
-      
       # cumulative():
       d_cumul <- dcumulative(seq_len(ncat),
                              eta_test, thres_test, link = link)
-      d_cumul_ch <- cbind(F_thres_eta, 1) - cbind(0, F_thres_eta)
-      dimnames(d_cumul_ch) <- list(NULL, NULL)
+      d_cumul_ch <- inv_link_cumulative_ch(thres_eta, link = link)
       expect_equivalent(d_cumul, d_cumul_ch)
       
       # sratio():
       d_sratio <- dsratio(seq_len(ncat),
                           eta_test, thres_test, link = link)
-      d_sratio_ch <- cbind(F_thres_eta, 1) *
-        cbind(1, S_thres_eta_cumprod)
-      dimnames(d_sratio_ch) <- list(NULL, NULL)
+      d_sratio_ch <- inv_link_sratio_ch(thres_eta, link = link)
       expect_equivalent(d_sratio, d_sratio_ch)
       
       # cratio():
       d_cratio <- dcratio(seq_len(ncat),
                           eta_test, thres_test, link = link)
-      d_cratio_ch <- cbind(1 - F_eta_thres, 1) *
-        cbind(1, F_eta_thres_cumprod)
-      dimnames(d_cratio_ch) <- list(NULL, NULL)
+      d_cratio_ch <- inv_link_cratio_ch(eta_thres, link = link)
       expect_equivalent(d_cratio, d_cratio_ch)
       
       # acat():
-      d_acat <- brms:::dacat(seq_len(ncat),
+      d_acat <- dacat(seq_len(ncat),
                       eta_test, thres_test, link = link)
-      d_acat_ch <- cbind(1, F_eta_thres_cumprod) *
-        cbind(S_eta_thres_cumprod_rev, 1)
-      d_acat_ch <- d_acat_ch / rowSums(d_acat_ch)
+      d_acat_ch <- inv_link_acat_ch(eta_thres, link = link)
       expect_equivalent(d_acat, d_acat_ch)
     }
   }
 })
 
 test_that("inv_link_<ordinal_family>() works correctly for arrays", {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
   for (link in c("logit", "probit", "cauchit", "cloglog")) {
-    invlinkfun <- switch(link,
-                         "logit" = plogis,
-                         "probit" = pnorm,
-                         "cauchit" = pcauchy,
-                         "cloglog" = inv_cloglog)
-    F_x <- invlinkfun(x_test)
-    F_nx <- invlinkfun(nx_test)
-    S_x_cumprod <- aperm(apply(1 - F_x, c(1, 2), cumprod), perm = c(2, 3, 1))
-    F_nx_cumprod <- aperm(apply(F_nx, c(1, 2), cumprod), perm = c(2, 3, 1))
-    S_nx_cumprod_rev <- aperm(apply(
-      1 - F_nx[, , rev(seq_len(ncat - 1)), drop = FALSE],
-      c(1, 2), cumprod
-    ), perm = c(2, 3, 1))
-    S_nx_cumprod_rev <- 
-      S_nx_cumprod_rev[, , rev(seq_len(ncat - 1)), drop = FALSE]
-    ones_arr <- array(1, dim = c(ndraws, nobs, 1))
-    zeros_arr <- array(0, dim = c(ndraws, nobs, 1))
-    
     # cumulative():
     il_cumul <- inv_link_cumulative(x_test, link = link)
-    il_cumul_ch <- abind::abind(F_x, ones_arr) - abind::abind(zeros_arr, F_x)
+    il_cumul_ch <- inv_link_cumulative_ch(x_test, link = link)
     expect_equivalent(il_cumul, il_cumul_ch)
     
     # sratio():
     il_sratio <- inv_link_sratio(x_test, link = link)
-    il_sratio_ch <- abind::abind(F_x, ones_arr) *
-      abind::abind(ones_arr, S_x_cumprod)
+    il_sratio_ch <- inv_link_sratio_ch(x_test, link = link)
     expect_equivalent(il_sratio, il_sratio_ch)
     
     # cratio():
     il_cratio <- inv_link_cratio(nx_test, link = link)
-    il_cratio_ch <- abind::abind(1 - F_nx, ones_arr) *
-      abind::abind(ones_arr, F_nx_cumprod)
+    il_cratio_ch <- inv_link_cratio_ch(nx_test, link = link)
     expect_equivalent(il_cratio, il_cratio_ch)
     
     # acat():
     il_acat <- inv_link_acat(nx_test, link = link)
-    if (link == "logit") {
-      il_acat_ch <- abind::abind(ones_arr, exp_nx_cumprod)
-    } else {
-      il_acat_ch <- abind::abind(ones_arr, F_nx_cumprod) *
-        abind::abind(S_nx_cumprod_rev, ones_arr)
-    }
-    catsum <- apply(il_acat_ch, c(1, 2), sum)
-    il_acat_ch <- sapply(seq_len(ncat), function(k) {
-      il_acat_ch[, , k] / catsum
-    }, simplify = "array")
+    il_acat_ch <- inv_link_acat_ch(nx_test, link = link)
     expect_equivalent(il_acat, il_acat_ch)
   }
 })
