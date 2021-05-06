@@ -2225,7 +2225,7 @@ inv_link_acat <- function(x, link) {
     out <- abind::abind(ones_arr, x_cumprod) *
       abind::abind(Sx_cumprod_rev, ones_arr)
   }
-  catsum <- apply(out, marg_othdim, sum)
+  catsum <- array(apply(out, marg_othdim, sum), dim = dim_noncat)
   sweep(out, marg_othdim, catsum, "/")
 }
 
