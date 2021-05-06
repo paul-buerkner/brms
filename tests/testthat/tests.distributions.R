@@ -261,33 +261,35 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
   for (ndraws in ndraws_vec) {
-    for (ncat in ncat_vec) {
-      x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                      dim = c(ndraws, nobsv, ncat - 1))
-      nx_test <- -x_test
-      exp_nx_cumprod <- aperm(array(apply(exp(nx_test), c(1, 2), cumprod),
-                                    dim = c(ncat - 1, ndraws, nobsv)),
-                              perm = c(2, 3, 1))
-      for (link in c("logit", "probit", "cauchit", "cloglog")) {
-        # cumulative():
-        il_cumul <- inv_link_cumulative(x_test, link = link)
-        il_cumul_ch <- inv_link_cumulative_ch(x_test, link = link)
-        expect_equivalent(il_cumul, il_cumul_ch)
-        
-        # sratio():
-        il_sratio <- inv_link_sratio(x_test, link = link)
-        il_sratio_ch <- inv_link_sratio_ch(x_test, link = link)
-        expect_equivalent(il_sratio, il_sratio_ch)
-        
-        # cratio():
-        il_cratio <- inv_link_cratio(nx_test, link = link)
-        il_cratio_ch <- inv_link_cratio_ch(nx_test, link = link)
-        expect_equivalent(il_cratio, il_cratio_ch)
-        
-        # acat():
-        il_acat <- inv_link_acat(nx_test, link = link)
-        il_acat_ch <- inv_link_acat_ch(nx_test, link = link)
-        expect_equivalent(il_acat, il_acat_ch)
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        nx_test <- -x_test
+        exp_nx_cumprod <- aperm(array(apply(exp(nx_test), c(1, 2), cumprod),
+                                      dim = c(ncat - 1, ndraws, nobsv)),
+                                perm = c(2, 3, 1))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          il_cumul <- inv_link_cumulative(x_test, link = link)
+          il_cumul_ch <- inv_link_cumulative_ch(x_test, link = link)
+          expect_equivalent(il_cumul, il_cumul_ch)
+          
+          # sratio():
+          il_sratio <- inv_link_sratio(x_test, link = link)
+          il_sratio_ch <- inv_link_sratio_ch(x_test, link = link)
+          expect_equivalent(il_sratio, il_sratio_ch)
+          
+          # cratio():
+          il_cratio <- inv_link_cratio(nx_test, link = link)
+          il_cratio_ch <- inv_link_cratio_ch(nx_test, link = link)
+          expect_equivalent(il_cratio, il_cratio_ch)
+          
+          # acat():
+          il_acat <- inv_link_acat(nx_test, link = link)
+          il_acat_ch <- inv_link_acat_ch(nx_test, link = link)
+          expect_equivalent(il_acat, il_acat_ch)
+        }
       }
     }
   }
@@ -331,20 +333,22 @@ test_that(paste(
 ), {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
   for (ndraws in ndraws_vec) {
-    for (ncat in ncat_vec) {
-      x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                      dim = c(ndraws, nobsv, ncat - 1))
-      nx_test <- -x_test
-      exp_nx_cumprod <- aperm(array(apply(exp(nx_test), c(1, 2), cumprod),
-                                    dim = c(ncat - 1, ndraws, nobsv)),
-                              perm = c(2, 3, 1))
-      for (link in c("logit", "probit", "cauchit", "cloglog")) {
-        il_sratio <- inv_link_sratio(x_test, link = link)
-        il_cratio <- inv_link_cratio(nx_test, link = link)
-        if (link != "cloglog") {
-          expect_equal(il_sratio, il_cratio)
-        } else {
-          expect_false(isTRUE(all.equal(il_sratio, il_cratio)))
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        nx_test <- -x_test
+        exp_nx_cumprod <- aperm(array(apply(exp(nx_test), c(1, 2), cumprod),
+                                      dim = c(ncat - 1, ndraws, nobsv)),
+                                perm = c(2, 3, 1))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          il_sratio <- inv_link_sratio(x_test, link = link)
+          il_cratio <- inv_link_cratio(nx_test, link = link)
+          if (link != "cloglog") {
+            expect_equal(il_sratio, il_cratio)
+          } else {
+            expect_false(isTRUE(all.equal(il_sratio, il_cratio)))
+          }
         }
       }
     }
