@@ -6,59 +6,88 @@ slice <- brms:::slice
 inv_link_cumulative_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
-  dim_noncat <- dim(x)[-ndim]
-  ones_arr <- array(1, dim = c(dim_noncat, 1))
-  zeros_arr <- array(0, dim = c(dim_noncat, 1))
-  abind::abind(x, ones_arr) - abind::abind(zeros_arr, x)
+  ncat <- dim(x)[ndim] + 1
+  out <- vector("list", ncat)
+  out[[1]] <- slice(x, ndim, 1)
+  if (ncat > 2) {
+    .diff <- function(k) {
+      slice(x, ndim, k) - slice(x, ndim, k - 1)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .diff)
+  }
+  out[[ncat]] <- 1 - slice(x, ndim, ncat - 1)
+  abind::abind(out, along = ndim)
 }
 
 inv_link_sratio_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
-  dim_noncat <- dim(x)[-ndim]
+  ncat <- dim(x)[ndim] + 1
   marg_othdim <- seq_along(dim(x))[-ndim]
-  ones_arr <- array(1, dim = c(dim_noncat, 1))
-  Sx_cumprod <- aperm(apply(1 - x, marg_othdim, cumprod),
-                      perm = c(marg_othdim + 1, 1))
-  abind::abind(x, ones_arr) * abind::abind(ones_arr, Sx_cumprod)
+  out <- vector("list", ncat)
+  out[[1]] <- slice(x, ndim, 1)
+  if (ncat > 2) {
+    .condprod <- function(k) {
+      slice(x, ndim, k) *
+        apply(1 - slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .condprod)
+  }
+  out[[ncat]] <- apply(1 - x, marg_othdim, prod)
+  abind::abind(out, along = ndim)
 }
 
 inv_link_cratio_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
-  dim_noncat <- dim(x)[-ndim]
+  ncat <- dim(x)[ndim] + 1
   marg_othdim <- seq_along(dim(x))[-ndim]
-  ones_arr <- array(1, dim = c(dim_noncat, 1))
-  x_cumprod <- aperm(apply(x, marg_othdim, cumprod),
-                     perm = c(marg_othdim + 1, 1))
-  abind::abind(1 - x, ones_arr) * abind::abind(ones_arr, x_cumprod)
+  out <- vector("list", ncat)
+  out[[1]] <- 1 - slice(x, ndim, 1)
+  if (ncat > 2) {
+    .condprod <- function(k) {
+      (1 - slice(x, ndim, k)) *
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
+    }
+    mid_cats <- 2:(ncat - 1)
+    out[mid_cats] <- lapply(mid_cats, .condprod)
+  }
+  out[[ncat]] <- apply(x, marg_othdim, prod)
+  abind::abind(out, along = ndim)
 }
 
 inv_link_acat_ch <- function(x, link) {
   ndim <- length(dim(x))
-  dim_noncat <- dim(x)[-ndim]
+  ncat <- dim(x)[ndim] + 1
   marg_othdim <- seq_along(dim(x))[-ndim]
-  ones_arr <- array(1, dim = c(dim_noncat, 1))
+  out <- vector("list", ncat)
   if (link == "logit") { 
     # faster evaluation in this case
-    exp_x_cumprod <- aperm(apply(exp(x), marg_othdim, cumprod),
-                           perm = c(marg_othdim + 1, 1))
-    out <- abind::abind(ones_arr, exp_x_cumprod)
+    out[[1]] <- array(1, dim = dim(x)[-ndim])
+    out[[2]] <- exp(slice(x, ndim, 1))
+    if (ncat > 2) {
+      .catsum <- function(k) {
+        exp(apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, sum))
+      }
+      remaincats <- 3:ncat
+      out[remaincats] <- lapply(remaincats, .catsum)
+    }
   } else {
     x <- ilink(x, link)
-    x_cumprod <- aperm(apply(x, marg_othdim, cumprod),
-                       perm = c(marg_othdim + 1, 1))
-    nthres <- dim(x)[ndim]
-    Sx_cumprod_rev <- aperm(apply(
-      1 - slice(x, ndim, rev(seq_len(nthres)), drop = FALSE),
-      marg_othdim, cumprod
-    ), perm = c(marg_othdim + 1, 1))
-    Sx_cumprod_rev <- slice(
-      Sx_cumprod_rev, ndim, rev(seq_len(nthres)), drop = FALSE
-    )
-    out <- abind::abind(ones_arr, x_cumprod) *
-      abind::abind(Sx_cumprod_rev, ones_arr)
+    out[[1]] <- apply(1 - x, marg_othdim, prod)
+    if (ncat > 2) {
+      .othercatprod <- function(k) {
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod) * 
+          apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_othdim, prod)
+      }
+      mid_cats <- 2:(ncat - 1)
+      out[mid_cats] <- lapply(mid_cats, .othercatprod)
+    }
+    out[[ncat]] <- apply(x, marg_othdim, prod)
   }
+  out <- abind::abind(out, along = ndim)
   catsum <- apply(out, marg_othdim, sum)
   sweep(out, marg_othdim, catsum, "/")
 }
