@@ -2045,18 +2045,10 @@ dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
 inv_link_cumulative <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
-  ncat <- dim(x)[ndim] + 1
-  out <- vector("list", ncat)
-  out[[1]] <- slice(x, ndim, 1)
-  if (ncat > 2) {
-    .diff <- function(k) {
-      slice(x, ndim, k) - slice(x, ndim, k - 1)
-    }
-    mid_cats <- 2:(ncat - 1)
-    out[mid_cats] <- lapply(mid_cats, .diff)
-  }
-  out[[ncat]] <- 1 - slice(x, ndim, ncat - 1)
-  abind::abind(out, along = ndim)
+  dim_noncat <- dim(x)[-ndim]
+  ones_arr <- array(1, dim = c(dim_noncat, 1))
+  zeros_arr <- array(0, dim = c(dim_noncat, 1))
+  abind::abind(x, ones_arr) - abind::abind(zeros_arr, x)
 }
 
 # density of the sratio distribution
@@ -2101,20 +2093,16 @@ dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
 inv_link_sratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
-  ncat <- dim(x)[ndim] + 1
+  dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim]
   marg_othdim <- seq_along(dim(x))[-ndim]
-  out <- vector("list", ncat)
-  out[[1]] <- slice(x, ndim, 1)
-  if (ncat > 2) {
-    .condprod <- function(k) {
-      slice(x, ndim, k) *
-        apply(1 - slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
-    }
-    mid_cats <- 2:(ncat - 1)
-    out[mid_cats] <- lapply(mid_cats, .condprod)
-  }
-  out[[ncat]] <- apply(1 - x, marg_othdim, prod)
-  abind::abind(out, along = ndim)
+  ones_arr <- array(1, dim = c(dim_noncat, 1))
+  dim_t <- c(dim_thres, dim_noncat)
+  Sx_cumprod <- aperm(
+    array(apply(1 - x, marg_othdim, cumprod), dim = dim_t),
+    perm = c(marg_othdim + 1, 1)
+  )
+  abind::abind(x, ones_arr) * abind::abind(ones_arr, Sx_cumprod)
 }
 
 # density of the cratio distribution
@@ -2159,20 +2147,16 @@ dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
 inv_link_cratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
-  ncat <- dim(x)[ndim] + 1
+  dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim]
   marg_othdim <- seq_along(dim(x))[-ndim]
-  out <- vector("list", ncat)
-  out[[1]] <- 1 - slice(x, ndim, 1)
-  if (ncat > 2) {
-    .condprod <- function(k) {
-      (1 - slice(x, ndim, k)) *
-        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
-    }
-    mid_cats <- 2:(ncat - 1)
-    out[mid_cats] <- lapply(mid_cats, .condprod)
-  }
-  out[[ncat]] <- apply(x, marg_othdim, prod)
-  abind::abind(out, along = ndim)
+  ones_arr <- array(1, dim = c(dim_noncat, 1))
+  dim_t <- c(dim_thres, dim_noncat)
+  x_cumprod <- aperm(
+    array(apply(x, marg_othdim, cumprod), dim = dim_t),
+    perm = c(marg_othdim + 1, 1)
+  )
+  abind::abind(1 - x, ones_arr) * abind::abind(ones_arr, x_cumprod)
 }
 
 # density of the acat distribution
@@ -2212,35 +2196,40 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 #   of the inverse-link function applied to `x`.
 inv_link_acat <- function(x, link) {
   ndim <- length(dim(x))
-  ncat <- dim(x)[ndim] + 1
+  dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim]
   marg_othdim <- seq_along(dim(x))[-ndim]
-  out <- vector("list", ncat)
+  ones_arr <- array(1, dim = c(dim_noncat, 1))
+  dim_t <- c(dim_thres, dim_noncat)
   if (link == "logit") { 
     # faster evaluation in this case
-    out[[1]] <- array(1, dim = dim(x)[-ndim])
-    out[[2]] <- exp(slice(x, ndim, 1))
-    if (ncat > 2) {
-      .catsum <- function(k) {
-        exp(apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, sum))
-      }
-      remaincats <- 3:ncat
-      out[remaincats] <- lapply(remaincats, .catsum)
-    }
+    exp_x_cumprod <- aperm(
+      array(apply(exp(x), marg_othdim, cumprod), dim = dim_t),
+      perm = c(marg_othdim + 1, 1)
+    )
+    out <- abind::abind(ones_arr, exp_x_cumprod)
   } else {
     x <- ilink(x, link)
-    out[[1]] <- apply(1 - x, marg_othdim, prod)
-    if (ncat > 2) {
-      .othercatprod <- function(k) {
-        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod) * 
-          apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_othdim, prod)
-      }
-      mid_cats <- 2:(ncat - 1)
-      out[mid_cats] <- lapply(mid_cats, .othercatprod)
-    }
-    out[[ncat]] <- apply(x, marg_othdim, prod)
+    x_cumprod <- aperm(
+      array(apply(x, marg_othdim, cumprod), dim = dim_t),
+      perm = c(marg_othdim + 1, 1)
+    )
+    nthres <- dim(x)[ndim]
+    Sx_cumprod_rev <- apply(
+      1 - slice(x, ndim, rev(seq_len(nthres)), drop = FALSE),
+      marg_othdim, cumprod
+    )
+    Sx_cumprod_rev <- aperm(
+      array(Sx_cumprod_rev, dim = dim_t), 
+      perm = c(marg_othdim + 1, 1)
+    )
+    Sx_cumprod_rev <- slice(
+      Sx_cumprod_rev, ndim, rev(seq_len(nthres)), drop = FALSE
+    )
+    out <- abind::abind(ones_arr, x_cumprod) *
+      abind::abind(Sx_cumprod_rev, ones_arr)
   }
-  out <- abind::abind(out, along = ndim)
-  catsum <- apply(out, marg_othdim, sum)
+  catsum <- array(apply(out, marg_othdim, sum), dim = dim_noncat)
   sweep(out, marg_othdim, catsum, "/")
 }
 
