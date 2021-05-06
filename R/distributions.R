@@ -2094,10 +2094,11 @@ inv_link_sratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim]
   marg_othdim <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   Sx_cumprod <- aperm(
-    apply(1 - x, marg_othdim, cumprod),
+    array(apply(1 - x, marg_othdim, cumprod), dim = c(dim_thres, dim_noncat)),
     perm = c(marg_othdim + 1, 1)
   )
   abind::abind(x, ones_arr) * abind::abind(ones_arr, Sx_cumprod)
@@ -2146,10 +2147,11 @@ inv_link_cratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim]
   marg_othdim <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   x_cumprod <- aperm(
-    apply(x, marg_othdim, cumprod),
+    array(apply(x, marg_othdim, cumprod), dim = c(dim_thres, dim_noncat)),
     perm = c(marg_othdim + 1, 1)
   )
   abind::abind(1 - x, ones_arr) * abind::abind(ones_arr, x_cumprod)
@@ -2193,27 +2195,28 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 inv_link_acat <- function(x, link) {
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim]
   marg_othdim <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   if (link == "logit") { 
     # faster evaluation in this case
     exp_x_cumprod <- aperm(
-      apply(exp(x), marg_othdim, cumprod),
+      array(apply(exp(x), marg_othdim, cumprod), dim = c(dim_thres, dim_noncat)),
       perm = c(marg_othdim + 1, 1)
     )
     out <- abind::abind(ones_arr, exp_x_cumprod)
   } else {
     x <- ilink(x, link)
     x_cumprod <- aperm(
-      apply(x, marg_othdim, cumprod),
+      array(apply(x, marg_othdim, cumprod), dim = c(dim_thres, dim_noncat)),
       perm = c(marg_othdim + 1, 1)
     )
     nthres <- dim(x)[ndim]
     Sx_cumprod_rev <- aperm(
-      apply(
+      array(apply(
         1 - slice(x, ndim, rev(seq_len(nthres)), drop = FALSE),
         marg_othdim, cumprod
-      ), 
+      ), dim = c(dim_thres, dim_noncat)), 
       perm = c(marg_othdim + 1, 1)
     )
     Sx_cumprod_rev <- slice(
