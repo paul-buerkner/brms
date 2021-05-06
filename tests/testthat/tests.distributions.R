@@ -200,16 +200,7 @@ test_that("wiener distribution functions run without errors", {
 })
 
 test_that("d<ordinal_family>() works correctly", {
-  # This test corresponds to a single observation.
-  set.seed(1234)
-  ndraws <- 5
-  ncat <- 3
-  thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
-  # Emulate no category-specific effects (i.e., only a single vector of linear
-  # predictors) as well as category-specific effects (i.e., a matrix of linear
-  # predictors):
-  eta_test_list <- list(rnorm(ndraws),
-                        matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws))
+  source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
   for (eta_test in eta_test_list) {
     for (link in c("logit", "probit", "cauchit", "cloglog")) {
       invlinkfun <- switch(link,
@@ -276,15 +267,7 @@ test_that("d<ordinal_family>() works correctly", {
 })
 
 test_that("inv_link_<ordinal_family>() works correctly for arrays", {
-  set.seed(1234)
-  ndraws <- 5
-  nobs <- 4
-  ncat <- 3
-  x_test <- array(rnorm(ndraws * nobs * (ncat - 1)),
-                  dim = c(ndraws, nobs, ncat - 1))
-  nx_test <- -x_test
-  exp_nx_cumprod <- aperm(apply(exp(nx_test), c(1, 2), cumprod),
-                          perm = c(2, 3, 1))
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
   for (link in c("logit", "probit", "cauchit", "cloglog")) {
     invlinkfun <- switch(link,
                          "logit" = plogis,
@@ -301,8 +284,8 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
     ), perm = c(2, 3, 1))
     S_nx_cumprod_rev <- 
       S_nx_cumprod_rev[, , rev(seq_len(ncat - 1)), drop = FALSE]
-    ones_arr <- array(1, dim = c(ndraws, nobs, 1))
-    zeros_arr <- array(0, dim = c(ndraws, nobs, 1))
+    ones_arr <- array(1, dim = c(ndraws, nobsv, 1))
+    zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
     
     # cumulative():
     il_cumul <- inv_link_cumulative(x_test, link = link)
@@ -334,5 +317,41 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
       il_acat_ch[, , k] / catsum
     }, simplify = "array")
     expect_equivalent(il_acat, il_acat_ch)
+  }
+})
+
+test_that(paste(
+  "dsratio() and dcratio() give the same results for symmetric distribution",
+  "functions"
+), {
+  source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
+  for (eta_test in eta_test_list) {
+    for (link in c("logit", "probit", "cauchit", "cloglog")) {
+      d_sratio <- dsratio(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+      d_cratio <- dcratio(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+      if (link != "cloglog") {
+        expect_equal(d_sratio, d_cratio)
+      } else {
+        expect_false(isTRUE(all.equal(d_sratio, d_cratio)))
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "inv_link_sratio() and inv_link_cratio() applied to arrays give the same",
+  "results for symmetric distribution functions"
+), {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
+  for (link in c("logit", "probit", "cauchit", "cloglog")) {
+    il_sratio <- inv_link_sratio(x_test, link = link)
+    il_cratio <- inv_link_cratio(nx_test, link = link)
+    if (link != "cloglog") {
+      expect_equal(il_sratio, il_cratio)
+    } else {
+      expect_false(isTRUE(all.equal(il_sratio, il_cratio)))
+    }
   }
 })
