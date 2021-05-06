@@ -203,10 +203,7 @@ test_that("posterior_epred() can be reproduced by using d<family>()", {
   disc4 <- bprep4$dpars$disc$fe$b %*% t(bprep4$dpars$disc$fe$X)
   disc4 <- exp(disc4)
   epred4_ch <- aperm(sapply(seq_len(dim(eta4)[2]), function(i) {
-    dsratio(seq_len(ncol(thres4) + 1),
-            eta4[, i, ],
-            thres4,
-            disc4[, i])
+    dsratio(seq_len(ncol(thres4) + 1), eta4[, i, ], thres4, disc4[, i])
   }, simplify = "array"), perm = c(1, 3, 2))
   
   expect_equivalent(epred4, epred4_ch)
