@@ -1017,20 +1017,20 @@ test_that(paste(
   chains <- 1
   stan_model_args <- list(save_dso = FALSE)
   
-  fit_sratio <- brm(
+  fit_sratio <- SW(brm(
     bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
     data = dat2, family = sratio(),
     warmup = warmup, iter = iter, chains = chains,
     stan_model_args = stan_model_args, seed = 533273
-  )
+  ))
   draws_sratio <- as.matrix(fit_sratio)
   
-  fit_cratio <- brm(
+  fit_cratio <- SW(brm(
     bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
     data = dat2, family = cratio(),
     warmup = warmup, iter = iter, chains = chains,
     stan_model_args = stan_model_args, seed = 533273
-  )
+  ))
   draws_cratio <- as.matrix(fit_cratio)
   
   expect_equal(draws_sratio, draws_cratio)
