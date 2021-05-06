@@ -1,3 +1,8 @@
+### Only needed here in the unit tests:
+ilink <- brms:::ilink
+slice <- brms:::slice
+### 
+
 inv_link_cumulative_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
