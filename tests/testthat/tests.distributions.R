@@ -284,8 +284,8 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
     ), perm = c(2, 3, 1))
     S_nx_cumprod_rev <- 
       S_nx_cumprod_rev[, , rev(seq_len(ncat - 1)), drop = FALSE]
-    ones_arr <- array(1, dim = c(ndraws, nobs, 1))
-    zeros_arr <- array(0, dim = c(ndraws, nobs, 1))
+    ones_arr <- array(1, dim = c(ndraws, nobsv, 1))
+    zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
     
     # cumulative():
     il_cumul <- inv_link_cumulative(x_test, link = link)
