@@ -944,9 +944,16 @@ wsp_per_line <- function(x, nsp) {
   x
 }
 
-# remove whitespaces from strings
+# remove whitespaces in character strings
 rm_wsp <- function(x) {
   out <- gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  dim(out) <- dim(x)
+  out
+}
+
+# trim whitespaces in character strings
+trim_wsp <- function(x) {
+  out <- gsub("[ \t\r\n]+", " ", x, perl = TRUE)
   dim(out) <- dim(x)
   out
 }

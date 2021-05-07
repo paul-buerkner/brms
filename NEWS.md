@@ -23,6 +23,9 @@ to `posterior_epred(dpar = "mu")` and no longer deprecated.
 thanks to Thomas Buehrens. (#1149)
 * Fix an issue with default baseline hazard knots in `cox` models
 thanks to Malcolm Gillies. (#1143)
+* Fix a bug in non-linear models caused by accidental
+merging of operators in the non-linear formula 
+thanks to Fernando Miguez. (#1142)
 
 
 # brms 2.15.0

@@ -1629,9 +1629,10 @@ str2formula <- function(x, ..., collapse = "+") {
 # @param formula a model formula
 # @param rm a vector of to elements indicating how many characters 
 #   should be removed at the beginning and end of the string respectively
-# @param space how should whitespaces be treated?
+# @param space how should whitespaces be treated? 
+#    option 'rm' is dangerous as it may combine different operators (#1142)
 # @return a single character string or NULL
-formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+formula2str <- function(formula, rm = c(0, 0), space = c("trim", "rm")) {
   if (is.null(formula)) {
     return(NULL)
   }
@@ -1639,11 +1640,11 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   space <- match.arg(space)
   if (anyNA(rm[2])) rm[2] <- 0
   x <- Reduce(paste, deparse(formula))
-  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+  x <- gsub("[\t\r\n]+", " ", x, perl = TRUE)
   if (space == "trim") {
-    x <- gsub(" {1,}", " ", x, perl = TRUE)
+    x <- trim_wsp(x)
   } else {
-    x <- gsub(" ", "", x, perl = TRUE) 
+    x <- rm_wsp(x) 
   }
   substr(x, 1 + rm[1], nchar(x) - rm[2])
 }

@@ -1116,7 +1116,7 @@ test_that("Stan code for GAMMs is correct", {
   scode <- make_stancode(
     y ~ s(x) + t2(x,y), data = dat,
     prior = set_prior("normal(0,1)", "sds") +
-      set_prior("normal(0,2)", "sds", coef = "t2(x,y)")
+      set_prior("normal(0,2)", "sds", coef = "t2(x, y)")
   )
   expect_match2(scode, "Zs_2_2 * s_2_2")
   expect_match2(scode, "matrix[N, knots_2[2]] Zs_2_2")
