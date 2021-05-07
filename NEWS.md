@@ -28,6 +28,8 @@ merging of operators in the non-linear formula
 thanks to Fernando Miguez. (#1142)
 * Validate factors in `validate_newdata` even when they are simultaneously 
 used as predictors and grouping variables thanks to Martin Modrak. (#1141)
+* Fix a bug in the Stan code generation of threaded mixture models
+with predicted mixture probabilities thanks to Riccardo Fusaroli. (#1150)
 
 
 # brms 2.15.0
