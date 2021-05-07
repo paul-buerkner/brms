@@ -21,6 +21,8 @@ to `posterior_epred(dpar = "mu")` and no longer deprecated.
 
 * Fix an issue in the post-processing of non-normal ARMA models
 thanks to Thomas Buehrens. (#1149)
+* Fix an issue with default baseline hazard knots in `cox` models
+thanks to Malcolm Gillies. (#1143)
 
 
 # brms 2.15.0

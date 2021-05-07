@@ -486,15 +486,14 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
     args$intercept <- as_one_logical(args$intercept) 
   }
   if (is.null(args$Boundary.knots)) {
-    if (isTRUE(args$intercept)) {
-      lower_knot <- min(y)
-      upper_knot <- max(y)
-    } else {
-      # we need a smaller lower boundary knot to avoid lp = -Inf 
-      # the below choices are ad-hoc and may need further thought
-      lower_knot <- max(min(y) - mad(y, na.rm = TRUE) / 10, 0)
-      upper_knot <- max(y) + mad(y, na.rm = TRUE) / 10
-    }
+    # avoid 'knots' outside 'Boundary.knots' error (#1143)
+    # we also need a smaller lower boundary knot to avoid lp = -Inf 
+    # the below choices are ad-hoc and may need further thought
+    min_y <- min(y, na.rm = TRUE)
+    max_y <- max(y, na.rm = TRUE)
+    diff_y <- max_y - min_y
+    lower_knot <- max(min_y - diff_y / 50, 0)
+    upper_knot <- max_y + diff_y / 50
     args$Boundary.knots <- c(lower_knot, upper_knot)
   }
   if (integrate) {
