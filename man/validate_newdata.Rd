@@ -13,7 +13,7 @@ validate_newdata(
   resp = NULL,
   check_response = TRUE,
   incl_autocor = TRUE,
-  all_group_vars = NULL,
+  group_vars = NULL,
   req_vars = NULL,
   ...
 )
@@ -45,7 +45,7 @@ be checked as well. Defaults to \code{TRUE}.}
 specified via \code{autocor} should be included in the predictions.
 Defaults to \code{TRUE}.}
 
-\item{all_group_vars}{Optional names of grouping variables to be validated.
+\item{group_vars}{Optional names of grouping variables to be validated.
 Defaults to all grouping variables in the model.}
 
 \item{req_vars}{Optional names of variables required in \code{newdata}.

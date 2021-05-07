@@ -580,6 +580,11 @@ get_all_effects.btnl <- function(x, ...) {
   unique(out)
 }
 
+# extract names of predictor variables
+get_pred_vars <- function(x) {
+  unique(unlist(get_all_effects(x)))
+}
+
 # extract names of variables treated as integers
 get_int_vars <- function(x, ...) {
   UseMethod("get_int_vars")

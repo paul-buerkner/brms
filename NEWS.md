@@ -26,6 +26,8 @@ thanks to Malcolm Gillies. (#1143)
 * Fix a bug in non-linear models caused by accidental
 merging of operators in the non-linear formula 
 thanks to Fernando Miguez. (#1142)
+* Validate factors in `validate_newdata` even when they are simultaneously 
+used as predictors and grouping variables thanks to Martin Modrak. (#1141)
 
 
 # brms 2.15.0

@@ -379,7 +379,7 @@ get_data_name <- function(data) {
 #' @param object A \code{brmsfit} object.
 #' @param check_response Logical; Indicates if response variables should
 #'   be checked as well. Defaults to \code{TRUE}.
-#' @param all_group_vars Optional names of grouping variables to be validated.
+#' @param group_vars Optional names of grouping variables to be validated.
 #'   Defaults to all grouping variables in the model.
 #' @param req_vars Optional names of variables required in \code{newdata}.
 #'   If \code{NULL} (the default), all variables in the original data
@@ -392,7 +392,7 @@ get_data_name <- function(data) {
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
   newdata2 = NULL, resp = NULL, check_response = TRUE, 
-  incl_autocor = TRUE, all_group_vars = NULL, req_vars = NULL, ...
+  incl_autocor = TRUE, group_vars = NULL, req_vars = NULL, ...
 ) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
@@ -464,10 +464,12 @@ validate_newdata <- function(
   }
   newdata <- combine_groups(newdata, new_group_vars)
   # validate factor levels in newdata
-  if (is.null(all_group_vars)) {
-    all_group_vars <- get_group_vars(object) 
+  if (is.null(group_vars)) {
+    group_vars <- get_group_vars(object) 
   }
-  dont_check <- c(all_group_vars, cens_vars)
+  do_check <- union(get_pred_vars(bterms), get_int_vars(bterms))
+  dont_check <- union(group_vars, cens_vars)
+  dont_check <- setdiff(dont_check, do_check)
   dont_check <- names(mf) %in% dont_check
   is_factor <- ulapply(mf, is.factor)
   factors <- mf[is_factor & !dont_check]
@@ -508,7 +510,7 @@ validate_newdata <- function(
   }
   # check if originally numeric variables are still numeric
   num_names <- names(mf)[!is_factor]
-  num_names <- setdiff(num_names, all_group_vars)
+  num_names <- setdiff(num_names, group_vars)
   for (nm in intersect(num_names, names(newdata))) {
     if (!anyNA(newdata[[nm]]) && !is.numeric(newdata[[nm]])) {
       stop2("Variable '", nm, "' was originally ", 
