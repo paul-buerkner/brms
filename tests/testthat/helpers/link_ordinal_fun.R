@@ -54,5 +54,10 @@ link_cratio_ch <- function(x, link) {
 }
 
 link_acat_ch <- function(x, link) {
-  # TODO
+  # The same as link_acat(), but possibly dropping margins.
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim]
+  x <- slice(x, ndim, -1) / slice(x, ndim, -ncat)
+  x <- odds_inv(x)
+  link(x, link)
 }

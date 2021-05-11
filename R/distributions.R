@@ -2289,6 +2289,27 @@ inv_link_acat <- function(x, link) {
   sweep(out, marg_noncat, catsum, "/")
 }
 
+# generic link function for the acat family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_acat <- function(x, link) {
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim]
+  x <- slice(x, ndim, -1, drop = FALSE) / slice(x, ndim, -ncat, drop = FALSE)
+  x <- odds_inv(x)
+  link(x, link)
+}
+
 # CDF for ordinal distributions
 # @param q positive integers not greater than ncat
 # @param eta samples of the linear predictor

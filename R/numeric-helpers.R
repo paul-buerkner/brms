@@ -187,3 +187,7 @@ log_softmax <- function(x) {
   }
   x - log(rowSums(exp(x)))
 }
+
+odds_inv <- function(x) {
+  x / (1 + x)
+}
