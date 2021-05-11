@@ -2068,9 +2068,9 @@ link_cumulative <- function(x, link) {
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim]
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim] - 1
+  nthres <- dim(x)[ndim] - 1
   marg_noncat <- seq_along(dim(x))[-ndim]
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   x <- aperm(array(apply(slice(x, ndim, -ncat, drop = FALSE),
                          marg_noncat, cumsum),
                    dim = dim_t),
@@ -2121,10 +2121,10 @@ inv_link_sratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim]
+  nthres <- dim(x)[ndim]
   marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   Sx_cumprod <- aperm(
     array(apply(1 - x, marg_noncat, cumprod), dim = dim_t),
     perm = c(marg_noncat + 1, 1)
@@ -2204,10 +2204,10 @@ inv_link_cratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim]
+  nthres <- dim(x)[ndim]
   marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   x_cumprod <- aperm(
     array(apply(x, marg_noncat, cumprod), dim = dim_t),
     perm = c(marg_noncat + 1, 1)
@@ -2282,10 +2282,10 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 inv_link_acat <- function(x, link) {
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim]
+  nthres <- dim(x)[ndim]
   marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   if (link == "logit") { 
     # faster evaluation in this case
     exp_x_cumprod <- aperm(
@@ -2299,7 +2299,6 @@ inv_link_acat <- function(x, link) {
       array(apply(x, marg_noncat, cumprod), dim = dim_t),
       perm = c(marg_noncat + 1, 1)
     )
-    nthres <- dim(x)[ndim]
     Sx_cumprod_rev <- apply(
       1 - slice(x, ndim, rev(seq_len(nthres)), drop = FALSE),
       marg_noncat, cumprod
