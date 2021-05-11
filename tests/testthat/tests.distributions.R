@@ -359,6 +359,40 @@ test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
   }
 })
 
+test_that("link_<ordinal_family>() inverts inv_link_<ordinal_family>()", {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        nx_test <- -x_test
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          il_cumul <- inv_link_cumulative(x_test, link = link)
+          l_cumul <- link_cumulative(il_cumul, link = link)
+          expect_equivalent(l_cumul, x_test)
+          
+          # sratio():
+          il_sratio <- inv_link_sratio(x_test, link = link)
+          l_sratio <- link_sratio(il_sratio, link = link)
+          expect_equivalent(l_sratio, x_test)
+          
+          # cratio():
+          il_cratio <- inv_link_cratio(x_test, link = link)
+          l_cratio <- link_cratio(il_cratio, link = link)
+          expect_equivalent(l_cratio, x_test)
+          
+          # acat():
+          il_acat <- inv_link_acat(x_test, link = link)
+          l_acat <- link_acat(il_acat, link = link)
+          expect_equivalent(l_acat, x_test)
+        }
+      }
+    }
+  }
+})
+
 test_that(paste(
   "dsratio() and dcratio() give the same results for symmetric distribution",
   "functions"
