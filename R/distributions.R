@@ -2215,6 +2215,35 @@ inv_link_cratio <- function(x, link) {
   abind::abind(1 - x, ones_arr) * abind::abind(ones_arr, x_cumprod)
 }
 
+# generic link function for the cratio family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_cratio <- function(x, link) {
+  ndim <- length(dim(x))
+  .F_k <- function(k) {
+    if (k == 1) {
+      prev_res <- list(F_k = NULL, F_km1_prod = 1)
+    } else {
+      prev_res <- .F_k(k - 1)
+    }
+    F_k <- 1 - slice(x, ndim, k, drop = FALSE) / prev_res$F_km1_prod
+    return(list(F_k = abind::abind(prev_res$F_k, F_k),
+                F_km1_prod = prev_res$F_km1_prod * F_k))
+  }
+  x <- .F_k(dim(x)[ndim] - 1)$F_k
+  link(x, link)
+}
+
 # density of the acat distribution
 # 
 # @param x Integer vector containing response category indices to return the

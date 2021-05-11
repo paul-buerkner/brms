@@ -51,7 +51,20 @@ link_sratio_ch <- function(x, link) {
 }
 
 link_cratio_ch <- function(x, link) {
-  # TODO
+  # The same as link_cratio(), but dropping margins.
+  ndim <- length(dim(x))
+  .F_k <- function(k) {
+    if (k == 1) {
+      prev_res <- list(F_k = NULL, F_km1_prod = 1)
+    } else {
+      prev_res <- .F_k(k - 1)
+    }
+    F_k <- 1 - slice(x, ndim, k) / prev_res$F_km1_prod
+    return(list(F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
+                F_km1_prod = prev_res$F_km1_prod * F_k))
+  }
+  x <- .F_k(dim(x)[ndim] - 1)$F_k
+  link(x, link)
 }
 
 link_acat_ch <- function(x, link) {
