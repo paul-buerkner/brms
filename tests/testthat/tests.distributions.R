@@ -326,6 +326,39 @@ test_that("link_<ordinal_family>() works correctly for arrays", {
   }
 })
 
+test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
+  source(testthat::test_path(file.path("helpers", "link_ordinal_sim.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          l_cumul <- link_cumulative(x_test, link = link)
+          il_cumul <- inv_link_cumulative(l_cumul, link = link)
+          expect_equivalent(il_cumul, x_test)
+          
+          # sratio():
+          l_sratio <- link_sratio(x_test, link = link)
+          il_sratio <- inv_link_sratio(l_sratio, link = link)
+          expect_equivalent(il_sratio, x_test)
+          
+          # cratio():
+          l_cratio <- link_cratio(x_test, link = link)
+          il_cratio <- inv_link_cratio(l_cratio, link = link)
+          expect_equivalent(il_cratio, x_test)
+          
+          # acat():
+          l_acat <- link_acat(x_test, link = link)
+          il_acat <- inv_link_acat(l_acat, link = link)
+          expect_equivalent(il_acat, x_test)
+        }
+      }
+    }
+  }
+})
+
 test_that(paste(
   "dsratio() and dcratio() give the same results for symmetric distribution",
   "functions"
