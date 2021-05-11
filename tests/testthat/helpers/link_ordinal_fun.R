@@ -68,7 +68,8 @@ link_cratio_ch <- function(x, link) {
 }
 
 link_acat_ch <- function(x, link) {
-  # The same as link_acat(), but possibly dropping margins.
+  # The same as link_acat(), but possibly dropping margins and not treating the
+  # logit link as a special case.
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim]
   dim_noncat <- dim(x)[-ndim]

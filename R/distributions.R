@@ -2334,8 +2334,13 @@ link_acat <- function(x, link) {
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim]
   x <- slice(x, ndim, -1, drop = FALSE) / slice(x, ndim, -ncat, drop = FALSE)
-  x <- odds_inv(x)
-  link(x, link)
+  if (link == "logit") {
+    # faster evaluation in this case
+    return(log(x))
+  } else {
+    x <- odds_inv(x)
+    return(link(x, link))
+  }
 }
 
 # CDF for ordinal distributions
