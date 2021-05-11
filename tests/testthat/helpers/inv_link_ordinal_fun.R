@@ -1,4 +1,4 @@
-### Only needed here in the unit tests:
+### Only needed here in the unit tests (and only for testing in R CMD check):
 ilink <- brms:::ilink
 slice <- brms:::slice
 ### 
