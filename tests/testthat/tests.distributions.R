@@ -266,9 +266,6 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
                         dim = c(ndraws, nobsv, ncat - 1))
         nx_test <- -x_test
-        exp_nx_cumprod <- aperm(array(apply(exp(nx_test), c(1, 2), cumprod),
-                                      dim = c(ncat - 1, ndraws, nobsv)),
-                                perm = c(2, 3, 1))
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           # cumulative():
           il_cumul <- inv_link_cumulative(x_test, link = link)
@@ -338,9 +335,6 @@ test_that(paste(
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
                         dim = c(ndraws, nobsv, ncat - 1))
         nx_test <- -x_test
-        exp_nx_cumprod <- aperm(array(apply(exp(nx_test), c(1, 2), cumprod),
-                                      dim = c(ncat - 1, ndraws, nobsv)),
-                                perm = c(2, 3, 1))
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           il_sratio <- inv_link_sratio(x_test, link = link)
           il_cratio <- inv_link_cratio(nx_test, link = link)
