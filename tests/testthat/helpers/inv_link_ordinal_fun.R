@@ -24,18 +24,18 @@ inv_link_sratio_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   out <- vector("list", ncat)
   out[[1]] <- slice(x, ndim, 1)
   if (ncat > 2) {
     .condprod <- function(k) {
       slice(x, ndim, k) *
-        apply(1 - slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
+        apply(1 - slice(x, ndim, 1:(k - 1), drop = FALSE), marg_noncat, prod)
     }
     mid_cats <- 2:(ncat - 1)
     out[mid_cats] <- lapply(mid_cats, .condprod)
   }
-  out[[ncat]] <- apply(1 - x, marg_othdim, prod)
+  out[[ncat]] <- apply(1 - x, marg_noncat, prod)
   abind::abind(out, along = ndim)
 }
 
@@ -43,25 +43,25 @@ inv_link_cratio_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   out <- vector("list", ncat)
   out[[1]] <- 1 - slice(x, ndim, 1)
   if (ncat > 2) {
     .condprod <- function(k) {
       (1 - slice(x, ndim, k)) *
-        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod)
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_noncat, prod)
     }
     mid_cats <- 2:(ncat - 1)
     out[mid_cats] <- lapply(mid_cats, .condprod)
   }
-  out[[ncat]] <- apply(x, marg_othdim, prod)
+  out[[ncat]] <- apply(x, marg_noncat, prod)
   abind::abind(out, along = ndim)
 }
 
 inv_link_acat_ch <- function(x, link) {
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   out <- vector("list", ncat)
   if (link == "logit") { 
     # faster evaluation in this case
@@ -69,25 +69,25 @@ inv_link_acat_ch <- function(x, link) {
     out[[2]] <- exp(slice(x, ndim, 1))
     if (ncat > 2) {
       .catsum <- function(k) {
-        exp(apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, sum))
+        exp(apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_noncat, sum))
       }
       remaincats <- 3:ncat
       out[remaincats] <- lapply(remaincats, .catsum)
     }
   } else {
     x <- ilink(x, link)
-    out[[1]] <- apply(1 - x, marg_othdim, prod)
+    out[[1]] <- apply(1 - x, marg_noncat, prod)
     if (ncat > 2) {
       .othercatprod <- function(k) {
-        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_othdim, prod) * 
-          apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_othdim, prod)
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_noncat, prod) * 
+          apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_noncat, prod)
       }
       mid_cats <- 2:(ncat - 1)
       out[mid_cats] <- lapply(mid_cats, .othercatprod)
     }
-    out[[ncat]] <- apply(x, marg_othdim, prod)
+    out[[ncat]] <- apply(x, marg_noncat, prod)
   }
   out <- abind::abind(out, along = ndim)
-  catsum <- apply(out, marg_othdim, sum)
-  sweep(out, marg_othdim, catsum, "/")
+  catsum <- apply(out, marg_noncat, sum)
+  sweep(out, marg_noncat, catsum, "/")
 }

@@ -2095,12 +2095,12 @@ inv_link_sratio <- function(x, link) {
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
   dim_thres <- dim(x)[ndim]
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   dim_t <- c(dim_thres, dim_noncat)
   Sx_cumprod <- aperm(
-    array(apply(1 - x, marg_othdim, cumprod), dim = dim_t),
-    perm = c(marg_othdim + 1, 1)
+    array(apply(1 - x, marg_noncat, cumprod), dim = dim_t),
+    perm = c(marg_noncat + 1, 1)
   )
   abind::abind(x, ones_arr) * abind::abind(ones_arr, Sx_cumprod)
 }
@@ -2149,12 +2149,12 @@ inv_link_cratio <- function(x, link) {
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
   dim_thres <- dim(x)[ndim]
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   dim_t <- c(dim_thres, dim_noncat)
   x_cumprod <- aperm(
-    array(apply(x, marg_othdim, cumprod), dim = dim_t),
-    perm = c(marg_othdim + 1, 1)
+    array(apply(x, marg_noncat, cumprod), dim = dim_t),
+    perm = c(marg_noncat + 1, 1)
   )
   abind::abind(1 - x, ones_arr) * abind::abind(ones_arr, x_cumprod)
 }
@@ -2198,30 +2198,30 @@ inv_link_acat <- function(x, link) {
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
   dim_thres <- dim(x)[ndim]
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   dim_t <- c(dim_thres, dim_noncat)
   if (link == "logit") { 
     # faster evaluation in this case
     exp_x_cumprod <- aperm(
-      array(apply(exp(x), marg_othdim, cumprod), dim = dim_t),
-      perm = c(marg_othdim + 1, 1)
+      array(apply(exp(x), marg_noncat, cumprod), dim = dim_t),
+      perm = c(marg_noncat + 1, 1)
     )
     out <- abind::abind(ones_arr, exp_x_cumprod)
   } else {
     x <- ilink(x, link)
     x_cumprod <- aperm(
-      array(apply(x, marg_othdim, cumprod), dim = dim_t),
-      perm = c(marg_othdim + 1, 1)
+      array(apply(x, marg_noncat, cumprod), dim = dim_t),
+      perm = c(marg_noncat + 1, 1)
     )
     nthres <- dim(x)[ndim]
     Sx_cumprod_rev <- apply(
       1 - slice(x, ndim, rev(seq_len(nthres)), drop = FALSE),
-      marg_othdim, cumprod
+      marg_noncat, cumprod
     )
     Sx_cumprod_rev <- aperm(
       array(Sx_cumprod_rev, dim = dim_t), 
-      perm = c(marg_othdim + 1, 1)
+      perm = c(marg_noncat + 1, 1)
     )
     Sx_cumprod_rev <- slice(
       Sx_cumprod_rev, ndim, rev(seq_len(nthres)), drop = FALSE
@@ -2229,8 +2229,8 @@ inv_link_acat <- function(x, link) {
     out <- abind::abind(ones_arr, x_cumprod) *
       abind::abind(Sx_cumprod_rev, ones_arr)
   }
-  catsum <- array(apply(out, marg_othdim, sum), dim = dim_noncat)
-  sweep(out, marg_othdim, catsum, "/")
+  catsum <- array(apply(out, marg_noncat, sum), dim = dim_noncat)
+  sweep(out, marg_noncat, catsum, "/")
 }
 
 # CDF for ordinal distributions
