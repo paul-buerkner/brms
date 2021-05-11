@@ -2153,11 +2153,11 @@ link_sratio <- function(x, link) {
     } else {
       prev_res <- .F_k(k - 1)
     }
-    F_k <- slice(x, ndim, k) / prev_res$S_km1_prod
-    return(list(F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
+    F_k <- slice(x, ndim, k, drop = FALSE) / prev_res$S_km1_prod
+    return(list(F_k = abind::abind(prev_res$F_k, F_k),
                 S_km1_prod = prev_res$S_km1_prod * (1 - F_k)))
   }
-  x <- .F_k(dim(x)[ndim])$F_k
+  x <- .F_k(dim(x)[ndim] - 1)$F_k
   link(x, link)
 }
 
