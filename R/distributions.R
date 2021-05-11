@@ -2051,6 +2051,33 @@ inv_link_cumulative <- function(x, link) {
   abind::abind(x, ones_arr) - abind::abind(zeros_arr, x)
 }
 
+# generic link function for the cumulative family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_cumulative <- function(x, link) {
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim]
+  dim_noncat <- dim(x)[-ndim]
+  dim_thres <- dim(x)[ndim] - 1
+  marg_noncat <- seq_along(dim(x))[-ndim]
+  dim_t <- c(dim_thres, dim_noncat)
+  x <- aperm(array(apply(slice(x, ndim, -ncat, drop = FALSE),
+                         marg_noncat, cumsum),
+                   dim = dim_t),
+             perm = c(marg_noncat + 1, 1))
+  link(x, link)
+}
+
 # density of the sratio distribution
 # 
 # @param x Integer vector containing response category indices to return the
@@ -2103,6 +2130,35 @@ inv_link_sratio <- function(x, link) {
     perm = c(marg_noncat + 1, 1)
   )
   abind::abind(x, ones_arr) * abind::abind(ones_arr, Sx_cumprod)
+}
+
+# generic link function for the sratio family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_sratio <- function(x, link) {
+  ndim <- length(dim(x))
+  .F_k <- function(k) {
+    if (k == 1) {
+      prev_res <- list(F_k = NULL, S_km1_prod = 1)
+    } else {
+      prev_res <- .F_k(k - 1)
+    }
+    F_k <- slice(x, ndim, k) / prev_res$S_km1_prod
+    return(list(F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
+                S_km1_prod = prev_res$S_km1_prod * (1 - F_k)))
+  }
+  x <- .F_k(dim(x)[ndim])$F_k
+  link(x, link)
 }
 
 # density of the cratio distribution
