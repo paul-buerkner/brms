@@ -71,7 +71,8 @@ link_acat_ch <- function(x, link) {
   # The same as link_acat(), but possibly dropping margins.
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim]
+  dim_noncat <- dim(x)[-ndim]
   x <- slice(x, ndim, -1) / slice(x, ndim, -ncat)
   x <- odds_inv(x)
-  link(x, link)
+  array(link(x, link), dim = c(dim_noncat, ncat - 1))
 }
