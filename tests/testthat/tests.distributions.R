@@ -292,6 +292,40 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
   }
 })
 
+test_that("link_<ordinal_family>() works correctly for arrays", {
+  source(testthat::test_path(file.path("helpers", "link_ordinal_fun.R")))
+  source(testthat::test_path(file.path("helpers", "link_ordinal_sim.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          l_cumul <- link_cumulative(x_test, link = link)
+          l_cumul_ch <- link_cumulative_ch(x_test, link = link)
+          expect_equivalent(l_cumul, l_cumul_ch)
+          
+          # sratio():
+          l_sratio <- link_sratio(x_test, link = link)
+          l_sratio_ch <- link_sratio_ch(x_test, link = link)
+          expect_equivalent(l_sratio, l_sratio_ch)
+          
+          # cratio():
+          l_cratio <- link_cratio(x_test, link = link)
+          l_cratio_ch <- link_cratio_ch(x_test, link = link)
+          expect_equivalent(l_cratio, l_cratio_ch)
+          
+          # acat():
+          l_acat <- link_acat(x_test, link = link)
+          l_acat_ch <- link_acat_ch(x_test, link = link)
+          expect_equivalent(l_acat, l_acat_ch)
+        }
+      }
+    }
+  }
+})
+
 test_that(paste(
   "dsratio() and dcratio() give the same results for symmetric distribution",
   "functions"
@@ -342,6 +376,30 @@ test_that(paste(
             expect_equal(il_sratio, il_cratio)
           } else {
             expect_false(isTRUE(all.equal(il_sratio, il_cratio)))
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "link_sratio() and link_cratio() applied to arrays give the same",
+  "results for symmetric distribution functions"
+), {
+  source(testthat::test_path(file.path("helpers", "link_ordinal_sim.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          l_sratio <- link_sratio(x_test, link = link)
+          l_cratio <- link_cratio(x_test, link = link)
+          if (link != "cloglog") {
+            expect_equal(l_sratio, -l_cratio)
+          } else {
+            expect_false(isTRUE(all.equal(l_sratio, -l_cratio)))
           }
         }
       }
