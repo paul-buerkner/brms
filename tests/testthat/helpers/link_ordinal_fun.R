@@ -34,6 +34,7 @@ link_cumulative_ch <- function(x, link) {
 }
 
 link_sratio_ch <- function(x, link) {
+  # The same as link_sratio(), but dropping margins.
   ndim <- length(dim(x))
   .F_k <- function(k) {
     if (k == 1) {
