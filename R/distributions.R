@@ -1961,12 +1961,16 @@ dcategorical <- function(x, eta, log = FALSE) {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (log) {
-    out <- log_softmax(eta)
-  } else {
-    out <- softmax(eta)
-  }
+  out <- inv_link_categorical(eta, log = log)
   out[, x, drop = FALSE]
+}
+
+inv_link_categorical <- function(x, log = FALSE) {
+  if (log) {
+    return(log_softmax(x))
+  } else {
+    return(softmax(x))
+  }
 }
 
 # CDF of the categorical distribution with the softmax transform
