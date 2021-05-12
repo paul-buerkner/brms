@@ -205,9 +205,9 @@ test_that("d<ordinal_family>() works correctly", {
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
-      # Emulate no category-specific effects (i.e., only a single vector of linear
-      # predictors) as well as category-specific effects (i.e., a matrix of linear
-      # predictors):
+      # Emulate no category-specific effects (i.e., only a single vector of
+      # linear predictors) as well as category-specific effects (i.e., a matrix
+      # of linear predictors):
       eta_test_list <- list(
         rnorm(ndraws),
         matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
@@ -413,9 +413,9 @@ test_that(paste(
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
-      # Emulate no category-specific effects (i.e., only a single vector of linear
-      # predictors) as well as category-specific effects (i.e., a matrix of linear
-      # predictors):
+      # Emulate no category-specific effects (i.e., only a single vector of
+      # linear predictors) as well as category-specific effects (i.e., a matrix
+      # of linear predictors):
       eta_test_list <- list(
         rnorm(ndraws),
         matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
