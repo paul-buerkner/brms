@@ -59,7 +59,7 @@ test_that("skew_normal distribution functions run without errors", {
   res <- dskew_normal(x, mu = 1, sigma = 2, alpha = 1)
   expect_true(length(res) == n)
   res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n, 
-                             alpha = 3, log.p = TRUE)
+                      alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- qskew_normal(x, mu = rnorm(n), sigma = 1:n, 
                       alpha = 3, log.p = TRUE)
@@ -74,7 +74,7 @@ test_that("exgaussian distribution functions run without errors", {
   res <- dexgaussian(x, mu = 1, sigma = 2, beta = 1)
   expect_true(length(res) == n)
   res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n, 
-                            beta = 3, log.p = TRUE)
+                     beta = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
   expect_true(length(res) == n)
@@ -124,7 +124,7 @@ test_that("asym_laplace distribution functions run without errors", {
   res <- pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
   expect_true(length(res) == n)
   res <- rasym_laplace(n, mu = rnorm(n), sigma = 10, 
-                              quantile = runif(n, 0, 1))
+                       quantile = runif(n, 0, 1))
   expect_true(length(res) == n)
 })
 
