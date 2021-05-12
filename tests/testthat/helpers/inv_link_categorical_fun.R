@@ -1,4 +1,4 @@
-inv_link_categorical_ch <- function(x, log = FALSE) {
+inv_link_categorical_ch <- function(x, has_refcat = TRUE, log = FALSE) {
   ndim <- length(dim(x))
   # For testing purposes, only allow 3-dimensional arrays here:
   if (ndim <= 1) {
@@ -9,6 +9,11 @@ inv_link_categorical_ch <- function(x, log = FALSE) {
     ndim <- length(dim(x))
   } else if (ndim > 3) {
     stop("At most 3 dimensions are allowed here.")
+  }
+  if (!has_refcat) {
+    dim_noncat <- dim(x)[-ndim]
+    zeros_arr <- array(0, dim = c(dim_noncat, 1))
+    x <- abind::abind(zeros_arr, x)
   }
   # For testing purposes, iterate over the observations:
   ndraws <- dim(x)[1]

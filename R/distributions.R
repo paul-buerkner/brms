@@ -1967,10 +1967,15 @@ dcategorical <- function(x, eta, log = FALSE) {
 
 # generic inverse link function for the categorical family
 # 
-# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
-#   `ncat` denoting the number of response categories) with values of `eta` for
-#   one observation (see dcategorical()) or an array (S x N x `ncat`) containing
-#   the same values as the matrix just described, but for N observations.
+# @param x Matrix (S x `ncat` or S x `ncat - 1` (depending on `has_refcat`),
+#   with S denoting the number of posterior draws and `ncat` denoting the number
+#   of response categories) with values of `eta` for one observation (see
+#   dcategorical()) or an array (S x N x `ncat` or S x N x `ncat - 1` (depending
+#   on `has_refcat`)) containing the same values as the matrix just described,
+#   but for N observations.
+# @param has_refcat Logical (length 1) indicating whether `x` contains values
+#   for the reference category. Caution: If this is `FALSE`, then the reference
+#   category will be inserted as the *first* category.
 # @param log Logical (length 1) indicating whether to log the return value.
 # 
 # @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
@@ -1978,7 +1983,17 @@ dcategorical <- function(x, eta, log = FALSE) {
 #   categories) containing the values of the inverse-link function applied to
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
-inv_link_categorical <- function(x, log = FALSE) {
+inv_link_categorical <- function(x, has_refcat = TRUE, log = FALSE) {
+  if (!has_refcat) {
+    ndim <- length(dim(x))
+    if (ndim <= 1) {
+      x <- matrix(x, nrow = 1)
+      ndim <- length(dim(x))
+    }
+    dim_noncat <- dim(x)[-ndim]
+    zeros_arr <- array(0, dim = c(dim_noncat, 1))
+    x <- abind::abind(zeros_arr, x)
+  }
   if (log) {
     return(log_softmax(x))
   } else {
