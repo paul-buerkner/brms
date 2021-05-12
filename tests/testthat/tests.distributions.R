@@ -263,7 +263,7 @@ test_that("d<ordinal_family>() works correctly", {
 
 test_that("inv_link_<ordinal_family>() works correctly for arrays", {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
-  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
+  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -372,7 +372,7 @@ test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
 })
 
 test_that("link_<ordinal_family>() inverts inv_link_<ordinal_family>()", {
-  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
+  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -442,7 +442,7 @@ test_that(paste(
   "results for symmetric distribution functions (when respecting the sign",
   "appropriately)."
 ), {
-  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
+  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
