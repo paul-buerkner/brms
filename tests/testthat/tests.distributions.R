@@ -487,3 +487,22 @@ test_that(paste(
     }
   }
 })
+
+test_that("dcategorical() works correctly", {
+  source(testthat::test_path(file.path("helpers", "inv_link_categorical_fun.R")))
+  source(testthat::test_path(file.path("helpers", "d_cat_sim.R")))
+  for (ndraws in ndraws_vec) {
+    for (ncat in ncat_vec) {
+      eta_test_list <- list(matrix(rnorm(ndraws * ncat), nrow = ndraws))
+      if (ndraws == 1) {
+        eta_test_list <- c(eta_test_list, list(rnorm(ncat)))
+      }
+      for (eta_test in eta_test_list) {
+        d_categorical <- dcategorical(seq_len(ncat), eta_test)
+        d_categorical_ch <- inv_link_categorical_ch(eta_test)
+        expect_equivalent(d_categorical, d_categorical_ch)
+        expect_equal(dim(d_categorical), c(ndraws, ncat))
+      }
+    }
+  }
+})
