@@ -201,7 +201,7 @@ test_that("wiener distribution functions run without errors", {
 
 test_that("d<ordinal_family>() works correctly", {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
-  source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
+  source(testthat::test_path(file.path("helpers", "d_cat_sim.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
@@ -409,7 +409,7 @@ test_that(paste(
   "dsratio() and dcratio() give the same results for symmetric distribution",
   "functions"
 ), {
-  source(testthat::test_path(file.path("helpers", "d_ordinal_sim.R")))
+  source(testthat::test_path(file.path("helpers", "d_cat_sim.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
