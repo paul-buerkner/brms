@@ -439,7 +439,8 @@ test_that(paste(
 
 test_that(paste(
   "inv_link_sratio() and inv_link_cratio() applied to arrays give the same",
-  "results for symmetric distribution functions"
+  "results for symmetric distribution functions (when respecting the sign",
+  "appropriately)."
 ), {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_sim.R")))
   for (ndraws in ndraws_vec) {
@@ -464,7 +465,8 @@ test_that(paste(
 
 test_that(paste(
   "link_sratio() and link_cratio() applied to arrays give the same",
-  "results for symmetric distribution functions"
+  "results for symmetric distribution functions (when respecting the sign",
+  "appropriately)."
 ), {
   source(testthat::test_path(file.path("helpers", "link_ordinal_sim.R")))
   for (ndraws in ndraws_vec) {
