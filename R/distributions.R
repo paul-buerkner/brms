@@ -2001,6 +2001,37 @@ inv_link_categorical <- function(x, has_refcat = TRUE, log = FALSE) {
   }
 }
 
+# generic link function for the categorical family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param refcat Numeric (length 1) giving the index of the reference category.
+# @param return_refcat Logical (length 1) indicating whether to include the
+#   reference category in the return value.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat` or S x `ncat - 1`
+#   (depending on `return_refcat`), with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) containing the
+#   values of the link function applied to `x`. If `x` is an array, then an
+#   array (S x N x `ncat` or S x N x `ncat - 1` (depending on `return_refcat`))
+#   containing the same values as the matrix just described, but for N
+#   observations.
+link_categorical <- function(x, refcat = 1, return_refcat = TRUE) {
+  ndim <- length(dim(x))
+  marg_noncat <- seq_along(dim(x))[-ndim]
+  x_tosweep <- if (return_refcat) {
+    x
+  } else {
+    slice(x, ndim, -refcat, drop = FALSE)
+  }
+  log(sweep(x_tosweep,
+            MARGIN = marg_noncat,
+            STATS = slice(x, ndim, refcat),
+            FUN = "/"))
+}
+
 # CDF of the categorical distribution with the softmax transform
 # @param q positive integers not greater than ncat
 # @param eta the linear predictor (of length or ncol ncat)  
