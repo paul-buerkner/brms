@@ -3,8 +3,10 @@ inv_link_categorical_ch <- function(x, log = FALSE) {
   # For testing purposes, only allow 3-dimensional arrays here:
   if (ndim <= 1) {
     x <- array(x, dim = c(1, 1, length(x)))
+    ndim <- length(dim(x))
   } else if (ndim == 2) {
     x <- array(x, dim = c(dim(x)[1], 1, dim(x)[2]))
+    ndim <- length(dim(x))
   } else if (ndim > 3) {
     stop("At most 3 dimensions are allowed here.")
   }

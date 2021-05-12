@@ -1965,6 +1965,19 @@ dcategorical <- function(x, eta, log = FALSE) {
   out[, x, drop = FALSE]
 }
 
+# generic inverse link function for the categorical family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) with values of `eta` for
+#   one observation (see dcategorical()) or an array (S x N x `ncat`) containing
+#   the same values as the matrix just described, but for N observations.
+# @param log Logical (length 1) indicating whether to log the return value.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
 inv_link_categorical <- function(x, log = FALSE) {
   if (log) {
     return(log_softmax(x))
