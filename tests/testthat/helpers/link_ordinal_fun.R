@@ -14,10 +14,10 @@ link_ch <- function(x, link) {
   }
 }
 
+# Very similar to link_cumulative(), but iterates over the observations:
 link_cumulative_ch <- function(x, link) {
   # For testing purposes, only allow 3-dimensional arrays here:
   stopifnot(length(dim(x)) == 3)
-  # For testing purposes, iterate over the observations:
   ndraws <- dim(x)[1]
   nobsv <- dim(x)[2]
   ncat <- dim(x)[3]
@@ -33,8 +33,8 @@ link_cumulative_ch <- function(x, link) {
   link_ch(x_cumsum, link = link)
 }
 
+# The same as link_sratio(), but dropping margins:
 link_sratio_ch <- function(x, link) {
-  # The same as link_sratio(), but dropping margins.
   ndim <- length(dim(x))
   .F_k <- function(k) {
     if (k == 1) {
@@ -50,8 +50,8 @@ link_sratio_ch <- function(x, link) {
   link_ch(x, link)
 }
 
+# The same as link_cratio(), but dropping margins:
 link_cratio_ch <- function(x, link) {
-  # The same as link_cratio(), but dropping margins.
   ndim <- length(dim(x))
   .F_k <- function(k) {
     if (k == 1) {
@@ -67,9 +67,9 @@ link_cratio_ch <- function(x, link) {
   link(x, link)
 }
 
+# The same as link_acat(), but possibly dropping margins and not treating the
+# logit link as a special case:
 link_acat_ch <- function(x, link) {
-  # The same as link_acat(), but possibly dropping margins and not treating the
-  # logit link as a special case.
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim]
   dim_noncat <- dim(x)[-ndim]
