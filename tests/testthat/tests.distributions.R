@@ -233,24 +233,28 @@ test_that("d<ordinal_family>() works correctly", {
                                  eta_test, thres_test, link = link)
           d_cumul_ch <- inv_link_cumulative_ch(thres_eta, link = link)
           expect_equivalent(d_cumul, d_cumul_ch)
+          expect_equal(dim(d_cumul), c(ndraws, ncat))
           
           # sratio():
           d_sratio <- dsratio(seq_len(ncat),
                               eta_test, thres_test, link = link)
           d_sratio_ch <- inv_link_sratio_ch(thres_eta, link = link)
           expect_equivalent(d_sratio, d_sratio_ch)
+          expect_equal(dim(d_sratio), c(ndraws, ncat))
           
           # cratio():
           d_cratio <- dcratio(seq_len(ncat),
                               eta_test, thres_test, link = link)
           d_cratio_ch <- inv_link_cratio_ch(eta_thres, link = link)
           expect_equivalent(d_cratio, d_cratio_ch)
+          expect_equal(dim(d_cratio), c(ndraws, ncat))
           
           # acat():
           d_acat <- dacat(seq_len(ncat),
                           eta_test, thres_test, link = link)
           d_acat_ch <- inv_link_acat_ch(eta_thres, link = link)
           expect_equivalent(d_acat, d_acat_ch)
+          expect_equal(dim(d_acat), c(ndraws, ncat))
         }
       }
     }
@@ -271,21 +275,25 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
           il_cumul <- inv_link_cumulative(x_test, link = link)
           il_cumul_ch <- inv_link_cumulative_ch(x_test, link = link)
           expect_equivalent(il_cumul, il_cumul_ch)
+          expect_equal(dim(il_cumul), c(ndraws, nobsv, ncat))
           
           # sratio():
           il_sratio <- inv_link_sratio(x_test, link = link)
           il_sratio_ch <- inv_link_sratio_ch(x_test, link = link)
           expect_equivalent(il_sratio, il_sratio_ch)
+          expect_equal(dim(il_sratio), c(ndraws, nobsv, ncat))
           
           # cratio():
           il_cratio <- inv_link_cratio(nx_test, link = link)
           il_cratio_ch <- inv_link_cratio_ch(nx_test, link = link)
           expect_equivalent(il_cratio, il_cratio_ch)
+          expect_equal(dim(il_cratio), c(ndraws, nobsv, ncat))
           
           # acat():
           il_acat <- inv_link_acat(nx_test, link = link)
           il_acat_ch <- inv_link_acat_ch(nx_test, link = link)
           expect_equivalent(il_acat, il_acat_ch)
+          expect_equal(dim(il_acat), c(ndraws, nobsv, ncat))
         }
       }
     }
@@ -305,21 +313,25 @@ test_that("link_<ordinal_family>() works correctly for arrays", {
           l_cumul <- link_cumulative(x_test, link = link)
           l_cumul_ch <- link_cumulative_ch(x_test, link = link)
           expect_equivalent(l_cumul, l_cumul_ch)
+          expect_equal(dim(l_cumul), c(ndraws, nobsv, ncat - 1))
           
           # sratio():
           l_sratio <- link_sratio(x_test, link = link)
           l_sratio_ch <- link_sratio_ch(x_test, link = link)
           expect_equivalent(l_sratio, l_sratio_ch)
+          expect_equal(dim(l_sratio), c(ndraws, nobsv, ncat - 1))
           
           # cratio():
           l_cratio <- link_cratio(x_test, link = link)
           l_cratio_ch <- link_cratio_ch(x_test, link = link)
           expect_equivalent(l_cratio, l_cratio_ch)
+          expect_equal(dim(l_cratio), c(ndraws, nobsv, ncat - 1))
           
           # acat():
           l_acat <- link_acat(x_test, link = link)
           l_acat_ch <- link_acat_ch(x_test, link = link)
           expect_equivalent(l_acat, l_acat_ch)
+          expect_equal(dim(l_acat), c(ndraws, nobsv, ncat - 1))
         }
       }
     }
