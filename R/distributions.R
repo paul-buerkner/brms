@@ -2338,7 +2338,7 @@ link_acat <- function(x, link) {
     # faster evaluation in this case
     return(log(x))
   } else {
-    x <- odds_inv(x)
+    x <- inv_odds(x)
     return(link(x, link))
   }
 }
