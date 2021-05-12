@@ -1952,7 +1952,7 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
 
 # density of the categorical distribution with the softmax transform
 # @param x positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat-1)
+# @param eta the linear predictor (of length or ncol ncat)
 # @param log return values on the log scale?
 dcategorical <- function(x, eta, log = FALSE) {
   if (is.null(dim(eta))) {
@@ -1971,7 +1971,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 
 # CDF of the categorical distribution with the softmax transform
 # @param q positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat-1)  
+# @param eta the linear predictor (of length or ncol ncat)  
 # @param log.p return values on the log scale?
 pcategorical <- function(q, eta, log.p = FALSE) {
   p <- dcategorical(seq_len(max(q)), eta = eta)
@@ -1984,7 +1984,7 @@ pcategorical <- function(q, eta, log.p = FALSE) {
 
 # density of the multinomial distribution with the softmax transform
 # @param x positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat-1)
+# @param eta the linear predictor (of length or ncol ncat)
 # @param log return values on the log scale?
 dmultinomial <- function(x, eta, log = FALSE) {
   if (is.null(dim(eta))) {
