@@ -84,9 +84,20 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     formula <- formula$forms[[resp]]
   }
   
+  # prepare the family object for use in projpred
+  family <- family(object, resp = resp)
+  if (family$family == "bernoulli") {
+    family$family <- "binomial"
+  }
+  ### TODO: Modify this to allow for arguments like `refcat` and `thresholds`
+  ### which might be needed in the future?:
+  family <- get(family$family, mode = "function")(link = family$link)
+  ### 
+  family <- projpred::extend_family(family)
+  
   # check if the model is supported by projpred
   bterms <- brmsterms(formula)
-  if (length(bterms$dpars) > 1L) {
+  if (length(bterms$dpars) > 1L && !is_categorical(family$family)) { # In the future, `!is_polytomous(family)` could be used (when all the corresponding families are supported by projpred).
     stop2("Projpred does not support distributional models.")
   }
   if (length(bterms$nlpars) > 0L) {
@@ -101,20 +112,43 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   formula <- formula$formula
   # LHS should only contain the response variable
   formula[[2]] <- bterms$respform[[2]]
-
-  # prepare the family object for use in projpred
-  family <- family(object, resp = resp)
-  if (family$family == "bernoulli") {
-    family$family <- "binomial"
-  }
-  family <- get(family$family, mode = "function")(link = family$link)
-  family <- projpred::extend_family(family)
   
   # projpred requires the dispersion parameter if present
   dis <- NULL
   if (family$family == "gaussian") {
     dis <- paste0("sigma", usc(resp))
     dis <- as.data.frame(object, pars = dis, fixed = TRUE)[[dis]]
+  }
+  
+  # TODO: Currently, only `refcat = NULL` is allowed in categorical() (which
+  # causes the first category to be used as reference category). In the future,
+  # a non-NULL `refcat` could be allowed if the package/function used for
+  # solving the weighted maximum-likelihood problem in the augmented-data
+  # approach supports it.
+  if (is_categorical(family$family)) {
+    if (!is.null(family$refcat)) {
+      stop2("For projpred, only `refcat = NULL` is allowed in categorical().")
+    }
+  }
+  
+  # TODO: Perhaps add an `else if (is_categorical(family$family))` condition and
+  # there insert the reference category into posterior_linpred()'s output:
+  ref_predfun <- if (is_ordinal(family$family)) {
+    # Use argument `incl_thres` of posterior_linpred() (and convert the
+    # 3-dimensional array to an "augmented-rows" matrix):
+    function(fit, newdata = NULL) {
+      # Note: `transform = FALSE` is not needed, but included here for
+      # consistency with projpred's default ref_predfun():
+      linpred_out <- posterior_linpred(
+        fit, transform = FALSE, newdata = newdata, incl_thres = TRUE
+      )
+      stopifnot(length(dim(linpred_out)) == 3)
+      linpred_out <- projpred:::arr2augmat(linpred_out, margin_draws = 1)
+      return(linpred_out)
+    }
+  } else {
+    # Using the default prediction function from projpred is fine:
+    NULL
   }
   
   # prepare data passed to projpred
@@ -146,7 +180,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # using default prediction functions from projpred is fine
   args <- nlist(
     object, data, formula, family, folds, dis,
-    ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
+    ref_predfun = ref_predfun, proj_predfun = NULL, div_minimizer = NULL, 
     cvfun = cvfun, extract_model_data = extract_model_data, ...
   )
   do_call(projpred::init_refmodel, args)
