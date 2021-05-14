@@ -1,3 +1,8 @@
+### Only needed here in the unit tests (and only for testing in R CMD check):
+slice <- brms:::slice
+inv_odds <- brms:::inv_odds
+### 
+
 link_ch <- function(x, link) {
   # switch() would be more straightforward, but for testing purposes, use if ()
   # here:
@@ -64,7 +69,7 @@ link_cratio_ch <- function(x, link) {
                 F_km1_prod = prev_res$F_km1_prod * F_k))
   }
   x <- .F_k(dim(x)[ndim] - 1)$F_k
-  link(x, link)
+  link_ch(x, link)
 }
 
 # The same as link_acat(), but possibly dropping margins and not treating the
@@ -75,5 +80,5 @@ link_acat_ch <- function(x, link) {
   dim_noncat <- dim(x)[-ndim]
   x <- slice(x, ndim, -1) / slice(x, ndim, -ncat)
   x <- inv_odds(x)
-  array(link(x, link), dim = c(dim_noncat, ncat - 1))
+  array(link_ch(x, link), dim = c(dim_noncat, ncat - 1))
 }

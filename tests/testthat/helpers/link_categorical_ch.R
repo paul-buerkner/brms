@@ -1,3 +1,7 @@
+### Only needed here in the unit tests (and only for testing in R CMD check):
+slice <- brms:::slice
+### 
+
 # Very similar to link_categorical(), but iterates over the observations:
 link_categorical_ch <- function(x, refcat = 1, return_refcat = TRUE) {
   # For testing purposes, only allow 3-dimensional arrays here:

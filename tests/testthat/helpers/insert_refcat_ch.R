@@ -1,3 +1,8 @@
+### Only needed here in the unit tests (and only for testing in R CMD check):
+seq_cols <- brms:::seq_cols
+slice_col <- brms:::slice_col
+### 
+
 # Very similar to insert_refcat(), but iterates over the observations (if
 # necessary):
 insert_refcat_ch <- function(eta, family) {
