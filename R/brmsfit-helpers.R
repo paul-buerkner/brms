@@ -575,23 +575,27 @@ apply_dpar_ilink <- function(dpar, family) {
 
 # insert zeros for the predictor term of the reference category
 # in categorical-like models using the softmax response function
-insert_refcat  <- function(eta, family) {
-  stopifnot(is.matrix(eta), is.brmsfamily(family))
+insert_refcat <- function(eta, family) {
+  stopifnot(is.array(eta), is.brmsfamily(family))
   if (!conv_cats_dpars(family) || isNA(family$refcat)) {
     return(eta)
   }
   # need to add zeros for the reference category
-  zeros <- as.matrix(rep(0, nrow(eta)))
+  ndim <- length(dim(eta))
+  dim_noncat <- dim(eta)[-ndim]
+  zeros_arr <- array(0, dim = c(dim_noncat, 1))
   if (is.null(family$refcat) || is.null(family$cats)) {
     # no information on the categories provided:
     # use the first category as the reference
-    return(cbind(zeros, eta))
+    return(abind::abind(zeros_arr, eta))
   }
-  colnames(zeros) <- paste0("mu", family$refcat)
+  dimnames(zeros_arr)[[ndim]] <- paste0("mu", family$refcat)
   iref <- match(family$refcat, family$cats)
   before <- seq_len(iref - 1)
-  after <- setdiff(seq_cols(eta), before)
-  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
+  after <- setdiff(seq_dim(eta, ndim), before)
+  abind::abind(slice(eta, ndim, before, drop = FALSE),
+               zeros_arr,
+               slice(eta, ndim, after, drop = FALSE))
 }
 
 # validate the 'resp' argument of 'predict' and related methods
