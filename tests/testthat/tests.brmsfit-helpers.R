@@ -155,3 +155,35 @@ test_that("brmsfit_needs_refit works correctly", {
     scode = scode_model1, algorithm = NULL, silent = TRUE))
   
 })
+
+test_that("insert_refcat() works correctly", {
+  source(testthat::test_path(file.path("helpers", "insert_refcat_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
+  for (ndraws in ndraws_vec) {
+    for (ncat in ncat_vec) {
+      cats <- paste0("cat", 1:ncat)
+      fam_list <- list(
+        fam_refNULL = categorical(),
+        fam_ref1 = categorical(refcat = cats[1]),
+        fam_reflast = categorical(refcat = cats[ncat])
+      )
+      if (ncat > 2) {
+        fam_list <- c(fam_list, list(fam_ref2 = categorical(refcat = cats[2])))
+      }
+      eta_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      for (fam in fam_list) {
+        # Emulate content of `fam` after fit:
+        if (is.null(fam$refcat)) {
+          fam$refcat <- cats[1]
+        }
+        fam$cats <- cats
+        
+        # Insert reference category:
+        eta_ref <- insert_refcat(eta_test, fam)
+        eta_ref_ch <- insert_refcat_ch(eta_test, fam)
+        
+        expect_identical(eta_ref, eta_ref_ch)
+      }
+    }
+  }
+})
