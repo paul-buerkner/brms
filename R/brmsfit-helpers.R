@@ -591,6 +591,9 @@ insert_refcat <- function(eta, family) {
   }
   ncat <- length(family$cats)
   stopifnot(identical(dim(eta)[ndim], ncat - 1L))
+  if (is.null(dimnames(eta)[[ndim]])) {
+    dimnames(eta)[[ndim]] <- paste0("mu", setdiff(family$cats, family$refcat))
+  }
   dimnames(zeros_arr)[[ndim]] <- paste0("mu", family$refcat)
   iref <- match(family$refcat, family$cats)
   before <- seq_len(iref - 1)

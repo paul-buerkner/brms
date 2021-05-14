@@ -190,7 +190,7 @@ test_that("insert_refcat() works correctly", {
             # Perform the check:
             eta_ref <- insert_refcat(eta_test, fam)
             eta_ref_ch <- insert_refcat_ch(eta_test, fam)
-            expect_identical(eta_ref, eta_ref_ch)
+            expect_equivalent(eta_ref, eta_ref_ch)
             if (length(dim(eta_test)) == 3) {
               expect_equal(dim(eta_ref), c(ndraws, nobsv, ncat))
             } else if (length(dim(eta_test)) == 2) {
