@@ -89,10 +89,14 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (family$family == "bernoulli") {
     family$family <- "binomial"
   }
-  ### TODO: Modify this to allow for arguments like `refcat` and `thresholds`
-  ### which might be needed in the future?:
-  family <- get(family$family, mode = "function")(link = family$link)
-  ### 
+  dot_args <- list(...)
+  # For the augmented-data approach, do not re-define ordinal or categorical
+  # families to preserve their family-specific extra arguments ("extra" meaning
+  # "additionally to `link`") like `refcat` and `thresholds` (see ?brmsfamily):
+  if (!(isTRUE(dot_args$aug_data) &&
+        (is_ordinal(family$family) || is_categorical(family$family)))) {
+    family <- get(family$family, mode = "function")(link = family$link)
+  }
   family <- projpred::extend_family(family)
   
   # check if the model is supported by projpred
@@ -120,20 +124,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     dis <- as.data.frame(object, pars = dis, fixed = TRUE)[[dis]]
   }
   
-  # TODO: Currently, only `refcat = NULL` is allowed in categorical() (which
-  # causes the first category to be used as reference category). In the future,
-  # a non-NULL `refcat` could be allowed if the package/function used for
-  # solving the weighted maximum-likelihood problem in the augmented-data
-  # approach supports it.
-  if (is_categorical(family$family)) {
-    if (!is.null(family$refcat)) {
-      stop2("For projpred, only `refcat = NULL` is allowed in categorical().")
-    }
-  }
-  
-  # TODO: Perhaps add an `else if (is_categorical(family$family))` condition and
-  # there insert the reference category into posterior_linpred()'s output:
-  ref_predfun <- if (is_ordinal(family$family)) {
+  ref_predfun <- if (isTRUE(dot_args$aug_data) && is_ordinal(family$family)) {
     # Use argument `incl_thres` of posterior_linpred() (and convert the
     # 3-dimensional array to an "augmented-rows" matrix):
     function(fit, newdata = NULL) {
