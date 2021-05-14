@@ -101,7 +101,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # check if the model is supported by projpred
   bterms <- brmsterms(formula)
-  if (length(bterms$dpars) > 1L && !is_categorical(family$family)) { # In the future, `!is_polytomous(family)` could be used (when all the corresponding families are supported by projpred).
+  if (length(bterms$dpars) > 1L && !is_categorical(family$family)) {
     stop2("Projpred does not support distributional models.")
   }
   if (length(bterms$nlpars) > 0L) {
@@ -168,7 +168,6 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
   
-  # using default prediction functions from projpred is fine
   args <- nlist(
     object, data, formula, family, folds, dis,
     ref_predfun = ref_predfun, proj_predfun = NULL, div_minimizer = NULL, 
