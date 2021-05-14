@@ -201,7 +201,7 @@ test_that("wiener distribution functions run without errors", {
 
 test_that("d<ordinal_family>() works correctly", {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
-  source(testthat::test_path(file.path("helpers", "d_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
@@ -263,7 +263,7 @@ test_that("d<ordinal_family>() works correctly", {
 
 test_that("inv_link_<ordinal_family>() works correctly for arrays", {
   source(testthat::test_path(file.path("helpers", "inv_link_ordinal_fun.R")))
-  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -302,7 +302,7 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
 
 test_that("link_<ordinal_family>() works correctly for arrays", {
   source(testthat::test_path(file.path("helpers", "link_ordinal_fun.R")))
-  source(testthat::test_path(file.path("helpers", "link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -339,7 +339,7 @@ test_that("link_<ordinal_family>() works correctly for arrays", {
 })
 
 test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
-  source(testthat::test_path(file.path("helpers", "link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -372,7 +372,7 @@ test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
 })
 
 test_that("link_<ordinal_family>() inverts inv_link_<ordinal_family>()", {
-  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -409,7 +409,7 @@ test_that(paste(
   "dsratio() and dcratio() give the same results for symmetric distribution",
   "functions"
 ), {
-  source(testthat::test_path(file.path("helpers", "d_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
@@ -442,7 +442,7 @@ test_that(paste(
   "results for symmetric distribution functions (when respecting the sign",
   "appropriately)."
 ), {
-  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -468,7 +468,7 @@ test_that(paste(
   "results for symmetric distribution functions (when respecting the sign",
   "appropriately)."
 ), {
-  source(testthat::test_path(file.path("helpers", "link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -490,7 +490,7 @@ test_that(paste(
 
 test_that("dcategorical() works correctly", {
   source(testthat::test_path(file.path("helpers", "inv_link_categorical_fun.R")))
-  source(testthat::test_path(file.path("helpers", "d_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
       eta_test_list <- list(cbind(0,
@@ -511,7 +511,7 @@ test_that("dcategorical() works correctly", {
 
 test_that("inv_link_categorical() works correctly for arrays", {
   source(testthat::test_path(file.path("helpers", "inv_link_categorical_fun.R")))
-  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -530,7 +530,7 @@ test_that("inv_link_categorical() works correctly for arrays", {
 
 test_that("link_categorical() works correctly for arrays", {
   source(testthat::test_path(file.path("helpers", "link_categorical_fun.R")))
-  source(testthat::test_path(file.path("helpers", "link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -546,7 +546,7 @@ test_that("link_categorical() works correctly for arrays", {
 })
 
 test_that("inv_link_categorical() inverts link_categorical()", {
-  source(testthat::test_path(file.path("helpers", "link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
@@ -561,7 +561,7 @@ test_that("inv_link_categorical() inverts link_categorical()", {
 })
 
 test_that("link_categorical() inverts inv_link_categorical()", {
-  source(testthat::test_path(file.path("helpers", "inv_link_cat_sim.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
   for (ndraws in ndraws_vec) {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
