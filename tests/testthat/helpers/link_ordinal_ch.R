@@ -1,8 +1,3 @@
-### Only needed here in the unit tests (and only for testing in R CMD check):
-slice <- brms:::slice
-inv_odds <- brms:::inv_odds
-### 
-
 link_ch <- function(x, link) {
   # switch() would be more straightforward, but for testing purposes, use if ()
   # here:
@@ -54,6 +49,7 @@ link_sratio_ch <- function(x, link) {
   x <- .F_k(dim(x)[ndim] - 1)$F_k
   link_ch(x, link)
 }
+environment(link_sratio_ch) <- as.environment(asNamespace("brms"))
 
 # The same as link_cratio(), but dropping margins:
 link_cratio_ch <- function(x, link) {
@@ -71,6 +67,7 @@ link_cratio_ch <- function(x, link) {
   x <- .F_k(dim(x)[ndim] - 1)$F_k
   link_ch(x, link)
 }
+environment(link_cratio_ch) <- as.environment(asNamespace("brms"))
 
 # The same as link_acat(), but possibly dropping margins and not treating the
 # logit link as a special case:
@@ -82,3 +79,4 @@ link_acat_ch <- function(x, link) {
   x <- inv_odds(x)
   array(link_ch(x, link), dim = c(dim_noncat, ncat - 1))
 }
+environment(link_acat_ch) <- as.environment(asNamespace("brms"))

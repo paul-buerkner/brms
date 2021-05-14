@@ -1,8 +1,3 @@
-### Only needed here in the unit tests (and only for testing in R CMD check):
-ilink <- brms:::ilink
-slice <- brms:::slice
-### 
-
 inv_link_cumulative_ch <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
@@ -19,6 +14,7 @@ inv_link_cumulative_ch <- function(x, link) {
   out[[ncat]] <- 1 - slice(x, ndim, ncat - 1)
   abind::abind(out, along = ndim)
 }
+environment(inv_link_cumulative_ch) <- as.environment(asNamespace("brms"))
 
 inv_link_sratio_ch <- function(x, link) {
   x <- ilink(x, link)
@@ -38,6 +34,7 @@ inv_link_sratio_ch <- function(x, link) {
   out[[ncat]] <- apply(1 - x, marg_noncat, prod)
   abind::abind(out, along = ndim)
 }
+environment(inv_link_sratio_ch) <- as.environment(asNamespace("brms"))
 
 inv_link_cratio_ch <- function(x, link) {
   x <- ilink(x, link)
@@ -57,6 +54,7 @@ inv_link_cratio_ch <- function(x, link) {
   out[[ncat]] <- apply(x, marg_noncat, prod)
   abind::abind(out, along = ndim)
 }
+environment(inv_link_cratio_ch) <- as.environment(asNamespace("brms"))
 
 inv_link_acat_ch <- function(x, link) {
   ndim <- length(dim(x))
@@ -91,3 +89,4 @@ inv_link_acat_ch <- function(x, link) {
   catsum <- apply(out, marg_noncat, sum)
   sweep(out, marg_noncat, catsum, "/")
 }
+environment(inv_link_acat_ch) <- as.environment(asNamespace("brms"))

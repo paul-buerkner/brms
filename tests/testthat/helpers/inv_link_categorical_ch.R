@@ -1,9 +1,3 @@
-### Only needed here in the unit tests (and only for testing in R CMD check):
-slice <- brms:::slice
-softmax <- brms:::softmax
-log_softmax <- brms:::log_softmax
-### 
-
 # Very similar to inv_link_categorical(), but iterates over the observations:
 inv_link_categorical_ch <- function(x, log = FALSE) {
   ndim <- length(dim(x))
@@ -45,3 +39,4 @@ inv_link_categorical_ch <- function(x, log = FALSE) {
   }
   out
 }
+environment(inv_link_categorical_ch) <- as.environment(asNamespace("brms"))

@@ -1,8 +1,3 @@
-### Only needed here in the unit tests (and only for testing in R CMD check):
-seq_cols <- brms:::seq_cols
-slice_col <- brms:::slice_col
-### 
-
 # Very similar to insert_refcat(), but iterates over the observations (if
 # necessary):
 insert_refcat_ch <- function(eta, family) {
@@ -18,6 +13,7 @@ insert_refcat_ch <- function(eta, family) {
     stop2("eta has wrong dimensions.")
   }
 }
+environment(insert_refcat_ch) <- as.environment(asNamespace("brms"))
 
 # A matrix-only variant of insert_refcat() (used to be insert_refcat() before it
 # was extended to arrays):
@@ -39,3 +35,4 @@ insert_refcat_ch_i <- function(eta, family) {
   after <- setdiff(seq_cols(eta), before)
   cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
 }
+environment(insert_refcat_ch_i) <- as.environment(asNamespace("brms"))
