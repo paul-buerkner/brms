@@ -589,6 +589,8 @@ insert_refcat <- function(eta, family) {
     # use the first category as the reference
     return(abind::abind(zeros_arr, eta))
   }
+  ncat <- length(family$cats)
+  stopifnot(identical(dim(eta)[ndim], ncat - 1L))
   dimnames(zeros_arr)[[ndim]] <- paste0("mu", family$refcat)
   iref <- match(family$refcat, family$cats)
   before <- seq_len(iref - 1)
