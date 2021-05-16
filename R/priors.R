@@ -4,7 +4,7 @@
 #' 
 #' @aliases brmsprior brmsprior-class
 #'
-#' @param prior A character string defining a distribution in \pkg{Stan} language
+#' @param prior A character string defining a distribution in \proglang{Stan} language
 #' @param class The parameter class. Defaults to \code{"b"} 
 #'   (i.e. population-level effects). 
 #'   See 'Details' for other valid parameter classes. 
@@ -48,11 +48,11 @@
 #'   
 #'   To combine multiple priors, use \code{c(...)} or the \code{+} operator 
 #'   (see 'Examples'). \pkg{brms} does not check if the priors are written 
-#'   in correct \pkg{Stan} language. Instead, \pkg{Stan} will check their 
+#'   in correct \proglang{Stan} language. Instead, \proglang{Stan} will check their 
 #'   syntactical correctness when the model is parsed to \code{C++} and 
 #'   returns an error if they are not. 
 #'   This, however, does not imply that priors are always meaningful if they are 
-#'   accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems 
+#'   accepted by \proglang{Stan}. Although \pkg{brms} trys to find common problems 
 #'   (e.g., setting bounded priors on unbounded parameters), there is no guarantee 
 #'   that the defined priors are reasonable for the model.
 #'   Below, we list the types of parameters in \pkg{brms} models, 
@@ -232,7 +232,7 @@
 #'   As explained in the details section of \code{\link{brm}},
 #'   monotonic effects make use of a special parameter vector to
 #'   estimate the 'normalized distances' between consecutive predictor 
-#'   categories. This is realized in \pkg{Stan} using the \code{simplex}
+#'   categories. This is realized in \proglang{Stan} using the \code{simplex}
 #'   parameter type. This class is named \code{"simo"} (short for 
 #'   simplex monotonic) in \pkg{brms}. 
 #'   The only valid prior for simplex parameters is the
@@ -1841,7 +1841,7 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
 #'   The \code{1} implies that the student-t prior of the local shrinkage 
 #'   parameters has 1 degrees of freedom. This may, however, lead to an 
-#'   increased number of divergent transition in \pkg{Stan}.
+#'   increased number of divergent transition in \proglang{Stan}.
 #'   Accordingly, increasing the degrees of freedom to slightly higher values 
 #'   (e.g., \code{3}) may often be a better option, although the prior 
 #'   no longer resembles a horseshoe in this case. 

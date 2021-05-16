@@ -5,7 +5,7 @@
 #' @inheritParams brm
 #' @param ... Other arguments for internal usage only.
 #' 
-#' @return A character string containing the fully commented \pkg{Stan} code 
+#' @return A character string containing the fully commented \proglang{Stan} code 
 #'   to fit a \pkg{brms} model.
 #'  
 #' @examples 

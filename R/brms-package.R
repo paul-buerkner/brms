@@ -11,7 +11,7 @@
 #' }
 #' 
 #' The \pkg{brms} package provides an interface to fit Bayesian generalized
-#' multivariate (non-)linear multilevel models using \pkg{Stan}, which is a C++
+#' multivariate (non-)linear multilevel models using \proglang{Stan}, which is a C++
 #' package for obtaining full Bayesian inference (see
 #' \url{https://mc-stan.org/}). The formula syntax is an extended version of the
 #' syntax applied in the \pkg{lme4} package to provide a familiar and simple
@@ -38,7 +38,7 @@
 #' via \code{\link{bayes_factor}} which relies on the \pkg{bridgesampling} package. 
 #' For a full list of methods to apply, type \code{methods(class = "brmsfit")}.
 #' 
-#' Because \pkg{brms} is based on \pkg{Stan}, a C++ compiler is required. The
+#' Because \pkg{brms} is based on \proglang{Stan}, a C++ compiler is required. The
 #' program Rtools (available on
 #' \url{https://cran.r-project.org/bin/windows/Rtools/}) comes with a C++
 #' compiler for Windows. On Mac, you should use Xcode. For further instructions

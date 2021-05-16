@@ -513,9 +513,9 @@ family.brmsfit <- function(object, resp = NULL, ...) {
   family
 }
 
-#' Expose user-defined \pkg{Stan} functions
+#' Expose user-defined \proglang{Stan} functions
 #' 
-#' Export user-defined \pkg{Stan} function and
+#' Export user-defined \proglang{Stan} function and
 #' optionally vectorize them. For more details see 
 #' \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 #' 

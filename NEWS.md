@@ -16,6 +16,7 @@ of an ordinal family. (#1137)
 over two years of deprecation (please use `mvbind` instead).
 * Method `posterior_linpred(transform = TRUE)` is now equal
 to `posterior_epred(dpar = "mu")` and no longer deprecated.
+* Replaced `\pkg{Stan}` with `\proglang{Stan}` in the manual.
 
 ### Bug Fixes
 
