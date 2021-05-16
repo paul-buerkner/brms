@@ -28,7 +28,7 @@ information on the priors used in the model.}
 
 \item{\code{stanvars}}{A \code{\link{stanvars}} object.}
 
-\item{\code{model}}{The model code in \proglang{Stan} language.}
+\item{\code{model}}{The model code in \pkg{Stan} language.}
 
 \item{\code{ranef}}{A \code{data.frame} containing the group-level structure.}
 

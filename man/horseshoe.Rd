@@ -69,7 +69,7 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
   The \code{1} implies that the student-t prior of the local shrinkage 
   parameters has 1 degrees of freedom. This may, however, lead to an 
-  increased number of divergent transition in \proglang{Stan}.
+  increased number of divergent transition in \pkg{Stan}.
   Accordingly, increasing the degrees of freedom to slightly higher values 
   (e.g., \code{3}) may often be a better option, although the prior 
   no longer resembles a horseshoe in this case. 

@@ -1,12 +1,12 @@
 #' Data for \pkg{brms} Models
 #' 
-#' Generate data for \pkg{brms} models to be passed to \proglang{Stan}
+#' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 #'
 #' @inheritParams brm
 #' @param ... Other arguments for internal use.
 #' 
 #' @return A named list of objects containing the required data 
-#'   to fit a \pkg{brms} model with \proglang{Stan}. 
+#'   to fit a \pkg{brms} model with \pkg{Stan}. 
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 

@@ -18,7 +18,7 @@
 #' @slot prior A \code{\link{brmsprior}} object containing
 #'   information on the priors used in the model.
 #' @slot stanvars A \code{\link{stanvars}} object.
-#' @slot model The model code in \proglang{Stan} language.
+#' @slot model The model code in \pkg{Stan} language.
 #' @slot ranef A \code{data.frame} containing the group-level structure.
 #' @slot exclude The names of the parameters for which samples are not saved.
 #' @slot algorithm The name of the algorithm used to fit the model.

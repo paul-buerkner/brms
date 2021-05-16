@@ -1,7 +1,7 @@
 #' Extract Diagnostic Quantities of \pkg{brms} Models
 #' 
 #' Extract quantities that can be used to diagnose sampling behavior
-#' of the algorithms applied by \proglang{Stan} at the back-end of \pkg{brms}.
+#' of the algorithms applied by \pkg{Stan} at the back-end of \pkg{brms}.
 #' 
 #' @name diagnostic-quantities
 #' @aliases log_posterior nuts_params rhat neff_ratio
