@@ -3,7 +3,7 @@
 \name{expose_functions.brmsfit}
 \alias{expose_functions.brmsfit}
 \alias{expose_functions}
-\title{Expose user-defined \pkg{Stan} functions}
+\title{Expose user-defined \proglang{Stan} functions}
 \usage{
 \method{expose_functions}{brmsfit}(x, vectorize = FALSE, env = globalenv(), ...)
 
@@ -23,7 +23,7 @@ available. Defaults to the global environment.}
 \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.}
 }
 \description{
-Export user-defined \pkg{Stan} function and
+Export user-defined \proglang{Stan} function and
 optionally vectorize them. For more details see 
 \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 }

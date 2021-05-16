@@ -32,7 +32,7 @@ prior_string(prior, ...)
 empty_prior()
 }
 \arguments{
-\item{prior}{A character string defining a distribution in \pkg{Stan} language}
+\item{prior}{A character string defining a distribution in \proglang{Stan} language}
 
 \item{class}{The parameter class. Defaults to \code{"b"} 
 (i.e. population-level effects). 
@@ -90,11 +90,11 @@ Define priors for specific parameters or classes of parameters.
   
   To combine multiple priors, use \code{c(...)} or the \code{+} operator 
   (see 'Examples'). \pkg{brms} does not check if the priors are written 
-  in correct \pkg{Stan} language. Instead, \pkg{Stan} will check their 
+  in correct \proglang{Stan} language. Instead, \proglang{Stan} will check their 
   syntactical correctness when the model is parsed to \code{C++} and 
   returns an error if they are not. 
   This, however, does not imply that priors are always meaningful if they are 
-  accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems 
+  accepted by \proglang{Stan}. Although \pkg{brms} trys to find common problems 
   (e.g., setting bounded priors on unbounded parameters), there is no guarantee 
   that the defined priors are reasonable for the model.
   Below, we list the types of parameters in \pkg{brms} models, 
@@ -273,7 +273,7 @@ Define priors for specific parameters or classes of parameters.
   As explained in the details section of \code{\link{brm}},
   monotonic effects make use of a special parameter vector to
   estimate the 'normalized distances' between consecutive predictor 
-  categories. This is realized in \pkg{Stan} using the \code{simplex}
+  categories. This is realized in \proglang{Stan} using the \code{simplex}
   parameter type. This class is named \code{"simo"} (short for 
   simplex monotonic) in \pkg{brms}. 
   The only valid prior for simplex parameters is the

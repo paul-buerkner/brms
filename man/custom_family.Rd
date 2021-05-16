@@ -47,7 +47,7 @@ parameters. Defaults to \code{NA} that is no upper bound.}
 function without being distributional parameters. That is,
 \code{vars} can be used to pass data to the likelihood. 
 See \code{\link{stanvar}} for details about adding self-defined
-data to the generated \pkg{Stan} model.}
+data to the generated \proglang{Stan} model.}
 
 \item{specials}{A character vector of special options to enable
 for this custom family. Currently for internal use only.}
@@ -99,7 +99,7 @@ For a list of built-in families see \code{\link{brmsfamily}}.
 The corresponding probability density or mass \code{Stan} 
   functions need to have the same name as the custom family.
   That is if a family is called \code{myfamily}, then the 
-  \pkg{Stan} functions should be called \code{myfamily_lpdf} or
+  \proglang{Stan} functions should be called \code{myfamily_lpdf} or
   \code{myfamily_lpmf} depending on whether it defines a 
   continuous or discrete distribution.
 }

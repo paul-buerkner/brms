@@ -25,7 +25,7 @@ A \code{brmsthreads} object which can be passed to the
   \code{threads} argument of \code{brm} and related functions.
 }
 \description{
-Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
+Use threads for within-chain parallelization in \proglang{Stan} via the \pkg{brms}
 interface. Within-chain parallelization is experimental! We recommend its use
 only if you are experienced with Stan's \code{reduce_sum} function and have a
 slow running model that cannot be sped up by any other means.
