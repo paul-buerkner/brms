@@ -1952,7 +1952,7 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
 
 # density of the categorical distribution with the softmax transform
 # @param x positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat-1)
+# @param eta the linear predictor (of length or ncol ncat)
 # @param log return values on the log scale?
 dcategorical <- function(x, eta, log = FALSE) {
   if (is.null(dim(eta))) {
@@ -1961,17 +1961,77 @@ dcategorical <- function(x, eta, log = FALSE) {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (log) {
-    out <- log_softmax(eta)
-  } else {
-    out <- softmax(eta)
-  }
+  out <- inv_link_categorical(eta, log = log)
   out[, x, drop = FALSE]
+}
+
+# generic inverse link function for the categorical family
+# 
+# @param x Matrix (S x `ncat` or S x `ncat - 1` (depending on
+#   `insert_refcat_fam`), with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) with values of `eta` for
+#   one observation (see dcategorical()) or an array (S x N x `ncat` or S x N x
+#   `ncat - 1` (depending on `insert_refcat_fam`)) containing the same values as
+#   the matrix just described, but for N observations.
+# @param insert_refcat_fam Either NULL or an object of class "brmsfamily". If
+#   NULL, `x` is not modified at all. If an object of class "brmsfamily", then
+#   insert_refcat() is used to insert values for the reference category into
+#   `x`.
+# @param log Logical (length 1) indicating whether to log the return value.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the inverse-link function applied to
+#   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
+#   values as the matrix just described, but for N observations.
+inv_link_categorical <- function(x, insert_refcat_fam = NULL, log = FALSE) {
+  if (!is.null(insert_refcat_fam)) {
+    x <- insert_refcat(x, family = insert_refcat_fam)
+  }
+  if (log) {
+    out <- log_softmax(x)
+  } else {
+    out <- softmax(x)
+  }
+  out
+}
+
+# generic link function for the categorical family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param refcat Numeric (length 1) giving the index of the reference category.
+# @param return_refcat Logical (length 1) indicating whether to include the
+#   reference category in the return value.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat` or S x `ncat - 1`
+#   (depending on `return_refcat`), with S denoting the number of posterior
+#   draws and `ncat` denoting the number of response categories) containing the
+#   values of the link function applied to `x`. If `x` is an array, then an
+#   array (S x N x `ncat` or S x N x `ncat - 1` (depending on `return_refcat`))
+#   containing the same values as the matrix just described, but for N
+#   observations.
+link_categorical <- function(x, refcat = 1, return_refcat = TRUE) {
+  ndim <- length(dim(x))
+  marg_noncat <- seq_along(dim(x))[-ndim]
+  if (return_refcat) {
+    x_tosweep <- x
+  } else {
+    x_tosweep <- slice(x, ndim, -refcat, drop = FALSE)
+  }
+  log(sweep(
+    x_tosweep,
+    MARGIN = marg_noncat,
+    STATS = slice(x, ndim, refcat),
+    FUN = "/"
+  ))
 }
 
 # CDF of the categorical distribution with the softmax transform
 # @param q positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat-1)  
+# @param eta the linear predictor (of length or ncol ncat)  
 # @param log.p return values on the log scale?
 pcategorical <- function(q, eta, log.p = FALSE) {
   p <- dcategorical(seq_len(max(q)), eta = eta)
@@ -1984,7 +2044,7 @@ pcategorical <- function(q, eta, log.p = FALSE) {
 
 # density of the multinomial distribution with the softmax transform
 # @param x positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat-1)
+# @param eta the linear predictor (of length or ncol ncat)
 # @param log return values on the log scale?
 dmultinomial <- function(x, eta, log = FALSE) {
   if (is.null(dim(eta))) {
@@ -2051,6 +2111,31 @@ inv_link_cumulative <- function(x, link) {
   abind::abind(x, ones_arr) - abind::abind(zeros_arr, x)
 }
 
+# generic link function for the cumulative family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_cumulative <- function(x, link) {
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim]
+  dim_noncat <- dim(x)[-ndim]
+  nthres <- dim(x)[ndim] - 1
+  marg_noncat <- seq_along(dim(x))[-ndim]
+  dim_t <- c(nthres, dim_noncat)
+  x <- apply(slice(x, ndim, -ncat, drop = FALSE), marg_noncat, cumsum)
+  x <- aperm(array(x, dim = dim_t), perm = c(marg_noncat + 1, 1))
+  link(x, link)
+}
+
 # density of the sratio distribution
 # 
 # @param x Integer vector containing response category indices to return the
@@ -2094,15 +2179,47 @@ inv_link_sratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim]
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  nthres <- dim(x)[ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   Sx_cumprod <- aperm(
-    array(apply(1 - x, marg_othdim, cumprod), dim = dim_t),
-    perm = c(marg_othdim + 1, 1)
+    array(apply(1 - x, marg_noncat, cumprod), dim = dim_t),
+    perm = c(marg_noncat + 1, 1)
   )
   abind::abind(x, ones_arr) * abind::abind(ones_arr, Sx_cumprod)
+}
+
+# generic link function for the sratio family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_sratio <- function(x, link) {
+  ndim <- length(dim(x))
+  .F_k <- function(k) {
+    if (k == 1) {
+      prev_res <- list(F_k = NULL, S_km1_prod = 1)
+    } else {
+      prev_res <- .F_k(k - 1)
+    }
+    F_k <- slice(x, ndim, k, drop = FALSE) / prev_res$S_km1_prod
+    .out <- list(
+      F_k = abind::abind(prev_res$F_k, F_k),
+      S_km1_prod = prev_res$S_km1_prod * (1 - F_k)
+    )
+    return(.out)
+  }
+  x <- .F_k(dim(x)[ndim] - 1)$F_k
+  link(x, link)
 }
 
 # density of the cratio distribution
@@ -2148,15 +2265,47 @@ inv_link_cratio <- function(x, link) {
   x <- ilink(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim]
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  nthres <- dim(x)[ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   x_cumprod <- aperm(
-    array(apply(x, marg_othdim, cumprod), dim = dim_t),
-    perm = c(marg_othdim + 1, 1)
+    array(apply(x, marg_noncat, cumprod), dim = dim_t),
+    perm = c(marg_noncat + 1, 1)
   )
   abind::abind(1 - x, ones_arr) * abind::abind(ones_arr, x_cumprod)
+}
+
+# generic link function for the cratio family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_cratio <- function(x, link) {
+  ndim <- length(dim(x))
+  .F_k <- function(k) {
+    if (k == 1) {
+      prev_res <- list(F_k = NULL, F_km1_prod = 1)
+    } else {
+      prev_res <- .F_k(k - 1)
+    }
+    F_k <- 1 - slice(x, ndim, k, drop = FALSE) / prev_res$F_km1_prod
+    .out <- list(
+      F_k = abind::abind(prev_res$F_k, F_k),
+      F_km1_prod = prev_res$F_km1_prod * F_k
+    )
+    return(.out)
+  }
+  x <- .F_k(dim(x)[ndim] - 1)$F_k
+  link(x, link)
 }
 
 # density of the acat distribution
@@ -2197,31 +2346,30 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 inv_link_acat <- function(x, link) {
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
-  dim_thres <- dim(x)[ndim]
-  marg_othdim <- seq_along(dim(x))[-ndim]
+  nthres <- dim(x)[ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
-  dim_t <- c(dim_thres, dim_noncat)
+  dim_t <- c(nthres, dim_noncat)
   if (link == "logit") { 
     # faster evaluation in this case
     exp_x_cumprod <- aperm(
-      array(apply(exp(x), marg_othdim, cumprod), dim = dim_t),
-      perm = c(marg_othdim + 1, 1)
+      array(apply(exp(x), marg_noncat, cumprod), dim = dim_t),
+      perm = c(marg_noncat + 1, 1)
     )
     out <- abind::abind(ones_arr, exp_x_cumprod)
   } else {
     x <- ilink(x, link)
     x_cumprod <- aperm(
-      array(apply(x, marg_othdim, cumprod), dim = dim_t),
-      perm = c(marg_othdim + 1, 1)
+      array(apply(x, marg_noncat, cumprod), dim = dim_t),
+      perm = c(marg_noncat + 1, 1)
     )
-    nthres <- dim(x)[ndim]
     Sx_cumprod_rev <- apply(
       1 - slice(x, ndim, rev(seq_len(nthres)), drop = FALSE),
-      marg_othdim, cumprod
+      marg_noncat, cumprod
     )
     Sx_cumprod_rev <- aperm(
       array(Sx_cumprod_rev, dim = dim_t), 
-      perm = c(marg_othdim + 1, 1)
+      perm = c(marg_noncat + 1, 1)
     )
     Sx_cumprod_rev <- slice(
       Sx_cumprod_rev, ndim, rev(seq_len(nthres)), drop = FALSE
@@ -2229,8 +2377,35 @@ inv_link_acat <- function(x, link) {
     out <- abind::abind(ones_arr, x_cumprod) *
       abind::abind(Sx_cumprod_rev, ones_arr)
   }
-  catsum <- array(apply(out, marg_othdim, sum), dim = dim_noncat)
-  sweep(out, marg_othdim, catsum, "/")
+  catsum <- array(apply(out, marg_noncat, sum), dim = dim_noncat)
+  sweep(out, marg_noncat, catsum, "/")
+}
+
+# generic link function for the acat family
+# 
+# @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
+#   `ncat` denoting the number of response categories) of probabilities for the
+#   response categories or an array (S x N x `ncat`) containing the same values
+#   as the matrix just described, but for N observations.
+# @param link Character string (length 1) giving the name of the link function.
+# 
+# @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
+#   number of posterior draws and `ncat` denoting the number of response
+#   categories) containing the values of the link function applied to `x`. If
+#   `x` is an array, then an array (S x N x `ncat - 1`) containing the same
+#   values as the matrix just described, but for N observations.
+link_acat <- function(x, link) {
+  ndim <- length(dim(x))
+  ncat <- dim(x)[ndim]
+  x <- slice(x, ndim, -1, drop = FALSE) / slice(x, ndim, -ncat, drop = FALSE)
+  if (link == "logit") {
+    # faster evaluation in this case
+    out <- log(x)
+  } else {
+    x <- inv_odds(x)
+    out <- link(x, link)
+  }
+  out
 }
 
 # CDF for ordinal distributions

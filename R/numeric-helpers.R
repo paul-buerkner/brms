@@ -174,16 +174,30 @@ fabs <- function(x) {
 }
 
 softmax <- function(x) {
-  if (!is.matrix(x)) {
+  ndim <- length(dim(x))
+  if (ndim <= 1) {
     x <- matrix(x, nrow = 1)
+    ndim <- length(dim(x))
   }
-  x <- exp(x) 
-  x / rowSums(x)
+  x <- exp(x)
+  dim_noncat <- dim(x)[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
+  catsum <- array(apply(x, marg_noncat, sum), dim = dim_noncat)
+  sweep(x, marg_noncat, catsum, "/")
 }
 
 log_softmax <- function(x) {
-  if (!is.matrix(x)) {
+  ndim <- length(dim(x))
+  if (ndim <= 1) {
     x <- matrix(x, nrow = 1)
+    ndim <- length(dim(x))
   }
-  x - log(rowSums(exp(x)))
+  dim_noncat <- dim(x)[-ndim]
+  marg_noncat <- seq_along(dim(x))[-ndim]
+  catsum <- log(array(apply(exp(x), marg_noncat, sum), dim = dim_noncat))
+  sweep(x, marg_noncat, catsum, "-")
+}
+
+inv_odds <- function(x) {
+  x / (1 + x)
 }
