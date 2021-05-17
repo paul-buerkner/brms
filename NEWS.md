@@ -7,7 +7,7 @@ of custom families thank to Martin Modrak. (#1131)
 * Support the `squareplus` link function in all families and
 distributional parameters that also allow for the `log` link function.
 * Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
-substract the threshold-excluding linear predictor from the thresholds in case
+subtract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
 
 ### Other Changes
@@ -16,6 +16,8 @@ of an ordinal family. (#1137)
 over two years of deprecation (please use `mvbind` instead).
 * Method `posterior_linpred(transform = TRUE)` is now equal
 to `posterior_epred(dpar = "mu")` and no longer deprecated.
+* Refactor and extend internal post-processing functions
+for ordinal and categorical models thanks to Frank Weber. (#1159)
 
 ### Bug Fixes
 
