@@ -1989,10 +1989,11 @@ inv_link_categorical <- function(x, insert_refcat_fam = NULL, log = FALSE) {
     x <- insert_refcat(x, family = insert_refcat_fam)
   }
   if (log) {
-    return(log_softmax(x))
+    out <- log_softmax(x)
   } else {
-    return(softmax(x))
+    out <- softmax(x)
   }
+  out
 }
 
 # generic link function for the categorical family
@@ -2015,15 +2016,17 @@ inv_link_categorical <- function(x, insert_refcat_fam = NULL, log = FALSE) {
 link_categorical <- function(x, refcat = 1, return_refcat = TRUE) {
   ndim <- length(dim(x))
   marg_noncat <- seq_along(dim(x))[-ndim]
-  x_tosweep <- if (return_refcat) {
-    x
+  if (return_refcat) {
+    x_tosweep <- x
   } else {
-    slice(x, ndim, -refcat, drop = FALSE)
+    x_tosweep <- slice(x, ndim, -refcat, drop = FALSE)
   }
-  log(sweep(x_tosweep,
-            MARGIN = marg_noncat,
-            STATS = slice(x, ndim, refcat),
-            FUN = "/"))
+  log(sweep(
+    x_tosweep,
+    MARGIN = marg_noncat,
+    STATS = slice(x, ndim, refcat),
+    FUN = "/"
+  ))
 }
 
 # CDF of the categorical distribution with the softmax transform
@@ -2128,10 +2131,8 @@ link_cumulative <- function(x, link) {
   nthres <- dim(x)[ndim] - 1
   marg_noncat <- seq_along(dim(x))[-ndim]
   dim_t <- c(nthres, dim_noncat)
-  x <- aperm(array(apply(slice(x, ndim, -ncat, drop = FALSE),
-                         marg_noncat, cumsum),
-                   dim = dim_t),
-             perm = c(marg_noncat + 1, 1))
+  x <- apply(slice(x, ndim, -ncat, drop = FALSE), marg_noncat, cumsum)
+  x <- aperm(array(x, dim = dim_t), perm = c(marg_noncat + 1, 1))
   link(x, link)
 }
 
@@ -2211,8 +2212,11 @@ link_sratio <- function(x, link) {
       prev_res <- .F_k(k - 1)
     }
     F_k <- slice(x, ndim, k, drop = FALSE) / prev_res$S_km1_prod
-    return(list(F_k = abind::abind(prev_res$F_k, F_k),
-                S_km1_prod = prev_res$S_km1_prod * (1 - F_k)))
+    .out <- list(
+      F_k = abind::abind(prev_res$F_k, F_k),
+      S_km1_prod = prev_res$S_km1_prod * (1 - F_k)
+    )
+    return(.out)
   }
   x <- .F_k(dim(x)[ndim] - 1)$F_k
   link(x, link)
@@ -2294,8 +2298,11 @@ link_cratio <- function(x, link) {
       prev_res <- .F_k(k - 1)
     }
     F_k <- 1 - slice(x, ndim, k, drop = FALSE) / prev_res$F_km1_prod
-    return(list(F_k = abind::abind(prev_res$F_k, F_k),
-                F_km1_prod = prev_res$F_km1_prod * F_k))
+    .out <- list(
+      F_k = abind::abind(prev_res$F_k, F_k),
+      F_km1_prod = prev_res$F_km1_prod * F_k
+    )
+    return(.out)
   }
   x <- .F_k(dim(x)[ndim] - 1)$F_k
   link(x, link)
@@ -2393,11 +2400,12 @@ link_acat <- function(x, link) {
   x <- slice(x, ndim, -1, drop = FALSE) / slice(x, ndim, -ncat, drop = FALSE)
   if (link == "logit") {
     # faster evaluation in this case
-    return(log(x))
+    out <- log(x)
   } else {
     x <- inv_odds(x)
-    return(link(x, link))
+    out <- link(x, link)
   }
+  out
 }
 
 # CDF for ordinal distributions

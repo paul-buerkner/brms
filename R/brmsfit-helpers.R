@@ -598,9 +598,11 @@ insert_refcat <- function(eta, family) {
   iref <- match(family$refcat, family$cats)
   before <- seq_len(iref - 1)
   after <- setdiff(seq_dim(eta, ndim), before)
-  abind::abind(slice(eta, ndim, before, drop = FALSE),
-               zeros_arr,
-               slice(eta, ndim, after, drop = FALSE))
+  abind::abind(
+    slice(eta, ndim, before, drop = FALSE),
+    zeros_arr,
+    slice(eta, ndim, after, drop = FALSE)
+  )
 }
 
 # validate the 'resp' argument of 'predict' and related methods
