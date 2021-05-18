@@ -280,11 +280,11 @@ fit_model <- function(model, backend, ...) {
 
 .fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
 chains, cores, threads, inits, exclude, seed, 
-control, silent, future, stanfit, ...) {
-  if(is.function(stanfit)) {
-    stanfit()
+control, silent, future, mock_fit, ...) {
+  if(is.function(mock_fit)) {
+    mock_fit()
   } else {
-    stanfit
+    mock_fit
   }
 }
 

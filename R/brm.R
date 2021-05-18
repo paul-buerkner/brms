@@ -165,7 +165,7 @@
 #'   testing \pkg{brms} and packages that depend on it easier. 
 #'   The \code{"mock"} backend does not actually do any fitting, it only checks
 #'   the generated Stan code for correctness and then returns whatever is passed
-#'   in an additional \code{stanfit} argument as the result of the fit.
+#'   in an additional \code{mock_fit} argument as the result of the fit.
 #' @param control A named \code{list} of parameters to control the sampler's
 #'   behavior. It defaults to \code{NULL} so all the default values are used.
 #'   The most important control parameters are discussed in the 'Details'
