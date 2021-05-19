@@ -9,6 +9,8 @@ distributional parameters that also allow for the `log` link function.
 * Add argument `incl_thres` to `posterior_linpred.brmsfit()` allowing to
 subtract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
+* Add a `"mock"` backend option to facilitate testing 
+thanks to Martin Modrak. (#1116)
 
 ### Other Changes
 
