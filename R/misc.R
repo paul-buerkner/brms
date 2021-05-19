@@ -4,6 +4,7 @@
 # @param row indicating if rows or cols should be indexed
 #   only relevant if x has two or three dimensions
 p <- function(x, i = NULL, row = TRUE) {
+  # TODO: replace by "slice"
   if (isTRUE(length(dim(x)) > 3L)) {
     stop2("'p' can only handle objects up to 3 dimensions.")
   }
@@ -60,17 +61,29 @@ extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   out
 }
 
-# savely extract columns without dropping other dimensions
+# extract slices of one array dimension without dropping other dimensions
 # @param x an array
-# @param i colum index
-extract_col <- function(x, i) {
-  ldim <- length(dim(x))
-  if (ldim < 2L) {
+# @param dim dimension from which to take the slice
+# @param i slice index
+# @param drop Logical (length 1) indicating whether to drop dimension `dim`.
+slice <- function(x, dim, i, drop = TRUE) {
+  ndim <- length(dim(x))
+  commas1 <- collapse(rep(", ", dim - 1))
+  commas2 <- collapse(rep(", ", ndim - dim))
+  drop_dim <- ifelse(drop, ", drop_dim = dim", "")
+  expr <- paste0("extract(x, ", commas1, "i", commas2, drop_dim, ")")
+  eval2(expr)
+}
+
+# slice out columns without dropping other dimensions
+# @param x an array; a vector or 1D array is treated as already sliced
+# @param i column index
+slice_col <- function(x, i) {
+  if (length(dim(x)) < 2L) {
+    # a vector or 1D array is treated as already sliced
     return(x)
   }
-  commas <- collapse(rep(", ", ldim - 2))
-  expr <- paste0("extract(x, , i", commas, ", drop_dim = 2)")
-  eval2(expr)
+  slice(x, 2, i)
 }
 
 seq_rows <- function(x) {
@@ -102,8 +115,8 @@ seq_dim <- function(x, dim) {
 match_rows <- function(x, y, ...) {
   x <- as.data.frame(x)
   y <- as.data.frame(y)
-  x <- do_call("paste", c(x, sep = "\r"))
-  y <- do_call("paste", c(y, sep = "\r"))
+  x <- do.call("paste", c(x, sep = "\r"))
+  y <- do.call("paste", c(y, sep = "\r"))
   match(x, y, ...)
 }
 
@@ -227,8 +240,8 @@ isNA <- function(x) {
   length(x) == 1L && is.na(x)
 }
 
-is_equal <- function(x, y, ...) {
-  isTRUE(all.equal(x, y, ...))
+is_equal <- function(x, y, check.attributes = FALSE, ...) {
+  isTRUE(all.equal(x, y, check.attributes = check.attributes, ...))
 }
 
 # check if 'x' will behave like a factor in design matrices
@@ -378,12 +391,12 @@ ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
 
 # rbind lapply output
 rblapply <- function(X, FUN, ...) {
-  do_call(rbind, lapply(X, FUN, ...))
+  do.call(rbind, lapply(X, FUN, ...))
 }
 
 # cbind lapply output
 cblapply <- function(X, FUN, ...) {
-  do_call(cbind, lapply(X, FUN, ...))
+  do.call(cbind, lapply(X, FUN, ...))
 }
 
 # parallel lapply sensitive to the operating system
@@ -482,7 +495,7 @@ glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(),
     .close = close, .na = na, .trim = FALSE,
     .transformer = zero_length_transformer
   )
-  out <- do_call(glue::glue_data, c(dots, args))
+  out <- do.call(glue::glue_data, c(dots, args))
   if (!is.null(collapse)) {
     collapse <- as_one_character(collapse)
     out <- paste0(out, collapse = collapse)
@@ -570,7 +583,7 @@ collapse_lists <- function(..., ls = list()) {
   ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
   args <- c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE)
-  out <- do_call(mapply, args)
+  out <- do.call(mapply, args)
   names(out) <- elements
   out
 }
@@ -622,7 +635,9 @@ is_named <- function(x) {
 #' Execute a Function Call
 #'
 #' Execute a function call similar to \code{\link{do.call}}, but without
-#' deparsing function arguments.
+#' deparsing function arguments. For large number of arguments (i.e., more
+#' than a few thousand) this function currently is somewhat inefficient
+#' and should be used with care in this case.
 #' 
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
@@ -630,12 +645,13 @@ is_named <- function(x) {
 #'   \code{args} gives the argument names.
 #' @param pkg Optional name of the package in which to search for the
 #'   function if \code{what} is a character string.
+#' @param envir An environment within which to evaluate the call.
 #'
 #' @return The result of the (evaluated) function call.
 #' 
 #' @keywords internal
 #' @export
-do_call <- function(what, args, pkg = NULL) {
+do_call <- function(what, args, pkg = NULL, envir = parent.frame()) {
   call <- ""
   if (length(args)) {
     if (!is.list(args)) {
@@ -663,7 +679,7 @@ do_call <- function(what, args, pkg = NULL) {
     }
   }
   call <- paste0(what, "(", call, ")")
-  eval2(call, envir = args, enclos = parent.frame())
+  eval2(call, envir = args, enclos = envir)
 }
 
 # create an empty data frame
@@ -928,9 +944,16 @@ wsp_per_line <- function(x, nsp) {
   x
 }
 
-# remove whitespaces from strings
+# remove whitespaces in character strings
 rm_wsp <- function(x) {
   out <- gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  dim(out) <- dim(x)
+  out
+}
+
+# trim whitespaces in character strings
+trim_wsp <- function(x) {
+  out <- gsub("[ \t\r\n]+", " ", x, perl = TRUE)
   dim(out) <- dim(x)
   out
 }

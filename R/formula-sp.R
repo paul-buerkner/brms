@@ -305,7 +305,7 @@ tidy_spef <- function(x, data) {
     return(empty_data_frame())
   }
   mm <- sp_model_matrix(form, data, rename = FALSE)
-  out <- data.frame(term = rm_wsp(colnames(mm)), stringsAsFactors = FALSE)
+  out <- data.frame(term = trim_wsp(colnames(mm)), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
   calls_cols <- paste0("calls_", all_sp_types())
   for (col in c(calls_cols, "joint_call", "vars_mi", "ids_mo", "Imo")) {

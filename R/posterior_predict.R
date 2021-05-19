@@ -515,6 +515,19 @@ posterior_predict_negbinomial <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_negbinomial2 <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  sigma <- get_dpar(prep, "sigma", i)
+  shape <- multiply_dpar_rate_denom(1 / sigma, prep, i = i)
+  rdiscrete(
+    n = prep$nsamples, dist = "nbinom",
+    mu = mu, size = shape,
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_geometric <- function(i, prep, ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
@@ -826,6 +839,12 @@ posterior_predict_dirichlet <- function(i, prep, ...) {
   cats <- seq_len(prep$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
   rdirichlet(prep$nsamples, alpha = alpha)
+}
+
+posterior_predict_dirichlet2 <- function(i, prep, ...) {
+  mu_dpars <- str_subset(names(prep$dpars), "^mu")
+  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  rdirichlet(prep$nsamples, alpha = mu)
 }
 
 posterior_predict_cumulative <- function(i, prep, ...) {

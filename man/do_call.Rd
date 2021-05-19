@@ -4,7 +4,7 @@
 \alias{do_call}
 \title{Execute a Function Call}
 \usage{
-do_call(what, args, pkg = NULL)
+do_call(what, args, pkg = NULL, envir = parent.frame())
 }
 \arguments{
 \item{what}{Either a function or a non-empty character string naming the
@@ -15,12 +15,16 @@ function to be called.}
 
 \item{pkg}{Optional name of the package in which to search for the
 function if \code{what} is a character string.}
+
+\item{envir}{An environment within which to evaluate the call.}
 }
 \value{
 The result of the (evaluated) function call.
 }
 \description{
 Execute a function call similar to \code{\link{do.call}}, but without
-deparsing function arguments.
+deparsing function arguments. For large number of arguments (i.e., more
+than a few thousand) this function currently is somewhat inefficient
+and should be used with care in this case.
 }
 \keyword{internal}

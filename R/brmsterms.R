@@ -425,9 +425,9 @@ terms_sp <- function(formula) {
   if (!length(out)) {
     return(NULL) 
   }
-  uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
-  uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
-  uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
+  uni_mo <- trim_wsp(get_matches_expr(regex_sp("mo"), out))
+  uni_me <- trim_wsp(get_matches_expr(regex_sp("me"), out))
+  uni_mi <- trim_wsp(get_matches_expr(regex_sp("mi"), out))
   # remove the intercept as it is handled separately
   out <- str2formula(c("0", out))
   attr(out, "int") <- FALSE
@@ -532,13 +532,7 @@ terms_resp <- function(formula, check_names = TRUE) {
   } else {
     str_fun <- deparse_no_string(expr[[1]]) 
     use_mvbind <- identical(str_fun, "mvbind")
-    use_cbind <- identical(str_fun, "cbind")
     if (use_mvbind) {
-      out <- ulapply(expr[-1], deparse_no_string)
-    } else if (use_cbind) {
-      # deprecated as of brms 2.7.2
-      warning2("Using 'cbind' for multivariate models is ", 
-               "deprecated. Please use 'mvbind' instead.")
       out <- ulapply(expr[-1], deparse_no_string)
     } else {
       out <- deparse_no_string(expr) 
@@ -896,7 +890,7 @@ all_terms <- function(x) {
   if (!inherits(x, "terms")) {
     x <- terms(as.formula(x))
   }
-  rm_wsp(attr(x, "term.labels"))
+  trim_wsp(attr(x, "term.labels"))
 }
 
 # generate a regular expression to extract special terms
@@ -952,7 +946,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
     inv <- out[lengths(matches) > 1L]
     if (!length(inv)) {
       # each term must be exactly equal to the special function call
-      inv <- out[rm_wsp(unlist(matches)) != out]
+      inv <- out[trim_wsp(unlist(matches)) != out]
     }
     if (length(inv)) {
       stop2("The term '", inv[1], "' is invalid in brms syntax.")
@@ -1059,6 +1053,8 @@ check_accidental_helper_functions <- function(formula) {
   regex <- paste0("^(", regex, ")\\(")
   matches <- get_matches(regex, terms, first = TRUE)
   matches <- sub("\\($", "", matches)
+  matches <- unique(matches)
+  matches <- matches[nzchar(matches)]
   for (m in matches) {
     loc <- utils::find(m, mode = "function")
     if (is_equal(loc[1], "package:brms")) {

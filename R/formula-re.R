@@ -360,11 +360,7 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
     out <- paste0("(", out, ")")
   } 
   if (formula) {
-    if (length(out)) {
-      out <- formula(paste("~ 1", collapse("+", out)))
-    } else {
-      out <- ~ 1
-    }
+    out <- str2formula(out)
   }
   out
 }
@@ -457,12 +453,12 @@ update_re_terms.formula <- function(formula, re_formula = NULL) {
   if (length(old_re_terms)) {
     # remove old group-level terms
     rm_terms <- c(
-      paste0("+(", old_re_terms, ")"),
+      paste0("+ (", old_re_terms, ")"),
       paste0("(", old_re_terms, ")"),
       old_re_terms
     )
     new_formula <- rename(new_formula, rm_terms, "")
-    if (grepl("~\\+*$", new_formula)) {
+    if (grepl("~( *\\+*)*$", new_formula)) {
       # lhs only formulas are syntactically invalid
       # also check for trailing '+' signs (#769)
       new_formula <- paste(new_formula, "1")

@@ -186,7 +186,8 @@ test_that("log_lik for count and survival models works correctly", {
     shape = rgamma(ns, 4),
     xi = runif(ns, -1, 0.5)
   )
-  prep$dpars$nu <- prep$dpars$sigma <- prep$dpars$shape + 1
+  prep$dpars$sigma <- 1 / prep$dpars$shape
+  prep$dpars$nu <- prep$dpars$shape + 1
   prep$data <- list(
     Y = rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1)), 
     trials = trials
@@ -217,6 +218,9 @@ test_that("log_lik for count and survival models works correctly", {
     size = prep$dpars$shape, log = TRUE
   )
   ll <- brms:::log_lik_negbinomial(i, prep = prep)
+  expect_equal(ll, ll_nbinom)
+  
+  ll <- brms:::log_lik_negbinomial2(i, prep = prep)
   expect_equal(ll, ll_nbinom)
   
   ll_geo <- dnbinom(
@@ -275,7 +279,7 @@ test_that("log_lik for count and survival models works correctly", {
   prep$data$Y[i] <- 0
   ll_gen_extreme_value <- SW(dgen_extreme_value(
     x = prep$data$Y[i], mu = prep$dpars$mu[, i],
-    sigma = prep$dpars$nu, xi = prep$dpars$xi, log = TRUE
+    sigma = prep$dpars$sigma, xi = prep$dpars$xi, log = TRUE
   ))
   ll <- SW(brms:::log_lik_gen_extreme_value(i, prep = prep))
   expect_equal(ll, ll_gen_extreme_value)
@@ -429,6 +433,13 @@ test_that("log_lik for categorical and related models runs without erros", {
   prep$dpars$phi <- rexp(ns, 10)
   prep$family <- dirichlet()
   ll <- sapply(1:nobs, brms:::log_lik_dirichlet, prep = prep)
+  expect_equal(dim(ll), c(ns, nobs))
+  
+  prep$family <- brmsfamily("dirichlet2")
+  prep$dpars$mu1 <- rexp(ns, 10)
+  prep$dpars$mu2 <- rexp(ns, 10)
+  prep$dpars$mu3 <- rexp(ns, 10)
+  ll <- sapply(1:nobs, brms:::log_lik_dirichlet2, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
 })
 

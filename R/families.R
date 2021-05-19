@@ -288,7 +288,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     out$threshold <- match.arg(threshold, thres_options)
   }
   if (conv_cats_dpars(out$family)) {
-    if (!is.null(refcat)) {
+    if (!has_joint_link(out$family)) {
+      out$refcat <- NA
+    } else if (!is.null(refcat)) {
       out$refcat <- as_one_character(refcat, allow_na = TRUE) 
     }
   }
@@ -496,6 +498,15 @@ negbinomial <- function(link = "log", link_shape = "log") {
               link_shape = link_shape)
 }
 
+# not yet officially supported
+# @rdname brmsfamily
+# @export
+negbinomial2 <- function(link = "log", link_sigma = "log") {
+  slink <- substitute(link)
+  .brmsfamily("negbinomial2", link = link, slink = slink,
+              link_sigma = link_sigma)
+}
+
 #' @rdname brmsfamily
 #' @export
 geometric <- function(link = "log") {
@@ -612,6 +623,14 @@ dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily("dirichlet", link = link, slink = slink,
               link_phi = link_phi, refcat = refcat)
+}
+
+# not yet exported
+# @rdname brmsfamily
+# @export
+dirichlet2 <- function(link = "log") {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet2", link = link, slink = slink, refcat = NA)
 }
 
 #' @rdname brmsfamily
@@ -1199,23 +1218,23 @@ links_dpars <- function(dpar) {
   switch(dpar,
     character(0),
     mu = "identity",  # not actually used
-    sigma = c("log", "identity", "softplus"), 
-    shape = c("log", "identity", "softplus"),
+    sigma = c("log", "identity", "softplus", "squareplus"), 
+    shape = c("log", "identity", "softplus", "squareplus"),
     nu = c("logm1", "identity"), 
-    phi = c("log", "identity", "softplus"),
-    kappa = c("log", "identity", "softplus"), 
-    beta = c("log", "identity", "softplus"),
+    phi = c("log", "identity", "softplus", "squareplus"),
+    kappa = c("log", "identity", "softplus", "squareplus"), 
+    beta = c("log", "identity", "softplus", "squareplus"),
     zi = c("logit", "identity"), 
     hu = c("logit", "identity"),
     zoi = c("logit", "identity"), 
     coi = c("logit", "identity"), 
-    disc = c("log", "identity", "softplus"),
-    bs = c("log", "identity", "softplus"), 
-    ndt = c("log", "identity", "softplus"),
+    disc = c("log", "identity", "softplus", "squareplus"),
+    bs = c("log", "identity", "softplus", "squareplus"), 
+    ndt = c("log", "identity", "softplus", "squareplus"),
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
-    alpha = c("identity", "log", "softplus"),
+    alpha = c("identity", "log", "softplus", "squareplus"),
     theta = c("identity")
   )
 }
@@ -1227,12 +1246,26 @@ dpar_family <- function(family, dpar, ...) {
 
 #' @export
 dpar_family.default <- function(family, dpar, ...) {
-  dp_class <- dpar_class(dpar)
-  if (dp_class != "mu" || conv_cats_dpars(family)) {
+  dp_class <- dpar_class(dpar, family)
+  if (dp_class == "mu") {
+    if (conv_cats_dpars(family)) {
+      link <- NULL
+      if (!has_joint_link(family)) {
+        link <- family$link
+      }
+      # joint links are applied directly in the likelihood function
+      # so link is treated as 'identity'
+      out <- .dpar_family(dpar, link)
+    } else {
+      # standard single mu parameters just store the original family
+      out <- family 
+    }
+  } else {
+    # link_<dp_class> is always defined for non-mu parameters
     link <- family[[paste0("link_", dp_class)]]
-    family <- .dpar_family(dpar, link)
+    out <- .dpar_family(dpar, link)
   }
-  family
+  out
 }
 
 #' @export
@@ -1453,6 +1486,11 @@ is_cox <- function(family) {
   "cox" %in% family_info(family, "specials")
 }
 
+# has joint link function over multiple inputs
+has_joint_link <- function(family) {
+  "joint_link" %in% family_info(family, "specials")
+}
+
 allow_factors <- function(family) {
   specials <- c("binary", "categorical", "ordinal")
   any(specials %in% family_info(family, "specials"))
@@ -1664,6 +1702,7 @@ family_bounds.mvbrmsterms <- function(x, ...) {
   lapply(x$terms, family_bounds, ...)
 }
 
+# bounds of likelihood families
 # @return a list with elements 'lb' and 'ub'
 #' @export
 family_bounds.brmsterms <- function(x, ...) {
@@ -1672,9 +1711,11 @@ family_bounds.brmsterms <- function(x, ...) {
     return(list(lb = -Inf, ub = Inf))
   }
   resp <- usc(x$resp)
+  # TODO: define in family-lists.R
   pos_families <- c(
-    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
-    "exponential", "lognormal", "frechet", "inverse.gaussian", 
+    "poisson", "negbinomial", "negbinomial2", "geometric", 
+    "gamma", "weibull", "exponential", "lognormal", 
+    "frechet", "inverse.gaussian", 
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "zero_inflated_poisson", 
     "zero_inflated_negbinomial"

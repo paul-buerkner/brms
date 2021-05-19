@@ -612,7 +612,7 @@ test_that("make_standata handles multi-membership models", {
   )
   expect_error(
     make_standata(y ~ (mmc(w1, w2)*y|mm(g1,g2)), data = dat),
-    "The term 'mmc(w1,w2):y' is invalid", fixed = TRUE
+    "The term 'mmc(w1, w2):y' is invalid", fixed = TRUE
   )
   
   # tests if ":" works in multi-membership models

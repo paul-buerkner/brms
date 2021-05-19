@@ -19,7 +19,7 @@ stopifnot_resp <- function(x, resp = NULL) {
 }
 
 # apply a link function 
-# @param x an arrary of arbitrary dimension
+# @param x an array of arbitrary dimension
 # @param link character string defining the link
 link <- function(x, link) {
   switch(link, 
@@ -37,12 +37,13 @@ link <- function(x, link) {
     "cloglog" = cloglog(x), 
     "probit_approx" = qnorm(x),
     "softplus" = log_expm1(x),
+    "squareplus" = (x^2 - 1) / x,
     stop2("Link '", link, "' not supported.")
   )
 }
 
 # apply an inverse link function
-# @param x an arrary of arbitrary dimension
+# @param x an array of arbitrary dimension
 # @param link a character string defining the link
 ilink <- function(x, link) {
   switch(link, 
@@ -60,6 +61,7 @@ ilink <- function(x, link) {
     "cloglog" = inv_cloglog(x), 
     "probit_approx" = pnorm(x),
     "softplus" = log1p_exp(x),
+    "squareplus" = (x + sqrt(x^2 + 4)) / 2,
     stop2("Link '", link, "' not supported.")
   )
 }
@@ -323,19 +325,46 @@ get_cor_matrix_ident <- function(nsamples, nobs) {
   out
 }
 
-# get samples of a distributional parameter
-# @param prep a 'brmsprep' or 'mvbrmsprep' object
-# @param dpar name of the distributional parameter
-# @param i the current observation number
-# @param ilink should the inverse link function be applied?
-#   if NULL the value is chosen internally
-# @return 
-#   If the parameter is predicted and i is NULL or 
-#   length(i) > 1, an S x N matrix.
-#   If the parameter it not predicted or length(i) == 1,
-#   a vector of length S.
+#' Samples of a Distributional Parameter
+#' 
+#' Get samples of a distributional parameter from a \code{brmsprep} or 
+#' \code{mvbrmsprep} object. This function is primarily useful when developing
+#' custom families or packages depending on \pkg{brms}. 
+#' This function lets callers easily handle both the case when the
+#' distributional parameter is predicted directly, via a (non-)linear
+#' predictor or fixed to a constant. See the vignette
+#' \code{vignette("brms_customfamilies")} for an example use case.
+#' 
+#' @param prep A 'brmsprep' or 'mvbrmsprep' object created by
+#'   \code{\link[brms:prepare_predictions.brmsfit]{prepare_predictions}}.
+#' @param dpar Name of the distributional parameter.
+#' @param i The observation numbers for which predictions shall be extracted.
+#'   If \code{NULL} (the default), all observation will be extracted.
+#'   Ignored if \code{dpar} is not predicted.
+#' @param ilink Should the inverse link function be applied?
+#'   If \code{NULL} (the default), the value is chosen internally.
+#'   In particular, \code{ilink} is \code{TRUE} by default for custom
+#'   families.
+#' @return 
+#'   If the parameter is predicted and \code{i} is \code{NULL} or
+#'   \code{length(i) > 1}, an \code{S x N} matrix. If the parameter it not
+#'   predicted or \code{length(i) == 1}, a vector of length \code{S}. Here
+#'   \code{S} is the number of samples and \code{N} is the number of
+#'   observations or length of \code{i} if specified.
+#'   
+#' @examples
+#' \dontrun{
+#' posterior_predict_my_dist <- function(i, prep, ...) {
+#'   mu <- brms::get_dpar(prep, "mu", i = i)
+#'   mypar <- brms::get_dpar(prep, "mypar", i = i)
+#'   my_rng(mu, mypar)
+#' }
+#' } 
+#' 
+#' @export
 get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
+  dpar <- as_one_character(dpar)
   x <- prep$dpars[[dpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
@@ -343,15 +372,17 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
     out <- predictor(x, i = i, fprep = prep)
     if (is.null(ilink)) {
       ilink <- apply_dpar_ilink(dpar, family = prep$family)
+    } else {
+      ilink <- as_one_logical(ilink) 
     }
     if (ilink) {
       out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
-      out <- extract_col(out, 1)
+      out <- slice_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- extract_col(x, i)
+    out <- slice_col(x, i)
   } else {
     out <- x
   }
@@ -373,10 +404,10 @@ get_nlpar <- function(prep, nlpar, i = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
     if (length(i) == 1L) {
-      out <- extract_col(out, 1)
+      out <- slice_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- extract_col(x, i)
+    out <- slice_col(x, i)
   } else {
     out <- x
   }
@@ -421,11 +452,11 @@ get_Mu <- function(prep, i = NULL) {
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- do_call(abind, c(Mu, along = 3))
+      Mu <- abind::abind(Mu, along = 3)
     }
   } else {
     stopifnot(!is.null(i))
-    Mu <- extract_col(Mu, i)
+    Mu <- slice_col(Mu, i)
   }
   Mu
 }
@@ -462,7 +493,7 @@ get_Sigma <- function(prep, i = NULL) {
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
-      Sigma <- extract_col(Sigma, i)
+      Sigma <- slice_col(Sigma, i)
     }
   }
   Sigma
@@ -537,31 +568,41 @@ subset_thres <- function(prep, i) {
 }
 
 # helper function of 'get_dpar' to decide if
-# the link function should be applied by default
+# the link function should be applied direclty
 apply_dpar_ilink <- function(dpar, family) {
-  !(is_polytomous(family) && dpar_class(dpar) == "mu") ||
-    is.customfamily(family)
+  !(has_joint_link(family) && dpar_class(dpar, family) == "mu")
 }
 
 # insert zeros for the predictor term of the reference category
 # in categorical-like models using the softmax response function
-insert_refcat  <- function(eta, family) {
-  stopifnot(is.matrix(eta), is.brmsfamily(family))
+insert_refcat <- function(eta, family) {
+  stopifnot(is.array(eta), is.brmsfamily(family))
   if (!conv_cats_dpars(family) || isNA(family$refcat)) {
     return(eta)
   }
   # need to add zeros for the reference category
-  zeros <- as.matrix(rep(0, nrow(eta)))
+  ndim <- length(dim(eta))
+  dim_noncat <- dim(eta)[-ndim]
+  zeros_arr <- array(0, dim = c(dim_noncat, 1))
   if (is.null(family$refcat) || is.null(family$cats)) {
     # no information on the categories provided:
     # use the first category as the reference
-    return(cbind(zeros, eta))
+    return(abind::abind(zeros_arr, eta))
   }
-  colnames(zeros) <- paste0("mu", family$refcat)
+  ncat <- length(family$cats)
+  stopifnot(identical(dim(eta)[ndim], ncat - 1L))
+  if (is.null(dimnames(eta)[[ndim]])) {
+    dimnames(eta)[[ndim]] <- paste0("mu", setdiff(family$cats, family$refcat))
+  }
+  dimnames(zeros_arr)[[ndim]] <- paste0("mu", family$refcat)
   iref <- match(family$refcat, family$cats)
   before <- seq_len(iref - 1)
-  after <- setdiff(seq_cols(eta), before)
-  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
+  after <- setdiff(seq_dim(eta, ndim), before)
+  abind::abind(
+    slice(eta, ndim, before, drop = FALSE),
+    zeros_arr,
+    slice(eta, ndim, after, drop = FALSE)
+  )
 }
 
 # validate the 'resp' argument of 'predict' and related methods

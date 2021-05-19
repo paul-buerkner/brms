@@ -1085,7 +1085,7 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
     link <- "log"
   }
   tlinks <- c("identity", "log", "inverse", "sqrt", "1/mu^2")
-  if (link %in% tlinks && !is_like_factor(y)) {
+  if (link %in% tlinks && !is_like_factor(y) && !conv_cats_dpars(x)) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(y)
       y <- ifelse(y == 0, y + 0.1, y) 
@@ -1141,8 +1141,10 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 }  
 
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bterms, data, sample_prior, ...) {
+.validate_prior <- function(prior, bterms, data, sample_prior,
+                            require_nlpar_prior = TRUE, ...) {
   sample_prior <- validate_sample_prior(sample_prior)
+  require_nlpar_prior <- as_one_logical(require_nlpar_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors
@@ -1165,7 +1167,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   # check for invalid priors
   # it is good to let the user know beforehand that some of their priors
-  # were invalid in the model to avoid unecessary refits
+  # were invalid in the model to avoid unnecessary refits
   if (nrow(prior)) {
     valid_ids <- which(duplicated(rbind(all_priors, prior)))
     invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
@@ -1185,7 +1187,12 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
-  prior <- validate_prior_special(prior, bterms = bterms, data = data, ...)
+  # don't require priors on nlpars if some priors are not checked (#1124)
+  require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
+  prior <- validate_prior_special(
+    prior, bterms = bterms, data = data,
+    require_nlpar_prior = require_nlpar_prior, ...
+  )
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
@@ -1371,23 +1378,25 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         prior, class = cl, coef = "",
         dpar = "", nlpar = "", resp = x$resp
       ))
-      if (any(nzchar(prior$prior[gi]))) {
+      prior$remove[gi] <- TRUE
+      if (!any(nzchar(prior$prior[gi]))) {
+        next
+      } else {
         # allowing global priors in categorical models implies conceptual problems 
         # in the specification of default priors as it becomes unclear on which 
         # prior level they should be defined
         warning2("Specifying global priors for regression coefficients in ", 
                  "categorical models is deprecated. Please specify priors ",
                  "separately for each response category.")
-      }
-      prior$remove[gi] <- TRUE
-      for (dp in names(x$dpars)) {
-        rows <- which(find_rows(
-          prior, class = cl, coef = "",
-          dpar = dp, nlpar = "", resp = x$resp
-        ))
-        for (dpi in rows) {
-          if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
-            prior$prior[dpi] <- prior$prior[gi]
+        for (dp in names(x$dpars)) {
+          rows <- which(find_rows(
+            prior, class = cl, coef = "",
+            dpar = dp, nlpar = "", resp = x$resp
+          ))
+          for (dpi in rows) {
+            if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
+              prior$prior[dpi] <- prior$prior[gi]
+            }
           }
         }
       }

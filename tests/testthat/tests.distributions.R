@@ -59,7 +59,7 @@ test_that("skew_normal distribution functions run without errors", {
   res <- dskew_normal(x, mu = 1, sigma = 2, alpha = 1)
   expect_true(length(res) == n)
   res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n, 
-                             alpha = 3, log.p = TRUE)
+                      alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- qskew_normal(x, mu = rnorm(n), sigma = 1:n, 
                       alpha = 3, log.p = TRUE)
@@ -74,7 +74,7 @@ test_that("exgaussian distribution functions run without errors", {
   res <- dexgaussian(x, mu = 1, sigma = 2, beta = 1)
   expect_true(length(res) == n)
   res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n, 
-                            beta = 3, log.p = TRUE)
+                     beta = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
   expect_true(length(res) == n)
@@ -124,7 +124,7 @@ test_that("asym_laplace distribution functions run without errors", {
   res <- pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
   expect_true(length(res) == n)
   res <- rasym_laplace(n, mu = rnorm(n), sigma = 10, 
-                              quantile = runif(n, 0, 1))
+                       quantile = runif(n, 0, 1))
   expect_true(length(res) == n)
 })
 
@@ -197,4 +197,382 @@ test_that("wiener distribution functions run without errors", {
   r2 <- rwiener(n, alpha, tau, beta, delta, backend = "rtdists")
   expect_equal(names(r1), names(r2))
   expect_equal(dim(r1), dim(r2))
+})
+
+test_that("d<ordinal_family>() works correctly", {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
+  for (ndraws in ndraws_vec) {
+    for (ncat in ncat_vec) {
+      thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      # Emulate no category-specific effects (i.e., only a single vector of
+      # linear predictors) as well as category-specific effects (i.e., a matrix
+      # of linear predictors):
+      eta_test_list <- list(
+        rnorm(ndraws),
+        matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      )
+      for (eta_test in eta_test_list) {
+        thres_eta <- if (is.matrix(eta_test)) {
+          stopifnot(identical(dim(eta_test), dim(thres_test)))
+          thres_test - eta_test
+        } else {
+          # Just to try something different:
+          sweep(thres_test, 1, as.array(eta_test))
+        }
+        eta_thres <- if (is.matrix(eta_test)) {
+          stopifnot(identical(dim(eta_test), dim(thres_test)))
+          eta_test - thres_test
+        } else {
+          # Just to try something different:
+          sweep(-thres_test, 1, as.array(eta_test), FUN = "+")
+        }
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          d_cumul <- dcumulative(seq_len(ncat),
+                                 eta_test, thres_test, link = link)
+          d_cumul_ch <- inv_link_cumulative_ch(thres_eta, link = link)
+          expect_equivalent(d_cumul, d_cumul_ch)
+          expect_equal(dim(d_cumul), c(ndraws, ncat))
+          
+          # sratio():
+          d_sratio <- dsratio(seq_len(ncat),
+                              eta_test, thres_test, link = link)
+          d_sratio_ch <- inv_link_sratio_ch(thres_eta, link = link)
+          expect_equivalent(d_sratio, d_sratio_ch)
+          expect_equal(dim(d_sratio), c(ndraws, ncat))
+          
+          # cratio():
+          d_cratio <- dcratio(seq_len(ncat),
+                              eta_test, thres_test, link = link)
+          d_cratio_ch <- inv_link_cratio_ch(eta_thres, link = link)
+          expect_equivalent(d_cratio, d_cratio_ch)
+          expect_equal(dim(d_cratio), c(ndraws, ncat))
+          
+          # acat():
+          d_acat <- dacat(seq_len(ncat),
+                          eta_test, thres_test, link = link)
+          d_acat_ch <- inv_link_acat_ch(eta_thres, link = link)
+          expect_equivalent(d_acat, d_acat_ch)
+          expect_equal(dim(d_acat), c(ndraws, ncat))
+        }
+      }
+    }
+  }
+})
+
+test_that("inv_link_<ordinal_family>() works correctly for arrays", {
+  source(testthat::test_path(file.path("helpers", "inv_link_ordinal_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        nx_test <- -x_test
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          il_cumul <- inv_link_cumulative(x_test, link = link)
+          il_cumul_ch <- inv_link_cumulative_ch(x_test, link = link)
+          expect_equivalent(il_cumul, il_cumul_ch)
+          expect_equal(dim(il_cumul), c(ndraws, nobsv, ncat))
+          
+          # sratio():
+          il_sratio <- inv_link_sratio(x_test, link = link)
+          il_sratio_ch <- inv_link_sratio_ch(x_test, link = link)
+          expect_equivalent(il_sratio, il_sratio_ch)
+          expect_equal(dim(il_sratio), c(ndraws, nobsv, ncat))
+          
+          # cratio():
+          il_cratio <- inv_link_cratio(nx_test, link = link)
+          il_cratio_ch <- inv_link_cratio_ch(nx_test, link = link)
+          expect_equivalent(il_cratio, il_cratio_ch)
+          expect_equal(dim(il_cratio), c(ndraws, nobsv, ncat))
+          
+          # acat():
+          il_acat <- inv_link_acat(nx_test, link = link)
+          il_acat_ch <- inv_link_acat_ch(nx_test, link = link)
+          expect_equivalent(il_acat, il_acat_ch)
+          expect_equal(dim(il_acat), c(ndraws, nobsv, ncat))
+        }
+      }
+    }
+  }
+})
+
+test_that("link_<ordinal_family>() works correctly for arrays", {
+  source(testthat::test_path(file.path("helpers", "link_ordinal_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          l_cumul <- link_cumulative(x_test, link = link)
+          l_cumul_ch <- link_cumulative_ch(x_test, link = link)
+          expect_equivalent(l_cumul, l_cumul_ch)
+          expect_equal(dim(l_cumul), c(ndraws, nobsv, ncat - 1))
+          
+          # sratio():
+          l_sratio <- link_sratio(x_test, link = link)
+          l_sratio_ch <- link_sratio_ch(x_test, link = link)
+          expect_equivalent(l_sratio, l_sratio_ch)
+          expect_equal(dim(l_sratio), c(ndraws, nobsv, ncat - 1))
+          
+          # cratio():
+          l_cratio <- link_cratio(x_test, link = link)
+          l_cratio_ch <- link_cratio_ch(x_test, link = link)
+          expect_equivalent(l_cratio, l_cratio_ch)
+          expect_equal(dim(l_cratio), c(ndraws, nobsv, ncat - 1))
+          
+          # acat():
+          l_acat <- link_acat(x_test, link = link)
+          l_acat_ch <- link_acat_ch(x_test, link = link)
+          expect_equivalent(l_acat, l_acat_ch)
+          expect_equal(dim(l_acat), c(ndraws, nobsv, ncat - 1))
+        }
+      }
+    }
+  }
+})
+
+test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          l_cumul <- link_cumulative(x_test, link = link)
+          il_cumul <- inv_link_cumulative(l_cumul, link = link)
+          expect_equivalent(il_cumul, x_test)
+          
+          # sratio():
+          l_sratio <- link_sratio(x_test, link = link)
+          il_sratio <- inv_link_sratio(l_sratio, link = link)
+          expect_equivalent(il_sratio, x_test)
+          
+          # cratio():
+          l_cratio <- link_cratio(x_test, link = link)
+          il_cratio <- inv_link_cratio(l_cratio, link = link)
+          expect_equivalent(il_cratio, x_test)
+          
+          # acat():
+          l_acat <- link_acat(x_test, link = link)
+          il_acat <- inv_link_acat(l_acat, link = link)
+          expect_equivalent(il_acat, x_test)
+        }
+      }
+    }
+  }
+})
+
+test_that("link_<ordinal_family>() inverts inv_link_<ordinal_family>()", {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        nx_test <- -x_test
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          # cumulative():
+          il_cumul <- inv_link_cumulative(x_test, link = link)
+          l_cumul <- link_cumulative(il_cumul, link = link)
+          expect_equivalent(l_cumul, x_test)
+          
+          # sratio():
+          il_sratio <- inv_link_sratio(x_test, link = link)
+          l_sratio <- link_sratio(il_sratio, link = link)
+          expect_equivalent(l_sratio, x_test)
+          
+          # cratio():
+          il_cratio <- inv_link_cratio(x_test, link = link)
+          l_cratio <- link_cratio(il_cratio, link = link)
+          expect_equivalent(l_cratio, x_test)
+          
+          # acat():
+          il_acat <- inv_link_acat(x_test, link = link)
+          l_acat <- link_acat(il_acat, link = link)
+          expect_equivalent(l_acat, x_test)
+        }
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "dsratio() and dcratio() give the same results for symmetric distribution",
+  "functions"
+), {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
+  for (ndraws in ndraws_vec) {
+    for (ncat in ncat_vec) {
+      thres_test <- matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      # Emulate no category-specific effects (i.e., only a single vector of
+      # linear predictors) as well as category-specific effects (i.e., a matrix
+      # of linear predictors):
+      eta_test_list <- list(
+        rnorm(ndraws),
+        matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      )
+      for (eta_test in eta_test_list) {
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          d_sratio <- dsratio(seq_len(ncat),
+                              eta_test, thres_test, link = link)
+          d_cratio <- dcratio(seq_len(ncat),
+                              eta_test, thres_test, link = link)
+          if (link != "cloglog") {
+            expect_equal(d_sratio, d_cratio)
+          } else {
+            expect_false(isTRUE(all.equal(d_sratio, d_cratio)))
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "inv_link_sratio() and inv_link_cratio() applied to arrays give the same",
+  "results for symmetric distribution functions (when respecting the sign",
+  "appropriately)."
+), {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        nx_test <- -x_test
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          il_sratio <- inv_link_sratio(x_test, link = link)
+          il_cratio <- inv_link_cratio(nx_test, link = link)
+          if (link != "cloglog") {
+            expect_equal(il_sratio, il_cratio)
+          } else {
+            expect_false(isTRUE(all.equal(il_sratio, il_cratio)))
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "link_sratio() and link_cratio() applied to arrays give the same",
+  "results for symmetric distribution functions (when respecting the sign",
+  "appropriately)."
+), {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        for (link in c("logit", "probit", "cauchit", "cloglog")) {
+          l_sratio <- link_sratio(x_test, link = link)
+          l_cratio <- link_cratio(x_test, link = link)
+          if (link != "cloglog") {
+            expect_equal(l_sratio, -l_cratio)
+          } else {
+            expect_false(isTRUE(all.equal(l_sratio, -l_cratio)))
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("dcategorical() works correctly", {
+  source(testthat::test_path(file.path("helpers", "inv_link_categorical_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
+  for (ndraws in ndraws_vec) {
+    for (ncat in ncat_vec) {
+      eta_test_list <- list(cbind(0,
+                                  matrix(rnorm(ndraws * (ncat - 1)),
+                                         nrow = ndraws)))
+      if (ndraws == 1) {
+        eta_test_list <- c(eta_test_list, list(c(0, rnorm(ncat - 1))))
+      }
+      for (eta_test in eta_test_list) {
+        d_categorical <- dcategorical(seq_len(ncat), eta_test)
+        d_categorical_ch <- inv_link_categorical_ch(eta_test)
+        expect_equivalent(d_categorical, d_categorical_ch)
+        expect_equal(dim(d_categorical), c(ndraws, ncat))
+      }
+    }
+  }
+})
+
+test_that("inv_link_categorical() works correctly for arrays", {
+  source(testthat::test_path(file.path("helpers", "inv_link_categorical_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
+        x_test <- abind::abind(zeros_arr, x_test)
+        il_categorical <- inv_link_categorical(x_test)
+        il_categorical_ch <- inv_link_categorical_ch(x_test)
+        expect_equivalent(il_categorical, il_categorical_ch)
+        expect_equal(dim(il_categorical), c(ndraws, nobsv, ncat))
+      }
+    }
+  }
+})
+
+test_that("link_categorical() works correctly for arrays", {
+  source(testthat::test_path(file.path("helpers", "link_categorical_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        l_categorical <- link_categorical(x_test)
+        l_categorical_ch <- link_categorical_ch(x_test)
+        expect_equivalent(l_categorical, l_categorical_ch)
+        expect_equal(dim(l_categorical), c(ndraws, nobsv, ncat))
+      }
+    }
+  }
+})
+
+test_that("inv_link_categorical() inverts link_categorical()", {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
+                        dim = c(ndraws, nobsv, ncat))
+        l_categorical <- link_categorical(x_test)
+        il_categorical <- inv_link_categorical(l_categorical)
+        expect_equivalent(il_categorical, x_test)
+      }
+    }
+  }
+})
+
+test_that("link_categorical() inverts inv_link_categorical()", {
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
+                        dim = c(ndraws, nobsv, ncat - 1))
+        zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
+        x_test <- abind::abind(zeros_arr, x_test)
+        il_categorical <- inv_link_categorical(x_test)
+        l_categorical <- link_categorical(il_categorical)
+        expect_equivalent(l_categorical, x_test)
+      }
+    }
+  }
 })

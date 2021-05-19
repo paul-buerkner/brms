@@ -457,6 +457,21 @@ log_lik_negbinomial <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_negbinomial2 <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  sigma <- get_dpar(prep, "sigma", i)
+  shape <- multiply_dpar_rate_denom(1 / sigma, prep, i = i)
+  args <- list(mu = mu, size = shape)
+  out <- log_lik_censor(
+    dist = "nbinom", args = args, i = i, prep = prep
+  )
+  out <- log_lik_truncate(
+    out, cdf = pnbinom, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_geometric <- function(i, prep) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
@@ -765,6 +780,13 @@ log_lik_dirichlet <- function(i, prep) {
   cats <- seq_len(prep$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
   out <- ddirichlet(prep$data$Y[i, ], alpha = alpha, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_dirichlet2 <- function(i, prep) {
+  mu_dpars <- str_subset(names(prep$dpars), "^mu")
+  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  out <- ddirichlet(prep$data$Y[i, ], alpha = mu, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
 

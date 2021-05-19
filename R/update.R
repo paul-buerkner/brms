@@ -170,6 +170,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots$control[names(control)] <- control
   
   if (is.null(recompile)) {
+    dots$backend <- match.arg(dots$backend, backend_choices())
     # only recompile if new and old stan code do not match
     new_stancode <- suppressMessages(do_call(make_stancode, dots))
     # stan code may differ just because of the version number (#288)

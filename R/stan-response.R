@@ -396,7 +396,6 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  n <- stan_nn(threads)
   nmix <- length(bterms$family$mix)
   theta_pred <- grepl("^theta", names(bterms$dpars))
   theta_pred <- bterms$dpars[theta_pred]
@@ -414,15 +413,14 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
       "  vector[N{p}] theta{missing_id}{p} = rep_vector(0.0, N{p});\n",                   
       "  real log_sum_exp_theta;\n"      
     )
-    sum_exp_theta <- glue("exp(theta{1:nmix}{p}{n})", collapse = " + ")
+    sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
     str_add(out$model_comp_mix) <- glue(
       "  for (n in 1:N{p}) {{\n",
-      stan_nn_def(threads),
       "    // scale theta to become a probability vector\n",
       "    log_sum_exp_theta = log({sum_exp_theta});\n"
     )
     str_add(out$model_comp_mix) <- cglue(
-      "    theta{1:nmix}{p}{n} = theta{1:nmix}{p}{n} - log_sum_exp_theta;\n"
+      "    theta{1:nmix}{p}[n] = theta{1:nmix}{p}[n] - log_sum_exp_theta;\n"
     )
     str_add(out$model_comp_mix) <- "  }\n"
   } else if (length(theta_fix)) {

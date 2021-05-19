@@ -365,7 +365,7 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
 conditional_effects.brmsterms <- function(
   x, fit, cond_data, int_conditions, method, surface, 
   spaghetti, categorical, ordinal, probs, robust, 
-  dpar = NULL, resp = NULL, ...
+  dpar = NULL, nlpar = NULL, resp = NULL, ...
 ) {
   stopifnot(is.brmsfit(fit))
   effects <- attr(cond_data, "effects")
@@ -373,7 +373,7 @@ conditional_effects.brmsterms <- function(
   catscale <- NULL
   pred_args <- list(
     fit, newdata = cond_data, allow_new_levels = TRUE, 
-    dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
+    dpar = dpar, nlpar = nlpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
   if (method != "posterior_predict") {
@@ -403,7 +403,7 @@ conditional_effects.brmsterms <- function(
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
-    if (conv_cats_dpars(x$family)) {
+    if (conv_cats_dpars(x$family) && is.null(dpar)) {
       stop2("Please set 'categorical' to TRUE.")
     }
     if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {
@@ -459,7 +459,13 @@ conditional_effects.brmsterms <- function(
   }
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   out <- cbind(cond_data, out)
-  response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
+  if (!is.null(dpar)) {
+    response <- dpar
+  } else if (!is.null(nlpar)) {
+    response <- nlpar
+  } else {
+    response <- as.character(x$formula[2])
+  }
   attr(out, "effects") <- effects
   attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
@@ -578,6 +584,11 @@ get_all_effects.btnl <- function(x, ...) {
     c(out) <- utils::combn(covars, 2, simplify = FALSE)
   }
   unique(out)
+}
+
+# extract names of predictor variables
+get_pred_vars <- function(x) {
+  unique(unlist(get_all_effects(x)))
 }
 
 # extract names of variables treated as integers

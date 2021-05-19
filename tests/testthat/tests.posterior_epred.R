@@ -119,6 +119,9 @@ test_that("posterior_epred helper functions run without errors", {
   mu <- brms:::posterior_epred_trunc_negbinomial(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
+  mu <- brms:::posterior_epred_trunc_negbinomial2(prep, lb = lb, ub = ub)
+  expect_equal(dim(mu), c(nsamples, nobs))
+  
   mu <- brms:::posterior_epred_trunc_geometric(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
@@ -181,4 +184,28 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
   prep$family <- dirichlet()
   pred <- brms:::posterior_epred_dirichlet(prep = prep)
   expect_equal(dim(pred), c(ns, nobs, ncat))
+  
+  prep$family <- brmsfamily("dirichlet2")
+  prep$dpars$mu1 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu2 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu3 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  pred <- brms:::posterior_epred_dirichlet2(prep = prep)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
 })
+
+test_that("posterior_epred() can be reproduced by using d<family>()", {
+  fit4 <- rename_pars(brms:::brmsfit_example4)
+  epred4 <- posterior_epred(fit4)
+  
+  eta4 <- posterior_linpred(fit4)
+  bprep4 <- prepare_predictions(fit4)
+  thres4 <- bprep4$thres$thres
+  disc4 <- bprep4$dpars$disc$fe$b %*% t(bprep4$dpars$disc$fe$X)
+  disc4 <- exp(disc4)
+  epred4_ch <- aperm(sapply(seq_len(dim(eta4)[2]), function(i) {
+    dsratio(seq_len(ncol(thres4) + 1), eta4[, i, ], thres4, disc4[, i])
+  }, simplify = "array"), perm = c(1, 3, 2))
+  
+  expect_equivalent(epred4, epred4_ch)
+})
+

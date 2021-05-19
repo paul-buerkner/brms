@@ -261,10 +261,15 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
+  # a lot of metadata is not stored via rstan::read_stan_csv
+  metadata <- cmdstanr::read_cmdstan_csv(
+    out$output_files(), variables = "", sampler_diagnostics = ""
+  )
   # transform into stanfit object for consistent output structure
   out <- rstan::read_stan_csv(out$output_files())
   # allow updating the model without recompilation
   attributes(out)$CmdStanModel <- model
+  attributes(out)$metadata <- metadata
   if (empty_model) {
     # allow correct updating of an 'empty' model
     out@sim <- list()
@@ -274,12 +279,12 @@ fit_model <- function(model, backend, ...) {
 
 
 .fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
-chains, cores, threads, inits, exclude, seed, 
-control, silent, future, stanfit, ...) {
-  if(is.function(stanfit)) {
-    stanfit()
+                            chains, cores, threads, inits, exclude, seed, 
+                            control, silent, future, mock_fit, ...) {
+  if(is.function(mock_fit)) {
+    mock_fit()
   } else {
-    stanfit
+    mock_fit
   }
 }
 
@@ -294,6 +299,26 @@ compiled_model <- function(x) {
     out <- attributes(x$fit)$CmdStanModel
   } else if(backend == "mock") {
     stop2("Compiled models not supported in mock backend")
+  }
+  out
+}
+
+# extract the elapsed time during model fitting
+# @param x brmsfit object
+elapsed_time <- function(x) {
+  stopifnot(is.brmsfit(x))
+  backend <- x$backend %||% "rstan"
+  if (backend == "rstan") {
+    out <- rstan::get_elapsed_time(x$fit)
+    out <- data.frame(
+      chain_id = seq_len(nrow(out)),
+      warmup = out[, "warmup"],
+      sampling = out[, "sample"]
+    )
+    out$total <- out$warmup + out$sampling
+    rownames(out) <- NULL 
+  } else if (backend == "cmdstanr") {
+    out <- attributes(x$fit)$metadata$time$chains
   }
   out
 }
