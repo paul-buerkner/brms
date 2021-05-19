@@ -3,6 +3,7 @@
 context("Tests for brms error messages")
 
 test_that("brm works fully with mock backend", {
+  skip_on_cran()
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
   
   # Positive control - forced error gets thrown and propagated
@@ -11,58 +12,58 @@ test_that("brm works fully with mock backend", {
                "Test error")
   
   # Positive control - bad Stan code from stanvars gets an error
-  expect_error(brm(y ~ x + (1|g), dat, backend = "mock", 
-                   stanvars = stanvar(scode = "invalid;", block = "model")))
-  
+  expect_error(suppressMessages(
+     brm(y ~ x + (1|g), dat, backend = "mock", 
+         stanvars = stanvar(scode = "invalid;", block = "model"))
+  ))
   
   # Testing some models
   mock_fit <- brm(y ~ x + (1|g), dat, mock_fit = 1, backend = "mock", rename = FALSE)
   expect_equal(mock_fit$fit, 1)
-  
 })
 
 test_that("brm(file = xx) works fully with mock backend", {
+  skip_on_cran()
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
   
-  f <- tempfile(fileext = ".rds")
+  file <- tempfile(fileext = ".rds")
   mock_fit1 <- brm(y ~ x + (1|g), dat, mock_fit = "stored", backend = "mock", 
-                   rename = FALSE, file = f)
-  expect_true(file.exists(f))
+                   rename = FALSE, file = file)
+  expect_true(file.exists(file))
 
   mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock", 
-                   rename = FALSE, file = f)
+                   rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
   
   # In default settings, even using different data/model should result in the 
   # model being loaded from file
   changed_data <- dplyr::sample_frac(dat, 0.8)
   mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock", 
-                   rename = FALSE, file = f)
+                   rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
   
   # Now test using file_refit = "on_change" which should be more clever
   # No change
   mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock", 
-                   rename = FALSE, file = f)
+                   rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
   
   
   # Change data, but not code
   mock_fit2 <- brm(y ~ x + (1|g), changed_data, mock_fit = "new", backend = "mock", 
-                   rename = FALSE, file = f, file_refit = "on_change")
+                   rename = FALSE, file = file, file_refit = "on_change")
   expect_equal(mock_fit2$fit, "new")
   
   # Change code but not data
   mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock", 
-                   rename = FALSE, file = f, file_refit = "on_change",
+                   rename = FALSE, file = file, file_refit = "on_change",
                    prior = prior(normal(0,2), class = sd))
   expect_equal(mock_fit2$fit, "new")
 
   # Change both
   mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock", 
-                   rename = FALSE, file = f, file_refit = "on_change")
+                   rename = FALSE, file = file, file_refit = "on_change")
   expect_equal(mock_fit2$fit, "new")
-  
 })
 
 
