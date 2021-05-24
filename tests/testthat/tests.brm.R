@@ -37,7 +37,7 @@ test_that("brm(file = xx) works fully with mock backend", {
   
   # In default settings, even using different data/model should result in the 
   # model being loaded from file
-  changed_data <- dplyr::sample_frac(dat, 0.8)
+  changed_data <- dat[1:8, ]
   mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock", 
                    rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
