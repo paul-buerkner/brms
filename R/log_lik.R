@@ -39,7 +39,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             resp = NULL, nsamples = NULL, subset = NULL, 
                             pointwise = FALSE, combine = TRUE,
                             add_point_estimate = FALSE, 
-                            cores = getOption("mc.cores", 1), ...) {
+                            cores = NULL, ...) {
   pointwise <- as_one_logical(pointwise)
   combine <- as_one_logical(combine)
   add_point_estimate <- as_one_logical(add_point_estimate)
@@ -84,7 +84,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            resp = NULL, nsamples = NULL, subset = NULL, 
                            pointwise = FALSE, combine = TRUE,
-                           cores = getOption("mc.cores", 1), ...) {
+                           cores = NULL, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
@@ -109,7 +109,8 @@ log_lik.mvbrmsprep <- function(object, combine = TRUE, ...) {
 }
 
 #' @export
-log_lik.brmsprep <- function(object, cores = 1, ...) {
+log_lik.brmsprep <- function(object, cores = NULL, ...) {
+  cores <- validate_cores_post_processing(cores)
   log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
   for (nlp in names(object$nlpars)) {

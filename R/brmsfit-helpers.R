@@ -716,6 +716,24 @@ arg_names <- function(method) {
   out
 }
 
+# validate 'cores' argument for use in post-processing functions
+validate_cores_post_processing <- function(cores) {
+  if (is.null(cores)) {
+    if (os_is_windows()) {
+      # multi cores often leads to a slowdown on windows
+      # in post-processing functions as discussed in #1129
+      cores <- 1L
+    } else {
+      cores <- getOption("mc.cores", 1L) 
+    }
+  }
+  cores <- as_one_integer(cores)
+  if (cores < 1L) {
+    cores <- 1L
+  }
+  cores
+}
+
 #' Check if cached fit can be used.
 #' 
 #' Checks whether a given cached fit can be used without refitting when 

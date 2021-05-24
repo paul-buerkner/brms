@@ -26,8 +26,8 @@
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
-#' @param cores Number of cores (defaults to \code{1}).
-#'    Can be set globally via the \code{mc.cores} option.
+#' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
+#'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.
 #' 
@@ -83,7 +83,7 @@ posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL, 
   transform = NULL, resp = NULL, negative_rt = FALSE, 
   nsamples = NULL, subset = NULL, sort = FALSE, ntrys = 5,
-  cores = getOption("mc.cores", 1), ...
+  cores = NULL, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -119,7 +119,8 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE, 
                                        probs = c(0.025, 0.975), 
-                                       cores = 1, ...) {
+                                       cores = NULL, ...) {
+  cores <- validate_cores_post_processing(cores)
   for (nlp in names(object$nlpars)) {
     object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
@@ -234,8 +235,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, resp = NULL, 
                             negative_rt = FALSE, nsamples = NULL, 
                             subset = NULL, sort = FALSE, ntrys = 5, 
-                            cores = getOption("mc.cores", 1),
-                            summary = TRUE, robust = FALSE,
+                            cores = NULL, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
