@@ -34,6 +34,8 @@ thanks to Fernando Miguez. (#1142)
 used as predictors and grouping variables thanks to Martin Modrak. (#1141)
 * Fix a bug in the Stan code generation of threaded mixture models
 with predicted mixture probabilities thanks to Riccardo Fusaroli. (#1150)
+* Remove duplicated Stan code related to the `horseshoe` prior
+thanks to Max Joseph. (#1167)
 
 
 # brms 2.15.0
