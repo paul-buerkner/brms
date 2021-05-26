@@ -58,6 +58,8 @@ Suggests:
     digest,
     diffobj,
     R.rsp,
+    gtable,
+    shiny,
     knitr,
     rmarkdown
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
