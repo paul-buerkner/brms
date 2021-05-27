@@ -16,14 +16,14 @@ A \code{brmsopencl} object which can be passed to the
   \code{opencl} argument of \code{brm} and related functions.
 }
 \description{
-Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. only 
+Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only 
 some \pkg{Stan} functions can be run on a GPU at this point and so
 a lot of \pkg{brms} models won't benefit from OpenCL for now.
 }
 \details{
 For more details on OpenCL in \pkg{Stan}, check out
-https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl
-as well as https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html.
+\url{https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl}
+as well as \url{https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html}.
 }
 \examples{
 \dontrun{

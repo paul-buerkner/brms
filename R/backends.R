@@ -465,8 +465,8 @@ use_threading <- function(threads) {
 #'   \code{opencl} argument of \code{brm} and related functions.
 #'   
 #' @details For more details on OpenCL in \pkg{Stan}, check out
-#' https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl
-#' as well as https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html.
+#' \url{https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl}
+#' as well as \url{https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html}.
 #' 
 #' @examples 
 #' \dontrun{
