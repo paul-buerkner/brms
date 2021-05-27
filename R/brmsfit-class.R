@@ -23,6 +23,9 @@
 #' @slot exclude The names of the parameters for which samples are not saved.
 #' @slot algorithm The name of the algorithm used to fit the model.
 #' @slot backend The name of the backend used to fit the model.
+#' @slot threads An object of class `brmsthreads` created by 
+#'   \code{\link{threading}}.
+#' @slot opencl An object of class `brmsopencl` created by \code{\link{opencl}}.
 #' @slot fit An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 #'   among others containing the posterior samples.
 #' @slot criteria An empty \code{list} for adding model fit criteria
@@ -52,7 +55,8 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
                     data2 = list(), stanvars = NULL, model = "", 
                     ranef = empty_ranef(), save_pars = NULL, 
                     algorithm = "sampling", backend = "rstan",
-                    threads = threading(), fit = NULL, criteria = list(), 
+                    threads = threading(), opencl = opencl(),
+                    fit = NULL, criteria = list(), 
                     file = NULL, family = NULL, autocor = NULL, 
                     cov_ranef = NULL, stan_funs = NULL, data.name = "") {
   version <- list(
@@ -67,7 +71,7 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
   }
   x <- nlist(
     formula, data, prior, data2, stanvars, model, ranef, 
-    save_pars, algorithm, backend, threads, fit, criteria, file,
+    save_pars, algorithm, backend, threads, opencl, fit, criteria, file,
     version, family, autocor, cov_ranef, stan_funs, data.name
   )
   class(x) <- "brmsfit"

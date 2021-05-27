@@ -29,6 +29,7 @@ brm(
   thin = 1,
   cores = getOption("mc.cores", 1),
   threads = NULL,
+  opencl = NULL,
   normalize = getOption("brms.normalize", TRUE),
   control = NULL,
   algorithm = getOption("brms.algorithm", "sampling"),
@@ -196,6 +197,11 @@ more control over the threading process, \code{threads} may also be a
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
 model that cannot be sped up by any other means.}
+
+\item{opencl}{The platform and device IDs of the OpenCL device to use for
+fitting using GPU support. If you don't know the IDs of your OpenCL
+device, \code{c(0,0)} is most likely what you need. For more details, see
+\code{\link{opencl}}.}
 
 \item{normalize}{Logical. Indicates whether normalization constants should
 be included in the Stan code (defaults to \code{TRUE}). Setting it
