@@ -141,6 +141,10 @@
 #'   parallelization is experimental! We recommend its use only if you are
 #'   experienced with Stan's \code{reduce_sum} function and have a slow running
 #'   model that cannot be sped up by any other means.
+#' @param opencl The platform and device IDs of the OpenCL device to use for
+#'   fitting using GPU support. If you don't know the IDs of your OpenCL
+#'   device, \code{c(0,0)} is most likely what you need. For more details, see
+#'   \code{\link{opencl}}.
 #' @param normalize Logical. Indicates whether normalization constants should
 #'   be included in the Stan code (defaults to \code{TRUE}). Setting it
 #'   to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
@@ -421,7 +425,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 save_mevars = NULL, save_all_pars = NULL, 
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
-                cores = getOption("mc.cores", 1), threads = NULL,
+                cores = getOption("mc.cores", 1), 
+                threads = NULL, opencl = NULL,
                 normalize = getOption("brms.normalize", TRUE),
                 control = NULL, 
                 algorithm = getOption("brms.algorithm", "sampling"),
@@ -453,6 +458,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
   threads <- validate_threads(threads)
+  opencl <- validate_opencl(opencl)
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
@@ -514,15 +520,16 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     model <- .make_stancode(
       bterms, data = data, prior = prior, 
       stanvars = stanvars, save_model = save_model,
-      backend = backend, threads = threads, normalize = normalize
+      backend = backend, threads = threads, opencl = opencl,
+      normalize = normalize
     )
     
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior, 
       stanvars = stanvars, model = model, algorithm = algorithm, 
-      backend = backend, threads = threads, save_pars = save_pars, 
-      ranef = ranef, family = family
+      backend = backend, threads = threads, opencl = opencl,
+      save_pars = save_pars, ranef = ranef, family = family
     )
     exclude <- exclude_pars(x)
     # generate Stan data before compiling the model to avoid
@@ -555,14 +562,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     compile_args$model <- model
     compile_args$backend <- backend
     compile_args$threads <- threads
+    compile_args$opencl <- opencl
     compile_args$silent <- silent
     model <- do_call(compile_model, compile_args)
   }
   
   # fit the Stan model
   fit_args <- nlist(
-    model, sdata, algorithm, backend, iter, warmup, thin, chains, 
-    cores, threads, inits, exclude, control, future, seed, silent, ...
+    model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
+    threads, opencl, inits, exclude, control, future, seed, silent, ...
   )
   x$fit <- do_call(fit_model, fit_args)
 

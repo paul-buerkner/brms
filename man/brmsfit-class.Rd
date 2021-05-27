@@ -38,6 +38,11 @@ information on the priors used in the model.}
 
 \item{\code{backend}}{The name of the backend used to fit the model.}
 
+\item{\code{threads}}{An object of class `brmsthreads` created by 
+\code{\link{threading}}.}
+
+\item{\code{opencl}}{An object of class `brmsopencl` created by \code{\link{opencl}}.}
+
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 among others containing the posterior samples.}
 

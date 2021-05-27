@@ -201,6 +201,10 @@ restructure_v2 <- function(x) {
     ))
     x$exclude <- NULL
   }
+  if (version < "2.15.6") {
+    # added support for OpenCL
+    x$opencl <- opencl()
+  }
   x
 }
 

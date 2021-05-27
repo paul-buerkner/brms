@@ -61,7 +61,7 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with rstan
 # @param model Stan model code
 # @return model compiled with rstan
-.compile_model_rstan <- function(model, threads, silent = 1, ...) {
+.compile_model_rstan <- function(model, threads, opencl, silent = 1, ...) {
   args <- list(...)
   args$model_code <- model
   if (silent < 2) {
@@ -77,6 +77,10 @@ compile_model <- function(model, backend, ...) {
             utils::packageVersion("rstan"), ".")
     }
   }
+  if (use_opencl(opencl)) {
+    stop2("OpenCL is not supported by backend 'rstan' version ",
+          utils::packageVersion("rstan"), ".")
+  }
   eval_silent(
     do_call(rstan::stan_model, args),
     type = "message", try = TRUE, silent = silent >= 2
@@ -86,12 +90,15 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with cmdstanr
 # @param model Stan model code
 # @return model compiled with cmdstanr
-.compile_model_cmdstanr <- function(model, threads, silent = 1, ...) {
+.compile_model_cmdstanr <- function(model, threads, opencl, silent = 1, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
   if (use_threading(threads)) {
     args$cpp_options$stan_threads <- TRUE
+  }
+  if (use_opencl(opencl)) {
+    args$cpp_options$stan_opencl <- TRUE
   }
   eval_silent(
     do_call(cmdstanr::cmdstan_model, args),
@@ -100,7 +107,7 @@ compile_model <- function(model, backend, ...) {
 }
 
 # compile model with a mock backend for testing
-.compile_model_mock <- function(model, threads, compile_check = "rstan",
+.compile_model_mock <- function(model, threads, opencl, compile_check = "rstan",
                                 compile_error = NULL, silent = 1, ...) {
   if (!is.null(compile_error)) {
     stop2(compile_error)
@@ -130,8 +137,8 @@ fit_model <- function(model, backend, ...) {
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
 .fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin, 
-                             chains, cores, threads, inits, exclude, seed, 
-                             control, silent, future, ...) {
+                             chains, cores, threads, opencl, inits, exclude, 
+                             seed, control, silent, future, ...) {
   
   # some input checks and housekeeping
   if (use_threading(threads)) {
@@ -143,6 +150,10 @@ fit_model <- function(model, backend, ...) {
       stop2("Threading is not supported by backend 'rstan' version ",
             utils::packageVersion("rstan"), ".")
     }
+  }
+  if (use_opencl(opencl)) {
+    stop2("OpenCL is not supported by backend 'rstan' version ",
+          utils::packageVersion("rstan"), ".")
   }
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
@@ -204,8 +215,8 @@ fit_model <- function(model, backend, ...) {
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
 .fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin, 
-                                chains, cores, threads, inits, exclude, seed, 
-                                control, silent, future, ...) {
+                                chains, cores, threads, opencl, inits, exclude, 
+                                seed, control, silent, future, ...) {
   
   require_package("cmdstanr")
   # some input checks and housekeeping
@@ -224,6 +235,9 @@ fit_model <- function(model, backend, ...) {
   args <- nlist(data = sdata, seed, init = inits)
   if (use_threading(threads)) {
     args$threads_per_chain <- threads$threads
+  }
+  if (use_opencl(opencl)) {
+    args$opencl_ids <- opencl$ids
   }
   # TODO: exclude variables via 'exclude'
   dots <- list(...)
@@ -281,8 +295,8 @@ fit_model <- function(model, backend, ...) {
 
 # fit model with a mock backend for testing
 .fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
-                            chains, cores, threads, inits, exclude, seed, 
-                            control, silent, future, mock_fit, ...) {
+                            chains, cores, threads, opencl, inits, exclude, 
+                            seed, control, silent, future, mock_fit, ...) {
   if (is.function(mock_fit)) {
     out <- mock_fit()
   } else {
@@ -435,6 +449,70 @@ validate_threads <- function(threads) {
 # is threading activated?
 use_threading <- function(threads) {
   isTRUE(validate_threads(threads)$threads > 0)
+}
+
+#' GPU support in Stan via OpenCL
+#' 
+#' Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only 
+#' some \pkg{Stan} functions can be run on a GPU at this point and so
+#' a lot of \pkg{brms} models won't benefit from OpenCL for now.
+#' 
+#' @param ids (integer vector of length 2) The platform and device IDs of the
+#'   OpenCL device to use for fitting. If you don't know the IDs of your OpenCL
+#'   device, \code{c(0,0)} is most likely what you need.
+#' 
+#' @return A \code{brmsopencl} object which can be passed to the
+#'   \code{opencl} argument of \code{brm} and related functions.
+#'   
+#' @details For more details on OpenCL in \pkg{Stan}, check out
+#' \url{https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl}
+#' as well as \url{https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html}.
+#' 
+#' @examples 
+#' \dontrun{
+#' # this model just serves as an illustration
+#' # OpenCL may not actually speed things up here
+#' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
+#'            data = epilepsy, family = poisson(),
+#'            chains = 2, cores = 2, opencl = opencl(c(0, 0)),
+#'            backend = "cmdstanr")
+#' summary(fit)
+#' }
+#' 
+#' @export
+opencl <- function(ids = NULL) {
+  out <- list(ids = NULL)
+  class(out) <- "brmsopencl"
+  if (!is.null(ids)) {
+    ids <- as.integer(ids)
+    if (!length(ids) == 2L) {
+      stop2("OpenCl 'ids' needs to be an integer vector of length 2.")
+    }
+    out$ids <- ids
+  }
+  out
+}
+
+is.brmsopencl <- function(x) {
+  inherits(x, "brmsopencl")
+}
+
+# validate the 'opencl' argument
+validate_opencl <- function(opencl) {
+  if (is.null(opencl)) {
+    opencl <- opencl()
+  } else if (is.numeric(opencl)) {
+    opencl <- opencl(opencl)
+  } else if (!is.brmsopencl(opencl)) {
+    stop2("Argument 'opencl' needs to an integer vector or ", 
+          "specified via the 'opencl' function.")
+  }
+  opencl
+}
+
+# is OpenCL activated?
+use_opencl <- function(opencl) {
+  !is.null(validate_opencl(opencl)$ids)
 }
 
 # validate the 'silent' argument

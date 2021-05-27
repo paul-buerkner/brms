@@ -11,6 +11,8 @@ subtract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
 * Add a `"mock"` backend option to facilitate testing 
 thanks to Martin Modrak. (#1116)
+* Initial GPU support via OpenCL thanks to the help
+Rok Češnovar. (#1166)
 
 ### Other Changes
 
