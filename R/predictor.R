@@ -52,24 +52,41 @@ predictor.bprepnl <- function(prep, i = NULL, fprep = NULL, ...) {
   for (cov in covars) {
     args[[cov]] <- p(prep$C[[cov]], i, row = FALSE)  
   }
+  dim_eta <- dim(rmNULL(args)[[1]])
   # evaluate non-linear predictor
-  eta <- try(eval(prep$nlform, args), silent = TRUE)
+  if (!prep$loop) {
+    # cannot reasonably vectorize over posterior samples 
+    # when 'nlform' must be evaluated jointly across observations 
+    # and hence 'loop' had been set to FALSE
+    for (i in seq_along(args)) {
+      args[[i]] <- split(args[[i]], row(args[[i]]))
+    }
+    .fun <- function(...) eval(prep$nlform, list(...))
+    eta <- try(
+      t(do_call(mapply, c(list(FUN = .fun, SIMPLIFY = "array"), args))), 
+      silent = TRUE
+    )
+  } else {
+    # assumes fully vectorized version of 'nlform'
+    eta <- try(eval(prep$nlform, args), silent = TRUE)
+  }
   if (is(eta, "try-error")) {
     if (grepl("could not find function", eta)) {
       eta <- rename(eta, "Error in eval(expr, envir, enclos) : ", "")
+      vectorize <- str_if(prep$loop, ", vectorize = TRUE")
       message(
         eta, " Most likely this is because you used a Stan ",
         "function in the non-linear model formula that ",
         "is not defined in R. If this is a user-defined function, ",
-        "please run 'expose_functions(., vectorize = TRUE)' on ",
-        "your fitted model and try again."
+        "please run 'expose_functions(.", vectorize, ")' ",
+        "on your fitted model and try again."
       )
     } else {
       eta <- rename(eta, "^Error :", "", fixed = FALSE)
       stop2(eta)
     }
   }
-  dim(eta) <- dim(rmNULL(args)[[1]])
+  dim(eta) <- dim_eta
   unname(eta)
 }
 

@@ -38,6 +38,8 @@ used as predictors and grouping variables thanks to Martin Modrak. (#1141)
 with predicted mixture probabilities thanks to Riccardo Fusaroli. (#1150)
 * Remove duplicated Stan code related to the `horseshoe` prior
 thanks to Max Joseph. (#1167)
+* Fix an issue in the post-processing of non-looped non-linear
+parameters thanks to Sebastian Weber.
 
 
 # brms 2.15.0

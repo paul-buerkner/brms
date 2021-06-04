@@ -182,7 +182,8 @@ prepare_predictions.btnl <- function(x, samples, sdata, ...) {
     family = x$family, nlform = x$formula[[2]],
     nsamples = nrow(samples), 
     nobs = sdata[[paste0("N", usc(x$resp))]],
-    used_nlpars = x$used_nlpars
+    used_nlpars = x$used_nlpars,
+    loop = x$loop
   )
   class(out) <- "bprepnl"
   p <- usc(combine_prefix(x))
