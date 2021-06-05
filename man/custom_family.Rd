@@ -13,6 +13,7 @@ custom_family(
   lb = NA,
   ub = NA,
   vars = NULL,
+  loop = TRUE,
   specials = NULL,
   threshold = "flexible",
   log_lik = NULL,
@@ -48,6 +49,11 @@ function without being distributional parameters. That is,
 \code{vars} can be used to pass data to the likelihood. 
 See \code{\link{stanvar}} for details about adding self-defined
 data to the generated \pkg{Stan} model.}
+
+\item{loop}{Logical; Should the likelihood be evaluated via a loop
+(\code{TRUE}; the default) over observations in Stan?
+If \code{FALSE}, the Stan code will be written in a vectorized
+manner over observations if possible.}
 
 \item{specials}{A character vector of special options to enable
 for this custom family. Currently for internal use only.}

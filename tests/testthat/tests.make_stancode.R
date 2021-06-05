@@ -2115,6 +2115,35 @@ test_that("custom families are handled correctly", {
   expect_match2(scode,
     "target += beta_binomial2_lpmf(Y_y[n] | mu_y[n], tau_y, vint1_y[n], vreal1_y[n]);"
   )
+  
+  # check vectorized custom families
+  beta_binomial2_vec <- custom_family(
+    "beta_binomial2_vec",
+    dpars = c("mu", "tau"),
+    links = c("logit", "log"), 
+    lb = c(NA, 0),
+    type = "int", 
+    vars = c("vint1", "vreal1"),
+    loop = FALSE
+  )
+  stan_funs_vec <- "
+    real beta_binomial2_vec_lpmf(int[] y, vector mu, real phi, int[] N, real[] R) {
+      return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+    }
+    int beta_binomial2_rng(real mu, real phi, int N, real R) {
+      return beta_binomial_rng(N, mu * phi, (1 - mu) * phi);
+    }
+  "
+  stanvars <- stanvar(scode = stan_funs_vec, block = "functions")
+  scode <- make_stancode(
+    y | vint(size) + vreal(size) ~ x, data = dat, 
+    family = beta_binomial2_vec, 
+    prior = prior(gamma(0.1, 0.1), class = "tau"),
+    stanvars = stanvars
+  )
+  expect_match2(scode, 
+    "target += beta_binomial2_vec_lpmf(Y | mu, tau, vint1, vreal1);"
+  )
 })
 
 test_that("likelihood of distributional beta models is correct", {

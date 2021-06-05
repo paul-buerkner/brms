@@ -984,6 +984,10 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   \code{vars} can be used to pass data to the likelihood. 
 #'   See \code{\link{stanvar}} for details about adding self-defined
 #'   data to the generated \pkg{Stan} model.
+#' @param loop Logical; Should the likelihood be evaluated via a loop
+#'   (\code{TRUE}; the default) over observations in Stan?
+#'   If \code{FALSE}, the Stan code will be written in a vectorized
+#'   manner over observations if possible. 
 #' @param specials A character vector of special options to enable
 #'   for this custom family. Currently for internal use only.
 #' @param threshold Optional threshold type for custom ordinal families.
@@ -1061,7 +1065,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @export
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
-                          vars = NULL, specials = NULL, 
+                          vars = NULL, loop = TRUE, specials = NULL, 
                           threshold = "flexible",
                           log_lik = NULL, posterior_predict = NULL,
                           posterior_epred = NULL, predict = NULL, 
@@ -1073,6 +1077,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   lb <- as.character(lb)
   ub <- as.character(ub)
   vars <- as.character(vars)
+  loop <- as_one_logical(loop)
   specials <- as.character(specials)
   env <- as.environment(env)
   posterior_predict <- use_alias(posterior_predict, predict)
@@ -1129,7 +1134,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   normalized <- ""
   out <- nlist(
     family = "custom", link, name, 
-    dpars, lb, ub, type, vars, specials,
+    dpars, lb, ub, type, vars, loop, specials,
     log_lik, posterior_predict, posterior_epred, env,
     normalized
   )

@@ -841,8 +841,9 @@ stan_log_lik_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "",
 }
 
 stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
-  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
+  reqn <- !isFALSE(family$loop) || stan_log_lik_adj(bterms) || nzchar(mix)
+  p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))

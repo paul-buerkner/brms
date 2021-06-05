@@ -14,6 +14,8 @@ thanks to Martin Modrak. (#1116)
 * Initial GPU support via OpenCL thanks to the help
 Rok Češnovar. (#1166)
 * Support argument `robust` in method `hypothesis`. (#1170)
+* Vectorize the Stan code of custom likelihoods via 
+argument `loop` of `custom_family`. (#1084)
 
 ### Other Changes
 
