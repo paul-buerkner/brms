@@ -322,6 +322,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")
       }
+      if (anyNA(y2[icens])) {
+        stop2("'y2' should not be NA for interval censored observations.")
+      }
       if (any(out$Y[icens] >= y2[icens])) {
         stop2("Left censor points must be smaller than right ",
               "censor points for interval censored data.")

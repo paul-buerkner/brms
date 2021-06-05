@@ -1002,3 +1002,18 @@ test_that("variables in data2 can be used in population-level effects", {
   expect_equivalent(sdata$X[, 2], dat$x3)
   expect_equivalent(sdata$X[, 3], dat$x1)
 })
+
+test_that("NAs are allowed in unused interval censoring variables", {
+  dat <- data.frame(y = rnorm(10), ce = c(1, rep(2, 9)))
+  dat$y2 <- dat$y + 2
+  dat$y2[1] <- NA
+  sdata <- make_standata(y | cens(ce, y2 = y2) ~ 1, data = dat)
+  expect_equal(sdata$N, 10L)
+  expect_equal(sdata$rcens[1], 0)
+  
+  dat$ce[1] <- 2
+  expect_error(
+    make_standata(y | cens(ce, y2 = y2) ~ 1, data = dat),
+    "'y2' should not be NA for interval censored observations"
+  )
+})

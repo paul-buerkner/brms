@@ -25,6 +25,8 @@ over two years of deprecation (please use `mvbind` instead).
 to `posterior_epred(dpar = "mu")` and no longer deprecated.
 * Refactor and extend internal post-processing functions
 for ordinal and categorical models thanks to Frank Weber. (#1159)
+* Ignore `NA` values in interval censored boundaries as long as
+they are unused. (#1070)
 
 ### Bug Fixes
 

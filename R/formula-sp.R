@@ -186,13 +186,16 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 
 #' @export
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
+  out <- character(0)
   if (is.formula(x$adforms$mi)) {
     mi_respcall <- terms_resp(x$respform, check_names = FALSE)
     mi_respvars <- all_vars(mi_respcall)
     mi_advars <- all_vars(x$adforms$mi)
-    out <- unique(c(mi_respcall, mi_respvars, mi_advars))
-  } else {
-    out <- character(0)
+    c(out) <- unique(c(mi_respcall, mi_respvars, mi_advars))
+  } 
+  if (is.formula(x$adforms$cens)) {
+    y2_expr <- get_ad_expr(x, "cens", "y2", type = "vars")
+    c(out) <- all_vars(y2_expr)
   }
   uni_mi <- ulapply(get_effect(x, "sp"), attr, "uni_mi")
   if (length(uni_mi)) {
