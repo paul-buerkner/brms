@@ -96,8 +96,8 @@ validate_weights_method <- function(method) {
 #' 
 #' @inheritParams model_weights.brmsfit
 #' @param method Method used to obtain predictions to average over. Should be
-#'   one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
-#'   \code{"predictive_error"}.
+#'   one of \code{"posterior_predict"} (default), \code{"posterior_epred"},
+#'   \code{"posterior_linpred"} or \code{"predictive_error"}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
 #' @param nsamples Total number of posterior samples to use.

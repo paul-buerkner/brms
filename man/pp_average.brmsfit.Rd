@@ -42,8 +42,8 @@ For some methods, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
 \item{method}{Method used to obtain predictions to average over. Should be
-one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
-\code{"predictive_error"}.}
+one of \code{"posterior_predict"} (default), \code{"posterior_epred"},
+\code{"posterior_linpred"} or \code{"predictive_error"}.}
 
 \item{nsamples}{Total number of posterior samples to use.}
 
