@@ -13,6 +13,7 @@ of an ordinal family. (#1137)
 thanks to Martin Modrak. (#1116)
 * Initial GPU support via OpenCL thanks to the help
 Rok Češnovar. (#1166)
+* Support argument `robust` in method `hypothesis`. (#1170)
 
 ### Other Changes
 

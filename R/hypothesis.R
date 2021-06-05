@@ -19,6 +19,10 @@
 #'  group-level effects parameters related to this grouping factor.
 #' @param alpha The alpha-level of the tests (default is 0.05;
 #'  see 'Details' for more information).
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
 #' @param scope Indicates where to look for the variables specified in
 #'  \code{hypothesis}. If \code{"standard"}, use the full parameter names
 #'  (subject to the restriction given by \code{class} and \code{group}).
@@ -126,7 +130,8 @@
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                scope = c("standard", "ranef", "coef"),
-                               alpha = 0.05, seed = NULL, ...) {
+                               alpha = 0.05, robust = FALSE, seed = NULL, 
+                               ...) {
   # use a seed as prior_samples.brmsfit randomly permutes samples
   if (!is.null(seed)) {
     set.seed(seed) 
@@ -146,14 +151,18 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       class <- paste0(class, "_")
     }
     out <- .hypothesis(
-      x, hypothesis, class = class, alpha = alpha, ...
+      x, hypothesis, class = class, alpha = alpha, 
+      robust = robust, ...
     )
   } else {
     co <- do_call(scope, list(x, summary = FALSE))
     if (!group %in% names(co)) {
       stop2("'group' should be one of ", collapse_comma(names(co)))
     }
-    out <- hypothesis_coef(co[[group]], hypothesis, alpha = alpha, ...)
+    out <- hypothesis_coef(
+      co[[group]], hypothesis, alpha = alpha,
+      robust = robust, ...
+    )
   }
   out
 }
@@ -166,9 +175,13 @@ hypothesis <- function(x, ...) {
 
 #' @rdname hypothesis.brmsfit
 #' @export
-hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
+hypothesis.default <- function(x, hypothesis, alpha = 0.05, 
+                               robust = FALSE, ...) {
   x <- as.data.frame(x)
-  .hypothesis(x, hypothesis, class = "", alpha = alpha, ...)
+  .hypothesis(
+    x, hypothesis, class = "", alpha = alpha,
+    robust = robust, ...
+  )
 }
 
 #' Descriptions of \code{brmshypothesis} Objects
@@ -210,7 +223,8 @@ NULL
 # @param class prefix of the parameters in the hypotheses
 # @param alpha the 'alpha-level' as understood by frequentist statistics
 # @return a 'brmshypothesis' object
-.hypothesis <- function(x, hypothesis, class, alpha, combine = TRUE, ...) {
+.hypothesis <- function(x, hypothesis, class, alpha, robust, 
+                        combine = TRUE, ...) {
   if (!is.character(hypothesis) || !length(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
@@ -218,11 +232,13 @@ NULL
     stop2("Argument 'alpha' must be a single value in [0,1].")
   }
   class <- as_one_character(class)
+  robust <- as_one_logical(robust)
   out <- vector("list", length(hypothesis))
   for (i in seq_along(out)) {
     out[[i]] <- eval_hypothesis(
       hypothesis[i], x = x, class = class, 
-      alpha = alpha, name = names(hypothesis)[i]
+      alpha = alpha, robust = robust, 
+      name = names(hypothesis)[i]
     )
   }
   if (combine) {
@@ -276,7 +292,7 @@ combine_hlist <- function(hlist, class, alpha) {
 }
 
 # evaluate a single hypothesis based on the posterior samples
-eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
+eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
   pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
   # parse hypothesis string
@@ -318,9 +334,14 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
     "=" = c(alpha / 2, 1 - alpha / 2),
     "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
   )
+  if (robust) {
+    measures <- c("median", "mad")
+  } else {
+    measures <- c("mean", "sd")
+  }
+  measures <- c(measures, "quantile", "evidence_ratio")
   sm <- lapply(
-    c("mean", "sd", "quantile", "evidence_ratio"), 
-    get_estimate, samples = samples, probs = probs, 
+    measures, get_estimate, samples = samples, probs = probs, 
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))

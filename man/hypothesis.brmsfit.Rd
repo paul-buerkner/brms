@@ -13,13 +13,14 @@
   group = "",
   scope = c("standard", "ranef", "coef"),
   alpha = 0.05,
+  robust = FALSE,
   seed = NULL,
   ...
 )
 
 hypothesis(x, ...)
 
-\method{hypothesis}{default}(x, hypothesis, alpha = 0.05, ...)
+\method{hypothesis}{default}(x, hypothesis, alpha = 0.05, robust = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object. If it is no \code{brmsfit} object,
@@ -51,6 +52,11 @@ respectively.}
 
 \item{alpha}{The alpha-level of the tests (default is 0.05;
 see 'Details' for more information).}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deviation (MAD) are applied instead.}
 
 \item{seed}{A single numeric value passed to \code{\link{set.seed}}
 to make results reproducible.}
