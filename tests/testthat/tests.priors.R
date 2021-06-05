@@ -121,3 +121,10 @@ test_that("external interface of validate_prior works correctly", {
   expect_true(all(c("b", "Intercept", "sd") %in% prior1$class))
   expect_equal(nrow(prior1), 9)
 })
+
+test_that("overall intercept priors are adjusted for the intercept", {
+  dat <- data.frame(y = rep(c(1, 3), each = 5), off = 10)
+  prior1 <- get_prior(y ~ 1 + offset(off), dat)
+  int_prior <- prior1$prior[prior1$class == "Intercept"]
+  expect_equal(int_prior, "student_t(3, -8, 2.5)")
+})

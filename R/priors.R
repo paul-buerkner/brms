@@ -578,7 +578,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
         brmsprior(prior = "dirichlet(1)", class = "theta", resp = x$resp)
     }
     if (fix_intercepts(x)) {
-      # fixing thresholds across mixture componenents 
+      # fixing thresholds across mixture components 
       # requires a single set of priors at the top level
       stopifnot(is_ordinal(x))
       prior <- prior + prior_thres(x, def_scale_prior = def_scale_prior)
@@ -1017,7 +1017,7 @@ def_dprior <- function(x, dpar, data = NULL) {
   if (link == "identity") {
     # dpar is estimated or predicted on the linear scale
     out <- switch(dpar_class, "",
-      mu = def_scale_prior(x, data, center = FALSE),
+      mu = def_scale_prior(x, data, center = FALSE, dpar = dpar),
       sigma = def_scale_prior(x, data), 
       shape = "gamma(0.01, 0.01)",
       nu = "gamma(2, 0.1)", 
@@ -1040,7 +1040,7 @@ def_dprior <- function(x, dpar, data = NULL) {
   } else {
     # except for 'mu' all parameters only support one link other than identity
     out <- switch(dpar_class, "",
-      mu = def_scale_prior(x, data, center = FALSE),
+      mu = def_scale_prior(x, data, center = FALSE, dpar = dpar),
       sigma = def_scale_prior(x, data),
       shape = "student_t(3, 0, 2.5)",
       nu = "normal(2.7, 0.8)", 
@@ -1074,11 +1074,12 @@ def_scale_prior.mvbrmsterms <- function(x, data, ...) {
   out
 }
 
-# @param center Should the prior be centererd around zero?
+# @param center Should the prior be centered around zero?
 #   If FALSE, the prior location is computed based on Y.
 #' @export
-def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
-                                      location = 0, scale = 2.5, ...) {
+def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3, 
+                                      location = 0, scale = 2.5,
+                                      dpar = NULL, ...) {
   y <- unname(model.response(model.frame(x$respform, data)))
   link <- x$family$link
   if (has_logscale(x$family)) {
@@ -1099,6 +1100,15 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
       location_y <- round(median(y_link), 1)
       if (is.finite(location_y)) {
         location <- location_y
+      }
+      # offsets may render default intercept priors not sensible 
+      dpar <- as_one_character(dpar)
+      offset <- unname(unlist(data_offset(x$dpars[[dpar]], data)))
+      if (length(offset)) {
+        mean_offset <- mean(offset)
+        if (is.finite(mean_offset)) {
+          location <- location - mean_offset 
+        }
       }
     }
   }

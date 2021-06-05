@@ -27,6 +27,8 @@ to `posterior_epred(dpar = "mu")` and no longer deprecated.
 for ordinal and categorical models thanks to Frank Weber. (#1159)
 * Ignore `NA` values in interval censored boundaries as long as
 they are unused. (#1070)
+* Take offsets into account when deriving default priors
+for overall intercept parameters. (#923)
 
 ### Bug Fixes
 
