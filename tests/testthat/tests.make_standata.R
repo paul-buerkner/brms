@@ -490,15 +490,18 @@ test_that("make_standata handles category specific effects", {
   sdata <- make_standata(rating ~ period + carry + cse(treat), 
                          data = inhaler, family = sratio())
   expect_equivalent(sdata$Xcs, matrix(inhaler$treat))
-  sdata <- make_standata(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
+  sdata <- make_standata(rating ~ period + carry + cs(treat) + (cs(1)|subject), 
                          data = inhaler, family = acat())
   expect_equivalent(sdata$Z_1_3, as.array(rep(1, nrow(inhaler))))
-  sdata <- make_standata(rating ~ period + carry + (cse(treat)|subject), 
+  sdata <- make_standata(rating ~ period + carry + (cs(treat)|subject), 
                          data = inhaler, family = cratio())
   expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
-  expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
-                             family = "cumulative"), "not supported")
-  expect_error(make_standata(rating ~ 1 + (treat + cse(1)|subject), 
+  expect_warning(
+    make_standata(rating ~ 1 + cs(treat), data = inhaler,
+                  family = "cumulative"), 
+    "Category specific effects for this family should be considered experimental"
+  )
+  expect_error(make_standata(rating ~ 1 + (treat + cs(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")
 })

@@ -1039,6 +1039,10 @@ check_cs <- function(bterms) {
     if (!(is.null(bterms$family) || allow_cs(bterms$family))) {
       stop2("Category specific effects are not supported for this family.")
     }
+    if (needs_ordered_cs(bterms$family)) {
+      warning2("Category specific effects for this family should be ",
+               "considered experimental and may have convergence issues.")
+    }
   }
   invisible(NULL)
 }

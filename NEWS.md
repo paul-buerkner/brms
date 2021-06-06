@@ -16,6 +16,8 @@ Rok Češnovar. (#1166)
 * Support argument `robust` in method `hypothesis`. (#1170)
 * Vectorize the Stan code of custom likelihoods via 
 argument `loop` of `custom_family`. (#1084)
+* Experimentally allow category specific effects for
+ordinal `cumulative` models. (#1060)
 
 ### Other Changes
 

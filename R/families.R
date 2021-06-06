@@ -1511,9 +1511,14 @@ has_rescor <- function(family) {
   "rescor" %in% family_info(family, "specials")
 }
 
-# checks if category specific effects are allowed
+# check if category specific effects are allowed
 allow_cs <- function(family) {
-  "cs" %in% family_info(family, "specials")
+  any(c("cs", "ocs") %in% family_info(family, "specials"))
+}
+
+# check if category specific effects should be ordered
+needs_ordered_cs <- function(family) {
+  "ocs" %in% family_info(family, "specials")
 }
 
 # choose dpar names based on categories?

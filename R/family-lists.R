@@ -345,7 +345,10 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat"), 
-    specials = c("ordinal", "ordered_thres", "thres_minus_eta", "joint_link"),
+    specials = c(
+      "ordinal", "ordered_thres", "thres_minus_eta", 
+      "joint_link", "ocs"
+    ),
     normalized = ""
   )
 }
