@@ -261,12 +261,8 @@ subset_data <- function(data, bterms) {
     if (anyNA(subset)) {
       stop2("Subset variables may not contain NAs.")
     }
-    # cross-formula indexing is not yet working for subsetted models
-    sp_terms <- ulapply(get_effect(bterms, "sp"), all_terms)
-    sp_matches <- get_matches_expr(regex_sp(c("mi", "me")), sp_terms)
-    if (length(sp_matches)) {
-      stop2("Cannot use mi() or me() terms in subsetted formulas.")
-    }
+    # cross-formula indexing is no longer trivial for subsetted models
+    check_cross_formula_indexing(bterms)
     data <- data[subset, , drop = FALSE]
   }
   if (!NROW(data)) {

@@ -4,10 +4,15 @@
 \alias{mi}
 \title{Predictors with Missing Values in \pkg{brms} Models}
 \usage{
-mi(x)
+mi(x, idx = NA)
 }
 \arguments{
-\item{x}{The variable containing missings.}
+\item{x}{The variable containing missing values.}
+
+\item{idx}{An optional variable containing indices of observations in `x`
+that are to be used in the model. This is mostly relevant in partially
+subsetted models (via \code{\link[addition-terms]{resp_subset}}) but may
+also have other applications.}
 }
 \description{
 Specify predictor term with missing values in \pkg{brms}. The function does

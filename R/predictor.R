@@ -167,6 +167,9 @@ predictor_sp <- function(prep, i) {
   for (j in seq_along(sp[["Yl"]])) {
     eval_list[[names(sp[["Yl"]])[j]]] <- p(sp[["Yl"]][[j]], i, row = FALSE)
   }
+  for (j in seq_along(sp[["idxl"]])) {
+    eval_list[[names(sp[["idxl"]])[j]]] <- p(sp[["idxl"]][[j]], i, row = FALSE)
+  }
   for (j in seq_along(sp[["Csp"]])) {
     eval_list[[paste0("Csp_", j)]] <- p(sp[["Csp"]][[j]], i, row = FALSE)
   }

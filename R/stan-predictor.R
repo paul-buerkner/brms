@@ -897,7 +897,10 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
       eta <- rename(eta, meef$term, new_me)
     }
     if (!is.null(spef$calls_mi[[i]])) {
-      new_mi <- glue("Yl_{spef$vars_mi[[i]]}{n}")
+      is_na_idx <- is.na(spef$idx2_mi[[i]])
+      idx_mi <- glue("[idxl{p}_{spef$vars_mi[[i]]}_{spef$idx2_mi[[i]]}{n}]")
+      idx_mi <- ifelse(is_na_idx, n, idx_mi)
+      new_mi <- glue("Yl_{spef$vars_mi[[i]]}{idx_mi}")
       eta <- rename(eta, spef$calls_mi[[i]], new_mi)
       str_add(out$pll_args) <- glue(", vector Yl_{spef$vars_mi[[i]]}")
     }
@@ -908,6 +911,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r)}"))
     str_add(out$loopeta) <- glue(" + (bsp{p}[{i}]{rpars}) * {eta}")
   }
+  
   # prepare general Stan code
   ncovars <- max(spef$Ic)
   str_add(out$data) <- glue(
@@ -919,23 +923,6 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
       "  vector[N{resp}] Csp{p}_{seq_len(ncovars)};\n"
     )
     str_add(out$pll_args) <- cglue(", vector Csp{p}_{seq_len(ncovars)}")
-  }
-  # prepare special effects coefficients
-  bound <- get_bound(prior, class = "b", px = px)
-  if (stan_assign_b_tpar(bterms, prior)) {
-    str_add(out$tpar_def) <- glue(
-      "  // special effects coefficients\n", 
-      "  vector{bound}[Ksp{p}] bsp{p};\n"
-    )
-  } else {
-    str_add_list(out) <- stan_prior(
-      prior, class = "b", coef = spef$coef, 
-      type = glue("vector{bound}[Ksp{p}]"),
-      coef_type = glue("real{bound}"), px = px, 
-      suffix = glue("sp{p}"), header_type = "vector",
-      comment = "special effects coefficients",
-      normalize = normalize
-    )
   }
   
   # include special Stan code for monotonic effects
@@ -981,6 +968,33 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     }
   }
   
+  # include special Stan code for missing value terms
+  uni_mi <- na.omit(attr(spef, "uni_mi"))
+  for (j in seq_rows(uni_mi)) {
+    idxl <- glue("idxl{p}_{uni_mi$var[j]}_{uni_mi$idx2[j]}")
+    str_add(out$data) <- glue(
+      "  int {idxl}[N{resp}];  // matching indices\n"
+    )
+    str_add(out$pll_args) <- glue(", int[] {idxl}")
+  }
+  
+  # prepare special effects coefficients
+  bound <- get_bound(prior, class = "b", px = px)
+  if (stan_assign_b_tpar(bterms, prior)) {
+    str_add(out$tpar_def) <- glue(
+      "  // special effects coefficients\n", 
+      "  vector{bound}[Ksp{p}] bsp{p};\n"
+    )
+  } else {
+    str_add_list(out) <- stan_prior(
+      prior, class = "b", coef = spef$coef, 
+      type = glue("vector{bound}[Ksp{p}]"),
+      coef_type = glue("real{bound}"), px = px, 
+      suffix = glue("sp{p}"), header_type = "vector",
+      comment = "special effects coefficients",
+      normalize = normalize
+    )
+  }
   stan_special_priors <- stan_special_prior_local(
     prior, class = "bsp", ncoef = nrow(spef), 
     px = px, center_X = FALSE, normalize = normalize

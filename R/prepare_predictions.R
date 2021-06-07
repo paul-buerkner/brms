@@ -253,7 +253,10 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
       call <- rename(call, meef$term, new_me)
     }
     if (!is.null(spef$calls_mi[[i]])) {
-      new_mi <- paste0("Yl_", spef$vars_mi[[i]])
+      is_na_idx <- is.na(spef$idx2_mi[[i]])
+      idx_mi <- paste0("idxl", p, "_", spef$vars_mi[[i]], "_", spef$idx2_mi[[i]])
+      idx_mi <- ifelse(is_na_idx, "", paste0("[, ", idx_mi, "]"))
+      new_mi <- paste0("Yl_", spef$vars_mi[[i]], idx_mi)
       call <- rename(call, spef$calls_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {
@@ -329,7 +332,8 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
     out$Yl <- named_list(Yl_names)
     for (i in seq_along(out$Yl)) {
       vmi <- vars_mi[i]
-      Y <- as_draws_matrix(sdata[[paste0("Y_", vmi)]], dim)
+      dim_y <- c(nrow(out$bsp), sdata[[paste0("N_", vmi)]])
+      Y <- as_draws_matrix(sdata[[paste0("Y_", vmi)]], dim_y)
       sdy <- sdata[[paste0("noise_", vmi)]]
       if (is.null(sdy)) {
         # missings only
@@ -355,10 +359,14 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
             lb = sdata[[paste0("lbmi_", vmi)]],
             ub = sdata[[paste0("ubmi_", vmi)]]
           )
-          out$Yl[[i]] <- array(out$Yl[[i]], dim)
+          out$Yl[[i]] <- array(out$Yl[[i]], dim_y)
         }
       }
     }
+    # extract index variables belonging to mi terms
+    uni_mi <- na.omit(attr(spef, "uni_mi"))
+    idxl_vars <- paste0("idxl", p, "_", uni_mi$var, "_", uni_mi$idx2)
+    out$idxl <- sdata[idxl_vars]
   }
   if (warn_me) {
     warning2(
