@@ -34,12 +34,12 @@
 #'  )
 #' # fit a simple error-in-variables model 
 #' fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
-#'            save_mevars = TRUE)
+#'             save_pars = save_pars(latent = TRUE))
 #' summary(fit1)
 #' 
 #' # turn off modeling of correlations
 #' bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
-#' fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+#' fit2 <- brm(bform, data = dat, save_pars = save_pars(latent = TRUE))
 #' summary(fit2)
 #' } 
 #' 
@@ -79,23 +79,31 @@ me <- function(x, sdx, gr = NULL) {
 #' @examples 
 #' \dontrun{
 #' data("nhanes", package = "mice")
+#' 
 #' bform <- bf(bmi | mi() ~ age * mi(chl)) +
 #'   bf(chl | mi() ~ age) + set_rescor(FALSE)
+#'   
 #' fit <- brm(bform, data = nhanes)
+#' 
 #' summary(fit)
 #' plot(conditional_effects(fit, resp = "bmi"), ask = FALSE)
-#' LOO(fit, newdata = na.omit(fit$data))
+#' loo(fit, newdata = na.omit(fit$data))
 #' } 
 #' 
 #' @export
 mi <- function(x, idx = NA) {
   # use 'term' for consistency with other special terms
   term <- deparse(substitute(x))
-  idx <- deparse(substitute(idx))
   term_vars <- all_vars(term)
-  idx_vars <- all_vars(idx)
-  if (!is_equal(term, term_vars) || !is_equal(idx, idx_vars)) {
+  if (!is_equal(term, term_vars)) {
     stop2("'mi' only accepts single untransformed variables.")
+  }
+  idx <- deparse(substitute(idx))
+  if (idx != "NA") {
+    idx_vars <- all_vars(idx)
+    if (!is_equal(idx, idx_vars)) {
+      stop2("'mi' only accepts single untransformed variables.")
+    }
   }
   label <- deparse(match.call())
   out <- nlist(term, idx, label)

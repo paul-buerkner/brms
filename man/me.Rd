@@ -38,12 +38,12 @@ dat <- data.frame(
  )
 # fit a simple error-in-variables model 
 fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
-           save_mevars = TRUE)
+            save_pars = save_pars(latent = TRUE))
 summary(fit1)
 
 # turn off modeling of correlations
 bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
-fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+fit2 <- brm(bform, data = dat, save_pars = save_pars(latent = TRUE))
 summary(fit2)
 } 
 

@@ -24,12 +24,15 @@ For detailed documentation see \code{help(brmsformula)}.
 \examples{
 \dontrun{
 data("nhanes", package = "mice")
+
 bform <- bf(bmi | mi() ~ age * mi(chl)) +
   bf(chl | mi() ~ age) + set_rescor(FALSE)
+  
 fit <- brm(bform, data = nhanes)
+
 summary(fit)
 plot(conditional_effects(fit, resp = "bmi"), ask = FALSE)
-LOO(fit, newdata = na.omit(fit$data))
+loo(fit, newdata = na.omit(fit$data))
 } 
 
 }
