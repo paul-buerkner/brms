@@ -384,6 +384,7 @@ tidy_index <- function(x, data) {
 
 #' @export
 .tidy_index.brmsterms <- function(x, data, ...) {
+  data <- subset_data(data, x)
   out <- get_ad_values(x, "index", "index", data)
   if (!is.null(out)) {
     if (anyDuplicated(out)) {
