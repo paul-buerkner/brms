@@ -322,6 +322,11 @@
 #'   will be treated as a response on the lower boundary. Alternatively,
 #'   the variable passed to \code{dec} might also be a character vector 
 #'   consisting of \code{'lower'} and \code{'upper'}.
+#'   
+#'   All families support the \code{index} addition term to uniquely identify
+#'   each observation of the particular response variable. Currently,
+#'   \code{index} is primarily useful in combination with the \code{subset}
+#'   addition and \code{\link{mi}} terms.
 #'
 #'   For custom families, it is possible to pass an arbitrary number of real and
 #'   integer vectors via the addition terms \code{vreal} and \code{vint},
