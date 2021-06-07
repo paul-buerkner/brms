@@ -24,16 +24,50 @@ For detailed documentation see \code{help(brmsformula)}.
 \examples{
 \dontrun{
 data("nhanes", package = "mice")
+N <- nrow(nhanes)
 
-bform <- bf(bmi | mi() ~ age * mi(chl)) +
-  bf(chl | mi() ~ age) + set_rescor(FALSE)
+# simple model with missing data
+bform1 <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi() ~ age) + 
+  set_rescor(FALSE)
   
-fit <- brm(bform, data = nhanes)
+fit1 <- brm(bform1, data = nhanes)
 
-summary(fit)
-plot(conditional_effects(fit, resp = "bmi"), ask = FALSE)
-loo(fit, newdata = na.omit(fit$data))
-} 
+summary(fit1)
+plot(conditional_effects(fit1, resp = "bmi"), ask = FALSE)
+loo(fit1, newdata = na.omit(fit1$data))
+}
+
+# simulate some measurement noise
+nhanes$se <- rexp(N, 2)
+
+# measurement noise can be handled within 'mi' terms 
+# with or without the presence of missing values
+bform2 <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi(se) ~ age) + 
+  set_rescor(FALSE)
+  
+fit2 <- brm(bform2, data = nhanes)
+
+summary(fit2)
+plot(conditional_effects(fit2, resp = "bmi"), ask = FALSE)
+
+# 'mi' terms can also be used when some responses are subsetted
+nhanes$sub <- TRUE
+nhanes$sub[1:2] <- FALSE
+nhanes$id <- 1:N
+nhanes$idx <- sample(3:N, N, TRUE)
+
+# this requires the addition term 'index' being specified 
+# in the subsetted part of the model
+bform3 <- bf(bmi | mi() ~ age * mi(chl, idx)) +
+  bf(chl | mi(se) + subset(sub) + index(id) ~ age) + 
+  set_rescor(FALSE)
+  
+fit3 <- brm(bform3, data = nhanes)
+
+summary(fit3)
+plot(conditional_effects(fit3, resp = "bmi"), ask = FALSE)
 
 }
 \seealso{
