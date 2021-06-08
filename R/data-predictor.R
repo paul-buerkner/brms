@@ -60,10 +60,10 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
-                               basis = NULL, ...) {
+                               index = NULL, basis = NULL, ...) {
   out <- c(
     data_fe(x, data),
-    data_sp(x, data, data2 = data2, prior = prior, basis = basis$sp),
+    data_sp(x, data, data2 = data2, prior = prior, index = index, basis = basis$sp),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
     data_sm(x, data, basis = basis$sm),
@@ -326,7 +326,7 @@ data_gr_global <- function(ranef, data2) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, data2, prior, basis = NULL) {
+data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -370,6 +370,27 @@ data_sp <- function(bterms, data, data2, prior, basis = NULL) {
         con_simo <- eval_dirichlet(simo_prior$prior, Jmo[j], data2)
         out[[paste0("con_simo", p, "_", j)]] <- as.array(con_simo)
       }
+    }
+  }
+  uni_mi <- attr(spef, "uni_mi")
+  for (j in seq_rows(uni_mi)) {
+    if (!is.na(uni_mi$idx[j])) {
+      idxl <- get(uni_mi$idx[j], data)
+      if (is.null(index[[uni_mi$var[j]]])) {
+        # the 'idx' argument needs to be mapped against 'index' addition terms
+        stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ", 
+              "term to compare with 'idx'. See ?mi for examples.")
+      }
+      idxl <- match(idxl, index[[uni_mi$var[j]]])
+      if (anyNA(idxl)) {
+        stop2("Could not match all indices in response '", uni_mi$var[j], "'.")
+      }
+      idxl_name <- paste0("idxl", p, "_", uni_mi$var[j], "_", uni_mi$idx2[j])
+      out[[idxl_name]] <- as.array(idxl) 
+    } else if (isTRUE(attr(index[[uni_mi$var[j]]], "subset"))) {
+      # cross-formula referencing is required for subsetted variables
+      stop2("mi() terms of subsetted variables require ",
+            "the 'idx' argument to be specified.")
     }
   }
   out

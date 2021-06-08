@@ -15,7 +15,8 @@
 #'   \code{FALSE} and \code{TRUE}. \code{resp_cens} requires \code{'left'},
 #'   \code{'none'}, \code{'right'}, and \code{'interval'} (or equivalently
 #'   \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate left, no, right,
-#'   or interval censoring.
+#'   or interval censoring. \code{resp_index} does not make any requirements
+#'   other than the value being unique for each observation.
 #' @param sigma Logical; Indicates whether the residual standard deviation
 #'  parameter \code{sigma} should be included in addition to the known
 #'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
@@ -167,6 +168,13 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
 resp_mi <- function(sdy = NA) {
   sdy <- deparse(substitute(sdy))
   class_resp_special("mi", call = match.call(), vars = nlist(sdy))
+}
+
+#' @rdname addition-terms
+#' @export
+resp_index <- function(x) {
+  index <- deparse(substitute(x))
+  class_resp_special("index", call = match.call(), vars = nlist(index))
 }
 
 #' @rdname addition-terms
@@ -356,4 +364,61 @@ has_subset <- function(bterms) {
     out <- FALSE
   }
   out 
+}
+
+# construct a list of indices for cross-formula referencing
+tidy_index <- function(x, data) {
+  out <- .tidy_index(x, data)
+  if (is.brmsterms(x)) {
+    # ensure consistent format for both uni- and multivariate models
+    out <- list(out)
+    names(out)[1] <- terms_resp(x$respform) 
+  }
+  out
+}
+
+# internal version of tidy_index
+.tidy_index <- function(x, ...) {
+  UseMethod(".tidy_index")
+}
+
+#' @export
+.tidy_index.brmsterms <- function(x, data, ...) {
+  out <- get_ad_values(x, "index", "index", data)
+  if (is.null(out)) {
+    return(NULL)
+  }
+  if (has_subset(x)) {
+    subset <- as.logical(get_ad_values(x, "subset", "subset", data))
+    out <- out[subset]
+    attr(out, "subset") <- TRUE
+  }
+  if (anyNA(out)) {
+    stop2("NAs are not allowed in 'index' variables.")
+  }
+  if (anyDuplicated(out)) {
+    stop2("Index of response '", names(out), "' contains duplicated values.")
+  }
+  out
+}
+
+#' @export
+.tidy_index.mvbrmsterms <- function(x, data, ...) {
+  lapply(x$terms, .tidy_index, data = data, ...)
+}
+
+# check if cross-formula referencing is possible in subsetted models
+check_cross_formula_indexing <- function(bterms) {
+  sp_terms <- ulapply(get_effect(bterms, "sp"), all_terms)
+  me_terms <- get_matches_expr(regex_sp("me"), sp_terms)
+  if (length(me_terms)) {
+    stop2("Cannot use me() terms in subsetted formulas.")
+  }
+  mi_terms <- get_matches_expr(regex_sp("mi"), sp_terms)
+  idx_vars <- lapply(mi_terms, function(x) eval2(x)$idx)
+  if (any(idx_vars == "NA")) {
+    stop2("mi() terms in subsetted formulas require ",
+          "the 'idx' argument to be specified.")
+  }
+  invisible(TRUE)
 }

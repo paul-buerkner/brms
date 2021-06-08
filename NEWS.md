@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Combine missing value (`mi`) terms with `subset` addition terms. (#1063)
 * Expose function `get_dpar` for use in the post-processing 
 of custom families thank to Martin Modrak. (#1131)
 * Support the `squareplus` link function in all families and
@@ -31,6 +32,8 @@ for ordinal and categorical models thanks to Frank Weber. (#1159)
 they are unused. (#1070)
 * Take offsets into account when deriving default priors
 for overall intercept parameters. (#923)
+* Soft deprecate measurement error (`me`) terms in favor
+of the more general and consistent missing value (`mi`) terms. (#698)
 
 ### Bug Fixes
 

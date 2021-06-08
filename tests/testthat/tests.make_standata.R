@@ -588,6 +588,51 @@ test_that("make_standata handles overimputation", {
   expect_true(all(is.infinite(sdata$noise_x[miss])))
 })
 
+test_that("make_standata handles mi terms with 'subset'", {
+  dat <- data.frame(
+    y = rnorm(10), x = c(rnorm(9), NA), z = rnorm(10), 
+    g1 = sample(1:5, 10, TRUE), g2 = 10:1, g3 = 1:10,
+    s = c(FALSE, rep(TRUE, 9))
+  )
+  
+  bform <- bf(y ~ mi(x, idx = g1)) + 
+    bf(x | mi() + index(g2) + subset(s)  ~ 1) +
+    set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_true(all(sdata$idxl_y_x_1 %in% 9:5))
+  
+  # test a bunch of errors
+  bform <- bf(y ~ mi(x, idx = g1)) + 
+    bf(x | mi() + index(g3) + subset(s)  ~ 1) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "Could not match all indices in response 'x'"
+  )
+  
+  bform <- bf(y ~ mi(x, idx = g1)) + 
+    bf(x | mi() + subset(s) ~ 1) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "Response 'x' needs to have an 'index' addition term"  
+  )
+  
+  bform <- bf(y ~ mi(x)) + 
+    bf(x | mi() + subset(s) + index(g2)  ~ 1) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "mi() terms of subsetted variables require the 'idx' argument",
+    fixed = TRUE
+  )
+  
+  bform <- bf(y | mi() ~ mi(x, idx = g1)) + 
+    bf(x | mi() + subset(s) + index(g2)  ~ mi(y)) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "mi() terms in subsetted formulas require the 'idx' argument",
+    fixed = TRUE
+  )
+})
+
 test_that("make_standata handles multi-membership models", {
   dat <- data.frame(y = rnorm(10), g1 = c(7:2, rep(10, 4)),
                     g2 = 1:10, w1 = rep(1, 10),

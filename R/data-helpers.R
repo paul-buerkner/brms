@@ -251,22 +251,17 @@ order_data <- function(data, bterms) {
 
 # subset data according to addition argument 'subset'
 subset_data <- function(data, bterms) {
-  if (is.formula(bterms$adforms$subset)) {
+  if (has_subset(bterms)) {
     # only evaluate a subset of the data
-    subset <- eval_rhs(bterms$adforms$subset)
-    subset <- as.logical(eval2(subset$vars$subset, data))
+    subset <- as.logical(get_ad_values(bterms, "subset", "subset", data))
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }
     if (anyNA(subset)) {
       stop2("Subset variables may not contain NAs.")
     }
-    # cross-formula indexing is not yet working for subsetted models
-    sp_terms <- ulapply(get_effect(bterms, "sp"), all_terms)
-    sp_matches <- get_matches_expr(regex_sp(c("mi", "me")), sp_terms)
-    if (length(sp_matches)) {
-      stop2("Cannot use mi() or me() terms in subsetted formulas.")
-    }
+    # cross-formula indexing is no longer trivial for subsetted models
+    check_cross_formula_indexing(bterms)
     data <- data[subset, , drop = FALSE]
   }
   if (!NROW(data)) {

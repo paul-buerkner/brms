@@ -192,6 +192,29 @@ software. On the downside, it is currently not possible to impute discrete
 variables, because **Stan** (the engine behind **brms**) does not allow
 estimating discrete parameters.
 
+### Combining measurement error and missing values
+
+Missing value terms in **brms** cannot only handle missing values but also
+measurement error, or arbitrary combinations of the two. In fact, we can think
+of a missing value as a value with infinite measurement error. Thus, `mi` terms
+are a natural (and somewhat more verbose) generalization of the now soft deprecated
+`me` terms. Suppose we had measured the variable `chl` with some known error:
+
+```{r}
+nhanes$se <- rexp(nrow(nhanes), 2)
+```
+
+Then we can go ahead an include this information into the model as follows:
+
+```{r, results = 'hide', message = FALSE, eval = FALSE}
+bform <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi(se) ~ age) + set_rescor(FALSE)
+fit_imp3 <- brm(bform, data = nhanes)
+```
+
+Summarizing and post-processing the model continues to work as usual.
+
+
 [^1]: Actually, there is a third approach that only applies to missings in
 response variables. If we want to impute missing responses, we just fit the
 model using the observed responses and than impute the missings *after* fitting

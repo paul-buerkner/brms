@@ -3,8 +3,8 @@
 
 #' Predictors with Measurement Error in \pkg{brms} Models
 #' 
-#' Specify predictors with measurement error. The function does not evaluate its
-#' arguments -- it exists purely to help set up a model.
+#' (Soft deprecated) Specify predictors with measurement error. The function
+#' does not evaluate its arguments -- it exists purely to help set up a model.
 #' 
 #' @param x The variable measured with error.
 #' @param sdx Known measurement error of \code{x}
@@ -15,8 +15,9 @@
 #'   observation will have its own value of the latent variable.
 #' 
 #' @details 
-#' For detailed documentation see \code{help(brmsformula)}. 
-#' 
+#' For detailed documentation see \code{help(brmsformula)}.
+#' \code{me} terms are soft deprecated in favor of the more
+#' general and consistent \code{\link{mi}} terms. 
 #' By default, latent noise-free variables are assumed
 #' to be correlated. To change that, add \code{set_mecor(FALSE)}
 #' to your model formula object (see examples).
@@ -34,12 +35,12 @@
 #'  )
 #' # fit a simple error-in-variables model 
 #' fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
-#'            save_mevars = TRUE)
+#'             save_pars = save_pars(latent = TRUE))
 #' summary(fit1)
 #' 
 #' # turn off modeling of correlations
 #' bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
-#' fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+#' fit2 <- brm(bform, data = dat, save_pars = save_pars(latent = TRUE))
 #' summary(fit2)
 #' } 
 #' 
@@ -66,7 +67,11 @@ me <- function(x, sdx, gr = NULL) {
 #' Specify predictor term with missing values in \pkg{brms}. The function does
 #' not evaluate its arguments -- it exists purely to help set up a model.
 #' 
-#' @param x The variable containing missings.
+#' @param x The variable containing missing values.
+#' @param idx An optional variable containing indices of observations in `x`
+#'   that are to be used in the model. This is mostly relevant in partially
+#'   subsetted models (via \code{resp_subset}) but may also have other
+#'   applications that I haven't thought of.
 #' 
 #' @details For detailed documentation see \code{help(brmsformula)}. 
 #' 
@@ -75,25 +80,68 @@ me <- function(x, sdx, gr = NULL) {
 #' @examples 
 #' \dontrun{
 #' data("nhanes", package = "mice")
-#' bform <- bf(bmi | mi() ~ age * mi(chl)) +
-#'   bf(chl | mi() ~ age) + set_rescor(FALSE)
-#' fit <- brm(bform, data = nhanes)
-#' summary(fit)
-#' plot(conditional_effects(fit, resp = "bmi"), ask = FALSE)
-#' LOO(fit, newdata = na.omit(fit$data))
-#' } 
+#' N <- nrow(nhanes)
+#' 
+#' # simple model with missing data
+#' bform1 <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi() ~ age) + 
+#'   set_rescor(FALSE)
+#'   
+#' fit1 <- brm(bform1, data = nhanes)
+#' 
+#' summary(fit1)
+#' plot(conditional_effects(fit1, resp = "bmi"), ask = FALSE)
+#' loo(fit1, newdata = na.omit(fit1$data))
+#' 
+#' # simulate some measurement noise
+#' nhanes$se <- rexp(N, 2)
+#' 
+#' # measurement noise can be handled within 'mi' terms 
+#' # with or without the presence of missing values
+#' bform2 <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi(se) ~ age) + 
+#'   set_rescor(FALSE)
+#'   
+#' fit2 <- brm(bform2, data = nhanes)
+#' 
+#' summary(fit2)
+#' plot(conditional_effects(fit2, resp = "bmi"), ask = FALSE)
+#' 
+#' # 'mi' terms can also be used when some responses are subsetted
+#' nhanes$sub <- TRUE
+#' nhanes$sub[1:2] <- FALSE
+#' nhanes$id <- 1:N
+#' nhanes$idx <- sample(3:N, N, TRUE)
+#' 
+#' # this requires the addition term 'index' being specified 
+#' # in the subsetted part of the model
+#' bform3 <- bf(bmi | mi() ~ age * mi(chl, idx)) +
+#'   bf(chl | mi(se) + subset(sub) + index(id) ~ age) + 
+#'   set_rescor(FALSE)
+#'   
+#' fit3 <- brm(bform3, data = nhanes)
+#' 
+#' summary(fit3)
+#' plot(conditional_effects(fit3, resp = "bmi"), ask = FALSE)
+#' }
 #' 
 #' @export
-mi <- function(x) {
+mi <- function(x, idx = NA) {
   # use 'term' for consistency with other special terms
-  term <- substitute(x)
-  vars <- all.vars(term)
-  term <- deparse(term)
-  if (!is_equal(term, vars)) {
+  term <- deparse(substitute(x))
+  term_vars <- all_vars(term)
+  if (!is_equal(term, term_vars)) {
     stop2("'mi' only accepts single untransformed variables.")
   }
+  idx <- deparse(substitute(idx))
+  if (idx != "NA") {
+    idx_vars <- all_vars(idx)
+    if (!is_equal(idx, idx_vars)) {
+      stop2("'mi' only accepts single untransformed variables.")
+    }
+  }
   label <- deparse(match.call())
-  out <- nlist(term, label)
+  out <- nlist(term, idx, label)
   class(out) <- c("mi_term", "sp_term")
   out
 }
@@ -105,7 +153,7 @@ mi <- function(x) {
 #' 
 #' @param x An integer variable or an ordered factor to be modeled as monotonic.
 #' @param id Optional character string. All monotonic terms
-#'  with the same \code{id} within one formula  will be modeled as
+#'  with the same \code{id} within one formula will be modeled as
 #'  having the same simplex (shape) parameter vector. If all monotonic terms
 #'  of the same predictor have the same \code{id}, the resulting
 #'  predictions will be conditionally monotonic for all values of
@@ -299,6 +347,7 @@ get_sp_vars <- function(x, type) {
 # @param x either a formula or a list containing an element "sp"
 # @param data data frame containing the monotonic variables
 # @return a data.frame with one row per special term
+# TODO: refactor to store in long format to avoid several list columns?
 tidy_spef <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
@@ -310,8 +359,9 @@ tidy_spef <- function(x, data) {
   mm <- sp_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = trim_wsp(colnames(mm)), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
-  calls_cols <- paste0("calls_", all_sp_types())
-  for (col in c(calls_cols, "joint_call", "vars_mi", "ids_mo", "Imo")) {
+  calls_cols <- c(paste0("calls_", all_sp_types()), "joint_call")
+  list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo")
+  for (col in c(calls_cols, list_cols)) {
     out[[col]] <- vector("list", nrow(out))
   }
   kmo <- 0
@@ -331,7 +381,7 @@ tidy_spef <- function(x, data) {
         if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_term)) {
           stop2("The monotonic term '",  mo_term, "' is invalid.")
         }
-        out$ids_mo[[i]][[j]] <- eval2(mo_term)[["id"]]
+        out$ids_mo[[i]][j] <- eval2(mo_term)$id
       }
     }
     # prepare me terms
@@ -347,7 +397,14 @@ tidy_spef <- function(x, data) {
     if (sum(take_mi)) {
       mi_parts <- terms_split[[i]][take_mi]
       out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
-      out$vars_mi[[i]] <- all_vars(str2formula(out$calls_mi[[i]]))
+      out$vars_mi[[i]] <- out$idx_mi[[i]] <- rep(NA, length(out$calls_mi[[i]]))
+      for (j in seq_along(out$calls_mi[[i]])) {
+        mi_term <- eval2(out$calls_mi[[i]][[j]])
+        out$vars_mi[[i]][j] <- mi_term$term
+        if (mi_term$idx != "NA") {
+          out$idx_mi[[i]][j] <- mi_term$idx 
+        }
+      }
       # do it like terms_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
@@ -356,6 +413,29 @@ tidy_spef <- function(x, data) {
     out$joint_call[[i]] <- paste0(sp_calls, collapse = " * ")
     out$Ic[i] <- any(!has_sp_calls)
   }
+  
+  # extract data frame to track all required index variables
+  uni_mi <- unique(data.frame(
+    var = unlist(out$vars_mi), 
+    idx = unlist(out$idx_mi)
+  ))
+  uni_mi$idx2 <- rep(NA, nrow(uni_mi))
+  for (i in seq_rows(uni_mi)) {
+    uni_mi_sub <- subset2(uni_mi, var = uni_mi$var[i])
+    uni_mi$idx2[i] <- match(uni_mi$idx[i], na.omit(uni_mi_sub$idx))
+  }
+  attr(out, "uni_mi") <- uni_mi
+  for (i in seq_rows(out)) {
+    for (j in seq_along(out$idx_mi[[i]])) {
+      sub <- subset2(
+        uni_mi, var = out$vars_mi[[i]][j], 
+        idx = out$idx_mi[[i]][j]
+      )
+      out$idx2_mi[[i]][j] <- sub$idx2
+    }
+  }
+  
+  # extract information on covariates
   not_one <- apply(mm, 2, function(x) any(x != 1))
   out$Ic <- cumsum(out$Ic | not_one)
   out

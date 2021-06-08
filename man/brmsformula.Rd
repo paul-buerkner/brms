@@ -209,9 +209,9 @@ models for all parameters of the assumed response distribution.
   \code{sdx2} and \code{z} is a predictor without error
   (e.g., an experimental setting), we can model all main effects 
   and interactions of the three predictors in the well known manner: 
-  \code{y ~ me(x, sdx) * me(x2, sdx2) * z}. In future version of \pkg{brms},
-  a vignette will be added to explain more details about these
-  so called 'error-in-variables' models and provide real world examples.
+  \code{y ~ me(x, sdx) * me(x2, sdx2) * z}.
+  The \code{me} function is soft deprecated in favor of the more flexible
+  and consistent \code{mi} function (see below).
   
   When a variable contains missing values, the corresponding rows will
   be excluded from the data by default (row-wise exclusion). However,
@@ -228,7 +228,10 @@ models for all parameters of the assumed response distribution.
   we go for \code{y ~ mi(x) + z}. Second, we need to model \code{x} 
   as an additional response with corresponding predictors and the 
   addition term \code{mi()}. In our example, we could write
-  \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
+  \code{x | mi() ~ z}. Measurement error may be included via
+  the \code{sdy} argument, say, \code{x | mi(sdy = se) ~ z}.
+  See \code{\link{mi}} for examples with real data.
+  
   
   \bold{Autocorrelation terms}
   
@@ -348,6 +351,11 @@ models for all parameters of the assumed response distribution.
   will be treated as a response on the lower boundary. Alternatively,
   the variable passed to \code{dec} might also be a character vector 
   consisting of \code{'lower'} and \code{'upper'}.
+  
+  All families support the \code{index} addition term to uniquely identify
+  each observation of the corresponding response variable. Currently,
+  \code{index} is primarily useful in combination with the \code{subset}
+  addition and \code{\link{mi}} terms.
 
   For custom families, it is possible to pass an arbitrary number of real and
   integer vectors via the addition terms \code{vreal} and \code{vint},

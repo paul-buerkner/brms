@@ -17,7 +17,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index"),
     normalized = c("_time_hom", "_time_het", "_lagsar", "_errorsar", "_fcor"),
     specials = c("residuals", "rescor")
   )
@@ -28,7 +28,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma", "nu"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index"),
     include = "fun_logm1.stan",
     normalized = c("_time_hom", "_time_het", "_lagsar", "_errorsar", "_fcor"),
     specials = c("residuals", "rescor")
@@ -40,7 +40,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma", "alpha"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "se", "cens", "trunc", "mi")
+    ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index")
   )
 }
 
@@ -52,7 +52,7 @@
     ),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "trials", "cens", "trunc")
+    ad = c("weights", "subset", "trials", "cens", "trunc", "index")
   )
 }
 
@@ -64,7 +64,8 @@
     ),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
-    ad = c("weights", "subset"), specials = "binary"
+    ad = c("weights", "subset", "index"), 
+    specials = "binary"
   )
 }
 
@@ -74,7 +75,7 @@
     dpars = NULL,  # is determind based on the data
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
-    ad = c("weights", "subset"), 
+    ad = c("weights", "subset", "index"), 
     specials = c("categorical", "joint_link")
   )
 }
@@ -85,7 +86,7 @@
     dpars = NULL,  # is determind based on the data
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
-    ad = c("weights", "subset", "trials"), 
+    ad = c("weights", "subset", "trials", "index"), 
     specials = c("multinomial", "joint_link"),
     include = "fun_multinomial_logit.stan",
     normalized = ""
@@ -100,7 +101,7 @@
     ),
     dpars = c("mu", "phi"), type = "real",
     ybounds = c(0, 1), closed = c(FALSE, FALSE),
-    ad = c("weights", "subset", "cens", "trunc", "mi")
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index")
   )
 }
 
@@ -110,7 +111,7 @@
     dpars = "phi",  # more dpars are determined based on the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
-    ad = c("weights", "subset"), 
+    ad = c("weights", "subset", "index"), 
     specials = c("dirichlet", "joint_link"),
     include = "fun_dirichlet_logit.stan",
     normalized = ""
@@ -123,7 +124,7 @@
     dpars = NULL,  # is determind based on the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
-    ad = c("weights", "subset"), 
+    ad = c("weights", "subset", "index"), 
     specials = c("dirichlet"),
     include = "fun_logm1.stan",
     normalized = ""
@@ -135,7 +136,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
   )
 }
 
@@ -144,7 +145,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
   )
 }
 
@@ -154,7 +155,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "sigma"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
   )
 }
  
@@ -163,7 +164,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
   )
 }
 
@@ -175,7 +176,7 @@
     ),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_discrete_weibull.stan"
   )
 }
@@ -185,7 +186,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_com_poisson.stan"
   )
 }
@@ -195,7 +196,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -205,7 +206,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -215,7 +216,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = "mu", type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -225,7 +226,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "nu"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = "fun_logm1.stan",
     specials = "transeta"  # see stan_eta_ilink()
   )
@@ -236,7 +237,7 @@
     links = c("1/mu^2", "inverse", "identity", "log", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = "fun_inv_gaussian.stan"
   )
 }
@@ -246,7 +247,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     specials = "logscale"
   )
 }
@@ -256,7 +257,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma", "ndt"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     specials = "logscale"
   )
 }
@@ -266,7 +267,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma", "beta"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi")
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index")
   )
 }
 
@@ -275,7 +276,7 @@
     links = c("identity", "log", "softplus", "squareplus"),
     dpars = c("mu", "bs", "ndt", "bias"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "dec"),
+    ad = c("weights", "subset", "dec", "index"),
     include = "fun_wiener_diffusion.stan",
     normalized = ""
   )
@@ -286,7 +287,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma", "xi"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = c("fun_gen_extreme_value.stan", "fun_scale_xi.stan"),
     normalized = ""
   )
@@ -297,7 +298,7 @@
     links = c("tan_half", "identity"),
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = c("fun_tan_half.stan", "fun_von_mises.stan"),
     normalized = ""
   )
@@ -308,7 +309,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma", "quantile"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = "fun_asym_laplace.stan",
     normalized = ""
   )
@@ -319,7 +320,7 @@
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "sigma", "quantile", "zi"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = c("fun_asym_laplace.stan", "fun_zero_inflated_asym_laplace.stan")
   )
 }
@@ -329,7 +330,7 @@
     links = c("log", "identity", "softplus", "squareplus"),
     dpars = c("mu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_cox.stan",
     specials = c("cox"),
     normalized = ""
@@ -344,7 +345,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "thres", "cat"), 
+    ad = c("weights", "subset", "thres", "cat", "index"), 
     specials = c(
       "ordinal", "ordered_thres", "thres_minus_eta", 
       "joint_link", "ocs"
@@ -361,7 +362,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "thres", "cat"), 
+    ad = c("weights", "subset", "thres", "cat", "index"), 
     specials = c("ordinal", "cs", "thres_minus_eta", "joint_link"),
     normalized = ""
   )
@@ -375,7 +376,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "thres", "cat"),
+    ad = c("weights", "subset", "thres", "cat", "index"),
     specials = c("ordinal", "cs", "eta_minus_thres", "joint_link"),
     normalized = ""
   )
@@ -389,7 +390,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "thres", "cat"), 
+    ad = c("weights", "subset", "thres", "cat", "index"), 
     specials = c("ordinal", "cs", "eta_minus_thres", "joint_link"),
     normalized = ""
   )
@@ -400,7 +401,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_poisson.stan",
     normalized = ""
   )
@@ -411,7 +412,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "shape", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_negbinomial.stan",
     normalized = ""
   )
@@ -422,7 +423,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "shape", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_gamma.stan",
     normalized = ""
   )
@@ -433,7 +434,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_lognormal.stan",
     specials = "logscale",
     normalized = ""
@@ -445,7 +446,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_poisson.stan",
     normalized = ""
   )
@@ -456,7 +457,7 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "shape", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_negbinomial.stan",
     normalized = ""
   )
@@ -470,7 +471,7 @@
     ),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "trials", "cens", "trunc"),
+    ad = c("weights", "subset", "trials", "cens", "trunc", "index"),
     include = "fun_zero_inflated_binomial.stan",
     normalized = ""
   )
@@ -484,7 +485,7 @@
     ),
     dpars = c("mu", "phi", "zi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
-    ad = c("weights", "subset", "cens", "trunc"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_beta.stan",
     normalized = ""
   )
@@ -498,7 +499,7 @@
     ),
     dpars = c("mu", "phi", "zoi", "coi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
-    ad = c("weights", "subset"),
+    ad = c("weights", "subset", "index"),
     include = "fun_zero_one_inflated_beta.stan",
     normalized = ""
   )
@@ -507,7 +508,7 @@
 .family_custom <- function() {
   list(
     ad = c("weights", "subset", "se", "cens", "trunc", "trials", 
-           "thres", "cat", "dec", "mi", "vreal", "vint"),
+           "thres", "cat", "dec", "mi", "index", "vreal", "vint"),
     ybounds = c(-Inf, Inf), closed = c(NA, NA)
   )
 }

@@ -1933,6 +1933,25 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
+test_that("Missing value terms can be combined with 'subset'", {
+  dat <- data.frame(
+    y = rnorm(10), x = c(rnorm(9), NA),
+    z = rnorm(10), g2 = 10:1,
+    g1 = sample(1:5, 10, TRUE),
+    s = c(FALSE, rep(TRUE, 9))
+  )
+  
+  bform <- bf(y ~ mi(x, idx = g1)*mi(z)) + 
+    bf(x | mi() + index(g2) + subset(s)  ~ 1) +
+    bf(z | mi() ~ s) +
+    set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "(bsp_y[1]) * Yl_x[idxl_y_x_1[n]]")
+  expect_match2(scode, "(bsp_y[2]) * Yl_z[n]")
+  expect_match2(scode, "(bsp_y[3]) * Yl_x[idxl_y_x_1[n]] * Yl_z[n]")
+  expect_match2(scode, "int idxl_y_x_1[N_y];")
+})
+
 test_that("Stan code for advanced count data distribution is correct", {
   scode <- make_stancode(
     count ~ zAge + zBase * Trt + (1|patient),

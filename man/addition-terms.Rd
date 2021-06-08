@@ -11,6 +11,7 @@
 \alias{resp_cens}
 \alias{resp_trunc}
 \alias{resp_mi}
+\alias{resp_index}
 \alias{resp_rate}
 \alias{resp_subset}
 \alias{resp_vreal}
@@ -35,6 +36,8 @@ resp_trunc(lb = -Inf, ub = Inf)
 
 resp_mi(sdy = NA)
 
+resp_index(x)
+
 resp_rate(denom)
 
 resp_subset(x)
@@ -53,7 +56,8 @@ positive numeric values. \code{resp_trials}, \code{resp_thres}, and
 \code{FALSE} and \code{TRUE}. \code{resp_cens} requires \code{'left'},
 \code{'none'}, \code{'right'}, and \code{'interval'} (or equivalently
 \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate left, no, right,
-or interval censoring.}
+or interval censoring. \code{resp_index} does not make any requirements
+other than the value being unique for each observation.}
 
 \item{sigma}{Logical; Indicates whether the residual standard deviation
 parameter \code{sigma} should be included in addition to the known

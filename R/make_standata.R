@@ -80,9 +80,10 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   if (!only_response) {
     ranef <- tidy_ranef(bterms, data, old_levels = basis$levels)
     meef <- tidy_meef(bterms, data, old_levels = basis$levels)
+    index <- tidy_index(bterms, data)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, data2 = data2,
-      ranef = ranef, basis = basis
+      ranef = ranef, index = index, basis = basis
     )
     c(out) <- data_gr_global(ranef, data2 = data2)
     c(out) <- data_Xme(meef, data = data)
@@ -108,9 +109,9 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     # allows to recover the original order of the data
     attr(out, "old_order") <- attr(data, "old_order")
     # ensures current grouping levels are known in post-processing
-    attr(out, "levels") <- get_levels(
-      tidy_meef(bterms, data), tidy_ranef(bterms, data)
-    )
+    ranef_new <- tidy_ranef(bterms, data)
+    meef_new <- tidy_meef(bterms, data)
+    attr(out, "levels") <- get_levels(ranef_new, meef_new)
   }
   structure(out, class = c("standata", "list"))
 }
