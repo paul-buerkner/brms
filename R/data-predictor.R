@@ -379,9 +379,12 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       if (is.null(index[[uni_mi$var[j]]])) {
         # the 'idx' argument needs to be mapped against 'index' addition terms
         stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ", 
-              "term to compare with 'idx'. See ?brmsformula for details.")
+              "term to compare with 'idx'. See ?mi for examples.")
       }
       idxl <- match(idxl, index[[uni_mi$var[j]]])
+      if (anyNA(idxl)) {
+        stop2("Could not match all indices in response '", uni_mi$var[j], "'.")
+      }
       idxl_name <- paste0("idxl", p, "_", uni_mi$var[j], "_", uni_mi$idx2[j])
       out[[idxl_name]] <- as.array(idxl) 
     } else if (isTRUE(attr(index[[uni_mi$var[j]]], "subset"))) {

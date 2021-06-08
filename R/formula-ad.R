@@ -393,8 +393,11 @@ tidy_index <- function(x, data) {
     out <- out[subset]
     attr(out, "subset") <- TRUE
   }
+  if (anyNA(out)) {
+    stop2("NAs are not allowed in 'index' variables.")
+  }
   if (anyDuplicated(out)) {
-    stop2("Index of response '", names(out)[i], "' contains duplicated values.")
+    stop2("Index of response '", names(out), "' contains duplicated values.")
   }
   out
 }
