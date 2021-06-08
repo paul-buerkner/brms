@@ -52,6 +52,8 @@ with predicted mixture probabilities thanks to Riccardo Fusaroli. (#1150)
 thanks to Max Joseph. (#1167)
 * Fix an issue in the post-processing of non-looped non-linear
 parameters thanks to Sebastian Weber.
+* Fix an issue in the Stan code of threaded non-looped non-linear
+models thanks to Sebastian Weber. (#1175)
 
 
 # brms 2.15.0

@@ -1643,7 +1643,12 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
     p <- usc(combine_prefix(bterms))
     new_covars <- rep(NA, length(covars))
     data_cnl <- data_cnl(bterms, data)
-    nn <- paste0(str_if(bterms$loop, stan_nn(threads)), " ")
+    if (bterms$loop) {
+      slice <- stan_nn(threads)
+    } else {
+      slice <- stan_slice(threads)
+    }
+    slice <- paste0(slice, " ")
     str_add(out$data) <- "  // covariate vectors for non-linear functions\n"
     for (i in seq_along(covars)) {
       is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
@@ -1658,7 +1663,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
         )
         str_add(out$pll_args) <- glue(", vector C{p}_{i}")
       }
-      new_covars[i] <- glue(" C{p}_{i}{nn}")
+      new_covars[i] <- glue(" C{p}_{i}{slice}")
     }
   }
   # add white spaces to be able to replace parameters and covariates

@@ -997,6 +997,13 @@ test_that("Stan code for non-linear models is correct", {
                          data = data, prior = prior)
   expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1);")
   
+  # check if that only works with threading
+  scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist, 
+                            nl = TRUE, loop = FALSE), 
+                         data = data, prior = prior, 
+                         threads = threading(2), parse = FALSE)
+  expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1[start:end]);")
+  
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
              set_prior("normal(0,1)", nlpar = "a2"))
