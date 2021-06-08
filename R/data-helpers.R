@@ -251,10 +251,9 @@ order_data <- function(data, bterms) {
 
 # subset data according to addition argument 'subset'
 subset_data <- function(data, bterms) {
-  if (is.formula(bterms$adforms$subset)) {
+  if (has_subset(bterms)) {
     # only evaluate a subset of the data
-    subset <- eval_rhs(bterms$adforms$subset)
-    subset <- as.logical(eval2(subset$vars$subset, data))
+    subset <- as.logical(get_ad_values(bterms, "subset", "subset", data))
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }

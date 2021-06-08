@@ -384,13 +384,17 @@ tidy_index <- function(x, data) {
 
 #' @export
 .tidy_index.brmsterms <- function(x, data, ...) {
-  data <- subset_data(data, x)
   out <- get_ad_values(x, "index", "index", data)
-  if (!is.null(out)) {
-    if (anyDuplicated(out)) {
-      stop2("Index of response '", names(out)[i], "' contains duplicated values.")
-    }
-    attr(out, "subset") <- has_subset(x)    
+  if (is.null(out)) {
+    return(NULL)
+  }
+  if (has_subset(x)) {
+    subset <- as.logical(get_ad_values(x, "subset", "subset", data))
+    out <- out[subset]
+    attr(out, "subset") <- TRUE
+  }
+  if (anyDuplicated(out)) {
+    stop2("Index of response '", names(out)[i], "' contains duplicated values.")
   }
   out
 }
