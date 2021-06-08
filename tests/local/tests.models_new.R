@@ -1037,60 +1037,63 @@ test_that(paste(
 })
 
 test_that("Non-linear non-looped model predictions work correctly in blocked order", {
-    loss_alt  <- transform(loss, row=as.integer(1:nrow(loss)), nr=nrow(loss), test=as.integer(0))
-    growth_model  <- stanvar(name="growth_test", scode="
-vector growth_test(vector ult, int[] dev, vector theta, vector omega, int[] row, int[] test) {
-    int N = rows(ult);
-    vector[N] mu;
-    int rows_sorted = 1;
-
-    for(i in 1:N) {
-      if(row[i] != i)
-         rows_sorted = 0;
+  loss_alt <- transform(loss, row=as.integer(1:nrow(loss)), nr=nrow(loss), test=as.integer(0))
+  scode_growth <- "
+    vector growth_test(vector ult, int[] dev, vector theta, vector omega, int[] row, int[] test) {
+      int N = rows(ult);
+      vector[N] mu;
+      int rows_sorted = 1;
+    
+      for(i in 1:N) {
+        if(row[i] != i)
+           rows_sorted = 0;
+      }
+    
+      for(i in 1:N) {
+         if(test[i] == 0) {
+           mu[i] = ult[i] * (1 - exp(-(dev[i]/theta[i])^omega[i]));
+         } else if(test[i] == 1) {
+           mu[i] = rows_sorted;
+         } else if(test[i] == 2) {
+           mu[i] = N;
+         }
+      }
+      return(mu);
     }
-
-    for(i in 1:N) {
-       if(test[i] == 0) {
-         mu[i] = ult[i] * (1 - exp(-(dev[i]/theta[i])^omega[i]));
-       } else if(test[i] == 1) {
-         mu[i] = rows_sorted;
-       } else if(test[i] == 2) {
-         mu[i] = N;
-       }
-    }
-    return(mu);
-}
-", block="functions")
+  "
+  growth_model  <- stanvar(name="growth_test", scode=scode_growth, block="functions")
+  
   fit_loss <- brm(
     bf(cum ~ growth_test(ult, dev, theta, omega, row, test),
        ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
        nl = TRUE, loop=FALSE),
     data = loss_alt, family = gaussian(),
-    stanvars=growth_model,
+    stanvars = growth_model,
     prior = c(prior(normal(5000, 1000), nlpar = "ult"),
               prior(normal(1, 2), nlpar = "omega"),
               prior(normal(45, 10), nlpar = "theta")),
     control = list(adapt_delta = 0.9),
     refresh = 0,
-    chains=1,
-    backend="rstan"
+    chains = 1,
+    backend = "rstan"
   )
-    expose_functions(fit_loss)
-    N <- nrow(loss_alt)
-    pr1 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1), nsamples=10)
-    expect_true(all(dim(pr1) == c(10,N)))
-    expect_true(all(pr1 == 1))
-    pr1b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-5,], nsamples=10)
-    expect_true(all(dim(pr1b) == c(10,N-1)))
-    expect_true(all(pr1b == 0))
-    pr1c <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-N,], nsamples=10)
-    expect_true(all(dim(pr1c) == c(10,N-1)))
-    expect_true(all(pr1c == 1))
-    pr2 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2), nsamples=10)
-    expect_true(all(dim(pr2) == c(10,N)))
-    expect_true(all(pr2 == N))
-    pr2b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2)[-N,], nsamples=10)
-    expect_true(all(dim(pr2b) == c(10,N-1)))
-    expect_true(all(pr2b == N-1))
+  expose_functions(fit_loss)
+    
+  N <- nrow(loss_alt)
+  pr1 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1), nsamples=10)
+  expect_true(all(dim(pr1) == c(10,N)))
+  expect_true(all(pr1 == 1))
+  pr1b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-5,], nsamples=10)
+  expect_true(all(dim(pr1b) == c(10,N-1)))
+  expect_true(all(pr1b == 0))
+  pr1c <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-N,], nsamples=10)
+  expect_true(all(dim(pr1c) == c(10,N-1)))
+  expect_true(all(pr1c == 1))
+  pr2 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2), nsamples=10)
+  expect_true(all(dim(pr2) == c(10,N)))
+  expect_true(all(pr2 == N))
+  pr2b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2)[-N,], nsamples=10)
+  expect_true(all(dim(pr2b) == c(10,N-1)))
+  expect_true(all(pr2b == N-1))
 })
 
