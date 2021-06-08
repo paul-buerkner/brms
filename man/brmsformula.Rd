@@ -291,7 +291,7 @@ models for all parameters of the assumed response distribution.
   the linear predictor of the main parameter but the former is arguably
   more convenient and explicit.
   
-  With the exception of categorical, ordinal, and mixture families, 
+  With the exception of categorical and ordinal families, 
   left, right, and interval censoring can be modeled through 
   \code{y | cens(censored) ~ predictors}. The censoring variable 
   (named \code{censored} in this example) should contain the values 
@@ -305,7 +305,7 @@ models for all parameters of the assumed response distribution.
   in \code{y2} for interval censored data. Intervals are assumed to be open 
   on the left and closed on the right: \code{(y, y2]}.
   
-  With the exception of categorical, ordinal, and mixture families, 
+  With the exception of categorical and ordinal families, 
   the response distribution can be truncated using the \code{trunc} 
   function in the addition part. If the response variable is truncated 
   between, say, 0 and 100, we can specify this via
