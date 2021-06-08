@@ -11,8 +11,8 @@ mi(x, idx = NA)
 
 \item{idx}{An optional variable containing indices of observations in `x`
 that are to be used in the model. This is mostly relevant in partially
-subsetted models (via \code{\link[addition-terms]{resp_subset}}) but may
-also have other applications.}
+subsetted models (via \code{resp_subset}) but may also have other
+applications that I haven't thought of.}
 }
 \description{
 Specify predictor term with missing values in \pkg{brms}. The function does
@@ -36,7 +36,6 @@ fit1 <- brm(bform1, data = nhanes)
 summary(fit1)
 plot(conditional_effects(fit1, resp = "bmi"), ask = FALSE)
 loo(fit1, newdata = na.omit(fit1$data))
-}
 
 # simulate some measurement noise
 nhanes$se <- rexp(N, 2)
@@ -68,6 +67,7 @@ fit3 <- brm(bform3, data = nhanes)
 
 summary(fit3)
 plot(conditional_effects(fit3, resp = "bmi"), ask = FALSE)
+}
 
 }
 \seealso{

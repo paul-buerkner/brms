@@ -206,13 +206,13 @@ nhanes$se <- rexp(nrow(nhanes), 2)
 
 Then we can go ahead an include this information into the model as follows:
 
-```{r, results = 'hide', message = FALSE, eval = TRUE}
+```{r, results = 'hide', message = FALSE, eval = FALSE}
 bform <- bf(bmi | mi() ~ age * mi(chl)) +
   bf(chl | mi(se) ~ age) + set_rescor(FALSE)
 fit_imp3 <- brm(bform, data = nhanes)
 ```
 
-Summarizing and plotting the results continues to work as usual.
+Summarizing and post-processing the model continues to work as usual.
 
 
 [^1]: Actually, there is a third approach that only applies to missings in

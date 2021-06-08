@@ -324,7 +324,7 @@
 #'   consisting of \code{'lower'} and \code{'upper'}.
 #'   
 #'   All families support the \code{index} addition term to uniquely identify
-#'   each observation of the particular response variable. Currently,
+#'   each observation of the corresponding response variable. Currently,
 #'   \code{index} is primarily useful in combination with the \code{subset}
 #'   addition and \code{\link{mi}} terms.
 #'

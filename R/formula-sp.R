@@ -70,8 +70,8 @@ me <- function(x, sdx, gr = NULL) {
 #' @param x The variable containing missing values.
 #' @param idx An optional variable containing indices of observations in `x`
 #'   that are to be used in the model. This is mostly relevant in partially
-#'   subsetted models (via \code{\link[addition-terms]{resp_subset}}) but may
-#'   also have other applications.
+#'   subsetted models (via \code{resp_subset}) but may also have other
+#'   applications that I haven't thought of.
 #' 
 #' @details For detailed documentation see \code{help(brmsformula)}. 
 #' 
@@ -92,7 +92,6 @@ me <- function(x, sdx, gr = NULL) {
 #' summary(fit1)
 #' plot(conditional_effects(fit1, resp = "bmi"), ask = FALSE)
 #' loo(fit1, newdata = na.omit(fit1$data))
-#' }
 #' 
 #' # simulate some measurement noise
 #' nhanes$se <- rexp(N, 2)
@@ -124,6 +123,7 @@ me <- function(x, sdx, gr = NULL) {
 #' 
 #' summary(fit3)
 #' plot(conditional_effects(fit3, resp = "bmi"), ask = FALSE)
+#' }
 #' 
 #' @export
 mi <- function(x, idx = NA) {
