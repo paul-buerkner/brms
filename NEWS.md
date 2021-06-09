@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Substantially extend compatibility of `brms` models 
+with `emmeans` thanks to Mattan S. Ben-Shachar. (#907, #1134)
 * Combine missing value (`mi`) terms with `subset` addition terms. (#1063)
 * Expose function `get_dpar` for use in the post-processing 
 of custom families thank to Martin Modrak. (#1131)
