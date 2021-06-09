@@ -5,16 +5,26 @@
 #' they will be called automatically by the \code{emmeans} function
 #' of the \pkg{emmeans} package.
 #' 
-#' In addition to the usual choices for \code{dpar}, the special value
-#' \code{dpar = "mean"} requests that we use the expected values of the posterior 
-#' predictive distribution, obtained via \code{\link{posterior_epred.brmsfit}}.
-#' 
 #' @name emmeans-brms-helpers
 #' 
 #' @inheritParams posterior_epred.brmsfit
+#' @param re_formula Optional formula containing group-level effects to be
+#'   considered in the prediction. If \code{NULL}, include all group-level
+#'   effects; if \code{NA} (default), include no group-level effects.
+#' @param epred Logical. If \code{TRUE} compute predictions of
+#'   the posterior predictive distribution's mean
+#'   (see \code{\link{posterior_epred.brmsfit}}) while ignoring
+#'   arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
 #' @param data,trms,xlev,grid,vcov. Arguments required by \pkg{emmeans}.
 #' @param ... Additional arguments passed to \pkg{emmeans}.
 #' 
+#' @details 
+#' In order to ensure compatibility of most \pkg{brms} models with
+#' \pkg{emmeans}, predictions are not generated 'manually' via a design matrix
+#' and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}. 
+#' This appears to generally work well, but note that it produces an `.@linfct`
+#' slot that contains the computed predictions as columns instead of the
+#' coefficients.
 #' 
 #' @examples 
 #' \dontrun{
@@ -28,20 +38,22 @@
 #' em <- emmeans(rg, "disease")
 #' summary(em, point.est = mean)
 #' 
-#' epred <- emmeans(fit, "disease", dpar = "mean")
+#' # obtain estimates for the posterior predictive distribution's mean
+#' epred <- emmeans(fit, "disease", epred = TRUE)
 #' summary(epred, point.est = mean)
 #' }
 NULL
 
-# recover the predictors used in the population-level part of the model
+# recover the variables used in the model predictions
+# @param data only added to prevent it from being passed further via ...
 #' @rdname emmeans-brms-helpers
 recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, 
-                                  nlpar = NULL, ...) {
-  bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-  form <- combine_formulas(bterms$fe, bterms$offset, update = TRUE)
-  trms <- attr(model.frame(form, data = object$data), "terms")
+                                  nlpar = NULL, re_formula = NA,
+                                  epred = FALSE, ...) {
+  bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula, epred)
+  trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
   # brms has no call component so the call is just a dummy
-  emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
+  emmeans::recover_data(call("brms"), trms, "na.omit", data = object$data, ...)
 }
 
 # Calculate the basis for making predictions. In some sense, this is
@@ -49,28 +61,35 @@ recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL,
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
 emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, 
-                               dpar = NULL, nlpar = NULL, ...) {
+                               dpar = NULL, nlpar = NULL, re_formula = NA,
+                               epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
-    post.beta <- posterior_epred(object, newdata = grid, re_formula = NA, ...)
-    bhat <- apply(post.beta, 2, mean)
-    V <- cov(post.beta)
-    X <- diag(length(bhat))
+    # deprecated as of version 2.15.9
+    warning2("dpar = 'mean' is deprecated. Please use epred = TRUE instead.")
+    epred <- TRUE
+    dpar <- NULL
+  }
+  epred <- as_one_logical(epred)
+  if (epred) {
+    post.beta <- posterior_epred(
+      object, newdata = grid, re_formula = re_formula,
+      incl_autocor = FALSE, ...
+    )
     misc <- list()
   } else {
-    bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-    m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
-    contr <- lapply(object$data, function(x) attr(x, "contrasts"))
-    contr <- contr[!ulapply(contr, is.null)]
-    p <- combine_prefix(bterms)
-    cols2remove <- str_if(is_ordinal(bterms), "(Intercept)")
-    X <- get_model_matrix(trms, m, cols2remove, contrasts.arg = contr)
-    nm <- paste0(usc(p, "suffix"), colnames(X))
-    V <- vcov(object)[nm, nm, drop = FALSE]
+    bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula)
+    req_vars <- all_vars(bterms$allvars)
+    post.beta <- posterior_linpred(
+      object, newdata = grid, re_formula = re_formula, 
+      resp = resp, dpar = dpar, nlpar = nlpar, 
+      incl_autocor = FALSE, req_vars = req_vars, ...
+    )
     misc <- emmeans::.std.link.labels(bterms$family, list())
-    post.beta <- as.matrix(object, pars = paste0("b_", nm), fixed = TRUE)
-    bhat <- apply(post.beta, 2, mean)
   }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
+  bhat <- apply(post.beta, 2, mean)
+  V <- cov(post.beta)
+  X <- diag(length(bhat))
   nbasis <- matrix(NA)
   dfargs <- list()
   dffun <- function(k, dfargs) Inf
@@ -79,13 +98,23 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
 }
 
 # extract terms of a specific predicted parameter in the model
-.extract_par_terms <- function(object, resp = NULL, dpar = NULL, nlpar = NULL) {
+.extract_par_terms <- function(object, resp = NULL, dpar = NULL, nlpar = NULL,
+                               re_formula = NA, epred = FALSE) {
+  if (is_equal(dpar, "mean")) {
+    # deprecation warning already provided in emm_basis.brmsfit
+    epred <- TRUE
+    dpar <- NULL
+  }
+  epred <- as_one_logical(epred)
   resp <- validate_resp(resp, object, multiple = FALSE)
   stopifnot_resp(object, resp)
-  bterms <- brmsterms(formula(object))
-  allvars <- bterms$allvars
+  new_formula <- update_re_terms(formula(object), re_formula)
+  bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms)) {
     bterms <- bterms$terms[[resp]]
+  }
+  if (epred) {
+    return(bterms)
   }
   all_dpars <- names(bterms$dpars)
   all_nlpars <- names(bterms$nlpars)
@@ -103,23 +132,19 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
     out <- bterms$nlpars[[nlpar]]
   } else if (!is.null(dpar)) {
     dpar <- as_one_character(dpar)
-    if (dpar == "mean") {
-      # prepare posterior mean predictions as a special case
-      out <- list(fe = terms_fe(allvars))
-      class(out) <- "btl"
-    } else {
-      if (!dpar %in% all_dpars) {
-        stop2(
-          "Distributional parameter '", dpar, "' is not part of the model.",
-          "\nSupported parameters are: ", collapse_comma(all_dpars)
-        )
-      }
-      out <- bterms$dpars[[dpar]]
+    if (!dpar %in% all_dpars) {
+      stop2(
+        "Distributional parameter '", dpar, "' is not part of the model.",
+        "\nSupported parameters are: ", collapse_comma(all_dpars)
+      )
     }
+    out <- bterms$dpars[[dpar]]
   } else {
+    # neither dpar nor nlpar specified
     out <- bterms$dpars[["mu"]]
   }
   if (!is.btl(out)) {
+    # TODO: can non-linear formulas be supported by emmeans as well?
     btl_dpars <- all_dpars[ulapply(bterms$dpars, is.btl)]
     btl_nlpars <- all_nlpars[ulapply(bterms$nlpars, is.btl)]
     stop2(

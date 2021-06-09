@@ -78,9 +78,9 @@ test_that("bridge_sampler has reasonable ouputs", {
 
 test_that("coef has reasonable ouputs", {
   coef1 <- SM(coef(fit1))
-  expect_equal(dim(coef1$visit), c(4, 4, 8))
+  expect_equal(dim(coef1$visit), c(4, 4, 9))
   coef1 <- SM(coef(fit1, summary = FALSE))
-  expect_equal(dim(coef1$visit), c(nsamples(fit1), 4, 8))
+  expect_equal(dim(coef1$visit), c(nsamples(fit1), 4, 9))
   coef2 <- SM(coef(fit2))
   expect_equal(dim(coef2$patient), c(59, 4, 4))
   coef4 <- SM(coef(fit4))
@@ -101,7 +101,7 @@ test_that("conditional_effects has reasonable ouputs", {
   me <- conditional_effects(fit1, "Trt", select_points = 0.1)
   expect_lt(nrow(attr(me[[1]], "points")), nobs(fit1))
   
-  me <- conditional_effects(fit1, "Exp:Age", surface = TRUE, 
+  me <- conditional_effects(fit1, "volume:Age", surface = TRUE, 
                             resolution = 15, too_far = 0.2)
   meplot <- plot(me, plot = FALSE)
   expect_ggplot(meplot[[1]])
@@ -151,6 +151,7 @@ test_that("conditional_effects has reasonable ouputs", {
                "please use the 'conditions' argument")
   
   mdata$visit <- NULL
+  mdata$Exp <- NULL
   mdata$patient <- 1
   expect_equal(nrow(conditional_effects(fit2)[[2]]), 100)
   me <- conditional_effects(fit2, re_formula = NULL, conditions = mdata)
@@ -236,7 +237,8 @@ test_that("fitted has reasonable outputs", {
   
   newdata <- data.frame(
     Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
-    count = c(20, 13), patient = c(1, 42), Exp = c(2, 4)
+    count = c(20, 13), patient = c(1, 42), Exp = c(2, 4),
+    volume = 0
   )
   fi <- fitted(fit1, newdata = newdata)
   expect_equal(dim(fi), c(2, 4))
@@ -248,7 +250,7 @@ test_that("fitted has reasonable outputs", {
   # fitted values with new_levels
   newdata <- data.frame(
     Age = 0, visit = paste0("a", 1:100), Trt = 0, 
-    count = 20, patient = 1, Exp = 2
+    count = 20, patient = 1, Exp = 2, volume = 0
   )
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
                sample_new_levels = "old_levels", nsamples = 10)
@@ -260,7 +262,7 @@ test_that("fitted has reasonable outputs", {
   # fitted values of auxiliary parameters
   newdata <- data.frame(
     Age = 0, visit = c("a", "b"), Trt = 0,
-    count = 20, patient = 1, Exp = 2
+    count = 20, patient = 1, Exp = 2, volume = 0
   )
   fi <- fitted(fit1, dpar = "sigma")
   expect_equal(dim(fi), c(nobs(fit1), 4))
@@ -303,7 +305,7 @@ test_that("fitted has reasonable outputs", {
 test_that("fixef has reasonable ouputs", {
   fixef1 <- SM(fixef(fit1))
   expect_equal(rownames(fixef1), 
-               c("Intercept", "sigma_Intercept", "Trt1", "Age", 
+               c("Intercept", "sigma_Intercept", "Trt1", "Age", "volume", 
                  "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp")
   )
   fixef1 <- SM(fixef(fit1, pars = c("Age", "sAge_1")))
@@ -438,7 +440,7 @@ test_that("loo_predict has reasonable outputs", {
   
   newdata <- data.frame(
     Age = 0, visit = c("a", "b"), Trt = 0,
-    count = 20, patient = 1, Exp = 2
+    count = 20, patient = 1, Exp = 2, volume = 0
   )
   llp <- SW(loo_predict(
     fit1, newdata = newdata,
@@ -550,7 +552,7 @@ test_that("posterior_samples has reasonable outputs", {
   expect_equal(names(ps), parnames(fit1))
   expect_equal(names(posterior_samples(fit1, pars = "^b_")),
                c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
-                 "b_Age", "b_Trt1:Age", "b_sigma_Trt1"))
+                 "b_Age", "b_volume", "b_Trt1:Age", "b_sigma_Trt1"))
   
   # test default method
   ps <- posterior_samples(fit1$fit, "^b_Intercept$")
@@ -559,7 +561,7 @@ test_that("posterior_samples has reasonable outputs", {
 
 test_that("posterior_summary has reasonable outputs", {
   ps <- posterior_summary(fit1, "^b_")
-  expect_equal(dim(ps), c(6, 4))
+  expect_equal(dim(ps), c(7, 4))
 })
 
 test_that("posterior_interval has reasonable outputs", {
@@ -634,7 +636,8 @@ test_that("predict has reasonable outputs", {
   
   newdata <- data.frame(
     Age = c(0, -0.2), visit = c(1, 4), Trt = c(1, 0), 
-    count = c(2, 10), patient = c(1, 42), Exp = c(1, 2)
+    count = c(2, 10), patient = c(1, 42), Exp = c(1, 2),
+    volume = 0
   )
   pred <- predict(fit1, newdata = newdata)
   expect_equal(dim(pred), c(2, 4))
@@ -690,7 +693,7 @@ test_that("print has reasonable outputs", {
 test_that("prior_samples has reasonable outputs", {
   prs1 <- prior_samples(fit1)
   prior_names <- c(
-    "Intercept", "b", "bsp", paste0("simo_moExp1[", 1:4, "]"), 
+    "Intercept", "b", paste0("simo_moExp1[", 1:4, "]"), "bsp", 
     "bs", "sds_sAge_1", "b_sigma", "Intercept_sigma", "nu", 
     "sd_visit", "cor_visit"
   )
@@ -726,7 +729,7 @@ test_that("ranef has reasonable outputs", {
 test_that("residuals has reasonable outputs", {
   res1 <- SW(residuals(fit1, type = "pearson", probs = c(0.65)))
   expect_equal(dim(res1), c(nobs(fit1), 3))
-  newdata <- cbind(epilepsy[1:10, ], Exp = rep(1:5, 2))
+  newdata <- cbind(epilepsy[1:10, ], Exp = rep(1:5, 2), volume = 0)
   res2 <- residuals(fit1, newdata = newdata)
   expect_equal(dim(res2), c(10, 4))
   newdata$visit <- rep(1:5, 2)
@@ -785,7 +788,7 @@ test_that("summary has reasonable outputs", {
   summary1 <- SW(summary(fit1, priors = TRUE))
   expect_true(is.numeric(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
-               c("Intercept", "sigma_Intercept", "Trt1", "Age", 
+               c("Intercept", "sigma_Intercept", "Trt1", "Age", "volume", 
                  "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp"))
   expect_equal(colnames(summary1$fixed), 
                c("Estimate", "Est.Error", "l-95% CI", 
@@ -815,7 +818,7 @@ test_that("update has reasonable outputs", {
   new_data <- data.frame(
     Age = rnorm(18), visit = rep(c(3, 2, 4), 6),
     Trt = rep(0:1, 9), count = rep(c(5, 17, 28), 6),
-    patient = 1, Exp = 4
+    patient = 1, Exp = 4, volume = 0
   )
   up <- update(fit1, newdata = new_data, save_pars = save_pars(group = FALSE), 
                testmode = TRUE)
@@ -874,8 +877,8 @@ test_that("VarCorr has reasonable outputs", {
 })
 
 test_that("vcov has reasonable outputs", {
-  expect_equal(dim(vcov(fit1)), c(8, 8))
-  expect_equal(dim(vcov(fit1, cor = TRUE)), c(8, 8))
+  expect_equal(dim(vcov(fit1)), c(9, 9))
+  expect_equal(dim(vcov(fit1, cor = TRUE)), c(9, 9))
 })
 
 test_that("waic has reasonable outputs", {
