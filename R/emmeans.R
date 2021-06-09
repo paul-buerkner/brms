@@ -70,6 +70,11 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
     dpar <- NULL
   }
   epred <- as_one_logical(epred)
+  bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula, epred)
+  if (is_ordinal(bterms)) {
+    warning2("brms' emmeans support for ordinal models is experimental ",
+             "and currently ignores the threshold parameters.")
+  }
   if (epred) {
     post.beta <- posterior_epred(
       object, newdata = grid, re_formula = re_formula,
@@ -77,7 +82,6 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
     )
     misc <- list()
   } else {
-    bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula)
     req_vars <- all_vars(bterms$allvars)
     post.beta <- posterior_linpred(
       object, newdata = grid, re_formula = re_formula, 
@@ -142,18 +146,6 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
   } else {
     # neither dpar nor nlpar specified
     out <- bterms$dpars[["mu"]]
-  }
-  if (!is.btl(out)) {
-    # TODO: can non-linear formulas be supported by emmeans as well?
-    btl_dpars <- all_dpars[ulapply(bterms$dpars, is.btl)]
-    btl_nlpars <- all_nlpars[ulapply(bterms$nlpars, is.btl)]
-    stop2(
-      "The select parameter is not predicted by a linear formula. ",
-      "Use the 'dpar' and 'nlpar' arguments to select the ",
-      "parameter for which marginal means should be computed.",
-      "\nPredicted distributional parameters are: ", collapse_comma(btl_dpars),
-      "\nPredicted non-linear parameters are: ", collapse_comma(btl_nlpars)
-    )
   }
   out
 }
