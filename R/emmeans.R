@@ -77,12 +77,13 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
     )
     misc <- list()
   } else {
+    bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula)
+    req_vars <- all_vars(bterms$allvars)
     post.beta <- posterior_linpred(
       object, newdata = grid, re_formula = re_formula, 
       resp = resp, dpar = dpar, nlpar = nlpar, 
-      incl_autocor = FALSE, ...
+      incl_autocor = FALSE, req_vars = req_vars, ...
     )
-    bterms <- .extract_par_terms(object, resp, dpar, nlpar)
     misc <- emmeans::.std.link.labels(bterms$family, list())
   }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
