@@ -47,9 +47,9 @@ NULL
 # recover the variables used in the model predictions
 # @param data only added to prevent it from being passed further via ...
 #' @rdname emmeans-brms-helpers
-recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, 
-                                  nlpar = NULL, re_formula = NA,
-                                  epred = FALSE, ...) {
+recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL, 
+                                 nlpar = NULL, re_formula = NA,
+                                 epred = FALSE, ...) {
   bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula, epred)
   trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
   # brms has no call component so the call is just a dummy
@@ -60,9 +60,9 @@ recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL,
 # similar to the fitted() function with new data on the link scale. 
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
-emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, 
-                               dpar = NULL, nlpar = NULL, re_formula = NA,
-                               epred = FALSE, ...) {
+emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL, 
+                              dpar = NULL, nlpar = NULL, re_formula = NA,
+                              epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
     # deprecated as of version 2.15.9
     warning2("dpar = 'mean' is deprecated. Please use epred = TRUE instead.")
