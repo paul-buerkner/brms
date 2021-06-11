@@ -21,6 +21,8 @@ Rok Češnovar. (#1166)
 argument `loop` of `custom_family`. (#1084)
 * Experimentally allow category specific effects for
 ordinal `cumulative` models. (#1060)
+* Support `expose_functions` for models fitted with the 
+`cmdstanr` backend thanks to Sebastian Weber. (#1176)
 
 ### Other Changes
 

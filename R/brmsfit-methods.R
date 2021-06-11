@@ -531,16 +531,25 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 #' @export
 expose_functions.brmsfit <- function(x, vectorize = FALSE, 
                                      env = globalenv(), ...) {
-  require_backend("rstan", x)
   vectorize <- as_one_logical(vectorize)
+  if (x$backend == "cmdstanr") {
+    # cmdstanr does not yet support 'expose_stan_functions' itself (#1176)
+    scode  <- strsplit(stancode(x), "\n")[[1]]
+    data_line <- grep("^data[ ]+\\{$", scode)
+    scode <- paste0(c(scode[seq_len(data_line - 1)], "\n"), collapse = "\n")
+    stanmodel <- tempfile(fileext = ".stan")
+    cat(scode, file = stanmodel)
+  } else {
+    stanmodel <- x$fit
+  } 
   if (vectorize) {
-    funs <- rstan::expose_stan_functions(x$fit, env = environment(), ...)
+    funs <- rstan::expose_stan_functions(stanmodel, env = environment(), ...)
     for (i in seq_along(funs)) {
       FUN <- Vectorize(get(funs[i], mode = "function"))
       assign(funs[i], FUN, pos = env) 
     }
   } else {
-    funs <- rstan::expose_stan_functions(x$fit, env = env, ...)
+    funs <- rstan::expose_stan_functions(stanmodel, env = env, ...)
   }
   invisible(funs)
 }
