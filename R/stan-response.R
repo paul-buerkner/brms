@@ -24,19 +24,19 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  int<lower=2> ncat{resp};  // number of categories\n"
     )
-    str_add(out$pll_args) <- glue(", int ncat{resp}")
+    str_add(out$pll_args) <- glue(", data int ncat{resp}")
   }
   if (has_multicol(family)) {
     if (rtype == "real") {
       str_add(out$data) <- glue(
         "  vector[ncat{resp}] Y{resp}[N{resp}];  // response array\n"
       )
-      str_add(out$pll_args) <- glue(", vector[] Y{resp}")
+      str_add(out$pll_args) <- glue(", data vector[] Y{resp}")
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
         "  int Y{resp}[N{resp}, ncat{resp}];  // response array\n"
       )
-      str_add(out$pll_args) <- glue(", int[,] Y{resp}")
+      str_add(out$pll_args) <- glue(", data int[,] Y{resp}")
     }
   } else {
     if (rtype == "real") {
@@ -44,12 +44,12 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$data) <- glue(
         "  vector[N{resp}] Y{resp};  // response variable\n"
       )
-      str_add(out$pll_args) <- glue(", vector Y{resp}")
+      str_add(out$pll_args) <- glue(", data vector Y{resp}")
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
         "  int Y{resp}[N{resp}];  // response variable\n"
       )
-      str_add(out$pll_args) <- glue(", int[] Y{resp}")
+      str_add(out$pll_args) <- glue(", data int[] Y{resp}")
     }
   }
   if (has_ndt(family)) {
@@ -61,13 +61,13 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  int trials{resp}[N{resp}];  // number of trials\n"
     )
-    str_add(out$pll_args) <- glue(", int[] trials{resp}")
+    str_add(out$pll_args) <- glue(", data int[] trials{resp}")
   }
   if (is.formula(bterms$adforms$weights)) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] weights{resp};  // model weights\n" 
     )
-    str_add(out$pll_args) <- glue(", vector weights{resp}")
+    str_add(out$pll_args) <- glue(", data vector weights{resp}")
   }
   if (has_thres(family)) {
     groups <- get_thres_groups(family)
@@ -93,12 +93,14 @@ stan_response <- function(bterms, data, normalize) {
         "    Kthres_end{resp}[i] = Kthres_end{resp}[i-1] + nthres{resp}[i];\n",
         "  }}\n"
       )
-      str_add(out$pll_args) <- glue(", int nthres{resp}, int[,] Jthres{resp}")
+      str_add(out$pll_args) <- glue(
+        ", data int nthres{resp}, data int[,] Jthres{resp}"
+      )
     } else {
       str_add(out$data) <- glue(
         "  int<lower=2> nthres{resp};  // number of thresholds\n"
       )
-      str_add(out$pll_args) <- glue(", int nthres{resp}")
+      str_add(out$pll_args) <- glue(", data int nthres{resp}")
     }
   }
   if (is.formula(bterms$adforms$se)) {
@@ -108,13 +110,15 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$tdata_def) <- glue(
       "  vector<lower=0>[N{resp}] se2{resp} = square(se{resp});\n"
     )
-    str_add(out$pll_args) <- glue(", vector se{resp}, vector se2{resp}")
+    str_add(out$pll_args) <- glue(
+      ", data vector se{resp}, data vector se2{resp}"
+    )
   }
   if (is.formula(bterms$adforms$dec)) {
     str_add(out$data) <- glue(
       "  int<lower=0,upper=1> dec{resp}[N{resp}];  // decisions\n"
     )
-    str_add(out$pll_args) <- glue(", int[] dec{resp}")
+    str_add(out$pll_args) <- glue(", data int[] dec{resp}")
   }
   if (is.formula(bterms$adforms$rate)) {
     str_add(out$data) <- glue(
@@ -126,7 +130,7 @@ stan_response <- function(bterms, data, normalize) {
       "  vector[N{resp}] log_denom{resp} = log(denom{resp});\n"
     )
     str_add(out$pll_args) <- glue(
-      ", vector denom{resp}, vector log_denom{resp}"
+      ", data vector denom{resp}, data vector log_denom{resp}"
     )
   }
   if (is.formula(bterms$adforms$cens)) {
@@ -134,19 +138,19 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  int<lower=-1,upper=2> cens{resp}[N{resp}];  // indicates censoring\n"
     )
-    str_add(out$pll_args) <- glue(", int[] cens{resp}")
+    str_add(out$pll_args) <- glue(", data int[] cens{resp}")
     if (cens$vars$y2 != "NA") {
       # interval censoring is required
       if (rtype == "int") {
         str_add(out$data) <- glue(
           "  int rcens{resp}[N{resp}];"
         )
-        str_add(out$pll_args) <- glue(", int[] rcens{resp}")
+        str_add(out$pll_args) <- glue(", data int[] rcens{resp}")
       } else {
         str_add(out$data) <- glue(
           "  vector[N{resp}] rcens{resp};"
         )
-        str_add(out$pll_args) <- glue(", vector rcens{resp}")
+        str_add(out$pll_args) <- glue(", data vector rcens{resp}")
       }
       str_add(out$data) <- "  // right censor points for interval censoring\n"
     }
@@ -156,13 +160,13 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  {rtype} lb{resp}[N{resp}];  // lower truncation bounds;\n"
     )
-    str_add(out$pll_args) <- glue(", {rtype}[] lb{resp}")
+    str_add(out$pll_args) <- glue(", data {rtype}[] lb{resp}")
   }
   if (any(bounds$ub < Inf)) {
     str_add(out$data) <- glue(
       "  {rtype} ub{resp}[N{resp}];  // upper truncation bounds\n"
     )
-    str_add(out$pll_args) <- glue(", {rtype}[] ub{resp}")
+    str_add(out$pll_args) <- glue(", data {rtype}[] ub{resp}")
   }
   if (is.formula(bterms$adforms$mi)) {
     # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
@@ -211,7 +215,7 @@ stan_response <- function(bterms, data, normalize) {
       "  // data for custom real vectors\n",
       "  real vreal{seq_len(k)}{resp}[N{resp}];\n"
     )
-    str_add(out$pll_args) <- cglue(", real[] vreal{seq_len(k)}{resp}")
+    str_add(out$pll_args) <- cglue(", data real[] vreal{seq_len(k)}{resp}")
   }
   if (is.formula(bterms$adforms$vint)) {
     # vectors of integer values for use in custom families
@@ -221,7 +225,7 @@ stan_response <- function(bterms, data, normalize) {
       "  // data for custom integer vectors\n",
       "  int vint{seq_len(k)}{resp}[N{resp}];\n"
     )
-    str_add(out$pll_args) <- cglue(", int[] vint{seq_len(k)}{resp}")
+    str_add(out$pll_args) <- cglue(", data int[] vint{seq_len(k)}{resp}")
   }
   out
 }
@@ -382,7 +386,7 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
     "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp}{slice} * sbhaz{resp};\n"
   )
   str_add(out$pll_args) <- glue(
-    ", matrix Zbhaz{resp}, matrix Zcbhaz{resp}, vector sbhaz{resp}"
+    ", data matrix Zbhaz{resp}, data matrix Zcbhaz{resp}, vector sbhaz{resp}"
   )
   out
 }

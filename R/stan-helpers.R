@@ -253,8 +253,7 @@ stan_clean_pll_args <- function(...) {
   # split up header to remove duplicates
   typed <- unlist(strsplit(args, ", +"))[-1]
   typed <- unique(typed)
-  plain <- unlist(strsplit(typed, " +"))
-  plain <- plain[seq(2, length(plain), 2)]
+  plain <- rm_wsp(get_matches(" [^ ]+$", typed))
   typed <- collapse(", ", typed)
   plain <- collapse(", ", plain)
   nlist(typed, plain)

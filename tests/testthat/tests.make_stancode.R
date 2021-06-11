@@ -2010,7 +2010,7 @@ test_that("argument 'stanvars' is handled correctly", {
                          stanvars = stanvars, threads = threading(2),
                          parse = FALSE)
   expect_match2(scode, 
-    "partial_log_lik_lpmf(int[] seq, int start, int end, int[] Y, real Intercept, real foo, real tau)"
+    "partial_log_lik_lpmf(int[] seq, int start, int end, data int[] Y, real Intercept, data real foo, real tau)"
   )
   expect_match2(scode, 
     "reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Intercept, foo, tau)"
