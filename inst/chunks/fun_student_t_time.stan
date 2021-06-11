@@ -15,7 +15,7 @@
    *   sum of the log-PDF values of all observations 
    */ 
   real student_t_time_hom_lpdf(vector y, real nu, vector mu, real sigma, 
-                               matrix chol_cor, vector se2, int[] nobs, 
+                               matrix chol_cor, data vector se2, int[] nobs,
                                int[] begin, int[] end) { 
     int I = size(nobs);
     int has_se = max(se2) > 0;
@@ -50,7 +50,7 @@
    *   sum of the log-PDF values of all observations 
    */ 
   real student_t_time_het_lpdf(vector y, real nu, vector mu, vector sigma, 
-                               matrix chol_cor, vector se2, int[] nobs, 
+                               matrix chol_cor, data vector se2, int[] nobs, 
                                int[] begin, int[] end) { 
     int I = size(nobs);
     int has_se = max(se2) > 0;

@@ -10,7 +10,7 @@
    *   sum of the log-PDF values of all observations 
    */ 
   real student_t_fcor_hom_lpdf(vector y, real nu, vector mu, real sigma, 
-                               matrix chol_cor) { 
+                               data matrix chol_cor) { 
     int N = rows(chol_cor);
     matrix[N, N] Cov = multiply_lower_tri_self_transpose(sigma * chol_cor);
     return multi_student_t_lpdf(y | nu, mu, Cov);
@@ -27,7 +27,7 @@
    *   sum of the log-PDF values of all observations 
    */ 
   real student_t_fcor_het_lpdf(vector y, real nu, vector mu, vector sigma, 
-                               matrix chol_cor) { 
+                               data matrix chol_cor) { 
     int N = rows(chol_cor);
     matrix[N, N] Cov = diag_pre_multiply(sigma, chol_cor);
     Cov = multiply_lower_tri_self_transpose(Cov);

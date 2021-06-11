@@ -10,7 +10,7 @@
    *   a scalar to be added to the log posterior 
    */ 
   real normal_lagsar_lpdf(vector y, vector mu, real sigma, 
-                          real rho, matrix W, vector eigenW) { 
+                          real rho, data matrix W, data vector eigenW) { 
     int N = rows(y);
     real inv_sigma2 = inv_square(sigma);
     matrix[N, N] W_tilde = add_diag(-rho * W, 1);
