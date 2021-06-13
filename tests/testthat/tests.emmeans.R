@@ -25,7 +25,7 @@ test_that("emmeans returns expected output structure", {
   em <- SW(summary(emmeans(fit2, "Age", nlpar = "a")))
   expect_equal(nrow(em), 1)
   
-  em <- summary(emmeans(fit4, "x1", dpar = "mu"))
+  em <- SW(summary(emmeans(fit4, "x1", dpar = "mu")))
   expect_equal(nrow(em), 1)
 })
 
