@@ -17,6 +17,6 @@ A (possibly updated) \code{brmsfit} object. The
 \description{
 Compile a \code{\link[rstan:stanmodel-class]{stanmodel}} and add
 it to a \code{brmsfit} object. This enables some advanced functionality
-of \pkg{rstan}, most notably \code{\link[rstan:log_prob-methods]{log_prob}}
+of \pkg{rstan}, most notably \code{\link[rstan:log_prob]{log_prob}}
 and friends, to be used with brms models fitted with other Stan backends.
 }
