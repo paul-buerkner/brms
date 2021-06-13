@@ -4,15 +4,16 @@
 \alias{add_rstan_model}
 \title{Add compiled \pkg{rstan} models to \code{brmsfit} objects}
 \usage{
-add_rstan_model(x)
+add_rstan_model(x, overwrite = FALSE)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object to be updated.}
+
+\item{overwrite}{Logical. If \code{TRUE}, overwrite any existing 
+\code{\link[rstan:stanmodel-class]{stanmodel}}. Defaults to \code{FALSE}.}
 }
 \value{
-A (possibly updated) \code{brmsfit} object. The
-  \code{\link[rstan:stanmodel-class]{stanmodel}} is only added if none was
-  present before. Otherwise, the object is returned unchanged.
+A (possibly updated) \code{brmsfit} object.
 }
 \description{
 Compile a \code{\link[rstan:stanmodel-class]{stanmodel}} and add

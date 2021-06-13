@@ -717,15 +717,16 @@ update_misc_env <- function(x, only_windows = FALSE) {
 #' and friends, to be used with brms models fitted with other Stan backends.
 #' 
 #' @param x A \code{brmsfit} object to be updated.
+#' @param overwrite Logical. If \code{TRUE}, overwrite any existing 
+#' \code{\link[rstan:stanmodel-class]{stanmodel}}. Defaults to \code{FALSE}.
 #' 
-#' @return A (possibly updated) \code{brmsfit} object. The
-#'   \code{\link[rstan:stanmodel-class]{stanmodel}} is only added if none was
-#'   present before. Otherwise, the object is returned unchanged.
+#' @return A (possibly updated) \code{brmsfit} object.
 #' 
 #' @export
-add_rstan_model <- function(x) {
+add_rstan_model <- function(x, overwrite = FALSE) {
   stopifnot(is.brmsfit(x))
-  if (!has_rstan_model(x)) {
+  overwrite <- as_one_logical(overwrite)
+  if (!has_rstan_model(x) || overwrite) {
     message("Recompiling the model with 'rstan'")
     # threading is not yet supported by rstan andd needs to be deactivated
     stanfit <- suppressMessages(rstan::stan(
