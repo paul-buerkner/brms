@@ -748,8 +748,14 @@ test_that("residuals has reasonable outputs", {
 })
 
 test_that("stancode has reasonable outputs", {
+  scode <- stancode(fit1)
   expect_true(is.character(stancode(fit1)))
-  expect_output(print(stancode(fit1)), "generated quantities")
+  expect_match(stancode(fit1), "generated quantities")
+  expect_identical(scode, fit1$model)
+  
+  # test that stancode can be updated
+  scode <- stancode(fit2, threads = threading(1))
+  expect_match(scode, "reduce_sum(partial_log_lik_lpmf,", fixed = TRUE)
 })
 
 test_that("standata has reasonable outputs", {
