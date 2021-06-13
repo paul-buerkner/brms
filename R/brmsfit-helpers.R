@@ -692,16 +692,58 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 # update .MISC environment of the stanfit object
 # allows to call log_prob and other C++ using methods
 # on objects not created in the current R session
-update_misc_env <- function(x) {
+# or objects created via another backend
+update_misc_env <- function(x, only_windows = FALSE) {
   stopifnot(is.brmsfit(x))
-  if (!isTRUE(x$backend == "rstan")) {
-    # .MISC env is only relevant for rstan
-    return(x)
+  only_windows <- as_one_logical(only_windows)
+  if (!has_rstan_model(x)) {
+    x <- add_rstan_model(x)
+  } else if (os_is_windows() || !only_windows) {
+    # TODO: detect when updating .MISC is not required
+    # TODO: find a more efficient way to update .MISC
+    old_backend <- x$backend
+    x$backend <- "rstan"
+    x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC 
+    x$backend <- old_backend
   }
-  # TODO: detect when updating .MISC is not required
-  # TODO: find a more efficient way to update .MISC
-  x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
   x
+}
+
+#' Add compiled \pkg{rstan} models to \code{brmsfit} objects
+#' 
+#' Compile a \code{\link[rstan:stanmodel-class]{stanmodel}} and add
+#' it to a \code{brmsfit} object. This enables some advanced functionality
+#' of \pkg{rstan}, most notably \code{\link[rstan:log_prob]{log_prob}}
+#' and friends, to be used with brms models fitted with other Stan backends.
+#' 
+#' @param x A \code{brmsfit} object to be updated.
+#' 
+#' @return A (possibly updated) \code{brmsfit} object. The
+#'   \code{\link[rstan:stanmodel-class]{stanmodel}} is only added if none was
+#'   present before. Otherwise, the object is returned unchanged.
+#' 
+#' @export
+add_rstan_model <- function(x) {
+  stopifnot(is.brmsfit(x))
+  if (!has_rstan_model(x)) {
+    message("Recompiling the model with 'rstan'")
+    # threading is not yet supported by rstan andd needs to be deactivated
+    stanfit <- suppressMessages(rstan::stan(
+      model_code = stancode(x, threads = threading()), 
+      data = standata(x), chains = 0
+    ))
+    x$fit@stanmodel <- stanfit@stanmodel
+    x$fit@.MISC <- stanfit@.MISC
+  }
+  x
+}
+
+# does the model have a non-empty rstan 'stanmodel' 
+# that can be used for 'log_prob' and friends?
+has_rstan_model <- function(x) {
+  stopifnot(is.brmsfit(x))
+  isTRUE(nzchar(x$fit@stanmodel@model_cpp$model_cppname)) &&
+    length(ls(pos = x$fit@.MISC)) > 0
 }
 
 # extract argument names of a post-processing method

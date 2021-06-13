@@ -76,6 +76,12 @@ test_that("Survival model from brm doc works correctly", {
   me3 <- conditional_effects(fit3, method = "predict")
   expect_ggplot(plot(me3, ask = FALSE)[[2]])
   expect_range(LOO(fit3)$estimates[3, 1], 650, 740)
+  
+  # enables rstan specific functionality
+  fit3 <- add_rstan_model(fit3)
+  expect_range(LOO(fit3, moment_match = TRUE)$estimates[3, 1], 650, 740)
+  bridge <- bridge_sampler(fit3)
+  expect_true(is.numeric(bridge$logml))
 })
 
 test_that("Binomial model from brm doc works correctly", {

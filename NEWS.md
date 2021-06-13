@@ -21,8 +21,12 @@ Rok Češnovar. (#1166)
 argument `loop` of `custom_family`. (#1084)
 * Experimentally allow category specific effects for
 ordinal `cumulative` models. (#1060)
+* Regenerate Stan code of an existing model via
+argument `regenerate` of method `stancode`.
 * Support `expose_functions` for models fitted with the 
 `cmdstanr` backend thanks to Sebastian Weber. (#1176)
+* Support `log_prob` and related functionality in models fitted 
+with the `cmdstanr` backend via function `add_rstan_model`. (#1184)
 
 ### Other Changes
 

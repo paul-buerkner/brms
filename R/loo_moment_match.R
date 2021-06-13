@@ -66,7 +66,6 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
       )
     }
   }
-  require_backend("rstan", x)
   # otherwise loo_moment_match might not work in a new R session
   x <- update_misc_env(x)
   out <- try(loo::loo_moment_match.default(
@@ -101,9 +100,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
 
 # compute log_prob for each posterior draws on the unconstrained space
 .log_prob_upars <- function(x, upars, ...) {
-  if (os_is_windows()) {
-    x <- update_misc_env(x) 
-  }
+  x <- update_misc_env(x, only_windows = TRUE)
   log_prob_upars_stanfit(x$fit, upars = upars, ...)
 }
 
@@ -162,9 +159,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
 .log_lik_i_upars <- function(x, upars, i, samples = NULL, 
                              subset = NULL, ...) {
   # do not pass subset or nsamples further to avoid subsetting twice
-  if (os_is_windows()) {
-    x <- update_misc_env(x) 
-  }
+  x <- update_misc_env(x, only_windows = TRUE) 
   x <- .update_pars(x, upars = upars, ...)
   .log_lik_i(x, i = i, ...)
 }
