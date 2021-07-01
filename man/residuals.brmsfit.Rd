@@ -8,7 +8,7 @@
   object,
   newdata = NULL,
   re_formula = NULL,
-  method = "pp_expect",
+  method = "posterior_epred",
   type = c("ordinary", "pearson"),
   resp = NULL,
   nsamples = NULL,
@@ -34,9 +34,9 @@ the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
 \item{method}{Method use to obtain predictions. Either
-\code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+\code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
 Using \code{"posterior_predict"} is recommended
-but \code{"pp_expect"} is the current default for 
+but \code{"posterior_epred"} is the current default for 
 reasons of backwards compatibility.}
 
 \item{type}{The type of the residuals, 
@@ -88,8 +88,8 @@ with additional arguments for obtaining summaries of the computed samples.
 Residuals of type \code{'ordinary'} are of the form \eqn{R = Y -
   Yrep}, where \eqn{Y} is the observed and \eqn{Yrep} is the predicted response.
   Residuals of type \code{pearson} are of the form \eqn{R = (Y - Yrep) /
-  SD(Y)}, where \eqn{SD(Y)} is an estimation of the standard deviation of
-  \eqn{Y}.
+  SD(Yrep)}, where \eqn{SD(Yrep)} is an estimate of the standard deviation of
+  \eqn{Yrep}.
 }
 \examples{
 \dontrun{

@@ -47,9 +47,9 @@ predictive_error.brmsfit <- function(
 #' 
 #' @inheritParams predictive_error.brmsfit
 #' @param method Method use to obtain predictions. Either
-#'  \code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+#'  \code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
 #'  Using \code{"posterior_predict"} is recommended
-#'  but \code{"pp_expect"} is the current default for 
+#'  but \code{"posterior_epred"} is the current default for 
 #'  reasons of backwards compatibility.
 #' @param type The type of the residuals, 
 #'  either \code{"ordinary"} or \code{"pearson"}. 
@@ -73,8 +73,8 @@ predictive_error.brmsfit <- function(
 #' @details Residuals of type \code{'ordinary'} are of the form \eqn{R = Y -
 #'   Yrep}, where \eqn{Y} is the observed and \eqn{Yrep} is the predicted response.
 #'   Residuals of type \code{pearson} are of the form \eqn{R = (Y - Yrep) /
-#'   SD(Y)}, where \eqn{SD(Y)} is an estimation of the standard deviation of
-#'   \eqn{Y}.
+#'   SD(Yrep)}, where \eqn{SD(Yrep)} is an estimate of the standard deviation of
+#'   \eqn{Yrep}.
 #'   
 #' @examples 
 #' \dontrun{
@@ -89,7 +89,7 @@ predictive_error.brmsfit <- function(
 #'
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                              method = "pp_expect",
+                              method = "posterior_epred",
                               type = c("ordinary", "pearson"),
                               resp = NULL, nsamples = NULL,
                               subset = NULL, sort = FALSE, 
