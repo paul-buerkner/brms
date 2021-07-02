@@ -531,8 +531,8 @@ terms_resp <- function(formula, check_names = TRUE) {
     out <- deparse_no_string(expr)
   } else {
     str_fun <- deparse_no_string(expr[[1]]) 
-    use_mvbind <- identical(str_fun, "mvbind")
-    if (use_mvbind) {
+    used_mvbind <- grepl("^(brms:::?)?mvbind$", str_fun)
+    if (used_mvbind) {
       out <- ulapply(expr[-1], deparse_no_string)
     } else {
       out <- deparse_no_string(expr) 
