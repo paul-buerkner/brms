@@ -90,6 +90,9 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     )
     misc <- emmeans::.std.link.labels(bterms$family, list())
   }
+  if (anyNA(post.beta)) {
+    stop2("emm_basis.brmsfit created NAs. Please check your reference grid.")
+  }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
   bhat <- apply(post.beta, 2, mean)
   V <- cov(post.beta)
