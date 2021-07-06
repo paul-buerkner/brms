@@ -168,10 +168,14 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
   }
   colnames(out) <- NULL
   out <- reorder_obs(out, object$old_order, sort = sort)
+  if (is_polytomous(object$family) && length(dim(out)) == 3L && 
+      scale == "response") {
+    dimnames(out)[[3]] <- object$cats
+  }
   if (summary) {
     # only for compatibility with the 'fitted' method
     out <- posterior_summary(out, probs = probs, robust = robust)
-    if (has_cat(object$family) && length(dim(out)) == 3L) {
+    if (is_polytomous(object$family) && length(dim(out)) == 3L) {
       if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
