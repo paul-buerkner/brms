@@ -23,8 +23,8 @@
 #' 
 #' @export
 dstudent_t <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   if (log) {
     dt((x - mu) / sigma, df = df, log = TRUE) - log(sigma)
@@ -37,8 +37,8 @@ dstudent_t <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
 #' @export
 pstudent_t <- function(q, df, mu = 0, sigma = 1, 
                        lower.tail = TRUE, log.p = FALSE) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   pt((q - mu) / sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
@@ -46,8 +46,8 @@ pstudent_t <- function(q, df, mu = 0, sigma = 1,
 #' @rdname StudentT
 #' @export
 qstudent_t <-  function(p, df, mu = 0, sigma = 1) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   mu + sigma * qt(p, df = df)
 }
@@ -55,8 +55,8 @@ qstudent_t <-  function(p, df, mu = 0, sigma = 1) {
 #' @rdname StudentT
 #' @export
 rstudent_t <- function(n, df, mu = 0, sigma = 1) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {     
+    stop2("sigma must be non-negative.")
   }
   mu + sigma * rt(n, df = df)
 }
@@ -215,7 +215,7 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
 #' @export
 dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0, 
                          xi = NULL, omega = NULL, log = FALSE) {
-  if (isTRUE(any(sigma <= 0))) {
+  if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be greater than 0.")
   }
   args <- cp2dp(mu, sigma, alpha, xi = xi, omega = omega, x = x)
@@ -246,8 +246,8 @@ pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0,
                          xi = NULL, omega = NULL,
                          lower.tail = TRUE, log.p = FALSE) {
   require_package("mnormt")
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   args <- cp2dp(mu, sigma, alpha, xi = xi, omega = omega, q = q)
   out <- with(args, {
@@ -289,8 +289,8 @@ qskew_normal <- function(p, mu = 0, sigma = 1, alpha = 0,
                          xi = NULL, omega = NULL,
                          lower.tail = TRUE, log.p = FALSE, 
                          tol = 1e-8) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   if (log.p) {
     p <- exp(p)
@@ -337,8 +337,8 @@ qskew_normal <- function(p, mu = 0, sigma = 1, alpha = 0,
 #' @export
 rskew_normal <- function(n, mu = 0, sigma = 1, alpha = 0,
                          xi = NULL, omega = NULL) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   args <- cp2dp(mu, sigma, alpha, xi = xi, omega = omega)
   with(args, {
@@ -586,8 +586,8 @@ rvon_mises <- function(n, mu, kappa) {
 #' 
 #' @export
 dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   if (isTRUE(any(beta <= 0))) {
     stop2("beta must be greater than 0.")
@@ -611,8 +611,8 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
 #' @export
 pexgaussian <- function(q, mu, sigma, beta, 
                         lower.tail = TRUE, log.p = FALSE) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   if (isTRUE(any(beta <= 0))) {
     stop2("beta must be greater than 0.")
@@ -639,11 +639,11 @@ pexgaussian <- function(q, mu, sigma, beta,
 #' @rdname ExGaussian
 #' @export
 rexgaussian <- function(n, mu, sigma, beta) {
-  if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma must be greater than 0.")
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
   }
   if (isTRUE(any(beta <= 0))) {
-    stop2("beta must be greater than 0.")
+    stop2("beta must be positive.")
   }
   mu <- mu - beta
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
@@ -890,10 +890,9 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
 #' on the parameterization.
 #' 
 #' @export
-dgen_extreme_value <- function(x, mu = 0, sigma = 1, 
-                               xi = 0, log = FALSE) {
+dgen_extreme_value <- function(x, mu = 0, sigma = 1, xi = 0, log = FALSE) {
   if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma bust be greater than 0.")
+    stop2("sigma bust be positive.")
   }
   x <- (x - mu) / sigma
   args <- nlist(x, mu, sigma, xi)
@@ -915,7 +914,7 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1,
 pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
                                lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma bust be greater than 0.")
+    stop2("sigma bust be positive.")
   }
   q <- (q - mu) / sigma
   args <- nlist(q, mu, sigma, xi)
@@ -938,7 +937,7 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
 #' @export
 rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
   if (isTRUE(any(sigma <= 0))) {
-    stop2("sigma bust be greater than 0.")
+    stop2("sigma bust be positive.")
   }
   args <- nlist(mu, sigma, xi, length = n)
   args <- do_call(expand, args)
@@ -1046,7 +1045,7 @@ ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
     stop2("mu bust be between 0 and 1.")
   }
   if (isTRUE(any(shape <= 0))) {
-    stop2("shape bust be greater than 0.")
+    stop2("shape bust be positive.")
   }
   x <- round(x)
   out <- mu^x^shape - mu^(x + 1)^shape
@@ -1064,7 +1063,7 @@ pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
     stop2("mu bust be between 0 and 1.")
   }
   if (isTRUE(any(shape <= 0))) {
-    stop2("shape bust be greater than 0.")
+    stop2("shape bust be positive.")
   }
   x <- round(x)
   if (lower.tail) {
@@ -1087,7 +1086,7 @@ qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
     stop2("mu bust be between 0 and 1.")
   }
   if (isTRUE(any(shape <= 0))) {
-    stop2("shape bust be greater than 0.")
+    stop2("shape bust be positive.")
   }
   if (log.p) {
     p <- exp(p)
