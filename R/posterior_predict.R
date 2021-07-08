@@ -120,6 +120,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE, 
                                        probs = c(0.025, 0.975), 
                                        cores = NULL, ...) {
+  summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
   for (nlp in names(object$nlpars)) {
     object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
@@ -157,7 +158,6 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
     out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- object$cats
-  summary <- as_one_logical(summary)
   if (summary) {
     # only for compatibility with the 'predict' method
     if (is_ordinal(object$family)) {

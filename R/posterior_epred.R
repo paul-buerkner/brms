@@ -76,6 +76,7 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
                                      scale = "response", incl_thres = NULL, 
                                      summary = FALSE, robust = FALSE, 
                                      probs = c(0.025, 0.975), ...) {
+  summary <- as_one_logical(summary)
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
   if (length(dpar)) {
