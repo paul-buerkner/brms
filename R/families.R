@@ -1149,6 +1149,19 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   out
 }
 
+# get post-processing methods for custom families
+custom_family_method <- function(family, name) {
+  if (!is.customfamily(family)) {
+    return(NULL)
+  }
+  out <- family[[name]]
+  if (!is.function(out)) {
+    out <- paste0(name, "_", family$name)
+    out <- get(out, family$env)
+  }
+  out
+}
+
 # get valid distributional parameters for a family
 valid_dpars <- function(family, ...) {
   UseMethod("valid_dpars")

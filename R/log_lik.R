@@ -113,6 +113,10 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
   cores <- validate_cores_post_processing(cores)
   log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
+  if (is.customfamily(object$family)) {
+    # ensure that the method can be found during parallel execution
+    object$family$log_lik <- custom_family_method(object$family, "log_lik")
+  }
   for (nlp in names(object$nlpars)) {
     object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
@@ -888,12 +892,7 @@ log_lik_acat <- function(i, prep) {
 }
 
 log_lik_custom <- function(i, prep) {
-  log_lik_fun <- prep$family$log_lik
-  if (!is.function(log_lik_fun)) {
-    log_lik_fun <- paste0("log_lik_", prep$family$name)
-    log_lik_fun <- get(log_lik_fun, prep$family$env)
-  }
-  log_lik_fun(i, prep)
+  custom_family_method(prep$family, "log_lik")(i, prep)
 }
 
 log_lik_mixture <- function(i, prep) {

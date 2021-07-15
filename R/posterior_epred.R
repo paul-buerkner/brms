@@ -568,12 +568,7 @@ posterior_epred_acat <- function(prep) {
 }
 
 posterior_epred_custom <- function(prep) {
-  posterior_epred_fun <- prep$family$posterior_epred
-  if (!is.function(posterior_epred_fun)) {
-    posterior_epred_fun <- paste0("posterior_epred_", prep$family$name)
-    posterior_epred_fun <- get(posterior_epred_fun, prep$family$env)
-  }
-  posterior_epred_fun(prep)
+  custom_family_method(prep$family, "posterior_epred")(prep)
 }
 
 posterior_epred_mixture <- function(prep) {

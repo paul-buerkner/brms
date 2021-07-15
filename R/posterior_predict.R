@@ -122,6 +122,11 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        cores = NULL, ...) {
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
+  if (is.customfamily(object$family)) {
+    # ensure that the method can be found during parallel execution
+    object$family$posterior_predict <- 
+      custom_family_method(object$family, "posterior_predict")
+  }
   for (nlp in names(object$nlpars)) {
     object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
@@ -878,15 +883,7 @@ posterior_predict_ordinal <- function(i, prep, ...) {
 }
 
 posterior_predict_custom <- function(i, prep, ...) {
-  pp_fun <- prep$family$posterior_predict
-  if (is.null(pp_fun)) {
-    pp_fun <- prep$family$predict
-  }
-  if (!is.function(pp_fun)) {
-    pp_fun <- paste0("posterior_predict_", prep$family$name)
-    pp_fun <- get(pp_fun, prep$family$env)
-  }
-  pp_fun(i, prep, ...)
+  custom_family_method(prep$family, "posterior_predict")(i, prep, ...)
 }
 
 posterior_predict_mixture <- function(i, prep, ...) {
