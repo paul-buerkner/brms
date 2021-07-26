@@ -95,3 +95,8 @@ is.brmsfit <- function(x) {
 is.brmsfit_multiple <- function(x) {
   inherits(x, "brmsfit_multiple")
 }
+
+is.stanfit <- function(x) {
+  inherits(x, "stanfit")
+}
+
