@@ -5,8 +5,9 @@
 #'   in the summary. Default is \code{FALSE}.
 #' @param prob A value between 0 and 1 indicating the desired probability 
 #'   to be covered by the uncertainty intervals. The default is 0.95.
-#' @param mc_se Logical; Indicating if the uncertainty caused by the 
-#'   MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.
+#' @param mc_se Logical; Indicating if the uncertainty in \code{Estimate}
+#'   caused by the MCMC sampling should be shown in the summary. Defaults to
+#'   \code{FALSE}.
 #' @param ... Other potential arguments
 #' @inheritParams posterior_summary
 #' 
@@ -21,6 +22,7 @@
 #' 
 #' @method summary brmsfit
 #' @importMethodsFrom rstan summary
+#' @importFrom posterior subset_draws
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             robust = FALSE, mc_se = FALSE, ...) {
@@ -28,11 +30,6 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   probs <- validate_ci_bounds(prob)
   robust <- as_one_logical(robust)
   mc_se <- as_one_logical(mc_se)
-  if (mc_se) {
-    warning2("Argument 'mc_se' is currently deactivated but ", 
-             "will be working again in the future. Sorry!")
-  }
-  
   object <- restructure(object)
   bterms <- brmsterms(object$formula)
   out <- list(
@@ -50,10 +47,10 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     # the model does not contain posterior samples
     return(out)
   }
-  out$chains <- object$fit@sim$chains
-  out$iter <- object$fit@sim$iter
-  out$warmup <- object$fit@sim$warmup
-  out$thin <- object$fit@sim$thin
+  out$chains <- nchains(object)
+  out$iter <- niterations(object) + nwarmup(object)
+  out$warmup <- nwarmup(object)
+  out$thin <- nthin(object)
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
   if (priors) {
@@ -61,49 +58,50 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # compute a summary for given set of parameters
-  .summary <- function(object, pars, probs, robust) {
-    # TODO: use rstan::monitor instead once it is clean and stable
-    sims <- as.array(object, pars = pars, fixed = TRUE)
-    parnames <- dimnames(sims)[[3]]
-    valid <- rep(NA, length(parnames))
-    out <- named_list(parnames)
-    for (i in seq_along(out)) {
-      sims_i <- sims[, , i]
-      valid[i] <- all(is.finite(sims_i))
-      if (robust) {
-        est <- median(sims_i)
-        est_error <- mad(sims_i) 
-      } else {
-        est <- mean(sims_i)
-        est_error <- sd(sims_i) 
-      }
-      quan <- unname(quantile(sims_i, probs = probs))
-      rhat <- rstan::Rhat(sims_i)
-      ess_bulk <- round(rstan::ess_bulk(sims_i))
-      ess_tail <- round(rstan::ess_tail(sims_i))
-      out[[i]] <- c(est, est_error, quan, rhat, ess_bulk, ess_tail)
+  # TODO: align names with summary outputs of other methods and packages
+  .summary <- function(draws, variables, probs, robust) {
+    # quantiles with appropriate names to retain backwards compatibility
+    .quantile <- function(x, ...) {
+      qs <- quantile2(x, probs = probs, ...)
+      prob <- probs[2] - probs[1]
+      names(qs) <- paste0(c("l-", "u-"), prob * 100, "% CI")
+      return(qs)
     }
-    out <- do_call(rbind, out)
-    prob <- probs[2] - probs[1]
-    CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
-    # TODO: align column names with summary outputs of other methods
-    colnames(out) <- c(
-      "Estimate", "Est.Error", CIs, "Rhat", "Bulk_ESS", "Tail_ESS"
+    draws <- subset_draws(draws, variable = variables)
+    measures <- list()
+    if (robust) {
+      measures$Estimate <- median
+      if (mc_se) {
+        measures$MCSE <- mcse_median
+      }
+      measures$Est.Error <- mad
+    } else {
+      measures$Estimate <- mean
+      if (mc_se) {
+        measures$MCSE <- mcse_mean
+      }
+      measures$Est.Error <- sd
+    }
+    c(measures) <- list(
+      quantiles = .quantile, 
+      Rhat = posterior::rhat, 
+      Bulk_ESS = posterior::ess_bulk,
+      Tail_ESS = posterior::ess_tail
     )
-    rownames(out) <- parnames
-    S <- prod(dim(sims)[1:2])
-    out[valid & !is.finite(out[, "Rhat"]), "Rhat"] <- 1
-    out[valid & !is.finite(out[, "Bulk_ESS"]), "Bulk_ESS"] <- S
-    out[valid & !is.finite(out[, "Tail_ESS"]), "Tail_ESS"] <- S
+    out <- do.call(summarize_draws, c(list(draws), measures))
+    out <- as.data.frame(out)
+    rownames(out) <- out$variable
+    out$variable <- NULL
     return(out)
   }
   
-  pars <- parnames(object)
+  variables <- variables(object)
   excl_regex <- "^(r|s|z|zs|zgp|Xme|L|Lrescor|prior|lp)(_|$)"
-  pars <- pars[!grepl(excl_regex, pars)]
-  fit_summary <- .summary(object, pars, probs, robust)
+  variables <- variables[!grepl(excl_regex, variables)]
+  draws <- as_draws_array(object)
+  full_summary <- .summary(draws, variables, probs, robust)
   if (algorithm(object) == "sampling") {
-    Rhats <- fit_summary[, "Rhat"]
+    Rhats <- full_summary[, "Rhat"]
     if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
         "Parts of the model have not converged (some Rhats are > 1.05). ",
@@ -123,41 +121,41 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # summary of population-level effects
-  fe_pars <- pars[grepl(fixef_pars(), pars)]
-  out$fixed <- fit_summary[fe_pars, , drop = FALSE]
+  fe_pars <- variables[grepl(fixef_pars(), variables)]
+  out$fixed <- full_summary[fe_pars, , drop = FALSE]
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
   
   # summary of family specific parameters
   spec_pars <- c(valid_dpars(object), "delta")
   spec_pars <- paste0(spec_pars, collapse = "|")
   spec_pars <- paste0("^(", spec_pars, ")($|_)")
-  spec_pars <- pars[grepl(spec_pars, pars)]
-  out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
+  spec_pars <- variables[grepl(spec_pars, variables)]
+  out$spec_pars <- full_summary[spec_pars, , drop = FALSE]
   
   # summary of residual correlations
-  rescor_pars <- pars[grepl("^rescor_", pars)]
+  rescor_pars <- variables[grepl("^rescor_", variables)]
   if (length(rescor_pars)) {
-    out$rescor_pars <- fit_summary[rescor_pars, , drop = FALSE]
+    out$rescor_pars <- full_summary[rescor_pars, , drop = FALSE]
     rescor_pars <- sub("__", ",", sub("__", "(", rescor_pars))
     rownames(out$rescor_pars) <- paste0(rescor_pars, ")")
   }
   
   # summary of autocorrelation effects
-  cor_pars <- pars[grepl(regex_autocor_pars(), pars)]
-  out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
+  cor_pars <- variables[grepl(regex_autocor_pars(), variables)]
+  out$cor_pars <- full_summary[cor_pars, , drop = FALSE]
   rownames(out$cor_pars) <- cor_pars
   
   # summary of group-level effects
   for (g in out$group) {
     gregex <- escape_dot(g)
     sd_prefix <- paste0("^sd_", gregex, "__")
-    sd_pars <- pars[grepl(sd_prefix, pars)]
+    sd_pars <- variables[grepl(sd_prefix, variables)]
     cor_prefix <- paste0("^cor_", gregex, "__")
-    cor_pars <- pars[grepl(cor_prefix, pars)]
+    cor_pars <- variables[grepl(cor_prefix, variables)]
     df_prefix <- paste0("^df_", gregex, "$")
-    df_pars <- pars[grepl(df_prefix, pars)]
+    df_pars <- variables[grepl(df_prefix, variables)]
     gpars <- c(df_pars, sd_pars, cor_pars)
-    out$random[[g]] <- fit_summary[gpars, , drop = FALSE]
+    out$random[[g]] <- full_summary[gpars, , drop = FALSE]
     if (has_rows(out$random[[g]])) {
       sd_names <- sub(sd_prefix, "sd(", sd_pars)
       cor_names <- sub(cor_prefix, "cor(", cor_pars)
@@ -168,21 +166,21 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     }
   }
   # summary of smooths
-  sm_pars <- pars[grepl("^sds_", pars)]
+  sm_pars <- variables[grepl("^sds_", variables)]
   if (length(sm_pars)) {
-    out$splines <- fit_summary[sm_pars, , drop = FALSE]
+    out$splines <- full_summary[sm_pars, , drop = FALSE]
     rownames(out$splines) <- paste0(gsub("^sds_", "sds(", sm_pars), ")")
   }
   # summary of monotonic parameters
-  mo_pars <- pars[grepl("^simo_", pars)]
+  mo_pars <- variables[grepl("^simo_", variables)]
   if (length(mo_pars)) {
-    out$mo <- fit_summary[mo_pars, , drop = FALSE]
+    out$mo <- full_summary[mo_pars, , drop = FALSE]
     rownames(out$mo) <- gsub("^simo_", "", mo_pars)
   }
   # summary of gaussian processes
-  gp_pars <- pars[grepl("^(sdgp|lscale)_", pars)]
+  gp_pars <- variables[grepl("^(sdgp|lscale)_", variables)]
   if (length(gp_pars)) {
-    out$gp <- fit_summary[gp_pars, , drop = FALSE]
+    out$gp <- full_summary[gp_pars, , drop = FALSE]
     rownames(out$gp) <- gsub("^sdgp_", "sdgp(", rownames(out$gp))
     rownames(out$gp) <- gsub("^lscale_", "lscale(", rownames(out$gp))
     rownames(out$gp) <- paste0(rownames(out$gp), ")")
