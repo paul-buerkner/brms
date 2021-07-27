@@ -31,16 +31,23 @@ By default, all posterior samples of all parameters are extracted.}
 }
 \value{
 A matrix where rows indicate parameters 
- and columns indicate the summary estimates.
+and columns indicate the summary estimates.
 }
 \description{
 Summarizes posterior samples based on point estimates (mean or median),
-estimation errors (SD or MAD) and quantiles.
+estimation errors (SD or MAD) and quantiles. This function mainly exists to
+retain backwards compatibility. It will eventually be replaced by functions
+of the \pkg{posterior} package (see examples below).
 }
 \examples{
 \dontrun{
 fit <- brm(time ~ age * sex, data = kidney)
 posterior_summary(fit)
+
+# recommended workflow using posterior
+library(posterior)
+draws <- as_draws_array(fit)
+summarise_draws(draws, default_summary_measures())
 }
 
 }

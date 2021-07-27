@@ -62,7 +62,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   .summary <- function(draws, variables, probs, robust) {
     # quantiles with appropriate names to retain backwards compatibility
     .quantile <- function(x, ...) {
-      qs <- quantile2(x, probs = probs, ...)
+      qs <- posterior::quantile2(x, probs = probs, ...)
       prob <- probs[2] - probs[1]
       names(qs) <- paste0(c("l-", "u-"), prob * 100, "% CI")
       return(qs)
@@ -332,7 +332,9 @@ algorithm <- function(x) {
 #' Summarize Posterior Samples
 #' 
 #' Summarizes posterior samples based on point estimates (mean or median),
-#' estimation errors (SD or MAD) and quantiles.
+#' estimation errors (SD or MAD) and quantiles. This function mainly exists to
+#' retain backwards compatibility. It will eventually be replaced by functions
+#' of the \pkg{posterior} package (see examples below).
 #' 
 #' @param x An \R object.
 #' @param probs The percentiles to be computed by the 
@@ -345,12 +347,17 @@ algorithm <- function(x) {
 #' @inheritParams posterior_samples
 #' 
 #' @return A matrix where rows indicate parameters 
-#'  and columns indicate the summary estimates.
+#' and columns indicate the summary estimates.
 #'  
 #' @examples 
 #' \dontrun{
 #' fit <- brm(time ~ age * sex, data = kidney)
 #' posterior_summary(fit)
+#' 
+#' # recommended workflow using posterior
+#' library(posterior)
+#' draws <- as_draws_array(fit)
+#' summarise_draws(draws, default_summary_measures())
 #' }
 #' 
 #' @export
@@ -362,6 +369,8 @@ posterior_summary <- function(x, ...) {
 #' @export
 posterior_summary.default <- function(x, probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
+  # TODO: replace with summary functions from posterior
+  # TODO: find a way to represent 3D summaries as well
   if (!length(x)) {
     stop2("No posterior samples supplied.")
   }
@@ -393,6 +402,7 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   } else {
     stop("'x' must be of dimension 2 or 3.")
   }
+  # TODO: align names with summary outputs of other methods and packages
   colnames(out) <- c("Estimate", "Est.Error", paste0("Q", probs * 100))
   out  
 }
@@ -413,6 +423,7 @@ posterior_summary.brmsfit <- function(x, pars = NA,
 # @param ... additional arguments passed to get(coef)
 # @return typically a matrix with colnames(samples) as colnames
 get_estimate <- function(coef, samples, margin = 2, ...) {
+  # TODO: replace with summary functions from posterior
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun_args <- names(formals(coef))
