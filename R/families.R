@@ -1664,6 +1664,13 @@ no_nu <- function(bterms) {
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
 }
 
+# does the family-link combination have a built-in Stan function?
+has_built_in_fun <- function(family, link = NULL, dpar = NULL, cdf = FALSE) {
+  link <- link %||% family$link
+  glm_special <- paste0("sbi", usc(dpar), "_", link, str_if(cdf, "_cdf"))
+  glm_special %in% family_info(family, "specials")
+}
+
 # suffixes of Stan lpdfs or lpmfs for which only a normalized version exists
 always_normalized <- function(family) {
   family_info(family, "normalized")
