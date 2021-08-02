@@ -129,7 +129,7 @@ prepare_predictions.brmsterms <- function(x, samples, sdata, data, ...) {
       # theta was predicted
       missing_id <- which(ulapply(out$dpars[thetas], is.null))
       out$dpars[[paste0("theta", missing_id)]] <- structure(
-        as_draws_matrix(0, c(nsamples, nobs)), predicted = TRUE
+        data2draws(0, c(nsamples, nobs)), predicted = TRUE
       )
     } else {
       # theta was not predicted
@@ -137,7 +137,7 @@ prepare_predictions.brmsterms <- function(x, samples, sdata, data, ...) {
       out$dpars[thetas] <- NULL
       if (nrow(out$dpars$theta) == 1L) {
         dim <- c(nrow(samples), ncol(out$dpars$theta))
-        out$dpars$theta <- as_draws_matrix(out$dpars$theta, dim = dim)
+        out$dpars$theta <- data2draws(out$dpars$theta, dim = dim)
       }
     }
   } 
@@ -191,7 +191,7 @@ prepare_predictions.btnl <- function(x, samples, sdata, ...) {
   dim <- c(out$nsamples, out$nobs)
   for (i in seq_along(covars)) {
     cvalues <- sdata[[paste0("C", p, "_", i)]]
-    out$C[[covars[i]]] <- as_draws_matrix(cvalues, dim = dim)
+    out$C[[covars[i]]] <- data2draws(cvalues, dim = dim)
   }
   out
 }
@@ -310,8 +310,8 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
           me_dim <- c(nrow(out$bsp), sdata$N)
         }
         for (k in K) {
-          dXn <- as_draws_matrix(Xn[[k]], me_dim)
-          dnoise <- as_draws_matrix(noise[[k]], me_dim)
+          dXn <- data2draws(Xn[[k]], me_dim)
+          dnoise <- data2draws(noise[[k]], me_dim)
           out$Xme[[k]] <- array(rnorm(prod(me_dim), dXn, dnoise), me_dim)
           remove(dXn, dnoise)
         }
@@ -333,7 +333,7 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
     for (i in seq_along(out$Yl)) {
       vmi <- vars_mi[i]
       dim_y <- c(nrow(out$bsp), sdata[[paste0("N_", vmi)]])
-      Y <- as_draws_matrix(sdata[[paste0("Y_", vmi)]], dim_y)
+      Y <- data2draws(sdata[[paste0("Y_", vmi)]], dim_y)
       sdy <- sdata[[paste0("noise_", vmi)]]
       if (is.null(sdy)) {
         # missings only
@@ -352,7 +352,7 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
           out$Yl[[i]] <- get_samples(samples, Yl_pars)
         } else {
           warn_me <- warn_me || !new
-          sdy <- as_draws_matrix(sdy, dim)
+          sdy <- data2draws(sdy, dim)
           out$Yl[[i]] <- rcontinuous(
             n = prod(dim), dist = "norm", 
             mean = Y, sd = sdy,
@@ -380,7 +380,7 @@ prepare_predictions_sp <- function(bterms, samples, sdata, data,
   out$Csp <- vector("list", ncovars)
   for (i in seq_len(ncovars)) {
     out$Csp[[i]] <- sdata[[paste0("Csp", p, "_", i)]]
-    out$Csp[[i]] <- as_draws_matrix(out$Csp[[i]], dim = dim)
+    out$Csp[[i]] <- data2draws(out$Csp[[i]], dim = dim)
   }
   out
 }

@@ -300,7 +300,7 @@ predictor_gp <- function(prep, i) {
     eta <- eta[, gp[["Jgp"]], drop = FALSE]
   }
   if (!is.null(gp[["Cgp"]])) {
-    eta <- eta * as_draws_matrix(gp[["Cgp"]], dim = dim(eta))
+    eta <- eta * data2draws(gp[["Cgp"]], dim = dim(eta))
   }
   eta
 }

@@ -2054,7 +2054,7 @@ dmultinomial <- function(x, eta, log = FALSE) {
   }
   log_prob <- log_softmax(eta)
   size <- sum(x)
-  x <- as_draws_matrix(x, dim = dim(eta))
+  x <- data2draws(x, dim = dim(eta))
   out <- lgamma(size + 1) + rowSums(x * log_prob - lgamma(x + 1))
   if (!log) {
     out <- exp(out)

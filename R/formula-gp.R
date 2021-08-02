@@ -271,7 +271,7 @@ spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
     constant <- sdgp^2 * sqrt(2 * pi)^D * matrixStats::rowProds(lscale)
     neg_half_lscale2 = -0.5 * lscale^2
     for (m in seq_len(NB)) {
-      x2 <- as_draws_matrix(x[m, ]^2, dim = dim(lscale))
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
       out[, m] <- constant * exp(rowSums(neg_half_lscale2 * x2))
     }
   }

@@ -370,7 +370,7 @@ posterior_epred_shifted_lognormal <- function(prep) {
 }
 
 posterior_epred_binomial <- function(prep) {
-  trials <- as_draws_matrix(prep$data$trials, dim_mu(prep))
+  trials <- data2draws(prep$data$trials, dim_mu(prep))
   prep$dpars$mu * trials 
 }
 
@@ -486,7 +486,7 @@ posterior_epred_zero_inflated_negbinomial <- function(prep) {
 }
 
 posterior_epred_zero_inflated_binomial <- function(prep) {
-  trials <- as_draws_matrix(prep$data$trials, dim_mu(prep))
+  trials <- data2draws(prep$data$trials, dim_mu(prep))
   prep$dpars$mu * trials * (1 - prep$dpars$zi)
 }
 
@@ -636,7 +636,7 @@ posterior_epred_lagsar <- function(prep) {
 
 # expand data to dimension appropriate for
 # vectorized multiplication with posterior samples
-as_draws_matrix <- function(x, dim) {
+data2draws <- function(x, dim) {
   stopifnot(length(dim) == 2L, length(x) %in% c(1, dim[2]))
   matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
 }
@@ -656,8 +656,8 @@ is_trunc <- function(prep) {
 # family specific truncation function for posterior_epred values
 posterior_epred_trunc <- function(prep) {
   stopifnot(is_trunc(prep))
-  lb <- as_draws_matrix(prep$data[["lb"]], dim_mu(prep))
-  ub <- as_draws_matrix(prep$data[["ub"]], dim_mu(prep))
+  lb <- data2draws(prep$data[["lb"]], dim_mu(prep))
+  ub <- data2draws(prep$data[["ub"]], dim_mu(prep))
   posterior_epred_trunc_fun <- paste0("posterior_epred_trunc_", prep$family$family)
   posterior_epred_trunc_fun <- try(
     get(posterior_epred_trunc_fun, asNamespace("brms")), 
@@ -755,7 +755,7 @@ posterior_epred_trunc_binomial <- function(prep, lb, ub) {
   ub <- ifelse(ub > max_value, max_value, ub)
   trials <- prep$data$trials
   if (length(trials) > 1) {
-    trials <- as_draws_matrix(trials, dim_mu(prep))
+    trials <- data2draws(trials, dim_mu(prep))
   }
   args <- list(size = trials, prob = prep$dpars$mu)
   posterior_epred_trunc_discrete(dist = "binom", args = args, lb = lb, ub = ub)

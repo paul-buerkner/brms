@@ -129,11 +129,11 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (length(dim(yrep)) == 3L) {
     # multivariate model
     y <- lapply(seq_cols(y), function(i) y[, i])
-    y <- lapply(y, as_draws_matrix, dim = dim(yrep)[1:2])
+    y <- lapply(y, data2draws, dim = dim(yrep)[1:2])
     y <- abind(y, along = 3)
     dimnames(y)[[3]] <- dimnames(yrep)[[3]]
   } else {
-    y <- as_draws_matrix(y, dim = dim(yrep))
+    y <- data2draws(y, dim = dim(yrep))
   }
   out <- y - yrep
   remove(y, yrep)
@@ -145,10 +145,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     pred <- do_call("predict", pred_args)
     if (length(dim(pred)) == 3L) {
       sd_pred <- array2list(pred[, 2, ])
-      sd_pred <- lapply(sd_pred, as_draws_matrix, dim = dim(out)[1:2])
+      sd_pred <- lapply(sd_pred, data2draws, dim = dim(out)[1:2])
       sd_pred <- abind(sd_pred, along = 3)
     } else {
-      sd_pred <- as_draws_matrix(pred[, 2], dim = dim(out))
+      sd_pred <- data2draws(pred[, 2], dim = dim(out))
     }
     out <- out / sd_pred
   }

@@ -509,7 +509,7 @@ get_se <- function(prep, i = NULL) {
     }
     if (length(se) > 1L) {
       dim <- c(prep$nsamples, length(se))
-      se <- as_draws_matrix(se, dim = dim)
+      se <- data2draws(se, dim = dim)
     }
   } else {
     se <- 0
@@ -537,7 +537,7 @@ get_rate_denom <- function(prep, i = NULL) {
     }
     if (length(denom) > 1L) {
       dim <- c(prep$nsamples, length(denom))
-      denom <- as_draws_matrix(denom, dim = dim)
+      denom <- data2draws(denom, dim = dim)
     }
   } else {
     denom <- 1
