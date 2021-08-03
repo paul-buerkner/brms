@@ -79,9 +79,16 @@ nthin <- function(x) {
 #' 
 #' @param x A \code{brmsfit} object or another \R object for which
 #' the methods are defined.
+#' @param variable A character vector providing the variables to extract.
+#'   By default, all variables are extracted.
+#' @param regex Logical; Should variable should be treated as a (vector of) 
+#'   regular expressions? Any variable in \code{x} matching at least one of the 
+#'   regular expressions will be selected. Defaults to \code{FALSE}.
+#' @param inc_warmup Should warmup draws be included? Defaults to \code{FALSE}.
 #' @param ... Arguments passed to individual methods (if applicable).
 #' 
 #' @seealso \code{\link[posterior:draws]{draws}}
+#'   \code{\link[posterior:subset_draws]{subset_draws}}
 #' 
 #' @examples 
 #' \dontrun{
@@ -91,6 +98,10 @@ nthin <- function(x) {
 #' # extract posterior draws in an array format
 #' (draws_fit <- as_draws_array(fit))
 #' posterior::summarize_draws(draws_fit)
+#' 
+#' # extract only certain variables
+#' as_draws_array(fit, variable = "r_patient")
+#' as_draws_array(fit, variable = "^b_", regex = TRUE)
 #' 
 #' # extract posterior draws in a random variables format
 #' as_draws_rvars(fit)
@@ -104,8 +115,13 @@ NULL
 #' @method as_draws brmsfit
 #' @export
 #' @export as_draws
-as_draws.brmsfit <- function(x, ...) {
-  as_draws(x$fit, ...) 
+as_draws.brmsfit <- function(x, variable = NULL, regex = FALSE,
+                             inc_warmup = FALSE, ...) {
+  # draws_list is the fastest format to convert to at the moment
+  as_draws_list(
+    x, variable = variable, regex = regex,
+    inc_warmup = inc_warmup, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -113,8 +129,12 @@ as_draws.brmsfit <- function(x, ...) {
 #' @method as_draws_matrix brmsfit
 #' @export
 #' @export as_draws_matrix
-as_draws_matrix.brmsfit <- function(x, ...) {
-  as_draws_matrix(x$fit, ...) 
+as_draws_matrix.brmsfit <- function(x, variable = NULL, regex = FALSE,
+                                    inc_warmup = FALSE, ...) {
+  as_draws_matrix(as_draws_list(
+    x, variable = variable, regex = regex,
+    inc_warmup = inc_warmup, ...
+  ))
 }
 
 #' @rdname draws-brms
@@ -122,8 +142,12 @@ as_draws_matrix.brmsfit <- function(x, ...) {
 #' @method as_draws_array brmsfit
 #' @export
 #' @export as_draws_array
-as_draws_array.brmsfit <- function(x, ...) {
-  as_draws_array(x$fit, ...) 
+as_draws_array.brmsfit <- function(x, variable = NULL, regex = FALSE,
+                                   inc_warmup = FALSE, ...) {
+  as_draws_array(as_draws_list(
+    x, variable = variable, regex = regex,
+    inc_warmup = inc_warmup, ...
+  ))
 }
 
 #' @rdname draws-brms
@@ -131,8 +155,12 @@ as_draws_array.brmsfit <- function(x, ...) {
 #' @method as_draws_df brmsfit
 #' @export
 #' @export as_draws_df
-as_draws_df.brmsfit <- function(x, ...) {
-  as_draws_df(x$fit, ...) 
+as_draws_df.brmsfit <- function(x, variable = NULL, regex = FALSE,
+                                inc_warmup = FALSE, ...) {
+  as_draws_df(as_draws_list(
+    x, variable = variable, regex = regex,
+    inc_warmup = inc_warmup, ...
+  ))
 }
 
 #' @rdname draws-brms
@@ -140,8 +168,12 @@ as_draws_df.brmsfit <- function(x, ...) {
 #' @method as_draws_list brmsfit
 #' @export
 #' @export as_draws_list
-as_draws_list.brmsfit <- function(x, ...) {
-  as_draws_list(x$fit, ...) 
+as_draws_list.brmsfit <- function(x, variable = NULL, regex = FALSE,
+                                  inc_warmup = FALSE, ...) {
+  .as_draws_list(
+    x$fit, variable = variable, regex = regex, 
+    inc_warmup = inc_warmup, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -149,6 +181,33 @@ as_draws_list.brmsfit <- function(x, ...) {
 #' @method as_draws_rvars brmsfit
 #' @export
 #' @export as_draws_rvars
-as_draws_rvars.brmsfit <- function(x, ...) {
-  as_draws_rvars(x$fit, ...) 
+as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
+                                   inc_warmup = FALSE, ...) {
+  as_draws_rvars(as_draws_list(
+    x, variable = variable, regex = regex,
+    inc_warmup = inc_warmup, ...
+  ))
+}
+
+# in stanfit objects draws are stored in a draws_list-like format
+# so converting from there will be most efficient
+# may be removed once rstan supports posterior natively
+.as_draws_list <- function(x, variable = NULL, regex = FALSE,
+                           inc_warmup = FALSE, ...) {
+  stopifnot(is.stanfit(x))
+  inc_warmup <- as_one_logical(inc_warmup)
+  if (!length(x@sim$samples)) {
+    stop2("The model does not contain posterior draws.")
+  }
+  out <- as_draws_list(x@sim$samples)
+  # first subset variables then remove warmup as removing warmup
+  # will take a lot of time when extracting many variables
+  out <- subset_draws(out, variable = variable, regex = regex)
+  if (inc_warmup) {
+    nwarmup <- x$sim$warmup2[1] %||% 0
+    warmup_ids <- seq_len(nwarmup)
+    iteration_ids <- iteration_ids(out)[-warmup_ids]
+    out <- subset_draws(out, iteration = iteration_ids)
+  }
+  out
 }
