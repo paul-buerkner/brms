@@ -94,7 +94,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     dims <- dim(post.beta)
     post.beta <- matrix(post.beta, ncol = prod(dims[2:3]))
     X <- matrix(replicate(dims[3], X), nrow = dims[2])
-    misc$ylevs = list(rep.meas = bterms$.resp)
+    misc$ylevs = list(rep.meas = bterms$responses)
   }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
   bhat <- apply(post.beta, 2, mean)
@@ -114,8 +114,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     epred <- TRUE
     dpar <- NULL
   }
-  epred <- as_one_logical(epred)
   resp <- validate_resp(resp, object)
+  epred <- as_one_logical(epred)
   new_formula <- update_re_terms(formula(object), re_formula)
   out <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(out)) {
@@ -123,10 +123,12 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
       # reduce to a univariate model
       out <- out$terms[[resp]]
     } else {
+      # only keep information of selected responses
       out$terms <- out$terms[resp]
+      out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
+      out$responses <- resp
     }
   }
-  out$.resp <- resp
   if (is_ordinal(out)) {
     warning2("brms' emmeans support for ordinal models is experimental ",
              "and currently ignores the threshold parameters.")
