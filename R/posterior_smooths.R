@@ -68,6 +68,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
                                   nsamples = NULL, subset = NULL, ...) {
   smooth <- rm_wsp(as_one_character(smooth))
   smef <- tidy_smef(object, fit$data)
+  smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)
   if (!smooth %in% smterms) {
     stop2("Term '", smooth, "' cannot be found. Available ", 
