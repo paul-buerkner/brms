@@ -146,7 +146,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     # posterior_linpred uses 'mu' dpars by default
     mu_list <- lapply(lapply(out$terms, "[[", "dpars"), "[[", "mu")
     out$allvars <- allvars_formula(lapply(mu_list, get_allvars))
-    # unclear whether emmeans support different families or 
+    # unclear whether emmeans supports different families or 
     # link functions across univariate models
     families <- unique(lapply(out$terms, "[[", "family"))
     if (length(families) > 1L){
