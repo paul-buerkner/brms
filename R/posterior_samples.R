@@ -1,6 +1,9 @@
-#' Extract Posterior Samples
+#' (Soft-Deprecated) Extract Posterior Samples
 #' 
-#' Extract posterior samples of specified parameters.
+#' Extract posterior samples of specified parameters. The
+#' \code{posterior_samples} method is soft-deprecated. We recommend using the
+#' more modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+#' functions of the \pkg{posterior} package instead.
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param pars Names of parameters for which posterior samples 
@@ -22,17 +25,21 @@
 #'   instead of a \code{data.frame}? Defaults to \code{FALSE}.
 #' @param row.names,optional See \code{\link[base:as.data.frame]{as.data.frame}}.
 #' @param ... For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
-#'   Further arguments to be passed to \code{posterior_samples}.
+#'   Further arguments to be passed to \code{posterior_samples} or the
+#'   corresponding \code{\link[brms:draws-brms]{as_draws_*}} methods (see details).
 #'   
-#' @details Currently there are methods for \code{brmsfit} objects.
-#'   \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
-#'   \code{as.array.brmsfit} are basically aliases of 
-#'   \code{posterior_samples.brmsfit} and differ from
-#'   each other only in type of the returned object.
+#' @details The applied backend of \code{as.data.frame.brmsfit},
+#'   \code{as.matrix.brmsfit}, and \code{as.array.brmsfit} depends on the
+#'   supplied arguments. If any of the soft-deprecated arguments \code{pars},
+#'   \code{add_chain}, or \code{subset} is given, \code{posterior_samples} will
+#'   be used as backend to retain backwards compatibility. Otherwise, the
+#'   corresponding \code{\link[brms:draws-brms]{as_draws_*}} methods are used as
+#'   backends but removing the \pkg{posterior}-specific object classes to ensure
+#'   expected subsetting behavior.
 #'   
-#' @return A data.frame (matrix or array) containing the posterior samples, 
-#'   with one column per parameter. In case an array is returned,
-#'   it contains one additional dimension for the chains.
+#' @return A data.frame (matrix or array) containing the posterior samples.
+#'   
+#' @seealso \code{\link[brms:draws-brms]{as_draws}} 
 #' 
 #' @examples
 #' \dontrun{
@@ -40,11 +47,11 @@
 #'            data = inhaler, family = "cumulative")
 #' 
 #' # extract posterior samples of population-level effects 
-#' samples1 <- posterior_samples(fit, "^b")
+#' samples1 <- posterior_samples(fit, pars = "^b")
 #' head(samples1)
 #' 
 #' # extract posterior samples of group-level standard deviations
-#' samples2 <- posterior_samples(fit, "^sd_")
+#' samples2 <- posterior_samples(fit, pars = "^sd_")
 #' head(samples2)
 #' }
 #' 
@@ -118,21 +125,52 @@ posterior_samples.default <- function(x, pars = NA, fixed = FALSE, ...) {
 
 #' @rdname posterior_samples.brmsfit
 #' @export
-as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, ...) {
-  out <- posterior_samples(x, ..., as.matrix = FALSE)
+as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, 
+                                  pars = NA, add_chain = FALSE, subset = NULL, 
+                                  ...) {
+  cl <- match.call()
+  if (any(c("pars", "add_chain", "subset") %in% names(cl))) {
+    out <- posterior_samples(
+      x, pars = pars, add_chain = add_chain, 
+      subset = subset, ...
+    ) 
+  } else {
+    out <- unclass(as_draws_df(x, ...))
+    out$.chain <- out$.iteration <- out$.draw <- NULL
+  }
   data.frame(out, row.names = row.names, check.names = !optional)
 }
 
 #' @rdname posterior_samples.brmsfit
 #' @export
-as.matrix.brmsfit <- function(x, ...) {
-  posterior_samples(x, ..., as.matrix = TRUE)
+as.matrix.brmsfit <- function(x, pars = NA, add_chain = FALSE, 
+                              subset = NULL, ...) {
+  cl <- match.call()
+  if (any(c("pars", "add_chain", "subset") %in% names(cl))) {
+    out <- posterior_samples(
+      x, pars = pars, add_chain = add_chain, 
+      subset = subset, ..., as.matrix = TRUE
+    ) 
+  } else {
+    out <- unclass(as_draws_matrix(x, ...))
+  }
+  out
 }
 
 #' @rdname posterior_samples.brmsfit
 #' @export
-as.array.brmsfit <- function(x, ...) {
-  posterior_samples(x, ..., as.array = TRUE)
+as.array.brmsfit <- function(x, pars = NA, add_chain = FALSE, 
+                             subset = NULL, ...) {
+  cl <- match.call()
+  if (any(c("pars", "add_chain", "subset") %in% names(cl))) {
+    out <- posterior_samples(
+      x, pars = pars, add_chain = add_chain, 
+      subset = subset, ..., as.array = TRUE
+    ) 
+  } else {
+    out <- unclass(as_draws_array(x, ...))
+  }
+  out
 }
 
 #' Extract Parameter Names
@@ -267,16 +305,15 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
           out <- NULL
         } else {
           take <- match(max(matches), matches)
-          # order samples randomly to avoid artifical dependencies
+          # order samples randomly to avoid artificial dependencies
           # between parameters using the same prior samples
           samples <- list(samples[sample(nsamples(x)), take])
           out <- structure(samples, names = par)
         }
         return(out)
       }
-      samples <- data.frame(
-        rmNULL(lapply(pars, .prior_samples)), check.names = FALSE
-      )
+      samples <- rmNULL(lapply(pars, .prior_samples))
+      samples <- data.frame(samples, check.names = FALSE)
     }
   } else {
     samples <- NULL
@@ -360,6 +397,7 @@ ignore_prior <- function(x, par) {
 as.mcmc.brmsfit <- function(x, pars = NA, fixed = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
+  warning2("as.mcmc.brmsfit is deprecated and will eventually be removed.")
   contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x), fixed = fixed, ...)
   combine_chains <- as_one_logical(combine_chains)

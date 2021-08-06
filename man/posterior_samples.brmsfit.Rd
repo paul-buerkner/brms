@@ -6,7 +6,7 @@
 \alias{as.data.frame.brmsfit}
 \alias{as.matrix.brmsfit}
 \alias{as.array.brmsfit}
-\title{Extract Posterior Samples}
+\title{(Soft-Deprecated) Extract Posterior Samples}
 \usage{
 \method{posterior_samples}{brmsfit}(
   x,
@@ -21,11 +21,19 @@
 
 posterior_samples(x, pars = NA, ...)
 
-\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = TRUE, ...)
+\method{as.data.frame}{brmsfit}(
+  x,
+  row.names = NULL,
+  optional = TRUE,
+  pars = NA,
+  add_chain = FALSE,
+  subset = NULL,
+  ...
+)
 
-\method{as.matrix}{brmsfit}(x, ...)
+\method{as.matrix}{brmsfit}(x, pars = NA, add_chain = FALSE, subset = NULL, ...)
 
-\method{as.array}{brmsfit}(x, ...)
+\method{as.array}{brmsfit}(x, pars = NA, add_chain = FALSE, subset = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -54,24 +62,29 @@ instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 
 \item{...}{For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
-Further arguments to be passed to \code{posterior_samples}.}
+Further arguments to be passed to \code{posterior_samples} or the
+corresponding \code{\link[brms:draws-brms]{as_draws_*}} methods (see details).}
 
 \item{row.names, optional}{See \code{\link[base:as.data.frame]{as.data.frame}}.}
 }
 \value{
-A data.frame (matrix or array) containing the posterior samples, 
-  with one column per parameter. In case an array is returned,
-  it contains one additional dimension for the chains.
+A data.frame (matrix or array) containing the posterior samples.
 }
 \description{
-Extract posterior samples of specified parameters.
+Extract posterior samples of specified parameters. The
+\code{posterior_samples} method is soft-deprecated. We recommend using the
+more modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+functions of the \pkg{posterior} package instead.
 }
 \details{
-Currently there are methods for \code{brmsfit} objects.
-  \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
-  \code{as.array.brmsfit} are basically aliases of 
-  \code{posterior_samples.brmsfit} and differ from
-  each other only in type of the returned object.
+The applied backend of \code{as.data.frame.brmsfit},
+  \code{as.matrix.brmsfit}, and \code{as.array.brmsfit} depends on the
+  supplied arguments. If any of the soft-deprecated arguments \code{pars},
+  \code{add_chain}, or \code{subset} is given, \code{posterior_samples} will
+  be used as backend to retain backwards compatibility. Otherwise, the
+  corresponding \code{\link[brms:draws-brms]{as_draws_*}} methods are used as
+  backends but removing the \pkg{posterior}-specific object classes to ensure
+  expected subsetting behavior.
 }
 \examples{
 \dontrun{
@@ -79,12 +92,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, family = "cumulative")
 
 # extract posterior samples of population-level effects 
-samples1 <- posterior_samples(fit, "^b")
+samples1 <- posterior_samples(fit, pars = "^b")
 head(samples1)
 
 # extract posterior samples of group-level standard deviations
-samples2 <- posterior_samples(fit, "^sd_")
+samples2 <- posterior_samples(fit, pars = "^sd_")
 head(samples2)
 }
 
+}
+\seealso{
+\code{\link[brms:draws-brms]{as_draws}}
 }
