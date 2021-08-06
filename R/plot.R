@@ -61,8 +61,8 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
     pars <- default_plot_pars(x)
     fixed <- FALSE
   }
-  samples <- as.data.frame(x, pars = pars, add_chain = TRUE, fixed = fixed)
-  pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
+  samples <- as.array(x, pars = pars, fixed = fixed)
+  pars <- dimnames(samples)[[3]]
   if (!length(pars)) {
     stop2("No valid parameters selected.")
   }
@@ -76,7 +76,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
     sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
-    sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
+    sub_samples <- samples[, , sub_pars, drop = FALSE]
     plots[[i]] <- bayesplot::mcmc_combo(
       sub_samples, combo = combo, gg_theme = theme, ...
     )
@@ -182,15 +182,11 @@ mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals",
       mcmc_args$x <- nuts_params(object)
     } else {
       # x refers to a data.frame of samples
-      # TODO: replace once bayesplot supports posterior
-      samples <- as.data.frame(
-        object, pars = pars, add_chain = TRUE, fixed = fixed
-      )
+      samples <- as.array(object, pars = pars, fixed = fixed)
       if (!length(samples)) {
         stop2("No valid parameters selected.")
       }
-      samples$iter <- NULL
-      sel_pars <- names(samples)[!names(samples) %in% "chain"]
+      sel_pars <- dimnames(samples)[[3]]
       if (type %in% c("scatter", "hex") && length(sel_pars) != 2L) {
         stop2("Exactly 2 parameters must be selected for this type.",
               "\nParameters selected: ", collapse_comma(sel_pars))
@@ -262,8 +258,7 @@ pairs.brmsfit <- function(x, pars = NA, fixed = FALSE, exact_match = FALSE, ...)
     pars <- default_plot_pars(x)
     fixed <- FALSE
   }
-  samples <- as.data.frame(x, pars = pars, add_chain = TRUE, fixed = fixed)
-  samples$iter <- NULL
+  samples <- as.array(x, pars = pars, fixed = fixed)
   bayesplot::mcmc_pairs(samples, ...)
 }
 
