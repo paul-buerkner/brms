@@ -24,20 +24,20 @@ fit6 <- rename_pars(brms:::brmsfit_example6)
 test_that("as.data.frame has reasonable ouputs", {
   ps <- as.data.frame(fit1)
   expect_true(is(ps, "data.frame"))
-  expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))
+  expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
 })
 
 test_that("as.matrix has reasonable ouputs", {
   ps <- as.matrix(fit1)
   expect_true(is(ps, "matrix"))
-  expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))
+  expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
 })
 
 test_that("as.array has reasonable ouputs", {
   ps <- as.array(fit1)
   expect_true(is.array(ps))
   chains <- fit1$fit@sim$chains
-  ps_dim <- c(nsamples(fit1) / chains, chains, length(parnames(fit1)))
+  ps_dim <- c(nsamples(fit1) / chains, chains, length(variables(fit1)))
   expect_equal(dim(ps), ps_dim)
 })
 
@@ -45,12 +45,12 @@ test_that("as.mcmc has reasonable ouputs", {
   chains <- fit1$fit@sim$chains
   mc <- SW(as.mcmc(fit1))
   expect_equal(length(mc), chains)
-  expect_equal(dim(mc[[1]]), c(nsamples(fit1) / chains, length(parnames(fit1))))
+  expect_equal(dim(mc[[1]]), c(nsamples(fit1) / chains, length(variables(fit1))))
   mc <- SW(as.mcmc(fit1, combine_chains = TRUE))
-  expect_equal(dim(mc), c(nsamples(fit1), length(parnames(fit1))))
+  expect_equal(dim(mc), c(nsamples(fit1), length(variables(fit1))))
   # test assumes thin = 1
   expect_equal(dim(SW(as.mcmc(fit1, inc_warmup = TRUE)[[1]])), 
-               c(fit1$fit@sim$iter, length(parnames(fit1))))
+               c(fit1$fit@sim$iter, length(variables(fit1))))
 })
 
 test_that("autocor has reasonable ouputs", {
@@ -494,28 +494,8 @@ test_that("nsamples has reasonable ouputs", {
 })
 
 test_that("pairs has reasonable outputs", {
-  expect_s3_class(SW(pairs(fit1, pars = parnames(fit1)[1:3])), 
+  expect_s3_class(SW(pairs(fit1, pars = variables(fit1)[1:3])), 
                   "bayesplot_grid")
-})
-
-test_that("parnames has reasonable ouputs", {
-  expect_true(all(
-    c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
-      "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
-      "prior_sd_visit", "prior_cor_visit", "lp__") %in%
-      parnames(fit1)  
-  ))
-  expect_true(all(
-    c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
-      "cor_patient__a_Intercept__b_Intercept", 
-      "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
-      "prior_b_a") %in%
-      parnames(fit2)  
-  ))
-  expect_true(all(
-    c("lscale_volume_gpAgeTrt0", "lscale_volume_gpAgeTrt1") %in% 
-      parnames(fit6)
-  ))
 })
 
 test_that("plot has reasonable outputs", {
@@ -548,8 +528,8 @@ test_that("posterior_average has reasonable outputs", {
 
 test_that("posterior_samples has reasonable outputs", {
   ps <- posterior_samples(fit1)
-  expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))
-  expect_equal(names(ps), parnames(fit1))
+  expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
+  expect_equal(names(ps), variables(fit1))
   expect_equal(names(posterior_samples(fit1, pars = "^b_")),
                c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
                  "b_Age", "b_volume", "b_Trt1:Age", "b_sigma_Trt1"))
@@ -566,7 +546,7 @@ test_that("posterior_summary has reasonable outputs", {
 
 test_that("posterior_interval has reasonable outputs", {
   expect_equal(dim(posterior_interval(fit1)), 
-               c(length(parnames(fit1)), 2))
+               c(length(variables(fit1)), 2))
 })
 
 test_that("posterior_predict has reasonable outputs", {
@@ -779,7 +759,7 @@ test_that("mcmc_plot has reasonable outputs", {
   expect_ggplot(mcmc_plot(fit1, type = "hist", pars = "^sd_"))
   expect_ggplot(mcmc_plot(fit1, type = "dens"))
   expect_ggplot(mcmc_plot(fit1, type = "scatter",
-                          pars = parnames(fit1)[2:3], 
+                          pars = variables(fit1)[2:3], 
                           fixed = TRUE))
   expect_ggplot(SW(mcmc_plot(fit1, type = "rhat", pars = "^b_")))
   expect_ggplot(SW(mcmc_plot(fit1, type = "neff")))
@@ -880,6 +860,27 @@ test_that("VarCorr has reasonable outputs", {
   expect_equal(dim(VarCorr(fit6)$residual__$sd), c(1, 4))
   vc <- VarCorr(fit5)
   expect_equal(dim(vc$patient$sd), c(2, 4))
+})
+
+test_that("variables has reasonable ouputs", {
+  expect_true(all(
+    c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
+      "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
+      "prior_sd_visit", "prior_cor_visit", "lp__") %in%
+      variables(fit1)
+  ))
+  expect_true(all(
+    c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
+      "cor_patient__a_Intercept__b_Intercept", 
+      "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
+      "prior_b_a") %in%
+      variables(fit2)  
+  ))
+  expect_true(all(
+    c("lscale_volume_gpAgeTrt0", "lscale_volume_gpAgeTrt1") %in% 
+      variables(fit6)
+  ))
+  expect_equal(variables(fit3), SW(parnames(fit3)))
 })
 
 test_that("vcov has reasonable outputs", {

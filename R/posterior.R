@@ -25,6 +25,11 @@ variables.brmsfit <- function(x, ...) {
   out
 }
 
+#' @method variables data.frame
+variables.data.frame <- function(x, ...) {
+  names(x)
+}
+
 #' @rdname draws-index-brms
 #' @importFrom posterior nvariables
 #' @method nvariables brmsfit

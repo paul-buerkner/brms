@@ -14,7 +14,7 @@
 #'  Other typical options are "sd" or "cor". 
 #'  If \code{class = NULL}, all parameters can be tested
 #'  against each other, but have to be specified with their full name 
-#'  (see also \code{\link[brms:parnames]{parnames}}) 
+#'  (see also \code{\link[brms:draws-index-brms]{variables}}) 
 #' @param group Name of a grouping factor to evaluate only 
 #'  group-level effects parameters related to this grouping factor.
 #' @param alpha The alpha-level of the tests (default is 0.05;
@@ -294,7 +294,7 @@ combine_hlist <- function(hlist, class, alpha) {
 # evaluate a single hypothesis based on the posterior samples
 eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
-  pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
+  pars <- variables(x)[grepl(paste0("^", class), variables(x))]
   # parse hypothesis string
   h <- gsub("[ \t\r\n]", "", h)
   sign <- get_matches("=|<|>", h)

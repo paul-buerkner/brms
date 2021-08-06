@@ -45,7 +45,7 @@ model. The output of this function is ment for usage in the
 fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
            data = epilepsy, family = poisson(),
            save_pars = save_pars(group = FALSE))
-parnames(fit)
+variables(fit)
 }
   
 }

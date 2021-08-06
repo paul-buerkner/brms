@@ -1077,14 +1077,14 @@ point_samples <- function(samples, point_estimate = NULL) {
     return(samples)
   }
   point_estimate <- match.arg(point_estimate, c("mean", "median"))
-  parnames <- colnames(samples)
+  variables <- colnames(samples)
   if (point_estimate == "mean") {
     samples <- matrixStats::colMeans2(samples)
   } else if (point_estimate == "median") {
     samples <- matrixStats::colMedians(samples)
   }
   samples <- t(samples)
-  colnames(samples) <- parnames
+  colnames(samples) <- variables
   samples
 }
 

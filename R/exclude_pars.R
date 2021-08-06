@@ -152,7 +152,7 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
 #' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'            data = epilepsy, family = poisson(),
 #'            save_pars = save_pars(group = FALSE))
-#' parnames(fit)
+#' variables(fit)
 #' }
 #'   
 #' @export

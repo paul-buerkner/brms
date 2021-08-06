@@ -127,7 +127,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (!"sample_prior" %in% names(dots)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
-      has_prior_pars <- any(grepl("^prior_", parnames(object)))
+      has_prior_pars <- any(grepl("^prior_", variables(object)))
       dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }

@@ -34,7 +34,7 @@
 fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), pars = NULL, ...) {
   contains_samples(object)
-  all_pars <- parnames(object)
+  all_pars <- variables(object)
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
   if (!is.null(pars)) {
     pars <- as.character(pars)
@@ -75,7 +75,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #' @export
 vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
   contains_samples(object)
-  all_pars <- parnames(object)
+  all_pars <- variables(object)
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
   if (!is.null(pars)) {
     pars <- as.character(pars)
@@ -135,7 +135,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   if (!nrow(object$ranef)) {
     stop2("The model does not contain group-level effects.")
   }
-  all_pars <- parnames(object)
+  all_pars <- variables(object)
   if (!is.null(pars)) {
     pars <- as.character(pars)
   }
@@ -311,7 +311,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(x)
   x <- restructure(x)
-  if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
+  if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", variables(x))))) {
     stop2("The model does not contain covariance matrices.")
   }
   .VarCorr <- function(y) {
@@ -319,7 +319,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     out <- list(sd = as.matrix(x, pars = y$sd_pars, fixed = TRUE))
     colnames(out$sd) <- y$rnames
     # compute correlation and covariance matrices
-    found_cor_pars <- intersect(y$cor_pars, parnames(x))
+    found_cor_pars <- intersect(y$cor_pars, variables(x))
     if (length(found_cor_pars)) {
       cor <- as.matrix(x, pars = found_cor_pars, fixed = TRUE)
       if (length(found_cor_pars) < length(y$cor_pars)) { 

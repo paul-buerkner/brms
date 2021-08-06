@@ -67,7 +67,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, fixed = FALSE,
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
   contains_samples(x)
-  pars <- extract_pars(pars, parnames(x), fixed = fixed, ...)
+  pars <- extract_pars(pars, variables(x), fixed = fixed, ...)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -186,6 +186,7 @@ as.array.brmsfit <- function(x, pars = NA, add_chain = FALSE,
 #' 
 #' @export
 parnames <- function(x, ...) {
+  warning2("'parnames' is deprecated. Please use 'variables' instead.")
   UseMethod("parnames")
 }
 
@@ -206,7 +207,7 @@ parnames.brmsfit <- function(x, ...) {
 # extract all valid parameter names that match pars
 # @param pars A character vector or regular expression
 # @param all_pars all parameter names of the fitted model
-# @param fixed should parnames be matched exactly?
+# @param fixed should parameter names be matched exactly?
 # @param exact_match deprecated alias of fixed
 # @param na_value: what should be returned if pars is NA? 
 # @param ... Further arguments to be passed to grepl
@@ -290,7 +291,7 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
   if (!anyNA(pars) && !is.character(pars)) {
     stop2("Argument 'pars' must be a character vector.")
   }
-  par_names <- parnames(x)
+  par_names <- variables(x)
   prior_names <- unique(par_names[grepl("^prior_", par_names)])
   if (length(prior_names)) {
     samples <- posterior_samples(x, prior_names, fixed = TRUE)
@@ -399,7 +400,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, fixed = FALSE,
                             ...) {
   warning2("as.mcmc.brmsfit is deprecated and will eventually be removed.")
   contains_samples(x)
-  pars <- extract_pars(pars, all_pars = parnames(x), fixed = fixed, ...)
+  pars <- extract_pars(pars, all_pars = variables(x), fixed = fixed, ...)
   combine_chains <- as_one_logical(combine_chains)
   inc_warmup <- as_one_logical(inc_warmup)
   if (combine_chains) {

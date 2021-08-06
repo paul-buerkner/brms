@@ -37,7 +37,7 @@ Default is "b" for population-level effects.
 Other typical options are "sd" or "cor". 
 If \code{class = NULL}, all parameters can be tested
 against each other, but have to be specified with their full name 
-(see also \code{\link[brms:parnames]{parnames}})}
+(see also \code{\link[brms:draws-index-brms]{variables}})}
 
 \item{group}{Name of a grouping factor to evaluate only 
 group-level effects parameters related to this grouping factor.}

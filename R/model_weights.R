@@ -254,7 +254,7 @@ posterior_average.brmsfit <- function(
     set.seed(seed) 
   }
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
-  pars_list <- lapply(models, parnames)
+  pars_list <- lapply(models, variables)
   all_pars <- unique(unlist(pars_list))
   if (is.null(missing)) {
     common_pars <- lapply(pars_list, function(x) all_pars %in% x)
@@ -283,7 +283,7 @@ posterior_average.brmsfit <- function(
     }
     if (is.list(missing)) {
       all_miss_pars <- unique(ulapply(
-        models, function(m) setdiff(pars, parnames(m))
+        models, function(m) setdiff(pars, variables(m))
       ))
       inv_pars <- setdiff(all_miss_pars, names(missing))
       if (length(inv_pars)) {

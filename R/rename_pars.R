@@ -30,7 +30,7 @@ rename_pars <- function(x) {
   bterms <- brmsterms(x$formula)
   data <- model.frame(x)
   meef <- tidy_meef(bterms, data)
-  pars <- parnames(x)
+  pars <- variables(x)
   # find positions of parameters and define new names
   change <- c(
     change_effects(bterms, data = data, pars = pars),
@@ -581,7 +581,7 @@ compute_xi <- function(x, ...) {
 
 #' @export
 compute_xi.brmsfit <- function(x, ...) {
-  if (!any(grepl("^tmp_xi(_|$)", parnames(x)))) {
+  if (!any(grepl("^tmp_xi(_|$)", variables(x)))) {
     return(x)
   }
   draws <- try(extract_draws(x))
@@ -607,7 +607,7 @@ compute_xi.brmsprep <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   resp <- usc(x$resp)
   tmp_xi_name <- paste0("tmp_xi", resp)
-  if (!tmp_xi_name %in% parnames(fit)) {
+  if (!tmp_xi_name %in% variables(fit)) {
     return(fit)
   }
   mu <- get_dpar(x, "mu")

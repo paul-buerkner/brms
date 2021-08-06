@@ -251,7 +251,7 @@ stanplot.brmsfit <- function(object, ...) {
 #' fit <- brm(count ~ zAge + zBase * Trt 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")  
-#' pairs(fit, pars = parnames(fit)[1:3], fixed = TRUE)
+#' pairs(fit, pars = variables(fit)[1:3], fixed = TRUE)
 #' pairs(fit, pars = "^sd_")
 #' }
 #'
