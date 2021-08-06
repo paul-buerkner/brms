@@ -307,7 +307,8 @@ posterior_average.brmsfit <- function(
     if (nsamples[i] > 0) {
       subset <- sample(seq_len(nsamples(models[[i]])), nsamples[i])
       subset <- sort(subset)
-      ps <- posterior_samples(
+      # TODO: eventually move to posterior inferface
+      ps <- as.data.frame(
         models[[i]], pars = pars, 
         subset = subset, fixed = TRUE
       )

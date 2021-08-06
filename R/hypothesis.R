@@ -316,7 +316,7 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   # get posterior and prior samples
   pattern <- c(paste0("^", class), ":", "\\[", "\\]", ",")
   repl <- c("", "___", ".", ".", "..")
-    samples <- posterior_samples(x, pars = parsH, fixed = TRUE)
+  samples <- as.data.frame(x, variable = parsH)
   names(samples) <- rename(names(samples), pattern, repl, fixed = FALSE)
   samples <- as.matrix(eval2(h_renamed, samples))
   prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)

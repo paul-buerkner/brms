@@ -344,7 +344,6 @@ algorithm <- function(x) {
 #'  the measure of variability. If \code{TRUE}, the median and the 
 #'  median absolute deviation (MAD) are applied instead.
 #' @param ... More arguments passed to or from other methods.
-#' @inheritParams posterior_samples
 #' 
 #' @return A matrix where rows indicate parameters 
 #' and columns indicate the summary estimates.
@@ -409,10 +408,9 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
 
 #' @rdname posterior_summary
 #' @export
-posterior_summary.brmsfit <- function(x, pars = NA, 
-                                      probs = c(0.025, 0.975), 
+posterior_summary.brmsfit <- function(x, probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
-  out <- as.matrix(x, pars = pars, ...)
+  out <- as.matrix(x, ...)
   posterior_summary(out, probs = probs, robust = robust, ...)
 }
 

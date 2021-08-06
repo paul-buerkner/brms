@@ -61,7 +61,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
     pars <- default_plot_pars(x)
     fixed <- FALSE
   }
-  samples <- posterior_samples(x, pars, add_chain = TRUE, fixed = fixed)
+  samples <- as.data.frame(x, pars, add_chain = TRUE, fixed = fixed)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
   if (!length(pars)) {
     stop2("No valid parameters selected.")
@@ -182,7 +182,8 @@ mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals",
       mcmc_args$x <- nuts_params(object)
     } else {
       # x refers to a data.frame of samples
-      samples <- posterior_samples(object, pars, add_chain = TRUE, fixed = fixed)
+      # TODO: replace once bayesplot supports posterior
+      samples <- as.data.frame(object, pars, add_chain = TRUE, fixed = fixed)
       if (!length(samples)) {
         stop2("No valid parameters selected.")
       }
@@ -259,7 +260,7 @@ pairs.brmsfit <- function(x, pars = NA, fixed = FALSE, exact_match = FALSE, ...)
     pars <- default_plot_pars(x)
     fixed <- FALSE
   }
-  samples <- posterior_samples(x, pars, add_chain = TRUE, fixed = fixed)
+  samples <- as.data.frame(x, pars, add_chain = TRUE, fixed = fixed)
   samples$iter <- NULL
   bayesplot::mcmc_pairs(samples, ...)
 }

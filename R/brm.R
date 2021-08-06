@@ -383,7 +383,7 @@
 #' conditional_effects(fit6)
 #'
 #' # extract estimated residual SDs of both groups
-#' sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
+#' sigmas <- exp(as.data.frame(fit6, variable = "^b_sigma_", regex = TRUE))
 #' ggplot(stack(sigmas), aes(values)) +
 #'   geom_density(aes(fill = ind))
 #'

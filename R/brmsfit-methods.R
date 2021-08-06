@@ -84,7 +84,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
   if (!length(fpars)) {
     return(NULL)
   }
-  samples <- posterior_samples(object, pars = fpars, fixed = TRUE)
+  samples <- as.data.frame(object, variable = fpars)
   names(samples) <- sub(fixef_pars(), "", names(samples))
   if (correlation) {
     out <- cor(samples) 
