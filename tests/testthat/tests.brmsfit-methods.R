@@ -43,13 +43,13 @@ test_that("as.array has reasonable ouputs", {
 
 test_that("as.mcmc has reasonable ouputs", {
   chains <- fit1$fit@sim$chains
-  mc <- as.mcmc(fit1)
+  mc <- SW(as.mcmc(fit1))
   expect_equal(length(mc), chains)
   expect_equal(dim(mc[[1]]), c(nsamples(fit1) / chains, length(parnames(fit1))))
-  mc <- as.mcmc(fit1, combine_chains = TRUE)
+  mc <- SW(as.mcmc(fit1, combine_chains = TRUE))
   expect_equal(dim(mc), c(nsamples(fit1), length(parnames(fit1))))
   # test assumes thin = 1
-  expect_equal(dim(as.mcmc(fit1, inc_warmup = TRUE)[[1]]), 
+  expect_equal(dim(SW(as.mcmc(fit1, inc_warmup = TRUE)[[1]])), 
                c(fit1$fit@sim$iter, length(parnames(fit1))))
 })
 
@@ -792,7 +792,7 @@ test_that("mcmc_plot has reasonable outputs", {
 
 test_that("summary has reasonable outputs", {
   summary1 <- SW(summary(fit1, priors = TRUE))
-  expect_true(is.numeric(summary1$fixed))
+  expect_true(is.data.frame(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
                c("Intercept", "sigma_Intercept", "Trt1", "Age", "volume", 
                  "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp"))

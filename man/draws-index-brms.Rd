@@ -2,6 +2,17 @@
 % Please edit documentation in R/posterior.R
 \name{draws-index-brms}
 \alias{draws-index-brms}
+\alias{variables}
+\alias{nvariables}
+\alias{niterations}
+\alias{nchains}
+\alias{ndraws}
+\alias{Index}
+\alias{variables,}
+\alias{iterations,}
+\alias{chains,}
+\alias{and}
+\alias{draws.}
 \alias{variables.brmsfit}
 \alias{nvariables.brmsfit}
 \alias{niterations.brmsfit}
@@ -11,7 +22,7 @@
 \usage{
 \method{variables}{brmsfit}(x, ...)
 
-\method{nvariables}{brmsfit}(x)
+\method{nvariables}{brmsfit}(x, ...)
 
 \method{niterations}{brmsfit}(x)
 
@@ -26,5 +37,5 @@ the methods are defined.}
 \item{...}{Arguments passed to individual methods (if applicable).}
 }
 \description{
-Index variables, iterations, chains, and draws.
+Index \code{brmsfit} objects
 }

@@ -312,7 +312,7 @@ posterior_average.brmsfit <- function(
         models[[i]], pars = pars, 
         subset = subset, fixed = TRUE
       )
-      if (!is.null(ps)) {
+      if (NROW(ps)) {
         out[[i]] <- ps
       } else {
         out[[i]] <- as.data.frame(matrix(

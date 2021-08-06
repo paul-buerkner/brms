@@ -10,7 +10,7 @@ posterior_summary(x, ...)
 
 \method{posterior_summary}{default}(x, probs = c(0.025, 0.975), robust = FALSE, ...)
 
-\method{posterior_summary}{brmsfit}(x, probs = c(0.025, 0.975), robust = FALSE, ...)
+\method{posterior_summary}{brmsfit}(x, pars = NA, probs = c(0.025, 0.975), robust = FALSE, ...)
 }
 \arguments{
 \item{x}{An \R object.}
@@ -24,6 +24,10 @@ posterior_summary(x, ...)
 the measure of central tendency and the standard deviation as 
 the measure of variability. If \code{TRUE}, the median and the 
 median absolute deviation (MAD) are applied instead.}
+
+\item{pars}{Names of parameters for which posterior samples 
+should be returned, as given by a character vector or regular expressions.
+By default, all posterior samples of all parameters are extracted.}
 }
 \value{
 A matrix where rows indicate parameters 

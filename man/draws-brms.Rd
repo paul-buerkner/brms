@@ -2,6 +2,12 @@
 % Please edit documentation in R/posterior.R
 \name{draws-brms}
 \alias{draws-brms}
+\alias{as_draws}
+\alias{as_draws_matrix}
+\alias{as_draws_array}
+\alias{as_draws_df}
+\alias{as_draws_rvars}
+\alias{as_draws_list}
 \alias{as_draws.brmsfit}
 \alias{as_draws_matrix.brmsfit}
 \alias{as_draws_array.brmsfit}

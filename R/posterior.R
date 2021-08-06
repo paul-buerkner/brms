@@ -1,5 +1,7 @@
 #' Index \code{brmsfit} objects
 #' 
+#' @aliases variables nvariables niterations nchains ndraws
+#' 
 #' Index variables, iterations, chains, and draws.
 #' 
 #' @param x A \code{brmsfit} object or another \R object for which
@@ -28,8 +30,8 @@ variables.brmsfit <- function(x, ...) {
 #' @method nvariables brmsfit
 #' @export
 #' @export nvariables
-nvariables.brmsfit <- function(x) {
-  length(variables(x))
+nvariables.brmsfit <- function(x, ...) {
+  length(variables(x, ...))
 }
 
 #' @rdname draws-index-brms
@@ -59,7 +61,7 @@ nchains.brmsfit <- function(x) {
 #' @export
 #' @export ndraws
 ndraws.brmsfit <- function(x) {
-  niteration(x) * nchains(x)
+  niterations(x) * nchains(x)
 }
 
 nwarmup <- function(x) {
@@ -76,6 +78,9 @@ nthin <- function(x) {
 #' 
 #' Transform a \code{brmsfit} object to a format supported by the 
 #' \pkg{posterior} package.
+#' 
+#' @aliases as_draws as_draws_matrix as_draws_array as_draws_df 
+#' @aliases as_draws_rvars as_draws_list
 #' 
 #' @param x A \code{brmsfit} object or another \R object for which
 #' the methods are defined.
@@ -203,10 +208,13 @@ as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
   # first subset variables then remove warmup as removing warmup
   # will take a lot of time when extracting many variables
   out <- subset_draws(out, variable = variable, regex = regex)
-  if (inc_warmup) {
-    nwarmup <- x$sim$warmup2[1] %||% 0
+  if (!inc_warmup) {
+    nwarmup <- x@sim$warmup2[1] %||% 0
     warmup_ids <- seq_len(nwarmup)
-    iteration_ids <- iteration_ids(out)[-warmup_ids]
+    iteration_ids <- posterior::iteration_ids(out)
+    if (length(warmup_ids)) {
+      iteration_ids <- iteration_ids[-warmup_ids]
+    }
     out <- subset_draws(out, iteration = iteration_ids)
   }
   out

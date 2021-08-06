@@ -22,7 +22,7 @@
 #' 
 #' @method summary brmsfit
 #' @importMethodsFrom rstan summary
-#' @importFrom posterior subset_draws
+#' @importFrom posterior subset_draws summarize_draws
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             robust = FALSE, mc_se = FALSE, ...) {
@@ -72,13 +72,13 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     if (robust) {
       measures$Estimate <- median
       if (mc_se) {
-        measures$MCSE <- mcse_median
+        measures$MCSE <- posterior::mcse_median
       }
       measures$Est.Error <- mad
     } else {
       measures$Estimate <- mean
       if (mc_se) {
-        measures$MCSE <- mcse_mean
+        measures$MCSE <- posterior::mcse_mean
       }
       measures$Est.Error <- sd
     }
@@ -337,6 +337,9 @@ algorithm <- function(x) {
 #' of the \pkg{posterior} package (see examples below).
 #' 
 #' @param x An \R object.
+#' @param pars Names of parameters for which posterior samples 
+#'   should be returned, as given by a character vector or regular expressions.
+#'   By default, all posterior samples of all parameters are extracted.
 #' @param probs The percentiles to be computed by the 
 #'   \code{quantile} function.
 #' @param robust If \code{FALSE} (the default) the mean is used as 
@@ -408,9 +411,9 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
 
 #' @rdname posterior_summary
 #' @export
-posterior_summary.brmsfit <- function(x, probs = c(0.025, 0.975), 
+posterior_summary.brmsfit <- function(x, pars = NA, probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
-  out <- as.matrix(x, ...)
+  out <- as.matrix(x, pars = pars, ...)
   posterior_summary(out, probs = probs, robust = robust, ...)
 }
 
