@@ -8,7 +8,7 @@
 #' \code{restructure} once per model after updating \pkg{brms}.
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param rstr_summary Logical; If \code{TRUE}, the cached summary
+#' @param rstr_summary (Defunct) Logical; If \code{TRUE}, the cached summary
 #'   stored by \pkg{rstan} is restructured as well.
 #'   
 #' @return A \code{brmsfit} object compatible with the latest version

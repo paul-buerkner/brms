@@ -9,7 +9,7 @@ restructure(x, rstr_summary = FALSE)
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{rstr_summary}{Logical; If \code{TRUE}, the cached summary
+\item{rstr_summary}{(Defunct) Logical; If \code{TRUE}, the cached summary
 stored by \pkg{rstan} is restructured as well.}
 }
 \value{
