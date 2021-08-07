@@ -177,15 +177,6 @@ extract_pars <- function(pars, all_pars, fixed = FALSE,
   out
 }
 
-# use the deprecated 'pars' alias to 'variable'
-use_variable_alias <- function(variable, object, pars = NA, ...) {
-  if (!anyNA(pars)) {
-    warning2("Argument 'pars' is deprecated. Please use 'variable' instead.")
-    variable <- extract_pars(pars, variables(object), ...)
-  }
-  variable
-}
-
 # check deprecated alias of argument 'fixed'
 check_deprecated_fixed <- function(fixed, exact_match) {
   if (!isFALSE(exact_match)) {

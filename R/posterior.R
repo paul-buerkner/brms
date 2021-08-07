@@ -297,6 +297,15 @@ as.array.brmsfit <- function(x, pars = NA, variable = NULL,
   unclass_draws(out)
 }
 
+# use the deprecated 'pars' alias to 'variable'
+use_variable_alias <- function(variable, object, pars = NA, ...) {
+  if (!anyNA(pars)) {
+    warning2("Argument 'pars' is deprecated. Please use 'variable' instead.")
+    variable <- extract_pars(pars, variables(object), ...)
+  }
+  variable
+}
+
 # remove the posterior draws format classes from objects
 unclass_draws <- function(x, ...) {
   UseMethod("unclass_draws")

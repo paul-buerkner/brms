@@ -215,6 +215,8 @@ tidy_gpef <- function(x, data) {
 # exponential-quadratic covariance matrix
 # not vectorized over parameter values
 cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
+  sdgp <- as.numeric(sdgp)
+  lscale <- as.numeric(lscale)
   Dls <- length(lscale)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
