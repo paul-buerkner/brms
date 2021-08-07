@@ -3,10 +3,7 @@
 \name{posterior_samples.brmsfit}
 \alias{posterior_samples.brmsfit}
 \alias{posterior_samples}
-\alias{as.data.frame.brmsfit}
-\alias{as.matrix.brmsfit}
-\alias{as.array.brmsfit}
-\title{(Soft-Deprecated) Extract Posterior Samples}
+\title{(Deprecated) Extract Posterior Samples}
 \usage{
 \method{posterior_samples}{brmsfit}(
   x,
@@ -20,20 +17,6 @@
 )
 
 posterior_samples(x, pars = NA, ...)
-
-\method{as.data.frame}{brmsfit}(
-  x,
-  row.names = NULL,
-  optional = TRUE,
-  pars = NA,
-  add_chain = FALSE,
-  subset = NULL,
-  ...
-)
-
-\method{as.matrix}{brmsfit}(x, pars = NA, add_chain = FALSE, subset = NULL, ...)
-
-\method{as.array}{brmsfit}(x, pars = NA, add_chain = FALSE, subset = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -61,30 +44,16 @@ instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 \item{as.array}{Should the output be an \code{array} 
 instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 
-\item{...}{For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
-Further arguments to be passed to \code{posterior_samples} or the
-corresponding \code{\link[brms:draws-brms]{as_draws_*}} methods (see details).}
-
-\item{row.names, optional}{See \code{\link[base:as.data.frame]{as.data.frame}}.}
+\item{...}{Arguments passed to individual methods (if applicable).}
 }
 \value{
 A data.frame (matrix or array) containing the posterior samples.
 }
 \description{
 Extract posterior samples of specified parameters. The
-\code{posterior_samples} method is soft-deprecated. We recommend using the
-more modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+\code{posterior_samples} method is deprecated. We recommend using the more
+modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
 functions of the \pkg{posterior} package instead.
-}
-\details{
-The applied backend of \code{as.data.frame.brmsfit},
-  \code{as.matrix.brmsfit}, and \code{as.array.brmsfit} depends on the
-  supplied arguments. If any of the soft-deprecated arguments \code{pars},
-  \code{add_chain}, or \code{subset} is given, \code{posterior_samples} will
-  be used as backend to retain backwards compatibility. Otherwise, the
-  corresponding \code{\link[brms:draws-brms]{as_draws_*}} methods are used as
-  backends but removing the \pkg{posterior}-specific object classes to ensure
-  expected subsetting behavior.
 }
 \examples{
 \dontrun{
@@ -102,5 +71,6 @@ head(samples2)
 
 }
 \seealso{
-\code{\link[brms:draws-brms]{as_draws}}
+\code{\link[brms:draws-brms]{as_draws}},
+   \code{\link[brms:as.data.frame.brmsfit]{as.data.frame}}
 }
