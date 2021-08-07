@@ -82,7 +82,7 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
 ```
 
-The results (i.e., posterior samples) can be investigated using
+The results (i.e., posterior draws) can be investigated using
 
 ```{r summary}
 summary(fit1) 
@@ -118,7 +118,7 @@ can use the `plot` method. If we just want to see results of the regression
 coefficients of `Trt` and `zBase`, we go for
 
 ```{r plot}
-plot(fit1, pars = c("Trt", "zBase")) 
+plot(fit1, variable = c("b_Trt1", "b_zBase")) 
 ``` 
 
 A more detailed investigation can be performed by running
@@ -263,7 +263,7 @@ model fitting, use the `make_stancode` function.
 
 When you fit your model for the first time with brms, there is currently no way
 to avoid compilation. However, if you have already fitted your model and want to
-run it again, for instance with more samples, you can do this without
+run it again, for instance with more draws, you can do this without
 recompilation by using the `update` method. For more details see
 `help("update.brmsfit")`.
 
