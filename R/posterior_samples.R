@@ -123,56 +123,6 @@ posterior_samples.default <- function(x, pars = NA, fixed = FALSE, ...) {
   x
 }
 
-#' @rdname posterior_samples.brmsfit
-#' @export
-as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, 
-                                  pars = NA, add_chain = FALSE, subset = NULL, 
-                                  ...) {
-  cl <- match.call()
-  if (any(c("pars", "add_chain", "subset") %in% names(cl))) {
-    out <- posterior_samples(
-      x, pars = pars, add_chain = add_chain, 
-      subset = subset, ...
-    ) 
-  } else {
-    out <- unclass(as_draws_df(x, ...))
-    out$.chain <- out$.iteration <- out$.draw <- NULL
-  }
-  data.frame(out, row.names = row.names, check.names = !optional)
-}
-
-#' @rdname posterior_samples.brmsfit
-#' @export
-as.matrix.brmsfit <- function(x, pars = NA, add_chain = FALSE, 
-                              subset = NULL, ...) {
-  cl <- match.call()
-  if (any(c("pars", "add_chain", "subset") %in% names(cl))) {
-    out <- posterior_samples(
-      x, pars = pars, add_chain = add_chain, 
-      subset = subset, ..., as.matrix = TRUE
-    ) 
-  } else {
-    out <- unclass(as_draws_matrix(x, ...))
-  }
-  out
-}
-
-#' @rdname posterior_samples.brmsfit
-#' @export
-as.array.brmsfit <- function(x, pars = NA, add_chain = FALSE, 
-                             subset = NULL, ...) {
-  cl <- match.call()
-  if (any(c("pars", "add_chain", "subset") %in% names(cl))) {
-    out <- posterior_samples(
-      x, pars = pars, add_chain = add_chain, 
-      subset = subset, ..., as.array = TRUE
-    ) 
-  } else {
-    out <- unclass(as_draws_array(x, ...))
-  }
-  out
-}
-
 #' Extract Parameter Names
 #' 
 #' Extract all parameter names of a given model.
@@ -234,6 +184,15 @@ extract_pars <- function(pars, all_pars, fixed = FALSE,
     out <- na_value
   }
   out
+}
+
+# use the deprecated 'pars' alias to 'variable'
+use_variable_alias <- function(variable, object, pars = NA, ...) {
+  if (!anyNA(pars)) {
+    warning2("Argument 'pars' is deprecated. Please use 'variable' instead.")
+    variable <- extract_pars(pars, variables(object), ...)
+  }
+  variable
 }
 
 # check deprecated alias of argument 'fixed'

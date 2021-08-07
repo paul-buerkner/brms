@@ -91,6 +91,10 @@ nthin <- function(x) {
 #' the methods are defined.
 #' @param variable A character vector providing the variables to extract.
 #'   By default, all variables are extracted.
+#' @param iteration The iteration indices to select.
+#' @param chain The chain indices to select.
+#' @param draw The draw indices to be select. Subsetting draw indices will lead
+#'   to an automatic merging of chains.
 #' @param regex Logical; Should variable should be treated as a (vector of) 
 #'   regular expressions? Any variable in \code{x} matching at least one of the 
 #'   regular expressions will be selected. Defaults to \code{FALSE}.
@@ -125,13 +129,15 @@ NULL
 #' @method as_draws brmsfit
 #' @export
 #' @export as_draws
-as_draws.brmsfit <- function(x, variable = NULL, regex = FALSE,
+as_draws.brmsfit <- function(x, variable = NULL, iteration = NULL,
+                             chain = NULL, draw = NULL, regex = FALSE,
                              inc_warmup = FALSE, ...) {
   # draws_list is the fastest format to convert to at the moment
-  as_draws_list(
+  out <- as_draws_list(
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   )
+  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
 }
 
 #' @rdname draws-brms
@@ -139,12 +145,14 @@ as_draws.brmsfit <- function(x, variable = NULL, regex = FALSE,
 #' @method as_draws_matrix brmsfit
 #' @export
 #' @export as_draws_matrix
-as_draws_matrix.brmsfit <- function(x, variable = NULL, regex = FALSE,
+as_draws_matrix.brmsfit <- function(x, variable = NULL, iteration = NULL,
+                                    chain = NULL, draw = NULL, regex = FALSE,
                                     inc_warmup = FALSE, ...) {
-  as_draws_matrix(as_draws_list(
+  out <- as_draws_matrix(as_draws_list(
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
+  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
 }
 
 #' @rdname draws-brms
@@ -152,12 +160,14 @@ as_draws_matrix.brmsfit <- function(x, variable = NULL, regex = FALSE,
 #' @method as_draws_array brmsfit
 #' @export
 #' @export as_draws_array
-as_draws_array.brmsfit <- function(x, variable = NULL, regex = FALSE,
+as_draws_array.brmsfit <- function(x, variable = NULL, iteration = NULL,
+                                   chain = NULL, draw = NULL, regex = FALSE,
                                    inc_warmup = FALSE, ...) {
-  as_draws_array(as_draws_list(
+  out <- as_draws_array(as_draws_list(
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
+  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
 }
 
 #' @rdname draws-brms
@@ -165,12 +175,14 @@ as_draws_array.brmsfit <- function(x, variable = NULL, regex = FALSE,
 #' @method as_draws_df brmsfit
 #' @export
 #' @export as_draws_df
-as_draws_df.brmsfit <- function(x, variable = NULL, regex = FALSE,
+as_draws_df.brmsfit <- function(x, variable = NULL, iteration = NULL,
+                                chain = NULL, draw = NULL, regex = FALSE,
                                 inc_warmup = FALSE, ...) {
-  as_draws_df(as_draws_list(
+  out <- as_draws_df(as_draws_list(
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
+  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
 }
 
 #' @rdname draws-brms
@@ -178,12 +190,14 @@ as_draws_df.brmsfit <- function(x, variable = NULL, regex = FALSE,
 #' @method as_draws_list brmsfit
 #' @export
 #' @export as_draws_list
-as_draws_list.brmsfit <- function(x, variable = NULL, regex = FALSE,
+as_draws_list.brmsfit <- function(x, variable = NULL, iteration = NULL,
+                                  chain = NULL, draw = NULL, regex = FALSE,
                                   inc_warmup = FALSE, ...) {
-  .as_draws_list(
+  out <- .as_draws_list(
     x$fit, variable = variable, regex = regex, 
     inc_warmup = inc_warmup, ...
   )
+  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
 }
 
 #' @rdname draws-brms
@@ -191,12 +205,14 @@ as_draws_list.brmsfit <- function(x, variable = NULL, regex = FALSE,
 #' @method as_draws_rvars brmsfit
 #' @export
 #' @export as_draws_rvars
-as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
+as_draws_rvars.brmsfit <- function(x, variable = NULL, iteration = NULL,
+                                   chain = NULL, draw = NULL, regex = FALSE,
                                    inc_warmup = FALSE, ...) {
-  as_draws_rvars(as_draws_list(
+  out <- as_draws_rvars(as_draws_list(
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
+  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
 }
 
 # in stanfit objects draws are stored in a draws_list-like format
@@ -223,4 +239,76 @@ as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
     out <- subset_draws(out, iteration = iteration_ids)
   }
   out
+}
+
+#' Extract Posterior Draws
+#' 
+#' Extract posterior draws in conventional formats
+#' as data.frames, matrices, or arrays.
+#' 
+#' @inheritParams as_draws.brmsfit
+#' @param pars Deprecated alias of \code{variable}. For reasons of backwards
+#'   compatibility, \code{pars} is interpreted as a vector of regular
+#'   expressions by default unless \code{fixed = TRUE} is specified.
+#' @param subset Deprecated alias of \code{draw}.
+#' @param row.names,optional Unused and only added for consistency with
+#'   the \code{\link[base:as.data.frame]{as.data.frame}} generic.
+#' @param ... Further arguments to be passed to the corresponding
+#'   \code{\link[brms:draws-brms]{as_draws_*}} methods.
+#'   
+#' @return A data.frame, matrix, or array containing the posterior draws.
+#'   
+#' @seealso \code{\link[brms:draws-brms]{as_draws}} 
+#' 
+#' @export
+as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, 
+                                  pars = NA, variable = NULL, draw = NULL, 
+                                  subset = NULL, ...) {
+  variable <- use_variable_alias(variable, x, pars = pars, ...)
+  draw <- use_alias(draw, subset)
+  out <- suppressMessages(as_draws_df(
+    x, variable = variable, draw = draw, ...
+  ))
+  unclass_draws(out)
+}
+
+#' @rdname as.data.frame.brmsfit
+#' @export
+as.matrix.brmsfit <- function(x, pars = NA, variable = NULL, 
+                              draw = NULL, subset = NULL, ...) {
+  variable <- use_variable_alias(variable, x, pars = pars, ...)
+  draw <- use_alias(draw, subset)
+  out <- suppressMessages(as_draws_matrix(
+    x, variable = variable, draw = draw, ...
+  ))
+  unclass_draws(out)
+}
+
+#' @rdname as.data.frame.brmsfit
+#' @export
+as.array.brmsfit <- function(x, pars = NA, variable = NULL, 
+                             draw = NULL, subset = NULL, ...) {
+  variable <- use_variable_alias(variable, x, pars = pars, ...)
+  draw <- use_alias(draw, subset)
+  out <- suppressMessages(as_draws_array(
+    x, variable = variable, draw = draw, ...
+  ))
+  unclass_draws(out)
+}
+
+# remove the posterior draws format classes from objects
+unclass_draws <- function(x, ...) {
+  UseMethod("unclass_draws")
+}
+
+#' @export
+unclass_draws.default <- function(x, ...) {
+  unclass(x)
+}
+
+#' @export
+unclass_draws.draws_df <- function(x, ...) {
+  x <- as.data.frame(x)
+  x$.chain <- x$.iteration <- x$.draw <- NULL
+  x
 }

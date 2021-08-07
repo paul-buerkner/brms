@@ -16,17 +16,71 @@
 \alias{as_draws_rvars.brmsfit}
 \title{Transform \code{brmsfit} to \code{draws} objects}
 \usage{
-\method{as_draws}{brmsfit}(x, variable = NULL, regex = FALSE, inc_warmup = FALSE, ...)
+\method{as_draws}{brmsfit}(
+  x,
+  variable = NULL,
+  iteration = NULL,
+  chain = NULL,
+  draw = NULL,
+  regex = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 
-\method{as_draws_matrix}{brmsfit}(x, variable = NULL, regex = FALSE, inc_warmup = FALSE, ...)
+\method{as_draws_matrix}{brmsfit}(
+  x,
+  variable = NULL,
+  iteration = NULL,
+  chain = NULL,
+  draw = NULL,
+  regex = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 
-\method{as_draws_array}{brmsfit}(x, variable = NULL, regex = FALSE, inc_warmup = FALSE, ...)
+\method{as_draws_array}{brmsfit}(
+  x,
+  variable = NULL,
+  iteration = NULL,
+  chain = NULL,
+  draw = NULL,
+  regex = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 
-\method{as_draws_df}{brmsfit}(x, variable = NULL, regex = FALSE, inc_warmup = FALSE, ...)
+\method{as_draws_df}{brmsfit}(
+  x,
+  variable = NULL,
+  iteration = NULL,
+  chain = NULL,
+  draw = NULL,
+  regex = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 
-\method{as_draws_list}{brmsfit}(x, variable = NULL, regex = FALSE, inc_warmup = FALSE, ...)
+\method{as_draws_list}{brmsfit}(
+  x,
+  variable = NULL,
+  iteration = NULL,
+  chain = NULL,
+  draw = NULL,
+  regex = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 
-\method{as_draws_rvars}{brmsfit}(x, variable = NULL, regex = FALSE, inc_warmup = FALSE, ...)
+\method{as_draws_rvars}{brmsfit}(
+  x,
+  variable = NULL,
+  iteration = NULL,
+  chain = NULL,
+  draw = NULL,
+  regex = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object or another \R object for which
@@ -34,6 +88,13 @@ the methods are defined.}
 
 \item{variable}{A character vector providing the variables to extract.
 By default, all variables are extracted.}
+
+\item{iteration}{The iteration indices to select.}
+
+\item{chain}{The chain indices to select.}
+
+\item{draw}{The draw indices to be select. Subsetting draw indices will lead
+to an automatic merging of chains.}
 
 \item{regex}{Logical; Should variable should be treated as a (vector of) 
 regular expressions? Any variable in \code{x} matching at least one of the 
