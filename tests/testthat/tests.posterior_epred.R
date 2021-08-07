@@ -89,7 +89,7 @@ test_that("posterior_epred helper functions run without errors", {
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
   
   # truncated continuous models
-  prep$dpars$shape <- c(as.matrix(fit, pars = "^shape$"))
+  prep$dpars$shape <- c(as.matrix(fit, variable = "shape"))
   mu <- brms:::posterior_epred_trunc_gaussian(prep, lb = 0, ub = 10)
   expect_equal(dim(mu), c(nsamples, nobs))
   

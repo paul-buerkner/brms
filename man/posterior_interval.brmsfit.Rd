@@ -5,24 +5,26 @@
 \alias{posterior_interval}
 \title{Compute posterior uncertainty intervals}
 \usage{
-\method{posterior_interval}{brmsfit}(object, pars = NA, prob = 0.95, ...)
+\method{posterior_interval}{brmsfit}(object, pars = NA, variable = NULL, prob = 0.95, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{pars}{Names of parameters for which posterior samples should be 
-returned, as given by a character vector or regular expressions. 
-By default, all posterior samples of all parameters are extracted.}
+\item{pars}{Deprecated alias of \code{variable}. For reasons of backwards
+compatibility, \code{pars} is interpreted as a vector of regular
+expressions by default unless \code{fixed = TRUE} is specified.}
+
+\item{variable}{A character vector providing the variables to extract.
+By default, all variables are extracted.}
 
 \item{prob}{A value between 0 and 1 indicating the desired probability 
 to be covered by the uncertainty intervals. The default is 0.95.}
 
-\item{...}{More arguments passed to 
-\code{\link{as.matrix.brmsfit}}.}
+\item{...}{More arguments passed to \code{\link{as.matrix.brmsfit}}.}
 }
 \value{
 A \code{matrix} with lower and upper interval bounds
-  as columns and as many rows as selected parameters.
+  as columns and as many rows as selected variables.
 }
 \description{
 Compute posterior uncertainty intervals for \code{brmsfit} objects.

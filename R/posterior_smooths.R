@@ -84,7 +84,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
     check_response = FALSE, req_vars = req_vars
   )
   subset <- subset_samples(fit, subset, nsamples)
-  samples <- as.matrix(fit, subset = subset)
+  samples <- as.matrix(fit, draw = subset)
   prep_args <- nlist(x = object, samples, sdata, data = fit$data)
   prep <- do_call(prepare_predictions, prep_args)
   # select subset of smooth parameters and design matrices

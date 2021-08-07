@@ -329,27 +329,27 @@ algorithm <- function(x) {
   else x$algorithm
 }
 
-#' Summarize Posterior Samples
+#' Summarize Posterior draws
 #' 
-#' Summarizes posterior samples based on point estimates (mean or median),
+#' Summarizes posterior draws based on point estimates (mean or median),
 #' estimation errors (SD or MAD) and quantiles. This function mainly exists to
 #' retain backwards compatibility. It will eventually be replaced by functions
 #' of the \pkg{posterior} package (see examples below).
 #' 
 #' @param x An \R object.
-#' @param pars Names of parameters for which posterior samples 
-#'   should be returned, as given by a character vector or regular expressions.
-#'   By default, all posterior samples of all parameters are extracted.
+#' @inheritParams as.matrix.brmsfit
 #' @param probs The percentiles to be computed by the 
-#'   \code{quantile} function.
+#'   \code{\link[stats:quantile]{quantile}} function.
 #' @param robust If \code{FALSE} (the default) the mean is used as 
 #'  the measure of central tendency and the standard deviation as 
 #'  the measure of variability. If \code{TRUE}, the median and the 
 #'  median absolute deviation (MAD) are applied instead.
 #' @param ... More arguments passed to or from other methods.
 #' 
-#' @return A matrix where rows indicate parameters 
+#' @return A matrix where rows indicate variables
 #' and columns indicate the summary estimates.
+#' 
+#' @seealso \code{\link[posterior:summarize_draws]{summarize_draws}}
 #'  
 #' @examples 
 #' \dontrun{
@@ -374,7 +374,7 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   # TODO: replace with summary functions from posterior
   # TODO: find a way to represent 3D summaries as well
   if (!length(x)) {
-    stop2("No posterior samples supplied.")
+    stop2("No posterior draws supplied.")
   }
   if (robust) {
     coefs <- c("median", "mad", "quantile")
@@ -411,9 +411,10 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
 
 #' @rdname posterior_summary
 #' @export
-posterior_summary.brmsfit <- function(x, pars = NA, probs = c(0.025, 0.975), 
+posterior_summary.brmsfit <- function(x, pars = NA, variable = NULL, 
+                                      probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
-  out <- as.matrix(x, pars = pars, ...)
+  out <- as.matrix(x, pars = pars, variable = variable, ...)
   posterior_summary(out, probs = probs, robust = robust, ...)
 }
 
@@ -511,15 +512,14 @@ posterior_table <- function(x, levels = NULL) {
 #' 
 #' Compute posterior uncertainty intervals for \code{brmsfit} objects.
 #' 
-#' @inheritParams summary.brmsfit
-#' @param pars Names of parameters for which posterior samples should be 
-#'   returned, as given by a character vector or regular expressions. 
-#'   By default, all posterior samples of all parameters are extracted.
-#' @param ... More arguments passed to 
-#'   \code{\link{as.matrix.brmsfit}}.
+#' @param object An object of class \code{brmsfit}.
+#' @param prob A value between 0 and 1 indicating the desired probability 
+#'   to be covered by the uncertainty intervals. The default is 0.95.
+#' @inheritParams as.matrix.brmsfit
+#' @param ... More arguments passed to \code{\link{as.matrix.brmsfit}}.
 #' 
 #' @return A \code{matrix} with lower and upper interval bounds
-#'   as columns and as many rows as selected parameters.
+#'   as columns and as many rows as selected variables.
 #'   
 #' @examples 
 #' \dontrun{
@@ -534,9 +534,9 @@ posterior_table <- function(x, levels = NULL) {
 #' @export posterior_interval
 #' @importFrom rstantools posterior_interval
 posterior_interval.brmsfit <- function(
-  object, pars = NA, prob = 0.95, ...
+  object, pars = NA, variable = NULL, prob = 0.95, ...
 ) {
-  ps <- as.matrix(object, pars = pars, ...)
+  ps <- as.matrix(object, pars = pars, variable = variable, ...)
   rstantools::posterior_interval(ps, prob = prob)
 }
 
@@ -544,7 +544,7 @@ posterior_interval.brmsfit <- function(
 #' 
 #' @aliases prior_summary
 #' 
-#' @param object A \code{brmsfit} object
+#' @param object An object of class \code{brmsfit}.
 #' @param all Logical; Show all parameters in the model which may have 
 #'   priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?
 #' @param ... Further arguments passed to or from other methods.

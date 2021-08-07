@@ -319,7 +319,7 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   samples <- as.data.frame(x, variable = parsH)
   names(samples) <- rename(names(samples), pattern, repl, fixed = FALSE)
   samples <- as.matrix(eval2(h_renamed, samples))
-  prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
+  prior_samples <- prior_draws(x, variable = parsH)
   if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
     names(prior_samples) <- rename(
       names(prior_samples), pattern, repl, fixed = FALSE

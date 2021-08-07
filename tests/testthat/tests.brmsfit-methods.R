@@ -25,6 +25,14 @@ test_that("as.data.frame has reasonable ouputs", {
   ps <- as.data.frame(fit1)
   expect_true(is(ps, "data.frame"))
   expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
+  
+  # deprecated 'pars' argument still works
+  expect_warning(
+    ps <- as.data.frame(fit1, pars = "^b_"),
+    "'pars' is deprecated"
+  )
+  expect_true(is(ps, "data.frame"))
+  expect_true(ncol(ps) > 0)
 })
 
 test_that("as.matrix has reasonable ouputs", {
@@ -494,15 +502,15 @@ test_that("nsamples has reasonable ouputs", {
 })
 
 test_that("pairs has reasonable outputs", {
-  expect_s3_class(SW(pairs(fit1, pars = variables(fit1)[1:3])), 
+  expect_s3_class(SW(pairs(fit1, variable = variables(fit1)[1:3])), 
                   "bayesplot_grid")
 })
 
 test_that("plot has reasonable outputs", {
   expect_silent(p <- plot(fit1, plot = FALSE))
-  expect_silent(p <- plot(fit1, pars = "^b", plot = FALSE))
-  expect_silent(p <- plot(fit1, pars = "^sd", plot = FALSE))
-  expect_error(plot(fit1, pars = "123"),  "No valid parameters selected")
+  expect_silent(p <- plot(fit1, variable = "^b", regex = TRUE, plot = FALSE))
+  expect_silent(p <- plot(fit1, variable = "^sd", regex = TRUE, plot = FALSE))
+  expect_error(plot(fit1, variable = "123"))
 })
 
 test_that("post_prob has reasonable ouputs", {
@@ -513,13 +521,13 @@ test_that("post_prob has reasonable ouputs", {
 
 test_that("posterior_average has reasonable outputs", {
   pnames <- c("b_Age", "nu")
-  ps <- posterior_average(fit1, fit1, pars = pnames, weights = c(0.3, 0.7))
+  ps <- posterior_average(fit1, fit1, variable = pnames, weights = c(0.3, 0.7))
   expect_equal(dim(ps), c(nsamples(fit1), 2))
   expect_equal(names(ps), pnames)
   
   weights <- rexp(3)
   ps <- brms:::SW(posterior_average(
-    fit1, fit2, fit3, pars = "nu", weights = rexp(3), 
+    fit1, fit2, fit3, variable = "nu", weights = rexp(3), 
     missing = 1, nsamples = 10
   ))
   expect_equal(dim(ps), c(10, 1))
@@ -527,20 +535,20 @@ test_that("posterior_average has reasonable outputs", {
 })
 
 test_that("posterior_samples has reasonable outputs", {
-  ps <- posterior_samples(fit1)
+  ps <- SW(posterior_samples(fit1))
   expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
   expect_equal(names(ps), variables(fit1))
-  expect_equal(names(posterior_samples(fit1, pars = "^b_")),
+  expect_equal(names(SW(posterior_samples(fit1, pars = "^b_"))),
                c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
                  "b_Age", "b_volume", "b_Trt1:Age", "b_sigma_Trt1"))
   
   # test default method
-  ps <- posterior_samples(fit1$fit, "^b_Intercept$")
+  ps <- SW(posterior_samples(fit1$fit, "^b_Intercept$"))
   expect_equal(dim(ps), c(nsamples(fit1), 1))
 })
 
 test_that("posterior_summary has reasonable outputs", {
-  ps <- posterior_summary(fit1, "^b_")
+  ps <- posterior_summary(fit1, variable = "^b_", regex = TRUE)
   expect_equal(dim(ps), c(7, 4))
 })
 
@@ -670,8 +678,8 @@ test_that("print has reasonable outputs", {
   expect_output(SW(print(fit1)), "Group-Level Effects:")
 })
 
-test_that("prior_samples has reasonable outputs", {
-  prs1 <- prior_samples(fit1)
+test_that("prior_draws has reasonable outputs", {
+  prs1 <- prior_draws(fit1)
   prior_names <- c(
     "Intercept", "b", paste0("simo_moExp1[", 1:4, "]"), "bsp", 
     "bs", "sds_sAge_1", "b_sigma", "Intercept_sigma", "nu", 
@@ -679,12 +687,12 @@ test_that("prior_samples has reasonable outputs", {
   )
   expect_equal(colnames(prs1), prior_names)
   
-  prs2 <- prior_samples(fit1, pars = "b_Trt1")
-  expect_equal(dimnames(prs2), list(as.character(1:nsamples(fit1)), "b_Trt1"))
+  prs2 <- prior_draws(fit1, variable = "b_Trt1")
+  expect_equal(dimnames(prs2), list(as.character(1:ndraws(fit1)), "b_Trt1"))
   expect_equal(sort(prs1$b), sort(prs2$b_Trt))
   
   # test default method
-  prs <- prior_samples(fit1$fit, pars = "^sd_visit")
+  prs <- prior_draws(fit1$fit, variable = "^sd_visit", regex = TRUE)
   expect_equal(names(prs), "prior_sd_visit")
 })
 
@@ -754,14 +762,12 @@ test_that("standata has reasonable outputs", {
 
 test_that("mcmc_plot has reasonable outputs", {
   expect_ggplot(mcmc_plot(fit1))
-  expect_ggplot(mcmc_plot(fit1, pars = "^b"))
-  expect_ggplot(SM(mcmc_plot(fit1, type = "trace", pars = "^b_")))
-  expect_ggplot(mcmc_plot(fit1, type = "hist", pars = "^sd_"))
+  expect_ggplot(mcmc_plot(fit1, variable = "^b", regex = TRUE))
+  expect_ggplot(SM(mcmc_plot(fit1, type = "trace", variable = "^b_", regex = TRUE)))
+  expect_ggplot(mcmc_plot(fit1, type = "hist", variable = "^sd_", regex = TRUE))
   expect_ggplot(mcmc_plot(fit1, type = "dens"))
-  expect_ggplot(mcmc_plot(fit1, type = "scatter",
-                          pars = variables(fit1)[2:3], 
-                          fixed = TRUE))
-  expect_ggplot(SW(mcmc_plot(fit1, type = "rhat", pars = "^b_")))
+  expect_ggplot(mcmc_plot(fit1, type = "scatter", variable = variables(fit1)[2:3]))
+  expect_ggplot(SW(mcmc_plot(fit1, type = "rhat", variable = "^b_", regex = TRUE)))
   expect_ggplot(SW(mcmc_plot(fit1, type = "neff")))
   expect_ggplot(mcmc_plot(fit1, type = "acf"))
   expect_silent(p <- mcmc_plot(fit1, type = "nuts_divergence"))

@@ -25,7 +25,7 @@ prepare_predictions.brmsfit <- function(
   resp <- validate_resp(resp, x)
   subset <- subset_samples(x, subset, nsamples)
   # TODO: replace with posterior workflow
-  samples <- as.matrix(x, subset = subset)
+  samples <- as.matrix(x, draw = subset)
   samples <- point_samples(samples, point_estimate)
   
   new_formula <- update_re_terms(x$formula, re_formula)

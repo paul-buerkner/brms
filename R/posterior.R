@@ -103,6 +103,7 @@ nthin <- function(x) {
 #' 
 #' @seealso \code{\link[posterior:draws]{draws}}
 #'   \code{\link[posterior:subset_draws]{subset_draws}}
+#'   \code{\link[brms:as.data.frame.brmsfit]{as.data.frame}} 
 #' 
 #' @examples 
 #' \dontrun{

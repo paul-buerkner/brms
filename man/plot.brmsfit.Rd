@@ -9,8 +9,9 @@
   pars = NA,
   combo = c("dens", "trace"),
   N = 5,
+  variable = NULL,
+  regex = FALSE,
   fixed = FALSE,
-  exact_match = FALSE,
   theme = NULL,
   plot = TRUE,
   ask = TRUE,
@@ -21,9 +22,9 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{pars}{Names of the parameters to plot, as given by a character vector 
-or a regular expression. By default, all parameters except 
-for group-level and smooth effects are plotted.}
+\item{pars}{(Deprecated alias of \code{variable}).
+Names of the parameters to plot, as given by a
+character vector or a regular expression.}
 
 \item{combo}{A character vector with at least two elements. 
 Each element of \code{combo} corresponds to a column in the resulting 
@@ -33,11 +34,17 @@ graphic and should be the name of one of the available
 
 \item{N}{The number of parameters plotted per page.}
 
-\item{fixed}{Indicates whether parameter names 
-should be matched exactly (\code{TRUE}) or treated as
-regular expressions (\code{FALSE}). Default is \code{FALSE}.}
+\item{variable}{Names of the variables (parameters) to plot, as given by a
+character vector or a regular expression (if \code{regex = TRUE}). By
+default, a hopefully not too large selection of variables is plotted.}
 
-\item{exact_match}{Deprecated alias of argument \code{fixed}.}
+\item{regex}{Logical; Indicates whether \code{variable} should
+be treated as regular expressions. Defaults to \code{FALSE}.}
+
+\item{fixed}{(Deprecated) Indicates whether parameter names 
+should be matched exactly (\code{TRUE}) or treated as
+regular expressions (\code{FALSE}). Default is \code{FALSE}
+and only works with argument \code{pars}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 
@@ -73,7 +80,7 @@ fit <- brm(count ~ zAge + zBase * Trt
            data = epilepsy, family = "poisson")
 plot(fit)
 ## plot population-level effects only
-plot(fit, pars = "^b_") 
+plot(fit, variable = "^b_", regex = TRUE) 
 }
 
 }

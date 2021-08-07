@@ -1,9 +1,12 @@
 #' Trace and Density Plots for MCMC Samples
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param pars Names of the parameters to plot, as given by a character vector 
-#'   or a regular expression. By default, all parameters except 
-#'   for group-level and smooth effects are plotted. 
+#' @param pars (Deprecated alias of \code{variable}).
+#'   Names of the parameters to plot, as given by a
+#'   character vector or a regular expression.
+#' @param variable Names of the variables (parameters) to plot, as given by a
+#'   character vector or a regular expression (if \code{regex = TRUE}). By
+#'   default, a hopefully not too large selection of variables is plotted.
 #' @param combo A character vector with at least two elements. 
 #'   Each element of \code{combo} corresponds to a column in the resulting 
 #'   graphic and should be the name of one of the available 
@@ -14,10 +17,12 @@
 #'   modifying the appearance of the plots. 
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 #'   and \code{\link[bayesplot:theme_default]{theme_default}}.
-#' @param fixed Indicates whether parameter names 
+#' @param regex Logical; Indicates whether \code{variable} should
+#'   be treated as regular expressions. Defaults to \code{FALSE}.
+#' @param fixed (Deprecated) Indicates whether parameter names 
 #'   should be matched exactly (\code{TRUE}) or treated as
-#'   regular expressions (\code{FALSE}). Default is \code{FALSE}.
-#' @param exact_match Deprecated alias of argument \code{fixed}.
+#'   regular expressions (\code{FALSE}). Default is \code{FALSE}
+#'   and only works with argument \code{pars}.
 #' @param plot Logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
@@ -40,7 +45,7 @@
 #'            data = epilepsy, family = "poisson")
 #' plot(fit)
 #' ## plot population-level effects only
-#' plot(fit, pars = "^b_") 
+#' plot(fit, variable = "^b_", regex = TRUE) 
 #' }
 #' 
 #' @method plot brmsfit
@@ -49,22 +54,22 @@
 #' @importFrom grDevices devAskNewPage
 #' @export
 plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"), 
-                         N = 5, fixed = FALSE, exact_match = FALSE,
+                         N = 5, variable = NULL, regex = FALSE, fixed = FALSE, 
                          theme = NULL, plot = TRUE, ask = TRUE, 
                          newpage = TRUE, ...) {
   contains_samples(x)
   if (!is_wholenumber(N) || N < 1) {
     stop2("Argument 'N' must be a positive integer.")
   }
-  fixed <- check_deprecated_fixed(fixed, exact_match)
-  if (!is.character(pars)) {
-    pars <- default_plot_pars(x)
-    fixed <- FALSE
+  variable <- use_variable_alias(variable, x, pars, fixed = fixed)
+  if (is.null(variable)) {
+    variable <- default_plot_variables(x)
+    regex <- TRUE
   }
-  samples <- as.array(x, pars = pars, fixed = fixed)
-  pars <- dimnames(samples)[[3]]
-  if (!length(pars)) {
-    stop2("No valid parameters selected.")
+  samples <- as.array(x, variable = variable, regex = regex)
+  variables <- dimnames(samples)[[3]]
+  if (!length(variables)) {
+    stop2("No valid variables selected.")
   }
   
   if (plot) {
@@ -72,11 +77,11 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  n_plots <- ceiling(length(pars) / N)
+  n_plots <- ceiling(length(variables) / N)
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
-    sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
-    sub_samples <- samples[, , sub_pars, drop = FALSE]
+    sub_vars <- variables[((i - 1) * N + 1):min(i * N, length(variables))]
+    sub_samples <- samples[, , sub_vars, drop = FALSE]
     plots[[i]] <- bayesplot::mcmc_combo(
       sub_samples, combo = combo, gg_theme = theme, ...
     )
@@ -91,7 +96,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
 }
 
 # list all parameter classes to be included in plots by default
-default_plot_pars <- function(family) {
+default_plot_variables <- function(family) {
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", valid_dpars(family), "$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", 
@@ -107,10 +112,6 @@ default_plot_pars <- function(family) {
 #' 
 #' @inheritParams plot.brmsfit
 #' @param object An \R object typically of class \code{brmsfit}
-#' @param pars Names of parameters to be plotted, 
-#'   as given by a character vector or regular expressions. 
-#'   By default, all parameters except for group-level and 
-#'   smooth effects are plotted. May be ignored for some plots.
 #' @param type The type of the plot. 
 #'   Supported types are (as names) \code{hist}, \code{dens}, 
 #'   \code{hist_by_chain}, \code{dens_overlay}, 
@@ -142,7 +143,7 @@ default_plot_pars <- function(family) {
 #' mcmc_plot(model)
 #' 
 #' # only show population-level effects in the plots
-#' mcmc_plot(model, pars = "^b_")
+#' mcmc_plot(model, variable = "^b_", regex = TRUE)
 #' 
 #' # show histograms of the posterior distributions
 #' mcmc_plot(model, type = "hist")
@@ -158,14 +159,15 @@ default_plot_pars <- function(family) {
 #' 
 #' @export
 mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals", 
-                              fixed = FALSE, exact_match = FALSE, ...) {
+                              variable = NULL, regex = FALSE,
+                              fixed = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
   type <- as_one_character(type)
-  fixed <- check_deprecated_fixed(fixed, exact_match)
-  if (!is.character(pars)) {
-    pars <- default_plot_pars(object)
-    fixed <- FALSE
+  variable <- use_variable_alias(variable, object, pars, fixed = fixed)
+  if (is.null(variable)) {
+    variable <- default_plot_variables(object)
+    regex <- TRUE
   }
   valid_types <- as.character(bayesplot::available_mcmc(""))
   valid_types <- sub("^mcmc_", "", valid_types)
@@ -182,14 +184,14 @@ mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals",
       mcmc_args$x <- nuts_params(object)
     } else {
       # x refers to a data.frame of samples
-      samples <- as.array(object, pars = pars, fixed = fixed)
+      samples <- as.array(object, variable = variable, regex = regex)
       if (!length(samples)) {
         stop2("No valid parameters selected.")
       }
-      sel_pars <- dimnames(samples)[[3]]
-      if (type %in% c("scatter", "hex") && length(sel_pars) != 2L) {
+      sel_variables <- dimnames(samples)[[3]]
+      if (type %in% c("scatter", "hex") && length(sel_variables) != 2L) {
         stop2("Exactly 2 parameters must be selected for this type.",
-              "\nParameters selected: ", collapse_comma(sel_pars))
+              "\nParameters selected: ", collapse_comma(sel_variables))
       }
       mcmc_args$x <- samples
     }
@@ -247,18 +249,19 @@ stanplot.brmsfit <- function(object, ...) {
 #' fit <- brm(count ~ zAge + zBase * Trt 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")  
-#' pairs(fit, pars = variables(fit)[1:3], fixed = TRUE)
-#' pairs(fit, pars = "^sd_")
+#' pairs(fit, variable = variables(fit)[1:3])
+#' pairs(fit, variable = "^sd_", regex = TRUE)
 #' }
 #'
 #' @export
-pairs.brmsfit <- function(x, pars = NA, fixed = FALSE, exact_match = FALSE, ...) {
-  fixed <- check_deprecated_fixed(fixed, exact_match)
-  if (!is.character(pars)) {
-    pars <- default_plot_pars(x)
-    fixed <- FALSE
+pairs.brmsfit <- function(x, pars = NA, variable = NULL, regex = FALSE, 
+                          fixed = FALSE, ...) {
+  variable <- use_variable_alias(variable, x, pars, fixed = fixed)
+  if (is.null(variable)) {
+    variable <- default_plot_variables(x)
+    regex <- TRUE
   }
-  samples <- as.array(x, pars = pars, fixed = fixed)
+  samples <- as.array(x, variable = variable, regex = regex)
   bayesplot::mcmc_pairs(samples, ...)
 }
 
