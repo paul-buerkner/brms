@@ -8,7 +8,7 @@
 \description{
 Models fitted with the \code{\link[brms:brms-package]{brms}} package are 
 represented as a \code{brmsfit} object, which contains the posterior 
-samples, model formula, Stan code, relevant data, and other information.
+draws (samples), model formula, Stan code, relevant data, and other information.
 }
 \details{
 See \code{methods(class = "brmsfit")} for an overview of available methods.
@@ -32,7 +32,7 @@ information on the priors used in the model.}
 
 \item{\code{ranef}}{A \code{data.frame} containing the group-level structure.}
 
-\item{\code{exclude}}{The names of the parameters for which samples are not saved.}
+\item{\code{exclude}}{The names of the parameters for which draws are not saved.}
 
 \item{\code{algorithm}}{The name of the algorithm used to fit the model.}
 
@@ -44,7 +44,7 @@ information on the priors used in the model.}
 \item{\code{opencl}}{An object of class `brmsopencl` created by \code{\link{opencl}}.}
 
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit-class]{stanfit}}
-among others containing the posterior samples.}
+among others containing the posterior draws.}
 
 \item{\code{criteria}}{An empty \code{list} for adding model fit criteria
 after estimation of the model.}

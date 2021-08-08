@@ -2,13 +2,13 @@
 % Please edit documentation in R/summary.R
 \name{posterior_table}
 \alias{posterior_table}
-\title{Table Creation for Posterior Samples}
+\title{Table Creation for Posterior Draws}
 \usage{
 posterior_table(x, levels = NULL)
 }
 \arguments{
-\item{x}{A matrix of posterior samples where rows 
-indicate samples and columns indicate parameters.}
+\item{x}{A matrix of posterior draws where rows 
+indicate draws and columns indicate parameters.}
 
 \item{levels}{Optional values of possible posterior values.
 Defaults to all unique values in \code{x}.}
@@ -16,10 +16,10 @@ Defaults to all unique values in \code{x}.}
 \value{
 A matrix where rows indicate parameters 
  and columns indicate the unique values of 
- posterior samples.
+ posterior draws.
 }
 \description{
-Create a table for unique values of posterior samples. 
+Create a table for unique values of posterior draws. 
 This is usually only useful when summarizing predictions 
 of ordinal models.
 }

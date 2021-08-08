@@ -283,7 +283,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   args <- c(nlist(fit, data = newdata), dots)
   # update arguments controlling the sampling process
   # they cannot be accessed directly from the template model 
-  # as it does not contain any samples (chains = 0)
+  # as it does not contain any draws (chains = 0)
   if (is.null(args$iter)) {
     # only keep old 'warmup' if also keeping old 'iter'
     args$warmup <- first_not_null(args$warmup, object$fit@sim$warmup)

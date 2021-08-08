@@ -3,9 +3,10 @@
 prepare_predictions.brmsfit <- function(
   x, newdata = NULL, re_formula = NULL, 
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  incl_autocor = TRUE, oos = NULL, resp = NULL, nsamples = NULL, 
-  subset = NULL, nug = NULL, smooths_only = FALSE, offset = TRUE, 
-  newdata2 = NULL, new_objects = NULL, point_estimate = NULL, ...
+  incl_autocor = TRUE, oos = NULL, resp = NULL, ndraws = NULL, draw_ids = NULL,
+  nsamples = NULL, subset = NULL, nug = NULL, smooths_only = FALSE, 
+  offset = TRUE, newdata2 = NULL, new_objects = NULL, point_estimate = NULL, 
+  ...
 ) {
   
   x <- restructure(x)
@@ -16,6 +17,8 @@ prepare_predictions.brmsfit <- function(
   
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
+  ndraws <- use_alias(ndraws, nsamples)
+  draw_ids <- use_alias(draw_ids, subset)
   warn_brmsfit_multiple(x, newdata = newdata)
   newdata2 <- use_alias(newdata2, new_objects)
   x <- exclude_terms(
@@ -23,8 +26,8 @@ prepare_predictions.brmsfit <- function(
     offset = offset, smooths_only = smooths_only
   )
   resp <- validate_resp(resp, x)
-  subset <- subset_samples(x, subset, nsamples)
-  draws <- suppressMessages(as_draws_matrix(x, draw = subset))
+  draw_ids <- validate_draw_ids(x, draw_ids, ndraws)
+  draws <- suppressMessages(as_draws_matrix(x, draw = draw_ids))
   draws <- point_draws(draws, point_estimate)
   
   new_formula <- update_re_terms(x$formula, re_formula)
@@ -56,9 +59,9 @@ prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
   if (length(resp) > 1) {
     if (has_subset(x)) {
       stop2("Argument 'resp' must be a single variable name ",
-            "for models using addition argument 'subset'.")
+            "for models using addition argument 'draw_ids'.")
     }
-    out <- list(nsamples = nrow(draws), nobs = sdata$N)
+    out <- list(ndraws = nrow(draws), nobs = sdata$N)
     out$resps <- named_list(resp)
     out$old_order <- attr(sdata, "old_order")
     for (r in resp) {
@@ -92,10 +95,10 @@ prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
 #' @export
 prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   data <- subset_data(data, x)
-  nsamples <- nrow(draws)
+  ndraws <- nrow(draws)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   resp <- usc(combine_prefix(x))
-  out <- nlist(nsamples, nobs, resp = x$resp)
+  out <- nlist(ndraws, nobs, resp = x$resp)
   out$family <- prepare_family(x)
   out$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
@@ -130,7 +133,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
       # theta was predicted
       missing_id <- which(ulapply(out$dpars[thetas], is.null))
       out$dpars[[paste0("theta", missing_id)]] <- structure(
-        data2draws(0, c(nsamples, nobs)), predicted = TRUE
+        data2draws(0, c(ndraws, nobs)), predicted = TRUE
       )
     } else {
       # theta was not predicted
@@ -181,7 +184,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
 prepare_predictions.btnl <- function(x, draws, sdata, ...) {
   out <- list(
     family = x$family, nlform = x$formula[[2]],
-    nsamples = nrow(draws), 
+    ndraws = nrow(draws), 
     nobs = sdata[[paste0("N", usc(x$resp))]],
     used_nlpars = x$used_nlpars,
     loop = x$loop
@@ -189,7 +192,7 @@ prepare_predictions.btnl <- function(x, draws, sdata, ...) {
   class(out) <- "bprepnl"
   p <- usc(combine_prefix(x))
   covars <- all.vars(x$covars)
-  dim <- c(out$nsamples, out$nobs)
+  dim <- c(out$ndraws, out$nobs)
   for (i in seq_along(covars)) {
     cvalues <- sdata[[paste0("C", p, "_", i)]]
     out$C[[covars[i]]] <- data2draws(cvalues, dim = dim)
@@ -199,9 +202,9 @@ prepare_predictions.btnl <- function(x, draws, sdata, ...) {
 
 #' @export
 prepare_predictions.btl <- function(x, draws, sdata, ...) {
-  nsamples <- nrow(draws)
+  ndraws <- nrow(draws)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
-  out <- nlist(family = x$family, nsamples, nobs)
+  out <- nlist(family = x$family, ndraws, nobs)
   class(out) <- "bprepl"
   out$fe <- prepare_predictions_fe(x, draws, sdata, ...)
   out$sp <- prepare_predictions_sp(x, draws, sdata, ...)
@@ -848,23 +851,23 @@ choose_N <- function(prep) {
 
 # create pseudo brmsprep objects for components of mixture models
 # @param comp the mixture component number
-# @param sample_ids see predict_mixture
-pseudo_prep_for_mixture <- function(prep, comp, sample_ids = NULL) {
+# @param draw_ids see predict_mixture
+pseudo_prep_for_mixture <- function(prep, comp, draw_ids = NULL) {
   stopifnot(is.brmsprep(prep), is.mixfamily(prep$family))
-  if (!is.null(sample_ids)) {
-    nsamples <- length(sample_ids)
+  if (!is.null(draw_ids)) {
+    ndraws <- length(draw_ids)
   } else {
-    nsamples <- prep$nsamples
+    ndraws <- prep$ndraws
   }
   out <- list(
-    family = prep$family$mix[[comp]], nsamples = nsamples,
+    family = prep$family$mix[[comp]], ndraws = ndraws,
     nobs = prep$nobs, data = prep$data
   )
   out$family$fun <- out$family$family
   for (dp in valid_dpars(out$family)) {
     out$dpars[[dp]] <- prep$dpars[[paste0(dp, comp)]]
-    if (length(sample_ids) && length(out$dpars[[dp]]) > 1L) {
-      out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)
+    if (length(draw_ids) && length(out$dpars[[dp]]) > 1L) {
+      out$dpars[[dp]] <- p(out$dpars[[dp]], draw_ids, row = TRUE)
     }
   }
   if (is_ordinal(out$family)) {
@@ -1137,16 +1140,16 @@ is.bprepnl <- function(x) {
 #'  factors specified in \code{re_formula}. This argument is only relevant if
 #'  \code{newdata} is provided and \code{allow_new_levels} is set to
 #'  \code{TRUE}. If \code{"uncertainty"} (default), each posterior sample for a
-#'  new level is drawn from the posterior samples of a randomly chosen existing
+#'  new level is drawn from the posterior draws of a randomly chosen existing
 #'  level. Each posterior sample for a new level may be drawn from a different
-#'  existing level such that the resulting set of new posterior samples
+#'  existing level such that the resulting set of new posterior draws
 #'  represents the variation across existing levels. If \code{"gaussian"},
 #'  sample new levels from the (multivariate) normal distribution implied by the
 #'  group-level standard deviations and correlations. This options may be useful
 #'  for conducting Bayesian power analysis or predicting new levels in
 #'  situations where relatively few levels where observed in the old_data. If
 #'  \code{"old_levels"}, directly sample new levels from the existing levels,
-#'  where a new level is assigned all of the posterior samples of the same
+#'  where a new level is assigned all of the posterior draws of the same
 #'  (randomly chosen) existing level.
 #' @param newdata2 A named \code{list} of objects containing new data, which
 #'   cannot be passed via argument \code{newdata}. Required for some objects 
@@ -1159,24 +1162,25 @@ is.bprepnl <- function(x) {
 #'   predictions. Defaults to \code{TRUE}.
 #' @param oos Optional indices of observations for which to compute
 #'   out-of-sample rather than in-sample predictions. Only required in models
-#'   that make use of response values to make predictions, that is currently
+#'   that make use of response values to make predictions, that is, currently
 #'   only ARMA models.
 #' @param smooths_only Logical; If \code{TRUE} only predictions related to the
-#'   computation of smooth terms will be prepared.
 #' @param resp Optional names of response variables. If specified, predictions
 #'   are performed only for the specified response variables.
-#' @param subset A numeric vector specifying the posterior samples to be used.
-#'   If \code{NULL} (the default), all samples are used.
-#' @param nsamples Positive integer indicating how many posterior samples should
-#'   be used. If \code{NULL} (the default) all samples are used. Ignored if
-#'   \code{subset} is not \code{NULL}.
+#' @param ndraws Positive integer indicating how many posterior draws should
+#'   be used. If \code{NULL} (the default) all draws are used. Ignored if
+#'   \code{draw_ids} is not \code{NULL}.
+#' @param draw_ids An integer vector specifying the posterior draws to be used.
+#'   If \code{NULL} (the default), all draws are used.
+#' @param nsamples Deprecated alias of \code{ndraws}.
+#' @param subset Deprecated alias of \code{draw_ids}.
 #' @param nug Small positive number for Gaussian process terms only. For
 #'   numerical reasons, the covariance matrix of a Gaussian process might not be
 #'   positive definite. Adding a very small number to the matrix's diagonal
 #'   often solves this problem. If \code{NULL} (the default), \code{nug} is
 #'   chosen internally.
 #' @param point_estimate Shall the returned object contain only point estimates
-#'   of the parameters instead of their posterior samples? Defaults to
+#'   of the parameters instead of their posterior draws? Defaults to
 #'   \code{NULL} in which case no point estimate is computed. Alternatively, may
 #'   be set to \code{"mean"} or \code{"median"}. This argument is primarily
 #'   implemented to ensure compatibility with the \code{\link{loo_subsample}}

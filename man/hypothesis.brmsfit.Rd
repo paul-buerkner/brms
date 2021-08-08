@@ -97,10 +97,10 @@ Among others, \code{hypothesis} computes an evidence ratio
   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
   small or large evidence, respectively, in favor of the tested hypothesis.
   For one-sided hypotheses pairs, this basically means that all posterior
-  samples are on the same side of the value dividing the two hypotheses. In
+  draws are on the same side of the value dividing the two hypotheses. In
   that sense, instead of \code{0} or \code{Inf,} you may rather read it as
   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
-  where \code{S} denotes the number of posterior samples used in the
+  where \code{S} denotes the number of posterior draws used in the
   computations.
  
   The argument \code{alpha} specifies the size of the credible interval

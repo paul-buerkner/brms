@@ -3,7 +3,7 @@
 \name{posterior_linpred.brmsfit}
 \alias{posterior_linpred.brmsfit}
 \alias{posterior_linpred}
-\title{Posterior Samples of the Linear Predictor}
+\title{Posterior Draws of the Linear Predictor}
 \usage{
 \method{posterior_linpred}{brmsfit}(
   object,
@@ -15,8 +15,8 @@
   dpar = NULL,
   nlpar = NULL,
   incl_thres = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   ...
 )
@@ -25,8 +25,8 @@
 \item{object}{An object of class \code{brmsfit}.}
 
 \item{transform}{Logical; if \code{FALSE}
-(the default), samples of the linear predictor are returned.
-If \code{TRUE}, samples of transformed linear predictor,
+(the default), draws of the linear predictor are returned.
+If \code{TRUE}, draws of transformed linear predictor,
 that is, after applying the link function are returned.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
@@ -45,7 +45,7 @@ if \code{NA}, include no group-level effects.}
 are performed only for the specified response variables.}
 
 \item{dpar}{Name of a predicted distributional parameter
-for which samples are to be returned. By default, samples
+for which draws are to be returned. By default, draws
 of the main distributional parameter(s) \code{"mu"} are returned.}
 
 \item{nlpar}{Optional name of a predicted non-linear parameter.
@@ -56,12 +56,12 @@ If specified, expected predictions of this parameters are returned.}
 thresholds and category-specific effects be included in the linear
 predictor? For backwards compatibility, the default is to not include them.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -72,7 +72,7 @@ time series (\code{TRUE}).}
 that control several aspects of data validation and prediction.}
 }
 \description{
-Compute posterior samples of the linear predictor, that is samples before
+Compute posterior draws of the linear predictor, that is draws before
 applying any link functions or other transformations. Can be performed for
 the data used to fit the model (posterior predictive checks) or for new data.
 }

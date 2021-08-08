@@ -2077,7 +2077,7 @@ get_special_prior <- function(prior, px = NULL) {
   out
 }
 
-# check if parameters should be samples only from the prior
+# check if parameters should be sampled only from the prior
 is_prior_only <- function(prior) {
   is_equal(get_sample_prior(prior), "only")
 }

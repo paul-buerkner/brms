@@ -8,7 +8,7 @@
 #' @inheritParams as.data.frame.brmsfit
 #' @param ... Arguments passed to individual methods (if applicable).
 #'   
-#' @details To make use of this function, the model must contain samples of
+#' @details To make use of this function, the model must contain draws of
 #'   prior distributions. This can be ensured by setting \code{sample_prior =
 #'   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
 #'   for technical reasons. For instance, this is the case for the
@@ -119,7 +119,7 @@ prior_samples <- function(x, ...) {
   UseMethod("prior_draws")
 }
 
-# ignore priors of certain parameters from whom we cannot obtain prior samples
+# ignore priors of certain parameters from whom we cannot obtain prior draws
 # currently applies only to overall intercepts of centered design matrices
 # fixes issue #696
 # @param x a brmsfit object

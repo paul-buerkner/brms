@@ -40,7 +40,7 @@ NULL
 #' @export log_posterior
 #' @export
 log_posterior.brmsfit <- function(object, ...) {
-  contains_samples(object)
+  contains_draws(object)
   bayesplot::log_posterior(object$fit, ...)
 }
 
@@ -49,7 +49,7 @@ log_posterior.brmsfit <- function(object, ...) {
 #' @export nuts_params
 #' @export
 nuts_params.brmsfit <- function(object, pars = NULL, ...) {
-  contains_samples(object)
+  contains_draws(object)
   bayesplot::nuts_params(object$fit, pars = pars, ...)
 }
 
@@ -58,7 +58,7 @@ nuts_params.brmsfit <- function(object, pars = NULL, ...) {
 #' @export rhat
 #' @export
 rhat.brmsfit <- function(object, pars = NULL, ...) {
-  contains_samples(object)
+  contains_draws(object)
   bayesplot::rhat(object$fit, pars = pars, ...)
 }
 
@@ -67,7 +67,7 @@ rhat.brmsfit <- function(object, pars = NULL, ...) {
 #' @export neff_ratio
 #' @export
 neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
-  contains_samples(object)
+  contains_draws(object)
   bayesplot::neff_ratio(object$fit, pars = pars, ...)
 }
 
@@ -92,7 +92,7 @@ control_params <- function(x, ...) {
 #' @rdname control_params
 #' @export
 control_params.brmsfit <- function(x, pars = NULL, ...) {
-  contains_samples(x)
+  contains_draws(x)
   out <- attr(x$fit@sim$samples[[1]], "args")$control
   if (!is.null(pars)) {
     out <- out[pars]

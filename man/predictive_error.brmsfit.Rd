@@ -3,7 +3,7 @@
 \name{predictive_error.brmsfit}
 \alias{predictive_error.brmsfit}
 \alias{predictive_error}
-\title{Posterior Samples of Predictive Errors}
+\title{Posterior Draws of Predictive Errors}
 \usage{
 \method{predictive_error}{brmsfit}(
   object,
@@ -11,8 +11,8 @@
   re_formula = NULL,
   re.form = NULL,
   resp = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   ...
 )
@@ -35,12 +35,12 @@ if \code{NA}, include no group-level effects.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -51,11 +51,11 @@ time series (\code{TRUE}).}
 that control several aspects of data validation and prediction.}
 }
 \value{
-An S x N \code{array} of predictive error samples, where S is the
-  number of posterior samples and N is the number of observations.
+An S x N \code{array} of predictive error draws, where S is the
+  number of posterior draws and N is the number of observations.
 }
 \description{
-Compute posterior samples of predictive errors, that is, observed minus
+Compute posterior draws of predictive errors, that is, observed minus
 predicted responses. Can be performed for the data used to fit the model
 (posterior predictive checks) or for new data.
 }

@@ -523,7 +523,7 @@ do_renaming <- function(x, change) {
   x
 }
 
-# order parameter samples after parameter class
+# order parameter draws after parameter class
 # @param x brmsfit object
 reorder_pars <- function(x) {
   all_classes <- unique(c(
@@ -622,7 +622,7 @@ compute_xi.brmsprep <- function(x, fit, ...) {
   samp_chain <- length(xi) / fit$fit@sim$chains
   for (i in seq_len(fit$fit@sim$chains)) {
     xi_part <- xi[((i - 1) * samp_chain + 1):(i * samp_chain)]
-    # add warmup samples not used anyway
+    # add warmup draws not used anyway
     xi_part <- c(rep(0, fit$fit@sim$warmup2[1]), xi_part)
     fit$fit@sim$samples[[i]][[xi_name]] <- xi_part
   }

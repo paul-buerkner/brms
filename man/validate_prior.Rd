@@ -39,18 +39,18 @@ details of supported families see \code{\link{brmsfamily}}. By default, a
 linear \code{gaussian} model is applied. In multivariate models,
 \code{family} might also be a list of families.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn
-additionally to the posterior samples. Options are \code{"no"} (the
-default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+\item{sample_prior}{Indicate if draws from priors should be drawn
+additionally to the posterior draws. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these draws can
 be used to calculate Bayes factors for point hypotheses via
 \code{\link{hypothesis}}. Please note that improper priors are not sampled,
 including the default improper priors used by \code{brm}. See
 \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default
+that prior draws for the overall intercept are not obtained by default
 for technical reasons. See \code{\link{brmsformula}} how to obtain prior
-samples for the intercept. If \code{sample_prior} is set to \code{"only"},
-samples are drawn solely from the priors ignoring the likelihood, which
-allows among others to generate samples from the prior predictive
+draws for the intercept. If \code{sample_prior} is set to \code{"only"},
+draws are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate draws from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
 
 \item{data2}{A named \code{list} of objects containing data, which

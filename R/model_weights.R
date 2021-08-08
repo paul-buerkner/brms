@@ -87,9 +87,9 @@ validate_weights_method <- function(method) {
   match.arg(method, options)
 }
 
-#' Posterior predictive samples averaged across models
+#' Posterior predictive draws averaged across models
 #' 
-#' Compute posterior predictive samples averaged across models.
+#' Compute posterior predictive draws averaged across models.
 #' Weighting can be done in various ways, for instance using
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.
@@ -100,7 +100,8 @@ validate_weights_method <- function(method) {
 #'   \code{"posterior_linpred"} or \code{"predictive_error"}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
-#' @param nsamples Total number of posterior samples to use.
+#' @param ndraws Total number of posterior draws to use.
+#' @param nsamples Deprecated alias of \code{ndraws}.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
 #'   to make results reproducible.
 #' @param summary Should summary statistics 
@@ -142,15 +143,16 @@ validate_weights_method <- function(method) {
 #' @export
 pp_average.brmsfit <- function(
   x, ..., weights = "stacking", method = "posterior_predict",
-  nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
-  model_names = NULL, control = list(), seed = NULL
+  ndraws = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), 
+  robust = FALSE, model_names = NULL, control = list(), seed = NULL
 ) {
   if (!is.null(seed)) {
     set.seed(seed) 
   }
   method <- validate_pp_method(method)
-  if ("subset" %in% names(list(...))) {
-    stop2("Cannot use argument 'subset' in pp_average.")
+  ndraws <- use_alias(ndraws, nsamples)
+  if (any(c("draw_ids", "subset") %in% names(list(...)))) {
+    stop2("Cannot use argument 'draw_ids' in pp_average.")
   }
   args <- split_dots(x, ..., model_names = model_names)
   args$summary <- FALSE
@@ -159,17 +161,18 @@ pp_average.brmsfit <- function(
   if (!match_response(models)) {
     stop2("Can only average models predicting the same response.")
   }
-  if (is.null(nsamples)) {
-    nsamples <- nsamples(models[[1]])
+  if (is.null(ndraws)) {
+    ndraws <- ndraws(models[[1]])
   }
+  ndraws <- as_one_integer(ndraws)
   weights <- validate_weights(weights, models, control)
-  nsamples <- round_largest_remainder(weights * nsamples)
-  names(weights) <- names(nsamples) <- names(models)
+  ndraws <- round_largest_remainder(weights * ndraws)
+  names(weights) <- names(ndraws) <- names(models)
   out <- named_list(names(models))
   for (i in seq_along(out)) {
-    if (nsamples[i] > 0) {
+    if (ndraws[i] > 0) {
       args$object <- models[[i]]
-      args$nsamples <- nsamples[i]
+      args$ndraws <- ndraws[i]
       out[[i]] <- do_call(method, args)
     }
   }
@@ -178,7 +181,7 @@ pp_average.brmsfit <- function(
     out <- posterior_summary(out, probs = probs, robust = robust) 
   }
   attr(out, "weights") <- weights
-  attr(out, "nsamples") <- nsamples
+  attr(out, "ndraws") <- ndraws
   out
 }
 
@@ -207,9 +210,9 @@ validate_weights <- function(weights, models, control = list()) {
   weights / sum(weights)
 }
 
-#' Posterior samples of parameters averaged across models
+#' Posterior draws of parameters averaged across models
 #' 
-#' Extract posterior samples of parameters averaged across models.
+#' Extract posterior draws of parameters averaged across models.
 #' Weighting can be done in various ways, for instance using
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.
@@ -246,14 +249,15 @@ validate_weights <- function(weights, models, control = list()) {
 #' 
 #' @export
 posterior_average.brmsfit <- function(
-  x, ..., variable = NULL, pars = NULL, weights = "stacking", nsamples = NULL,
-  missing = NULL, model_names = NULL, control = list(),
+  x, ..., variable = NULL, pars = NULL, weights = "stacking", ndraws = NULL, 
+  nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
   seed = NULL
 ) {
   if (!is.null(seed)) {
     set.seed(seed) 
   }
   variable <- use_alias(variable, pars)
+  ndraws <- use_alias(ndraws, nsamples)
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   vars_list <- lapply(models, variables)
   all_vars <- unique(unlist(vars_list))
@@ -297,16 +301,17 @@ posterior_average.brmsfit <- function(
       missing <- named_list(variable, missing)
     }
   }
-  if (is.null(nsamples)) {
-    nsamples <- nsamples(models[[1]])
+  if (is.null(ndraws)) {
+    ndraws <- ndraws(models[[1]])
   }
+  ndraws <- as_one_integer(ndraws)
   weights <- validate_weights(weights, models, control)
-  nsamples <- round_largest_remainder(weights * nsamples)
-  names(weights) <- names(nsamples) <- names(models)
+  ndraws <- round_largest_remainder(weights * ndraws)
+  names(weights) <- names(ndraws) <- names(models)
   out <- named_list(names(models))
   for (i in seq_along(out)) {
-    if (nsamples[i] > 0) {
-      draw <- sample(seq_len(nsamples(models[[i]])), nsamples[i])
+    if (ndraws[i] > 0) {
+      draw <- sample(seq_len(ndraws(models[[i]])), ndraws[i])
       draw <- sort(draw)
       found_vars <- intersect(variable, variables(models[[i]]))
       if (length(found_vars)) {
@@ -315,7 +320,7 @@ posterior_average.brmsfit <- function(
         )
       } else {
         out[[i]] <- as.data.frame(matrix(
-          numeric(0), nrow = nsamples[i], ncol = 0
+          numeric(0), nrow = ndraws[i], ncol = 0
         ))
       }
       if (!is.null(missing)) {
@@ -329,7 +334,7 @@ posterior_average.brmsfit <- function(
   out <- do_call(rbind, out)
   rownames(out) <- NULL
   attr(out, "weights") <- weights
-  attr(out, "nsamples") <- nsamples
+  attr(out, "ndraws") <- ndraws
   out
 }
 

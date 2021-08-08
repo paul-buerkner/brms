@@ -30,7 +30,7 @@
 launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {
-  contains_samples(object)
+  contains_draws(object)
   if (object$algorithm != "sampling") {
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
   } 

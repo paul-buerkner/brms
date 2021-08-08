@@ -2,7 +2,7 @@
 #' 
 #' Models fitted with the \code{\link[brms:brms-package]{brms}} package are 
 #' represented as a \code{brmsfit} object, which contains the posterior 
-#' samples, model formula, Stan code, relevant data, and other information.
+#' draws (samples), model formula, Stan code, relevant data, and other information.
 #' 
 #' @name brmsfit-class
 #' @aliases brmsfit
@@ -20,14 +20,14 @@
 #' @slot stanvars A \code{\link{stanvars}} object.
 #' @slot model The model code in \pkg{Stan} language.
 #' @slot ranef A \code{data.frame} containing the group-level structure.
-#' @slot exclude The names of the parameters for which samples are not saved.
+#' @slot exclude The names of the parameters for which draws are not saved.
 #' @slot algorithm The name of the algorithm used to fit the model.
 #' @slot backend The name of the backend used to fit the model.
 #' @slot threads An object of class `brmsthreads` created by 
 #'   \code{\link{threading}}.
 #' @slot opencl An object of class `brmsopencl` created by \code{\link{opencl}}.
 #' @slot fit An object of class \code{\link[rstan:stanfit-class]{stanfit}}
-#'   among others containing the posterior samples.
+#'   among others containing the posterior draws.
 #' @slot criteria An empty \code{list} for adding model fit criteria
 #'   after estimation of the model.
 #' @slot file Optional name of a file in which the model object was stored in

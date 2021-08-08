@@ -1,7 +1,7 @@
-#' Trace and Density Plots for MCMC Samples
+#' Trace and Density Plots for MCMC Draws
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param pars (Deprecated alias of \code{variable}).
+#' @param pars Deprecated alias of \code{variable}.
 #'   Names of the parameters to plot, as given by a
 #'   character vector or a regular expression.
 #' @param variable Names of the variables (parameters) to plot, as given by a
@@ -57,7 +57,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
                          N = 5, variable = NULL, regex = FALSE, fixed = FALSE, 
                          theme = NULL, plot = TRUE, ask = TRUE, 
                          newpage = TRUE, ...) {
-  contains_samples(x)
+  contains_draws(x)
   if (!is_wholenumber(N) || N < 1) {
     stop2("Argument 'N' must be a positive integer.")
   }
@@ -66,8 +66,8 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
     variable <- default_plot_variables(x)
     regex <- TRUE
   }
-  samples <- as.array(x, variable = variable, regex = regex)
-  variables <- dimnames(samples)[[3]]
+  draws <- as.array(x, variable = variable, regex = regex)
+  variables <- dimnames(draws)[[3]]
   if (!length(variables)) {
     stop2("No valid variables selected.")
   }
@@ -81,9 +81,9 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
     sub_vars <- variables[((i - 1) * N + 1):min(i * N, length(variables))]
-    sub_samples <- samples[, , sub_vars, drop = FALSE]
+    sub_draws <- draws[, , sub_vars, drop = FALSE]
     plots[[i]] <- bayesplot::mcmc_combo(
-      sub_samples, combo = combo, gg_theme = theme, ...
+      sub_draws, combo = combo, gg_theme = theme, ...
     )
     if (plot) {
       plot(plots[[i]], newpage = newpage || i > 1)
@@ -161,7 +161,7 @@ default_plot_variables <- function(family) {
 mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals", 
                               variable = NULL, regex = FALSE,
                               fixed = FALSE, ...) {
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   type <- as_one_character(type)
   variable <- use_variable_alias(variable, object, pars, fixed = fixed)
@@ -183,17 +183,17 @@ mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals",
       # x refers to a molten data.frame of NUTS parameters
       mcmc_args$x <- nuts_params(object)
     } else {
-      # x refers to a data.frame of samples
-      samples <- as.array(object, variable = variable, regex = regex)
-      if (!length(samples)) {
+      # x refers to a data.frame of draws
+      draws <- as.array(object, variable = variable, regex = regex)
+      if (!length(draws)) {
         stop2("No valid parameters selected.")
       }
-      sel_variables <- dimnames(samples)[[3]]
+      sel_variables <- dimnames(draws)[[3]]
       if (type %in% c("scatter", "hex") && length(sel_variables) != 2L) {
         stop2("Exactly 2 parameters must be selected for this type.",
               "\nParameters selected: ", collapse_comma(sel_variables))
       }
-      mcmc_args$x <- samples
+      mcmc_args$x <- draws
     }
   }
   if ("lp" %in% mcmc_arg_names) {
@@ -261,8 +261,8 @@ pairs.brmsfit <- function(x, pars = NA, variable = NULL, regex = FALSE,
     variable <- default_plot_variables(x)
     regex <- TRUE
   }
-  samples <- as.array(x, variable = variable, regex = regex)
-  bayesplot::mcmc_pairs(samples, ...)
+  draws <- as.array(x, variable = variable, regex = regex)
+  bayesplot::mcmc_pairs(draws, ...)
 }
 
 #' Default \pkg{bayesplot} Theme for \pkg{ggplot2} Graphics

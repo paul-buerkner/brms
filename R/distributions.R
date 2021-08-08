@@ -8,7 +8,7 @@
 #' 
 #' @param x,q Vector of quantiles.
 #' @param p Vector of probabilities.
-#' @param n Number of samples to draw from the distribution.
+#' @param n Number of draws to sample from the distribution.
 #' @param mu Vector of location values.
 #' @param sigma Vector of scale values.
 #' @param df Vector of degrees of freedom.
@@ -122,8 +122,8 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
       stop2("Sigma must be a symmetric matrix.")
     }
   }
-  samples <- matrix(rnorm(n * p), nrow = n, ncol = p)
-  mu + samples %*% chol(Sigma)
+  draws <- matrix(rnorm(n * p), nrow = n, ncol = p)
+  mu + draws %*% chol(Sigma)
 }
 
 #' The Multivariate Student-t Distribution
@@ -184,9 +184,9 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
   if (isTRUE(any(df <= 0))) {
     stop2("df must be greater than 0.")
   }
-  samples <- rmulti_normal(n, mu = rep(0, p), Sigma = Sigma, check = check)
-  samples <- samples / sqrt(rchisq(n, df = df) / df)
-  sweep(samples, 2, mu, "+")
+  draws <- rmulti_normal(n, mu = rep(0, p), Sigma = Sigma, check = check)
+  draws <- draws / sqrt(rchisq(n, df = df) / df)
+  sweep(draws, 2, mu, "+")
 }
 
 #' The Skew-Normal Distribution
@@ -2409,9 +2409,9 @@ link_acat <- function(x, link) {
 
 # CDF for ordinal distributions
 # @param q positive integers not greater than ncat
-# @param eta samples of the linear predictor
-# @param thres samples of threshold parameters
-# @param disc samples of the discrimination parameter
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
 # @param family a character string naming the family
 # @param link a character string naming the link
 # @return a matrix of probabilities P(x <= q)

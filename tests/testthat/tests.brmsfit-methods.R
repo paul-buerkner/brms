@@ -24,7 +24,7 @@ fit6 <- rename_pars(brms:::brmsfit_example6)
 test_that("as.data.frame has reasonable ouputs", {
   ps <- as.data.frame(fit1)
   expect_true(is(ps, "data.frame"))
-  expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
+  expect_equal(dim(ps), c(ndraws(fit1), length(variables(fit1))))
   
   # deprecated 'pars' argument still works
   expect_warning(
@@ -38,14 +38,14 @@ test_that("as.data.frame has reasonable ouputs", {
 test_that("as.matrix has reasonable ouputs", {
   ps <- as.matrix(fit1)
   expect_true(is(ps, "matrix"))
-  expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
+  expect_equal(dim(ps), c(ndraws(fit1), length(variables(fit1))))
 })
 
 test_that("as.array has reasonable ouputs", {
   ps <- as.array(fit1)
   expect_true(is.array(ps))
   chains <- fit1$fit@sim$chains
-  ps_dim <- c(nsamples(fit1) / chains, chains, length(variables(fit1)))
+  ps_dim <- c(ndraws(fit1) / chains, chains, length(variables(fit1)))
   expect_equal(dim(ps), ps_dim)
 })
 
@@ -53,9 +53,9 @@ test_that("as.mcmc has reasonable ouputs", {
   chains <- fit1$fit@sim$chains
   mc <- SW(as.mcmc(fit1))
   expect_equal(length(mc), chains)
-  expect_equal(dim(mc[[1]]), c(nsamples(fit1) / chains, length(variables(fit1))))
+  expect_equal(dim(mc[[1]]), c(ndraws(fit1) / chains, length(variables(fit1))))
   mc <- SW(as.mcmc(fit1, combine_chains = TRUE))
-  expect_equal(dim(mc), c(nsamples(fit1), length(variables(fit1))))
+  expect_equal(dim(mc), c(ndraws(fit1), length(variables(fit1))))
   # test assumes thin = 1
   expect_equal(dim(SW(as.mcmc(fit1, inc_warmup = TRUE)[[1]])), 
                c(fit1$fit@sim$iter, length(variables(fit1))))
@@ -69,7 +69,7 @@ test_that("autocor has reasonable ouputs", {
 test_that("bayes_R2 has reasonable ouputs", {
   fit1 <- add_criterion(fit1, "bayes_R2")
   R2 <- bayes_R2(fit1, summary = FALSE)
-  expect_equal(dim(R2), c(nsamples(fit1), 1))
+  expect_equal(dim(R2), c(ndraws(fit1), 1))
   R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ], re_formula = NA)
   expect_equal(dim(R2), c(1, 4))
   R2 <- bayes_R2(fit6)
@@ -88,7 +88,7 @@ test_that("coef has reasonable ouputs", {
   coef1 <- SM(coef(fit1))
   expect_equal(dim(coef1$visit), c(4, 4, 9))
   coef1 <- SM(coef(fit1, summary = FALSE))
-  expect_equal(dim(coef1$visit), c(nsamples(fit1), 4, 9))
+  expect_equal(dim(coef1$visit), c(ndraws(fit1), 4, 9))
   coef2 <- SM(coef(fit2))
   expect_equal(dim(coef2$patient), c(59, 4, 4))
   coef4 <- SM(coef(fit4))
@@ -96,7 +96,7 @@ test_that("coef has reasonable ouputs", {
 })
 
 test_that("combine_models has reasonable ouputs", {
-  expect_equal(nsamples(combine_models(fit1, fit1)), nsamples(fit1) * 2)
+  expect_equal(ndraws(combine_models(fit1, fit1)), ndraws(fit1) * 2)
 })
 
 test_that("conditional_effects has reasonable ouputs", {
@@ -116,7 +116,7 @@ test_that("conditional_effects has reasonable ouputs", {
   meplot <- plot(me, stype = "raster", plot = FALSE)
   expect_ggplot(meplot[[1]])
   
-  me <- conditional_effects(fit1, "Age", spaghetti = TRUE, nsamples = 10)
+  me <- conditional_effects(fit1, "Age", spaghetti = TRUE, ndraws = 10)
   expect_equal(nrow(attr(me$Age, "spaghetti")), 1000)
   meplot <- plot(me, plot = FALSE)
   expect_ggplot(meplot[[1]])
@@ -176,7 +176,7 @@ test_that("conditional_effects has reasonable ouputs", {
   me5 <- conditional_effects(fit5)
   expect_true(is(me5, "brms_conditional_effects"))
   
-  me6 <- conditional_effects(fit6, nsamples = 40)
+  me6 <- conditional_effects(fit6, ndraws = 40)
   expect_true(is(me6, "brms_conditional_effects"))
 })
 
@@ -220,7 +220,7 @@ test_that("conditional_smooths has reasonable ouputs", {
   expect_equal(nrow(ms[[1]]), 100)
   expect_true(is(ms, "brms_conditional_effects"))
   
-  ms <- conditional_smooths(fit1, spaghetti = TRUE, nsamples = 10)
+  ms <- conditional_smooths(fit1, spaghetti = TRUE, ndraws = 10)
   expect_equal(nrow(attr(ms[[1]], "spaghetti")), 1000)
   
   expect_error(conditional_smooths(fit1, smooths = "s3"),
@@ -261,10 +261,10 @@ test_that("fitted has reasonable outputs", {
     count = 20, patient = 1, Exp = 2, volume = 0
   )
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "old_levels", nsamples = 10)
+               sample_new_levels = "old_levels", ndraws = 10)
   expect_equal(dim(fi), c(100, 4))
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "gaussian", nsamples = 1)
+               sample_new_levels = "gaussian", ndraws = 1)
   expect_equal(dim(fi), c(100, 4))
   
   # fitted values of auxiliary parameters
@@ -370,9 +370,9 @@ test_that("launch_shinystan has reasonable ouputs", {
 })
 
 test_that("log_lik has reasonable ouputs", {
-  expect_equal(dim(log_lik(fit1)), c(nsamples(fit1), nobs(fit1)))
-  expect_equal(dim(logLik(fit1)), c(nsamples(fit1), nobs(fit1)))
-  expect_equal(dim(log_lik(fit2)), c(nsamples(fit2), nobs(fit2)))
+  expect_equal(dim(log_lik(fit1)), c(ndraws(fit1), nobs(fit1)))
+  expect_equal(dim(logLik(fit1)), c(ndraws(fit1), nobs(fit1)))
+  expect_equal(dim(log_lik(fit2)), c(ndraws(fit2), nobs(fit2)))
 })
 
 test_that("loo has reasonable outputs", {
@@ -427,7 +427,7 @@ test_that("loo_R2 has reasonable outputs", {
   expect_equal(dim(R2), c(1, 4))
   
   R2 <- SW(loo_R2(fit2, summary = FALSE))
-  expect_equal(dim(R2), c(nsamples(fit1), 1))
+  expect_equal(dim(R2), c(ndraws(fit1), 1))
 })
 
 test_that("loo_linpred has reasonable outputs", {
@@ -496,9 +496,9 @@ test_that("nobs has reasonable ouputs", {
 })
 
 test_that("nsamples has reasonable ouputs", {
-  expect_equal(nsamples(fit1), 50)
-  expect_equal(nsamples(fit1, subset = 10:1), 10)
-  expect_equal(nsamples(fit1, incl_warmup = TRUE), 200)
+  expect_equal(SW(nsamples(fit1)), 50)
+  expect_equal(SW(nsamples(fit1, subset = 10:1)), 10)
+  expect_equal(SW(nsamples(fit1, incl_warmup = TRUE)), 200)
 })
 
 test_that("pairs has reasonable outputs", {
@@ -522,13 +522,13 @@ test_that("post_prob has reasonable ouputs", {
 test_that("posterior_average has reasonable outputs", {
   pnames <- c("b_Age", "nu")
   ps <- posterior_average(fit1, fit1, variable = pnames, weights = c(0.3, 0.7))
-  expect_equal(dim(ps), c(nsamples(fit1), 2))
+  expect_equal(dim(ps), c(ndraws(fit1), 2))
   expect_equal(names(ps), pnames)
   
   weights <- rexp(3)
   ps <- brms:::SW(posterior_average(
     fit1, fit2, fit3, variable = "nu", weights = rexp(3), 
-    missing = 1, nsamples = 10
+    missing = 1, ndraws = 10
   ))
   expect_equal(dim(ps), c(10, 1))
   expect_equal(names(ps), "nu")
@@ -536,7 +536,7 @@ test_that("posterior_average has reasonable outputs", {
 
 test_that("posterior_samples has reasonable outputs", {
   ps <- SW(posterior_samples(fit1))
-  expect_equal(dim(ps), c(nsamples(fit1), length(variables(fit1))))
+  expect_equal(dim(ps), c(ndraws(fit1), length(variables(fit1))))
   expect_equal(names(ps), variables(fit1))
   expect_equal(names(SW(posterior_samples(fit1, pars = "^b_"))),
                c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
@@ -544,7 +544,7 @@ test_that("posterior_samples has reasonable outputs", {
   
   # test default method
   ps <- SW(posterior_samples(fit1$fit, "^b_Intercept$"))
-  expect_equal(dim(ps), c(nsamples(fit1), 1))
+  expect_equal(dim(ps), c(ndraws(fit1), 1))
 })
 
 test_that("posterior_summary has reasonable outputs", {
@@ -559,12 +559,12 @@ test_that("posterior_interval has reasonable outputs", {
 
 test_that("posterior_predict has reasonable outputs", {
   expect_equal(dim(posterior_predict(fit1)), 
-               c(nsamples(fit1), nobs(fit1)))
+               c(ndraws(fit1), nobs(fit1)))
 })
 
 test_that("posterior_linpred has reasonable outputs", {
   expect_equal(dim(posterior_linpred(fit1)), 
-               c(nsamples(fit1), nobs(fit1)))
+               c(ndraws(fit1), nobs(fit1)))
 })
 
 test_that("pp_average has reasonable outputs", {
@@ -572,14 +572,14 @@ test_that("pp_average has reasonable outputs", {
   expect_equal(dim(ppa), c(nobs(fit1), 4))
   ppa <- pp_average(fit1, fit1, weights = c(1, 4))
   expect_equal(attr(ppa, "weights"), c(fit1 = 0.2, fit1 = 0.8))
-  ns <- c(fit1 = nsamples(fit1) / 5, fit1 = 4 * nsamples(fit1) / 5)
-  expect_equal(attr(ppa, "nsamples"), ns)
+  ns <- c(fit1 = ndraws(fit1) / 5, fit1 = 4 * ndraws(fit1) / 5)
+  expect_equal(attr(ppa, "ndraws"), ns)
 })
 
 test_that("pp_check has reasonable outputs", {
   expect_ggplot(pp_check(fit1))
   expect_ggplot(pp_check(fit1, newdata = fit1$data[1:100, ]))
-  expect_ggplot(pp_check(fit1, "stat", nsamples = 5))
+  expect_ggplot(pp_check(fit1, "stat", ndraws = 5))
   expect_ggplot(pp_check(fit1, "error_binned"))
   pp <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
   expect_ggplot(pp)
@@ -605,7 +605,7 @@ test_that("pp_check has reasonable outputs", {
 })
 
 test_that("posterior_epred has reasonable outputs", {
-  expect_equal(dim(posterior_epred(fit1)), c(nsamples(fit1), nobs(fit1)))
+  expect_equal(dim(posterior_epred(fit1)), c(ndraws(fit1), nobs(fit1)))
 })
 
 test_that("pp_mixture has reasonable outputs", {
@@ -619,7 +619,7 @@ test_that("predict has reasonable outputs", {
   pred <- predict(fit1)
   expect_equal(dim(pred), c(nobs(fit1), 4))
   expect_equal(colnames(pred), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
-  pred <- predict(fit1, nsamples = 10, probs = c(0.2, 0.5, 0.8))
+  pred <- predict(fit1, ndraws = 10, probs = c(0.2, 0.5, 0.8))
   expect_equal(dim(pred), c(nobs(fit1), 5))
   
   newdata <- data.frame(
@@ -637,7 +637,7 @@ test_that("predict has reasonable outputs", {
   # predict NA responses in ARMA models
   df <- fit1$data[1:10, ]
   df$count[8:10] <- NA
-  pred <- predict(fit1, newdata = df, nsamples = 1)
+  pred <- predict(fit1, newdata = df, ndraws = 1)
   expect_true(!anyNA(pred[, "Estimate"]))
   
   pred <- predict(fit2)
@@ -671,7 +671,7 @@ test_that("predict has reasonable outputs", {
 
 test_that("predictive_error has reasonable outputs", {
   expect_equal(dim(predictive_error(fit1)), 
-               c(nsamples(fit1), nobs(fit1)))
+               c(ndraws(fit1), nobs(fit1)))
 })
 
 test_that("print has reasonable outputs", {
@@ -711,7 +711,7 @@ test_that("ranef has reasonable outputs", {
   expect_equal(length(ranef1), 0L)
   
   ranef2 <- SM(ranef(fit2, summary = FALSE))
-  expect_equal(dim(ranef2$patient), c(nsamples(fit2), 59, 2))
+  expect_equal(dim(ranef2$patient), c(ndraws(fit2), 59, 2))
 })
 
 test_that("residuals has reasonable outputs", {
@@ -862,7 +862,7 @@ test_that("VarCorr has reasonable outputs", {
   expect_equal(names(vc), c("patient"))
   expect_equal(dim(vc$patient$cor), c(2, 4, 2))
   vc <- VarCorr(fit2, summary = FALSE)
-  expect_equal(dim(vc$patient$cor), c(nsamples(fit2), 2, 2))
+  expect_equal(dim(vc$patient$cor), c(ndraws(fit2), 2, 2))
   expect_equal(dim(VarCorr(fit6)$residual__$sd), c(1, 4))
   vc <- VarCorr(fit5)
   expect_equal(dim(vc$patient$sd), c(2, 4))

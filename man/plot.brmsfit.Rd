@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{plot.brmsfit}
 \alias{plot.brmsfit}
-\title{Trace and Density Plots for MCMC Samples}
+\title{Trace and Density Plots for MCMC Draws}
 \usage{
 \method{plot}{brmsfit}(
   x,
@@ -22,7 +22,7 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{pars}{(Deprecated alias of \code{variable}).
+\item{pars}{Deprecated alias of \code{variable}.
 Names of the parameters to plot, as given by a
 character vector or a regular expression.}
 
@@ -71,7 +71,7 @@ An invisible list of
   \code{\link[gtable:gtable]{gtable}} objects.
 }
 \description{
-Trace and Density Plots for MCMC Samples
+Trace and Density Plots for MCMC Draws
 }
 \examples{
 \dontrun{ 

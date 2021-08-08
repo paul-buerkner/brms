@@ -4,13 +4,12 @@
 \alias{restructure}
 \title{Restructure Old \code{brmsfit} Objects}
 \usage{
-restructure(x, rstr_summary = FALSE)
+restructure(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{rstr_summary}{(Defunct) Logical; If \code{TRUE}, the cached summary
-stored by \pkg{rstan} is restructured as well.}
+\item{...}{Currently ignored.}
 }
 \value{
 A \code{brmsfit} object compatible with the latest version

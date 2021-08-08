@@ -31,7 +31,7 @@ A \code{data.frame} containing the prior draws.
 Extract prior draws of specified parameters
 }
 \details{
-To make use of this function, the model must contain samples of
+To make use of this function, the model must contain draws of
   prior distributions. This can be ensured by setting \code{sample_prior =
   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
   for technical reasons. For instance, this is the case for the

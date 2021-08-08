@@ -67,28 +67,28 @@
 #'   each level of the grouping factor(s) should be saved (default is
 #'   \code{TRUE}). Set to \code{FALSE} to save memory. The argument has no
 #'   impact on the model fitting itself.
-#' @param save_mevars (Deprecated) A flag to indicate if samples of latent
+#' @param save_mevars (Deprecated) A flag to indicate if draws of latent
 #'   noise-free variables obtained by using \code{me} and \code{mi} terms should
-#'   be saved (default is \code{FALSE}). Saving these samples allows to better
+#'   be saved (default is \code{FALSE}). Saving these draws allows to better
 #'   use methods such as \code{predict} with the latent variables but leads to
 #'   very large \R objects even for models of moderate size and complexity.
-#' @param save_all_pars (Deprecated) A flag to indicate if samples from all
+#' @param save_all_pars (Deprecated) A flag to indicate if draws from all
 #'   variables defined in Stan's \code{parameters} block should be saved
-#'   (default is \code{FALSE}). Saving these samples is required in order to
+#'   (default is \code{FALSE}). Saving these draws is required in order to
 #'   apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
 #'   \code{post_prob}.
-#' @param sample_prior Indicate if samples from priors should be drawn
-#'   additionally to the posterior samples. Options are \code{"no"} (the
-#'   default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+#' @param sample_prior Indicate if draws from priors should be drawn
+#'   additionally to the posterior draws. Options are \code{"no"} (the
+#'   default), \code{"yes"}, and \code{"only"}. Among others, these draws can
 #'   be used to calculate Bayes factors for point hypotheses via
 #'   \code{\link{hypothesis}}. Please note that improper priors are not sampled,
 #'   including the default improper priors used by \code{brm}. See
 #'   \code{\link{set_prior}} on how to set (proper) priors. Please also note
-#'   that prior samples for the overall intercept are not obtained by default
+#'   that prior draws for the overall intercept are not obtained by default
 #'   for technical reasons. See \code{\link{brmsformula}} how to obtain prior
-#'   samples for the intercept. If \code{sample_prior} is set to \code{"only"},
-#'   samples are drawn solely from the priors ignoring the likelihood, which
-#'   allows among others to generate samples from the prior predictive
+#'   draws for the intercept. If \code{sample_prior} is set to \code{"only"},
+#'   draws are drawn solely from the priors ignoring the likelihood, which
+#'   allows among others to generate draws from the prior predictive
 #'   distribution. In this case, all parameters must have proper priors.
 #' @param knots Optional list containing user specified knot values to be used
 #'   for basis construction of smoothing terms. See
@@ -110,7 +110,7 @@
 #'   \code{"random"} (the default), Stan will randomly generate initial values
 #'   for parameters. If it is \code{"0"}, all parameters are initialized to
 #'   zero. This option is sometimes useful for certain families, as it happens
-#'   that default (\code{"random"}) inits cause samples to be essentially
+#'   that default (\code{"random"}) inits cause draws to be essentially
 #'   constant. Generally, setting \code{inits = "0"} is worth a try, if chains
 #'   do not behave well. Alternatively, \code{inits} can be a list of lists
 #'   containing the initial values, or a function (or function name) generating
@@ -125,7 +125,7 @@
 #'   to 2000).
 #' @param warmup A positive integer specifying number of warmup (aka burnin)
 #'   iterations. This also specifies the number of iterations used for stepsize
-#'   adaptation, so warmup samples should not be used for inference. The number
+#'   adaptation, so warmup draws should not be used for inference. The number
 #'   of warmup should not be larger than \code{iter} and the default is
 #'   \code{iter/2}.
 #' @param thin Thinning rate. Must be a positive integer. Set \code{thin > 1} to
@@ -228,7 +228,7 @@
 #'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior
-#'   samples along with many other useful information about the model. Use
+#'   draws along with many other useful information about the model. Use
 #'   \code{methods(class = "brmsfit")} for an overview on available methods.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -265,22 +265,22 @@
 #'
 #'   \bold{Adjusting the sampling behavior of \pkg{Stan}}
 #'
-#'   In addition to choosing the number of iterations, warmup samples, and
+#'   In addition to choosing the number of iterations, warmup draws, and
 #'   chains, users can control the behavior of the NUTS sampler, by using the
 #'   \code{control} argument. The most important reason to use \code{control} is
 #'   to decrease (or eliminate at best) the number of divergent transitions that
-#'   cause a bias in the obtained posterior samples. Whenever you see the
+#'   cause a bias in the obtained posterior draws. Whenever you see the
 #'   warning "There were x divergent transitions after warmup." you should
 #'   really think about increasing \code{adapt_delta}. To do this, write
 #'   \code{control = list(adapt_delta = <x>)}, where \code{<x>} should usually
 #'   be value between \code{0.8} (current default) and \code{1}. Increasing
 #'   \code{adapt_delta} will slow down the sampler but will decrease the number
 #'   of divergent transitions threatening the validity of your posterior
-#'   samples.
+#'   draws.
 #'
 #'   Another problem arises when the depth of the tree being evaluated in each
 #'   iteration is exceeded. This is less common than having divergent
-#'   transitions, but may also bias the posterior samples. When it happens,
+#'   transitions, but may also bias the posterior draws. When it happens,
 #'   \pkg{Stan} will throw out a warning suggesting to increase
 #'   \code{max_treedepth}, which can be accomplished by writing \code{control =
 #'   list(max_treedepth = <x>)} with a positive integer \code{<x>} that should

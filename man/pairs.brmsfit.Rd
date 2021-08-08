@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}}
 
-\item{pars}{(Deprecated alias of \code{variable}).
+\item{pars}{Deprecated alias of \code{variable}.
 Names of the parameters to plot, as given by a
 character vector or a regular expression.}
 

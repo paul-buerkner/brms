@@ -55,7 +55,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, fixed = FALSE,
   if (add_chain && as.array) {
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
-  contains_samples(x)
+  contains_draws(x)
   pars <- extract_pars(pars, variables(x), fixed = fixed, ...)
   
   # get basic information on the samples 
@@ -210,7 +210,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, fixed = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
   warning2("as.mcmc.brmsfit is deprecated and will eventually be removed.")
-  contains_samples(x)
+  contains_draws(x)
   pars <- extract_pars(pars, all_pars = variables(x), fixed = fixed, ...)
   combine_chains <- as_one_logical(combine_chains)
   inc_warmup <- as_one_logical(inc_warmup)

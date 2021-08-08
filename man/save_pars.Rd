@@ -13,9 +13,9 @@ each level of the grouping factors should be saved (default is
 \code{group} may also be a character vector naming the grouping factors
 for which to save draws of coefficients.}
 
-\item{latent}{A flag to indicate if samples of latent variables obtained by
+\item{latent}{A flag to indicate if draws of latent variables obtained by
 using \code{me} and \code{mi} terms should be saved (default is
-\code{FALSE}). Saving these samples allows to better use methods such as
+\code{FALSE}). Saving these draws allows to better use methods such as
 \code{posterior_predict} with the latent variables but leads to very large
 \R objects even for models of moderate size and complexity. Alternatively,
 \code{latent} may also be a character vector naming the latent variables

@@ -15,6 +15,8 @@
   incl_autocor = TRUE,
   oos = NULL,
   resp = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   nsamples = NULL,
   subset = NULL,
   nug = NULL,
@@ -49,16 +51,16 @@ effects are allowed (defaults to \code{FALSE}). Only relevant if
 factors specified in \code{re_formula}. This argument is only relevant if
 \code{newdata} is provided and \code{allow_new_levels} is set to
 \code{TRUE}. If \code{"uncertainty"} (default), each posterior sample for a
-new level is drawn from the posterior samples of a randomly chosen existing
+new level is drawn from the posterior draws of a randomly chosen existing
 level. Each posterior sample for a new level may be drawn from a different
-existing level such that the resulting set of new posterior samples
+existing level such that the resulting set of new posterior draws
 represents the variation across existing levels. If \code{"gaussian"},
 sample new levels from the (multivariate) normal distribution implied by the
 group-level standard deviations and correlations. This options may be useful
 for conducting Bayesian power analysis or predicting new levels in
 situations where relatively few levels where observed in the old_data. If
 \code{"old_levels"}, directly sample new levels from the existing levels,
-where a new level is assigned all of the posterior samples of the same
+where a new level is assigned all of the posterior draws of the same
 (randomly chosen) existing level.}
 
 \item{incl_autocor}{A flag indicating if correlation structures originally
@@ -67,18 +69,22 @@ Defaults to \code{TRUE}.}
 
 \item{oos}{Optional indices of observations for which to compute
 out-of-sample rather than in-sample predictions. Only required in models
-that make use of response values to make predictions, that is currently
+that make use of response values to make predictions, that is, currently
 only ARMA models.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
+
+\item{subset}{Deprecated alias of \code{draw_ids}.}
 
 \item{nug}{Small positive number for Gaussian process terms only. For
 numerical reasons, the covariance matrix of a Gaussian process might not be
@@ -86,8 +92,7 @@ positive definite. Adding a very small number to the matrix's diagonal
 often solves this problem. If \code{NULL} (the default), \code{nug} is
 chosen internally.}
 
-\item{smooths_only}{Logical; If \code{TRUE} only predictions related to the
-computation of smooth terms will be prepared.}
+\item{smooths_only}{Logical; If \code{TRUE} only predictions related to the}
 
 \item{offset}{Logical; Indicates if offsets should be included in the
 predictions. Defaults to \code{TRUE}.}
@@ -99,7 +104,7 @@ used in autocorrelation structures, or \code{\link{stanvars}}.}
 \item{new_objects}{Deprecated alias of \code{newdata2}.}
 
 \item{point_estimate}{Shall the returned object contain only point estimates
-of the parameters instead of their posterior samples? Defaults to
+of the parameters instead of their posterior draws? Defaults to
 \code{NULL} in which case no point estimate is computed. Alternatively, may
 be set to \code{"mean"} or \code{"median"}. This argument is primarily
 implemented to ensure compatibility with the \code{\link{loo_subsample}}

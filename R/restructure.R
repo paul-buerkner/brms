@@ -8,14 +8,13 @@
 #' \code{restructure} once per model after updating \pkg{brms}.
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param rstr_summary (Defunct) Logical; If \code{TRUE}, the cached summary
-#'   stored by \pkg{rstan} is restructured as well.
+#' @param ... Currently ignored.
 #'   
 #' @return A \code{brmsfit} object compatible with the latest version
 #'   of \pkg{brms}.
 #'   
 #' @export
-restructure <- function(x, rstr_summary = FALSE) {
+restructure <- function(x, ...) {
   stopifnot(is.brmsfit(x))
   if (is.null(x$version)) {
     # this is the latest version without saving the version number
@@ -128,7 +127,7 @@ restructure_v2 <- function(x) {
     )
   }
   if (version < "2.11.3") {
-    # ordering after IDs matches the order of the posterior samples 
+    # ordering after IDs matches the order of the posterior draws 
     # if multiple IDs are used for the same grouping factor (#835)
     x$ranef <- x$ranef[order(x$ranef$id), , drop = FALSE]
   }

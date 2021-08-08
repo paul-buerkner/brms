@@ -293,7 +293,7 @@ test_that("multivariate normal models work correctly", {
   expect_equal(dim(fitted(fit_mv1)), c(300, 4, 2))
   newdata <- data.frame(month = 1, y1 = 0, y2 = 0, x = 0, id = 1, tim = 1)
   expect_equal(dim(predict(fit_mv1, newdata = newdata)), c(1, 4, 2))
-  cs <- conditional_smooths(fit_mv1, nsamples = 750)
+  cs <- conditional_smooths(fit_mv1, ndraws = 750)
   expect_equal(length(cs), 2)
   expect_ggplot(plot(cs, ask = FALSE)[[2]])
 
@@ -301,7 +301,7 @@ test_that("multivariate normal models work correctly", {
                  prior = prior_(~lkj(5), class = "rescor"),
                  sample_prior = TRUE, iter = 1000, refresh = 0)
   print(fit_mv2)
-  waic_mv <- WAIC(fit_mv1, fit_mv2, nsamples = 100)
+  waic_mv <- WAIC(fit_mv1, fit_mv2, ndraws = 100)
   expect_true(waic_mv$ic_diffs__[1, "WAIC"] > 0)
 })
 
@@ -344,7 +344,7 @@ test_that("ZI and HU models work correctly", {
   print(fit_zi)
   expect_equal(dim(predict(fit_zi)), c(nobs(fit_zi), 4))
   expect_ggplot(plot(conditional_effects(fit_zi), ask = FALSE)[[2]])
-  waic_zi <- WAIC(fit_hu, fit_zi, nsamples = 100)
+  waic_zi <- WAIC(fit_hu, fit_zi, ndraws = 100)
   expect_equal(dim(waic_zi$ic_diffs__), c(1, 2))
 
   ## zero_inflated beta model
@@ -524,7 +524,7 @@ test_that("Wiener diffusion models work correctly", {
   print(fit_d1)
   expect_ggplot(plot(conditional_effects(fit_d1), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d1))
-  pp <- posterior_predict(fit_d1, nsamples = 10, negative_rt = TRUE)
+  pp <- posterior_predict(fit_d1, ndraws = 10, negative_rt = TRUE)
   expect_true(min(pp) < 0)
 
   fit_d2 <- brm(bf(q | dec(resp) ~ x, ndt ~ x),
@@ -532,7 +532,7 @@ test_that("Wiener diffusion models work correctly", {
   print(fit_d2)
   expect_ggplot(plot(conditional_effects(fit_d2), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d2))
-  pred <- predict(fit_d2, nsamples = 10, negative_rt = TRUE, summary = FALSE)
+  pred <- predict(fit_d2, ndraws = 10, negative_rt = TRUE, summary = FALSE)
   expect_true(any(pred < 0))
 
   waic_d <- WAIC(fit_d1, fit_d2)
@@ -643,7 +643,7 @@ test_that("Gaussian processes work correctly", {
               chains = 2, refresh = 0)
   print(fit1)
   expect_ggplot(pp_check(fit1))
-  ce <- conditional_effects(fit1, nsamples = 200, nug = 1e-07)
+  ce <- conditional_effects(fit1, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
@@ -652,7 +652,7 @@ test_that("Gaussian processes work correctly", {
   print(fit2)
   expect_ggplot(pp_check(fit2))
   ce <- conditional_effects(
-    fit2, nsamples = 200, nug = 1e-07,
+    fit2, ndraws = 200, nug = 1e-07,
     surface = TRUE, resolution = 10
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
@@ -662,7 +662,7 @@ test_that("Gaussian processes work correctly", {
   fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2, refresh = 0)
   print(fit3)
   expect_ggplot(pp_check(fit3))
-  ce <- conditional_effects(fit3, nsamples = 200, nug = 1e-07)
+  ce <- conditional_effects(fit3, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
 
@@ -671,7 +671,7 @@ test_that("Gaussian processes work correctly", {
   fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, refresh = 0)
   print(fit4)
   expect_ggplot(pp_check(fit4))
-  ce <- conditional_effects(fit4, nsamples = 200, nug = 1e-07)
+  ce <- conditional_effects(fit4, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })
@@ -718,7 +718,7 @@ test_that("SAR models work correctly", {
                     chains = 2, refresh = 0)
   print(fit_lagsar)
   expect_ggplot(pp_check(fit_lagsar))
-  ce <- conditional_effects(fit_lagsar, nsamples = 200)
+  ce <- conditional_effects(fit_lagsar, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_lagsar)$estimates[3, 1], 350, 380)
 
@@ -727,7 +727,7 @@ test_that("SAR models work correctly", {
                       chains = 2, refresh = 0)
   print(fit_errorsar)
   expect_ggplot(pp_check(fit_errorsar))
-  ce <- conditional_effects(fit_errorsar, nsamples = 200)
+  ce <- conditional_effects(fit_errorsar, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_errorsar)$estimates[3, 1], 350, 380)
 })
@@ -766,7 +766,7 @@ test_that("CAR models work correctly", {
   )
   print(fit_car)
   expect_ggplot(pp_check(fit_car))
-  ce = conditional_effects(fit_car, nsamples = 200)
+  ce = conditional_effects(fit_car, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(LOO(fit_car)$estimates[3, 1], 450, 550)
   expect_false(isTRUE(all.equal(
@@ -776,7 +776,7 @@ test_that("CAR models work correctly", {
 
   newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = 1)
   pp <- posterior_predict(fit_car, newdata = newdata)
-  expect_equal(dim(pp), c(nsamples(fit_car), 1))
+  expect_equal(dim(pp), c(ndraws(fit_car), 1))
 
   newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = -1)
   new_W <- W
@@ -795,13 +795,13 @@ test_that("Missing value imputation works correctly", {
   fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1,
                            backend = "rstan", refresh = 0)
   print(fit_imp1)
-  expect_equal(nsamples(fit_imp1), 5000)
+  expect_equal(ndraws(fit_imp1), 5000)
   expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
 
   fit_imp1 <- update(fit_imp1, . ~ chl, newdata = imp)
   print(fit_imp1)
   expect_true(!"b_age" %in% parnames(fit_imp1))
-  expect_equal(nsamples(fit_imp1), 5000)
+  expect_equal(ndraws(fit_imp1), 5000)
 
   # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
@@ -1086,19 +1086,19 @@ test_that("Non-linear non-looped model predictions work correctly in blocked ord
   expose_functions(fit_loss)
     
   N <- nrow(loss_alt)
-  pr1 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1), nsamples=10)
+  pr1 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1), ndraws=10)
   expect_true(all(dim(pr1) == c(10,N)))
   expect_true(all(pr1 == 1))
-  pr1b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-5,], nsamples=10)
+  pr1b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-5,], ndraws=10)
   expect_true(all(dim(pr1b) == c(10,N-1)))
   expect_true(all(pr1b == 0))
-  pr1c <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-N,], nsamples=10)
+  pr1c <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-N,], ndraws=10)
   expect_true(all(dim(pr1c) == c(10,N-1)))
   expect_true(all(pr1c == 1))
-  pr2 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2), nsamples=10)
+  pr2 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2), ndraws=10)
   expect_true(all(dim(pr2) == c(10,N)))
   expect_true(all(pr2 == N))
-  pr2b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2)[-N,], nsamples=10)
+  pr2b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2)[-N,], ndraws=10)
   expect_true(all(dim(pr2b) == c(10,N-1)))
   expect_true(all(pr2b == N-1))
 })

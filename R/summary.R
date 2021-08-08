@@ -44,7 +44,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   )
   class(out) <- "brmssummary"
   if (!length(object$fit@sim)) {
-    # the model does not contain posterior samples
+    # the model does not contain posterior draws
     return(out)
   }
   out$chains <- nchains(object)
@@ -218,13 +218,13 @@ print.brmssummary <- function(x, digits = 2, ...) {
     " (Number of observations: ", x$nobs, ") \n"
   ))
   if (!isTRUE(nzchar(x$sampler))) {
-    cat("\nThe model does not contain posterior samples.\n")
+    cat("\nThe model does not contain posterior draws.\n")
   } else {
-    final_samples <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
+    total_ndraws <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
     cat(paste0(
-      "Samples: ", x$chains, " chains, each with iter = ", x$iter, 
+      "Draws: ", x$chains, " chains, each with iter = ", x$iter, 
       "; warmup = ", x$warmup, "; thin = ", x$thin, ";\n",
-      "         total post-warmup samples = ", final_samples, "\n\n"
+      "         total post-warmup draws = ", total_ndraws, "\n\n"
     ))
     if (nrow(x$prior)) {
       cat("Priors: \n")
@@ -276,7 +276,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
       print_format(x$rescor, digits)
       cat("\n")
     }
-    cat(paste0("Samples were drawn using ", x$sampler, ". "))
+    cat(paste0("Draws were sampled using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
       cat(paste0(
         "For each parameter, Bulk_ESS\n",
@@ -383,7 +383,7 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   }
   .posterior_summary <- function(x) {
     do_call(cbind, lapply(
-      coefs, get_estimate, samples = x, 
+      coefs, get_estimate, draws = x, 
       probs = probs, na.rm = TRUE
     ))
   }
@@ -418,16 +418,16 @@ posterior_summary.brmsfit <- function(x, pars = NA, variable = NULL,
   posterior_summary(out, probs = probs, robust = robust, ...)
 }
 
-# calculate estimates over posterior samples 
-# @param coef coefficient to be applied on the samples (e.g., "mean")
-# @param samples the samples over which to apply coef
+# calculate estimates over posterior draws 
+# @param coef coefficient to be applied on the draws (e.g., "mean")
+# @param draws the draws over which to apply coef
 # @param margin see 'apply'
 # @param ... additional arguments passed to get(coef)
-# @return typically a matrix with colnames(samples) as colnames
-get_estimate <- function(coef, samples, margin = 2, ...) {
+# @return typically a matrix with colnames(draws) as colnames
+get_estimate <- function(coef, draws, margin = 2, ...) {
   # TODO: replace with summary functions from posterior
   dots <- list(...)
-  args <- list(X = samples, MARGIN = margin, FUN = coef)
+  args <- list(X = draws, MARGIN = margin, FUN = coef)
   fun_args <- names(formals(coef))
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
@@ -461,20 +461,20 @@ validate_ci_bounds <- function(prob, probs = NULL) {
   probs
 }
 
-#' Table Creation for Posterior Samples
+#' Table Creation for Posterior Draws
 #' 
-#' Create a table for unique values of posterior samples. 
+#' Create a table for unique values of posterior draws. 
 #' This is usually only useful when summarizing predictions 
 #' of ordinal models.
 #' 
-#' @param x A matrix of posterior samples where rows 
-#'   indicate samples and columns indicate parameters. 
+#' @param x A matrix of posterior draws where rows 
+#'   indicate draws and columns indicate parameters. 
 #' @param levels Optional values of possible posterior values.
 #'   Defaults to all unique values in \code{x}.
 #' 
 #' @return A matrix where rows indicate parameters 
 #'  and columns indicate the unique values of 
-#'  posterior samples.
+#'  posterior draws.
 #'  
 #' @examples 
 #' \dontrun{

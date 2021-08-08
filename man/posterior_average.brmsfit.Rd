@@ -3,7 +3,7 @@
 \name{posterior_average.brmsfit}
 \alias{posterior_average.brmsfit}
 \alias{posterior_average}
-\title{Posterior samples of parameters averaged across models}
+\title{Posterior draws of parameters averaged across models}
 \usage{
 \method{posterior_average}{brmsfit}(
   x,
@@ -11,6 +11,7 @@
   variable = NULL,
   pars = NULL,
   weights = "stacking",
+  ndraws = NULL,
   nsamples = NULL,
   missing = NULL,
   model_names = NULL,
@@ -46,7 +47,9 @@ likelihood values (make sure to specify reasonable priors in this case).
 For some methods, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
-\item{nsamples}{Total number of posterior samples to use.}
+\item{ndraws}{Total number of posterior draws to use.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
 
 \item{missing}{An optional numeric value or a named list of numeric values 
 to use if a model does not contain a variable for which posterior draws
@@ -67,7 +70,7 @@ to make results reproducible.}
 A \code{data.frame} of posterior draws.
 }
 \description{
-Extract posterior samples of parameters averaged across models.
+Extract posterior draws of parameters averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.

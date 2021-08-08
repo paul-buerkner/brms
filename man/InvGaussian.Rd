@@ -27,7 +27,7 @@ Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{n}{Number of samples to draw from the distribution.}
+\item{n}{Number of draws to sample from the distribution.}
 }
 \description{
 Density, distribution function, and random generation 

@@ -3,7 +3,7 @@
 \name{posterior_predict.brmsfit}
 \alias{posterior_predict.brmsfit}
 \alias{posterior_predict}
-\title{Samples from the Posterior Predictive Distribution}
+\title{Draws from the Posterior Predictive Distribution}
 \usage{
 \method{posterior_predict}{brmsfit}(
   object,
@@ -13,8 +13,8 @@
   transform = NULL,
   resp = NULL,
   negative_rt = FALSE,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   ntrys = 5,
   cores = NULL,
@@ -49,12 +49,12 @@ on the lower boundary should be returned as negative values.
 This allows to distinguish responses on the upper and
 lower boundary. Defaults to \code{FALSE}.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -74,18 +74,18 @@ that control several aspects of data validation and prediction.}
 \value{
 An \code{array} of predicted response values. In univariate models,
   the output is as an S x N matrix, where S is the number of posterior
-  samples and N is the number of observations. In multivariate models, an
+  draws and N is the number of observations. In multivariate models, an
   additional dimension is added to the output which indexes along the
   different response variables.
 }
 \description{
-Compute posterior samples of the posterior predictive distribution. Can be
+Compute posterior draws of the posterior predictive distribution. Can be
 performed for the data used to fit the model (posterior predictive checks) or
-for new data. By definition, these samples have higher variance than samples
+for new data. By definition, these draws have higher variance than draws
 of the means of the posterior predictive distribution computed by
 \code{\link{posterior_epred.brmsfit}}. This is because the residual error
 is incorporated in \code{posterior_predict}. However, the estimated means of
-both methods averaged across samples should be very similar.
+both methods averaged across draws should be very similar.
 }
 \details{
 \code{NA} values within factors in \code{newdata}, 

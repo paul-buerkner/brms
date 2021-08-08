@@ -3,7 +3,7 @@
 \name{nsamples.brmsfit}
 \alias{nsamples.brmsfit}
 \alias{nsamples}
-\title{Number of Posterior Samples}
+\title{(Deprecated) Number of Posterior Samples}
 \usage{
 \method{nsamples}{brmsfit}(object, subset = NULL, incl_warmup = FALSE, ...)
 }
@@ -19,5 +19,7 @@ samples.}
 \item{...}{Currently ignored.}
 }
 \description{
-Extract the number of posterior samples stored in a fitted Bayesian model.
+Extract the number of posterior samples (draws) stored in a fitted Bayesian
+model. Method \code{nsamples} is deprecated. Please use \code{ndraws}
+instead.
 }

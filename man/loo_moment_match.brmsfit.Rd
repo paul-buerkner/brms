@@ -53,7 +53,7 @@ Moment matching for efficient approximate leave-one-out cross-validation
 for more details.
 }
 \details{
-The moment matching algorithm requires samples of all variables
+The moment matching algorithm requires draws of all variables
   defined in Stan's \code{parameters} block to be saved. Otherwise
   \code{loo_moment_match} cannot be computed. Thus, please set
   \code{save_pars = save_pars(all = TRUE)} in the call to \code{brm}, if you

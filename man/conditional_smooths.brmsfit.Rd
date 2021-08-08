@@ -15,8 +15,10 @@
   spaghetti = FALSE,
   resolution = 100,
   too_far = 0,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   nsamples = NULL,
+  subset = NULL,
   probs = NULL,
   ...
 )
@@ -48,7 +50,7 @@ to be covered by the uncertainty intervals. The default is 0.95.}
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
-to set argument \code{nsamples} to a relatively small value 
+to set argument \code{ndraws} to a relatively small value 
 (e.g., \code{100}) in order to reduce computation time.}
 
 \item{resolution}{Number of support points used to generate 
@@ -66,14 +68,18 @@ the unit square and then grid points more than \code{too_far}
 from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
-\item{subset}{A numeric vector specifying
-the posterior samples to be used. 
-If \code{NULL} (the default), all samples are used.}
+\item{ndraws}{Positive integer indicating how many 
+posterior draws should be used. 
+If \code{NULL} (the default) all draws are used.
+Ignored if \code{draw_ids} is not \code{NULL}.}
 
-\item{nsamples}{Positive integer indicating how many 
-posterior samples should be used. 
-If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset} is not \code{NULL}.}
+\item{draw_ids}{An integer vector specifying
+the posterior draws to be used. 
+If \code{NULL} (the default), all draws are used.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
+
+\item{subset}{Deprecated alias of \code{draw_ids}.}
 
 \item{probs}{(Deprecated) The quantiles to be used in the computation of
 uncertainty intervals. Please use argument \code{prob} instead.}
