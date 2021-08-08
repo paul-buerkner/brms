@@ -795,11 +795,11 @@ test_that("Missing value imputation works correctly", {
                            backend = "rstan", refresh = 0)
   print(fit_imp1)
   expect_equal(ndraws(fit_imp1), 5000)
-  expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
+  expect_equal(dim(fit_imp1$rhats), c(5, length(variables(fit_imp1))))
 
   fit_imp1 <- update(fit_imp1, . ~ chl, newdata = imp)
   print(fit_imp1)
-  expect_true(!"b_age" %in% parnames(fit_imp1))
+  expect_true(!"b_age" %in% variables(fit_imp1))
   expect_equal(ndraws(fit_imp1), 5000)
 
   # missing value imputation within Stan
@@ -838,8 +838,8 @@ test_that("student-t-distributed group-level effects work correctly", {
     chains = 1, refresh = 0
   )
   print(summary(fit))
-  expect_true("df_patient" %in% parnames(fit))
-  expect_true(!"udf_1" %in% parnames(fit))
+  expect_true("df_patient" %in% variables(fit))
+  expect_true(!"udf_1" %in% variables(fit))
   waic <- suppressWarnings(waic(fit))
   expect_range(waic$estimates[3, 1], 1300, 1400)
 })
