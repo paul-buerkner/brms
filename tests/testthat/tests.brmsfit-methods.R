@@ -21,32 +21,68 @@ fit5 <- rename_pars(brms:::brmsfit_example5)
 fit6 <- rename_pars(brms:::brmsfit_example6)
 
 # test S3 methods in alphabetical order
+test_that("as_draws and friends have resonable outputs", {
+  draws <- as_draws(fit1, variable = "b_Intercept")
+  expect_s3_class(draws, "draws_list")
+  expect_equal(variables(draws), "b_Intercept")
+  expect_equal(ndraws(draws), ndraws(fit1))
+  
+  draws <- SM(as_draws_matrix(fit1, draw = 1:10))
+  expect_s3_class(draws, "draws_matrix")
+  expect_equal(ndraws(draws), 10)
+  
+  draws <- as_draws_array(fit2, iteration = 1:10)
+  expect_s3_class(draws, "draws_array")
+  expect_equal(niterations(draws), 10)
+  
+  draws <- as_draws_df(fit2, variable = "^b_", regex = TRUE)
+  expect_s3_class(draws, "draws_df")
+  expect_true(all(grepl("^b_", variables(draws))))
+  
+  draws <- as_draws_list(fit2, chain = 1)
+  expect_s3_class(draws, "draws_list")
+  expect_equal(nchains(draws), 1)
+  
+  draws <- as_draws_rvars(fit3)
+  expect_s3_class(draws, "draws_rvars")
+  expect_equal(ndraws(draws), ndraws(fit3))
+  expect_true(length(variables(draws)) > 0)
+})
+
 test_that("as.data.frame has reasonable ouputs", {
-  ps <- as.data.frame(fit1)
-  expect_true(is(ps, "data.frame"))
-  expect_equal(dim(ps), c(ndraws(fit1), length(variables(fit1))))
+  draws <- as.data.frame(fit1)
+  expect_true(is(draws, "data.frame"))
+  expect_equal(dim(draws), c(ndraws(fit1), length(variables(fit1))))
   
   # deprecated 'pars' argument still works
   expect_warning(
-    ps <- as.data.frame(fit1, pars = "^b_"),
+    draws <- as.data.frame(fit1, pars = "^b_"),
     "'pars' is deprecated"
   )
-  expect_true(is(ps, "data.frame"))
-  expect_true(ncol(ps) > 0)
+  expect_s3_class(draws, "data.frame")
+  expect_true(ncol(draws) > 0)
+  
+  # deprecated 'subset' argument still works
+  expect_warning(
+    draws <- as.data.frame(fit1, subset = 10:20),
+    "'subset' is deprecated"
+  )
+  expect_s3_class(draws, "data.frame")
+  expect_equal(nrow(draws), 11)
 })
 
 test_that("as.matrix has reasonable ouputs", {
-  ps <- as.matrix(fit1)
-  expect_true(is(ps, "matrix"))
-  expect_equal(dim(ps), c(ndraws(fit1), length(variables(fit1))))
+  draws <- as.matrix(fit1)
+  expect_true(is(draws, "matrix"))
+  expect_equal(dim(draws), c(ndraws(fit1), length(variables(fit1))))
 })
 
 test_that("as.array has reasonable ouputs", {
-  ps <- as.array(fit1)
-  expect_true(is.array(ps))
+  draws <- as.array(fit1)
+  expect_true(is.array(draws))
   chains <- fit1$fit@sim$chains
   ps_dim <- c(ndraws(fit1) / chains, chains, length(variables(fit1)))
-  expect_equal(dim(ps), ps_dim)
+  expect_equal(dim(draws), ps_dim)
 })
 
 test_that("as.mcmc has reasonable ouputs", {
@@ -486,6 +522,12 @@ test_that("model_weights has reasonable ouputs", {
   # expect_equal(mw, setNames(c(0.5, 0.5), c("fit1", "fit1")))
 })
 
+test_that("ndraws and friends have reasonable ouputs", {
+  expect_equal(ndraws(fit1), 50)
+  expect_equal(nchains(fit1), 1)
+  expect_equal(niterations(fit1), 50)
+})
+
 test_that("ngrps has reasonable ouputs", {
   expect_equal(ngrps(fit1), list(visit = 4))
   expect_equal(ngrps(fit2), list(patient = 59))
@@ -521,35 +563,35 @@ test_that("post_prob has reasonable ouputs", {
 
 test_that("posterior_average has reasonable outputs", {
   pnames <- c("b_Age", "nu")
-  ps <- posterior_average(fit1, fit1, variable = pnames, weights = c(0.3, 0.7))
-  expect_equal(dim(ps), c(ndraws(fit1), 2))
-  expect_equal(names(ps), pnames)
+  draws <- posterior_average(fit1, fit1, variable = pnames, weights = c(0.3, 0.7))
+  expect_equal(dim(draws), c(ndraws(fit1), 2))
+  expect_equal(names(draws), pnames)
   
   weights <- rexp(3)
-  ps <- brms:::SW(posterior_average(
+  draws <- brms:::SW(posterior_average(
     fit1, fit2, fit3, variable = "nu", weights = rexp(3), 
     missing = 1, ndraws = 10
   ))
-  expect_equal(dim(ps), c(10, 1))
-  expect_equal(names(ps), "nu")
+  expect_equal(dim(draws), c(10, 1))
+  expect_equal(names(draws), "nu")
 })
 
 test_that("posterior_samples has reasonable outputs", {
-  ps <- SW(posterior_samples(fit1))
-  expect_equal(dim(ps), c(ndraws(fit1), length(variables(fit1))))
-  expect_equal(names(ps), variables(fit1))
+  draws <- SW(posterior_samples(fit1))
+  expect_equal(dim(draws), c(ndraws(fit1), length(variables(fit1))))
+  expect_equal(names(draws), variables(fit1))
   expect_equal(names(SW(posterior_samples(fit1, pars = "^b_"))),
                c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
                  "b_Age", "b_volume", "b_Trt1:Age", "b_sigma_Trt1"))
   
   # test default method
-  ps <- SW(posterior_samples(fit1$fit, "^b_Intercept$"))
-  expect_equal(dim(ps), c(ndraws(fit1), 1))
+  draws <- SW(posterior_samples(fit1$fit, "^b_Intercept$"))
+  expect_equal(dim(draws), c(ndraws(fit1), 1))
 })
 
 test_that("posterior_summary has reasonable outputs", {
-  ps <- posterior_summary(fit1, variable = "^b_", regex = TRUE)
-  expect_equal(dim(ps), c(7, 4))
+  draws <- posterior_summary(fit1, variable = "^b_", regex = TRUE)
+  expect_equal(dim(draws), c(7, 4))
 })
 
 test_that("posterior_interval has reasonable outputs", {
