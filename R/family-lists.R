@@ -52,7 +52,8 @@
     ),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "trials", "cens", "trunc", "index")
+    ad = c("weights", "subset", "trials", "cens", "trunc", "index"),
+    specials = "sbi_logit"
   )
 }
 
@@ -65,25 +66,25 @@
     dpars = c("mu"), type = "int", 
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "index"), 
-    specials = "binary"
+    specials = c("binary", "sbi_logit")
   )
 }
 
 .family_categorical <- function() {
   list(
     links = "logit", 
-    dpars = NULL,  # is determind based on the data
+    dpars = NULL,  # is determined based on the data
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights", "subset", "index"), 
-    specials = c("categorical", "joint_link")
+    specials = c("categorical", "joint_link", "sbi_logit")
   )
 }
 
 .family_multinomial <- function() {
   list(
     links = "logit", 
-    dpars = NULL,  # is determind based on the data
+    dpars = NULL,  # is determined based on the data
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights", "subset", "trials", "index"), 
@@ -136,7 +137,8 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index"),
+    specials = "sbi_log"
   )
 }
 
@@ -145,7 +147,8 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index"),
+    specials = "sbi_log"
   )
 }
 
@@ -155,7 +158,8 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu", "sigma"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index"),
+    specials = "sbi_log"
   )
 }
  
@@ -164,7 +168,8 @@
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "rate", "index")
+    ad = c("weights", "subset", "cens", "trunc", "rate", "index"),
+    specials = "sbi_log"
   )
 }
 
@@ -187,7 +192,8 @@
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
-    include = "fun_com_poisson.stan"
+    include = "fun_com_poisson.stan",
+    specials = "sbi_log"
   )
 }
 
@@ -332,7 +338,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_cox.stan",
-    specials = c("cox"),
+    specials = c("cox", "sbi_log", "sbi_log_cdf"),
     normalized = ""
   )
 }
@@ -348,7 +354,7 @@
     ad = c("weights", "subset", "thres", "cat", "index"), 
     specials = c(
       "ordinal", "ordered_thres", "thres_minus_eta", 
-      "joint_link", "ocs"
+      "joint_link", "ocs", "sbi_logit"
     ),
     normalized = ""
   )
@@ -403,6 +409,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_poisson.stan",
+    specials = c("sbi_log", "sbi_hu_logit"),
     normalized = ""
   )
 }
@@ -414,6 +421,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_negbinomial.stan",
+    specials = c("sbi_log", "sbi_hu_logit"),
     normalized = ""
   )
 }
@@ -425,6 +433,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_gamma.stan",
+    specials = "sbi_hu_logit",
     normalized = ""
   )
 }
@@ -436,7 +445,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_lognormal.stan",
-    specials = "logscale",
+    specials = c("logscale", "sbi_hu_logit"),
     normalized = ""
   )
 }
@@ -448,6 +457,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_poisson.stan",
+    specials = c("sbi_log", "sbi_zi_logit"),
     normalized = ""
   )
 }
@@ -459,6 +469,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_negbinomial.stan",
+    specials = c("sbi_log", "sbi_zi_logit"),
     normalized = ""
   )
 }
@@ -473,6 +484,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "trials", "cens", "trunc", "index"),
     include = "fun_zero_inflated_binomial.stan",
+    specials = c("sbi_logit", "sbi_zi_logit"),
     normalized = ""
   )
 }
@@ -487,6 +499,7 @@
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_beta.stan",
+    specials = "sbi_zi_logit",
     normalized = ""
   )
 }
@@ -501,6 +514,7 @@
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "index"),
     include = "fun_zero_one_inflated_beta.stan",
+    specials = "sbi_zi_logit",
     normalized = ""
   )
 }

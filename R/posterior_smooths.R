@@ -71,6 +71,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   ndraws <- use_alias(ndraws, nsamples)
   draw_ids <- use_alias(draw_ids, subset)
   smef <- tidy_smef(object, fit$data)
+  smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)
   if (!smooth %in% smterms) {
     stop2("Term '", smooth, "' cannot be found. Available ", 

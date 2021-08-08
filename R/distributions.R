@@ -589,8 +589,8 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
-  if (isTRUE(any(beta <= 0))) {
-    stop2("beta must be greater than 0.")
+  if (isTRUE(any(beta < 0))) {
+    stop2("beta must be non-negative.")
   }
   args <- nlist(x, mu, sigma, beta)
   args <- do_call(expand, args)
@@ -614,8 +614,8 @@ pexgaussian <- function(q, mu, sigma, beta,
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
-  if (isTRUE(any(beta <= 0))) {
-    stop2("beta must be greater than 0.")
+  if (isTRUE(any(beta < 0))) {
+    stop2("beta must be non-negative.")
   }
   args <- nlist(q, mu, sigma, beta)
   args <- do_call(expand, args)
@@ -642,8 +642,8 @@ rexgaussian <- function(n, mu, sigma, beta) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
-  if (isTRUE(any(beta <= 0))) {
-    stop2("beta must be positive.")
+  if (isTRUE(any(beta < 0))) {
+    stop2("beta must be non-negative.")
   }
   mu <- mu - beta
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)

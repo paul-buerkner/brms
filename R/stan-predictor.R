@@ -1959,11 +1959,11 @@ stan_eta_rsp <- function(r) {
 # does eta need to be transformed manually using the link functions
 # @param family the model family
 # @param cens_or_trunc is the model censored or truncated?
-stan_eta_transform <- function(family, cens_or_trunc = FALSE) {
+stan_eta_transform <- function(family, bterms) {
   transeta <- "transeta" %in% family_info(family, "specials")
   no_transform <- family$link == "identity" && !transeta || 
     has_joint_link(family) && !is.customfamily(family)
-  !no_transform && !stan_has_built_in_fun(family, cens_or_trunc)
+  !no_transform && !stan_has_built_in_fun(family, bterms)
 }
 
 # correctly apply inverse link to eta
@@ -1975,8 +1975,7 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
-  cens_or_trunc <- stan_log_lik_adj(bterms$adforms, c("cens", "trunc"))
-  if (stan_eta_transform(family, cens_or_trunc = cens_or_trunc)) {
+  if (stan_eta_transform(family, bterms)) {
     dpar_id <- dpar_id(dpar)
     pred_dpars <- names(bterms$dpars)
     shape <- glue("shape{dpar_id}")
