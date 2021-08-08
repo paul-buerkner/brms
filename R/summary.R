@@ -222,7 +222,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   } else {
     total_ndraws <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
     cat(paste0(
-      "Draws: ", x$chains, " chains, each with iter = ", x$iter, 
+      "  Draws: ", x$chains, " chains, each with iter = ", x$iter, 
       "; warmup = ", x$warmup, "; thin = ", x$thin, ";\n",
       "         total post-warmup draws = ", total_ndraws, "\n\n"
     ))
