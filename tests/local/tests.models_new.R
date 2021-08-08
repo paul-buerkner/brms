@@ -100,7 +100,7 @@ test_that("Binomial model from brm doc works correctly", {
 })
 
 test_that("Non-linear model from brm doc works correctly", {
-  x <- rnorm(100)
+  x <- abs(rnorm(100))
   y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
   data5 <- data.frame(x, y)
   fit5 <- brm(
