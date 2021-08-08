@@ -169,8 +169,9 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
   }
   colnames(out) <- NULL
   out <- reorder_obs(out, object$old_order, sort = sort)
-  if (is_polytomous(object$family) && length(dim(out)) == 3L && 
-      scale == "response") {
+  if (scale == "response" && is_polytomous(object$family) &&
+      length(dim(out)) == 3L && dim(out)[3] == length(object$cats)) {
+    # for ordinal models with varying thresholds, dim[3] may not match cats
     dimnames(out)[[3]] <- object$cats
   }
   if (summary) {

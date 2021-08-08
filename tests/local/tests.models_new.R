@@ -975,7 +975,7 @@ test_that("ordinal model with grouped thresholds works correctly", {
   new_arrnms <- dimnames(thres_minus_eta_ch[[1]])
   thres_minus_eta_ch <- abind::abind(thres_minus_eta_ch, along = 2)
   dimnames(thres_minus_eta_ch) <- new_arrnms
-  expect_identical(thres_minus_eta, thres_minus_eta_ch)
+  expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
 })
 
 test_that("Fixing parameters to constants works correctly", {
