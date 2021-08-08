@@ -125,7 +125,7 @@ test_that("ARMA models work correctly", {
     chains = 2, refresh = 0
   )
   print(fit_ar)
-  ar <- colMeans(as.matrix(fit_ar, "^ar"))
+  ar <- colMeans(as.matrix(fit_ar, variable = "ar"))
   expect_range(ar[1], 0.5, 0.9)
   expect_range(ar[3], -0.2, 0.25)
   expect_range(ar[5], -0.6, -0.1)
