@@ -568,11 +568,10 @@ test_that("Argument `incl_thres` works correctly for non-grouped thresholds", {
   thres <- bprep$thres$thres
   eta <- posterior_linpred(fit)
   thres_minus_eta_ch <- apply(thres, 2, "-", eta)
-  thres_minus_eta_ch <- array(thres_minus_eta_ch,
-                              dim = c(nrow(thres), ncol(eta), ncol(thres)))
-  dimnames(thres_minus_eta_ch) <-
-    list(NULL, NULL, as.character(seq_len(ncol(thres))))
-  expect_identical(thres_minus_eta, thres_minus_eta_ch)
+  thres_minus_eta_ch <- array(
+    thres_minus_eta_ch, dim = c(nrow(thres), ncol(eta), ncol(thres))
+  )
+  expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
 })
 
 test_that("Mixture models work correctly", {
