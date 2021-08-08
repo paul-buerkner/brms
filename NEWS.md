@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Support several methods of the `posterior` package. (#1204)
 * Substantially extend compatibility of `brms` models 
 with `emmeans` thanks to Mattan S. Ben-Shachar. (#907, #1134)
 * Combine missing value (`mi`) terms with `subset` addition terms. (#1063)
