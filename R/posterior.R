@@ -138,7 +138,10 @@ as_draws.brmsfit <- function(x, variable = NULL, iteration = NULL,
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   )
-  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
+  subset_draws(
+    out, iteration = iteration, chain = chain, 
+    draw = draw, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -153,7 +156,10 @@ as_draws_matrix.brmsfit <- function(x, variable = NULL, iteration = NULL,
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
-  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
+  subset_draws(
+    out, iteration = iteration, chain = chain, 
+    draw = draw, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -168,7 +174,10 @@ as_draws_array.brmsfit <- function(x, variable = NULL, iteration = NULL,
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
-  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
+  subset_draws(
+    out, iteration = iteration, chain = chain, 
+    draw = draw, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -183,7 +192,10 @@ as_draws_df.brmsfit <- function(x, variable = NULL, iteration = NULL,
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
-  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
+  subset_draws(
+    out, iteration = iteration, chain = chain, 
+    draw = draw, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -198,7 +210,10 @@ as_draws_list.brmsfit <- function(x, variable = NULL, iteration = NULL,
     x$fit, variable = variable, regex = regex, 
     inc_warmup = inc_warmup, ...
   )
-  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
+  subset_draws(
+    out, iteration = iteration, chain = chain,
+    draw = draw, ...
+  )
 }
 
 #' @rdname draws-brms
@@ -213,7 +228,10 @@ as_draws_rvars.brmsfit <- function(x, variable = NULL, iteration = NULL,
     x, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
-  subset_draws(out, iteration = iteration, chain = chain, draw = draw)
+  subset_draws(
+    out, iteration = iteration, chain = chain, 
+    draw = draw, ...
+  )
 }
 
 # in stanfit objects draws are stored in a draws_list-like format
