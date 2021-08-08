@@ -124,15 +124,15 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
   } else {
     # no dpar or nlpar specified
     incl_thres <- as_one_logical(incl_thres %||% FALSE)
-    if (scale == "linear" && incl_thres && is_ordinal(object$family)) {
+    incl_thres <- incl_thres && is_ordinal(object$family) && scale == "linear" 
+    if (incl_thres) {
       # extract linear predictor array with thresholds etc. included
       if (is.mixfamily(object$family)) {
         stop2("'incl_thres' is not supported for mixture models.")
       }
       object$family$link <- "identity"
-      scale <- "response"
     }
-    if (scale == "response") {
+    if (scale == "response" || incl_thres) {
       # predict the mean of the response distribution
       for (nlp in nlpars) {
         object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
