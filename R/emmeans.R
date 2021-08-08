@@ -87,16 +87,15 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   if (anyNA(post.beta)) {
     stop2("emm_basis.brmsfit created NAs. Please check your reference grid.")
   }
-  X <- diag(ncol(post.beta))
   misc <- bterms$.misc
   if (is.mvbrmsterms(bterms)) {
     # reshape to a 2D matrix for multivariate models
     dims <- dim(post.beta)
     post.beta <- matrix(post.beta, ncol = prod(dims[2:3]))
-    X <- matrix(replicate(dims[3], X), nrow = dims[2])
     misc$ylevs = list(rep.meas = bterms$responses)
   }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
+  X <- diag(ncol(post.beta))
   bhat <- apply(post.beta, 2, mean)
   V <- cov(post.beta)
   nbasis <- matrix(NA)
