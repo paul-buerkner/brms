@@ -1005,6 +1005,25 @@ test_that("projpred methods can be run", {
   expect_is(vs, "vsel")
 })
 
+test_that("emmeans can be run for multivariate models", {
+  library(emmeans)
+  df <- data.frame(
+    y1 = rnorm(100), y2 = rnorm(100), 
+    x1 = rnorm(100), x2 = rnorm(100)
+  )
+  
+  bform <- bf(mvbind(y1, y2) ~ x1 + x2) + set_rescor(TRUE)
+  fit <- brm(bform, df, chains = 1, iter = 1000)
+  
+  # Default: Collapse over repeated measures:
+  em <- summary(emmeans(fit, "x1", at = list(x1 = c(-1, 1))))
+  expect_equal(nrow(em), 2)
+  
+  # Ask for MV with rep.meas
+  em <- summary(emmeans(fit, c("x1", "rep.meas"), at = list(x1 = c(-1, 1))))
+  expect_equal(nrow(em), 4)
+})
+
 test_that(paste(
   "Families sratio() and cratio() are equivalent for symmetric distribution",
   "functions (here only testing the logit link)"
