@@ -50,7 +50,10 @@ NULL
 recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL, 
                                  nlpar = NULL, re_formula = NA,
                                  epred = FALSE, ...) {
-  bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula, epred)
+  bterms <- .extract_par_terms(
+    object, resp = resp, dpar = dpar, nlpar = nlpar, 
+    re_formula = re_formula, epred = epred
+  )
   trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
   # brms has no call component so the call is just a dummy
   emmeans::recover_data(call("brms"), trms, "na.omit", data = object$data, ...)
@@ -70,7 +73,10 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     dpar <- NULL
   }
   epred <- as_one_logical(epred)
-  bterms <- .extract_par_terms(object, resp, dpar, nlpar, re_formula, epred)
+  bterms <- .extract_par_terms(
+    object, resp = resp, dpar = dpar, nlpar = nlpar, 
+    re_formula = re_formula, epred = epred
+  )
   if (epred) {
     post.beta <- posterior_epred(
       object, newdata = grid, re_formula = re_formula,
@@ -88,11 +94,15 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     stop2("emm_basis.brmsfit created NAs. Please check your reference grid.")
   }
   misc <- bterms$.misc
-  if (is.mvbrmsterms(bterms)) {
-    # reshape to a 2D matrix for multivariate models
+  if (length(dim(post.beta)) == 3L) {
+    # reshape to a 2D matrix, for example, in multivariate models
+    ynames <- dimnames(post.beta)[[3]]
+    if (is.null(ynames)) {
+      ynames <- as.character(seq_len(dim(post.beta)[3]))
+    }
     dims <- dim(post.beta)
     post.beta <- matrix(post.beta, ncol = prod(dims[2:3]))
-    misc$ylevs = list(rep.meas = bterms$responses)
+    misc$ylevs = list(rep.meas = ynames)
   }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
   X <- diag(ncol(post.beta))
@@ -105,84 +115,96 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   nlist(X, bhat, nbasis, V, dffun, dfargs, misc, post.beta)
 }
 
-# extract terms of a specific predicted parameter in the model
-.extract_par_terms <- function(object, resp = NULL, dpar = NULL, nlpar = NULL,
-                               re_formula = NA, epred = FALSE) {
+# extract terms of specific predicted parameter(s) in the model
+# currently, the only slots that matter in the returned object are
+# allvars: formula with all required variables on the right-hand side
+# .misc: a named list with additional info to be interpreted by emmeans
+.extract_par_terms <- function(x, ...) {
+  UseMethod(".extract_par_terms")
+}
+
+#' @export
+.extract_par_terms.brmsfit <- function(x, resp = NULL, re_formula = NA, 
+                                       dpar = NULL, epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
     # deprecation warning already provided in emm_basis.brmsfit
     epred <- TRUE
     dpar <- NULL
   }
-  resp <- validate_resp(resp, object)
-  epred <- as_one_logical(epred)
-  new_formula <- update_re_terms(formula(object), re_formula)
-  out <- brmsterms(new_formula, resp_rhs_all = FALSE)
-  if (is.mvbrmsterms(out)) {
-    if (length(resp) == 1L) {
-      # reduce to a univariate model
-      out <- out$terms[[resp]]
-    } else {
-      # only keep information of selected responses
-      out$terms <- out$terms[resp]
-      out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
-      out$responses <- resp
-    }
-  }
-  if (is_ordinal(out)) {
+  resp <- validate_resp(resp, x)
+  new_formula <- update_re_terms(formula(x), re_formula)
+  bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
+  if (is_ordinal(bterms)) {
     warning2("brms' emmeans support for ordinal models is experimental ",
              "and currently ignores the threshold parameters.")
   }
+  .extract_par_terms(bterms, resp = resp, dpar = dpar, epred = epred, ...)
+}
+
+#' @export
+.extract_par_terms.mvbrmsterms <- function(x, resp, epred, ...) {
+  stopifnot(is.character(resp))
+  epred <- as_one_logical(epred)
+  out <- x
+  # only use selected univariate models
+  out$terms <- out$terms[resp]
+  if (epred) {
+    out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
+    out$.misc <- list()
+    return(out)
+  }
+  for (i in seq_along(out$terms)) {
+    out$terms[[i]] <- .extract_par_terms(out$terms[[i]], epred = epred, ...)
+  }
+  out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
+  misc_list <- unique(lapply(out$terms, "[[", ".misc"))
+  if (length(misc_list) > 1L){
+    stop2("brms' emmeans support for multivariate models is limited ",
+          "to cases where all univariate models have the same family.")
+  }
+  out$.misc <- misc_list[[1]]
+  out
+}
+
+#' @export
+.extract_par_terms.brmsterms <- function(x, dpar, nlpar, epred, ...) {
+  epred <- as_one_logical(epred)
+  all_dpars <- names(x$dpars)
+  all_nlpars <- names(x$nlpars)
+  out <- x
   if (epred) {
     out$.misc <- list()
     return(out)
   }
-  if (is.mvbrmsterms(out)) {
-    # multivariate model
-    if (!is.null(dpar) || !is.null(nlpar)) {
-      stop2("Cannot use 'dpar' or 'nlpar' if multiple ",
-            "response variables are selected.")
+  if (!is.null(nlpar)) {
+    if (!is.null(dpar)) {
+      stop2("'dpar' and 'nlpar' cannot be specified at the same time.")
     }
-    # posterior_linpred uses 'mu' dpars by default
-    mu_list <- lapply(lapply(out$terms, "[[", "dpars"), "[[", "mu")
-    out$allvars <- allvars_formula(lapply(mu_list, get_allvars))
-    # unclear whether emmeans supports different families or 
-    # link functions across univariate models
-    families <- unique(lapply(out$terms, "[[", "family"))
-    if (length(families) > 1L){
-      stop2("brms' emmeans support for multivariate models is limited ",
-            "to cases where all univariate models have the same family.")
+    nlpar <- as_one_character(nlpar)
+    if (!nlpar %in% all_nlpars) {
+      stop2(
+        "Non-linear parameter '", nlpar, "' is not part of the model.",
+        "\nSupported parameters are: ", collapse_comma(all_nlpars)
+      )
     }
-    out$.misc <- emmeans::.std.link.labels(families[[1]], list())
+    out <- x$nlpars[[nlpar]]
+  } else if (!is.null(dpar)) {
+    dpar <- as_one_character(dpar)
+    if (!dpar %in% all_dpars) {
+      stop2(
+        "Distributional parameter '", dpar, "' is not part of the model.",
+        "\nSupported parameters are: ", collapse_comma(all_dpars)
+      )
+    }
+    out <- x$dpars[[dpar]]
   } else {
-    # univariate model
-    all_dpars <- names(out$dpars)
-    all_nlpars <- names(out$nlpars)
-    if (!is.null(nlpar)) {
-      if (!is.null(dpar)) {
-        stop2("'dpar' and 'nlpar' cannot be specified at the same time.")
-      }
-      nlpar <- as_one_character(nlpar)
-      if (!nlpar %in% all_nlpars) {
-        stop2(
-          "Non-linear parameter '", nlpar, "' is not part of the model.",
-          "\nSupported parameters are: ", collapse_comma(all_nlpars)
-        )
-      }
-      out <- out$nlpars[[nlpar]]
-    } else if (!is.null(dpar)) {
-      dpar <- as_one_character(dpar)
-      if (!dpar %in% all_dpars) {
-        stop2(
-          "Distributional parameter '", dpar, "' is not part of the model.",
-          "\nSupported parameters are: ", collapse_comma(all_dpars)
-        )
-      }
-      out <- out$dpars[[dpar]]
-    } else {
-      # neither dpar nor nlpar specified
-      out <- out$dpars[["mu"]]
+    # extract 'mu' parameter by default
+    if (!"mu" %in% names(x$dpars)) {
+      # concerns categorical-like and mixture models
+      stop2("emmeans is not yet supported for this brms model.")
     }
-    out$.misc <- emmeans::.std.link.labels(out$family, list())
+    out <- x$dpars[["mu"]]
   }
+  out$.misc <- emmeans::.std.link.labels(out$family, list())
   out
 }

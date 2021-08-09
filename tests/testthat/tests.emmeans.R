@@ -8,6 +8,7 @@ SW <- suppressWarnings
 fit1 <- rename_pars(brms:::brmsfit_example1)
 fit2 <- rename_pars(brms:::brmsfit_example2)
 fit4 <- rename_pars(brms:::brmsfit_example4)
+fit6 <- rename_pars(brms:::brmsfit_example6)
 
 test_that("emmeans returns expected output structure", {
   em <- summary(emmeans(fit1, "Age", by = "Trt"))
@@ -34,6 +35,10 @@ test_that("emmeans supports 'epred' predictions", {
   expect_equal(nrow(em), 1)
   
   em <- summary(emmeans(fit2, "Age", by = "Trt", epred = TRUE))
+  expect_equal(nrow(em), 2)
+  
+  # test for a multivariate model
+  em <- summary(emmeans(fit6, "Age", by = "Trt", epred = TRUE))
   expect_equal(nrow(em), 2)
 })
 
