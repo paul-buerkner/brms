@@ -842,7 +842,12 @@ stan_log_lik_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "",
 
 stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
   family <- bterms$family
-  reqn <- !isFALSE(family$loop) || stan_log_lik_adj(bterms) || nzchar(mix)
+  no_loop <- isFALSE(family$loop)
+  if (no_loop && (stan_log_lik_adj(bterms) || nzchar(mix))) {
+    stop2("This model requires evaluating the custom ", 
+          "likelihood as a loop over observations.")
+  }
+  reqn <- !no_loop
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
@@ -854,7 +859,11 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   n <- stan_nn(threads)
   var_names <- sub("\\[.+$", "", family$vars)
   var_indices <- get_matches("\\[.+$", family$vars, first = TRUE)
-  var_indices <- ifelse(var_indices %in% "[n]", n, var_indices)
+  has_n_index <- var_indices %in% "[n]"
+  if (no_loop && any(has_n_index)) {
+    stop2("Invalid use of index '[n]' in an unlooped custom likelihood.")
+  }
+  var_indices <- ifelse(has_n_index, n, var_indices)
   is_var_adterms <- var_names %in% c("se", "trials", "dec") |
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
