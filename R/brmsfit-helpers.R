@@ -787,9 +787,11 @@ validate_cores_post_processing <- function(cores) {
 #' 
 #' @param fit Old \code{brmsfit} object (e.g., loaded from file).
 #' @param sdata New Stan data (result of a call to \code{\link{make_standata}}).
-#'   Pass \code{NULL} to avoid data check.
+#'   Pass \code{NULL} to avoid this data check.
 #' @param scode New Stan code (result of a call to \code{\link{make_stancode}}).
-#'   Pass \code{NULL} to avoid code check.
+#'   Pass \code{NULL} to avoid this code check.
+#' @param data New data to check consistency of factor level names.
+#'   Pass \code{NULL} to avoid this data check.
 #' @param algorithm New algorithm. Pass \code{NULL} to avoid algorithm check.
 #' @param silent Logical. If \code{TRUE}, no messages will be given.
 #' @param verbose Logical. If \code{TRUE} detailed report of the differences 
@@ -802,7 +804,7 @@ validate_cores_post_processing <- function(cores) {
 #' 
 #' @export
 #' @keywords internal
-brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, 
+brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
                                 algorithm = NULL, silent = FALSE, 
                                 verbose = FALSE) {
   stopifnot(is.brmsfit(fit))
@@ -816,6 +818,10 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
     stopifnot(is.list(sdata))
     cached_sdata <- standata(fit)
   }
+  if (!is.null(data)) {
+    stopifnot(is.data.frame(data))
+    cached_data <- fit$data
+  }
   if (!is.null(algorithm)) {
     algorithm <- as_one_character(algorithm)
     stopifnot(!is.null(fit$algorithm))
@@ -825,7 +831,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
   if (!is.null(scode)) {
     if (normalize_stancode(scode) != normalize_stancode(cached_scode)) {
       if (!silent) {
-        message("Stan code changed beyond whitespace/comments.")
+        message("Stan code has changed beyond whitespace/comments.")
         if (verbose) {
           require_package("diffobj")
           print(diffobj::diffChr(scode, cached_scode, format = "ansi8"))
@@ -838,7 +844,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
     sdata_equality <- all.equal(sdata, cached_sdata, check.attributes = FALSE)
     if (!isTRUE(sdata_equality)) {
       if (!silent) {
-        message("The processed data for Stan changed.\n")
+        message("The processed data for Stan has changed.")
         if (verbose) {
           print(sdata_equality)
         }
@@ -846,10 +852,41 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
       refit <- TRUE
     }
   }
+  if (!is.null(data)) {
+    # check consistency of factor names 
+    # as they are only stored as attributes in sdata (#1128)
+    factor_level_message <- FALSE
+    for (var in names(cached_data)) {
+      if (is_like_factor(cached_data[[var]])) {
+        cached_levels <- levels(factor(cached_data[[var]]))
+        new_levels <- levels(factor(data[[var]]))
+        if (!is_equal(cached_levels, new_levels)) {
+          if (!silent) {
+            factor_level_message <- TRUE
+            if (verbose) {
+              cat(paste0(
+                "Names of factor levels have changed for variable '", var, "' ",
+                "with cached levels (", collapse_comma(cached_levels), ") ", 
+                "but new levels (", collapse_comma(new_levels), ").\n"
+              ))
+            }
+          }
+          refit <- TRUE
+          if (!verbose) {
+            # no need to check all variables if we trigger a refit anyway
+            break
+          }
+        }
+      }
+    }
+    if (factor_level_message) {
+      message("Names of factor levels have changed.")
+    }
+  }
   if (!is.null(algorithm)) {
     if (algorithm != fit$algorithm) {
       if (!silent) {
-        message("Algorithm changed from '", fit$algorithm, 
+        message("Algorithm has changed from '", fit$algorithm, 
                 "' to '", algorithm, "'.\n")
       }
       refit <- TRUE

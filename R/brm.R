@@ -475,7 +475,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
           x_from_file, scode = stancode(x), sdata = sdata,
-          algorithm = algorithm, silent = silent
+          data = x$data, algorithm = algorithm, silent = silent
         )
         if (!needs_refit) {
           return(x_from_file)
@@ -548,7 +548,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x_from_file <- read_brmsfit(file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
-          x_from_file, scode = model, sdata = sdata,
+          x_from_file, scode = model, sdata = sdata, data = data,
           algorithm = algorithm, silent = silent
         )
         if (!needs_refit) {
