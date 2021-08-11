@@ -204,7 +204,8 @@
 #'   is stored in the \code{brmsfit} object for later usage.
 #' @param file_refit Modifies when the fit stored via the \code{file} parameter
 #'   is re-used. For \code{"never"} (default) the fit is always loaded if it
-#'   exists and fitting is skipped. If set to \code{"on_change"}, brms will
+#'   exists and fitting is skipped. For \code{"always"} the model is always
+#'   refitted. If set to \code{"on_change"}, brms will
 #'   refit the model if model, data or algorithm as passed to Stan differ from
 #'   what is stored in the file. This also covers changes in priors,
 #'   \code{sample_prior}, \code{stanvars}, covariance structure, etc. If you

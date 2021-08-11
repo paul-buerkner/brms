@@ -86,9 +86,11 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     if (!combine) {
       stop2("Cannot use 'file' if 'combine' is FALSE.")
     }
-    fits <- read_brmsfit(file)
-    if (!is.null(fits)) {
-      return(fits)
+    if (file_refit != "always") {
+      fits <- read_brmsfit(file)
+      if (!is.null(fits)) {
+        return(fits)
+      } 
     }
   }
   
