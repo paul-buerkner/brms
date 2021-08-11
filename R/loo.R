@@ -21,6 +21,10 @@
 #'  into memory issues, \code{pointwise = TRUE} is the way to go.
 #' @param moment_match Logical; Indicate whether \code{\link{loo_moment_match}} 
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
+#'  For most models, moment matching will only work if you have set
+#'  \code{save_pars = save_pars(all = TRUE)} when fitting the model with
+#'  \code{\link{brm}}. See \code{\link{loo_moment_match.brmsfit}} for more
+#'  details.
 #' @param reloo Logical; Indicate whether \code{\link{reloo}} 
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 

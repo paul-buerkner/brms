@@ -26,8 +26,8 @@
 #' @details The moment matching algorithm requires samples of all variables
 #'   defined in Stan's \code{parameters} block to be saved. Otherwise
 #'   \code{loo_moment_match} cannot be computed. Thus, please set
-#'   \code{save_pars = save_pars(all = TRUE)} in the call to \code{brm}, if you
-#'   are planning to apply \code{loo_moment_match} to your models.
+#'   \code{save_pars = save_pars(all = TRUE)} in the call to \code{\link{brm}},
+#'   if you are planning to apply \code{loo_moment_match} to your models.
 #'   
 #' @references 
 #'   Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2021). 
