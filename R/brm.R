@@ -178,7 +178,7 @@
 #' @param future Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 #'   package is used for parallel execution of the chains and argument
 #'   \code{cores} will be ignored. Can be set globally for the current \R
-#'   session via the \code{future} option. The execution type is controlled via
+#'   session via the \code{"future"} option. The execution type is controlled via
 #'   \code{\link[future:plan]{plan}} (see the examples section below).
 #' @param silent Verbosity level between \code{0} and \code{2}.
 #'   If \code{1} (the default), most of the
@@ -203,7 +203,9 @@
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
 #' @param file_refit Modifies when the fit stored via the \code{file} parameter
-#'   is re-used. For \code{"never"} (default) the fit is always loaded if it
+#'   is re-used. Can be set globally for the current \R session via the
+#'   \code{"brms.file_refit"} option (see \code{\link{options}}). 
+#'   For \code{"never"} (default) the fit is always loaded if it
 #'   exists and fitting is skipped. For \code{"always"} the model is always
 #'   refitted. If set to \code{"on_change"}, brms will
 #'   refit the model if model, data or algorithm as passed to Stan differ from
@@ -434,8 +436,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = 1, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, file_refit = "never", empty = FALSE, 
-                rename = TRUE, ...) {
+                file = NULL, file_refit = getOption("brms.file_refit", "never"), 
+                empty = FALSE, rename = TRUE, ...) {
   
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.

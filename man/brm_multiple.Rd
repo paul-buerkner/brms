@@ -151,7 +151,9 @@ to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
 
 \item{file_refit}{Modifies when the fit stored via the \code{file} parameter
-is re-used. For \code{"never"} (default) the fit is always loaded if it
+is re-used. Can be set globally for the current \R session via the
+\code{"brms.file_refit"} option (see \code{\link{options}}). 
+For \code{"never"} (default) the fit is always loaded if it
 exists and fitting is skipped. For \code{"always"} the model is always
 refitted. If set to \code{"on_change"}, brms will
 refit the model if model, data or algorithm as passed to Stan differ from
