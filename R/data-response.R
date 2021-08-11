@@ -176,8 +176,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (!is.numeric(trials)) {
         stop2("Number of trials must be numeric.")
       }
-      if (any(!is_wholenumber(trials) | trials < 1)) {
-        stop2("Number of trials must be positive integers.")
+      if (any(!is_wholenumber(trials) | trials < 0)) {
+        stop2("Number of trials must be non-negative integers.")
       }
     } else {
       stop2("Argument 'trials' is misspecified.")

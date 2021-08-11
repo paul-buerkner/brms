@@ -815,7 +815,7 @@ data_cnl <- function(bterms, data) {
       }
       cvalues <- cvalues[, 1]
     }
-    out[[paste0("C", p, "_", i)]] <- cvalues
+    out[[paste0("C", p, "_", i)]] <- as.array(cvalues)
   }
   out
 }
