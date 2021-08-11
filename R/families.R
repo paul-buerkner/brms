@@ -974,7 +974,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @param links Names of the link functions of the 
 #'   distributional parameters.
 #' @param type Indicates if the response distribution is
-#'   continuous (\code{"real"}) or discrete (\code{"int"}).
+#'   continuous (\code{"real"}) or discrete (\code{"int"}) and controls
+#'   if the corresonding function will be named with "_lpdf" or "_lpmf".
 #' @param lb Vector of lower bounds of the distributional 
 #'   parameters. Defaults to \code{NA} that is no lower bound.
 #' @param ub Vector of upper bounds of the distributional 
