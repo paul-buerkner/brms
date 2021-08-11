@@ -14,6 +14,8 @@ subtract the threshold-excluding linear predictor from the thresholds in case
 of an ordinal family. (#1137)
 * Add a `"mock"` backend option to facilitate testing 
 thanks to Martin Modrak. (#1116)
+* Add option `file_refit = "always"` to always overwrite models
+stored via the `file` argument. (#1151)
 * Initial GPU support via OpenCL thanks to the help
 Rok Češnovar. (#1166)
 * Support argument `robust` in method `hypothesis`. (#1170)
@@ -52,6 +54,8 @@ thanks to Malcolm Gillies. (#1143)
 * Fix a bug in non-linear models caused by accidental
 merging of operators in the non-linear formula 
 thanks to Fernando Miguez. (#1142)
+* Correctly trigger a refit for `file_refit = "on_change"` if factor level
+names have changed thanks to Martin Modrak. (#1128)
 * Validate factors in `validate_newdata` even when they are simultaneously 
 used as predictors and grouping variables thanks to Martin Modrak. (#1141)
 * Fix a bug in the Stan code generation of threaded mixture models
