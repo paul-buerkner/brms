@@ -527,3 +527,8 @@ validate_silent <- function(silent) {
   }
   silent
 }
+
+# possible options for argument 'file_refit'
+file_refit_options <- function() {
+  c("never", "always", "on_change")
+}

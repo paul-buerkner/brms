@@ -439,7 +439,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
-  file_refit <- match.arg(file_refit, c("never", "on_change"))
+  file_refit <- match.arg(file_refit, file_refit_options())
   if (!is.null(file) && file_refit == "never") {
     x <- read_brmsfit(file)
     if (!is.null(x)) {
