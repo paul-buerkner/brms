@@ -39,7 +39,9 @@
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
 #' @param ... For \code{resp_vreal}, vectors of real values. 
-#'   For \code{resp_vint}, vectors of integer values.  
+#'   For \code{resp_vint}, vectors of integer values. In Stan,
+#'   these variables will be named \code{vreal1}, \code{vreal2}, ...,
+#'   and \code{vint1}, \code{vint2}, ..., respectively.
 #'
 #' @return A list of additional response information to be processed further
 #'   by \pkg{brms}.
