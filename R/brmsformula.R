@@ -331,10 +331,12 @@
 #'   For custom families, it is possible to pass an arbitrary number of real and
 #'   integer vectors via the addition terms \code{vreal} and \code{vint},
 #'   respectively. An example is provided in
-#'   \code{vignette('brms_customfamilies')}.
+#'   \code{vignette('brms_customfamilies')}. To pass multiple vectors of the
+#'   same data type, provide them separated by commas inside a single 
+#'   \code{vreal} or \code{vint} statement.
 #' 
-#'   Multiple addition terms may be specified at the same time using the
-#'   \code{+} operator. For example, the formula
+#'   Multiple addition terms of different types may be specified at the same 
+#'   time using the \code{+} operator. For example, the formula
 #'   \code{formula = yi | se(sei) + cens(censored) ~ 1} implies a censored 
 #'   meta-analytic model.
 #'   

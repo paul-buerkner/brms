@@ -89,7 +89,9 @@ at the same time using the plausible-values-technique.}
 the denominator values from which the response rates are computed.}
 
 \item{...}{For \code{resp_vreal}, vectors of real values. 
-For \code{resp_vint}, vectors of integer values.}
+For \code{resp_vint}, vectors of integer values. In Stan,
+these variables will be named \code{vreal1}, \code{vreal2}, ...,
+and \code{vint1}, \code{vint2}, ..., respectively.}
 }
 \value{
 A list of additional response information to be processed further
