@@ -468,7 +468,11 @@ get_Sigma <- function(prep, i = NULL) {
   Sigma <- prep$mvpars$Sigma
   if (is.null(Sigma)) {
     stopifnot(!is.null(prep$mvpars$rescor))
-    sigma <- lapply(prep$resps, get_dpar, "sigma", i = i)
+    sigma <- named_list(names(prep$resps))
+    for (j in seq_along(sigma)) {
+      sigma[[j]] <- get_dpar(prep$resps[[j]], "sigma", i = i)
+      sigma[[j]] <- add_sigma_se(sigma[[j]], prep$resps[[j]], i = i)
+    }
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted

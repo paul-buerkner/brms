@@ -818,12 +818,15 @@ prepare_predictions_data <- function(bterms, sdata, data, stanvars = NULL, ...) 
   vars <- paste0(vars, resp)
   vars <- intersect(vars, names(sdata))
   # variables of variable length need to be handled via regular expression
+  escaped_resp <- escape_all(resp)
   vl_vars <- c("vreal", "vint")
   vl_vars <- regex_or(vl_vars)
-  vl_vars <- paste0("^", vl_vars, "[[:digit:]]+", escape_all(resp), "$")
+  vl_vars <- paste0("^", vl_vars, "[[:digit:]]+", escaped_resp, "$")
   vl_vars <- str_subset(names(sdata), vl_vars)
   vars <- union(vars, vl_vars)
   out <- sdata[vars]
+  # remove resp suffix from names to simplify post-processing
+  names(out) <- sub(paste0(escaped_resp, "$"), "", names(out))
   if (length(stanvars)) {
     stopifnot(is.stanvars(stanvars))
     out[names(stanvars)] <- sdata[names(stanvars)]

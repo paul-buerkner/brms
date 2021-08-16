@@ -66,6 +66,8 @@ thanks to Max Joseph. (#1167)
 parameters thanks to Sebastian Weber.
 * Fix an issue in the Stan code of threaded non-looped non-linear
 models thanks to Sebastian Weber. (#1175)
+* Fix problems in the post-processing of multivariate meta-analytic 
+models that could lead to incorrect handling of known standard errors.
 
 
 # brms 2.15.0
