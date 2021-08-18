@@ -336,9 +336,9 @@ kfold_predict <- function(x, method = c("predict", "fitted"),
   resp <- validate_resp(resp, x$fits[[1, "fit"]], multiple = FALSE)
   all_predicted <- as.character(sort(unlist(x$fits[, "predicted"])))
   npredicted <- length(all_predicted)
-  nsamples <- nsamples(x$fits[[1, "fit"]])
+  ndraws <- ndraws(x$fits[[1, "fit"]])
   y <- rep(NA, npredicted)
-  yrep <- matrix(NA, nrow = nsamples, ncol = npredicted)
+  yrep <- matrix(NA, nrow = ndraws, ncol = npredicted)
   names(y) <- colnames(yrep) <- all_predicted
   for (k in seq_rows(x$fits)) {
     fit_k <- x$fits[[k, "fit"]]

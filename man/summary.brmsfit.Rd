@@ -27,8 +27,9 @@ the measure of central tendency and the standard deviation as
 the measure of variability. If \code{TRUE}, the median and the 
 median absolute deviation (MAD) are applied instead.}
 
-\item{mc_se}{Logical; Indicating if the uncertainty caused by the 
-MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.}
+\item{mc_se}{Logical; Indicating if the uncertainty in \code{Estimate}
+caused by the MCMC sampling should be shown in the summary. Defaults to
+\code{FALSE}.}
 
 \item{...}{Other potential arguments}
 }

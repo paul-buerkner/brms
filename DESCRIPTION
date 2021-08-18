@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.15.9
-Date: 2021-06-09
+Version: 2.15.10
+Date: 2021-07-26
 Authors@R: 
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -22,6 +22,7 @@ Imports:
     rstan (>= 2.19.2),
     ggplot2 (>= 2.0.0),
     loo (>= 2.3.1),
+    posterior (>= 1.0.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
     rstantools (>= 2.1.1),

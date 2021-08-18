@@ -33,8 +33,8 @@
 #' @importFrom nlme fixef
 fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), pars = NULL, ...) {
-  contains_samples(object)
-  all_pars <- parnames(object)
+  contains_draws(object)
+  all_pars <- variables(object)
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
   if (!is.null(pars)) {
     pars <- as.character(pars)
@@ -43,7 +43,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
   if (!length(fpars)) {
     return(NULL)
   }
-  out <- as.matrix(object, pars = fpars, fixed = TRUE)
+  out <- as.matrix(object, variable = fpars)
   colnames(out) <- gsub(fixef_pars(), "", fpars)
   if (summary) {
     out <- posterior_summary(out, probs, robust)
@@ -63,7 +63,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #' @return covariance or correlation matrix of population-level parameters
 #' 
 #' @details Estimates are obtained by calculating the maximum likelihood 
-#'   covariances (correlations) of the posterior samples. 
+#'   covariances (correlations) of the posterior draws. 
 #'   
 #' @examples
 #' \dontrun{
@@ -74,8 +74,8 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #'
 #' @export
 vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
-  contains_samples(object)
-  all_pars <- parnames(object)
+  contains_draws(object)
+  all_pars <- variables(object)
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
   if (!is.null(pars)) {
     pars <- as.character(pars)
@@ -84,12 +84,12 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
   if (!length(fpars)) {
     return(NULL)
   }
-  samples <- posterior_samples(object, pars = fpars, fixed = TRUE)
-  names(samples) <- sub(fixef_pars(), "", names(samples))
+  draws <- as.data.frame(object, variable = fpars)
+  names(draws) <- sub(fixef_pars(), "", names(draws))
   if (correlation) {
-    out <- cor(samples) 
+    out <- cor(draws) 
   } else {
-    out <- cov(samples)
+    out <- cov(draws)
   }
   out
 }
@@ -130,12 +130,12 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                           probs = c(0.025, 0.975), pars = NULL, 
                           groups = NULL, ...) {
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("The model does not contain group-level effects.")
   }
-  all_pars <- parnames(object)
+  all_pars <- variables(object)
   if (!is.null(pars)) {
     pars <- as.character(pars)
   }
@@ -159,7 +159,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       regex <- paste0(",", regex, "\\]$")
       rpars <- rpars[grepl(regex, rpars)]
     }
-    out[[g]] <- as.matrix(object, rpars, fixed = TRUE)
+    out[[g]] <- as.matrix(object, variable = rpars)
     levels <- attr(ranef, "levels")[[g]]
     dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
     dimnames(out[[g]])[2:3] <- list(levels, coefs)
@@ -203,7 +203,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @export
 coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                          probs = c(0.025, 0.975), ...) {
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("No group-level effects detected. Call method ", 
@@ -309,19 +309,19 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @export
 VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
-  contains_samples(x)
+  contains_draws(x)
   x <- restructure(x)
-  if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
+  if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", variables(x))))) {
     stop2("The model does not contain covariance matrices.")
   }
   .VarCorr <- function(y) {
-    # extract samples for sd, cor and cov
-    out <- list(sd = as.matrix(x, pars = y$sd_pars, fixed = TRUE))
+    # extract draws for sd, cor and cov
+    out <- list(sd = as.matrix(x, variable = y$sd_pars))
     colnames(out$sd) <- y$rnames
     # compute correlation and covariance matrices
-    found_cor_pars <- intersect(y$cor_pars, parnames(x))
+    found_cor_pars <- intersect(y$cor_pars, variables(x))
     if (length(found_cor_pars)) {
-      cor <- as.matrix(x, pars = found_cor_pars, fixed = TRUE)
+      cor <- as.matrix(x, variable = found_cor_pars)
       if (length(found_cor_pars) < length(y$cor_pars)) { 
         # some correlations are missing and will be replaced by 0
         cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
@@ -396,9 +396,11 @@ model.frame.brmsfit <- function(formula, ...) {
   formula$data 
 }
 
-#' Number of Posterior Samples
+#' (Deprecated) Number of Posterior Samples
 #'
-#' Extract the number of posterior samples stored in a fitted Bayesian model.
+#' Extract the number of posterior samples (draws) stored in a fitted Bayesian
+#' model. Method \code{nsamples} is deprecated. Please use \code{ndraws}
+#' instead.
 #'
 #' @aliases nsamples
 #'
@@ -415,6 +417,7 @@ model.frame.brmsfit <- function(formula, ...) {
 #' @importFrom rstantools nsamples
 nsamples.brmsfit <- function(object, subset = NULL,
                              incl_warmup = FALSE, ...) {
+  warning2("'nsamples.brmsfit' is deprecated. Please use 'ndraws' instead.")
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) {
     out <- 0
   } else {

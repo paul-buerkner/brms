@@ -2,7 +2,7 @@
 % Please edit documentation in R/brmsfit-helpers.R
 \name{get_dpar}
 \alias{get_dpar}
-\title{Samples of a Distributional Parameter}
+\title{Draws of a Distributional Parameter}
 \usage{
 get_dpar(prep, dpar, i = NULL, ilink = NULL)
 }
@@ -25,11 +25,11 @@ families.}
 If the parameter is predicted and \code{i} is \code{NULL} or
   \code{length(i) > 1}, an \code{S x N} matrix. If the parameter it not
   predicted or \code{length(i) == 1}, a vector of length \code{S}. Here
-  \code{S} is the number of samples and \code{N} is the number of
+  \code{S} is the number of draws and \code{N} is the number of
   observations or length of \code{i} if specified.
 }
 \description{
-Get samples of a distributional parameter from a \code{brmsprep} or 
+Get draws of a distributional parameter from a \code{brmsprep} or 
 \code{mvbrmsprep} object. This function is primarily useful when developing
 custom families or packages depending on \pkg{brms}. 
 This function lets callers easily handle both the case when the

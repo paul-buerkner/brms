@@ -8,7 +8,7 @@
 \method{prior_summary}{brmsfit}(object, all = TRUE, ...)
 }
 \arguments{
-\item{object}{A \code{brmsfit} object}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{all}{Logical; Show all parameters in the model which may have 
 priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?}

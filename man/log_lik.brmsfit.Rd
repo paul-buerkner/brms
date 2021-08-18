@@ -11,8 +11,8 @@
   newdata = NULL,
   re_formula = NULL,
   resp = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   pointwise = FALSE,
   combine = TRUE,
   add_point_estimate = FALSE,
@@ -36,16 +36,16 @@ if \code{NA}, include no group-level effects.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{pointwise}{A flag indicating whether to compute the full
 log-likelihood matrix at once (the default), or just return
-the likelihood function along with all data and samples
+the likelihood function along with all data and draws
 required to compute the log-likelihood separately for each
 observation. The latter option is rarely useful when
 calling \code{log_lik} directly, but rather when computing
@@ -67,13 +67,13 @@ that control several aspects of data validation and prediction.}
 }
 \value{
 Usually, an S x N matrix containing the pointwise log-likelihood
- samples, where S is the number of samples and N is the number 
+ draws, where S is the number of draws and N is the number 
  of observations in the data. For multivariate models and if 
  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
  where R is the number of response variables.
  If \code{pointwise = TRUE}, the output is a function
  with a \code{draws} attribute containing all relevant
- data and posterior samples.
+ data and posterior draws.
 }
 \description{
 Compute the Pointwise Log-Likelihood

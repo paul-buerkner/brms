@@ -169,7 +169,7 @@ monotonic variables are included in the model.
 summary(fit4)
 ```
 
-We have used `sample_prior = TRUE` to also obtain samples from the prior
+We have used `sample_prior = TRUE` to also obtain draws from the prior
 distribution of `simo_moincome1` so that we can visualized it.
 
 ```{r}

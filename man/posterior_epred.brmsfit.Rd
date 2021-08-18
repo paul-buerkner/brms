@@ -14,8 +14,8 @@
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   ...
 )
@@ -44,12 +44,12 @@ If specified, expected predictions of this parameters are returned.}
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -63,19 +63,19 @@ that control several aspects of data validation and prediction.}
 An \code{array} of predicted \emph{mean} response values. For
   categorical and ordinal models, the output is an S x N x C array.
   Otherwise, the output is an S x N matrix, where S is the number of
-  posterior samples, N is the number of observations, and C is the number of
+  posterior draws, N is the number of observations, and C is the number of
   categories. In multivariate models, an additional dimension is added to the
   output which indexes along the different response variables.
 }
 \description{
-Compute posterior samples of the expected value/mean of the posterior
+Compute posterior draws of the expected value/mean of the posterior
 predictive distribution. Can be performed for the data used to fit the model
 (posterior predictive checks) or for new data. By definition, these
 predictions have smaller variance than the posterior predictions performed by
 the \code{\link{posterior_predict.brmsfit}} method. This is because only the
-uncertainty in the mean is incorporated in the samples computed by
+uncertainty in the mean is incorporated in the draws computed by
 \code{posterior_epred} while any residual error is ignored. However, the
-estimated means of both methods averaged across samples should be very
+estimated means of both methods averaged across draws should be very
 similar.
 }
 \details{

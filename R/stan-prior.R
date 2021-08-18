@@ -472,7 +472,7 @@ stan_unchecked_prior <- function(prior) {
 # @param gen_quantities Stan code from the generated quantities block
 # @param prior_special a list of values pertaining to special priors
 #   such as horseshoe or lasso
-# @param sample_prior take samples from priors?
+# @param sample_prior take draws from priors?
 stan_rngprior <- function(prior, par_declars, gen_quantities, 
                           prior_special, sample_prior = "yes") {
   if (!is_equal(sample_prior, "yes")) {
@@ -560,7 +560,7 @@ stan_rngprior <- function(prior, par_declars, gen_quantities,
   D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)
   D$lkj_index <- ifelse(D$lkj, "[1, 2]", "")
   D$prior_par <- glue("prior_{D$par}")
-  str_add(out$gen_def) <- "  // additionally draw samples from priors\n"
+  str_add(out$gen_def) <- "  // additionally sample draws from priors\n"
   str_add(out$gen_def) <- cglue(
     "  {D$type} {D$prior_par} = {D$dist}_rng({D$args}){D$lkj_index};\n"
   )

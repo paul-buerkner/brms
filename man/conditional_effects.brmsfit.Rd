@@ -107,7 +107,7 @@ function documentations.}
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
-to set argument \code{nsamples} to a relatively small value 
+to set argument \code{ndraws} to a relatively small value 
 (e.g., \code{100}) in order to reduce computation time.}
 
 \item{surface}{Logical. Indicates if interactions or 
@@ -156,7 +156,7 @@ grid points are used. Ignored for non-surface plots.}
 \item{probs}{(Deprecated) The quantiles to be used in the computation of
 uncertainty intervals. Please use argument \code{prob} instead.}
 
-\item{...}{Further arguments such as \code{subset} or \code{nsamples}
+\item{...}{Further arguments such as \code{draw_ids} or \code{ndraws}
 passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}
 
 \item{ncol}{Number of plots to display per column for each effect.

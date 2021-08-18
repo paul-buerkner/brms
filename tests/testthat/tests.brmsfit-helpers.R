@@ -56,7 +56,7 @@ test_that("autocorrelation matrices are computed correctly", {
   diag(expected_cosy_mat) <- 1
   expect_equal(cosy_mat[1, , ], expected_cosy_mat)
   
-  ident_mat <- brms:::get_cor_matrix_ident(nsamples = 10, nobs = 4)
+  ident_mat <- brms:::get_cor_matrix_ident(ndraws = 10, nobs = 4)
   expected_ident_mat <- diag(1, 4)
   expect_equal(ident_mat[1, , ], expected_ident_mat)
 })

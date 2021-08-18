@@ -11,11 +11,11 @@
 #'   of currently supported types. You may also use an invalid
 #'   type (e.g. \code{type = "xyz"}) to get a list of supported 
 #'   types in the resulting error message.
-#' @param nsamples Positive integer indicating how many
-#'  posterior samples should be used.
-#'  If \code{NULL} all samples are used. If not specified,
-#'  the number of posterior samples is chosen automatically.
-#'  Ignored if \code{subset} is not \code{NULL}.
+#' @param ndraws Positive integer indicating how many
+#'  posterior draws should be used.
+#'  If \code{NULL} all draws are used. If not specified,
+#'  the number of posterior draws is chosen automatically.
+#'  Ignored if \code{draw_ids} is not \code{NULL}.
 #' @param group Optional name of a factor variable in the model
 #'  by which to stratify the ppc plot. This argument is required for
 #'  ppc \code{*_grouped} types and ignored otherwise.
@@ -24,7 +24,7 @@
 #'  and ignored otherwise.
 #' @param ... Further arguments passed to \code{\link{predict.brmsfit}}
 #'   as well as to the PPC function specified in \code{type}.
-#' @inheritParams predict.brmsfit
+#' @inheritParams prepare_predictions.brmsfit
 #' 
 #' @return A ggplot object that can be further
 #'  customized using the \pkg{ggplot2} package.
@@ -41,8 +41,8 @@
 #'             data = epilepsy, family = poisson())
 #' 
 #' pp_check(fit)  # shows dens_overlay plot by default
-#' pp_check(fit, type = "error_hist", nsamples = 11)
-#' pp_check(fit, type = "scatter_avg", nsamples = 100)
+#' pp_check(fit, type = "error_hist", ndraws = 11)
+#' pp_check(fit, type = "scatter_avg", ndraws = 100)
 #' pp_check(fit, type = "stat_2d")
 #' pp_check(fit, type = "rootogram")
 #' pp_check(fit, type = "loo_pit")
@@ -54,9 +54,9 @@
 #' @importFrom bayesplot pp_check
 #' @export pp_check
 #' @export
-pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
-                             x = NULL, newdata = NULL, resp = NULL,
-                             subset = NULL, ...) {
+pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
+                             group = NULL, x = NULL, newdata = NULL,
+                             resp = NULL, draw_ids = NULL, subset = NULL, ...) {
   dots <- list(...)
   if (missing(type)) {
     type <- "dens_overlay"
@@ -68,6 +68,9 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (!is.null(x)) {
     x <- as_one_character(x)
   }
+  ndraws_given <- any(c("ndraws", "nsamples") %in% names(match.call()))
+  ndraws <- use_alias(ndraws, nsamples)
+  draw_ids <- use_alias(draw_ids, subset)
   resp <- validate_resp(resp, object, multiple = FALSE)
   valid_types <- as.character(bayesplot::available_ppc(""))
   valid_types <- sub("^ppc_", "", valid_types)
@@ -105,7 +108,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   } else {
     method <- "posterior_predict"
   }
-  if (missing(nsamples)) {
+  if (!ndraws_given) {
     aps_types <- c(
       "error_scatter_avg", "error_scatter_avg_vs_x",
       "intervals", "intervals_grouped", "loo_pit", 
@@ -115,24 +118,24 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
       "stat_freqpoly_grouped", "stat_grouped", 
       "violin_grouped"
     )
-    if (!is.null(subset)) {
-      nsamples <- NULL
+    if (!is.null(draw_ids)) {
+      ndraws <- NULL
     } else if (type %in% aps_types) {
-      nsamples <- NULL
-      message("Using all posterior samples for ppc type '", 
+      ndraws <- NULL
+      message("Using all posterior draws for ppc type '", 
               type, "' by default.")
     } else {
-      nsamples <- 10
-      message("Using 10 posterior samples for ppc type '",
+      ndraws <- 10
+      message("Using 10 posterior draws for ppc type '",
               type, "' by default.")
     }
   }
   
   y <- get_y(object, resp = resp, newdata = newdata, ...)
-  subset <- subset_samples(object, subset, nsamples)
+  draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- list(
     object, newdata = newdata, resp = resp, 
-    subset = subset, ...
+    draw_ids = draw_ids, ...
   )
   yrep <- do_call(method, pred_args)
 

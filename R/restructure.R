@@ -8,14 +8,13 @@
 #' \code{restructure} once per model after updating \pkg{brms}.
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param rstr_summary Logical; If \code{TRUE}, the cached summary
-#'   stored by \pkg{rstan} is restructured as well.
+#' @param ... Currently ignored.
 #'   
 #' @return A \code{brmsfit} object compatible with the latest version
 #'   of \pkg{brms}.
 #'   
 #' @export
-restructure <- function(x, rstr_summary = FALSE) {
+restructure <- function(x, ...) {
   stopifnot(is.brmsfit(x))
   if (is.null(x$version)) {
     # this is the latest version without saving the version number
@@ -40,18 +39,6 @@ restructure <- function(x, rstr_summary = FALSE) {
   x$version$restructure <- current_version
   # remove unused attribute
   attr(x, "restructured") <- NULL
-  # optionally also restructure the rstan summary
-  # TODO: remove at some point as summary.brmsfit no longer requires it
-  stan_env <- attributes(x$fit)$.MISC
-  if (rstr_summary && exists("summary", stan_env)) {
-    stan_summary <- get("summary", stan_env)
-    old_parnames <- rownames(stan_summary$msd)
-    if (!identical(old_parnames, parnames(x))) {
-      # do not rename parameters in the cached summary
-      # just let rstan compute the summary again
-      remove("summary", pos = stan_env)
-    }
-  }
   x
 }
 
@@ -59,7 +46,7 @@ restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
   x$formula <- update_old_family(x$formula)
   bterms <- SW(brmsterms(x$formula))
-  pars <- parnames(x)
+  pars <- variables(x)
   version <- restructure_version(x)
   if (version < "2.1.2") {
     x <- do_renaming(x, change_old_bsp(pars))
@@ -140,7 +127,7 @@ restructure_v2 <- function(x) {
     )
   }
   if (version < "2.11.3") {
-    # ordering after IDs matches the order of the posterior samples 
+    # ordering after IDs matches the order of the posterior draws 
     # if multiple IDs are used for the same grouping factor (#835)
     x$ranef <- x$ranef[order(x$ranef$id), , drop = FALSE]
   }
@@ -238,20 +225,20 @@ restructure_v1 <- function(x) {
   if (version < "0.10.1") {
     if (length(bterms$dpars$mu$nlpars)) {
       # nlpar and group have changed positions
-      change <- change_old_re(x$ranef, parnames(x), x$fit@sim$dims_oi)
+      change <- change_old_re(x$ranef, variables(x), x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
   }
   if (version < "1.0.0") {
     # double underscores were added to group-level parameters
-    change <- change_old_re2(x$ranef, parnames(x), x$fit@sim$dims_oi)
+    change <- change_old_re2(x$ranef, variables(x), x$fit@sim$dims_oi)
     x <- do_renaming(x, change)
   }
   if (version < "1.0.1.1") {
     # names of spline parameters had to be changed after
     # allowing for multiple covariates in one spline term
     change <- change_old_sm(
-      bterms, model.frame(x), parnames(x), x$fit@sim$dims_oi
+      bterms, model.frame(x), variables(x), x$fit@sim$dims_oi
     )
     x <- do_renaming(x, change)
   }
@@ -259,11 +246,11 @@ restructure_v1 <- function(x) {
     att <- attributes(x$exclude)
     if (is.null(att$save_ranef)) {
       attr(x$exclude, "save_ranef") <- 
-        any(grepl("^r_", parnames(x))) || !nrow(x$ranef)
+        any(grepl("^r_", variables(x))) || !nrow(x$ranef)
     }
     if (is.null(att$save_mevars)) {
       attr(x$exclude, "save_mevars") <- 
-        any(grepl("^Xme_", parnames(x)))
+        any(grepl("^Xme_", variables(x)))
     }
   }
   if (version < "1.8.0.2") {
@@ -275,11 +262,11 @@ restructure_v1 <- function(x) {
   if (version < "1.9.0.4") {
     # names of monotonic parameters had to be changed after
     # allowing for interactions in monotonic terms
-    change <- change_old_mo(bterms, x$data, pars = parnames(x))
+    change <- change_old_mo(bterms, x$data, pars = variables(x))
     x <- do_renaming(x, change)
   }
   if (version >= "1.0.0" && version < "2.0.0") {
-    change <- change_old_categorical(bterms, x$data, pars = parnames(x))
+    change <- change_old_categorical(bterms, x$data, pars = variables(x))
     x <- do_renaming(x, change)
   }
   x
@@ -633,7 +620,7 @@ rescale_old_mo.btl <- function(x, fit, ...) {
     "for more details. Parameters of old models are adjusted automatically."
   )
   p <- combine_prefix(x)
-  all_pars <- parnames(fit)
+  all_pars <- variables(fit)
   chains <- fit$fit@sim$chains
   for (i in which(has_mo)) {
     bsp_par <- paste0("bsp", p, "_", spef$coef[i])

@@ -687,7 +687,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     # incorporate deprecated 'cov_ranef' argument
     ranef <- update_ranef_cov(ranef, bterms)
   }
-  # ordering after IDs matches the order of the posterior samples 
+  # ordering after IDs matches the order of the posterior draws
   # if multiple IDs are used for the same grouping factor (#835)
   ranef <- ranef[order(ranef$id), , drop = FALSE]
   structure(ranef, class = c("ranef_frame", "data.frame"))

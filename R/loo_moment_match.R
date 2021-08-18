@@ -23,7 +23,7 @@
 #'   to work correctly.
 #' @return An updated object of class \code{loo}.
 #' 
-#' @details The moment matching algorithm requires samples of all variables
+#' @details The moment matching algorithm requires draws of all variables
 #'   defined in Stan's \code{parameters} block to be saved. Otherwise
 #'   \code{loo_moment_match} cannot be computed. Thus, please set
 #'   \code{save_pars = save_pars(all = TRUE)} in the call to \code{\link{brm}},
@@ -110,45 +110,45 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   pars <- apply(upars, 1, .constrain_pars, x = x)
   # select required parameters only
   pars <- lapply(pars, "[", x$fit@sim$pars_oi_old)
-  # transform samples
-  nsamples <- length(pars)
+  # transform draws
+  ndraws <- length(pars)
   pars <- unlist(pars)
-  npars <- length(pars) / nsamples
-  dim(pars) <- c(npars, nsamples)
-  # add dummy 'lp__' samples
-  pars <- rbind(pars, rep(0, nsamples))
-  # bring samples into the right structure
-  new_samples <- named_list(x$fit@sim$fnames_oi_old, list(numeric(nsamples)))
-  if (length(new_samples) != nrow(pars)) {
+  npars <- length(pars) / ndraws
+  dim(pars) <- c(npars, ndraws)
+  # add dummy 'lp__' draws
+  pars <- rbind(pars, rep(0, ndraws))
+  # bring draws into the right structure
+  new_draws <- named_list(x$fit@sim$fnames_oi_old, list(numeric(ndraws)))
+  if (length(new_draws) != nrow(pars)) {
     stop2("Updating parameters in `loo_moment_match.brmsfit' failed. ",
           "Please report a bug at https://github.com/paul-buerkner/brms.")
   }
   for (i in seq_len(npars)) {
-    new_samples[[i]] <- pars[i, ]
+    new_draws[[i]] <- pars[i, ]
   }
   # create new sim object to overwrite x$fit@sim
   x$fit@sim <- list(
-    samples = list(new_samples),
-    iter = nsamples,
+    samples = list(new_draws),
+    iter = ndraws,
     thin = 1,
     warmup = 0,
     chains = 1,
-    n_save = nsamples,
+    n_save = ndraws,
     warmup2 = 0,
-    permutation = list(seq_len(nsamples)),
+    permutation = list(seq_len(ndraws)),
     pars_oi = x$fit@sim$pars_oi_old,
     dims_oi = x$fit@sim$dims_oi_old,
     fnames_oi = x$fit@sim$fnames_oi_old,
     n_flatnames = length(x$fit@sim$fnames_oi_old)
   ) 
   x$fit@stan_args <- list(
-    list(chain_id = 1, iter = nsamples, thin = 1, warmup = 0)
+    list(chain_id = 1, iter = ndraws, thin = 1, warmup = 0)
   )
   rename_pars(x)
 }
 
 # wrapper around rstan::constrain_pars
-# ensures that the right posterior samples are excluded
+# ensures that the right posterior draws are excluded
 .constrain_pars <- function(upars, x) {
   out <- rstan::constrain_pars(upars, object = x$fit)
   out[x$exclude] <- NULL
@@ -156,9 +156,9 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
 }
 
 # compute log_lik values based on the unconstrained parameters
-.log_lik_i_upars <- function(x, upars, i, samples = NULL, 
-                             subset = NULL, ...) {
-  # do not pass subset or nsamples further to avoid subsetting twice
+.log_lik_i_upars <- function(x, upars, i, ndraws = NULL, 
+                             draw_ids = NULL, ...) {
+  # do not pass draw_ids or ndraws further to avoid subsetting twice
   x <- update_misc_env(x, only_windows = TRUE) 
   x <- .update_pars(x, upars = upars, ...)
   .log_lik_i(x, i = i, ...)

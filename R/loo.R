@@ -690,12 +690,7 @@ r_eff_log_lik.matrix <- function(x, fit, allow_na = FALSE, ...) {
     return(rep(1, ncol(x)))
   }
   chain_id <- get_chain_id(nrow(x), fit)
-  r_eff_helper(
-    exp(x), 
-    chain_id = chain_id, 
-    allow_na = allow_na, 
-    ...
-  )
+  r_eff_helper(exp(x), chain_id = chain_id, allow_na = allow_na, ...)
 }
 
 #' @export
@@ -709,24 +704,21 @@ r_eff_log_lik.function <- function(x, fit, draws, allow_na = FALSE, ...) {
   lik_fun <- function(data_i, draws, ...) {
     exp(x(data_i, draws, ...))
   }
-  chain_id <- get_chain_id(draws$nsamples, fit)
+  chain_id <- get_chain_id(draws$ndraws, fit)
   r_eff_helper(
-    lik_fun, 
-    chain_id = chain_id, 
-    draws = draws, 
-    allow_na = allow_na, 
-    ...
+    lik_fun, chain_id = chain_id, draws = draws, 
+    allow_na = allow_na, ...
   )
 }
 
 # get chain IDs per posterior draw
-get_chain_id <- function(nsamples, fit) {
-  if (nsamples != nsamples(fit)) {
+get_chain_id <- function(ndraws, fit) {
+  if (ndraws != ndraws(fit)) {
     # don't know the chain IDs of a subset of draws
-    chain_id <- rep(1L, nsamples)
+    chain_id <- rep(1L, ndraws)
   } else {
     nchains <- fit$fit@sim$chains
-    chain_id <- rep(seq_len(nchains), each = nsamples / nchains) 
+    chain_id <- rep(seq_len(nchains), each = ndraws / nchains) 
   }
   chain_id
 }

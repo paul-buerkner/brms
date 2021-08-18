@@ -87,9 +87,9 @@ validate_weights_method <- function(method) {
   match.arg(method, options)
 }
 
-#' Posterior predictive samples averaged across models
+#' Posterior predictive draws averaged across models
 #' 
-#' Compute posterior predictive samples averaged across models.
+#' Compute posterior predictive draws averaged across models.
 #' Weighting can be done in various ways, for instance using
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.
@@ -100,7 +100,8 @@ validate_weights_method <- function(method) {
 #'   \code{"posterior_linpred"} or \code{"predictive_error"}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
-#' @param nsamples Total number of posterior samples to use.
+#' @param ndraws Total number of posterior draws to use.
+#' @param nsamples Deprecated alias of \code{ndraws}.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
 #'   to make results reproducible.
 #' @param summary Should summary statistics 
@@ -142,15 +143,16 @@ validate_weights_method <- function(method) {
 #' @export
 pp_average.brmsfit <- function(
   x, ..., weights = "stacking", method = "posterior_predict",
-  nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
-  model_names = NULL, control = list(), seed = NULL
+  ndraws = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), 
+  robust = FALSE, model_names = NULL, control = list(), seed = NULL
 ) {
   if (!is.null(seed)) {
     set.seed(seed) 
   }
   method <- validate_pp_method(method)
-  if ("subset" %in% names(list(...))) {
-    stop2("Cannot use argument 'subset' in pp_average.")
+  ndraws <- use_alias(ndraws, nsamples)
+  if (any(c("draw_ids", "subset") %in% names(list(...)))) {
+    stop2("Cannot use argument 'draw_ids' in pp_average.")
   }
   args <- split_dots(x, ..., model_names = model_names)
   args$summary <- FALSE
@@ -159,17 +161,18 @@ pp_average.brmsfit <- function(
   if (!match_response(models)) {
     stop2("Can only average models predicting the same response.")
   }
-  if (is.null(nsamples)) {
-    nsamples <- nsamples(models[[1]])
+  if (is.null(ndraws)) {
+    ndraws <- ndraws(models[[1]])
   }
+  ndraws <- as_one_integer(ndraws)
   weights <- validate_weights(weights, models, control)
-  nsamples <- round_largest_remainder(weights * nsamples)
-  names(weights) <- names(nsamples) <- names(models)
+  ndraws <- round_largest_remainder(weights * ndraws)
+  names(weights) <- names(ndraws) <- names(models)
   out <- named_list(names(models))
   for (i in seq_along(out)) {
-    if (nsamples[i] > 0) {
+    if (ndraws[i] > 0) {
       args$object <- models[[i]]
-      args$nsamples <- nsamples[i]
+      args$ndraws <- ndraws[i]
       out[[i]] <- do_call(method, args)
     }
   }
@@ -178,7 +181,7 @@ pp_average.brmsfit <- function(
     out <- posterior_summary(out, probs = probs, robust = robust) 
   }
   attr(out, "weights") <- weights
-  attr(out, "nsamples") <- nsamples
+  attr(out, "ndraws") <- ndraws
   out
 }
 
@@ -207,24 +210,24 @@ validate_weights <- function(weights, models, control = list()) {
   weights / sum(weights)
 }
 
-#' Posterior samples of parameters averaged across models
+#' Posterior draws of parameters averaged across models
 #' 
-#' Extract posterior samples of parameters averaged across models.
+#' Extract posterior draws of parameters averaged across models.
 #' Weighting can be done in various ways, for instance using
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.
 #' 
 #' @inheritParams pp_average.brmsfit
-#' @param pars Names of parameters for which to average across models.
-#'   Only those parameters can be averaged that appear in every model.
-#'   Defaults to all overlapping parameters.
+#' @param variable Names of variables (parameters) for which to average across
+#'   models. Only those variables can be averaged that appear in every model.
+#'   Defaults to all overlapping variables.
+#' @param pars Deprecated alias of \code{variable}.
 #' @param missing An optional numeric value or a named list of numeric values 
-#'   to use if a model does not contain a parameter for which posterior samples 
+#'   to use if a model does not contain a variable for which posterior draws
 #'   should be averaged. Defaults to \code{NULL}, in which case only those
-#'   parameters can be averaged that are present in all of the models.
+#'   variables can be averaged that are present in all of the models.
 #' 
-#' @return A \code{data.frame} of posterior samples. Samples are rows
-#'   and parameters are columns.
+#' @return A \code{data.frame} of posterior draws.
 #' 
 #' @details Weights are computed with the \code{\link{model_weights}} method.
 #' 
@@ -246,82 +249,84 @@ validate_weights <- function(weights, models, control = list()) {
 #' 
 #' @export
 posterior_average.brmsfit <- function(
-  x, ..., pars = NULL, weights = "stacking", nsamples = NULL,
-  missing = NULL, model_names = NULL, control = list(),
+  x, ..., variable = NULL, pars = NULL, weights = "stacking", ndraws = NULL, 
+  nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
   seed = NULL
 ) {
   if (!is.null(seed)) {
     set.seed(seed) 
   }
+  variable <- use_alias(variable, pars)
+  ndraws <- use_alias(ndraws, nsamples)
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
-  pars_list <- lapply(models, parnames)
-  all_pars <- unique(unlist(pars_list))
+  vars_list <- lapply(models, variables)
+  all_vars <- unique(unlist(vars_list))
   if (is.null(missing)) {
-    common_pars <- lapply(pars_list, function(x) all_pars %in% x)
-    common_pars <- all_pars[Reduce("&", common_pars)]
-    if (is.null(pars)) {
-      pars <- setdiff(common_pars, "lp__")
+    common_vars <- lapply(vars_list, function(x) all_vars %in% x)
+    common_vars <- all_vars[Reduce("&", common_vars)]
+    if (is.null(variable)) {
+      variable <- setdiff(common_vars, "lp__")
     }
-    pars <- as.character(pars)
-    inv_pars <- setdiff(pars, common_pars)
-    if (length(inv_pars)) {
-      inv_pars <- collapse_comma(inv_pars)
+    variable <- as.character(variable)
+    inv_vars <- setdiff(variable, common_vars)
+    if (length(inv_vars)) {
+      inv_vars <- collapse_comma(inv_vars)
       stop2(
-        "Parameters ", inv_pars, " cannot be found in all ", 
+        "Parameters ", inv_vars, " cannot be found in all ", 
         "of the models. Consider using argument 'missing'."
       )
     }
   } else {
-    if (is.null(pars)) {
-      pars <- setdiff(all_pars, "lp__")
+    if (is.null(variable)) {
+      variable <- setdiff(all_vars, "lp__")
     }
-    pars <- as.character(pars)
-    inv_pars <- setdiff(pars, all_pars)
-    if (length(inv_pars)) {
-      inv_pars <- collapse_comma(inv_pars)
-      stop2("Parameters ", inv_pars, " cannot be found in any of the models.")
+    variable <- as.character(variable)
+    inv_vars <- setdiff(variable, all_vars)
+    if (length(inv_vars)) {
+      inv_vars <- collapse_comma(inv_vars)
+      stop2("Parameters ", inv_vars, " cannot be found in any of the models.")
     }
     if (is.list(missing)) {
-      all_miss_pars <- unique(ulapply(
-        models, function(m) setdiff(pars, parnames(m))
+      all_miss_vars <- unique(ulapply(
+        models, function(m) setdiff(variable, variables(m))
       ))
-      inv_pars <- setdiff(all_miss_pars, names(missing))
-      if (length(inv_pars)) {
+      inv_vars <- setdiff(all_miss_vars, names(missing))
+      if (length(inv_vars)) {
         stop2("Argument 'missing' has no value for parameters ",
-              collapse_comma(inv_pars), ".")
+              collapse_comma(inv_vars), ".")
       }
       missing <- lapply(missing, as_one_numeric, allow_na = TRUE)
     } else {
       missing <- as_one_numeric(missing, allow_na = TRUE)
-      missing <- named_list(pars, missing)
+      missing <- named_list(variable, missing)
     }
   }
-  if (is.null(nsamples)) {
-    nsamples <- nsamples(models[[1]])
+  if (is.null(ndraws)) {
+    ndraws <- ndraws(models[[1]])
   }
+  ndraws <- as_one_integer(ndraws)
   weights <- validate_weights(weights, models, control)
-  nsamples <- round_largest_remainder(weights * nsamples)
-  names(weights) <- names(nsamples) <- names(models)
+  ndraws <- round_largest_remainder(weights * ndraws)
+  names(weights) <- names(ndraws) <- names(models)
   out <- named_list(names(models))
   for (i in seq_along(out)) {
-    if (nsamples[i] > 0) {
-      subset <- sample(seq_len(nsamples(models[[i]])), nsamples[i])
-      subset <- sort(subset)
-      ps <- posterior_samples(
-        models[[i]], pars = pars, 
-        subset = subset, fixed = TRUE
-      )
-      if (!is.null(ps)) {
-        out[[i]] <- ps
+    if (ndraws[i] > 0) {
+      draw <- sample(seq_len(ndraws(models[[i]])), ndraws[i])
+      draw <- sort(draw)
+      found_vars <- intersect(variable, variables(models[[i]]))
+      if (length(found_vars)) {
+        out[[i]] <- as.data.frame(
+          models[[i]], variable = found_vars, draw = draw
+        )
       } else {
         out[[i]] <- as.data.frame(matrix(
-          numeric(0), nrow = nsamples[i], ncol = 0
+          numeric(0), nrow = ndraws[i], ncol = 0
         ))
       }
       if (!is.null(missing)) {
-        miss_pars <- setdiff(pars, names(out[[i]]))
-        if (length(miss_pars)) {
-          out[[i]][miss_pars] <- missing[miss_pars]
+        miss_vars <- setdiff(variable, names(out[[i]]))
+        if (length(miss_vars)) {
+          out[[i]][miss_vars] <- missing[miss_vars]
         }
       }
     }
@@ -329,7 +334,7 @@ posterior_average.brmsfit <- function(
   out <- do_call(rbind, out)
   rownames(out) <- NULL
   attr(out, "weights") <- weights
-  attr(out, "nsamples") <- nsamples
+  attr(out, "ndraws") <- ndraws
   out
 }
 

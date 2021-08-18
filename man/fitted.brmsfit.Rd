@@ -12,8 +12,8 @@
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   summary = TRUE,
   robust = FALSE,
@@ -50,12 +50,12 @@ If specified, expected predictions of this parameters are returned.}
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -99,7 +99,7 @@ An \code{array} of predicted \emph{mean} response values.
 }
 \description{
 This method is an alias of \code{\link{posterior_epred.brmsfit}}
-with additional arguments for obtaining summaries of the computed samples.
+with additional arguments for obtaining summaries of the computed draws.
 }
 \examples{
 \dontrun{

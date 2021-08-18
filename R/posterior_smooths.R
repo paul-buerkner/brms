@@ -13,7 +13,7 @@
 #' @param ... Currently ignored.
 #' 
 #' @return An S x N matrix, where S is the number of
-#'   posterior samples and N is the number of observations.
+#'   posterior draws and N is the number of observations.
 #'   
 #' @examples 
 #' \dontrun{
@@ -29,7 +29,7 @@
 #' @export
 posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL, 
                                       resp = NULL, dpar = NULL, nlpar = NULL, 
-                                      nsamples = NULL, subset = NULL,  ...) {
+                                      ndraws = NULL, draw_ids = NULL, ...) {
   resp <- validate_resp(resp, object, multiple = FALSE)
   bterms <- brmsterms(exclude_terms(object$formula, smooths_only = TRUE))
   if (!is.null(resp)) {
@@ -59,14 +59,17 @@ posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL,
   }
   posterior_smooths(
     bterms, fit = object, smooth = smooth, newdata = newdata,
-    nsamples = nsamples, subset = subset, ...
+    ndraws = ndraws, draw_ids = draw_ids, ...
   )
 }
 
 #' @export
 posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL, 
+                                  ndraws = NULL, draw_ids = NULL,
                                   nsamples = NULL, subset = NULL, ...) {
   smooth <- rm_wsp(as_one_character(smooth))
+  ndraws <- use_alias(ndraws, nsamples)
+  draw_ids <- use_alias(draw_ids, subset)
   smef <- tidy_smef(object, fit$data)
   smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)
@@ -84,9 +87,10 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
     fit, newdata, re_formula = NA, internal = TRUE, 
     check_response = FALSE, req_vars = req_vars
   )
-  subset <- subset_samples(fit, subset, nsamples)
-  samples <- as.matrix(fit, subset = subset)
-  prep_args <- nlist(x = object, samples, sdata, data = fit$data)
+  draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)
+  draws <- as_draws_matrix(fit)
+  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
+  prep_args <- nlist(x = object, draws, sdata, data = fit$data)
   prep <- do_call(prepare_predictions, prep_args)
   # select subset of smooth parameters and design matrices
   i <- which(smterms %in% smooth)[1]

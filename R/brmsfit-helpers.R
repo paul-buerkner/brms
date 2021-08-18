@@ -1,6 +1,6 @@
-contains_samples <- function(x) {
+contains_draws <- function(x) {
   if (!(is.brmsfit(x) && length(x$fit@sim))) {
-    stop2("The model does not contain posterior samples.")
+    stop2("The model does not contain posterior draws.")
   }
   invisible(TRUE)
 }
@@ -66,13 +66,20 @@ ilink <- function(x, link) {
   )
 }
 
-# generate integers indicating subsets of the posterior samples
-subset_samples <- function(x, subset = NULL, nsamples = NULL) {
-  stopifnot(is.brmsfit(x))
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
+# validate integers indicating which draws to subset
+validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
+  ndraws_total <- ndraws(x)
+  if (is.null(draw_ids) && !is.null(ndraws)) {
+    ndraws <- as_one_integer(ndraws)
+    draw_ids <- sample(seq_len(ndraws_total), ndraws)
   }
-  subset
+  if (!is.null(draw_ids)) {
+    draw_ids <- as.integer(draw_ids)
+    if (any(draw_ids < 1L) || any(draw_ids > ndraws_total)) {
+      stop2("Some 'draw_ids' indices are out of range.")
+    }
+  }
+  draw_ids
 }
 
 # get correlation names as combinations of variable names
@@ -109,15 +116,15 @@ get_cat_vars <- function(x) {
   unique(valid_groups[nzchar(valid_groups)])
 }
 
-# covariance matrices based on correlation and SD samples
-# @param sd matrix of samples of standard deviations
-# @param cor matrix of samples of correlations
+# covariance matrices based on correlation and SD draws
+# @param sd matrix of draws of standard deviations
+# @param cor matrix of draws of correlations
 get_cov_matrix <- function(sd, cor = NULL) {
   sd <- as.matrix(sd)
   stopifnot(all(sd >= 0))
-  nsamples <- nrow(sd)
+  ndraws <- nrow(sd)
   size <- ncol(sd)
-  out <- array(diag(1, size), dim = c(size, size, nsamples))
+  out <- array(diag(1, size), dim = c(size, size, ndraws))
   out <- aperm(out, perm = c(3, 1, 2))
   for (i in seq_len(size)) { 
     out[, i, i] <- sd[, i]^2
@@ -138,23 +145,23 @@ get_cov_matrix <- function(sd, cor = NULL) {
   out
 }
 
-# correlation matrices based on correlation samples
-# @param cor samples of correlations
+# correlation matrices based on correlation draws
+# @param cor draws of correlations
 # @param size optional size of the desired correlation matrix;
 #   ignored is 'cor' is specified
-# @param nsamples optional number of posterior samples;
+# @param ndraws optional number of posterior draws;
 #   ignored is 'cor' is specified
-get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
+get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
   if (length(cor)) {
     cor <- as.matrix(cor)
     size <- -1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
-    nsamples <- nrow(cor)
+    ndraws <- nrow(cor)
   } 
   size <- as_one_numeric(size)
-  nsamples <- as_one_numeric(nsamples)
+  ndraws <- as_one_numeric(ndraws)
   stopifnot(is_wholenumber(size) && size > 0)
-  stopifnot(is_wholenumber(nsamples) && nsamples > 0)
-  out <- array(diag(1, size), dim = c(size, size, nsamples))
+  stopifnot(is_wholenumber(ndraws) && ndraws > 0)
+  out <- array(diag(1, size), dim = c(size, size, ndraws))
   out <- aperm(out, perm = c(3, 1, 2))
   if (length(cor)) {
     k <- 0 
@@ -177,7 +184,7 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
     obs <- seq_len(prep$nobs) 
   }
   nobs <- length(obs)
-  nsamples <- prep$nsamples
+  ndraws <- prep$ndraws
   acef <- prep$ac$acef
   # prepare correlations
   if (has_ac_class(acef, "arma")) {
@@ -196,14 +203,14 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
     cosy <- as.numeric(prep$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
   } else if (has_ac_class(acef, "fcor")) {
-    cor <- get_cor_matrix_fcor(prep$ac$Mfcor, nsamples)
+    cor <- get_cor_matrix_fcor(prep$ac$Mfcor, ndraws)
   } else {
-    cor <- get_cor_matrix_ident(nsamples, nobs)
+    cor <- get_cor_matrix_ident(ndraws, nobs)
   }
   # prepare known standard errors
   if (!is.null(prep$data$se)) {
     se2 <- prep$data$se[obs]^2
-    se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, nsamples))
+    se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, ndraws))
     se2 <- aperm(se2, perm = c(3, 1, 2))
     # make sure not to add 'se' twice
     prep$data$se <- NULL
@@ -217,7 +224,7 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
     sigma <- get_dpar(prep, "sigma", i = obs)
     if (NCOL(sigma) > 1L) {
       # sigma varies across observations
-      sigma2 <- array(dim = c(nsamples, nobs, nobs))
+      sigma2 <- array(dim = c(ndraws, nobs, nobs))
       for (s in seq_rows(sigma2)) {
         sigma2[s, , ] <- outer(sigma[s, ], sigma[s, ])
       }
@@ -229,9 +236,9 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
 }
 
 # compute AR1 correlation matrices
-# @param ar AR1 autocorrelation samples
+# @param ar AR1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_ar1 <- function(ar, nobs) {
   out <- array(0, dim = c(NROW(ar), nobs, nobs))
   fac <- 1 / (1 - ar^2)
@@ -248,9 +255,9 @@ get_cor_matrix_ar1 <- function(ar, nobs) {
 }
 
 # compute MA1 correlation matrices
-# @param ma MA1 autocorrelation samples
+# @param ma MA1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_ma1 <- function(ma, nobs) {
   out <- array(0, dim = c(NROW(ma), nobs, nobs))
   gamma0 <- 1 + ma^2
@@ -267,10 +274,10 @@ get_cor_matrix_ma1 <- function(ma, nobs) {
 }
 
 # compute ARMA1 correlation matrices
-# @param ar AR1 autocorrelation samples
-# @param ma MA1 autocorrelation samples
+# @param ar AR1 autocorrelation draws
+# @param ma MA1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_arma1 <- function(ar, ma, nobs) {
   out <- array(0, dim = c(NROW(ar), nobs, nobs))
   fac <- 1 / (1 - ar^2)
@@ -289,9 +296,9 @@ get_cor_matrix_arma1 <- function(ar, ma, nobs) {
 }
 
 # compute compound symmetry correlation matrices
-# @param cosy compund symmetry correlation samples
+# @param cosy compund symmetry correlation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_cosy <- function(cosy, nobs) {
   out <- array(0, dim = c(NROW(cosy), nobs, nobs))
   for (i in seq_len(nobs)) {
@@ -306,28 +313,28 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
 
 # prepare a fixed correlation matrix
 # @param Mfcor correlation matrix to be prepared
-# @param nsamples number of posterior samples
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
-get_cor_matrix_fcor <- function(Mfcor, nsamples) {
-  out <- array(Mfcor, dim = c(dim(Mfcor), nsamples))
+# @param ndraws number of posterior draws
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
+get_cor_matrix_fcor <- function(Mfcor, ndraws) {
+  out <- array(Mfcor, dim = c(dim(Mfcor), ndraws))
   aperm(out, c(3, 1, 2))
 }
 
 # compute an identity correlation matrix
-# @param nsamples number of posterior samples
+# @param ndraws number of posterior draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
-get_cor_matrix_ident <- function(nsamples, nobs) {
-  out <- array(0, dim = c(nsamples, nobs, nobs))
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
+get_cor_matrix_ident <- function(ndraws, nobs) {
+  out <- array(0, dim = c(ndraws, nobs, nobs))
   for (i in seq_len(nobs)) {
     out[, i, i] <- 1
   }
   out
 }
 
-#' Samples of a Distributional Parameter
+#' Draws of a Distributional Parameter
 #' 
-#' Get samples of a distributional parameter from a \code{brmsprep} or 
+#' Get draws of a distributional parameter from a \code{brmsprep} or 
 #' \code{mvbrmsprep} object. This function is primarily useful when developing
 #' custom families or packages depending on \pkg{brms}. 
 #' This function lets callers easily handle both the case when the
@@ -349,7 +356,7 @@ get_cor_matrix_ident <- function(nsamples, nobs) {
 #'   If the parameter is predicted and \code{i} is \code{NULL} or
 #'   \code{length(i) > 1}, an \code{S x N} matrix. If the parameter it not
 #'   predicted or \code{length(i) == 1}, a vector of length \code{S}. Here
-#'   \code{S} is the number of samples and \code{N} is the number of
+#'   \code{S} is the number of draws and \code{N} is the number of
 #'   observations or length of \code{i} if specified.
 #'   
 #' @examples
@@ -368,7 +375,7 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   x <- prep$dpars[[dpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
-    # compute samples of a predicted parameter
+    # compute draws of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
     if (is.null(ilink)) {
       ilink <- apply_dpar_ilink(dpar, family = prep$family)
@@ -389,8 +396,8 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   out
 }
 
-# get samples of a non-linear parameter
-# @param x object to extract posterior samples from
+# get draws of a non-linear parameter
+# @param x object to extract posterior draws from
 # @param nlpar name of the non-linear parameter
 # @param i the current observation number
 # @return
@@ -401,7 +408,7 @@ get_nlpar <- function(prep, nlpar, i = NULL) {
   x <- prep$nlpars[[nlpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
-    # compute samples of a predicted parameter
+    # compute draws of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
     if (length(i) == 1L) {
       out <- slice_col(out, 1)
@@ -440,7 +447,7 @@ get_theta <- function(prep, i = NULL) {
   theta
 }
 
-# get posterior samples of multivariate mean vectors
+# get posterior draws of multivariate mean vectors
 # only used in multivariate models with 'rescor'
 get_Mu <- function(prep, i = NULL) {
   stopifnot(is.mvbrmsprep(prep))
@@ -461,7 +468,7 @@ get_Mu <- function(prep, i = NULL) {
   Mu
 }
 
-# get posterior samples of residual covariance matrices
+# get posterior draws of residual covariance matrices
 # only used in multivariate models with 'rescor'
 get_Sigma <- function(prep, i = NULL) {
   stopifnot(is.mvbrmsprep(prep))
@@ -512,8 +519,8 @@ get_se <- function(prep, i = NULL) {
       se <- se[i]
     }
     if (length(se) > 1L) {
-      dim <- c(prep$nsamples, length(se))
-      se <- as_draws_matrix(se, dim = dim)
+      dim <- c(prep$ndraws, length(se))
+      se <- data2draws(se, dim = dim)
     }
   } else {
     se <- 0
@@ -540,8 +547,8 @@ get_rate_denom <- function(prep, i = NULL) {
       denom <- denom[i]
     }
     if (length(denom) > 1L) {
-      dim <- c(prep$nsamples, length(denom))
-      denom <- as_draws_matrix(denom, dim = dim)
+      dim <- c(prep$ndraws, length(denom))
+      denom <- data2draws(denom, dim = dim)
     }
   } else {
     denom <- 1
@@ -559,7 +566,7 @@ multiply_dpar_rate_denom <- function(dpar, prep, i = NULL) {
   dpar
 }
 
-# return samples of ordinal thresholds for observation i
+# return draws of ordinal thresholds for observation i
 # @param prep a bprepl or bprepnl object
 # @param i observation number
 subset_thres <- function(prep, i) {
@@ -680,7 +687,7 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
 
 # reorder observations to be in the initial user-defined order
 # currently only relevant for autocorrelation models 
-# @param eta 'nsamples' x 'nobs' matrix or array
+# @param eta 'ndraws' x 'nobs' matrix or array
 # @param old_order optional vector to retrieve the initial data order
 # @param sort keep the new order as defined by the time-series?
 # @return the 'eta' matrix with possibly reordered columns
@@ -955,14 +962,14 @@ require_old_default <- function(version) {
   isTRUE(brmsfit_version < version)
 }
 
-# add dummy samples to a brmsfit object for use in unit tests
+# add dummy draws to a brmsfit object for use in unit tests
 # @param x a brmsfit object
 # @param newpar name of the new parameter to add
 # @param dim dimension of the new parameter
 # @param dist name of the distribution from which to sample
 # @param ... further arguments passed to r<dist>
-# @return a brmsfit object including dummy samples of the new parameter
-add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
+# @return a brmsfit object including dummy draws of the new parameter
+add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(is.brmsfit(x))
   stopifnot(identical(dim, numeric(0)))
   newpar <- as_one_character(newpar)

@@ -14,7 +14,7 @@
 #' where N is the number of observations, K is the number
 #' of mixture components, and E is equal to \code{length(probs) + 2}.
 #' If \code{summary = FALSE}, an S x N x K array, where
-#' S is the number of posterior samples.
+#' S is the number of posterior draws.
 #' 
 #' @details 
 #' The returned probabilities can be written as
@@ -62,12 +62,12 @@
 #' 
 #' @export
 pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
-                               resp = NULL, nsamples = NULL, subset = NULL, 
+                               resp = NULL, ndraws = NULL, draw_ids = NULL, 
                                log = FALSE, summary = TRUE, robust = FALSE, 
                                probs = c(0.025, 0.975), ...) {
   stopifnot_resp(x, resp)
   log <- as_one_logical(log)
-  contains_samples(x)
+  contains_draws(x)
   x <- restructure(x)
   if (is_mv(x)) {
     resp <- validate_resp(resp, x$formula$responses, multiple = FALSE)
@@ -80,7 +80,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   }
   prep <- prepare_predictions(
     x, newdata = newdata, re_formula = re_formula, resp = resp, 
-    subset = subset, nsamples = nsamples, check_response = TRUE, ...
+    draw_ids = draw_ids, ndraws = ndraws, check_response = TRUE, ...
   )
   stopifnot(is.brmsprep(prep))
   prep$pp_mixture <- TRUE

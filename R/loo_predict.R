@@ -128,8 +128,8 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @return If \code{summary = TRUE}, an M x C matrix is returned
 #'  (M = number of response variables and c = \code{length(probs) + 2}) 
 #'  containing summary statistics of the LOO-adjusted R-squared values.
-#'  If \code{summary = FALSE}, the posterior samples of the LOO-adjusted
-#'  R-squared values are returned in an S x M matrix (S is the number of samples).
+#'  If \code{summary = FALSE}, the posterior draws of the LOO-adjusted
+#'  R-squared values are returned in an S x M matrix (S is the number of draws).
 #'  
 #' @examples
 #' \dontrun{
@@ -148,7 +148,7 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @export
 loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE, 
                            robust = FALSE, probs = c(0.025, 0.975), ...) {
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
   summary <- as_one_logical(summary)

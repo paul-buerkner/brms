@@ -6,77 +6,77 @@ skip_on_cran()
 test_that("posterior_epred helper functions run without errors", {
   # actually run posterior_epred.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
-  add_samples <- brms:::add_samples
-  fit <- add_samples(fit, "shape", dist = "exp")
-  fit <- add_samples(fit, "alpha", dist = "norm")
-  fit <- add_samples(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)
-  fit <- add_samples(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
-  fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
-  fit <- add_samples(fit, "xi", dist = "unif", min = -1, max = 0.5)
-  fit <- add_samples(fit, "ndt", dist = "exp")
+  add_dummy_draws <- brms:::add_dummy_draws
+  fit <- add_dummy_draws(fit, "shape", dist = "exp")
+  fit <- add_dummy_draws(fit, "alpha", dist = "norm")
+  fit <- add_dummy_draws(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)
+  fit <- add_dummy_draws(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
+  fit <- add_dummy_draws(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
+  fit <- add_dummy_draws(fit, "xi", dist = "unif", min = -1, max = 0.5)
+  fit <- add_dummy_draws(fit, "ndt", dist = "exp")
   fit$formula$formula <- update(fit$formula$formula, .~. - arma(visit, patient))
   prep <- brms:::prepare_predictions(fit)
   prep$dpars$mu <- brms:::get_dpar(prep, "mu")
   prep$dpars$sigma <- brms:::get_dpar(prep, "sigma")
   prep$dpars$nu <- brms:::get_dpar(prep, "nu")
-  nsamples <- nsamples(fit)
+  ndraws <- ndraws(fit)
   nobs <- nobs(fit)
   
   # test preparation of truncated models
   prep$data$lb <- 0
   prep$data$ub <- 200
   mu <- brms:::posterior_epred_trunc(prep)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   # pseudo log-normal model
   fit$family <- fit$formula$family <- lognormal()
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+               c(ndraws, nobs))
   
   # pseudo shifted log-normal model
   fit$family <- fit$formula$family <- shifted_lognormal()
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+               c(ndraws, nobs))
   
   # pseudo skew-normal model
   fit$family <- fit$formula$family <- skew_normal()
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+               c(ndraws, nobs))
   
   # pseudo asym_laplace model
   fit$family <- fit$formula$family <- asym_laplace()
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+               c(ndraws, nobs))
   
   # pseudo zero_inflated_asym_laplace model
   fit$family <- fit$formula$family <- brmsfamily("zero_inflated_asym_laplace")
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+               c(ndraws, nobs))
   
   # pseudo gen_extreme_value model
   fit$family <- fit$formula$family <- gen_extreme_value()
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+               c(ndraws, nobs))
   
   # pseudo weibull model
   fit$formula$pforms <- NULL
   fit$family <- fit$formula$family <- weibull()
-  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(nsamples, nobs))
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
   
   # pseudo binomial model
   fit$autocor <- brms:::cor_empty()
   fit$family <- fit$formula$family <- binomial()
-  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(nsamples, nobs))
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
   
   # pseudo hurdle poisson model
   fit$family <- fit$formula$family <- hurdle_poisson()
   fit$formula <- bf(count ~ Trt*Age + mo(Exp) + offset(Age) + (1+Trt|visit),
                     family = family(fit))
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(ndraws, nobs))
   
   # pseudo zero-inflated poisson model
   fit$family <- fit$formula$family <- zero_inflated_poisson()
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(ndraws, nobs))
   
   # pseudo custom model
   posterior_epred_test <- function(prep) {
@@ -86,50 +86,50 @@ test_that("posterior_epred helper functions run without errors", {
     "test", dpars = "mu", links = c("logit"),
     type = "int", vars = "trials[n]"
   )
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(ndraws, nobs))
   
   # truncated continuous models
-  prep$dpars$shape <- c(as.matrix(fit, pars = "^shape$"))
+  prep$dpars$shape <- c(as.matrix(fit, variable = "shape"))
   mu <- brms:::posterior_epred_trunc_gaussian(prep, lb = 0, ub = 10)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- brms:::posterior_epred_trunc_student(prep, lb = -Inf, ub = 15)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- brms:::posterior_epred_trunc_lognormal(prep, lb = 2, ub = 15)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   prep$dpars$mu <- exp(prep$dpars$mu)
   mu <- brms:::posterior_epred_trunc_gamma(prep, lb = 1, ub = 7)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- brms:::posterior_epred_trunc_exponential(prep, lb = 0, ub = Inf)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- SW(brms:::posterior_epred_trunc_weibull(prep, lb = -Inf, ub = Inf))
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   # truncated discrete models
   data <- list(Y = sample(100, 10), trials = 1:10, N = 10)
-  lb <- matrix(0, nrow = nsamples, ncol = nobs)
-  ub <- matrix(100, nrow = nsamples, ncol = nobs)
+  lb <- matrix(0, nrow = ndraws, ncol = nobs)
+  ub <- matrix(100, nrow = ndraws, ncol = nobs)
   mu <- brms:::posterior_epred_trunc_poisson(prep, lb = lb, ub = ub)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- brms:::posterior_epred_trunc_negbinomial(prep, lb = lb, ub = ub)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- brms:::posterior_epred_trunc_negbinomial2(prep, lb = lb, ub = ub)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   mu <- brms:::posterior_epred_trunc_geometric(prep, lb = lb, ub = ub)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
   
   prep$data$trials <- 120
-  lb <- matrix(-Inf, nrow = nsamples, ncol = nobs)
+  lb <- matrix(-Inf, nrow = ndraws, ncol = nobs)
   prep$dpars$mu <- brms:::ilink(prep$dpars$mu, "logit")
   mu <- brms:::posterior_epred_trunc_binomial(prep, lb = lb, ub = ub)
-  expect_equal(dim(mu), c(nsamples, nobs))
+  expect_equal(dim(mu), c(ndraws, nobs))
 })
 
 test_that("posterior_epred_lagsar runs without errors", {
@@ -139,7 +139,7 @@ test_that("posterior_epred_lagsar runs without errors", {
       lagsar = matrix(c(0.3, 0.5, 0.7)), 
       Msar = matrix(1:100, 10, 10)
     ),
-    nsamples = 3,
+    ndraws = 3,
     nobs = 10,
     family = gaussian()
   )
@@ -152,7 +152,7 @@ test_that("posterior_epred for advanced count data distributions runs without er
   ns <- 15
   nobs <- 5
   ncat <- 3
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = array(rbeta(ns*nobs, 2, 2), dim = c(ns, nobs)),
     shape = array(rexp(ns*nobs, 3), dim = c(ns, nobs))
@@ -170,7 +170,7 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
   ns <- 15
   nobs <- 8
   ncat <- 3
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))

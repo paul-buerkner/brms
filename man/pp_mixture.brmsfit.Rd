@@ -10,8 +10,8 @@
   newdata = NULL,
   re_formula = NULL,
   resp = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   log = FALSE,
   summary = TRUE,
   robust = FALSE,
@@ -37,12 +37,12 @@ if \code{NA}, include no group-level effects.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{log}{Logical; Indicates whether to return 
 probabilities on the log-scale.}
@@ -67,7 +67,7 @@ If \code{summary = TRUE}, an N x E x K array,
 where N is the number of observations, K is the number
 of mixture components, and E is equal to \code{length(probs) + 2}.
 If \code{summary = FALSE}, an S x N x K array, where
-S is the number of posterior samples.
+S is the number of posterior draws.
 }
 \description{
 Compute the posterior probabilities of mixture component 

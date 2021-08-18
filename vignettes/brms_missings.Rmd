@@ -90,10 +90,10 @@ fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 ```
 
 The returned fitted model is an ordinary `brmsfit` object containing the
-posterior samples of all `m` submodels. While pooling across models is not
+posterior draws of all `m` submodels. While pooling across models is not
 necessarily straightforward in classical statistics, it is trivial in a Bayesian
 framework. Here, pooling results of multiple imputed data sets is simply
-achieved by combining the posterior samples of the submodels. Accordingly, all
+achieved by combining the posterior draws of the submodels. Accordingly, all
 post-processing methods can be used out of the box without having to worry about
 pooling at all.
 

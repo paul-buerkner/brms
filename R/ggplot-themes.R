@@ -28,7 +28,7 @@
 #' # create various plots
 #' plot(marginal_effects(fit), ask = FALSE)
 #' pp_check(fit)
-#' stanplot(fit, type = "hex", pars = c("b_Intercept", "b_Trt1"))
+#' mcmc_plot(fit, type = "hex", variable = c("b_Intercept", "b_Trt1"))
 #' }
 #' 
 #' @export

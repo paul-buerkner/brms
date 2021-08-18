@@ -52,7 +52,7 @@
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
-#'   to set argument \code{nsamples} to a relatively small value 
+#'   to set argument \code{ndraws} to a relatively small value 
 #'   (e.g., \code{100}) in order to reduce computation time.
 #' @param surface Logical. Indicates if interactions or 
 #'   two-dimensional smooths should be visualized as a surface. 
@@ -90,7 +90,7 @@
 #'   the unit interval and then points more than \code{select_points} 
 #'   from the values in \code{conditions} are excluded. 
 #'   By default, all points are used.
-#' @param ... Further arguments such as \code{subset} or \code{nsamples}
+#' @param ... Further arguments such as \code{draw_ids} or \code{ndraws}
 #'   passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
@@ -237,7 +237,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   surface <- as_one_logical(surface)
   categorical <- as_one_logical(categorical)
   ordinal <- as_one_logical(ordinal)
-  contains_samples(x)
+  contains_draws(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- brmsterms(new_formula)
@@ -445,7 +445,7 @@ conditional_effects.brmsterms <- function(
     }
     sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
-      # samples should be unique across plotting groups
+      # draws should be unique across plotting groups
       sample <- paste0(sample, "_", cond_data[[effects[2]]])
     }
     spag <- data.frame(as.numeric(t(spag)), factor(sample))

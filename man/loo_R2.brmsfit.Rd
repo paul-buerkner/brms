@@ -41,8 +41,8 @@ which are used in the computation of the R-squared values.}
 If \code{summary = TRUE}, an M x C matrix is returned
  (M = number of response variables and c = \code{length(probs) + 2}) 
  containing summary statistics of the LOO-adjusted R-squared values.
- If \code{summary = FALSE}, the posterior samples of the LOO-adjusted
- R-squared values are returned in an S x M matrix (S is the number of samples).
+ If \code{summary = FALSE}, the posterior draws of the LOO-adjusted
+ R-squared values are returned in an S x M matrix (S is the number of draws).
 }
 \description{
 Compute a LOO-adjusted R-squared for regression models

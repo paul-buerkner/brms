@@ -26,7 +26,7 @@ correlation matrix of population-level parameters
 }
 \details{
 Estimates are obtained by calculating the maximum likelihood 
-  covariances (correlations) of the posterior samples.
+  covariances (correlations) of the posterior draws.
 }
 \examples{
 \dontrun{
