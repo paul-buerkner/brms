@@ -42,6 +42,9 @@ list of distributions, which are not natively supported. The present vignette
 will explain how to specify such *custom families* in **brms**. By doing that,
 users can benefit from the modeling flexibility and post-processing options of
 **brms** even when using self-defined response distributions.
+If you have built a custom family that you want to make available to other
+users, you can submit a pull request to this 
+[GitHub repository](https://github.com/paul-buerkner/custom-brms-families).
 
 ## A Case Study
 
@@ -223,7 +226,7 @@ to worry too much about how `prep` is created (if you are interested, check
 out the `prepare_predictions` function). Instead, all you need to know is
 that parameters are stored in slot `dpars` and data are stored in slot `data`.
 Generally, parameters take on the form of a $S \times N$ matrix (with $S =$
-number of posterior samples and $N =$ number of observations) if they are
+number of posterior draws and $N =$ number of observations) if they are
 predicted (as is `mu` in our example) and a vector of size $N$ if the are not
 predicted (as is `phi`).
 

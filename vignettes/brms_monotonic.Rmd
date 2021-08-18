@@ -93,7 +93,7 @@ The summary methods yield
 
 ```{r}
 summary(fit1)
-plot(fit1, pars = "simo")
+plot(fit1, variable = "simo", regex = TRUE)
 plot(conditional_effects(fit1))
 ```
 
@@ -173,7 +173,7 @@ We have used `sample_prior = TRUE` to also obtain draws from the prior
 distribution of `simo_moincome1` so that we can visualized it.
 
 ```{r}
-plot(fit4, pars = "prior_simo", N = 3)
+plot(fit4, variable = "prior_simo", regex = TRUE, N = 3)
 ```
 
 As is visible in the plots, `simo_moincome1[1]` was a-priori on average twice as

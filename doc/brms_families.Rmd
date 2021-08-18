@@ -94,13 +94,13 @@ $$
 with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
 -->
 
-## Survival models
+## Time-to-event models
 
-With survival models we mean all models that are defined on the positive reals
-only, that is $y \in \mathbb{R}^+$. The density of the **lognormal** family is
-given by
+With time-to-event models we mean all models that are defined on the positive
+reals only, that is $y \in \mathbb{R}^+$. The density of the **lognormal**
+family is given by
 $$
-f(y) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
+f(y) = \frac{1}{\sqrt{2\pi}\sigma y} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
 $$ 
 where $\sigma$ is the residual standard deviation on the log-scale.
 The density of the **Gamma** family is given by
@@ -122,7 +122,15 @@ is set to $1$ for either the gamma or Weibull distribution. The density of the
 $$
 f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
 $$
-where $\alpha$ is a positive shape parameter.
+where $\alpha$ is a positive shape parameter. The **cox** family implements Cox
+proportional hazards model which assumes a hazard function of the form $h(y) =
+h_0(y) \mu$ with baseline hazard $h_0(y)$ expressed via M-splines (which
+integrate to I-splines) in order to ensure monotonicity. The density of the cox
+model is then given by
+$$
+f(y) = h(y) S(y)
+$$
+where $S(y)$ is the survival function implied by $h(y)$.
 
 ## Extreme value models
 
@@ -154,20 +162,20 @@ $$
 f(y) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi + \sigma^2 / \beta - 2 y \right) \right) \text{erfc}\left(\frac{\xi + \sigma^2 / \beta - y}{\sqrt{2} \sigma} \right)
 $$
 where $\beta$ is the scale (inverse rate) of the exponential component, $\xi$ is
-the mean of the Gaussian componenent, $\sigma$ is the standard deviation of the
+the mean of the Gaussian component, $\sigma$ is the standard deviation of the
 Gaussian component, and $\text{erfc}$ is the complementary error function. We
 parameterize $\mu = \xi + \beta$ so that the main predictor term equals the
 mean of the distribution.
 
-Another family well suited for modelling response times is the
+Another family well suited for modeling response times is the
 **shifted_lognormal** distribution. It's density equals that of the
 **lognormal** distribution except that the whole distribution is shifted to the
 right by a positive parameter called *ndt* (for consistency with the **wiener**
 diffusion model explained below).
 
-A family concerned with the combined modelling of reaction times and
+A family concerned with the combined modeling of reaction times and
 corresponding binary responses is the **wiener** diffusion model. It has four
-model parameters each with a natural interpreation. The parameter $\alpha > 0$
+model parameters each with a natural interpretation. The parameter $\alpha > 0$
 describes the separation between two boundaries of the diffusion process, 
 $\tau > 0$ describes the non-decision time (e.g., due to image or motor processing),
 $\beta \in [0, 1]$ describes the initial bias in favor of the upper alternative,
@@ -273,7 +281,7 @@ $k$ for a subset of predictors. This leads to category specific
 effects (for details on how to specify them see `help(brm)`). Note that
 **cumulative** and **sratio** models use $\tau - \eta$, whereas **cratio** and
 **acat** use $\eta - \tau$. This is done to ensure that larger values of $\eta$
-increase the probability of *higher* reponse categories.
+increase the probability of *higher* response categories.
 
 The **categorical** family is currently only implemented with the multivariate
 logit link function and has density
@@ -294,7 +302,7 @@ function shown above.
 ## Zero-inflated and hurdle models
 
 **Zero-inflated** and **hurdle** families extend existing families by adding
-special processes for responses that are zero. The densitiy of a
+special processes for responses that are zero. The density of a
 **zero-inflated** family is given by
 $$
 f_z(y) = z + (1 - z) f(0) \quad \text{if } y = 0 \\

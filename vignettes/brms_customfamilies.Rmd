@@ -42,6 +42,9 @@ list of distributions, which are not natively supported. The present vignette
 will explain how to specify such *custom families* in **brms**. By doing that,
 users can benefit from the modeling flexibility and post-processing options of
 **brms** even when using self-defined response distributions.
+If you have built a custom family that you want to make available to other
+users, you can submit a pull request to this 
+[GitHub repository](https://github.com/paul-buerkner/custom-brms-families).
 
 ## A Case Study
 

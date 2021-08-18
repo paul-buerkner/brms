@@ -108,7 +108,7 @@ not overlay each other exactly, since there were fitted to different data. We
 can see the chains on the right-hand side of
 
 ```{r}
-plot(fit_imp1, pars = "^b")
+plot(fit_imp1, variable = "^b", regex = TRUE)
 ```
 
 Such non-overlaying chains imply high `Rhat` values without there actually being
