@@ -41,7 +41,8 @@ to an automatic merging of chains.}
 \item{subset}{Deprecated alias of \code{draw}.}
 
 \item{...}{Further arguments to be passed to the corresponding
-\code{\link[brms:draws-brms]{as_draws_*}} methods.}
+\code{\link[brms:draws-brms]{as_draws_*}} methods as well as to
+\code{\link[posterior:subset_draws]{subset_draws}}.}
 }
 \value{
 A data.frame, matrix, or array containing the posterior draws.
@@ -51,5 +52,6 @@ Extract posterior draws in conventional formats
 as data.frames, matrices, or arrays.
 }
 \seealso{
-\code{\link[brms:draws-brms]{as_draws}}
+\code{\link[brms:draws-brms]{as_draws}},
+  \code{\link[posterior:subset_draws]{subset_draws}}
 }

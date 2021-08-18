@@ -27,7 +27,8 @@ prepare_predictions.brmsfit <- function(
   )
   resp <- validate_resp(resp, x)
   draw_ids <- validate_draw_ids(x, draw_ids, ndraws)
-  draws <- suppressMessages(as_draws_matrix(x, draw = draw_ids))
+  draws <- as_draws_matrix(x)
+  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
   draws <- point_draws(draws, point_estimate)
   
   new_formula <- update_re_terms(x$formula, re_formula)

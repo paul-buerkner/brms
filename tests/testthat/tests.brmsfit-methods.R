@@ -27,21 +27,21 @@ test_that("as_draws and friends have resonable outputs", {
   expect_equal(variables(draws), "b_Intercept")
   expect_equal(ndraws(draws), ndraws(fit1))
   
-  draws <- SM(as_draws_matrix(fit1, draw = 1:10))
+  draws <- SM(as_draws_matrix(fit1))
   expect_s3_class(draws, "draws_matrix")
-  expect_equal(ndraws(draws), 10)
+  expect_equal(ndraws(draws), ndraws(fit1))
   
-  draws <- as_draws_array(fit2, iteration = 1:10)
+  draws <- as_draws_array(fit2)
   expect_s3_class(draws, "draws_array")
-  expect_equal(niterations(draws), 10)
+  expect_equal(niterations(draws), ndraws(fit2))
   
   draws <- as_draws_df(fit2, variable = "^b_", regex = TRUE)
   expect_s3_class(draws, "draws_df")
   expect_true(all(grepl("^b_", variables(draws))))
   
-  draws <- as_draws_list(fit2, chain = 1)
+  draws <- as_draws_list(fit2)
   expect_s3_class(draws, "draws_list")
-  expect_equal(nchains(draws), 1)
+  expect_equal(nchains(draws), nchains(fit2))
   
   draws <- as_draws_rvars(fit3)
   expect_s3_class(draws, "draws_rvars")
@@ -72,16 +72,21 @@ test_that("as.data.frame has reasonable ouputs", {
 })
 
 test_that("as.matrix has reasonable ouputs", {
-  draws <- as.matrix(fit1)
+  draws <- as.matrix(fit1, iteration = 1:10)
   expect_true(is(draws, "matrix"))
-  expect_equal(dim(draws), c(ndraws(fit1), length(variables(fit1))))
+  expect_equal(dim(draws), c(10, length(variables(fit1))))
 })
 
 test_that("as.array has reasonable ouputs", {
   draws <- as.array(fit1)
   expect_true(is.array(draws))
   chains <- fit1$fit@sim$chains
-  ps_dim <- c(ndraws(fit1) / chains, chains, length(variables(fit1)))
+  ps_dim <- c(niterations(fit1), chains, length(variables(fit1)))
+  expect_equal(dim(draws), ps_dim)
+  
+  draws <- as.array(fit1, chain = 1)
+  expect_true(is.array(draws))
+  ps_dim <- c(niterations(fit1), 1, length(variables(fit1)))
   expect_equal(dim(draws), ps_dim)
 })
 

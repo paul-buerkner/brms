@@ -88,7 +88,8 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
     check_response = FALSE, req_vars = req_vars
   )
   draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)
-  draws <- suppressMessages(as_draws_matrix(fit, draw = draw_ids))
+  draws <- as_draws_matrix(fit)
+  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
   prep_args <- nlist(x = object, draws, sdata, data = fit$data)
   prep <- do_call(prepare_predictions, prep_args)
   # select subset of smooth parameters and design matrices
