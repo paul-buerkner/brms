@@ -191,8 +191,8 @@ stan_has_built_in_fun <- function(family, bterms) {
   stopifnot(all(c("family", "link") %in% names(family)))
   stopifnot(is.brmsterms(bterms))
   cens_or_trunc <- stan_log_lik_adj(bterms$adforms, c("cens", "trunc"))
-  link <- family$link
-  dpar <- family$dpar
+  link <- family[["link"]]
+  dpar <- family[["dpar"]]
   if (cens_or_trunc) {
     # only few families have special lcdf and lccdf functions
     out <- has_built_in_fun(family, link, cdf = TRUE) ||
