@@ -525,11 +525,14 @@ validate_silent <- function(silent) {
   silent
 }
 
-# repairs parameter names of stanfit objects as rstan::read_stan_csv 
-# seems to accidentally rename dimension suffixes
+# repairs parameter names of stanfit objects
 repair_stanfit_names <- function(x) {
   stopifnot(is.stanfit(x))
+  # the posterior package cannot deal with non-unique parameter names
+  # this case happens rarely but might happen when sample_prior = "yes"
+  x@sim$fnames_oi <- make.unique(x@sim$fnames_oi, "__")
   for (i in seq_along(x@sim$samples)) {
+    # rstan::read_stan_csv may have renamed dimension suffixes (#1218)
     names(x@sim$samples[[i]]) <- x@sim$fnames_oi
   }
   x
