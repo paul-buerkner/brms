@@ -1,3 +1,12 @@
+# brms 2.16.0++
+
+### Bug Fixes
+
+* Fix a bug causing problems during post-processing of models
+fitted with older versions of brms and the `cmdstanr` backend
+thanks to Riccardo Fusaroli. (#1218)
+
+
 # brms 2.16.0
 
 ### New Features

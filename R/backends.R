@@ -283,10 +283,7 @@ fit_model <- function(model, backend, ...) {
   )
   # transform into stanfit object for consistent output structure
   out <- rstan::read_stan_csv(out$output_files())
-  # read_stan_csv seems to accidentally rename dimension suffixes
-  for (i in seq_along(out@sim$samples)) {
-    names(out@sim$samples[[i]]) <- out@sim$fnames_oi
-  }
+  out <- repair_stanfit_names(out)
   # allow updating the model without recompilation
   attributes(out)$CmdStanModel <- model
   attributes(out)$metadata <- metadata
@@ -526,6 +523,16 @@ validate_silent <- function(silent) {
     stop2("'silent' must be between 0 and 2.")
   }
   silent
+}
+
+# repairs parameter names of stanfit objects as rstan::read_stan_csv 
+# seems to accidentally rename dimension suffixes
+repair_stanfit_names <- function(x) {
+  stopifnot(is.stanfit(x))
+  for (i in seq_along(x@sim$samples)) {
+    names(x@sim$samples[[i]]) <- x@sim$fnames_oi
+  }
+  x
 }
 
 # possible options for argument 'file_refit'
