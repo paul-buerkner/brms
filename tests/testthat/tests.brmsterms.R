@@ -1,10 +1,12 @@
 context("Tests for formula parsing functions")
 
 test_that("brmsterms finds all variables in very long formulas", {
-  expect_equal(brmsterms(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
-                                 psi_api_ident + psi_api_intere + psi_api_groupint)$all, 
-               t2_brand_recall ~ t2_brand_recall + psi_expsi + psi_api_probsolv + psi_api_ident + 
+  expect_equal(
+    all.vars(brmsterms(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
+                                 psi_api_ident + psi_api_intere + psi_api_groupint)$all), 
+    all.vars(t2_brand_recall ~ t2_brand_recall + psi_expsi + psi_api_probsolv + psi_api_ident + 
                  psi_api_intere + psi_api_groupint)
+  )
 })
 
 test_that("brmsterms handles very long RE terms", {

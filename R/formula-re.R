@@ -306,11 +306,11 @@ split_re_terms <- function(re_terms) {
       }
     }
     # prepare effects of basic terms
-    fe_form <- terms_fe(lhs_form)
+    lhs_terms <- terms(lhs_form)
+    fe_form <- terms_fe(lhs_terms)
     fe_terms <- all_terms(fe_form)
-    has_intercept <- attr(terms(fe_form), "intercept")
     # the intercept lives within not outside of 'cs' terms
-    has_intercept <- has_intercept && !"cs" %in% type[[i]]
+    has_intercept <- has_intercept(lhs_terms) && !"cs" %in% type[[i]]
     if (length(fe_terms) || has_intercept) {
       new_lhs <- c(new_lhs, formula2str(fe_form, rm = 1))
       type[[i]] <- c(type[[i]], "")
