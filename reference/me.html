@@ -47,8 +47,8 @@
 
 
 <meta property="og:title" content="Predictors with Measurement Error in brms Models — me" />
-<meta property="og:description" content="Specify predictors with measurement error. The function does not evaluate its
-arguments -- it exists purely to help set up a model." />
+<meta property="og:description" content="(Soft deprecated) Specify predictors with measurement error. The function
+does not evaluate its arguments -- it exists purely to help set up a model." />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -81,7 +81,7 @@ arguments -- it exists purely to help set up a model." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -168,8 +168,8 @@ arguments -- it exists purely to help set up a model." />
     </div>
 
     <div class="ref-description">
-    <p>Specify predictors with measurement error. The function does not evaluate its
-arguments -- it exists purely to help set up a model.</p>
+    <p>(Soft deprecated) Specify predictors with measurement error. The function
+does not evaluate its arguments -- it exists purely to help set up a model.</p>
     </div>
 
     <pre class="usage"><span class='fu'>me</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>sdx</span>, gr <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
@@ -197,8 +197,10 @@ observation will have its own value of the latent variable.</p></td>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>For detailed documentation see <code><a href='brmsformula.html'>help(brmsformula)</a></code>.</p>
-<p>By default, latent noise-free variables are assumed
+    <p>For detailed documentation see <code><a href='brmsformula.html'>help(brmsformula)</a></code>.
+<code>me</code> terms are soft deprecated in favor of the more
+general and consistent <code><a href='mi.html'>mi</a></code> terms. 
+By default, latent noise-free variables are assumed
 to be correlated. To change that, add <code><a href='brmsformula-helpers.html'>set_mecor(FALSE)</a></code>
 to your model formula object (see examples).</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
@@ -215,12 +217,12 @@ to your model formula object (see examples).</p>
  <span class='op'>)</span>
 <span class='co'># fit a simple error-in-variables model </span>
 <span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x1</span>, <span class='va'>sdx</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x2</span>, <span class='va'>sdx</span><span class='op'>)</span>, data <span class='op'>=</span> <span class='va'>dat</span>, 
-           save_mevars <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+            save_pars <span class='op'>=</span> <span class='fu'><a href='save_pars.html'>save_pars</a></span><span class='op'>(</span>latent <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
 
 <span class='co'># turn off modeling of correlations</span>
 <span class='va'>bform</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x1</span>, <span class='va'>sdx</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'>me</span><span class='op'>(</span><span class='va'>x2</span>, <span class='va'>sdx</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='brmsformula-helpers.html'>set_mecor</a></span><span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span>
-<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>bform</span>, data <span class='op'>=</span> <span class='va'>dat</span>, save_mevars <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>bform</span>, data <span class='op'>=</span> <span class='va'>dat</span>, save_pars <span class='op'>=</span> <span class='fu'><a href='save_pars.html'>save_pars</a></span><span class='op'>(</span>latent <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
 <span class='op'>}</span> 
 

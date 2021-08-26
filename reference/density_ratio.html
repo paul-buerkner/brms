@@ -47,7 +47,7 @@
 
 
 <meta property="og:title" content="Compute Density Ratios — density_ratio" />
-<meta property="og:description" content="Compute the ratio of two densities at given points based on samples of the
+<meta property="og:description" content="Compute the ratio of two densities at given points based on draws of the
 corresponding distributions." />
 <meta property="og:image" content="/logo.png" />
 
@@ -81,7 +81,7 @@ corresponding distributions." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -168,7 +168,7 @@ corresponding distributions." />
     </div>
 
     <div class="ref-description">
-    <p>Compute the ratio of two densities at given points based on samples of the
+    <p>Compute the ratio of two densities at given points based on draws of the
 corresponding distributions.</p>
     </div>
 
@@ -179,12 +179,12 @@ corresponding distributions.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>Vector of samples from the first distribution, usually the posterior
+      <td><p>Vector of draws from the first distribution, usually the posterior
 distribution of the quantity of interest.</p></td>
     </tr>
     <tr>
       <th>y</th>
-      <td><p>Optional vector of samples from the second distribution, usually the
+      <td><p>Optional vector of draws from the second distribution, usually the
 prior distribution of the quantity of interest. If <code>NULL</code> (the
 default), only the density of <code>x</code> will be evaluated.</p></td>
     </tr>
@@ -212,7 +212,7 @@ estimation. See <code><a href='https://rdrr.io/r/stats/density.html'>density</a>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>In order to achieve sufficient accuracy in the density estimation,
-  more samples than usual are required. That is you may need an effective
+  more draws than usual are required. That is you may need an effective
   sample size of 10,000 or more to reliably estimate the densities.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

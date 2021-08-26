@@ -79,7 +79,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -186,7 +186,7 @@
       <tr>
         
         <td>
-          <p><code><a href="addition-terms.html">resp_se()</a></code> <code><a href="addition-terms.html">resp_weights()</a></code> <code><a href="addition-terms.html">resp_trials()</a></code> <code><a href="addition-terms.html">resp_thres()</a></code> <code><a href="addition-terms.html">resp_cat()</a></code> <code><a href="addition-terms.html">resp_dec()</a></code> <code><a href="addition-terms.html">resp_cens()</a></code> <code><a href="addition-terms.html">resp_trunc()</a></code> <code><a href="addition-terms.html">resp_mi()</a></code> <code><a href="addition-terms.html">resp_rate()</a></code> <code><a href="addition-terms.html">resp_subset()</a></code> <code><a href="addition-terms.html">resp_vreal()</a></code> <code><a href="addition-terms.html">resp_vint()</a></code> </p>
+          <p><code><a href="addition-terms.html">resp_se()</a></code> <code><a href="addition-terms.html">resp_weights()</a></code> <code><a href="addition-terms.html">resp_trials()</a></code> <code><a href="addition-terms.html">resp_thres()</a></code> <code><a href="addition-terms.html">resp_cat()</a></code> <code><a href="addition-terms.html">resp_dec()</a></code> <code><a href="addition-terms.html">resp_cens()</a></code> <code><a href="addition-terms.html">resp_trunc()</a></code> <code><a href="addition-terms.html">resp_mi()</a></code> <code><a href="addition-terms.html">resp_index()</a></code> <code><a href="addition-terms.html">resp_rate()</a></code> <code><a href="addition-terms.html">resp_subset()</a></code> <code><a href="addition-terms.html">resp_vreal()</a></code> <code><a href="addition-terms.html">resp_vint()</a></code> </p>
         </td>
         <td><p>Additional Response Information</p></td>
       </tr><tr>
@@ -204,6 +204,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="add_rstan_model.html">add_rstan_model()</a></code> </p>
+        </td>
+        <td><p>Add compiled <span class="pkg">rstan</span> models to <code>brmsfit</code> objects</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="ar.html">ar()</a></code> </p>
         </td>
         <td><p>Set up AR(p) correlation structures</p></td>
@@ -213,6 +219,12 @@
           <p><code><a href="arma.html">arma()</a></code> </p>
         </td>
         <td><p>Set up ARMA(p,q) correlation structures</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="as.data.frame.brmsfit.html">as.data.frame(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="as.data.frame.brmsfit.html">as.matrix(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="as.data.frame.brmsfit.html">as.array(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Extract Posterior Draws</p></td>
       </tr><tr>
         
         <td>
@@ -438,6 +450,18 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="draws-brms.html">as_draws(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-brms.html">as_draws_matrix(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-brms.html">as_draws_array(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-brms.html">as_draws_df(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-brms.html">as_draws_list(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-brms.html">as_draws_rvars(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Transform <code>brmsfit</code> to <code>draws</code> objects</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="draws-index-brms.html">variables(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-index-brms.html">nvariables(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-index-brms.html">niterations(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-index-brms.html">nchains(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="draws-index-brms.html">ndraws(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Index <code>brmsfit</code> objects</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="emmeans-brms-helpers.html">recover_data.brmsfit()</a></code> <code><a href="emmeans-brms-helpers.html">emm_basis.brmsfit()</a></code> </p>
         </td>
         <td><p>Support Functions for <span class="pkg">emmeans</span></p></td>
@@ -501,6 +525,12 @@
           <p><code><a href="GenExtremeValue.html">dgen_extreme_value()</a></code> <code><a href="GenExtremeValue.html">pgen_extreme_value()</a></code> <code><a href="GenExtremeValue.html">rgen_extreme_value()</a></code> </p>
         </td>
         <td><p>The Generalized Extreme Value Distribution</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="get_dpar.html">get_dpar()</a></code> </p>
+        </td>
+        <td><p>Draws of a Distributional Parameter</p></td>
       </tr><tr>
         
         <td>
@@ -812,7 +842,13 @@
         <td>
           <p><code><a href="nsamples.brmsfit.html">nsamples(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Number of Posterior Samples</p></td>
+        <td><p>(Deprecated) Number of Posterior Samples</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="opencl.html">opencl()</a></code> </p>
+        </td>
+        <td><p>GPU support in Stan via OpenCL</p></td>
       </tr><tr>
         
         <td>
@@ -830,13 +866,13 @@
         <td>
           <p><code><a href="plot.brmsfit.html">plot(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Trace and Density Plots for MCMC Samples</p></td>
+        <td><p>Trace and Density Plots for MCMC Draws</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="posterior_average.brmsfit.html">posterior_average()</a></code> </p>
         </td>
-        <td><p>Posterior samples of parameters averaged across models</p></td>
+        <td><p>Posterior draws of parameters averaged across models</p></td>
       </tr><tr>
         
         <td>
@@ -854,19 +890,19 @@
         <td>
           <p><code><a href="posterior_linpred.brmsfit.html">posterior_linpred(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Posterior Samples of the Linear Predictor</p></td>
+        <td><p>Posterior Draws of the Linear Predictor</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="posterior_predict.brmsfit.html">posterior_predict(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Samples from the Posterior Predictive Distribution</p></td>
+        <td><p>Draws from the Posterior Predictive Distribution</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="posterior_samples.brmsfit.html">posterior_samples()</a></code> <code><a href="posterior_samples.brmsfit.html">as.data.frame(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="posterior_samples.brmsfit.html">as.matrix(<i>&lt;brmsfit&gt;</i>)</a></code> <code><a href="posterior_samples.brmsfit.html">as.array(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+          <p><code><a href="posterior_samples.brmsfit.html">posterior_samples()</a></code> </p>
         </td>
-        <td><p>Extract Posterior Samples</p></td>
+        <td><p>(Deprecated) Extract Posterior Samples</p></td>
       </tr><tr>
         
         <td>
@@ -878,13 +914,13 @@
         <td>
           <p><code><a href="posterior_summary.html">posterior_summary()</a></code> </p>
         </td>
-        <td><p>Summarize Posterior Samples</p></td>
+        <td><p>Summarize Posterior draws</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="posterior_table.html">posterior_table()</a></code> </p>
         </td>
-        <td><p>Table Creation for Posterior Samples</p></td>
+        <td><p>Table Creation for Posterior Draws</p></td>
       </tr><tr>
         
         <td>
@@ -896,7 +932,7 @@
         <td>
           <p><code><a href="pp_average.brmsfit.html">pp_average()</a></code> </p>
         </td>
-        <td><p>Posterior predictive samples averaged across models</p></td>
+        <td><p>Posterior predictive draws averaged across models</p></td>
       </tr><tr>
         
         <td>
@@ -914,13 +950,13 @@
         <td>
           <p><code><a href="predict.brmsfit.html">predict(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Samples from the Posterior Predictive Distribution</p></td>
+        <td><p>Draws from the Posterior Predictive Distribution</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="predictive_error.brmsfit.html">predictive_error(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Posterior Samples of Predictive Errors</p></td>
+        <td><p>Posterior Draws of Predictive Errors</p></td>
       </tr><tr>
         
         <td>
@@ -948,9 +984,9 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="prior_samples.brmsfit.html">prior_samples()</a></code> </p>
+          <p><code><a href="prior_draws.brmsfit.html">prior_draws()</a></code> <code><a href="prior_draws.brmsfit.html">prior_samples()</a></code> </p>
         </td>
-        <td><p>Extract prior samples</p></td>
+        <td><p>Extract Prior Draws</p></td>
       </tr><tr>
         
         <td>
@@ -986,7 +1022,7 @@
         <td>
           <p><code><a href="residuals.brmsfit.html">residuals(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Posterior Samples of Residuals/Predictive Errors</p></td>
+        <td><p>Posterior Draws of Residuals/Predictive Errors</p></td>
       </tr><tr>
         
         <td>

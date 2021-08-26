@@ -82,7 +82,7 @@ developer, you will rarely need to call prepare_predictions directly." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -184,6 +184,8 @@ developer, you will rarely need to call <code>prepare_predictions</code> directl
   incl_autocor <span class='op'>=</span> <span class='cn'>TRUE</span>,
   oos <span class='op'>=</span> <span class='cn'>NULL</span>,
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
   subset <span class='op'>=</span> <span class='cn'>NULL</span>,
   nug <span class='op'>=</span> <span class='cn'>NULL</span>,
@@ -230,16 +232,16 @@ effects are allowed (defaults to <code>FALSE</code>). Only relevant if
 factors specified in <code>re_formula</code>. This argument is only relevant if
 <code>newdata</code> is provided and <code>allow_new_levels</code> is set to
 <code>TRUE</code>. If <code>"uncertainty"</code> (default), each posterior sample for a
-new level is drawn from the posterior samples of a randomly chosen existing
+new level is drawn from the posterior draws of a randomly chosen existing
 level. Each posterior sample for a new level may be drawn from a different
-existing level such that the resulting set of new posterior samples
+existing level such that the resulting set of new posterior draws
 represents the variation across existing levels. If <code>"gaussian"</code>,
 sample new levels from the (multivariate) normal distribution implied by the
 group-level standard deviations and correlations. This options may be useful
 for conducting Bayesian power analysis or predicting new levels in
 situations where relatively few levels where observed in the old_data. If
 <code>"old_levels"</code>, directly sample new levels from the existing levels,
-where a new level is assigned all of the posterior samples of the same
+where a new level is assigned all of the posterior draws of the same
 (randomly chosen) existing level.</p></td>
     </tr>
     <tr>
@@ -252,7 +254,7 @@ Defaults to <code>TRUE</code>.</p></td>
       <th>oos</th>
       <td><p>Optional indices of observations for which to compute
 out-of-sample rather than in-sample predictions. Only required in models
-that make use of response values to make predictions, that is currently
+that make use of response values to make predictions, that is, currently
 only ARMA models.</p></td>
     </tr>
     <tr>
@@ -261,15 +263,23 @@ only ARMA models.</p></td>
 are performed only for the specified response variables.</p></td>
     </tr>
     <tr>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
+    </tr>
+    <tr>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
+    </tr>
+    <tr>
       <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <td><p>Deprecated alias of <code>ndraws</code>.</p></td>
     </tr>
     <tr>
       <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <td><p>Deprecated alias of <code>draw_ids</code>.</p></td>
     </tr>
     <tr>
       <th>nug</th>
@@ -281,8 +291,7 @@ chosen internally.</p></td>
     </tr>
     <tr>
       <th>smooths_only</th>
-      <td><p>Logical; If <code>TRUE</code> only predictions related to the
-computation of smooth terms will be prepared.</p></td>
+      <td><p>Logical; If <code>TRUE</code> only predictions related to the</p></td>
     </tr>
     <tr>
       <th>offset</th>
@@ -302,7 +311,7 @@ used in autocorrelation structures, or <code><a href='stanvar.html'>stanvars</a>
     <tr>
       <th>point_estimate</th>
       <td><p>Shall the returned object contain only point estimates
-of the parameters instead of their posterior samples? Defaults to
+of the parameters instead of their posterior draws? Defaults to
 <code>NULL</code> in which case no point estimate is computed. Alternatively, may
 be set to <code>"mean"</code> or <code>"median"</code>. This argument is primarily
 implemented to ensure compatibility with the <code><a href='loo_subsample.brmsfit.html'>loo_subsample</a></code>

@@ -86,7 +86,7 @@ For a list of built-in families see brmsfamily." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -190,6 +190,7 @@ For a list of built-in families see <code><a href='brmsfamily.html'>brmsfamily</
   lb <span class='op'>=</span> <span class='cn'>NA</span>,
   ub <span class='op'>=</span> <span class='cn'>NA</span>,
   vars <span class='op'>=</span> <span class='cn'>NULL</span>,
+  loop <span class='op'>=</span> <span class='cn'>TRUE</span>,
   specials <span class='op'>=</span> <span class='cn'>NULL</span>,
   threshold <span class='op'>=</span> <span class='st'>"flexible"</span>,
   log_lik <span class='op'>=</span> <span class='cn'>NULL</span>,
@@ -222,7 +223,9 @@ distributional parameters.</p></td>
     <tr>
       <th>type</th>
       <td><p>Indicates if the response distribution is
-continuous (<code>"real"</code>) or discrete (<code>"int"</code>).</p></td>
+continuous (<code>"real"</code>) or discrete (<code>"int"</code>). This controls
+if the corresponding density function will be named with
+<code>&lt;name&gt;_lpdf</code> or <code>&lt;name&gt;_lpmf</code>.</p></td>
     </tr>
     <tr>
       <th>lb</th>
@@ -236,11 +239,22 @@ parameters. Defaults to <code>NA</code> that is no upper bound.</p></td>
     </tr>
     <tr>
       <th>vars</th>
-      <td><p>Names of variables, which are part of the likelihood
-function without being distributional parameters. That is,
-<code>vars</code> can be used to pass data to the likelihood. 
-See <code><a href='stanvar.html'>stanvar</a></code> for details about adding self-defined
-data to the generated <span class="pkg">Stan</span> model.</p></td>
+      <td><p>Names of variables that are part of the likelihood function
+without being distributional parameters. That is, <code>vars</code> can be used
+to pass data to the likelihood. Such arguments will be added to the list of
+function arguments at the end, after the distributional parameters. See
+<code><a href='stanvar.html'>stanvar</a></code> for details about adding self-defined data to the
+generated <span class="pkg">Stan</span> model. Addition arguments <code>vreal</code> and <code>vint</code>
+may be used for this purpose as well (see Examples below). See also
+<code><a href='brmsformula.html'>brmsformula</a></code> and <code><a href='addition-terms.html'>addition-terms</a></code> for more
+details.</p></td>
+    </tr>
+    <tr>
+      <th>loop</th>
+      <td><p>Logical; Should the likelihood be evaluated via a loop
+(<code>TRUE</code>; the default) over observations in Stan?
+If <code>FALSE</code>, the Stan code will be written in a vectorized
+manner over observations if possible.</p></td>
     </tr>
     <tr>
       <th>specials</th>
@@ -307,7 +321,8 @@ By default, <code>env</code> is the environment from which
   continuous or discrete distribution.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='brmsfamily.html'>brmsfamily</a></code>, <code><a href='stanvar.html'>stanvar</a></code></p></div>
+    <div class='dont-index'><p><code><a href='brmsfamily.html'>brmsfamily</a></code>, <code><a href='brmsformula.html'>brmsformula</a></code>,
+   <code><a href='stanvar.html'>stanvar</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
@@ -329,20 +344,44 @@ By default, <code>env</code> is the environment from which
 <span class='va'>beta_binomial2</span> <span class='op'>&lt;-</span> <span class='fu'>custom_family</span><span class='op'>(</span>
   <span class='st'>"beta_binomial2"</span>, dpars <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"mu"</span>, <span class='st'>"phi"</span><span class='op'>)</span>,
   links <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"logit"</span>, <span class='st'>"log"</span><span class='op'>)</span>, lb <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fl'>0</span><span class='op'>)</span>,
-  type <span class='op'>=</span> <span class='st'>"int"</span>, vars <span class='op'>=</span> <span class='st'>"trials[n]"</span>
+  type <span class='op'>=</span> <span class='st'>"int"</span>, vars <span class='op'>=</span> <span class='st'>"vint1[n]"</span>
 <span class='op'>)</span>
 
 <span class='co'># define the corresponding Stan density function</span>
-<span class='va'>stan_funs</span> <span class='op'>&lt;-</span> <span class='st'>"
+<span class='va'>stan_density</span> <span class='op'>&lt;-</span> <span class='st'>"
   real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
   }
 "</span>
+<span class='va'>stanvars</span> <span class='op'>&lt;-</span> <span class='fu'><a href='stanvar.html'>stanvar</a></span><span class='op'>(</span>scode <span class='op'>=</span> <span class='va'>stan_density</span>, block <span class='op'>=</span> <span class='st'>"functions"</span><span class='op'>)</span>
 
 <span class='co'># fit the model</span>
-<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>|</span> <span class='fu'>trials</span><span class='op'>(</span><span class='va'>ntrials</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>z</span>, data <span class='op'>=</span> <span class='va'>dat</span>, 
-           family <span class='op'>=</span> <span class='va'>beta_binomial2</span>, stan_funs <span class='op'>=</span> <span class='va'>stan_funs</span><span class='op'>)</span>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>|</span> <span class='fu'>vint</span><span class='op'>(</span><span class='va'>ntrials</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>z</span>, data <span class='op'>=</span> <span class='va'>dat</span>, 
+           family <span class='op'>=</span> <span class='va'>beta_binomial2</span>, stanvars <span class='op'>=</span> <span class='va'>stanvars</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+
+
+<span class='co'># define a *vectorized* custom family (no loop over observations)</span>
+<span class='co'># notice also that 'vint' no longer has an observation index</span>
+<span class='va'>beta_binomial2_vec</span> <span class='op'>&lt;-</span> <span class='fu'>custom_family</span><span class='op'>(</span>
+  <span class='st'>"beta_binomial2"</span>, dpars <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"mu"</span>, <span class='st'>"phi"</span><span class='op'>)</span>,
+  links <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"logit"</span>, <span class='st'>"log"</span><span class='op'>)</span>, lb <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fl'>0</span><span class='op'>)</span>,
+  type <span class='op'>=</span> <span class='st'>"int"</span>, vars <span class='op'>=</span> <span class='st'>"vint1"</span>, loop <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span>
+
+<span class='co'># define the corresponding Stan density function</span>
+<span class='va'>stan_density_vec</span> <span class='op'>&lt;-</span> <span class='st'>"
+  real beta_binomial2_lpmf(int[] y, vector mu, real phi, int[] N) {
+    return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+  }
+"</span>
+<span class='va'>stanvars_vec</span> <span class='op'>&lt;-</span> <span class='fu'><a href='stanvar.html'>stanvar</a></span><span class='op'>(</span>scode <span class='op'>=</span> <span class='va'>stan_density_vec</span>, block <span class='op'>=</span> <span class='st'>"functions"</span><span class='op'>)</span>
+
+<span class='co'># fit the model</span>
+<span class='va'>fit_vec</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>|</span> <span class='fu'>vint</span><span class='op'>(</span><span class='va'>ntrials</span><span class='op'>)</span> <span class='op'>~</span> <span class='va'>z</span>, data <span class='op'>=</span> <span class='va'>dat</span>, 
+           family <span class='op'>=</span> <span class='va'>beta_binomial2_vec</span>, 
+           stanvars <span class='op'>=</span> <span class='va'>stanvars_vec</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit_vec</span><span class='op'>)</span>
 <span class='op'>}</span>
 
 </div></pre>

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Posterior predictive samples averaged across models — pp_average.brmsfit • brms</title>
+<title>Posterior predictive draws averaged across models — pp_average.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,8 @@
 
 
 
-<meta property="og:title" content="Posterior predictive samples averaged across models — pp_average.brmsfit" />
-<meta property="og:description" content="Compute posterior predictive samples averaged across models.
+<meta property="og:title" content="Posterior predictive draws averaged across models — pp_average.brmsfit" />
+<meta property="og:description" content="Compute posterior predictive draws averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods." />
@@ -83,7 +83,7 @@ marginal likelihoods." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -164,13 +164,13 @@ marginal likelihoods." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Posterior predictive samples averaged across models</h1>
+    <h1>Posterior predictive draws averaged across models</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/model_weights.R'><code>R/model_weights.R</code></a></small>
     <div class="hidden name"><code>pp_average.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Compute posterior predictive samples averaged across models.
+    <p>Compute posterior predictive draws averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.</p>
@@ -182,6 +182,7 @@ marginal likelihoods.</p>
   <span class='va'>...</span>,
   weights <span class='op'>=</span> <span class='st'>"stacking"</span>,
   method <span class='op'>=</span> <span class='st'>"posterior_predict"</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
   nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
   summary <span class='op'>=</span> <span class='cn'>TRUE</span>,
   probs <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.025</span>, <span class='fl'>0.975</span><span class='op'>)</span>,
@@ -224,12 +225,16 @@ pre-specified weights.</p></td>
     <tr>
       <th>method</th>
       <td><p>Method used to obtain predictions to average over. Should be
-one of <code>"posterior_predict"</code> (default), <code>"pp_expect"</code>, or
-<code>"predictive_error"</code>.</p></td>
+one of <code>"posterior_predict"</code> (default), <code>"posterior_epred"</code>,
+<code>"posterior_linpred"</code> or <code>"predictive_error"</code>.</p></td>
+    </tr>
+    <tr>
+      <th>ndraws</th>
+      <td><p>Total number of posterior draws to use.</p></td>
     </tr>
     <tr>
       <th>nsamples</th>
-      <td><p>Total number of posterior samples to use.</p></td>
+      <td><p>Deprecated alias of <code>ndraws</code>.</p></td>
     </tr>
     <tr>
       <th>summary</th>

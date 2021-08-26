@@ -81,7 +81,7 @@ models fitted with brms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -180,8 +180,8 @@ models fitted with <span class="pkg">brms</span>.</p>
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
   dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
   nlpar <span class='op'>=</span> <span class='cn'>NULL</span>,
-  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   <span class='va'>...</span>
 <span class='op'>)</span>
 
@@ -222,15 +222,15 @@ If specified, expected predictions of this parameters are returned.</p></td>
 If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -241,7 +241,7 @@ If <code>NULL</code> (the default), all samples are used.</p></td>
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>An S x N matrix, where S is the number of
-  posterior samples and N is the number of observations.</p>
+  posterior draws and N is the number of observations.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>

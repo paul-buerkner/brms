@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -171,7 +171,7 @@
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>stancode</span><span class='op'>(</span><span class='va'>object</span>, version <span class='op'>=</span> <span class='cn'>TRUE</span>, <span class='va'>...</span><span class='op'>)</span>
+<span class='fu'>stancode</span><span class='op'>(</span><span class='va'>object</span>, version <span class='op'>=</span> <span class='cn'>TRUE</span>, regenerate <span class='op'>=</span> <span class='cn'>NULL</span>, threads <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='fu'>stancode</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
@@ -189,8 +189,21 @@ the <span class="pkg">brms</span> version number should be included.
 Defaults to <code>TRUE</code>.</p></td>
     </tr>
     <tr>
+      <th>regenerate</th>
+      <td><p>Logical; indicates if the Stan code should
+be regenerated with the current <span class="pkg">brms</span> version.
+By default, <code>regenerate</code> will be <code>FALSE</code> unless required
+to be <code>TRUE</code> by other arguments.</p></td>
+    </tr>
+    <tr>
+      <th>threads</th>
+      <td><p>Controls whether the Stan code should be threaded.
+See <code><a href='threading.html'>threading</a></code> for details.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
-      <td><p>Currently ignored.</p></td>
+      <td><p>Further arguments passed to <code><a href='make_stancode.html'>make_stancode</a></code> if the
+Stan code is regenerated.</p></td>
     </tr>
     </table>
 

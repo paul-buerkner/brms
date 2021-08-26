@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -122,7 +122,7 @@
       <h1 data-toc-skip>Estimating Monotonic Effects with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2021-03-14</h4>
+            <h4 class="date">2021-08-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_monotonic.Rmd"><code>vignettes/brms_monotonic.Rmd</code></a></small>
       <div class="hidden name"><code>brms_monotonic.Rmd</code></div>
@@ -159,29 +159,29 @@
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) 
    Data: dat (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    29.16      1.75    25.77    32.63 1.00     2897     2302
-moincome     15.34      0.76    13.84    16.82 1.00     2846     2546
+Intercept    27.47      1.44    24.72    30.28 1.00     2367     2537
+moincome     15.43      0.61    14.22    16.61 1.00     2279     2295
 
 Simplex Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.69      0.04     0.60     0.77 1.00     3659     2579
-moincome1[2]     0.20      0.05     0.10     0.29 1.00     4015     2645
-moincome1[3]     0.12      0.04     0.04     0.20 1.00     3385     1829
+moincome1[1]     0.70      0.03     0.63     0.77 1.00     3143     2502
+moincome1[2]     0.27      0.04     0.19     0.34 1.00     3531     3188
+moincome1[3]     0.03      0.03     0.00     0.10 1.00     2392     1550
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.84      0.58     6.80     9.09 1.00     3296     2541
+sigma     6.90      0.51     5.98     8.03 1.00     2990     1968
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit1</span>, pars <span class="op">=</span> <span class="st">"simo"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit1</span>, variable <span class="op">=</span> <span class="st">"simo"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span><span class="op">)</span></code></pre></div>
@@ -197,19 +197,19 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   Links: mu = identity; sigma = identity 
 Formula: ls ~ income_num 
    Data: dat (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     24.22      2.77    18.60    29.61 1.00     3518     2740
-income_num    14.02      0.98    12.10    16.03 1.00     3453     2801
+Intercept     22.47      2.63    17.31    27.83 1.00     3823     2927
+income_num    14.34      0.96    12.47    16.22 1.00     3788     2962
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma    10.47      0.75     9.12    12.04 1.00     3499     2935
+sigma    10.75      0.77     9.38    12.44 1.00     3794     2924
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>or (b) Assume <code>income</code> to be an unordered factor:</p>
@@ -222,21 +222,21 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   Links: mu = identity; sigma = identity 
 Formula: ls ~ income 
    Data: dat (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    28.78      1.76    25.34    32.25 1.00     2521     2609
-income2      31.96      2.30    27.54    36.61 1.00     2787     3072
-income3      40.97      2.36    36.33    45.62 1.00     2771     2997
-income4      46.55      2.33    42.06    51.03 1.00     2788     2771
+Intercept    27.27      1.46    24.50    30.19 1.00     2939     2575
+income2      32.62      1.97    28.64    36.46 1.00     3196     2984
+income3      45.85      2.14    41.58    50.06 1.00     3156     3040
+income4      45.87      1.96    41.90    49.77 1.00     3042     2970
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.85      0.58     6.82     9.12 1.00     4205     2777
+sigma     6.90      0.51     5.99     7.99 1.00     3818     2756
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>We can easily compare the fit of the three models using leave-one-out cross-validation.</p>
@@ -247,9 +247,9 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -349.8  7.8
-p_loo         4.9  0.9
-looic       699.6 15.6
+elpd_loo   -336.7  6.6
+p_loo         4.3  0.6
+looic       673.5 13.2
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -261,9 +261,9 @@ Output of model 'fit2':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -377.7  6.4
-p_loo         2.9  0.5
-looic       755.3 12.8
+elpd_loo   -380.5  5.9
+p_loo         2.6  0.4
+looic       761.0 11.8
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -275,9 +275,9 @@ Output of model 'fit3':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -350.0  7.8
-p_loo         5.1  0.9
-looic       699.9 15.6
+elpd_loo   -337.0  6.6
+p_loo         4.9  0.7
+looic       674.0 13.2
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -287,8 +287,8 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
      elpd_diff se_diff
 fit1   0.0       0.0  
-fit3  -0.1       0.2  
-fit2 -27.9       6.0  </code></pre>
+fit3  -0.3       0.8  
+fit2 -43.8       6.1  </code></pre>
 <p>The monotonic model fits better than the continuous model, which is not surprising given that the relationship between <code>income</code> and <code>ls</code> is non-linear. The monotonic and the unordered factor model have almost identical fit in this example, but this may not be the case for other data sets.</p>
 </div>
 <div id="setting-prior-distributions" class="section level2">
@@ -306,30 +306,30 @@ fit2 -27.9       6.0  </code></pre>
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) 
    Data: dat (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    29.13      1.79    25.62    32.56 1.00     2724     2657
-moincome     15.34      0.77    13.87    16.90 1.00     2492     2327
+Intercept    27.42      1.46    24.55    30.21 1.00     2634     2514
+moincome     15.44      0.61    14.21    16.64 1.00     2602     2250
 
 Simplex Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.69      0.04     0.61     0.77 1.00     2911     2454
-moincome1[2]     0.20      0.05     0.10     0.29 1.00     3449     2142
-moincome1[3]     0.12      0.04     0.02     0.20 1.00     2727     1314
+moincome1[1]     0.70      0.03     0.64     0.76 1.00     2801     1977
+moincome1[2]     0.26      0.04     0.19     0.34 1.00     3163     2849
+moincome1[3]     0.03      0.03     0.00     0.10 1.00     2795     1837
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.84      0.58     6.82     9.08 1.00     3248     2469
+sigma     6.91      0.50     6.01     7.99 1.00     2981     2422
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>We have used <code>sample_prior = TRUE</code> to also obtain samples from the prior distribution of <code>simo_moincome1</code> so that we can visualized it.</p>
+<p>We have used <code>sample_prior = TRUE</code> to also obtain draws from the prior distribution of <code>simo_moincome1</code> so that we can visualized it.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit4</span>, pars <span class="op">=</span> <span class="st">"prior_simo"</span>, N <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit4</span>, variable <span class="op">=</span> <span class="st">"prior_simo"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span>, N <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-11-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>As is visible in the plots, <code>simo_moincome1[1]</code> was a-priori on average twice as high as <code>simo_moincome1[2]</code> and <code>simo_moincome1[3]</code> as a result of setting <span class="math inline">\(\alpha_1\)</span> to 2.</p>
 </div>
@@ -348,30 +348,30 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) * age 
    Data: dat (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       32.06      4.67    22.84    41.26 1.00     1570     1876
-age             -0.08      0.11    -0.30     0.15 1.00     1480     1889
-moincome        14.47      2.20    10.17    18.86 1.00     1127     1623
-moincome:age     0.02      0.05    -0.09     0.13 1.00     1091     1841
+Intercept       26.41      4.70    17.56    36.52 1.00     1188     1836
+age              0.03      0.11    -0.21     0.24 1.00     1094     1633
+moincome        14.74      2.15    10.31    18.82 1.00      844     1464
+moincome:age     0.02      0.05    -0.09     0.13 1.00      811     1487
 
 Simplex Parameters: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.71      0.07     0.58     0.86 1.00     1501     1431
-moincome1[2]         0.18      0.06     0.05     0.30 1.00     2161     1600
-moincome1[3]         0.11      0.05     0.01     0.22 1.00     2190     1612
-moincome:age1[1]     0.35      0.23     0.01     0.82 1.00     2249     1622
-moincome:age1[2]     0.33      0.23     0.01     0.82 1.00     1981     1552
-moincome:age1[3]     0.32      0.23     0.01     0.82 1.00     2750     2293
+moincome1[1]         0.71      0.06     0.60     0.87 1.00     1175      921
+moincome1[2]         0.25      0.06     0.10     0.35 1.00     1345      930
+moincome1[3]         0.04      0.03     0.00     0.12 1.00     2319     1470
+moincome:age1[1]     0.38      0.25     0.01     0.87 1.00     2048     1774
+moincome:age1[2]     0.36      0.24     0.02     0.85 1.00     2132     2273
+moincome:age1[3]     0.27      0.22     0.01     0.81 1.00     1923     2486
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.91      0.59     6.87     9.12 1.00     3401     2782
+sigma     6.96      0.51     6.04     8.03 1.00     3257     2856
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
@@ -395,37 +395,37 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) * age + (mo(income) | city) 
    Data: dat (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Group-Level Effects: 
 ~city (Number of levels: 10) 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)              14.66      4.23     8.69    24.92 1.00     1462     1939
-sd(moincome)                1.17      0.97     0.04     3.57 1.00     1676     2103
-cor(Intercept,moincome)    -0.11      0.52    -0.93     0.90 1.00     3741     2093
+sd(Intercept)               6.17      2.70     1.64    12.47 1.00     1123      932
+sd(moincome)                1.63      1.06     0.10     3.98 1.00      929     1151
+cor(Intercept,moincome)    -0.43      0.47    -0.97     0.79 1.00     2230     2291
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       37.06      7.13    23.23    51.16 1.00     1606     2289
-age             -0.13      0.13    -0.39     0.14 1.00     2517     2619
-moincome        13.08      2.33     8.43    17.96 1.00     2167     2631
-moincome:age     0.05      0.06    -0.07     0.16 1.00     2033     2476
+Intercept       26.57      5.23    16.29    37.02 1.00     2112     2501
+age              0.05      0.12    -0.18     0.28 1.00     2050     2354
+moincome        15.16      2.34    10.54    19.85 1.00     1733     2101
+moincome:age     0.00      0.06    -0.11     0.12 1.00     1640     1467
 
 Simplex Parameters: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.74      0.08     0.58     0.91 1.00     2663     2054
-moincome1[2]         0.16      0.07     0.02     0.29 1.00     3056     2209
-moincome1[3]         0.11      0.06     0.01     0.23 1.00     3284     2324
-moincome:age1[1]     0.36      0.23     0.01     0.83 1.00     4263     2187
-moincome:age1[2]     0.33      0.22     0.01     0.82 1.00     4378     2107
-moincome:age1[3]     0.31      0.21     0.01     0.80 1.00     4120     2581
+moincome1[1]         0.70      0.07     0.59     0.87 1.00     2009     1272
+moincome1[2]         0.25      0.06     0.09     0.36 1.00     2283     1332
+moincome1[3]         0.05      0.03     0.00     0.13 1.00     3222     1905
+moincome:age1[1]     0.37      0.24     0.02     0.84 1.00     3671     2554
+moincome:age1[2]     0.35      0.24     0.02     0.86 1.00     3046     3322
+moincome:age1[3]     0.28      0.22     0.01     0.80 1.00     3472     2763
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.92      0.61     6.79     9.20 1.00     4585     2954
+sigma     6.99      0.58     5.95     8.20 1.00     2225     3102
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>reveals that the effect of <code>income</code> varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed <code>income</code> to have the same effect across cities.</p>

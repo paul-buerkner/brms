@@ -48,7 +48,7 @@ articles:
     desc: >
        These vignettes demonstrate how to use various features of the **brms** package.     
     contents:
-      - brms_custom_families
+      - brms_customfamilies
       - brms_distreg
       - brms_families
       - brms_missings

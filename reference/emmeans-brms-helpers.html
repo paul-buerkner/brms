@@ -83,7 +83,7 @@ of the emmeans package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -176,7 +176,16 @@ they will be called automatically by the <code>emmeans</code> function
 of the <span class="pkg">emmeans</span> package.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>recover_data.brmsfit</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>data</span>, resp <span class='op'>=</span> <span class='cn'>NULL</span>, dpar <span class='op'>=</span> <span class='cn'>NULL</span>, nlpar <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>...</span><span class='op'>)</span>
+    <pre class="usage"><span class='fu'>recover_data.brmsfit</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  <span class='va'>data</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
+  nlpar <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re_formula <span class='op'>=</span> <span class='cn'>NA</span>,
+  epred <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
 <span class='fu'>emm_basis.brmsfit</span><span class='op'>(</span>
   <span class='va'>object</span>,
@@ -187,6 +196,8 @@ of the <span class="pkg">emmeans</span> package.</p>
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
   dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
   nlpar <span class='op'>=</span> <span class='cn'>NULL</span>,
+  re_formula <span class='op'>=</span> <span class='cn'>NA</span>,
+  epred <span class='op'>=</span> <span class='cn'>FALSE</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
@@ -217,6 +228,19 @@ If specified, expected predictions of this parameters are returned.</p></td>
 If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
+      <th>re_formula</th>
+      <td><p>Optional formula containing group-level effects to be
+considered in the prediction. If <code>NULL</code>, include all group-level
+effects; if <code>NA</code> (default), include no group-level effects.</p></td>
+    </tr>
+    <tr>
+      <th>epred</th>
+      <td><p>Logical. If <code>TRUE</code> compute predictions of
+the posterior predictive distribution's mean
+(see <code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code>) while ignoring
+arguments <code>dpar</code> and <code>nlpar</code>. Defaults to <code>FALSE</code>.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
       <td><p>Additional arguments passed to <span class="pkg">emmeans</span>.</p></td>
     </tr>
@@ -224,9 +248,12 @@ If specified, expected predictions of this parameters are returned.</p></td>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>In addition to the usual choices for <code>dpar</code>, the special value
-<code>dpar = "mean"</code> requests that we use the expected values of the posterior 
-predictive distribution, obtained via <code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code>.</p>
+    <p>In order to ensure compatibility of most <span class="pkg">brms</span> models with
+<span class="pkg">emmeans</span>, predictions are not generated 'manually' via a design matrix
+and coefficient vector, but rather via <code><a href='posterior_linpred.brmsfit.html'>posterior_linpred.brmsfit</a></code>. 
+This appears to generally work well, but note that it produces an `.@linfct`
+slot that contains the computed predictions as columns instead of the
+coefficients.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
@@ -240,7 +267,8 @@ predictive distribution, obtained via <code><a href='posterior_epred.brmsfit.htm
 <span class='va'>em</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/emmeans/man/emmeans.html'>emmeans</a></span><span class='op'>(</span><span class='va'>rg</span>, <span class='st'>"disease"</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>em</span>, point.est <span class='op'>=</span> <span class='va'>mean</span><span class='op'>)</span>
 
-<span class='va'>epred</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/emmeans/man/emmeans.html'>emmeans</a></span><span class='op'>(</span><span class='va'>fit</span>, <span class='st'>"disease"</span>, dpar <span class='op'>=</span> <span class='st'>"mean"</span><span class='op'>)</span>
+<span class='co'># obtain estimates for the posterior predictive distribution's mean</span>
+<span class='va'>epred</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/emmeans/man/emmeans.html'>emmeans</a></span><span class='op'>(</span><span class='va'>fit</span>, <span class='st'>"disease"</span>, epred <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>epred</span>, point.est <span class='op'>=</span> <span class='va'>mean</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>

@@ -82,7 +82,7 @@ known measurement error." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -192,6 +192,8 @@ known measurement error.</p>
 
 <span class='fu'>resp_mi</span><span class='op'>(</span>sdy <span class='op'>=</span> <span class='cn'>NA</span><span class='op'>)</span>
 
+<span class='fu'>resp_index</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+
 <span class='fu'>resp_rate</span><span class='op'>(</span><span class='va'>denom</span><span class='op'>)</span>
 
 <span class='fu'>resp_subset</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
@@ -214,7 +216,8 @@ positive numeric values. <code>resp_trials</code>, <code>resp_thres</code>, and
 <code>FALSE</code> and <code>TRUE</code>. <code>resp_cens</code> requires <code>'left'</code>,
 <code>'none'</code>, <code>'right'</code>, and <code>'interval'</code> (or equivalently
 <code>-1</code>, <code>0</code>, <code>1</code>, and <code>2</code>) to indicate left, no, right,
-or interval censoring.</p></td>
+or interval censoring. <code>resp_index</code> does not make any requirements
+other than the value being unique for each observation.</p></td>
     </tr>
     <tr>
       <th>sigma</th>
@@ -264,7 +267,9 @@ the denominator values from which the response rates are computed.</p></td>
     <tr>
       <th>...</th>
       <td><p>For <code>resp_vreal</code>, vectors of real values. 
-For <code>resp_vint</code>, vectors of integer values.</p></td>
+For <code>resp_vint</code>, vectors of integer values. In Stan,
+these variables will be named <code>vreal1</code>, <code>vreal2</code>, ...,
+and <code>vint1</code>, <code>vint2</code>, ..., respectively.</p></td>
     </tr>
     </table>
 

@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -251,18 +251,18 @@ interface using the <code><a href='gr.html'>gr</a></code> and related functions.
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from priors should be drawn
-additionally to the posterior samples. Options are <code>"no"</code> (the
-default), <code>"yes"</code>, and <code>"only"</code>. Among others, these samples can
+      <td><p>Indicate if draws from priors should be drawn
+additionally to the posterior draws. Options are <code>"no"</code> (the
+default), <code>"yes"</code>, and <code>"only"</code>. Among others, these draws can
 be used to calculate Bayes factors for point hypotheses via
 <code><a href='hypothesis.brmsfit.html'>hypothesis</a></code>. Please note that improper priors are not sampled,
 including the default improper priors used by <code>brm</code>. See
 <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default
+that prior draws for the overall intercept are not obtained by default
 for technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior
-samples for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>,
-samples are drawn solely from the priors ignoring the likelihood, which
-allows among others to generate samples from the prior predictive
+draws for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>,
+draws are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate draws from the prior predictive
 distribution. In this case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
@@ -322,7 +322,7 @@ for basis construction of smoothing terms. See
 #&gt;  $ M_1       : int 1
 #&gt;  $ NC_1      : int 0
 #&gt;  $ prior_only: int 0
-#&gt;  - attr(*, "class")= chr "standata"</div><div class='input'>
+#&gt;  - attr(*, "class")= chr [1:2] "standata" "list"</div><div class='input'>
 <span class='va'>sdata2</span> <span class='op'>&lt;-</span> <span class='fu'>make_standata</span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span>,
                         data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='st'>"poisson"</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/str.html'>str</a></span><span class='op'>(</span><span class='va'>sdata2</span><span class='op'>)</span>
@@ -348,7 +348,7 @@ for basis construction of smoothing terms. See
 #&gt;  $ M_1       : int 1
 #&gt;  $ NC_1      : int 0
 #&gt;  $ prior_only: int 0
-#&gt;  - attr(*, "class")= chr "standata"</div><div class='input'>         
+#&gt;  - attr(*, "class")= chr [1:2] "standata" "list"</div><div class='input'>         
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

@@ -81,7 +81,7 @@ fitted with brms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -181,8 +181,10 @@ fitted with <span class="pkg">brms</span>.</p>
   spaghetti <span class='op'>=</span> <span class='cn'>FALSE</span>,
   resolution <span class='op'>=</span> <span class='fl'>100</span>,
   too_far <span class='op'>=</span> <span class='fl'>0</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
   probs <span class='op'>=</span> <span class='cn'>NULL</span>,
   <span class='va'>...</span>
 <span class='op'>)</span>
@@ -226,7 +228,7 @@ to be covered by the uncertainty intervals. The default is 0.95.</p></td>
       <td><p>Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If <code>TRUE</code>, it is recommended 
-to set argument <code>nsamples</code> to a relatively small value 
+to set argument <code>ndraws</code> to a relatively small value 
 (e.g., <code>100</code>) in order to reduce computation time.</p></td>
     </tr>
     <tr>
@@ -249,17 +251,25 @@ from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying
-the posterior samples to be used. 
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many 
+posterior draws should be used. 
+If <code>NULL</code> (the default) all draws are used.
+Ignored if <code>draw_ids</code> is not <code>NULL</code>.</p></td>
+    </tr>
+    <tr>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying
+the posterior draws to be used. 
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>nsamples</th>
-      <td><p>Positive integer indicating how many 
-posterior samples should be used. 
-If <code>NULL</code> (the default) all samples are used.
-Ignored if <code>subset</code> is not <code>NULL</code>.</p></td>
+      <td><p>Deprecated alias of <code>ndraws</code>.</p></td>
+    </tr>
+    <tr>
+      <th>subset</th>
+      <td><p>Deprecated alias of <code>draw_ids</code>.</p></td>
     </tr>
     <tr>
       <th>probs</th>

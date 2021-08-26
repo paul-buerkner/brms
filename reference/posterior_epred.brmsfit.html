@@ -47,14 +47,14 @@
 
 
 <meta property="og:title" content="Expected Values of the Posterior Predictive Distribution — posterior_epred.brmsfit" />
-<meta property="og:description" content="Compute posterior samples of the expected value/mean of the posterior
+<meta property="og:description" content="Compute posterior draws of the expected value/mean of the posterior
 predictive distribution. Can be performed for the data used to fit the model
 (posterior predictive checks) or for new data. By definition, these
 predictions have smaller variance than the posterior predictions performed by
 the posterior_predict.brmsfit method. This is because only the
-uncertainty in the mean is incorporated in the samples computed by
+uncertainty in the mean is incorporated in the draws computed by
 posterior_epred while any residual error is ignored. However, the
-estimated means of both methods averaged across samples should be very
+estimated means of both methods averaged across draws should be very
 similar." />
 <meta property="og:image" content="/logo.png" />
 
@@ -88,7 +88,7 @@ similar." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -175,14 +175,14 @@ similar." />
     </div>
 
     <div class="ref-description">
-    <p>Compute posterior samples of the expected value/mean of the posterior
+    <p>Compute posterior draws of the expected value/mean of the posterior
 predictive distribution. Can be performed for the data used to fit the model
 (posterior predictive checks) or for new data. By definition, these
 predictions have smaller variance than the posterior predictions performed by
 the <code><a href='posterior_predict.brmsfit.html'>posterior_predict.brmsfit</a></code> method. This is because only the
-uncertainty in the mean is incorporated in the samples computed by
+uncertainty in the mean is incorporated in the draws computed by
 <code>posterior_epred</code> while any residual error is ignored. However, the
-estimated means of both methods averaged across samples should be very
+estimated means of both methods averaged across draws should be very
 similar.</p>
     </div>
 
@@ -195,8 +195,8 @@ similar.</p>
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
   dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
   nlpar <span class='op'>=</span> <span class='cn'>NULL</span>,
-  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   sort <span class='op'>=</span> <span class='cn'>FALSE</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
@@ -242,15 +242,15 @@ If specified, expected predictions of this parameters are returned.</p></td>
 If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>sort</th>
@@ -271,7 +271,7 @@ that control several aspects of data validation and prediction.</p></td>
     <p>An <code>array</code> of predicted <em>mean</em> response values. For
   categorical and ordinal models, the output is an S x N x C array.
   Otherwise, the output is an S x N matrix, where S is the number of
-  posterior samples, N is the number of observations, and C is the number of
+  posterior draws, N is the number of observations, and C is the number of
   categories. In multivariate models, an additional dimension is added to the
   output which indexes along the different response variables.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>

@@ -81,7 +81,7 @@ implemented in the bayesplot package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -177,8 +177,9 @@ implemented in the <span class="pkg">bayesplot</span> package.</p>
   <span class='va'>object</span>,
   pars <span class='op'>=</span> <span class='cn'>NA</span>,
   type <span class='op'>=</span> <span class='st'>"intervals"</span>,
+  variable <span class='op'>=</span> <span class='cn'>NULL</span>,
+  regex <span class='op'>=</span> <span class='cn'>FALSE</span>,
   fixed <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  exact_match <span class='op'>=</span> <span class='cn'>FALSE</span>,
   <span class='va'>...</span>
 <span class='op'>)</span>
 
@@ -193,10 +194,9 @@ implemented in the <span class="pkg">bayesplot</span> package.</p>
     </tr>
     <tr>
       <th>pars</th>
-      <td><p>Names of parameters to be plotted, 
-as given by a character vector or regular expressions. 
-By default, all parameters except for group-level and 
-smooth effects are plotted. May be ignored for some plots.</p></td>
+      <td><p>Deprecated alias of <code>variable</code>.
+Names of the parameters to plot, as given by a
+character vector or a regular expression.</p></td>
     </tr>
     <tr>
       <th>type</th>
@@ -212,14 +212,22 @@ For an overview on the various plot types see
 <code><a href='https://mc-stan.org/bayesplot/reference/MCMC-overview.html'>MCMC-overview</a></code>.</p></td>
     </tr>
     <tr>
-      <th>fixed</th>
-      <td><p>Indicates whether parameter names 
-should be matched exactly (<code>TRUE</code>) or treated as
-regular expressions (<code>FALSE</code>). Default is <code>FALSE</code>.</p></td>
+      <th>variable</th>
+      <td><p>Names of the variables (parameters) to plot, as given by a
+character vector or a regular expression (if <code>regex = TRUE</code>). By
+default, a hopefully not too large selection of variables is plotted.</p></td>
     </tr>
     <tr>
-      <th>exact_match</th>
-      <td><p>Deprecated alias of argument <code>fixed</code>.</p></td>
+      <th>regex</th>
+      <td><p>Logical; Indicates whether <code>variable</code> should
+be treated as regular expressions. Defaults to <code>FALSE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>fixed</th>
+      <td><p>(Deprecated) Indicates whether parameter names 
+should be matched exactly (<code>TRUE</code>) or treated as
+regular expressions (<code>FALSE</code>). Default is <code>FALSE</code>
+and only works with argument <code>pars</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -248,7 +256,7 @@ more details.</p></td>
 <span class='fu'>mcmc_plot</span><span class='op'>(</span><span class='va'>model</span><span class='op'>)</span>
 
 <span class='co'># only show population-level effects in the plots</span>
-<span class='fu'>mcmc_plot</span><span class='op'>(</span><span class='va'>model</span>, pars <span class='op'>=</span> <span class='st'>"^b_"</span><span class='op'>)</span>
+<span class='fu'>mcmc_plot</span><span class='op'>(</span><span class='va'>model</span>, variable <span class='op'>=</span> <span class='st'>"^b_"</span>, regex <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
 <span class='co'># show histograms of the posterior distributions</span>
 <span class='fu'>mcmc_plot</span><span class='op'>(</span><span class='va'>model</span>, type <span class='op'>=</span> <span class='st'>"hist"</span><span class='op'>)</span>

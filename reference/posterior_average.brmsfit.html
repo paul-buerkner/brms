@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Posterior samples of parameters averaged across models — posterior_average.brmsfit • brms</title>
+<title>Posterior draws of parameters averaged across models — posterior_average.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,8 @@
 
 
 
-<meta property="og:title" content="Posterior samples of parameters averaged across models — posterior_average.brmsfit" />
-<meta property="og:description" content="Extract posterior samples of parameters averaged across models.
+<meta property="og:title" content="Posterior draws of parameters averaged across models — posterior_average.brmsfit" />
+<meta property="og:description" content="Extract posterior draws of parameters averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods." />
@@ -83,7 +83,7 @@ marginal likelihoods." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -164,13 +164,13 @@ marginal likelihoods." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Posterior samples of parameters averaged across models</h1>
+    <h1>Posterior draws of parameters averaged across models</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/model_weights.R'><code>R/model_weights.R</code></a></small>
     <div class="hidden name"><code>posterior_average.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Extract posterior samples of parameters averaged across models.
+    <p>Extract posterior draws of parameters averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.</p>
@@ -180,8 +180,10 @@ marginal likelihoods.</p>
 <span class='fu'>posterior_average</span><span class='op'>(</span>
   <span class='va'>x</span>,
   <span class='va'>...</span>,
+  variable <span class='op'>=</span> <span class='cn'>NULL</span>,
   pars <span class='op'>=</span> <span class='cn'>NULL</span>,
   weights <span class='op'>=</span> <span class='st'>"stacking"</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
   nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
   missing <span class='op'>=</span> <span class='cn'>NULL</span>,
   model_names <span class='op'>=</span> <span class='cn'>NULL</span>,
@@ -206,10 +208,14 @@ In particular, see <code><a href='prepare_predictions.brmsfit.html'>prepare_pred
 supported arguments.</p></td>
     </tr>
     <tr>
+      <th>variable</th>
+      <td><p>Names of variables (parameters) for which to average across
+models. Only those variables can be averaged that appear in every model.
+Defaults to all overlapping variables.</p></td>
+    </tr>
+    <tr>
       <th>pars</th>
-      <td><p>Names of parameters for which to average across models.
-Only those parameters can be averaged that appear in every model.
-Defaults to all overlapping parameters.</p></td>
+      <td><p>Deprecated alias of <code>variable</code>.</p></td>
     </tr>
     <tr>
       <th>weights</th>
@@ -226,15 +232,19 @@ For some methods, <code>weights</code> may also be a numeric vector of
 pre-specified weights.</p></td>
     </tr>
     <tr>
+      <th>ndraws</th>
+      <td><p>Total number of posterior draws to use.</p></td>
+    </tr>
+    <tr>
       <th>nsamples</th>
-      <td><p>Total number of posterior samples to use.</p></td>
+      <td><p>Deprecated alias of <code>ndraws</code>.</p></td>
     </tr>
     <tr>
       <th>missing</th>
       <td><p>An optional numeric value or a named list of numeric values 
-to use if a model does not contain a parameter for which posterior samples 
+to use if a model does not contain a variable for which posterior draws
 should be averaged. Defaults to <code>NULL</code>, in which case only those
-parameters can be averaged that are present in all of the models.</p></td>
+variables can be averaged that are present in all of the models.</p></td>
     </tr>
     <tr>
       <th>model_names</th>
@@ -256,8 +266,7 @@ to make results reproducible.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A <code>data.frame</code> of posterior samples. Samples are rows
-  and parameters are columns.</p>
+    <p>A <code>data.frame</code> of posterior draws.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>Weights are computed with the <code><a href='model_weights.brmsfit.html'>model_weights</a></code> method.</p>

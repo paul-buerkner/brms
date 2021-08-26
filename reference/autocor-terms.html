@@ -86,7 +86,7 @@ autocorrelation terms, see cor_brms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -201,7 +201,7 @@ terms.</p>
     <pre class="examples"><div class='input'><span class='co'># specify autocor terms within the formula</span>
 <span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span> <span class='op'>+</span> <span class='fu'><a href='arma.html'>arma</a></span><span class='op'>(</span>p <span class='op'>=</span> <span class='fl'>1</span>, q <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='car.html'>car</a></span><span class='op'>(</span><span class='va'>M</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; y ~ x + arma(p = 1, q = 1) + car(M)
-#&gt; &lt;environment: 0x00000000295d9bd8&gt;</div><div class='input'>
+#&gt; &lt;environment: 0x0000000048121c30&gt;</div><div class='input'>
 <span class='co'># specify autocor terms in the 'autocor' argument</span>
 <span class='fu'><a href='brmsformula.html'>bf</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>x</span>, autocor <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='arma.html'>arma</a></span><span class='op'>(</span>p <span class='op'>=</span> <span class='fl'>1</span>, q <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'><a href='car.html'>car</a></span><span class='op'>(</span><span class='va'>M</span><span class='op'>)</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; y ~ x 

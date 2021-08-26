@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -122,7 +122,7 @@
       <h1 data-toc-skip>Estimating Non-Linear Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2021-03-14</h4>
+            <h4 class="date">2021-08-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_nonlinear.Rmd"><code>vignettes/brms_nonlinear.Rmd</code></a></small>
       <div class="hidden name"><code>brms_nonlinear.Rmd</code></div>
@@ -166,19 +166,19 @@ Formula: y ~ b1 * exp(b2 * x)
          b1 ~ 1
          b2 ~ 1
    Data: dat1 (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-b1_Intercept     1.94      0.12     1.71     2.17 1.00     1738     1923
-b2_Intercept     0.75      0.04     0.68     0.82 1.00     1727     1711
+b1_Intercept     2.24      0.11     2.03     2.46 1.00     1525     1872
+b2_Intercept     0.72      0.03     0.66     0.78 1.00     1414     1640
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     1.01      0.07     0.88     1.17 1.00     2019     2047
+sigma     0.98      0.07     0.86     1.13 1.01     2533     2108
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -197,19 +197,19 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   Links: mu = identity; sigma = identity 
 Formula: y ~ x 
    Data: dat1 (Number of observations: 100) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     2.68      0.15     2.40     2.96 1.00     3796     3114
-x             1.86      0.14     1.58     2.14 1.00     4290     2839
+Intercept     2.93      0.15     2.63     3.22 1.00     4140     2947
+x             1.93      0.15     1.63     2.22 1.00     4179     3049
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     1.49      0.11     1.30     1.71 1.00     3806     2967
+sigma     1.51      0.11     1.32     1.74 1.00     4105     3015
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>To investigate and compare model fit, we can apply graphical posterior predictive checks, which make use of the <strong>bayesplot</strong> package on the backend.</p>
@@ -227,13 +227,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -144.0  6.1
-p_loo         3.4  0.9
-looic       287.9 12.1
+elpd_loo   -140.5  6.1
+p_loo         2.9  0.9
+looic       280.9 12.2
 ------
-Monte Carlo SE of elpd_loo is 0.0.
+Monte Carlo SE of elpd_loo is 0.1.
 
-All Pareto k estimates are good (k &lt; 0.5).
+Pareto k diagnostic values:
+                         Count Pct.    Min. n_eff
+(-Inf, 0.5]   (good)     99    99.0%   716       
+ (0.5, 0.7]   (ok)        1     1.0%   386       
+   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+
+All Pareto k estimates are ok (k &lt; 0.7).
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
@@ -241,26 +248,24 @@ Output of model 'fit2':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -184.3 11.6
-p_loo         5.7  2.5
-looic       368.5 23.3
+elpd_loo   -188.0 16.9
+p_loo         8.8  5.2
+looic       376.0 33.9
 ------
-Monte Carlo SE of elpd_loo is 0.1.
+Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     99    99.0%   1510      
- (0.5, 0.7]   (ok)        1     1.0%   104       
-   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
-
-All Pareto k estimates are ok (k &lt; 0.7).
+(-Inf, 0.5]   (good)     98    98.0%   1463      
+ (0.5, 0.7]   (ok)        0     0.0%   &lt;NA&gt;      
+   (0.7, 1]   (bad)       1     1.0%   158       
+   (1, Inf)   (very bad)  1     1.0%   15        
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit1   0.0       0.0  
-fit2 -40.3      10.6  </code></pre>
+fit2 -47.6      16.0  </code></pre>
 <p>Since smaller <code>LOOIC</code> values indicate better model fit, it is immediately evident that the non-linear model fits the data better, which is of course not too surprising since we simulated the data from exactly that model.</p>
 </div>
 <div id="a-real-world-non-linear-model" class="section level2">
@@ -303,25 +308,25 @@ Formula: cum ~ ult * (1 - exp(-(dev/theta)^omega))
          omega ~ 1
          theta ~ 1
    Data: loss (Number of observations: 55) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Group-Level Effects: 
 ~AY (Number of levels: 10) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(ult_Intercept)   757.74    237.17   432.94  1343.83 1.00     1112     1869
+sd(ult_Intercept)   744.73    230.25   420.40  1314.08 1.00     1029     2006
 
 Population-Level Effects: 
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-ult_Intercept    5292.23    293.45  4708.31  5884.92 1.00     1179     1566
-omega_Intercept     1.34      0.05     1.24     1.43 1.00     2319     2261
-theta_Intercept    46.25      2.16    42.50    50.96 1.00     2256     1958
+ult_Intercept    5289.58    290.03  4730.35  5876.53 1.00     1192     1690
+omega_Intercept     1.33      0.05     1.24     1.44 1.00     2194     2124
+theta_Intercept    46.24      2.21    42.37    50.97 1.00     2143     2026
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma   139.84     15.70   113.13   175.11 1.00     2703     2489
+sigma   140.40     15.67   114.06   174.86 1.00     2801     2593
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
@@ -362,15 +367,15 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   Links: mu = logit 
 Formula: answer ~ ability 
    Data: dat_ir (Number of observations: 300) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     0.99      0.14     0.73     1.26 1.00     2748     2175
-ability       0.65      0.15     0.37     0.95 1.00     2702     2262
+Intercept     0.86      0.13     0.62     1.11 1.00     3630     3026
+ability       0.53      0.13     0.27     0.79 1.00     3085     2768
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
@@ -392,15 +397,15 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Formula: answer ~ 0.33 + 0.67 * inv_logit(eta) 
          eta ~ ability
    Data: dat_ir (Number of observations: 300) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-eta_Intercept     0.26      0.19    -0.12     0.61 1.00     2357     2150
-eta_ability       1.08      0.28     0.59     1.67 1.00     2384     1919
+eta_Intercept     0.13      0.18    -0.25     0.47 1.00     2774     2476
+eta_ability       0.88      0.24     0.45     1.39 1.00     2626     2376
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
@@ -414,9 +419,9 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 300 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -168.5  8.2
-p_loo         2.1  0.2
-looic       336.9 16.4
+elpd_loo   -178.4  7.2
+p_loo         1.8  0.1
+looic       356.9 14.3
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -428,9 +433,9 @@ Output of model 'fit_ir2':
 Computed from 4000 by 300 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -167.2  8.3
-p_loo         2.3  0.3
-looic       334.4 16.7
+elpd_loo   -177.6  7.3
+p_loo         2.2  0.2
+looic       355.3 14.6
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -440,7 +445,7 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
         elpd_diff se_diff
 fit_ir2  0.0       0.0   
-fit_ir1 -1.3       1.3   </code></pre>
+fit_ir1 -0.8       1.0   </code></pre>
 <p>shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don’t know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">fit_ir3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
@@ -461,15 +466,15 @@ Formula: answer ~ guess + (1 - guess) * inv_logit(eta)
          eta ~ 0 + ability
          guess ~ 1
    Data: dat_ir (Number of observations: 300) 
-Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup samples = 4000
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
 
 Population-Level Effects: 
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-eta_ability         1.23      0.29     0.70     1.83 1.00     3267     2137
-guess_Intercept     0.42      0.05     0.32     0.51 1.00     3058     2320
+eta_ability         0.95      0.26     0.46     1.48 1.00     2891     2640
+guess_Intercept     0.39      0.05     0.29     0.48 1.00     3334     3074
 
-Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">

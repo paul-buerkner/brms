@@ -82,7 +82,7 @@ GP terms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -299,19 +299,19 @@ but we are still working on providing better recommendations.</p></td>
 <span class='co'># fit a simple GP model</span>
 <span class='va'>fit1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>gp</span><span class='op'>(</span><span class='va'>x2</span><span class='op'>)</span>, <span class='va'>dat</span>, chains <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit1</span><span class='op'>)</span>
-<span class='va'>me1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit1</span>, nsamples <span class='op'>=</span> <span class='fl'>200</span>, spaghetti <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>me1</span> <span class='op'>&lt;-</span> <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit1</span>, ndraws <span class='op'>=</span> <span class='fl'>200</span>, spaghetti <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>me1</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
 <span class='co'># fit a more complicated GP model</span>
 <span class='va'>fit2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>gp</span><span class='op'>(</span><span class='va'>x0</span><span class='op'>)</span> <span class='op'>+</span> <span class='va'>x1</span> <span class='op'>+</span> <span class='fu'>gp</span><span class='op'>(</span><span class='va'>x2</span><span class='op'>)</span> <span class='op'>+</span> <span class='va'>x3</span>, <span class='va'>dat</span>, chains <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit2</span><span class='op'>)</span>
-<span class='va'>me2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit2</span>, nsamples <span class='op'>=</span> <span class='fl'>200</span>, spaghetti <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>me2</span> <span class='op'>&lt;-</span> <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit2</span>, ndraws <span class='op'>=</span> <span class='fl'>200</span>, spaghetti <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>me2</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
 <span class='co'># fit a multivariate GP model</span>
 <span class='va'>fit3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='fu'>gp</span><span class='op'>(</span><span class='va'>x1</span>, <span class='va'>x2</span><span class='op'>)</span>, <span class='va'>dat</span>, chains <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>fit3</span><span class='op'>)</span>
-<span class='va'>me3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit3</span>, nsamples <span class='op'>=</span> <span class='fl'>200</span>, spaghetti <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>me3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span><span class='op'>(</span><span class='va'>fit3</span>, ndraws <span class='op'>=</span> <span class='fl'>200</span>, spaghetti <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>me3</span>, ask <span class='op'>=</span> <span class='cn'>FALSE</span>, points <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 
 <span class='co'># compare model fit</span>

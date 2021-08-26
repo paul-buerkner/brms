@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -171,7 +171,7 @@
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>posterior_interval</span><span class='op'>(</span><span class='va'>object</span>, pars <span class='op'>=</span> <span class='cn'>NA</span>, prob <span class='op'>=</span> <span class='fl'>0.95</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+<span class='fu'>posterior_interval</span><span class='op'>(</span><span class='va'>object</span>, pars <span class='op'>=</span> <span class='cn'>NA</span>, variable <span class='op'>=</span> <span class='cn'>NULL</span>, prob <span class='op'>=</span> <span class='fl'>0.95</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -182,9 +182,14 @@
     </tr>
     <tr>
       <th>pars</th>
-      <td><p>Names of parameters for which posterior samples should be 
-returned, as given by a character vector or regular expressions. 
-By default, all posterior samples of all parameters are extracted.</p></td>
+      <td><p>Deprecated alias of <code>variable</code>. For reasons of backwards
+compatibility, <code>pars</code> is interpreted as a vector of regular
+expressions by default unless <code>fixed = TRUE</code> is specified.</p></td>
+    </tr>
+    <tr>
+      <th>variable</th>
+      <td><p>A character vector providing the variables to extract.
+By default, all variables are extracted.</p></td>
     </tr>
     <tr>
       <th>prob</th>
@@ -193,15 +198,14 @@ to be covered by the uncertainty intervals. The default is 0.95.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>More arguments passed to 
-<code><a href='posterior_samples.brmsfit.html'>as.matrix.brmsfit</a></code>.</p></td>
+      <td><p>More arguments passed to <code><a href='as.data.frame.brmsfit.html'>as.matrix.brmsfit</a></code>.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>A <code>matrix</code> with lower and upper interval bounds
-  as columns and as many rows as selected parameters.</p>
+  as columns and as many rows as selected variables.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>

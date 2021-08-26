@@ -84,7 +84,7 @@ package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -269,18 +269,18 @@ interface using the <code><a href='gr.html'>gr</a></code> and related functions.
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from priors should be drawn
-additionally to the posterior samples. Options are <code>"no"</code> (the
-default), <code>"yes"</code>, and <code>"only"</code>. Among others, these samples can
+      <td><p>Indicate if draws from priors should be drawn
+additionally to the posterior draws. Options are <code>"no"</code> (the
+default), <code>"yes"</code>, and <code>"only"</code>. Among others, these draws can
 be used to calculate Bayes factors for point hypotheses via
 <code><a href='hypothesis.brmsfit.html'>hypothesis</a></code>. Please note that improper priors are not sampled,
 including the default improper priors used by <code>brm</code>. See
 <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default
+that prior draws for the overall intercept are not obtained by default
 for technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior
-samples for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>,
-samples are drawn solely from the priors ignoring the likelihood, which
-allows among others to generate samples from the prior predictive
+draws for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>,
+draws are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate draws from the prior predictive
 distribution. In this case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
@@ -365,8 +365,11 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
     <tr>
       <th>file_refit</th>
       <td><p>Modifies when the fit stored via the <code>file</code> parameter
-is re-used. For <code>"never"</code> (default) the fit is always loaded if it
-exists and fitting is skipped. If set to <code>"on_change"</code>, brms will
+is re-used. Can be set globally for the current <span style="R">R</span> session via the
+<code>"brms.file_refit"</code> option (see <code><a href='https://rdrr.io/r/base/options.html'>options</a></code>). 
+For <code>"never"</code> (default) the fit is always loaded if it
+exists and fitting is skipped. For <code>"always"</code> the model is always
+refitted. If set to <code>"on_change"</code>, brms will
 refit the model if model, data or algorithm as passed to Stan differ from
 what is stored in the file. This also covers changes in priors,
 <code>sample_prior</code>, <code>stanvars</code>, covariance structure, etc. If you

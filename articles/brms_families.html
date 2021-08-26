@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -122,7 +122,7 @@
       <h1 data-toc-skip>Parameterization of Response Distributions in brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2021-03-14</h4>
+            <h4 class="date">2021-08-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_families.Rmd"><code>vignettes/brms_families.Rmd</code></a></small>
       <div class="hidden name"><code>brms_families.Rmd</code></div>
@@ -183,7 +183,7 @@ with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
 <h2 class="hasAnchor">
 <a href="#time-to-event-models" class="anchor"></a>Time-to-event models</h2>
 <p>With time-to-event models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[
-f(y) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
+f(y) = \frac{1}{\sqrt{2\pi}\sigma y} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
 \]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation on the log-scale. The density of the <strong>Gamma</strong> family is given by <span class="math display">\[
 f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1} 
 \exp\left(-\frac{\alpha y}{\mu}\right)

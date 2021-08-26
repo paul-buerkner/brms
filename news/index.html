@@ -79,7 +79,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -164,13 +164,91 @@
       <small>Source: <a href='https://github.com/paul-buerkner/brms/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
-    <div id="brms-2150" class="section level1">
-<h1 class="page-header" data-toc-text="2.15.0">
-<a href="#brms-2150" class="anchor"></a>brms 2.15.0<small> 2021-03-14 </small>
+    <div id="brms-2161" class="section level1">
+<h1 class="page-header" data-toc-text="2.16.1">
+<a href="#brms-2161" class="anchor"></a>brms 2.16.1++<small> 2021-08-23 </small>
+</h1>
+<div id="bug-fixes" class="section level3">
+<h3 class="hasAnchor">
+<a href="#bug-fixes" class="anchor"></a>Bug Fixes</h3>
+<ul>
+<li>Ensure that argument <code>overwrite</code> in <code>add_criterion</code> is working as intended thanks to Ruben Arslan. (<a href='https://github.com/paul-buerkner/brms/issues/1219'>#1219</a>)</li>
+</ul>
+</div>
+</div>
+    <div id="brms-2161-1" class="section level1">
+<h1 class="page-header" data-toc-text="2.16.1">
+<a href="#brms-2161-1" class="anchor"></a>brms 2.16.1<small> 2021-08-23 </small>
+</h1>
+<div id="bug-fixes-1" class="section level3">
+<h3 class="hasAnchor">
+<a href="#bug-fixes-1" class="anchor"></a>Bug Fixes</h3>
+<ul>
+<li>Fix a bug causing problems during post-processing of models fitted with older versions of brms and the <code>cmdstanr</code> backend thanks to Riccardo Fusaroli. (<a href='https://github.com/paul-buerkner/brms/issues/1218'>#1218</a>)</li>
+</ul>
+</div>
+</div>
+    <div id="brms-2160" class="section level1">
+<h1 class="page-header" data-toc-text="2.16.0">
+<a href="#brms-2160" class="anchor"></a>brms 2.16.0<small> 2021-08-18 </small>
 </h1>
 <div id="new-features" class="section level3">
 <h3 class="hasAnchor">
 <a href="#new-features" class="anchor"></a>New Features</h3>
+<ul>
+<li>Support several methods of the <code>posterior</code> package. (<a href='https://github.com/paul-buerkner/brms/issues/1204'>#1204</a>)</li>
+<li>Substantially extend compatibility of <code>brms</code> models with <code>emmeans</code> thanks to Mattan S. Ben-Shachar. (<a href='https://github.com/paul-buerkner/brms/issues/907'>#907</a>, <a href='https://github.com/paul-buerkner/brms/issues/1134'>#1134</a>)</li>
+<li>Combine missing value (<code>mi</code>) terms with <code>subset</code> addition terms. (<a href='https://github.com/paul-buerkner/brms/issues/1063'>#1063</a>)</li>
+<li>Expose function <code>get_dpar</code> for use in the post-processing of custom families thank to Martin Modrak. (<a href='https://github.com/paul-buerkner/brms/issues/1131'>#1131</a>)</li>
+<li>Support the <code>squareplus</code> link function in all families and distributional parameters that also allow for the <code>log</code> link function.</li>
+<li>Add argument <code>incl_thres</code> to <code><a href="../reference/posterior_linpred.brmsfit.html">posterior_linpred.brmsfit()</a></code> allowing to subtract the threshold-excluding linear predictor from the thresholds in case of an ordinal family. (<a href='https://github.com/paul-buerkner/brms/issues/1137'>#1137</a>)</li>
+<li>Add a <code>"mock"</code> backend option to facilitate testing thanks to Martin Modrak. (<a href='https://github.com/paul-buerkner/brms/issues/1116'>#1116</a>)</li>
+<li>Add option <code>file_refit = "always"</code> to always overwrite models stored via the <code>file</code> argument. (<a href='https://github.com/paul-buerkner/brms/issues/1151'>#1151</a>)</li>
+<li>Initial GPU support via OpenCL thanks to the help Rok Češnovar. (<a href='https://github.com/paul-buerkner/brms/issues/1166'>#1166</a>)</li>
+<li>Support argument <code>robust</code> in method <code>hypothesis</code>. (<a href='https://github.com/paul-buerkner/brms/issues/1170'>#1170</a>)</li>
+<li>Vectorize the Stan code of custom likelihoods via argument <code>loop</code> of <code>custom_family</code>. (<a href='https://github.com/paul-buerkner/brms/issues/1084'>#1084</a>)</li>
+<li>Experimentally allow category specific effects for ordinal <code>cumulative</code> models. (<a href='https://github.com/paul-buerkner/brms/issues/1060'>#1060</a>)</li>
+<li>Regenerate Stan code of an existing model via argument <code>regenerate</code> of method <code>stancode</code>.</li>
+<li>Support <code>expose_functions</code> for models fitted with the <code>cmdstanr</code> backend thanks to Sebastian Weber. (<a href='https://github.com/paul-buerkner/brms/issues/1176'>#1176</a>)</li>
+<li>Support <code>log_prob</code> and related functionality in models fitted with the <code>cmdstanr</code> backend via function <code>add_rstan_model</code>. (<a href='https://github.com/paul-buerkner/brms/issues/1184'>#1184</a>)</li>
+</ul>
+</div>
+<div id="other-changes" class="section level3">
+<h3 class="hasAnchor">
+<a href="#other-changes" class="anchor"></a>Other Changes</h3>
+<ul>
+<li>Remove use of <code>cbind</code> to express multivariate models after over two years of deprecation (please use <code>mvbind</code> instead).</li>
+<li>Method <code><a href="../reference/posterior_linpred.brmsfit.html">posterior_linpred(transform = TRUE)</a></code> is now equal to <code><a href="../reference/posterior_epred.brmsfit.html">posterior_epred(dpar = "mu")</a></code> and no longer deprecated.</li>
+<li>Refactor and extend internal post-processing functions for ordinal and categorical models thanks to Frank Weber. (<a href='https://github.com/paul-buerkner/brms/issues/1159'>#1159</a>)</li>
+<li>Ignore <code>NA</code> values in interval censored boundaries as long as they are unused. (<a href='https://github.com/paul-buerkner/brms/issues/1070'>#1070</a>)</li>
+<li>Take offsets into account when deriving default priors for overall intercept parameters. (<a href='https://github.com/paul-buerkner/brms/issues/923'>#923</a>)</li>
+<li>Soft deprecate measurement error (<code>me</code>) terms in favor of the more general and consistent missing value (<code>mi</code>) terms. (<a href='https://github.com/paul-buerkner/brms/issues/698'>#698</a>)</li>
+</ul>
+</div>
+<div id="bug-fixes-2" class="section level3">
+<h3 class="hasAnchor">
+<a href="#bug-fixes-2" class="anchor"></a>Bug Fixes</h3>
+<ul>
+<li>Fix an issue in the post-processing of non-normal ARMA models thanks to Thomas Buehrens. (<a href='https://github.com/paul-buerkner/brms/issues/1149'>#1149</a>)</li>
+<li>Fix an issue with default baseline hazard knots in <code>cox</code> models thanks to Malcolm Gillies. (<a href='https://github.com/paul-buerkner/brms/issues/1143'>#1143</a>)</li>
+<li>Fix a bug in non-linear models caused by accidental merging of operators in the non-linear formula thanks to Fernando Miguez. (<a href='https://github.com/paul-buerkner/brms/issues/1142'>#1142</a>)</li>
+<li>Correctly trigger a refit for <code>file_refit = "on_change"</code> if factor level names have changed thanks to Martin Modrak. (<a href='https://github.com/paul-buerkner/brms/issues/1128'>#1128</a>)</li>
+<li>Validate factors in <code>validate_newdata</code> even when they are simultaneously used as predictors and grouping variables thanks to Martin Modrak. (<a href='https://github.com/paul-buerkner/brms/issues/1141'>#1141</a>)</li>
+<li>Fix a bug in the Stan code generation of threaded mixture models with predicted mixture probabilities thanks to Riccardo Fusaroli. (<a href='https://github.com/paul-buerkner/brms/issues/1150'>#1150</a>)</li>
+<li>Remove duplicated Stan code related to the <code>horseshoe</code> prior thanks to Max Joseph. (<a href='https://github.com/paul-buerkner/brms/issues/1167'>#1167</a>)</li>
+<li>Fix an issue in the post-processing of non-looped non-linear parameters thanks to Sebastian Weber.</li>
+<li>Fix an issue in the Stan code of threaded non-looped non-linear models thanks to Sebastian Weber. (<a href='https://github.com/paul-buerkner/brms/issues/1175'>#1175</a>)</li>
+<li>Fix problems in the post-processing of multivariate meta-analytic models that could lead to incorrect handling of known standard errors.</li>
+</ul>
+</div>
+</div>
+    <div id="brms-2150" class="section level1">
+<h1 class="page-header" data-toc-text="2.15.0">
+<a href="#brms-2150" class="anchor"></a>brms 2.15.0<small> 2021-03-14 </small>
+</h1>
+<div id="new-features-1" class="section level3">
+<h3 class="hasAnchor">
+<a href="#new-features-1" class="anchor"></a>New Features</h3>
 <ul>
 <li>Turn off normalization in the Stan model via argument <code>normalize</code>. to increase sampling efficiency thanks to Andrew Johnson. (<a href='https://github.com/paul-buerkner/brms/issues/1017'>#1017</a>, <a href='https://github.com/paul-buerkner/brms/issues/1053'>#1053</a>)</li>
 <li>Enable <code>posterior_predict</code> for truncated continuous models even if the required CDF or quantile functions are unavailable.</li>
@@ -185,16 +263,16 @@
 <li>Allow <code>stanvars</code> to be used inside threaded likelihoods. (<a href='https://github.com/paul-buerkner/brms/issues/1111'>#1111</a>)</li>
 </ul>
 </div>
-<div id="other-changes" class="section level3">
+<div id="other-changes-1" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-1" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Improve numerical stability of ordinal sequential models (families <code>sratio</code> and <code>cratio</code>) thanks to Andrew Johnson. (<a href='https://github.com/paul-buerkner/brms/issues/1087'>#1087</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes" class="section level3">
+<div id="bug-fixes-3" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-3" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Allow fitting <code>multinomial</code> models with the <code>cmdstanr</code> backend thanks to Andrew Johnson. (<a href='https://github.com/paul-buerkner/brms/issues/1033'>#1033</a>)</li>
 <li>Allow user-defined Stan functions in threaded models. (<a href='https://github.com/paul-buerkner/brms/issues/1034'>#1034</a>)</li>
@@ -213,18 +291,18 @@
 <h1 class="page-header" data-toc-text="2.14.4">
 <a href="#brms-2144" class="anchor"></a>brms 2.14.4<small> 2020-11-03 </small>
 </h1>
-<div id="new-features-1" class="section level3">
+<div id="new-features-2" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-1" class="anchor"></a>New Features</h3>
+<a href="#new-features-2" class="anchor"></a>New Features</h3>
 <ul>
 <li>Support <code>projpred</code> version 2.0 for variable selection in generalized linear and additive multilevel models thanks to Alejandro Catalina.</li>
 <li>Support <code>by</code> variables in multi-membership terms.</li>
 <li>Use Bayesian bootstrap in <code>loo_R2</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-1" class="section level3">
+<div id="bug-fixes-4" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-1" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-4" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Allow non-linear terms in threaded models.</li>
 <li>Allow multi-membership terms in threaded models.</li>
@@ -239,9 +317,9 @@
 <h1 class="page-header" data-toc-text="2.14.0">
 <a href="#brms-2140" class="anchor"></a>brms 2.14.0<small> 2020-10-08 </small>
 </h1>
-<div id="new-features-2" class="section level3">
+<div id="new-features-3" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-2" class="anchor"></a>New Features</h3>
+<a href="#new-features-3" class="anchor"></a>New Features</h3>
 <ul>
 <li>Experimentally support within-chain parallelization via <code>reduce_sum</code> using argument <code>threads</code> in <code>brm</code> thanks to Sebastian Weber. (<a href='https://github.com/paul-buerkner/brms/issues/892'>#892</a>)</li>
 <li>Add algorithm <code>fixed_param</code> to sample from fixed parameter values. (<a href='https://github.com/paul-buerkner/brms/issues/973'>#973</a>)</li>
@@ -258,18 +336,18 @@
 <li>Allow to display grouping variables in <code>conditional_effects</code> using the <code>effects</code> argument. (<a href='https://github.com/paul-buerkner/brms/issues/1012'>#1012</a>)</li>
 </ul>
 </div>
-<div id="other-changes-1" class="section level3">
+<div id="other-changes-2" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-1" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-2" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Improve sampling efficiency for a lot of models by using Stan’s GLM-primitives even in non-GLM cases. (<a href='https://github.com/paul-buerkner/brms/issues/984'>#984</a>)</li>
 <li>Improve sampling efficiency of multilevel models with within-group covariances thanks to David Westergaard. (<a href='https://github.com/paul-buerkner/brms/issues/977'>#977</a>)</li>
 <li>Deprecate argument <code>probs</code> in the <code>conditional_effects</code> method in favor of argument <code>prob</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-2" class="section level3">
+<div id="bug-fixes-5" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-2" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-5" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix a problem in <code>pp_check</code> inducing wronger observation orders in time series models thanks to Fiona Seaton. (<a href='https://github.com/paul-buerkner/brms/issues/1007'>#1007</a>)</li>
 <li>Fix multiple problems with <code>loo_moment_match</code> that prevented it from working for some more complex models.</li>
@@ -280,24 +358,24 @@
 <h1 class="page-header" data-toc-text="2.13.5">
 <a href="#brms-2135" class="anchor"></a>brms 2.13.5<small> 2020-07-31 </small>
 </h1>
-<div id="new-features-3" class="section level3">
+<div id="new-features-4" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-3" class="anchor"></a>New Features</h3>
+<a href="#new-features-4" class="anchor"></a>New Features</h3>
 <ul>
 <li>Support the Cox proportional hazards model for time-to-event data via family <code>cox</code>. (<a href='https://github.com/paul-buerkner/brms/issues/230'>#230</a>, <a href='https://github.com/paul-buerkner/brms/issues/962'>#962</a>)</li>
 <li>Support method <code>loo_moment_match</code>, which can be used to update a <code>loo</code> object when Pareto k estimates are large.</li>
 </ul>
 </div>
-<div id="other-changes-2" class="section level3">
+<div id="other-changes-3" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-2" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-3" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Improve the prediction behavior in post-processing methods when sampling new levels of grouping factors via <code>sample_new_levels = "uncertainty"</code>. (<a href='https://github.com/paul-buerkner/brms/issues/956'>#956</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes-3" class="section level3">
+<div id="bug-fixes-6" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-3" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-6" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix minor problems with MKL on CRAN.</li>
 </ul>
@@ -307,25 +385,25 @@
 <h1 class="page-header" data-toc-text="2.13.3">
 <a href="#brms-2133" class="anchor"></a>brms 2.13.3<small> 2020-07-13 </small>
 </h1>
-<div id="new-features-4" class="section level3">
+<div id="new-features-5" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-4" class="anchor"></a>New Features</h3>
+<a href="#new-features-5" class="anchor"></a>New Features</h3>
 <ul>
 <li>Fix shape parameters across multiple monotonic terms via argument <code>id</code> in function <code>mo</code> to ensure conditionally monotonic effects. (<a href='https://github.com/paul-buerkner/brms/issues/924'>#924</a>)</li>
 <li>Support package <code>rtdists</code> as additional backend of <code>wiener</code> distribution functions thanks to the help of Henrik Singmann. (<a href='https://github.com/paul-buerkner/brms/issues/385'>#385</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes-4" class="section level3">
+<div id="bug-fixes-7" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-4" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-7" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix generated Stan Code of models with improper global priors and <code>constant</code> priors on some coefficients thanks to Frank Weber. (<a href='https://github.com/paul-buerkner/brms/issues/919'>#919</a>)</li>
 <li>Fix a bug in <code>conditional_effects</code> occurring for categorical models with matrix predictors thanks to Jamie Cranston. (<a href='https://github.com/paul-buerkner/brms/issues/933'>#933</a>)</li>
 </ul>
 </div>
-<div id="other-changes-3" class="section level3">
+<div id="other-changes-4" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-3" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-4" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Adjust behavior of the <code>rate</code> addition term so that it also affects the <code>shape</code> parameter in <code>negbinomial</code> models thanks to Edward Abraham. (<a href='https://github.com/paul-buerkner/brms/issues/915'>#915</a>)</li>
 <li>Adjust the default inverse-gamma prior on length-scale parameters of Gaussian processes to be less extreme in edge cases thanks to Topi Paananen.</li>
@@ -336,9 +414,9 @@
 <h1 class="page-header" data-toc-text="2.13.0">
 <a href="#brms-2130" class="anchor"></a>brms 2.13.0<small> 2020-05-27 </small>
 </h1>
-<div id="new-features-5" class="section level3">
+<div id="new-features-6" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-5" class="anchor"></a>New Features</h3>
+<a href="#new-features-6" class="anchor"></a>New Features</h3>
 <ul>
 <li>Constrain ordinal thresholds to sum to zero via argument <code>threshold</code> in ordinal family functions thanks to the help of Marta Kołczyńska.</li>
 <li>Support <code>posterior_linpred</code> as method in <code>conditional_effects</code>.</li>
@@ -351,9 +429,9 @@
 <li>Control the within-block position of Stan code added via <code>stanvar</code> using the <code>position</code> argument.</li>
 </ul>
 </div>
-<div id="bug-fixes-5" class="section level3">
+<div id="bug-fixes-8" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-5" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-8" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix issue in Stan code of models with multiple <code>me</code> terms thanks to Chris Chatham. (<a href='https://github.com/paul-buerkner/brms/issues/855'>#855</a>, <a href='https://github.com/paul-buerkner/brms/issues/856'>#856</a>)</li>
 <li>Fix scaling problems in the estimation of ordinal models with multiple threshold vectors thanks to Marta Kołczyńska and Rok Češnovar.</li>
@@ -363,9 +441,9 @@
 <li>Fix Stan code of multivariate models with custom families and data variables passed to the likelihood thanks to Raoul Wolf. (<a href='https://github.com/paul-buerkner/brms/issues/906'>#906</a>)</li>
 </ul>
 </div>
-<div id="other-changes-4" class="section level3">
+<div id="other-changes-5" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-4" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-5" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Reduce minimal scale of several default priors from 10 to 2.5. The resulting priors should remain weakly informative.</li>
 <li>Automatically group observations in <code>gp</code> for increased efficiency.</li>
@@ -383,9 +461,9 @@
 <h1 class="page-header" data-toc-text="2.12.0">
 <a href="#brms-2120" class="anchor"></a>brms 2.12.0<small> 2020-02-23 </small>
 </h1>
-<div id="new-features-6" class="section level3">
+<div id="new-features-7" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-6" class="anchor"></a>New Features</h3>
+<a href="#new-features-7" class="anchor"></a>New Features</h3>
 <ul>
 <li>Fix parameters to constants via the <code>prior</code> argument. (<a href='https://github.com/paul-buerkner/brms/issues/783'>#783</a>)</li>
 <li>Specify autocorrelation terms directly in the model formula. (<a href='https://github.com/paul-buerkner/brms/issues/708'>#708</a>)</li>
@@ -395,9 +473,9 @@
 <li>Compute pointwise log-likelihood values via <code>log_lik</code> for non-factorizable Student-t models. (<a href='https://github.com/paul-buerkner/brms/issues/705'>#705</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes-6" class="section level3">
+<div id="bug-fixes-9" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-6" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-9" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix output of <code>posterior_predict</code> for <code>multinomial</code> models thanks to Ivan Ukhov.</li>
 <li>Fix selection of group-level terms via <code>re_formula</code> in multivariate models thanks to Maxime Dahirel. (<a href='https://github.com/paul-buerkner/brms/issues/834'>#834</a>)</li>
@@ -408,9 +486,9 @@
 <li>Fix a bug in the Stan code of models with multiple monotonic varying effects across different groups thanks to Julian Quandt.</li>
 </ul>
 </div>
-<div id="other-changes-5" class="section level3">
+<div id="other-changes-6" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-5" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-6" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Rename <code>offset</code> variables to <code>offsets</code> in the generated Stan code as the former will be reserved in the new stanc3 compiler.</li>
 </ul>
@@ -420,9 +498,9 @@
 <h1 class="page-header" data-toc-text="2.11.1">
 <a href="#brms-2111" class="anchor"></a>brms 2.11.1<small> 2020-01-19 </small>
 </h1>
-<div id="bug-fixes-7" class="section level3">
+<div id="bug-fixes-10" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-7" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-10" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix version requirement of the <code>loo</code> package.</li>
 <li>Fix effective sample size note in the <code>summary</code> output. (<a href='https://github.com/paul-buerkner/brms/issues/824'>#824</a>)</li>
@@ -436,18 +514,18 @@
 <h1 class="page-header" data-toc-text="2.11.0">
 <a href="#brms-2110" class="anchor"></a>brms 2.11.0<small> 2020-01-12 </small>
 </h1>
-<div id="new-features-7" class="section level3">
+<div id="new-features-8" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-7" class="anchor"></a>New Features</h3>
+<a href="#new-features-8" class="anchor"></a>New Features</h3>
 <ul>
 <li>Support grouped ordinal threshold vectors via addition argument <code>resp_thres</code>. (<a href='https://github.com/paul-buerkner/brms/issues/675'>#675</a>)</li>
 <li>Support method <code>loo_subsample</code> for performing approximate leave-one-out cross-validation for large data.</li>
 <li>Allow storing more model fit criteria via <code>add_criterion</code>. (<a href='https://github.com/paul-buerkner/brms/issues/793'>#793</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes-8" class="section level3">
+<div id="bug-fixes-11" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-8" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-11" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix prediction uncertainties of new group levels for <code>sample_new_levels = "uncertainty"</code> thanks to Dominic Magirr. (<a href='https://github.com/paul-buerkner/brms/issues/779'>#779</a>)</li>
 <li>Fix problems when using <code>pp_check</code> on censored models thanks to Andrew Milne. (<a href='https://github.com/paul-buerkner/brms/issues/744'>#744</a>)</li>
@@ -460,9 +538,9 @@
 <li>Fix problems in parsing covariates of special effects terms thanks to Riccardo Fusaroli (<a href='https://github.com/paul-buerkner/brms/issues/813'>#813</a>)</li>
 </ul>
 </div>
-<div id="other-changes-6" class="section level3">
+<div id="other-changes-7" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-6" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-7" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Rename <code>marginal_effects</code> to <code>conditional_effects</code> and <code>marginal_smooths</code> to <code>conditional_smooths</code>. (<a href='https://github.com/paul-buerkner/brms/issues/735'>#735</a>)</li>
 <li>Rename <code>stanplot</code> to <code>mcmc_plot</code>.</li>
@@ -481,9 +559,9 @@
 <h1 class="page-header" data-toc-text="2.10.0">
 <a href="#brms-2100" class="anchor"></a>brms 2.10.0<small> 2019-08-29 </small>
 </h1>
-<div id="new-features-8" class="section level3">
+<div id="new-features-9" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-8" class="anchor"></a>New Features</h3>
+<a href="#new-features-9" class="anchor"></a>New Features</h3>
 <ul>
 <li>Improve convergence diagnostics in the <code>summary</code> output. (<a href='https://github.com/paul-buerkner/brms/issues/712'>#712</a>)</li>
 <li>Use primitive Stan GLM functions whenever possible. (<a href='https://github.com/paul-buerkner/brms/issues/703'>#703</a>)</li>
@@ -494,9 +572,9 @@
 <li>Fit BYM2 CAR models via <code>cor_car</code> thanks to the case study and help of Mitzi Morris.</li>
 </ul>
 </div>
-<div id="other-changes-7" class="section level3">
+<div id="other-changes-8" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-7" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-8" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Substantially improve the sampling efficiency of SAR models thanks to the GitHub user aslez. (<a href='https://github.com/paul-buerkner/brms/issues/680'>#680</a>)</li>
 <li>No longer allow changing the boundaries of autocorrelation parameters.</li>
@@ -505,9 +583,9 @@
 <li>Name temporary intercept parameters more consistently in the Stan code.</li>
 </ul>
 </div>
-<div id="bug-fixes-9" class="section level3">
+<div id="bug-fixes-12" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-9" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-12" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix problems in the post-processing of <code>me</code> terms with grouping factors thanks to the GitHub user tatters. (<a href='https://github.com/paul-buerkner/brms/issues/706'>#706</a>)</li>
 <li>Allow grouping variables to start with a dot thanks to Bruno Nicenboim. (<a href='https://github.com/paul-buerkner/brms/issues/679'>#679</a>)</li>
@@ -524,9 +602,9 @@
 <h1 class="page-header" data-toc-text="2.9.0">
 <a href="#brms-290" class="anchor"></a>brms 2.9.0<small> 2019-05-23 </small>
 </h1>
-<div id="new-features-9" class="section level3">
+<div id="new-features-10" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-9" class="anchor"></a>New Features</h3>
+<a href="#new-features-10" class="anchor"></a>New Features</h3>
 <ul>
 <li>Specify non-linear ordinal models. (<a href='https://github.com/paul-buerkner/brms/issues/623'>#623</a>)</li>
 <li>Allow to fix thresholds in ordinal mixture models (<a href='https://github.com/paul-buerkner/brms/issues/626'>#626</a>)</li>
@@ -537,9 +615,9 @@
 <li>Support <code>cor_arma</code> in non-normal models. (<a href='https://github.com/paul-buerkner/brms/issues/648'>#648</a>)</li>
 </ul>
 </div>
-<div id="other-changes-8" class="section level3">
+<div id="other-changes-9" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-8" class="anchor"></a>Other Changes</h3>
+<a href="#other-changes-9" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Change the parameterization of monotonic effects to improve their interpretability. (<a href='https://github.com/paul-buerkner/brms/issues/578'>#578</a>)</li>
 <li>No longer support the <code>cor_arr</code> and <code>cor_bsts</code> correlation structures after a year of deprecation.</li>
@@ -547,9 +625,9 @@
 <li>Improve penalty of splines thanks to Ben Goodrich and Ruben Arslan.</li>
 </ul>
 </div>
-<div id="bug-fixes-10" class="section level3">
+<div id="bug-fixes-13" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-10" class="anchor"></a>Bug Fixes</h3>
+<a href="#bug-fixes-13" class="anchor"></a>Bug Fixes</h3>
 <ul>
 <li>Fix a problem when applying <code>marginal_effects</code> to measurement error models thanks to Jonathan A. Nations. (<a href='https://github.com/paul-buerkner/brms/issues/636'>#636</a>)</li>
 <li>Fix computation of log-likelihood values for weighted mixture models.</li>
@@ -565,9 +643,9 @@
 <h1 class="page-header" data-toc-text="2.8.0">
 <a href="#brms-280" class="anchor"></a>brms 2.8.0<small> 2019-03-15 </small>
 </h1>
-<div id="new-features-10" class="section level3">
+<div id="new-features-11" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-10" class="anchor"></a>New Features</h3>
+<a href="#new-features-11" class="anchor"></a>New Features</h3>
 <ul>
 <li>Fit multinomial models via family <code>multinomial</code>. (<a href='https://github.com/paul-buerkner/brms/issues/463'>#463</a>)</li>
 <li>Fit Dirichlet models via family <code>dirichlet</code>. (<a href='https://github.com/paul-buerkner/brms/issues/463'>#463</a>)</li>
@@ -579,9 +657,9 @@
 <li>Split folds after <code>group</code> in the <code>kfold</code> method. (<a href='https://github.com/paul-buerkner/brms/issues/619'>#619</a>)</li>
 </ul>
 </div>
-<div id="other-changes-9" class="section level3">
+<div id="other-changes-10" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-9" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-10" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Deprecate <code>compare_ic</code> and instead recommend <code>loo_compare</code> for the comparison of <code>loo</code> objects to ensure consistency between packages. (<a href='https://github.com/paul-buerkner/brms/issues/414'>#414</a>)</li>
 <li>Use the <strong>glue</strong> package in the Stan code generation. (<a href='https://github.com/paul-buerkner/brms/issues/549'>#549</a>)</li>
@@ -591,9 +669,9 @@
 <li>Export function <code>get_y</code> which is used to extract response values from <code>brmsfit</code> objects.</li>
 </ul>
 </div>
-<div id="bug-fixes-11" class="section level3">
+<div id="bug-fixes-14" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-11" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-14" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix an error when trying to change argument <code>re_formula</code> in <code>bayes_R2</code> thanks to the GitHub user emieldl. (<a href='https://github.com/paul-buerkner/brms/issues/592'>#592</a>)</li>
 <li>Fix occasional problems when running chains in parallel via the <strong>future</strong> package thanks to Jared Knowles. (<a href='https://github.com/paul-buerkner/brms/issues/579'>#579</a>)</li>
@@ -613,9 +691,9 @@
 <h1 class="page-header" data-toc-text="2.7.0">
 <a href="#brms-270" class="anchor"></a>brms 2.7.0<small> 2018-12-17 </small>
 </h1>
-<div id="new-features-11" class="section level3">
+<div id="new-features-12" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-11" class="anchor"></a>New features</h3>
+<a href="#new-features-12" class="anchor"></a>New features</h3>
 <ul>
 <li>Fit approximate and non-isotropic Gaussian processes via <code>gp</code>. (<a href='https://github.com/paul-buerkner/brms/issues/540'>#540</a>)</li>
 <li>Enable parallelization of model fitting in <code>brm_multiple</code> via the future package. (<a href='https://github.com/paul-buerkner/brms/issues/364'>#364</a>)</li>
@@ -623,9 +701,9 @@
 <li>Indicate observations for out-of-sample predictions in ARMA models via argument <code>oos</code> of <code>extract_draws</code>. (<a href='https://github.com/paul-buerkner/brms/issues/539'>#539</a>)</li>
 </ul>
 </div>
-<div id="other-changes-10" class="section level3">
+<div id="other-changes-11" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-10" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-11" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Allow factor-like variables in smooth terms. (<a href='https://github.com/paul-buerkner/brms/issues/562'>#562</a>)</li>
 <li>Make plotting of <code>marginal_effects</code> more robust to the usage of non-standard variable names.</li>
@@ -634,9 +712,9 @@
 <li>No longer print informational messages from the Stan parser.</li>
 </ul>
 </div>
-<div id="bug-fixes-12" class="section level3">
+<div id="bug-fixes-15" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-12" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-15" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix an issue that could result in a substantial efficiency drop of various post-processing methods for larger models.</li>
 <li>Fix an issue when that resulted in an error when using <code><a href="https://rdrr.io/r/stats/fitted.values.html">fitted(..., scale = "linear")</a></code> with ordinal models thanks to Andrew Milne. (<a href='https://github.com/paul-buerkner/brms/issues/557'>#557</a>)</li>
@@ -654,30 +732,30 @@
 <h1 class="page-header" data-toc-text="2.6.0">
 <a href="#brms-260" class="anchor"></a>brms 2.6.0<small> 2018-10-23 </small>
 </h1>
-<div id="new-features-12" class="section level3">
+<div id="new-features-13" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-12" class="anchor"></a>New features</h3>
+<a href="#new-features-13" class="anchor"></a>New features</h3>
 <ul>
 <li>Fit factor smooth interactions thanks to Simon Wood.</li>
 <li>Specify separate priors for thresholds in ordinal models. (<a href='https://github.com/paul-buerkner/brms/issues/524'>#524</a>)</li>
-<li>Pass additional arguments to <code><a href="https://mc-stan.org/rstan/reference/stan_model.html">rstan::stan_model</a></code> via argument <code>stan_model_args</code> in <code>brm</code>. (<a href='https://github.com/paul-buerkner/brms/issues/525'>#525</a>)</li>
+<li>Pass additional arguments to <code><a href="https://rdrr.io/pkg/rstan/man/stan_model.html">rstan::stan_model</a></code> via argument <code>stan_model_args</code> in <code>brm</code>. (<a href='https://github.com/paul-buerkner/brms/issues/525'>#525</a>)</li>
 <li>Save model objects via argument <code>file</code> in <code>add_ic</code> after adding model fit criteria. (<a href='https://github.com/paul-buerkner/brms/issues/478'>#478</a>)</li>
 <li>Compute density ratios based on MCMC samples via <code>density_ratio</code>.</li>
 <li>Ignore offsets in various post-processing methods via argument <code>offset</code>.</li>
 <li>Update addition terms in formulas via <code>update_adterms</code>.</li>
 </ul>
 </div>
-<div id="other-changes-11" class="section level3">
+<div id="other-changes-12" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-11" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-12" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Improve internal modularization of smooth terms.</li>
 <li>Reduce size of internal example models.</li>
 </ul>
 </div>
-<div id="bug-fixes-13" class="section level3">
+<div id="bug-fixes-16" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-13" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-16" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Correctly plot splines with factorial covariates via <code>marginal_smooths</code>.</li>
 <li>Allow sampling from priors in intercept only models thanks to Emmanuel Charpentier. (<a href='https://github.com/paul-buerkner/brms/issues/529'>#529</a>)</li>
@@ -689,9 +767,9 @@
 <h1 class="page-header" data-toc-text="2.5.0">
 <a href="#brms-250" class="anchor"></a>brms 2.5.0<small> 2018-09-16 </small>
 </h1>
-<div id="new-features-13" class="section level3">
+<div id="new-features-14" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-13" class="anchor"></a>New features</h3>
+<a href="#new-features-14" class="anchor"></a>New features</h3>
 <ul>
 <li>Improve <code>marginal_effects</code> to better display ordinal and categorical models via argument <code>categorical</code>. (<a href='https://github.com/paul-buerkner/brms/issues/491'>#491</a>, <a href='https://github.com/paul-buerkner/brms/issues/497'>#497</a>)</li>
 <li>Improve method <code>kfold</code> to offer more options for specifying omitted subsets. (<a href='https://github.com/paul-buerkner/brms/issues/510'>#510</a>)</li>
@@ -703,9 +781,9 @@
 <li>Allow to <code>overwrite</code> already stored fit indices when using <code>add_ic</code>.</li>
 </ul>
 </div>
-<div id="other-changes-12" class="section level3">
+<div id="other-changes-13" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-12" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-13" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Ignore argument <code>resp</code> when post-processing univariate models thanks to Ruben Arslan. (<a href='https://github.com/paul-buerkner/brms/issues/488'>#488</a>)</li>
 <li>Deprecate argument <code>ordinal</code> of <code>marginal_effects</code>. (<a href='https://github.com/paul-buerkner/brms/issues/491'>#491</a>)</li>
@@ -714,9 +792,9 @@
 <li>No longer sample from priors of population-level intercepts when using the default intercept parameterization.</li>
 </ul>
 </div>
-<div id="bug-fixes-14" class="section level3">
+<div id="bug-fixes-17" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-14" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-17" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Correctly sample from LKJ correlation priors thanks to Donald Williams.</li>
 <li>Remove stored fit indices when calling <code>update</code> on brmsfit objects thanks to Emmanuel Charpentier. (<a href='https://github.com/paul-buerkner/brms/issues/490'>#490</a>)</li>
@@ -730,9 +808,9 @@
 <h1 class="page-header" data-toc-text="2.4.0">
 <a href="#brms-240" class="anchor"></a>brms 2.4.0<small> 2018-07-20 </small>
 </h1>
-<div id="new-features-14" class="section level3">
+<div id="new-features-15" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-14" class="anchor"></a>New features</h3>
+<a href="#new-features-15" class="anchor"></a>New features</h3>
 <ul>
 <li>Define custom variables in all of Stan’s program blocks via function <code>stanvar</code>. (<a href='https://github.com/paul-buerkner/brms/issues/459'>#459</a>)</li>
 <li>Change the scope of non-linear parameters to be global within univariate models. (<a href='https://github.com/paul-buerkner/brms/issues/390'>#390</a>)</li>
@@ -747,18 +825,18 @@
 <li>Display posterior probabilities in the output of <code>hypothesis</code>.</li>
 </ul>
 </div>
-<div id="other-changes-13" class="section level3">
+<div id="other-changes-14" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-13" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-14" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Deprecate argument <code>stan_funs</code> in <code>brm</code> in favor of using the <code>stanvars</code> argument for the specification of custom Stan functions.</li>
 <li>Deprecate arguments <code>flist</code> and <code>...</code> in <code>nlf</code>.</li>
 <li>Deprecate argument <code>dpar</code> in <code>lf</code> and <code>nlf</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-15" class="section level3">
+<div id="bug-fixes-18" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-15" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-18" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Allow custom families in mixture models thanks to Noam Ross. (<a href='https://github.com/paul-buerkner/brms/issues/453'>#453</a>)</li>
 <li>Ensure compatibility with <strong>mice</strong> version 3.0. (<a href='https://github.com/paul-buerkner/brms/issues/455'>#455</a>)</li>
@@ -773,25 +851,25 @@
 <h1 class="page-header" data-toc-text="2.3.1">
 <a href="#brms-231" class="anchor"></a>brms 2.3.1<small> 2018-06-05 </small>
 </h1>
-<div id="new-features-15" class="section level3">
+<div id="new-features-16" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-15" class="anchor"></a>New features</h3>
+<a href="#new-features-16" class="anchor"></a>New features</h3>
 <ul>
 <li>Allow censoring and truncation in zero-inflated and hurdle models. (<a href='https://github.com/paul-buerkner/brms/issues/430'>#430</a>)</li>
 <li>Export zero-inflated and hurdle distribution functions.</li>
 </ul>
 </div>
-<div id="other-changes-14" class="section level3">
+<div id="other-changes-15" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-14" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-15" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Improve sampling efficiency of the ordinal families <code>cumulative</code>, <code>sratio</code>, and <code>cratio</code>. (<a href='https://github.com/paul-buerkner/brms/issues/433'>#433</a>)</li>
 <li>Allow to specify a single k-fold subset in method <code>kfold</code>. (<a href='https://github.com/paul-buerkner/brms/issues/441'>#441</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes-16" class="section level3">
+<div id="bug-fixes-19" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-16" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-19" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a problem in <code>launch_shinystan</code> due to which the maximum treedepth was not correctly displayed thanks to Paul Galpern. (<a href='https://github.com/paul-buerkner/brms/issues/431'>#431</a>)</li>
 </ul>
@@ -809,9 +887,9 @@
 <li>Compute <code>loo</code> and related methods for non-factorizable normal models.</li>
 </ul>
 </div>
-<div id="other-changes-15" class="section level3">
+<div id="other-changes-16" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-15" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-16" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Rename quantile columns in <code>posterior_summary</code>. This affects the output of <code>predict</code> and related methods if <code>summary = TRUE</code>. (<a href='https://github.com/paul-buerkner/brms/issues/425'>#425</a>)</li>
 <li>Use hashes to check if models have the same response values when performing model comparisons. (<a href='https://github.com/paul-buerkner/brms/issues/414'>#414</a>)</li>
@@ -820,9 +898,9 @@
 <li>Simplify internal workflow to implement native response distributions. (<a href='https://github.com/paul-buerkner/brms/issues/421'>#421</a>)</li>
 </ul>
 </div>
-<div id="bug-fixes-17" class="section level3">
+<div id="bug-fixes-20" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-17" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-20" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Allow <code>cor_car</code> in multivariate models with residual correlations thanks to Quentin Read. (<a href='https://github.com/paul-buerkner/brms/issues/427'>#427</a>)</li>
 <li>Fix a problem in the Stan code generation of distributional <code>beta</code> models thanks to Hans van Calster. (<a href='https://github.com/paul-buerkner/brms/issues/404'>#404</a>)</li>
@@ -854,9 +932,9 @@
 <li>Introduce function <code>make_conditions</code> to ease preparation of conditions for <code>marginal_effects</code>.</li>
 </ul>
 </div>
-<div id="other-changes-16" class="section level3">
+<div id="other-changes-17" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-16" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-17" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Change the parameterization of <code>weibull</code> and <code>exgaussian</code> models to be consistent with other model classes. Post-processing of related models fitted with earlier version of <code>brms</code> is no longer possible.</li>
 <li>Treat integer responses in <code>ordinal</code> models as directly indicating categories even if the lowest integer is not one.</li>
@@ -865,9 +943,9 @@
 <li>Deprecate the <code>cor_bsts</code> correlation structure.</li>
 </ul>
 </div>
-<div id="bug-fixes-18" class="section level3">
+<div id="bug-fixes-21" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-18" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-21" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Allow the <code><a href="https://rdrr.io/r/base/Colon.html">:</a></code> operator to combine groups in multi-membership terms thanks to Gang Chen.</li>
 <li>Avoid an unexpected error when calling <code>LOO</code> with argument <code>reloo = TRUE</code> thanks to Peter Konings. (<a href='https://github.com/paul-buerkner/brms/issues/348'>#348</a>)</li>
@@ -899,9 +977,9 @@
 <li>Allow predicting new data in models with ARMA autocorrelation structures.</li>
 </ul>
 </div>
-<div id="bug-fixes-19" class="section level3">
+<div id="bug-fixes-22" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-19" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-22" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Correctly recover noise-free coefficients through <code>me</code> terms thanks to Ruben Arslan. As a side effect, it is no longer possible to define priors on noise-free <code>Xme</code> variables directly, but only on their hyper-parameters <code>meanme</code> and <code>sdme</code>.</li>
 <li>Fix problems in renaming parameters of the <code>cor_bsts</code> structure thanks to Joshua Edward Morten. (<a href='https://github.com/paul-buerkner/brms/issues/312'>#312</a>)</li>
@@ -922,9 +1000,9 @@
 <li>Export the helper functions <code>posterior_summary</code> and <code>posterior_table</code> both being used to summarize posterior samples and predictions.</li>
 </ul>
 </div>
-<div id="bug-fixes-20" class="section level3">
+<div id="bug-fixes-23" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-20" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-23" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix incorrect computation of intercepts in <code>acat</code> and <code>cratio</code> models thanks to Peter Phalen. (<a href='https://github.com/paul-buerkner/brms/issues/302'>#302</a>)</li>
 <li>Fix <code>pointwise</code> computation of <code>LOO</code> and <code>WAIC</code> in multivariate models with estimated residual correlation structure.</li>
@@ -949,9 +1027,9 @@
 <li>Add argument <code>re.form</code> as an alias of <code>re_formula</code> to the methods <code>posterior_predict</code>, <code>posterior_linpred</code>, and <code>predictive_error</code> for consistency with other packages making use of these methods. (<a href='https://github.com/paul-buerkner/brms/issues/283'>#283</a>)</li>
 </ul>
 </div>
-<div id="other-changes-17" class="section level3">
+<div id="other-changes-18" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-17" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-18" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Refactor many parts of the package to make it more consistent and easier to extend.</li>
 <li>Show the link functions of all distributional parameters in the <code>summary</code> output. (<a href='https://github.com/paul-buerkner/brms/issues/277'>#277</a>)</li>
@@ -965,9 +1043,9 @@
 <li>No longer fix the seed for random number generation in <code>brm</code> to avoid unexpected behavior in simulation studies.</li>
 </ul>
 </div>
-<div id="bug-fixes-21" class="section level3">
+<div id="bug-fixes-24" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-21" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-24" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Store <code>stan_funs</code> in <code>brmsfit</code> objects to allow using <code>update</code> on models with user-defined Stan functions thanks to Tom Wallis. (<a href='https://github.com/paul-buerkner/brms/issues/288'>#288</a>)</li>
 <li>Fix problems in various post-processing methods when applied to models with the reserved variable <code>intercept</code> in group-level terms thanks to the GitHub user ASKurz. (<a href='https://github.com/paul-buerkner/brms/issues/279'>#279</a>)</li>
@@ -988,9 +1066,9 @@
 <li>Allow addition argument <code>se</code> in <code>skew_normal</code> models.</li>
 </ul>
 </div>
-<div id="bug-fixes-22" class="section level3">
+<div id="bug-fixes-25" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-22" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-25" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Ensure correct behavior of horseshoe and lasso priors in multivariate models thanks to Donald Williams.</li>
 <li>Allow using <code>identity</code> links on all parameters of the <code>wiener</code> family thanks to Henrik Singmann. (<a href='https://github.com/paul-buerkner/brms/issues/276'>#276</a>)</li>
@@ -1016,9 +1094,9 @@
 <li>Add several arguments to the <code>plot</code> method of <code>marginal_effects</code> to improve control over the appearences of the plots.</li>
 </ul>
 </div>
-<div id="other-changes-18" class="section level3">
+<div id="other-changes-19" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-18" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-19" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Use the same noise-free variables for all model parts in measurement error models. (<a href='https://github.com/paul-buerkner/brms/issues/257'>#257</a>)</li>
 <li>Make names of local-level terms used in the <code>cor_bsts</code> structure more informative.</li>
@@ -1029,9 +1107,9 @@
 <li>Refactor parts of <code>extract_draws</code> and <code>linear_predictor</code> to be more consistent with the rest of the package.</li>
 </ul>
 </div>
-<div id="bug-fixes-23" class="section level3">
+<div id="bug-fixes-26" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-23" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-26" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Do not silence the <code>Stan</code> parser when calling <code>brm</code> to get informative error messages about invalid priors.</li>
 <li>Fix problems with spaces in priors passed to <code>set_prior</code>.</li>
@@ -1056,9 +1134,9 @@
 <li>Split the <code>nlpar</code> argument of <code>set_prior</code> into the three arguments <code>resp</code>, <code>dpar</code>, and <code>nlpar</code> to allow for more flexible prior specifications.</li>
 </ul>
 </div>
-<div id="other-changes-19" class="section level3">
+<div id="other-changes-20" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-19" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-20" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Refactor parts of the package to prepare for the implementation of more flexible multivariate models in future updates.</li>
 <li>Keep all constants in the log-posterior in order for <code>bridge_sampler</code> to be working correctly.</li>
@@ -1069,9 +1147,9 @@
 <li>Include citations of the <code>brms</code> overview paper as published in the Journal of Statistical Software.</li>
 </ul>
 </div>
-<div id="bug-fixes-24" class="section level3">
+<div id="bug-fixes-27" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-24" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-27" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems when calling <code>fitted</code> with <code>hurdle_lognormal</code> models thanks to Meghna Krishnadas.</li>
 <li>Fix problems when predicting <code>sigma</code> in <code>asym_laplace</code> models thanks to Anna Josefine Sorensen.</li>
@@ -1095,9 +1173,9 @@
 <li>Improve parallel execution flexibility via the <code>future</code> package.</li>
 </ul>
 </div>
-<div id="other-changes-20" class="section level3">
+<div id="other-changes-21" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-20" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-21" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Improve efficiency and stability of ARMA models.</li>
 <li>Throw an error when the intercept is removed in an ordinal model instead of silently adding it back again.</li>
@@ -1107,9 +1185,9 @@
 <li>Shorten <code>Stan</code> code by combining declarations and definitions where possible.</li>
 </ul>
 </div>
-<div id="bug-fixes-25" class="section level3">
+<div id="bug-fixes-28" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-25" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-28" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems in <code>pp_check</code> when the variable specified in argument <code>x</code> has attributes thanks to Paul Galpern.</li>
 <li>Fix problems when computing fitted values for truncated discrete models based on new data thanks to Nathan Doogan.</li>
@@ -1135,9 +1213,9 @@
 <li>Introduce an <code>as.array</code> method for <code>brmsfit</code> objects.</li>
 </ul>
 </div>
-<div id="other-changes-21" class="section level3">
+<div id="other-changes-22" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-21" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-22" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Show output of \R code in HTML vignettes thanks to Ben Goodrich (<a href='https://github.com/paul-buerkner/brms/issues/158'>#158</a>).</li>
 <li>Resolve citations in PDF vignettes thanks to Thomas Kluth (<a href='https://github.com/paul-buerkner/brms/issues/223'>#223</a>).</li>
@@ -1145,13 +1223,12 @@
 <li>Also transform data points when using argument <code>transform</code> in <code>marginal_effects</code> thanks to Markus Gesmann.</li>
 </ul>
 </div>
-<div id="bug-fixes-26" class="section level3">
+<div id="bug-fixes-29" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-26" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-29" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix an unexpected error in <code>marginal_effects</code> occurring for some models with autocorrelation terms thanks to Markus Gesmann.</li>
-<li>Fix multiple problems occurring for models with<br>
-the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
+<li>Fix multiple problems occurring for models with the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 </ul>
 </div>
 </div>
@@ -1167,17 +1244,17 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Allow for more link functions in zero-inflated and hurdle models.</li>
 </ul>
 </div>
-<div id="other-changes-22" class="section level3">
+<div id="other-changes-23" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-22" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-23" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Ensure full compatibility with <code>bayesplot</code> version 1.2.0.</li>
 <li>Deprecate addition argument <code>disp</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-27" class="section level3">
+<div id="bug-fixes-30" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-27" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-30" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems when setting priors on coefficients of auxiliary parameters when also setting priors on the corresponding coefficients of the mean parameter. Thanks to Matti Vuorre for reporting this bug.</li>
 <li>Allow ordered factors to be used as grouping variables thanks to the GitHub user itissid.</li>
@@ -1206,9 +1283,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Extend method <code>stanplot</code> to correctly handle some new <code>mcmc_</code> plots of the <code>bayesplot</code> package.</li>
 </ul>
 </div>
-<div id="other-changes-23" class="section level3">
+<div id="other-changes-24" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-23" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-24" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Improve the <code>update</code> method to only recompile models when the <code>Stan</code> code changes.</li>
 <li>Warn about divergent transitions when calling <code>summary</code> or <code>print</code> on <code>brmsfit</code> objects.</li>
@@ -1216,9 +1293,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Export and document several distribution functions that were previously kept internal.</li>
 </ul>
 </div>
-<div id="bug-fixes-28" class="section level3">
+<div id="bug-fixes-31" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-28" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-31" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems with the inclusion of offsets occurring for more complicated formulas thanks to Christian Stock.</li>
 <li>Fix a bug that led to invalid Stan code when sampling from priors in intercept only models thanks to Tom Wallis.</li>
@@ -1241,16 +1318,16 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Force recompiling <code>Stan</code> models in <code>update.brmsfit</code> via argument <code>recompile</code>.</li>
 </ul>
 </div>
-<div id="other-changes-24" class="section level3">
+<div id="other-changes-25" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-24" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-25" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Avoid indexing of matrices in non-linear models to slightly improve sampling speed.</li>
 </ul>
 </div>
-<div id="bug-fixes-29" class="section level3">
+<div id="bug-fixes-32" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-29" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-32" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a severe problem (introduced in version 1.5.0), when predicting <code>Beta</code> models thanks to Vivian Lam.</li>
 <li>Fix problems when summarizing some models fitted with older version of <code>brms</code> thanks to Vivian Lam.</li>
@@ -1274,17 +1351,17 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Add vignette <code>"brms_multilevel"</code>, in which the advanced formula syntax of <code>brms</code> is explained in detail using several examples.</li>
 </ul>
 </div>
-<div id="other-changes-25" class="section level3">
+<div id="other-changes-26" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-25" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-26" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Refactor various parts of the package to ease implementation of mixture and multivariate models in future updates. This should not have any user visible effects.</li>
 <li>Save the version number of <code>rstan</code> in element <code>version</code> of <code>brmsfit</code> objects.</li>
 </ul>
 </div>
-<div id="bug-fixes-30" class="section level3">
+<div id="bug-fixes-33" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-30" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-33" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a rare error when predicting <code>von_mises</code> models thanks to John Kirwan.</li>
 </ul>
@@ -1311,9 +1388,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Add more options to customize two-dimensional surface plots created by <code>marginal_effects</code> or <code>marginal_smooths</code>.</li>
 </ul>
 </div>
-<div id="other-changes-26" class="section level3">
+<div id="other-changes-27" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-26" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-27" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Change structure of <code>brmsformula</code> objects to be more reliable and easier to extend.</li>
 <li>Make sure that parameter <code>nu</code> never falls below <code>1</code> to reduce convergence problems when using family <code>student</code>.</li>
@@ -1324,12 +1401,12 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Refactor helper functions of the <code>fitted</code> method to be easier to extend in the future.</li>
 <li>Remove many units tests of internal functions and add tests of user-facing functions instead.</li>
 <li>Import some generics from <code>nlme</code> instead of <code>lme4</code> to remove dependency on the latter one.</li>
-<li>Do not apply <code>structure</code> to <code>NULL</code> anymore to get rid of warnings in \R-devel.</li>
+<li>Do not apply <code>structure</code> to <code>NULL</code> anymore to get rid of warnings in R-devel.</li>
 </ul>
 </div>
-<div id="bug-fixes-31" class="section level3">
+<div id="bug-fixes-34" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-31" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-34" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems when fitting smoothing terms with factors as <code>by</code> variables thanks to Milani Chaloupka.</li>
 <li>Fix a bug that could cause some monotonic effects to be ignored in the <code>Stan</code> code thanks to the GitHub user bschneider.</li>
@@ -1354,16 +1431,16 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Create <code>marginal_effects</code> plots of two-way interactions of variables that were not explicitely modeled as interacting.</li>
 </ul>
 </div>
-<div id="other-changes-27" class="section level3">
+<div id="other-changes-28" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-27" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-28" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Move <code>rstan</code> to ‘Imports’ and <code>Rcpp</code> to ‘Depends’ in order to avoid loading <code>rstan</code> into the global environment automatically.</li>
 </ul>
 </div>
-<div id="bug-fixes-32" class="section level3">
+<div id="bug-fixes-35" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-32" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-35" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug leading to unexpected errors in some S3 methods when applied to ordinal models.</li>
 </ul>
@@ -1387,9 +1464,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Allow visualizing two-dimensional smooths with the <code>marginal_smooths</code> method.</li>
 </ul>
 </div>
-<div id="other-changes-28" class="section level3">
+<div id="other-changes-29" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-28" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-29" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Require argument <code>data</code> to be explicitely specified in all user facing functions.</li>
 <li>Refactor the <code>stanplot</code> method to use <code>bayesplot</code> on the backend.</li>
@@ -1422,9 +1499,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Introduce methods <code>posterior_predict</code>, <code>predictive_error</code> and <code>log_lik</code> as (partial) aliases of <code>predict</code>, <code>residuals</code>, and <code>logLik</code> respectively.</li>
 </ul>
 </div>
-<div id="other-changes-29" class="section level3">
+<div id="other-changes-30" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-29" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-30" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Improve computation of Bayes factors in the <code>hypothesis</code> method to be less influenced by MCMC error.</li>
 <li>Improve documentation of default priors.</li>
@@ -1432,9 +1509,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Use the <code>bayesplot</code> package as the new backend of <code>plot.brmsfit</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-33" class="section level3">
+<div id="bug-fixes-36" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-33" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-36" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Better mimic <code>mgcv</code> when parsing smooth terms to make sure all arguments are correctly handled.</li>
 <li>Avoid an error occurring during the prediction of new data when grouping factors with only a single factor level were supplied thanks to Tom Wallis.</li>
@@ -1460,17 +1537,17 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Allow to compute <code>residuals</code> also based on predicted values instead of fitted values.</li>
 </ul>
 </div>
-<div id="other-changes-30" class="section level3">
+<div id="other-changes-31" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-30" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-31" class="anchor"></a>Other changes</h3>
 <ul>
-<li>Use the prefix <code>bcs</code> in parameter names of category specific effects and the prefix <code>bm</code> in parameter names of monotonic effects (instead of the prefix <code>b</code>) to simplify their identifaction.</li>
+<li>Use the prefix <code>bcs</code> in parameter names of category specific effects and the prefix <code>bm</code> in parameter names of monotonic effects (instead of the prefix <code>b</code>) to simplify their identification.</li>
 <li>Ensure full compatibility with <code>ggplot2</code> version 2.2.</li>
 </ul>
 </div>
-<div id="bug-fixes-34" class="section level3">
+<div id="bug-fixes-37" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-34" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-37" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could result in incorrect threshold estimates for <code>cumulative</code> and <code>sratio</code> models thanks to Peter Congdon.</li>
 <li>Fix a bug that sometimes kept distributional <code>gamma</code> models from being compiled thanks to Tim Beechey.</li>
@@ -1509,9 +1586,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Feature vectors as arguments for the addition argument <code>trunc</code> in order to model varying truncation points.</li>
 </ul>
 </div>
-<div id="other-changes-31" class="section level3">
+<div id="other-changes-32" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-31" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-32" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Remove the <code>cauchy</code> family after several months of deprecation.</li>
 <li>Make sure that group-level parameter names are unambiguous by adding double underscores thanks to the idea of the GitHub user schmettow.</li>
@@ -1521,9 +1598,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Set the default of the <code>robust</code> argument to <code>TRUE</code> in <code>marginal_effects.brmsfit</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-35" class="section level3">
+<div id="bug-fixes-38" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-35" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-38" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could occur when predicting factorial response variables for new data. Only affects categorical and ordinal models.</li>
 <li>Fix a bug that could lead to duplicated variable names in the Stan code when sampling from priors in non-linear models thanks to Tom Wallis.</li>
@@ -1545,17 +1622,17 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Introduce <code>as.data.frame</code> and <code>as.matrix</code> methods for <code>brmsfit</code> objects.</li>
 </ul>
 </div>
-<div id="other-changes-32" class="section level3">
+<div id="other-changes-33" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-32" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-33" class="anchor"></a>Other changes</h3>
 <ul>
 <li>The <code><a href="https://rdrr.io/r/stats/family.html">gaussian("log")</a></code> family no longer implies a log-normal distribution, but a normal distribution with log-link to match the behavior of <code>glm</code>. The log-normal distribution can now be specified via family <code>lognormal</code>.</li>
 <li>Update syntax of <code>Stan</code> models to match the recommended syntax of <code>Stan</code> 2.10.</li>
 </ul>
 </div>
-<div id="bug-fixes-36" class="section level3">
+<div id="bug-fixes-39" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-36" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-39" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>The <code>ngrps</code> method should now always return the correct result for non-linear models.</li>
 <li>Fix problems in <code>marginal_effects</code> for models using the reserved variable <code>intercept</code> thanks to Frederik Aust.</li>
@@ -1577,16 +1654,16 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Allow to compute <code>WAIC</code> and <code>LOO</code> based on the pointwise log-likelihood using argument <code>pointwise</code> to substantially reduce memory requirements.</li>
 </ul>
 </div>
-<div id="other-changes-33" class="section level3">
+<div id="other-changes-34" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-33" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-34" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Add horizontal lines to the errorbars in <code>marginal_effects</code> plots for factors.</li>
 </ul>
 </div>
-<div id="bug-fixes-37" class="section level3">
+<div id="bug-fixes-40" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-37" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-40" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could lead to a cryptic error message when changing some parts of the model <code>formula</code> using the <code>update</code> method.</li>
 <li>Fix a bug that could lead to an error when calling <code>marginal_effects</code> for predictors that were generated with the <code><a href="https://rdrr.io/r/base/scale.html">base::scale</a></code> function thanks to Tom Wallis.</li>
@@ -1615,9 +1692,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Center the fixed effects design matrix also in multivariate models. This may lead to increased sampling speed in models with many predictors.</li>
 </ul>
 </div>
-<div id="other-changes-34" class="section level3">
+<div id="other-changes-35" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-34" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-35" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Refactor <code>Stan</code> code and data generating functions to be more consistent and easier to extent.</li>
 <li>Improve checks of user-define prior specifications.</li>
@@ -1626,9 +1703,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Allow to define category specific effects in ordinal models directly within the <code>formula</code> argument.</li>
 </ul>
 </div>
-<div id="bug-fixes-38" class="section level3">
+<div id="bug-fixes-41" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-38" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-41" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems in the generated <code>Stan</code> code when using very long non-linear model formulas thanks to Emmanuel Charpentier.</li>
 <li>Fix a bug that prohibited to change priors on single standard deviation parameters in non-linear models thanks to Emmanuel Charpentier.</li>
@@ -1654,9 +1731,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Allow to call the <code>WAIC</code>, <code>LOO</code>, and <code>logLik</code> methods with new data.</li>
 </ul>
 </div>
-<div id="other-changes-35" class="section level3">
+<div id="other-changes-36" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-35" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-36" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Make sure that <code>brms</code> is fully compatible with <code>loo</code> version 0.1.5.</li>
 <li>Optionally define the intercept as an ordinary fixed effect to avoid the reparametrization via centering of the fixed effects design matrix.</li>
@@ -1666,12 +1743,12 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Do not remove bad behaving chains anymore as they may point to general convergence problems that are dangerous to ignore.</li>
 <li>Improve flexibility of the <code>theme</code> argument in all plotting functions.</li>
 <li>Only show the legend once per page, when computing trace and density plots with the <code>plot</code> method.</li>
-<li>Move code of self-defined <code>Stan</code> functions to <code>inst/chunks</code> and incorporate them into the models using <code><a href="https://mc-stan.org/rstan/reference/stanc.html">rstan::stanc_builder</a></code>. Also, add unit tests for these functions.</li>
+<li>Move code of self-defined <code>Stan</code> functions to <code>inst/chunks</code> and incorporate them into the models using <code><a href="https://rdrr.io/pkg/rstan/man/stanc.html">rstan::stanc_builder</a></code>. Also, add unit tests for these functions.</li>
 </ul>
 </div>
-<div id="bug-fixes-39" class="section level3">
+<div id="bug-fixes-42" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-39" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-42" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix problems when predicting with <code>newdata</code> for zero-inflated and hurdle models thanks to Ruben Arslan.</li>
 <li>Fix problems when predicting with <code>newdata</code> if it is a subset of the data stored in a <code>brmsfit</code> object thanks to Ruben Arslan.</li>
@@ -1702,9 +1779,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Add a <code>plot</code> method for objects returned by method <code>hypothesis</code> to visualize prior and posterior distributions of the hypotheses being tested.</li>
 </ul>
 </div>
-<div id="other-changes-36" class="section level3">
+<div id="other-changes-37" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-36" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-37" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Improve evaluation of the response part of the <code>formula</code> argument to reliably allow terms with more than one variable (e.g., <code>y/x ~ 1</code>).</li>
 <li>Improve sampling efficiency of models containing many fixed effects through centering the fixed effects design matrix thanks to Wayne Folta.</li>
@@ -1717,9 +1794,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Amend names of random effects parameters to simplify matching with their respective grouping factor levels.</li>
 </ul>
 </div>
-<div id="bug-fixes-40" class="section level3">
+<div id="bug-fixes-43" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-40" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-43" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug in the <code>hypothesis</code> method that could cause valid model parameters to be falsely reported as invalid.</li>
 <li>Fix a bug in the <code>prior_samples</code> method that could cause prior samples of parameters of the same class to be artificially correlated.</li>
@@ -1751,9 +1828,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Report model weights computed by the <code>loo</code> package when comparing multiple fitted models.</li>
 </ul>
 </div>
-<div id="other-changes-37" class="section level3">
+<div id="other-changes-38" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-37" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-38" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Separate the fixed effects Intercept from other fixed effects in the <code>Stan</code> code to slightly improve sampling efficiency.</li>
 <li>Move autoregressive (AR) effects of the response from the <code>cor_ar</code> to the <code>cor_arr</code> function as the result of implementing AR effects of residuals.</li>
@@ -1767,9 +1844,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Improve documentation to better explain differences in autoregressive effects across R packages.</li>
 </ul>
 </div>
-<div id="bug-fixes-41" class="section level3">
+<div id="bug-fixes-44" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-41" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-44" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could cause an unexpected error when the <code>predict</code> method was called with <code>newdata</code>.</li>
 <li>Avoid side effects of the <code>rstan</code> compilation routines that could occasionally cause R to crash.</li>
@@ -1795,9 +1872,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>New S3 methods <code>fitted</code> and <code>residuals</code> to compute fitted values and residuals, respectively.</li>
 </ul>
 </div>
-<div id="other-changes-38" class="section level3">
+<div id="other-changes-39" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-38" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-39" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Arguments <code>WAIC</code> and <code>predict</code> are removed from the <code>brm</code> function, as they are no longer necessary.</li>
 <li>New argument <code>cluster_type</code> in function <code>brm</code> allowing to choose the cluster type created by the parallel package.</li>
@@ -1806,9 +1883,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>S3 method <code>VarCorr</code> now always returns covariance matrices regardless of whether correlations were estimated.</li>
 </ul>
 </div>
-<div id="bug-fixes-42" class="section level3">
+<div id="bug-fixes-45" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-42" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-45" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug in S3 method <code>hypothesis</code> related to the calculation of Bayes-factors for point hypotheses.</li>
 <li>User-defined covariance matrices that are not strictly positive definite for numerical reasons should now be handled correctly.</li>
@@ -1830,9 +1907,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Compute Bayes-factors for point hypotheses in S3 method <code>hypothesis</code>.</li>
 </ul>
 </div>
-<div id="bug-fixes-43" class="section level3">
+<div id="bug-fixes-46" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-43" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-46" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could cause an error for models with multiple grouping factors thanks to Jonathan Williams.</li>
 <li>Fix a bug that could cause an error for weighted poisson and exponential models.</li>
@@ -1855,9 +1932,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Introduce new family <code>bernoulli</code> for dichotomous response variables as a more efficient alternative to families <code>binomial</code> or <code>categorical</code> in this special case.</li>
 </ul>
 </div>
-<div id="other-changes-39" class="section level3">
+<div id="other-changes-40" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-39" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-40" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Slightly change the internal structure of brms to reflect that <code>rstan</code> is finally on CRAN.</li>
 <li>Thoroughly check validity of the response variable before the data is passed to <code>Stan</code>.</li>
@@ -1868,9 +1945,9 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Remove any experimental <code>JAGS</code> code from the package.</li>
 </ul>
 </div>
-<div id="bug-fixes-44" class="section level3">
+<div id="bug-fixes-47" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-44" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-47" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug in S3 method <code>hypothesis</code> leading to an error when numbers with decimal places were used in the formulation of the hypotheses.</li>
 <li>Fix a bug in S3 method <code>ranef</code> that caused an error for grouping factors with only one random effect.</li>
@@ -1895,17 +1972,17 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Introduce new functions <code>cor.ar</code>, <code>cor.ma</code>, and <code>cor.arma</code>, to be used with argument <code>autocor</code> for modeling autoregressive, moving-average, and autoregressive-moving-average models.</li>
 </ul>
 </div>
-<div id="other-changes-40" class="section level3">
+<div id="other-changes-41" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-40" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-41" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Amend parametrization of random effects to increase efficiency of the sampling algorithms.</li>
 <li>Improve vectorization of sampling statements.</li>
 </ul>
 </div>
-<div id="bug-fixes-45" class="section level3">
+<div id="bug-fixes-48" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-45" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-48" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could cause an error when fitting poisson models while <code>predict = TRUE</code>.</li>
 <li>Fix a bug that caused an error when sampling only one chain while <code>silent = TRUE</code>.</li>
@@ -1926,18 +2003,18 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Introduce new families <code>negbinomial</code> (negative binomial) and <code>geometric</code> to allow for more flexibility in modeling count data.</li>
 </ul>
 </div>
-<div id="other-changes-41" class="section level3">
+<div id="other-changes-42" class="section level3">
 <h3 class="hasAnchor">
-<a href="#other-changes-41" class="anchor"></a>Other changes</h3>
+<a href="#other-changes-42" class="anchor"></a>Other changes</h3>
 <ul>
 <li>Amend warning and error messages to make them more informative.</li>
 <li>Correct examples in the documentation.</li>
 <li>Extend the README file.</li>
 </ul>
 </div>
-<div id="bug-fixes-46" class="section level3">
+<div id="bug-fixes-49" class="section level3">
 <h3 class="hasAnchor">
-<a href="#bug-fixes-46" class="anchor"></a>Bug fixes</h3>
+<a href="#bug-fixes-49" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that caused problems when formulas contained more complicated function calls.</li>
 <li>Fix a bug that caused an error when posterior predictives were sampled for family <code>cumulative</code>.</li>

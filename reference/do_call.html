@@ -48,7 +48,9 @@
 
 <meta property="og:title" content="Execute a Function Call — do_call" />
 <meta property="og:description" content="Execute a function call similar to do.call, but without
-deparsing function arguments." />
+deparsing function arguments. For large number of arguments (i.e., more
+than a few thousand) this function currently is somewhat inefficient
+and should be used with care in this case." />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -81,7 +83,7 @@ deparsing function arguments." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -169,10 +171,12 @@ deparsing function arguments." />
 
     <div class="ref-description">
     <p>Execute a function call similar to <code><a href='https://rdrr.io/r/base/do.call.html'>do.call</a></code>, but without
-deparsing function arguments.</p>
+deparsing function arguments. For large number of arguments (i.e., more
+than a few thousand) this function currently is somewhat inefficient
+and should be used with care in this case.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>do_call</span><span class='op'>(</span><span class='va'>what</span>, <span class='va'>args</span>, pkg <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>do_call</span><span class='op'>(</span><span class='va'>what</span>, <span class='va'>args</span>, pkg <span class='op'>=</span> <span class='cn'>NULL</span>, envir <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sys.parent.html'>parent.frame</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -191,6 +195,10 @@ function to be called.</p></td>
       <th>pkg</th>
       <td><p>Optional name of the package in which to search for the
 function if <code>what</code> is a character string.</p></td>
+    </tr>
+    <tr>
+      <th>envir</th>
+      <td><p>An environment within which to evaluate the call.</p></td>
     </tr>
     </table>
 

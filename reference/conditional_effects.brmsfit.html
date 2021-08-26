@@ -81,7 +81,7 @@ predictors including two-way interaction effects." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -293,7 +293,7 @@ function documentations.</p></td>
       <td><p>Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If <code>TRUE</code>, it is recommended 
-to set argument <code>nsamples</code> to a relatively small value 
+to set argument <code>ndraws</code> to a relatively small value 
 (e.g., <code>100</code>) in order to reduce computation time.</p></td>
     </tr>
     <tr>
@@ -360,7 +360,7 @@ uncertainty intervals. Please use argument <code>prob</code> instead.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Further arguments such as <code>subset</code> or <code>nsamples</code>
+      <td><p>Further arguments such as <code>draw_ids</code> or <code>ndraws</code>
 passed to <code><a href='posterior_predict.brmsfit.html'>posterior_predict</a></code> or <code><a href='posterior_epred.brmsfit.html'>posterior_epred</a></code>.</p></td>
     </tr>
     <tr>

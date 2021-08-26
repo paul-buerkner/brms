@@ -84,7 +84,7 @@ yourself." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -179,7 +179,14 @@ yourself.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>get_refmodel</span><span class='op'>(</span><span class='va'>object</span>, newdata <span class='op'>=</span> <span class='cn'>NULL</span>, resp <span class='op'>=</span> <span class='cn'>NULL</span>, folds <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+<span class='fu'>get_refmodel</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  resp <span class='op'>=</span> <span class='cn'>NULL</span>,
+  folds <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cvfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -207,8 +214,16 @@ are performed only for the specified response variables.</p></td>
 indices for each data point in data.</p></td>
     </tr>
     <tr>
+      <th>cvfun</th>
+      <td><p>Optional cross-validation function
+(see <code><a href='https://mc-stan.org/projpred/reference/get-refmodel.html'>get_refmodel</a></code> for details).
+If <code>NULL</code> (the default), <code>cvfun</code> is defined internally
+based on <code><a href='kfold.brmsfit.html'>kfold.brmsfit</a></code>.</p></td>
+    </tr>
+    <tr>
       <th>...</th>
-      <td><p>Further arguments currently ignored.</p></td>
+      <td><p>Further arguments passed to 
+<code><a href='https://mc-stan.org/projpred/reference/get-refmodel.html'>init_refmodel</a></code>.</p></td>
     </tr>
     </table>
 

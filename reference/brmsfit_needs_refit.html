@@ -84,7 +84,7 @@ and scripts should not use it." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -182,6 +182,7 @@ and scripts should not use it.</p>
   <span class='va'>fit</span>,
   sdata <span class='op'>=</span> <span class='cn'>NULL</span>,
   scode <span class='op'>=</span> <span class='cn'>NULL</span>,
+  data <span class='op'>=</span> <span class='cn'>NULL</span>,
   algorithm <span class='op'>=</span> <span class='cn'>NULL</span>,
   silent <span class='op'>=</span> <span class='cn'>FALSE</span>,
   verbose <span class='op'>=</span> <span class='cn'>FALSE</span>
@@ -197,12 +198,17 @@ and scripts should not use it.</p>
     <tr>
       <th>sdata</th>
       <td><p>New Stan data (result of a call to <code><a href='make_standata.html'>make_standata</a></code>).
-Pass <code>NULL</code> to avoid data check.</p></td>
+Pass <code>NULL</code> to avoid this data check.</p></td>
     </tr>
     <tr>
       <th>scode</th>
       <td><p>New Stan code (result of a call to <code><a href='make_stancode.html'>make_stancode</a></code>).
-Pass <code>NULL</code> to avoid code check.</p></td>
+Pass <code>NULL</code> to avoid this code check.</p></td>
+    </tr>
+    <tr>
+      <th>data</th>
+      <td><p>New data to check consistency of factor level names.
+Pass <code>NULL</code> to avoid this data check.</p></td>
     </tr>
     <tr>
       <th>algorithm</th>

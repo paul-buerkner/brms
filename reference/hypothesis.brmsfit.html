@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -178,6 +178,7 @@
   group <span class='op'>=</span> <span class='st'>""</span>,
   scope <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"standard"</span>, <span class='st'>"ranef"</span>, <span class='st'>"coef"</span><span class='op'>)</span>,
   alpha <span class='op'>=</span> <span class='fl'>0.05</span>,
+  robust <span class='op'>=</span> <span class='cn'>FALSE</span>,
   seed <span class='op'>=</span> <span class='cn'>NULL</span>,
   <span class='va'>...</span>
 <span class='op'>)</span>
@@ -185,7 +186,7 @@
 <span class='fu'>hypothesis</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for default</span>
-<span class='fu'>hypothesis</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>hypothesis</span>, alpha <span class='op'>=</span> <span class='fl'>0.05</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+<span class='fu'>hypothesis</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>hypothesis</span>, alpha <span class='op'>=</span> <span class='fl'>0.05</span>, robust <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -210,7 +211,7 @@ Default is "b" for population-level effects.
 Other typical options are "sd" or "cor". 
 If <code>class = NULL</code>, all parameters can be tested
 against each other, but have to be specified with their full name 
-(see also <code><a href='parnames.html'>parnames</a></code>)</p></td>
+(see also <code><a href='draws-index-brms.html'>variables</a></code>)</p></td>
     </tr>
     <tr>
       <th>group</th>
@@ -231,6 +232,13 @@ respectively.</p></td>
       <th>alpha</th>
       <td><p>The alpha-level of the tests (default is 0.05;
 see 'Details' for more information).</p></td>
+    </tr>
+    <tr>
+      <th>robust</th>
+      <td><p>If <code>FALSE</code> (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If <code>TRUE</code>, the median and the 
+median absolute deviation (MAD) are applied instead.</p></td>
     </tr>
     <tr>
       <th>seed</th>
@@ -274,10 +282,10 @@ to make results reproducible.</p></td>
 <p>The <code>Evid.Ratio</code> may sometimes be <code>0</code> or <code>Inf</code> implying very
   small or large evidence, respectively, in favor of the tested hypothesis.
   For one-sided hypotheses pairs, this basically means that all posterior
-  samples are on the same side of the value dividing the two hypotheses. In
+  draws are on the same side of the value dividing the two hypotheses. In
   that sense, instead of <code>0</code> or <code>Inf,</code> you may rather read it as
   <code>Evid.Ratio</code> smaller <code>1 / S</code> or greater <code>S</code>, respectively,
-  where <code>S</code> denotes the number of posterior samples used in the
+  where <code>S</code> denotes the number of posterior draws used in the
   computations.</p> 
 <p>The argument <code>alpha</code> specifies the size of the credible interval
   (i.e., Bayesian confidence interval). For instance, if we tested a

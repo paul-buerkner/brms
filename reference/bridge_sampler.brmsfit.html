@@ -84,7 +84,7 @@ the corresponding method for stanfit objects." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -203,10 +203,10 @@ the corresponding method for <code>stanfit</code> objects.</p>
   = save_pars(all = TRUE)</code> in the call to <code>brm</code>, if you are planning to
   apply <code>bridge_sampler</code> to your models.</p>  
 <p>The computation of marginal likelihoods based on bridge sampling requires
-  a lot more posterior samples than usual. A good conservative 
-  rule of thump is perhaps 10-fold more samples (read: the default of 4000 
-  samples may not be enough in many cases). If not enough posterior
-  samples are provided, the bridge sampling algorithm tends to be 
+  a lot more posterior draws than usual. A good conservative 
+  rule of thump is perhaps 10-fold more draws (read: the default of 4000 
+  draws may not be enough in many cases). If not enough posterior
+  draws are provided, the bridge sampling algorithm tends to be 
   unstable leading to considerably different results each time it is run. 
   We thus recommend running <code>bridge_sampler</code>
   multiple times to check the stability of the results.</p>

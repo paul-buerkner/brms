@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Posterior Samples of the Linear Predictor — posterior_linpred.brmsfit • brms</title>
+<title>Posterior Draws of the Linear Predictor — posterior_linpred.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,8 @@
 
 
 
-<meta property="og:title" content="Posterior Samples of the Linear Predictor — posterior_linpred.brmsfit" />
-<meta property="og:description" content="Compute posterior samples of the linear predictor, that is samples before
+<meta property="og:title" content="Posterior Draws of the Linear Predictor — posterior_linpred.brmsfit" />
+<meta property="og:description" content="Compute posterior draws of the linear predictor, that is draws before
 applying any link functions or other transformations. Can be performed for
 the data used to fit the model (posterior predictive checks) or for new data." />
 <meta property="og:image" content="/logo.png" />
@@ -82,7 +82,7 @@ the data used to fit the model (posterior predictive checks) or for new data." /
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -163,13 +163,13 @@ the data used to fit the model (posterior predictive checks) or for new data." /
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Posterior Samples of the Linear Predictor</h1>
+    <h1>Posterior Draws of the Linear Predictor</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/posterior_epred.R'><code>R/posterior_epred.R</code></a></small>
     <div class="hidden name"><code>posterior_linpred.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Compute posterior samples of the linear predictor, that is samples before
+    <p>Compute posterior draws of the linear predictor, that is draws before
 applying any link functions or other transformations. Can be performed for
 the data used to fit the model (posterior predictive checks) or for new data.</p>
     </div>
@@ -184,8 +184,9 @@ the data used to fit the model (posterior predictive checks) or for new data.</p
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
   dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
   nlpar <span class='op'>=</span> <span class='cn'>NULL</span>,
-  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  incl_thres <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   sort <span class='op'>=</span> <span class='cn'>FALSE</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
@@ -199,14 +200,10 @@ the data used to fit the model (posterior predictive checks) or for new data.</p
     </tr>
     <tr>
       <th>transform</th>
-      <td><p>(Deprecated) Logical; if <code>FALSE</code>
-(the default), samples of the linear predictor are returned.
-If <code>TRUE</code>, samples of transformed linear predictor,
-that is, the mean of the posterior predictive distribution
-are returned instead (see <code><a href='posterior_epred.brmsfit.html'>posterior_epred</a></code> for details).
-Only implemented for compatibility with the 
-<code><a href='https://mc-stan.org/rstantools/reference/posterior_linpred.html'>posterior_linpred</a></code>
-generic.</p></td>
+      <td><p>Logical; if <code>FALSE</code>
+(the default), draws of the linear predictor are returned.
+If <code>TRUE</code>, draws of transformed linear predictor,
+that is, after applying the link function are returned.</p></td>
     </tr>
     <tr>
       <th>newdata</th>
@@ -233,8 +230,9 @@ are performed only for the specified response variables.</p></td>
     </tr>
     <tr>
       <th>dpar</th>
-      <td><p>Optional name of a predicted distributional parameter.
-If specified, expected predictions of this parameters are returned.</p></td>
+      <td><p>Name of a predicted distributional parameter
+for which draws are to be returned. By default, draws
+of the main distributional parameter(s) <code>"mu"</code> are returned.</p></td>
     </tr>
     <tr>
       <th>nlpar</th>
@@ -242,15 +240,22 @@ If specified, expected predictions of this parameters are returned.</p></td>
 If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <th>incl_thres</th>
+      <td><p>Logical; only relevant for ordinal models when
+<code>transform</code> is <code>FALSE</code>, and ignored otherwise. Shall the
+thresholds and category-specific effects be included in the linear
+predictor? For backwards compatibility, the default is to not include them.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
+    </tr>
+    <tr>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>sort</th>

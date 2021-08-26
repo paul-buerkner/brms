@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -176,12 +176,12 @@
   newdata <span class='op'>=</span> <span class='cn'>NULL</span>,
   re_formula <span class='op'>=</span> <span class='cn'>NULL</span>,
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
-  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   pointwise <span class='op'>=</span> <span class='cn'>FALSE</span>,
   combine <span class='op'>=</span> <span class='cn'>TRUE</span>,
   add_point_estimate <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  cores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"mc.cores"</span>, <span class='fl'>1</span><span class='op'>)</span>,
+  cores <span class='op'>=</span> <span class='cn'>NULL</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
@@ -212,21 +212,21 @@ if <code>NA</code>, include no group-level effects.</p></td>
 are performed only for the specified response variables.</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>pointwise</th>
       <td><p>A flag indicating whether to compute the full
 log-likelihood matrix at once (the default), or just return
-the likelihood function along with all data and samples
+the likelihood function along with all data and draws
 required to compute the log-likelihood separately for each
 observation. The latter option is rarely useful when
 calling <code>log_lik</code> directly, but rather when computing
@@ -246,8 +246,8 @@ with the <code><a href='loo_subsample.brmsfit.html'>loo_subsample</a></code> met
     </tr>
     <tr>
       <th>cores</th>
-      <td><p>Number of cores (defaults to <code>1</code>).
-Can be set globally via the <code>mc.cores</code> option.</p></td>
+      <td><p>Number of cores (defaults to <code>1</code>). On non-Windows systems,
+this argument can be set globally via the <code>mc.cores</code> option.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -259,13 +259,13 @@ that control several aspects of data validation and prediction.</p></td>
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>Usually, an S x N matrix containing the pointwise log-likelihood
- samples, where S is the number of samples and N is the number 
+ draws, where S is the number of draws and N is the number 
  of observations in the data. For multivariate models and if 
  <code>combine</code> is <code>FALSE</code>, an S x N x R array is returned, 
  where R is the number of response variables.
  If <code>pointwise = TRUE</code>, the output is a function
  with a <code>draws</code> attribute containing all relevant
- data and posterior samples.</p>
+ data and posterior draws.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p><code>NA</code> values within factors in <code>newdata</code>, 

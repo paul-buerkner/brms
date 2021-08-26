@@ -48,7 +48,7 @@
 
 <meta property="og:title" content="Expected Values of the Posterior Predictive Distribution — fitted.brmsfit" />
 <meta property="og:description" content="This method is an alias of posterior_epred.brmsfit
-with additional arguments for obtaining summaries of the computed samples." />
+with additional arguments for obtaining summaries of the computed draws." />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -81,7 +81,7 @@ with additional arguments for obtaining summaries of the computed samples." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -169,7 +169,7 @@ with additional arguments for obtaining summaries of the computed samples." />
 
     <div class="ref-description">
     <p>This method is an alias of <code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code>
-with additional arguments for obtaining summaries of the computed samples.</p>
+with additional arguments for obtaining summaries of the computed draws.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
@@ -181,8 +181,8 @@ with additional arguments for obtaining summaries of the computed samples.</p>
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
   dpar <span class='op'>=</span> <span class='cn'>NULL</span>,
   nlpar <span class='op'>=</span> <span class='cn'>NULL</span>,
-  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   sort <span class='op'>=</span> <span class='cn'>FALSE</span>,
   summary <span class='op'>=</span> <span class='cn'>TRUE</span>,
   robust <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -236,15 +236,15 @@ If specified, expected predictions of this parameters are returned.</p></td>
 If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>sort</th>

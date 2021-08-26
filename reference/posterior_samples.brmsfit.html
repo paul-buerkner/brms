@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Extract Posterior Samples — posterior_samples.brmsfit • brms</title>
+<title>(Deprecated) Extract Posterior Samples — posterior_samples.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,11 @@
 
 
 
-<meta property="og:title" content="Extract Posterior Samples — posterior_samples.brmsfit" />
-<meta property="og:description" content="Extract posterior samples of specified parameters." />
+<meta property="og:title" content="(Deprecated) Extract Posterior Samples — posterior_samples.brmsfit" />
+<meta property="og:description" content="Extract posterior samples of specified parameters. The
+posterior_samples method is deprecated. We recommend using the more
+modern and consistent as_draws_* extractor
+functions of the posterior package instead." />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -80,7 +83,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -161,13 +164,16 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Extract Posterior Samples</h1>
+    <h1>(Deprecated) Extract Posterior Samples</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/posterior_samples.R'><code>R/posterior_samples.R</code></a></small>
     <div class="hidden name"><code>posterior_samples.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Extract posterior samples of specified parameters.</p>
+    <p>Extract posterior samples of specified parameters. The
+<code>posterior_samples</code> method is deprecated. We recommend using the more
+modern and consistent <code><a href='draws-brms.html'>as_draws_*</a></code> extractor
+functions of the <span class="pkg">posterior</span> package instead.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
@@ -182,16 +188,7 @@
   <span class='va'>...</span>
 <span class='op'>)</span>
 
-<span class='fu'>posterior_samples</span><span class='op'>(</span><span class='va'>x</span>, pars <span class='op'>=</span> <span class='cn'>NA</span>, <span class='va'>...</span><span class='op'>)</span>
-
-<span class='co'># S3 method for brmsfit</span>
-<span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span><span class='op'>(</span><span class='va'>x</span>, row.names <span class='op'>=</span> <span class='cn'>NULL</span>, optional <span class='op'>=</span> <span class='cn'>TRUE</span>, <span class='va'>...</span><span class='op'>)</span>
-
-<span class='co'># S3 method for brmsfit</span>
-<span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span>
-
-<span class='co'># S3 method for brmsfit</span>
-<span class='fu'><a href='https://rdrr.io/r/base/array.html'>as.array</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+<span class='fu'>posterior_samples</span><span class='op'>(</span><span class='va'>x</span>, pars <span class='op'>=</span> <span class='cn'>NA</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -237,27 +234,17 @@ instead of a <code>data.frame</code>? Defaults to <code>FALSE</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>For <code>as.data.frame</code>, <code>as.matrix</code>, and <code>as.array</code>:
-Further arguments to be passed to <code>posterior_samples</code>.</p></td>
-    </tr>
-    <tr>
-      <th>row.names, optional</th>
-      <td><p>See <code><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></code>.</p></td>
+      <td><p>Arguments passed to individual methods (if applicable).</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data.frame (matrix or array) containing the posterior samples, 
-  with one column per parameter. In case an array is returned,
-  it contains one additional dimension for the chains.</p>
-    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+    <p>A data.frame (matrix or array) containing the posterior samples.</p>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <p>Currently there are methods for <code>brmsfit</code> objects.
-  <code>as.data.frame.brmsfit</code>, <code>as.matrix.brmsfit</code>, and
-  <code>as.array.brmsfit</code> are basically aliases of 
-  <code>posterior_samples.brmsfit</code> and differ from
-  each other only in type of the returned object.</p>
+    <div class='dont-index'><p><code><a href='draws-brms.html'>as_draws</a></code>,
+   <code><a href='as.data.frame.brmsfit.html'>as.data.frame</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
@@ -265,11 +252,11 @@ Further arguments to be passed to <code>posterior_samples</code>.</p></td>
            data <span class='op'>=</span> <span class='va'>inhaler</span>, family <span class='op'>=</span> <span class='st'>"cumulative"</span><span class='op'>)</span>
 
 <span class='co'># extract posterior samples of population-level effects </span>
-<span class='va'>samples1</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_samples</span><span class='op'>(</span><span class='va'>fit</span>, <span class='st'>"^b"</span><span class='op'>)</span>
+<span class='va'>samples1</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_samples</span><span class='op'>(</span><span class='va'>fit</span>, pars <span class='op'>=</span> <span class='st'>"^b"</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>samples1</span><span class='op'>)</span>
 
 <span class='co'># extract posterior samples of group-level standard deviations</span>
-<span class='va'>samples2</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_samples</span><span class='op'>(</span><span class='va'>fit</span>, <span class='st'>"^sd_"</span><span class='op'>)</span>
+<span class='va'>samples2</span> <span class='op'>&lt;-</span> <span class='fu'>posterior_samples</span><span class='op'>(</span><span class='va'>fit</span>, pars <span class='op'>=</span> <span class='st'>"^sd_"</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>samples2</span><span class='op'>)</span>
 <span class='op'>}</span>
 

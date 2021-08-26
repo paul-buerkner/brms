@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Samples from the Posterior Predictive Distribution — posterior_predict.brmsfit • brms</title>
+<title>Draws from the Posterior Predictive Distribution — posterior_predict.brmsfit • brms</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,14 +46,14 @@
 
 
 
-<meta property="og:title" content="Samples from the Posterior Predictive Distribution — posterior_predict.brmsfit" />
-<meta property="og:description" content="Compute posterior samples of the posterior predictive distribution. Can be
+<meta property="og:title" content="Draws from the Posterior Predictive Distribution — posterior_predict.brmsfit" />
+<meta property="og:description" content="Compute posterior draws of the posterior predictive distribution. Can be
 performed for the data used to fit the model (posterior predictive checks) or
-for new data. By definition, these samples have higher variance than samples
+for new data. By definition, these draws have higher variance than draws
 of the means of the posterior predictive distribution computed by
 posterior_epred.brmsfit. This is because the residual error
 is incorporated in posterior_predict. However, the estimated means of
-both methods averaged across samples should be very similar." />
+both methods averaged across draws should be very similar." />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -86,7 +86,7 @@ both methods averaged across samples should be very similar." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -167,19 +167,19 @@ both methods averaged across samples should be very similar." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Samples from the Posterior Predictive Distribution</h1>
+    <h1>Draws from the Posterior Predictive Distribution</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/posterior_predict.R'><code>R/posterior_predict.R</code></a></small>
     <div class="hidden name"><code>posterior_predict.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Compute posterior samples of the posterior predictive distribution. Can be
+    <p>Compute posterior draws of the posterior predictive distribution. Can be
 performed for the data used to fit the model (posterior predictive checks) or
-for new data. By definition, these samples have higher variance than samples
+for new data. By definition, these draws have higher variance than draws
 of the means of the posterior predictive distribution computed by
 <code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code>. This is because the residual error
 is incorporated in <code>posterior_predict</code>. However, the estimated means of
-both methods averaged across samples should be very similar.</p>
+both methods averaged across draws should be very similar.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
@@ -191,11 +191,11 @@ both methods averaged across samples should be very similar.</p>
   transform <span class='op'>=</span> <span class='cn'>NULL</span>,
   resp <span class='op'>=</span> <span class='cn'>NULL</span>,
   negative_rt <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  nsamples <span class='op'>=</span> <span class='cn'>NULL</span>,
-  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
+  draw_ids <span class='op'>=</span> <span class='cn'>NULL</span>,
   sort <span class='op'>=</span> <span class='cn'>FALSE</span>,
   ntrys <span class='op'>=</span> <span class='fl'>5</span>,
-  cores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"mc.cores"</span>, <span class='fl'>1</span><span class='op'>)</span>,
+  cores <span class='op'>=</span> <span class='cn'>NULL</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
@@ -244,15 +244,15 @@ This allows to distinguish responses on the upper and
 lower boundary. Defaults to <code>FALSE</code>.</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>Positive integer indicating how many posterior samples should
-be used. If <code>NULL</code> (the default) all samples are used. Ignored if
-<code>subset</code> is not <code>NULL</code>.</p></td>
+      <th>ndraws</th>
+      <td><p>Positive integer indicating how many posterior draws should
+be used. If <code>NULL</code> (the default) all draws are used. Ignored if
+<code>draw_ids</code> is not <code>NULL</code>.</p></td>
     </tr>
     <tr>
-      <th>subset</th>
-      <td><p>A numeric vector specifying the posterior samples to be used.
-If <code>NULL</code> (the default), all samples are used.</p></td>
+      <th>draw_ids</th>
+      <td><p>An integer vector specifying the posterior draws to be used.
+If <code>NULL</code> (the default), all draws are used.</p></td>
     </tr>
     <tr>
       <th>sort</th>
@@ -269,8 +269,8 @@ for truncated discrete models only
     </tr>
     <tr>
       <th>cores</th>
-      <td><p>Number of cores (defaults to <code>1</code>).
-Can be set globally via the <code>mc.cores</code> option.</p></td>
+      <td><p>Number of cores (defaults to <code>1</code>). On non-Windows systems,
+this argument can be set globally via the <code>mc.cores</code> option.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -283,7 +283,7 @@ that control several aspects of data validation and prediction.</p></td>
 
     <p>An <code>array</code> of predicted response values. In univariate models,
   the output is as an S x N matrix, where S is the number of posterior
-  samples and N is the number of observations. In multivariate models, an
+  draws and N is the number of observations. In multivariate models, an
   additional dimension is added to the output which indexes along the
   different response variables.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>

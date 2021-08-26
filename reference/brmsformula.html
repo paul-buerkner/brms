@@ -82,7 +82,7 @@ models for all parameters of the assumed response distribution." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -388,9 +388,9 @@ if those variables are required for post-processing the model.</p></td>
   <code>sdx2</code> and <code>z</code> is a predictor without error
   (e.g., an experimental setting), we can model all main effects 
   and interactions of the three predictors in the well known manner: 
-  <code>y ~ me(x, sdx) * me(x2, sdx2) * z</code>. In future version of <span class="pkg">brms</span>,
-  a vignette will be added to explain more details about these
-  so called 'error-in-variables' models and provide real world examples.</p>  
+  <code>y ~ me(x, sdx) * me(x2, sdx2) * z</code>.
+  The <code>me</code> function is soft deprecated in favor of the more flexible
+  and consistent <code>mi</code> function (see below).</p>  
 <p>When a variable contains missing values, the corresponding rows will
   be excluded from the data by default (row-wise exclusion). However,
   quite often we want to keep these rows and instead estimate the missing values.
@@ -406,7 +406,10 @@ if those variables are required for post-processing the model.</p></td>
   we go for <code>y ~ mi(x) + z</code>. Second, we need to model <code>x</code> 
   as an additional response with corresponding predictors and the 
   addition term <code><a href='mi.html'>mi()</a></code>. In our example, we could write
-  <code>x | mi() ~ z</code>. See <code><a href='mi.html'>mi</a></code> for examples with real data.</p>  
+  <code>x | mi() ~ z</code>. Measurement error may be included via
+  the <code>sdy</code> argument, say, <code>x | mi(sdy = se) ~ z</code>.
+  See <code><a href='mi.html'>mi</a></code> for examples with real data.</p>  
+  
 <p><b>Autocorrelation terms</b></p>  
 <p>Autocorrelation terms can be directly specified inside the <code>pterms</code>
   part as well. Details can be found in <code><a href='autocor-terms.html'>autocor-terms</a></code>.</p>  
@@ -457,7 +460,7 @@ if those variables are required for post-processing the model.</p></td>
   <code>rate(denom)</code> is equivalent to adding <code><a href='https://rdrr.io/r/stats/offset.html'>offset(log(denom))</a></code> to
   the linear predictor of the main parameter but the former is arguably
   more convenient and explicit.</p>  
-<p>With the exception of categorical, ordinal, and mixture families, 
+<p>With the exception of categorical and ordinal families, 
   left, right, and interval censoring can be modeled through 
   <code>y | cens(censored) ~ predictors</code>. The censoring variable 
   (named <code>censored</code> in this example) should contain the values 
@@ -470,7 +473,7 @@ if those variables are required for post-processing the model.</p></td>
   While the lower bounds are given in <code>y</code>, the upper bounds are given 
   in <code>y2</code> for interval censored data. Intervals are assumed to be open 
   on the left and closed on the right: <code>(y, y2]</code>.</p>  
-<p>With the exception of categorical, ordinal, and mixture families, 
+<p>With the exception of categorical and ordinal families, 
   the response distribution can be truncated using the <code>trunc</code> 
   function in the addition part. If the response variable is truncated 
   between, say, 0 and 100, we can specify this via
@@ -510,13 +513,19 @@ if those variables are required for post-processing the model.</p></td>
   as a response on the upper boundary of the diffusion process and zeros
   will be treated as a response on the lower boundary. Alternatively,
   the variable passed to <code>dec</code> might also be a character vector 
-  consisting of <code>'lower'</code> and <code>'upper'</code>.</p>
+  consisting of <code>'lower'</code> and <code>'upper'</code>.</p>  
+<p>All families support the <code>index</code> addition term to uniquely identify
+  each observation of the corresponding response variable. Currently,
+  <code>index</code> is primarily useful in combination with the <code>subset</code>
+  addition and <code><a href='mi.html'>mi</a></code> terms.</p>
 <p>For custom families, it is possible to pass an arbitrary number of real and
   integer vectors via the addition terms <code>vreal</code> and <code>vint</code>,
   respectively. An example is provided in
-  <code><a href='../articles/brms_customfamilies.html'>vignette('brms_customfamilies')</a></code>.</p>
-<p>Multiple addition terms may be specified at the same time using the
-  <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. For example, the formula
+  <code><a href='../articles/brms_customfamilies.html'>vignette('brms_customfamilies')</a></code>. To pass multiple vectors of the
+  same data type, provide them separated by commas inside a single 
+  <code>vreal</code> or <code>vint</code> statement.</p>
+<p>Multiple addition terms of different types may be specified at the same 
+  time using the <code><a href='https://rdrr.io/r/base/Arithmetic.html'>+</a></code> operator. For example, the formula
   <code>formula = yi | se(sei) + cens(censored) ~ 1</code> implies a censored 
   meta-analytic model.</p>  
 <p>The addition argument <code>disp</code> (short for dispersion) 

@@ -81,7 +81,7 @@ method that is customized for MCMC output." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
       </span>
     </div>
 
@@ -173,7 +173,7 @@ method that is customized for MCMC output.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/pairs.html'>pairs</a></span><span class='op'>(</span><span class='va'>x</span>, pars <span class='op'>=</span> <span class='cn'>NA</span>, fixed <span class='op'>=</span> <span class='cn'>FALSE</span>, exact_match <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+<span class='fu'><a href='https://rdrr.io/r/graphics/pairs.html'>pairs</a></span><span class='op'>(</span><span class='va'>x</span>, pars <span class='op'>=</span> <span class='cn'>NA</span>, variable <span class='op'>=</span> <span class='cn'>NULL</span>, regex <span class='op'>=</span> <span class='cn'>FALSE</span>, fixed <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -184,19 +184,27 @@ method that is customized for MCMC output.</p>
     </tr>
     <tr>
       <th>pars</th>
-      <td><p>Names of the parameters to plot, as given by a character vector 
-or a regular expression. By default, all parameters except 
-for group-level and smooth effects are plotted.</p></td>
+      <td><p>Deprecated alias of <code>variable</code>.
+Names of the parameters to plot, as given by a
+character vector or a regular expression.</p></td>
+    </tr>
+    <tr>
+      <th>variable</th>
+      <td><p>Names of the variables (parameters) to plot, as given by a
+character vector or a regular expression (if <code>regex = TRUE</code>). By
+default, a hopefully not too large selection of variables is plotted.</p></td>
+    </tr>
+    <tr>
+      <th>regex</th>
+      <td><p>Logical; Indicates whether <code>variable</code> should
+be treated as regular expressions. Defaults to <code>FALSE</code>.</p></td>
     </tr>
     <tr>
       <th>fixed</th>
-      <td><p>Indicates whether parameter names 
+      <td><p>(Deprecated) Indicates whether parameter names 
 should be matched exactly (<code>TRUE</code>) or treated as
-regular expressions (<code>FALSE</code>). Default is <code>FALSE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>exact_match</th>
-      <td><p>Deprecated alias of argument <code>fixed</code>.</p></td>
+regular expressions (<code>FALSE</code>). Default is <code>FALSE</code>
+and only works with argument <code>pars</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -215,8 +223,8 @@ regular expressions (<code>FALSE</code>). Default is <code>FALSE</code>.</p></td
 <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span><span class='op'>(</span><span class='va'>count</span> <span class='op'>~</span> <span class='va'>zAge</span> <span class='op'>+</span> <span class='va'>zBase</span> <span class='op'>*</span> <span class='va'>Trt</span> 
            <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>patient</span><span class='op'>)</span> <span class='op'>+</span> <span class='op'>(</span><span class='fl'>1</span><span class='op'>|</span><span class='va'>visit</span><span class='op'>)</span>, 
            data <span class='op'>=</span> <span class='va'>epilepsy</span>, family <span class='op'>=</span> <span class='st'>"poisson"</span><span class='op'>)</span>  
-<span class='fu'><a href='https://rdrr.io/r/graphics/pairs.html'>pairs</a></span><span class='op'>(</span><span class='va'>fit</span>, pars <span class='op'>=</span> <span class='fu'><a href='parnames.html'>parnames</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>3</span><span class='op'>]</span>, fixed <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/pairs.html'>pairs</a></span><span class='op'>(</span><span class='va'>fit</span>, pars <span class='op'>=</span> <span class='st'>"^sd_"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/pairs.html'>pairs</a></span><span class='op'>(</span><span class='va'>fit</span>, variable <span class='op'>=</span> <span class='fu'><a href='draws-index-brms.html'>variables</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>3</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/pairs.html'>pairs</a></span><span class='op'>(</span><span class='va'>fit</span>, variable <span class='op'>=</span> <span class='st'>"^sd_"</span>, regex <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='op'>}</span>
 
 </div></pre>
