@@ -1,3 +1,11 @@
+# brms 2.16.1++
+
+### Bug Fixes
+
+* Ensure that argument `overwrite` in `add_criterion`
+is working as intended thanks to Ruben Arslan. (#1219)
+
+
 # brms 2.16.1
 
 ### Bug Fixes

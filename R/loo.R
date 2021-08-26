@@ -499,24 +499,26 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   force_save <- as_one_logical(force_save)
   overwrite <- as_one_logical(overwrite)
   if (overwrite) {
-    # remove previously stored criterion objects
-    x$criteria[criterion] <- list(NULL)
+    # recompute all criteria
+    new_criteria <- criterion
+  } else {
+    # only computed criteria not already stored
+    new_criteria <- criterion[ulapply(x$criteria[criterion], is.null)]
   }
-  new_criteria <- criterion[ulapply(x$criteria[criterion], is.null)]
   args <- list(x, ...)
-  for (fun in intersect(criterion, loo_options)) {
+  for (fun in intersect(new_criteria, loo_options)) {
     args$model_names <- model_name
     x$criteria[[fun]] <- do_call(fun, args)
   }
-  if ("bayes_R2" %in% criterion) {
+  if ("bayes_R2" %in% new_criteria) {
     args$summary <- FALSE
     x$criteria$bayes_R2 <- do_call(bayes_R2, args)
   }
-  if ("loo_R2" %in% criterion) {
+  if ("loo_R2" %in% new_criteria) {
     args$summary <- FALSE
     x$criteria$loo_R2 <- do_call(loo_R2, args)
   }
-  if ("marglik" %in% criterion) {
+  if ("marglik" %in% new_criteria) {
     x$criteria$marglik <- do_call(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_criteria))) {
