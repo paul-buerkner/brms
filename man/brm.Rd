@@ -29,6 +29,7 @@ brm(
   thin = 1,
   cores = getOption("mc.cores", 1),
   threads = NULL,
+  opencl = NULL,
   normalize = getOption("brms.normalize", TRUE),
   control = NULL,
   algorithm = getOption("brms.algorithm", "sampling"),
@@ -39,7 +40,7 @@ brm(
   save_model = NULL,
   stan_model_args = list(),
   file = NULL,
-  file_refit = "never",
+  file_refit = getOption("brms.file_refit", "never"),
   empty = FALSE,
   rename = TRUE,
   ...
@@ -93,18 +94,18 @@ It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn
-additionally to the posterior samples. Options are \code{"no"} (the
-default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+\item{sample_prior}{Indicate if draws from priors should be drawn
+additionally to the posterior draws. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these draws can
 be used to calculate Bayes factors for point hypotheses via
 \code{\link{hypothesis}}. Please note that improper priors are not sampled,
 including the default improper priors used by \code{brm}. See
 \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default
+that prior draws for the overall intercept are not obtained by default
 for technical reasons. See \code{\link{brmsformula}} how to obtain prior
-samples for the intercept. If \code{sample_prior} is set to \code{"only"},
-samples are drawn solely from the priors ignoring the likelihood, which
-allows among others to generate samples from the prior predictive
+draws for the intercept. If \code{sample_prior} is set to \code{"only"},
+draws are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate draws from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
@@ -143,15 +144,15 @@ each level of the grouping factor(s) should be saved (default is
 \code{TRUE}). Set to \code{FALSE} to save memory. The argument has no
 impact on the model fitting itself.}
 
-\item{save_mevars}{(Deprecated) A flag to indicate if samples of latent
+\item{save_mevars}{(Deprecated) A flag to indicate if draws of latent
 noise-free variables obtained by using \code{me} and \code{mi} terms should
-be saved (default is \code{FALSE}). Saving these samples allows to better
+be saved (default is \code{FALSE}). Saving these draws allows to better
 use methods such as \code{predict} with the latent variables but leads to
 very large \R objects even for models of moderate size and complexity.}
 
-\item{save_all_pars}{(Deprecated) A flag to indicate if samples from all
+\item{save_all_pars}{(Deprecated) A flag to indicate if draws from all
 variables defined in Stan's \code{parameters} block should be saved
-(default is \code{FALSE}). Saving these samples is required in order to
+(default is \code{FALSE}). Saving these draws is required in order to
 apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
 \code{post_prob}.}
 
@@ -159,7 +160,7 @@ apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
 \code{"random"} (the default), Stan will randomly generate initial values
 for parameters. If it is \code{"0"}, all parameters are initialized to
 zero. This option is sometimes useful for certain families, as it happens
-that default (\code{"random"}) inits cause samples to be essentially
+that default (\code{"random"}) inits cause draws to be essentially
 constant. Generally, setting \code{inits = "0"} is worth a try, if chains
 do not behave well. Alternatively, \code{inits} can be a list of lists
 containing the initial values, or a function (or function name) generating
@@ -177,7 +178,7 @@ to 2000).}
 
 \item{warmup}{A positive integer specifying number of warmup (aka burnin)
 iterations. This also specifies the number of iterations used for stepsize
-adaptation, so warmup samples should not be used for inference. The number
+adaptation, so warmup draws should not be used for inference. The number
 of warmup should not be larger than \code{iter} and the default is
 \code{iter/2}.}
 
@@ -196,6 +197,11 @@ more control over the threading process, \code{threads} may also be a
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
 model that cannot be sped up by any other means.}
+
+\item{opencl}{The platform and device IDs of the OpenCL device to use for
+fitting using GPU support. If you don't know the IDs of your OpenCL
+device, \code{c(0,0)} is most likely what you need. For more details, see
+\code{\link{opencl}}.}
 
 \item{normalize}{Logical. Indicates whether normalization constants should
 be included in the Stan code (defaults to \code{TRUE}). Setting it
@@ -225,12 +231,16 @@ fitting the Stan model. Options are \code{"rstan"} (the default) or
 \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 \pkg{rstan} and \pkg{cmdstanr} packages are available at
 \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
-respectively.}
+respectively. Additionally a \code{"mock"} backend is available to make
+testing \pkg{brms} and packages that depend on it easier. 
+The \code{"mock"} backend does not actually do any fitting, it only checks
+the generated Stan code for correctness and then returns whatever is passed
+in an additional \code{mock_fit} argument as the result of the fit.}
 
 \item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 package is used for parallel execution of the chains and argument
 \code{cores} will be ignored. Can be set globally for the current \R
-session via the \code{future} option. The execution type is controlled via
+session via the \code{"future"} option. The execution type is controlled via
 \code{\link[future:plan]{plan}} (see the examples section below).}
 
 \item{silent}{Verbosity level between \code{0} and \code{2}.
@@ -263,8 +273,11 @@ to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
 
 \item{file_refit}{Modifies when the fit stored via the \code{file} parameter
-is re-used. For \code{"never"} (default) the fit is always loaded if it
-exists and fitting is skipped. If set to \code{"on_change"}, brms will
+is re-used. Can be set globally for the current \R session via the
+\code{"brms.file_refit"} option (see \code{\link{options}}). 
+For \code{"never"} (default) the fit is always loaded if it
+exists and fitting is skipped. For \code{"always"} the model is always
+refitted. If set to \code{"on_change"}, brms will
 refit the model if model, data or algorithm as passed to Stan differ from
 what is stored in the file. This also covers changes in priors,
 \code{sample_prior}, \code{stanvars}, covariance structure, etc. If you
@@ -290,7 +303,7 @@ For \code{backend = "cmdstanr"} the arguments are passed to the
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior
-  samples along with many other useful information about the model. Use
+  draws along with many other useful information about the model. Use
   \code{methods(class = "brmsfit")} for an overview on available methods.
 }
 \description{
@@ -341,22 +354,22 @@ Fit a generalized (non-)linear multivariate multilevel model via
 
   \bold{Adjusting the sampling behavior of \pkg{Stan}}
 
-  In addition to choosing the number of iterations, warmup samples, and
+  In addition to choosing the number of iterations, warmup draws, and
   chains, users can control the behavior of the NUTS sampler, by using the
   \code{control} argument. The most important reason to use \code{control} is
   to decrease (or eliminate at best) the number of divergent transitions that
-  cause a bias in the obtained posterior samples. Whenever you see the
+  cause a bias in the obtained posterior draws. Whenever you see the
   warning "There were x divergent transitions after warmup." you should
   really think about increasing \code{adapt_delta}. To do this, write
   \code{control = list(adapt_delta = <x>)}, where \code{<x>} should usually
   be value between \code{0.8} (current default) and \code{1}. Increasing
   \code{adapt_delta} will slow down the sampler but will decrease the number
   of divergent transitions threatening the validity of your posterior
-  samples.
+  draws.
 
   Another problem arises when the depth of the tree being evaluated in each
   iteration is exceeded. This is less common than having divergent
-  transitions, but may also bias the posterior samples. When it happens,
+  transitions, but may also bias the posterior draws. When it happens,
   \pkg{Stan} will throw out a warning suggesting to increase
   \code{max_treedepth}, which can be accomplished by writing \code{control =
   list(max_treedepth = <x>)} with a positive integer \code{<x>} that should
@@ -447,7 +460,7 @@ plot(fit6)
 conditional_effects(fit6)
 
 # extract estimated residual SDs of both groups
-sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
+sigmas <- exp(as.data.frame(fit6, variable = "^b_sigma_", regex = TRUE))
 ggplot(stack(sigmas), aes(values)) +
   geom_density(aes(fill = ind))
 

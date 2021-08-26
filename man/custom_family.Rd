@@ -13,6 +13,7 @@ custom_family(
   lb = NA,
   ub = NA,
   vars = NULL,
+  loop = TRUE,
   specials = NULL,
   threshold = "flexible",
   log_lik = NULL,
@@ -35,7 +36,9 @@ parameter.}
 distributional parameters.}
 
 \item{type}{Indicates if the response distribution is
-continuous (\code{"real"}) or discrete (\code{"int"}).}
+continuous (\code{"real"}) or discrete (\code{"int"}). This controls
+if the corresponding density function will be named with
+\code{<name>_lpdf} or \code{<name>_lpmf}.}
 
 \item{lb}{Vector of lower bounds of the distributional 
 parameters. Defaults to \code{NA} that is no lower bound.}
@@ -43,11 +46,20 @@ parameters. Defaults to \code{NA} that is no lower bound.}
 \item{ub}{Vector of upper bounds of the distributional 
 parameters. Defaults to \code{NA} that is no upper bound.}
 
-\item{vars}{Names of variables, which are part of the likelihood
-function without being distributional parameters. That is,
-\code{vars} can be used to pass data to the likelihood. 
-See \code{\link{stanvar}} for details about adding self-defined
-data to the generated \pkg{Stan} model.}
+\item{vars}{Names of variables that are part of the likelihood function
+without being distributional parameters. That is, \code{vars} can be used
+to pass data to the likelihood. Such arguments will be added to the list of
+function arguments at the end, after the distributional parameters. See
+\code{\link{stanvar}} for details about adding self-defined data to the
+generated \pkg{Stan} model. Addition arguments \code{vreal} and \code{vint}
+may be used for this purpose as well (see Examples below). See also
+\code{\link{brmsformula}} and \code{\link{addition-terms}} for more
+details.}
+
+\item{loop}{Logical; Should the likelihood be evaluated via a loop
+(\code{TRUE}; the default) over observations in Stan?
+If \code{FALSE}, the Stan code will be written in a vectorized
+manner over observations if possible.}
 
 \item{specials}{A character vector of special options to enable
 for this custom family. Currently for internal use only.}
@@ -123,23 +135,48 @@ dat <- data.frame(y, z, ntrials)
 beta_binomial2 <- custom_family(
   "beta_binomial2", dpars = c("mu", "phi"),
   links = c("logit", "log"), lb = c(NA, 0),
-  type = "int", vars = "trials[n]"
+  type = "int", vars = "vint1[n]"
 )
 
 # define the corresponding Stan density function
-stan_funs <- "
+stan_density <- "
   real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
   }
 "
+stanvars <- stanvar(scode = stan_density, block = "functions")
 
 # fit the model
-fit <- brm(y | trials(ntrials) ~ z, data = dat, 
-           family = beta_binomial2, stan_funs = stan_funs)
+fit <- brm(y | vint(ntrials) ~ z, data = dat, 
+           family = beta_binomial2, stanvars = stanvars)
 summary(fit)
+
+
+# define a *vectorized* custom family (no loop over observations)
+# notice also that 'vint' no longer has an observation index
+beta_binomial2_vec <- custom_family(
+  "beta_binomial2", dpars = c("mu", "phi"),
+  links = c("logit", "log"), lb = c(NA, 0),
+  type = "int", vars = "vint1", loop = FALSE
+)
+
+# define the corresponding Stan density function
+stan_density_vec <- "
+  real beta_binomial2_lpmf(int[] y, vector mu, real phi, int[] N) {
+    return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+  }
+"
+stanvars_vec <- stanvar(scode = stan_density_vec, block = "functions")
+
+# fit the model
+fit_vec <- brm(y | vint(ntrials) ~ z, data = dat, 
+           family = beta_binomial2_vec, 
+           stanvars = stanvars_vec)
+summary(fit_vec)
 }
 
 }
 \seealso{
-\code{\link{brmsfamily}}, \code{\link{stanvar}}
+\code{\link{brmsfamily}}, \code{\link{brmsformula}},
+   \code{\link{stanvar}}
 }

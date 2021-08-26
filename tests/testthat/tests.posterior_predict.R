@@ -3,7 +3,7 @@ context("Tests for posterior_predict helper functions")
 test_that("posterior_predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
-  prep <- structure(list(nsamples = ns), class = "brmsprep")
+  prep <- structure(list(ndraws = ns), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
     sigma = rchisq(ns, 3), nu = rgamma(ns, 4)
@@ -20,7 +20,7 @@ test_that("posterior_predict for location shift models runs without errors", {
 test_that("posterior_predict for various skewed models runs without errors", {
   ns <- 50
   nobs <- 2
-  prep <- structure(list(nsamples = ns), class = "brmsprep")
+  prep <- structure(list(ndraws = ns), class = "brmsprep")
   prep$dpars <- list(
     sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
@@ -38,7 +38,7 @@ test_that("posterior_predict for various skewed models runs without errors", {
 
 test_that("posterior_predict for aysm_laplace models runs without errors", {
   ns <- 50
-  prep <- structure(list(nsamples = ns), class = "brmsprep")
+  prep <- structure(list(ndraws = ns), class = "brmsprep")
   prep$dpars <- list(
     sigma = rchisq(ns, 3), 
     quantile = rbeta(ns, 2, 1),
@@ -57,7 +57,7 @@ test_that("posterior_predict for multivariate linear models runs without errors"
   ncols <- 4
   nobs <- nvars * ncols
   Sigma = array(cov(matrix(rnorm(300), ncol = 3)), dim = c(3, 3, 10))
-  prep <- structure(list(nsamples = ns), class = "mvbrmsprep")
+  prep <- structure(list(ndraws = ns), class = "mvbrmsprep")
   prep$mvpars <- list(
     Mu = array(rnorm(ns*nobs*nvars), dim = c(ns, nobs, nvars)),
     Sigma = aperm(Sigma, c(3, 1, 2))
@@ -75,7 +75,7 @@ test_that("posterior_predict for multivariate linear models runs without errors"
 test_that("posterior_predict for ARMA covariance models runs without errors", {
   ns <- 20
   nobs <- 15
-  prep <- structure(list(nsamples = ns), class = "brmsprep")
+  prep <- structure(list(ndraws = ns), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(ns*nobs), ncol = nobs),
     sigma = rchisq(ns, 3),
@@ -99,7 +99,7 @@ test_that("posterior_predict for ARMA covariance models runs without errors", {
 
 test_that("loglik for SAR models runs without errors", {
   ns = 3
-  prep <- structure(list(nsamples = ns, nobs = 10), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = 10), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(30), nrow = ns),
     nu = rep(2, ns),
@@ -123,7 +123,7 @@ test_that("loglik for SAR models runs without errors", {
 test_that("posterior_predict for FCOR models runs without errors", {
   ns <- 3
   nobs <- 10
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(nobs * ns), nrow = ns),
     sigma = rep(1, ns), nu = rep(2, ns)
@@ -139,7 +139,7 @@ test_that("posterior_predict for count and survival models runs without errors",
   ns <- 25
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     eta = matrix(rnorm(ns*nobs), ncol = nobs),
     shape = rgamma(ns, 4), xi = 0
@@ -160,6 +160,9 @@ test_that("posterior_predict for count and survival models runs without errors",
   expect_equal(length(pred), ns)
   
   pred <- brms:::posterior_predict_negbinomial(i, prep = prep)
+  expect_equal(length(pred), ns)
+  
+  pred <- brms:::posterior_predict_negbinomial2(i, prep = prep)
   expect_equal(length(pred), ns)
   
   pred <- brms:::posterior_predict_geometric(i, prep = prep)
@@ -191,7 +194,7 @@ test_that("posterior_predict for count and survival models runs without errors",
 test_that("posterior_predict for bernoulli and beta models works correctly", {
   ns <- 17
   nobs <- 10
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = brms:::inv_logit(matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs)),
     phi = rgamma(ns, 4)
@@ -208,7 +211,7 @@ test_that("posterior_predict for bernoulli and beta models works correctly", {
 test_that("posterior_predict for circular models runs without errors", {
   ns <- 15
   nobs <- 10
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = 2 * atan(matrix(rnorm(ns * nobs * 2), ncol = nobs * 2)),
     kappa = rgamma(ns, 4)
@@ -222,7 +225,7 @@ test_that("posterior_predict for zero-inflated and hurdle models runs without er
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
     shape = rgamma(ns, 4), phi = rgamma(ns, 1),
@@ -263,7 +266,7 @@ test_that("posterior_predict for ordinal models runs without erros", {
   nobs <- 8
   nthres <- 3
   ncat <- nthres + 1
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = array(rnorm(ns * nobs), dim = c(ns, nobs)),
     disc = rexp(ns)
@@ -298,7 +301,7 @@ test_that("posterior_predict for categorical and related models runs without err
   ns <- 50
   nobs <- 8
   ncat <- 3
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu1 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs)),
     mu2 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs))
@@ -318,12 +321,20 @@ test_that("posterior_predict for categorical and related models runs without err
   pred <- brms:::posterior_predict_dirichlet(i = sample(1:nobs, 1), prep = prep)
   expect_equal(dim(pred), c(ns, ncat))
   expect_equal(rowSums(pred), rep(1, nrow(pred)))
+  
+  prep$family <- brmsfamily("dirichlet2")
+  prep$dpars$mu1 <- rexp(ns, 10)
+  prep$dpars$mu2 <- rexp(ns, 10)
+  prep$dpars$mu3 <- rexp(ns, 10)
+  pred <- brms:::posterior_predict_dirichlet2(i = sample(1:nobs, 1), prep = prep)
+  expect_equal(dim(pred), c(ns, ncat))
+  expect_equal(rowSums(pred), rep(1, nrow(pred)))
 })
 
 test_that("truncated posterior_predict run without errors", {
   ns <- 30
   nobs <- 15
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
     sigma = rchisq(ns, 3)
@@ -347,7 +358,7 @@ test_that("posterior_predict for the wiener diffusion model runs without errors"
   skip("skip as long as RWiener fails on R-devel for 3.6.0")
   ns <- 5
   nobs <- 3
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
     bs = rchisq(ns, 3), ndt = rep(0.5, ns),
@@ -361,7 +372,7 @@ test_that("posterior_predict for the wiener diffusion model runs without errors"
 test_that("posterior_predict_custom runs without errors", {
   ns <- 15
   nobs <- 10
-  prep <- structure(list(nsamples = ns, nobs = nobs), class = "brmsprep")
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rbeta(ns * nobs * 2, 1, 1), ncol = nobs * 2)
   )
@@ -373,7 +384,7 @@ test_that("posterior_predict_custom runs without errors", {
   )
   posterior_predict_beta_binomial2 <- function(i, prep) {
     mu <- prep$dpars$mu[, i]
-    rbinom(prep$nsamples, size = prep$data$trials[i], prob = mu)
+    rbinom(prep$ndraws, size = prep$data$trials[i], prob = mu)
   }
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })

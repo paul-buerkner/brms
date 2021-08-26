@@ -1,7 +1,8 @@
-# unless otherwise specifiedm functions return a named list 
+# unless otherwise specified, functions return a named list 
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
+# TODO: refactor to not require extraction of information from all model parts
 stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
@@ -9,12 +10,15 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- families[unique_combs]
   links <- links[unique_combs]
   out <- list()
+  # TODO: detect these links in all dpars not just in 'mu'
   if (any(links == "cauchit")) {
     str_add(out$fun) <- "  #include 'fun_cauchit.stan'\n"
   } else if (any(links == "cloglog")) {
     str_add(out$fun) <- "  #include 'fun_cloglog.stan'\n"
   } else if (any(links == "softplus")) {
     str_add(out$fun) <- "  #include 'fun_softplus.stan'\n"
+  } else if (any(links == "squareplus")) {
+    str_add(out$fun) <- "  #include 'fun_squareplus.stan'\n"
   }
   special <- get_special_prior(prior)
   if (!isNULL(lapply(special, "[[", "horseshoe"))) {
@@ -131,7 +135,8 @@ stan_link <- function(link) {
     cauchit = "cauchit",
     tan_half = "tan_half",
     log1p = "log1p",
-    softplus = "log_expm1"
+    softplus = "log_expm1",
+    squareplus = "inv_squareplus"
   )
 }
 
@@ -152,7 +157,8 @@ stan_ilink <- function(link) {
     cauchit = "inv_cauchit",
     tan_half = "inv_tan_half",
     log1p = "expm1",
-    softplus = "log1p_exp"
+    softplus = "log1p_exp",
+    squareplus = "squareplus"
   )
 }
 
@@ -178,35 +184,24 @@ stan_cor_gen_comp <- function(cor, ncol) {
 
 # indicates if a family-link combination has a built in 
 # function in Stan (such as binomial_logit)
-# @param family a list with elements 'family' and 'link'
-# @param cens_or_trunc is the model censored or truncated?
-stan_has_built_in_fun <- function(family, cens_or_trunc = FALSE) {
+# @param family a list with elements 'family' and 'link' 
+#   ideally a (brms)family object
+# @param bterms brmsterms object of the univariate model
+stan_has_built_in_fun <- function(family, bterms) {
   stopifnot(all(c("family", "link") %in% names(family)))
-  link <- family$link
-  dpar <- family$dpar
-  family <- family$family
+  stopifnot(is.brmsterms(bterms))
+  cens_or_trunc <- stan_log_lik_adj(bterms$adforms, c("cens", "trunc"))
+  link <- family[["link"]]
+  dpar <- family[["dpar"]]
   if (cens_or_trunc) {
     # only few families have special lcdf and lccdf functions
-    log_families <- c("cox")
-    logit_families <- character(0)
-    logit_dpars <- character(0)
+    out <- has_built_in_fun(family, link, cdf = TRUE) ||
+      has_built_in_fun(bterms, link, dpar = dpar, cdf = TRUE)
   } else {
-    log_families <- c(
-      "poisson", "negbinomial", "geometric", "com_poisson",
-      "zero_inflated_poisson", "zero_inflated_negbinomial",
-      "hurdle_poisson", "hurdle_negbinomial", "cox"
-    )
-    logit_families <- c(
-      "binomial", "bernoulli", "cumulative", "categorical",
-      "zero_inflated_binomial"
-    )
-    logit_dpars <- c("zi", "hu")
+    out <- has_built_in_fun(family, link) ||
+      has_built_in_fun(bterms, link, dpar = dpar)
   }
-  isTRUE(
-    family %in% log_families && link == "log" ||
-    family %in% logit_families && link == "logit" ||
-    isTRUE(dpar %in% logit_dpars) && link == "logit"
-  )
+  out
 }
 
 # get all variable names accepted in Stan
@@ -247,8 +242,7 @@ stan_clean_pll_args <- function(...) {
   # split up header to remove duplicates
   typed <- unlist(strsplit(args, ", +"))[-1]
   typed <- unique(typed)
-  plain <- unlist(strsplit(typed, " +"))
-  plain <- plain[seq(2, length(plain), 2)]
+  plain <- rm_wsp(get_matches(" [^ ]+$", typed))
   typed <- collapse(", ", typed)
   plain <- collapse(", ", plain)
   nlist(typed, plain)

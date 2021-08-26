@@ -67,28 +67,28 @@
 #'   each level of the grouping factor(s) should be saved (default is
 #'   \code{TRUE}). Set to \code{FALSE} to save memory. The argument has no
 #'   impact on the model fitting itself.
-#' @param save_mevars (Deprecated) A flag to indicate if samples of latent
+#' @param save_mevars (Deprecated) A flag to indicate if draws of latent
 #'   noise-free variables obtained by using \code{me} and \code{mi} terms should
-#'   be saved (default is \code{FALSE}). Saving these samples allows to better
+#'   be saved (default is \code{FALSE}). Saving these draws allows to better
 #'   use methods such as \code{predict} with the latent variables but leads to
 #'   very large \R objects even for models of moderate size and complexity.
-#' @param save_all_pars (Deprecated) A flag to indicate if samples from all
+#' @param save_all_pars (Deprecated) A flag to indicate if draws from all
 #'   variables defined in Stan's \code{parameters} block should be saved
-#'   (default is \code{FALSE}). Saving these samples is required in order to
+#'   (default is \code{FALSE}). Saving these draws is required in order to
 #'   apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
 #'   \code{post_prob}.
-#' @param sample_prior Indicate if samples from priors should be drawn
-#'   additionally to the posterior samples. Options are \code{"no"} (the
-#'   default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+#' @param sample_prior Indicate if draws from priors should be drawn
+#'   additionally to the posterior draws. Options are \code{"no"} (the
+#'   default), \code{"yes"}, and \code{"only"}. Among others, these draws can
 #'   be used to calculate Bayes factors for point hypotheses via
 #'   \code{\link{hypothesis}}. Please note that improper priors are not sampled,
 #'   including the default improper priors used by \code{brm}. See
 #'   \code{\link{set_prior}} on how to set (proper) priors. Please also note
-#'   that prior samples for the overall intercept are not obtained by default
+#'   that prior draws for the overall intercept are not obtained by default
 #'   for technical reasons. See \code{\link{brmsformula}} how to obtain prior
-#'   samples for the intercept. If \code{sample_prior} is set to \code{"only"},
-#'   samples are drawn solely from the priors ignoring the likelihood, which
-#'   allows among others to generate samples from the prior predictive
+#'   draws for the intercept. If \code{sample_prior} is set to \code{"only"},
+#'   draws are drawn solely from the priors ignoring the likelihood, which
+#'   allows among others to generate draws from the prior predictive
 #'   distribution. In this case, all parameters must have proper priors.
 #' @param knots Optional list containing user specified knot values to be used
 #'   for basis construction of smoothing terms. See
@@ -110,7 +110,7 @@
 #'   \code{"random"} (the default), Stan will randomly generate initial values
 #'   for parameters. If it is \code{"0"}, all parameters are initialized to
 #'   zero. This option is sometimes useful for certain families, as it happens
-#'   that default (\code{"random"}) inits cause samples to be essentially
+#'   that default (\code{"random"}) inits cause draws to be essentially
 #'   constant. Generally, setting \code{inits = "0"} is worth a try, if chains
 #'   do not behave well. Alternatively, \code{inits} can be a list of lists
 #'   containing the initial values, or a function (or function name) generating
@@ -125,7 +125,7 @@
 #'   to 2000).
 #' @param warmup A positive integer specifying number of warmup (aka burnin)
 #'   iterations. This also specifies the number of iterations used for stepsize
-#'   adaptation, so warmup samples should not be used for inference. The number
+#'   adaptation, so warmup draws should not be used for inference. The number
 #'   of warmup should not be larger than \code{iter} and the default is
 #'   \code{iter/2}.
 #' @param thin Thinning rate. Must be a positive integer. Set \code{thin > 1} to
@@ -141,6 +141,10 @@
 #'   parallelization is experimental! We recommend its use only if you are
 #'   experienced with Stan's \code{reduce_sum} function and have a slow running
 #'   model that cannot be sped up by any other means.
+#' @param opencl The platform and device IDs of the OpenCL device to use for
+#'   fitting using GPU support. If you don't know the IDs of your OpenCL
+#'   device, \code{c(0,0)} is most likely what you need. For more details, see
+#'   \code{\link{opencl}}.
 #' @param normalize Logical. Indicates whether normalization constants should
 #'   be included in the Stan code (defaults to \code{TRUE}). Setting it
 #'   to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
@@ -161,7 +165,11 @@
 #'   \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 #'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
 #'   \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
-#'   respectively.
+#'   respectively. Additionally a \code{"mock"} backend is available to make
+#'   testing \pkg{brms} and packages that depend on it easier. 
+#'   The \code{"mock"} backend does not actually do any fitting, it only checks
+#'   the generated Stan code for correctness and then returns whatever is passed
+#'   in an additional \code{mock_fit} argument as the result of the fit.
 #' @param control A named \code{list} of parameters to control the sampler's
 #'   behavior. It defaults to \code{NULL} so all the default values are used.
 #'   The most important control parameters are discussed in the 'Details'
@@ -170,7 +178,7 @@
 #' @param future Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 #'   package is used for parallel execution of the chains and argument
 #'   \code{cores} will be ignored. Can be set globally for the current \R
-#'   session via the \code{future} option. The execution type is controlled via
+#'   session via the \code{"future"} option. The execution type is controlled via
 #'   \code{\link[future:plan]{plan}} (see the examples section below).
 #' @param silent Verbosity level between \code{0} and \code{2}.
 #'   If \code{1} (the default), most of the
@@ -195,8 +203,11 @@
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
 #' @param file_refit Modifies when the fit stored via the \code{file} parameter
-#'   is re-used. For \code{"never"} (default) the fit is always loaded if it
-#'   exists and fitting is skipped. If set to \code{"on_change"}, brms will
+#'   is re-used. Can be set globally for the current \R session via the
+#'   \code{"brms.file_refit"} option (see \code{\link{options}}). 
+#'   For \code{"never"} (default) the fit is always loaded if it
+#'   exists and fitting is skipped. For \code{"always"} the model is always
+#'   refitted. If set to \code{"on_change"}, brms will
 #'   refit the model if model, data or algorithm as passed to Stan differ from
 #'   what is stored in the file. This also covers changes in priors,
 #'   \code{sample_prior}, \code{stanvars}, covariance structure, etc. If you
@@ -220,7 +231,7 @@
 #'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior
-#'   samples along with many other useful information about the model. Use
+#'   draws along with many other useful information about the model. Use
 #'   \code{methods(class = "brmsfit")} for an overview on available methods.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -257,22 +268,22 @@
 #'
 #'   \bold{Adjusting the sampling behavior of \pkg{Stan}}
 #'
-#'   In addition to choosing the number of iterations, warmup samples, and
+#'   In addition to choosing the number of iterations, warmup draws, and
 #'   chains, users can control the behavior of the NUTS sampler, by using the
 #'   \code{control} argument. The most important reason to use \code{control} is
 #'   to decrease (or eliminate at best) the number of divergent transitions that
-#'   cause a bias in the obtained posterior samples. Whenever you see the
+#'   cause a bias in the obtained posterior draws. Whenever you see the
 #'   warning "There were x divergent transitions after warmup." you should
 #'   really think about increasing \code{adapt_delta}. To do this, write
 #'   \code{control = list(adapt_delta = <x>)}, where \code{<x>} should usually
 #'   be value between \code{0.8} (current default) and \code{1}. Increasing
 #'   \code{adapt_delta} will slow down the sampler but will decrease the number
 #'   of divergent transitions threatening the validity of your posterior
-#'   samples.
+#'   draws.
 #'
 #'   Another problem arises when the depth of the tree being evaluated in each
 #'   iteration is exceeded. This is less common than having divergent
-#'   transitions, but may also bias the posterior samples. When it happens,
+#'   transitions, but may also bias the posterior draws. When it happens,
 #'   \pkg{Stan} will throw out a warning suggesting to increase
 #'   \code{max_treedepth}, which can be accomplished by writing \code{control =
 #'   list(max_treedepth = <x>)} with a positive integer \code{<x>} that should
@@ -375,7 +386,7 @@
 #' conditional_effects(fit6)
 #'
 #' # extract estimated residual SDs of both groups
-#' sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
+#' sigmas <- exp(as.data.frame(fit6, variable = "^b_sigma_", regex = TRUE))
 #' ggplot(stack(sigmas), aes(values)) +
 #'   geom_density(aes(fill = ind))
 #'
@@ -417,20 +428,21 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 save_mevars = NULL, save_all_pars = NULL, 
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
-                cores = getOption("mc.cores", 1), threads = NULL,
+                cores = getOption("mc.cores", 1), 
+                threads = NULL, opencl = NULL,
                 normalize = getOption("brms.normalize", TRUE),
                 control = NULL, 
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = 1, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, file_refit = "never", empty = FALSE, 
-                rename = TRUE, ...) {
+                file = NULL, file_refit = getOption("brms.file_refit", "never"), 
+                empty = FALSE, rename = TRUE, ...) {
   
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
-  file_refit <- match.arg(file_refit, c("never", "on_change"))
+  file_refit <- match.arg(file_refit, file_refit_options())
   if (!is.null(file) && file_refit == "never") {
     x <- read_brmsfit(file)
     if (!is.null(x)) {
@@ -449,6 +461,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
   threads <- validate_threads(threads)
+  opencl <- validate_opencl(opencl)
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
@@ -465,7 +478,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
           x_from_file, scode = stancode(x), sdata = sdata,
-          algorithm = algorithm, silent = silent
+          data = x$data, algorithm = algorithm, silent = silent
         )
         if (!needs_refit) {
           return(x_from_file)
@@ -510,15 +523,16 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     model <- .make_stancode(
       bterms, data = data, prior = prior, 
       stanvars = stanvars, save_model = save_model,
-      backend = backend, threads = threads, normalize = normalize
+      backend = backend, threads = threads, opencl = opencl,
+      normalize = normalize
     )
     
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior, 
       stanvars = stanvars, model = model, algorithm = algorithm, 
-      backend = backend, threads = threads, save_pars = save_pars, 
-      ranef = ranef, family = family
+      backend = backend, threads = threads, opencl = opencl,
+      save_pars = save_pars, ranef = ranef, family = family
     )
     exclude <- exclude_pars(x)
     # generate Stan data before compiling the model to avoid
@@ -537,7 +551,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x_from_file <- read_brmsfit(file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
-          x_from_file, scode = model, sdata = sdata,
+          x_from_file, scode = model, sdata = sdata, data = data,
           algorithm = algorithm, silent = silent
         )
         if (!needs_refit) {
@@ -551,14 +565,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     compile_args$model <- model
     compile_args$backend <- backend
     compile_args$threads <- threads
+    compile_args$opencl <- opencl
     compile_args$silent <- silent
     model <- do_call(compile_model, compile_args)
   }
   
   # fit the Stan model
   fit_args <- nlist(
-    model, sdata, algorithm, backend, iter, warmup, thin, chains, 
-    cores, threads, inits, exclude, control, future, seed, silent, ...
+    model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
+    threads, opencl, inits, exclude, control, future, seed, silent, ...
   )
   x$fit <- do_call(fit_model, fit_args)
 

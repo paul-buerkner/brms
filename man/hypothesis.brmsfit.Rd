@@ -13,13 +13,14 @@
   group = "",
   scope = c("standard", "ranef", "coef"),
   alpha = 0.05,
+  robust = FALSE,
   seed = NULL,
   ...
 )
 
 hypothesis(x, ...)
 
-\method{hypothesis}{default}(x, hypothesis, alpha = 0.05, ...)
+\method{hypothesis}{default}(x, hypothesis, alpha = 0.05, robust = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object. If it is no \code{brmsfit} object,
@@ -36,7 +37,7 @@ Default is "b" for population-level effects.
 Other typical options are "sd" or "cor". 
 If \code{class = NULL}, all parameters can be tested
 against each other, but have to be specified with their full name 
-(see also \code{\link[brms:parnames]{parnames}})}
+(see also \code{\link[brms:draws-index-brms]{variables}})}
 
 \item{group}{Name of a grouping factor to evaluate only 
 group-level effects parameters related to this grouping factor.}
@@ -51,6 +52,11 @@ respectively.}
 
 \item{alpha}{The alpha-level of the tests (default is 0.05;
 see 'Details' for more information).}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deviation (MAD) are applied instead.}
 
 \item{seed}{A single numeric value passed to \code{\link{set.seed}}
 to make results reproducible.}
@@ -91,10 +97,10 @@ Among others, \code{hypothesis} computes an evidence ratio
   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
   small or large evidence, respectively, in favor of the tested hypothesis.
   For one-sided hypotheses pairs, this basically means that all posterior
-  samples are on the same side of the value dividing the two hypotheses. In
+  draws are on the same side of the value dividing the two hypotheses. In
   that sense, instead of \code{0} or \code{Inf,} you may rather read it as
   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
-  where \code{S} denotes the number of posterior samples used in the
+  where \code{S} denotes the number of posterior draws used in the
   computations.
  
   The argument \code{alpha} specifies the size of the credible interval

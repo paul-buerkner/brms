@@ -6,7 +6,16 @@
 \alias{emm_basis.brmsfit}
 \title{Support Functions for \pkg{emmeans}}
 \usage{
-recover_data.brmsfit(object, data, resp = NULL, dpar = NULL, nlpar = NULL, ...)
+recover_data.brmsfit(
+  object,
+  data,
+  resp = NULL,
+  dpar = NULL,
+  nlpar = NULL,
+  re_formula = NA,
+  epred = FALSE,
+  ...
+)
 
 emm_basis.brmsfit(
   object,
@@ -17,6 +26,8 @@ emm_basis.brmsfit(
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
+  re_formula = NA,
+  epred = FALSE,
   ...
 )
 }
@@ -34,6 +45,15 @@ If specified, expected predictions of this parameters are returned.}
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}
 
+\item{re_formula}{Optional formula containing group-level effects to be
+considered in the prediction. If \code{NULL}, include all group-level
+effects; if \code{NA} (default), include no group-level effects.}
+
+\item{epred}{Logical. If \code{TRUE} compute predictions of
+the posterior predictive distribution's mean
+(see \code{\link{posterior_epred.brmsfit}}) while ignoring
+arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.}
+
 \item{...}{Additional arguments passed to \pkg{emmeans}.}
 }
 \description{
@@ -43,9 +63,12 @@ they will be called automatically by the \code{emmeans} function
 of the \pkg{emmeans} package.
 }
 \details{
-In addition to the usual choices for \code{dpar}, the special value
-\code{dpar = "mean"} requests that we use the expected values of the posterior 
-predictive distribution, obtained via \code{\link{posterior_epred.brmsfit}}.
+In order to ensure compatibility of most \pkg{brms} models with
+\pkg{emmeans}, predictions are not generated 'manually' via a design matrix
+and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}. 
+This appears to generally work well, but note that it produces an `.@linfct`
+slot that contains the computed predictions as columns instead of the
+coefficients.
 }
 \examples{
 \dontrun{
@@ -59,7 +82,8 @@ rg <- ref_grid(fit)
 em <- emmeans(rg, "disease")
 summary(em, point.est = mean)
 
-epred <- emmeans(fit, "disease", dpar = "mean")
+# obtain estimates for the posterior predictive distribution's mean
+epred <- emmeans(fit, "disease", epred = TRUE)
 summary(epred, point.est = mean)
 }
 }

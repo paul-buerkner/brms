@@ -44,7 +44,11 @@ requires much less working memory. Accordingly, if one runs
 into memory issues, \code{pointwise = TRUE} is the way to go.}
 
 \item{moment_match}{Logical; Indicate whether \code{\link{loo_moment_match}} 
-should be applied on problematic observations. Defaults to \code{FALSE}.}
+should be applied on problematic observations. Defaults to \code{FALSE}.
+For most models, moment matching will only work if you have set
+\code{save_pars = save_pars(all = TRUE)} when fitting the model with
+\code{\link{brm}}. See \code{\link{loo_moment_match.brmsfit}} for more
+details.}
 
 \item{reloo}{Logical; Indicate whether \code{\link{reloo}} 
 should be applied on problematic observations. Defaults to \code{FALSE}.}

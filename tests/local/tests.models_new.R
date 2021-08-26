@@ -27,7 +27,7 @@ test_that("Poisson model from brm doc works correctly", {
   ## investigate model fit
   expect_range(WAIC(fit1)$estimates[3, 1], 1120, 1160)
   expect_ggplot(pp_check(fit1))
-  
+
   # test kfold
   kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
   expect_range(kfold1$estimates[3, 1], 1210, 1260)
@@ -40,7 +40,7 @@ test_that("Poisson model from brm doc works correctly", {
   kfp1 <- kfold_predict(kfold1)
   rmse1 <- rmse(y = kfp1$y, yrep = kfp1$yrep)
   expect_range(rmse1, 6, 7)
-  
+
   # test loo_moment_match
   loo1 <- loo(fit1)
   mmloo1 <- loo_moment_match(fit1, loo1, k_threshold = 1, cores = 1)
@@ -76,6 +76,12 @@ test_that("Survival model from brm doc works correctly", {
   me3 <- conditional_effects(fit3, method = "predict")
   expect_ggplot(plot(me3, ask = FALSE)[[2]])
   expect_range(LOO(fit3)$estimates[3, 1], 650, 740)
+  
+  # enables rstan specific functionality
+  fit3 <- add_rstan_model(fit3)
+  expect_range(LOO(fit3, moment_match = TRUE)$estimates[3, 1], 650, 740)
+  bridge <- bridge_sampler(fit3)
+  expect_true(is.numeric(bridge$logml))
 })
 
 test_that("Binomial model from brm doc works correctly", {
@@ -94,7 +100,7 @@ test_that("Binomial model from brm doc works correctly", {
 })
 
 test_that("Non-linear model from brm doc works correctly", {
-  x <- rnorm(100)
+  x <- abs(rnorm(100))
   y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
   data5 <- data.frame(x, y)
   fit5 <- brm(
@@ -119,7 +125,7 @@ test_that("ARMA models work correctly", {
     chains = 2, refresh = 0
   )
   print(fit_ar)
-  ar <- colMeans(as.matrix(fit_ar, "^ar"))
+  ar <- colMeans(as.matrix(fit_ar, variable = "ar"))
   expect_range(ar[1], 0.5, 0.9)
   expect_range(ar[3], -0.2, 0.25)
   expect_range(ar[5], -0.6, -0.1)
@@ -194,12 +200,12 @@ test_that("categorical models work correctly", {
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
   expect_equal(dim(fitted(fit2, scale = "linear")),
                c(nobs(fit2), 4, ncat - 1))
-  
+
   # tests with new data
   newd <- inhaler[1:10, ]
   newd$rating <- NULL
   expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
-  
+
   ce <- conditional_effects(fit2, categorical = TRUE)
   expect_ggplot(plot(ce, plot = FALSE)[[1]])
 })
@@ -273,21 +279,21 @@ test_that("multivariate normal models work correctly", {
   tim <- sample(1:N, N)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + 
+  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) +
                    (1|x|id) + arma(tim, id, q = 0),
-                  data = data,
-                  prior = c(prior_(~normal(0,5), resp = "y1"),
-                            prior_(~normal(0,5), resp = "y2"),
-                            prior_(~lkj(5), class = "rescor")),
-                  sample_prior = TRUE,
-                  iter = 1000, chains = 2, refresh = 0)
+                 data = data,
+                 prior = c(prior_(~normal(0,5), resp = "y1"),
+                           prior_(~normal(0,5), resp = "y2"),
+                           prior_(~lkj(5), class = "rescor")),
+                 sample_prior = TRUE,
+                 iter = 1000, chains = 2, refresh = 0)
   print(fit_mv1)
 
   expect_equal(dim(predict(fit_mv1)), c(300, 4, 2))
   expect_equal(dim(fitted(fit_mv1)), c(300, 4, 2))
   newdata <- data.frame(month = 1, y1 = 0, y2 = 0, x = 0, id = 1, tim = 1)
   expect_equal(dim(predict(fit_mv1, newdata = newdata)), c(1, 4, 2))
-  cs <- conditional_smooths(fit_mv1, nsamples = 750)
+  cs <- conditional_smooths(fit_mv1, ndraws = 750)
   expect_equal(length(cs), 2)
   expect_ggplot(plot(cs, ask = FALSE)[[2]])
 
@@ -295,7 +301,7 @@ test_that("multivariate normal models work correctly", {
                  prior = prior_(~lkj(5), class = "rescor"),
                  sample_prior = TRUE, iter = 1000, refresh = 0)
   print(fit_mv2)
-  waic_mv <- WAIC(fit_mv1, fit_mv2, nsamples = 100)
+  waic_mv <- WAIC(fit_mv1, fit_mv2, ndraws = 100)
   expect_true(waic_mv$ic_diffs__[1, "WAIC"] > 0)
 })
 
@@ -338,7 +344,7 @@ test_that("ZI and HU models work correctly", {
   print(fit_zi)
   expect_equal(dim(predict(fit_zi)), c(nobs(fit_zi), 4))
   expect_ggplot(plot(conditional_effects(fit_zi), ask = FALSE)[[2]])
-  waic_zi <- WAIC(fit_hu, fit_zi, nsamples = 100)
+  waic_zi <- WAIC(fit_hu, fit_zi, ndraws = 100)
   expect_equal(dim(waic_zi$ic_diffs__), c(1, 2))
 
   ## zero_inflated beta model
@@ -518,7 +524,7 @@ test_that("Wiener diffusion models work correctly", {
   print(fit_d1)
   expect_ggplot(plot(conditional_effects(fit_d1), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d1))
-  pp <- posterior_predict(fit_d1, nsamples = 10, negative_rt = TRUE)
+  pp <- posterior_predict(fit_d1, ndraws = 10, negative_rt = TRUE)
   expect_true(min(pp) < 0)
 
   fit_d2 <- brm(bf(q | dec(resp) ~ x, ndt ~ x),
@@ -526,7 +532,7 @@ test_that("Wiener diffusion models work correctly", {
   print(fit_d2)
   expect_ggplot(plot(conditional_effects(fit_d2), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d2))
-  pred <- predict(fit_d2, nsamples = 10, negative_rt = TRUE, summary = FALSE)
+  pred <- predict(fit_d2, ndraws = 10, negative_rt = TRUE, summary = FALSE)
   expect_true(any(pred < 0))
 
   waic_d <- WAIC(fit_d1, fit_d2)
@@ -536,9 +542,9 @@ test_that("Wiener diffusion models work correctly", {
 test_that("disc parameter in ordinal models is handled correctly", {
   fit <- brm(
     bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
-     data = inhaler, family = cumulative(),
-     prior = prior(normal(0,5)),
-     chains = 2, refresh = 0
+    data = inhaler, family = cumulative(),
+    prior = prior(normal(0,5)),
+    chains = 2, refresh = 0
   )
   print(fit)
   expect_range(waic(fit)$estimates[3, 1], 870, 920)
@@ -548,6 +554,24 @@ test_that("disc parameter in ordinal models is handled correctly", {
     conditional_effects(fit), ask = FALSE,
     points = TRUE, point_args = list(width = 0.3)
   )[[3]])
+})
+
+test_that("Argument `incl_thres` works correctly for non-grouped thresholds", {
+  fit <- brm(
+    bf(rating ~ period + carry + treat + (1|subject)),
+    data = inhaler, family = cumulative(),
+    prior = prior(normal(0,5)),
+    chains = 2, refresh = 0
+  )
+  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+  bprep <- prepare_predictions(fit)
+  thres <- bprep$thres$thres
+  eta <- posterior_linpred(fit)
+  thres_minus_eta_ch <- apply(thres, 2, "-", eta)
+  thres_minus_eta_ch <- array(
+    thres_minus_eta_ch, dim = c(nrow(thres), ncol(eta), ncol(thres))
+  )
+  expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
 })
 
 test_that("Mixture models work correctly", {
@@ -581,7 +605,7 @@ test_that("Mixture models work correctly", {
   bform2 <- bf(bform1, theta1 = 1, theta2 = 1, theta3 = 1)
   fit2 <- brm(
     bform2, data = dat, family = mixfam,
-    prior = prior, chains = 2, 
+    prior = prior, chains = 2,
     inits = 0, refresh = 0
   )
   print(fit2)
@@ -598,7 +622,7 @@ test_that("Mixture models work correctly", {
   #   prior(normal(0, 1), Intercept, dpar = theta2)
   # fit3 <- brm(
   #   bform3, data = dat, family = mixfam,
-  #   prior = prior3, init_r = 0.1, 
+  #   prior = prior3, init_r = 0.1,
   #   chains = 1, refresh = 0
   # )
   # print(fit3)
@@ -614,11 +638,11 @@ test_that("Gaussian processes work correctly", {
   ## Basic GPs
   set.seed(1112)
   dat <- mgcv::gamSim(1, n = 30, scale = 2)
-  fit1 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, 
+  fit1 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat,
               chains = 2, refresh = 0)
   print(fit1)
   expect_ggplot(pp_check(fit1))
-  ce <- conditional_effects(fit1, nsamples = 200, nug = 1e-07)
+  ce <- conditional_effects(fit1, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
@@ -627,7 +651,7 @@ test_that("Gaussian processes work correctly", {
   print(fit2)
   expect_ggplot(pp_check(fit2))
   ce <- conditional_effects(
-    fit2, nsamples = 200, nug = 1e-07,
+    fit2, ndraws = 200, nug = 1e-07,
     surface = TRUE, resolution = 10
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
@@ -637,16 +661,16 @@ test_that("Gaussian processes work correctly", {
   fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2, refresh = 0)
   print(fit3)
   expect_ggplot(pp_check(fit3))
-  ce <- conditional_effects(fit3, nsamples = 200, nug = 1e-07)
+  ce <- conditional_effects(fit3, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
-  
+
   # GP with factor 'by' variable
   dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
   fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, refresh = 0)
   print(fit4)
   expect_ggplot(pp_check(fit4))
-  ce <- conditional_effects(fit4, nsamples = 200, nug = 1e-07)
+  ce <- conditional_effects(fit4, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })
@@ -654,22 +678,22 @@ test_that("Gaussian processes work correctly", {
 test_that("Approximate Gaussian processes work correctly", {
   set.seed(1245)
   dat <- mgcv::gamSim(4, n = 200, scale = 2)
-  
+
   # isotropic approximate GP
   fit1 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4), 
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
   print(fit1)
-  expect_range(bayes_R2(fit1)[1, 1], 0.45, 0.7) 
+  expect_range(bayes_R2(fit1)[1, 1], 0.45, 0.7)
   ce <- conditional_effects(
     fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit1)$estimates[3, 1], 900, 1000)
-  
+
   # non isotropic approximate GP
   fit2 <- brm(
     y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE),
@@ -677,7 +701,7 @@ test_that("Approximate Gaussian processes work correctly", {
     control = list(adapt_delta = 0.99)
   )
   print(fit2)
-  expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.62) 
+  expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.62)
   ce <- conditional_effects(
     fit2, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
@@ -688,21 +712,21 @@ test_that("Approximate Gaussian processes work correctly", {
 
 test_that("SAR models work correctly", {
   data(oldcol, package = "spdep")
-  fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb), 
+  fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb),
                     data = COL.OLD, data2 = list(COL.nb = COL.nb),
                     chains = 2, refresh = 0)
   print(fit_lagsar)
   expect_ggplot(pp_check(fit_lagsar))
-  ce <- conditional_effects(fit_lagsar, nsamples = 200)
+  ce <- conditional_effects(fit_lagsar, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_lagsar)$estimates[3, 1], 350, 380)
-  
-  fit_errorsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"), 
+
+  fit_errorsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
                       data = COL.OLD, data2 = list(COL.nb = COL.nb),
                       chains = 2, refresh = 0)
   print(fit_errorsar)
   expect_ggplot(pp_check(fit_errorsar))
-  ce <- conditional_effects(fit_errorsar, nsamples = 200)
+  ce <- conditional_effects(fit_errorsar, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_errorsar)$estimates[3, 1], 350, 380)
 })
@@ -713,13 +737,13 @@ test_that("CAR models work correctly", {
   east <- north <- 1:10
   Grid <- expand.grid(east, north)
   K <- nrow(Grid)
-  
+
   # set up distance and neighbourhood matrices
   distance <- as.matrix(dist(Grid))
   W <- array(0, c(K, K))
   W[distance == 1] <- 1
   rownames(W) <- 1:nrow(W)
-  
+
   # generate the covariates and response data
   x1 <- rnorm(K)
   x2 <- rnorm(K)
@@ -732,27 +756,27 @@ test_that("CAR models work correctly", {
   size <- rep(50, K)
   y <- rbinom(n = K, size = size, prob = prob)
   dat <- data.frame(y, size, x1, x2, obs = 1:length(y))
-  
+
   # fit a CAR model
   fit_car <- brm(
     y | trials(size) ~ x1 + x2 + car(W, obs),
-    data = dat, data2 = list(W = W), family = binomial(), 
+    data = dat, data2 = list(W = W), family = binomial(),
     chains = 2, refresh = 0
-  ) 
+  )
   print(fit_car)
   expect_ggplot(pp_check(fit_car))
-  ce = conditional_effects(fit_car, nsamples = 200)
+  ce = conditional_effects(fit_car, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(LOO(fit_car)$estimates[3, 1], 450, 550)
   expect_false(isTRUE(all.equal(
-    fitted(fit_car, newdata = dat[1:5, ]), 
+    fitted(fit_car, newdata = dat[1:5, ]),
     fitted(fit_car, newdata = dat[1:5, ], incl_autocor = FALSE)
   )))
-  
+
   newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = 1)
   pp <- posterior_predict(fit_car, newdata = newdata)
-  expect_equal(dim(pp), c(nsamples(fit_car), 1))
-  
+  expect_equal(dim(pp), c(ndraws(fit_car), 1))
+
   newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = -1)
   new_W <- W
   rownames(W)[1] <- "-1"
@@ -764,20 +788,20 @@ test_that("CAR models work correctly", {
 test_that("Missing value imputation works correctly", {
   library(mice)
   data("nhanes", package = "mice")
-  
+
   # missing value imputation via multiple imputation
   imp <- mice(nhanes)
-  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1, 
+  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1,
                            backend = "rstan", refresh = 0)
   print(fit_imp1)
-  expect_equal(nsamples(fit_imp1), 5000)
-  expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
-  
+  expect_equal(ndraws(fit_imp1), 5000)
+  expect_equal(dim(fit_imp1$rhats), c(5, length(variables(fit_imp1))))
+
   fit_imp1 <- update(fit_imp1, . ~ chl, newdata = imp)
   print(fit_imp1)
-  expect_true(!"b_age" %in% parnames(fit_imp1))
-  expect_equal(nsamples(fit_imp1), 5000)
-  
+  expect_true(!"b_age" %in% variables(fit_imp1))
+  expect_equal(ndraws(fit_imp1), 5000)
+
   # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
@@ -789,14 +813,14 @@ test_that("Missing value imputation works correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   loo <- LOO(fit_imp2, newdata = na.omit(fit_imp2$data))
   expect_range(loo$estimates[3, 1], 200, 220)
-  
+
   # overimputation within Stan
   dat <- nhanes
   dat$sdy <- 5
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
   fit_imp3 <- brm(bform, data = dat,
-                  save_pars = save_pars(latent = TRUE), 
+                  save_pars = save_pars(latent = TRUE),
                   backend = "rstan", refresh = 0)
   print(fit_imp3)
   pred <- predict(fit_imp3)
@@ -810,12 +834,12 @@ test_that("Missing value imputation works correctly", {
 test_that("student-t-distributed group-level effects work correctly", {
   fit <- brm(
     count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
-    data = epilepsy, family = poisson(), 
+    data = epilepsy, family = poisson(),
     chains = 1, refresh = 0
   )
   print(summary(fit))
-  expect_true("df_patient" %in% parnames(fit))
-  expect_true(!"udf_1" %in% parnames(fit))
+  expect_true("df_patient" %in% variables(fit))
+  expect_true(!"udf_1" %in% variables(fit))
   waic <- suppressWarnings(waic(fit))
   expect_range(waic$estimates[3, 1], 1300, 1400)
 })
@@ -824,12 +848,12 @@ test_that("multinomial models work correctly", {
   set.seed(1245)
   N <- 100
   dat <- data.frame(
-    y1 = rbinom(N, 10, 0.1), y2 = rbinom(N, 10, 0.4), 
+    y1 = rbinom(N, 10, 0.1), y2 = rbinom(N, 10, 0.4),
     y3 = rbinom(N, 10, 0.7), x = rnorm(N)
   )
   dat$size <- with(dat, y1 + y2 + y3)
   dat$y <- with(dat, cbind(y1, y2, y3))
-  
+
   fit <- brm(y | trials(size) ~ x, data = dat,
              family = multinomial(), refresh = 0)
   print(summary(fit))
@@ -849,7 +873,7 @@ test_that("dirichlet models work correctly", {
   names(dat) <- c("y1", "y2", "y3")
   dat$x <- rnorm(N)
   dat$y <- with(dat, cbind(y1, y2, y3))
-  
+
   fit <- brm(y ~ x, data = dat, family = dirichlet(), refresh = 0)
   print(summary(fit))
   expect_output(print(fit), "muy2 = logit")
@@ -867,7 +891,7 @@ test_that("Addition argument 'subset' works correctly", {
   data("BTdata", package = "MCMCglmm")
   BTdata$sub1 <- sample(0:1, nrow(BTdata), replace = TRUE)
   BTdata$sub2 <- sample(0:1, nrow(BTdata), replace = TRUE)
-  
+
   bform <- bf(tarsus | subset(sub1) ~ sex + (1|p|fosternest) + (1|q|dam)) +
     bf(back | subset(sub2) ~ sex + (1|p|fosternest) + (1|q|dam)) +
     set_rescor(FALSE)
@@ -891,8 +915,8 @@ test_that("Cox models work correctly", {
   d1 <- simsurv::simsurv(lambdas = 0.1, gammas  = 1.5, betas = c(trt = -0.5),
                          x = covs, maxt  = 5)
   d1 <- merge(d1, covs)
-  
-  fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt, 
+
+  fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt,
               data = d1, family = brmsfamily("cox"), refresh = 0)
   print(summary(fit1))
   expect_range(posterior_summary(fit1)["b_trt", "Estimate"], -0.70, -0.30)
@@ -907,22 +931,58 @@ test_that("ordinal model with grouped thresholds works correctly", {
     th = rep(5:6, each = 50),
     x = rnorm(100)
   )
-  
+
   prior <- prior(normal(0,1), class = "Intercept", group = "b")
-  fit <- brm(y | thres(th, gr) ~ x, dat, cumulative(), prior = prior) 
+  fit <- brm(y | thres(th, gr) ~ x, dat, cumulative(), prior = prior)
   print(summary(fit))
   pred <- predict(fit)
   expect_equal(dim(pred), c(nrow(dat), max(dat$th) + 1))
   expect_range(waic(fit)$estimates[3, 1], 350, 400)
   ce <- conditional_effects(fit, categorical = TRUE)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
+
+  # test incl_thres = TRUE
+  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+  bprep <- prepare_predictions(fit)
+  thres <- bprep$thres$thres
+  eta <- posterior_linpred(fit)
+  gr_unq <- unique(family(fit)$thres$group)
+  gr_vec <- fit$data$gr
+  nthres_max <- max(
+    by(family(fit)$thres, family(fit)$thres$group, function(x) max(x$thres))
+  )
+  thres_minus_eta_ch <- lapply(setNames(nm = gr_unq), function(gr) {
+    thres_gr_nms <- grepl(paste0("^b_Intercept\\[", gr, ","), colnames(thres))
+    thres_gr <- thres[, thres_gr_nms]
+    eta_gr <- eta[, gr_vec == gr, drop = FALSE]
+    thres_minus_eta_ch_gr <- apply(thres_gr, 2, "-", eta_gr)
+    thres_minus_eta_ch_gr <- array(
+      thres_minus_eta_ch_gr,
+      dim = c(nrow(thres_gr), ncol(eta_gr), ncol(thres_gr))
+    )
+    if (ncol(thres_gr) < nthres_max) {
+      dim_NA <- c(
+        dim(thres_minus_eta_ch_gr)[-3],
+        nthres_max - dim(thres_minus_eta_ch_gr)[3]
+      )
+      thres_minus_eta_ch_gr <-
+        abind::abind(thres_minus_eta_ch_gr, array(dim = dim_NA))
+    }
+    dimnames(thres_minus_eta_ch_gr) <-
+      list(NULL, NULL, as.character(seq_len(nthres_max)))
+    return(thres_minus_eta_ch_gr)
+  })
+  new_arrnms <- dimnames(thres_minus_eta_ch[[1]])
+  thres_minus_eta_ch <- abind::abind(thres_minus_eta_ch, along = 2)
+  dimnames(thres_minus_eta_ch) <- new_arrnms
+  expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
 })
 
 test_that("Fixing parameters to constants works correctly", {
   bprior <- prior(normal(0, 1), class = "b") +
     prior(constant(2), class = "b", coef = "zBase") +
     prior(constant(0.5), class = "sd")
-  
+
   fit <- brm(count ~ zAge + zBase + (1 | patient),
              data = epilepsy, prior = bprior)
   print(summary(fit))
@@ -935,12 +995,128 @@ test_that("projpred methods can be run", {
   fit <- brm(count ~ zAge + zBase * Trt,
              data = epilepsy, family = poisson())
   summary(fit)
-  
+
   # perform variable selection without cross-validation
   vs <- varsel(fit)
   expect_is(vs, "vsel")
-  
+
   # perform variable selection with cross-validation
   cv_vs <- cv_varsel(fit)
   expect_is(vs, "vsel")
 })
+
+test_that("emmeans can be run for multivariate models", {
+  library(emmeans)
+  df <- data.frame(
+    y1 = rnorm(100), y2 = rnorm(100), 
+    x1 = rnorm(100), x2 = rnorm(100)
+  )
+  
+  bform <- bf(mvbind(y1, y2) ~ x1 + x2) + set_rescor(TRUE)
+  fit <- brm(bform, df, chains = 1, iter = 1000)
+  
+  # Default: Collapse over repeated measures:
+  em <- summary(emmeans(fit, "x1", at = list(x1 = c(-1, 1))))
+  expect_equal(nrow(em), 2)
+  
+  # Ask for MV with rep.meas
+  em <- summary(emmeans(fit, c("x1", "rep.meas"), at = list(x1 = c(-1, 1))))
+  expect_equal(nrow(em), 4)
+})
+
+test_that(paste(
+  "Families sratio() and cratio() are equivalent for symmetric distribution",
+  "functions (here only testing the logit link)"
+), {
+  set.seed(1234)
+  dat2 <- data.frame(
+    rating = sample(1:4, 50, TRUE),
+    subject = rep(1:10, 5),
+    x1 = rnorm(50),
+    x2 = rnorm(50),
+    x3 = rnorm(50)
+  )
+  warmup <- 150
+  iter <- 200
+  chains <- 1
+
+  fit_sratio <- brm(
+    bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
+    data = dat2, family = sratio(),
+    warmup = warmup, iter = iter, chains = chains,
+    seed = 533273
+  )
+  draws_sratio <- as.matrix(fit_sratio)
+
+  fit_cratio <- brm(
+    bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
+    data = dat2, family = cratio(),
+    warmup = warmup, iter = iter, chains = chains,
+    seed = 533273
+  )
+  draws_cratio <- as.matrix(fit_cratio)
+
+  expect_equal(draws_sratio, draws_cratio)
+})
+
+test_that("Non-linear non-looped model predictions work correctly in blocked order", {
+  loss_alt <- transform(loss, row=as.integer(1:nrow(loss)), nr=nrow(loss), test=as.integer(0))
+  scode_growth <- "
+    vector growth_test(vector ult, int[] dev, vector theta, vector omega, int[] row, int[] test) {
+      int N = rows(ult);
+      vector[N] mu;
+      int rows_sorted = 1;
+    
+      for(i in 1:N) {
+        if(row[i] != i)
+           rows_sorted = 0;
+      }
+    
+      for(i in 1:N) {
+         if(test[i] == 0) {
+           mu[i] = ult[i] * (1 - exp(-(dev[i]/theta[i])^omega[i]));
+         } else if(test[i] == 1) {
+           mu[i] = rows_sorted;
+         } else if(test[i] == 2) {
+           mu[i] = N;
+         }
+      }
+      return(mu);
+    }
+  "
+  growth_model  <- stanvar(name="growth_test", scode=scode_growth, block="functions")
+  
+  fit_loss <- brm(
+    bf(cum ~ growth_test(ult, dev, theta, omega, row, test),
+       ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
+       nl = TRUE, loop=FALSE),
+    data = loss_alt, family = gaussian(),
+    stanvars = growth_model,
+    prior = c(prior(normal(5000, 1000), nlpar = "ult"),
+              prior(normal(1, 2), nlpar = "omega"),
+              prior(normal(45, 10), nlpar = "theta")),
+    control = list(adapt_delta = 0.9),
+    refresh = 0,
+    chains = 1,
+    backend = "rstan"
+  )
+  expose_functions(fit_loss)
+    
+  N <- nrow(loss_alt)
+  pr1 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1), ndraws=10)
+  expect_true(all(dim(pr1) == c(10,N)))
+  expect_true(all(pr1 == 1))
+  pr1b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-5,], ndraws=10)
+  expect_true(all(dim(pr1b) == c(10,N-1)))
+  expect_true(all(pr1b == 0))
+  pr1c <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1)[-N,], ndraws=10)
+  expect_true(all(dim(pr1c) == c(10,N-1)))
+  expect_true(all(pr1c == 1))
+  pr2 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2), ndraws=10)
+  expect_true(all(dim(pr2) == c(10,N)))
+  expect_true(all(pr2 == N))
+  pr2b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2)[-N,], ndraws=10)
+  expect_true(all(dim(pr2b) == c(10,N-1)))
+  expect_true(all(pr2b == N-1))
+})
+

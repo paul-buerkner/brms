@@ -30,7 +30,7 @@ rename_pars <- function(x) {
   bterms <- brmsterms(x$formula)
   data <- model.frame(x)
   meef <- tidy_meef(bterms, data)
-  pars <- parnames(x)
+  pars <- variables(x)
   # find positions of parameters and define new names
   change <- c(
     change_effects(bterms, data = data, pars = pars),
@@ -523,7 +523,7 @@ do_renaming <- function(x, change) {
   x
 }
 
-# order parameter samples after parameter class
+# order parameter draws after parameter class
 # @param x brmsfit object
 reorder_pars <- function(x) {
   all_classes <- unique(c(
@@ -581,7 +581,7 @@ compute_xi <- function(x, ...) {
 
 #' @export
 compute_xi.brmsfit <- function(x, ...) {
-  if (!any(grepl("^tmp_xi(_|$)", parnames(x)))) {
+  if (!any(grepl("^tmp_xi(_|$)", variables(x)))) {
     return(x)
   }
   draws <- try(extract_draws(x))
@@ -607,7 +607,7 @@ compute_xi.brmsprep <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   resp <- usc(x$resp)
   tmp_xi_name <- paste0("tmp_xi", resp)
-  if (!tmp_xi_name %in% parnames(fit)) {
+  if (!tmp_xi_name %in% variables(fit)) {
     return(fit)
   }
   mu <- get_dpar(x, "mu")
@@ -622,7 +622,7 @@ compute_xi.brmsprep <- function(x, fit, ...) {
   samp_chain <- length(xi) / fit$fit@sim$chains
   for (i in seq_len(fit$fit@sim$chains)) {
     xi_part <- xi[((i - 1) * samp_chain + 1):(i * samp_chain)]
-    # add warmup samples not used anyway
+    # add warmup draws not used anyway
     xi_part <- c(rep(0, fit$fit@sim$warmup2[1]), xi_part)
     fit$fit@sim$samples[[i]][[xi_name]] <- xi_part
   }

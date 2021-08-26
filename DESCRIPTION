@@ -2,15 +2,18 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.15.0
-Date: 2021-03-10
+Version: 2.16.2
+Date: 2021-08-26
 Authors@R: 
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
       person("Jonah", "Gabry", role = c("ctb")),
       person("Sebastian", "Weber", role = c("ctb")),
       person("Andrew", "Johnson", role = c("ctb")),
-      person("Martin", "Modrak", role = c("ctb")))
+      person("Martin", "Modrak", role = c("ctb")),
+      person("Hamada S.", "Badr", role = c("ctb")),
+      person("Frank", "Weber", role = c("ctb")),
+      person("Mattan S.", "Ben-Shachar", role = c("ctb")))
 Depends: 
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
@@ -19,6 +22,7 @@ Imports:
     rstan (>= 2.19.2),
     ggplot2 (>= 2.0.0),
     loo (>= 2.3.1),
+    posterior (>= 1.0.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
     rstantools (>= 2.1.1),
@@ -41,7 +45,7 @@ Imports:
 Suggests: 
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
-    cmdstanr (>= 0.1.3),
+    cmdstanr (>= 0.4.0),
     RWiener,
     rtdists,
     mice,
@@ -56,6 +60,8 @@ Suggests:
     digest,
     diffobj,
     R.rsp,
+    gtable,
+    shiny,
     knitr,
     rmarkdown
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models

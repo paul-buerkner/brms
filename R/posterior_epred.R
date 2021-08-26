@@ -1,13 +1,13 @@
 #' Expected Values of the Posterior Predictive Distribution
 #' 
-#' Compute posterior samples of the expected value/mean of the posterior
+#' Compute posterior draws of the expected value/mean of the posterior
 #' predictive distribution. Can be performed for the data used to fit the model
 #' (posterior predictive checks) or for new data. By definition, these
 #' predictions have smaller variance than the posterior predictions performed by
 #' the \code{\link{posterior_predict.brmsfit}} method. This is because only the
-#' uncertainty in the mean is incorporated in the samples computed by
+#' uncertainty in the mean is incorporated in the draws computed by
 #' \code{posterior_epred} while any residual error is ignored. However, the
-#' estimated means of both methods averaged across samples should be very
+#' estimated means of both methods averaged across draws should be very
 #' similar.
 #' 
 #' @aliases pp_expect
@@ -21,7 +21,7 @@
 #' @return An \code{array} of predicted \emph{mean} response values. For
 #'   categorical and ordinal models, the output is an S x N x C array.
 #'   Otherwise, the output is an S x N matrix, where S is the number of
-#'   posterior samples, N is the number of observations, and C is the number of
+#'   posterior draws, N is the number of observations, and C is the number of
 #'   categories. In multivariate models, an additional dimension is added to the
 #'   output which indexes along the different response variables.
 #'   
@@ -46,21 +46,21 @@
 #' @export
 posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                     re.form = NULL, resp = NULL, dpar = NULL,
-                                    nlpar = NULL, nsamples = NULL, subset = NULL, 
+                                    nlpar = NULL, ndraws = NULL, draw_ids = NULL, 
                                     sort = FALSE, ...) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
     re_formula <- re.form
   }
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
-    nsamples = nsamples, subset = subset, check_response = FALSE, ...
+    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = "response", dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE
+    prep,  dpar = dpar, nlpar = nlpar, sort = sort,
+    scale = "response", summary = FALSE
   )
 }
 
@@ -72,8 +72,11 @@ posterior_epred.mvbrmsprep <- function(object, ...) {
 }
 
 #' @export
-posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort, 
-                                     summary, robust, probs, ...) {
+posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
+                                     scale = "response", incl_thres = NULL, 
+                                     summary = FALSE, robust = FALSE, 
+                                     probs = c(0.025, 0.975), ...) {
+  summary <- as_one_logical(summary)
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
   if (length(dpar)) {
@@ -108,7 +111,7 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
     } else {
       # parameter is constant across observations
       out <- object$dpars[[dpar]]
-      out <- matrix(out, nrow = object$nsamples, ncol = object$nobs)
+      out <- matrix(out, nrow = object$ndraws, ncol = object$nobs)
     }
   } else if (length(nlpar)) {
     # predict a non-linear parameter
@@ -119,8 +122,18 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
     }
     out <- get_nlpar(object, nlpar = nlpar)
   } else {
-    # predict the mean of the response distribution
-    if (scale == "response") {
+    # no dpar or nlpar specified
+    incl_thres <- as_one_logical(incl_thres %||% FALSE)
+    incl_thres <- incl_thres && is_ordinal(object$family) && scale == "linear" 
+    if (incl_thres) {
+      # extract linear predictor array with thresholds etc. included
+      if (is.mixfamily(object$family)) {
+        stop2("'incl_thres' is not supported for mixture models.")
+      }
+      object$family$link <- "identity"
+    }
+    if (scale == "response" || incl_thres) {
+      # predict the mean of the response distribution
       for (nlp in nlpars) {
         object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
       }
@@ -135,16 +148,18 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
         out <- posterior_epred_fun(object)
       }
     } else {
+      # return results on the linear scale
+      # extract all 'mu' parameters
       if (conv_cats_dpars(object$family)) {
-        mus <- dpars[grepl("^mu", dpars)] 
+        out <- dpars[grepl("^mu", dpars)] 
       } else {
-        mus <- dpars[dpar_class(dpars) %in% "mu"]
+        out <- dpars[dpar_class(dpars) %in% "mu"]
       }
-      if (length(mus) == 1L) {
-        out <- get_dpar(object, dpar = mus, ilink = FALSE)
+      if (length(out) == 1L) {
+        out <- get_dpar(object, dpar = out, ilink = FALSE)
       } else {
         # multiple mu parameters in categorical or mixture models
-        out <- lapply(mus, get_dpar, prep = object, ilink = FALSE)
+        out <- lapply(out, get_dpar, prep = object, ilink = FALSE)
         out <- abind::abind(out, along = 3)
       }
     }
@@ -154,10 +169,15 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
   }
   colnames(out) <- NULL
   out <- reorder_obs(out, object$old_order, sort = sort)
+  if (scale == "response" && is_polytomous(object$family) &&
+      length(dim(out)) == 3L && dim(out)[3] == length(object$cats)) {
+    # for ordinal models with varying thresholds, dim[3] may not match cats
+    dimnames(out)[[3]] <- object$cats
+  }
   if (summary) {
     # only for compatibility with the 'fitted' method
     out <- posterior_summary(out, probs = probs, robust = robust)
-    if (has_cat(object$family) && length(dim(out)) == 3L) {
+    if (is_polytomous(object$family) && length(dim(out)) == 3L) {
       if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
@@ -171,7 +191,7 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
 #' Expected Values of the Posterior Predictive Distribution
 #' 
 #' This method is an alias of \code{\link{posterior_epred.brmsfit}}
-#' with additional arguments for obtaining summaries of the computed samples.
+#' with additional arguments for obtaining summaries of the computed draws.
 #' 
 #' @inheritParams posterior_epred.brmsfit
 #' @param object An object of class \code{brmsfit}.
@@ -231,39 +251,42 @@ posterior_epred.brmsprep <- function(object, scale, dpar, nlpar, sort,
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
                            resp = NULL, dpar = NULL, nlpar = NULL,
-                           nsamples = NULL, subset = NULL, sort = FALSE, 
+                           ndraws = NULL, draw_ids = NULL, sort = FALSE, 
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   summary <- as_one_logical(summary)
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
-    nsamples = nsamples, subset = subset, check_response = FALSE, ...
+    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = scale, dpar = dpar, nlpar = nlpar, sort = sort, 
+    prep, dpar = dpar, nlpar = nlpar, sort = sort, scale = scale, 
     summary = summary, robust = robust, probs = probs
   )
 }
 
-#' Posterior Samples of the Linear Predictor
+#' Posterior Draws of the Linear Predictor
 #' 
-#' Compute posterior samples of the linear predictor, that is samples before
+#' Compute posterior draws of the linear predictor, that is draws before
 #' applying any link functions or other transformations. Can be performed for
 #' the data used to fit the model (posterior predictive checks) or for new data.
 #' 
 #' @inheritParams posterior_epred.brmsfit
 #' @param object An object of class \code{brmsfit}.
-#' @param transform (Deprecated) Logical; if \code{FALSE}
-#'  (the default), samples of the linear predictor are returned.
-#'  If \code{TRUE}, samples of transformed linear predictor,
-#'  that is, the mean of the posterior predictive distribution
-#'  are returned instead (see \code{\link{posterior_epred}} for details).
-#'  Only implemented for compatibility with the 
-#'  \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
-#'  generic. 
+#' @param transform Logical; if \code{FALSE}
+#'  (the default), draws of the linear predictor are returned.
+#'  If \code{TRUE}, draws of transformed linear predictor,
+#'  that is, after applying the link function are returned.
+#' @param dpar Name of a predicted distributional parameter
+#'  for which draws are to be returned. By default, draws
+#'  of the main distributional parameter(s) \code{"mu"} are returned.
+#' @param incl_thres Logical; only relevant for ordinal models when
+#'   \code{transform} is \code{FALSE}, and ignored otherwise. Shall the
+#'   thresholds and category-specific effects be included in the linear
+#'   predictor? For backwards compatibility, the default is to not include them.
 #' 
 #' @seealso \code{\link{posterior_epred.brmsfit}}
 #'  
@@ -286,7 +309,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
   re.form = NULL, resp = NULL, dpar = NULL, nlpar = NULL, 
-  nsamples = NULL, subset = NULL, sort = FALSE, ...
+  incl_thres = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -295,19 +318,23 @@ posterior_linpred.brmsfit <- function(
   scale <- "linear"
   transform <- as_one_logical(transform)
   if (transform) {
-    warning2("posterior_linpred(transform = TRUE) is deprecated. Please ",
-             "use posterior_epred() instead, without the 'transform' argument.")
     scale <- "response"
+    # if transform, return inv-link draws of only a single
+    # distributional or non-linear parameter for consistency
+    # of brms and rstanarm
+    if (is.null(dpar) && is.null(nlpar)) {
+      dpar <- "mu"
+    }
   }
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
-    nsamples = nsamples, subset = subset, check_response = FALSE, ...
+    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, scale = scale, dpar = dpar, 
-    nlpar = nlpar, sort = sort, summary = FALSE
+    prep, dpar = dpar, nlpar = nlpar, sort = sort,
+    scale = scale, incl_thres = incl_thres, summary = FALSE
   )
 }
 
@@ -344,7 +371,7 @@ posterior_epred_shifted_lognormal <- function(prep) {
 }
 
 posterior_epred_binomial <- function(prep) {
-  trials <- as_draws_matrix(prep$data$trials, dim_mu(prep))
+  trials <- data2draws(prep$data$trials, dim_mu(prep))
   prep$dpars$mu * trials 
 }
 
@@ -357,6 +384,10 @@ posterior_epred_poisson <- function(prep) {
 }
 
 posterior_epred_negbinomial <- function(prep) {
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
+}
+
+posterior_epred_negbinomial2 <- function(prep) {
   multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
@@ -456,7 +487,7 @@ posterior_epred_zero_inflated_negbinomial <- function(prep) {
 }
 
 posterior_epred_zero_inflated_binomial <- function(prep) {
-  trials <- as_draws_matrix(prep$data$trials, dim_mu(prep))
+  trials <- data2draws(prep$data$trials, dim_mu(prep))
   prep$dpars$mu * trials * (1 - prep$dpars$zi)
 }
 
@@ -470,7 +501,7 @@ posterior_epred_zero_one_inflated_beta <- function(prep) {
 
 posterior_epred_categorical <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
   eta <- abind(prep$dpars, along = 3)
@@ -483,7 +514,7 @@ posterior_epred_categorical <- function(prep) {
 
 posterior_epred_multinomial <- function(prep) {
   get_counts <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta) * trials[i]
   }
   eta <- abind(prep$dpars, along = 3)
@@ -497,7 +528,7 @@ posterior_epred_multinomial <- function(prep) {
 
 posterior_epred_dirichlet <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
   eta <- prep$dpars[grepl("^mu", names(prep$dpars))]
@@ -507,6 +538,18 @@ posterior_epred_dirichlet <- function(prep) {
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- prep$cats
   out
+}
+
+posterior_epred_dirichlet2 <- function(prep) {
+  mu <- prep$dpars[grepl("^mu", names(prep$dpars))]
+  mu <- abind(mu, along = 3)
+  sums_mu <- apply(mu, 1:2, sum)
+  cats <- seq_len(prep$data$ncat)
+  for (i in cats) {
+    mu[, , i] <- mu[, , i] / sums_mu
+  }
+  dimnames(mu)[[3]] <- prep$cats
+  mu
 }
 
 posterior_epred_cumulative <- function(prep) {
@@ -526,12 +569,7 @@ posterior_epred_acat <- function(prep) {
 }
 
 posterior_epred_custom <- function(prep) {
-  posterior_epred_fun <- prep$family$posterior_epred
-  if (!is.function(posterior_epred_fun)) {
-    posterior_epred_fun <- paste0("posterior_epred_", prep$family$name)
-    posterior_epred_fun <- get(posterior_epred_fun, prep$family$env)
-  }
-  posterior_epred_fun(prep)
+  custom_family_method(prep$family, "posterior_epred")(prep)
 }
 
 posterior_epred_mixture <- function(prep) {
@@ -556,22 +594,26 @@ posterior_epred_mixture <- function(prep) {
 # compute 'posterior_epred' for ordinal models
 posterior_epred_ordinal <- function(prep) {
   dens <- get(paste0("d", prep$family$family), mode = "function")
-  ncat_max <- max(prep$data$nthres) + 1
-  nact_min <- min(prep$data$nthres) + 1
-  zero_mat <- matrix(0, nrow = prep$nsamples, ncol = ncat_max - nact_min)
+  # the linear scale has one column less than the response scale
+  adjust <- ifelse(prep$family$link == "identity", 0, 1)
+  ncat_max <- max(prep$data$nthres) + adjust
+  nact_min <- min(prep$data$nthres) + adjust
+  init_mat <- matrix(ifelse(prep$family$link == "identity", NA, 0),
+                     nrow = prep$ndraws,
+                     ncol = ncat_max - nact_min)
   args <- list(link = prep$family$link)
   out <- vector("list", prep$nobs)
   for (i in seq_along(out)) {
     args_i <- args
-    args_i$eta <- extract_col(prep$dpars$mu, i)
-    args_i$disc <- extract_col(prep$dpars$disc, i)
+    args_i$eta <- slice_col(prep$dpars$mu, i)
+    args_i$disc <- slice_col(prep$dpars$disc, i)
     args_i$thres <- subset_thres(prep, i)
-    ncat_i <- NCOL(args_i$thres) + 1
+    ncat_i <- NCOL(args_i$thres) + adjust
     args_i$x <- seq_len(ncat_i)
     out[[i]] <- do_call(dens, args_i)
     if (ncat_i < ncat_max) {
       sel <- seq_len(ncat_max - ncat_i)
-      out[[i]] <- cbind(out[[i]], zero_mat[, sel])
+      out[[i]] <- cbind(out[[i]], init_mat[, sel])
     }
   }
   out <- abind(out, along = 3)
@@ -588,21 +630,21 @@ posterior_epred_lagsar <- function(prep) {
     IB <- I - with(prep$ac, lagsar[s, ] * Msar)
     as.numeric(solve(IB, prep$dpars$mu[s, ]))
   }
-  out <- rblapply(seq_len(prep$nsamples), .posterior_epred)
+  out <- rblapply(seq_len(prep$ndraws), .posterior_epred)
   rownames(out) <- NULL
   out
 }
 
 # expand data to dimension appropriate for
-# vectorized multiplication with posterior samples
-as_draws_matrix <- function(x, dim) {
+# vectorized multiplication with posterior draws
+data2draws <- function(x, dim) {
   stopifnot(length(dim) == 2L, length(x) %in% c(1, dim[2]))
   matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
 }
 
 # expected dimension of the main parameter 'mu'
 dim_mu <- function(prep) {
-  c(prep$nsamples, prep$nobs)
+  c(prep$ndraws, prep$nobs)
 }
 
 # is the model truncated?
@@ -615,8 +657,8 @@ is_trunc <- function(prep) {
 # family specific truncation function for posterior_epred values
 posterior_epred_trunc <- function(prep) {
   stopifnot(is_trunc(prep))
-  lb <- as_draws_matrix(prep$data[["lb"]], dim_mu(prep))
-  ub <- as_draws_matrix(prep$data[["ub"]], dim_mu(prep))
+  lb <- data2draws(prep$data[["lb"]], dim_mu(prep))
+  ub <- data2draws(prep$data[["ub"]], dim_mu(prep))
   posterior_epred_trunc_fun <- paste0("posterior_epred_trunc_", prep$family$family)
   posterior_epred_trunc_fun <- try(
     get(posterior_epred_trunc_fun, asNamespace("brms")), 
@@ -634,7 +676,7 @@ posterior_epred_trunc <- function(prep) {
 # @param prep output of 'prepare_predictions'
 # @param lb lower truncation bound
 # @param ub upper truncation bound
-# @return samples of the truncated mean parameter
+# @return draws of the truncated mean parameter
 posterior_epred_trunc_gaussian <- function(prep, lb, ub) {
   zlb <- (lb - prep$dpars$mu) / prep$dpars$sigma
   zub <- (ub - prep$dpars$mu) / prep$dpars$sigma
@@ -714,7 +756,7 @@ posterior_epred_trunc_binomial <- function(prep, lb, ub) {
   ub <- ifelse(ub > max_value, max_value, ub)
   trials <- prep$data$trials
   if (length(trials) > 1) {
-    trials <- as_draws_matrix(trials, dim_mu(prep))
+    trials <- data2draws(trials, dim_mu(prep))
   }
   args <- list(size = trials, prob = prep$dpars$mu)
   posterior_epred_trunc_discrete(dist = "binom", args = args, lb = lb, ub = ub)
@@ -722,25 +764,40 @@ posterior_epred_trunc_binomial <- function(prep, lb, ub) {
 
 posterior_epred_trunc_poisson <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(lambda = prep$dpars$mu)
+  args <- list(lambda = mu)
   posterior_epred_trunc_discrete(dist = "pois", args = args, lb = lb, ub = ub)
 }
 
 posterior_epred_trunc_negbinomial <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = prep$dpars$mu, size = prep$dpars$shape)
+  shape <- multiply_dpar_rate_denom(prep$dpars$shape, prep)
+  args <- list(mu = mu, size = shape)
+  posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
+}
+
+posterior_epred_trunc_negbinomial2 <- function(prep, lb, ub) {
+  lb <- ifelse(lb < -1, -1, lb)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
+  ub <- ifelse(ub > max_value, max_value, ub)
+  shape <- multiply_dpar_rate_denom(1 / prep$dpars$sigma, prep)
+  args <- list(mu = mu, size = shape)
   posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
 posterior_epred_trunc_geometric <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(prep$dpars$mu)
+  mu <- multiply_dpar_rate_denom(prep$dpars$mu, prep)
+  max_value <- 3 * max(mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = prep$dpars$mu, size = 1)
+  shape <- multiply_dpar_rate_denom(1, prep)
+  args <- list(mu = mu, size = shape)
   posterior_epred_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
@@ -774,8 +831,8 @@ posterior_epred_trunc_discrete <- function(dist, args, lb, ub) {
     m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
   }
   rm(mk)
-  m1 <- do_call(cbind, m1)
-  m1 / (do_call(cdf, c(list(ub), args)) - do_call(cdf, c(list(lb), args)))
+  m1 <- do.call(cbind, m1)
+  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb), args)))
 }
 
 #' @export

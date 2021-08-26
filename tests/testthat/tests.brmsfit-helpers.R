@@ -56,7 +56,7 @@ test_that("autocorrelation matrices are computed correctly", {
   diag(expected_cosy_mat) <- 1
   expect_equal(cosy_mat[1, , ], expected_cosy_mat)
   
-  ident_mat <- brms:::get_cor_matrix_ident(nsamples = 10, nobs = 4)
+  ident_mat <- brms:::get_cor_matrix_ident(ndraws = 10, nobs = 4)
   expected_ident_mat <- diag(1, 4)
   expect_equal(ident_mat[1, , ], expected_ident_mat)
 })
@@ -154,4 +154,51 @@ test_that("brmsfit_needs_refit works correctly", {
                                      sample_prior = "only"), 
     scode = scode_model1, algorithm = NULL, silent = TRUE))
   
+})
+
+test_that("insert_refcat() works correctly", {
+  source(testthat::test_path(file.path("helpers", "insert_refcat_ch.R")))
+  source(testthat::test_path(file.path("helpers", "simopts_catlike.R")))
+  for (ndraws in ndraws_vec) {
+    for (nobsv in nobsv_vec) {
+      for (ncat in ncat_vec) {
+        cats <- paste0("cat", 1:ncat)
+        fam_list <- list(
+          fam_refNULL = categorical(),
+          fam_ref1 = categorical(refcat = cats[1]),
+          fam_reflast = categorical(refcat = cats[ncat])
+        )
+        if (ncat > 2) {
+          fam_list <- c(fam_list, list(fam_ref2 = categorical(refcat = cats[2])))
+        }
+        eta_test_list <- list(array(rnorm(ndraws * nobsv * (ncat - 1)),
+                                    dim = c(ndraws, nobsv, ncat - 1)))
+        if (nobsv == 1) {
+          eta_test_list <- c(
+            eta_test_list,
+            list(matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws))
+          )
+        }
+        for (eta_test in eta_test_list) {
+          for (fam in fam_list) {
+            # Emulate content of `fam` after fit:
+            if (is.null(fam$refcat)) {
+              fam$refcat <- cats[1]
+            }
+            fam$cats <- cats
+            
+            # Perform the check:
+            eta_ref <- insert_refcat(eta_test, fam)
+            eta_ref_ch <- insert_refcat_ch(eta_test, fam)
+            expect_equivalent(eta_ref, eta_ref_ch)
+            if (length(dim(eta_test)) == 3) {
+              expect_equal(dim(eta_ref), c(ndraws, nobsv, ncat))
+            } else if (length(dim(eta_test)) == 2) {
+              expect_equal(dim(eta_ref), c(ndraws, ncat))
+            }
+          }
+        }
+      }
+    }
+  }
 })

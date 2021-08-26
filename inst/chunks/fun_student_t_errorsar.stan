@@ -11,7 +11,7 @@
    *   a scalar to be added to the log posterior 
    */ 
   real student_t_errorsar_lpdf(vector y, real nu, vector mu, real sigma, 
-                               real rho, matrix W, vector eigenW) {
+                               real rho, data matrix W, data vector eigenW) {
     int N = rows(y);
     real K = rows(y);  // avoid integer division warning
     real inv_sigma2 = inv_square(sigma);

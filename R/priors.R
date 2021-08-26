@@ -578,7 +578,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
         brmsprior(prior = "dirichlet(1)", class = "theta", resp = x$resp)
     }
     if (fix_intercepts(x)) {
-      # fixing thresholds across mixture componenents 
+      # fixing thresholds across mixture components 
       # requires a single set of priors at the top level
       stopifnot(is_ordinal(x))
       prior <- prior + prior_thres(x, def_scale_prior = def_scale_prior)
@@ -1017,7 +1017,7 @@ def_dprior <- function(x, dpar, data = NULL) {
   if (link == "identity") {
     # dpar is estimated or predicted on the linear scale
     out <- switch(dpar_class, "",
-      mu = def_scale_prior(x, data, center = FALSE),
+      mu = def_scale_prior(x, data, center = FALSE, dpar = dpar),
       sigma = def_scale_prior(x, data), 
       shape = "gamma(0.01, 0.01)",
       nu = "gamma(2, 0.1)", 
@@ -1040,7 +1040,7 @@ def_dprior <- function(x, dpar, data = NULL) {
   } else {
     # except for 'mu' all parameters only support one link other than identity
     out <- switch(dpar_class, "",
-      mu = def_scale_prior(x, data, center = FALSE),
+      mu = def_scale_prior(x, data, center = FALSE, dpar = dpar),
       sigma = def_scale_prior(x, data),
       shape = "student_t(3, 0, 2.5)",
       nu = "normal(2.7, 0.8)", 
@@ -1074,18 +1074,19 @@ def_scale_prior.mvbrmsterms <- function(x, data, ...) {
   out
 }
 
-# @param center Should the prior be centererd around zero?
+# @param center Should the prior be centered around zero?
 #   If FALSE, the prior location is computed based on Y.
 #' @export
-def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
-                                      location = 0, scale = 2.5, ...) {
+def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3, 
+                                      location = 0, scale = 2.5,
+                                      dpar = NULL, ...) {
   y <- unname(model.response(model.frame(x$respform, data)))
   link <- x$family$link
   if (has_logscale(x$family)) {
     link <- "log"
   }
   tlinks <- c("identity", "log", "inverse", "sqrt", "1/mu^2")
-  if (link %in% tlinks && !is_like_factor(y)) {
+  if (link %in% tlinks && !is_like_factor(y) && !conv_cats_dpars(x)) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(y)
       y <- ifelse(y == 0, y + 0.1, y) 
@@ -1099,6 +1100,15 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
       location_y <- round(median(y_link), 1)
       if (is.finite(location_y)) {
         location <- location_y
+      }
+      # offsets may render default intercept priors not sensible 
+      dpar <- as_one_character(dpar)
+      offset <- unname(unlist(data_offset(x$dpars[[dpar]], data)))
+      if (length(offset)) {
+        mean_offset <- mean(offset)
+        if (is.finite(mean_offset)) {
+          location <- location - mean_offset 
+        }
       }
     }
   }
@@ -1141,8 +1151,10 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 }  
 
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bterms, data, sample_prior, ...) {
+.validate_prior <- function(prior, bterms, data, sample_prior,
+                            require_nlpar_prior = TRUE, ...) {
   sample_prior <- validate_sample_prior(sample_prior)
+  require_nlpar_prior <- as_one_logical(require_nlpar_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors
@@ -1165,7 +1177,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   # check for invalid priors
   # it is good to let the user know beforehand that some of their priors
-  # were invalid in the model to avoid unecessary refits
+  # were invalid in the model to avoid unnecessary refits
   if (nrow(prior)) {
     valid_ids <- which(duplicated(rbind(all_priors, prior)))
     invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
@@ -1185,7 +1197,12 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
-  prior <- validate_prior_special(prior, bterms = bterms, data = data, ...)
+  # don't require priors on nlpars if some priors are not checked (#1124)
+  require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
+  prior <- validate_prior_special(
+    prior, bterms = bterms, data = data,
+    require_nlpar_prior = require_nlpar_prior, ...
+  )
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
@@ -1371,23 +1388,25 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         prior, class = cl, coef = "",
         dpar = "", nlpar = "", resp = x$resp
       ))
-      if (any(nzchar(prior$prior[gi]))) {
+      prior$remove[gi] <- TRUE
+      if (!any(nzchar(prior$prior[gi]))) {
+        next
+      } else {
         # allowing global priors in categorical models implies conceptual problems 
         # in the specification of default priors as it becomes unclear on which 
         # prior level they should be defined
         warning2("Specifying global priors for regression coefficients in ", 
                  "categorical models is deprecated. Please specify priors ",
                  "separately for each response category.")
-      }
-      prior$remove[gi] <- TRUE
-      for (dp in names(x$dpars)) {
-        rows <- which(find_rows(
-          prior, class = cl, coef = "",
-          dpar = dp, nlpar = "", resp = x$resp
-        ))
-        for (dpi in rows) {
-          if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
-            prior$prior[dpi] <- prior$prior[gi]
+        for (dp in names(x$dpars)) {
+          rows <- which(find_rows(
+            prior, class = cl, coef = "",
+            dpar = dp, nlpar = "", resp = x$resp
+          ))
+          for (dpi in rows) {
+            if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
+              prior$prior[dpi] <- prior$prior[gi]
+            }
           }
         }
       }
@@ -2058,7 +2077,7 @@ get_special_prior <- function(prior, px = NULL) {
   out
 }
 
-# check if parameters should be samples only from the prior
+# check if parameters should be sampled only from the prior
 is_prior_only <- function(prior) {
   is_equal(get_sample_prior(prior), "only")
 }

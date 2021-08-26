@@ -7,10 +7,10 @@
 density_ratio(x, y = NULL, point = 0, n = 4096, ...)
 }
 \arguments{
-\item{x}{Vector of samples from the first distribution, usually the posterior
+\item{x}{Vector of draws from the first distribution, usually the posterior
 distribution of the quantity of interest.}
 
-\item{y}{Optional vector of samples from the second distribution, usually the
+\item{y}{Optional vector of draws from the second distribution, usually the
 prior distribution of the quantity of interest. If \code{NULL} (the
 default), only the density of \code{x} will be evaluated.}
 
@@ -28,12 +28,12 @@ A vector of length equal to \code{length(point)}. If \code{y} is
   only the density of \code{x} is returned.
 }
 \description{
-Compute the ratio of two densities at given points based on samples of the
+Compute the ratio of two densities at given points based on draws of the
 corresponding distributions.
 }
 \details{
 In order to achieve sufficient accuracy in the density estimation,
-  more samples than usual are required. That is you may need an effective
+  more draws than usual are required. That is you may need an effective
   sample size of 10,000 or more to reliably estimate the densities.
 }
 \examples{

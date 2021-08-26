@@ -14,7 +14,7 @@
    *   sum of the log-PDF values of all observations 
    */ 
   real normal_time_hom_lpdf(vector y, vector mu, real sigma, matrix chol_cor, 
-                            vector se2, int[] nobs, int[] begin, int[] end) {
+                            data vector se2, int[] nobs, int[] begin, int[] end) {
     int I = size(nobs);
     int has_se = max(se2) > 0;
     vector[I] lp; 
@@ -49,7 +49,7 @@
    *   sum of the log-PDF values of all observations 
    */ 
   real normal_time_het_lpdf(vector y, vector mu, vector sigma, matrix chol_cor, 
-                            vector se2, int[] nobs, int[] begin, int[] end) {
+                            data vector se2, int[] nobs, int[] begin, int[] end) {
     int I = size(nobs);
     int has_se = max(se2) > 0;
     vector[I] lp; 

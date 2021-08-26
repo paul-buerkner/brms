@@ -77,18 +77,20 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          file = NULL, file_refit = "never", ...) {
   
   combine <- as_one_logical(combine)
-  file_refit <- match.arg(file_refit, c("never", "on_change"))
+  file_refit <- match.arg(file_refit, file_refit_options())
   if (!is.null(file)) {
-    if(file_refit == "on_change") {
+    if (file_refit == "on_change") {
       stop2("file_refit = 'on_change' is not supported for brm_multiple yet.")
     }
     # optionally load saved model object
     if (!combine) {
       stop2("Cannot use 'file' if 'combine' is FALSE.")
     }
-    fits <- read_brmsfit(file)
-    if (!is.null(fits)) {
-      return(fits)
+    if (file_refit != "always") {
+      fits <- read_brmsfit(file)
+      if (!is.null(fits)) {
+        return(fits)
+      } 
     }
   }
   
@@ -195,13 +197,13 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
     models[[i]] <- restructure(models[[i]])
   }
   ref_formula <- formula(models[[1]])
-  ref_pars <- parnames(models[[1]])
+  ref_pars <- variables(models[[1]])
   ref_mf <- model.frame(models[[1]]) 
   for (i in seq_along(models)[-1]) {
     if (!is_equal(formula(models[[i]]), ref_formula)) {
       stop2("Models 1 and ", i, " have different formulas.")
     }
-    if (!is_equal(parnames(models[[i]]), ref_pars)) {
+    if (!is_equal(variables(models[[i]]), ref_pars)) {
       stop2("Models 1 and ", i, " have different parameters.")
     }
     if (check_data && !is_equal(model.frame(models[[i]]), ref_mf)) {

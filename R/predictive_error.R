@@ -1,13 +1,13 @@
-#' Posterior Samples of Predictive Errors
+#' Posterior Draws of Predictive Errors
 #' 
-#' Compute posterior samples of predictive errors, that is, observed minus
+#' Compute posterior draws of predictive errors, that is, observed minus
 #' predicted responses. Can be performed for the data used to fit the model
 #' (posterior predictive checks) or for new data. 
 #' 
 #' @inheritParams posterior_predict.brmsfit
 #' 
-#' @return An S x N \code{array} of predictive error samples, where S is the
-#'   number of posterior samples and N is the number of observations.
+#' @return An S x N \code{array} of predictive error draws, where S is the
+#'   number of posterior draws and N is the number of observations.
 #' 
 #' @examples 
 #' \dontrun{
@@ -27,7 +27,7 @@
 #' @export predictive_error
 predictive_error.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL, 
-  resp = NULL, nsamples = NULL, subset = NULL, sort = FALSE, ...
+  resp = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -36,20 +36,20 @@ predictive_error.brmsfit <- function(
   .predictive_error(
     object, newdata = newdata, re_formula = re_formula,
     method = "posterior_predict", type = "ordinary", resp = resp, 
-    nsamples = nsamples, subset = subset, sort = sort, ...
+    ndraws = ndraws, draw_ids = draw_ids, sort = sort, ...
   )
 }
 
-#' Posterior Samples of Residuals/Predictive Errors
+#' Posterior Draws of Residuals/Predictive Errors
 #' 
 #' This method is an alias of \code{\link{predictive_error.brmsfit}}
-#' with additional arguments for obtaining summaries of the computed samples.
+#' with additional arguments for obtaining summaries of the computed draws.
 #' 
 #' @inheritParams predictive_error.brmsfit
 #' @param method Method use to obtain predictions. Either
-#'  \code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+#'  \code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
 #'  Using \code{"posterior_predict"} is recommended
-#'  but \code{"pp_expect"} is the current default for 
+#'  but \code{"posterior_epred"} is the current default for 
 #'  reasons of backwards compatibility.
 #' @param type The type of the residuals, 
 #'  either \code{"ordinary"} or \code{"pearson"}. 
@@ -64,17 +64,17 @@ predictive_error.brmsfit <- function(
 #' @param probs The percentiles to be computed by the \code{quantile} 
 #'  function. Only used if \code{summary} is \code{TRUE}. 
 #'  
-#' @return An \code{array} of predictive error/residual samples. If
+#' @return An \code{array} of predictive error/residual draws. If
 #'   \code{summary = FALSE} the output resembles those of
 #'   \code{\link{predictive_error.brmsfit}}. If \code{summary = TRUE} the output
 #'   is an N x E matrix, where N is the number of observations and E denotes
-#'   the summary statistics computed from the samples.
+#'   the summary statistics computed from the draws.
 #'  
 #' @details Residuals of type \code{'ordinary'} are of the form \eqn{R = Y -
 #'   Yrep}, where \eqn{Y} is the observed and \eqn{Yrep} is the predicted response.
 #'   Residuals of type \code{pearson} are of the form \eqn{R = (Y - Yrep) /
-#'   SD(Y)}, where \eqn{SD(Y)} is an estimation of the standard deviation of
-#'   \eqn{Y}.
+#'   SD(Yrep)}, where \eqn{SD(Yrep)} is an estimate of the standard deviation of
+#'   \eqn{Yrep}.
 #'   
 #' @examples 
 #' \dontrun{
@@ -89,17 +89,17 @@ predictive_error.brmsfit <- function(
 #'
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                              method = "pp_expect",
+                              method = "posterior_epred",
                               type = c("ordinary", "pearson"),
-                              resp = NULL, nsamples = NULL,
-                              subset = NULL, sort = FALSE, 
+                              resp = NULL, ndraws = NULL,
+                              draw_ids = NULL, sort = FALSE, 
                               summary = TRUE, robust = FALSE, 
                               probs = c(0.025, 0.975), ...) {
   summary <- as_one_logical(summary)
   out <- .predictive_error(
     object, newdata = newdata, re_formula = re_formula,
     method = method, type = type, resp = resp, 
-    nsamples = nsamples, subset = subset, sort = sort, ...
+    ndraws = ndraws, draw_ids = draw_ids, sort = sort, ...
   )
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)
@@ -109,8 +109,9 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 # internal function doing the work for predictive_error.brmsfit
 .predictive_error <- function(object, newdata, re_formula, method, type,  
-                              resp, nsamples, subset, sort, ...) {
-  contains_samples(object)
+                              resp, ndraws, draw_ids, sort, nsamples = NULL, 
+                              subset = NULL, ...) {
+  contains_draws(object)
   object <- restructure(object)
   method <- validate_pp_method(method)
   type <- match.arg(type, c("ordinary", "pearson"))
@@ -119,9 +120,11 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is_polytomous(family)) {
     stop2("Predictive errors are not defined for ordinal or categorical models.")
   }
-  subset <- subset_samples(object, subset, nsamples)
+  ndraws <- use_alias(ndraws, nsamples)
+  draw_ids <- use_alias(draw_ids, subset)
+  draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- nlist(
-    object, newdata, re_formula, resp, subset, 
+    object, newdata, re_formula, resp, draw_ids, 
     summary = FALSE, sort = sort, ...
   )
   yrep <- do_call(method, pred_args)
@@ -129,11 +132,11 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (length(dim(yrep)) == 3L) {
     # multivariate model
     y <- lapply(seq_cols(y), function(i) y[, i])
-    y <- lapply(y, as_draws_matrix, dim = dim(yrep)[1:2])
+    y <- lapply(y, data2draws, dim = dim(yrep)[1:2])
     y <- abind(y, along = 3)
     dimnames(y)[[3]] <- dimnames(yrep)[[3]]
   } else {
-    y <- as_draws_matrix(y, dim = dim(yrep))
+    y <- data2draws(y, dim = dim(yrep))
   }
   out <- y - yrep
   remove(y, yrep)
@@ -145,10 +148,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     pred <- do_call("predict", pred_args)
     if (length(dim(pred)) == 3L) {
       sd_pred <- array2list(pred[, 2, ])
-      sd_pred <- lapply(sd_pred, as_draws_matrix, dim = dim(out)[1:2])
+      sd_pred <- lapply(sd_pred, data2draws, dim = dim(out)[1:2])
       sd_pred <- abind(sd_pred, along = 3)
     } else {
-      sd_pred <- as_draws_matrix(pred[, 2], dim = dim(out))
+      sd_pred <- data2draws(pred[, 2], dim = dim(out))
     }
     out <- out / sd_pred
   }

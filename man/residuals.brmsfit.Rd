@@ -2,17 +2,17 @@
 % Please edit documentation in R/predictive_error.R
 \name{residuals.brmsfit}
 \alias{residuals.brmsfit}
-\title{Posterior Samples of Residuals/Predictive Errors}
+\title{Posterior Draws of Residuals/Predictive Errors}
 \usage{
 \method{residuals}{brmsfit}(
   object,
   newdata = NULL,
   re_formula = NULL,
-  method = "pp_expect",
+  method = "posterior_epred",
   type = c("ordinary", "pearson"),
   resp = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   summary = TRUE,
   robust = FALSE,
@@ -34,9 +34,9 @@ the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
 \item{method}{Method use to obtain predictions. Either
-\code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+\code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
 Using \code{"posterior_predict"} is recommended
-but \code{"pp_expect"} is the current default for 
+but \code{"posterior_epred"} is the current default for 
 reasons of backwards compatibility.}
 
 \item{type}{The type of the residuals, 
@@ -46,12 +46,12 @@ More information is provided under 'Details'.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -74,22 +74,22 @@ function. Only used if \code{summary} is \code{TRUE}.}
 that control several aspects of data validation and prediction.}
 }
 \value{
-An \code{array} of predictive error/residual samples. If
+An \code{array} of predictive error/residual draws. If
   \code{summary = FALSE} the output resembles those of
   \code{\link{predictive_error.brmsfit}}. If \code{summary = TRUE} the output
   is an N x E matrix, where N is the number of observations and E denotes
-  the summary statistics computed from the samples.
+  the summary statistics computed from the draws.
 }
 \description{
 This method is an alias of \code{\link{predictive_error.brmsfit}}
-with additional arguments for obtaining summaries of the computed samples.
+with additional arguments for obtaining summaries of the computed draws.
 }
 \details{
 Residuals of type \code{'ordinary'} are of the form \eqn{R = Y -
   Yrep}, where \eqn{Y} is the observed and \eqn{Yrep} is the predicted response.
   Residuals of type \code{pearson} are of the form \eqn{R = (Y - Yrep) /
-  SD(Y)}, where \eqn{SD(Y)} is an estimation of the standard deviation of
-  \eqn{Y}.
+  SD(Yrep)}, where \eqn{SD(Yrep)} is an estimate of the standard deviation of
+  \eqn{Yrep}.
 }
 \examples{
 \dontrun{

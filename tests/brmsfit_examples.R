@@ -1,12 +1,12 @@
 set.seed(1234)
 dat <- data.frame(
   count = rpois(236, lambda = 20),
-  visit = rep(1:4, each = 59),
+  visit = factor(rep(1:4, each = 59)),
   patient = factor(rep(1:59, 4)),
   Age = rnorm(236), 
   Trt = factor(sample(0:1, 236, TRUE)),
   AgeSD = abs(rnorm(236, 1)),
-  Exp = sample(1:5, 236, TRUE),
+  Exp = factor(sample(1:5, 236, TRUE), ordered = TRUE),
   volume = rnorm(236),
   gender = factor(c(rep("m", 30), rep("f", 29)))
 )
@@ -26,7 +26,7 @@ stan_model_args <- list(save_dso = FALSE)
 
 library(brms)
 brmsfit_example1 <- brm(
-  bf(count ~ Trt*Age + mo(Exp) + s(Age) +
+  bf(count ~ Trt*Age + mo(Exp) + s(Age) + volume +
       offset(Age) + (1+Trt|visit) + arma(visit, patient),
      sigma ~ Trt),
   data = dat, family = student(), 
@@ -39,7 +39,7 @@ brmsfit_example1 <- brm(
 )
 
 brmsfit_example2 <- brm(
-  bf(count | weights(Exp) ~ inv_logit(a) * exp(b * Trt),
+  bf(count | weights(AgeSD) ~ inv_logit(a) * exp(b * Trt),
      a + b ~ Age + (1|ID1|patient), nl = TRUE),
   data = dat, family = Gamma("identity"), 
   prior = set_prior("normal(2,2)", nlpar = "a") +

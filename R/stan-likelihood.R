@@ -305,9 +305,13 @@ stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "",
 # multiply 'dpar' by the 'rate' denominator within the Stan likelihood
 # @param log add the rate denominator on the log scale if sensible?
 stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "", 
-                                             log = FALSE) {
+                                             log = FALSE, transform = NULL) {
+  dpar_transform <- dpar
+  if (!is.null(transform)) {
+    dpar_transform <- glue("{transform}({dpar})")
+  }
   if (!is.formula(bterms$adforms$rate)) {
-    return(dpar)
+    return(dpar_transform)
   }
   ndenom <- str_if(reqn, "[n]")
   denom <- glue("denom{resp}{ndenom}")
@@ -319,7 +323,7 @@ stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "",
     is_pred <- dpar %in% c("mu", names(bterms$dpars))
     operator <- str_if(reqn || !is_pred, "*", ".*")
   }
-  glue("{dpar} {operator} {denom}")
+  glue("{dpar_transform} {operator} {denom}")
 }
 
 # check if the log-liklihood needs to be adjused
@@ -520,6 +524,26 @@ stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = NULL
   out
 }
 
+stan_log_lik_negbinomial2 <- function(bterms, resp = "", mix = "", threads = NULL,
+                                      ...) {
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
+    p$sigma <- paste0("sigma", resp)
+    p$shape <- paste0("inv(", p$sigma, ")")
+    out <- sdist("neg_binomial_2_log_glm", p$x, p$alpha, p$beta, p$shape)
+  } else {
+    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
+    p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
+    p$shape <- stan_log_lik_multiply_rate_denom(
+      p$sigma, bterms, reqn, resp, transform = "inv"
+    )
+    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
+    out <- sdist(lpdf, p$mu, p$shape)
+  }
+  out
+}
+
 stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = NULL, 
                                    ...) {
   if (use_glm_primitive(bterms)) {
@@ -703,6 +727,12 @@ stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
   sdist("dirichlet_logit", mu, phi)
 }
 
+stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
+  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
+  sdist("dirichlet", mu)
+}
+
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
@@ -811,8 +841,14 @@ stan_log_lik_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "",
 }
 
 stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
-  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
+  no_loop <- isFALSE(family$loop)
+  if (no_loop && (stan_log_lik_adj(bterms) || nzchar(mix))) {
+    stop2("This model requires evaluating the custom ", 
+          "likelihood as a loop over observations.")
+  }
+  reqn <- !no_loop
+  p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
@@ -823,7 +859,11 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   n <- stan_nn(threads)
   var_names <- sub("\\[.+$", "", family$vars)
   var_indices <- get_matches("\\[.+$", family$vars, first = TRUE)
-  var_indices <- ifelse(var_indices %in% "[n]", n, var_indices)
+  has_n_index <- var_indices %in% "[n]"
+  if (no_loop && any(has_n_index)) {
+    stop2("Invalid use of index '[n]' in an unlooped custom likelihood.")
+  }
+  var_indices <- ifelse(has_n_index, n, var_indices)
   is_var_adterms <- var_names %in% c("se", "trials", "dec") |
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
@@ -848,7 +888,7 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   # TODO: support categorical_logit primitive
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
-    poisson = "log", negbinomial = "log"
+    poisson = "log", negbinomial = "log", negbinomial2 = "log"
     # rstan does not yet support 'ordered_logistic_glm'
     # cumulative = "logit"
   )

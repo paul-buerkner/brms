@@ -5,7 +5,7 @@
 \alias{stancode}
 \title{Extract Stan model code}
 \usage{
-\method{stancode}{brmsfit}(object, version = TRUE, ...)
+\method{stancode}{brmsfit}(object, version = TRUE, regenerate = NULL, threads = NULL, ...)
 
 stancode(object, ...)
 }
@@ -16,7 +16,16 @@ stancode(object, ...)
 the \pkg{brms} version number should be included.
 Defaults to \code{TRUE}.}
 
-\item{...}{Currently ignored.}
+\item{regenerate}{Logical; indicates if the Stan code should
+be regenerated with the current \pkg{brms} version.
+By default, \code{regenerate} will be \code{FALSE} unless required
+to be \code{TRUE} by other arguments.}
+
+\item{threads}{Controls whether the Stan code should be threaded.
+See \code{\link{threading}} for details.}
+
+\item{...}{Further arguments passed to \code{\link{make_stancode}} if the
+Stan code is regenerated.}
 }
 \value{
 Stan model code for further processing.

@@ -50,12 +50,12 @@ loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @importFrom loo .ndraws
 #' @export
 .ndraws.brmsprep <- function(x) {
-  x$nsamples
+  x$ndraws
 }
 
 #' @export
 .ndraws.mvbrmsprep <- function(x) {
-  x$nsamples
+  x$ndraws
 }
 
 #' @importFrom loo .thin_draws

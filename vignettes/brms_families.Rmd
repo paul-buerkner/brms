@@ -100,7 +100,7 @@ With time-to-event models we mean all models that are defined on the positive
 reals only, that is $y \in \mathbb{R}^+$. The density of the **lognormal**
 family is given by
 $$
-f(y) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
+f(y) = \frac{1}{\sqrt{2\pi}\sigma y} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
 $$ 
 where $\sigma$ is the residual standard deviation on the log-scale.
 The density of the **Gamma** family is given by

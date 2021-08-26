@@ -14,11 +14,15 @@
 #'  Other typical options are "sd" or "cor". 
 #'  If \code{class = NULL}, all parameters can be tested
 #'  against each other, but have to be specified with their full name 
-#'  (see also \code{\link[brms:parnames]{parnames}}) 
+#'  (see also \code{\link[brms:draws-index-brms]{variables}}) 
 #' @param group Name of a grouping factor to evaluate only 
 #'  group-level effects parameters related to this grouping factor.
 #' @param alpha The alpha-level of the tests (default is 0.05;
 #'  see 'Details' for more information).
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
 #' @param scope Indicates where to look for the variables specified in
 #'  \code{hypothesis}. If \code{"standard"}, use the full parameter names
 #'  (subject to the restriction given by \code{class} and \code{group}).
@@ -57,10 +61,10 @@
 #'   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
 #'   small or large evidence, respectively, in favor of the tested hypothesis.
 #'   For one-sided hypotheses pairs, this basically means that all posterior
-#'   samples are on the same side of the value dividing the two hypotheses. In
+#'   draws are on the same side of the value dividing the two hypotheses. In
 #'   that sense, instead of \code{0} or \code{Inf,} you may rather read it as
 #'   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
-#'   where \code{S} denotes the number of posterior samples used in the
+#'   where \code{S} denotes the number of posterior draws used in the
 #'   computations.
 #'  
 #'   The argument \code{alpha} specifies the size of the credible interval
@@ -126,12 +130,13 @@
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                scope = c("standard", "ranef", "coef"),
-                               alpha = 0.05, seed = NULL, ...) {
-  # use a seed as prior_samples.brmsfit randomly permutes samples
+                               alpha = 0.05, robust = FALSE, seed = NULL, 
+                               ...) {
+  # use a seed as prior_draws.brmsfit randomly permutes draws
   if (!is.null(seed)) {
     set.seed(seed) 
   }
-  contains_samples(x)
+  contains_draws(x)
   x <- restructure(x)
   group <- as_one_character(group)
   scope <- match.arg(scope)
@@ -146,14 +151,18 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       class <- paste0(class, "_")
     }
     out <- .hypothesis(
-      x, hypothesis, class = class, alpha = alpha, ...
+      x, hypothesis, class = class, alpha = alpha, 
+      robust = robust, ...
     )
   } else {
     co <- do_call(scope, list(x, summary = FALSE))
     if (!group %in% names(co)) {
       stop2("'group' should be one of ", collapse_comma(names(co)))
     }
-    out <- hypothesis_coef(co[[group]], hypothesis, alpha = alpha, ...)
+    out <- hypothesis_coef(
+      co[[group]], hypothesis, alpha = alpha,
+      robust = robust, ...
+    )
   }
   out
 }
@@ -166,14 +175,18 @@ hypothesis <- function(x, ...) {
 
 #' @rdname hypothesis.brmsfit
 #' @export
-hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
+hypothesis.default <- function(x, hypothesis, alpha = 0.05, 
+                               robust = FALSE, ...) {
   x <- as.data.frame(x)
-  .hypothesis(x, hypothesis, class = "", alpha = alpha, ...)
+  .hypothesis(
+    x, hypothesis, class = "", alpha = alpha,
+    robust = robust, ...
+  )
 }
 
 #' Descriptions of \code{brmshypothesis} Objects
 #' 
-#' A \code{brmshypothesis} object contains posterior samples
+#' A \code{brmshypothesis} object contains posterior draws
 #' as well as summary statistics of non-linear hypotheses as 
 #' returned by \code{\link{hypothesis}}.
 #' 
@@ -198,7 +211,7 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
 #' The two most important elements of a \code{brmshypothesis} object are
 #' \code{hypothesis}, which is a data.frame containing the summary estimates
 #' of the hypotheses, and \code{samples}, which is a data.frame containing 
-#' the corresponding posterior samples.
+#' the corresponding posterior draws.
 #' 
 #' @seealso \code{\link{hypothesis}}
 NULL
@@ -206,11 +219,12 @@ NULL
 # internal function to evaluate hypotheses
 # @param x the primary object passed to the hypothesis method;
 #   needs to be a brmsfit object or coercible to a data.frame
-# @param hypothesis Vector of character strings containing the hypotheses
+# @param hypothesis vector of character strings containing the hypotheses
 # @param class prefix of the parameters in the hypotheses
 # @param alpha the 'alpha-level' as understood by frequentist statistics
 # @return a 'brmshypothesis' object
-.hypothesis <- function(x, hypothesis, class, alpha, combine = TRUE, ...) {
+.hypothesis <- function(x, hypothesis, class, alpha, robust, 
+                        combine = TRUE, ...) {
   if (!is.character(hypothesis) || !length(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
@@ -218,11 +232,13 @@ NULL
     stop2("Argument 'alpha' must be a single value in [0,1].")
   }
   class <- as_one_character(class)
+  robust <- as_one_logical(robust)
   out <- vector("list", length(hypothesis))
   for (i in seq_along(out)) {
     out[[i]] <- eval_hypothesis(
       hypothesis[i], x = x, class = class, 
-      alpha = alpha, name = names(hypothesis)[i]
+      alpha = alpha, robust = robust, 
+      name = names(hypothesis)[i]
     )
   }
   if (combine) {
@@ -271,14 +287,15 @@ combine_hlist <- function(hlist, class, alpha) {
   prior_samples <- as.data.frame(do_call(cbind, prior_samples))
   names(samples) <- names(prior_samples) <- paste0("H", seq_along(hlist))
   class <- sub("_+$", "", class)
+  # TODO: rename 'samples' to 'draws' in brms 3.0
   out <- nlist(hypothesis = hs, samples, prior_samples, class, alpha)
   structure(out, class = "brmshypothesis")
 }
 
-# evaluate a single hypothesis based on the posterior samples
-eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
+# evaluate a single hypothesis based on the posterior draws
+eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
-  pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
+  pars <- variables(x)[grepl(paste0("^", class), variables(x))]
   # parse hypothesis string
   h <- gsub("[ \t\r\n]", "", h)
   sign <- get_matches("=|<|>", h)
@@ -297,13 +314,13 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   }
   # rename hypothesis for correct evaluation
   h_renamed <- rename(h, c(":", "[", "]", ","),  c("___", ".", ".", ".."))
-  # get posterior and prior samples
+  # get posterior and prior draws
   pattern <- c(paste0("^", class), ":", "\\[", "\\]", ",")
   repl <- c("", "___", ".", ".", "..")
-    samples <- posterior_samples(x, pars = parsH, fixed = TRUE)
+  samples <- as.data.frame(x, variable = parsH)
   names(samples) <- rename(names(samples), pattern, repl, fixed = FALSE)
   samples <- as.matrix(eval2(h_renamed, samples))
-  prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
+  prior_samples <- prior_draws(x, variable = parsH)
   if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
     names(prior_samples) <- rename(
       names(prior_samples), pattern, repl, fixed = FALSE
@@ -318,9 +335,14 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
     "=" = c(alpha / 2, 1 - alpha / 2),
     "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
   )
+  if (robust) {
+    measures <- c("median", "mad")
+  } else {
+    measures <- c("mean", "sd")
+  }
+  measures <- c(measures, "quantile", "evidence_ratio")
   sm <- lapply(
-    c("mean", "sd", "quantile", "evidence_ratio"), 
-    get_estimate, samples = samples, probs = probs, 
+    measures, get_estimate, draws = samples, probs = probs, 
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
@@ -381,12 +403,12 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
 
 #' Compute Density Ratios
 #'
-#' Compute the ratio of two densities at given points based on samples of the
+#' Compute the ratio of two densities at given points based on draws of the
 #' corresponding distributions.
 #'
-#' @param x Vector of samples from the first distribution, usually the posterior
+#' @param x Vector of draws from the first distribution, usually the posterior
 #'   distribution of the quantity of interest.
-#' @param y Optional vector of samples from the second distribution, usually the
+#' @param y Optional vector of draws from the second distribution, usually the
 #'   prior distribution of the quantity of interest. If \code{NULL} (the
 #'   default), only the density of \code{x} will be evaluated.
 #' @param point Numeric values at which to evaluate and compare the densities.
@@ -400,7 +422,7 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
 #'   only the density of \code{x} is returned.
 #'
 #' @details In order to achieve sufficient accuracy in the density estimation,
-#'   more samples than usual are required. That is you may need an effective
+#'   more draws than usual are required. That is you may need an effective
 #'   sample size of 10,000 or more to reliably estimate the densities.
 #'
 #' @examples
@@ -438,10 +460,10 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
 }
 
 # compute the evidence ratio between two disjunct hypotheses
-# @param x posterior samples 
+# @param x posterior draws 
 # @param cut the cut point between the two hypotheses
 # @param wsign direction of the hypothesis
-# @param prior_samples optional prior samples for two-sided hypothesis
+# @param prior_samples optional prior draws for two-sided hypothesis
 # @param ... optional arguments passed to density_ratio
 # @return the evidence ratio of the two hypothesis
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
@@ -504,7 +526,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
                                 plot = TRUE,  ...) {
   dots <- list(...)
   if (!is.data.frame(x$samples)) {
-    stop2("No posterior samples found")
+    stop2("No posterior draws found.")
   }
   plot <- use_alias(plot, dots$do_plot)
   if (is.null(colors)) {

@@ -15,9 +15,9 @@
   * Returns:
   *   Log probability density of CAR prior up to additive constant
   */
-  real sparse_car_lpdf(vector phi, real car, real sdcar, 
-                       int Nloc, int Nedges, vector Nneigh,
-                       vector eigenW, int[] edges1, int[] edges2) {
+  real sparse_car_lpdf(vector phi, real car, real sdcar, int Nloc,
+                       int Nedges, data vector Nneigh, data vector eigenW,
+                       int[] edges1, int[] edges2) {
     real tau;  // precision parameter
     row_vector[Nloc] phit_D;  // phi' * D
     row_vector[Nloc] phit_W;  // phi' * W

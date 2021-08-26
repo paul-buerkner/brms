@@ -114,23 +114,24 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
     }
     if (is.null(pll_args)) {
       # infer pll_args from x
+      pll_type <- str_if(block %in% c("data", "tdata"), "data ")
       if (is.integer(x)) {
         if (length(x) == 1L) {
-          pll_type <- "int"
+          pll_type <- paste0(pll_type, "int")
         } else {
-          pll_type <- "int[]"
+          pll_type <- paste0(pll_type, "int[]")
         }
       } else if (is.vector(x)) {
         if (length(x) == 1L) {
-          pll_type <- "real"
+          pll_type <- paste0(pll_type, "real")
         } else {
-          pll_type <- "vector"
+          pll_type <- paste0(pll_type, "vector")
         }
       } else if (is.array(x)) {
         if (length(dim(x)) == 1L) {
-          pll_type <- "vector"
+          pll_type <- paste0(pll_type, "vector")
         } else if (is.matrix(x)) {
-          pll_type <- "matrix"
+          pll_type <- paste0(pll_type, "matrix")
         }
       }
       if (!is.null(pll_type)) {
@@ -152,7 +153,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
     scode <- as.character(scode)
     pll_args <- as.character(pll_args)
   }
-  if (position == "end" && block %in% c("functions", "data", "model")) {
+  if (position == "end" && block %in% c("functions", "data")) {
     stop2("Position '", position, "' is not sensible for block '", block, "'.")
   }
   out <- nlist(name, sdata = x, scode, block, position, pll_args)

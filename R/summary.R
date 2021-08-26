@@ -5,8 +5,9 @@
 #'   in the summary. Default is \code{FALSE}.
 #' @param prob A value between 0 and 1 indicating the desired probability 
 #'   to be covered by the uncertainty intervals. The default is 0.95.
-#' @param mc_se Logical; Indicating if the uncertainty caused by the 
-#'   MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.
+#' @param mc_se Logical; Indicating if the uncertainty in \code{Estimate}
+#'   caused by the MCMC sampling should be shown in the summary. Defaults to
+#'   \code{FALSE}.
 #' @param ... Other potential arguments
 #' @inheritParams posterior_summary
 #' 
@@ -21,6 +22,7 @@
 #' 
 #' @method summary brmsfit
 #' @importMethodsFrom rstan summary
+#' @importFrom posterior subset_draws summarize_draws
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             robust = FALSE, mc_se = FALSE, ...) {
@@ -28,11 +30,6 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   probs <- validate_ci_bounds(prob)
   robust <- as_one_logical(robust)
   mc_se <- as_one_logical(mc_se)
-  if (mc_se) {
-    warning2("Argument 'mc_se' is currently deactivated but ", 
-             "will be working again in the future. Sorry!")
-  }
-  
   object <- restructure(object)
   bterms <- brmsterms(object$formula)
   out <- list(
@@ -47,13 +44,13 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   )
   class(out) <- "brmssummary"
   if (!length(object$fit@sim)) {
-    # the model does not contain posterior samples
+    # the model does not contain posterior draws
     return(out)
   }
-  out$chains <- object$fit@sim$chains
-  out$iter <- object$fit@sim$iter
-  out$warmup <- object$fit@sim$warmup
-  out$thin <- object$fit@sim$thin
+  out$chains <- nchains(object)
+  out$iter <- niterations(object) + nwarmup(object)
+  out$warmup <- nwarmup(object)
+  out$thin <- nthin(object)
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
   if (priors) {
@@ -61,49 +58,50 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # compute a summary for given set of parameters
-  .summary <- function(object, pars, probs, robust) {
-    # TODO: use rstan::monitor instead once it is clean and stable
-    sims <- as.array(object, pars = pars, fixed = TRUE)
-    parnames <- dimnames(sims)[[3]]
-    valid <- rep(NA, length(parnames))
-    out <- named_list(parnames)
-    for (i in seq_along(out)) {
-      sims_i <- sims[, , i]
-      valid[i] <- all(is.finite(sims_i))
-      if (robust) {
-        est <- median(sims_i)
-        est_error <- mad(sims_i) 
-      } else {
-        est <- mean(sims_i)
-        est_error <- sd(sims_i) 
-      }
-      quan <- unname(quantile(sims_i, probs = probs))
-      rhat <- rstan::Rhat(sims_i)
-      ess_bulk <- round(rstan::ess_bulk(sims_i))
-      ess_tail <- round(rstan::ess_tail(sims_i))
-      out[[i]] <- c(est, est_error, quan, rhat, ess_bulk, ess_tail)
+  # TODO: align names with summary outputs of other methods and packages
+  .summary <- function(draws, variables, probs, robust) {
+    # quantiles with appropriate names to retain backwards compatibility
+    .quantile <- function(x, ...) {
+      qs <- posterior::quantile2(x, probs = probs, ...)
+      prob <- probs[2] - probs[1]
+      names(qs) <- paste0(c("l-", "u-"), prob * 100, "% CI")
+      return(qs)
     }
-    out <- do_call(rbind, out)
-    prob <- probs[2] - probs[1]
-    CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
-    # TODO: align column names with summary outputs of other methods
-    colnames(out) <- c(
-      "Estimate", "Est.Error", CIs, "Rhat", "Bulk_ESS", "Tail_ESS"
+    draws <- subset_draws(draws, variable = variables)
+    measures <- list()
+    if (robust) {
+      measures$Estimate <- median
+      if (mc_se) {
+        measures$MCSE <- posterior::mcse_median
+      }
+      measures$Est.Error <- mad
+    } else {
+      measures$Estimate <- mean
+      if (mc_se) {
+        measures$MCSE <- posterior::mcse_mean
+      }
+      measures$Est.Error <- sd
+    }
+    c(measures) <- list(
+      quantiles = .quantile, 
+      Rhat = posterior::rhat, 
+      Bulk_ESS = posterior::ess_bulk,
+      Tail_ESS = posterior::ess_tail
     )
-    rownames(out) <- parnames
-    S <- prod(dim(sims)[1:2])
-    out[valid & !is.finite(out[, "Rhat"]), "Rhat"] <- 1
-    out[valid & !is.finite(out[, "Bulk_ESS"]), "Bulk_ESS"] <- S
-    out[valid & !is.finite(out[, "Tail_ESS"]), "Tail_ESS"] <- S
+    out <- do.call(summarize_draws, c(list(draws), measures))
+    out <- as.data.frame(out)
+    rownames(out) <- out$variable
+    out$variable <- NULL
     return(out)
   }
   
-  pars <- parnames(object)
+  variables <- variables(object)
   excl_regex <- "^(r|s|z|zs|zgp|Xme|L|Lrescor|prior|lp)(_|$)"
-  pars <- pars[!grepl(excl_regex, pars)]
-  fit_summary <- .summary(object, pars, probs, robust)
+  variables <- variables[!grepl(excl_regex, variables)]
+  draws <- as_draws_array(object)
+  full_summary <- .summary(draws, variables, probs, robust)
   if (algorithm(object) == "sampling") {
-    Rhats <- fit_summary[, "Rhat"]
+    Rhats <- full_summary[, "Rhat"]
     if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
         "Parts of the model have not converged (some Rhats are > 1.05). ",
@@ -123,41 +121,41 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # summary of population-level effects
-  fe_pars <- pars[grepl(fixef_pars(), pars)]
-  out$fixed <- fit_summary[fe_pars, , drop = FALSE]
+  fe_pars <- variables[grepl(fixef_pars(), variables)]
+  out$fixed <- full_summary[fe_pars, , drop = FALSE]
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
   
   # summary of family specific parameters
   spec_pars <- c(valid_dpars(object), "delta")
   spec_pars <- paste0(spec_pars, collapse = "|")
   spec_pars <- paste0("^(", spec_pars, ")($|_)")
-  spec_pars <- pars[grepl(spec_pars, pars)]
-  out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
+  spec_pars <- variables[grepl(spec_pars, variables)]
+  out$spec_pars <- full_summary[spec_pars, , drop = FALSE]
   
   # summary of residual correlations
-  rescor_pars <- pars[grepl("^rescor_", pars)]
+  rescor_pars <- variables[grepl("^rescor_", variables)]
   if (length(rescor_pars)) {
-    out$rescor_pars <- fit_summary[rescor_pars, , drop = FALSE]
+    out$rescor_pars <- full_summary[rescor_pars, , drop = FALSE]
     rescor_pars <- sub("__", ",", sub("__", "(", rescor_pars))
     rownames(out$rescor_pars) <- paste0(rescor_pars, ")")
   }
   
   # summary of autocorrelation effects
-  cor_pars <- pars[grepl(regex_autocor_pars(), pars)]
-  out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
+  cor_pars <- variables[grepl(regex_autocor_pars(), variables)]
+  out$cor_pars <- full_summary[cor_pars, , drop = FALSE]
   rownames(out$cor_pars) <- cor_pars
   
   # summary of group-level effects
   for (g in out$group) {
     gregex <- escape_dot(g)
     sd_prefix <- paste0("^sd_", gregex, "__")
-    sd_pars <- pars[grepl(sd_prefix, pars)]
+    sd_pars <- variables[grepl(sd_prefix, variables)]
     cor_prefix <- paste0("^cor_", gregex, "__")
-    cor_pars <- pars[grepl(cor_prefix, pars)]
+    cor_pars <- variables[grepl(cor_prefix, variables)]
     df_prefix <- paste0("^df_", gregex, "$")
-    df_pars <- pars[grepl(df_prefix, pars)]
+    df_pars <- variables[grepl(df_prefix, variables)]
     gpars <- c(df_pars, sd_pars, cor_pars)
-    out$random[[g]] <- fit_summary[gpars, , drop = FALSE]
+    out$random[[g]] <- full_summary[gpars, , drop = FALSE]
     if (has_rows(out$random[[g]])) {
       sd_names <- sub(sd_prefix, "sd(", sd_pars)
       cor_names <- sub(cor_prefix, "cor(", cor_pars)
@@ -168,21 +166,21 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     }
   }
   # summary of smooths
-  sm_pars <- pars[grepl("^sds_", pars)]
+  sm_pars <- variables[grepl("^sds_", variables)]
   if (length(sm_pars)) {
-    out$splines <- fit_summary[sm_pars, , drop = FALSE]
+    out$splines <- full_summary[sm_pars, , drop = FALSE]
     rownames(out$splines) <- paste0(gsub("^sds_", "sds(", sm_pars), ")")
   }
   # summary of monotonic parameters
-  mo_pars <- pars[grepl("^simo_", pars)]
+  mo_pars <- variables[grepl("^simo_", variables)]
   if (length(mo_pars)) {
-    out$mo <- fit_summary[mo_pars, , drop = FALSE]
+    out$mo <- full_summary[mo_pars, , drop = FALSE]
     rownames(out$mo) <- gsub("^simo_", "", mo_pars)
   }
   # summary of gaussian processes
-  gp_pars <- pars[grepl("^(sdgp|lscale)_", pars)]
+  gp_pars <- variables[grepl("^(sdgp|lscale)_", variables)]
   if (length(gp_pars)) {
-    out$gp <- fit_summary[gp_pars, , drop = FALSE]
+    out$gp <- full_summary[gp_pars, , drop = FALSE]
     rownames(out$gp) <- gsub("^sdgp_", "sdgp(", rownames(out$gp))
     rownames(out$gp) <- gsub("^lscale_", "lscale(", rownames(out$gp))
     rownames(out$gp) <- paste0(rownames(out$gp), ")")
@@ -220,13 +218,13 @@ print.brmssummary <- function(x, digits = 2, ...) {
     " (Number of observations: ", x$nobs, ") \n"
   ))
   if (!isTRUE(nzchar(x$sampler))) {
-    cat("\nThe model does not contain posterior samples.\n")
+    cat("\nThe model does not contain posterior draws.\n")
   } else {
-    final_samples <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
+    total_ndraws <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
     cat(paste0(
-      "Samples: ", x$chains, " chains, each with iter = ", x$iter, 
+      "  Draws: ", x$chains, " chains, each with iter = ", x$iter, 
       "; warmup = ", x$warmup, "; thin = ", x$thin, ";\n",
-      "         total post-warmup samples = ", final_samples, "\n\n"
+      "         total post-warmup draws = ", total_ndraws, "\n\n"
     ))
     if (nrow(x$prior)) {
       cat("Priors: \n")
@@ -278,7 +276,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
       print_format(x$rescor, digits)
       cat("\n")
     }
-    cat(paste0("Samples were drawn using ", x$sampler, ". "))
+    cat(paste0("Draws were sampled using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
       cat(paste0(
         "For each parameter, Bulk_ESS\n",
@@ -331,28 +329,37 @@ algorithm <- function(x) {
   else x$algorithm
 }
 
-#' Summarize Posterior Samples
+#' Summarize Posterior draws
 #' 
-#' Summarizes posterior samples based on point estimates (mean or median),
-#' estimation errors (SD or MAD) and quantiles.
+#' Summarizes posterior draws based on point estimates (mean or median),
+#' estimation errors (SD or MAD) and quantiles. This function mainly exists to
+#' retain backwards compatibility. It will eventually be replaced by functions
+#' of the \pkg{posterior} package (see examples below).
 #' 
 #' @param x An \R object.
+#' @inheritParams as.matrix.brmsfit
 #' @param probs The percentiles to be computed by the 
-#'   \code{quantile} function.
+#'   \code{\link[stats:quantile]{quantile}} function.
 #' @param robust If \code{FALSE} (the default) the mean is used as 
 #'  the measure of central tendency and the standard deviation as 
 #'  the measure of variability. If \code{TRUE}, the median and the 
 #'  median absolute deviation (MAD) are applied instead.
 #' @param ... More arguments passed to or from other methods.
-#' @inheritParams posterior_samples
 #' 
-#' @return A matrix where rows indicate parameters 
-#'  and columns indicate the summary estimates.
+#' @return A matrix where rows indicate variables
+#' and columns indicate the summary estimates.
+#' 
+#' @seealso \code{\link[posterior:summarize_draws]{summarize_draws}}
 #'  
 #' @examples 
 #' \dontrun{
 #' fit <- brm(time ~ age * sex, data = kidney)
 #' posterior_summary(fit)
+#' 
+#' # recommended workflow using posterior
+#' library(posterior)
+#' draws <- as_draws_array(fit)
+#' summarise_draws(draws, default_summary_measures())
 #' }
 #' 
 #' @export
@@ -364,8 +371,10 @@ posterior_summary <- function(x, ...) {
 #' @export
 posterior_summary.default <- function(x, probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
+  # TODO: replace with summary functions from posterior
+  # TODO: find a way to represent 3D summaries as well
   if (!length(x)) {
-    stop2("No posterior samples supplied.")
+    stop2("No posterior draws supplied.")
   }
   if (robust) {
     coefs <- c("median", "mad", "quantile")
@@ -374,7 +383,7 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   }
   .posterior_summary <- function(x) {
     do_call(cbind, lapply(
-      coefs, get_estimate, samples = x, 
+      coefs, get_estimate, draws = x, 
       probs = probs, na.rm = TRUE
     ))
   }
@@ -395,28 +404,30 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   } else {
     stop("'x' must be of dimension 2 or 3.")
   }
+  # TODO: align names with summary outputs of other methods and packages
   colnames(out) <- c("Estimate", "Est.Error", paste0("Q", probs * 100))
   out  
 }
 
 #' @rdname posterior_summary
 #' @export
-posterior_summary.brmsfit <- function(x, pars = NA, 
+posterior_summary.brmsfit <- function(x, pars = NA, variable = NULL, 
                                       probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
-  out <- as.matrix(x, pars = pars, ...)
+  out <- as.matrix(x, pars = pars, variable = variable, ...)
   posterior_summary(out, probs = probs, robust = robust, ...)
 }
 
-# calculate estimates over posterior samples 
-# @param coef coefficient to be applied on the samples (e.g., "mean")
-# @param samples the samples over which to apply coef
+# calculate estimates over posterior draws 
+# @param coef coefficient to be applied on the draws (e.g., "mean")
+# @param draws the draws over which to apply coef
 # @param margin see 'apply'
 # @param ... additional arguments passed to get(coef)
-# @return typically a matrix with colnames(samples) as colnames
-get_estimate <- function(coef, samples, margin = 2, ...) {
+# @return typically a matrix with colnames(draws) as colnames
+get_estimate <- function(coef, draws, margin = 2, ...) {
+  # TODO: replace with summary functions from posterior
   dots <- list(...)
-  args <- list(X = samples, MARGIN = margin, FUN = coef)
+  args <- list(X = draws, MARGIN = margin, FUN = coef)
   fun_args <- names(formals(coef))
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
@@ -450,20 +461,20 @@ validate_ci_bounds <- function(prob, probs = NULL) {
   probs
 }
 
-#' Table Creation for Posterior Samples
+#' Table Creation for Posterior Draws
 #' 
-#' Create a table for unique values of posterior samples. 
+#' Create a table for unique values of posterior draws. 
 #' This is usually only useful when summarizing predictions 
 #' of ordinal models.
 #' 
-#' @param x A matrix of posterior samples where rows 
-#'   indicate samples and columns indicate parameters. 
+#' @param x A matrix of posterior draws where rows 
+#'   indicate draws and columns indicate parameters. 
 #' @param levels Optional values of possible posterior values.
 #'   Defaults to all unique values in \code{x}.
 #' 
 #' @return A matrix where rows indicate parameters 
 #'  and columns indicate the unique values of 
-#'  posterior samples.
+#'  posterior draws.
 #'  
 #' @examples 
 #' \dontrun{
@@ -501,15 +512,14 @@ posterior_table <- function(x, levels = NULL) {
 #' 
 #' Compute posterior uncertainty intervals for \code{brmsfit} objects.
 #' 
-#' @inheritParams summary.brmsfit
-#' @param pars Names of parameters for which posterior samples should be 
-#'   returned, as given by a character vector or regular expressions. 
-#'   By default, all posterior samples of all parameters are extracted.
-#' @param ... More arguments passed to 
-#'   \code{\link{as.matrix.brmsfit}}.
+#' @param object An object of class \code{brmsfit}.
+#' @param prob A value between 0 and 1 indicating the desired probability 
+#'   to be covered by the uncertainty intervals. The default is 0.95.
+#' @inheritParams as.matrix.brmsfit
+#' @param ... More arguments passed to \code{\link{as.matrix.brmsfit}}.
 #' 
 #' @return A \code{matrix} with lower and upper interval bounds
-#'   as columns and as many rows as selected parameters.
+#'   as columns and as many rows as selected variables.
 #'   
 #' @examples 
 #' \dontrun{
@@ -524,9 +534,9 @@ posterior_table <- function(x, levels = NULL) {
 #' @export posterior_interval
 #' @importFrom rstantools posterior_interval
 posterior_interval.brmsfit <- function(
-  object, pars = NA, prob = 0.95, ...
+  object, pars = NA, variable = NULL, prob = 0.95, ...
 ) {
-  ps <- as.matrix(object, pars = pars, ...)
+  ps <- as.matrix(object, pars = pars, variable = variable, ...)
   rstantools::posterior_interval(ps, prob = prob)
 }
 
@@ -534,7 +544,7 @@ posterior_interval.brmsfit <- function(
 #' 
 #' @aliases prior_summary
 #' 
-#' @param object A \code{brmsfit} object
+#' @param object An object of class \code{brmsfit}.
 #' @param all Logical; Show all parameters in the model which may have 
 #'   priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?
 #' @param ... Further arguments passed to or from other methods.

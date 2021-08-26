@@ -11,8 +11,9 @@
   object,
   pars = NA,
   type = "intervals",
+  variable = NULL,
+  regex = FALSE,
   fixed = FALSE,
-  exact_match = FALSE,
   ...
 )
 
@@ -21,10 +22,9 @@ mcmc_plot(object, ...)
 \arguments{
 \item{object}{An \R object typically of class \code{brmsfit}}
 
-\item{pars}{Names of parameters to be plotted, 
-as given by a character vector or regular expressions. 
-By default, all parameters except for group-level and 
-smooth effects are plotted. May be ignored for some plots.}
+\item{pars}{Deprecated alias of \code{variable}.
+Names of the parameters to plot, as given by a
+character vector or a regular expression.}
 
 \item{type}{The type of the plot. 
 Supported types are (as names) \code{hist}, \code{dens}, 
@@ -37,11 +37,17 @@ Supported types are (as names) \code{hist}, \code{dens},
 For an overview on the various plot types see
 \code{\link[bayesplot:MCMC-overview]{MCMC-overview}}.}
 
-\item{fixed}{Indicates whether parameter names 
-should be matched exactly (\code{TRUE}) or treated as
-regular expressions (\code{FALSE}). Default is \code{FALSE}.}
+\item{variable}{Names of the variables (parameters) to plot, as given by a
+character vector or a regular expression (if \code{regex = TRUE}). By
+default, a hopefully not too large selection of variables is plotted.}
 
-\item{exact_match}{Deprecated alias of argument \code{fixed}.}
+\item{regex}{Logical; Indicates whether \code{variable} should
+be treated as regular expressions. Defaults to \code{FALSE}.}
+
+\item{fixed}{(Deprecated) Indicates whether parameter names 
+should be matched exactly (\code{TRUE}) or treated as
+regular expressions (\code{FALSE}). Default is \code{FALSE}
+and only works with argument \code{pars}.}
 
 \item{...}{Additional arguments passed to the plotting functions.
 See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for
@@ -69,7 +75,7 @@ model <- brm(count ~ zAge + zBase * Trt + (1|patient),
 mcmc_plot(model)
 
 # only show population-level effects in the plots
-mcmc_plot(model, pars = "^b_")
+mcmc_plot(model, variable = "^b_", regex = TRUE)
 
 # show histograms of the posterior distributions
 mcmc_plot(model, type = "hist")

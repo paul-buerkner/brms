@@ -62,7 +62,12 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @inheritParams posterior_predict.brmsfit
 #' @param folds Only used for k-fold variable selection. A vector of fold
 #' indices for each data point in data.
-#' @param ... Further arguments currently ignored.
+#' @param cvfun Optional cross-validation function
+#' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+#' If \code{NULL} (the default), \code{cvfun} is defined internally
+#' based on \code{\link{kfold.brmsfit}}.
+#' @param ... Further arguments passed to 
+#' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
 #' @return A \code{refmodel} object to be used in
 #'   \code{\link[projpred:varsel]{varsel}} and related variable selection
@@ -72,22 +77,36 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @export get_refmodel
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 folds = NULL, ...) {
+                                 folds = NULL, cvfun = NULL, ...) {
+  dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {
     formula <- formula$forms[[resp]]
   }
   
+  # prepare the family object for use in projpred
+  family <- family(object, resp = resp)
+  if (family$family == "bernoulli") {
+    family$family <- "binomial"
+  }
+  # For the augmented-data approach, do not re-define ordinal or categorical
+  # families to preserve their family-specific extra arguments ("extra" meaning
+  # "additionally to `link`") like `refcat` and `thresholds` (see ?brmsfamily):
+  if (!(isTRUE(dots$aug_data) && is_polytomous(family))) {
+    family <- get(family$family, mode = "function")(link = family$link)
+  }
+  family <- projpred::extend_family(family)
+  
   # check if the model is supported by projpred
   bterms <- brmsterms(formula)
-  if (length(bterms$dpars) > 1L) {
+  if (length(bterms$dpars) > 1L && !conv_cats_dpars(family$family)) {
     stop2("Projpred does not support distributional models.")
   }
   if (length(bterms$nlpars) > 0L) {
     stop2("Projpred does not support non-linear models.")
   }
-  not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset"))
+  not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset", "sm"))
   if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
     stop2("Projpred only supports standard multilevel terms and offsets.")
   }
@@ -96,20 +115,31 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   formula <- formula$formula
   # LHS should only contain the response variable
   formula[[2]] <- bterms$respform[[2]]
-
-  # prepare the family object for use in projpred
-  family <- family(object, resp = resp)
-  if (family$family == "bernoulli") {
-    family$family <- "binomial"
-  }
-  family <- get(family$family, mode = "function")(link = family$link)
-  family <- projpred::extend_family(family)
   
   # projpred requires the dispersion parameter if present
   dis <- NULL
   if (family$family == "gaussian") {
     dis <- paste0("sigma", usc(resp))
     dis <- as.data.frame(object, pars = dis, fixed = TRUE)[[dis]]
+  }
+  
+  # Using the default prediction function from projpred is usually fine
+  ref_predfun <- NULL
+  if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
+    stop2("This case is not yet supported.")
+    # Use argument `incl_thres` of posterior_linpred() (and convert the
+    # 3-dimensional array to an "augmented-rows" matrix)
+    # TODO: uncomment the lines below as soon as arr2augmat() is exported
+    # ref_predfun <- function(fit, newdata = NULL) {
+    #   # Note: `transform = FALSE` is not needed, but included here for
+    #   # consistency with projpred's default ref_predfun():
+    #   linpred_out <- posterior_linpred(
+    #     fit, transform = FALSE, newdata = newdata, incl_thres = TRUE
+    #   )
+    #   stopifnot(length(dim(linpred_out)) == 3L)
+    #   linpred_out <- projpred:::arr2augmat(linpred_out, margin_draws = 1)
+    #   return(linpred_out)
+    # }
   }
   
   # prepare data passed to projpred
@@ -122,19 +152,25 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # extract a list of K-fold sub-models
-  cvfun <- function(folds) {
-    cvres <- kfold(
-      object, K = max(folds),
-      save_fits = TRUE, folds = folds
-    )
-    fits <- cvres$fits[, "fit"]
-    return(fits)
+  if (is.null(cvfun)) {
+    cvfun <- function(folds, ...) {
+      cvres <- kfold(
+        object, K = max(folds),
+        save_fits = TRUE, folds = folds,
+        ...
+      )
+      fits <- cvres$fits[, "fit"]
+      return(fits)
+    }
+  } else {
+    if (!is.function(cvfun)) {
+      stop2("'cvfun' should be a function.")
+    }
   }
   
-  # using default prediction functions from projpred is fine
   args <- nlist(
     object, data, formula, family, folds, dis,
-    ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
+    ref_predfun = ref_predfun, proj_predfun = NULL, div_minimizer = NULL, 
     cvfun = cvfun, extract_model_data = extract_model_data, ...
   )
   do_call(projpred::init_refmodel, args)

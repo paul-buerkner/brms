@@ -180,9 +180,9 @@
 #'   \code{sdx2} and \code{z} is a predictor without error
 #'   (e.g., an experimental setting), we can model all main effects 
 #'   and interactions of the three predictors in the well known manner: 
-#'   \code{y ~ me(x, sdx) * me(x2, sdx2) * z}. In future version of \pkg{brms},
-#'   a vignette will be added to explain more details about these
-#'   so called 'error-in-variables' models and provide real world examples.
+#'   \code{y ~ me(x, sdx) * me(x2, sdx2) * z}.
+#'   The \code{me} function is soft deprecated in favor of the more flexible
+#'   and consistent \code{mi} function (see below).
 #'   
 #'   When a variable contains missing values, the corresponding rows will
 #'   be excluded from the data by default (row-wise exclusion). However,
@@ -199,7 +199,10 @@
 #'   we go for \code{y ~ mi(x) + z}. Second, we need to model \code{x} 
 #'   as an additional response with corresponding predictors and the 
 #'   addition term \code{mi()}. In our example, we could write
-#'   \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
+#'   \code{x | mi() ~ z}. Measurement error may be included via
+#'   the \code{sdy} argument, say, \code{x | mi(sdy = se) ~ z}.
+#'   See \code{\link{mi}} for examples with real data.
+#'   
 #'   
 #'   \bold{Autocorrelation terms}
 #'   
@@ -259,7 +262,7 @@
 #'   the linear predictor of the main parameter but the former is arguably
 #'   more convenient and explicit.
 #'   
-#'   With the exception of categorical, ordinal, and mixture families, 
+#'   With the exception of categorical and ordinal families, 
 #'   left, right, and interval censoring can be modeled through 
 #'   \code{y | cens(censored) ~ predictors}. The censoring variable 
 #'   (named \code{censored} in this example) should contain the values 
@@ -273,7 +276,7 @@
 #'   in \code{y2} for interval censored data. Intervals are assumed to be open 
 #'   on the left and closed on the right: \code{(y, y2]}.
 #'   
-#'   With the exception of categorical, ordinal, and mixture families, 
+#'   With the exception of categorical and ordinal families, 
 #'   the response distribution can be truncated using the \code{trunc} 
 #'   function in the addition part. If the response variable is truncated 
 #'   between, say, 0 and 100, we can specify this via
@@ -319,14 +322,21 @@
 #'   will be treated as a response on the lower boundary. Alternatively,
 #'   the variable passed to \code{dec} might also be a character vector 
 #'   consisting of \code{'lower'} and \code{'upper'}.
+#'   
+#'   All families support the \code{index} addition term to uniquely identify
+#'   each observation of the corresponding response variable. Currently,
+#'   \code{index} is primarily useful in combination with the \code{subset}
+#'   addition and \code{\link{mi}} terms.
 #'
 #'   For custom families, it is possible to pass an arbitrary number of real and
 #'   integer vectors via the addition terms \code{vreal} and \code{vint},
 #'   respectively. An example is provided in
-#'   \code{vignette('brms_customfamilies')}.
+#'   \code{vignette('brms_customfamilies')}. To pass multiple vectors of the
+#'   same data type, provide them separated by commas inside a single 
+#'   \code{vreal} or \code{vint} statement.
 #' 
-#'   Multiple addition terms may be specified at the same time using the
-#'   \code{+} operator. For example, the formula
+#'   Multiple addition terms of different types may be specified at the same 
+#'   time using the \code{+} operator. For example, the formula
 #'   \code{formula = yi | se(sei) + cens(censored) ~ 1} implies a censored 
 #'   meta-analytic model.
 #'   
@@ -1629,9 +1639,10 @@ str2formula <- function(x, ..., collapse = "+") {
 # @param formula a model formula
 # @param rm a vector of to elements indicating how many characters 
 #   should be removed at the beginning and end of the string respectively
-# @param space how should whitespaces be treated?
+# @param space how should whitespaces be treated? 
+#    option 'rm' is dangerous as it may combine different operators (#1142)
 # @return a single character string or NULL
-formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+formula2str <- function(formula, rm = c(0, 0), space = c("trim", "rm")) {
   if (is.null(formula)) {
     return(NULL)
   }
@@ -1639,11 +1650,11 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   space <- match.arg(space)
   if (anyNA(rm[2])) rm[2] <- 0
   x <- Reduce(paste, deparse(formula))
-  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+  x <- gsub("[\t\r\n]+", " ", x, perl = TRUE)
   if (space == "trim") {
-    x <- gsub(" {1,}", " ", x, perl = TRUE)
+    x <- trim_wsp(x)
   } else {
-    x <- gsub(" ", "", x, perl = TRUE) 
+    x <- rm_wsp(x) 
   }
   substr(x, 1 + rm[1], nchar(x) - rm[2])
 }

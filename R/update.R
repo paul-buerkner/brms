@@ -127,7 +127,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (!"sample_prior" %in% names(dots)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
-      has_prior_pars <- any(grepl("^prior_", parnames(object)))
+      has_prior_pars <- any(grepl("^prior_", variables(object)))
       dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }
@@ -170,6 +170,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots$control[names(control)] <- control
   
   if (is.null(recompile)) {
+    dots$backend <- match.arg(dots$backend, backend_choices())
     # only recompile if new and old stan code do not match
     new_stancode <- suppressMessages(do_call(make_stancode, dots))
     # stan code may differ just because of the version number (#288)
@@ -282,7 +283,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   args <- c(nlist(fit, data = newdata), dots)
   # update arguments controlling the sampling process
   # they cannot be accessed directly from the template model 
-  # as it does not contain any samples (chains = 0)
+  # as it does not contain any draws (chains = 0)
   if (is.null(args$iter)) {
     # only keep old 'warmup' if also keeping old 'iter'
     args$warmup <- first_not_null(args$warmup, object$fit@sim$warmup)

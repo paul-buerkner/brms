@@ -3,7 +3,7 @@
 \name{posterior_linpred.brmsfit}
 \alias{posterior_linpred.brmsfit}
 \alias{posterior_linpred}
-\title{Posterior Samples of the Linear Predictor}
+\title{Posterior Draws of the Linear Predictor}
 \usage{
 \method{posterior_linpred}{brmsfit}(
   object,
@@ -14,8 +14,9 @@
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  incl_thres = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   sort = FALSE,
   ...
 )
@@ -23,14 +24,10 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{transform}{(Deprecated) Logical; if \code{FALSE}
-(the default), samples of the linear predictor are returned.
-If \code{TRUE}, samples of transformed linear predictor,
-that is, the mean of the posterior predictive distribution
-are returned instead (see \code{\link{posterior_epred}} for details).
-Only implemented for compatibility with the 
-\code{\link[rstantools:posterior_linpred]{posterior_linpred}}
-generic.}
+\item{transform}{Logical; if \code{FALSE}
+(the default), draws of the linear predictor are returned.
+If \code{TRUE}, draws of transformed linear predictor,
+that is, after applying the link function are returned.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.
@@ -47,18 +44,24 @@ if \code{NA}, include no group-level effects.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{dpar}{Optional name of a predicted distributional parameter.
-If specified, expected predictions of this parameters are returned.}
+\item{dpar}{Name of a predicted distributional parameter
+for which draws are to be returned. By default, draws
+of the main distributional parameter(s) \code{"mu"} are returned.}
 
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{incl_thres}{Logical; only relevant for ordinal models when
+\code{transform} is \code{FALSE}, and ignored otherwise. Shall the
+thresholds and category-specific effects be included in the linear
+predictor? For backwards compatibility, the default is to not include them.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
+
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{sort}{Logical. Only relevant for time series models. 
 Indicating whether to return predicted values in the original 
@@ -69,7 +72,7 @@ time series (\code{TRUE}).}
 that control several aspects of data validation and prediction.}
 }
 \description{
-Compute posterior samples of the linear predictor, that is samples before
+Compute posterior draws of the linear predictor, that is draws before
 applying any link functions or other transformations. Can be performed for
 the data used to fit the model (posterior predictive checks) or for new data.
 }

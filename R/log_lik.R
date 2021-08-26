@@ -10,7 +10,7 @@
 #'   or if the log-likelihoods should be returned separately.
 #' @param pointwise A flag indicating whether to compute the full
 #'   log-likelihood matrix at once (the default), or just return
-#'   the likelihood function along with all data and samples
+#'   the likelihood function along with all data and draws
 #'   required to compute the log-likelihood separately for each
 #'   observation. The latter option is rarely useful when
 #'   calling \code{log_lik} directly, but rather when computing
@@ -19,13 +19,13 @@
 #'   with the \code{\link{loo_subsample}} method.
 #' 
 #' @return Usually, an S x N matrix containing the pointwise log-likelihood
-#'  samples, where S is the number of samples and N is the number 
+#'  draws, where S is the number of draws and N is the number 
 #'  of observations in the data. For multivariate models and if 
 #'  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
 #'  where R is the number of response variables.
 #'  If \code{pointwise = TRUE}, the output is a function
 #'  with a \code{draws} attribute containing all relevant
-#'  data and posterior samples.
+#'  data and posterior draws.
 #'  
 #' @template details-newdata-na
 #' @template details-allow_new_levels
@@ -36,27 +36,27 @@
 #' @export log_lik
 #' @importFrom rstantools log_lik
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                            resp = NULL, nsamples = NULL, subset = NULL, 
+                            resp = NULL, ndraws = NULL, draw_ids = NULL, 
                             pointwise = FALSE, combine = TRUE,
                             add_point_estimate = FALSE, 
-                            cores = getOption("mc.cores", 1), ...) {
+                            cores = NULL, ...) {
   pointwise <- as_one_logical(pointwise)
   combine <- as_one_logical(combine)
   add_point_estimate <- as_one_logical(add_point_estimate)
-  contains_samples(object)
+  contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
-    subset = subset, nsamples = nsamples, check_response = TRUE, ...
+    ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE, ...
   )
   if (add_point_estimate) {
     # required for the loo_subsample method
     # Computing a point estimate based on the full prep object is too
     # difficult due to its highly nested structure. As an alternative, a second
-    # prep object is created from the point estimates of the samples directly.
+    # prep object is created from the point estimates of the draws directly.
     attr(prep, "point_estimate") <- prepare_predictions(
       object, newdata = newdata, re_formula = re_formula, resp = resp, 
-      subset = subset, nsamples = nsamples, check_response = TRUE, 
+      ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE, 
       point_estimate = "median", ...
     )
   }
@@ -82,9 +82,9 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' @export
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                           resp = NULL, nsamples = NULL, subset = NULL, 
+                           resp = NULL, ndraws = NULL, draw_ids = NULL, 
                            pointwise = FALSE, combine = TRUE,
-                           cores = getOption("mc.cores", 1), ...) {
+                           cores = NULL, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
@@ -109,9 +109,14 @@ log_lik.mvbrmsprep <- function(object, combine = TRUE, ...) {
 }
 
 #' @export
-log_lik.brmsprep <- function(object, cores = 1, ...) {
+log_lik.brmsprep <- function(object, cores = NULL, ...) {
+  cores <- validate_cores_post_processing(cores)
   log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
+  if (is.customfamily(object$family)) {
+    # ensure that the method can be found during parallel execution
+    object$family$log_lik <- custom_family_method(object$family, "log_lik")
+  }
   for (nlp in names(object$nlpars)) {
     object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
@@ -147,7 +152,7 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 # @param i index of the observatio for which to compute log-lik values
 # @param prep A named list returned by prepare_predictions containing 
 #   all required data and posterior draws
-# @return a vector of length prep$nsamples containing the pointwise 
+# @return a vector of length prep$ndraws containing the pointwise 
 #   log-likelihood for the ith observation 
 log_lik_gaussian <- function(i, prep) {
   mu <- get_dpar(prep, "mu", i = i)
@@ -220,7 +225,7 @@ log_lik_gaussian_mv <- function(i, prep) {
       Sigma = Sigma[s, , ], log = TRUE
     )
   }
-  out <- sapply(1:prep$nsamples, dmn)
+  out <- sapply(1:prep$ndraws, dmn)
   log_lik_weight(out, i = i, prep = prep)
 }
 
@@ -234,7 +239,7 @@ log_lik_student_mv <- function(i, prep) {
       Sigma = Sigma[s, , ], log = TRUE
     )
   }
-  out <- sapply(1:prep$nsamples, dmst)
+  out <- sapply(1:prep$ndraws, dmst)
   log_lik_weight(out, i = i, prep = prep)
 }
 
@@ -254,7 +259,7 @@ log_lik_gaussian_time <- function(i, prep) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_student_time <- function(i, prep) {
@@ -276,7 +281,7 @@ log_lik_student_time <- function(i, prep) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_gaussian_lagsar <- function(i, prep) {
@@ -297,7 +302,7 @@ log_lik_gaussian_lagsar <- function(i, prep) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_student_lagsar <- function(i, prep) {
@@ -321,7 +326,7 @@ log_lik_student_lagsar <- function(i, prep) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_gaussian_errorsar <- function(i, prep) {
@@ -341,7 +346,7 @@ log_lik_gaussian_errorsar <- function(i, prep) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_student_errorsar <- function(i, prep) {
@@ -364,7 +369,7 @@ log_lik_student_errorsar <- function(i, prep) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_gaussian_fcor <- function(i, prep) {
@@ -383,7 +388,7 @@ log_lik_gaussian_fcor <- function(i, prep) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_student_fcor <- function(i, prep) {
@@ -405,7 +410,7 @@ log_lik_student_fcor <- function(i, prep) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(prep$nsamples), .log_lik)
+  rblapply(seq_len(prep$ndraws), .log_lik)
 }
 
 log_lik_binomial <- function(i, prep) {
@@ -447,6 +452,21 @@ log_lik_negbinomial <- function(i, prep) {
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- get_dpar(prep, "shape", i)
   shape <- multiply_dpar_rate_denom(shape, prep, i = i)
+  args <- list(mu = mu, size = shape)
+  out <- log_lik_censor(
+    dist = "nbinom", args = args, i = i, prep = prep
+  )
+  out <- log_lik_truncate(
+    out, cdf = pnbinom, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_negbinomial2 <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  sigma <- get_dpar(prep, "sigma", i)
+  shape <- multiply_dpar_rate_denom(1 / sigma, prep, i = i)
   args <- list(mu = mu, size = shape)
   out <- log_lik_censor(
     dist = "nbinom", args = args, i = i, prep = prep
@@ -768,6 +788,13 @@ log_lik_dirichlet <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_dirichlet2 <- function(i, prep) {
+  mu_dpars <- str_subset(names(prep$dpars), "^mu")
+  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  out <- ddirichlet(prep$data$Y[i, ], alpha = mu, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_cumulative <- function(i, prep) {
   disc <- get_dpar(prep, "disc", i = i)
   mu <- get_dpar(prep, "mu", i = i)
@@ -865,12 +892,7 @@ log_lik_acat <- function(i, prep) {
 }
 
 log_lik_custom <- function(i, prep) {
-  log_lik_fun <- prep$family$log_lik
-  if (!is.function(log_lik_fun)) {
-    log_lik_fun <- paste0("log_lik_", prep$family$name)
-    log_lik_fun <- get(log_lik_fun, prep$family$env)
-  }
-  log_lik_fun(i, prep)
+  custom_family_method(prep$family, "log_lik")(i, prep)
 }
 
 log_lik_mixture <- function(i, prep) {

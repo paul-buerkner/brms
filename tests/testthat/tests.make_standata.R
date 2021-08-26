@@ -490,15 +490,18 @@ test_that("make_standata handles category specific effects", {
   sdata <- make_standata(rating ~ period + carry + cse(treat), 
                          data = inhaler, family = sratio())
   expect_equivalent(sdata$Xcs, matrix(inhaler$treat))
-  sdata <- make_standata(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
+  sdata <- make_standata(rating ~ period + carry + cs(treat) + (cs(1)|subject), 
                          data = inhaler, family = acat())
   expect_equivalent(sdata$Z_1_3, as.array(rep(1, nrow(inhaler))))
-  sdata <- make_standata(rating ~ period + carry + (cse(treat)|subject), 
+  sdata <- make_standata(rating ~ period + carry + (cs(treat)|subject), 
                          data = inhaler, family = cratio())
   expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
-  expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
-                             family = "cumulative"), "not supported")
-  expect_error(make_standata(rating ~ 1 + (treat + cse(1)|subject), 
+  expect_warning(
+    make_standata(rating ~ 1 + cs(treat), data = inhaler,
+                  family = "cumulative"), 
+    "Category specific effects for this family should be considered experimental"
+  )
+  expect_error(make_standata(rating ~ 1 + (treat + cs(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")
 })
@@ -585,6 +588,51 @@ test_that("make_standata handles overimputation", {
   expect_true(all(is.infinite(sdata$noise_x[miss])))
 })
 
+test_that("make_standata handles mi terms with 'subset'", {
+  dat <- data.frame(
+    y = rnorm(10), x = c(rnorm(9), NA), z = rnorm(10), 
+    g1 = sample(1:5, 10, TRUE), g2 = 10:1, g3 = 1:10,
+    s = c(FALSE, rep(TRUE, 9))
+  )
+  
+  bform <- bf(y ~ mi(x, idx = g1)) + 
+    bf(x | mi() + index(g2) + subset(s)  ~ 1) +
+    set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_true(all(sdata$idxl_y_x_1 %in% 9:5))
+  
+  # test a bunch of errors
+  bform <- bf(y ~ mi(x, idx = g1)) + 
+    bf(x | mi() + index(g3) + subset(s)  ~ 1) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "Could not match all indices in response 'x'"
+  )
+  
+  bform <- bf(y ~ mi(x, idx = g1)) + 
+    bf(x | mi() + subset(s) ~ 1) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "Response 'x' needs to have an 'index' addition term"  
+  )
+  
+  bform <- bf(y ~ mi(x)) + 
+    bf(x | mi() + subset(s) + index(g2)  ~ 1) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "mi() terms of subsetted variables require the 'idx' argument",
+    fixed = TRUE
+  )
+  
+  bform <- bf(y | mi() ~ mi(x, idx = g1)) + 
+    bf(x | mi() + subset(s) + index(g2)  ~ mi(y)) +
+    set_rescor(FALSE)
+  expect_error(make_standata(bform, dat), 
+    "mi() terms in subsetted formulas require the 'idx' argument",
+    fixed = TRUE
+  )
+})
+
 test_that("make_standata handles multi-membership models", {
   dat <- data.frame(y = rnorm(10), g1 = c(7:2, rep(10, 4)),
                     g2 = 1:10, w1 = rep(1, 10),
@@ -612,7 +660,7 @@ test_that("make_standata handles multi-membership models", {
   )
   expect_error(
     make_standata(y ~ (mmc(w1, w2)*y|mm(g1,g2)), data = dat),
-    "The term 'mmc(w1,w2):y' is invalid", fixed = TRUE
+    "The term 'mmc(w1, w2):y' is invalid", fixed = TRUE
   )
   
   # tests if ":" works in multi-membership models
@@ -1001,4 +1049,19 @@ test_that("variables in data2 can be used in population-level effects", {
   expect_equal(colnames(sdata$X), target)
   expect_equivalent(sdata$X[, 2], dat$x3)
   expect_equivalent(sdata$X[, 3], dat$x1)
+})
+
+test_that("NAs are allowed in unused interval censoring variables", {
+  dat <- data.frame(y = rnorm(10), ce = c(1, rep(2, 9)))
+  dat$y2 <- dat$y + 2
+  dat$y2[1] <- NA
+  sdata <- make_standata(y | cens(ce, y2 = y2) ~ 1, data = dat)
+  expect_equal(sdata$N, 10L)
+  expect_equal(sdata$rcens[1], 0)
+  
+  dat$ce[1] <- 2
+  expect_error(
+    make_standata(y | cens(ce, y2 = y2) ~ 1, data = dat),
+    "'y2' should not be NA for interval censored observations"
+  )
 })

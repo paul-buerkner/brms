@@ -3,13 +3,15 @@
 \name{posterior_average.brmsfit}
 \alias{posterior_average.brmsfit}
 \alias{posterior_average}
-\title{Posterior samples of parameters averaged across models}
+\title{Posterior draws of parameters averaged across models}
 \usage{
 \method{posterior_average}{brmsfit}(
   x,
   ...,
+  variable = NULL,
   pars = NULL,
   weights = "stacking",
+  ndraws = NULL,
   nsamples = NULL,
   missing = NULL,
   model_names = NULL,
@@ -27,9 +29,11 @@ passed to the underlying post-processing functions.
 In particular, see \code{\link{prepare_predictions}} for further
 supported arguments.}
 
-\item{pars}{Names of parameters for which to average across models.
-Only those parameters can be averaged that appear in every model.
-Defaults to all overlapping parameters.}
+\item{variable}{Names of variables (parameters) for which to average across
+models. Only those variables can be averaged that appear in every model.
+Defaults to all overlapping variables.}
+
+\item{pars}{Deprecated alias of \code{variable}.}
 
 \item{weights}{Name of the criterion to compute weights from. Should be one
 of \code{"loo"}, \code{"waic"}, \code{"kfold"}, \code{"stacking"} (current
@@ -43,12 +47,14 @@ likelihood values (make sure to specify reasonable priors in this case).
 For some methods, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
-\item{nsamples}{Total number of posterior samples to use.}
+\item{ndraws}{Total number of posterior draws to use.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
 
 \item{missing}{An optional numeric value or a named list of numeric values 
-to use if a model does not contain a parameter for which posterior samples 
+to use if a model does not contain a variable for which posterior draws
 should be averaged. Defaults to \code{NULL}, in which case only those
-parameters can be averaged that are present in all of the models.}
+variables can be averaged that are present in all of the models.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
@@ -61,11 +67,10 @@ passed to the function specified in \code{weights}.}
 to make results reproducible.}
 }
 \value{
-A \code{data.frame} of posterior samples. Samples are rows
-  and parameters are columns.
+A \code{data.frame} of posterior draws.
 }
 \description{
-Extract posterior samples of parameters averaged across models.
+Extract posterior draws of parameters averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.

@@ -150,7 +150,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
     "  int<lower=1> nresp;  // number of responses\n",   
     "  int nrescor;  // number of residual correlations\n"
   )
-  str_add(out$pll_args) <- glue(", int nresp")
+  str_add(out$pll_args) <- glue(", data int nresp")
   str_add(out$tdata_def) <- glue(
     "  vector[nresp] Y[N];  // response array\n"
   )
@@ -159,13 +159,13 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
     "    Y[n] = {stan_vector(glue('Y_{resp}[n]'))};\n",
     "  }}\n"
   )
-  str_add(out$pll_args) <- ", vector[] Y"
+  str_add(out$pll_args) <- ", data vector[] Y"
   if (any(adnames %in% "weights")) {
     str_add(out$tdata_def) <- glue(
       "  // weights of the pointwise log-likelihood\n",
       "  vector<lower=0>[N] weights = weights_{resp[1]};\n" 
     )
-    str_add(out$pll_args) <- glue(", vector weights")
+    str_add(out$pll_args) <- glue(", data vector weights")
   }
   miforms <- rmNULL(lapply(adforms, "[[", "mi"))
   if (length(miforms)) {
@@ -291,7 +291,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       "  // population-level design matrix\n"
     )
     if (decomp == "none") {
-      str_add(out$pll_args) <- glue(", matrix X{ct}{p}") 
+      str_add(out$pll_args) <- glue(", data matrix X{ct}{p}") 
     }
     if (sparse) {
       if (decomp != "none") {
@@ -443,7 +443,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
       "  XR{p}_inv = inverse(XR{p});\n"
     )
-    str_add(out$pll_args) <- glue(", matrix XQ{p}")
+    str_add(out$pll_args) <- glue(", data matrix XQ{p}")
   }
   str_add(out$eta) <- stan_eta_fe(fixef, bterms, threads, primitive)
   out
@@ -518,7 +518,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
         "  // multi-membership weights\n"
       )
       str_add(out$pll_args) <- cglue(
-        ", int[] J_{id}{res}_{ng}, real[] W_{id}{res}_{ng}"
+        ", data int[] J_{id}{res}_{ng}, data real[] W_{id}{res}_{ng}"
       )
     }
   } else {
@@ -527,7 +527,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
       "  // grouping indicator per observation\n"
     )
     str_add(out$pll_args) <- cglue(
-      ", int[] J_{id}{uresp}"
+      ", data int[] J_{id}{uresp}"
     )
   }
   if (has_by) {
@@ -553,7 +553,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
           "  vector[N{usc(r$resp[i])}] Z_{idp[i]}_{r$cn[i]}_{ng};\n"
         )
         str_add(out$pll_args) <- cglue(
-          ", vector Z_{idp[i]}_{r$cn[i]}_{ng}"
+          ", data vector Z_{idp[i]}_{r$cn[i]}_{ng}"
         )
       }
     } else {
@@ -561,7 +561,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
         "  vector[N{usc(r$resp[reqZ])}] Z_{idp[reqZ]}_{r$cn[reqZ]};\n"
       )
       str_add(out$pll_args) <- cglue(
-        ", vector Z_{idp[reqZ]}_{r$cn[reqZ]}"
+        ", data vector Z_{idp[reqZ]}_{r$cn[reqZ]}"
       )
     }
   }
@@ -735,7 +735,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
       "  matrix[N{resp}, Ks{p}] Xs{p};",
       "  // design matrix for the linear effects\n"
     )
-    str_add(out$pll_args) <- glue(", matrix Xs{p}")
+    str_add(out$pll_args) <- glue(", data matrix Xs{p}")
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = Xs_names,
       type = glue("vector[Ks{p}]"), suffix = glue("s{p}"), 
@@ -756,7 +756,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
     str_add(out$data) <- cglue(
       "  matrix[N{resp}, knots{pi}[{nb}]] Zs{pi}_{nb};\n"
     )
-    str_add(out$pll_args) <- cglue(", matrix Zs{pi}_{nb}")
+    str_add(out$pll_args) <- cglue(", data matrix Zs{pi}_{nb}")
     str_add(out$par) <- glue(
       "  // parameters for spline {smef$byterm[i]}\n"
     )
@@ -808,7 +808,7 @@ stan_cs <- function(bterms, data, prior, ranef, threads, normalize, ...) {
       "  int<lower=1> Kcs{p};  // number of category specific effects\n",
       "  matrix[N{resp}, Kcs{p}] Xcs{p};  // category specific design matrix\n"
     )
-    str_add(out$pll_args) <- glue(", matrix Xcs{p}")
+    str_add(out$pll_args) <- glue(", data matrix Xcs{p}")
     bound <- get_bound(prior, class = "b", px = px)
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = csef,
@@ -897,7 +897,10 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
       eta <- rename(eta, meef$term, new_me)
     }
     if (!is.null(spef$calls_mi[[i]])) {
-      new_mi <- glue("Yl_{spef$vars_mi[[i]]}{n}")
+      is_na_idx <- is.na(spef$idx2_mi[[i]])
+      idx_mi <- glue("[idxl{p}_{spef$vars_mi[[i]]}_{spef$idx2_mi[[i]]}{n}]")
+      idx_mi <- ifelse(is_na_idx, n, idx_mi)
+      new_mi <- glue("Yl_{spef$vars_mi[[i]]}{idx_mi}")
       eta <- rename(eta, spef$calls_mi[[i]], new_mi)
       str_add(out$pll_args) <- glue(", vector Yl_{spef$vars_mi[[i]]}")
     }
@@ -908,6 +911,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r)}"))
     str_add(out$loopeta) <- glue(" + (bsp{p}[{i}]{rpars}) * {eta}")
   }
+  
   # prepare general Stan code
   ncovars <- max(spef$Ic)
   str_add(out$data) <- glue(
@@ -918,24 +922,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     str_add(out$data) <- cglue(
       "  vector[N{resp}] Csp{p}_{seq_len(ncovars)};\n"
     )
-    str_add(out$pll_args) <- cglue(", vector Csp{p}_{seq_len(ncovars)}")
-  }
-  # prepare special effects coefficients
-  bound <- get_bound(prior, class = "b", px = px)
-  if (stan_assign_b_tpar(bterms, prior)) {
-    str_add(out$tpar_def) <- glue(
-      "  // special effects coefficients\n", 
-      "  vector{bound}[Ksp{p}] bsp{p};\n"
-    )
-  } else {
-    str_add_list(out) <- stan_prior(
-      prior, class = "b", coef = spef$coef, 
-      type = glue("vector{bound}[Ksp{p}]"),
-      coef_type = glue("real{bound}"), px = px, 
-      suffix = glue("sp{p}"), header_type = "vector",
-      comment = "special effects coefficients",
-      normalize = normalize
-    )
+    str_add(out$pll_args) <- cglue(", data vector Csp{p}_{seq_len(ncovars)}")
   }
   
   # include special Stan code for monotonic effects
@@ -981,6 +968,33 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     }
   }
   
+  # include special Stan code for missing value terms
+  uni_mi <- na.omit(attr(spef, "uni_mi"))
+  for (j in seq_rows(uni_mi)) {
+    idxl <- glue("idxl{p}_{uni_mi$var[j]}_{uni_mi$idx2[j]}")
+    str_add(out$data) <- glue(
+      "  int {idxl}[N{resp}];  // matching indices\n"
+    )
+    str_add(out$pll_args) <- glue(", data int[] {idxl}")
+  }
+  
+  # prepare special effects coefficients
+  bound <- get_bound(prior, class = "b", px = px)
+  if (stan_assign_b_tpar(bterms, prior)) {
+    str_add(out$tpar_def) <- glue(
+      "  // special effects coefficients\n", 
+      "  vector{bound}[Ksp{p}] bsp{p};\n"
+    )
+  } else {
+    str_add_list(out) <- stan_prior(
+      prior, class = "b", coef = spef$coef, 
+      type = glue("vector{bound}[Ksp{p}]"),
+      coef_type = glue("real{bound}"), px = px, 
+      suffix = glue("sp{p}"), header_type = "vector",
+      comment = "special effects coefficients",
+      normalize = normalize
+    )
+  }
   stan_special_priors <- stan_special_prior_local(
     prior, class = "bsp", ncoef = nrow(spef), 
     px = px, center_X = FALSE, normalize = normalize
@@ -1054,7 +1068,9 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
         "  int<lower=1> {Igp}[{Ngp}[{J}]];\n",
         "  vector[{Ngp}[{J}]] Cgp{pi}_{J};\n"
       )
-      str_add(out$pll_args) <- cglue(", int[] {Igp}, vector Cgp{pi}_{J}")
+      str_add(out$pll_args) <- cglue(
+        ", data int[] {Igp}, data vector Cgp{pi}_{J}"
+      )
       str_add_list(out) <- stan_prior(
         prior, class = "lscale", coef = sfx2, 
         type = lscale_type, coef_type = "real<lower=0>",
@@ -1070,7 +1086,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
           "  // indices of latent GP groups per observation\n",
           "  int<lower=1> Jgp{pi}_{J}[{Ngp}[{J}]];\n"
         )
-        str_add(out$pll_args) <- cglue(", int[] Jgp{pi}_{J}")
+        str_add(out$pll_args) <- cglue(", data int[] Jgp{pi}_{J}")
       }
       if (is_approx) {
         str_add(out$data) <- 
@@ -1145,7 +1161,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
           "  // indices of latent GP groups per observation\n",
           "  int<lower=1> Jgp{pi}[N{resp}];\n"
         )
-        str_add(out$pll_args) <- glue(", int[] Jgp{pi}")
+        str_add(out$pll_args) <- glue(", data int[] Jgp{pi}")
       }
       Cgp <- ""
       if (bynum) {
@@ -1153,7 +1169,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
           "  // numeric by-variable of the GP\n",
           "  vector[N{resp}] Cgp{pi};\n"
         )
-        str_add(out$pll_args) <- glue(", vector Cgp{pi}")
+        str_add(out$pll_args) <- glue(", data vector Cgp{pi}")
         Cgp <- glue("Cgp{pi}{slice} .* ")
       }
       if (is_approx) {
@@ -1184,7 +1200,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
             "  vector[N{resp}] gp_pred{pi} = Xgp{pi}{slice} * rgp{pi};\n"
           )
           str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}")
-          str_add(out$pll_args) <- glue(", matrix Xgp{pi}, vector rgp{pi}")
+          str_add(out$pll_args) <- glue(", data matrix Xgp{pi}, vector rgp{pi}")
         }
       } else {
         # exact GPs
@@ -1469,7 +1485,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       type = "real<lower=0>", comment = "SD of the CAR structure",
       normalize = normalize
     )
-    str_add(out$pll_args) <- glue(", vector rcar{p}, int[] Jloc{p}")
+    str_add(out$pll_args) <- glue(", vector rcar{p}, data int[] Jloc{p}")
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}{n}]")
     if (acef_car$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
@@ -1605,7 +1621,7 @@ stan_offset <- function(bterms, threads, ...) {
     slice <- stan_slice(threads)
     # use 'offsets' as 'offset' will be reserved in stanc3
     str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
-    str_add(out$pll_args) <- glue(", vector offsets{p}")
+    str_add(out$pll_args) <- glue(", data vector offsets{p}")
     str_add(out$eta) <- glue(" + offsets{p}{slice}")
   }
   out
@@ -1629,7 +1645,12 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
     p <- usc(combine_prefix(bterms))
     new_covars <- rep(NA, length(covars))
     data_cnl <- data_cnl(bterms, data)
-    nn <- paste0(str_if(bterms$loop, stan_nn(threads)), " ")
+    if (bterms$loop) {
+      slice <- stan_nn(threads)
+    } else {
+      slice <- stan_slice(threads)
+    }
+    slice <- paste0(slice, " ")
     str_add(out$data) <- "  // covariate vectors for non-linear functions\n"
     for (i in seq_along(covars)) {
       is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
@@ -1637,14 +1658,14 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
         str_add(out$data) <- glue(
           "  int C{p}_{i}[N{resp}];\n"
         )
-        str_add(out$pll_args) <- glue(", int[] C{p}_{i}")
+        str_add(out$pll_args) <- glue(", data int[] C{p}_{i}")
       } else {
         str_add(out$data) <- glue(
           "  vector[N{resp}] C{p}_{i};\n"
         )
-        str_add(out$pll_args) <- glue(", vector C{p}_{i}")
+        str_add(out$pll_args) <- glue(", data vector C{p}_{i}")
       }
-      new_covars[i] <- glue(" C{p}_{i}{nn}")
+      new_covars[i] <- glue(" C{p}_{i}{slice}")
     }
   }
   # add white spaces to be able to replace parameters and covariates
@@ -1707,7 +1728,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
         "  int<lower=0> Nme_{i};  // number of latent values\n",
         "  int<lower=1> Jme_{i}[N];  // group index per observation\n"
       )
-      str_add(out$pll_args) <- glue(", int[] Jme_{i}")
+      str_add(out$pll_args) <- glue(", data int[] Jme_{i}")
     } else {
       Nme <- "N"
     }
@@ -1751,7 +1772,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
       )
       str_add(out$tpar_comp) <- glue(
         "  // compute actual latent values\n",
-        "  Xme{i} = rep_matrix(transpose(meanme_{i}), {Nme}) ", 
+        "  Xme{i} = rep_matrix(transpose(meanme_{i}), {Nme})", 
         " + transpose(diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i});\n"
       )
       str_add(out$tpar_def) <- cglue(
@@ -1938,11 +1959,11 @@ stan_eta_rsp <- function(r) {
 # does eta need to be transformed manually using the link functions
 # @param family the model family
 # @param cens_or_trunc is the model censored or truncated?
-stan_eta_transform <- function(family, cens_or_trunc = FALSE) {
+stan_eta_transform <- function(family, bterms) {
   transeta <- "transeta" %in% family_info(family, "specials")
   no_transform <- family$link == "identity" && !transeta || 
-    is_polytomous(family) && !is.customfamily(family)
-  !no_transform && !stan_has_built_in_fun(family, cens_or_trunc)
+    has_joint_link(family) && !is.customfamily(family)
+  !no_transform && !stan_has_built_in_fun(family, bterms)
 }
 
 # correctly apply inverse link to eta
@@ -1954,8 +1975,7 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
-  cens_or_trunc <- stan_log_lik_adj(bterms$adforms, c("cens", "trunc"))
-  if (stan_eta_transform(family, cens_or_trunc = cens_or_trunc)) {
+  if (stan_eta_transform(family, bterms)) {
     dpar_id <- dpar_id(dpar)
     pred_dpars <- names(bterms$dpars)
     shape <- glue("shape{dpar_id}")
@@ -2035,7 +2055,7 @@ stan_dpar_types <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
   default_types <- list(
     sigma = list(
       type = "real<lower=0>", 
-      comment = "residual SD"
+      comment = "dispersion parameter"
     ),
     shape = list(
       type = "real<lower=0>", 

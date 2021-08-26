@@ -32,7 +32,7 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit1)
-plot(fit1, pars = "simo")
+plot(fit1, variable = "simo", regex = TRUE)
 plot(conditional_effects(fit1))
 
 ## ---- results='hide'--------------------------------------------------------------------
@@ -61,7 +61,7 @@ fit4 <- brm(ls ~ mo(income), data = dat,
 summary(fit4)
 
 ## ---------------------------------------------------------------------------------------
-plot(fit4, pars = "prior_simo", N = 3)
+plot(fit4, variable = "prior_simo", regex = TRUE, N = 3)
 
 ## ---------------------------------------------------------------------------------------
 dat$age <- rnorm(100, mean = 40, sd = 10)

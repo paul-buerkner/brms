@@ -8,11 +8,13 @@
 \method{pp_check}{brmsfit}(
   object,
   type,
-  nsamples,
+  ndraws = NULL,
+  nsamples = NULL,
   group = NULL,
   x = NULL,
   newdata = NULL,
   resp = NULL,
+  draw_ids = NULL,
   subset = NULL,
   ...
 )
@@ -26,11 +28,13 @@ of currently supported types. You may also use an invalid
 type (e.g. \code{type = "xyz"}) to get a list of supported 
 types in the resulting error message.}
 
-\item{nsamples}{Positive integer indicating how many
-posterior samples should be used.
-If \code{NULL} all samples are used. If not specified,
-the number of posterior samples is chosen automatically.
-Ignored if \code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many
+posterior draws should be used.
+If \code{NULL} all draws are used. If not specified,
+the number of posterior draws is chosen automatically.
+Ignored if \code{draw_ids} is not \code{NULL}.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
 
 \item{group}{Optional name of a factor variable in the model
 by which to stratify the ppc plot. This argument is required for
@@ -49,8 +53,10 @@ predictions of the grand mean when using sum coding.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
+
+\item{subset}{Deprecated alias of \code{draw_ids}.}
 
 \item{...}{Further arguments passed to \code{\link{predict.brmsfit}}
 as well as to the PPC function specified in \code{type}.}
@@ -76,8 +82,8 @@ fit <-  brm(count ~ zAge + zBase * Trt
             data = epilepsy, family = poisson())
 
 pp_check(fit)  # shows dens_overlay plot by default
-pp_check(fit, type = "error_hist", nsamples = 11)
-pp_check(fit, type = "scatter_avg", nsamples = 100)
+pp_check(fit, type = "error_hist", ndraws = 11)
+pp_check(fit, type = "scatter_avg", ndraws = 100)
 pp_check(fit, type = "stat_2d")
 pp_check(fit, type = "rootogram")
 pp_check(fit, type = "loo_pit")

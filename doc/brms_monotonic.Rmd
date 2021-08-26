@@ -39,15 +39,18 @@ predictors that are on an ordinal or higher scale (Bürkner & Charpentier, in
 review). A predictor, which we want to model as monotonic (i.e., having a
 monotonically increasing or decreasing relationship with the response), must
 either be integer valued or an ordered factor. As opposed to a continuous
-predictor, predictor categories (or integers) are not assumend to be equidistant
+predictor, predictor categories (or integers) are not assumed to be equidistant
 with respect to their effect on the response variable. Instead, the distance
 between adjacent predictor categories (or integers) is estimated from the data
 and may vary across categories. This is realized by parameterizing as follows:
 One parameter, $b$, takes care of the direction and size of the effect similar
-to an ordinary regression parameter, while an additional parameter vector,
+to an ordinary regression parameter. If the monotonic effect is used in a linear
+model, $b$ can be interpreted as the expected average difference between two
+adjacent categories of the ordinal predictor. An additional parameter vector,
 $\zeta$, estimates the normalized distances between consecutive predictor
-categories. For a single monotonic predictor, $x$, the linear predictor term of
-observation $n$ looks as follows:
+categories which thus defines the shape of the monotonic effect. For a single
+monotonic predictor, $x$, the linear predictor term of observation $n$ looks as
+follows:
 
 $$\eta_n = b D \sum_{i = 1}^{x_n} \zeta_i$$
 
@@ -90,7 +93,7 @@ The summary methods yield
 
 ```{r}
 summary(fit1)
-plot(fit1, pars = "simo")
+plot(fit1, variable = "simo", regex = TRUE)
 plot(conditional_effects(fit1))
 ```
 
@@ -130,7 +133,7 @@ loo(fit1, fit2, fit3)
 
 The monotonic model fits better than the continuous model, which is not
 surprising given that the relationship between `income` and `ls` is non-linear.
-The monotonic and the unorderd factor model have almost identical fit in this
+The monotonic and the unordered factor model have almost identical fit in this
 example, but this may not be the case for other data sets.
 
 ## Setting Prior Distributions
@@ -139,7 +142,7 @@ In the previous monotonic model, we have implicitly assumed that all differences
 between adjacent categories were a-priori the same, or formulated correctly, had
 the same prior distribution. In the following, we want to show how to change
 this assumption. The canonical prior distribution of a simplex parameter is the
-Dirchlet distribution, a multivariate generalization of the beta distribution.
+Dirichlet distribution, a multivariate generalization of the beta distribution.
 It is non-zero for all valid simplexes (i.e., $\zeta_i \in [0,1]$ and $\sum_{i =
 1}^D \zeta_i = 1$) and zero otherwise. The Dirichlet prior has a single
 parameter $\alpha$ of the same length as $\zeta$. The higher $\alpha_i$ the
@@ -166,11 +169,11 @@ monotonic variables are included in the model.
 summary(fit4)
 ```
 
-We have used `sample_prior = TRUE` to also obtain samples from the prior
+We have used `sample_prior = TRUE` to also obtain draws from the prior
 distribution of `simo_moincome1` so that we can visualized it.
 
 ```{r}
-plot(fit4, pars = "prior_simo", N = 3)
+plot(fit4, variable = "prior_simo", regex = TRUE, N = 3)
 ```
 
 As is visible in the plots, `simo_moincome1[1]` was a-priori on average twice as

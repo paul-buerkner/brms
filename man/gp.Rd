@@ -110,19 +110,19 @@ dat <- mgcv::gamSim(1, n = 30, scale = 2)
 # fit a simple GP model
 fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 summary(fit1)
-me1 <- conditional_effects(fit1, nsamples = 200, spaghetti = TRUE)
+me1 <- conditional_effects(fit1, ndraws = 200, spaghetti = TRUE)
 plot(me1, ask = FALSE, points = TRUE)
 
 # fit a more complicated GP model
 fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
 summary(fit2)
-me2 <- conditional_effects(fit2, nsamples = 200, spaghetti = TRUE)
+me2 <- conditional_effects(fit2, ndraws = 200, spaghetti = TRUE)
 plot(me2, ask = FALSE, points = TRUE)
 
 # fit a multivariate GP model
 fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
 summary(fit3)
-me3 <- conditional_effects(fit3, nsamples = 200, spaghetti = TRUE)
+me3 <- conditional_effects(fit3, ndraws = 200, spaghetti = TRUE)
 plot(me3, ask = FALSE, points = TRUE)
 
 # compare model fit

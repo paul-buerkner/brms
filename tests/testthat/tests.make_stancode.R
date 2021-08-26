@@ -339,6 +339,11 @@ test_that("Stan GLM primitives are applied correctly", {
     "neg_binomial_2_log_glm_lpmf(Y | Xc, Intercept, b, shape)"
   )
   
+  scode <- make_stancode(y ~ x, dat, family = brmsfamily("negbinomial2"))
+  expect_match2(scode, 
+    "neg_binomial_2_log_glm_lpmf(Y | Xc, Intercept, b, inv(sigma))"
+  )
+  
   scode <- make_stancode(y ~ 0 + x, dat, family = gaussian)
   expect_match2(scode, "normal_id_glm_lpdf(Y | X, 0, b, sigma)")
   
@@ -437,6 +442,11 @@ test_that("self-defined functions appear in the Stan code", {
   scode <- make_stancode(rating ~ treat, data = inhaler,
                          family = brmsfamily("poisson", "softplus"))
   expect_match2(scode, "real log_expm1(real x)")
+  
+  # squareplus link
+  scode <- make_stancode(rating ~ treat, data = inhaler,
+                         family = brmsfamily("poisson", "squareplus"))
+  expect_match2(scode, "real squareplus(real x)")
   
   # tan_half link
   expect_match2(make_stancode(rating ~ treat, data = inhaler,
@@ -652,6 +662,8 @@ test_that("Stan code for dirichlet models is correct", {
   names(dat) <- c("y1", "y2", "y3")
   dat$x <- rnorm(N)
   dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  # dirichlet in probability-sum(alpha) concentration
   prior <- prior(normal(0, 5), class = "b", dpar = "muy3") +
     prior(exponential(10), "phi")
   scode <- make_stancode(bf(y ~ 1, muy3 ~ x), data = dat, 
@@ -667,6 +679,18 @@ test_that("Stan code for dirichlet models is correct", {
   expect_match2(scode, "target += dirichlet_logit_lpdf(Y[n] | mu[n], phi[n]);")
   expect_match2(scode, "vector[N] phi = Intercept_phi + Xc_phi * b_phi;")
   expect_match2(scode, "phi[n] = exp(phi[n]);")
+  
+  # dirichlet2 in alpha parameterization
+  prior <- prior(normal(0, 5), class = "b", dpar = "muy3")
+  scode <- make_stancode(bf(y ~ 1, muy3 ~ x), data = dat, 
+                         family = brmsfamily("dirichlet2"), prior = prior)
+  expect_match2(scode, "vector[ncat] Y[N];")
+  expect_match2(scode, "muy3[n] = exp(muy3[n]);")
+  expect_match2(scode, "target += dirichlet_lpdf(Y[n] | mu[n]);")
+  expect_match2(scode, "muy3 = Intercept_muy3 + Xc_muy3 * b_muy3;")
+  expect_match2(scode, "mu[n] = transpose([muy1[n], muy2[n], muy3[n]]);")
+  expect_match2(scode, "target += normal_lpdf(b_muy3 | 0, 5);")
+  expect_match2(scode, "target += student_t_lpdf(Intercept_muy1 | 3, 0, 2.5);")
 })
 
 test_that("Stan code for ARMA models is correct", {
@@ -973,6 +997,13 @@ test_that("Stan code for non-linear models is correct", {
                          data = data, prior = prior)
   expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1);")
   
+  # check if that only works with threading
+  scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist, 
+                            nl = TRUE, loop = FALSE), 
+                         data = data, prior = prior, 
+                         threads = threading(2), parse = FALSE)
+  expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1[start:end]);")
+  
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
              set_prior("normal(0,1)", nlpar = "a2"))
@@ -1092,7 +1123,7 @@ test_that("Stan code for GAMMs is correct", {
   scode <- make_stancode(
     y ~ s(x) + t2(x,y), data = dat,
     prior = set_prior("normal(0,1)", "sds") +
-      set_prior("normal(0,2)", "sds", coef = "t2(x,y)")
+      set_prior("normal(0,2)", "sds", coef = "t2(x, y)")
   )
   expect_match2(scode, "Zs_2_2 * s_2_2")
   expect_match2(scode, "matrix[N, knots_2[2]] Zs_2_2")
@@ -1459,6 +1490,9 @@ test_that("Stan code of addition term 'rate' is correct", {
   
   scode <- make_stancode(y | rate(time) ~ x, data, negbinomial())
   expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape * denom);")
+  
+  scode <- make_stancode(y | rate(time) ~ x, data, brmsfamily("negbinomial2"))
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, inv(sigma) * denom);")
   
   scode <- make_stancode(y | rate(time) + cens(1) ~ x, data, geometric())
   expect_match2(scode, "target += neg_binomial_2_lpmf(Y[n] | mu[n] * denom[n], 1 * denom[n]);")
@@ -1906,6 +1940,25 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
+test_that("Missing value terms can be combined with 'subset'", {
+  dat <- data.frame(
+    y = rnorm(10), x = c(rnorm(9), NA),
+    z = rnorm(10), g2 = 10:1,
+    g1 = sample(1:5, 10, TRUE),
+    s = c(FALSE, rep(TRUE, 9))
+  )
+  
+  bform <- bf(y ~ mi(x, idx = g1)*mi(z)) + 
+    bf(x | mi() + index(g2) + subset(s)  ~ 1) +
+    bf(z | mi() ~ s) +
+    set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "(bsp_y[1]) * Yl_x[idxl_y_x_1[n]]")
+  expect_match2(scode, "(bsp_y[2]) * Yl_z[n]")
+  expect_match2(scode, "(bsp_y[3]) * Yl_x[idxl_y_x_1[n]] * Yl_z[n]")
+  expect_match2(scode, "int idxl_y_x_1[N_y];")
+})
+
 test_that("Stan code for advanced count data distribution is correct", {
   scode <- make_stancode(
     count ~ zAge + zBase * Trt + (1|patient),
@@ -1957,7 +2010,7 @@ test_that("argument 'stanvars' is handled correctly", {
                          stanvars = stanvars, threads = threading(2),
                          parse = FALSE)
   expect_match2(scode, 
-    "partial_log_lik_lpmf(int[] seq, int start, int end, int[] Y, real Intercept, real foo, real tau)"
+    "partial_log_lik_lpmf(int[] seq, int start, int end, data int[] Y, real Intercept, data real foo, real tau)"
   )
   expect_match2(scode, 
     "reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Intercept, foo, tau)"
@@ -1971,7 +2024,7 @@ test_that("argument 'stanvars' is handled correctly", {
   
   stanvars <- stanvar(scode = "mu += 1.0;", block = "likelihood", position = "start")
   scode <- make_stancode(count ~ Trt + (1|patient), data = epilepsy,
-                         stanvars = stanvars, threads = 2)
+                         stanvars = stanvars, threads = 2, parse = FALSE)
   expect_match2(scode, "mu += 1.0;")
   
   
@@ -2087,6 +2140,35 @@ test_that("custom families are handled correctly", {
   scode <- make_stancode(bform, data = dat, stanvars = stanvars)
   expect_match2(scode,
     "target += beta_binomial2_lpmf(Y_y[n] | mu_y[n], tau_y, vint1_y[n], vreal1_y[n]);"
+  )
+  
+  # check vectorized custom families
+  beta_binomial2_vec <- custom_family(
+    "beta_binomial2_vec",
+    dpars = c("mu", "tau"),
+    links = c("logit", "log"), 
+    lb = c(NA, 0),
+    type = "int", 
+    vars = c("vint1", "vreal1"),
+    loop = FALSE
+  )
+  stan_funs_vec <- "
+    real beta_binomial2_vec_lpmf(int[] y, vector mu, real phi, int[] N, real[] R) {
+      return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+    }
+    int beta_binomial2_rng(real mu, real phi, int N, real R) {
+      return beta_binomial_rng(N, mu * phi, (1 - mu) * phi);
+    }
+  "
+  stanvars <- stanvar(scode = stan_funs_vec, block = "functions")
+  scode <- make_stancode(
+    y | vint(size) + vreal(size) ~ x, data = dat, 
+    family = beta_binomial2_vec, 
+    prior = prior(gamma(0.1, 0.1), class = "tau"),
+    stanvars = stanvars
+  )
+  expect_match2(scode, 
+    "target += beta_binomial2_vec_lpmf(Y | mu, tau, vint1, vreal1);"
   )
 })
 
@@ -2213,7 +2295,7 @@ test_that("threaded Stan code is correct", {
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
   expect_match2(scode, "ptarget += multi_normal_cholesky_lpdf(Y[start:end] | Mu, LSigma);")
   
-  bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
+  bform <- bf(brms::mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
   expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_count, seq_count,")
   expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_Exp, seq_Exp,")

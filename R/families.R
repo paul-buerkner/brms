@@ -288,7 +288,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     out$threshold <- match.arg(threshold, thres_options)
   }
   if (conv_cats_dpars(out$family)) {
-    if (!is.null(refcat)) {
+    if (!has_joint_link(out$family)) {
+      out$refcat <- NA
+    } else if (!is.null(refcat)) {
       out$refcat <- as_one_character(refcat, allow_na = TRUE) 
     }
   }
@@ -496,6 +498,15 @@ negbinomial <- function(link = "log", link_shape = "log") {
               link_shape = link_shape)
 }
 
+# not yet officially supported
+# @rdname brmsfamily
+# @export
+negbinomial2 <- function(link = "log", link_sigma = "log") {
+  slink <- substitute(link)
+  .brmsfamily("negbinomial2", link = link, slink = slink,
+              link_sigma = link_sigma)
+}
+
 #' @rdname brmsfamily
 #' @export
 geometric <- function(link = "log") {
@@ -612,6 +623,14 @@ dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily("dirichlet", link = link, slink = slink,
               link_phi = link_phi, refcat = refcat)
+}
+
+# not yet exported
+# @rdname brmsfamily
+# @export
+dirichlet2 <- function(link = "log") {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet2", link = link, slink = slink, refcat = NA)
 }
 
 #' @rdname brmsfamily
@@ -955,16 +974,26 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @param links Names of the link functions of the 
 #'   distributional parameters.
 #' @param type Indicates if the response distribution is
-#'   continuous (\code{"real"}) or discrete (\code{"int"}).
+#'   continuous (\code{"real"}) or discrete (\code{"int"}). This controls
+#'   if the corresponding density function will be named with
+#'   \code{<name>_lpdf} or \code{<name>_lpmf}.
 #' @param lb Vector of lower bounds of the distributional 
 #'   parameters. Defaults to \code{NA} that is no lower bound.
 #' @param ub Vector of upper bounds of the distributional 
 #'   parameters. Defaults to \code{NA} that is no upper bound.
-#' @param vars Names of variables, which are part of the likelihood
-#'   function without being distributional parameters. That is,
-#'   \code{vars} can be used to pass data to the likelihood. 
-#'   See \code{\link{stanvar}} for details about adding self-defined
-#'   data to the generated \pkg{Stan} model.
+#' @param vars Names of variables that are part of the likelihood function
+#'   without being distributional parameters. That is, \code{vars} can be used
+#'   to pass data to the likelihood. Such arguments will be added to the list of
+#'   function arguments at the end, after the distributional parameters. See
+#'   \code{\link{stanvar}} for details about adding self-defined data to the
+#'   generated \pkg{Stan} model. Addition arguments \code{vreal} and \code{vint}
+#'   may be used for this purpose as well (see Examples below). See also
+#'   \code{\link{brmsformula}} and \code{\link{addition-terms}} for more
+#'   details.
+#' @param loop Logical; Should the likelihood be evaluated via a loop
+#'   (\code{TRUE}; the default) over observations in Stan?
+#'   If \code{FALSE}, the Stan code will be written in a vectorized
+#'   manner over observations if possible. 
 #' @param specials A character vector of special options to enable
 #'   for this custom family. Currently for internal use only.
 #' @param threshold Optional threshold type for custom ordinal families.
@@ -1001,7 +1030,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @return An object of class \code{customfamily} inheriting
 #'   from class \code{\link{brmsfamily}}.
 #'   
-#' @seealso \code{\link{brmsfamily}}, \code{\link{stanvar}}
+#' @seealso \code{\link{brmsfamily}}, \code{\link{brmsformula}},
+#'    \code{\link{stanvar}}
 #' 
 #' @examples
 #' \dontrun{
@@ -1023,26 +1053,50 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' beta_binomial2 <- custom_family(
 #'   "beta_binomial2", dpars = c("mu", "phi"),
 #'   links = c("logit", "log"), lb = c(NA, 0),
-#'   type = "int", vars = "trials[n]"
+#'   type = "int", vars = "vint1[n]"
 #' )
 #' 
 #' # define the corresponding Stan density function
-#' stan_funs <- "
+#' stan_density <- "
 #'   real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
 #'     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
 #'   }
 #' "
+#' stanvars <- stanvar(scode = stan_density, block = "functions")
 #' 
 #' # fit the model
-#' fit <- brm(y | trials(ntrials) ~ z, data = dat, 
-#'            family = beta_binomial2, stan_funs = stan_funs)
+#' fit <- brm(y | vint(ntrials) ~ z, data = dat, 
+#'            family = beta_binomial2, stanvars = stanvars)
 #' summary(fit)
+#' 
+#' 
+#' # define a *vectorized* custom family (no loop over observations)
+#' # notice also that 'vint' no longer has an observation index
+#' beta_binomial2_vec <- custom_family(
+#'   "beta_binomial2", dpars = c("mu", "phi"),
+#'   links = c("logit", "log"), lb = c(NA, 0),
+#'   type = "int", vars = "vint1", loop = FALSE
+#' )
+#' 
+#' # define the corresponding Stan density function
+#' stan_density_vec <- "
+#'   real beta_binomial2_lpmf(int[] y, vector mu, real phi, int[] N) {
+#'     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+#'   }
+#' "
+#' stanvars_vec <- stanvar(scode = stan_density_vec, block = "functions")
+#' 
+#' # fit the model
+#' fit_vec <- brm(y | vint(ntrials) ~ z, data = dat, 
+#'            family = beta_binomial2_vec, 
+#'            stanvars = stanvars_vec)
+#' summary(fit_vec)
 #' }
 #' 
 #' @export
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
-                          vars = NULL, specials = NULL, 
+                          vars = NULL, loop = TRUE, specials = NULL, 
                           threshold = "flexible",
                           log_lik = NULL, posterior_predict = NULL,
                           posterior_epred = NULL, predict = NULL, 
@@ -1054,6 +1108,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   lb <- as.character(lb)
   ub <- as.character(ub)
   vars <- as.character(vars)
+  loop <- as_one_logical(loop)
   specials <- as.character(specials)
   env <- as.environment(env)
   posterior_predict <- use_alias(posterior_predict, predict)
@@ -1110,7 +1165,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   normalized <- ""
   out <- nlist(
     family = "custom", link, name, 
-    dpars, lb, ub, type, vars, specials,
+    dpars, lb, ub, type, vars, loop, specials,
     log_lik, posterior_predict, posterior_epred, env,
     normalized
   )
@@ -1121,6 +1176,19 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   if (is_ordinal(out)) {
     threshold <- match.arg(threshold)
     out$threshold <- threshold
+  }
+  out
+}
+
+# get post-processing methods for custom families
+custom_family_method <- function(family, name) {
+  if (!is.customfamily(family)) {
+    return(NULL)
+  }
+  out <- family[[name]]
+  if (!is.function(out)) {
+    out <- paste0(name, "_", family$name)
+    out <- get(out, family$env)
   }
   out
 }
@@ -1199,23 +1267,23 @@ links_dpars <- function(dpar) {
   switch(dpar,
     character(0),
     mu = "identity",  # not actually used
-    sigma = c("log", "identity", "softplus"), 
-    shape = c("log", "identity", "softplus"),
+    sigma = c("log", "identity", "softplus", "squareplus"), 
+    shape = c("log", "identity", "softplus", "squareplus"),
     nu = c("logm1", "identity"), 
-    phi = c("log", "identity", "softplus"),
-    kappa = c("log", "identity", "softplus"), 
-    beta = c("log", "identity", "softplus"),
+    phi = c("log", "identity", "softplus", "squareplus"),
+    kappa = c("log", "identity", "softplus", "squareplus"), 
+    beta = c("log", "identity", "softplus", "squareplus"),
     zi = c("logit", "identity"), 
     hu = c("logit", "identity"),
     zoi = c("logit", "identity"), 
     coi = c("logit", "identity"), 
-    disc = c("log", "identity", "softplus"),
-    bs = c("log", "identity", "softplus"), 
-    ndt = c("log", "identity", "softplus"),
+    disc = c("log", "identity", "softplus", "squareplus"),
+    bs = c("log", "identity", "softplus", "squareplus"), 
+    ndt = c("log", "identity", "softplus", "squareplus"),
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
-    alpha = c("identity", "log", "softplus"),
+    alpha = c("identity", "log", "softplus", "squareplus"),
     theta = c("identity")
   )
 }
@@ -1227,12 +1295,26 @@ dpar_family <- function(family, dpar, ...) {
 
 #' @export
 dpar_family.default <- function(family, dpar, ...) {
-  dp_class <- dpar_class(dpar)
-  if (dp_class != "mu" || conv_cats_dpars(family)) {
+  dp_class <- dpar_class(dpar, family)
+  if (dp_class == "mu") {
+    if (conv_cats_dpars(family)) {
+      link <- NULL
+      if (!has_joint_link(family)) {
+        link <- family$link
+      }
+      # joint links are applied directly in the likelihood function
+      # so link is treated as 'identity'
+      out <- .dpar_family(dpar, link)
+    } else {
+      # standard single mu parameters just store the original family
+      out <- family 
+    }
+  } else {
+    # link_<dp_class> is always defined for non-mu parameters
     link <- family[[paste0("link_", dp_class)]]
-    family <- .dpar_family(dpar, link)
+    out <- .dpar_family(dpar, link)
   }
-  family
+  out
 }
 
 #' @export
@@ -1453,6 +1535,11 @@ is_cox <- function(family) {
   "cox" %in% family_info(family, "specials")
 }
 
+# has joint link function over multiple inputs
+has_joint_link <- function(family) {
+  "joint_link" %in% family_info(family, "specials")
+}
+
 allow_factors <- function(family) {
   specials <- c("binary", "categorical", "ordinal")
   any(specials %in% family_info(family, "specials"))
@@ -1468,9 +1555,14 @@ has_rescor <- function(family) {
   "rescor" %in% family_info(family, "specials")
 }
 
-# checks if category specific effects are allowed
+# check if category specific effects are allowed
 allow_cs <- function(family) {
-  "cs" %in% family_info(family, "specials")
+  any(c("cs", "ocs") %in% family_info(family, "specials"))
+}
+
+# check if category specific effects should be ordered
+needs_ordered_cs <- function(family) {
+  "ocs" %in% family_info(family, "specials")
 }
 
 # choose dpar names based on categories?
@@ -1603,6 +1695,13 @@ no_nu <- function(bterms) {
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
 }
 
+# does the family-link combination have a built-in Stan function?
+has_built_in_fun <- function(family, link = NULL, dpar = NULL, cdf = FALSE) {
+  link <- link %||% family$link
+  glm_special <- paste0("sbi", usc(dpar), "_", link, str_if(cdf, "_cdf"))
+  all(glm_special %in% family_info(family, "specials"))
+}
+
 # suffixes of Stan lpdfs or lpmfs for which only a normalized version exists
 always_normalized <- function(family) {
   family_info(family, "normalized")
@@ -1664,6 +1763,7 @@ family_bounds.mvbrmsterms <- function(x, ...) {
   lapply(x$terms, family_bounds, ...)
 }
 
+# bounds of likelihood families
 # @return a list with elements 'lb' and 'ub'
 #' @export
 family_bounds.brmsterms <- function(x, ...) {
@@ -1672,9 +1772,11 @@ family_bounds.brmsterms <- function(x, ...) {
     return(list(lb = -Inf, ub = Inf))
   }
   resp <- usc(x$resp)
+  # TODO: define in family-lists.R
   pos_families <- c(
-    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
-    "exponential", "lognormal", "frechet", "inverse.gaussian", 
+    "poisson", "negbinomial", "negbinomial2", "geometric", 
+    "gamma", "weibull", "exponential", "lognormal", 
+    "frechet", "inverse.gaussian", 
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "zero_inflated_poisson", 
     "zero_inflated_negbinomial"

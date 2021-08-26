@@ -77,18 +77,18 @@ It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn
-additionally to the posterior samples. Options are \code{"no"} (the
-default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+\item{sample_prior}{Indicate if draws from priors should be drawn
+additionally to the posterior draws. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these draws can
 be used to calculate Bayes factors for point hypotheses via
 \code{\link{hypothesis}}. Please note that improper priors are not sampled,
 including the default improper priors used by \code{brm}. See
 \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default
+that prior draws for the overall intercept are not obtained by default
 for technical reasons. See \code{\link{brmsformula}} how to obtain prior
-samples for the intercept. If \code{sample_prior} is set to \code{"only"},
-samples are drawn solely from the priors ignoring the likelihood, which
-allows among others to generate samples from the prior predictive
+draws for the intercept. If \code{sample_prior} is set to \code{"only"},
+draws are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate draws from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
@@ -151,8 +151,11 @@ to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
 
 \item{file_refit}{Modifies when the fit stored via the \code{file} parameter
-is re-used. For \code{"never"} (default) the fit is always loaded if it
-exists and fitting is skipped. If set to \code{"on_change"}, brms will
+is re-used. Can be set globally for the current \R session via the
+\code{"brms.file_refit"} option (see \code{\link{options}}). 
+For \code{"never"} (default) the fit is always loaded if it
+exists and fitting is skipped. For \code{"always"} the model is always
+refitted. If set to \code{"on_change"}, brms will
 refit the model if model, data or algorithm as passed to Stan differ from
 what is stored in the file. This also covers changes in priors,
 \code{sample_prior}, \code{stanvars}, covariance structure, etc. If you

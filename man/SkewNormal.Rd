@@ -70,7 +70,7 @@ Else, return P(X > x) .}
 \item{tol}{Tolerance of the approximation used in the 
 computation of quantiles.}
 
-\item{n}{Number of samples to draw from the distribution.}
+\item{n}{Number of draws to sample from the distribution.}
 }
 \description{
 Density, distribution function, and random generation for the 

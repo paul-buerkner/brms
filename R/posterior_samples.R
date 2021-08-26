@@ -1,6 +1,9 @@
-#' Extract Posterior Samples
+#' (Deprecated) Extract Posterior Samples
 #' 
-#' Extract posterior samples of specified parameters.
+#' Extract posterior samples of specified parameters. The
+#' \code{posterior_samples} method is deprecated. We recommend using the more
+#' modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+#' functions of the \pkg{posterior} package instead.
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param pars Names of parameters for which posterior samples 
@@ -20,19 +23,12 @@
 #'   instead of a \code{data.frame}? Defaults to \code{FALSE}.
 #' @param as.array Should the output be an \code{array} 
 #'   instead of a \code{data.frame}? Defaults to \code{FALSE}.
-#' @param row.names,optional See \code{\link[base:as.data.frame]{as.data.frame}}.
-#' @param ... For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
-#'   Further arguments to be passed to \code{posterior_samples}.
+#' @param ... Arguments passed to individual methods (if applicable).
 #'   
-#' @details Currently there are methods for \code{brmsfit} objects.
-#'   \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
-#'   \code{as.array.brmsfit} are basically aliases of 
-#'   \code{posterior_samples.brmsfit} and differ from
-#'   each other only in type of the returned object.
+#' @return A data.frame (matrix or array) containing the posterior samples.
 #'   
-#' @return A data.frame (matrix or array) containing the posterior samples, 
-#'   with one column per parameter. In case an array is returned,
-#'   it contains one additional dimension for the chains.
+#' @seealso \code{\link[brms:draws-brms]{as_draws}},
+#'    \code{\link[brms:as.data.frame.brmsfit]{as.data.frame}} 
 #' 
 #' @examples
 #' \dontrun{
@@ -40,11 +36,11 @@
 #'            data = inhaler, family = "cumulative")
 #' 
 #' # extract posterior samples of population-level effects 
-#' samples1 <- posterior_samples(fit, "^b")
+#' samples1 <- posterior_samples(fit, pars = "^b")
 #' head(samples1)
 #' 
 #' # extract posterior samples of group-level standard deviations
-#' samples2 <- posterior_samples(fit, "^sd_")
+#' samples2 <- posterior_samples(fit, pars = "^sd_")
 #' head(samples2)
 #' }
 #' 
@@ -59,8 +55,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, fixed = FALSE,
   if (add_chain && as.array) {
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
-  contains_samples(x)
-  pars <- extract_pars(pars, parnames(x), fixed = fixed, ...)
+  contains_draws(x)
+  pars <- extract_pars(pars, variables(x), fixed = fixed, ...)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -100,6 +96,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, fixed = FALSE,
 #' @rdname posterior_samples.brmsfit
 #' @export 
 posterior_samples <- function(x, pars = NA, ...) {
+  warning2("Method 'posterior_samples' is deprecated. ", 
+           "Please see ?as_draws for recommended alternatives.")
   UseMethod("posterior_samples")
 }
 
@@ -116,25 +114,6 @@ posterior_samples.default <- function(x, pars = NA, fixed = FALSE, ...) {
   x
 }
 
-#' @rdname posterior_samples.brmsfit
-#' @export
-as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, ...) {
-  out <- posterior_samples(x, ..., as.matrix = FALSE)
-  data.frame(out, row.names = row.names, check.names = !optional)
-}
-
-#' @rdname posterior_samples.brmsfit
-#' @export
-as.matrix.brmsfit <- function(x, ...) {
-  posterior_samples(x, ..., as.matrix = TRUE)
-}
-
-#' @rdname posterior_samples.brmsfit
-#' @export
-as.array.brmsfit <- function(x, ...) {
-  posterior_samples(x, ..., as.array = TRUE)
-}
-
 #' Extract Parameter Names
 #' 
 #' Extract all parameter names of a given model.
@@ -148,6 +127,7 @@ as.array.brmsfit <- function(x, ...) {
 #' 
 #' @export
 parnames <- function(x, ...) {
+  warning2("'parnames' is deprecated. Please use 'variables' instead.")
   UseMethod("parnames")
 }
 
@@ -168,7 +148,7 @@ parnames.brmsfit <- function(x, ...) {
 # extract all valid parameter names that match pars
 # @param pars A character vector or regular expression
 # @param all_pars all parameter names of the fitted model
-# @param fixed should parnames be matched exactly?
+# @param fixed should parameter names be matched exactly?
 # @param exact_match deprecated alias of fixed
 # @param na_value: what should be returned if pars is NA? 
 # @param ... Further arguments to be passed to grepl
@@ -208,137 +188,6 @@ check_deprecated_fixed <- function(fixed, exact_match) {
   fixed
 }
 
-#' Extract prior samples
-#' 
-#' Extract prior samples of specified parameters 
-#' 
-#' @aliases prior_samples.brmsfit
-#' 
-#' @param x An \code{R} object typically of class \code{brmsfit}
-#' @param pars Names of parameters for which prior samples should be returned, 
-#'   as given by a character vector or regular expressions.
-#'   By default, all prior samples are extracted
-#' @param ... Currently ignored
-#'   
-#' @details To make use of this function, the model must contain samples of
-#'   prior distributions. This can be ensured by setting \code{sample_prior =
-#'   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
-#'   for technical reasons. For instance, this is the case for the
-#'   population-level intercept, which is only computed after fitting the model
-#'   by default. If you want to treat the intercept as part of all the other
-#'   regression coefficients, so that sampling from its prior becomes possible,
-#'   use \code{... ~ 0 + Intercept + ...} in the formulas.
-#'   
-#' @return A data frame containing the prior samples.
-#' 
-#' @examples
-#' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry + (1|subject), 
-#'            data = inhaler, family = "cumulative", 
-#'            prior = set_prior("normal(0,2)", class = "b"), 
-#'            sample_prior = TRUE)
-#' 
-#' # extract all prior samples
-#' samples1 <- prior_samples(fit)
-#' head(samples1)
-#' 
-#' # extract prior samples for the population-level effects of 'treat'
-#' samples2 <- prior_samples(fit, "b_treat")
-#' head(samples2)
-#' }
-#' 
-#' @export
-prior_samples.brmsfit <- function(x, pars = NA, ...) {
-  if (!anyNA(pars) && !is.character(pars)) {
-    stop2("Argument 'pars' must be a character vector.")
-  }
-  par_names <- parnames(x)
-  prior_names <- unique(par_names[grepl("^prior_", par_names)])
-  if (length(prior_names)) {
-    samples <- posterior_samples(x, prior_names, fixed = TRUE)
-    names(samples) <- sub("^prior_", "", prior_names)
-    if (!anyNA(pars)) {
-      .prior_samples <- function(par) {
-        # get prior samples for parameter par 
-        matches <- paste0("^", escape_all(names(samples)))
-        matches <- lapply(matches, regexpr, text = par)
-        matches <- ulapply(matches, attr, which = "match.length")
-        if (max(matches) == -1 || ignore_prior(x, par)) {
-          out <- NULL
-        } else {
-          take <- match(max(matches), matches)
-          # order samples randomly to avoid artifical dependencies
-          # between parameters using the same prior samples
-          samples <- list(samples[sample(nsamples(x)), take])
-          out <- structure(samples, names = par)
-        }
-        return(out)
-      }
-      samples <- data.frame(
-        rmNULL(lapply(pars, .prior_samples)), check.names = FALSE
-      )
-    }
-  } else {
-    samples <- NULL
-  }
-  samples
-}
-
-#' @rdname prior_samples.brmsfit
-#' @export 
-prior_samples <- function(x, pars = NA, ...) {
-  UseMethod("prior_samples")
-}
-
-#' @export
-prior_samples.default <- function(x, pars = NA, fixed = FALSE, ...) {
-  if (anyNA(pars)) {
-    pars <- "^prior_"
-    fixed <- FALSE
-  } else {
-    if (fixed) {
-      pars <- paste0("prior_", pars) 
-    } else {
-      hat <- substr(pars, 1, 1) == "^"
-      pars <- ifelse(hat, substr(pars, 2, nchar(pars)), pars)
-      pars <- paste0("^prior_", pars)  
-    }
-  }
-  posterior_samples(x, pars = pars, fixed = fixed, ...)
-}
-
-# ignore priors of certain parameters from whom we cannot obtain prior samples
-# currently applies only to overall intercepts of centered design matrices
-# fixes issue #696
-# @param x a brmsfit object
-# @param par name of the parameter
-# @return TRUE (if the prior should be ignored) or FALSE
-ignore_prior <- function(x, par) {
-  stopifnot(is.brmsfit(x))
-  par <- as_one_character(par)
-  out <- FALSE
-  if (grepl("^b_.*Intercept($|\\[)", par)) {
-    # cannot sample from intercepts if 'center' was TRUE
-    intercept_priors <- subset2(x$prior, class = "Intercept")
-    if (NROW(intercept_priors)) {
-      # prefixes of the model intercepts
-      p_intercepts <- usc(combine_prefix(intercept_priors))
-      # prefix of the parameter under question
-      p_par <- sub("^b", "", par)
-      p_par <- sub("_Intercept($|\\[)", "", p_par)
-      out <- p_par %in% p_intercepts
-      if (out) {
-        warning2(
-          "Sampling from the prior of an overall intercept is not ", 
-          "possible by default. See the documentation of the ", 
-          "'sample_prior' argument in help('brm')."
-        )
-      }
-    }
-  }
-  out
-}
-
 #' Extract posterior samples for use with the \pkg{coda} package
 #' 
 #' @aliases as.mcmc
@@ -360,8 +209,9 @@ ignore_prior <- function(x, par) {
 as.mcmc.brmsfit <- function(x, pars = NA, fixed = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
-  contains_samples(x)
-  pars <- extract_pars(pars, all_pars = parnames(x), fixed = fixed, ...)
+  warning2("as.mcmc.brmsfit is deprecated and will eventually be removed.")
+  contains_draws(x)
+  pars <- extract_pars(pars, all_pars = variables(x), fixed = fixed, ...)
   combine_chains <- as_one_logical(combine_chains)
   inc_warmup <- as_one_logical(inc_warmup)
   if (combine_chains) {

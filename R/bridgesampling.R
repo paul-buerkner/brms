@@ -19,10 +19,10 @@
 #'   apply \code{bridge_sampler} to your models.
 #'   
 #'   The computation of marginal likelihoods based on bridge sampling requires
-#'   a lot more posterior samples than usual. A good conservative 
-#'   rule of thump is perhaps 10-fold more samples (read: the default of 4000 
-#'   samples may not be enough in many cases). If not enough posterior
-#'   samples are provided, the bridge sampling algorithm tends to be 
+#'   a lot more posterior draws than usual. A good conservative 
+#'   rule of thump is perhaps 10-fold more draws (read: the default of 4000 
+#'   draws may not be enough in many cases). If not enough posterior
+#'   draws are provided, the bridge sampling algorithm tends to be 
 #'   unstable leading to considerably different results each time it is run. 
 #'   We thus recommend running \code{bridge_sampler}
 #'   multiple times to check the stability of the results.
@@ -81,7 +81,6 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "usable in method 'bridge_sampler'."
     )
   }
-  require_backend("rstan", samples)
   # otherwise bridge_sampler might not work in a new R session
   samples <- update_misc_env(samples)
   out <- try(bridge_sampler(samples$fit, ...))

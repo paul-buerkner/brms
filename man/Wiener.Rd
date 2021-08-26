@@ -50,7 +50,7 @@ Either \code{"Rwiener"} (the default) or \code{"rtdists"}.
 Can be set globally for the current \R session via the
 \code{"wiener_backend"} option (see \code{\link{options}}).}
 
-\item{n}{Number of samples to draw from the distribution.}
+\item{n}{Number of draws to sample from the distribution.}
 
 \item{types}{Which types of responses to return? By default,
 return both the response times \code{"q"} and the dichotomous 

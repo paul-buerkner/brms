@@ -1,6 +1,6 @@
-contains_samples <- function(x) {
+contains_draws <- function(x) {
   if (!(is.brmsfit(x) && length(x$fit@sim))) {
-    stop2("The model does not contain posterior samples.")
+    stop2("The model does not contain posterior draws.")
   }
   invisible(TRUE)
 }
@@ -19,7 +19,7 @@ stopifnot_resp <- function(x, resp = NULL) {
 }
 
 # apply a link function 
-# @param x an arrary of arbitrary dimension
+# @param x an array of arbitrary dimension
 # @param link character string defining the link
 link <- function(x, link) {
   switch(link, 
@@ -37,12 +37,13 @@ link <- function(x, link) {
     "cloglog" = cloglog(x), 
     "probit_approx" = qnorm(x),
     "softplus" = log_expm1(x),
+    "squareplus" = (x^2 - 1) / x,
     stop2("Link '", link, "' not supported.")
   )
 }
 
 # apply an inverse link function
-# @param x an arrary of arbitrary dimension
+# @param x an array of arbitrary dimension
 # @param link a character string defining the link
 ilink <- function(x, link) {
   switch(link, 
@@ -60,17 +61,25 @@ ilink <- function(x, link) {
     "cloglog" = inv_cloglog(x), 
     "probit_approx" = pnorm(x),
     "softplus" = log1p_exp(x),
+    "squareplus" = (x + sqrt(x^2 + 4)) / 2,
     stop2("Link '", link, "' not supported.")
   )
 }
 
-# generate integers indicating subsets of the posterior samples
-subset_samples <- function(x, subset = NULL, nsamples = NULL) {
-  stopifnot(is.brmsfit(x))
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
+# validate integers indicating which draws to subset
+validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
+  ndraws_total <- ndraws(x)
+  if (is.null(draw_ids) && !is.null(ndraws)) {
+    ndraws <- as_one_integer(ndraws)
+    draw_ids <- sample(seq_len(ndraws_total), ndraws)
   }
-  subset
+  if (!is.null(draw_ids)) {
+    draw_ids <- as.integer(draw_ids)
+    if (any(draw_ids < 1L) || any(draw_ids > ndraws_total)) {
+      stop2("Some 'draw_ids' indices are out of range.")
+    }
+  }
+  draw_ids
 }
 
 # get correlation names as combinations of variable names
@@ -107,15 +116,15 @@ get_cat_vars <- function(x) {
   unique(valid_groups[nzchar(valid_groups)])
 }
 
-# covariance matrices based on correlation and SD samples
-# @param sd matrix of samples of standard deviations
-# @param cor matrix of samples of correlations
+# covariance matrices based on correlation and SD draws
+# @param sd matrix of draws of standard deviations
+# @param cor matrix of draws of correlations
 get_cov_matrix <- function(sd, cor = NULL) {
   sd <- as.matrix(sd)
   stopifnot(all(sd >= 0))
-  nsamples <- nrow(sd)
+  ndraws <- nrow(sd)
   size <- ncol(sd)
-  out <- array(diag(1, size), dim = c(size, size, nsamples))
+  out <- array(diag(1, size), dim = c(size, size, ndraws))
   out <- aperm(out, perm = c(3, 1, 2))
   for (i in seq_len(size)) { 
     out[, i, i] <- sd[, i]^2
@@ -136,23 +145,23 @@ get_cov_matrix <- function(sd, cor = NULL) {
   out
 }
 
-# correlation matrices based on correlation samples
-# @param cor samples of correlations
+# correlation matrices based on correlation draws
+# @param cor draws of correlations
 # @param size optional size of the desired correlation matrix;
 #   ignored is 'cor' is specified
-# @param nsamples optional number of posterior samples;
+# @param ndraws optional number of posterior draws;
 #   ignored is 'cor' is specified
-get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
+get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
   if (length(cor)) {
     cor <- as.matrix(cor)
     size <- -1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
-    nsamples <- nrow(cor)
+    ndraws <- nrow(cor)
   } 
   size <- as_one_numeric(size)
-  nsamples <- as_one_numeric(nsamples)
+  ndraws <- as_one_numeric(ndraws)
   stopifnot(is_wholenumber(size) && size > 0)
-  stopifnot(is_wholenumber(nsamples) && nsamples > 0)
-  out <- array(diag(1, size), dim = c(size, size, nsamples))
+  stopifnot(is_wholenumber(ndraws) && ndraws > 0)
+  out <- array(diag(1, size), dim = c(size, size, ndraws))
   out <- aperm(out, perm = c(3, 1, 2))
   if (length(cor)) {
     k <- 0 
@@ -175,7 +184,7 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
     obs <- seq_len(prep$nobs) 
   }
   nobs <- length(obs)
-  nsamples <- prep$nsamples
+  ndraws <- prep$ndraws
   acef <- prep$ac$acef
   # prepare correlations
   if (has_ac_class(acef, "arma")) {
@@ -194,14 +203,14 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
     cosy <- as.numeric(prep$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
   } else if (has_ac_class(acef, "fcor")) {
-    cor <- get_cor_matrix_fcor(prep$ac$Mfcor, nsamples)
+    cor <- get_cor_matrix_fcor(prep$ac$Mfcor, ndraws)
   } else {
-    cor <- get_cor_matrix_ident(nsamples, nobs)
+    cor <- get_cor_matrix_ident(ndraws, nobs)
   }
   # prepare known standard errors
   if (!is.null(prep$data$se)) {
     se2 <- prep$data$se[obs]^2
-    se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, nsamples))
+    se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, ndraws))
     se2 <- aperm(se2, perm = c(3, 1, 2))
     # make sure not to add 'se' twice
     prep$data$se <- NULL
@@ -215,7 +224,7 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
     sigma <- get_dpar(prep, "sigma", i = obs)
     if (NCOL(sigma) > 1L) {
       # sigma varies across observations
-      sigma2 <- array(dim = c(nsamples, nobs, nobs))
+      sigma2 <- array(dim = c(ndraws, nobs, nobs))
       for (s in seq_rows(sigma2)) {
         sigma2[s, , ] <- outer(sigma[s, ], sigma[s, ])
       }
@@ -227,9 +236,9 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
 }
 
 # compute AR1 correlation matrices
-# @param ar AR1 autocorrelation samples
+# @param ar AR1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_ar1 <- function(ar, nobs) {
   out <- array(0, dim = c(NROW(ar), nobs, nobs))
   fac <- 1 / (1 - ar^2)
@@ -246,9 +255,9 @@ get_cor_matrix_ar1 <- function(ar, nobs) {
 }
 
 # compute MA1 correlation matrices
-# @param ma MA1 autocorrelation samples
+# @param ma MA1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_ma1 <- function(ma, nobs) {
   out <- array(0, dim = c(NROW(ma), nobs, nobs))
   gamma0 <- 1 + ma^2
@@ -265,10 +274,10 @@ get_cor_matrix_ma1 <- function(ma, nobs) {
 }
 
 # compute ARMA1 correlation matrices
-# @param ar AR1 autocorrelation samples
-# @param ma MA1 autocorrelation samples
+# @param ar AR1 autocorrelation draws
+# @param ma MA1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_arma1 <- function(ar, ma, nobs) {
   out <- array(0, dim = c(NROW(ar), nobs, nobs))
   fac <- 1 / (1 - ar^2)
@@ -287,9 +296,9 @@ get_cor_matrix_arma1 <- function(ar, ma, nobs) {
 }
 
 # compute compound symmetry correlation matrices
-# @param cosy compund symmetry correlation samples
+# @param cosy compund symmetry correlation draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
 get_cor_matrix_cosy <- function(cosy, nobs) {
   out <- array(0, dim = c(NROW(cosy), nobs, nobs))
   for (i in seq_len(nobs)) {
@@ -304,62 +313,91 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
 
 # prepare a fixed correlation matrix
 # @param Mfcor correlation matrix to be prepared
-# @param nsamples number of posterior samples
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
-get_cor_matrix_fcor <- function(Mfcor, nsamples) {
-  out <- array(Mfcor, dim = c(dim(Mfcor), nsamples))
+# @param ndraws number of posterior draws
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
+get_cor_matrix_fcor <- function(Mfcor, ndraws) {
+  out <- array(Mfcor, dim = c(dim(Mfcor), ndraws))
   aperm(out, c(3, 1, 2))
 }
 
 # compute an identity correlation matrix
-# @param nsamples number of posterior samples
+# @param ndraws number of posterior draws
 # @param nobs number of rows of the covariance matrix
-# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
-get_cor_matrix_ident <- function(nsamples, nobs) {
-  out <- array(0, dim = c(nsamples, nobs, nobs))
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
+get_cor_matrix_ident <- function(ndraws, nobs) {
+  out <- array(0, dim = c(ndraws, nobs, nobs))
   for (i in seq_len(nobs)) {
     out[, i, i] <- 1
   }
   out
 }
 
-# get samples of a distributional parameter
-# @param prep a 'brmsprep' or 'mvbrmsprep' object
-# @param dpar name of the distributional parameter
-# @param i the current observation number
-# @param ilink should the inverse link function be applied?
-#   if NULL the value is chosen internally
-# @return 
-#   If the parameter is predicted and i is NULL or 
-#   length(i) > 1, an S x N matrix.
-#   If the parameter it not predicted or length(i) == 1,
-#   a vector of length S.
+#' Draws of a Distributional Parameter
+#' 
+#' Get draws of a distributional parameter from a \code{brmsprep} or 
+#' \code{mvbrmsprep} object. This function is primarily useful when developing
+#' custom families or packages depending on \pkg{brms}. 
+#' This function lets callers easily handle both the case when the
+#' distributional parameter is predicted directly, via a (non-)linear
+#' predictor or fixed to a constant. See the vignette
+#' \code{vignette("brms_customfamilies")} for an example use case.
+#' 
+#' @param prep A 'brmsprep' or 'mvbrmsprep' object created by
+#'   \code{\link[brms:prepare_predictions.brmsfit]{prepare_predictions}}.
+#' @param dpar Name of the distributional parameter.
+#' @param i The observation numbers for which predictions shall be extracted.
+#'   If \code{NULL} (the default), all observation will be extracted.
+#'   Ignored if \code{dpar} is not predicted.
+#' @param ilink Should the inverse link function be applied?
+#'   If \code{NULL} (the default), the value is chosen internally.
+#'   In particular, \code{ilink} is \code{TRUE} by default for custom
+#'   families.
+#' @return 
+#'   If the parameter is predicted and \code{i} is \code{NULL} or
+#'   \code{length(i) > 1}, an \code{S x N} matrix. If the parameter it not
+#'   predicted or \code{length(i) == 1}, a vector of length \code{S}. Here
+#'   \code{S} is the number of draws and \code{N} is the number of
+#'   observations or length of \code{i} if specified.
+#'   
+#' @examples
+#' \dontrun{
+#' posterior_predict_my_dist <- function(i, prep, ...) {
+#'   mu <- brms::get_dpar(prep, "mu", i = i)
+#'   mypar <- brms::get_dpar(prep, "mypar", i = i)
+#'   my_rng(mu, mypar)
+#' }
+#' } 
+#' 
+#' @export
 get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
+  dpar <- as_one_character(dpar)
   x <- prep$dpars[[dpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
-    # compute samples of a predicted parameter
+    # compute draws of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
     if (is.null(ilink)) {
       ilink <- apply_dpar_ilink(dpar, family = prep$family)
+    } else {
+      ilink <- as_one_logical(ilink) 
     }
     if (ilink) {
       out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
-      out <- extract_col(out, 1)
+      out <- slice_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- extract_col(x, i)
+    out <- slice_col(x, i)
   } else {
     out <- x
   }
   out
 }
 
-# get samples of a non-linear parameter
-# @param x object to extract posterior samples from
+# get draws of a non-linear parameter
+# @param x object to extract posterior draws from
 # @param nlpar name of the non-linear parameter
 # @param i the current observation number
 # @return
@@ -370,13 +408,13 @@ get_nlpar <- function(prep, nlpar, i = NULL) {
   x <- prep$nlpars[[nlpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
-    # compute samples of a predicted parameter
+    # compute draws of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
     if (length(i) == 1L) {
-      out <- extract_col(out, 1)
+      out <- slice_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- extract_col(x, i)
+    out <- slice_col(x, i)
   } else {
     out <- x
   }
@@ -409,7 +447,7 @@ get_theta <- function(prep, i = NULL) {
   theta
 }
 
-# get posterior samples of multivariate mean vectors
+# get posterior draws of multivariate mean vectors
 # only used in multivariate models with 'rescor'
 get_Mu <- function(prep, i = NULL) {
   stopifnot(is.mvbrmsprep(prep))
@@ -421,23 +459,27 @@ get_Mu <- function(prep, i = NULL) {
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- do_call(abind, c(Mu, along = 3))
+      Mu <- abind::abind(Mu, along = 3)
     }
   } else {
     stopifnot(!is.null(i))
-    Mu <- extract_col(Mu, i)
+    Mu <- slice_col(Mu, i)
   }
   Mu
 }
 
-# get posterior samples of residual covariance matrices
+# get posterior draws of residual covariance matrices
 # only used in multivariate models with 'rescor'
 get_Sigma <- function(prep, i = NULL) {
   stopifnot(is.mvbrmsprep(prep))
   Sigma <- prep$mvpars$Sigma
   if (is.null(Sigma)) {
     stopifnot(!is.null(prep$mvpars$rescor))
-    sigma <- lapply(prep$resps, get_dpar, "sigma", i = i)
+    sigma <- named_list(names(prep$resps))
+    for (j in seq_along(sigma)) {
+      sigma[[j]] <- get_dpar(prep$resps[[j]], "sigma", i = i)
+      sigma[[j]] <- add_sigma_se(sigma[[j]], prep$resps[[j]], i = i)
+    }
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
@@ -462,7 +504,7 @@ get_Sigma <- function(prep, i = NULL) {
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
-      Sigma <- extract_col(Sigma, i)
+      Sigma <- slice_col(Sigma, i)
     }
   }
   Sigma
@@ -477,8 +519,8 @@ get_se <- function(prep, i = NULL) {
       se <- se[i]
     }
     if (length(se) > 1L) {
-      dim <- c(prep$nsamples, length(se))
-      se <- as_draws_matrix(se, dim = dim)
+      dim <- c(prep$ndraws, length(se))
+      se <- data2draws(se, dim = dim)
     }
   } else {
     se <- 0
@@ -505,8 +547,8 @@ get_rate_denom <- function(prep, i = NULL) {
       denom <- denom[i]
     }
     if (length(denom) > 1L) {
-      dim <- c(prep$nsamples, length(denom))
-      denom <- as_draws_matrix(denom, dim = dim)
+      dim <- c(prep$ndraws, length(denom))
+      denom <- data2draws(denom, dim = dim)
     }
   } else {
     denom <- 1
@@ -524,7 +566,7 @@ multiply_dpar_rate_denom <- function(dpar, prep, i = NULL) {
   dpar
 }
 
-# return samples of ordinal thresholds for observation i
+# return draws of ordinal thresholds for observation i
 # @param prep a bprepl or bprepnl object
 # @param i observation number
 subset_thres <- function(prep, i) {
@@ -537,31 +579,41 @@ subset_thres <- function(prep, i) {
 }
 
 # helper function of 'get_dpar' to decide if
-# the link function should be applied by default
+# the link function should be applied direclty
 apply_dpar_ilink <- function(dpar, family) {
-  !(is_polytomous(family) && dpar_class(dpar) == "mu") ||
-    is.customfamily(family)
+  !(has_joint_link(family) && dpar_class(dpar, family) == "mu")
 }
 
 # insert zeros for the predictor term of the reference category
 # in categorical-like models using the softmax response function
-insert_refcat  <- function(eta, family) {
-  stopifnot(is.matrix(eta), is.brmsfamily(family))
+insert_refcat <- function(eta, family) {
+  stopifnot(is.array(eta), is.brmsfamily(family))
   if (!conv_cats_dpars(family) || isNA(family$refcat)) {
     return(eta)
   }
   # need to add zeros for the reference category
-  zeros <- as.matrix(rep(0, nrow(eta)))
+  ndim <- length(dim(eta))
+  dim_noncat <- dim(eta)[-ndim]
+  zeros_arr <- array(0, dim = c(dim_noncat, 1))
   if (is.null(family$refcat) || is.null(family$cats)) {
     # no information on the categories provided:
     # use the first category as the reference
-    return(cbind(zeros, eta))
+    return(abind::abind(zeros_arr, eta))
   }
-  colnames(zeros) <- paste0("mu", family$refcat)
+  ncat <- length(family$cats)
+  stopifnot(identical(dim(eta)[ndim], ncat - 1L))
+  if (is.null(dimnames(eta)[[ndim]])) {
+    dimnames(eta)[[ndim]] <- paste0("mu", setdiff(family$cats, family$refcat))
+  }
+  dimnames(zeros_arr)[[ndim]] <- paste0("mu", family$refcat)
   iref <- match(family$refcat, family$cats)
   before <- seq_len(iref - 1)
-  after <- setdiff(seq_cols(eta), before)
-  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
+  after <- setdiff(seq_dim(eta, ndim), before)
+  abind::abind(
+    slice(eta, ndim, before, drop = FALSE),
+    zeros_arr,
+    slice(eta, ndim, after, drop = FALSE)
+  )
 }
 
 # validate the 'resp' argument of 'predict' and related methods
@@ -635,7 +687,7 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
 
 # reorder observations to be in the initial user-defined order
 # currently only relevant for autocorrelation models 
-# @param eta 'nsamples' x 'nobs' matrix or array
+# @param eta 'ndraws' x 'nobs' matrix or array
 # @param old_order optional vector to retrieve the initial data order
 # @param sort keep the new order as defined by the time-series?
 # @return the 'eta' matrix with possibly reordered columns
@@ -651,16 +703,59 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 # update .MISC environment of the stanfit object
 # allows to call log_prob and other C++ using methods
 # on objects not created in the current R session
-update_misc_env <- function(x) {
+# or objects created via another backend
+update_misc_env <- function(x, only_windows = FALSE) {
   stopifnot(is.brmsfit(x))
-  if (!isTRUE(x$backend == "rstan")) {
-    # .MISC env is only relevant for rstan
-    return(x)
+  only_windows <- as_one_logical(only_windows)
+  if (!has_rstan_model(x)) {
+    x <- add_rstan_model(x)
+  } else if (os_is_windows() || !only_windows) {
+    # TODO: detect when updating .MISC is not required
+    # TODO: find a more efficient way to update .MISC
+    old_backend <- x$backend
+    x$backend <- "rstan"
+    x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC 
+    x$backend <- old_backend
   }
-  # TODO: detect when updating .MISC is not required
-  # TODO: find a more efficient way to update .MISC
-  x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
   x
+}
+
+#' Add compiled \pkg{rstan} models to \code{brmsfit} objects
+#' 
+#' Compile a \code{\link[rstan:stanmodel-class]{stanmodel}} and add
+#' it to a \code{brmsfit} object. This enables some advanced functionality
+#' of \pkg{rstan}, most notably \code{\link[rstan:log_prob]{log_prob}}
+#' and friends, to be used with brms models fitted with other Stan backends.
+#' 
+#' @param x A \code{brmsfit} object to be updated.
+#' @param overwrite Logical. If \code{TRUE}, overwrite any existing 
+#' \code{\link[rstan:stanmodel-class]{stanmodel}}. Defaults to \code{FALSE}.
+#' 
+#' @return A (possibly updated) \code{brmsfit} object.
+#' 
+#' @export
+add_rstan_model <- function(x, overwrite = FALSE) {
+  stopifnot(is.brmsfit(x))
+  overwrite <- as_one_logical(overwrite)
+  if (!has_rstan_model(x) || overwrite) {
+    message("Recompiling the model with 'rstan'")
+    # threading is not yet supported by rstan andd needs to be deactivated
+    stanfit <- suppressMessages(rstan::stan(
+      model_code = stancode(x, threads = threading()), 
+      data = standata(x), chains = 0
+    ))
+    x$fit@stanmodel <- stanfit@stanmodel
+    x$fit@.MISC <- stanfit@.MISC
+  }
+  x
+}
+
+# does the model have a non-empty rstan 'stanmodel' 
+# that can be used for 'log_prob' and friends?
+has_rstan_model <- function(x) {
+  stopifnot(is.brmsfit(x))
+  isTRUE(nzchar(x$fit@stanmodel@model_cpp$model_cppname)) &&
+    length(ls(pos = x$fit@.MISC)) > 0
 }
 
 # extract argument names of a post-processing method
@@ -675,6 +770,24 @@ arg_names <- function(method) {
   out
 }
 
+# validate 'cores' argument for use in post-processing functions
+validate_cores_post_processing <- function(cores) {
+  if (is.null(cores)) {
+    if (os_is_windows()) {
+      # multi cores often leads to a slowdown on windows
+      # in post-processing functions as discussed in #1129
+      cores <- 1L
+    } else {
+      cores <- getOption("mc.cores", 1L) 
+    }
+  }
+  cores <- as_one_integer(cores)
+  if (cores < 1L) {
+    cores <- 1L
+  }
+  cores
+}
+
 #' Check if cached fit can be used.
 #' 
 #' Checks whether a given cached fit can be used without refitting when 
@@ -685,9 +798,11 @@ arg_names <- function(method) {
 #' 
 #' @param fit Old \code{brmsfit} object (e.g., loaded from file).
 #' @param sdata New Stan data (result of a call to \code{\link{make_standata}}).
-#'   Pass \code{NULL} to avoid data check.
+#'   Pass \code{NULL} to avoid this data check.
 #' @param scode New Stan code (result of a call to \code{\link{make_stancode}}).
-#'   Pass \code{NULL} to avoid code check.
+#'   Pass \code{NULL} to avoid this code check.
+#' @param data New data to check consistency of factor level names.
+#'   Pass \code{NULL} to avoid this data check.
 #' @param algorithm New algorithm. Pass \code{NULL} to avoid algorithm check.
 #' @param silent Logical. If \code{TRUE}, no messages will be given.
 #' @param verbose Logical. If \code{TRUE} detailed report of the differences 
@@ -700,7 +815,7 @@ arg_names <- function(method) {
 #' 
 #' @export
 #' @keywords internal
-brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, 
+brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
                                 algorithm = NULL, silent = FALSE, 
                                 verbose = FALSE) {
   stopifnot(is.brmsfit(fit))
@@ -714,6 +829,10 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
     stopifnot(is.list(sdata))
     cached_sdata <- standata(fit)
   }
+  if (!is.null(data)) {
+    stopifnot(is.data.frame(data))
+    cached_data <- fit$data
+  }
   if (!is.null(algorithm)) {
     algorithm <- as_one_character(algorithm)
     stopifnot(!is.null(fit$algorithm))
@@ -723,7 +842,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
   if (!is.null(scode)) {
     if (normalize_stancode(scode) != normalize_stancode(cached_scode)) {
       if (!silent) {
-        message("Stan code changed beyond whitespace/comments.")
+        message("Stan code has changed beyond whitespace/comments.")
         if (verbose) {
           require_package("diffobj")
           print(diffobj::diffChr(scode, cached_scode, format = "ansi8"))
@@ -736,7 +855,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
     sdata_equality <- all.equal(sdata, cached_sdata, check.attributes = FALSE)
     if (!isTRUE(sdata_equality)) {
       if (!silent) {
-        message("The processed data for Stan changed.\n")
+        message("The processed data for Stan has changed.")
         if (verbose) {
           print(sdata_equality)
         }
@@ -744,10 +863,41 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL,
       refit <- TRUE
     }
   }
+  if (!is.null(data)) {
+    # check consistency of factor names 
+    # as they are only stored as attributes in sdata (#1128)
+    factor_level_message <- FALSE
+    for (var in names(cached_data)) {
+      if (is_like_factor(cached_data[[var]])) {
+        cached_levels <- levels(factor(cached_data[[var]]))
+        new_levels <- levels(factor(data[[var]]))
+        if (!is_equal(cached_levels, new_levels)) {
+          if (!silent) {
+            factor_level_message <- TRUE
+            if (verbose) {
+              cat(paste0(
+                "Names of factor levels have changed for variable '", var, "' ",
+                "with cached levels (", collapse_comma(cached_levels), ") ", 
+                "but new levels (", collapse_comma(new_levels), ").\n"
+              ))
+            }
+          }
+          refit <- TRUE
+          if (!verbose) {
+            # no need to check all variables if we trigger a refit anyway
+            break
+          }
+        }
+      }
+    }
+    if (factor_level_message) {
+      message("Names of factor levels have changed.")
+    }
+  }
   if (!is.null(algorithm)) {
     if (algorithm != fit$algorithm) {
       if (!silent) {
-        message("Algorithm changed from '", fit$algorithm, 
+        message("Algorithm has changed from '", fit$algorithm, 
                 "' to '", algorithm, "'.\n")
       }
       refit <- TRUE
@@ -812,14 +962,14 @@ require_old_default <- function(version) {
   isTRUE(brmsfit_version < version)
 }
 
-# add dummy samples to a brmsfit object for use in unit tests
+# add dummy draws to a brmsfit object for use in unit tests
 # @param x a brmsfit object
 # @param newpar name of the new parameter to add
 # @param dim dimension of the new parameter
 # @param dist name of the distribution from which to sample
 # @param ... further arguments passed to r<dist>
-# @return a brmsfit object including dummy samples of the new parameter
-add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
+# @return a brmsfit object including dummy draws of the new parameter
+add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(is.brmsfit(x))
   stopifnot(identical(dim, numeric(0)))
   newpar <- as_one_character(newpar)

@@ -24,7 +24,7 @@ each row is taken to be a quantile.}
 should be performed. Defaults to \code{FALSE} to improve
 efficiency.}
 
-\item{n}{Number of samples to draw from the distribution.}
+\item{n}{Number of draws to sample from the distribution.}
 }
 \description{
 Density function and random generation for the multivariate normal 

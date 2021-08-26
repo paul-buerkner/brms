@@ -32,7 +32,7 @@ Else, return P(X > x) .}
 
 \item{p}{Vector of probabilities.}
 
-\item{n}{Number of samples to draw from the distribution.}
+\item{n}{Number of draws to sample from the distribution.}
 }
 \description{
 Density, distribution function, quantile function and random generation 

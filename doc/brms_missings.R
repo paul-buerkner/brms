@@ -34,7 +34,7 @@ fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 summary(fit_imp1)
 
 ## ---------------------------------------------------------------------------------------
-plot(fit_imp1, pars = "^b")
+plot(fit_imp1, variable = "^b", regex = TRUE)
 
 ## ---------------------------------------------------------------------------------------
 round(fit_imp1$rhats, 2)
@@ -50,4 +50,12 @@ fit_imp2 <- brm(bform, data = nhanes)
 ## ---------------------------------------------------------------------------------------
 summary(fit_imp2)
 conditional_effects(fit_imp2, "age:chl", resp = "bmi")
+
+## ---------------------------------------------------------------------------------------
+nhanes$se <- rexp(nrow(nhanes), 2)
+
+## ---- results = 'hide', message = FALSE, eval = FALSE-----------------------------------
+#  bform <- bf(bmi | mi() ~ age * mi(chl)) +
+#    bf(chl | mi(se) ~ age) + set_rescor(FALSE)
+#  fit_imp3 <- brm(bform, data = nhanes)
 

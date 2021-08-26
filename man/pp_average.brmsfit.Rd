@@ -3,13 +3,14 @@
 \name{pp_average.brmsfit}
 \alias{pp_average.brmsfit}
 \alias{pp_average}
-\title{Posterior predictive samples averaged across models}
+\title{Posterior predictive draws averaged across models}
 \usage{
 \method{pp_average}{brmsfit}(
   x,
   ...,
   weights = "stacking",
   method = "posterior_predict",
+  ndraws = NULL,
   nsamples = NULL,
   summary = TRUE,
   probs = c(0.025, 0.975),
@@ -42,10 +43,12 @@ For some methods, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
 \item{method}{Method used to obtain predictions to average over. Should be
-one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
-\code{"predictive_error"}.}
+one of \code{"posterior_predict"} (default), \code{"posterior_epred"},
+\code{"posterior_linpred"} or \code{"predictive_error"}.}
 
-\item{nsamples}{Total number of posterior samples to use.}
+\item{ndraws}{Total number of posterior draws to use.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
 
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
@@ -75,7 +78,7 @@ Same as the output of the method specified
   in argument \code{method}.
 }
 \description{
-Compute posterior predictive samples averaged across models.
+Compute posterior predictive draws averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.

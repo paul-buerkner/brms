@@ -251,22 +251,17 @@ order_data <- function(data, bterms) {
 
 # subset data according to addition argument 'subset'
 subset_data <- function(data, bterms) {
-  if (is.formula(bterms$adforms$subset)) {
+  if (has_subset(bterms)) {
     # only evaluate a subset of the data
-    subset <- eval_rhs(bterms$adforms$subset)
-    subset <- as.logical(eval2(subset$vars$subset, data))
+    subset <- as.logical(get_ad_values(bterms, "subset", "subset", data))
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }
     if (anyNA(subset)) {
       stop2("Subset variables may not contain NAs.")
     }
-    # cross-formula indexing is not yet working for subsetted models
-    sp_terms <- ulapply(get_effect(bterms, "sp"), all_terms)
-    sp_matches <- get_matches_expr(regex_sp(c("mi", "me")), sp_terms)
-    if (length(sp_matches)) {
-      stop2("Cannot use mi() or me() terms in subsetted formulas.")
-    }
+    # cross-formula indexing is no longer trivial for subsetted models
+    check_cross_formula_indexing(bterms)
     data <- data[subset, , drop = FALSE]
   }
   if (!NROW(data)) {
@@ -379,7 +374,7 @@ get_data_name <- function(data) {
 #' @param object A \code{brmsfit} object.
 #' @param check_response Logical; Indicates if response variables should
 #'   be checked as well. Defaults to \code{TRUE}.
-#' @param all_group_vars Optional names of grouping variables to be validated.
+#' @param group_vars Optional names of grouping variables to be validated.
 #'   Defaults to all grouping variables in the model.
 #' @param req_vars Optional names of variables required in \code{newdata}.
 #'   If \code{NULL} (the default), all variables in the original data
@@ -392,7 +387,7 @@ get_data_name <- function(data) {
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
   newdata2 = NULL, resp = NULL, check_response = TRUE, 
-  incl_autocor = TRUE, all_group_vars = NULL, req_vars = NULL, ...
+  incl_autocor = TRUE, group_vars = NULL, req_vars = NULL, ...
 ) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
@@ -464,10 +459,12 @@ validate_newdata <- function(
   }
   newdata <- combine_groups(newdata, new_group_vars)
   # validate factor levels in newdata
-  if (is.null(all_group_vars)) {
-    all_group_vars <- get_group_vars(object) 
+  if (is.null(group_vars)) {
+    group_vars <- get_group_vars(object) 
   }
-  dont_check <- c(all_group_vars, cens_vars)
+  do_check <- union(get_pred_vars(bterms), get_int_vars(bterms))
+  dont_check <- union(group_vars, cens_vars)
+  dont_check <- setdiff(dont_check, do_check)
   dont_check <- names(mf) %in% dont_check
   is_factor <- ulapply(mf, is.factor)
   factors <- mf[is_factor & !dont_check]
@@ -479,8 +476,12 @@ validate_newdata <- function(
         if (!is.factor(new_factor)) {
           new_factor <- factor(new_factor)
         }
-        new_levels <- levels(new_factor)
         old_levels <- levels(factors[[i]])
+        if (length(old_levels) <= 1L) {
+          # contrasts are not defined for factors with 1 or fewer levels
+          next
+        }
+        new_levels <- levels(new_factor)
         old_contrasts <- contrasts(factors[[i]])
         old_ordered <- is.ordered(factors[[i]])
         to_zero <- is.na(new_factor) | new_factor %in% "zero__"
@@ -508,7 +509,7 @@ validate_newdata <- function(
   }
   # check if originally numeric variables are still numeric
   num_names <- names(mf)[!is_factor]
-  num_names <- setdiff(num_names, all_group_vars)
+  num_names <- setdiff(num_names, group_vars)
   for (nm in intersect(num_names, names(newdata))) {
     if (!anyNA(newdata[[nm]]) && !is.numeric(newdata[[nm]])) {
       stop2("Variable '", nm, "' was originally ", 

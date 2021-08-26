@@ -5,7 +5,14 @@
 \alias{get_refmodel}
 \title{Get Reference Models}
 \usage{
-\method{get_refmodel}{brmsfit}(object, newdata = NULL, resp = NULL, folds = NULL, ...)
+\method{get_refmodel}{brmsfit}(
+  object,
+  newdata = NULL,
+  resp = NULL,
+  folds = NULL,
+  cvfun = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -22,7 +29,13 @@ are performed only for the specified response variables.}
 \item{folds}{Only used for k-fold variable selection. A vector of fold
 indices for each data point in data.}
 
-\item{...}{Further arguments currently ignored.}
+\item{cvfun}{Optional cross-validation function
+(see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+If \code{NULL} (the default), \code{cvfun} is defined internally
+based on \code{\link{kfold.brmsfit}}.}
+
+\item{...}{Further arguments passed to 
+\code{\link[projpred:get-refmodel]{init_refmodel}}.}
 }
 \value{
 A \code{refmodel} object to be used in

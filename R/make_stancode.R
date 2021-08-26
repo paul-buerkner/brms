@@ -245,7 +245,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef$tpar_prior,
       scode_Xme$tpar_prior,
       scode_predictor$tpar_comp,
-      scode_predictor$tpar_comp2,
+      scode_predictor$tpar_reg_prior,
       scode_ranef$tpar_comp,
       scode_Xme$tpar_comp,
       collapse_stanvars(stanvars, "tparameters", "end"),
@@ -319,13 +319,51 @@ print.brmsmodel <- function(x, ...) {
 #' @param version Logical; indicates if the first line containing
 #'   the \pkg{brms} version number should be included.
 #'   Defaults to \code{TRUE}.
-#' @param ... Currently ignored.
+#' @param regenerate Logical; indicates if the Stan code should
+#'   be regenerated with the current \pkg{brms} version.
+#'   By default, \code{regenerate} will be \code{FALSE} unless required
+#'   to be \code{TRUE} by other arguments.
+#' @param threads Controls whether the Stan code should be threaded.
+#'   See \code{\link{threading}} for details.
+#' @param ... Further arguments passed to \code{\link{make_stancode}} if the
+#'   Stan code is regenerated.
 #' 
 #' @return Stan model code for further processing.
 #' 
 #' @export
-stancode.brmsfit <- function(object, version = TRUE, ...) {
-  out <- object$model
+stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL, 
+                             threads = NULL, ...) {
+  if (is.null(regenerate)) {
+    # determine whether regenerating the Stan code is required
+    regenerate <- FALSE
+    cl <- match.call()
+    if ("threads" %in% names(cl)) {
+      threads <- validate_threads(threads)
+      if (use_threading(threads) && !use_threading(object$threads) ||
+          !use_threading(threads) && use_threading(object$threads)) {
+        # threading changed; regenerated Stan code
+        regenerate <- TRUE
+      }
+      object$threads <- threads
+    }
+  }
+  regenerate <- as_one_logical(regenerate)
+  if (regenerate) {
+    object <- restructure(object)
+    out <- make_stancode(
+      formula = object$formula,
+      data = object$data,
+      prior = object$prior,
+      data2 = object$data2,
+      stanvars = object$stanvars,
+      sample_prior = get_sample_prior(object$prior),
+      threads = object$threads,
+      ...
+    )
+  } else {
+    # extract Stan code unaltered
+    out <- object$model
+  }
   if (!version) {
     out <- sub("^[^\n]+[[:digit:]]\\.[^\n]+\n", "", out) 
   }

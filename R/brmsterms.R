@@ -204,7 +204,11 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
     unused_vars
   )
   if (check_response) {
-    y$allvars <- update(y$respform, y$allvars) 
+    # add y$respform to the left-hand side of y$allvars
+    # avoid using update.formula as it is inefficient for longer formulas
+    formula_allvars <- y$respform 
+    formula_allvars[[3]] <- y$allvars[[2]]
+    y$allvars <- formula_allvars
   }
   environment(y$allvars) <- environment(formula)
   y
@@ -241,8 +245,9 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
 # @return a 'btl' object
 terms_lf <- function(formula) {
   formula <- rhs(as.formula(formula))
-  check_accidental_helper_functions(formula)
   y <- nlist(formula)
+  formula <- terms(formula)
+  check_accidental_helper_functions(formula)
   types <- setdiff(all_term_types(), excluded_term_types(formula))
   for (t in types) {
     tmp <- do_call(paste0("terms_", t), list(formula))
@@ -338,16 +343,19 @@ terms_ad <- function(formula, family = NULL, check_response = TRUE) {
 
 # extract fixed effects terms
 terms_fe <- function(formula) {
+  if (!is.terms(formula)) {
+    formula <- terms(formula)
+  }
   all_terms <- all_terms(formula)
   sp_terms <- find_terms(all_terms, "all", complete = FALSE)
   re_terms <- all_terms[grepl("\\|", all_terms)]
-  int_term <- attr(terms(formula), "intercept")
+  int_term <- attr(formula, "intercept")
   fe_terms <- setdiff(all_terms, c(sp_terms, re_terms))
   out <- paste(c(int_term, fe_terms), collapse = "+")
   out <- str2formula(out)
   attr(out, "allvars") <- allvars_formula(out)
   attr(out, "decomp") <- get_decomp(formula)
-  if (has_rsv_intercept(out)) {
+  if (has_rsv_intercept(out, has_intercept(formula))) {
     attr(out, "int") <- FALSE
   }
   if (no_cmc(formula)) {
@@ -425,9 +433,9 @@ terms_sp <- function(formula) {
   if (!length(out)) {
     return(NULL) 
   }
-  uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
-  uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
-  uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
+  uni_mo <- trim_wsp(get_matches_expr(regex_sp("mo"), out))
+  uni_me <- trim_wsp(get_matches_expr(regex_sp("me"), out))
+  uni_mi <- trim_wsp(get_matches_expr(regex_sp("mi"), out))
   # remove the intercept as it is handled separately
   out <- str2formula(c("0", out))
   attr(out, "int") <- FALSE
@@ -494,12 +502,14 @@ terms_ac <- function(formula) {
 
 # extract offset terms
 terms_offset <- function(formula) {
-  terms <- terms(as.formula(formula))
-  pos <- attr(terms, "offset")
+  if (!is.terms(formula)) {
+    formula <- terms(as.formula(formula)) 
+  }
+  pos <- attr(formula, "offset")
   if (is.null(pos)) {
     return(NULL)
   }
-  vars <- attr(terms, "variables")
+  vars <- attr(formula, "variables")
   out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
   out <- str2formula(out)
   attr(out, "allvars") <- str2formula(all_vars(out))
@@ -531,14 +541,8 @@ terms_resp <- function(formula, check_names = TRUE) {
     out <- deparse_no_string(expr)
   } else {
     str_fun <- deparse_no_string(expr[[1]]) 
-    use_mvbind <- identical(str_fun, "mvbind")
-    use_cbind <- identical(str_fun, "cbind")
-    if (use_mvbind) {
-      out <- ulapply(expr[-1], deparse_no_string)
-    } else if (use_cbind) {
-      # deprecated as of brms 2.7.2
-      warning2("Using 'cbind' for multivariate models is ", 
-               "deprecated. Please use 'mvbind' instead.")
+    used_mvbind <- grepl("^(brms:::?)?mvbind$", str_fun)
+    if (used_mvbind) {
       out <- ulapply(expr[-1], deparse_no_string)
     } else {
       out <- deparse_no_string(expr) 
@@ -709,8 +713,7 @@ allvars_formula <- function(...) {
     stop2("The following variable names are invalid: ",
           collapse_comma(invalid_vars)) 
   }
-  out <- str2formula(c(out, all_vars))
-  update(out, ~ .)
+  str2formula(c(out, all_vars))
 }
 
 # conveniently extract a formula of all relevant variables
@@ -744,6 +747,20 @@ plus_rhs <- function(x) {
     out <- " + 1"
   }
   out
+}
+
+# like stats::terms but keeps attributes if possible
+terms <- function(formula, ...) {
+  old_attributes <- attributes(formula)
+  formula <- stats::terms(formula, ...)
+  new_attributes <- attributes(formula)
+  sel_names <- setdiff(names(old_attributes), names(new_attributes))
+  attributes(formula)[sel_names] <- old_attributes[sel_names]
+  formula
+}
+
+is.terms <- function(x) {
+  inherits(x, "terms")
 }
 
 # combine formulas for distributional parameters
@@ -893,10 +910,10 @@ all_terms <- function(x) {
   if (!length(x)) {
     return(character(0))
   }
-  if (!inherits(x, "terms")) {
+  if (!is.terms(x)) {
     x <- terms(as.formula(x))
   }
-  rm_wsp(attr(x, "term.labels"))
+  trim_wsp(attr(x, "term.labels"))
 }
 
 # generate a regular expression to extract special terms
@@ -952,7 +969,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
     inv <- out[lengths(matches) > 1L]
     if (!length(inv)) {
       # each term must be exactly equal to the special function call
-      inv <- out[rm_wsp(unlist(matches)) != out]
+      inv <- out[trim_wsp(unlist(matches)) != out]
     }
     if (length(inv)) {
       stop2("The term '", inv[1], "' is invalid in brms syntax.")
@@ -969,10 +986,10 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
 validate_terms <- function(x) {
   no_int <- no_int(x)
   no_cmc <- no_cmc(x)
-  if (is.formula(x) && !inherits(x, "terms")) {
+  if (is.formula(x) && !is.terms(x)) {
     x <- terms(x)
   }
-  if (!inherits(x, "terms")) {
+  if (!is.terms(x)) {
     return(NULL)
   }
   if (no_int || !has_intercept(x) && no_cmc) {
@@ -985,32 +1002,48 @@ validate_terms <- function(x) {
  
 # checks if the formula contains an intercept
 has_intercept <- function(formula) {
-  formula <- as.formula(formula)
-  try_terms <- try(terms(formula), silent = TRUE)
-  if (is(try_terms, "try-error")) {
-    out <- FALSE
+  if (is.terms(formula)) {
+    out <- as.logical(attr(formula, "intercept"))
   } else {
-    out <- as.logical(attr(try_terms, "intercept"))
+    formula <- as.formula(formula)
+    try_terms <- try(terms(formula), silent = TRUE)
+    if (is(try_terms, "try-error")) {
+      out <- FALSE
+    } else {
+      out <- as.logical(attr(try_terms, "intercept"))
+    } 
   }
   out
 }
 
 # check if model makes use of the reserved intercept variables
-has_rsv_intercept <- function(formula) {
+# @param has_intercept does the model have an intercept?
+#   if NULL this will be inferred from formula itself
+has_rsv_intercept <- function(formula, has_intercept = NULL) {
+  .has_rsv_intercept <- function(terms, has_intercept) {
+    has_intercept <- as_one_logical(has_intercept)
+    intercepts <- c("intercept", "Intercept")
+    out <- !has_intercept && any(intercepts %in% all_vars(rhs(terms)))
+    return(out)
+  }
+  if (is.terms(formula)) {
+    if (is.null(has_intercept)) {
+      has_intercept <- has_intercept(formula)
+    }
+    return(.has_rsv_intercept(formula, has_intercept))
+  }
   formula <- try(as.formula(formula), silent = TRUE)
   if (is(formula, "try-error")) {
-    out <- FALSE
-  } else {
+    return(FALSE)
+  } 
+  if (is.null(has_intercept)) {
     try_terms <- try(terms(formula), silent = TRUE)
     if (is(try_terms, "try-error")) {
-      out <- FALSE
-    } else {
-      has_intercept <- attr(try_terms, "intercept")
-      intercepts <- c("intercept", "Intercept")
-      out <- !has_intercept && any(intercepts %in% all_vars(rhs(formula)))
-    }
+      return(FALSE)
+    } 
+    has_intercept <- has_intercept(try_terms)
   }
-  out
+  .has_rsv_intercept(formula, has_intercept)
 }
 
 # names of reserved variables
@@ -1045,6 +1078,10 @@ check_cs <- function(bterms) {
     if (!(is.null(bterms$family) || allow_cs(bterms$family))) {
       stop2("Category specific effects are not supported for this family.")
     }
+    if (needs_ordered_cs(bterms$family)) {
+      warning2("Category specific effects for this family should be ",
+               "considered experimental and may have convergence issues.")
+    }
   }
   invisible(NULL)
 }
@@ -1059,6 +1096,8 @@ check_accidental_helper_functions <- function(formula) {
   regex <- paste0("^(", regex, ")\\(")
   matches <- get_matches(regex, terms, first = TRUE)
   matches <- sub("\\($", "", matches)
+  matches <- unique(matches)
+  matches <- matches[nzchar(matches)]
   for (m in matches) {
     loc <- utils::find(m, mode = "function")
     if (is_equal(loc[1], "package:brms")) {

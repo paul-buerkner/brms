@@ -176,8 +176,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (!is.numeric(trials)) {
         stop2("Number of trials must be numeric.")
       }
-      if (any(!is_wholenumber(trials) | trials < 1)) {
-        stop2("Number of trials must be positive integers.")
+      if (any(!is_wholenumber(trials) | trials < 0)) {
+        stop2("Number of trials must be non-negative integers.")
       }
     } else {
       stop2("Argument 'trials' is misspecified.")
@@ -321,6 +321,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       y2 <- unname(get_ad_values(x, "cens", "y2", data))
       if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")
+      }
+      if (anyNA(y2[icens])) {
+        stop2("'y2' should not be NA for interval censored observations.")
       }
       if (any(out$Y[icens] >= y2[icens])) {
         stop2("Left censor points must be smaller than right ",
@@ -486,15 +489,14 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
     args$intercept <- as_one_logical(args$intercept) 
   }
   if (is.null(args$Boundary.knots)) {
-    if (isTRUE(args$intercept)) {
-      lower_knot <- min(y)
-      upper_knot <- max(y)
-    } else {
-      # we need a smaller lower boundary knot to avoid lp = -Inf 
-      # the below choices are ad-hoc and may need further thought
-      lower_knot <- max(min(y) - mad(y, na.rm = TRUE) / 10, 0)
-      upper_knot <- max(y) + mad(y, na.rm = TRUE) / 10
-    }
+    # avoid 'knots' outside 'Boundary.knots' error (#1143)
+    # we also need a smaller lower boundary knot to avoid lp = -Inf 
+    # the below choices are ad-hoc and may need further thought
+    min_y <- min(y, na.rm = TRUE)
+    max_y <- max(y, na.rm = TRUE)
+    diff_y <- max_y - min_y
+    lower_knot <- max(min_y - diff_y / 50, 0)
+    upper_knot <- max_y + diff_y / 50
     args$Boundary.knots <- c(lower_knot, upper_knot)
   }
   if (integrate) {

@@ -2,8 +2,7 @@
 
 <img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/)
 
-brms
-====
+# brms
 
 [![Build
 Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
@@ -13,31 +12,28 @@ Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)
 Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 [![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
-Overview
---------
+## Overview
 
 The **brms** package provides an interface to fit Bayesian generalized
 (non-)linear multivariate multilevel models using Stan, which is a C++
 package for performing full Bayesian inference (see
-<a href="https://mc-stan.org/" class="uri">https://mc-stan.org/</a>).
-The formula syntax is very similar to that of the package lme4 to
-provide a familiar and simple interface for performing regression
-analyses. A wide range of response distributions are supported, allowing
-users to fit – among others – linear, robust linear, count data,
-survival, response times, ordinal, zero-inflated, and even self-defined
-mixture models all in a multilevel context. Further modeling options
-include non-linear and smooth terms, auto-correlation structures,
-censored data, missing value imputation, and quite a few more. In
-addition, all parameters of the response distribution can be predicted
-in order to perform distributional regression. Multivariate models
-(i.e., models with multiple response variables) can be fit, as well.
-Prior specifications are flexible and explicitly encourage users to
-apply prior distributions that actually reflect their beliefs. Model fit
-can easily be assessed and compared with posterior predictive checks,
-cross-validation, and Bayes factors.
+<https://mc-stan.org/>). The formula syntax is very similar to that of
+the package lme4 to provide a familiar and simple interface for
+performing regression analyses. A wide range of response distributions
+are supported, allowing users to fit – among others – linear, robust
+linear, count data, survival, response times, ordinal, zero-inflated,
+and even self-defined mixture models all in a multilevel context.
+Further modeling options include non-linear and smooth terms,
+auto-correlation structures, censored data, missing value imputation,
+and quite a few more. In addition, all parameters of the response
+distribution can be predicted in order to perform distributional
+regression. Multivariate models (i.e., models with multiple response
+variables) can be fit, as well. Prior specifications are flexible and
+explicitly encourage users to apply prior distributions that actually
+reflect their beliefs. Model fit can easily be assessed and compared
+with posterior predictive checks, cross-validation, and Bayes factors.
 
-Resources
----------
+## Resources
 
 -   [Introduction to
     brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of
@@ -54,8 +50,7 @@ Resources
 -   [Open an issue](https://github.com/paul-buerkner/brms/issues)
     (GitHub issues for bug reports and feature requests)
 
-How to use brms
----------------
+## How to use brms
 
 ``` r
 library(brms)
@@ -75,7 +70,7 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
 ```
 
-The results (i.e., posterior samples) can be investigated using
+The results (i.e., posterior draws) can be investigated using
 
 ``` r
 summary(fit1) 
@@ -94,7 +89,7 @@ summary(fit1)
 #> Population-Level Effects: 
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      1.77      0.12     1.53     2.00 1.00      779     1319
-#> zAge           0.09      0.09    -0.09     0.26 1.00      683     1071
+#> zAge           0.09      0.09    -0.09     0.26 1.00      684     1071
 #> zBase          0.70      0.12     0.46     0.95 1.00      847     1453
 #> Trt1          -0.27      0.17    -0.59     0.06 1.00      661     1046
 #> zBase:Trt1     0.05      0.16    -0.26     0.37 1.00      993     1624
@@ -136,7 +131,7 @@ distributions, we can use the `plot` method. If we just want to see
 results of the regression coefficients of `Trt` and `zBase`, we go for
 
 ``` r
-plot(fit1, pars = c("Trt", "zBase")) 
+plot(fit1, variable = c("b_Trt1", "b_zBase")) 
 ```
 
 <img src="man/figures/README-plot-1.png" width="60%" style="display: block; margin: auto;" />
@@ -257,8 +252,7 @@ a quick example. The post-processing methods we have shown above are
 just the tip of the iceberg. For a full list of methods to apply on
 fitted model objects, type `methods(class = "brmsfit")`.
 
-Citing brms and related software
---------------------------------
+## Citing brms and related software
 
 Developing and maintaining open source software is an important yet
 often underappreciated contribution to scientific progress. Thus,
@@ -296,8 +290,7 @@ methods such as `bayes_factor` are realized by means of the
 functions rely on **mgcv**. If you use some of these features, please
 also consider citing the related packages.
 
-FAQ
----
+## FAQ
 
 ### How do I install brms?
 
@@ -317,12 +310,11 @@ remotes::install_github("paul-buerkner/brms")
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program
-Rtools (available on
-<a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>)
+Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>)
 comes with a C++ compiler for Windows. On Mac, you should install Xcode.
 For further instructions on how to get the compilers running, see the
 prerequisites section on
-<a href="https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started" class="uri">https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started</a>.
+<https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
 
 ### I am new to brms. Where can I start?
 
@@ -348,8 +340,8 @@ without any model fitting, use the `make_stancode` function.
 
 When you fit your model for the first time with brms, there is currently
 no way to avoid compilation. However, if you have already fitted your
-model and want to run it again, for instance with more samples, you can
-do this without recompilation by using the `update` method. For more
+model and want to run it again, for instance with more draws, you can do
+this without recompilation by using the `update` method. For more
 details see `help("update.brmsfit")`.
 
 ### What is the difference between brms and rstanarm?

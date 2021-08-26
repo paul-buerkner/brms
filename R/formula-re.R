@@ -306,11 +306,11 @@ split_re_terms <- function(re_terms) {
       }
     }
     # prepare effects of basic terms
-    fe_form <- terms_fe(lhs_form)
+    lhs_terms <- terms(lhs_form)
+    fe_form <- terms_fe(lhs_terms)
     fe_terms <- all_terms(fe_form)
-    has_intercept <- attr(terms(fe_form), "intercept")
     # the intercept lives within not outside of 'cs' terms
-    has_intercept <- has_intercept && !"cs" %in% type[[i]]
+    has_intercept <- has_intercept(lhs_terms) && !"cs" %in% type[[i]]
     if (length(fe_terms) || has_intercept) {
       new_lhs <- c(new_lhs, formula2str(fe_form, rm = 1))
       type[[i]] <- c(type[[i]], "")
@@ -360,11 +360,7 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
     out <- paste0("(", out, ")")
   } 
   if (formula) {
-    if (length(out)) {
-      out <- formula(paste("~ 1", collapse("+", out)))
-    } else {
-      out <- ~ 1
-    }
+    out <- str2formula(out)
   }
   out
 }
@@ -457,12 +453,12 @@ update_re_terms.formula <- function(formula, re_formula = NULL) {
   if (length(old_re_terms)) {
     # remove old group-level terms
     rm_terms <- c(
-      paste0("+(", old_re_terms, ")"),
+      paste0("+ (", old_re_terms, ")"),
       paste0("(", old_re_terms, ")"),
       old_re_terms
     )
     new_formula <- rename(new_formula, rm_terms, "")
-    if (grepl("~\\+*$", new_formula)) {
+    if (grepl("~( *\\+*)*$", new_formula)) {
       # lhs only formulas are syntactically invalid
       # also check for trailing '+' signs (#769)
       new_formula <- paste(new_formula, "1")
@@ -691,7 +687,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     # incorporate deprecated 'cov_ranef' argument
     ranef <- update_ranef_cov(ranef, bterms)
   }
-  # ordering after IDs matches the order of the posterior samples 
+  # ordering after IDs matches the order of the posterior draws
   # if multiple IDs are used for the same grouping factor (#835)
   ranef <- ranef[order(ranef$id), , drop = FALSE]
   structure(ranef, class = c("ranef_frame", "data.frame"))

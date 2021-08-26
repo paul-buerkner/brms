@@ -4,20 +4,26 @@
 \alias{pairs.brmsfit}
 \title{Create a matrix of output plots from a \code{brmsfit} object}
 \usage{
-\method{pairs}{brmsfit}(x, pars = NA, fixed = FALSE, exact_match = FALSE, ...)
+\method{pairs}{brmsfit}(x, pars = NA, variable = NULL, regex = FALSE, fixed = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}}
 
-\item{pars}{Names of the parameters to plot, as given by a character vector 
-or a regular expression. By default, all parameters except 
-for group-level and smooth effects are plotted.}
+\item{pars}{Deprecated alias of \code{variable}.
+Names of the parameters to plot, as given by a
+character vector or a regular expression.}
 
-\item{fixed}{Indicates whether parameter names 
+\item{variable}{Names of the variables (parameters) to plot, as given by a
+character vector or a regular expression (if \code{regex = TRUE}). By
+default, a hopefully not too large selection of variables is plotted.}
+
+\item{regex}{Logical; Indicates whether \code{variable} should
+be treated as regular expressions. Defaults to \code{FALSE}.}
+
+\item{fixed}{(Deprecated) Indicates whether parameter names 
 should be matched exactly (\code{TRUE}) or treated as
-regular expressions (\code{FALSE}). Default is \code{FALSE}.}
-
-\item{exact_match}{Deprecated alias of argument \code{fixed}.}
+regular expressions (\code{FALSE}). Default is \code{FALSE}
+and only works with argument \code{pars}.}
 
 \item{...}{Further arguments to be passed to 
 \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.}
@@ -35,8 +41,8 @@ For a detailed description see
 fit <- brm(count ~ zAge + zBase * Trt 
            + (1|patient) + (1|visit), 
            data = epilepsy, family = "poisson")  
-pairs(fit, pars = parnames(fit)[1:3], fixed = TRUE)
-pairs(fit, pars = "^sd_")
+pairs(fit, variable = variables(fit)[1:3])
+pairs(fit, variable = "^sd_", regex = TRUE)
 }
 
 }

@@ -4,13 +4,20 @@
 \alias{posterior_summary}
 \alias{posterior_summary.default}
 \alias{posterior_summary.brmsfit}
-\title{Summarize Posterior Samples}
+\title{Summarize Posterior draws}
 \usage{
 posterior_summary(x, ...)
 
 \method{posterior_summary}{default}(x, probs = c(0.025, 0.975), robust = FALSE, ...)
 
-\method{posterior_summary}{brmsfit}(x, pars = NA, probs = c(0.025, 0.975), robust = FALSE, ...)
+\method{posterior_summary}{brmsfit}(
+  x,
+  pars = NA,
+  variable = NULL,
+  probs = c(0.025, 0.975),
+  robust = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{An \R object.}
@@ -18,29 +25,42 @@ posterior_summary(x, ...)
 \item{...}{More arguments passed to or from other methods.}
 
 \item{probs}{The percentiles to be computed by the 
-\code{quantile} function.}
+\code{\link[stats:quantile]{quantile}} function.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
 the measure of central tendency and the standard deviation as 
 the measure of variability. If \code{TRUE}, the median and the 
 median absolute deviation (MAD) are applied instead.}
 
-\item{pars}{Names of parameters for which posterior samples 
-should be returned, as given by a character vector or regular expressions.
-By default, all posterior samples of all parameters are extracted.}
+\item{pars}{Deprecated alias of \code{variable}. For reasons of backwards
+compatibility, \code{pars} is interpreted as a vector of regular
+expressions by default unless \code{fixed = TRUE} is specified.}
+
+\item{variable}{A character vector providing the variables to extract.
+By default, all variables are extracted.}
 }
 \value{
-A matrix where rows indicate parameters 
- and columns indicate the summary estimates.
+A matrix where rows indicate variables
+and columns indicate the summary estimates.
 }
 \description{
-Summarizes posterior samples based on point estimates (mean or median),
-estimation errors (SD or MAD) and quantiles.
+Summarizes posterior draws based on point estimates (mean or median),
+estimation errors (SD or MAD) and quantiles. This function mainly exists to
+retain backwards compatibility. It will eventually be replaced by functions
+of the \pkg{posterior} package (see examples below).
 }
 \examples{
 \dontrun{
 fit <- brm(time ~ age * sex, data = kidney)
 posterior_summary(fit)
+
+# recommended workflow using posterior
+library(posterior)
+draws <- as_draws_array(fit)
+summarise_draws(draws, default_summary_measures())
 }
 
+}
+\seealso{
+\code{\link[posterior:summarize_draws]{summarize_draws}}
 }

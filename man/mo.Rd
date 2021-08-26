@@ -10,7 +10,7 @@ mo(x, id = NA)
 \item{x}{An integer variable or an ordered factor to be modeled as monotonic.}
 
 \item{id}{Optional character string. All monotonic terms
-with the same \code{id} within one formula  will be modeled as
+with the same \code{id} within one formula will be modeled as
 having the same simplex (shape) parameter vector. If all monotonic terms
 of the same predictor have the same \code{id}, the resulting
 predictions will be conditionally monotonic for all values of

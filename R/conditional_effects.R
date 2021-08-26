@@ -52,7 +52,7 @@
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
-#'   to set argument \code{nsamples} to a relatively small value 
+#'   to set argument \code{ndraws} to a relatively small value 
 #'   (e.g., \code{100}) in order to reduce computation time.
 #' @param surface Logical. Indicates if interactions or 
 #'   two-dimensional smooths should be visualized as a surface. 
@@ -90,7 +90,7 @@
 #'   the unit interval and then points more than \code{select_points} 
 #'   from the values in \code{conditions} are excluded. 
 #'   By default, all points are used.
-#' @param ... Further arguments such as \code{subset} or \code{nsamples}
+#' @param ... Further arguments such as \code{draw_ids} or \code{ndraws}
 #'   passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
@@ -237,7 +237,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   surface <- as_one_logical(surface)
   categorical <- as_one_logical(categorical)
   ordinal <- as_one_logical(ordinal)
-  contains_samples(x)
+  contains_draws(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- brmsterms(new_formula)
@@ -365,7 +365,7 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
 conditional_effects.brmsterms <- function(
   x, fit, cond_data, int_conditions, method, surface, 
   spaghetti, categorical, ordinal, probs, robust, 
-  dpar = NULL, resp = NULL, ...
+  dpar = NULL, nlpar = NULL, resp = NULL, ...
 ) {
   stopifnot(is.brmsfit(fit))
   effects <- attr(cond_data, "effects")
@@ -373,7 +373,7 @@ conditional_effects.brmsterms <- function(
   catscale <- NULL
   pred_args <- list(
     fit, newdata = cond_data, allow_new_levels = TRUE, 
-    dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
+    dpar = dpar, nlpar = nlpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
   if (method != "posterior_predict") {
@@ -403,7 +403,7 @@ conditional_effects.brmsterms <- function(
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
-    if (conv_cats_dpars(x$family)) {
+    if (conv_cats_dpars(x$family) && is.null(dpar)) {
       stop2("Please set 'categorical' to TRUE.")
     }
     if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {
@@ -445,7 +445,7 @@ conditional_effects.brmsterms <- function(
     }
     sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
-      # samples should be unique across plotting groups
+      # draws should be unique across plotting groups
       sample <- paste0(sample, "_", cond_data[[effects[2]]])
     }
     spag <- data.frame(as.numeric(t(spag)), factor(sample))
@@ -459,7 +459,13 @@ conditional_effects.brmsterms <- function(
   }
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   out <- cbind(cond_data, out)
-  response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
+  if (!is.null(dpar)) {
+    response <- dpar
+  } else if (!is.null(nlpar)) {
+    response <- nlpar
+  } else {
+    response <- as.character(x$formula[2])
+  }
   attr(out, "effects") <- effects
   attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
@@ -578,6 +584,11 @@ get_all_effects.btnl <- function(x, ...) {
     c(out) <- utils::combn(covars, 2, simplify = FALSE)
   }
   unique(out)
+}
+
+# extract names of predictor variables
+get_pred_vars <- function(x) {
+  unique(unlist(get_all_effects(x)))
 }
 
 # extract names of variables treated as integers

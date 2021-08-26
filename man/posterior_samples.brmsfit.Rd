@@ -3,10 +3,7 @@
 \name{posterior_samples.brmsfit}
 \alias{posterior_samples.brmsfit}
 \alias{posterior_samples}
-\alias{as.data.frame.brmsfit}
-\alias{as.matrix.brmsfit}
-\alias{as.array.brmsfit}
-\title{Extract Posterior Samples}
+\title{(Deprecated) Extract Posterior Samples}
 \usage{
 \method{posterior_samples}{brmsfit}(
   x,
@@ -20,12 +17,6 @@
 )
 
 posterior_samples(x, pars = NA, ...)
-
-\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = TRUE, ...)
-
-\method{as.matrix}{brmsfit}(x, ...)
-
-\method{as.array}{brmsfit}(x, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -53,25 +44,16 @@ instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 \item{as.array}{Should the output be an \code{array} 
 instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 
-\item{...}{For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
-Further arguments to be passed to \code{posterior_samples}.}
-
-\item{row.names, optional}{See \code{\link[base:as.data.frame]{as.data.frame}}.}
+\item{...}{Arguments passed to individual methods (if applicable).}
 }
 \value{
-A data.frame (matrix or array) containing the posterior samples, 
-  with one column per parameter. In case an array is returned,
-  it contains one additional dimension for the chains.
+A data.frame (matrix or array) containing the posterior samples.
 }
 \description{
-Extract posterior samples of specified parameters.
-}
-\details{
-Currently there are methods for \code{brmsfit} objects.
-  \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
-  \code{as.array.brmsfit} are basically aliases of 
-  \code{posterior_samples.brmsfit} and differ from
-  each other only in type of the returned object.
+Extract posterior samples of specified parameters. The
+\code{posterior_samples} method is deprecated. We recommend using the more
+modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+functions of the \pkg{posterior} package instead.
 }
 \examples{
 \dontrun{
@@ -79,12 +61,16 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, family = "cumulative")
 
 # extract posterior samples of population-level effects 
-samples1 <- posterior_samples(fit, "^b")
+samples1 <- posterior_samples(fit, pars = "^b")
 head(samples1)
 
 # extract posterior samples of group-level standard deviations
-samples2 <- posterior_samples(fit, "^sd_")
+samples2 <- posterior_samples(fit, pars = "^sd_")
 head(samples2)
 }
 
+}
+\seealso{
+\code{\link[brms:draws-brms]{as_draws}},
+   \code{\link[brms:as.data.frame.brmsfit]{as.data.frame}}
 }

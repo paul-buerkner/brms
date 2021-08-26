@@ -12,8 +12,8 @@
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
-  nsamples = NULL,
-  subset = NULL,
+  ndraws = NULL,
+  draw_ids = NULL,
   ...
 )
 
@@ -39,18 +39,18 @@ If specified, expected predictions of this parameters are returned.}
 \item{nlpar}{Optional name of a predicted non-linear parameter.
 If specified, expected predictions of this parameters are returned.}
 
-\item{nsamples}{Positive integer indicating how many posterior samples should
-be used. If \code{NULL} (the default) all samples are used. Ignored if
-\code{subset} is not \code{NULL}.}
+\item{ndraws}{Positive integer indicating how many posterior draws should
+be used. If \code{NULL} (the default) all draws are used. Ignored if
+\code{draw_ids} is not \code{NULL}.}
 
-\item{subset}{A numeric vector specifying the posterior samples to be used.
-If \code{NULL} (the default), all samples are used.}
+\item{draw_ids}{An integer vector specifying the posterior draws to be used.
+If \code{NULL} (the default), all draws are used.}
 
 \item{...}{Currently ignored.}
 }
 \value{
 An S x N matrix, where S is the number of
-  posterior samples and N is the number of observations.
+  posterior draws and N is the number of observations.
 }
 \description{
 Compute posterior predictions of smooth \code{s} and \code{t2} terms of

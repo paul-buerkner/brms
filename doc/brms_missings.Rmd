@@ -90,10 +90,10 @@ fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 ```
 
 The returned fitted model is an ordinary `brmsfit` object containing the
-posterior samples of all `m` submodels. While pooling across models is not
+posterior draws of all `m` submodels. While pooling across models is not
 necessarily straightforward in classical statistics, it is trivial in a Bayesian
 framework. Here, pooling results of multiple imputed data sets is simply
-achieved by combining the posterior samples of the submodels. Accordingly, all
+achieved by combining the posterior draws of the submodels. Accordingly, all
 post-processing methods can be used out of the box without having to worry about
 pooling at all.
 
@@ -108,7 +108,7 @@ not overlay each other exactly, since there were fitted to different data. We
 can see the chains on the right-hand side of
 
 ```{r}
-plot(fit_imp1, pars = "^b")
+plot(fit_imp1, variable = "^b", regex = TRUE)
 ```
 
 Such non-overlaying chains imply high `Rhat` values without there actually being
@@ -182,7 +182,7 @@ conditional_effects(fit_imp2, "age:chl", resp = "bmi")
 The results look pretty similar to those obtained from multiple imputation, but
 be aware that this may not be generally the case. In multiple imputation, the
 default is to impute all variables based on all other variables, while in the
-'one-step' approach, we have to explictly specify the variables used in the
+'one-step' approach, we have to explicitly specify the variables used in the
 imputation. Thus, arguably, multiple imputation is easier to apply. An obvious
 advantage of the 'one-step' approach is that the model needs to be fitted only
 once instead of `m` times. Also, within the **brms** framework, we can use
@@ -191,6 +191,29 @@ missing values, which is not achieved as easily in standard multiple imputation
 software. On the downside, it is currently not possible to impute discrete
 variables, because **Stan** (the engine behind **brms**) does not allow
 estimating discrete parameters.
+
+### Combining measurement error and missing values
+
+Missing value terms in **brms** cannot only handle missing values but also
+measurement error, or arbitrary combinations of the two. In fact, we can think
+of a missing value as a value with infinite measurement error. Thus, `mi` terms
+are a natural (and somewhat more verbose) generalization of the now soft deprecated
+`me` terms. Suppose we had measured the variable `chl` with some known error:
+
+```{r}
+nhanes$se <- rexp(nrow(nhanes), 2)
+```
+
+Then we can go ahead an include this information into the model as follows:
+
+```{r, results = 'hide', message = FALSE, eval = FALSE}
+bform <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi(se) ~ age) + set_rescor(FALSE)
+fit_imp3 <- brm(bform, data = nhanes)
+```
+
+Summarizing and post-processing the model continues to work as usual.
+
 
 [^1]: Actually, there is a third approach that only applies to missings in
 response variables. If we want to impute missing responses, we just fit the

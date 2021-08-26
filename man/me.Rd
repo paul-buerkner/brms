@@ -18,12 +18,13 @@ latent variable. If \code{NULL} (the default) each
 observation will have its own value of the latent variable.}
 }
 \description{
-Specify predictors with measurement error. The function does not evaluate its
-arguments -- it exists purely to help set up a model.
+(Soft deprecated) Specify predictors with measurement error. The function
+does not evaluate its arguments -- it exists purely to help set up a model.
 }
 \details{
-For detailed documentation see \code{help(brmsformula)}. 
-
+For detailed documentation see \code{help(brmsformula)}.
+\code{me} terms are soft deprecated in favor of the more
+general and consistent \code{\link{mi}} terms. 
 By default, latent noise-free variables are assumed
 to be correlated. To change that, add \code{set_mecor(FALSE)}
 to your model formula object (see examples).
@@ -38,12 +39,12 @@ dat <- data.frame(
  )
 # fit a simple error-in-variables model 
 fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
-           save_mevars = TRUE)
+            save_pars = save_pars(latent = TRUE))
 summary(fit1)
 
 # turn off modeling of correlations
 bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
-fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+fit2 <- brm(bform, data = dat, save_pars = save_pars(latent = TRUE))
 summary(fit2)
 } 
 
