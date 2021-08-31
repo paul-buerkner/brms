@@ -120,7 +120,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   dis <- NULL
   if (family$family == "gaussian") {
     dis <- paste0("sigma", usc(resp))
-    dis <- as.data.frame(object, pars = dis, fixed = TRUE)[[dis]]
+    dis <- as.data.frame(object, variable = dis, fixed = TRUE)[[dis]]
   }
   
   # Using the default prediction function from projpred is usually fine
