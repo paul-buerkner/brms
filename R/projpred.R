@@ -194,7 +194,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # extract relevant auxiliary data
   usc_resp <- usc(resp)
   y <- as.vector(sdata[[paste0("Y", usc_resp)]])
-  offset <- as.vector(sdata[[paste0("offset", usc_resp)]])
+  offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
   if (is_binary(family)) {
