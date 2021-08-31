@@ -60,8 +60,6 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @aliases get_refmodel
 #' 
 #' @inheritParams posterior_predict.brmsfit
-#' @param folds Only used for k-fold variable selection. A vector of fold
-#' indices for each data point in data.
 #' @param cvfun Optional cross-validation function
 #' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
@@ -77,7 +75,7 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @export get_refmodel
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 folds = NULL, cvfun = NULL, ...) {
+                                 cvfun = NULL, ...) {
   dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
@@ -169,8 +167,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   args <- nlist(
-    object, data, formula, family, folds, dis,
-    ref_predfun = ref_predfun, proj_predfun = NULL, div_minimizer = NULL, 
+    object, data, formula, family, dis, ref_predfun = ref_predfun,
     cvfun = cvfun, extract_model_data = extract_model_data, ...
   )
   do_call(projpred::init_refmodel, args)

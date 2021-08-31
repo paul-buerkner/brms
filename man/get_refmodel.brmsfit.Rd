@@ -5,14 +5,7 @@
 \alias{get_refmodel}
 \title{Get Reference Models}
 \usage{
-\method{get_refmodel}{brmsfit}(
-  object,
-  newdata = NULL,
-  resp = NULL,
-  folds = NULL,
-  cvfun = NULL,
-  ...
-)
+\method{get_refmodel}{brmsfit}(object, newdata = NULL, resp = NULL, cvfun = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -25,9 +18,6 @@ predictions of the grand mean when using sum coding.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
-
-\item{folds}{Only used for k-fold variable selection. A vector of fold
-indices for each data point in data.}
 
 \item{cvfun}{Optional cross-validation function
 (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
