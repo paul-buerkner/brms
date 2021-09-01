@@ -93,8 +93,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # "additionally to `link`") like `refcat` and `thresholds` (see ?brmsfamily):
   if (!(isTRUE(dots$aug_data) && is_polytomous(family))) {
     family <- get(family$family, mode = "function")(link = family$link)
+  } else {
+    # TODO: uncomment the lines below as soon as the
+    # `extend_family_<family_name>` exist (in brms):
+    # family <- get(paste0("extend_family_", family$family, mode = "function"))(
+    #   family
+    # )
   }
-  family <- projpred::extend_family(family)
   
   # check if the model is supported by projpred
   bterms <- brmsterms(formula)
