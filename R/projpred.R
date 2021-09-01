@@ -121,6 +121,15 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     dis <- as.data.frame(object, variable = dis, fixed = TRUE)[[dis]]
   }
   
+  # prepare data passed to projpred
+  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  attr(data, "terms") <- NULL
+  
+  # allows to handle additional arguments implicitly
+  extract_model_data <- function(object, newdata = NULL, ...) {
+    .extract_model_data(object, newdata = newdata, resp = resp, ...)
+  }
+  
   # Using the default prediction function from projpred is usually fine
   ref_predfun <- NULL
   if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
@@ -135,18 +144,18 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     #     fit, transform = FALSE, newdata = newdata, incl_thres = TRUE
     #   )
     #   stopifnot(length(dim(linpred_out)) == 3L)
+    #   # Since posterior_linpred() is supposed to include the offsets in its
+    #   # result, subtract them here:
+    #   # Observation weights are not needed here, so use `wrhs = NULL` to avoid
+    #   # potential conflicts for a non-`NULL` default `wrhs`:
+    #   offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+    #   if (length(offs)) {
+    #     stopifnot(length(offs) %in% c(1L, dim(linpred_out)[2]))
+    #     linpred_out <- sweep(linpred_out, 2, offs)
+    #   }
     #   linpred_out <- projpred:::arr2augmat(linpred_out, margin_draws = 1)
     #   return(linpred_out)
     # }
-  }
-  
-  # prepare data passed to projpred
-  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
-  attr(data, "terms") <- NULL
-  
-  # allows to handle additional arguments implicitly
-  extract_model_data <- function(object, newdata = NULL, ...) {
-    .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
   # extract a list of K-fold sub-models
