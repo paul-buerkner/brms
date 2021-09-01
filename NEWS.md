@@ -1,5 +1,12 @@
 # brms 2.16.1++
 
+### Other changes
+
+* Move `projpred` from `Imports:` to `Suggests:`. This has the important
+implication that users need to load or attach `projpred` themselves if they want
+to use it (the more common case is probably attaching, which is achieved by
+`library(projpred)`). (#1222)
+
 ### Bug Fixes
 
 * Ensure that argument `overwrite` in `add_criterion`

@@ -1,63 +1,12 @@
-#' Projection Predictive Variable Selection
+#' Projection Predictive Variable Selection: Get Reference Model
 #' 
-#' Perform projection predictive variable selection with the \pkg{projpred}
-#' package. See \code{\link[projpred:varsel]{varsel}} and
-#' \code{\link[projpred:cv_varsel]{cv_varsel}} for more details.
-#' 
-#' @aliases varsel cv_varsel
-#' 
-#' @param object A \code{brmsfit} object.
-#' @param ... Further arguments passed to \code{\link{get_refmodel.brmsfit}}
-#' as well as \code{\link[projpred:varsel]{varsel.refmodel}} or 
-#' \code{\link[projpred:cv_varsel]{cv_varsel.refmodel}}.
-#' 
-#' @return A \code{vsel} object for which several methods are available
-#' in the \pkg{projpred} package.
-#' 
-#' @examples 
-#' \dontrun{
-#' # fit a simple model
-#' fit <- brm(count ~ zAge + zBase * Trt,
-#'            data = epilepsy, family = poisson())
-#' summary(fit)
-#' 
-#' # perform variable selection without cross-validation
-#' vs <- varsel(fit)
-#' summary(vs)
-#' plot(vs)
-#' 
-#' # perform variable selection with cross-validation
-#' cv_vs <- cv_varsel(fit)
-#' summary(cv_vs)
-#' plot(cv_vs)
-#' }
-#' 
-#' @importFrom projpred varsel
-#' @export varsel
-#' @export
-varsel.brmsfit <- function(object, ...) {
-  refmodel <- get_refmodel(object, ...)
-  varsel(refmodel, ...)
-}
-
-#' @rdname varsel.brmsfit
-#' @importFrom projpred cv_varsel
-#' @export cv_varsel
-#' @export
-cv_varsel.brmsfit <- function(object, ...) {
-  refmodel <- get_refmodel(object, ...)
-  cv_varsel(refmodel, ...)
-}
-
-#' Get Reference Models
-#' 
-#' Get reference model structure from \code{brmsfit} objects for use in
-#' \code{\link[projpred:varsel]{varsel}} and related variable selection methods.
-#' This method is called automatically when performing variable selection via
-#' \code{\link{varsel.brmsfit}} and so you will rarely need to call it manually
-#' yourself.
-#' 
-#' @aliases get_refmodel
+#' The \code{get_refmodel.brmsfit} method can be used to create the reference
+#' model structure which is needed by the \pkg{projpred} package for performing
+#' a projection predictive variable selection. This method is called
+#' automatically when performing variable selection via
+#' \code{\link[projpred:varsel]{varsel}} or
+#' \code{\link[projpred:cv_varsel]{cv_varsel}}, so you will rarely need to call
+#' it manually yourself.
 #' 
 #' @inheritParams posterior_predict.brmsfit
 #' @param cvfun Optional cross-validation function
@@ -67,15 +16,35 @@ cv_varsel.brmsfit <- function(object, ...) {
 #' @param ... Further arguments passed to 
 #' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
-#' @return A \code{refmodel} object to be used in
-#'   \code{\link[projpred:varsel]{varsel}} and related variable selection
-#'   methods.
+#' @return A \code{refmodel} object to be used in conjunction with the
+#'   \pkg{projpred} package.
 #' 
-#' @importFrom projpred get_refmodel
-#' @export get_refmodel
-#' @export
+#' @examples 
+#' \dontrun{
+#' # fit a simple model
+#' fit <- brm(count ~ zAge + zBase * Trt,
+#'            data = epilepsy, family = poisson())
+#' summary(fit)
+#' 
+#' # This 'if' condition is only needed here to ensure package 'projpred'
+#' # exists:
+#' if (requireNamespace("projpred", quietly = TRUE)) {
+#'   library(projpred)
+#'   
+#'   # perform variable selection without cross-validation
+#'   vs <- varsel(fit)
+#'   summary(vs)
+#'   plot(vs)
+#'   
+#'   # perform variable selection with cross-validation
+#'   cv_vs <- cv_varsel(fit)
+#'   summary(cv_vs)
+#'   plot(cv_vs)
+#' }
+#' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
                                  cvfun = NULL, ...) {
+  require_package("projpred")
   dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
