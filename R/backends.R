@@ -207,6 +207,7 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
+  out <- repair_stanfit_names(out)
   out
 }
 
