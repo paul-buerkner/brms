@@ -245,6 +245,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
   out$model_comp_mvjoin <- paste0(
     "  // combine univariate parameters\n",
     "  for (n in 1:N) {\n", 
+    stan_nn_def(threads),
     out$model_comp_mvjoin, 
     "  }\n"
   )
