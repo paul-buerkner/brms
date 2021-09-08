@@ -197,6 +197,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
+  stopifnot(!is.null(y))
   if (is_binary(family)) {
     trials <- rep(1, length(y))
   }
@@ -205,6 +206,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       stop2("Projpred cannot handle 'trials' and 'weights' at the same time.") 
     }
     weights <- trials
+  }
+  if (is.null(weights)) {
+    weights <- rep(1, length(y))
+  }
+  if (is.null(offset)) {
+    offset <- rep(0, length(y))
   }
   nlist(y, weights, offset)
 }
