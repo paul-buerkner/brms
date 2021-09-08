@@ -16,6 +16,11 @@
 #' @param ... Further arguments passed to 
 #' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
+#' @details Note that the \code{extract_model_data} function used internally by
+#'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
+#'   \code{extract_y}. This is relevant for
+#'   \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
+#' 
 #' @return A \code{refmodel} object to be used in conjunction with the
 #'   \pkg{projpred} package.
 #' 
