@@ -94,7 +94,7 @@ stan_response <- function(bterms, data, normalize) {
         "  }}\n"
       )
       str_add(out$pll_args) <- glue(
-        ", data int nthres{resp}, data int[,] Jthres{resp}"
+        ", data int[] nthres{resp}, data int[,] Jthres{resp}"
       )
     } else {
       str_add(out$data) <- glue(
