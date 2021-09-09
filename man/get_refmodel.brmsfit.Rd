@@ -46,20 +46,17 @@ fit <- brm(count ~ zAge + zBase * Trt,
            data = epilepsy, family = poisson())
 summary(fit)
 
-# This 'if' condition is only needed here to ensure package 'projpred'
-# exists:
-if (requireNamespace("projpred", quietly = TRUE)) {
-  library(projpred)
-  
-  # perform variable selection without cross-validation
-  vs <- varsel(fit)
-  summary(vs)
-  plot(vs)
-  
-  # perform variable selection with cross-validation
-  cv_vs <- cv_varsel(fit)
-  summary(cv_vs)
-  plot(cv_vs)
-}
+# The following code requires the 'projpred' package to be installed:
+library(projpred)
+
+# perform variable selection without cross-validation
+vs <- varsel(fit)
+summary(vs)
+plot(vs)
+
+# perform variable selection with cross-validation
+cv_vs <- cv_varsel(fit)
+summary(cv_vs)
+plot(cv_vs)
 }
 }
