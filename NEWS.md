@@ -13,8 +13,6 @@ to use it (the more common case is probably attaching, which is achieved by
 is working as intended thanks to Ruben Arslan. (#1219)
 * Fix a bug in `get_refmodel.brmsfit()` (i.e., when using `projpred` for a
 `"brmsfit"`) causing offsets not to be recognized. (#1220)
-* Avoid `Warning: Argument 'pars' is deprecated. Please use 'variable' instead.`
-in `get_refmodel.brmsfit()`.
 
 
 # brms 2.16.1
