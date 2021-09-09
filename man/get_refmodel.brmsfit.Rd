@@ -2,17 +2,9 @@
 % Please edit documentation in R/projpred.R
 \name{get_refmodel.brmsfit}
 \alias{get_refmodel.brmsfit}
-\alias{get_refmodel}
-\title{Get Reference Models}
+\title{Projection Predictive Variable Selection: Get Reference Model}
 \usage{
-\method{get_refmodel}{brmsfit}(
-  object,
-  newdata = NULL,
-  resp = NULL,
-  folds = NULL,
-  cvfun = NULL,
-  ...
-)
+get_refmodel.brmsfit(object, newdata = NULL, resp = NULL, cvfun = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -26,9 +18,6 @@ predictions of the grand mean when using sum coding.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{folds}{Only used for k-fold variable selection. A vector of fold
-indices for each data point in data.}
-
 \item{cvfun}{Optional cross-validation function
 (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
 If \code{NULL} (the default), \code{cvfun} is defined internally
@@ -38,14 +27,36 @@ based on \code{\link{kfold.brmsfit}}.}
 \code{\link[projpred:get-refmodel]{init_refmodel}}.}
 }
 \value{
-A \code{refmodel} object to be used in
-  \code{\link[projpred:varsel]{varsel}} and related variable selection
-  methods.
+A \code{refmodel} object to be used in conjunction with the
+  \pkg{projpred} package.
 }
 \description{
-Get reference model structure from \code{brmsfit} objects for use in
-\code{\link[projpred:varsel]{varsel}} and related variable selection methods.
-This method is called automatically when performing variable selection via
-\code{\link{varsel.brmsfit}} and so you will rarely need to call it manually
-yourself.
+The \code{get_refmodel.brmsfit} method can be used to create the reference
+model structure which is needed by the \pkg{projpred} package for performing
+a projection predictive variable selection. This method is called
+automatically when performing variable selection via
+\code{\link[projpred:varsel]{varsel}} or
+\code{\link[projpred:cv_varsel]{cv_varsel}}, so you will rarely need to call
+it manually yourself.
+}
+\examples{
+\dontrun{
+# fit a simple model
+fit <- brm(count ~ zAge + zBase * Trt,
+           data = epilepsy, family = poisson())
+summary(fit)
+
+# The following code requires the 'projpred' package to be installed:
+library(projpred)
+
+# perform variable selection without cross-validation
+vs <- varsel(fit)
+summary(vs)
+plot(vs)
+
+# perform variable selection with cross-validation
+cv_vs <- cv_varsel(fit)
+summary(cv_vs)
+plot(cv_vs)
+}
 }

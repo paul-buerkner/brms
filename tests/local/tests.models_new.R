@@ -996,6 +996,8 @@ test_that("projpred methods can be run", {
              data = epilepsy, family = poisson())
   summary(fit)
 
+  library(projpred)
+  
   # perform variable selection without cross-validation
   vs <- varsel(fit)
   expect_is(vs, "vsel")
