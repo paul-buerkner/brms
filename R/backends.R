@@ -526,9 +526,13 @@ validate_silent <- function(silent) {
   silent
 }
 
-# repairs parameter names of stanfit objects
+# repair parameter names of stanfit objects
 repair_stanfit_names <- function(x) {
   stopifnot(is.stanfit(x))
+  if (!length(x@sim$fnames_oi)) {
+    # nothing to rename
+    return(x)
+  }
   # the posterior package cannot deal with non-unique parameter names
   # this case happens rarely but might happen when sample_prior = "yes"
   x@sim$fnames_oi <- make.unique(as.character(x@sim$fnames_oi), "__")
