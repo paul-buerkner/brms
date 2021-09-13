@@ -689,19 +689,19 @@ stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
     out <- sdist("ordered_logistic_glm", p$x, p$beta, p$alpha)
     return(out)
   } 
-  stan_log_lik_ordinal(bterms, resp, mix)
+  stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
 stan_log_lik_sratio <- function(bterms, resp = "", mix = "", ...) {
-  stan_log_lik_ordinal(bterms, resp, mix)
+  stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
 stan_log_lik_cratio <- function(bterms, resp = "", mix = "", ...) {
-  stan_log_lik_ordinal(bterms, resp, mix)
+  stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
 stan_log_lik_acat <- function(bterms, resp = "", mix = "", ...) {
-  stan_log_lik_ordinal(bterms, resp, mix)
+  stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
 stan_log_lik_categorical <- function(bterms, resp = "", mix = "", ...) {
@@ -733,7 +733,8 @@ stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
   sdist("dirichlet", mu)
 }
 
-stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", 
+                                 threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
@@ -745,7 +746,8 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", ...) {
   }
   if (has_thres_groups(bterms)) {
     str_add(lpdf) <- "_merged"
-    p$Jthres <- paste0("Jthres", resp, "[n]")
+    n <- stan_nn(threads)
+    p$Jthres <- paste0("Jthres", resp, n)
     p$thres <- "merged_Intercept"
   } else {
     p$thres <- "Intercept"
