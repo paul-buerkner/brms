@@ -610,11 +610,10 @@ validate_car_matrix <- function(M) {
     stop2("'M' for CAR terms must be symmetric.")
   }
   colnames(M) <- rownames(M)
-  vals <- unique(M@x) # all unique nonzero values
-  not_binary <- !(vals == 1)
+  not_binary <- !(M == 0 | M == 1)
   if (any(not_binary)) {
     message("Converting all non-zero values in 'M' to 1.")
-    M@x[not_binary] <- 1
+    M[not_binary] <- 1
   }
   M
 }
