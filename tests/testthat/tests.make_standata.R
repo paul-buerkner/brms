@@ -830,6 +830,11 @@ test_that("make_standata includes data for CAR models", {
                          data = dat, data2 = dat2)
   expect_equal(length(sdata$car_scale), 1L)
   
+  dat2$W[1, 10] <- 4
+  dat2$W[10, 1] <- 4
+  expect_message(make_standata(y ~ car(W, gr = group), dat, data2 = dat2), 
+               "Converting all non-zero values in 'M' to 1")
+  
   # test error messages
   rownames(dat2$W) <- c(1:9, "a")
   expect_error(make_standata(y ~ car(W, gr = group), dat, data2 = dat2), 
