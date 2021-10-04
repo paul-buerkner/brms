@@ -582,7 +582,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- rename_pars(x) 
   }
   if (!is.null(file)) {
-    write_brmsfit(x, file)
+    x <- write_brmsfit(x, file)
   }
   x
 }

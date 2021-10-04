@@ -939,7 +939,7 @@ write_brmsfit <- function(x, file) {
   file <- check_brmsfit_file(file)
   x$file <- file
   saveRDS(x, file = file)
-  invisible(NULL)
+  invisible(x)
 }
 
 # check validity of file name to store a brmsfit object in

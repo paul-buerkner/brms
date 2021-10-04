@@ -160,7 +160,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     class(fits) <- c("brmsfit_multiple", class(fits))
   }
   if (!is.null(file)) {
-    write_brmsfit(fits, file)
+    fits <- write_brmsfit(fits, file)
   }
   fits
 }
