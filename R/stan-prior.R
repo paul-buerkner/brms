@@ -416,7 +416,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     )
     str_add(out$tpar_reg_prior) <- glue(
       "  // compute actual regression coefficients\n",
-      "  b{sp}{suffix} = horseshoe({hs_args});\n"
+      "  b{suffix}{sp} = horseshoe({hs_args});\n"
     )
     str_add(out$prior) <- glue(
       "{tp}std_normal_{lpdf}(zb{sp});\n",
@@ -443,7 +443,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     )
     str_add(out$tpar_reg_prior) <- glue(
       "  // compute actual regression coefficients\n",
-      "  b{sp}{suffix} = R2D2({R2D2_args});\n"
+      "  b{suffix}{sp} = R2D2({R2D2_args});\n"
     )
     str_add(out$prior) <- glue(
       "{tp}std_normal_{lpdf}(zb{sp});\n",
