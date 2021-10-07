@@ -36,7 +36,7 @@ with posterior predictive checks, cross-validation, and Bayes factors.
 ## Resources
 
 -   [Introduction to
-    brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of
+    brms](https://doi.org/10.18637/jss.v080.i01) (Journal of
     Statistical Software)
 -   [Advanced multilevel modeling with
     brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html)
