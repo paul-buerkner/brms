@@ -55,9 +55,10 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually
       # as there is not single base_prior anymore
-      prior_of_coefs <- prior[nzchar(prior$coef), vars_prefix()]
-      take <- match_rows(prior_of_coefs, upx)
-      prior[nzchar(prior$coef), "prior"] <- base_prior[take]
+      take_coef_prior <- nzchar(prior$coef) & !nzchar(prior$prior)
+      prior_of_coefs <- prior[take_coef_prior, vars_prefix()]
+      take_base_prior <- match_rows(prior_of_coefs, upx)
+      prior$prior[take_coef_prior] <- base_prior[take_base_prior]
     }
     base_prior <- base_prior[1]
     bound <- ""
