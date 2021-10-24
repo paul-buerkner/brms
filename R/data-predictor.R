@@ -727,13 +727,13 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
         }
       }
     }
-    M_tmp <- M
-    M_tmp[upper.tri(M_tmp)] <- NA
-    edges <- which(as.matrix(M_tmp == 1), arr.ind = TRUE)
+    edges_rows <- (Matrix::tril(M)@i + 1)
+    edges_cols <- sort(Matrix::triu(M)@i + 1) ## sort to make consistent with rows
+    edges <- cbind("rows" = edges_rows, "cols" = edges_cols)
     c(out) <- nlist(
-      Nloc, Jloc, Nedges = nrow(edges),  
-      edges1 = as.array(edges[, 1]), 
-      edges2 = as.array(edges[, 2])
+      Nloc, Jloc, Nedges = length(edges_rows),
+      edges1 = as.array(edges_rows),
+      edges2 = as.array(edges_cols)
     )
     if (acef_car$type %in% c("escar", "esicar")) {
       Nneigh <- Matrix::colSums(M)
