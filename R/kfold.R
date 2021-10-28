@@ -237,6 +237,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     fits <- array(list(), dim = c(length(Ksub), 3))
     dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
   }
+  
+  x <- recompile_model(x)
   for (k in Ksub) {
     ks <- match(k, Ksub)
     message("Fitting model ", k, " out of ", K)

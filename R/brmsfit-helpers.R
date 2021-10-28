@@ -739,7 +739,7 @@ add_rstan_model <- function(x, overwrite = FALSE) {
   overwrite <- as_one_logical(overwrite)
   if (!has_rstan_model(x) || overwrite) {
     message("Recompiling the model with 'rstan'")
-    # threading is not yet supported by rstan andd needs to be deactivated
+    # threading is not yet supported by rstan and needs to be deactivated
     stanfit <- suppressMessages(rstan::stan(
       model_code = stancode(x, threads = threading()), 
       data = standata(x), chains = 0

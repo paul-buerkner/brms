@@ -176,8 +176,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     # stan code may differ just because of the version number (#288)
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
-    recompile <- !is_equal(new_stancode, old_stancode) ||
-      !is_equal(dots$backend, object$backend)
+    recompile <- needs_recompilation(object) ||
+      !is_equal(new_stancode, old_stancode) ||
+      !is_equal(dots$backend, object$backend) 
     if (recompile && silent < 2) {
       message("The desired updates require recompiling the model") 
     }
