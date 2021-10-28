@@ -746,6 +746,7 @@ add_rstan_model <- function(x, overwrite = FALSE) {
     ))
     x$fit@stanmodel <- stanfit@stanmodel
     x$fit@.MISC <- stanfit@.MISC
+    message("Recompilation done")
   }
   x
 }
