@@ -119,6 +119,7 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     J, " problematic observation(s) found.", 
     "\nThe model will be refit ", J, " times."
   )
+  x <- recompile_model(x)
   for (j in seq_len(J)) {
     message(
       "\nFitting model ", j, " out of ", J,
