@@ -1352,15 +1352,16 @@ validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
   for (cl in c("b", "Intercept")) {
     # copy over the global population-level priors in MV models
     gi <- which(find_rows(prior, class = cl, coef = "", resp = ""))
-    if (any(nzchar(prior$prior[gi]))) {
-      # allowing global priors in multivariate models implies conceptual problems 
-      # in the specification of default priors as it becomes unclear on which 
-      # prior level they should be defined
-      warning2("Specifying global priors for regression coefficients in ", 
-               "multivariate models is deprecated. Please specify priors ",
-               "separately for each response variable.")
-    }
     prior$remove[gi] <- TRUE
+    if (!any(nzchar(prior$prior[gi]))) {
+      next
+    }
+    # allowing global priors in multivariate models implies conceptual problems 
+    # in the specification of default priors as it becomes unclear on which 
+    # prior level they should be defined
+    warning2("Specifying global priors for regression coefficients in ", 
+             "multivariate models is deprecated. Please specify priors ",
+             "separately for each response variable.")
     for (r in x$responses) {
       rows <- which(find_rows(prior, class = cl, coef = "", resp = r))
       for (ri in rows) {
@@ -1391,22 +1392,21 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
       prior$remove[gi] <- TRUE
       if (!any(nzchar(prior$prior[gi]))) {
         next
-      } else {
-        # allowing global priors in categorical models implies conceptual problems 
-        # in the specification of default priors as it becomes unclear on which 
-        # prior level they should be defined
-        warning2("Specifying global priors for regression coefficients in ", 
-                 "categorical models is deprecated. Please specify priors ",
-                 "separately for each response category.")
-        for (dp in names(x$dpars)) {
-          rows <- which(find_rows(
-            prior, class = cl, coef = "",
-            dpar = dp, nlpar = "", resp = x$resp
-          ))
-          for (dpi in rows) {
-            if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
-              prior$prior[dpi] <- prior$prior[gi]
-            }
+      }
+      # allowing global priors in categorical models implies conceptual problems 
+      # in the specification of default priors as it becomes unclear on which 
+      # prior level they should be defined
+      warning2("Specifying global priors for regression coefficients in ", 
+               "categorical models is deprecated. Please specify priors ",
+               "separately for each response category.")
+      for (dp in names(x$dpars)) {
+        rows <- which(find_rows(
+          prior, class = cl, coef = "",
+          dpar = dp, nlpar = "", resp = x$resp
+        ))
+        for (dpi in rows) {
+          if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
+            prior$prior[dpi] <- prior$prior[gi]
           }
         }
       }
