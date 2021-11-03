@@ -58,6 +58,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   family <- family(object, resp = resp)
   if (family$family == "bernoulli") {
     family$family <- "binomial"
+  } else if (family$family == "gamma") {
+    family$family <- "Gamma"
   }
   # For the augmented-data approach, do not re-define ordinal or categorical
   # families to preserve their family-specific extra arguments ("extra" meaning
