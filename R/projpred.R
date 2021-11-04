@@ -147,13 +147,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
         on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
       }
       set.seed(refprd_seed)
-      # Note: `transform = FALSE` is not needed, but included here for
-      # consistency with projpred's default ref_predfun():
-      linpred_out <- posterior_linpred(
-        fit, transform = FALSE, newdata = newdata, allow_new_levels = TRUE,
-        sample_new_levels = "gaussian", incl_thres = TRUE
-      )
-      return(linpred_out)
+      posterior_linpred(fit,
+                        newdata = newdata,
+                        allow_new_levels = TRUE,
+                        sample_new_levels = "gaussian",
+                        incl_thres = TRUE)
     }
   }
   
