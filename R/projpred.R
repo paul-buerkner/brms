@@ -138,25 +138,23 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                         sample_new_levels = "gaussian"))
   }
   if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
-    stop2("This case is not yet supported.")
     # Use argument `incl_thres` of posterior_linpred():
-    # TODO: uncomment the lines below as soon as arr2augmat() is exported
-    # ref_predfun <- function(fit, newdata = NULL) {
-    #   # Setting a seed is necessary for reproducible sampling of group-level
-    #   # effects for new levels:
-    #   if (exists(".Random.seed", envir = .GlobalEnv)) {
-    #     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-    #   }
-    #   set.seed(refprd_seed)
-    #   # Note: `transform = FALSE` is not needed, but included here for
-    #   # consistency with projpred's default ref_predfun():
-    #   linpred_out <- posterior_linpred(
-    #     fit, transform = FALSE, newdata = newdata, allow_new_levels = TRUE,
-    #     sample_new_levels = "gaussian", incl_thres = TRUE
-    #   )
-    #   return(linpred_out)
-    # }
+    ref_predfun <- function(fit, newdata = NULL) {
+      # Setting a seed is necessary for reproducible sampling of group-level
+      # effects for new levels:
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+        on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+      }
+      set.seed(refprd_seed)
+      # Note: `transform = FALSE` is not needed, but included here for
+      # consistency with projpred's default ref_predfun():
+      linpred_out <- posterior_linpred(
+        fit, transform = FALSE, newdata = newdata, allow_new_levels = TRUE,
+        sample_new_levels = "gaussian", incl_thres = TRUE
+      )
+      return(linpred_out)
+    }
   }
   
   if (utils::packageVersion("projpred") <= "2.0.2" && NROW(object$ranef)) {
