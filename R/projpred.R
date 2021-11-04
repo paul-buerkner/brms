@@ -139,8 +139,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
     stop2("This case is not yet supported.")
-    # Use argument `incl_thres` of posterior_linpred() (and convert the
-    # 3-dimensional array to an "augmented-rows" matrix)
+    # Use argument `incl_thres` of posterior_linpred():
     # TODO: uncomment the lines below as soon as arr2augmat() is exported
     # ref_predfun <- function(fit, newdata = NULL) {
     #   # Setting a seed is necessary for reproducible sampling of group-level
@@ -156,17 +155,6 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     #     fit, transform = FALSE, newdata = newdata, allow_new_levels = TRUE,
     #     sample_new_levels = "gaussian", incl_thres = TRUE
     #   )
-    #   stopifnot(length(dim(linpred_out)) == 3L)
-    #   # Since posterior_linpred() is supposed to include the offsets in its
-    #   # result, subtract them here:
-    #   # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-    #   # potential conflicts for a non-`NULL` default `wrhs`:
-    #   offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
-    #   if (length(offs)) {
-    #     stopifnot(length(offs) %in% c(1L, dim(linpred_out)[2]))
-    #     linpred_out <- sweep(linpred_out, 2, offs)
-    #   }
-    #   linpred_out <- projpred:::arr2augmat(linpred_out, margin_draws = 1)
     #   return(linpred_out)
     # }
   }
