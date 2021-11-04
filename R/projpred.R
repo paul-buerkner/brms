@@ -96,7 +96,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   dis <- NULL
   if (family$family == "gaussian") {
     dis <- paste0("sigma", usc(resp))
-    dis <- as.data.frame(object, variable = dis, fixed = TRUE)[[dis]]
+    dis <- as.data.frame(object, variable = dis)[[dis]]
+  } else if (family$family == "Gamma") {
+    dis <- paste0("shape", usc(resp))
+    dis <- as.data.frame(object, variable = dis)[[dis]]
   }
   
   # prepare data passed to projpred
