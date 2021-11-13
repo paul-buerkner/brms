@@ -49,7 +49,6 @@
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
                                  cvfun = NULL, brms_seed = NULL, ...) {
   require_package("projpred")
-  dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {
@@ -75,14 +74,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # For the augmented-data approach, do not re-define ordinal or categorical
   # families to preserve their family-specific extra arguments ("extra" meaning
   # "additionally to `link`") like `refcat` and `thresholds` (see ?brmsfamily):
-  if (!(isTRUE(dots$aug_data) && is_polytomous(family))) {
+  aug_data <- is_categorical(family) || is_ordinal(family)
+  if (!aug_data) {
     family <- get(family$family, mode = "function")(link = family$link)
-  } else {
-    # TODO: uncomment the lines below as soon as the
-    # `extend_family_<family_name>` exist (in brms):
-    # family <- get(paste0("extend_family_", family$family, mode = "function"))(
-    #   family
-    # )
   }
   
   # check if the model is supported by projpred
@@ -137,7 +131,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                         allow_new_levels = TRUE,
                         sample_new_levels = "gaussian"))
   }
-  if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
+  if (is_ordinal(family)) {
     # Use argument `incl_thres` of posterior_linpred():
     ref_predfun <- function(fit, newdata = NULL) {
       # Setting a seed is necessary for reproducible sampling of group-level
@@ -190,6 +184,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     cvfun = cvfun, extract_model_data = extract_model_data,
     cvrefbuilder = cvrefbuilder, ...
   )
+  if (aug_data) {
+    args <- c(args, list(
+      augdat_link = get(paste0("link_", family$family), mode = "function"),
+      augdat_ilink = get(paste0("inv_link_", family$family), mode = "function"),
+      link = family$link
+    ))
+  }
   do_call(projpred::init_refmodel, args)
 }
 
