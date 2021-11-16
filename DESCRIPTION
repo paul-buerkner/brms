@@ -89,4 +89,4 @@ Additional_repositories:
 VignetteBuilder: 
     knitr,
     R.rsp
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

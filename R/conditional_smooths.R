@@ -123,6 +123,8 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
   out <- list()
   mf <- model.frame(fit)
   smef <- tidy_smef(x, mf)
+  # fixes issue #1265
+  smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)
   if (!length(smooths)) {
     I <- seq_along(smterms)
