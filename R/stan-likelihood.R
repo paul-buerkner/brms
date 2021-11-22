@@ -692,15 +692,18 @@ stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
   stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
-stan_log_lik_sratio <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_sratio <- function(bterms, resp = "", mix = "",
+                                threads = NULL, ...) {
   stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
-stan_log_lik_cratio <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_cratio <- function(bterms, resp = "", mix = "", 
+                                threads = NULL, ...) {
   stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
-stan_log_lik_acat <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_acat <- function(bterms, resp = "", mix = "", 
+                              threads = NULL, ...) {
   stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 

@@ -36,3 +36,22 @@ bibentry(
   ),
   encoding = "UTF-8"
 )
+
+bibentry(
+  bibtype = "Article",
+  title = "Bayesian Item Response Modeling in {R} with {brms} and {Stan}",
+  author = person(given = "Paul-Christian", family = "Bürkner"),
+  journal = "Journal of Statistical Software",
+  year = "2021",
+  volume = "100",
+  number = "5",
+  pages = "1--54",
+  doi = "10.18637/jss.v100.i05",
+  textVersion = paste(
+    "Paul-Christian Bürkner (2021).",
+    "Bayesian Item Response Modeling in R with brms and Stan.",
+    "Journal of Statistical Software, 100(5), 1-54.",
+    "doi:10.18637/jss.v100.i05"
+  ),
+  encoding = "UTF-8"
+)
