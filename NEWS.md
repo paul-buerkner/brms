@@ -1,4 +1,4 @@
-# brms 2.16.1++
+# brms 2.16.3
 
 ### Other changes
 
@@ -13,6 +13,7 @@ to use it (the more common case is probably attaching, which is achieved by
 is working as intended thanks to Ruben Arslan. (#1219)
 * Fix a bug in `get_refmodel.brmsfit()` (i.e., when using `projpred` for a
 `"brmsfit"`) causing offsets not to be recognized. (#1220)
+* Several further minor bug fixes.
 
 
 # brms 2.16.1
