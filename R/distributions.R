@@ -1966,14 +1966,14 @@ dcategorical <- function(x, eta, log = FALSE) {
 
 # generic inverse link function for the categorical family
 # 
-# @param x Matrix (S x `ncat` or S x `ncat - 1` (depending on
-#   `refcat_obj`), with S denoting the number of posterior draws and
-#   `ncat` denoting the number of response categories) with values of `eta` for
-#   one observation (see dcategorical()) or an array (S x N x `ncat` or S x N x
-#   `ncat - 1` (depending on `refcat_obj`)) containing the same values as
-#   the matrix just described, but for N observations.
-# @param refcat_obj Either NULL or an object of class "brmsfamily". If
-#   NULL, `x` is not modified at all. If an object of class "brmsfamily", then
+# @param x Matrix (S x `ncat` or S x `ncat - 1` (depending on `refcat_obj`),
+#   with S denoting the number of posterior draws and `ncat` denoting the number
+#   of response categories) with values of `eta` for one observation (see
+#   dcategorical()) or an array (S x N x `ncat` or S x N x `ncat - 1` (depending
+#   on `refcat_obj`)) containing the same values as the matrix just described,
+#   but for N observations.
+# @param refcat_obj Either NULL or an object of class "brmsfamily". If NULL, `x`
+#   is not modified at all. If an object of class "brmsfamily", then
 #   insert_refcat() is used to insert values for the reference category into
 #   `x`.
 # @param log Logical (length 1) indicating whether to log the return value.
