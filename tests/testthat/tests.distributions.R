@@ -539,7 +539,7 @@ test_that("link_categorical() works correctly for arrays", {
         l_categorical <- link_categorical(x_test)
         l_categorical_ch <- link_categorical_ch(x_test)
         expect_equivalent(l_categorical, l_categorical_ch)
-        expect_equal(dim(l_categorical), c(ndraws, nobsv, ncat))
+        expect_equal(dim(l_categorical), c(ndraws, nobsv, ncat - 1))
       }
     }
   }

@@ -2012,7 +2012,7 @@ inv_link_categorical <- function(x, insert_refcat_fam = NULL, log = FALSE) {
 #   array (S x N x `ncat` or S x N x `ncat - 1` (depending on `return_refcat`))
 #   containing the same values as the matrix just described, but for N
 #   observations.
-link_categorical <- function(x, refcat = 1, return_refcat = TRUE) {
+link_categorical <- function(x, refcat = 1, return_refcat = FALSE) {
   ndim <- length(dim(x))
   marg_noncat <- seq_along(dim(x))[-ndim]
   if (return_refcat) {
