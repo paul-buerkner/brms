@@ -1,5 +1,10 @@
-# Very similar to inv_link_categorical(), but iterates over the observations:
-inv_link_categorical_ch <- function(x, log = FALSE) {
+# Very similar to inv_link_categorical(), but iterates over the observations and
+# always assumes the first category to be the reference category:
+inv_link_categorical_ch <- function(x, log = FALSE, refcat_ins = TRUE) {
+  if (refcat_ins) {
+    zeros_arr <- array(0, dim = c(head(dim(x), -1), 1))
+    x <- abind::abind(zeros_arr, x)
+  }
   ndim <- length(dim(x))
   # For testing purposes, only allow 3-dimensional arrays here:
   if (ndim <= 1) {

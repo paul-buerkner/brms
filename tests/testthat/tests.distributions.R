@@ -501,7 +501,8 @@ test_that("dcategorical() works correctly", {
       }
       for (eta_test in eta_test_list) {
         d_categorical <- dcategorical(seq_len(ncat), eta_test)
-        d_categorical_ch <- inv_link_categorical_ch(eta_test)
+        d_categorical_ch <- inv_link_categorical_ch(eta_test,
+                                                    refcat_ins = FALSE)
         expect_equivalent(d_categorical, d_categorical_ch)
         expect_equal(dim(d_categorical), c(ndraws, ncat))
       }
@@ -517,8 +518,6 @@ test_that("inv_link_categorical() works correctly for arrays", {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
                         dim = c(ndraws, nobsv, ncat - 1))
-        zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
-        x_test <- abind::abind(zeros_arr, x_test)
         il_categorical <- inv_link_categorical(x_test)
         il_categorical_ch <- inv_link_categorical_ch(x_test)
         expect_equivalent(il_categorical, il_categorical_ch)
@@ -567,8 +566,6 @@ test_that("link_categorical() inverts inv_link_categorical()", {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
                         dim = c(ndraws, nobsv, ncat - 1))
-        zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
-        x_test <- abind::abind(zeros_arr, x_test)
         il_categorical <- inv_link_categorical(x_test)
         l_categorical <- link_categorical(il_categorical)
         expect_equivalent(l_categorical, x_test)
