@@ -235,7 +235,11 @@ fit_model <- function(model, backend, ...) {
   }
   args <- nlist(data = sdata, seed, init = inits)
   if (use_threading(threads)) {
-    args$threads_per_chain <- threads$threads
+    if (algorithm %in% c("sampling", "fixed_param")) {
+      args$threads_per_chain <- threads$threads
+    } else if (algorithm %in% c("fullrank", "meanfield")) {
+      args$threads <- threads$threads
+    }
   }
   if (use_opencl(opencl)) {
     args$opencl_ids <- opencl$ids
