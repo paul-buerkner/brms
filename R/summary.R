@@ -48,8 +48,9 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     return(out)
   }
   out$chains <- nchains(object)
-  out$iter <- niterations(object) + nwarmup(object)
-  out$warmup <- nwarmup(object)
+  # iterations before thinning
+  out$iter <- object$fit@sim$iter
+  out$warmup <- object$fit@sim$warmup
   out$thin <- nthin(object)
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
