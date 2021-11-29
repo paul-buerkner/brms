@@ -30,9 +30,9 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += student_t_lpdf(sigma | 3, 0, 3.7)")
   expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 3.7)")
   expect_match2(scode, "target += gamma_lpdf(sd_2 | 1, 1)")
-  expect_match2(scode, "prior_b_1 = normal_rng(0,1);")
-  expect_match2(scode, "prior_sd_1_1 = cauchy_rng(0,1)")
-  expect_match2(scode, "while (prior_sd_1_1 < 0)")
+  expect_match2(scode, "prior_b__1 = normal_rng(0,1);")
+  expect_match2(scode, "prior_sd_1__1 = cauchy_rng(0,1)")
+  expect_match2(scode, "while (prior_sd_1__1 < 0)")
   expect_match2(scode, "prior_sd_2 = gamma_rng(1,1)")
   expect_match2(scode, "while (prior_sd_2 < 0)")
   
@@ -63,7 +63,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += cauchy_lpdf(sd_1[1] | 0, 1)")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1 | 2)")
   expect_match2(scode, "prior_b_a = normal_rng(0,5)")
-  expect_match2(scode, "prior_sd_1_2 = student_t_rng(3,0,3.7)")
+  expect_match2(scode, "prior_sd_1__2 = student_t_rng(3,0,3.7)")
   expect_match2(scode, "prior_cor_1 = lkj_corr_rng(M_1,2)[1, 2]")
   
   prior <- c(prior(lkj(2), rescor),
@@ -2234,8 +2234,8 @@ test_that("to_vector() is correctly removed from prior of SD parameters", {
     prior = bprior,
     sample_prior = TRUE
   )
-  expect_match2(scode, "prior_sd_1_1 = normal_rng(0,0.1);")
-  expect_match2(scode, "prior_sd_1_2 = normal_rng(0,0.01);")
+  expect_match2(scode, "prior_sd_1__1 = normal_rng(0,0.1);")
+  expect_match2(scode, "prior_sd_1__2 = normal_rng(0,0.01);")
 })
 
 test_that("threaded Stan code is correct", {

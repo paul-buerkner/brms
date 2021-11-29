@@ -504,7 +504,7 @@ stan_rngprior <- function(prior, par_declars, gen_quantities,
   D$par[has_ind] <- ulapply(D$par[has_ind], function(par) {
     ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
     ind <- get_matches(ind_regex, par, perl = TRUE)
-    gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
+    gsub("\\[[[:digit:]]+\\]", paste0("__", ind), par)
   })
   # cannot handle priors on variable transformations
   D <- D[D$par %in% stan_all_vars(D$par), ]

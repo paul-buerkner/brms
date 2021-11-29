@@ -445,12 +445,12 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
       lc(out) <- clist(pos_priors, priors)
     } else {
       digits <- sapply(priors, function(prior) {
-        d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
+        d <- regmatches(prior, gregexpr("__[[:digit:]]+$", prior))[[1]]
         if (length(d)) as.numeric(substr(d, 2, nchar(d))) else 0
       })
       for (i in seq_along(priors)) {
         if (digits[i] && !is.null(names)) {
-          priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
+          priors[i] <- gsub("_[[:digit:]]+$", names[digits[i]], priors[i])
         }
         if (pars[pos_priors[i]] != priors[i]) {
           lc(out) <- clist(pos_priors[i], priors[i])
