@@ -582,7 +582,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     bylevels <- NULL
     if (nzchar(rdat$by[1])) {
       bylevels <- eval2(rdat$by[1], data)
-      bylevels <- rm_wsp(levels(factor(bylevels)))
+      bylevels <- rm_wsp(extract_levels(bylevels))
     }
     rdat$bylevels <- repl(bylevels, nrow(rdat))
     rdat$form <- repl(re$form[[i]], nrow(rdat))
@@ -641,7 +641,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
         # combine levels of all grouping factors within one grouping term
         levels[[i]] <- unique(ulapply(
           rsub$gcall[[i]]$groups, 
-          function(g) levels(factor(get(g, data)))
+          function(g) extract_levels(get(g, data))
         ))
         # store information of corresponding by levels
         if (nzchar(rsub$by[i])) {
@@ -781,6 +781,13 @@ get_levels <- function(...) {
   }
   out <- unlist(out, recursive = FALSE)
   out[!duplicated(names(out))]
+}
+
+extract_levels <- function(x) {
+  if (anyNA(x)) {
+    stop2("NAs are not allowed in grouping variables.")
+  }
+  levels(factor(x))
 }
 
 # extract names of group-level effects

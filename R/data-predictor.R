@@ -689,7 +689,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     M <- data2[[acef_car$M]]
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
-      new_locations <- levels(factor(loc_data))
+      new_locations <- extract_levels(loc_data)
       if (is.null(locations)) {
         locations <- new_locations
       } else {

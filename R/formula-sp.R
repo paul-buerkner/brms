@@ -304,7 +304,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
       if (length(old_levels)) {
         levels[[i]] <- old_levels[[tmp$gr]]
       } else {
-        levels[[i]] <- levels(factor(get(tmp$gr, data)))
+        levels[[i]] <- extract_levels(get(tmp$gr, data))
       } 
     }
   }

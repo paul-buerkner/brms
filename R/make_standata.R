@@ -283,7 +283,7 @@ standata_basis_ac <- function(x, data, ...) {
     gr <- get_ac_vars(x, "gr", class = "car")
     stopifnot(length(gr) <= 1L)
     if (isTRUE(nzchar(gr))) {
-      out$locations <- levels(factor(get(gr, data)))
+      out$locations <- extract_levels(get(gr, data))
     } else {
       out$locations <- NA
     }
