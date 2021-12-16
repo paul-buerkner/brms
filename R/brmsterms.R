@@ -196,12 +196,12 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   check_fdpars(y$fdpars)
   
   # make a formula containing all required variables
-  unused_vars <- all_vars(attr(x$formula, "unused"))
+  y$unused <- attr(x$formula, "unused")
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
   y$allvars <- allvars_formula(
     lhsvars, advars, lapply(y$dpars, get_allvars), 
     lapply(y$nlpars, get_allvars), y$time$allvars,
-    unused_vars
+    get_unused_arg_vars(y)
   )
   if (check_response) {
     # add y$respform to the left-hand side of y$allvars
@@ -1106,6 +1106,31 @@ check_accidental_helper_functions <- function(formula) {
     }
   }
   invisible(TRUE)
+}
+
+# extract names of variables added via the 'unused' argument
+get_unused_arg_vars <- function(x, ...) {
+  UseMethod("get_unused_arg_vars")
+}
+
+#' @export
+get_unused_arg_vars.brmsformula <- function(x, ...) {
+  all_vars(attr(x$formula, "unused"))
+}
+
+#' @export
+get_unused_arg_vars.mvbrmsformula <- function(x, ...) {
+  unique(ulapply(x$forms, get_unused_arg_vars, ...))
+}
+
+#' @export
+get_unused_arg_vars.brmsterms <- function(x, ...) {
+  all_vars(x$unused)
+}
+
+#' @export
+get_unused_arg_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_unused_arg_vars, ...))
 }
 
 # extract elements from objects
