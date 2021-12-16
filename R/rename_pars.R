@@ -427,7 +427,8 @@ change_special_prior_local <- function(bterms, coef, pars) {
 change_prior <- function(class, pars, names = NULL, new_class = class,
                          is_vector = FALSE) {
   out <- list()
-  regex <- paste0("^prior_", class, "(_[[:digit:]]+|$|\\[)")
+  # 'stan_rngprior' adds '__' before the digits to disambiguate
+  regex <- paste0("^prior_", class, "(__[[:digit:]]+|$|\\[)")
   pos_priors <- which(grepl(regex, pars))
   if (length(pos_priors)) {
     priors <- gsub(
@@ -446,7 +447,7 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
     } else {
       digits <- sapply(priors, function(prior) {
         d <- regmatches(prior, gregexpr("__[[:digit:]]+$", prior))[[1]]
-        if (length(d)) as.numeric(substr(d, 2, nchar(d))) else 0
+        if (length(d)) as.numeric(substr(d, 3, nchar(d))) else 0
       })
       for (i in seq_along(priors)) {
         if (digits[i] && !is.null(names)) {

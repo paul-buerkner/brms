@@ -35,8 +35,8 @@ test_that("restructure_formula_v1 works correctly", {
 })
 
 test_that("change_prior returns expected lists", {
-  pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
-            "prior_b_3", "sd_x[1]", "prior_bp_1")
+  pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b__1", 
+            "prior_b__3", "sd_x[1]", "prior_bp__1")
   expect_equivalent(
     brms:::change_prior(
       class = "b", pars = pars, names = c("x1", "x3", "x2")
