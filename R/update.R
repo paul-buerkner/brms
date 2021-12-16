@@ -165,20 +165,23 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
-  control <- attr(object$fit@sim$samples[[1]], "args")$control
-  control <- control[setdiff(names(control), names(dots$control))]
-  dots$control[names(control)] <- control
+  dots$backend <- match.arg(dots$backend, backend_choices())
+  same_backend <- is_equal(dots$backend, object$backend) 
+  if (same_backend) {
+    # reusing control arguments in other backends may cause errors #1259
+    control <- attr(object$fit@sim$samples[[1]], "args")$control
+    control <- control[setdiff(names(control), names(dots$control))]
+    dots$control[names(control)] <- control 
+  }
   
   if (is.null(recompile)) {
-    dots$backend <- match.arg(dots$backend, backend_choices())
     # only recompile if new and old stan code do not match
     new_stancode <- suppressMessages(do_call(make_stancode, dots))
     # stan code may differ just because of the version number (#288)
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
-    recompile <- needs_recompilation(object) ||
-      !is_equal(new_stancode, old_stancode) ||
-      !is_equal(dots$backend, object$backend) 
+    recompile <- needs_recompilation(object) || !same_backend ||
+      !is_equal(new_stancode, old_stancode)
     if (recompile && silent < 2) {
       message("The desired updates require recompiling the model") 
     }
