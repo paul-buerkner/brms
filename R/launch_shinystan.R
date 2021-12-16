@@ -35,7 +35,9 @@ launch_shinystan.brmsfit <- function(
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
   } 
   draws <- as.array(object)
-  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = FALSE)
+  inc_warmup <- isTRUE(object$fit@sim$n_save[1] > niterations(object))
+  warmup <- if (inc_warmup) nwarmup(object) else 0
+  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = inc_warmup)
   control <- object$fit@stan_args[[1]]$control
   if (is.null(control)) {
     max_td <- 10
@@ -48,7 +50,7 @@ launch_shinystan.brmsfit <- function(
   sso <- shinystan::as.shinystan(
     X = draws, 
     model_name = object$fit@model_name,
-    warmup = 0, 
+    warmup = warmup, 
     sampler_params = sampler_params, 
     max_treedepth = max_td,
     algorithm = "NUTS"
