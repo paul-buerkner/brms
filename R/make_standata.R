@@ -23,7 +23,8 @@
 make_standata <- function(formula, data, family = gaussian(), prior = NULL, 
                           autocor = NULL, data2 = NULL, cov_ranef = NULL, 
                           sample_prior = "no", stanvars = NULL,
-                          threads = NULL, knots = NULL, ...) {
+                          threads = getOption("brms.threads", NULL), 
+                          knots = NULL, ...) {
 
   if (is.brmsfit(formula)) {
     stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")

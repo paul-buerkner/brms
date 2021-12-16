@@ -14,7 +14,7 @@ make_standata(
   cov_ranef = NULL,
   sample_prior = "no",
   stanvars = NULL,
-  threads = NULL,
+  threads = getOption("brms.threads", NULL),
   knots = NULL,
   ...
 )
@@ -90,7 +90,9 @@ more control over the threading process, \code{threads} may also be a
 \code{brmsthreads} object created by \code{\link{threading}}. Within-chain
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
-model that cannot be sped up by any other means.}
+model that cannot be sped up by any other means. Can be set globally for
+the current \R session via the \code{"brms.threads"} option (see
+\code{\link{options}}).}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See

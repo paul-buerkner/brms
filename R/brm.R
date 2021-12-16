@@ -140,11 +140,14 @@
 #'   \code{brmsthreads} object created by \code{\link{threading}}. Within-chain
 #'   parallelization is experimental! We recommend its use only if you are
 #'   experienced with Stan's \code{reduce_sum} function and have a slow running
-#'   model that cannot be sped up by any other means.
+#'   model that cannot be sped up by any other means. Can be set globally for
+#'   the current \R session via the \code{"brms.threads"} option (see
+#'   \code{\link{options}}).
 #' @param opencl The platform and device IDs of the OpenCL device to use for
-#'   fitting using GPU support. If you don't know the IDs of your OpenCL
-#'   device, \code{c(0,0)} is most likely what you need. For more details, see
-#'   \code{\link{opencl}}.
+#'   fitting using GPU support. If you don't know the IDs of your OpenCL device,
+#'   \code{c(0,0)} is most likely what you need. For more details, see
+#'   \code{\link{opencl}}. Can be set globally for the current \R session via
+#'   the \code{"brms.opencl"} option
 #' @param normalize Logical. Indicates whether normalization constants should
 #'   be included in the Stan code (defaults to \code{TRUE}). Setting it
 #'   to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
@@ -429,7 +432,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1), 
-                threads = NULL, opencl = NULL,
+                threads = getOption("brms.threads", NULL),
+                opencl = getOption("brms.opencl", NULL),
                 normalize = getOption("brms.normalize", TRUE),
                 control = NULL, 
                 algorithm = getOption("brms.algorithm", "sampling"),

@@ -21,7 +21,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
-                          threads = NULL, 
+                          threads = getOption("brms.threads", NULL),
                           normalize = getOption("brms.normalize", TRUE),
                           save_model = NULL, ...) {
   

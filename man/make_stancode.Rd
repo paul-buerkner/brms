@@ -17,7 +17,7 @@ make_stancode(
   stanvars = NULL,
   stan_funs = NULL,
   knots = NULL,
-  threads = NULL,
+  threads = getOption("brms.threads", NULL),
   normalize = getOption("brms.normalize", TRUE),
   save_model = NULL,
   ...
@@ -110,7 +110,9 @@ more control over the threading process, \code{threads} may also be a
 \code{brmsthreads} object created by \code{\link{threading}}. Within-chain
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
-model that cannot be sped up by any other means.}
+model that cannot be sped up by any other means. Can be set globally for
+the current \R session via the \code{"brms.threads"} option (see
+\code{\link{options}}).}
 
 \item{normalize}{Logical. Indicates whether normalization constants should
 be included in the Stan code (defaults to \code{TRUE}). Setting it
