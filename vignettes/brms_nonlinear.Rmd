@@ -44,7 +44,7 @@ can be written as follows:
 $$\eta_n = \sum_{i = 1}^K b_i x_{ni}$$
 
 where $b_i$ is the regression coefficient of predictor $i$ and $x_{ni}$ is the
-data of predictor $i$ for observation $n$. This also compromises interaction
+data of predictor $i$ for observation $n$. This also comprises interaction
 terms and various other data transformations. However, the structure of $\eta_n$
 is always linear in the sense that the regression coefficients $b_i$ are
 multiplied by some predictor values and then summed up. This implies that the
