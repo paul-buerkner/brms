@@ -200,7 +200,7 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$par) <- glue(
         "  vector{Ybounds}[N{resp}] Yl{resp};  // latent variable\n"
       )
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  target += normal_{lpdf}(Y{resp}[Jme{resp}]",
         " | Yl{resp}[Jme{resp}], noise{resp}[Jme{resp}]);\n"
       )
@@ -376,8 +376,8 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
   str_add(out$par) <- glue(
     "  simplex[Kbhaz{resp}] sbhaz{resp};  // baseline coefficients\n"
   )
-  str_add(out$prior) <- glue(
-    "  target += dirichlet_{lpdf}(sbhaz{resp} | con_sbhaz{resp});\n"
+  str_add(out$tpar_prior) <- glue(
+    "  lprior += dirichlet_{lpdf}(sbhaz{resp} | con_sbhaz{resp});\n"
   )
   str_add(out$model_def) <- glue(
     "  // compute values of baseline function\n",
@@ -445,8 +445,8 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
     str_add(out$par) <- glue(
       "  simplex[{nmix}] theta{p};  // mixing proportions\n"
     )
-    str_add(out$prior) <- glue(
-      "  target += dirichlet_{lpdf}(theta{p} | con_theta{p});\n"                
+    str_add(out$tpar_prior) <- glue(
+      "  lprior += dirichlet_{lpdf}(theta{p} | con_theta{p});\n"                
     )
     # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- "  // mixing proportions\n"

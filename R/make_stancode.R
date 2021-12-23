@@ -172,12 +172,11 @@ make_stancode <- function(formula, data, family = gaussian(),
   scode_predictor[["model_lik"]] <- 
     wsp_per_line(scode_predictor[["model_lik"]], 2)
     
-  # get priors for all parameters in the model
-  scode_prior <- paste0(
-    scode_predictor[["prior"]],
-    scode_ranef[["prior"]],
-    scode_Xme[["prior"]],
-    stan_unchecked_prior(prior)
+  # get all priors added to 'lprior'
+  scode_tpar_prior <- paste0(
+    scode_predictor[["tpar_prior"]],
+    scode_ranef[["tpar_prior"]],
+    scode_Xme[["tpar_prior"]]
   )
   
   # generate functions block
@@ -221,7 +220,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   # prepare additional sampling from priors
   scode_rngprior <- stan_rngprior(
-    prior = scode_prior,
+    tpar_prior = scode_tpar_prior,
     par_declars = scode_parameters,
     gen_quantities = scode_predictor[["gen_def"]],
     prior_special = attr(prior, "special"),
@@ -236,25 +235,30 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   
   # generate transformed parameters block
+  not_const <- str_if(!normalize, " not")
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
       scode_predictor[["tpar_def"]],
       scode_ranef[["tpar_def"]],
       scode_Xme[["tpar_def"]],
+      "  real lprior = 0;  // prior contributions to the log posterior\n",
       collapse_stanvars(stanvars, "tparameters", "start"),
-      scode_predictor[["tpar_prior"]],
-      scode_ranef[["tpar_prior"]],
-      scode_Xme[["tpar_prior"]],
+      scode_predictor[["tpar_prior_const"]],
+      scode_ranef[["tpar_prior_const"]],
+      scode_Xme[["tpar_prior_const"]],
       scode_predictor[["tpar_comp"]],
       scode_predictor[["tpar_reg_prior"]],
       scode_ranef[["tpar_comp"]],
       scode_Xme[["tpar_comp"]],
+      "  // priors", not_const, " including constants\n",
+      scode_predictor[["tpar_prior"]],
+      scode_ranef[["tpar_prior"]],
+      scode_Xme[["tpar_prior"]],
       collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
   
   # combine likelihood with prior part
-  not_const <- str_if(!normalize, " not")
   scode_model <- paste0(
     "model {\n",
       collapse_stanvars(stanvars, "model", "start"),
@@ -263,7 +267,11 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor[["model_lik"]],
       "  }\n", 
       "  // priors", not_const, " including constants\n",
-      scode_prior, 
+      "  target += lprior;\n",
+      scode_predictor[["model_prior"]],
+      scode_ranef[["model_prior"]],
+      scode_Xme[["model_prior"]],
+      stan_unchecked_prior(prior),
       collapse_stanvars(stanvars, "model", "end"),
     "}\n"
   )

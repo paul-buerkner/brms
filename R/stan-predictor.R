@@ -315,13 +315,17 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     b_bound <- get_bound(prior, class = "b", px = px)
     b_type <- glue("vector{b_bound}[K{ct}{p}]")
     b_coef_type <- glue("real{b_bound}")
+    has_special_b_prior <- stan_has_special_b_prior(bterms, prior)
     assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
     if (decomp == "none") {
       b_suffix <- ""
       b_comment <- "population-level effects"
-      if (assign_b_tpar) {
-        str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
-        str_add(out$pll_args) <- glue(", vector b{p}")
+      if (has_special_b_prior) {
+        if (assign_b_tpar) {
+          # only some special priors assign b in transformed parameters
+          str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
+          str_add(out$pll_args) <- glue(", vector b{p}")
+        }
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type, 
@@ -337,9 +341,12 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       }
       b_suffix <- "Q"
       b_comment <- "regression coefficients at QR scale"
-      if (assign_b_tpar) {
-        str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
-        str_add(out$pll_args) <- glue(", vector bQ{p}")
+      if (has_special_b_prior) {
+        if (assign_b_tpar) {
+          # only some special priors assign b in transformed parameters
+          str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
+          str_add(out$pll_args) <- glue(", vector bQ{p}")
+        }
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
@@ -471,7 +478,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
       str_add(out$par) <- glue(
         "  vector<lower=0>[N_{id}] udf{g};\n"
       )
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  target += inv_chi_square_{lpdf}(udf{g} | df{g});\n"
       )
       # separate definition from computation to support fixed parameters
@@ -597,7 +604,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
       "  matrix[M_{id}, N_{id}] z_{id};",
       "  // standardized group-level effects\n"
     )
-    str_add(out$prior) <- glue(
+    str_add(out$model_prior) <- glue(
       "  target += std_normal_{lpdf}(to_vector(z_{id}));\n"
     )
     if (has_rows(tr)) {
@@ -684,7 +691,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
       "  vector[N_{id}] z_{id}[M_{id}];",
       "  // standardized group-level effects\n"
     )
-    str_add(out$prior) <- cglue(
+    str_add(out$model_prior) <- cglue(
       "  target += std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n"
     )
     Lcov <- str_if(has_cov, glue("Lcov_{id} * "))
@@ -784,7 +791,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
       "  s{pi}_{nb} = sds{pi}_{nb} * zs{pi}_{nb};\n"
     )
     str_add(out$pll_args) <- cglue(", vector s{pi}_{nb}")
-    str_add(out$prior) <- cglue(
+    str_add(out$model_prior) <- cglue(
       "  target += std_normal_{lpdf}(zs{pi}_{nb});\n"
     )
     str_add(out$eta) <- cglue(
@@ -956,8 +963,8 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
           str_add(out$par) <- glue(
             "  simplex[Jmo{p}[{j}]] simo{p}_{j};  // monotonic simplex\n"
           )
-          str_add(out$prior) <- glue(
-            "  target += dirichlet_{lpdf}(simo{p}_{j} | con_simo{p}_{j});\n"
+          str_add(out$tpar_prior) <- glue(
+            "  lprior += dirichlet_{lpdf}(simo{p}_{j} | con_simo{p}_{j});\n"
           )
         } else {
           # use the simplex shared across all terms of the same ID
@@ -981,11 +988,14 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   
   # prepare special effects coefficients
   bound <- get_bound(prior, class = "b", px = px)
-  if (stan_assign_b_tpar(bterms, prior)) {
-    str_add(out$tpar_def) <- glue(
-      "  // special effects coefficients\n", 
-      "  vector{bound}[Ksp{p}] bsp{p};\n"
-    )
+  if (stan_has_special_b_prior(bterms, prior)) {
+    if (stan_assign_b_tpar(bterms, prior)) {
+      # only some special priors assign b in transformed parameters
+      str_add(out$tpar_def) <- glue(
+        "  // special effects coefficients\n", 
+        "  vector{bound}[Ksp{p}] bsp{p};\n"
+      )
+    }
   } else {
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = spef$coef, 
@@ -1142,7 +1152,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       str_add(out$model_comp_basic) <- cglue(
         "  {eta} += {Cgp}gp_pred{pi}_{J}{Jgp};\n"
       )
-      str_add(out$prior) <- cglue(
+      str_add(out$model_prior) <- cglue(
         "{tp()}std_normal_{lpdf}(zgp{pi}_{J});\n"
       )
     } else {
@@ -1221,7 +1231,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
         str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}{Jgp}")
         str_add(out$pll_args) <- glue(", vector gp_pred{pi}")
       }
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "{tp()}std_normal_{lpdf}(zgp{pi});\n"
       )
     }
@@ -1261,7 +1271,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  vector[N{resp}] err{p};  // actual residuals\n"
     )
     str_add(out$pll_args) <- glue(", vector err{p}")
-    str_add(out$prior) <- glue(
+    str_add(out$model_prior) <- glue(
       "  target += std_normal_{lpdf}(zerr{p});\n"
     )
     str_add(out$eta) <- glue(" + err{p}{slice}")
@@ -1507,7 +1517,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "Nneigh", "eigenMcar", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  target += sparse_car_lpdf(\n", 
         "    rcar{p} | {car_args}\n",
         "  );\n"
@@ -1529,7 +1539,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "eigenMcar", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  target += sparse_icar_lpdf(\n", 
         "    rcar{p} | {car_args}\n",
         "  );\n"
@@ -1550,7 +1560,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  // compute scaled parameters for the ICAR structure\n",
         "  rcar{p} = zcar{p} * sdcar{p};\n"
       )
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  // improper prior on the spatial CAR component\n",
         "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
         "  // soft sum-to-zero constraint\n",
@@ -1584,7 +1594,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
         " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
       )
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  // improper prior on the spatial BYM2 component\n",
         "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
         "  // soft sum-to-zero constraint\n",
@@ -1751,7 +1761,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
       coef_type = "real<lower=0>", comment = "latent SDs",
       normalize = normalize
     )
-    str_add(out$prior) <- cglue(
+    str_add(out$model_prior) <- cglue(
       "  target += normal_{lpdf}(Xn_{K} | Xme_{K}, noise_{K});\n"
     )
     if (meef$cor[K[1]] && length(K) > 1L) {
@@ -1784,7 +1794,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
         "  Xme_{K} = Xme{i}[, {J}];\n"
       )
       str_add(out$pll_args) <- cglue(", vector Xme_{K}")
-      str_add(out$prior) <- glue(
+      str_add(out$model_prior) <- glue(
         "  target += std_normal_{lpdf}(to_vector(zme_{i}));\n"
       )
       str_add(out$gen_def) <- cglue(
@@ -1809,7 +1819,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
         "  Xme_{K} = meanme_{i}[{J}] + sdme_{i}[{J}] * zme_{K};\n"
       )
       str_add(out$pll_args) <- cglue(", vector Xme_{K}")
-      str_add(out$prior) <- cglue(
+      str_add(out$model_prior) <- cglue(
         "  target += std_normal_{lpdf}(zme_{K});\n"
       )
     }
@@ -2014,6 +2024,13 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
     !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
+}
+
+# indicate if the overall coefficients 'b' have a special prior
+stan_has_special_b_prior <- function(bterms, prior) {
+  special <- get_special_prior(prior, bterms)
+  !is.null(special$horseshoe) || !is.null(special$R2D2) ||
+    !is.null(special$lasso)
 }
 
 # indicate if the overall coefficients 'b' should be

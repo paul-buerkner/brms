@@ -534,7 +534,7 @@ reorder_pars <- function(x) {
     "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
     "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", 
-    "lp"
+    "lprior", "lp"
   ))
   # reorder parameter classes
   class <- get_matches("^[^_]+", x$fit@sim$pars_oi)

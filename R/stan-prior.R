@@ -117,22 +117,22 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
             coef_prior <- stan_constant_prior(
               coef_prior, par_ij, broadcast = broadcast
             )
-            str_add(out$tpar_prior) <- paste0(coef_prior, ";\n")
+            str_add(out$tpar_prior_const) <- paste0(coef_prior, ";\n")
           } else {
             coef_prior <- stan_target_prior(
               coef_prior, par_ij, broadcast = broadcast, 
               bound = bound, resp = px$resp[1], normalize = normalize
             )
-            str_add(out$prior) <- paste0(tp(), coef_prior, ";\n") 
+            str_add(out$tpar_prior) <- paste0(lpp(), coef_prior, ";\n") 
           }
         }
       }
     }
     # the base prior may be improper flat in which no Stan code is added
     # but we still have estimated coefficients if the base prior is used
-    has_estimated_priors <- isTRUE(nzchar(out$prior)) ||
+    has_estimated_priors <- isTRUE(nzchar(out$tpar_prior)) ||
       used_base_prior && !stan_is_constant_prior(base_prior)
-    has_constant_priors <- isTRUE(nzchar(out$tpar_prior))
+    has_constant_priors <- isTRUE(nzchar(out$tpar_prior_const))
     if (has_estimated_priors && has_constant_priors) {
       # need to mix definition in the parameters and transformed parameters block
       if (!nzchar(coef_type)) {
@@ -145,7 +145,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           "  {coef_type} par_{par}_{iu};\n"
         )
         ib <- collapse("[", index, "]")
-        str_add(out$tpar_prior) <- cglue(
+        str_add(out$tpar_prior_const) <- cglue(
           "  {par}{ib} = par_{par}_{iu};\n"
         ) 
       }
@@ -158,13 +158,13 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       constant_base_prior <- stan_constant_prior(
         base_prior, par = par, ncoef = ncoef, broadcast = broadcast
       )
-      str_add(out$tpar_prior) <- paste0(constant_base_prior, ";\n")
+      str_add(out$tpar_prior_const) <- paste0(constant_base_prior, ";\n")
     } else {
       target_base_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, bound = bound,
         broadcast = broadcast, resp = px$resp[1], normalize = normalize
       )
-      str_add(out$prior) <- paste0(tp(), target_base_prior, ";\n")
+      str_add(out$tpar_prior) <- paste0(lpp(), target_base_prior, ";\n")
     }
   }
   
@@ -187,7 +187,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       stop2("Cannot fix parameter '", par, "' in this model.")
     }
   }
-  has_improper_prior <- !is.null(out$par) && is.null(out$prior)
+  has_improper_prior <- !is.null(out$par) && is.null(out$tpar_prior)
   if (prior_only && has_improper_prior) {
     stop2("Sampling from priors is not possible as ", 
           "some parameters have no proper priors. ",
@@ -316,6 +316,7 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
 stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
   out <- list()
   tp <- tp()
+  lpp <- lpp()
   lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -331,17 +332,17 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
     )
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
-      "  real<lower=0> hs_global{p};  // global shrinkage parameters\n",
+      "  real<lower=0> hs_global{p};  // global shrinkage parameter\n",
       "  real<lower=0> hs_slab{p};  // slab regularization parameter\n"
     )
     hs_scale_global <- glue("hs_scale_global{p}")
     if (isTRUE(special$horseshoe$autoscale)) {
       str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
     }
-    str_add(out$prior) <- glue(
-      "{tp}student_t_{lpdf}(hs_global{p} | hs_df_global{p}, 0, {hs_scale_global})",
+    str_add(out$tpar_prior) <- glue(
+      "{lpp}student_t_{lpdf}(hs_global{p} | hs_df_global{p}, 0, {hs_scale_global})",
       str_if(normalize, "\n    - 1 * log(0.5)"), ";\n",
-      "{tp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
+      "{lpp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
   }
   if (!is.null(special$R2D2)) {
@@ -363,8 +364,8 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
     str_add(out$tpar_comp) <- glue(
       "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n"
     )
-    str_add(out$prior) <- glue(
-      "{tp}beta_{lpdf}(R2D2_R2{p} | R2D2_mean_R2{p} * R2D2_prec_R2{p}, ",
+    str_add(out$tpar_prior) <- glue(
+      "{lpp}beta_{lpdf}(R2D2_R2{p} | R2D2_mean_R2{p} * R2D2_prec_R2{p}, ",
       "(1 - R2D2_mean_R2{p}) * R2D2_prec_R2{p});\n"
     )
   }
@@ -378,8 +379,8 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       "  // lasso shrinkage parameter\n",
       "  real<lower=0> lasso_inv_lambda{p};\n"
     )
-    str_add(out$prior) <- glue(
-      "{tp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
+    str_add(out$tpar_prior) <- glue(
+      "{lpp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
     )
   }
   out
@@ -407,7 +408,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
   special <- get_special_prior(prior, px)
   if (!is.null(special$horseshoe)) {
     str_add(out$par) <- glue(
-      "  // local parameters for horseshoe prior\n",
+      "  // local parameters for the horseshoe prior\n",
       "  vector[K{ct}{sp}] zb{sp};\n",
       "  vector<lower=0>[K{ct}{sp}] hs_local{sp};\n"
     )
@@ -416,10 +417,10 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       glue("hs_scale_slab{p}^2 * hs_slab{p}")
     )
     str_add(out$tpar_reg_prior) <- glue(
-      "  // compute actual regression coefficients\n",
+      "  // compute the actual regression coefficients\n",
       "  b{suffix}{sp} = horseshoe({hs_args});\n"
     )
-    str_add(out$prior) <- glue(
+    str_add(out$model_prior) <- glue(
       "{tp}std_normal_{lpdf}(zb{sp});\n",
       "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
       str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
@@ -446,9 +447,17 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       "  // compute actual regression coefficients\n",
       "  b{suffix}{sp} = R2D2({R2D2_args});\n"
     )
-    str_add(out$prior) <- glue(
+    str_add(out$model_prior) <- glue(
       "{tp}std_normal_{lpdf}(zb{sp});\n",
       "{tp}dirichlet_{lpdf}(R2D2_phi{sp} | R2D2_cons_D2{p});\n"
+    )
+  }
+  if (!is.null(special$lasso)) {
+    str_add(out$par) <- glue(
+      "  vector[K{ct}{sp}] b{sp};  // population-level effects\n"
+    )
+    str_add(out$model_prior) <- glue(
+      "{tp}double_exponential_lpdf(b{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
     )
   }
   out
@@ -467,21 +476,22 @@ stan_unchecked_prior <- function(prior) {
 }
 
 # Stan code to sample separately from priors
-# @param prior character string taken from stan_prior
+# @param tpar_prior character string taken from stan_prior that contains
+#   all priors that can potentially be sampled from separately
 # @param par_declars the parameters block of the Stan code
-#     required to extract boundaries
+#   required to extract boundaries
 # @param gen_quantities Stan code from the generated quantities block
 # @param prior_special a list of values pertaining to special priors
 #   such as horseshoe or lasso
 # @param sample_prior take draws from priors?
-stan_rngprior <- function(prior, par_declars, gen_quantities, 
+stan_rngprior <- function(tpar_prior, par_declars, gen_quantities, 
                           prior_special, sample_prior = "yes") {
   if (!is_equal(sample_prior, "yes")) {
     return(list())
   }
-  prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
+  tpar_prior <- strsplit(gsub(" |\\n", "", tpar_prior), ";")[[1]]
   # D will contain all relevant information about the priors
-  D <- data.frame(prior = prior[nzchar(prior)])
+  D <- data.frame(prior = tpar_prior[nzchar(tpar_prior)])
   pars_regex <- "(?<=(_lpdf\\())[^|]+" 
   D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
   # 'std_normal' has no '|' and thus the above regex matches too much
@@ -493,7 +503,7 @@ stan_rngprior <- function(prior, par_declars, gen_quantities,
   tv_regex <- "(^to_vector\\()|(\\)(?=((\\[[[:digit:]]+\\])?)$))"
   D$par[has_tv] <- gsub(tv_regex, "", D$par[has_tv], perl = TRUE)
   # do not sample from some auxiliary parameters
-  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "tmp")
+  excl_regex <- c("tmp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
@@ -513,7 +523,7 @@ stan_rngprior <- function(prior, par_declars, gen_quantities,
   class_old <- c("^L_", "^Lrescor")
   class_new <- c("cor_", "rescor")
   D$par <- rename(D$par, class_old, class_new, fixed = FALSE)
-  dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
+  dis_regex <- "(?<=lprior\\+=)[^\\(]+(?=_lpdf\\()"
   D$dist <- get_matches(dis_regex, D$prior, perl = TRUE, first = TRUE)
   D$dist <- sub("corr_cholesky$", "corr", D$dist)
   args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
@@ -608,4 +618,10 @@ stan_lpdf_name <- function(normalize, int = FALSE) {
     out <- ifelse(int, "lupmf", "lupdf")
   }
   out
+}
+
+# lprior plus equal
+lpp <- function(wsp = 2) {
+  wsp <- collapse(rep(" ", wsp))
+  paste0(wsp, "lprior += ")
 }

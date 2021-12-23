@@ -1494,10 +1494,7 @@ validate_prior_special.btl <- function(x, prior, data,
         # the parameterization via double_exponential appears to be more
         # efficient than an indirect parameterization via normal and 
         # exponential distributions; tested on 2017-06-09
-        p <- usc(combine_prefix(px))
-        lasso_scale <- paste0("lasso_scale", p, " * lasso_inv_lambda", p)
-        lasso_prior <- paste0("double_exponential(0, ", lasso_scale, ")")
-        prior$prior[b_index] <- lasso_prior
+        # TODO: enable autoscaling for lasso as well?
         special$lasso <- attributes(eval2(b_prior))
       }
     }
