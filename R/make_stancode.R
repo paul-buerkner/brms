@@ -235,13 +235,13 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   
   # generate transformed parameters block
-  not_const <- str_if(!normalize, " not")
+  scode_lprior_def <- "  real lprior = 0;  // prior contributions to the log posterior\n"
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
       scode_predictor[["tpar_def"]],
       scode_ranef[["tpar_def"]],
       scode_Xme[["tpar_def"]],
-      "  real lprior = 0;  // prior contributions to the log posterior\n",
+      str_if(normalize, scode_lprior_def),
       collapse_stanvars(stanvars, "tparameters", "start"),
       scode_predictor[["tpar_prior_const"]],
       scode_ranef[["tpar_prior_const"]],
@@ -250,23 +250,25 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor[["tpar_reg_prior"]],
       scode_ranef[["tpar_comp"]],
       scode_Xme[["tpar_comp"]],
-      "  // priors", not_const, " including constants\n",
-      scode_predictor[["tpar_prior"]],
-      scode_ranef[["tpar_prior"]],
-      scode_Xme[["tpar_prior"]],
+      # lprior cannot contain _lupdf functions in transformed parameters
+      # as discussed on github.com/stan-dev/stan/issues/3094
+      str_if(normalize, scode_tpar_prior),
       collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
   
   # combine likelihood with prior part
+  not_const <- str_if(!normalize, " not")
   scode_model <- paste0(
     "model {\n",
+      str_if(!normalize, scode_lprior_def),
       collapse_stanvars(stanvars, "model", "start"),
       "  // likelihood", not_const, " including constants\n",
       "  if (!prior_only) {\n",
       scode_predictor[["model_lik"]],
       "  }\n", 
       "  // priors", not_const, " including constants\n",
+      str_if(!normalize, scode_tpar_prior),
       "  target += lprior;\n",
       scode_predictor[["model_prior"]],
       scode_ranef[["model_prior"]],

@@ -2318,9 +2318,7 @@ test_that("Un-normalized Stan code is correct", {
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
   found_cmdstan <- !is(cmdstan_version, "try-error")
   options(
-    # will not compile for the time being (https://github.com/stan-dev/stan/issues/3094)
-    brms.parse_stancode = FALSE,
-    # brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.25" && not_cran, 
+    brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.25" && not_cran, 
     brms.backend = "cmdstanr"
   )
   
