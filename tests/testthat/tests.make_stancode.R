@@ -2298,8 +2298,8 @@ test_that("threaded Stan code is correct", {
   
   bform <- bf(brms::mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_count, seq_count,")
-  expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf_Exp, seq_Exp,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_count_lpmf, seq_count,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_Exp_lpmf, seq_Exp,")
   expect_match2(scode, 
     "ptarget += normal_id_glm_lpdf(Y_Exp[start:end] | Xc_Exp[start:end], Intercept_Exp, b_Exp, sigma_Exp);"
   )

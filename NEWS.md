@@ -1,3 +1,11 @@
+# brms 2.16.3++
+
+### Bug Fixes
+
+Fix Stan code of threaded multivariate models 
+thanks to Anirban Mukherjee. (#1277)
+
+
 # brms 2.16.3
 
 ### Other changes
