@@ -2,9 +2,10 @@
 
 ### Bug Fixes
 
-Fix Stan code of threaded multivariate models 
+* Fix Stan code of threaded multivariate models 
 thanks to Anirban Mukherjee. (#1277)
-
+* Fix usage of `int_conditions` in `conditional_smooths`
+thanks to Urs Kalbitzer. (#1280)
 
 # brms 2.16.3
 

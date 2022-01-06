@@ -148,8 +148,14 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     values <- named_list(vars)
     is_numeric <- setNames(rep(FALSE, ncovars), covars)
     for (cv in covars) {
-      if (is.numeric(mf[[cv]])) {
-        is_numeric[cv] <- TRUE
+      is_numeric[cv] <- is.numeric(mf[[cv]])
+      if (cv %in% names(int_conditions)) {
+        int_cond <- int_conditions[[cv]]
+        if (is.function(int_cond)) {
+          int_cond <- int_cond(mf[[cv]])
+        }
+        values[[cv]] <- int_cond
+      } else if (is_numeric[cv]) {
         values[[cv]] <- seq(
           min(mf[[cv]]), max(mf[[cv]]), 
           length.out = resolution
