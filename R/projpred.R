@@ -188,7 +188,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     args <- c(args, list(
       augdat_link = get(paste0("link_", family$family), mode = "function"),
       augdat_ilink = get(paste0("inv_link_", family$family), mode = "function"),
-      link = family$link
+      augdat_args_link = list(link = family$link),
+      augdat_args_ilink = list(link = family$link)
     ))
   }
   do_call(projpred::init_refmodel, args)
