@@ -417,7 +417,8 @@ tidy_spef <- function(x, data) {
   # extract data frame to track all required index variables
   uni_mi <- unique(data.frame(
     var = unlist(out$vars_mi), 
-    idx = unlist(out$idx_mi)
+    idx = unlist(out$idx_mi),
+    stringsAsFactors = FALSE
   ))
   uni_mi$idx2 <- rep(NA, nrow(uni_mi))
   for (i in seq_rows(uni_mi)) {
