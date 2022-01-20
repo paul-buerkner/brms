@@ -142,13 +142,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # extract a list of K-fold sub-models
   if (is.null(cvfun)) {
     cvfun <- function(folds, ...) {
-      cvres <- kfold(
-        object, K = max(folds),
-        save_fits = TRUE, folds = folds,
-        ...
-      )
-      fits <- cvres$fits[, "fit"]
-      return(fits)
+      kfold(
+        object, K = max(folds), save_fits = TRUE, folds = folds, ...
+      )$fits[, "fit"]
     }
   } else {
     if (!is.function(cvfun)) {
