@@ -450,7 +450,10 @@ conditional_effects.brmsterms <- function(
     }
     spag <- data.frame(as.numeric(t(spag)), factor(sample))
     colnames(spag) <- c("estimate__", "sample__")
-    spag <- cbind(cond_data, spag)
+    # ensures that 'cbind' works even in the presence of matrix columns
+    cond_data_spag <- repl(cond_data, nrow(spag) / nrow(cond_data))
+    cond_data_spag <- Reduce(rbind, cond_data_spag)
+    spag <- cbind(cond_data_spag, spag)
   }
   
   out <- posterior_summary(out, probs = probs, robust = robust)
