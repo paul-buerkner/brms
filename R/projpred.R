@@ -14,6 +14,8 @@
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
 #' based on \code{\link{kfold.brmsfit}}.
 #' @param kfold_seed A seed passed to \code{\link{kfold.brmsfit}}.
+#' @param refprd_seed A seed for sampling group-level effects for new levels (in
+#' multilevel models).
 #' @param ... Further arguments passed to 
 #' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
@@ -46,7 +48,8 @@
 #' plot(cv_vs)
 #' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 cvfun = NULL, kfold_seed = NULL, ...) {
+                                 cvfun = NULL, kfold_seed = NULL,
+                                 refprd_seed = NULL, ...) {
   require_package("projpred")
   dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -112,18 +115,39 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
-  # Using the default prediction function from projpred is usually fine
-  ref_predfun <- NULL
+  # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
+  # use a customized `ref_predfun`:
+  ref_predfun <- function(fit, newdata = NULL) {
+    # Setting a seed is necessary for reproducible sampling of group-level
+    # effects for new levels:
+    if (exists(".Random.seed")) {
+      rng_state_old <- .Random.seed
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(refprd_seed)
+    t(posterior_linpred(fit,
+                        newdata = newdata,
+                        allow_new_levels = TRUE,
+                        sample_new_levels = "gaussian"))
+  }
   if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
     stop2("This case is not yet supported.")
     # Use argument `incl_thres` of posterior_linpred() (and convert the
     # 3-dimensional array to an "augmented-rows" matrix)
     # TODO: uncomment the lines below as soon as arr2augmat() is exported
     # ref_predfun <- function(fit, newdata = NULL) {
+    #   # Setting a seed is necessary for reproducible sampling of group-level
+    #   # effects for new levels:
+    #   if (exists(".Random.seed")) {
+    #     rng_state_old <- .Random.seed
+    #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    #   }
+    #   set.seed(refprd_seed)
     #   # Note: `transform = FALSE` is not needed, but included here for
     #   # consistency with projpred's default ref_predfun():
     #   linpred_out <- posterior_linpred(
-    #     fit, transform = FALSE, newdata = newdata, incl_thres = TRUE
+    #     fit, transform = FALSE, newdata = newdata, allow_new_levels = TRUE,
+    #     sample_new_levels = "gaussian", incl_thres = TRUE
     #   )
     #   stopifnot(length(dim(linpred_out)) == 3L)
     #   # Since posterior_linpred() is supposed to include the offsets in its
@@ -175,6 +199,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # call standata to ensure the correct format of the data
   args <- nlist(
     object, newdata, resp,
+    allow_new_levels = TRUE,
     check_response = TRUE, 
     internal = TRUE
   )
