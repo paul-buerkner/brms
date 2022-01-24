@@ -13,6 +13,7 @@
 #' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
 #' based on \code{\link{kfold.brmsfit}}.
+#' @param kfold_seed A seed passed to \code{\link{kfold.brmsfit}}.
 #' @param ... Further arguments passed to 
 #' \code{\link[projpred:get-refmodel]{init_refmodel}}.
 #' 
@@ -45,7 +46,7 @@
 #' plot(cv_vs)
 #' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 cvfun = NULL, ...) {
+                                 cvfun = NULL, kfold_seed = NULL, ...) {
   require_package("projpred")
   dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -142,8 +143,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # extract a list of K-fold sub-models
   if (is.null(cvfun)) {
     cvfun <- function(folds, ...) {
+      if (is.null(kfold_seed)) {
+        # Since kfold() doesn't seem to accept `seed = NULL`, set a random seed:
+        kfold_seed <- sample.int(.Machine$integer.max, 1)
+      }
       kfold(
-        object, K = max(folds), save_fits = TRUE, folds = folds, ...
+        object, K = max(folds), save_fits = TRUE, folds = folds,
+        seed = kfold_seed, ...
       )$fits[, "fit"]
     }
   } else {

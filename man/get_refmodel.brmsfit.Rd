@@ -4,7 +4,14 @@
 \alias{get_refmodel.brmsfit}
 \title{Projection Predictive Variable Selection: Get Reference Model}
 \usage{
-get_refmodel.brmsfit(object, newdata = NULL, resp = NULL, cvfun = NULL, ...)
+get_refmodel.brmsfit(
+  object,
+  newdata = NULL,
+  resp = NULL,
+  cvfun = NULL,
+  kfold_seed = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -22,6 +29,8 @@ are performed only for the specified response variables.}
 (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
 If \code{NULL} (the default), \code{cvfun} is defined internally
 based on \code{\link{kfold.brmsfit}}.}
+
+\item{kfold_seed}{A seed passed to \code{\link{kfold.brmsfit}}.}
 
 \item{...}{Further arguments passed to 
 \code{\link[projpred:get-refmodel]{init_refmodel}}.}
