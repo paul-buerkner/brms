@@ -1138,24 +1138,24 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   if (!is.null(log_lik)) {
     log_lik <- as.function(log_lik)
     args <- names(formals(log_lik))
-    if (!is_equal(args[1:2], c("i", "draws"))) {
+    if (!is_equal(args[1:2], c("i", "prep"))) {
       stop2("The first two arguments of 'log_lik' ", 
-            "should be 'i' and 'draws'.")
+            "should be 'i' and 'prep'.")
     }
   }
   if (!is.null(posterior_predict)) {
     posterior_predict <- as.function(posterior_predict)
     args <- names(formals(posterior_predict))
-    if (!is_equal(args[1:3], c("i", "draws", "..."))) {
+    if (!is_equal(args[1:3], c("i", "prep", "..."))) {
       stop2("The first three arguments of 'posterior_predict' ", 
-            "should be 'i', 'draws', and '...'.")
+            "should be 'i', 'prep', and '...'.")
     }
   }
   if (!is.null(posterior_epred)) {
     posterior_epred <- as.function(posterior_epred)
     args <- names(formals(posterior_epred))
-    if (!is_equal(args[1], "draws")) {
-      stop2("The first argument of 'posterior_epred' should be 'draws'.")
+    if (!is_equal(args[1], "prep")) {
+      stop2("The first argument of 'posterior_epred' should be 'prep'.")
     }
   }
   lb <- named_list(dpars, lb)
