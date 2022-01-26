@@ -116,23 +116,24 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
-  # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
-  # use a customized `ref_predfun`:
-  ref_predfun <- function(fit, newdata = NULL) {
-    # Setting a seed is necessary for reproducible sampling of group-level
-    # effects for new levels:
-    if (exists(".Random.seed", envir = .GlobalEnv)) {
-      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (!is_ordinal(family)) {
+    # The default `ref_predfun` from projpred does not set `allow_new_levels`,
+    # so use a customized `ref_predfun`:
+    ref_predfun <- function(fit, newdata = NULL) {
+      # Setting a seed is necessary for reproducible sampling of group-level
+      # effects for new levels:
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+        on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+      }
+      set.seed(refprd_seed)
+      t(posterior_linpred(fit,
+                          newdata = newdata,
+                          allow_new_levels = TRUE,
+                          sample_new_levels = "gaussian"))
     }
-    set.seed(refprd_seed)
-    t(posterior_linpred(fit,
-                        newdata = newdata,
-                        allow_new_levels = TRUE,
-                        sample_new_levels = "gaussian"))
-  }
-  if (is_ordinal(family)) {
-    # Use argument `incl_thres` of posterior_linpred():
+  } else {
+    # Also use argument `incl_thres` of posterior_linpred():
     ref_predfun <- function(fit, newdata = NULL) {
       # Setting a seed is necessary for reproducible sampling of group-level
       # effects for new levels:
