@@ -182,9 +182,21 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
   
+  cvrefbuilder <- function(cvfit) {
+    # For `refprd_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new seed
+    # which is based on the original `refprd_seed`:
+    if (is.null(refprd_seed)) {
+      refprd_seed_k <- NULL
+    } else {
+      refprd_seed_k <- refprd_seed + cvfit$projpred_k
+    }
+    projpred::get_refmodel(cvfit, resp = resp, refprd_seed = refprd_seed_k, ...)
+  }
+  
   args <- nlist(
     object, data, formula, family, dis, ref_predfun = ref_predfun,
-    cvfun = cvfun, extract_model_data = extract_model_data, ...
+    cvfun = cvfun, extract_model_data = extract_model_data,
+    cvrefbuilder = cvrefbuilder, ...
   )
   do_call(projpred::init_refmodel, args)
 }
