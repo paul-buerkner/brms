@@ -10,14 +10,14 @@
 #' 
 #' @inheritParams posterior_predict.brmsfit
 #' @param cvfun Optional cross-validation function
-#' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+#' (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
 #' based on \code{\link{kfold.brmsfit}}.
 #' @param kfold_seed A seed passed to \code{\link{kfold.brmsfit}}.
 #' @param refprd_seed A seed for sampling group-level effects for new levels (in
 #' multilevel models).
 #' @param ... Further arguments passed to 
-#' \code{\link[projpred:get-refmodel]{init_refmodel}}.
+#' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #' 
 #' @details Note that the \code{extract_model_data} function used internally by
 #'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
