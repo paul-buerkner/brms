@@ -57,8 +57,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # Infer "sub-seeds":
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(brms_seed)
@@ -127,8 +127,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   ref_predfun <- function(fit, newdata = NULL) {
     # Setting a seed is necessary for reproducible sampling of group-level
     # effects for new levels:
-    if (exists(".Random.seed")) {
-      rng_state_old <- .Random.seed
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(refprd_seed)
@@ -145,8 +145,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     # ref_predfun <- function(fit, newdata = NULL) {
     #   # Setting a seed is necessary for reproducible sampling of group-level
     #   # effects for new levels:
-    #   if (exists(".Random.seed")) {
-    #     rng_state_old <- .Random.seed
+    #   if (exists(".Random.seed", envir = .GlobalEnv)) {
+    #     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     #   }
     #   set.seed(refprd_seed)
