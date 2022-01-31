@@ -2,7 +2,7 @@
 
 ### Other changes
 
-* Argument `kfold_seed` has been added to `get_refmodel.brmsfit()`. (#1286)
+* Argument `brms_seed` has been added to `get_refmodel.brmsfit()`. (#1287)
 
 ### Bug Fixes
 
@@ -11,9 +11,7 @@ thanks to Anirban Mukherjee. (#1277)
 * Fix usage of `int_conditions` in `conditional_smooths`
 thanks to Urs Kalbitzer. (#1280)
 * Fix an error sometimes occurring for multilevel (reference) models in
-`projpred`'s K-fold CV. For reproducible predictions of multilevel (reference)
-models, argument `refprd_seed` has been added to
-`get_refmodel.brmsfit()`. (#1286)
+`projpred`'s K-fold CV. (#1286)
 
 # brms 2.16.3
 

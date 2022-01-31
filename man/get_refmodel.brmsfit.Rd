@@ -9,8 +9,7 @@ get_refmodel.brmsfit(
   newdata = NULL,
   resp = NULL,
   cvfun = NULL,
-  kfold_seed = NULL,
-  refprd_seed = NULL,
+  brms_seed = NULL,
   ...
 )
 }
@@ -31,10 +30,8 @@ are performed only for the specified response variables.}
 If \code{NULL} (the default), \code{cvfun} is defined internally
 based on \code{\link{kfold.brmsfit}}.}
 
-\item{kfold_seed}{A seed passed to \code{\link{kfold.brmsfit}}.}
-
-\item{refprd_seed}{A seed for sampling group-level effects for new levels (in
-multilevel models).}
+\item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+and for sampling group-level effects for new levels (in multilevel models).}
 
 \item{...}{Further arguments passed to 
 \code{\link[projpred:init_refmodel]{init_refmodel}}.}

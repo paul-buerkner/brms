@@ -13,9 +13,8 @@
 #' (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
 #' based on \code{\link{kfold.brmsfit}}.
-#' @param kfold_seed A seed passed to \code{\link{kfold.brmsfit}}.
-#' @param refprd_seed A seed for sampling group-level effects for new levels (in
-#' multilevel models).
+#' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+#'   and for sampling group-level effects for new levels (in multilevel models).
 #' @param ... Further arguments passed to 
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #' 
@@ -48,8 +47,7 @@
 #' plot(cv_vs)
 #' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 cvfun = NULL, kfold_seed = NULL,
-                                 refprd_seed = NULL, ...) {
+                                 cvfun = NULL, brms_seed = NULL, ...) {
   require_package("projpred")
   dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -57,6 +55,15 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (!is.null(resp)) {
     formula <- formula$forms[[resp]]
   }
+  
+  # Infer "sub-seeds":
+  if (exists(".Random.seed")) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(brms_seed)
+  kfold_seed <- sample.int(.Machine$integer.max, 1)
+  refprd_seed <- sample.int(.Machine$integer.max, 1)
   
   # prepare the family object for use in projpred
   family <- family(object, resp = resp)
@@ -172,10 +179,6 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # extract a list of K-fold sub-models
   if (is.null(cvfun)) {
     cvfun <- function(folds, ...) {
-      if (is.null(kfold_seed)) {
-        # Since kfold() doesn't seem to accept `seed = NULL`, set a random seed:
-        kfold_seed <- sample.int(.Machine$integer.max, 1)
-      }
       kfold(
         object, K = max(folds), save_fits = TRUE, folds = folds,
         seed = kfold_seed, ...
@@ -190,11 +193,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   cvrefbuilder <- function(cvfit) {
     # For `refprd_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new seed
     # which is based on the original `refprd_seed`:
-    if (is.null(refprd_seed)) {
-      refprd_seed_k <- NULL
-    } else {
-      refprd_seed_k <- refprd_seed + cvfit$projpred_k
-    }
+    refprd_seed_k <- refprd_seed + cvfit$projpred_k
     projpred::get_refmodel(cvfit, resp = resp, refprd_seed = refprd_seed_k, ...)
   }
   
