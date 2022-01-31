@@ -243,7 +243,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     ks <- match(k, Ksub)
     message("Fitting model ", k, " out of ", K)
     futures[[ks]] <- future::future(
-      .kfold_k(k), packages = "brms", seed = TRUE
+      .kfold_k(k), seed = TRUE
     )
   }
   for (k in Ksub) {

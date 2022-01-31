@@ -1,11 +1,17 @@
 # brms 2.16.3++
 
+### Other changes
+
+* Argument `brms_seed` has been added to `get_refmodel.brmsfit()`. (#1287)
+
 ### Bug Fixes
 
 * Fix Stan code of threaded multivariate models 
 thanks to Anirban Mukherjee. (#1277)
 * Fix usage of `int_conditions` in `conditional_smooths`
 thanks to Urs Kalbitzer. (#1280)
+* Fix an error sometimes occurring for multilevel (reference) models in
+`projpred`'s K-fold CV. (#1286)
 
 # brms 2.16.3
 

@@ -10,11 +10,13 @@
 #' 
 #' @inheritParams posterior_predict.brmsfit
 #' @param cvfun Optional cross-validation function
-#' (see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+#' (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
 #' based on \code{\link{kfold.brmsfit}}.
+#' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+#'   and for sampling group-level effects for new levels (in multilevel models).
 #' @param ... Further arguments passed to 
-#' \code{\link[projpred:get-refmodel]{init_refmodel}}.
+#' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #' 
 #' @details Note that the \code{extract_model_data} function used internally by
 #'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
@@ -45,7 +47,7 @@
 #' plot(cv_vs)
 #' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
-                                 cvfun = NULL, ...) {
+                                 cvfun = NULL, brms_seed = NULL, ...) {
   require_package("projpred")
   dots <- list(...)
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -53,6 +55,15 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (!is.null(resp)) {
     formula <- formula$forms[[resp]]
   }
+  
+  # Infer "sub-seeds":
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(brms_seed)
+  kfold_seed <- sample.int(.Machine$integer.max, 1)
+  refprd_seed <- sample.int(.Machine$integer.max, 1)
   
   # prepare the family object for use in projpred
   family <- family(object, resp = resp)
@@ -111,18 +122,39 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
-  # Using the default prediction function from projpred is usually fine
-  ref_predfun <- NULL
+  # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
+  # use a customized `ref_predfun`:
+  ref_predfun <- function(fit, newdata = NULL) {
+    # Setting a seed is necessary for reproducible sampling of group-level
+    # effects for new levels:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(refprd_seed)
+    t(posterior_linpred(fit,
+                        newdata = newdata,
+                        allow_new_levels = TRUE,
+                        sample_new_levels = "gaussian"))
+  }
   if (isTRUE(dots$aug_data) && is_ordinal(family$family)) {
     stop2("This case is not yet supported.")
     # Use argument `incl_thres` of posterior_linpred() (and convert the
     # 3-dimensional array to an "augmented-rows" matrix)
     # TODO: uncomment the lines below as soon as arr2augmat() is exported
     # ref_predfun <- function(fit, newdata = NULL) {
+    #   # Setting a seed is necessary for reproducible sampling of group-level
+    #   # effects for new levels:
+    #   if (exists(".Random.seed", envir = .GlobalEnv)) {
+    #     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    #   }
+    #   set.seed(refprd_seed)
     #   # Note: `transform = FALSE` is not needed, but included here for
     #   # consistency with projpred's default ref_predfun():
     #   linpred_out <- posterior_linpred(
-    #     fit, transform = FALSE, newdata = newdata, incl_thres = TRUE
+    #     fit, transform = FALSE, newdata = newdata, allow_new_levels = TRUE,
+    #     sample_new_levels = "gaussian", incl_thres = TRUE
     #   )
     #   stopifnot(length(dim(linpred_out)) == 3L)
     #   # Since posterior_linpred() is supposed to include the offsets in its
@@ -139,16 +171,18 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     # }
   }
   
+  if (utils::packageVersion("projpred") <= "2.0.2" && NROW(object$ranef)) {
+    warning2("Under projpred version <= 2.0.2, projpred's K-fold CV results ",
+             "may not be reproducible for multilevel brms reference models.")
+  }
+  
   # extract a list of K-fold sub-models
   if (is.null(cvfun)) {
     cvfun <- function(folds, ...) {
-      cvres <- kfold(
-        object, K = max(folds),
-        save_fits = TRUE, folds = folds,
-        ...
-      )
-      fits <- cvres$fits[, "fit"]
-      return(fits)
+      kfold(
+        object, K = max(folds), save_fits = TRUE, folds = folds,
+        seed = kfold_seed, ...
+      )$fits[, "fit"]
     }
   } else {
     if (!is.function(cvfun)) {
@@ -156,9 +190,17 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
   
+  cvrefbuilder <- function(cvfit) {
+    # For `refprd_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new seed
+    # which is based on the original `refprd_seed`:
+    refprd_seed_k <- refprd_seed + cvfit$projpred_k
+    projpred::get_refmodel(cvfit, resp = resp, refprd_seed = refprd_seed_k, ...)
+  }
+  
   args <- nlist(
     object, data, formula, family, dis, ref_predfun = ref_predfun,
-    cvfun = cvfun, extract_model_data = extract_model_data, ...
+    cvfun = cvfun, extract_model_data = extract_model_data,
+    cvrefbuilder = cvrefbuilder, ...
   )
   do_call(projpred::init_refmodel, args)
 }
@@ -173,6 +215,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # call standata to ensure the correct format of the data
   args <- nlist(
     object, newdata, resp,
+    allow_new_levels = TRUE,
     check_response = TRUE, 
     internal = TRUE
   )

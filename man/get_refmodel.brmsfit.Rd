@@ -4,7 +4,14 @@
 \alias{get_refmodel.brmsfit}
 \title{Projection Predictive Variable Selection: Get Reference Model}
 \usage{
-get_refmodel.brmsfit(object, newdata = NULL, resp = NULL, cvfun = NULL, ...)
+get_refmodel.brmsfit(
+  object,
+  newdata = NULL,
+  resp = NULL,
+  cvfun = NULL,
+  brms_seed = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -19,12 +26,15 @@ predictions of the grand mean when using sum coding.}
 are performed only for the specified response variables.}
 
 \item{cvfun}{Optional cross-validation function
-(see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+(see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 If \code{NULL} (the default), \code{cvfun} is defined internally
 based on \code{\link{kfold.brmsfit}}.}
 
+\item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+and for sampling group-level effects for new levels (in multilevel models).}
+
 \item{...}{Further arguments passed to 
-\code{\link[projpred:get-refmodel]{init_refmodel}}.}
+\code{\link[projpred:init_refmodel]{init_refmodel}}.}
 }
 \value{
 A \code{refmodel} object to be used in conjunction with the
