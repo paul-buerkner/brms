@@ -127,7 +127,7 @@ multiply_log <- function(x, y) {
 }
 
 log1p_exp <- function(x) {
-  log(1 + exp(x))
+  log1p(exp(x))
 }
 
 log1m_exp <- function(x) {
@@ -147,10 +147,6 @@ log_sum_exp <- function(x, y) {
 log_mean_exp <- function(x) {
   max_x <- max(x)
   max_x + log(sum(exp(x - max_x))) - log(length(x))
-}
-
-expm1 <- function(x) {
-  exp(x) - 1
 }
 
 log_expm1 <- function(x) {
