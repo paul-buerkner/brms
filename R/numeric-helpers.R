@@ -127,7 +127,9 @@ multiply_log <- function(x, y) {
 }
 
 log1p_exp <- function(x) {
-  log1p(exp(x))
+  # approaches identity(x) for x -> Inf
+  out <- log1p(exp(x))
+  ifelse(out < Inf, out, x)
 }
 
 log1m_exp <- function(x) {
@@ -150,7 +152,9 @@ log_mean_exp <- function(x) {
 }
 
 log_expm1 <- function(x) {
-  log(expm1(x))
+  # approaches identity(x) for x -> Inf
+  out <- log(expm1(x))
+  ifelse(out < Inf, out, x)
 }
 
 log_inv_logit <- function(x) {
@@ -200,9 +204,11 @@ inv_odds <- function(x) {
 
 # inspired by logit but with softplus instead of log
 softit <- function(x) {
-  log(expm1(-x / (x - 1)))
+  log_expm1(x / (1 - x))
 }
 
+# inspired by inv_logit but with softplus instead of exp
 inv_softit <- function(x) {
-  log1p_exp(x) / (1 + log1p_exp(x))
+  y <- log1p_exp(x)
+  y / (1 + y)
 }
