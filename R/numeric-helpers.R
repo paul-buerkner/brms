@@ -201,3 +201,12 @@ log_softmax <- function(x) {
 inv_odds <- function(x) {
   x / (1 + x)
 }
+
+# inspired by logit but with softplus instead of log
+softit <- function(x) {
+  log(expm1(-x / (x - 1)))
+}
+
+inv_softit <- function(x) {
+  log1p_exp(x) / (1 + log1p_exp(x))
+}

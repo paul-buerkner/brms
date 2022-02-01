@@ -38,6 +38,7 @@ link <- function(x, link) {
     "probit_approx" = qnorm(x),
     "softplus" = log_expm1(x),
     "squareplus" = (x^2 - 1) / x,
+    "softit" = softit(x),
     stop2("Link '", link, "' is not supported.")
   )
 }
@@ -62,6 +63,7 @@ inv_link <- function(x, link) {
     "probit_approx" = pnorm(x),
     "softplus" = log1p_exp(x),
     "squareplus" = (x + sqrt(x^2 + 4)) / 2,
+    "softit" = inv_softit(x),
     stop2("Link '", link, "' is not supported.")
   )
 }

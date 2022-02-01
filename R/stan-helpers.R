@@ -19,6 +19,8 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     str_add(out$fun) <- "  #include 'fun_softplus.stan'\n"
   } else if (any(links == "squareplus")) {
     str_add(out$fun) <- "  #include 'fun_squareplus.stan'\n"
+  } else if (any(links == "softit")) {
+    str_add(out$fun) <- "  #include 'fun_softit.stan'\n"
   }
   special <- get_special_prior(prior)
   if (!isNULL(lapply(special, "[[", "horseshoe"))) {
@@ -136,7 +138,8 @@ stan_link <- function(link) {
     tan_half = "tan_half",
     log1p = "log1p",
     softplus = "log_expm1",
-    squareplus = "inv_squareplus"
+    squareplus = "inv_squareplus",
+    softit = "softit"
   )
 }
 
@@ -158,7 +161,8 @@ stan_inv_link <- function(link) {
     tan_half = "inv_tan_half",
     log1p = "expm1",
     softplus = "log1p_exp",
-    squareplus = "squareplus"
+    squareplus = "squareplus",
+    softit = "inv_softit"
   )
 }
 
