@@ -54,8 +54,8 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
     dp_terms <- x$dpars[[dp]]
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       # distributional parameter is predicted
-      ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
-      dp_args <- list(dp_terms, ilink = ilink)
+      inv_link <- stan_eta_inv_link(dp, bterms = x, resp = resp)
+      dp_args <- list(dp_terms, inv_link = inv_link)
       str_add_list(out) <- do_call(stan_predictor, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       # distributional parameter is fixed to a numeric value
@@ -1640,9 +1640,9 @@ stan_offset <- function(bterms, threads, ...) {
 
 # Stan code for non-linear predictor terms
 # @param nlpars names of the non-linear parameters
-# @param ilink character vector of length 2 defining the link to be applied
-stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
-  stopifnot(length(ilink) == 2L)
+# @param inv_link character vector of length 2 defining the link to be applied
+stan_nl <- function(bterms, data, nlpars, threads, inv_link = rep("", 2), ...) {
+  stopifnot(length(inv_link) == 2L)
   out <- list()
   resp <- usc(bterms$resp)
   par <- combine_prefix(bterms, keep_mu = TRUE, nlp = TRUE)
@@ -1703,13 +1703,13 @@ stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
       "  for (n in 1:N{resp}) {{\n",
       stan_nn_def(threads),
       "    // compute non-linear predictor values\n",
-      "    {par}[n] = {ilink[1]}{eta}{ilink[2]};\n",
+      "    {par}[n] = {inv_link[1]}{eta}{inv_link[2]};\n",
       "  }}\n"
     )
   } else {
     str_add(out[[position]]) <- glue(
       "  // compute non-linear predictor values\n",
-      "  {par} = {ilink[1]}{eta}{ilink[2]};\n"
+      "  {par} = {inv_link[1]}{eta}{inv_link[2]};\n"
     )
   }
   out
@@ -1832,12 +1832,12 @@ stan_Xme <- function(meef, prior, threads, normalize) {
 # @param bterms btl object
 # @param ranef output of tidy_ranef
 # @param primitive use Stan's GLM likelihood primitives?
-# @param ilink character vector of length 2 defining the link to be applied
+# @param inv_link character vector of length 2 defining the link to be applied
 # @param ... currently unused
 # @return list of character strings containing Stan code
 stan_eta_combine <- function(out, bterms, ranef, threads, primitive,
-                             ilink = c("", ""), ...) {
-  stopifnot(is.list(out), is.btl(bterms), length(ilink) == 2L)
+                             inv_link = c("", ""), ...) {
+  stopifnot(is.list(out), is.btl(bterms), length(inv_link) == 2L)
   if (primitive && !has_special_terms(bterms)) {
     # only overall effects and perhaps an intercept are present
     # which will be evaluated directly in the GLM primitive likelihood
@@ -1866,14 +1866,14 @@ stan_eta_combine <- function(out, bterms, ranef, threads, primitive,
   }
   out$loopeta <- NULL
   # possibly transform eta before it is passed to the likelihood
-  if (sum(nzchar(ilink))) {
+  if (sum(nzchar(inv_link))) {
     # make sure mu comes last as it might depend on other parameters
     is_mu <- isTRUE("mu" %in% dpar_class(bterms[["dpar"]]))
     position <- str_if(is_mu, "model_comp_mu_link", "model_comp_dpar_link")
     str_add(out[[position]]) <- glue(
       "  for (n in 1:N{resp}) {{\n",
       "    // apply the inverse link function\n",
-      "    {eta}[n] = {ilink[1]}{eta}[n]{ilink[2]};\n",
+      "    {eta}[n] = {inv_link[1]}{eta}[n]{inv_link[2]};\n",
       "  }}\n"
     )
   }
@@ -1982,7 +1982,7 @@ stan_eta_transform <- function(family, bterms) {
 # @param bterms object of class 'brmsterms'
 # @param resp name of the response variable
 # @return a single character string
-stan_eta_ilink <- function(dpar, bterms, resp = "") {
+stan_eta_inv_link <- function(dpar, bterms, resp = "") {
   stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
@@ -2000,9 +2000,9 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
       family$family %in% c("gamma", "hurdle_gamma", "exponential"),
       paste0(family$family, "_", family$link), family$family
     )
-    ilink <- stan_ilink(family$link)
+    inv_link <- stan_inv_link(family$link)
     out <- switch(family_link,
-      c(glue("{ilink}("), ")"),
+      c(glue("{inv_link}("), ")"),
       gamma_log = c(glue("{shape} * exp(-("), "))"),
       gamma_inverse = c(glue("{shape} * ("), ")"),
       gamma_identity = c(glue("{shape} / ("), ")"),
@@ -2012,8 +2012,8 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
       exponential_log = c("exp(-(", "))"),
       exponential_inverse = c("(", ")"),
       exponential_identity = c("inv(", ")"),
-      weibull = c(glue("{ilink}("), glue(") / tgamma(1 + 1 / {shape})")),
-      frechet = c(glue("{ilink}("), glue(") / tgamma(1 - 1 / {nu})"))
+      weibull = c(glue("{inv_link}("), glue(") / tgamma(1 + 1 / {shape})")),
+      frechet = c(glue("{inv_link}("), glue(") / tgamma(1 - 1 / {nu})"))
     )
   }
   out

@@ -2102,7 +2102,7 @@ dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
 inv_link_cumulative <- function(x, link) {
-  x <- ilink(x, link)
+  x <- inv_link(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
@@ -2175,7 +2175,7 @@ dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
 inv_link_sratio <- function(x, link) {
-  x <- ilink(x, link)
+  x <- inv_link(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
   nthres <- dim(x)[ndim]
@@ -2261,7 +2261,7 @@ dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
 inv_link_cratio <- function(x, link) {
-  x <- ilink(x, link)
+  x <- inv_link(x, link)
   ndim <- length(dim(x))
   dim_noncat <- dim(x)[-ndim]
   nthres <- dim(x)[ndim]
@@ -2357,7 +2357,7 @@ inv_link_acat <- function(x, link) {
     )
     out <- abind::abind(ones_arr, exp_x_cumprod)
   } else {
-    x <- ilink(x, link)
+    x <- inv_link(x, link)
     x_cumprod <- aperm(
       array(apply(x, marg_noncat, cumprod), dim = dim_t),
       perm = c(marg_noncat + 1, 1)

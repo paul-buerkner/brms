@@ -142,7 +142,7 @@ stan_link <- function(link) {
 
 # inverse link in Stan language
 # @param link name of the link function
-stan_ilink <- function(link) {
+stan_inv_link <- function(link) {
   switch(link, 
     identity = "",
     log = "exp", 

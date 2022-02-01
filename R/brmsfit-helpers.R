@@ -38,14 +38,14 @@ link <- function(x, link) {
     "probit_approx" = qnorm(x),
     "softplus" = log_expm1(x),
     "squareplus" = (x^2 - 1) / x,
-    stop2("Link '", link, "' not supported.")
+    stop2("Link '", link, "' is not supported.")
   )
 }
 
 # apply an inverse link function
 # @param x an array of arbitrary dimension
 # @param link a character string defining the link
-ilink <- function(x, link) {
+inv_link <- function(x, link) {
   switch(link, 
     "identity" = x, 
     "log" = exp(x),
@@ -62,7 +62,7 @@ ilink <- function(x, link) {
     "probit_approx" = pnorm(x),
     "softplus" = log1p_exp(x),
     "squareplus" = (x + sqrt(x^2 + 4)) / 2,
-    stop2("Link '", link, "' not supported.")
+    stop2("Link '", link, "' is not supported.")
   )
 }
 
@@ -348,9 +348,9 @@ get_cor_matrix_ident <- function(ndraws, nobs) {
 #' @param i The observation numbers for which predictions shall be extracted.
 #'   If \code{NULL} (the default), all observation will be extracted.
 #'   Ignored if \code{dpar} is not predicted.
-#' @param ilink Should the inverse link function be applied?
+#' @param inv_link Should the inverse link function be applied?
 #'   If \code{NULL} (the default), the value is chosen internally.
-#'   In particular, \code{ilink} is \code{TRUE} by default for custom
+#'   In particular, \code{inv_link} is \code{TRUE} by default for custom
 #'   families.
 #' @return 
 #'   If the parameter is predicted and \code{i} is \code{NULL} or
@@ -369,7 +369,7 @@ get_cor_matrix_ident <- function(ndraws, nobs) {
 #' } 
 #' 
 #' @export
-get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
+get_dpar <- function(prep, dpar, i = NULL, inv_link = NULL) {
   stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
   dpar <- as_one_character(dpar)
   x <- prep$dpars[[dpar]]
@@ -377,13 +377,13 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   if (is.list(x)) {
     # compute draws of a predicted parameter
     out <- predictor(x, i = i, fprep = prep)
-    if (is.null(ilink)) {
-      ilink <- apply_dpar_ilink(dpar, family = prep$family)
+    if (is.null(inv_link)) {
+      inv_link <- apply_dpar_inv_link(dpar, family = prep$family)
     } else {
-      ilink <- as_one_logical(ilink) 
+      inv_link <- as_one_logical(inv_link) 
     }
-    if (ilink) {
-      out <- ilink(out, x$family$link)
+    if (inv_link) {
+      out <- inv_link(out, x$family$link)
     }
     if (length(i) == 1L) {
       out <- slice_col(out, 1)
@@ -580,7 +580,7 @@ subset_thres <- function(prep, i) {
 
 # helper function of 'get_dpar' to decide if
 # the link function should be applied direclty
-apply_dpar_ilink <- function(dpar, family) {
+apply_dpar_inv_link <- function(dpar, family) {
   !(has_joint_link(family) && dpar_class(dpar, family) == "mu")
 }
 

@@ -803,13 +803,13 @@ log_lik_cumulative <- function(i, prep) {
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
   if (y == 1) { 
-    out <- log(ilink(eta[, 1], prep$family$link))
+    out <- log(inv_link(eta[, 1], prep$family$link))
   } else if (y == nthres + 1) {
-    out <- log(1 - ilink(eta[, y - 1], prep$family$link)) 
+    out <- log(1 - inv_link(eta[, y - 1], prep$family$link)) 
   } else {
     out <- log(
-      ilink(eta[, y], prep$family$link) - 
-        ilink(eta[, y - 1], prep$family$link)
+      inv_link(eta[, y], prep$family$link) - 
+        inv_link(eta[, y - 1], prep$family$link)
     )
   }
   log_lik_weight(out, i = i, prep = prep)
@@ -823,7 +823,7 @@ log_lik_sratio <- function(i, prep) {
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
   q <- sapply(seq_len(min(y, nthres)), 
-    function(k) 1 - ilink(eta[, k], prep$family$link)
+    function(k) 1 - inv_link(eta[, k], prep$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
@@ -845,7 +845,7 @@ log_lik_cratio <- function(i, prep) {
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
   q <- sapply(seq_len(min(y, nthres)), 
-    function(k) ilink(eta[, k], prep$family$link)
+    function(k) inv_link(eta[, k], prep$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1])
@@ -877,7 +877,7 @@ log_lik_acat <- function(i, prep) {
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
     q <- sapply(1:nthres, function(k) 
-      ilink(eta[, k], prep$family$link))
+      inv_link(eta[, k], prep$family$link))
     p <- cbind(apply(1 - q[, 1:nthres], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = nthres))
     if (nthres > 1L) {

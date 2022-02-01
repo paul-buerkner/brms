@@ -4,7 +4,7 @@
 \alias{get_dpar}
 \title{Draws of a Distributional Parameter}
 \usage{
-get_dpar(prep, dpar, i = NULL, ilink = NULL)
+get_dpar(prep, dpar, i = NULL, inv_link = NULL)
 }
 \arguments{
 \item{prep}{A 'brmsprep' or 'mvbrmsprep' object created by
@@ -16,9 +16,9 @@ get_dpar(prep, dpar, i = NULL, ilink = NULL)
 If \code{NULL} (the default), all observation will be extracted.
 Ignored if \code{dpar} is not predicted.}
 
-\item{ilink}{Should the inverse link function be applied?
+\item{inv_link}{Should the inverse link function be applied?
 If \code{NULL} (the default), the value is chosen internally.
-In particular, \code{ilink} is \code{TRUE} by default for custom
+In particular, \code{inv_link} is \code{TRUE} by default for custom
 families.}
 }
 \value{

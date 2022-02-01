@@ -106,7 +106,7 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
         out <- get_theta(object)[, , ap_id, drop = FALSE]
         dim(out) <- dim(out)[c(1, 2)]
       } else {
-        out <- get_dpar(object, dpar = dpar, ilink = TRUE)
+        out <- get_dpar(object, dpar = dpar, inv_link = TRUE)
       }
     } else {
       # parameter is constant across observations
@@ -156,10 +156,10 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
         out <- dpars[dpar_class(dpars) %in% "mu"]
       }
       if (length(out) == 1L) {
-        out <- get_dpar(object, dpar = out, ilink = FALSE)
+        out <- get_dpar(object, dpar = out, inv_link = FALSE)
       } else {
         # multiple mu parameters in categorical or mixture models
-        out <- lapply(out, get_dpar, prep = object, ilink = FALSE)
+        out <- lapply(out, get_dpar, prep = object, inv_link = FALSE)
         out <- abind::abind(out, along = 3)
       }
     }

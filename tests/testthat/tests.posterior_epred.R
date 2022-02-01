@@ -127,7 +127,7 @@ test_that("posterior_epred helper functions run without errors", {
   
   prep$data$trials <- 120
   lb <- matrix(-Inf, nrow = ndraws, ncol = nobs)
-  prep$dpars$mu <- brms:::ilink(prep$dpars$mu, "logit")
+  prep$dpars$mu <- brms:::inv_link(prep$dpars$mu, "logit")
   mu <- brms:::posterior_epred_trunc_binomial(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(ndraws, nobs))
 })

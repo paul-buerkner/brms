@@ -263,7 +263,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   out <- list(
     family = family, link = slink,
     linkfun = function(mu) link(mu, link = slink),
-    linkinv = function(eta) ilink(eta, link = slink)
+    linkinv = function(eta) inv_link(eta, link = slink)
   )
   out[names(family_info)] <- family_info
   class(out) <- c("brmsfamily", "family")

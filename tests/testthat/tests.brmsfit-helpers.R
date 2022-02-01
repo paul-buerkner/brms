@@ -14,8 +14,8 @@ test_that("array2list performs correct conversion", {
 })
 
 test_that("probit and probit_approx produce similar results", {
-  expect_equal(brms:::ilink(-10:10, "probit"), 
-               brms:::ilink(-10:10, "probit_approx"), 
+  expect_equal(brms:::inv_link(-10:10, "probit"), 
+               brms:::inv_link(-10:10, "probit_approx"), 
                tolerance = 1e-3)
 })
 

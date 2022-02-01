@@ -1,5 +1,5 @@
 inv_link_cumulative_ch <- function(x, link) {
-  x <- ilink(x, link)
+  x <- inv_link(x, link)
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
   out <- vector("list", ncat)
@@ -17,7 +17,7 @@ inv_link_cumulative_ch <- function(x, link) {
 environment(inv_link_cumulative_ch) <- as.environment(asNamespace("brms"))
 
 inv_link_sratio_ch <- function(x, link) {
-  x <- ilink(x, link)
+  x <- inv_link(x, link)
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
   marg_noncat <- seq_along(dim(x))[-ndim]
@@ -37,7 +37,7 @@ inv_link_sratio_ch <- function(x, link) {
 environment(inv_link_sratio_ch) <- as.environment(asNamespace("brms"))
 
 inv_link_cratio_ch <- function(x, link) {
-  x <- ilink(x, link)
+  x <- inv_link(x, link)
   ndim <- length(dim(x))
   ncat <- dim(x)[ndim] + 1
   marg_noncat <- seq_along(dim(x))[-ndim]
@@ -73,7 +73,7 @@ inv_link_acat_ch <- function(x, link) {
       out[remaincats] <- lapply(remaincats, .catsum)
     }
   } else {
-    x <- ilink(x, link)
+    x <- inv_link(x, link)
     out[[1]] <- apply(1 - x, marg_noncat, prod)
     if (ncat > 2) {
       .othercatprod <- function(k) {

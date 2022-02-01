@@ -495,9 +495,9 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
 # @return a character string
 stan_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
-  ilink <- stan_ilink(link)
+  inv_link <- stan_inv_link(link)
   th <- function(k) {
-    # helper function generating stan code inside ilink(.)
+    # helper function generating stan code inside inv_link(.)
     if (family %in% c("cumulative", "sratio")) {
       out <- glue("thres[{k}] - mu")
     } else if (family %in% c("cratio", "acat")) {
@@ -519,7 +519,7 @@ stan_ordinal_lpmf <- function(family, link) {
   )
   # define the function body
   if (family == "cumulative") {
-    if (ilink == "inv_logit") {
+    if (inv_link == "inv_logit") {
       str_add(out) <- glue(
         "     int nthres = num_elements(thres);\n",
         "     if (y == 1) {{\n",
@@ -540,44 +540,44 @@ stan_ordinal_lpmf <- function(family, link) {
         "     int nthres = num_elements(thres);\n",
         "     real p;\n",
         "     if (y == 1) {{\n",
-        "       p = {ilink}({th(1)});\n",
+        "       p = {inv_link}({th(1)});\n",
         "     }} else if (y == nthres + 1) {{\n",
-        "       p = 1 - {ilink}({th('nthres')});\n",
+        "       p = 1 - {inv_link}({th('nthres')});\n",
         "     }} else {{\n",
-        "       p = {ilink}({th('y')}) -\n",
-        "           {ilink}({th('y - 1')});\n",
+        "       p = {inv_link}({th('y')}) -\n",
+        "           {inv_link}({th('y - 1')});\n",
         "     }}\n",
         "     return log(p);\n",
         "   }}\n"
       )
     }
   } else if (family %in% c("sratio", "cratio")) {
-    if (ilink == "inv_cloglog") {
+    if (inv_link == "inv_cloglog") {
       qk <- str_if(
         family == "sratio", 
         "-exp({th('k')})",
         "log1m_exp(-exp({th('k')}))"
       )
-    } else if (ilink == "inv_logit") {
+    } else if (inv_link == "inv_logit") {
       qk <- str_if(
         family == "sratio", 
         "log1m_inv_logit({th('k')})",
         "log_inv_logit({th('k')})"
       )
-    } else if (ilink == "Phi") {
+    } else if (inv_link == "Phi") {
       # TODO: replace with more stable std_normal_lcdf once rstan >= 2.25
       qk <- str_if(
         family == "sratio", 
         "normal_lccdf({th('k')}|0,1)",
         "normal_lcdf({th('k')}|0,1)"
       )
-    } else if (ilink == "Phi_approx") {
+    } else if (inv_link == "Phi_approx") {
       qk <- str_if(
         family == "sratio",
         "log1m_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})",
         "log_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})"
       )
-    } else if (ilink == "inv_cauchit") {
+    } else if (inv_link == "inv_cauchit") {
       qk <- str_if(
         family == "sratio",
         "cauchy_lccdf({th('k')}|0,1)",
@@ -603,7 +603,7 @@ stan_ordinal_lpmf <- function(family, link) {
       "   }}\n"
     )
   } else if (family == "acat") {
-    if (ilink == "inv_logit") {
+    if (inv_link == "inv_logit") {
       str_add(out) <- glue(
         "     int nthres = num_elements(thres);\n",
         "     vector[nthres + 1] p = append_row(0, cumulative_sum(disc * (mu - thres)));\n",
@@ -616,7 +616,7 @@ stan_ordinal_lpmf <- function(family, link) {
         "     vector[nthres + 1] p;\n",
         "     vector[nthres] q;\n",
         "     for (k in 1:(nthres))\n",
-        "       q[k] = {ilink}({th('k')});\n",
+        "       q[k] = {inv_link}({th('k')});\n",
         "     for (k in 1:(nthres + 1)) {{\n",     
         "       p[k] = 1.0;\n",
         "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",

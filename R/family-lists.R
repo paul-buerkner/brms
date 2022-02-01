@@ -203,7 +203,7 @@
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    specials = "transeta"  # see stan_eta_ilink()
+    specials = "transeta"  # see stan_eta_inv_link()
   )
 }
 
@@ -213,7 +213,7 @@
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    specials = "transeta"  # see stan_eta_ilink()
+    specials = "transeta"  # see stan_eta_inv_link()
   )
 }
 
@@ -223,7 +223,7 @@
     dpars = "mu", type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    specials = "transeta"  # see stan_eta_ilink()
+    specials = "transeta"  # see stan_eta_inv_link()
   )
 }
 
@@ -234,7 +234,7 @@
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = "fun_logm1.stan",
-    specials = "transeta"  # see stan_eta_ilink()
+    specials = "transeta"  # see stan_eta_inv_link()
   )
 }
 
