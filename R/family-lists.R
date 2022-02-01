@@ -48,7 +48,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx", 
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
@@ -61,7 +61,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx", 
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
@@ -98,7 +98,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu", "phi"), type = "real",
     ybounds = c(0, 1), closed = c(FALSE, FALSE),
@@ -177,7 +177,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
@@ -347,7 +347,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx", 
-      "cloglog", "cauchit"
+      "cloglog", "cauchit", "softit"
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -364,7 +364,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx", 
-      "cloglog", "cauchit"
+      "cloglog", "cauchit", "softit"
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -378,7 +378,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx", 
-      "cloglog", "cauchit"
+      "cloglog", "cauchit", "softit"
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -392,7 +392,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx", 
-      "cloglog", "cauchit"
+      "cloglog", "cauchit", "softit"
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -478,7 +478,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
@@ -493,7 +493,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu", "phi", "zi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
@@ -508,7 +508,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "identity"
+      "cloglog", "cauchit", "softit", "identity"
     ),
     dpars = c("mu", "phi", "zoi", "coi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
