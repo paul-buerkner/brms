@@ -127,10 +127,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
         on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
       }
       set.seed(refprd_seed)
-      t(posterior_linpred(fit,
-                          newdata = newdata,
-                          allow_new_levels = TRUE,
-                          sample_new_levels = "gaussian"))
+      t(posterior_linpred(
+        fit, newdata = newdata,
+        allow_new_levels = TRUE,
+        sample_new_levels = "gaussian"
+      ))
     }
   } else {
     # Also use argument `incl_thres` of posterior_linpred():
@@ -142,11 +143,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
         on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
       }
       set.seed(refprd_seed)
-      posterior_linpred(fit,
-                        newdata = newdata,
-                        allow_new_levels = TRUE,
-                        sample_new_levels = "gaussian",
-                        incl_thres = TRUE)
+      posterior_linpred(
+        fit, newdata = newdata,
+        allow_new_levels = TRUE,
+        sample_new_levels = "gaussian",
+        incl_thres = TRUE
+      )
     }
   }
   
@@ -181,17 +183,16 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   args <- nlist(
-    object, data, formula, family, dis, ref_predfun = ref_predfun,
-    cvfun = cvfun, extract_model_data = extract_model_data,
-    cvrefbuilder = cvrefbuilder, ...
+    object, data, formula, family, dis, ref_predfun,
+    cvfun, extract_model_data, cvrefbuilder, ...
   )
   if (aug_data) {
-    args <- c(args, list(
+    c(args) <- list(
       augdat_link = get(paste0("link_", family$family), mode = "function"),
       augdat_ilink = get(paste0("inv_link_", family$family), mode = "function"),
       augdat_args_link = list(link = family$link),
       augdat_args_ilink = list(link = family$link)
-    ))
+    )
   }
   do_call(projpred::init_refmodel, args)
 }
