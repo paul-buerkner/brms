@@ -1985,7 +1985,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
 inv_link_categorical <- function(x, refcat_obj = "first", log = FALSE) {
-  if (identical(refcat_obj, "first")) {
+  if (is_equal(refcat_obj, "first")) {
     x <- insert_refcat(x, family = categorical()) # The link does not matter.
   } else if (!is.null(refcat_obj)) {
     x <- insert_refcat(x, family = refcat_obj)
