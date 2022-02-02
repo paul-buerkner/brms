@@ -1,5 +1,5 @@
 # Very similar to link_categorical(), but iterates over the observations:
-link_categorical_ch <- function(x, refcat = 1, return_refcat = TRUE) {
+link_categorical_ch <- function(x, refcat = 1, return_refcat = FALSE) {
   # For testing purposes, only allow 3-dimensional arrays here:
   stopifnot(length(dim(x)) == 3)
   x_tosweep <- if (return_refcat) {
