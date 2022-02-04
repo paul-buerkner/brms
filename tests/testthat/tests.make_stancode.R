@@ -2060,22 +2060,22 @@ test_that("custom families are handled correctly", {
   dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
   
   # define a custom beta-binomial family
-  log_lik_beta_binomial2 <- function(i, draws) {
-    mu <- draws$dpars$mu[, i]
-    tau <- draws$dpars$tau
-    trials <- draws$data$vint1[i]
-    y <- draws$data$Y[i]
+  log_lik_beta_binomial2 <- function(i, prep) {
+    mu <- prep$dpars$mu[, i]
+    tau <- prep$dpars$tau
+    trials <- prep$data$vint1[i]
+    y <- prep$data$Y[i]
     beta_binomial2_lpmf(y, mu, tau, trials)
   }
-  posterior_predict_beta_binomial2 <- function(i, draws, ...) {
-    mu <- draws$dpars$mu[, i]
-    tau <- draws$dpars$tau
-    trials <- draws$data$vint1[i]
+  posterior_predict_beta_binomial2 <- function(i, prep, ...) {
+    mu <- prep$dpars$mu[, i]
+    tau <- prep$dpars$tau
+    trials <- prep$data$vint1[i]
     beta_binomial2_rng(mu, tau, trials)
   }
-  posterior_epred_beta_binomial2 <- function(draws) {
-    mu <- draws$dpars$mu
-    trials <- draws$data$vint1
+  posterior_epred_beta_binomial2 <- function(prep) {
+    mu <- prep$dpars$mu
+    trials <- prep$data$vint1
     trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
     mu * trials
   }
