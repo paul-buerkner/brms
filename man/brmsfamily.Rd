@@ -17,6 +17,7 @@
 \alias{wiener}
 \alias{Beta}
 \alias{dirichlet}
+\alias{logistic_normal}
 \alias{von_mises}
 \alias{asym_laplace}
 \alias{cox}
@@ -96,6 +97,8 @@ wiener(
 Beta(link = "logit", link_phi = "log")
 
 dirichlet(link = "logit", link_phi = "log", refcat = NULL)
+
+logistic_normal(link = "identity", refcat = NULL)
 
 von_mises(link = "tan_half", link_kappa = "log")
 
@@ -201,10 +204,11 @@ consecutive thresholds to the same value, and
 \code{"sum_to_zero"} ensures the thresholds sum to zero.}
 
 \item{refcat}{Optional name of the reference response category used in
-categorical, multinomial, and dirichlet models. If \code{NULL} (the
-default), the first category is used as the reference. If \code{NA}, all
-categories will be predicted, which requires strong priors or carefully
-specified predictor terms in order to lead to an identified model.}
+\code{categorical}, \code{multinomial}, \code{dirichlet} and
+\code{logistic_normal} models. If \code{NULL} (the default), the first
+category is used as the reference. If \code{NA}, all categories will be
+predicted, which requires strong priors or carefully specified predictor
+terms in order to lead to an identified model.}
 
 \item{bhaz}{Currently for experimental purposes only.}
 }
@@ -251,8 +255,8 @@ Below, we list common use cases for the different families.
   \item{Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
   ('generalized extreme value') allow for modeling extremes.}
   
-  \item{Families \code{beta} and \code{dirichlet} can be used to model 
-  responses representing rates or probabilities.}
+  \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal} 
+  can be used to model responses representing rates or probabilities.}
   
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -307,6 +311,8 @@ Below, we list common use cases for the different families.
   
   \item{Families \code{lognormal} and \code{hurdle_lognormal} 
   support \code{identity} and \code{inverse}.}
+  
+  \item{Family \code{logistic_normal} supports \code{identity}.}
   
   \item{Family \code{inverse.gaussian} supports \code{1/mu^2}, 
   \code{inverse}, \code{identity}, \code{log}, and \code{softplus}.}

@@ -51,10 +51,11 @@
 #'   consecutive thresholds to the same value, and
 #'   \code{"sum_to_zero"} ensures the thresholds sum to zero.
 #' @param refcat Optional name of the reference response category used in
-#'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
-#'   default), the first category is used as the reference. If \code{NA}, all
-#'   categories will be predicted, which requires strong priors or carefully
-#'   specified predictor terms in order to lead to an identified model.
+#'   \code{categorical}, \code{multinomial}, \code{dirichlet} and
+#'   \code{logistic_normal} models. If \code{NULL} (the default), the first
+#'   category is used as the reference. If \code{NA}, all categories will be
+#'   predicted, which requires strong priors or carefully specified predictor
+#'   terms in order to lead to an identified model.
 #' @param bhaz Currently for experimental purposes only.
 #' 
 #' @details 
@@ -90,8 +91,8 @@
 #'   \item{Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
 #'   ('generalized extreme value') allow for modeling extremes.}
 #'   
-#'   \item{Families \code{beta} and \code{dirichlet} can be used to model 
-#'   responses representing rates or probabilities.}
+#'   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal} 
+#'   can be used to model responses representing rates or probabilities.}
 #'   
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -146,6 +147,8 @@
 #'   
 #'   \item{Families \code{lognormal} and \code{hurdle_lognormal} 
 #'   support \code{identity} and \code{inverse}.}
+#'   
+#'   \item{Family \code{logistic_normal} supports \code{identity}.}
 #'   
 #'   \item{Family \code{inverse.gaussian} supports \code{1/mu^2}, 
 #'   \code{inverse}, \code{identity}, \code{log}, and \code{softplus}.}
@@ -291,7 +294,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     if (!has_joint_link(out$family)) {
       out$refcat <- NA
     } else if (!is.null(refcat)) {
-      out$refcat <- as_one_character(refcat, allow_na = TRUE) 
+      allow_na_ref <- !is_logistic_normal(out$family)
+      out$refcat <- as_one_character(refcat, allow_na = allow_na_ref) 
     }
   }
   if (is_cox(out$family)) {
@@ -631,6 +635,14 @@ dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
 dirichlet2 <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("dirichlet2", link = link, slink = slink, refcat = NA)
+}
+
+#' @rdname brmsfamily
+#' @export
+logistic_normal <- function(link = "identity", refcat = NULL) {
+  # TODO: allow to pass and store 'link_sigma' as well
+  slink <- substitute(link)
+  .brmsfamily("logistic_normal", link = link, slink = slink, refcat = refcat)
 }
 
 #' @rdname brmsfamily
