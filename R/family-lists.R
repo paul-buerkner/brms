@@ -113,7 +113,7 @@
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"), 
-    specials = c("dirichlet", "joint_link"),
+    specials = c("simplex", "joint_link"),
     include = "fun_dirichlet_logit.stan",
     normalized = ""
   )
@@ -122,12 +122,25 @@
 .family_dirichlet2 <- function() {
   list(
     links = c("log", "softplus", "squareplus", "identity", "logm1"), 
-    dpars = NULL,  # is determind based on the data
+    dpars = NULL,  # is fully determined based on the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"), 
-    specials = c("dirichlet"),
+    specials = c("simplex"),
     include = "fun_logm1.stan",
+    normalized = ""
+  )
+}
+
+.family_logistic_normal <- function() {
+  list(
+    links = "identity", 
+    dpars = NULL,  # is fully determined based on the data
+    type = "real", ybounds = c(0, 1), 
+    closed = c(FALSE, FALSE),
+    ad = c("weights", "subset", "index"), 
+    specials = c("simplex", "logistic_normal", "joint_link"),
+    include = "fun_logistic_normal.stan",
     normalized = ""
   )
 }

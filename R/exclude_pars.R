@@ -72,10 +72,10 @@ exclude_pars.mvbrmsterms <- function(x, save_pars, ...) {
 
 #' @export
 exclude_pars.brmsterms <- function(x, save_pars, ...) {
-  out <- character(0)
+  out <- "Lncor"
   resp <- usc(combine_prefix(x))
   if (!save_pars$all) {
-    par_classes <- c("ordered_Intercept", "fixed_Intercept", "theta")
+    par_classes <- c("ordered_Intercept", "fixed_Intercept", "theta", "Llncor")
     c(out) <- paste0(par_classes, resp)
   }
   for (dp in names(x$dpars)) {

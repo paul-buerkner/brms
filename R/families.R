@@ -1245,11 +1245,14 @@ valid_dpars.brmsfit <- function(family, ...) {
 dpar_class <- function(dpar, family = NULL) {
   out <- sub("[[:digit:]]*$", "", dpar) 
   if (!is.null(family)) {
-    # TODO: avoid this special case by changing naming conventions
+    # TODO: avoid these special cases by changing naming conventions
     if (conv_cats_dpars(family) && grepl("^mu", out)) {
       # categorical-like models have non-integer suffixes
       # that will not be caught by the standard procedure
       out <- "mu"
+    }
+    if (is_logistic_normal(family) && grepl("^sigma", out)) {
+      out <- "sigma"
     }
   }
   out
@@ -1522,13 +1525,17 @@ is_multinomial <- function(family) {
   "multinomial" %in% family_info(family, "specials")
 }
 
-is_dirichlet <- function(family) {
-  "dirichlet" %in% family_info(family, "specials")
+is_logistic_normal <- function(family) {
+  "logistic_normal" %in% family_info(family, "specials")
+}
+
+is_simplex <- function(family) {
+  "simplex" %in% family_info(family, "specials")
 }
 
 is_polytomous <- function(family) {
   is_categorical(family) || is_ordinal(family) ||
-    is_multinomial(family) || is_dirichlet(family)
+    is_multinomial(family) || is_simplex(family)
 }
 
 is_cox <- function(family) {
@@ -1567,17 +1574,17 @@ needs_ordered_cs <- function(family) {
 
 # choose dpar names based on categories?
 conv_cats_dpars <- function(family) {
-  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_simplex(family)
 }
 
 # check if mixtures of the given families are allowed
 no_mixture <- function(family) {
-  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_simplex(family)
 }
 
 # indicate if the response should consist of multiple columns
 has_multicol <- function(family) {
-  is_multinomial(family) || is_dirichlet(family)
+  is_multinomial(family) || is_simplex(family)
 }
 
 # indicate if the response is modeled on the log-scale
@@ -1594,7 +1601,7 @@ has_trials <- function(family) {
 
 # indicate if family has more than two response categories
 has_cat <- function(family) {
-  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_simplex(family)
 }
 
 # indicate if family has thresholds
@@ -1628,9 +1635,25 @@ has_eta_minus_thres <- function(family) {
 }
 
 # get names of response categories
-# @param group name of a group for which to extract categories
 get_cats <- function(family) {
   family_info(family, "cats")
+}
+
+# get reference category categorical-like models
+get_refcat <- function(family, int = FALSE) {
+  refcat <- family_info(family, "refcat")
+  if (int) {
+    cats <- family_info(family, "cats")
+    refcat <- match(refcat, cats)
+  }
+  refcat
+}
+
+# get names of predicted categories categorical-like models
+get_predcats <- function(family) {
+  refcat <- family_info(family, "refcat")
+  cats <- family_info(family, "cats")
+  setdiff(cats, refcat)
 }
 
 # get names of ordinal thresholds for prior specification

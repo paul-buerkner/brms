@@ -124,9 +124,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("This model requires a response matrix.")
       }
     }
-    if (is_dirichlet(x$family)) {
+    if (is_simplex(x$family)) {
       if (!is_equal(rowSums(out$Y), rep(1, nrow(out$Y)))) {
-        stop2("Response values in dirichlet models must sum to 1.")
+        stop2("Response values in simplex models must sum to 1.")
       }
     }
     ybounds <- family_info(x$family, "ybounds")

@@ -736,6 +736,16 @@ stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
   sdist("dirichlet", mu)
 }
 
+stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
+  stopifnot(bterms$family$link == "identity")
+  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
+  sigma <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "sigma")$sigma
+  Llncor <- glue("Llncor{mix}{resp}")
+  refcat <- get_refcat(bterms$family, int = TRUE)
+  sdist("logistic_normal_cholesky_cor", mu, sigma, Llncor, refcat)
+}
+
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", 
                                  threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)

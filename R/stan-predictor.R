@@ -2141,7 +2141,7 @@ stan_dpar_types <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
     )
   )
   out <- ""
-  types <- default_types[[dpar_class(dpar)]]
+  types <- default_types[[dpar_class(dpar, family)]]
   if (!is.null(types)) {
     out <- types$type
     attr(out, "comment") <- types$comment
@@ -2166,7 +2166,7 @@ stan_dpar_tmp_types <- function(dpar, suffix = "", family = NULL) {
     )
   )
   out <- ""
-  types <- default_types[[dpar_class(dpar)]]
+  types <- default_types[[dpar_class(dpar, family)]]
   if (!is.null(types)) {
     out <- types$type
     attr(out, "comment") <- types$comment
@@ -2182,14 +2182,21 @@ stan_dpar_transform <- function(bterms, threads, ...) {
   p <- usc(combine_prefix(bterms))
   resp <- usc(bterms$resp)
   if (any(conv_cats_dpars(families))) {
+    stopifnot(length(families) == 1L)
+    is_logistic_normal <- any(is_logistic_normal(families))
+    len_mu <- glue("ncat{p}{str_if(is_logistic_normal, '-1')}")
     str_add(out$model_def) <- glue( 
       "  // linear predictor matrix\n",
-      "  vector[ncat{p}] mu{p}[N{resp}];\n"
+      "  vector[{len_mu}] mu{p}[N{resp}];\n"
     )
     mu_dpars <- make_stan_names(glue("mu{bterms$family$cats}"))
     mu_dpars <- glue("{mu_dpars}{p}[n]")
-    iref <- match(bterms$family$refcat, bterms$family$cats)
-    mu_dpars[iref] <- "0" 
+    iref <- get_refcat(bterms$family, int = TRUE)
+    if (is_logistic_normal) {
+      mu_dpars <- mu_dpars[-iref]
+    } else {
+      mu_dpars[iref] <- "0"
+    }
     str_add(out$model_comp_catjoin) <- glue(
       "  for (n in 1:N{resp}) {{\n",
       "    mu{p}[n] = {stan_vector(mu_dpars)};\n",
@@ -2256,6 +2263,49 @@ stan_dpar_transform <- function(bterms, threads, ...) {
         )
       }
     }
+  }
+  if (any(families %in% "logistic_normal")) {
+    stopifnot(length(families) == 1L)
+    predcats <- get_predcats(bterms$family)
+    sigma_dpars <- glue("sigma{predcats}")
+    reqn <- sigma_dpars %in% bterms$dpars
+    n <- ifelse(reqn, "[n]", "")
+    sigma_dpars <- glue("{sigma_dpars}{p}{n}")
+    ncatm1 <- glue("ncat{p}-1")
+    if (any(reqn)) {
+      # some of the sigmas are predicted
+      str_add(out$model_def) <- glue( 
+        "  // sigma parameter matrix\n",
+        "  vector[{ncatm1}] sigma{p}[N{resp}];\n"
+      ) 
+      str_add(out$model_comp_catjoin) <- glue(
+        "  for (n in 1:N{resp}) {{\n",
+        "    sigma{p}[n] = {stan_vector(sigma_dpars)};\n",
+        "  }}\n"
+      )
+    } else {
+      # none of the sigmas is predicted
+      str_add(out$model_def) <- glue( 
+        "  // sigma parameter vector\n",
+        "  vector[{ncatm1}] sigma{p} = {stan_vector(sigma_dpars)};\n"
+      ) 
+    }
+    # handle the latent correlation matrix 'lncor'
+    str_add(out$tdata_def) <- glue(
+      "  // number of logistic normal correlations\n",
+      "  int nlncor{p} = choose({ncatm1}, 2);\n"
+    )
+    str_add(out$par) <- glue(
+      "  // logistic normal Cholesky correlation matrix\n",
+      "  cholesky_factor_corr[{ncatm1}] Llncor;\n"
+    )
+    str_add(out$gen_def) <- glue(
+      "  // logistic normal correlations\n",
+      "  corr_matrix[{ncatm1}] Lncor",
+      " = multiply_lower_tri_self_transpose(Llncor);\n",
+      "  vector<lower=-1,upper=1>[nlncor] lncor;\n"
+    )
+    str_add(out$gen_comp) <- stan_cor_gen_comp("lncor", ncatm1)
   }
   out
 }
