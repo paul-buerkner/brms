@@ -132,6 +132,14 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   spec_pars <- paste0("^(", spec_pars, ")($|_)")
   spec_pars <- variables[grepl(spec_pars, variables)]
   out$spec_pars <- full_summary[spec_pars, , drop = FALSE]
+  # correlation parameters require renaming to look good in the summary
+  lncor_pars <- variables[grepl("^lncor_", variables)]
+  if (length(lncor_pars)) {
+    lncor_summary <- full_summary[lncor_pars, , drop = FALSE]
+    lncor_pars <- sub("__", ",", sub("__", "(", lncor_pars))
+    rownames(lncor_summary) <- paste0(lncor_pars, ")")
+    out$spec_pars <- rbind(out$spec_pars, lncor_summary)
+  }
   
   # summary of residual correlations
   rescor_pars <- variables[grepl("^rescor_", variables)]

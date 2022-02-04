@@ -820,35 +820,48 @@ posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
 }
 
 posterior_predict_categorical <- function(i, prep, ...) {
-  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
-  eta <- insert_refcat(eta, family = prep$family)
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- pcategorical(seq_len(prep$data$ncat), eta = eta)
   first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
 }
 
 posterior_predict_multinomial <- function(i, prep, ...) {
-  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
-  eta <- insert_refcat(eta, family = prep$family)
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
   size <- prep$data$trials[i]
-  out <- lapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
-  do_call(rbind, out)
+  out <- rlapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
+  dimnames(out)[[3]] <- prep$cats
+  out
 }
 
 posterior_predict_dirichlet <- function(i, prep, ...) {
-  mu_dpars <- str_subset(names(prep$dpars), "^mu")
-  eta <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
-  eta <- insert_refcat(eta, family = prep$family)
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
   cats <- seq_len(prep$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
-  rdirichlet(prep$ndraws, alpha = alpha)
+  out <- rdirichlet(prep$ndraws, alpha = alpha)
+  dimnames(out)[[3]] <- prep$cats
+  out
 }
 
 posterior_predict_dirichlet2 <- function(i, prep, ...) {
-  mu_dpars <- str_subset(names(prep$dpars), "^mu")
-  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
-  rdirichlet(prep$ndraws, alpha = mu)
+  mu <- get_Mu(prep, i = i)
+  out <- rdirichlet(prep$ndraws, alpha = mu)
+  dimnames(out)[[3]] <- prep$cats
+  out
+}
+
+posterior_predict_logistic_normal <- function(i, prep, ...) {
+  mu <- get_Mu(prep, i = i)
+  Sigma <- get_Sigma(prep, i, cor_name = "lncor")
+  .predict <- function(s) {
+    rlogistic_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ],
+                     refcat = prep$refcat)
+  }
+  rblapply(seq_len(prep$ndraws), .predict)
 }
 
 posterior_predict_cumulative <- function(i, prep, ...) {

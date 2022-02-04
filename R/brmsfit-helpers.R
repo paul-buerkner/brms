@@ -451,62 +451,92 @@ get_theta <- function(prep, i = NULL) {
 
 # get posterior draws of multivariate mean vectors
 # only used in multivariate models with 'rescor'
+# and in univariate models with multiple 'mu' pars such as logistic_normal
 get_Mu <- function(prep, i = NULL) {
-  stopifnot(is.mvbrmsprep(prep))
-  Mu <- prep$mvpars$Mu
-  if (is.null(Mu)) {
-    Mu <- lapply(prep$resps, get_dpar, "mu", i = i)
-    if (length(i) == 1L) {
-      Mu <- do_call(cbind, Mu)
-    } else {
-      # keep correct dimension even if data has only 1 row
-      Mu <- lapply(Mu, as.matrix)
-      Mu <- abind::abind(Mu, along = 3)
-    }
+  is_mv <- is.mvbrmsprep(prep)
+  if (is_mv) {
+    Mu <- prep$mvpars$Mu 
   } else {
+    stopifnot(is.brmsprep(prep))
+    Mu <- prep$dpars$Mu
+  }
+  if (!is.null(Mu)) {
     stopifnot(!is.null(i))
     Mu <- slice_col(Mu, i)
+    return(Mu)
+  }
+  if (is_mv) {
+    Mu <- lapply(prep$resps, get_dpar, "mu", i = i)
+  } else {
+    mu_dpars <- str_subset(names(prep$dpars), "^mu")
+    Mu <- lapply(mu_dpars, get_dpar, prep = prep, i = i)
+  }
+  if (length(i) == 1L) {
+    Mu <- do_call(cbind, Mu)
+  } else {
+    # keep correct dimension even if data has only 1 row
+    Mu <- lapply(Mu, as.matrix)
+    Mu <- abind::abind(Mu, along = 3)
   }
   Mu
 }
 
 # get posterior draws of residual covariance matrices
 # only used in multivariate models with 'rescor'
-get_Sigma <- function(prep, i = NULL) {
-  stopifnot(is.mvbrmsprep(prep))
-  Sigma <- prep$mvpars$Sigma
-  if (is.null(Sigma)) {
-    stopifnot(!is.null(prep$mvpars$rescor))
-    sigma <- named_list(names(prep$resps))
-    for (j in seq_along(sigma)) {
-      sigma[[j]] <- get_dpar(prep$resps[[j]], "sigma", i = i)
-      sigma[[j]] <- add_sigma_se(sigma[[j]], prep$resps[[j]], i = i)
-    }
-    is_matrix <- ulapply(sigma, is.matrix)
-    if (!any(is_matrix)) {
-      # happens if length(i) == 1 or if no sigma was predicted
-      sigma <- do_call(cbind, sigma)
-      Sigma <- get_cov_matrix(sigma, prep$mvpars$rescor)
-    } else {
-      for (j in seq_along(sigma)) {
-        # bring all sigmas to the same dimension
-        if (!is_matrix[j]) {
-          sigma[[j]] <- array(sigma[[j]], dim = dim_mu(prep))
-        }
-      }
-      nsigma <- length(sigma)
-      sigma <- abind(sigma, along = 3)
-      Sigma <- array(dim = c(dim_mu(prep), nsigma, nsigma))
-      for (n in seq_len(ncol(Sigma))) {
-        Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], prep$mvpars$rescor)
-      }
-    }
+# and in univariate models with multiple 'mu' pars such as logistic_normal
+get_Sigma <- function(prep, i = NULL, cor_name = NULL) {
+  is_mv <- is.mvbrmsprep(prep)
+  if (is_mv) {
+    cor_name <- "rescor"
+    Sigma <- prep$mvpars$Sigma 
   } else {
+    stopifnot(is.brmsprep(prep))
+    cor_name <- as_one_character(cor_name)
+    Sigma <- prep$dpars$Sigma
+  }
+  if (!is.null(Sigma)) {
+    # already computed before
     stopifnot(!is.null(i))
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
       Sigma <- slice_col(Sigma, i)
+    }
+    return(Sigma)
+  }
+  if (is_mv) {
+    cors <- prep$mvpars[[cor_name]]
+    sigma <- named_list(names(prep$resps))
+    for (j in seq_along(sigma)) {
+      sigma[[j]] <- get_dpar(prep$resps[[j]], "sigma", i = i)
+      sigma[[j]] <- add_sigma_se(sigma[[j]], prep$resps[[j]], i = i)
+    } 
+  } else {
+    cors <- prep$dpars[[cor_name]]
+    sigma_names <- str_subset(names(prep$dpars), "^sigma")
+    sigma <- named_list(sigma_names)
+    for (j in seq_along(sigma)) {
+      sigma[[j]] <- get_dpar(prep, sigma_names[j], i = i)
+      sigma[[j]] <- add_sigma_se(sigma[[j]], prep, i = i)
+    } 
+  }
+  is_matrix <- ulapply(sigma, is.matrix)
+  if (!any(is_matrix)) {
+    # happens if length(i) == 1 or if no sigma was predicted
+    sigma <- do_call(cbind, sigma)
+    Sigma <- get_cov_matrix(sigma, cors)
+  } else {
+    for (j in seq_along(sigma)) {
+      # bring all sigmas to the same dimension
+      if (!is_matrix[j]) {
+        sigma[[j]] <- array(sigma[[j]], dim = dim_mu(prep))
+      }
+    }
+    nsigma <- length(sigma)
+    sigma <- abind(sigma, along = 3)
+    Sigma <- array(dim = c(dim_mu(prep), nsigma, nsigma))
+    for (n in seq_len(ncol(Sigma))) {
+      Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], cors)
     }
   }
   Sigma
@@ -581,36 +611,21 @@ subset_thres <- function(prep, i) {
 }
 
 # helper function of 'get_dpar' to decide if
-# the link function should be applied direclty
+# the link function should be applied directly
 apply_dpar_inv_link <- function(dpar, family) {
   !(has_joint_link(family) && dpar_class(dpar, family) == "mu")
 }
 
 # insert zeros for the predictor term of the reference category
 # in categorical-like models using the softmax response function
-insert_refcat <- function(eta, family) {
-  stopifnot(is.array(eta), is.brmsfamily(family))
-  if (!conv_cats_dpars(family) || isNA(family$refcat)) {
-    return(eta)
-  }
+insert_refcat <- function(eta, refcat = 1) {
+  stopifnot(is.array(eta))
+  refcat <- as_one_integer(refcat)
   # need to add zeros for the reference category
   ndim <- length(dim(eta))
   dim_noncat <- dim(eta)[-ndim]
   zeros_arr <- array(0, dim = c(dim_noncat, 1))
-  if (is.null(family$refcat) || is.null(family$cats)) {
-    # no information on the categories provided:
-    # use the first category as the reference
-    return(abind::abind(zeros_arr, eta))
-  }
-  ncat <- length(family$cats)
-  stopifnot(identical(dim(eta)[ndim], ncat - 1L))
-  if (is.null(dimnames(eta)[[ndim]])) {
-    dimnames(eta)[ndim] <- 
-      list(paste0("mu", setdiff(family$cats, family$refcat)))
-  }
-  dimnames(zeros_arr)[ndim] <- list(paste0("mu", family$refcat))
-  iref <- match(family$refcat, family$cats)
-  before <- seq_len(iref - 1)
+  before <- seq_len(refcat - 1)
   after <- setdiff(seq_dim(eta, ndim), before)
   abind::abind(
     slice(eta, ndim, before, drop = FALSE),

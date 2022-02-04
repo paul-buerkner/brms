@@ -189,6 +189,74 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
   sweep(draws, 2, mu, "+")
 }
 
+#' The (Multivariate) Logistic Normal Distribution
+#' 
+#' Density function and random generation for the (multivariate) logistic normal 
+#' distribution with latent mean vector \code{mu} and covariance matrix \code{Sigma}.
+#' 
+#' @name LogisticNormal
+#' 
+#' @inheritParams StudentT
+#' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
+#'   each row is taken to be a quantile.
+#' @param mu Mean vector with length equal to the number of dimensions.
+#' @param Sigma Covariance matrix.
+#' @param refcat A single integer indicating the reference category.
+#'   Defaults to \code{1}.
+#' @param check Logical; Indicates whether several input checks
+#'   should be performed. Defaults to \code{FALSE} to improve
+#'   efficiency.
+#'   
+#' @export
+dlogistic_normal <- function(x, mu, Sigma, refcat = 1, log = FALSE, 
+                             check = FALSE) {
+  if (is.vector(x) || length(dim(x)) == 1L) {
+    x <- matrix(x, ncol = length(x))
+  }
+  p <- ncol(x)
+  if (check) {
+    if (length(mu) != p) {
+      stop2("Dimension of mu is incorrect.")
+    }
+    if (!all(dim(Sigma) == c(p, p))) {
+      stop2("Dimension of Sigma is incorrect.")
+    }
+    if (!is_symmetric(Sigma)) {
+      stop2("Sigma must be a symmetric matrix.")
+    }
+  }
+  lx <- link_categorical(x, refcat)
+  chol_Sigma <- chol(Sigma)
+  rooti <- backsolve(chol_Sigma, t(lx) - mu, transpose = TRUE)
+  quads <- colSums(rooti^2)
+  out <- -(p / 2) * log(2 * pi) - sum(log(diag(chol_Sigma))) - .5 * quads -
+    rowSums(log(x))  # Jacobian adjustment for logistic normal
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+#' @rdname LogisticNormal
+#' @export
+rlogistic_normal <- function(n, mu, Sigma, refcat = 1, check = FALSE) {
+  p <- length(mu)
+  if (check) {
+    if (!(is_wholenumber(n) && n > 0)) {
+      stop2("n must be a positive integer.")
+    }
+    if (!all(dim(Sigma) == c(p, p))) {
+      stop2("Dimension of Sigma is incorrect.")
+    }
+    if (!is_symmetric(Sigma)) {
+      stop2("Sigma must be a symmetric matrix.")
+    }
+  }
+  draws <- matrix(rnorm(n * p), nrow = n, ncol = p)
+  out <- mu + draws %*% chol(Sigma)
+  inv_link_categorical(out, refcat = refcat)
+}
+
 #' The Skew-Normal Distribution
 #' 
 #' Density, distribution function, and random generation for the 
@@ -1960,7 +2028,7 @@ dcategorical <- function(x, eta, log = FALSE) {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  out <- inv_link_categorical(eta, refcat_obj = NULL, log = log)
+  out <- inv_link_categorical(eta, log = log)
   out[, x, drop = FALSE]
 }
 
@@ -1972,11 +2040,8 @@ dcategorical <- function(x, eta, log = FALSE) {
 #   dcategorical()) or an array (S x N x `ncat` or S x N x `ncat - 1` (depending
 #   on `refcat_obj`)) containing the same values as the matrix just described,
 #   but for N observations.
-# @param refcat_obj Either the string "first", an object of class "brmsfamily",
-#   or NULL. If "first", then the first category is used as reference and
-#   corresponding values are inserted into `x`. If an object of class
-#   "brmsfamily", then passed to insert_refcat() which is used to insert values
-#   for the reference category into `x`. If NULL, `x` is not modified at all.
+# @param refcat Integer indicating the reference category to be inserted in 'x'.
+#   If NULL, `x` is not modified at all.
 # @param log Logical (length 1) indicating whether to log the return value.
 # 
 # @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
@@ -1984,11 +2049,9 @@ dcategorical <- function(x, eta, log = FALSE) {
 #   categories) containing the values of the inverse-link function applied to
 #   `x`. If `x` is an array, then an array (S x N x `ncat`) containing the same
 #   values as the matrix just described, but for N observations.
-inv_link_categorical <- function(x, refcat_obj = "first", log = FALSE) {
-  if (is_equal(refcat_obj, "first")) {
-    x <- insert_refcat(x, family = categorical()) # The link does not matter.
-  } else if (!is.null(refcat_obj)) {
-    x <- insert_refcat(x, family = refcat_obj)
+inv_link_categorical <- function(x, refcat = 1, log = FALSE) {
+  if (!is.null(refcat)) {
+    x <- insert_refcat(x, refcat = refcat)    
   }
   if (log) {
     out <- log_softmax(x)

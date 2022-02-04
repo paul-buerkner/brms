@@ -84,6 +84,7 @@ change_effects.brmsterms <- function(x, ...) {
   if (is.formula(x$adforms$mi)) {
     c(out) <- change_Ymi(x, ...)
   }
+  c(out) <- change_family_cor_pars(x, ...)
   out
 }
 
@@ -403,6 +404,20 @@ change_re_levels <- function(ranef, pars)  {
   out
 }
 
+# helps to rename correlation parameters of likelihoods
+change_family_cor_pars <- function(x, pars, ...) {
+  stopifnot(is.brmsterms(x))
+  out <- list()
+  if (is_logistic_normal(x$family)) {
+    predcats <- get_predcats(x$family)
+    lncor_names <- get_cornames(
+      predcats, type = "lncor", brackets = FALSE
+    )
+    lc(out) <- clist(grepl("^lncor\\[", pars), lncor_names)
+  }
+  out
+}
+
 # rename parameters related to special priors
 change_special_prior_local <- function(bterms, coef, pars) {
   out <- list()
@@ -531,7 +546,7 @@ reorder_pars <- function(x) {
   all_classes <- unique(c(
     "b", "bs", "bsp", "bcs", "ar", "ma", "lagsar", "errorsar", 
     "car", "sdcar", "cosy", "sd", "cor", "df", "sds", "sdgp", 
-    "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
+    "lscale", valid_dpars(x), "lncor", "Intercept", "tmp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
     "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", 
     "lprior", "lp"
