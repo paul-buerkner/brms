@@ -116,40 +116,29 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
-  if (!is_ordinal(family)) {
-    # The default `ref_predfun` from projpred does not set `allow_new_levels`,
-    # so use a customized `ref_predfun`:
-    ref_predfun <- function(fit, newdata = NULL) {
-      # Setting a seed is necessary for reproducible sampling of group-level
-      # effects for new levels:
-      if (exists(".Random.seed", envir = .GlobalEnv)) {
-        rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-        on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-      }
-      set.seed(refprd_seed)
-      t(posterior_linpred(
-        fit, newdata = newdata,
-        allow_new_levels = TRUE,
-        sample_new_levels = "gaussian"
-      ))
+  # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
+  # use a customized `ref_predfun` which also handles some preparations for the
+  # augmented-data projection:
+  ref_predfun <- function(fit, newdata = NULL) {
+    # Setting a seed is necessary for reproducible sampling of group-level
+    # effects for new levels:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
-  } else {
-    # Also use argument `incl_thres` of posterior_linpred():
-    ref_predfun <- function(fit, newdata = NULL) {
-      # Setting a seed is necessary for reproducible sampling of group-level
-      # effects for new levels:
-      if (exists(".Random.seed", envir = .GlobalEnv)) {
-        rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-        on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-      }
-      set.seed(refprd_seed)
-      posterior_linpred(
-        fit, newdata = newdata,
-        allow_new_levels = TRUE,
-        sample_new_levels = "gaussian",
-        incl_thres = TRUE
-      )
+    set.seed(refprd_seed)
+    lprd_args <- nlist(
+      object = fit, newdata, allow_new_levels = TRUE,
+      sample_new_levels = "gaussian"
+    )
+    if (is_ordinal(family)) {
+      c(lprd_args) <- list(incl_thres = TRUE)
     }
+    out <- do_call(posterior_linpred, lprd_args)
+    if (length(dim(out)) == 2) {
+      out <- t(out)
+    }
+    out
   }
   
   if (utils::packageVersion("projpred") <= "2.0.2" && NROW(object$ranef)) {
@@ -189,10 +178,14 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (aug_data) {
     c(args) <- list(
       augdat_link = get(paste0("link_", family$family), mode = "function"),
-      augdat_ilink = get(paste0("inv_link_", family$family), mode = "function"),
-      augdat_args_link = list(link = family$link),
-      augdat_args_ilink = list(link = family$link)
+      augdat_ilink = get(paste0("inv_link_", family$family), mode = "function")
     )
+    if (is_ordinal(family)) {
+      c(args) <- list(
+        augdat_args_link = list(link = family$link),
+        augdat_args_ilink = list(link = family$link)
+      )
+    }
   }
   do_call(projpred::init_refmodel, args)
 }
