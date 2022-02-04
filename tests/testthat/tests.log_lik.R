@@ -417,6 +417,7 @@ test_that("log_lik for categorical and related models runs without erros", {
   )
   prep$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   prep$family <- categorical()
+  prep$refcat <- 1
   ll <- sapply(1:nobs, brms:::log_lik_categorical, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
   

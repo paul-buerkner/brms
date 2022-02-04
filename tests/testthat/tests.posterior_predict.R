@@ -339,6 +339,7 @@ test_that("truncated posterior_predict run without errors", {
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
     sigma = rchisq(ns, 3)
   )
+  prep$refcat <- 1
 
   prep$data <- list(lb = sample(-(4:7), nobs, TRUE))
   pred <- sapply(1:nobs, brms:::posterior_predict_gaussian, prep = prep)
