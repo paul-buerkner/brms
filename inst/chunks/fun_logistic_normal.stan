@@ -5,12 +5,12 @@
    *   an unbounded real vector of length size(y) - 1
    */ 
    vector multi_logit(vector y, int ref) {
-     vector[size(y) - 1] x;
+     vector[rows(y) - 1] x;
      for (i in 1:(ref - 1)) {
-       x[i] = log(y[i] / y[ref]);
+       x[i] = log(y[i]) - log(y[ref]);
      }
-      for (i in (ref+1):size(y)) {
-       x[i - 1] = log(y[i] / y[ref]); 
+      for (i in (ref+1):rows(y)) {
+       x[i - 1] = log(y[i]) - log(y[ref]); 
      }
      return(x);
    } 
@@ -26,7 +26,7 @@
    */ 
    real logistic_normal_cholesky_cor_lpdf(vector y, vector mu, vector sigma, 
                                           matrix Lcor, int ref) {
-     int D = size(y);
+     int D = rows(y);
      vector[D - 1] x = multi_logit(y, ref);
      matrix[D - 1, D - 1] Lcov = diag_pre_multiply(sigma, Lcor);
      // multi-normal plus Jacobian adjustment of multivariate logit transform

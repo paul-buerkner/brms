@@ -213,24 +213,8 @@ dlogistic_normal <- function(x, mu, Sigma, refcat = 1, log = FALSE,
   if (is.vector(x) || length(dim(x)) == 1L) {
     x <- matrix(x, ncol = length(x))
   }
-  p <- ncol(x)
-  if (check) {
-    if (length(mu) != p) {
-      stop2("Dimension of mu is incorrect.")
-    }
-    if (!all(dim(Sigma) == c(p, p))) {
-      stop2("Dimension of Sigma is incorrect.")
-    }
-    if (!is_symmetric(Sigma)) {
-      stop2("Sigma must be a symmetric matrix.")
-    }
-  }
   lx <- link_categorical(x, refcat)
-  chol_Sigma <- chol(Sigma)
-  rooti <- backsolve(chol_Sigma, t(lx) - mu, transpose = TRUE)
-  quads <- colSums(rooti^2)
-  out <- -(p / 2) * log(2 * pi) - sum(log(diag(chol_Sigma))) - .5 * quads -
-    rowSums(log(x))  # Jacobian adjustment for logistic normal
+  out <- dmulti_normal(lx, mu, Sigma, log = TRUE) - rowSums(log(x))
   if (!log) {
     out <- exp(out)
   }
@@ -240,20 +224,7 @@ dlogistic_normal <- function(x, mu, Sigma, refcat = 1, log = FALSE,
 #' @rdname LogisticNormal
 #' @export
 rlogistic_normal <- function(n, mu, Sigma, refcat = 1, check = FALSE) {
-  p <- length(mu)
-  if (check) {
-    if (!(is_wholenumber(n) && n > 0)) {
-      stop2("n must be a positive integer.")
-    }
-    if (!all(dim(Sigma) == c(p, p))) {
-      stop2("Dimension of Sigma is incorrect.")
-    }
-    if (!is_symmetric(Sigma)) {
-      stop2("Sigma must be a symmetric matrix.")
-    }
-  }
-  draws <- matrix(rnorm(n * p), nrow = n, ncol = p)
-  out <- mu + draws %*% chol(Sigma)
+  out <- rmulti_normal(n, mu, Sigma, check = check)
   inv_link_categorical(out, refcat = refcat)
 }
 

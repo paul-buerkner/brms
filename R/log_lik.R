@@ -795,7 +795,7 @@ log_lik_dirichlet2 <- function(i, prep) {
 
 log_lik_logistic_normal <- function(i, prep, ...) {
   mu <- get_Mu(prep, i = i)
-  Sigma <- get_Sigma(prep, i, cor_name = "lncor")
+  Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   dlmn <- function(s) {
     dlogistic_normal(
       prep$data$Y[i, ], mu = mu[s, ], Sigma = Sigma[s, , ],

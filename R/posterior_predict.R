@@ -831,9 +831,7 @@ posterior_predict_multinomial <- function(i, prep, ...) {
   eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
   size <- prep$data$trials[i]
-  out <- rlapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
-  dimnames(out)[[3]] <- prep$cats
-  out
+  rlapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
 posterior_predict_dirichlet <- function(i, prep, ...) {
@@ -842,21 +840,17 @@ posterior_predict_dirichlet <- function(i, prep, ...) {
   phi <- get_dpar(prep, "phi", i = i)
   cats <- seq_len(prep$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
-  out <- rdirichlet(prep$ndraws, alpha = alpha)
-  dimnames(out)[[3]] <- prep$cats
-  out
+  rdirichlet(prep$ndraws, alpha = alpha)
 }
 
 posterior_predict_dirichlet2 <- function(i, prep, ...) {
   mu <- get_Mu(prep, i = i)
-  out <- rdirichlet(prep$ndraws, alpha = mu)
-  dimnames(out)[[3]] <- prep$cats
-  out
+  rdirichlet(prep$ndraws, alpha = mu)
 }
 
 posterior_predict_logistic_normal <- function(i, prep, ...) {
   mu <- get_Mu(prep, i = i)
-  Sigma <- get_Sigma(prep, i, cor_name = "lncor")
+  Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   .predict <- function(s) {
     rlogistic_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ],
                      refcat = prep$refcat)
