@@ -270,7 +270,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   )
   out[names(family_info)] <- family_info
   class(out) <- c("brmsfamily", "family")
-  for (dp in valid_dpars(out)) {
+  all_valid_dpars <- c(valid_dpars(out), valid_dpars(out, multi = TRUE))
+  for (dp in all_valid_dpars) {
     alink <- as.character(aux_links[[paste0("link_", dp)]])
     if (length(alink)) {
       alink <- as_one_character(alink)
@@ -639,10 +640,11 @@ dirichlet2 <- function(link = "log") {
 
 #' @rdname brmsfamily
 #' @export
-logistic_normal <- function(link = "identity", refcat = NULL) {
-  # TODO: allow to pass and store 'link_sigma' as well
+logistic_normal <- function(link = "identity", link_sigma = "log", 
+                            refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("logistic_normal", link = link, slink = slink, refcat = refcat)
+  .brmsfamily("logistic_normal", link = link, slink = slink, 
+              link_sigma = link_sigma, refcat = refcat)
 }
 
 #' @rdname brmsfamily
@@ -1211,12 +1213,17 @@ valid_dpars <- function(family, ...) {
 }
 
 #' @export
-valid_dpars.default <- function(family, ...) {
+valid_dpars.default <- function(family, multi = FALSE, ...) {
   if (!length(family)) {
     return("mu")
   }
   family <- validate_family(family) 
-  family_info(family, "dpars", ...)
+  if (multi) {
+    out <- family_info(family, "multi_dpars", ...)
+  } else {
+    out <- family_info(family, "dpars", ...)
+  }
+  out
 }
 
 #' @export
@@ -1258,13 +1265,16 @@ dpar_class <- function(dpar, family = NULL) {
   out <- sub("[[:digit:]]*$", "", dpar) 
   if (!is.null(family)) {
     # TODO: avoid these special cases by changing naming conventions
-    if (conv_cats_dpars(family) && grepl("^mu", out)) {
+    # perhaps add a protected "C" before category names
+    # and a protected "M" for mixture components
+    if (conv_cats_dpars(family)) {
       # categorical-like models have non-integer suffixes
       # that will not be caught by the standard procedure
-      out <- "mu"
-    }
-    if (is_logistic_normal(family) && grepl("^sigma", out)) {
-      out <- "sigma"
+      multi_dpars <- valid_dpars(family, multi = TRUE)
+      for (dp in multi_dpars) {
+        sel <- grepl(paste0("^", dp), out)
+        out[sel] <- dp
+      } 
     }
   }
   out

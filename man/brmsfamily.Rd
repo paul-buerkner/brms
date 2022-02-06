@@ -98,7 +98,7 @@ Beta(link = "logit", link_phi = "log")
 
 dirichlet(link = "logit", link_phi = "log", refcat = NULL)
 
-logistic_normal(link = "identity", refcat = NULL)
+logistic_normal(link = "identity", link_sigma = "log", refcat = NULL)
 
 von_mises(link = "tan_half", link_kappa = "log")
 

@@ -73,7 +73,8 @@
 .family_categorical <- function() {
   list(
     links = "logit", 
-    dpars = NULL,  # is determined based on the data
+    dpars = NULL,
+    multi_dpars = "mu",  # size determined by the data
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights", "subset", "index"), 
@@ -84,7 +85,8 @@
 .family_multinomial <- function() {
   list(
     links = "logit", 
-    dpars = NULL,  # is determined based on the data
+    dpars = NULL, 
+    multi_dpars = "mu",  # size determined by the data
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights", "subset", "trials", "index"), 
@@ -109,7 +111,8 @@
 .family_dirichlet <- function() {
   list(
     links = "logit", 
-    dpars = "phi",  # more dpars are determined based on the data
+    dpars = "phi",
+    multi_dpars = "mu",  # size determined by the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"), 
@@ -122,7 +125,8 @@
 .family_dirichlet2 <- function() {
   list(
     links = c("log", "softplus", "squareplus", "identity", "logm1"), 
-    dpars = NULL,  # is fully determined based on the data
+    dpars = NULL,
+    multi_dpars = "mu",  # size determined by the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"), 
@@ -135,7 +139,8 @@
 .family_logistic_normal <- function() {
   list(
     links = "identity", 
-    dpars = NULL,  # is fully determined based on the data
+    dpars = NULL, 
+    multi_dpars = c("mu", "sigma"),  # size determined by the data
     type = "real", ybounds = c(0, 1), 
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"), 

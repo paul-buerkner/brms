@@ -2268,7 +2268,7 @@ stan_dpar_transform <- function(bterms, threads, ...) {
     stopifnot(length(families) == 1L)
     predcats <- get_predcats(bterms$family)
     sigma_dpars <- glue("sigma{predcats}")
-    reqn <- sigma_dpars %in% bterms$dpars
+    reqn <- sigma_dpars %in% names(bterms$dpars)
     n <- ifelse(reqn, "[n]", "")
     sigma_dpars <- glue("{sigma_dpars}{p}{n}")
     ncatm1 <- glue("ncat{p}-1")

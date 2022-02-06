@@ -1320,14 +1320,8 @@ validate_formula.brmsformula <- function(
       }
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
-    dpars_data <- "mu"
-    if (is_logistic_normal(out$family)) {
-      # "sigma" parameters are also determined from the data
-      # evaluate "mu" last so that it is listed first in the end
-      # TODO: generalize interface to store dpars_data in the family?
-      dpars_data <- c("sigma", dpars_data)
-    }
-    for (dp in dpars_data) {
+    multi_dpars <- valid_dpars(out$family, multi = TRUE)
+    for (dp in multi_dpars) {
       dp_dpars <- make_stan_names(paste0(dp, predcats))
       if (any(duplicated(dp_dpars))) {
         stop2("Invalid response category names. Please avoid ",

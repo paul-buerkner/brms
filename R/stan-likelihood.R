@@ -257,11 +257,16 @@ stan_log_lik_Y_name <- function(bterms) {
 # @param reqn will the likelihood be wrapped in a loop over n?
 # @param dpars optional names of distributional parameters to be prepared
 #   if not specified will prepare all distributional parameters
-stan_log_lik_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
+stan_log_lik_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL,
+                               multi = FALSE) {
   if (is.null(dpars)) {
-    dpars <- paste0(valid_dpars(bterms), mix)
+    dpars <- paste0(valid_dpars(bterms, multi = multi), mix)
   }
-  is_pred <- dpars %in% c("mu", names(bterms$dpars))
+  pred_dpars <- names(bterms$dpars)
+  if (multi) {
+    pred_dpars <- unique(dpar_class(pred_dpars, bterms))
+  }
+  is_pred <- dpars %in% pred_dpars
   out <- paste0(dpars, resp, ifelse(reqn & is_pred, "[n]", ""))
   named_list(dpars, out)
 }
@@ -710,21 +715,21 @@ stan_log_lik_acat <- function(bterms, resp = "", mix = "",
 stan_log_lik_categorical <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")
+  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", multi = TRUE)
   sdist("categorical_logit", p$mu)
 }
 
 stan_log_lik_multinomial <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")
+  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", multi = TRUE)
   sdist("multinomial_logit2", p$mu)
 }
 
 stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
+  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", multi = TRUE)$mu
   reqn <- glue("phi{mix}") %in% names(bterms$dpars)
   phi <- stan_log_lik_dpars(bterms, reqn, resp, mix, dpars = "phi")$phi
   sdist("dirichlet_logit", mu, phi)
@@ -732,18 +737,17 @@ stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
 
 stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
+  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", multi = TRUE)$mu
   sdist("dirichlet", mu)
 }
 
 stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "identity")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
-  sigma <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "sigma")$sigma
-  Llncor <- glue("Llncor{mix}{resp}")
-  refcat <- get_refcat(bterms$family, int = TRUE)
-  sdist("logistic_normal_cholesky_cor", mu, sigma, Llncor, refcat)
+  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, multi = TRUE)
+  p$Llncor <- glue("Llncor{mix}{resp}")
+  p$refcat <- get_refcat(bterms$family, int = TRUE)
+  sdist("logistic_normal_cholesky_cor", p$mu, p$sigma, p$Llncor, p$refcat)
 }
 
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", 
