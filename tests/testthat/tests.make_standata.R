@@ -10,7 +10,7 @@ test_that(paste("make_standata returns correct data names ",
                                    + (1+treat|id|subject), data = inhaler,
                                    family = "categorical")),
                c("N", "Y", "ncat", "K_mu2", "X_mu2", "Z_1_mu2_1", 
-                 "Z_1_mu2_2", "K_mu3", "X_mu3", "Z_1_mu3_3", "Z_1_mu3_4",x
+                 "Z_1_mu2_2", "K_mu3", "X_mu3", "Z_1_mu3_3", "Z_1_mu3_4",
                  "K_mu4", "X_mu4", "Z_1_mu4_5", "Z_1_mu4_6",
                  "J_1", "N_1", "M_1", "NC_1", "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 

@@ -1999,7 +1999,7 @@ dcategorical <- function(x, eta, log = FALSE) {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  out <- inv_link_categorical(eta, log = log)
+  out <- inv_link_categorical(eta, log = log, refcat = NULL)
   out[, x, drop = FALSE]
 }
 
