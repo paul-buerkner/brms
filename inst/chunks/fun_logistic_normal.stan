@@ -1,8 +1,9 @@
   /* multi-logit transform
    * Args: 
-   *   y: a simplex vector
+   *   y: simplex vector of length D
+   *   ref: a single integer in 1:D indicating the reference category
    * Returns:  
-   *   an unbounded real vector of length size(y) - 1
+   *   an unbounded real vector of length D - 1
    */ 
    vector multi_logit(vector y, int ref) {
      vector[rows(y) - 1] x;
@@ -16,11 +17,11 @@
    } 
   /* logistic-normal log-PDF
    * Args: 
-   *   y: vector of real response values
-   *   mu: vector of means of the logit scale
-   *   sigma: vector for standard deviations on the logit scale
-   *   Lcor: correlation matrix on the logit scale
-   *   ref: index of the mandatory reference category
+   *   y: simplex vector of response values (length D)
+   *   mu: vector of means on the logit scale (length D-1)
+   *   sigma: vector for standard deviations on the logit scale (length D-1)
+   *   Lcor: Cholesky correlation matrix on the logit scale (dim D-1)
+   *   ref: a single integer in 1:D indicating the reference category
    * Returns:  
    *   a scalar to be added to the log posterior 
    */ 
