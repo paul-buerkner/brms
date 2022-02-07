@@ -1,5 +1,9 @@
 # brms 2.16.3++
 
+### New Features
+
+* Add family `logistic_normal` for simplex responses. (#1274)
+
 ### Other changes
 
 * Argument `brms_seed` has been added to `get_refmodel.brmsfit()`. (#1287)
