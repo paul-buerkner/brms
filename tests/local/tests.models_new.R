@@ -886,6 +886,24 @@ test_that("dirichlet models work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
+test_that("logistic_normal models work correctly", {
+  set.seed(1246)
+  N <- 100
+  dat <- as.data.frame(rdirichlet(N, c(10, 5, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  fit <- brm(y ~ x, data = dat, family = logistic_normal(), refresh = 0)
+  print(summary(fit))
+  expect_output(print(fit), "muy2 = identity")
+  pred <- predict(fit, ndraws = 250)
+  expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  expect_equal(dimnames(pred)[[3]], c("y1", "y2", "y3"))
+  waic <- waic(fit, ndraws = 250)
+  expect_range(waic$estimates[3, 1], -530, -260)
+})
+
 test_that("Addition argument 'subset' works correctly", {
   set.seed(12454)
   data("BTdata", package = "MCMCglmm")

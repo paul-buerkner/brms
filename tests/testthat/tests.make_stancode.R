@@ -694,6 +694,43 @@ test_that("Stan code for dirichlet models is correct", {
   expect_match2(scode, "lprior += student_t_lpdf(Intercept_muy1 | 3, 0, 2.5);")
 })
 
+test_that("Stan code for logistic_normal models is correct", {
+  N <- 15
+  dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  prior <- prior(normal(0, 5), class = "b", dpar = "muy3") +
+    prior(exponential(10), "sigmay1") +
+    prior(lkj(3), "lncor")
+  scode <- make_stancode(bf(y ~ x), data = dat, 
+                         family = logistic_normal(refcat = "y2"), 
+                         prior = prior)
+  expect_match2(scode, "vector[ncat] Y[N];")
+  expect_match2(scode, "mu[n] = transpose([muy1[n], muy3[n]]);")
+  expect_match2(scode, "vector[ncat-1] sigma = transpose([sigmay1, sigmay3]);")
+  expect_match2(scode, "target += logistic_normal_cholesky_cor_lpdf(Y[n] | mu[n], sigma, Llncor, 2);")
+  expect_match2(scode, "muy3 = Intercept_muy3 + Xc_muy3 * b_muy3;")
+  expect_match2(scode, "lprior += normal_lpdf(b_muy3 | 0, 5);")
+  expect_match2(scode, "lprior += exponential_lpdf(sigmay1 | 10);")
+  expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(Llncor | 3);")
+  
+  prior <- prior(normal(0, 5), class = "b", dpar = "muy3") +
+    prior(normal(0, 3), class = "b", dpar = "sigmay2")
+  scode <- make_stancode(bf(y ~ 1, muy3 ~ x, sigmay2 ~ x), data = dat, 
+                         family = logistic_normal(), 
+                         prior = prior)
+  expect_match2(scode, "vector[ncat] Y[N];")
+  expect_match2(scode, "mu[n] = transpose([muy2[n], muy3[n]]);")
+  expect_match2(scode, "sigma[n] = transpose([sigmay2[n], sigmay3]);")
+  expect_match2(scode, "target += logistic_normal_cholesky_cor_lpdf(Y[n] | mu[n], sigma[n], Llncor, 1);")
+  expect_match2(scode, "muy3 = Intercept_muy3 + Xc_muy3 * b_muy3;")
+  expect_match2(scode, "lprior += normal_lpdf(b_muy3 | 0, 5);")
+  expect_match2(scode, "lprior += normal_lpdf(b_sigmay2 | 0, 3);")
+  expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(Llncor | 1);")
+})
+
 test_that("Stan code for ARMA models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
   scode <- make_stancode(y ~ x + ar(time), dat, student())

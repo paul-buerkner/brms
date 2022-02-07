@@ -442,6 +442,17 @@ test_that("log_lik for categorical and related models runs without erros", {
   prep$dpars$mu3 <- rexp(ns, 10)
   ll <- sapply(1:nobs, brms:::log_lik_dirichlet2, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
+  
+  prep$family <- brmsfamily("logistic_normal")
+  prep$dpars <- list(
+    mu2 = rnorm(ns),
+    mu3 = rnorm(ns),
+    sigma2 = rexp(ns, 10),
+    sigma3 = rexp(ns, 10)
+  )
+  prep$lncor <- rbeta(ns, 2, 1)
+  ll <- sapply(1:nobs, brms:::log_lik_logistic_normal, prep = prep)
+  expect_equal(dim(ll), c(ns, nobs))
 })
 
 test_that("censored and truncated log_lik run without errors", {

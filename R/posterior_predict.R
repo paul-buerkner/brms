@@ -831,7 +831,7 @@ posterior_predict_multinomial <- function(i, prep, ...) {
   eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
   size <- prep$data$trials[i]
-  rlapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
+  rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
 posterior_predict_dirichlet <- function(i, prep, ...) {

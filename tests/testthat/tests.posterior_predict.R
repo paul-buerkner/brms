@@ -308,6 +308,7 @@ test_that("posterior_predict for categorical and related models runs without err
   )
   prep$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   prep$family <- categorical()
+  prep$refcat <- 1
   pred <- sapply(1:nobs, brms:::posterior_predict_categorical, prep = prep)
   expect_equal(dim(pred), c(ns, nobs))
   
@@ -327,6 +328,18 @@ test_that("posterior_predict for categorical and related models runs without err
   prep$dpars$mu2 <- rexp(ns, 10)
   prep$dpars$mu3 <- rexp(ns, 10)
   pred <- brms:::posterior_predict_dirichlet2(i = sample(1:nobs, 1), prep = prep)
+  expect_equal(dim(pred), c(ns, ncat))
+  expect_equal(rowSums(pred), rep(1, nrow(pred)))
+  
+  prep$family <- brmsfamily("logistic_normal")
+  prep$dpars <- list(
+    mu2 = rnorm(ns),
+    mu3 = rnorm(ns),
+    sigma2 = rexp(ns, 10),
+    sigma3 = rexp(ns, 10)
+  )
+  prep$lncor <- rbeta(ns, 2, 1)
+  pred <- brms:::posterior_predict_logistic_normal(i = sample(1:nobs, 1), prep = prep)
   expect_equal(dim(pred), c(ns, ncat))
   expect_equal(rowSums(pred), rep(1, nrow(pred)))
 })
