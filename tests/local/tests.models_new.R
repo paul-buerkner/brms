@@ -901,7 +901,7 @@ test_that("logistic_normal models work correctly", {
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
   expect_equal(dimnames(pred)[[3]], c("y1", "y2", "y3"))
   waic <- waic(fit, ndraws = 250)
-  expect_range(waic$estimates[3, 1], -530, -260)
+  expect_range(waic$estimates[3, 1], -530, -460)
 })
 
 test_that("Addition argument 'subset' works correctly", {

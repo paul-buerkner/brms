@@ -1321,7 +1321,8 @@ validate_formula.brmsformula <- function(
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
     multi_dpars <- valid_dpars(out$family, multi = TRUE)
-    for (dp in multi_dpars) {
+    # 'rev' so that mu comes last but appears first in the end
+    for (dp in rev(multi_dpars)) {
       dp_dpars <- make_stan_names(paste0(dp, predcats))
       if (any(duplicated(dp_dpars))) {
         stop2("Invalid response category names. Please avoid ",
