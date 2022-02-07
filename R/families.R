@@ -51,10 +51,11 @@
 #'   consecutive thresholds to the same value, and
 #'   \code{"sum_to_zero"} ensures the thresholds sum to zero.
 #' @param refcat Optional name of the reference response category used in
-#'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
-#'   default), the first category is used as the reference. If \code{NA}, all
-#'   categories will be predicted, which requires strong priors or carefully
-#'   specified predictor terms in order to lead to an identified model.
+#'   \code{categorical}, \code{multinomial}, \code{dirichlet} and
+#'   \code{logistic_normal} models. If \code{NULL} (the default), the first
+#'   category is used as the reference. If \code{NA}, all categories will be
+#'   predicted, which requires strong priors or carefully specified predictor
+#'   terms in order to lead to an identified model.
 #' @param bhaz Currently for experimental purposes only.
 #' 
 #' @details 
@@ -90,8 +91,8 @@
 #'   \item{Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
 #'   ('generalized extreme value') allow for modeling extremes.}
 #'   
-#'   \item{Families \code{beta} and \code{dirichlet} can be used to model 
-#'   responses representing rates or probabilities.}
+#'   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal} 
+#'   can be used to model responses representing rates or probabilities.}
 #'   
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -146,6 +147,8 @@
 #'   
 #'   \item{Families \code{lognormal} and \code{hurdle_lognormal} 
 #'   support \code{identity} and \code{inverse}.}
+#'   
+#'   \item{Family \code{logistic_normal} supports \code{identity}.}
 #'   
 #'   \item{Family \code{inverse.gaussian} supports \code{1/mu^2}, 
 #'   \code{inverse}, \code{identity}, \code{log}, and \code{softplus}.}
@@ -267,7 +270,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   )
   out[names(family_info)] <- family_info
   class(out) <- c("brmsfamily", "family")
-  for (dp in valid_dpars(out)) {
+  all_valid_dpars <- c(valid_dpars(out), valid_dpars(out, multi = TRUE))
+  for (dp in all_valid_dpars) {
     alink <- as.character(aux_links[[paste0("link_", dp)]])
     if (length(alink)) {
       alink <- as_one_character(alink)
@@ -291,7 +295,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     if (!has_joint_link(out$family)) {
       out$refcat <- NA
     } else if (!is.null(refcat)) {
-      out$refcat <- as_one_character(refcat, allow_na = TRUE) 
+      allow_na_ref <- !is_logistic_normal(out$family)
+      out$refcat <- as_one_character(refcat, allow_na = allow_na_ref) 
     }
   }
   if (is_cox(out$family)) {
@@ -631,6 +636,15 @@ dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
 dirichlet2 <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("dirichlet2", link = link, slink = slink, refcat = NA)
+}
+
+#' @rdname brmsfamily
+#' @export
+logistic_normal <- function(link = "identity", link_sigma = "log", 
+                            refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("logistic_normal", link = link, slink = slink, 
+              link_sigma = link_sigma, refcat = refcat)
 }
 
 #' @rdname brmsfamily
@@ -1199,12 +1213,17 @@ valid_dpars <- function(family, ...) {
 }
 
 #' @export
-valid_dpars.default <- function(family, ...) {
+valid_dpars.default <- function(family, multi = FALSE, ...) {
   if (!length(family)) {
     return("mu")
   }
   family <- validate_family(family) 
-  family_info(family, "dpars", ...)
+  if (multi) {
+    out <- family_info(family, "multi_dpars", ...)
+  } else {
+    out <- family_info(family, "dpars", ...)
+  }
+  out
 }
 
 #' @export
@@ -1245,11 +1264,17 @@ valid_dpars.brmsfit <- function(family, ...) {
 dpar_class <- function(dpar, family = NULL) {
   out <- sub("[[:digit:]]*$", "", dpar) 
   if (!is.null(family)) {
-    # TODO: avoid this special case by changing naming conventions
-    if (conv_cats_dpars(family) && grepl("^mu", out)) {
+    # TODO: avoid these special cases by changing naming conventions
+    # perhaps add a protected "C" before category names
+    # and a protected "M" for mixture components
+    if (conv_cats_dpars(family)) {
       # categorical-like models have non-integer suffixes
       # that will not be caught by the standard procedure
-      out <- "mu"
+      multi_dpars <- valid_dpars(family, multi = TRUE)
+      for (dp in multi_dpars) {
+        sel <- grepl(paste0("^", dp), out)
+        out[sel] <- dp
+      } 
     }
   }
   out
@@ -1522,13 +1547,17 @@ is_multinomial <- function(family) {
   "multinomial" %in% family_info(family, "specials")
 }
 
-is_dirichlet <- function(family) {
-  "dirichlet" %in% family_info(family, "specials")
+is_logistic_normal <- function(family) {
+  "logistic_normal" %in% family_info(family, "specials")
+}
+
+is_simplex <- function(family) {
+  "simplex" %in% family_info(family, "specials")
 }
 
 is_polytomous <- function(family) {
   is_categorical(family) || is_ordinal(family) ||
-    is_multinomial(family) || is_dirichlet(family)
+    is_multinomial(family) || is_simplex(family)
 }
 
 is_cox <- function(family) {
@@ -1567,17 +1596,17 @@ needs_ordered_cs <- function(family) {
 
 # choose dpar names based on categories?
 conv_cats_dpars <- function(family) {
-  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_simplex(family)
 }
 
 # check if mixtures of the given families are allowed
 no_mixture <- function(family) {
-  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_simplex(family)
 }
 
 # indicate if the response should consist of multiple columns
 has_multicol <- function(family) {
-  is_multinomial(family) || is_dirichlet(family)
+  is_multinomial(family) || is_simplex(family)
 }
 
 # indicate if the response is modeled on the log-scale
@@ -1594,7 +1623,7 @@ has_trials <- function(family) {
 
 # indicate if family has more than two response categories
 has_cat <- function(family) {
-  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_simplex(family)
 }
 
 # indicate if family has thresholds
@@ -1628,9 +1657,25 @@ has_eta_minus_thres <- function(family) {
 }
 
 # get names of response categories
-# @param group name of a group for which to extract categories
 get_cats <- function(family) {
   family_info(family, "cats")
+}
+
+# get reference category categorical-like models
+get_refcat <- function(family, int = FALSE) {
+  refcat <- family_info(family, "refcat")
+  if (int) {
+    cats <- family_info(family, "cats")
+    refcat <- match(refcat, cats)
+  }
+  refcat
+}
+
+# get names of predicted categories categorical-like models
+get_predcats <- function(family) {
+  refcat <- family_info(family, "refcat")
+  cats <- family_info(family, "cats")
+  setdiff(cats, refcat)
 }
 
 # get names of ordinal thresholds for prior specification

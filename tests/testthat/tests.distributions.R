@@ -493,9 +493,9 @@ test_that("dcategorical() works correctly", {
   source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
-      eta_test_list <- list(cbind(0,
-                                  matrix(rnorm(ndraws * (ncat - 1)),
-                                         nrow = ndraws)))
+      eta_test_list <- list(cbind(
+        0, matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      ))
       if (ndraws == 1) {
         eta_test_list <- c(eta_test_list, list(c(0, rnorm(ncat - 1))))
       }

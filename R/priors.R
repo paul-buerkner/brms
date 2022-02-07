@@ -563,7 +563,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior
 }
 
-prior_predictor.brmsterms <- function(x, data, ...) {
+prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
   data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x)
@@ -618,6 +618,15 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
         prior <- prior + brmsprior(class = cl, resp  = x$resp)
       }
+    }
+  }
+  if (is_logistic_normal(x$family)) {
+    if (internal) {
+      prior <- prior + 
+        brmsprior("lkj_corr_cholesky(1)", class = "Llncor", resp = x$resp)
+    } else {
+      prior <- prior + 
+        brmsprior("lkj(1)", class = "lncor", resp = x$resp)
     }
   }
   # priors for noise-free response variables
@@ -1169,8 +1178,8 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- prior[!no_checks, ]
   # check for duplicated priors
   prior$class <- rename(
-    prior$class, c("^cor$", "^rescor$", "^corme$"), 
-    c("L", "Lrescor", "Lme"), fixed = FALSE
+    prior$class, c("^cor$", "^rescor$", "^corme$", "^lncor"), 
+    c("L", "Lrescor", "Lme", "Llncor"), fixed = FALSE
   )
   if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")

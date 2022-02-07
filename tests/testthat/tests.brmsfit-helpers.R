@@ -163,12 +163,16 @@ test_that("insert_refcat() works correctly", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         cats <- paste0("cat", 1:ncat)
+        ref_list <- list(
+          ref1 = 1,
+          reflast = ncat
+        )
         fam_list <- list(
-          fam_refNULL = categorical(),
           fam_ref1 = categorical(refcat = cats[1]),
           fam_reflast = categorical(refcat = cats[ncat])
         )
         if (ncat > 2) {
+          ref_list <- c(ref_list, list(ref2 = 2))
           fam_list <- c(fam_list, list(fam_ref2 = categorical(refcat = cats[2])))
         }
         eta_test_list <- list(array(rnorm(ndraws * nobsv * (ncat - 1)),
@@ -180,15 +184,17 @@ test_that("insert_refcat() works correctly", {
           )
         }
         for (eta_test in eta_test_list) {
-          for (fam in fam_list) {
+          for (i in seq_along(fam_list)) {
             # Emulate content of `fam` after fit:
+            fam <- fam_list[[i]]
             if (is.null(fam$refcat)) {
               fam$refcat <- cats[1]
             }
             fam$cats <- cats
+            ref <- ref_list[[i]]
             
             # Perform the check:
-            eta_ref <- insert_refcat(eta_test, fam)
+            eta_ref <- insert_refcat(eta_test, ref)
             eta_ref_ch <- insert_refcat_ch(eta_test, fam)
             expect_equivalent(eta_ref, eta_ref_ch)
             if (length(dim(eta_test)) == 3) {

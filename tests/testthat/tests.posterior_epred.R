@@ -176,6 +176,7 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
   )
   prep$data <- list(ncat = ncat, trials = sample(1:20, nobs))
+  prep$refcat <- 1
  
   prep$family <- multinomial()
   pred <- brms:::posterior_epred_multinomial(prep = prep)

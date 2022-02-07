@@ -974,7 +974,7 @@ test_that("data for multinomial and dirichlet models is correct", {
     "Number of trials does not match the number of events"
   )
   expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
-               "Response values in dirichlet models must sum to 1")
+               "Response values in simplex models must sum to 1")
 })
 
 test_that("make_standata handles cox models correctly", {

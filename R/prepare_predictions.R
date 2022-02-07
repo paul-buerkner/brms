@@ -159,6 +159,9 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
       out$thres <- prepare_predictions_thres(x$dpars$mu, draws, sdata, ...)
     }
   }
+  if (is_logistic_normal(x$family)) {
+    out$dpars$lncor <- prepare_draws(draws, "^lncor__", regex = TRUE)
+  }
   if (is_cox(x$family)) {
     # prepare baseline hazard functions for the Cox model
     if (is.mixfamily(x$family)) {
@@ -174,6 +177,8 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   }
   # response category names for categorical and ordinal models
   out$cats <- get_cats(x)
+  # reference category for categorical models
+  out$refcat <- get_refcat(x, int = TRUE)
   # only include those autocor draws on the top-level 
   # of the output which imply covariance matrices on natural residuals
   out$ac <- prepare_predictions_ac(x$dpars$mu, draws, sdata, nat_cov = TRUE, ...)

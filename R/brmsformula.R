@@ -1320,14 +1320,18 @@ validate_formula.brmsformula <- function(
       }
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
-    mu_dpars <- make_stan_names(paste0("mu", predcats))
-    if (any(duplicated(mu_dpars))) {
-      stop2("Invalid response category names. Please avoid ",
-            "using any special characters in the names.")
+    multi_dpars <- valid_dpars(out$family, multi = TRUE)
+    # 'rev' so that mu comes last but appears first in the end
+    for (dp in rev(multi_dpars)) {
+      dp_dpars <- make_stan_names(paste0(dp, predcats))
+      if (any(duplicated(dp_dpars))) {
+        stop2("Invalid response category names. Please avoid ",
+              "using any special characters in the names.")
+      }
+      old_dp_dpars <- str_subset(out$family$dpars, paste0("^", dp))
+      out$family$dpars <- setdiff(out$family$dpars, old_dp_dpars)
+      out$family$dpars <- union(dp_dpars, out$family$dpars) 
     }
-    old_mu_dpars <- str_subset(out$family$dpars, "^mu")
-    out$family$dpars <- setdiff(out$family$dpars, old_mu_dpars)
-    out$family$dpars <- union(mu_dpars, out$family$dpars)
   }
   
   # incorporate deprecated arguments

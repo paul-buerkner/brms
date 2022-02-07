@@ -762,25 +762,24 @@ log_lik_zero_one_inflated_beta <- function(i, prep) {
 
 log_lik_categorical <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
-  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
-  eta <- insert_refcat(eta, family = prep$family)
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
   out <- dcategorical(prep$data$Y[i], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
 
 log_lik_multinomial <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
-  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
-  eta <- insert_refcat(eta, family = prep$family)
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
   out <- dmultinomial(prep$data$Y[i, ], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
 
 log_lik_dirichlet <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
-  mu_dpars <- str_subset(names(prep$dpars), "^mu")
-  eta <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
-  eta <- insert_refcat(eta, family = prep$family)
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
   cats <- seq_len(prep$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
@@ -789,9 +788,21 @@ log_lik_dirichlet <- function(i, prep) {
 }
 
 log_lik_dirichlet2 <- function(i, prep) {
-  mu_dpars <- str_subset(names(prep$dpars), "^mu")
-  mu <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  mu <- get_Mu(prep, i = i)
   out <- ddirichlet(prep$data$Y[i, ], alpha = mu, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_logistic_normal <- function(i, prep, ...) {
+  mu <- get_Mu(prep, i = i)
+  Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
+  dlmn <- function(s) {
+    dlogistic_normal(
+      prep$data$Y[i, ], mu = mu[s, ], Sigma = Sigma[s, , ],
+      refcat = prep$refcat, log = TRUE
+    )
+  }
+  out <- sapply(1:prep$ndraws, dlmn)
   log_lik_weight(out, i = i, prep = prep)
 }
 

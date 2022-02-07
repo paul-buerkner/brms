@@ -501,10 +501,10 @@ posterior_epred_zero_one_inflated_beta <- function(prep) {
 
 posterior_epred_categorical <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), refcat = prep$refcat)
     dcategorical(cats, eta = eta)
   }
-  eta <- abind(prep$dpars, along = 3)
+  eta <- get_Mu(prep)
   cats <- seq_len(prep$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
@@ -514,10 +514,10 @@ posterior_epred_categorical <- function(prep) {
 
 posterior_epred_multinomial <- function(prep) {
   get_counts <- function(i) {
-    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), refcat = prep$refcat)
     dcategorical(cats, eta = eta) * trials[i]
   }
-  eta <- abind(prep$dpars, along = 3)
+  eta <- get_Mu(prep)
   cats <- seq_len(prep$data$ncat)
   trials <- prep$data$trials
   out <- abind(lapply(seq_cols(eta), get_counts), along = 3)
@@ -528,11 +528,10 @@ posterior_epred_multinomial <- function(prep) {
 
 posterior_epred_dirichlet <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(slice_col(eta, i), family = prep$family)
+    eta <- insert_refcat(slice_col(eta, i), refcat = prep$refcat)
     dcategorical(cats, eta = eta)
   }
-  eta <- prep$dpars[grepl("^mu", names(prep$dpars))]
-  eta <- abind(eta, along = 3)
+  eta <- get_Mu(prep)
   cats <- seq_len(prep$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
@@ -541,8 +540,7 @@ posterior_epred_dirichlet <- function(prep) {
 }
 
 posterior_epred_dirichlet2 <- function(prep) {
-  mu <- prep$dpars[grepl("^mu", names(prep$dpars))]
-  mu <- abind(mu, along = 3)
+  mu <- get_Mu(prep)
   sums_mu <- apply(mu, 1:2, sum)
   cats <- seq_len(prep$data$ncat)
   for (i in cats) {
@@ -550,6 +548,11 @@ posterior_epred_dirichlet2 <- function(prep) {
   }
   dimnames(mu)[[3]] <- prep$cats
   mu
+}
+
+posterior_epred_logistic_normal <- function(prep) {
+  stop2("Cannot compute expected values of the posterior predictive ",
+        "distribution for family 'logistic_normal'.")
 }
 
 posterior_epred_cumulative <- function(prep) {
