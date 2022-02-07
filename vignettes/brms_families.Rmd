@@ -225,12 +225,29 @@ $$
 f(y) = \frac{1}{B((\mu_{1}, \ldots, \mu_{K}) \phi)} 
   \prod_{k=1}^K y_{k}^{\mu_{k} \phi - 1}.
 $$
-The **dirichlet** distribution is only implemented with the multivariate logit
+The **dirichlet** family is implemented with the multivariate logit
 link function so that
 $$
 \mu_{j} = \frac{\exp(\eta_{j})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
 $$
-For reasons of identifiability, $\eta_{1}$ is set to $0$.
+For reasons of identifiability, $\eta_{\rm ref}$ is set to $0$, where ${\rm ref}$
+is one of the response categories chosen as reference.
+
+An alternative to the **dirichlet** family is the **logistic_normal** family 
+with density
+$$
+f(y) = \frac{1}{\prod_{k=1}^K y_k} \times 
+  \text{multivariate_normal}(\tilde{y} \, | \, \mu, \sigma, \Omega)
+$$
+where $\tilde{y}$ is the multivariate logit transformed response
+$$
+\tilde{y} = (\log(y_1 / y_{\rm ref}), \ldots, \log(y_{\rm ref-1} / y_{\rm ref}), 
+             \log(y_{\rm ref+1} / y_{\rm ref}), \ldots, \log(y_K / y_{\rm ref}))
+$$
+of dimension $K-1$ (excluding the reference category), which is modeled as
+multivariate normally distributed with latent mean and standard deviation
+vectors $\mu$ and $\sigma$, as well as correlation matrix $\Omega$.
+
 
 ## Circular models
 
