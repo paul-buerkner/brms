@@ -108,10 +108,12 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
       }
     }
   }
+  str_add_list(out) <- stan_dpar_transform(
+    x, prior = prior, normalize = normalize, ...
+  )
   str_add_list(out) <- stan_mixture(
     x, data = data, prior = prior, normalize = normalize, ...
   )
-  str_add_list(out) <- stan_dpar_transform(x, ...)
   out$model_log_lik <- stan_log_lik(x, data = data, normalize = normalize, ...) 
   list(out)
 }
@@ -2175,11 +2177,12 @@ stan_dpar_tmp_types <- function(dpar, suffix = "", family = NULL) {
 }
 
 # Stan code for transformations of distributional parameters
-stan_dpar_transform <- function(bterms, threads, ...) {
+stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.brmsterms(bterms))
   out <- list()
   families <- family_names(bterms)
-  p <- usc(combine_prefix(bterms))
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   resp <- usc(bterms$resp)
   if (any(conv_cats_dpars(families))) {
     stopifnot(length(families) == 1L)
@@ -2295,9 +2298,11 @@ stan_dpar_transform <- function(bterms, threads, ...) {
       "  // number of logistic normal correlations\n",
       "  int nlncor{p} = choose({ncatm1}, 2);\n"
     )
-    str_add(out$par) <- glue(
-      "  // logistic normal Cholesky correlation matrix\n",
-      "  cholesky_factor_corr[{ncatm1}] Llncor;\n"
+    str_add_list(out) <- stan_prior(
+      prior, "Llncor", suffix = p, px = px, 
+      type = glue("cholesky_factor_corr[{ncatm1}]"),
+      comment = "logistic-normal Cholesky correlation matrix", 
+      normalize = normalize
     )
     str_add(out$gen_def) <- glue(
       "  // logistic normal correlations\n",
