@@ -2301,6 +2301,7 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
     str_add_list(out) <- stan_prior(
       prior, "Llncor", suffix = p, px = px, 
       type = glue("cholesky_factor_corr[{ncatm1}]"),
+      header_type = "matrix",
       comment = "logistic-normal Cholesky correlation matrix", 
       normalize = normalize
     )
