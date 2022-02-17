@@ -16,6 +16,8 @@ thanks to Anirban Mukherjee. (#1277)
 thanks to Urs Kalbitzer. (#1280)
 * Fix an error sometimes occurring for multilevel (reference) models in
 `projpred`'s K-fold CV. (#1286)
+* Fix response values in `make_standata` for `bernoulli` families
+when only 1s are present thanks to Facundo Munoz. (#1298) 
 
 # brms 2.16.3
 

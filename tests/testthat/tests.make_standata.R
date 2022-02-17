@@ -75,6 +75,10 @@ test_that(paste("make_standata accepts correct response variables",
                              family = "bernoulli")$Y, as.array(rep(1:0,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(c(TRUE, FALSE),5)),
                              family = "bernoulli")$Y, as.array(rep(1:0,5)))
+  expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(1,5)),
+                             family = "bernoulli")$Y, as.array(rep(1, 5)))
+  expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(0,5)),
+                             family = "bernoulli")$Y, as.array(rep(0, 5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(1:10,5)), 
                              family = "categorical")$Y, as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(11:20,5)), 

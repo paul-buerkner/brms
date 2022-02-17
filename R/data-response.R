@@ -83,12 +83,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # TODO: rename 'Y' to 'y'
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
-  if (is_binary(x$family) || is_categorical(x$family)) {
-    out$Y <- as_factor(out$Y, levels = basis$resp_levels)
-    out$Y <- as.numeric(out$Y)
-    if (is_binary(x$family)) {
-      out$Y <- out$Y - 1
+  if (is_binary(x$family)) {
+    bin_levels <- basis$resp_levels
+    if (is.null(bin_levels)) {
+      bin_levels <- sort(unique(out$Y))
     }
+    # fixes issue #1298
+    if (is.numeric(out$Y) && length(bin_levels) == 1L && !0 %in% bin_levels) {
+      bin_levels <- c(0, bin_levels)
+    }
+    out$Y <- as.numeric(as_factor(out$Y, levels = bin_levels)) - 1
+  }
+  if (is_categorical(x$family)) {
+    out$Y <- as.numeric(as_factor(out$Y, levels = basis$resp_levels))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
     out$Y <- as.numeric(out$Y)
