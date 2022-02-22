@@ -48,7 +48,7 @@
 #'  generalization of the multivariate normal distribution
 #'  to an infinite number of dimensions. Thus, it can be
 #'  interpreted as a prior over functions. The values of \eqn{f( )}
-#'  at any finite set of locations is jointly multivariate 
+#'  at any finite set of locations are jointly multivariate 
 #'  normal, with a covariance matrix defined by the covariance
 #'  kernel \eqn{k_p(x_i, x_j)}, where \eqn{p} is the vector of parameters
 #'  of the GP:
