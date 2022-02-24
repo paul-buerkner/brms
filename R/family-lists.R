@@ -14,7 +14,8 @@
 
 .family_gaussian <- function() {
   list(
-    links = c("identity", "log", "inverse", "softplus", "squareplus"),
+    links = c("identity", "log", "inverse", "softplus", "squareplus",
+              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index"),
@@ -25,7 +26,8 @@
 
 .family_student <- function() {
   list(
-    links = c("identity", "log", "inverse", "softplus", "squareplus"),
+    links = c("identity", "log", "inverse", "softplus", "squareplus",
+              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
     dpars = c("mu", "sigma", "nu"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index"),
@@ -37,7 +39,8 @@
 
 .family_skew_normal <- function() {
   list(
-    links = c("identity", "log", "inverse", "softplus", "squareplus"),
+    links = c("identity", "log", "inverse", "softplus", "squareplus",
+              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
     dpars = c("mu", "sigma", "alpha"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index")
