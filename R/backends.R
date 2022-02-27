@@ -25,7 +25,7 @@ parse_model <- function(model, backend, ...) {
   require_package("cmdstanr")
   temp_file <- cmdstanr::write_stan_file(model)
   if (cmdstanr::cmdstan_version() >= "2.29.0") {
-    .canonicalize_stan_model(temp_file, overwrite_file = FALSE)
+    .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
   }
   out <- eval_silent(
     cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
@@ -98,7 +98,7 @@ compile_model <- function(model, backend, ...) {
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
   if (cmdstanr::cmdstan_version() >= "2.29.0") {
-    .canonicalize_stan_model(args$stan_file, overwrite_file = FALSE)
+    .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
   }
   if (use_threading(threads)) {
     args$cpp_options$stan_threads <- TRUE
