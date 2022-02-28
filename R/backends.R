@@ -24,6 +24,9 @@ parse_model <- function(model, backend, ...) {
 .parse_model_cmdstanr <- function(model, silent = 1, ...) {
   require_package("cmdstanr")
   temp_file <- cmdstanr::write_stan_file(model)
+  if (cmdstanr::cmdstan_version() >= "2.29.0") {
+    .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
+  }
   out <- eval_silent(
     cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
     type = "message", try = TRUE, silent = silent
@@ -94,6 +97,9 @@ compile_model <- function(model, backend, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
+  if (cmdstanr::cmdstan_version() >= "2.29.0") {
+    .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
+  }
   if (use_threading(threads)) {
     args$cpp_options$stan_threads <- TRUE
   }
@@ -609,4 +615,34 @@ repair_stanfit_names <- function(x) {
 # possible options for argument 'file_refit'
 file_refit_options <- function() {
   c("never", "always", "on_change")
+}
+
+.canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
+  if (os_is_windows()) {
+    stanc_cmd <- "bin/stanc.exe"
+  } else {
+    stanc_cmd <- "bin/stanc"
+  }
+  stanc_flags <- c(
+    "--auto-format",
+    "--canonicalize=deprecations,braces,parentheses" 
+  )
+  if (cmdstanr::cmdstan_version() >= "2.29.0") {
+    res <- processx::run(
+      command = stanc_cmd,
+      args = c(stan_file, stanc_flags),
+      wd = cmdstanr::cmdstan_path(),
+      echo = FALSE,
+      echo_cmd = FALSE,
+      spinner = FALSE,
+      stderr_callback = function(x, p) {
+        message(x)
+      },
+      error_on_status = TRUE
+    )
+    if (overwrite_file) {
+      cat(res$stdout, file = stan_file, sep = "\n")
+    }    
+  }
+  res$stdout
 }
