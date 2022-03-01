@@ -54,7 +54,7 @@
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient), 
-#'            data = kidney, family = "exponential", inits = "0")
+#'            data = kidney, family = "exponential", init = "0")
 #' 
 #' ## predicted responses
 #' pp <- posterior_predict(fit)
@@ -216,7 +216,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient), 
-#'            data = kidney, family = "exponential", inits = "0")
+#'            data = kidney, family = "exponential", init = "0")
 #' 
 #' ## predicted responses
 #' pp <- predict(fit)

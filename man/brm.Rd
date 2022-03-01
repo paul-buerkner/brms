@@ -22,7 +22,8 @@ brm(
   save_ranef = NULL,
   save_mevars = NULL,
   save_all_pars = NULL,
-  inits = "random",
+  init = NULL,
+  inits = NULL,
   chains = 4,
   iter = 2000,
   warmup = floor(iter/2),
@@ -156,20 +157,22 @@ variables defined in Stan's \code{parameters} block should be saved
 apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
 \code{post_prob}.}
 
-\item{inits}{Either \code{"random"} or \code{"0"}. If inits is
-\code{"random"} (the default), Stan will randomly generate initial values
-for parameters. If it is \code{"0"}, all parameters are initialized to
-zero. This option is sometimes useful for certain families, as it happens
-that default (\code{"random"}) inits cause draws to be essentially
-constant. Generally, setting \code{inits = "0"} is worth a try, if chains
-do not behave well. Alternatively, \code{inits} can be a list of lists
-containing the initial values, or a function (or function name) generating
-initial values. The latter options are mainly implemented for internal
-testing but are available to users if necessary. If specifying initial 
-values using a list or a function then currently the parameter names must
-correspond to the names used in the generated Stan code (not the names
-used in \R). For more details on specifying initial values you can consult 
-the documentation of the selected \code{backend}.}
+\item{init}{Initial values for the sampler. If \code{NULL} (the default) or
+\code{"random"}, Stan will randomly generate initial values for parameters
+in a reasonable range. If \code{0}, all parameters are initialized to zero
+on the unconstrained space. This option is sometimes useful for certain
+families, as it happens that default random initial values cause draws to
+be essentially constant. Generally, setting \code{init = 0} is worth a try,
+if chains do not initialize or behave well. Alternatively, \code{init} can
+be a list of lists containing the initial values, or a function (or
+function name) generating initial values. The latter options are mainly
+implemented for internal testing but are available to users if necessary.
+If specifying initial values using a list or a function then currently the
+parameter names must correspond to the names used in the generated Stan
+code (not the names used in \R). For more details on specifying initial
+values you can consult the documentation of the selected \code{backend}.}
+
+\item{inits}{(Deprecated) Alias of \code{init}.}
 
 \item{chains}{Number of Markov chains (defaults to 4).}
 

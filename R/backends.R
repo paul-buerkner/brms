@@ -143,7 +143,7 @@ fit_model <- function(model, backend, ...) {
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
 .fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin, 
-                             chains, cores, threads, opencl, inits, exclude, 
+                             chains, cores, threads, opencl, init, exclude, 
                              seed, control, silent, future, ...) {
   
   # some input checks and housekeeping
@@ -161,12 +161,14 @@ fit_model <- function(model, backend, ...) {
     stop2("OpenCL is not supported by backend 'rstan' version ",
           utils::packageVersion("rstan"), ".")
   }
-  if (is.character(inits) && !inits %in% c("random", "0")) {
-    inits <- get(inits, mode = "function", envir = parent.frame())
+  if (is.null(init)) {
+    init <- "random"
+  } else if (is.character(init) && !init %in% c("random", "0")) {
+    init <- get(init, mode = "function", envir = parent.frame())
   }
   args <- nlist(
     object = model, data = sdata, iter, seed, 
-    init = inits, pars = exclude, include = FALSE
+    init = init, pars = exclude, include = FALSE
   )
   dots <- list(...)
   args[names(dots)] <- dots
@@ -188,8 +190,8 @@ fit_model <- function(model, backend, ...) {
       futures <- fits <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_id <- i
-        if (is.list(inits)) {
-          args$init <- inits[i]
+        if (is.list(init)) {
+          args$init <- init[i]
         }
         futures[[i]] <- future::future(
           brms::do_call(rstan::sampling, args), 
@@ -222,7 +224,7 @@ fit_model <- function(model, backend, ...) {
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
 .fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin, 
-                                chains, cores, threads, opencl, inits, exclude, 
+                                chains, cores, threads, opencl, init, exclude, 
                                 seed, control, silent, future, ...) {
   
   require_package("cmdstanr")
@@ -231,15 +233,15 @@ fit_model <- function(model, backend, ...) {
   if (isNA(seed)) {
     seed <- NULL
   }
-  if (is_equal(inits, "random")) {
-    inits <- NULL
-  } else if (is_equal(inits, "0")) {
-    inits <- 0
+  if (is_equal(init, "random")) {
+    init <- NULL
+  } else if (is_equal(init, "0")) {
+    init <- 0
   }
   if (future) {
     stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
   }
-  args <- nlist(data = sdata, seed, init = inits)
+  args <- nlist(data = sdata, seed, init)
   if (use_threading(threads)) {
     if (algorithm %in% c("sampling", "fixed_param")) {
       args$threads_per_chain <- threads$threads
@@ -307,7 +309,7 @@ fit_model <- function(model, backend, ...) {
 
 # fit model with a mock backend for testing
 .fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
-                            chains, cores, threads, opencl, inits, exclude, 
+                            chains, cores, threads, opencl, init, exclude, 
                             seed, control, silent, future, mock_fit, ...) {
   if (is.function(mock_fit)) {
     out <- mock_fit()

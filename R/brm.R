@@ -106,20 +106,21 @@
 #'   arguments modifying the model code or data are ignored. It is not
 #'   recommended to use this argument directly, but to call the
 #'   \code{\link[brms:update.brmsfit]{update}} method, instead.
-#' @param inits Either \code{"random"} or \code{"0"}. If inits is
-#'   \code{"random"} (the default), Stan will randomly generate initial values
-#'   for parameters. If it is \code{"0"}, all parameters are initialized to
-#'   zero. This option is sometimes useful for certain families, as it happens
-#'   that default (\code{"random"}) inits cause draws to be essentially
-#'   constant. Generally, setting \code{inits = "0"} is worth a try, if chains
-#'   do not behave well. Alternatively, \code{inits} can be a list of lists
-#'   containing the initial values, or a function (or function name) generating
-#'   initial values. The latter options are mainly implemented for internal
-#'   testing but are available to users if necessary. If specifying initial 
-#'   values using a list or a function then currently the parameter names must
-#'   correspond to the names used in the generated Stan code (not the names
-#'   used in \R). For more details on specifying initial values you can consult 
-#'   the documentation of the selected \code{backend}.
+#' @param init Initial values for the sampler. If \code{NULL} (the default) or
+#'   \code{"random"}, Stan will randomly generate initial values for parameters
+#'   in a reasonable range. If \code{0}, all parameters are initialized to zero
+#'   on the unconstrained space. This option is sometimes useful for certain
+#'   families, as it happens that default random initial values cause draws to
+#'   be essentially constant. Generally, setting \code{init = 0} is worth a try,
+#'   if chains do not initialize or behave well. Alternatively, \code{init} can
+#'   be a list of lists containing the initial values, or a function (or
+#'   function name) generating initial values. The latter options are mainly
+#'   implemented for internal testing but are available to users if necessary.
+#'   If specifying initial values using a list or a function then currently the
+#'   parameter names must correspond to the names used in the generated Stan
+#'   code (not the names used in \R). For more details on specifying initial
+#'   values you can consult the documentation of the selected \code{backend}.
+#' @param inits (Deprecated) Alias of \code{init}.
 #' @param chains Number of Markov chains (defaults to 4).
 #' @param iter Number of total iterations per chain (including warmup; defaults
 #'   to 2000).
@@ -429,7 +430,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 stanvars = NULL, stan_funs = NULL, fit = NA, 
                 save_pars = NULL, save_ranef = NULL, 
                 save_mevars = NULL, save_all_pars = NULL, 
-                inits = "random", chains = 4, iter = 2000, 
+                init = NULL, inits = NULL, chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1), 
                 threads = getOption("brms.threads", NULL),
@@ -464,6 +465,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   thin <- as_one_numeric(thin)
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
+  init <- use_alias(init, inits)
   threads <- validate_threads(threads)
   opencl <- validate_opencl(opencl)
   future <- as_one_logical(future) && chains > 0L
@@ -577,7 +579,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   # fit the Stan model
   fit_args <- nlist(
     model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
-    threads, opencl, inits, exclude, control, future, seed, silent, ...
+    threads, opencl, init, exclude, control, future, seed, silent, ...
   )
   x$fit <- do_call(fit_model, fit_args)
 
