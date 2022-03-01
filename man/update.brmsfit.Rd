@@ -43,7 +43,7 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
 summary(fit3)
 
 ## use another family and add population-level priors
-fit4 <- update(fit1, family = weibull(), inits = "0",
+fit4 <- update(fit1, family = weibull(), init = "0",
                prior = set_prior("normal(0,5)"))
 summary(fit4)
 }

@@ -50,7 +50,7 @@ model via selective inclusion of predictors.
 
 For most mixture models, you may want to specify priors on the
 population-level intercepts via \code{\link{set_prior}} to improve
-convergence. In addition, it is sometimes necessary to set \code{inits = 0}
+convergence. In addition, it is sometimes necessary to set \code{init = 0}
 in the call to \code{\link{brm}} to allow chains to initialize properly.
 
 For more details on the specification of mixture
@@ -85,14 +85,14 @@ summary(fit2)
 ## fix the mixing proportions
 fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2), 
             dat, family = mix, prior = prior, 
-            inits = 0, chains = 2)
+            init = 0, chains = 2)
 summary(fit3)
 pp_check(fit3)    
 
 ## predict the mixing proportions
 fit4 <- brm(bf(y ~ x + z, theta2 ~ x), 
             dat, family = mix, prior = prior, 
-            inits = 0, chains = 2)
+            init = 0, chains = 2)
 summary(fit4)
 pp_check(fit4)           
 
