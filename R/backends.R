@@ -343,7 +343,7 @@ needs_recompilation <- function(x) {
     out <- FALSE
   } else if (backend == "cmdstanr") {
     exe_file <- attributes(x$fit)$CmdStanModel$exe_file()
-    out <- !is.character(exe_file) || !exists(exe_file)
+    out <- !is.character(exe_file) || !file.exists(exe_file)
   } else if (backend == "mock") {
     out <- FALSE
   }
