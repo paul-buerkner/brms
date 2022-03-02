@@ -60,7 +60,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(brms_seed)
+  if (!is.null(brms_seed)) {
+    set.seed(brms_seed) 
+  }
   kfold_seed <- sample.int(.Machine$integer.max, 1)
   refprd_seed <- sample.int(.Machine$integer.max, 1)
   
