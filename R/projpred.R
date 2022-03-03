@@ -130,7 +130,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
     set.seed(refprd_seed)
     lprd_args <- nlist(
-      object = fit, newdata, allow_new_levels = TRUE,
+      object = fit, newdata, resp, allow_new_levels = TRUE,
       sample_new_levels = "gaussian"
     )
     if (is_ordinal(family)) {
