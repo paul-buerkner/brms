@@ -113,9 +113,16 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   data <- current_data(object, newdata, resp = resp, check_response = TRUE)
   attr(data, "terms") <- NULL
   
+  y_lvls <- NULL
+  if (aug_data &&
+      is_like_factor(eval(formula[[2]], data, environment(formula)))) {
+    y_lvls <- family$cats
+  }
+  
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
-    .extract_model_data(object, newdata = newdata, resp = resp, ...)
+    .extract_model_data(object, newdata = newdata, resp = resp, y_lvls = y_lvls,
+                        ...)
   }
   
   # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
@@ -194,7 +201,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 
 # auxiliary data required in predictions via projpred
 # @return a named list with slots 'weights' and 'offset'
-.extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
+.extract_model_data <- function(object, newdata = NULL, resp = NULL,
+                                y_lvls = NULL, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
   family <- family(object, resp = resp)
@@ -215,6 +223,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
   stopifnot(!is.null(y))
+  if (!is.null(y_lvls)) {
+    y <- as.factor(y)
+    y_lvls_raw <- as.character(seq_along(y_lvls))
+    stopifnot(all(levels(y) %in% y_lvls_raw))
+    y <- factor(y, levels = y_lvls_raw, labels = y_lvls)
+  }
   if (is_binary(family)) {
     trials <- rep(1, length(y))
   }
