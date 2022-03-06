@@ -114,9 +114,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   attr(data, "terms") <- NULL
   
   y_lvls <- NULL
-  if (aug_data &&
-      is_like_factor(eval(formula[[2]], data, environment(formula)))) {
-    y_lvls <- family$cats
+  if (is_like_factor(eval(formula[[2]], data, environment(formula)))) {
+    y_lvls <- levels(as.factor(eval(formula[[2]], data, environment(formula))))
+    if (aug_data) {
+      # projpred will assume the following identity:
+      stopifnot(identical(y_lvls, family$cats))
+    }
   }
   
   # allows to handle additional arguments implicitly
@@ -225,7 +228,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   stopifnot(!is.null(y))
   if (!is.null(y_lvls)) {
     y <- as.factor(y)
-    y_lvls_raw <- as.character(seq_along(y_lvls))
+    y_lvls_raw <- seq_along(y_lvls)
+    if (family$family %in% c("bernoulli", "binomial")) {
+      stopifnot(identical(y_lvls_raw, 1:2))
+      y_lvls_raw <- y_lvls_raw - 1L
+    }
+    y_lvls_raw <- as.character(y_lvls_raw)
     stopifnot(all(levels(y) %in% y_lvls_raw))
     y <- factor(y, levels = y_lvls_raw, labels = y_lvls)
   }
