@@ -254,19 +254,19 @@ Define priors for specific parameters or classes of parameters.
   
   6. Autocorrelation parameters
   
-  The autocorrelation parameters currently implemented are named 
-  \code{ar} (autoregression), \code{ma} (moving average),
-  \code{arr} (autoregression of the response), \code{car} 
-  (spatial conditional autoregression), as well as \code{lagsar} 
-  and \code{errorsar} (Spatial simultaneous autoregression).
+  The autocorrelation parameters currently implemented are named \code{ar}
+  (autoregression), \code{ma} (moving average), \code{sderr} (standard
+  deviation of latent residuals in latent ARMA models), \code{cosy} (compound
+  symmetry correlation), \code{car} (spatial conditional autoregression), as
+  well as \code{lagsar} and \code{errorsar} (spatial simultaneous
+  autoregression).
   
-  Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
-  for \code{ar} and similar for other autocorrelation parameters.
-  By default, \code{ar} and \code{ma} are bounded between \code{-1} 
-  and \code{1}, \code{car}, \code{lagsar}, and \code{errorsar} are 
-  bounded between \code{0}, and \code{1}, and \code{arr} is unbounded 
-  (you may change this by using the arguments \code{lb} and \code{ub}). 
-  The default prior is flat over the definition area.
+  Priors can be defined by \code{set_prior("<prior>", class = "ar")} for
+  \code{ar} and similar for other autocorrelation parameters. By default,
+  \code{ar} and \code{ma} are bounded between \code{-1} and \code{1};
+  \code{cosy}, \code{car}, \code{lagsar}, and \code{errorsar} are bounded
+  between \code{0} and \code{1}. The default priors are flat over the
+  respective definition areas.
   
   7. Distance parameters of monotonic effects
   
