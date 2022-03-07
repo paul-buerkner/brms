@@ -3,6 +3,8 @@
 ### New Features
 
 * Add family `logistic_normal` for simplex responses. (#1274)
+* Add argument `future_args` to `kfold` and `reloo` for additional
+control over parallel execution via futures.
 
 ### Other changes
 

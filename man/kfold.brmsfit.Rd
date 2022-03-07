@@ -16,7 +16,8 @@
   compare = TRUE,
   resp = NULL,
   model_names = NULL,
-  save_fits = FALSE
+  save_fits = FALSE,
+  future_args = list()
 )
 }
 \arguments{
@@ -71,6 +72,10 @@ values as model names.}
 the returned object to store the cross-validated \code{brmsfit} 
 objects and the indices of the omitted observations for each fold. 
 Defaults to \code{FALSE}.}
+
+\item{future_args}{A list of further arguments passed to
+\code{\link[future:future]{future}} for additional control over parallel
+execution if activated.}
 }
 \value{
 \code{kfold} returns an object that has a similar structure as the 

@@ -17,6 +17,9 @@
 #' @param check Logical; If \code{TRUE} (the default), some checks
 #'   check are performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
+#' @param future_args A list of further arguments passed to
+#'   \code{\link[future:future]{future}} for additional control over parallel
+#'   execution if activated.
 #' @param ... Further arguments passed to 
 #'   \code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.
 #'   
@@ -48,8 +51,9 @@
 #' 
 #' @export
 reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL, 
-                          resp = NULL, check = TRUE, ...) {
-  stopifnot(is.loo(loo), is.brmsfit(x))
+                          resp = NULL, check = TRUE, future_args = list(),
+                          ...) {
+  stopifnot(is.loo(loo), is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"
@@ -120,14 +124,15 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     "\nThe model will be refit ", J, " times."
   )
   x <- recompile_model(x)
+  future_args$FUN <- .reloo
+  future_args$seed <- TRUE
   for (j in seq_len(J)) {
     message(
       "\nFitting model ", j, " out of ", J,
       " (leaving out observation ", obs[j], ")"
     )
-    futures[[j]] <- future::future(
-      .reloo(j), packages = "brms", seed = TRUE
-    )
+    future_args$args <- list(j)
+    futures[[j]] <- do_call("futureCall", future_args, pkg = "future")
   }
   for (j in seq_len(J)) {
     lls[[j]] <- future::value(futures[[j]])

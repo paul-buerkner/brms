@@ -13,6 +13,7 @@
   newdata = NULL,
   resp = NULL,
   check = TRUE,
+  future_args = list(),
   ...
 )
 
@@ -43,6 +44,10 @@ are performed only for the specified response variables.}
 \item{check}{Logical; If \code{TRUE} (the default), some checks
 check are performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
+
+\item{future_args}{A list of further arguments passed to
+\code{\link[future:future]{future}} for additional control over parallel
+execution if activated.}
 
 \item{...}{Further arguments passed to 
 \code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.}
