@@ -3,7 +3,6 @@ context("Tests for family functions")
 test_that("family functions returns expected results", {
   expect_equal(student(identity)$link, "identity")
   expect_equal(student()$link, "identity")
-  expect_error(student("logit"), "student")
   expect_equal(bernoulli(logit)$link, "logit")
   expect_error(bernoulli("sqrt"), "bernoulli")
   expect_equal(negbinomial(sqrt)$link, "sqrt")
