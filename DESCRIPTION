@@ -46,6 +46,7 @@ Suggests:
     emmeans (>= 1.4.2),
     cmdstanr (>= 0.4.0),
     projpred (>= 2.0.0),
+    processx,
     RWiener,
     rtdists,
     mice,
