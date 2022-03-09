@@ -830,9 +830,7 @@ posterior_predict_zero_inflated_beta_binomial <- function(i, prep, ...) {
   probs <- rbeta(ndraws, mu * phi, (1 - mu) * phi)
   # compare with theta to incorporate the zero-inflation process
   zi <- runif(ndraws, 0, 1)
-  ifelse(zi < theta, 
-         0, 
-         rbinom(ndraws, size = trials, prob = probs))
+  ifelse(zi < theta, 0, rbinom(ndraws, size = trials, prob = probs))
 }
 
 posterior_predict_categorical <- function(i, prep, ...) {

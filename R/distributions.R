@@ -2477,16 +2477,14 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
 }
 
 #' CDF of beta-binomial distribution
-#' @importFrom extraDistr dbbinom
 dbeta_binom <- function (x, size, mu = 1, phi = 1, log = FALSE) {
-  extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log)
+  extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log = log)
 }
 #' PMF of beta-binomial distribution
-#' @importFrom extraDistr pbbinom
 pbeta_binom <- function (q, size, mu = 1, phi = 1, lower.tail = TRUE, 
                          log.p = FALSE) {
   extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,
-                      lower.tail, log.p)
+                      lower.tail = lower.tail, log.p = log.p)
 }
 
 # helper functions to shift arbitrary distributions
