@@ -1681,6 +1681,7 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
 #' @param zi zero-inflation probability
 #' @param mu,lambda location parameter
 #' @param shape,shape1,shape2 shape parameter
+#' @param phi precision parameter
 #' @param size number of trials
 #' @param prob probability of success on each trial
 #' 
@@ -2476,11 +2477,11 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   cblapply(q, .fun)
 }
 
-#' CDF of beta-binomial distribution
+# CDF of beta-binomial distribution
 dbeta_binom <- function (x, size, mu = 1, phi = 1, log = FALSE) {
   extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log = log)
 }
-#' PMF of beta-binomial distribution
+# PMF of beta-binomial distribution
 pbeta_binom <- function (q, size, mu = 1, phi = 1, lower.tail = TRUE, 
                          log.p = FALSE) {
   extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,

@@ -63,6 +63,8 @@ Else, return P(X > x) .}
 \item{size}{number of trials}
 
 \item{prob}{probability of success on each trial}
+
+\item{phi}{precision parameter}
 }
 \description{
 Density and distribution functions for zero-inflated distributions.
