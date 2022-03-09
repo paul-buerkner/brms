@@ -10,6 +10,7 @@ test_that("posterior_epred helper functions run without errors", {
   fit <- add_dummy_draws(fit, "shape", dist = "exp")
   fit <- add_dummy_draws(fit, "alpha", dist = "norm")
   fit <- add_dummy_draws(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)
+  fit <- add_dummy_draws(fit, "phi", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_dummy_draws(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_dummy_draws(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
   fit <- add_dummy_draws(fit, "xi", dist = "unif", min = -1, max = 0.5)
@@ -66,6 +67,14 @@ test_that("posterior_epred helper functions run without errors", {
   # pseudo binomial model
   fit$autocor <- brms:::cor_empty()
   fit$family <- fit$formula$family <- binomial()
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
+  
+  # pseudo zero inflated binomial model
+  fit$family <- fit$formula$family <- zero_inflated_binomial()
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
+  
+  # pseudo zero inflated beta binomial model
+  fit$family <- fit$formula$family <- zero_inflated_beta_binomial()
   expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
   
   # pseudo hurdle poisson model

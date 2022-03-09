@@ -21,9 +21,9 @@
 #'   \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal},
-#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
-#'   \code{zero_one_inflated_beta}.
+#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
+#'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
+#'   \code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.
 #' @param link A specification for the model link function. This can be a
 #'   name/expression or character string. See the 'Details' section for more
 #'   information on link functions supported by each family.
@@ -108,10 +108,10 @@
 #'   \item{Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
 #'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
-#'   \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} 
-#'   allow to estimate zero-inflated and hurdle models.
-#'   These models can be very helpful when there are many zeros in the data 
-#'   (or ones in case of one-inflated models)
+#'   \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta}, and
+#'   \code{zero_one_inflated_beta} allow to estimate zero-inflated and hurdle
+#'   models. These models can be very helpful when there are many zeros in the
+#'   data (or ones in case of one-inflated models)
 #'   that cannot be explained by the primary distribution of the response.}
 #'   }
 #'   
@@ -129,9 +129,9 @@
 #'   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 #'   
 #'   \item{Families \code{binomial}, \code{bernoulli}, \code{Beta}, 
-#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta}, 
-#'   and \code{zero_one_inflated_beta} support \code{logit}, 
-#'   \code{probit}, \code{probit_approx}, \code{cloglog}, 
+#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
+#'   \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} support
+#'   \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
 #'   \code{cauchit}, and \code{identity}.}
 #'   
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio}, 
@@ -759,6 +759,15 @@ zero_inflated_binomial <- function(link = "logit", link_zi = "logit") {
   slink <- substitute(link)
   .brmsfamily("zero_inflated_binomial", link = link, slink = slink,
               link_zi = link_zi)
+}
+
+#' @rdname brmsfamily
+#' @export
+zero_inflated_beta_binomial <- function(link = "logit", link_phi = "log",
+                                        link_zi = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("zero_inflated_beta_binomial", link = link, slink = slink,
+              link_phi = link_phi, link_zi = link_zi)
 }
 
 #' @rdname brmsfamily
@@ -1834,7 +1843,8 @@ family_bounds.brmsterms <- function(x, ...) {
     out <- list(lb = 0, ub = 1)
   } else if (family %in% c("categorical", ordinal_families)) {
     out <- list(lb = 1, ub = paste0("ncat", resp))
-  } else if (family %in% c("binomial", "zero_inflated_binomial")) {
+  } else if (family %in% c("binomial", "zero_inflated_binomial",
+                           "zero_inflated_beta_binomial")) {
     out <- list(lb = 0, ub = paste0("trials", resp))
   } else if (family %in% "von_mises") {
     out <- list(lb = -pi, ub = pi)

@@ -43,6 +43,15 @@ test_that("family functions returns expected results", {
                "'logit' is not a supported link for parameter 'shape'")
   expect_error(weibull(link_shape = c("log", "logit")),
                "Cannot coerce 'alink' to a single character value")
+  
+  expect_equal(zero_inflated_beta_binomial()$link, "logit")
+  expect_equal(zero_inflated_beta_binomial('probit')$link, "probit")
+  expect_equal(zero_inflated_beta_binomial()$link_phi, "log")
+  expect_equal(zero_inflated_beta_binomial()$link_zi, "logit")
+  expect_equal(zero_inflated_beta_binomial(link_zi = "identity")$link_zi, "identity")
+  expect_error(zero_inflated_beta_binomial('log'))
+  expect_error(zero_inflated_beta_binomial(link_phi = 'logit'))
+  expect_error(zero_inflated_beta_binomial(link_zi = 'log'))
 })
 
 test_that("print brmsfamily works correctly", {

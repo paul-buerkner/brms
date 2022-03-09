@@ -809,7 +809,7 @@ posterior_predict_zero_inflated_negbinomial <- function(i, prep, ...) {
 }
 
 posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
-  # theta is the bernoulii zero-inflation parameter
+  # theta is the bernoulli zero-inflation parameter
   theta <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   prob <- get_dpar(prep, "mu", i = i)
@@ -817,6 +817,22 @@ posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
   # compare with theta to incorporate the zero-inflation process
   zi <- runif(ndraws, 0, 1)
   ifelse(zi < theta, 0, rbinom(ndraws, size = trials, prob = prob))
+}
+
+posterior_predict_zero_inflated_beta_binomial <- function(i, prep, ...) {
+  # theta is the bernoulli zero-inflation parameter
+  theta <- get_dpar(prep, "zi", i = i)
+  trials <- prep$data$trials[i]
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  ndraws <- prep$ndraws
+  # beta location-scale probabilities
+  probs <- rbeta(ndraws, mu * phi, (1 - mu) * phi)
+  # compare with theta to incorporate the zero-inflation process
+  zi <- runif(ndraws, 0, 1)
+  ifelse(zi < theta, 
+         0, 
+         rbinom(ndraws, size = trials, prob = probs))
 }
 
 posterior_predict_categorical <- function(i, prep, ...) {

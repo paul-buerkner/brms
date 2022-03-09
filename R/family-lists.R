@@ -510,6 +510,23 @@
   )
 }
 
+.family_zero_inflated_beta_binomial <- function() {
+  list(
+    links = c(
+      "logit", "probit", "probit_approx",
+      "cloglog", "cauchit", "softit", "identity"
+    ),
+    dpars = c("mu", "phi", "zi"), 
+    type = "int",
+    ybounds = c(0, Inf),
+    closed = c(TRUE, NA),
+    ad = c("weights", "subset", "trials", "cens", "trunc", "index"),
+    include = "fun_zero_inflated_beta_binomial.stan",
+    specials = c("sbi_zi_logit"),
+    normalized = ""
+  )
+}
+
 .family_zero_inflated_beta <- function() {
   list(
     links = c(

@@ -1738,6 +1738,21 @@ pzero_inflated_binomial <- function(q, size, prob, zi, lower.tail = TRUE,
 
 #' @rdname ZeroInflated
 #' @export
+dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
+  pars <- nlist(size, mu, phi)
+  .dzero_inflated(x, "beta_binom", zi, pars, log)
+}
+
+#' @rdname ZeroInflated
+#' @export
+pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi, 
+                                         lower.tail = TRUE, log.p = FALSE) {
+  pars <- nlist(size, mu, phi)
+  .pzero_inflated(q, "beta_binom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
 dzero_inflated_beta <- function(x, shape1, shape2, zi, log = FALSE) {
   pars <- nlist(shape1, shape2)
   # zi_beta is technically a hurdle model
@@ -2459,6 +2474,19 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   p <- do_call(paste0("d", family), args)
   .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
   cblapply(q, .fun)
+}
+
+#' CDF of beta-binomial distribution
+#' @importFrom extraDistr dbbinom
+dbeta_binom <- function (x, size, mu = 1, phi = 1, log = FALSE) {
+  extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log)
+}
+#' PMF of beta-binomial distribution
+#' @importFrom extraDistr pbbinom
+pbeta_binom <- function (q, size, mu = 1, phi = 1, lower.tail = TRUE, 
+                         log.p = FALSE) {
+  extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,
+                      lower.tail, log.p)
 }
 
 # helper functions to shift arbitrary distributions

@@ -838,6 +838,18 @@ stan_log_lik_zero_inflated_binomial <- function(bterms, resp = "", mix = "",
   sdist(lpdf, p$trials, p$mu, p$zi)
 }
 
+stan_log_lik_zero_inflated_beta_binomial <- function(bterms, resp = "", 
+                                                     mix = "", threads = NULL, 
+                                                     ...) {
+  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
+  n <- stan_nn(threads)
+  p$trials <- paste0("trials", resp, n)
+  lpdf <- "zero_inflated_beta_binomial"
+  lpdf <- stan_log_lik_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
+  lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("zi", bterms))
+  sdist(lpdf, p$trials, p$mu, p$phi, p$zi)
+}
+
 stan_log_lik_zero_inflated_beta <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   usc_logit <- stan_log_lik_dpar_usc_logit("zi", bterms)

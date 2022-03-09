@@ -367,6 +367,9 @@ test_that("log_lik for zero-inflated and hurdle models runs without erros", {
   ll <- brms:::log_lik_zero_inflated_binomial(4, prep = prep)
   expect_equal(length(ll), ns)
   
+  ll <- brms:::log_lik_zero_inflated_beta_binomial(7, prep = prep)
+  expect_equal(length(ll), ns)
+  
   prep$data$Y[1:nobs] <- rbeta(nobs / 2, 0.5, 4)
   ll <- brms:::log_lik_zero_inflated_beta(6, prep = prep)
   expect_equal(length(ll), ns)

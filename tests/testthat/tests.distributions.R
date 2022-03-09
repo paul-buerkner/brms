@@ -147,6 +147,11 @@ test_that("zero-inflated distribution functions run without errors", {
   res <- pzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
   expect_true(length(res) == n)
   
+  res <- dzero_inflated_beta_binomial(x, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- pzero_inflated_beta_binomial(x, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
+  expect_true(length(res) == n)
+  
   x <- c(rbeta(n - 2, shape1 = 2, shape2 = 3), 0, 0)
   res <- dzero_inflated_beta(x, shape1 = 2, shape2 = 3, zi = 0.1)
   expect_true(length(res) == n)

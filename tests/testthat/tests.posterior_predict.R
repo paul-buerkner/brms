@@ -254,6 +254,9 @@ test_that("posterior_predict for zero-inflated and hurdle models runs without er
   pred <- brms:::posterior_predict_zero_inflated_binomial(4, prep = prep)
   expect_equal(length(pred), ns)
   
+  pred <- brms:::posterior_predict_zero_inflated_beta_binomial(6, prep = prep)
+  expect_equal(length(pred), ns)
+  
   pred <- brms:::posterior_predict_zero_inflated_beta(8, prep = prep)
   expect_equal(length(pred), ns)
   
