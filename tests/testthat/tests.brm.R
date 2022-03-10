@@ -117,8 +117,6 @@ test_that("brm produces expected errors", {
                "Category specific effects are not supported")
   
   # families and links
-  expect_error(brm(y ~ x, dat, family = gaussian("logit")), 
-               "'logit' is not a supported link for family 'gaussian'")
   expect_error(brm(y ~ x, dat, family = poisson("inverse")), 
                "'inverse' is not a supported link for family 'poisson'")
   expect_error(brm(y ~ x, dat, family = c("weibull", "sqrt")),

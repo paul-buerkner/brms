@@ -1681,6 +1681,7 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
 #' @param zi zero-inflation probability
 #' @param mu,lambda location parameter
 #' @param shape,shape1,shape2 shape parameter
+#' @param phi precision parameter
 #' @param size number of trials
 #' @param prob probability of success on each trial
 #' 
@@ -1734,6 +1735,21 @@ pzero_inflated_binomial <- function(q, size, prob, zi, lower.tail = TRUE,
                                     log.p = FALSE) {
   pars <- nlist(size, prob)
   .pzero_inflated(q, "binom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
+  pars <- nlist(size, mu, phi)
+  .dzero_inflated(x, "beta_binom", zi, pars, log)
+}
+
+#' @rdname ZeroInflated
+#' @export
+pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi, 
+                                         lower.tail = TRUE, log.p = FALSE) {
+  pars <- nlist(size, mu, phi)
+  .pzero_inflated(q, "beta_binom", zi, pars, lower.tail, log.p)
 }
 
 #' @rdname ZeroInflated
@@ -2459,6 +2475,20 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   p <- do_call(paste0("d", family), args)
   .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
   cblapply(q, .fun)
+}
+
+# CDF of the beta-binomial distribution
+dbeta_binom <- function(x, size, mu = 1, phi = 1, log = FALSE) {
+  require_package("extraDistr")
+  extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log = log)
+}
+
+# PMF of the beta-binomial distribution
+pbeta_binom <- function(q, size, mu = 1, phi = 1, lower.tail = TRUE, 
+                        log.p = FALSE) {
+  require_package("extraDistr")
+  extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,
+                      lower.tail = lower.tail, log.p = log.p)
 }
 
 # helper functions to shift arbitrary distributions

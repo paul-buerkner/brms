@@ -728,9 +728,20 @@ log_lik_zero_inflated_binomial <- function(i, prep) {
   trials <- prep$data$trials[i] 
   mu <- get_dpar(prep, "mu", i) 
   zi <- get_dpar(prep, "zi", i)
-  args <- list(size = trials, prob = mu, zi)
+  args <- list(size = trials, prob = mu, zi = zi)
   out <- log_lik_censor("zero_inflated_binomial", args, i, prep)
   out <- log_lik_truncate(out, pzero_inflated_binomial, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_zero_inflated_beta_binomial <- function(i, prep) {
+  trials <- prep$data$trials[i] 
+  mu <- get_dpar(prep, "mu", i) 
+  phi <- get_dpar(prep, "phi", i) 
+  zi <- get_dpar(prep, "zi", i)
+  args <- nlist(size = trials, mu, phi, zi)
+  out <- log_lik_censor("zero_inflated_beta_binomial", args, i, prep)
+  out <- log_lik_truncate(out, pzero_inflated_beta_binomial, args, i, prep)
   log_lik_weight(out, i = i, prep = prep)
 }
 

@@ -5,6 +5,8 @@
 * Add family `logistic_normal` for simplex responses. (#1274)
 * Add argument `future_args` to `kfold` and `reloo` for additional
 control over parallel execution via futures.
+* Add family `zero_inflated_beta_binomial` for potentially over-dispersed and 
+zero-inflated binomial response models thanks to Hayden Rabel. (#1311)
 
 ### Other changes
 

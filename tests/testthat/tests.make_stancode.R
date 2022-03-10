@@ -483,6 +483,9 @@ test_that("self-defined functions appear in the Stan code", {
                               family = "zero_inflated_binomial"),
                "real zero_inflated_binomial_lpmf(int y")
   expect_match2(make_stancode(count ~ Trt, data = epilepsy,
+                              family = "zero_inflated_beta_binomial"),
+                "real zero_inflated_beta_binomial_lpmf(int y")
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy,
                              family = "zero_inflated_beta"),
                "real zero_inflated_beta_lpdf(real y")
   expect_match2(make_stancode(count ~ Trt, data = epilepsy,
@@ -1458,7 +1461,19 @@ test_that("predicting zi and hu works correctly", {
     "target += zero_inflated_binomial_lpmf(Y[n] | trials[n], mu[n], zi[n])"
   )
   expect_match2(scode, "mu[n] = Phi(mu[n]);")
-
+  
+  scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy,
+                         family = "zero_inflated_beta_binomial")
+  expect_match2(scode,
+                "target += zero_inflated_beta_binomial_blogit_logit_lpmf(Y[n] | trials[n], mu[n], phi, zi[n])")
+  expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
+  scode <- 
+    make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy,
+                  zero_inflated_beta_binomial("probit", link_zi = "identity"))
+  expect_match2(scode,
+                "target += zero_inflated_beta_binomial_lpmf(Y[n] | trials[n], mu[n], phi, zi[n])")
+  expect_match2(scode, "mu[n] = Phi(mu[n]);")
+  
   scode <- make_stancode(
     bf(count ~ Trt, zi ~ Trt), epilepsy,
     family = zero_inflated_beta()

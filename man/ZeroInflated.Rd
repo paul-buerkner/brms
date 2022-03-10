@@ -8,6 +8,8 @@
 \alias{pzero_inflated_negbinomial}
 \alias{dzero_inflated_binomial}
 \alias{pzero_inflated_binomial}
+\alias{dzero_inflated_beta_binomial}
+\alias{pzero_inflated_beta_binomial}
 \alias{dzero_inflated_beta}
 \alias{pzero_inflated_beta}
 \title{Zero-Inflated Distributions}
@@ -23,6 +25,18 @@ pzero_inflated_negbinomial(q, mu, shape, zi, lower.tail = TRUE, log.p = FALSE)
 dzero_inflated_binomial(x, size, prob, zi, log = FALSE)
 
 pzero_inflated_binomial(q, size, prob, zi, lower.tail = TRUE, log.p = FALSE)
+
+dzero_inflated_beta_binomial(x, size, mu, phi, zi, log = FALSE)
+
+pzero_inflated_beta_binomial(
+  q,
+  size,
+  mu,
+  phi,
+  zi,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
 
 dzero_inflated_beta(x, shape1, shape2, zi, log = FALSE)
 
@@ -49,6 +63,8 @@ Else, return P(X > x) .}
 \item{size}{number of trials}
 
 \item{prob}{probability of success on each trial}
+
+\item{phi}{precision parameter}
 }
 \description{
 Density and distribution functions for zero-inflated distributions.

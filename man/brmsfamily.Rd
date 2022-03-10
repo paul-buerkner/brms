@@ -30,6 +30,7 @@
 \alias{zero_inflated_poisson}
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_binomial}
+\alias{zero_inflated_beta_binomial}
 \alias{categorical}
 \alias{multinomial}
 \alias{cumulative}
@@ -129,6 +130,12 @@ zero_inflated_negbinomial(link = "log", link_shape = "log", link_zi = "logit")
 
 zero_inflated_binomial(link = "logit", link_zi = "logit")
 
+zero_inflated_beta_binomial(
+  link = "logit",
+  link_phi = "log",
+  link_zi = "logit"
+)
+
 categorical(link = "logit", refcat = NULL)
 
 multinomial(link = "logit", refcat = NULL)
@@ -154,9 +161,9 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
 \code{hurdle_gamma}, \code{hurdle_lognormal},
-\code{zero_inflated_binomial}, \code{zero_inflated_beta},
-\code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
-\code{zero_one_inflated_beta}.}
+\code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
+\code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
+\code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.}
 
 \item{link}{A specification for the model link function. This can be a
 name/expression or character string. See the 'Details' section for more
@@ -272,10 +279,10 @@ Below, we list common use cases for the different families.
   \item{Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
-  \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} 
-  allow to estimate zero-inflated and hurdle models.
-  These models can be very helpful when there are many zeros in the data 
-  (or ones in case of one-inflated models)
+  \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta}, and
+  \code{zero_one_inflated_beta} allow to estimate zero-inflated and hurdle
+  models. These models can be very helpful when there are many zeros in the
+  data (or ones in case of one-inflated models)
   that cannot be explained by the primary distribution of the response.}
   }
   
@@ -293,9 +300,9 @@ Below, we list common use cases for the different families.
   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
   
   \item{Families \code{binomial}, \code{bernoulli}, \code{Beta}, 
-  \code{zero_inflated_binomial}, \code{zero_inflated_beta}, 
-  and \code{zero_one_inflated_beta} support \code{logit}, 
-  \code{probit}, \code{probit_approx}, \code{cloglog}, 
+  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
+  \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} support
+  \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
   \code{cauchit}, and \code{identity}.}
   
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio}, 
