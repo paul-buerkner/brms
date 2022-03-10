@@ -2,7 +2,7 @@
 # necessary to evaluate non-linear formulas containing these functions.
 
 logit <- function(p) {
-  log(p / (1 - p))
+  log(p) - log1p(-p)
 }
 
 inv_logit <- function(x) { 
@@ -10,7 +10,7 @@ inv_logit <- function(x) {
 }
 
 cloglog <- function(x) {
-  log(-log(1 - x))
+  log(-log1p(-x))
 }
 
 inv_cloglog <- function(x) {
