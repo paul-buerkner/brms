@@ -630,6 +630,7 @@ file_refit_options <- function() {
     "--canonicalize=deprecations,braces,parentheses" 
   )
   if (cmdstanr::cmdstan_version() >= "2.29.0") {
+    require_package("processx")
     res <- processx::run(
       command = stanc_cmd,
       args = c(stan_file, stanc_flags),

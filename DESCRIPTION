@@ -13,7 +13,8 @@ Authors@R:
       person("Martin", "Modrak", role = c("ctb")),
       person("Hamada S.", "Badr", role = c("ctb")),
       person("Frank", "Weber", role = c("ctb")),
-      person("Mattan S.", "Ben-Shachar", role = c("ctb")))
+      person("Mattan S.", "Ben-Shachar", role = c("ctb")),
+      person("Hayden", "Rabel", role = c("ctb")))
 Depends: 
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
@@ -49,6 +50,7 @@ Suggests:
     RWiener,
     rtdists,
     extraDistr,
+    processx,
     mice,
     spdep,
     mnormt,

@@ -2477,13 +2477,16 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   cblapply(q, .fun)
 }
 
-# CDF of beta-binomial distribution
-dbeta_binom <- function (x, size, mu = 1, phi = 1, log = FALSE) {
+# CDF of the beta-binomial distribution
+dbeta_binom <- function(x, size, mu = 1, phi = 1, log = FALSE) {
+  require_package("extraDistr")
   extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log = log)
 }
-# PMF of beta-binomial distribution
-pbeta_binom <- function (q, size, mu = 1, phi = 1, lower.tail = TRUE, 
-                         log.p = FALSE) {
+
+# PMF of the beta-binomial distribution
+pbeta_binom <- function(q, size, mu = 1, phi = 1, lower.tail = TRUE, 
+                        log.p = FALSE) {
+  require_package("extraDistr")
   extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,
                       lower.tail = lower.tail, log.p = log.p)
 }
