@@ -111,7 +111,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
-    .extract_model_data(object, newdata = newdata, resp = resp, ...)
+    .extract_model_data(object, newdata = newdata, resp = resp,
+                        aug_data = aug_data, ...)
   }
   
   # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
@@ -193,7 +194,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 
 # auxiliary data required in predictions via projpred
 # @return a named list with slots 'y', 'weights', and 'offset'
-.extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
+.extract_model_data <- function(object, newdata = NULL, resp = NULL,
+                                aug_data = FALSE, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
   family <- family(object, resp = resp)
@@ -208,14 +210,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   data <- current_data(object, newdata, resp = resp, check_response = TRUE)
   attr(data, "terms") <- NULL
   y <- unname(model.response(model.frame(respform, data, na.action = na.pass)))
-  # TODO: uncomment as soon as the 'aug_data' flag is implemented
-  # if (is_like_factor(y)) {
-  #   y_lvls <- levels(as.factor(y))
-  #   if (aug_data && !is_equal(y_lvls, family$cats)) {
-  #     stop2("The augmented data approach requires all response categories to ",
-  #           "be present in the data passed to projpred.")
-  #   }
-  # }
+  if (aug_data) {
+    y_lvls <- levels(as.factor(y))
+    if (!is_equal(y_lvls, family$cats)) {
+      stop2("The augmented data approach requires all response categories to ",
+            "be present in the data passed to projpred.")
+    }
+  }
   
   # extract relevant auxiliary data
   # call standata to ensure the correct format of the data
