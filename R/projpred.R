@@ -111,8 +111,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
-    .extract_model_data(object, newdata = newdata, resp = resp,
-                        aug_data = aug_data, ...)
+    .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
   # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
