@@ -109,23 +109,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     dis <- as.data.frame(object, variable = dis)[[dis]]
   }
   
-  # prepare data passed to projpred
-  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
-  attr(data, "terms") <- NULL
-  
-  y_lvls <- NULL
-  if (is_like_factor(eval(formula[[2]], data, environment(formula)))) {
-    y_lvls <- levels(as.factor(eval(formula[[2]], data, environment(formula))))
-    if (aug_data) {
-      # projpred will assume the following identity:
-      stopifnot(identical(y_lvls, family$cats))
-    }
-  }
-  
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
-    .extract_model_data(object, newdata = newdata, resp = resp, y_lvls = y_lvls,
-                        ...)
+    .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
   
   # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
@@ -183,6 +169,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     projpred::get_refmodel(cvfit, resp = resp, brms_seed = brms_seed_k, ...)
   }
   
+  # prepare data passed to projpred
+  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  attr(data, "terms") <- NULL
   args <- nlist(
     object, data, formula, family, dis, ref_predfun,
     cvfun, extract_model_data, cvrefbuilder, ...
@@ -203,13 +192,32 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 }
 
 # auxiliary data required in predictions via projpred
-# @return a named list with slots 'weights' and 'offset'
-.extract_model_data <- function(object, newdata = NULL, resp = NULL,
-                                y_lvls = NULL, ...) {
+# @return a named list with slots 'y', 'weights', and 'offset'
+.extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
   family <- family(object, resp = resp)
   
+  # extract the response variable manually instead of from make_standata
+  # so that it passes input checks of validate_newdata later on (#1314)
+  formula <- formula(object)
+  if (!is.null(resp)) {
+    formula <- formula$forms[[resp]]
+  }
+  respform <- brmsterms(formula)$respform
+  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  attr(data, "terms") <- NULL
+  y <- unname(model.response(model.frame(respform, data, na.action = na.pass)))
+  # TODO: uncomment as soon as the 'aug_data' flag is implemented
+  # if (is_like_factor(y)) {
+  #   y_lvls <- levels(as.factor(y))
+  #   if (aug_data && !is_equal(y_lvls, family$cats)) {
+  #     stop2("The augmented data approach requires all response categories to ",
+  #           "be present in the data passed to projpred.")
+  #   }
+  # }
+  
+  # extract relevant auxiliary data
   # call standata to ensure the correct format of the data
   args <- nlist(
     object, newdata, resp,
@@ -219,24 +227,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   )
   sdata <- do_call(standata, args)
   
-  # extract relevant auxiliary data
   usc_resp <- usc(resp)
-  y <- as.vector(sdata[[paste0("Y", usc_resp)]])
-  offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
-  stopifnot(!is.null(y))
-  if (!is.null(y_lvls)) {
-    y <- as.factor(y)
-    y_lvls_raw <- seq_along(y_lvls)
-    if (family$family %in% c("bernoulli", "binomial")) {
-      stopifnot(identical(y_lvls_raw, 1:2))
-      y_lvls_raw <- y_lvls_raw - 1L
-    }
-    y_lvls_raw <- as.character(y_lvls_raw)
-    stopifnot(all(levels(y) %in% y_lvls_raw))
-    y <- factor(y, levels = y_lvls_raw, labels = y_lvls)
-  }
   if (is_binary(family)) {
     trials <- rep(1, length(y))
   }
@@ -249,6 +242,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (is.null(weights)) {
     weights <- rep(1, length(y))
   }
+  offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   if (is.null(offset)) {
     offset <- rep(0, length(y))
   }
