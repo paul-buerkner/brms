@@ -204,7 +204,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     formula <- formula$forms[[resp]]
   }
   respform <- brmsterms(formula)$respform
-  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  data <- current_data(
+    object, newdata, resp = resp, check_response = TRUE,
+    allow_new_levels = TRUE
+  )
   y <- unname(model.response(model.frame(respform, data, na.action = na.pass)))
   aug_data <- is_categorical(formula) || is_ordinal(formula)
   if (aug_data) {
