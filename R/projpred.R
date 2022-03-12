@@ -109,10 +109,6 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     dis <- as.data.frame(object, variable = dis)[[dis]]
   }
   
-  # prepare data passed to projpred
-  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
-  attr(data, "terms") <- NULL
-  
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
@@ -173,6 +169,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     projpred::get_refmodel(cvfit, resp = resp, brms_seed = brms_seed_k, ...)
   }
   
+  # prepare data passed to projpred
+  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  attr(data, "terms") <- NULL
   args <- nlist(
     object, data, formula, family, dis, ref_predfun,
     cvfun, extract_model_data, cvrefbuilder, ...
@@ -193,12 +192,33 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 }
 
 # auxiliary data required in predictions via projpred
-# @return a named list with slots 'weights' and 'offset'
+# @return a named list with slots 'y', 'weights', and 'offset'
 .extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
-  family <- family(object, resp = resp)
   
+  # extract the response variable manually instead of from make_standata
+  # so that it passes input checks of validate_newdata later on (#1314)
+  formula <- formula(object)
+  if (!is.null(resp)) {
+    formula <- formula$forms[[resp]]
+  }
+  respform <- brmsterms(formula)$respform
+  data <- current_data(
+    object, newdata, resp = resp, check_response = TRUE,
+    allow_new_levels = TRUE
+  )
+  y <- unname(model.response(model.frame(respform, data, na.action = na.pass)))
+  aug_data <- is_categorical(formula) || is_ordinal(formula)
+  if (aug_data) {
+    y_lvls <- levels(as.factor(y))
+    if (!is_equal(y_lvls, get_cats(formula))) {
+      stop2("The augmented data approach requires all response categories to ",
+            "be present in the data passed to projpred.")
+    }
+  }
+  
+  # extract relevant auxiliary data
   # call standata to ensure the correct format of the data
   args <- nlist(
     object, newdata, resp,
@@ -208,14 +228,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   )
   sdata <- do_call(standata, args)
   
-  # extract relevant auxiliary data
   usc_resp <- usc(resp)
-  y <- as.vector(sdata[[paste0("Y", usc_resp)]])
-  offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
-  stopifnot(!is.null(y))
-  if (is_binary(family)) {
+  if (is_binary(formula)) {
     trials <- rep(1, length(y))
   }
   if (!is.null(trials)) {
@@ -227,6 +243,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (is.null(weights)) {
     weights <- rep(1, length(y))
   }
+  offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   if (is.null(offset)) {
     offset <- rep(0, length(y))
   }
