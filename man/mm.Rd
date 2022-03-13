@@ -22,7 +22,7 @@ mm(
 It should have as many columns as grouping terms specified in \code{...}.
 If \code{NULL} (the default), equally weights are used.}
 
-\item{scale}{Logical; if \code{TRUE} (the default), 
+\item{scale}{Logical; if \code{TRUE} (the default),
 weights are standardized in order to sum to one per row.
 If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
@@ -78,7 +78,7 @@ dat$xc <- (dat$x1 + dat$x2) / 2
 fit3 <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 summary(fit3)
 }
-  
+
 }
 \seealso{
 \code{\link{brmsformula}}, \code{\link{mmc}}

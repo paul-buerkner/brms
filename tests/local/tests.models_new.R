@@ -76,7 +76,7 @@ test_that("Survival model from brm doc works correctly", {
   me3 <- conditional_effects(fit3, method = "predict")
   expect_ggplot(plot(me3, ask = FALSE)[[2]])
   expect_range(LOO(fit3)$estimates[3, 1], 650, 740)
-  
+
   # enables rstan specific functionality
   fit3 <- add_rstan_model(fit3)
   expect_range(LOO(fit3, moment_match = TRUE)$estimates[3, 1], 650, 740)
@@ -893,7 +893,7 @@ test_that("logistic_normal models work correctly", {
   names(dat) <- c("y1", "y2", "y3")
   dat$x <- rnorm(N)
   dat$y <- with(dat, cbind(y1, y2, y3))
-  
+
   fit <- brm(y ~ x, data = dat, family = logistic_normal(), refresh = 0)
   print(summary(fit))
   expect_output(print(fit), "muy2 = identity")
@@ -1015,7 +1015,7 @@ test_that("projpred methods can be run", {
   summary(fit)
 
   library(projpred)
-  
+
   # perform variable selection without cross-validation
   vs <- varsel(fit)
   expect_is(vs, "vsel")
@@ -1028,17 +1028,17 @@ test_that("projpred methods can be run", {
 test_that("emmeans can be run for multivariate models", {
   library(emmeans)
   df <- data.frame(
-    y1 = rnorm(100), y2 = rnorm(100), 
+    y1 = rnorm(100), y2 = rnorm(100),
     x1 = rnorm(100), x2 = rnorm(100)
   )
-  
+
   bform <- bf(mvbind(y1, y2) ~ x1 + x2) + set_rescor(TRUE)
   fit <- brm(bform, df, chains = 1, iter = 1000)
-  
+
   # Default: Collapse over repeated measures:
   em <- summary(emmeans(fit, "x1", at = list(x1 = c(-1, 1))))
   expect_equal(nrow(em), 2)
-  
+
   # Ask for MV with rep.meas
   em <- summary(emmeans(fit, c("x1", "rep.meas"), at = list(x1 = c(-1, 1))))
   expect_equal(nrow(em), 4)
@@ -1086,12 +1086,12 @@ test_that("Non-linear non-looped model predictions work correctly in blocked ord
       int N = rows(ult);
       vector[N] mu;
       int rows_sorted = 1;
-    
+
       for(i in 1:N) {
         if(row[i] != i)
            rows_sorted = 0;
       }
-    
+
       for(i in 1:N) {
          if(test[i] == 0) {
            mu[i] = ult[i] * (1 - exp(-(dev[i]/theta[i])^omega[i]));
@@ -1105,7 +1105,7 @@ test_that("Non-linear non-looped model predictions work correctly in blocked ord
     }
   "
   growth_model  <- stanvar(name="growth_test", scode=scode_growth, block="functions")
-  
+
   fit_loss <- brm(
     bf(cum ~ growth_test(ult, dev, theta, omega, row, test),
        ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
@@ -1121,7 +1121,7 @@ test_that("Non-linear non-looped model predictions work correctly in blocked ord
     backend = "rstan"
   )
   expose_functions(fit_loss)
-    
+
   N <- nrow(loss_alt)
   pr1 <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=1), ndraws=10)
   expect_true(all(dim(pr1) == c(10,N)))

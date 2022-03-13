@@ -25,7 +25,7 @@
 \item{type}{Type of the ppc plot as given by a character string.
 See \code{\link[bayesplot:PPC-overview]{PPC}} for an overview
 of currently supported types. You may also use an invalid
-type (e.g. \code{type = "xyz"}) to get a list of supported 
+type (e.g. \code{type = "xyz"}) to get a list of supported
 types in the resulting error message.}
 
 \item{ndraws}{Positive integer indicating how many
@@ -40,8 +40,8 @@ Ignored if \code{draw_ids} is not \code{NULL}.}
 by which to stratify the ppc plot. This argument is required for
 ppc \code{*_grouped} types and ignored otherwise.}
 
-\item{x}{Optional name of a variable in the model. 
-Only used for ppc types having an \code{x} argument 
+\item{x}{Optional name of a variable in the model.
+Only used for ppc types having an \code{x} argument
 and ignored otherwise.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
@@ -70,9 +70,9 @@ Perform posterior predictive checks with the help
 of the \pkg{bayesplot} package.
 }
 \details{
-For a detailed explanation of each of the ppc functions, 
-see the \code{\link[bayesplot:PPC-overview]{PPC}} 
-documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} 
+For a detailed explanation of each of the ppc functions,
+see the \code{\link[bayesplot:PPC-overview]{PPC}}
+documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}}
 package.
 }
 \examples{

@@ -12,41 +12,41 @@
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to \code{\link{fixef.brmsfit}}
 and \code{\link{ranef.brmsfit}}.}
 }
 \value{
-A list of 3D arrays (one per grouping factor). 
- If \code{summary} is \code{TRUE}, 
- the 1st dimension contains the factor levels, 
- the 2nd dimension contains the summary statistics 
+A list of 3D arrays (one per grouping factor).
+ If \code{summary} is \code{TRUE},
+ the 1st dimension contains the factor levels,
+ the 2nd dimension contains the summary statistics
  (see \code{\link{posterior_summary}}), and
- the 3rd dimension contains the group-level effects. 
+ the 3rd dimension contains the group-level effects.
  If \code{summary} is \code{FALSE}, the 1st dimension contains
- the posterior draws, the 2nd dimension contains the factor levels, 
+ the posterior draws, the 2nd dimension contains the factor levels,
  and the 3rd dimension contains the group-level effects.
 }
 \description{
-Extract model coefficients, which are the sum of population-level 
+Extract model coefficients, which are the sum of population-level
 effects and corresponding group-level effects
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
            data = epilepsy, family = gaussian(), chains = 2)
 ## extract population and group-level coefficients separately
 fixef(fit)
 ranef(fit)
-## extract combined coefficients 
+## extract combined coefficients
 coef(fit)
 }
 

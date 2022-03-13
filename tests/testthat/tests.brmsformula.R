@@ -42,11 +42,11 @@ test_that("brmsformula detects auxiliary parameter equations", {
 test_that("update_adterms works correctly", {
   form <- y | trials(size) ~ x
   expect_equal(
-    update_adterms(form, ~ trials(10)), 
+    update_adterms(form, ~ trials(10)),
     y | trials(10) ~ x
   )
   expect_equal(
-    update_adterms(form, ~ weights(w)), 
+    update_adterms(form, ~ weights(w)),
     y | trials(size) + weights(w) ~ x
   )
   expect_equal(

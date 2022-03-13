@@ -72,7 +72,7 @@ within \code{formula}. See \code{\link{brmsformula}} for more details.}
 matrices should correspond to columns in \code{data} that are used as
 grouping factors. All levels of the grouping factor should appear as
 rownames of the corresponding matrix. This argument can be used, among
-others to model pedigrees and phylogenetic effects. 
+others to model pedigrees and phylogenetic effects.
 It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
@@ -144,7 +144,7 @@ randomly.}
 fitted model object is saved via \code{\link{saveRDS}} in a file named
 after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
-return the saved model object instead of refitting the model. 
+return the saved model object instead of refitting the model.
 Unless you specify the \code{file_refit} argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
@@ -152,7 +152,7 @@ is stored in the \code{brmsfit} object for later usage.}
 
 \item{file_refit}{Modifies when the fit stored via the \code{file} parameter
 is re-used. Can be set globally for the current \R session via the
-\code{"brms.file_refit"} option (see \code{\link{options}}). 
+\code{"brms.file_refit"} option (see \code{\link{options}}).
 For \code{"never"} (default) the fit is always loaded if it
 exists and fitting is skipped. For \code{"always"} the model is always
 refitted. If set to \code{"on_change"}, brms will

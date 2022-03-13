@@ -12,11 +12,11 @@
 
 \item{...}{More \code{brmsfit} objects.}
 
-\item{criterion}{The name of the criterion to be extracted 
+\item{criterion}{The name of the criterion to be extracted
 from \code{brmsfit} objects.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{

@@ -26,7 +26,7 @@ bibentry(
   year = "2018",
   volume = "10",
   number = "1",
-  pages = "395--411", 
+  pages = "395--411",
   doi = "10.32614/RJ-2018-017",
   textVersion = paste(
     "Paul-Christian Bürkner (2018).",

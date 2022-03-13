@@ -1,12 +1,12 @@
 #' Support Functions for \pkg{emmeans}
-#' 
+#'
 #' Functions required for compatibility of \pkg{brms} with \pkg{emmeans}.
 #' Users are not required to call these functions themselves. Instead,
 #' they will be called automatically by the \code{emmeans} function
 #' of the \pkg{emmeans} package.
-#' 
+#'
 #' @name emmeans-brms-helpers
-#' 
+#'
 #' @inheritParams posterior_epred.brmsfit
 #' @param re_formula Optional formula containing group-level effects to be
 #'   considered in the prediction. If \code{NULL}, include all group-level
@@ -17,27 +17,27 @@
 #'   arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
 #' @param data,trms,xlev,grid,vcov. Arguments required by \pkg{emmeans}.
 #' @param ... Additional arguments passed to \pkg{emmeans}.
-#' 
-#' @details 
+#'
+#' @details
 #' In order to ensure compatibility of most \pkg{brms} models with
 #' \pkg{emmeans}, predictions are not generated 'manually' via a design matrix
-#' and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}. 
+#' and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}.
 #' This appears to generally work well, but note that it produces an `.@linfct`
 #' slot that contains the computed predictions as columns instead of the
 #' coefficients.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #'             data = kidney, family = lognormal())
-#' summary(fit)           
+#' summary(fit)
 #'
 #' # summarize via 'emmeans'
 #' library(emmeans)
 #' rg <- ref_grid(fit)
 #' em <- emmeans(rg, "disease")
 #' summary(em, point.est = mean)
-#' 
+#'
 #' # obtain estimates for the posterior predictive distribution's mean
 #' epred <- emmeans(fit, "disease", epred = TRUE)
 #' summary(epred, point.est = mean)
@@ -47,11 +47,11 @@ NULL
 # recover the variables used in the model predictions
 # @param data only added to prevent it from being passed further via ...
 #' @rdname emmeans-brms-helpers
-recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL, 
+recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL,
                                  nlpar = NULL, re_formula = NA,
                                  epred = FALSE, ...) {
   bterms <- .extract_par_terms(
-    object, resp = resp, dpar = dpar, nlpar = nlpar, 
+    object, resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
   trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
@@ -60,10 +60,10 @@ recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL,
 }
 
 # Calculate the basis for making predictions. In some sense, this is
-# similar to the fitted() function with new data on the link scale. 
+# similar to the fitted() function with new data on the link scale.
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
-emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL, 
+emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
                               dpar = NULL, nlpar = NULL, re_formula = NA,
                               epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
@@ -74,7 +74,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   }
   epred <- as_one_logical(epred)
   bterms <- .extract_par_terms(
-    object, resp = resp, dpar = dpar, nlpar = nlpar, 
+    object, resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
   if (epred) {
@@ -85,8 +85,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   } else {
     req_vars <- all_vars(bterms$allvars)
     post.beta <- posterior_linpred(
-      object, newdata = grid, re_formula = re_formula, 
-      resp = resp, dpar = dpar, nlpar = nlpar, 
+      object, newdata = grid, re_formula = re_formula,
+      resp = resp, dpar = dpar, nlpar = nlpar,
       incl_autocor = FALSE, req_vars = req_vars, ...
     )
   }
@@ -124,7 +124,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
 }
 
 #' @export
-.extract_par_terms.brmsfit <- function(x, resp = NULL, re_formula = NA, 
+.extract_par_terms.brmsfit <- function(x, resp = NULL, re_formula = NA,
                                        dpar = NULL, epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
     # deprecation warning already provided in emm_basis.brmsfit

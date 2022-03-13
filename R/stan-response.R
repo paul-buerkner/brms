@@ -1,4 +1,4 @@
-# unless otherwise specifiedm functions return a named list 
+# unless otherwise specifiedm functions return a named list
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
@@ -65,7 +65,7 @@ stan_response <- function(bterms, data, normalize) {
   }
   if (is.formula(bterms$adforms$weights)) {
     str_add(out$data) <- glue(
-      "  vector<lower=0>[N{resp}] weights{resp};  // model weights\n" 
+      "  vector<lower=0>[N{resp}] weights{resp};  // model weights\n"
     )
     str_add(out$pll_args) <- glue(", data vector weights{resp}")
   }
@@ -78,9 +78,9 @@ stan_response <- function(bterms, data, normalize) {
         "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
       )
       str_add(out$tdata_def) <- glue(
-        "  int<lower=1> nmthres{resp} = sum(nthres{resp});", 
+        "  int<lower=1> nmthres{resp} = sum(nthres{resp});",
         "  // total number of thresholds\n",
-        "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];", 
+        "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];",
         "  // start index per threshold group\n",
         "  int<lower=1> Kthres_end{resp}[ngrthres{resp}];",
         "  // end index per threshold group\n"
@@ -183,7 +183,7 @@ stan_response <- function(bterms, data, normalize) {
       )
       str_add(out$model_no_pll_def) <- glue(
         "  // vector combining observed and missing responses\n",
-        "  vector[N{resp}] Yl{resp} = Y{resp};\n" 
+        "  vector[N{resp}] Yl{resp} = Y{resp};\n"
       )
       str_add(out$model_no_pll_comp_basic) <- glue(
         "  Yl{resp}[Jmi{resp}] = Ymi{resp};\n"
@@ -262,7 +262,7 @@ stan_thres <- function(bterms, data, prior, normalize, ...) {
     str_add(out$tpar_def) <- cglue(
       "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
     )
-    str_add(out$tpar_comp) <- 
+    str_add(out$tpar_comp) <-
       "  // fix thresholds across ordinal mixture components\n"
     str_add(out$tpar_comp) <- cglue(
       "  Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
@@ -272,35 +272,35 @@ stan_thres <- function(bterms, data, prior, normalize, ...) {
       bound <- subset2(prior, class = "delta", group = "", ls = px)$bound
       for (i in seq_along(groups)) {
         str_add_list(out) <- stan_prior(
-          prior, class = "Intercept", group = groups[i], 
+          prior, class = "Intercept", group = groups[i],
           type = "real", prefix = "first_",
-          suffix = glue("{p}{gr[i]}"), px = px, 
+          suffix = glue("{p}{gr[i]}"), px = px,
           comment = "first threshold", normalize = normalize
         )
         str_add_list(out) <- stan_prior(
-          prior, class = "delta", group = groups[i], 
-          type = glue("real{bound}"), px = px, suffix = gr[i], 
+          prior, class = "delta", group = groups[i],
+          type = glue("real{bound}"), px = px, suffix = gr[i],
           comment = "distance between thresholds", normalize = normalize
         )
       }
-      str_add(out$tpar_def) <- 
+      str_add(out$tpar_def) <-
         "  // temporary thresholds for centered predictors\n"
       str_add(out$tpar_def) <- cglue(
         "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
       )
-      str_add(out$tpar_comp) <- 
+      str_add(out$tpar_comp) <-
         "  // compute equidistant thresholds\n"
       str_add(out$tpar_comp) <- cglue(
         "  for (k in 1:(nthres{resp}{grb})) {{\n",
-        "    Intercept{p}{gr}[k] = first_Intercept{p}{gr}", 
+        "    Intercept{p}{gr}[k] = first_Intercept{p}{gr}",
         " + (k - 1.0) * delta{p}{gr};\n",
         "  }}\n"
       )
     } else {
       for (i in seq_along(groups)) {
         str_add_list(out) <- stan_prior(
-          prior, class = "Intercept", group = groups[i], 
-          coef = get_thres(bterms, group = groups[i]), 
+          prior, class = "Intercept", group = groups[i],
+          coef = get_thres(bterms, group = groups[i]),
           type = glue("{type}[nthres{resp}{grb[i]}]"),
           coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
           comment = "temporary thresholds for centered predictors",
@@ -345,8 +345,8 @@ stan_thres <- function(bterms, data, prior, normalize, ...) {
   }
   str_add(out$gen_def) <- "  // compute actual thresholds\n"
   str_add(out$gen_def) <- cglue(
-    "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",  
-    " = Intercept{p}{stz}{gr}{sub_X_means};\n" 
+    "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",
+    " = Intercept{p}{stz}{gr}{sub_X_means};\n"
   )
   out
 }
@@ -414,8 +414,8 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
     }
     missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
     str_add(out$model_def) <- glue(
-      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0.0, N{p});\n",                   
-      "  real log_sum_exp_theta;\n"      
+      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0.0, N{p});\n",
+      "  real log_sum_exp_theta;\n"
     )
     sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
     str_add(out$model_comp_mix) <- glue(
@@ -440,13 +440,13 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   } else {
     # estimate mixture proportions
     str_add(out$data) <- glue(
-      "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
+      "  vector[{nmix}] con_theta{p};  // prior concentration\n"
     )
     str_add(out$par) <- glue(
       "  simplex[{nmix}] theta{p};  // mixing proportions\n"
     )
     str_add(out$tpar_prior) <- glue(
-      "  lprior += dirichlet_{lpdf}(theta{p} | con_theta{p});\n"                
+      "  lprior += dirichlet_{lpdf}(theta{p} | con_theta{p});\n"
     )
     # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- "  // mixing proportions\n"
@@ -460,7 +460,7 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   }
   if (order_intercepts(bterms)) {
     # identify mixtures by ordering the intercepts of their components
-    str_add(out$par) <- glue( 
+    str_add(out$par) <- glue(
       "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
     )
   }
@@ -478,10 +478,10 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
     coef_type <- str_if(has_ordered_thres(bterms), "", "real")
     for (i in seq_along(groups)) {
       str_add_list(out) <- stan_prior(
-        prior, class = "Intercept", 
-        coef = get_thres(bterms, group = groups[i]), 
-        type = glue("{type}[nthres{p}{grb[i]}]"), 
-        coef_type = coef_type, px = px, 
+        prior, class = "Intercept",
+        coef = get_thres(bterms, group = groups[i]),
+        type = glue("{type}[nthres{p}{grb[i]}]"),
+        coef_type = coef_type, px = px,
         prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
         comment = "thresholds fixed over mixture components",
         normalize = normalize
@@ -512,7 +512,7 @@ stan_ordinal_lpmf <- function(family, link) {
     "   *   mu: latent mean parameter\n",
     "   *   disc: discrimination parameter\n",
     "   *   thres: ordinal thresholds\n",
-    "   * Returns:\n", 
+    "   * Returns:\n",
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
     "   real {family}_{link}_lpmf(int y, real mu, real disc, vector thres) {{\n"
@@ -554,20 +554,20 @@ stan_ordinal_lpmf <- function(family, link) {
   } else if (family %in% c("sratio", "cratio")) {
     if (inv_link == "inv_cloglog") {
       qk <- str_if(
-        family == "sratio", 
+        family == "sratio",
         "-exp({th('k')})",
         "log1m_exp(-exp({th('k')}))"
       )
     } else if (inv_link == "inv_logit") {
       qk <- str_if(
-        family == "sratio", 
+        family == "sratio",
         "log1m_inv_logit({th('k')})",
         "log_inv_logit({th('k')})"
       )
     } else if (inv_link == "Phi") {
       # TODO: replace with more stable std_normal_lcdf once rstan >= 2.25
       qk <- str_if(
-        family == "sratio", 
+        family == "sratio",
         "normal_lccdf({th('k')}|0,1)",
         "normal_lcdf({th('k')}|0,1)"
       )
@@ -593,7 +593,7 @@ stan_ordinal_lpmf <- function(family, link) {
       "     while (k <= min(y, nthres)) {{\n",
       "       q[k] = {qk};\n",
       "       p[k] = log1m_exp(q[k]);\n",
-      "       for (kk in 1:(k - 1)) p[k] = p[k] + q[kk];\n", 
+      "       for (kk in 1:(k - 1)) p[k] = p[k] + q[kk];\n",
       "       k += 1;\n",
       "     }}\n",
       "     if (y == nthres + 1) {{\n",
@@ -611,16 +611,16 @@ stan_ordinal_lpmf <- function(family, link) {
         "   }}\n"
       )
     } else {
-      str_add(out) <- glue(   
+      str_add(out) <- glue(
         "     int nthres = num_elements(thres);\n",
         "     vector[nthres + 1] p;\n",
         "     vector[nthres] q;\n",
         "     for (k in 1:(nthres))\n",
         "       q[k] = {inv_link}({th('k')});\n",
-        "     for (k in 1:(nthres + 1)) {{\n",     
+        "     for (k in 1:(nthres + 1)) {{\n",
         "       p[k] = 1.0;\n",
         "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
-        "       for (kk in k:(nthres)) p[k] = p[k] * (1 - q[kk]);\n",   
+        "       for (kk in k:(nthres)) p[k] = p[k] * (1 - q[kk]);\n",
         "     }}\n",
         "     return log(p[y] / sum(p));\n",
         "   }}\n"
@@ -636,16 +636,16 @@ stan_ordinal_lpmf <- function(family, link) {
     "   *   disc: discrimination parameter\n",
     "   *   thres: vector of merged ordinal thresholds\n",
     "   *   j: start and end index for the applid threshold within 'thres'\n",
-    "   * Returns:\n", 
+    "   * Returns:\n",
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}_merged_lpmf(", 
+    "   real {family}_{link}_merged_lpmf(",
     "int y, real mu, real disc, vector thres, int[] j) {{\n",
     "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
   if (family == "cumulative" && link == "logit") {
-    # use the more efficient 'ordered_logistic' built-in function 
+    # use the more efficient 'ordered_logistic' built-in function
     str_add(out) <- glue(
       "  /* ordered-logistic log-PDF for a single response and merged thresholds\n",
       "   * Args:\n",
@@ -653,10 +653,10 @@ stan_ordinal_lpmf <- function(family, link) {
       "   *   mu: latent mean parameter\n",
       "   *   thres: vector of merged ordinal thresholds\n",
       "   *   j: start and end index for the applid threshold within 'thres'\n",
-      "   * Returns:\n", 
+      "   * Returns:\n",
       "   *   a scalar to be added to the log posterior\n",
       "   */\n",
-      "   real ordered_logistic_merged_lpmf(", 
+      "   real ordered_logistic_merged_lpmf(",
       "int y, real mu, vector thres, int[] j) {{\n",
       "     return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);\n",
       "   }}\n"

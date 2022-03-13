@@ -65,7 +65,7 @@ of the \pkg{emmeans} package.
 \details{
 In order to ensure compatibility of most \pkg{brms} models with
 \pkg{emmeans}, predictions are not generated 'manually' via a design matrix
-and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}. 
+and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}.
 This appears to generally work well, but note that it produces an `.@linfct`
 slot that contains the computed predictions as columns instead of the
 coefficients.
@@ -74,7 +74,7 @@ coefficients.
 \dontrun{
 fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal())
-summary(fit)           
+summary(fit)
 
 # summarize via 'emmeans'
 library(emmeans)

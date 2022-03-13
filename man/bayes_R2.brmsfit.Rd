@@ -23,22 +23,22 @@ are performed only for the specified response variables.}
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{...}{Further arguments passed to 
+\item{...}{Further arguments passed to
 \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}},
 which is used in the computation of the R-squared values.}
 }
 \value{
 If \code{summary = TRUE}, an M x C matrix is returned
- (M = number of response variables and c = \code{length(probs) + 2}) 
+ (M = number of response variables and c = \code{length(probs) + 2})
  containing summary statistics of the Bayesian R-squared values.
  If \code{summary = FALSE}, the posterior draws of the Bayesian
  R-squared values are returned in an S x M matrix (S is the number of draws).

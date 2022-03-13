@@ -181,21 +181,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fit_imp1 <span class="ot">&lt;-</span> <span class="fu">brm_multiple</span>(bmi <span class="sc">~</span> age<span class="sc">*</span>chl, <span class="at">data =</span> imp, <span class="at">chains =</span> <span class="dv">2</span>)</span></code></pre></div>
 <p>The returned fitted model is an ordinary <code>brmsfit</code> object containing the posterior draws of all <code>m</code> submodels. While pooling across models is not necessarily straightforward in classical statistics, it is trivial in a Bayesian framework. Here, pooling results of multiple imputed data sets is simply achieved by combining the posterior draws of the submodels. Accordingly, all post-processing methods can be used out of the box without having to worry about pooling at all.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_imp1)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: bmi ~ age * chl 
-   Data: imp (Number of observations: 25) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: bmi ~ age * chl
+   Data: imp (Number of observations: 25)
   Draws: 10 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 10000
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    13.49      8.73    -3.69    30.10 1.24       30       NA
 age           1.44      4.55    -7.56    10.47 1.08       81       NA
 chl           0.10      0.05     0.00     0.20 1.34       23       NA
 age:chl      -0.02      0.02    -0.07     0.02 1.14       47       NA
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     3.19      0.59     2.27     4.60 1.15       45       NA
 
@@ -230,16 +230,16 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>fit_imp2 <span class="ot">&lt;-</span> <span class="fu">brm</span>(bform, <span class="at">data =</span> nhanes)</span></code></pre></div>
 <p>The model has become multivariate, as we no longer only predict <code>bmi</code> but also <code>chl</code> (see <code>vignette(&quot;brms_multivariate&quot;)</code> for details about the multivariate syntax of <strong>brms</strong>). We ensure that missings in both variables will be modeled rather than excluded by adding <code>| mi()</code> on the left-hand side of the formulas<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. We write <code>mi(chl)</code> on the right-hand side of the formula for <code>bmi</code> to ensure that the estimated missing values of <code>chl</code> will be used in the prediction of <code>bmi</code>. The summary is a bit more cluttered as we get coefficients for both response variables, but apart from that we can interpret coefficients in the usual way.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_imp2)</span></code></pre></div>
-<pre><code> Family: MV(gaussian, gaussian) 
+<pre><code> Family: MV(gaussian, gaussian)
   Links: mu = identity; sigma = identity
-         mu = identity; sigma = identity 
-Formula: bmi | mi() ~ age * mi(chl) 
-         chl | mi() ~ age 
-   Data: nhanes (Number of observations: 25) 
+         mu = identity; sigma = identity
+Formula: bmi | mi() ~ age * mi(chl)
+         chl | mi() ~ age
+   Data: nhanes (Number of observations: 25)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 bmi_Intercept    14.32      8.48    -1.86    31.74 1.01     1868     1965
 chl_Intercept   141.55     24.74    92.18   188.16 1.00     2514     2366
@@ -248,7 +248,7 @@ chl_age          28.68     13.25     2.76    55.17 1.00     2492     2320
 bmi_michl         0.10      0.04     0.01     0.18 1.00     1913     1702
 bmi_michl:age    -0.03      0.02    -0.07     0.02 1.00     1677     1816
 
-Family Specific Parameters: 
+Family Specific Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma_bmi     3.35      0.79     2.20     5.25 1.00     1220     2099
 sigma_chl    40.35      7.74    28.38    58.82 1.00     1901     2480

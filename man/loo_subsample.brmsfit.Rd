@@ -22,8 +22,8 @@ via \code{\link{loo_compare}}.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \description{
@@ -43,10 +43,10 @@ fit1 <- brm(rating ~ treat + period + carry,
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler)
-(loo2 <- loo_subsample(fit2))   
+(loo2 <- loo_subsample(fit2))
 
 # compare both models
-loo_compare(loo1, loo2)                      
+loo_compare(loo1, loo2)
 }
 
 }

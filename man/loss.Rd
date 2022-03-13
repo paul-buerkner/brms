@@ -5,17 +5,17 @@
 \alias{loss}
 \title{Cumulative Insurance Loss Payments}
 \format{
-A data frame of 55 observations containing information 
-  on the following 4 variables. 
+A data frame of 55 observations containing information
+  on the following 4 variables.
 \describe{
  \item{AY}{Origin year of the insurance (1991 to 2000)}
  \item{dev}{Deviation from the origin year in months}
- \item{cum}{Cumulative loss payments} 
+ \item{cum}{Cumulative loss payments}
  \item{premium}{Achieved premiums for the given origin year}
 }
 }
 \source{
-Gesmann M. & Morris J. (2020). Hierarchical Compartmental Reserving 
+Gesmann M. & Morris J. (2020). Hierarchical Compartmental Reserving
   Models. \emph{CAS Research Papers}.
 }
 \usage{
@@ -30,7 +30,7 @@ This dataset, discussed in Gesmann & Morris (2020), contains
 # non-linear model to predict cumulative loss payments
 fit_loss <- brm(
   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
      nl = TRUE),
   data = loss, family = gaussian(),
   prior = c(
@@ -49,7 +49,7 @@ conditional_effects(fit_loss)
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
 me_loss <- conditional_effects(
-  fit_loss, conditions = conditions, 
+  fit_loss, conditions = conditions,
   re_formula = NULL, method = "predict"
 )
 plot(me_loss, ncol = 5, points = TRUE)

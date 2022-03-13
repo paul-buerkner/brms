@@ -1,36 +1,36 @@
 #' (Deprecated) Black Theme for \pkg{ggplot2} Graphics
-#' 
+#'
 #' A black theme for ggplot graphics inspired by a blog post of Jon Lefcheck
 #' (\url{https://jonlefcheck.net/2013/03/11/black-theme-for-ggplot2-2/}).
-#' 
+#'
 #' @param base_size base font size
 #' @param base_family base font family
-#' 
+#'
 #' @return A \code{theme} object used in \pkg{ggplot2} graphics.
-#' 
+#'
 #' @details When using \code{theme_black} in plots powered by the
 #' \pkg{bayesplot} package such as \code{pp_check} or \code{stanplot},
 #' I recommend using the \code{"viridisC"} color scheme (see examples).
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # change default ggplot theme
 #' ggplot2::theme_set(theme_black())
-#' 
+#'
 #' # change default bayesplot color scheme
 #' bayesplot::color_scheme_set("viridisC")
-#' 
+#'
 #' # fit a simple model
 #' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'            data = epilepsy, family = poisson(), chains = 2)
 #' summary(fit)
-#'            
+#'
 #' # create various plots
 #' plot(marginal_effects(fit), ask = FALSE)
 #' pp_check(fit)
 #' mcmc_plot(fit, type = "hex", variable = c("b_Intercept", "b_Trt1"))
 #' }
-#' 
+#'
 #' @export
 theme_black = function(base_size = 12, base_family = "") {
   warning2("'theme_black' is deprecated. Please use the 'ggdark' package ",

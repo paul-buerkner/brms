@@ -13,17 +13,17 @@ expose_functions(x, ...)
 \item{x}{An object of class \code{brmsfit}.}
 
 \item{vectorize}{Logical; Indicates if the exposed functions
-should be vectorized via \code{\link{Vectorize}}. 
+should be vectorized via \code{\link{Vectorize}}.
 Defaults to \code{FALSE}.}
 
 \item{env}{Environment where the functions should be made
 available. Defaults to the global environment.}
 
-\item{...}{Further arguments passed to 
+\item{...}{Further arguments passed to
 \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.}
 }
 \description{
 Export user-defined \pkg{Stan} function and
-optionally vectorize them. For more details see 
+optionally vectorize them. For more details see
 \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 }

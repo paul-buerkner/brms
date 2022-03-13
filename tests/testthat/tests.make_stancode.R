@@ -1461,19 +1461,19 @@ test_that("predicting zi and hu works correctly", {
     "target += zero_inflated_binomial_lpmf(Y[n] | trials[n], mu[n], zi[n])"
   )
   expect_match2(scode, "mu[n] = Phi(mu[n]);")
-  
+
   scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy,
                          family = "zero_inflated_beta_binomial")
   expect_match2(scode,
                 "target += zero_inflated_beta_binomial_blogit_logit_lpmf(Y[n] | trials[n], mu[n], phi, zi[n])")
   expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
-  scode <- 
+  scode <-
     make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy,
                   zero_inflated_beta_binomial("probit", link_zi = "identity"))
   expect_match2(scode,
                 "target += zero_inflated_beta_binomial_lpmf(Y[n] | trials[n], mu[n], phi, zi[n])")
   expect_match2(scode, "mu[n] = Phi(mu[n]);")
-  
+
   scode <- make_stancode(
     bf(count ~ Trt, zi ~ Trt), epilepsy,
     family = zero_inflated_beta()
@@ -2446,7 +2446,7 @@ test_that("Canonicalizing Stan code is correct", {
   options(
     brms.backend = "cmdstanr"
   )
-  
+
   scode <- make_stancode(
     count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
     data = epilepsy, family = poisson(),
@@ -2456,7 +2456,7 @@ test_that("Canonicalizing Stan code is correct", {
   )
   expect_match2(scode, "array[M_1] vector[N_1] z_1;")
   expect_match2(scode, "array[M_2] vector[N_2] z_2;")
-  
+
   model <- "
   data {
     int a[5];
@@ -2475,7 +2475,7 @@ test_that("Canonicalizing Stan code is correct", {
   expect_match2(canonicalized_code, "array[4] vector[5] c;")
   expect_match2(canonicalized_code, "array[5] real d;")
   expect_match2(canonicalized_code, "array[4] vector[5] e;")
-  
+
 })
 
 test_that("Normalizing Stan code works correctly", {

@@ -26,14 +26,14 @@ mcmc_plot(object, ...)
 Names of the parameters to plot, as given by a
 character vector or a regular expression.}
 
-\item{type}{The type of the plot. 
-Supported types are (as names) \code{hist}, \code{dens}, 
-\code{hist_by_chain}, \code{dens_overlay}, 
-\code{violin}, \code{intervals}, \code{areas}, \code{acf}, 
+\item{type}{The type of the plot.
+Supported types are (as names) \code{hist}, \code{dens},
+\code{hist_by_chain}, \code{dens_overlay},
+\code{violin}, \code{intervals}, \code{areas}, \code{acf},
 \code{acf_bar},\code{trace}, \code{trace_highlight}, \code{scatter},
 \code{rhat}, \code{rhat_hist}, \code{neff}, \code{neff_hist}
 \code{nuts_acceptance}, \code{nuts_divergence},
-\code{nuts_stepsize}, \code{nuts_treedepth}, and \code{nuts_energy}. 
+\code{nuts_stepsize}, \code{nuts_treedepth}, and \code{nuts_energy}.
 For an overview on the various plot types see
 \code{\link[bayesplot:MCMC-overview]{MCMC-overview}}.}
 
@@ -44,7 +44,7 @@ default, a hopefully not too large selection of variables is plotted.}
 \item{regex}{Logical; Indicates whether \code{variable} should
 be treated as regular expressions. Defaults to \code{FALSE}.}
 
-\item{fixed}{(Deprecated) Indicates whether parameter names 
+\item{fixed}{(Deprecated) Indicates whether parameter names
 should be matched exactly (\code{TRUE}) or treated as
 regular expressions (\code{FALSE}). Default is \code{FALSE}
 and only works with argument \code{pars}.}
@@ -54,23 +54,23 @@ See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for
 more details.}
 }
 \value{
-A \code{\link[ggplot2:ggplot]{ggplot}} object 
+A \code{\link[ggplot2:ggplot]{ggplot}} object
   that can be further customized using the \pkg{ggplot2} package.
 }
 \description{
-Convenient way to call MCMC plotting functions 
+Convenient way to call MCMC plotting functions
 implemented in the \pkg{bayesplot} package.
 }
 \details{
-Also consider using the \pkg{shinystan} package available via 
-  method \code{\link{launch_shinystan}} in \pkg{brms} for flexible 
+Also consider using the \pkg{shinystan} package available via
+  method \code{\link{launch_shinystan}} in \pkg{brms} for flexible
   and interactive visual analysis.
 }
 \examples{
 \dontrun{
 model <- brm(count ~ zAge + zBase * Trt + (1|patient),
              data = epilepsy, family = "poisson")
-             
+
 # plot posterior intervals
 mcmc_plot(model)
 

@@ -41,7 +41,7 @@ exclude_terms.brmsformula <- function(
   }
   invalid_types <- setdiff(excl_term_types, all_term_types())
   if (length(invalid_types)) {
-    stop2("The following term types are invalid: ", 
+    stop2("The following term types are invalid: ",
           collapse_comma(invalid_types))
   }
   attr(x$formula, "excl_term_types") <- excl_term_types

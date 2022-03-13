@@ -98,7 +98,7 @@ chosen internally.}
 predictions. Defaults to \code{TRUE}.}
 
 \item{newdata2}{A named \code{list} of objects containing new data, which
-cannot be passed via argument \code{newdata}. Required for some objects 
+cannot be passed via argument \code{newdata}. Required for some objects
 used in autocorrelation structures, or \code{\link{stanvars}}.}
 
 \item{new_objects}{Deprecated alias of \code{newdata2}.}

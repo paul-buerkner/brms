@@ -38,23 +38,23 @@ via \code{\link{loo_compare}}.}
 are performed only for the specified response variables.}
 
 \item{pointwise}{A flag indicating whether to compute the full
-log-likelihood matrix at once or separately for each observation. 
-The latter approach is usually considerably slower but 
-requires much less working memory. Accordingly, if one runs 
+log-likelihood matrix at once or separately for each observation.
+The latter approach is usually considerably slower but
+requires much less working memory. Accordingly, if one runs
 into memory issues, \code{pointwise = TRUE} is the way to go.}
 
-\item{moment_match}{Logical; Indicate whether \code{\link{loo_moment_match}} 
+\item{moment_match}{Logical; Indicate whether \code{\link{loo_moment_match}}
 should be applied on problematic observations. Defaults to \code{FALSE}.
 For most models, moment matching will only work if you have set
 \code{save_pars = save_pars(all = TRUE)} when fitting the model with
 \code{\link{brm}}. See \code{\link{loo_moment_match.brmsfit}} for more
 details.}
 
-\item{reloo}{Logical; Indicate whether \code{\link{reloo}} 
+\item{reloo}{Logical; Indicate whether \code{\link{reloo}}
 should be applied on problematic observations. Defaults to \code{FALSE}.}
 
-\item{k_threshold}{The threshold at which pareto \eqn{k} 
-estimates are treated as problematic. Defaults to \code{0.7}. 
+\item{k_threshold}{The threshold at which pareto \eqn{k}
+estimates are treated as problematic. Defaults to \code{0.7}.
 Only used if argument \code{reloo} is \code{TRUE}.
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.}
 
@@ -67,16 +67,16 @@ in the returned object? For more details see \code{\link[loo:loo]{loo}}.}
 \item{reloo_args}{Optional \code{list} of additional arguments passed to
 \code{\link{reloo}}.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{
-If just one object is provided, an object of class \code{loo}. 
+If just one object is provided, an object of class \code{loo}.
  If multiple objects are provided, an object of class \code{loolist}.
 }
 \description{
-Perform approximate leave-one-out cross-validation based 
+Perform approximate leave-one-out cross-validation based
 on the posterior likelihood using the \pkg{loo} package.
 For more details see \code{\link[loo:loo]{loo}}.
 }
@@ -96,23 +96,23 @@ fit1 <- brm(rating ~ treat + period + carry,
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler)
-(loo2 <- loo(fit2))   
+(loo2 <- loo(fit2))
 
 # compare both models
-loo_compare(loo1, loo2)                      
+loo_compare(loo1, loo2)
 }
 
 }
 \references{
 Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+evaluation using leave-one-out cross-validation and WAIC. In Statistics
 and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
 
-Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-Understanding predictive information criteria for Bayesian models. 
+Gelman, A., Hwang, J., & Vehtari, A. (2014).
+Understanding predictive information criteria for Bayesian models.
 Statistics and Computing, 24, 997-1016.
 
-Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-and widely applicable information criterion in singular learning theory. 
+Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation
+and widely applicable information criterion in singular learning theory.
 The Journal of Machine Learning Research, 11, 3571-3594.
 }

@@ -17,39 +17,39 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{sigma}{Ignored (included for compatibility with 
+\item{sigma}{Ignored (included for compatibility with
 \code{\link[nlme:VarCorr]{VarCorr}}).}
 
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored.}
 }
 \value{
 A list of lists (one per grouping factor), each with
-three elements: a matrix containing the standard deviations, 
-an array containing the correlation matrix, and an array 
+three elements: a matrix containing the standard deviations,
+an array containing the correlation matrix, and an array
 containing the covariance matrix with variances on the diagonal.
 }
 \description{
-This function calculates the estimated standard deviations, 
-correlations and covariances of the group-level terms 
-in a multilevel model of class \code{brmsfit}. 
-For linear models, the residual standard deviations, 
+This function calculates the estimated standard deviations,
+correlations and covariances of the group-level terms
+in a multilevel model of class \code{brmsfit}.
+For linear models, the residual standard deviations,
 correlations and covariances are also returned.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
            data = epilepsy, family = gaussian(), chains = 2)
 VarCorr(fit)
 }

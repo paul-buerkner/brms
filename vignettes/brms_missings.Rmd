@@ -2,13 +2,13 @@
 title: "Handle Missing Values with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
   %\VignetteIndexEntry{Handle Missing Values with brms}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}  
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---

@@ -11,9 +11,9 @@ get_y(x, resp = NULL, sort = FALSE, warn = FALSE, ...)
 
 \item{resp}{Optional names of response variables for which to extract values.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
 \item{warn}{For internal use only.}

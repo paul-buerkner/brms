@@ -59,7 +59,7 @@ bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +
   gaussian()
 
 fit3 <- brm(
-  bf_tarsus + bf_back + set_rescor(FALSE), 
+  bf_tarsus + bf_back + set_rescor(FALSE),
   data = BTdata, chains = 2, cores = 2,
   control = list(adapt_delta = 0.95)
 )

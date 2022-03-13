@@ -15,13 +15,13 @@ passed to the underlying post-processing functions.
 In particular, see \code{\link{prepare_predictions}} for further
 supported arguments.}
 
-\item{prior_prob}{Numeric vector with prior model probabilities. 
-If omitted, a uniform prior is used (i.e., all models are equally 
-likely a priori). The default \code{NULL} corresponds to equal 
+\item{prior_prob}{Numeric vector with prior model probabilities.
+If omitted, a uniform prior is used (i.e., all models are equally
+likely a priori). The default \code{NULL} corresponds to equal
 prior model weights.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \description{
@@ -30,22 +30,22 @@ The \code{brmsfit} method is just a thin wrapper around
 the corresponding method for \code{bridge} objects.
 }
 \details{
-Computing the marginal likelihood requires samples 
+Computing the marginal likelihood requires samples
   of all variables defined in Stan's \code{parameters} block
   to be saved. Otherwise \code{post_prob} cannot be computed.
   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
   if you are planning to apply \code{post_prob} to your models.
-  
+
   The computation of model probabilities based on bridge sampling requires
-  a lot more posterior samples than usual. A good conservative 
-  rule of thump is perhaps 10-fold more samples (read: the default of 4000 
+  a lot more posterior samples than usual. A good conservative
+  rule of thump is perhaps 10-fold more samples (read: the default of 4000
   samples may not be enough in many cases). If not enough posterior
-  samples are provided, the bridge sampling algorithm tends to be 
-  unstable leading to considerably different results each time it is run. 
+  samples are provided, the bridge sampling algorithm tends to be
+  unstable leading to considerably different results each time it is run.
   We thus recommend running \code{post_prob}
   multiple times to check the stability of the results.
 
-  More details are provided under 
+  More details are provided under
   \code{\link[bridgesampling:post_prob]{bridgesampling::post_prob}}.
 }
 \examples{
@@ -53,7 +53,7 @@ Computing the marginal likelihood requires samples
 # model with the treatment effect
 fit1 <- brm(
   count ~ zAge + zBase + Trt,
-  data = epilepsy, family = negbinomial(), 
+  data = epilepsy, family = negbinomial(),
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE
 )
@@ -62,7 +62,7 @@ summary(fit1)
 # model without the treatent effect
 fit2 <- brm(
   count ~ zAge + zBase,
-  data = epilepsy, family = negbinomial(), 
+  data = epilepsy, family = negbinomial(),
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE
 )

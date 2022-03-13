@@ -30,7 +30,7 @@ p <- function(x, i = NULL, row = TRUE) {
 
 # extract parts of an object with selective dropping of dimensions
 # @param x,...,drop same as in x[..., drop]
-# @drop_dim: Optional numeric or logical vector controlling 
+# @drop_dim: Optional numeric or logical vector controlling
 #   which dimensions to drop. Will overwrite argument 'drop'.
 extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   if (!length(dim(x))) {
@@ -55,7 +55,7 @@ extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   new_dim <- dim(out)[keep]
   if (length(new_dim) == 1L) {
     # use vectors instead of 1D arrays
-    new_dim <- NULL  
+    new_dim <- NULL
   }
   dim(out) <- new_dim
   out
@@ -104,7 +104,7 @@ seq_dim <- function(x, dim) {
     len <- dim(x)[dim]
   }
   if (length(len) == 1L && !isNA(len)) {
-    out <- seq_len(len) 
+    out <- seq_len(len)
   } else {
     out <- integer(0)
   }
@@ -181,7 +181,7 @@ array2list <- function(x) {
     out[[i]] <- eval2(paste0("x[", ind, i, "]"))
     if (length(dim(x)) > 2) {
       # avoid accidental dropping of other dimensions
-      dim(out[[i]]) <- dim(x)[-ndim] 
+      dim(out[[i]]) <- dim(x)[-ndim]
     }
   }
   names(out) <- dimnames(x)[[ndim]]
@@ -202,7 +202,7 @@ repl <- function(expr, n) {
 # @param A a matrix
 # @param target a vector of length nrow(A)
 # @param i column of A being checked first
-# @return a vector of the same length as target containing the 
+# @return a vector of the same length as target containing the
 #   column ids where A[,i] was first greater than target
 first_greater <- function(A, target, i = 1) {
   ifelse(target <= A[, i] | ncol(A) == i, i, first_greater(A, target, i + 1))
@@ -369,7 +369,7 @@ subset_keep_attr <- function(x, y) {
 }
 
 # check if 'x' is a whole number (integer)
-is_wholenumber <- function(x, tol = .Machine$double.eps) {  
+is_wholenumber <- function(x, tol = .Machine$double.eps) {
   if (is.numeric(x)) {
     out <- abs(x - round(x)) < tol
   } else {
@@ -486,12 +486,12 @@ str_subset <- function(x, pattern, ...) {
 }
 
 # similar to glue::glue but specialized for generating Stan code
-glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(), 
+glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(),
                  open = "{", close = "}", na = "NA") {
   dots <- list(...)
   dots <- dots[lengths(dots) > 0L]
   args <- list(
-    .x = NULL, .sep = sep, .envir = envir, .open = open, 
+    .x = NULL, .sep = sep, .envir = envir, .open = open,
     .close = close, .na = na, .trim = FALSE,
     .transformer = zero_length_transformer
   )
@@ -527,7 +527,7 @@ require_package <- function(package, version = NULL) {
   if (!is.null(version)) {
     version <- as.package_version(version)
     if (utils::packageVersion(package) < version) {
-      stop2("Please install package '", package, 
+      stop2("Please install package '", package,
             "' version ", version, " or higher.")
     }
   }
@@ -542,14 +542,14 @@ require_package <- function(package, version = NULL) {
 # @param check_dup: logical; check for duplications in x after renaming
 # @param ... passed to 'gsub'
 # @return renamed character vector of the same length as x
-rename <- function(x, pattern = NULL, replacement = NULL, 
+rename <- function(x, pattern = NULL, replacement = NULL,
                    fixed = TRUE, check_dup = FALSE, ...) {
   pattern <- as.character(pattern)
   replacement <- as.character(replacement)
   if (!length(pattern) && !length(replacement)) {
-    # default renaming to avoid special characters in coeffcient names 
+    # default renaming to avoid special characters in coeffcient names
     pattern <- c(
-      " ", "(", ")", "[", "]", ",", "\"", "'", 
+      " ", "(", ")", "[", "]", ",", "\"", "'",
       "?", "+", "-", "*", "/", "^", "="
     )
     replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ")
@@ -638,7 +638,7 @@ is_named <- function(x) {
 #' deparsing function arguments. For large number of arguments (i.e., more
 #' than a few thousand) this function currently is somewhat inefficient
 #' and should be used with care in this case.
-#' 
+#'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
 #' @param args A list of arguments to the function call. The names attribute of
@@ -648,7 +648,7 @@ is_named <- function(x) {
 #' @param envir An environment within which to evaluate the call.
 #'
 #' @return The result of the (evaluated) function call.
-#' 
+#'
 #' @keywords internal
 #' @export
 do_call <- function(what, args, pkg = NULL, envir = parent.frame()) {
@@ -671,7 +671,7 @@ do_call <- function(what, args, pkg = NULL, envir = parent.frame()) {
   }
   if (is.function(what)) {
     args$.fun <- what
-    what <- ".fun" 
+    what <- ".fun"
   } else {
     what <- paste0("`", as_one_character(what), "`")
     if (!is.null(pkg)) {
@@ -734,10 +734,10 @@ eval2 <- function(expr, envir = parent.frame(), ...) {
 # evaluate an expression without printing output or messages
 # @param expr expression to be evaluated
 # @param type type of output to be suppressed (see ?sink)
-# @param try wrap evaluation of expr in 'try' and 
+# @param try wrap evaluation of expr in 'try' and
 #   not suppress outputs if evaluation fails?
 # @param silent actually evaluate silently?
-eval_silent <- function(expr, type = "output", try = FALSE, 
+eval_silent <- function(expr, type = "output", try = FALSE,
                         silent = TRUE, ...) {
   try <- as_one_logical(try)
   silent <- as_one_logical(silent)
@@ -827,7 +827,7 @@ SW <- function(expr) {
 # @param simplify return an atomic vector of matches?
 # @param first only return the first match in each string?
 # @return character vector containing matches
-get_matches <- function(pattern, text, simplify = TRUE, 
+get_matches <- function(pattern, text, simplify = TRUE,
                         first = FALSE, ...) {
   x <- regmatches(text, gregexpr(pattern, text, ...))
   if (first) {
@@ -864,9 +864,9 @@ get_matches_expr <- function(pattern, expr, ...) {
   unique(out)
 }
 
-# like 'grepl' but handles (parse trees of) expressions 
+# like 'grepl' but handles (parse trees of) expressions
 grepl_expr <- function(pattern, expr, ...) {
-  as.logical(ulapply(expr, function(e) 
+  as.logical(ulapply(expr, function(e)
     length(get_matches_expr(pattern, e, ...)) > 0L))
 }
 
@@ -930,7 +930,7 @@ wsp <- function(x = "", nsp = 1) {
     out <- ifelse(nzchar(x), paste0(sp, x, sp), sp)
   } else {
     out <- NULL
-  } 
+  }
   out
 }
 
@@ -991,7 +991,7 @@ use_alias <- function(arg, alias = NULL, default = NULL, warn = TRUE) {
       alias_name <- gsub("^dots\\[\\[\"|\"\\]\\]$", "", alias_name)
     }
     if (warn) {
-      warning2("Argument '", alias_name, "' is deprecated. ", 
+      warning2("Argument '", alias_name, "' is deprecated. ",
                "Please use argument '", arg_name, "' instead.")
     }
   }
@@ -1027,14 +1027,14 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
 s3_register_cp <- function(generic, class, method = NULL) {
   stopifnot(is.character(generic), length(generic) == 1)
   stopifnot(is.character(class), length(class) == 1)
-  
+
   pieces <- strsplit(generic, "::")[[1]]
   stopifnot(length(pieces) == 2)
   package <- pieces[[1]]
   generic <- pieces[[2]]
-  
+
   caller <- parent.frame()
-  
+
   get_method_env <- function() {
     top <- topenv(caller)
     if (isNamespace(top)) {
@@ -1050,16 +1050,16 @@ s3_register_cp <- function(generic, class, method = NULL) {
       method
     }
   }
-  
+
   register <- function(...) {
     envir <- asNamespace(package)
-    
+
     # Refresh the method each time, it might have been updated by
     # `devtools::load_all()`
     method_fn <- get_method(method)
     stopifnot(is.function(method_fn))
-    
-    
+
+
     # Only register if generic can be accessed
     if (exists(generic, envir)) {
       registerS3method(generic, class, method_fn, envir = envir)
@@ -1071,15 +1071,15 @@ s3_register_cp <- function(generic, class, method = NULL) {
       ))
     }
   }
-  
+
   # Always register hook in case package is later unloaded & reloaded
   setHook(packageEvent(package, "onLoad"), register)
-  
+
   # Avoid registration failures during loading (pkgload or regular)
   if (isNamespaceLoaded(package)) {
     register()
   }
-  
+
   invisible()
 }
 
@@ -1087,8 +1087,8 @@ s3_register_cp <- function(generic, class, method = NULL) {
 .onAttach <- function(libname, pkgname) {
   version <- utils::packageVersion("brms")
   packageStartupMessage(
-    "Loading 'brms' package (version ", version, "). Useful instructions\n", 
-    "can be found by typing help('brms'). A more detailed introduction\n", 
+    "Loading 'brms' package (version ", version, "). Useful instructions\n",
+    "can be found by typing help('brms'). A more detailed introduction\n",
     "to the package is available through vignette('brms_overview')."
   )
   invisible(NULL)
@@ -1100,7 +1100,7 @@ s3_register_cp <- function(generic, class, method = NULL) {
   backports::import(pkgname)
   # dynamically register the 'recover_data' and 'emm_basis'
   # methods needed by 'emmeans', if that package is installed
-  if (requireNamespace("emmeans", quietly = TRUE) && 
+  if (requireNamespace("emmeans", quietly = TRUE) &&
       utils::packageVersion("emmeans") >= "1.4.0") {
     emmeans::.emm_register("brmsfit", pkgname)
   }

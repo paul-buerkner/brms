@@ -9,16 +9,16 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{formula.}{Changes to the formula; for details see 
+\item{formula.}{Changes to the formula; for details see
 \code{\link{update.formula}} and \code{\link{brmsformula}}.}
 
 \item{newdata}{Optional \code{data.frame} to update the model with new data.
 Data-dependent default priors will not be updated automatically.}
 
-\item{recompile}{Logical, indicating whether the Stan model should 
+\item{recompile}{Logical, indicating whether the Stan model should
 be recompiled. If \code{NULL} (the default), \code{update} tries
-to figure out internally, if recompilation is necessary. 
-Setting it to \code{FALSE} will cause all Stan code changing 
+to figure out internally, if recompilation is necessary.
+Setting it to \code{FALSE} will cause all Stan code changing
 arguments to be ignored.}
 
 \item{...}{Other arguments passed to \code{\link{brm}}.}
@@ -28,7 +28,7 @@ This method allows to update an existing \code{brmsfit} object.
 }
 \examples{
 \dontrun{
-fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = gaussian("log"))
 summary(fit1)
 
@@ -38,7 +38,7 @@ summary(fit2)
 
 ## remove the group specific term of 'patient' and
 ## change the data (just take a subset in this example)
-fit3 <- update(fit1, formula. = ~ . - (1|patient), 
+fit3 <- update(fit1, formula. = ~ . - (1|patient),
                newdata = kidney[1:38, ])
 summary(fit3)
 

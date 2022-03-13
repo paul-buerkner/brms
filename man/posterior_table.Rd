@@ -7,28 +7,28 @@
 posterior_table(x, levels = NULL)
 }
 \arguments{
-\item{x}{A matrix of posterior draws where rows 
+\item{x}{A matrix of posterior draws where rows
 indicate draws and columns indicate parameters.}
 
 \item{levels}{Optional values of possible posterior values.
 Defaults to all unique values in \code{x}.}
 }
 \value{
-A matrix where rows indicate parameters 
- and columns indicate the unique values of 
+A matrix where rows indicate parameters
+ and columns indicate the unique values of
  posterior draws.
 }
 \description{
-Create a table for unique values of posterior draws. 
-This is usually only useful when summarizing predictions 
+Create a table for unique values of posterior draws.
+This is usually only useful when summarizing predictions
 of ordinal models.
 }
 \examples{
 \dontrun{
-fit <- brm(rating ~ period + carry + treat, 
+fit <- brm(rating ~ period + carry + treat,
            data = inhaler, family = cumulative())
 pr <- predict(fit, summary = FALSE)
 posterior_table(pr)
 }
- 
+
 }

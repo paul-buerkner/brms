@@ -193,24 +193,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>With the exception of <code>(1|gr(phylo, cov = A))</code> instead of <code>(1|phylo)</code> this is a basic multilevel model with a varying intercept over species (<code>phylo</code> is an indicator of species in this data set). However, by using <code>cov = A</code> in the <code>gr</code> function, we make sure that species are correlated as specified by the covariance matrix <code>A</code>. We pass <code>A</code> itself via the <code>data2</code> argument which can be used for any kinds of data that does not fit into the regular structure of the <code>data</code> argument. Setting priors is not required for achieving good convergence for this model, but it improves sampling speed a bit. After fitting, the results can be investigated in detail.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_simple)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: phen ~ cofactor + (1 | gr(phylo, cov = A)) 
-   Data: data_simple (Number of observations: 200) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: phen ~ cofactor + (1 | gr(phylo, cov = A))
+   Data: data_simple (Number of observations: 200)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
-~phylo (Number of levels: 200) 
+Group-Level Effects:
+~phylo (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)    14.39      2.13    10.45    18.84 1.00      862     1442
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    37.98      7.09    23.66    51.91 1.00     1973     2266
 cofactor      5.17      0.14     4.90     5.45 1.00     6481     3501
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     9.25      0.73     7.89    10.75 1.00     1017     1744
 
@@ -270,28 +270,28 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 <span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>The variables <code>phylo</code> and <code>species</code> are identical as they are both identifiers of the species. However, we model the phylogenetic covariance only for <code>phylo</code> and thus the <code>species</code> variable accounts for any specific effect that would be independent of the phylogenetic relationship between species (e.g., environmental or niche effects). Again we can obtain model summaries as well as estimates of the phylogenetic signal.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_repeat1)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species) 
-   Data: data_repeat (Number of observations: 1000) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species)
+   Data: data_repeat (Number of observations: 1000)
   Draws: 2 chains, each with iter = 4000; warmup = 1000; thin = 1;
          total post-warmup draws = 6000
 
-Group-Level Effects: 
-~phylo (Number of levels: 200) 
+Group-Level Effects:
+~phylo (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)    16.41      1.86    13.01    20.38 1.00     1593     2931
 
-~species (Number of levels: 200) 
+~species (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     4.98      0.83     3.24     6.55 1.00     1292     2105
 
-Population-Level Effects: 
+Population-Level Effects:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept       36.29      7.94    20.17    51.48 1.00     5069     4290
 spec_mean_cf     5.10      0.10     4.90     5.29 1.00     8654     4024
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     8.10      0.21     7.71     8.52 1.00     6304     4620
 
@@ -323,29 +323,29 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>The results are almost unchanged, with apparently no relationship between the phenotype and the within species variance of <code>cofactor</code>.</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_repeat2)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species) + within_spec_cf 
-   Data: data_repeat (Number of observations: 1000) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species) + within_spec_cf
+   Data: data_repeat (Number of observations: 1000)
   Draws: 2 chains, each with iter = 4000; warmup = 1000; thin = 1;
          total post-warmup draws = 6000
 
-Group-Level Effects: 
-~phylo (Number of levels: 200) 
+Group-Level Effects:
+~phylo (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)    16.36      1.83    12.88    20.18 1.00     1548     2371
 
-~species (Number of levels: 200) 
+~species (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     5.00      0.82     3.35     6.61 1.00     1213     1501
 
-Population-Level Effects: 
+Population-Level Effects:
                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept         36.39      7.68    21.55    51.68 1.00     3944     3636
 spec_mean_cf       5.10      0.10     4.89     5.30 1.00     7591     3864
 within_spec_cf    -0.06      0.19    -0.43     0.32 1.00     9225     3790
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     8.11      0.20     7.72     8.51 1.00     5572     4330
 
@@ -397,27 +397,27 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 <span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>A summary of the fitted model is obtained via</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_fisher)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: Zr | se(sqrt(1/(N - 3))) ~ 1 + (1 | gr(phylo, cov = A)) + (1 | obs) 
-   Data: data_fisher (Number of observations: 200) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: Zr | se(sqrt(1/(N - 3))) ~ 1 + (1 | gr(phylo, cov = A)) + (1 | obs)
+   Data: data_fisher (Number of observations: 200)
   Draws: 2 chains, each with iter = 4000; warmup = 1000; thin = 1;
          total post-warmup draws = 6000
 
-Group-Level Effects: 
-~obs (Number of levels: 200) 
+Group-Level Effects:
+~obs (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.05      0.03     0.00     0.10 1.00      947     2173
 
-~phylo (Number of levels: 200) 
+~phylo (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.07      0.04     0.01     0.15 1.00     1033     2178
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept     0.16      0.04     0.08     0.24 1.00     3253     2667
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     0.00      0.00     0.00     0.00   NA       NA       NA
 
@@ -454,23 +454,23 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>Again, we obtain a summary of the fitted model via</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_pois)</span></code></pre></div>
-<pre><code> Family: poisson 
-  Links: mu = log 
-Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) + (1 | obs) 
-   Data: data_pois (Number of observations: 200) 
+<pre><code> Family: poisson
+  Links: mu = log
+Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) + (1 | obs)
+   Data: data_pois (Number of observations: 200)
   Draws: 2 chains, each with iter = 4000; warmup = 2000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
-~obs (Number of levels: 200) 
+Group-Level Effects:
+~obs (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.18      0.08     0.02     0.33 1.00      687      832
 
-~phylo (Number of levels: 200) 
+~phylo (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.18      0.10     0.03     0.40 1.00      910     1476
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    -2.08      0.20    -2.49    -1.69 1.00     2708     2992
 cofactor      0.25      0.01     0.23     0.27 1.00     3506     3049
@@ -489,24 +489,24 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">list</span>(<span class="at">adapt_delta =</span> <span class="fl">0.95</span>)</span>
 <span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_normal)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) 
-   Data: data_pois (Number of observations: 200) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A))
+   Data: data_pois (Number of observations: 200)
   Draws: 2 chains, each with iter = 4000; warmup = 2000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
-~phylo (Number of levels: 200) 
+Group-Level Effects:
+~phylo (Number of levels: 200)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.72      0.51     0.04     1.92 1.00      858      997
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    -3.07      0.66    -4.40    -1.80 1.00     3108     2059
 cofactor      0.68      0.04     0.60     0.76 1.00     5458     2370
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     3.43      0.18     3.11     3.80 1.00     4345     2823
 
@@ -533,10 +533,10 @@ Monte Carlo SE of elpd_loo is 0.2.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     172   86.0%   682       
- (0.5, 0.7]   (ok)        28   14.0%   284       
-   (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;      
-   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     172   86.0%   682
+ (0.5, 0.7]   (ok)        28   14.0%   284
+   (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;
+   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;
 
 All Pareto k estimates are ok (k &lt; 0.7).
 See help(&#39;pareto-k-diagnostic&#39;) for details.
@@ -554,17 +554,17 @@ Monte Carlo SE of elpd_loo is 0.1.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     199   99.5%   667       
- (0.5, 0.7]   (ok)         1    0.5%   1699      
-   (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;      
-   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     199   99.5%   667
+ (0.5, 0.7]   (ok)         1    0.5%   1699
+   (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;
+   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;
 
 All Pareto k estimates are ok (k &lt; 0.7).
 See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Model comparisons:
              elpd_diff se_diff
-model_pois      0.0       0.0 
+model_pois      0.0       0.0
 model_normal -187.8      18.0 </code></pre>
 <p>Since smaller values of loo indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family <code>negative_binomial</code>), which already contains an overdispersion parameter so that modeling a varying intercept of <code>obs</code> becomes obsolete.</p>
 </div>

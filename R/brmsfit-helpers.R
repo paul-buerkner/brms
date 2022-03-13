@@ -12,29 +12,29 @@ is_mv <- function(x) {
 
 stopifnot_resp <- function(x, resp = NULL) {
   if (is_mv(x) && length(resp) != 1L) {
-    stop2("Argument 'resp' must be a single variable name ", 
+    stop2("Argument 'resp' must be a single variable name ",
           "when applying this method to a multivariate model.")
   }
   invisible(NULL)
 }
 
-# apply a link function 
+# apply a link function
 # @param x an array of arbitrary dimension
 # @param link character string defining the link
 link <- function(x, link) {
-  switch(link, 
-    identity = x, 
-    log = log(x), 
+  switch(link,
+    identity = x,
+    log = log(x),
     logm1 = logm1(x),
     log1p = log1p(x),
     inverse = 1 / x,
-    sqrt = sqrt(x), 
-    "1/mu^2" = 1 / x^2, 
+    sqrt = sqrt(x),
+    "1/mu^2" = 1 / x^2,
     tan_half = tan(x / 2),
-    logit = logit(x), 
-    probit = qnorm(x), 
+    logit = logit(x),
+    probit = qnorm(x),
     cauchit = qcauchy(x),
-    cloglog = cloglog(x), 
+    cloglog = cloglog(x),
     probit_approx = qnorm(x),
     softplus = log_expm1(x),
     squareplus = (x^2 - 1) / x,
@@ -47,19 +47,19 @@ link <- function(x, link) {
 # @param x an array of arbitrary dimension
 # @param link a character string defining the link
 inv_link <- function(x, link) {
-  switch(link, 
-    identity = x, 
+  switch(link,
+    identity = x,
     log = exp(x),
     logm1 = expp1(x),
     log1p = expm1(x),
     inverse = 1 / x,
-    sqrt = x^2, 
-    "1/mu^2" = 1 / sqrt(x), 
+    sqrt = x^2,
+    "1/mu^2" = 1 / sqrt(x),
     tan_half = 2 * atan(x),
-    logit = inv_logit(x), 
-    probit = pnorm(x), 
+    logit = inv_logit(x),
+    probit = pnorm(x),
     cauchit = pcauchy(x),
-    cloglog = inv_cloglog(x), 
+    cloglog = inv_cloglog(x),
     probit_approx = pnorm(x),
     softplus = log1p_exp(x),
     squareplus = (x + sqrt(x^2 + 4)) / 2,
@@ -85,9 +85,9 @@ validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
 }
 
 # get correlation names as combinations of variable names
-# @param names the variable names 
+# @param names the variable names
 # @param type character string to be put in front of the returned strings
-# @param brackets should the correlation names contain brackets 
+# @param brackets should the correlation names contain brackets
 #   or underscores as seperators?
 # @param sep character string to separate names; only used if !brackets
 # @return a vector of character strings
@@ -128,7 +128,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
   size <- ncol(sd)
   out <- array(diag(1, size), dim = c(size, size, ndraws))
   out <- aperm(out, perm = c(3, 1, 2))
-  for (i in seq_len(size)) { 
+  for (i in seq_len(size)) {
     out[, i, i] <- sd[, i]^2
   }
   if (length(cor)) {
@@ -136,7 +136,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
     stopifnot(nrow(sd) == nrow(cor))
     stopifnot(min(cor) >= -1, max(cor) <= 1)
     stopifnot(ncol(cor) == size * (size - 1) / 2)
-    k <- 0 
+    k <- 0
     for (i in seq_len(size)[-1]) {
       for (j in seq_len(i - 1)) {
         k = k + 1
@@ -158,7 +158,7 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
     cor <- as.matrix(cor)
     size <- -1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
     ndraws <- nrow(cor)
-  } 
+  }
   size <- as_one_numeric(size)
   ndraws <- as_one_numeric(ndraws)
   stopifnot(is_wholenumber(size) && size > 0)
@@ -166,7 +166,7 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
   out <- array(diag(1, size), dim = c(size, size, ndraws))
   out <- aperm(out, perm = c(3, 1, 2))
   if (length(cor)) {
-    k <- 0 
+    k <- 0
     for (i in seq_len(size)[-1]) {
       for (j in seq_len(i - 1)) {
         k = k + 1
@@ -183,7 +183,7 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
 # @param latent compute covariance matrix for latent residuals?
 get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
   if (is.null(obs)) {
-    obs <- seq_len(prep$nobs) 
+    obs <- seq_len(prep$nobs)
   }
   nobs <- length(obs)
   ndraws <- prep$ndraws
@@ -248,11 +248,11 @@ get_cor_matrix_ar1 <- function(ar, nobs) {
   for (i in seq_len(nobs)) {
     pow_ar[[i + 1]] <- ar^i
     out[, i, i] <- fac
-    for (j in seq_len(i - 1)) { 
+    for (j in seq_len(i - 1)) {
       out[, i, j] <- fac * pow_ar[[i - j + 1]]
       out[, j, i] <- out[, i, j]
-    } 
-  } 
+    }
+  }
   out
 }
 
@@ -263,7 +263,7 @@ get_cor_matrix_ar1 <- function(ar, nobs) {
 get_cor_matrix_ma1 <- function(ma, nobs) {
   out <- array(0, dim = c(NROW(ma), nobs, nobs))
   gamma0 <- 1 + ma^2
-  for (i in seq_len(nobs)) { 
+  for (i in seq_len(nobs)) {
     out[, i, i] <- gamma0
     if (i > 1) {
       out[, i, i - 1] <- ma
@@ -271,8 +271,8 @@ get_cor_matrix_ma1 <- function(ma, nobs) {
     if (i < nobs) {
       out[, i, i + 1] <- ma
     }
-  } 
-  out 
+  }
+  out
 }
 
 # compute ARMA1 correlation matrices
@@ -289,12 +289,12 @@ get_cor_matrix_arma1 <- function(ar, ma, nobs) {
   for (i in seq_len(nobs)) {
     out[, i, i] <- fac * gamma0
     gamma[[i]] <- gamma[[1]] * ar^(i - 1)
-    for (j in seq_len(i - 1)) { 
+    for (j in seq_len(i - 1)) {
       out[, i, j] <- fac * gamma[[i - j]]
       out[, j, i] <- out[, i, j]
-    } 
-  } 
-  out 
+    }
+  }
+  out
 }
 
 # compute compound symmetry correlation matrices
@@ -305,11 +305,11 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
   out <- array(0, dim = c(NROW(cosy), nobs, nobs))
   for (i in seq_len(nobs)) {
     out[, i, i] <- 1
-    for (j in seq_len(i - 1)) { 
+    for (j in seq_len(i - 1)) {
       out[, i, j] <- cosy
       out[, j, i] <- out[, i, j]
-    } 
-  } 
+    }
+  }
   out
 }
 
@@ -335,15 +335,15 @@ get_cor_matrix_ident <- function(ndraws, nobs) {
 }
 
 #' Draws of a Distributional Parameter
-#' 
-#' Get draws of a distributional parameter from a \code{brmsprep} or 
+#'
+#' Get draws of a distributional parameter from a \code{brmsprep} or
 #' \code{mvbrmsprep} object. This function is primarily useful when developing
-#' custom families or packages depending on \pkg{brms}. 
+#' custom families or packages depending on \pkg{brms}.
 #' This function lets callers easily handle both the case when the
 #' distributional parameter is predicted directly, via a (non-)linear
 #' predictor or fixed to a constant. See the vignette
 #' \code{vignette("brms_customfamilies")} for an example use case.
-#' 
+#'
 #' @param prep A 'brmsprep' or 'mvbrmsprep' object created by
 #'   \code{\link[brms:prepare_predictions.brmsfit]{prepare_predictions}}.
 #' @param dpar Name of the distributional parameter.
@@ -354,13 +354,13 @@ get_cor_matrix_ident <- function(ndraws, nobs) {
 #'   If \code{NULL} (the default), the value is chosen internally.
 #'   In particular, \code{inv_link} is \code{TRUE} by default for custom
 #'   families.
-#' @return 
+#' @return
 #'   If the parameter is predicted and \code{i} is \code{NULL} or
 #'   \code{length(i) > 1}, an \code{S x N} matrix. If the parameter it not
 #'   predicted or \code{length(i) == 1}, a vector of length \code{S}. Here
 #'   \code{S} is the number of draws and \code{N} is the number of
 #'   observations or length of \code{i} if specified.
-#'   
+#'
 #' @examples
 #' \dontrun{
 #' posterior_predict_my_dist <- function(i, prep, ...) {
@@ -368,8 +368,8 @@ get_cor_matrix_ident <- function(ndraws, nobs) {
 #'   mypar <- brms::get_dpar(prep, "mypar", i = i)
 #'   my_rng(mu, mypar)
 #' }
-#' } 
-#' 
+#' }
+#'
 #' @export
 get_dpar <- function(prep, dpar, i = NULL, inv_link = NULL) {
   stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
@@ -382,7 +382,7 @@ get_dpar <- function(prep, dpar, i = NULL, inv_link = NULL) {
     if (is.null(inv_link)) {
       inv_link <- apply_dpar_inv_link(dpar, family = prep$family)
     } else {
-      inv_link <- as_one_logical(inv_link) 
+      inv_link <- as_one_logical(inv_link)
     }
     if (inv_link) {
       out <- inv_link(out, x$family$link)
@@ -455,7 +455,7 @@ get_theta <- function(prep, i = NULL) {
 get_Mu <- function(prep, i = NULL) {
   is_mv <- is.mvbrmsprep(prep)
   if (is_mv) {
-    Mu <- prep$mvpars$Mu 
+    Mu <- prep$mvpars$Mu
   } else {
     stopifnot(is.brmsprep(prep))
     Mu <- prep$dpars$Mu
@@ -488,7 +488,7 @@ get_Sigma <- function(prep, i = NULL, cor_name = NULL) {
   is_mv <- is.mvbrmsprep(prep)
   if (is_mv) {
     cor_name <- "rescor"
-    Sigma <- prep$mvpars$Sigma 
+    Sigma <- prep$mvpars$Sigma
   } else {
     stopifnot(is.brmsprep(prep))
     cor_name <- as_one_character(cor_name)
@@ -510,7 +510,7 @@ get_Sigma <- function(prep, i = NULL, cor_name = NULL) {
     for (j in seq_along(sigma)) {
       sigma[[j]] <- get_dpar(prep$resps[[j]], "sigma", i = i)
       sigma[[j]] <- add_sigma_se(sigma[[j]], prep$resps[[j]], i = i)
-    } 
+    }
   } else {
     cors <- prep$dpars[[cor_name]]
     sigma_names <- str_subset(names(prep$dpars), "^sigma")
@@ -518,7 +518,7 @@ get_Sigma <- function(prep, i = NULL, cor_name = NULL) {
     for (j in seq_along(sigma)) {
       sigma[[j]] <- get_dpar(prep, sigma_names[j], i = i)
       sigma[[j]] <- add_sigma_se(sigma[[j]], prep, i = i)
-    } 
+    }
   }
   is_matrix <- ulapply(sigma, is.matrix)
   if (!any(is_matrix)) {
@@ -566,7 +566,7 @@ add_sigma_se <- function(sigma, prep, i = NULL) {
   if ("se" %in% names(prep$data)) {
     se <- get_se(prep, i = i)
     sigma <- sqrt(se^2 + sigma^2)
-  } 
+  }
   sigma
 }
 
@@ -664,15 +664,15 @@ validate_resp <- function(resp, x, multiple = TRUE) {
 }
 
 # split '...' into a list of model objects and other arguments
-# takes its argument names from parent.frame() 
+# takes its argument names from parent.frame()
 # @param .... objects to split into model and non-model objects
 # @param x object treated in the same way as '...'. Adding it is
-#   necessary for substitute() to catch the name of the first 
+#   necessary for substitute() to catch the name of the first
 #   argument passed to S3 methods.
-# @param model_names optional names of the model objects  
+# @param model_names optional names of the model objects
 # @param other: allow non-model arguments in '...'?
 # @return
-#   A list of arguments. All brmsfit objects are stored 
+#   A list of arguments. All brmsfit objects are stored
 #   as a list in element 'models' unless 'other' is FALSE.
 #   In the latter case just returns a list of models
 split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
@@ -704,7 +704,7 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
 }
 
 # reorder observations to be in the initial user-defined order
-# currently only relevant for autocorrelation models 
+# currently only relevant for autocorrelation models
 # @param eta 'ndraws' x 'nobs' matrix or array
 # @param old_order optional vector to retrieve the initial data order
 # @param sort keep the new order as defined by the time-series?
@@ -732,25 +732,25 @@ update_misc_env <- function(x, only_windows = FALSE) {
     # TODO: find a more efficient way to update .MISC
     old_backend <- x$backend
     x$backend <- "rstan"
-    x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC 
+    x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
     x$backend <- old_backend
   }
   x
 }
 
 #' Add compiled \pkg{rstan} models to \code{brmsfit} objects
-#' 
+#'
 #' Compile a \code{\link[rstan:stanmodel-class]{stanmodel}} and add
 #' it to a \code{brmsfit} object. This enables some advanced functionality
 #' of \pkg{rstan}, most notably \code{\link[rstan:log_prob]{log_prob}}
 #' and friends, to be used with brms models fitted with other Stan backends.
-#' 
+#'
 #' @param x A \code{brmsfit} object to be updated.
-#' @param overwrite Logical. If \code{TRUE}, overwrite any existing 
+#' @param overwrite Logical. If \code{TRUE}, overwrite any existing
 #' \code{\link[rstan:stanmodel-class]{stanmodel}}. Defaults to \code{FALSE}.
-#' 
+#'
 #' @return A (possibly updated) \code{brmsfit} object.
-#' 
+#'
 #' @export
 add_rstan_model <- function(x, overwrite = FALSE) {
   stopifnot(is.brmsfit(x))
@@ -759,7 +759,7 @@ add_rstan_model <- function(x, overwrite = FALSE) {
     message("Recompiling the model with 'rstan'")
     # threading is not yet supported by rstan and needs to be deactivated
     stanfit <- suppressMessages(rstan::stan(
-      model_code = stancode(x, threads = threading()), 
+      model_code = stancode(x, threads = threading()),
       data = standata(x), chains = 0
     ))
     x$fit@stanmodel <- stanfit@stanmodel
@@ -769,7 +769,7 @@ add_rstan_model <- function(x, overwrite = FALSE) {
   x
 }
 
-# does the model have a non-empty rstan 'stanmodel' 
+# does the model have a non-empty rstan 'stanmodel'
 # that can be used for 'log_prob' and friends?
 has_rstan_model <- function(x) {
   stopifnot(is.brmsfit(x))
@@ -797,7 +797,7 @@ validate_cores_post_processing <- function(cores) {
       # in post-processing functions as discussed in #1129
       cores <- 1L
     } else {
-      cores <- getOption("mc.cores", 1L) 
+      cores <- getOption("mc.cores", 1L)
     }
   }
   cores <- as_one_integer(cores)
@@ -808,13 +808,13 @@ validate_cores_post_processing <- function(cores) {
 }
 
 #' Check if cached fit can be used.
-#' 
-#' Checks whether a given cached fit can be used without refitting when 
+#'
+#' Checks whether a given cached fit can be used without refitting when
 #' \code{file_refit = "on_change"} is used.
-#' This function is internal and exposed only to facilitate debugging problems 
+#' This function is internal and exposed only to facilitate debugging problems
 #' with cached fits. The function may change or be removed in future versions
 #' and scripts should not use it.
-#' 
+#'
 #' @param fit Old \code{brmsfit} object (e.g., loaded from file).
 #' @param sdata New Stan data (result of a call to \code{\link{make_standata}}).
 #'   Pass \code{NULL} to avoid this data check.
@@ -824,18 +824,18 @@ validate_cores_post_processing <- function(cores) {
 #'   Pass \code{NULL} to avoid this data check.
 #' @param algorithm New algorithm. Pass \code{NULL} to avoid algorithm check.
 #' @param silent Logical. If \code{TRUE}, no messages will be given.
-#' @param verbose Logical. If \code{TRUE} detailed report of the differences 
+#' @param verbose Logical. If \code{TRUE} detailed report of the differences
 #'   is printed to the console.
 #' @return A boolean indicating whether a refit is needed.
-#' 
-#' @details 
+#'
+#' @details
 #' Use with \code{verbose = TRUE} to get additional info on how the stored
 #' fit differs from the given data and code.
-#' 
+#'
 #' @export
 #' @keywords internal
 brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
-                                algorithm = NULL, silent = FALSE, 
+                                algorithm = NULL, silent = FALSE,
                                 verbose = FALSE) {
   stopifnot(is.brmsfit(fit))
   silent <- as_one_logical(silent)
@@ -856,7 +856,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
     algorithm <- as_one_character(algorithm)
     stopifnot(!is.null(fit$algorithm))
   }
-  
+
   refit <- FALSE
   if (!is.null(scode)) {
     if (normalize_stancode(scode) != normalize_stancode(cached_scode)) {
@@ -883,7 +883,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
     }
   }
   if (!is.null(data)) {
-    # check consistency of factor names 
+    # check consistency of factor names
     # as they are only stored as attributes in sdata (#1128)
     factor_level_message <- FALSE
     for (var in names(cached_data)) {
@@ -896,7 +896,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
             if (verbose) {
               cat(paste0(
                 "Names of factor levels have changed for variable '", var, "' ",
-                "with cached levels (", collapse_comma(cached_levels), ") ", 
+                "with cached levels (", collapse_comma(cached_levels), ") ",
                 "but new levels (", collapse_comma(new_levels), ").\n"
               ))
             }
@@ -916,7 +916,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   if (!is.null(algorithm)) {
     if (algorithm != fit$algorithm) {
       if (!silent) {
-        message("Algorithm has changed from '", fit$algorithm, 
+        message("Algorithm has changed from '", fit$algorithm,
                 "' to '", algorithm, "'.\n")
       }
       refit <- TRUE
@@ -972,7 +972,7 @@ check_brmsfit_file <- function(file) {
 }
 
 # check if a function requires an old default setting
-# only used to ensure backwards compatibility 
+# only used to ensure backwards compatibility
 # @param version brms version in which the change to the default was made
 # @return TRUE or FALSE
 require_old_default <- function(version) {
@@ -993,10 +993,10 @@ add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(identical(dim, numeric(0)))
   newpar <- as_one_character(newpar)
   for (i in seq_along(x$fit@sim$samples)) {
-    x$fit@sim$samples[[i]][[newpar]] <- 
+    x$fit@sim$samples[[i]][[newpar]] <-
       do_call(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
-  x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
+  x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar)
   x$fit@sim$dims_oi[[newpar]] <- dim
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x

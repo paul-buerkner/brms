@@ -14,8 +14,8 @@ t2(...)
 \code{\link[mgcv:t2]{mgcv::t2}}.}
 }
 \description{
-Functions used in definition of smooth terms within a model formulas. 
-The function does not evaluate a (spline) smooth - it exists purely 
+Functions used in definition of smooth terms within a model formulas.
+The function does not evaluate a (spline) smooth - it exists purely
 to help set up a model using spline based smooths.
 }
 \details{
@@ -28,13 +28,13 @@ The function defined here are just simple wrappers
 dat <- mgcv::gamSim(1, n = 200, scale = 2)
 
 # fit univariate smooths for all predictors
-fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), 
+fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3),
             data = dat, chains = 2)
 summary(fit1)
 plot(conditional_smooths(fit1), ask = FALSE)
 
 # fit a more complicated smooth model
-fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3), 
+fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3),
             data = dat, chains = 2)
 summary(fit2)
 plot(conditional_smooths(fit2), ask = FALSE)

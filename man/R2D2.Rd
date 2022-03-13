@@ -17,7 +17,7 @@ decomposition parameters.}
 \item{autoscale}{Logical; indicating whether the horseshoe
 prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
-Autoscaling is not applied for distributional parameters or 
+Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
 }
 \description{
@@ -30,8 +30,8 @@ set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))
 
 }
 \references{
-Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020). 
-  Bayesian regression using a prior on the model fit: The R2-D2 shrinkage 
+Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020).
+  Bayesian regression using a prior on the model fit: The R2-D2 shrinkage
   prior. Journal of the American Statistical Association.
   \url{https://arxiv.org/pdf/1609.00046.pdf}
 }

@@ -1,5 +1,5 @@
 #' Projection Predictive Variable Selection: Get Reference Model
-#' 
+#'
 #' The \code{get_refmodel.brmsfit} method can be used to create the reference
 #' model structure which is needed by the \pkg{projpred} package for performing
 #' a projection predictive variable selection. This method is called
@@ -7,7 +7,7 @@
 #' \code{\link[projpred:varsel]{varsel}} or
 #' \code{\link[projpred:cv_varsel]{cv_varsel}}, so you will rarely need to call
 #' it manually yourself.
-#' 
+#'
 #' @inheritParams posterior_predict.brmsfit
 #' @param cvfun Optional cross-validation function
 #' (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
@@ -15,38 +15,38 @@
 #' based on \code{\link{kfold.brmsfit}}.
 #' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 #'   and for sampling group-level effects for new levels (in multilevel models).
-#' @param ... Further arguments passed to 
+#' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
-#' 
+#'
 #' @details Note that the \code{extract_model_data} function used internally by
 #'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
 #'   \code{extract_y}. This is relevant for
 #'   \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
-#' 
+#'
 #' @return A \code{refmodel} object to be used in conjunction with the
 #'   \pkg{projpred} package.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # fit a simple model
 #' fit <- brm(count ~ zAge + zBase * Trt,
 #'            data = epilepsy, family = poisson())
 #' summary(fit)
-#' 
+#'
 #' # The following code requires the 'projpred' package to be installed:
 #' library(projpred)
-#' 
+#'
 #' # perform variable selection without cross-validation
 #' vs <- varsel(fit)
 #' summary(vs)
 #' plot(vs)
-#' 
+#'
 #' # perform variable selection with cross-validation
 #' cv_vs <- cv_varsel(fit)
 #' summary(cv_vs)
 #' plot(cv_vs)
 #' }
-get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
+get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                                  cvfun = NULL, brms_seed = NULL, ...) {
   require_package("projpred")
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -54,18 +54,18 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (!is.null(resp)) {
     formula <- formula$forms[[resp]]
   }
-  
+
   # Infer "sub-seeds":
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   if (!is.null(brms_seed)) {
-    set.seed(brms_seed) 
+    set.seed(brms_seed)
   }
   kfold_seed <- sample.int(.Machine$integer.max, 1)
   refprd_seed <- sample.int(.Machine$integer.max, 1)
-  
+
   # prepare the family object for use in projpred
   family <- family(object, resp = resp)
   if (family$family == "bernoulli") {
@@ -80,7 +80,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (!aug_data) {
     family <- get(family$family, mode = "function")(link = family$link)
   }
-  
+
   # check if the model is supported by projpred
   bterms <- brmsterms(formula)
   if (length(bterms$dpars) > 1L && !conv_cats_dpars(family$family)) {
@@ -93,12 +93,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
     stop2("Projpred only supports standard multilevel terms and offsets.")
   }
-  
+
   # only use the raw formula for selection of terms
   formula <- formula$formula
   # LHS should only contain the response variable
   formula[[2]] <- bterms$respform[[2]]
-  
+
   # projpred requires the dispersion parameter if present
   dis <- NULL
   if (family$family == "gaussian") {
@@ -108,12 +108,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     dis <- paste0("shape", usc(resp))
     dis <- as.data.frame(object, variable = dis)[[dis]]
   }
-  
+
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
   }
-  
+
   # The default `ref_predfun` from projpred does not set `allow_new_levels`, so
   # use a customized `ref_predfun` which also handles some preparations for the
   # augmented-data projection:
@@ -138,12 +138,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
     out
   }
-  
+
   if (utils::packageVersion("projpred") <= "2.0.2" && NROW(object$ranef)) {
     warning2("Under projpred version <= 2.0.2, projpred's K-fold CV results ",
              "may not be reproducible for multilevel brms reference models.")
   }
-  
+
   # extract a list of K-fold sub-models
   if (is.null(cvfun)) {
     cvfun <- function(folds, ...) {
@@ -157,7 +157,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       stop2("'cvfun' should be a function.")
     }
   }
-  
+
   cvrefbuilder <- function(cvfit) {
     # For `brms_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new seed
     # which is based on the original `brms_seed`:
@@ -168,7 +168,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
     projpred::get_refmodel(cvfit, resp = resp, brms_seed = brms_seed_k, ...)
   }
-  
+
   # prepare data passed to projpred
   data <- current_data(object, newdata, resp = resp, check_response = TRUE)
   attr(data, "terms") <- NULL
@@ -196,7 +196,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 .extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
-  
+
   # extract the response variable manually instead of from make_standata
   # so that it passes input checks of validate_newdata later on (#1314)
   formula <- formula(object)
@@ -217,17 +217,17 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
             "be present in the data passed to projpred.")
     }
   }
-  
+
   # extract relevant auxiliary data
   # call standata to ensure the correct format of the data
   args <- nlist(
     object, newdata, resp,
     allow_new_levels = TRUE,
-    check_response = TRUE, 
+    check_response = TRUE,
     internal = TRUE
   )
   sdata <- do_call(standata, args)
-  
+
   usc_resp <- usc(resp)
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
@@ -236,7 +236,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   if (!is.null(trials)) {
     if (!is.null(weights)) {
-      stop2("Projpred cannot handle 'trials' and 'weights' at the same time.") 
+      stop2("Projpred cannot handle 'trials' and 'weights' at the same time.")
     }
     weights <- trials
   }

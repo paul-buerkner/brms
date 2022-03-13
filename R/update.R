@@ -1,35 +1,35 @@
 #' Update \pkg{brms} models
-#' 
+#'
 #' This method allows to update an existing \code{brmsfit} object.
-#' 
+#'
 #' @param object An object of class \code{brmsfit}.
-#' @param formula. Changes to the formula; for details see 
+#' @param formula. Changes to the formula; for details see
 #'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
 #' @param newdata Optional \code{data.frame} to update the model with new data.
 #'   Data-dependent default priors will not be updated automatically.
-#' @param recompile Logical, indicating whether the Stan model should 
+#' @param recompile Logical, indicating whether the Stan model should
 #'   be recompiled. If \code{NULL} (the default), \code{update} tries
-#'   to figure out internally, if recompilation is necessary. 
-#'   Setting it to \code{FALSE} will cause all Stan code changing 
-#'   arguments to be ignored. 
+#'   to figure out internally, if recompilation is necessary.
+#'   Setting it to \code{FALSE} will cause all Stan code changing
+#'   arguments to be ignored.
 #' @param ... Other arguments passed to \code{\link{brm}}.
-#'  
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
-#' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+#' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #'             data = kidney, family = gaussian("log"))
 #' summary(fit1)
-#' 
+#'
 #' ## remove effects of 'disease'
 #' fit2 <- update(fit1, formula. = ~ . - disease)
 #' summary(fit2)
-#' 
+#'
 #' ## remove the group specific term of 'patient' and
 #' ## change the data (just take a subset in this example)
-#' fit3 <- update(fit1, formula. = ~ . - (1|patient), 
+#' fit3 <- update(fit1, formula. = ~ . - (1|patient),
 #'                newdata = kidney[1:38, ])
 #' summary(fit3)
-#' 
+#'
 #' ## use another family and add population-level priors
 #' fit4 <- update(fit1, family = weibull(), init = "0",
 #'                prior = set_prior("normal(0,5)"))
@@ -37,7 +37,7 @@
 #' }
 #'
 #' @export
-update.brmsfit <- function(object, formula., newdata = NULL, 
+update.brmsfit <- function(object, formula., newdata = NULL,
                            recompile = NULL, ...) {
   dots <- list(...)
   testmode <- isTRUE(dots[["testmode"]])
@@ -53,9 +53,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   object$file <- NULL
-  
+
   if ("data" %in% names(dots)) {
-    # otherwise the data name cannot be found by substitute 
+    # otherwise the data name cannot be found by substitute
     stop2("Please use argument 'newdata' to update the data.")
   }
   if (!is.null(newdata)) {
@@ -65,12 +65,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     dots$data <- object$data
     data_name <- get_data_name(object$data)
   }
-  
+
   if (missing(formula.) || is.null(formula.)) {
     dots$formula <- object$formula
     if (!is.null(dots[["family"]])) {
       dots$formula <- bf(dots$formula, family = dots$family)
-    } 
+    }
     if (!is.null(dots[["autocor"]])) {
       dots$formula <- bf(dots$formula, autocor = dots$autocor)
     }
@@ -82,7 +82,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     if (is.brmsformula(formula.)) {
       nl <- get_nl(formula.)
     } else {
-      formula. <- as.formula(formula.) 
+      formula. <- as.formula(formula.)
       nl <- get_nl(formula(object))
     }
     family <- get_arg("family", formula., dots, object)
@@ -94,8 +94,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       } else {
         dots$formula <- update(object$formula, dots$formula, mode = "replace")
         if (silent < 2) {
-          message("Argument 'formula.' will completely replace the ", 
-                  "original formula in non-linear models.") 
+          message("Argument 'formula.' will completely replace the ",
+                  "original formula in non-linear models.")
         }
       }
     } else {
@@ -110,11 +110,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   # update response categories and ordinal thresholds
   dots$formula <- validate_formula(dots$formula, data = dots$data)
-  
+
   if (is.null(dots$prior)) {
     dots$prior <- object$prior
   } else {
-    if (!is.brmsprior(dots$prior)) { 
+    if (!is.brmsprior(dots$prior)) {
       stop2("Argument 'prior' needs to be a 'brmsprior' object.")
     }
     # update existing priors manually
@@ -156,7 +156,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (!"normalize" %in% names(dots)) {
     dots$normalize <- is_normalized(object$model)
   }
-  
+
   # update arguments controlling the sampling process
   if (is.null(dots$iter)) {
     # only keep old 'warmup' if also keeping old 'iter'
@@ -166,14 +166,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
   dots$backend <- match.arg(dots$backend, backend_choices())
-  same_backend <- is_equal(dots$backend, object$backend) 
+  same_backend <- is_equal(dots$backend, object$backend)
   if (same_backend) {
     # reusing control arguments in other backends may cause errors #1259
     control <- attr(object$fit@sim$samples[[1]], "args")$control
     control <- control[setdiff(names(control), names(dots$control))]
-    dots$control[names(control)] <- control 
+    dots$control[names(control)] <- control
   }
-  
+
   if (is.null(recompile)) {
     # only recompile if new and old stan code do not match
     new_stancode <- suppressMessages(do_call(make_stancode, dots))
@@ -183,7 +183,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     recompile <- needs_recompilation(object) || !same_backend ||
       !is_equal(new_stancode, old_stancode)
     if (recompile && silent < 2) {
-      message("The desired updates require recompiling the model") 
+      message("The desired updates require recompiling the model")
     }
   }
   recompile <- as_one_logical(recompile)
@@ -212,8 +212,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
     object$save_pars <- validate_save_pars(
-      save_pars = dots$save_pars, 
-      save_ranef = dots$save_ranef, 
+      save_pars = dots$save_pars,
+      save_ranef = dots$save_ranef,
       save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
@@ -231,26 +231,26 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 }
 
 #' Update \pkg{brms} models based on multiple data sets
-#' 
+#'
 #' This method allows to update an existing \code{brmsfit_multiple} object.
-#' 
+#'
 #' @param object An object of class \code{brmsfit_multiple}.
-#' @param formula. Changes to the formula; for details see 
+#' @param formula. Changes to the formula; for details see
 #'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
 #' @param newdata List of \code{data.frames} to update the model with new data.
 #'   Currently required even if the original data should be used.
 #' @param ... Other arguments passed to \code{\link{update.brmsfit}}
 #'   and \code{\link{brm_multiple}}.
-#'  
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' library(mice)
 #' imp <- mice(nhanes2)
-#' 
-#' # initially fit the model 
+#'
+#' # initially fit the model
 #' fit_imp1 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #' summary(fit_imp1)
-#' 
+#'
 #' # update the model using fewer predictors
 #' fit_imp2 <- update(fit_imp1, formula. = . ~ hyp + chl, newdata = imp)
 #' summary(fit_imp2)
@@ -260,7 +260,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   dots <- list(...)
   if ("data" %in% names(dots)) {
-    # otherwise the data name cannot be found by substitute 
+    # otherwise the data name cannot be found by substitute
     stop2("Please use argument 'newdata' to update the data.")
   }
   if (is.null(newdata)) {
@@ -273,7 +273,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   } else if (!(is.list(newdata) && is.vector(newdata))) {
     stop2("'newdata' must be a list of data.frames.")
   }
-  
+
   # update the template model using all arguments
   if (missing(formula.)) {
     formula. <- NULL
@@ -282,11 +282,11 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   args$file <- NULL
   args$chains <- 0
   fit <- do_call(update.brmsfit, args)
-  
+
   # arguments later passed to brm_multiple
   args <- c(nlist(fit, data = newdata), dots)
   # update arguments controlling the sampling process
-  # they cannot be accessed directly from the template model 
+  # they cannot be accessed directly from the template model
   # as it does not contain any draws (chains = 0)
   if (is.null(args$iter)) {
     # only keep old 'warmup' if also keeping old 'iter'
@@ -302,7 +302,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   control <- control[setdiff(names(control), names(args$control))]
   args$control[names(control)] <- control
   args$recompile <- NULL
-  
+
   out <- do_call(brm_multiple, args)
   attr(out$data, "data_name") <- data_name
   out

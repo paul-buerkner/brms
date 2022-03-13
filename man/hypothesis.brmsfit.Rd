@@ -25,37 +25,37 @@ hypothesis(x, ...)
 \arguments{
 \item{x}{An \code{R} object. If it is no \code{brmsfit} object,
 it must be coercible to a \code{data.frame}.
-In the latter case, the variables used in the \code{hypothesis} argument 
+In the latter case, the variables used in the \code{hypothesis} argument
 need to correspond to column names of \code{x}, while the rows
 are treated as representing posterior draws of the variables.}
 
-\item{hypothesis}{A character vector specifying one or more 
+\item{hypothesis}{A character vector specifying one or more
 non-linear hypothesis concerning parameters of the model.}
 
-\item{class}{A string specifying the class of parameters being tested. 
-Default is "b" for population-level effects. 
-Other typical options are "sd" or "cor". 
+\item{class}{A string specifying the class of parameters being tested.
+Default is "b" for population-level effects.
+Other typical options are "sd" or "cor".
 If \code{class = NULL}, all parameters can be tested
-against each other, but have to be specified with their full name 
+against each other, but have to be specified with their full name
 (see also \code{\link[brms:draws-index-brms]{variables}})}
 
-\item{group}{Name of a grouping factor to evaluate only 
+\item{group}{Name of a grouping factor to evaluate only
 group-level effects parameters related to this grouping factor.}
 
 \item{scope}{Indicates where to look for the variables specified in
 \code{hypothesis}. If \code{"standard"}, use the full parameter names
 (subject to the restriction given by \code{class} and \code{group}).
-If \code{"coef"} or \code{"ranef"}, compute the hypothesis for all levels 
-of the grouping factor given in \code{"group"}, based on the 
+If \code{"coef"} or \code{"ranef"}, compute the hypothesis for all levels
+of the grouping factor given in \code{"group"}, based on the
 output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 respectively.}
 
 \item{alpha}{The alpha-level of the tests (default is 0.05;
 see 'Details' for more information).}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.}
 
 \item{seed}{A single numeric value passed to \code{\link{set.seed}}
@@ -93,7 +93,7 @@ Among others, \code{hypothesis} computes an evidence ratio
   coefficients. When interpreting Bayes factors, make sure that your priors
   are reasonable and carefully chosen, as the result will depend heavily on
   the priors. In particular, avoid using default priors.
-  
+
   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
   small or large evidence, respectively, in favor of the tested hypothesis.
   For one-sided hypotheses pairs, this basically means that all posterior
@@ -102,7 +102,7 @@ Among others, \code{hypothesis} computes an evidence ratio
   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
   where \code{S} denotes the number of posterior draws used in the
   computations.
- 
+
   The argument \code{alpha} specifies the size of the credible interval
   (i.e., Bayesian confidence interval). For instance, if we tested a
   two-sided hypothesis and set \code{alpha = 0.05} (5\%) an, the credible
@@ -123,7 +123,7 @@ prior <- c(set_prior("normal(0,2)", class = "b"),
 ## fit a linear mixed effects models
 fit <- brm(time ~ age + sex + disease + (1 + age|patient),
            data = kidney, family = lognormal(),
-           prior = prior, sample_prior = "yes", 
+           prior = prior, sample_prior = "yes",
            control = list(adapt_delta = 0.95))
 
 ## perform two-sided hypothesis testing
@@ -134,7 +134,7 @@ hypothesis(fit, "exp(age) - 3 = 0", alpha = 0.01)
 ## perform one-sided hypothesis testing
 hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
 
-hypothesis(fit, "age < Intercept", 
+hypothesis(fit, "age < Intercept",
            class = "sd", group  = "patient")
 
 ## test the amount of random intercept variance on all variance

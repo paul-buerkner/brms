@@ -24,7 +24,7 @@ Combine multiple \code{brmsfit} objects, which fitted the same model.
 This is usefully for instance when having manually run models in parallel.
 }
 \details{
-This function just takes the first model and replaces 
-  its \code{stanfit} object (slot \code{fit}) by the combined 
+This function just takes the first model and replaces
+  its \code{stanfit} object (slot \code{fit}) by the combined
   \code{stanfit} objects of all models.
 }

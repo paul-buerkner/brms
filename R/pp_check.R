@@ -1,15 +1,15 @@
 #' Posterior Predictive Checks for \code{brmsfit} Objects
-#' 
+#'
 #' Perform posterior predictive checks with the help
 #' of the \pkg{bayesplot} package.
-#' 
+#'
 #' @aliases pp_check
-#' 
+#'
 #' @param object An object of class \code{brmsfit}.
 #' @param type Type of the ppc plot as given by a character string.
 #'   See \code{\link[bayesplot:PPC-overview]{PPC}} for an overview
 #'   of currently supported types. You may also use an invalid
-#'   type (e.g. \code{type = "xyz"}) to get a list of supported 
+#'   type (e.g. \code{type = "xyz"}) to get a list of supported
 #'   types in the resulting error message.
 #' @param ndraws Positive integer indicating how many
 #'  posterior draws should be used.
@@ -19,38 +19,38 @@
 #' @param group Optional name of a factor variable in the model
 #'  by which to stratify the ppc plot. This argument is required for
 #'  ppc \code{*_grouped} types and ignored otherwise.
-#' @param x Optional name of a variable in the model. 
-#'  Only used for ppc types having an \code{x} argument 
+#' @param x Optional name of a variable in the model.
+#'  Only used for ppc types having an \code{x} argument
 #'  and ignored otherwise.
 #' @param ... Further arguments passed to \code{\link{predict.brmsfit}}
 #'   as well as to the PPC function specified in \code{type}.
 #' @inheritParams prepare_predictions.brmsfit
-#' 
+#'
 #' @return A ggplot object that can be further
 #'  customized using the \pkg{ggplot2} package.
-#' 
-#' @details For a detailed explanation of each of the ppc functions, 
-#' see the \code{\link[bayesplot:PPC-overview]{PPC}} 
-#' documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} 
+#'
+#' @details For a detailed explanation of each of the ppc functions,
+#' see the \code{\link[bayesplot:PPC-overview]{PPC}}
+#' documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}}
 #' package.
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' fit <-  brm(count ~ zAge + zBase * Trt
 #'             + (1|patient) + (1|obs),
 #'             data = epilepsy, family = poisson())
-#' 
+#'
 #' pp_check(fit)  # shows dens_overlay plot by default
 #' pp_check(fit, type = "error_hist", ndraws = 11)
 #' pp_check(fit, type = "scatter_avg", ndraws = 100)
 #' pp_check(fit, type = "stat_2d")
 #' pp_check(fit, type = "rootogram")
 #' pp_check(fit, type = "loo_pit")
-#' 
+#'
 #' ## get an overview of all valid types
 #' pp_check(fit, type = "xyz")
 #' }
-#' 
+#'
 #' @importFrom bayesplot pp_check
 #' @export pp_check
 #' @export
@@ -75,7 +75,7 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
   valid_types <- as.character(bayesplot::available_ppc(""))
   valid_types <- sub("^ppc_", "", valid_types)
   if (!type %in% valid_types) {
-    stop2("Type '", type, "' is not a valid ppc type. ", 
+    stop2("Type '", type, "' is not a valid ppc type. ",
           "Valid types are:\n", collapse_comma(valid_types))
   }
   ppc_fun <- get(paste0("ppc_", type), asNamespace("bayesplot"))
@@ -111,18 +111,18 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
   if (!ndraws_given) {
     aps_types <- c(
       "error_scatter_avg", "error_scatter_avg_vs_x",
-      "intervals", "intervals_grouped", "loo_pit", 
-      "loo_intervals", "loo_ribbon", "ribbon", 
-      "ribbon_grouped", "rootogram", "scatter_avg", 
-      "scatter_avg_grouped", "stat", "stat_2d", 
-      "stat_freqpoly_grouped", "stat_grouped", 
+      "intervals", "intervals_grouped", "loo_pit",
+      "loo_intervals", "loo_ribbon", "ribbon",
+      "ribbon_grouped", "rootogram", "scatter_avg",
+      "scatter_avg_grouped", "stat", "stat_2d",
+      "stat_freqpoly_grouped", "stat_grouped",
       "violin_grouped"
     )
     if (!is.null(draw_ids)) {
       ndraws <- NULL
     } else if (type %in% aps_types) {
       ndraws <- NULL
-      message("Using all posterior draws for ppc type '", 
+      message("Using all posterior draws for ppc type '",
               type, "' by default.")
     } else {
       ndraws <- 10
@@ -130,11 +130,11 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
               type, "' by default.")
     }
   }
-  
+
   y <- get_y(object, resp = resp, newdata = newdata, ...)
   draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- list(
-    object, newdata = newdata, resp = resp, 
+    object, newdata = newdata, resp = resp,
     draw_ids = draw_ids, ...
   )
   yrep <- do_call(method, pred_args)
@@ -145,9 +145,9 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
     y <- y[take]
     yrep <- yrep[, take, drop = FALSE]
   }
-  
+
   data <- current_data(
-    object, newdata = newdata, resp = resp, 
+    object, newdata = newdata, resp = resp,
     re_formula = NA, check_response = TRUE, ...
   )
   # censored responses are misleading when displayed in pp_check

@@ -1,12 +1,12 @@
 #' Compute the Pointwise Log-Likelihood
-#' 
+#'
 #' @aliases log_lik logLik.brmsfit
-#' 
-#' @param object A fitted model object of class \code{brmsfit}. 
+#'
+#' @param object A fitted model object of class \code{brmsfit}.
 #' @inheritParams posterior_predict.brmsfit
 #' @param combine Only relevant in multivariate models.
 #'   Indicates if the log-likelihoods of the submodels should
-#'   be combined per observation (i.e. added together; the default) 
+#'   be combined per observation (i.e. added together; the default)
 #'   or if the log-likelihoods should be returned separately.
 #' @param pointwise A flag indicating whether to compute the full
 #'   log-likelihood matrix at once (the default), or just return
@@ -15,30 +15,30 @@
 #'   observation. The latter option is rarely useful when
 #'   calling \code{log_lik} directly, but rather when computing
 #'   \code{\link{waic}} or \code{\link{loo}}.
-#' @param add_point_estimate For internal use only. Ensures compatibility 
+#' @param add_point_estimate For internal use only. Ensures compatibility
 #'   with the \code{\link{loo_subsample}} method.
-#' 
+#'
 #' @return Usually, an S x N matrix containing the pointwise log-likelihood
-#'  draws, where S is the number of draws and N is the number 
-#'  of observations in the data. For multivariate models and if 
-#'  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+#'  draws, where S is the number of draws and N is the number
+#'  of observations in the data. For multivariate models and if
+#'  \code{combine} is \code{FALSE}, an S x N x R array is returned,
 #'  where R is the number of response variables.
 #'  If \code{pointwise = TRUE}, the output is a function
 #'  with a \code{draws} attribute containing all relevant
 #'  data and posterior draws.
-#'  
+#'
 #' @template details-newdata-na
 #' @template details-allow_new_levels
-#' 
+#'
 #' @aliases log_lik
 #' @method log_lik brmsfit
 #' @export
 #' @export log_lik
 #' @importFrom rstantools log_lik
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                            resp = NULL, ndraws = NULL, draw_ids = NULL, 
+                            resp = NULL, ndraws = NULL, draw_ids = NULL,
                             pointwise = FALSE, combine = TRUE,
-                            add_point_estimate = FALSE, 
+                            add_point_estimate = FALSE,
                             cores = NULL, ...) {
   pointwise <- as_one_logical(pointwise)
   combine <- as_one_logical(combine)
@@ -46,7 +46,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp, 
+    object, newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE, ...
   )
   if (add_point_estimate) {
@@ -55,8 +55,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # difficult due to its highly nested structure. As an alternative, a second
     # prep object is created from the point estimates of the draws directly.
     attr(prep, "point_estimate") <- prepare_predictions(
-      object, newdata = newdata, re_formula = re_formula, resp = resp, 
-      ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE, 
+      object, newdata = newdata, re_formula = re_formula, resp = resp,
+      ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE,
       point_estimate = "median", ...
     )
   }
@@ -71,7 +71,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (anyNA(log_lik)) {
       warning2(
         "NAs were found in the log-likelihood. Possibly this is because ",
-        "some of your responses contain NAs. If you use 'mi' terms, try ", 
+        "some of your responses contain NAs. If you use 'mi' terms, try ",
         "setting 'resp' to those response variables without missing values. ",
         "Alternatively, use 'newdata' to predict only complete cases."
       )
@@ -82,7 +82,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' @export
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                           resp = NULL, ndraws = NULL, draw_ids = NULL, 
+                           resp = NULL, ndraws = NULL, draw_ids = NULL,
                            pointwise = FALSE, combine = TRUE,
                            cores = NULL, ...) {
   cl <- match.call()
@@ -150,16 +150,16 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 
 # All log_lik_<family> functions have the same arguments structure
 # @param i index of the observatio for which to compute log-lik values
-# @param prep A named list returned by prepare_predictions containing 
+# @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
-# @return a vector of length prep$ndraws containing the pointwise 
-#   log-likelihood for the ith observation 
+# @return a vector of length prep$ndraws containing the pointwise
+#   log-likelihood for the ith observation
 log_lik_gaussian <- function(i, prep) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
   args <- list(mean = mu, sd = sigma)
-  # log_lik_censor computes the conventional log_lik in case of no censoring 
+  # log_lik_censor computes the conventional log_lik in case of no censoring
   out <- log_lik_censor(dist = "norm", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
     out, cdf = pnorm, args = args, i = i, prep = prep
@@ -423,7 +423,7 @@ log_lik_binomial <- function(i, prep) {
     out, cdf = pbinom, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
-}  
+}
 
 log_lik_bernoulli <- function(i, prep) {
   args <- list(size = 1, prob = get_dpar(prep, "mu", i))
@@ -494,7 +494,7 @@ log_lik_geometric <- function(i, prep) {
 
 log_lik_discrete_weibull <- function(i, prep) {
   args <- list(
-    mu = get_dpar(prep, "mu", i), 
+    mu = get_dpar(prep, "mu", i),
     shape = get_dpar(prep, "shape", i = i)
   )
   out <- log_lik_censor(
@@ -508,7 +508,7 @@ log_lik_discrete_weibull <- function(i, prep) {
 
 log_lik_com_poisson <- function(i, prep) {
   args <- list(
-    mu = get_dpar(prep, "mu", i), 
+    mu = get_dpar(prep, "mu", i),
     shape = get_dpar(prep, "shape", i = i)
   )
   # no censoring or truncation allowed yet
@@ -567,17 +567,17 @@ log_lik_gen_extreme_value <- function(i, prep) {
   xi <- get_dpar(prep, "xi", i = i)
   mu <- get_dpar(prep, "mu", i)
   args <- nlist(mu, sigma, xi)
-  out <- log_lik_censor(dist = "gen_extreme_value", args = args, 
+  out <- log_lik_censor(dist = "gen_extreme_value", args = args,
                        i = i, prep = prep)
-  out <- log_lik_truncate(out, cdf = pgen_extreme_value, 
+  out <- log_lik_truncate(out, cdf = pgen_extreme_value,
                          args = args, i = i, prep = prep)
   log_lik_weight(out, i = i, prep = prep)
 }
 
 log_lik_inverse.gaussian <- function(i, prep) {
-  args <- list(mu = get_dpar(prep, "mu", i), 
+  args <- list(mu = get_dpar(prep, "mu", i),
                shape = get_dpar(prep, "shape", i = i))
-  out <- log_lik_censor(dist = "inv_gaussian", args = args, 
+  out <- log_lik_censor(dist = "inv_gaussian", args = args,
                        i = i, prep = prep)
   out <- log_lik_truncate(out, cdf = pinv_gaussian, args = args,
                          i = i, prep = prep)
@@ -585,10 +585,10 @@ log_lik_inverse.gaussian <- function(i, prep) {
 }
 
 log_lik_exgaussian <- function(i, prep) {
-  args <- list(mu = get_dpar(prep, "mu", i), 
+  args <- list(mu = get_dpar(prep, "mu", i),
                sigma = get_dpar(prep, "sigma", i = i),
                beta = get_dpar(prep, "beta", i = i))
-  out <- log_lik_censor(dist = "exgaussian", args = args, 
+  out <- log_lik_censor(dist = "exgaussian", args = args,
                        i = i, prep = prep)
   out <- log_lik_truncate(out, cdf = pexgaussian, args = args,
                          i = i, prep = prep)
@@ -597,7 +597,7 @@ log_lik_exgaussian <- function(i, prep) {
 
 log_lik_wiener <- function(i, prep) {
   args <- list(
-    delta = get_dpar(prep, "mu", i), 
+    delta = get_dpar(prep, "mu", i),
     alpha = get_dpar(prep, "bs", i = i),
     tau = get_dpar(prep, "ndt", i = i),
     beta = get_dpar(prep, "bias", i = i),
@@ -620,7 +620,7 @@ log_lik_beta <- function(i, prep) {
 
 log_lik_von_mises <- function(i, prep) {
   args <- list(
-    mu = get_dpar(prep, "mu", i), 
+    mu = get_dpar(prep, "mu", i),
     kappa = get_dpar(prep, "kappa", i = i)
   )
   out <- log_lik_censor(
@@ -634,7 +634,7 @@ log_lik_von_mises <- function(i, prep) {
 
 log_lik_asym_laplace <- function(i, prep, ...) {
   args <- list(
-    mu = get_dpar(prep, "mu", i), 
+    mu = get_dpar(prep, "mu", i),
     sigma = get_dpar(prep, "sigma", i),
     quantile = get_dpar(prep, "quantile", i)
   )
@@ -645,7 +645,7 @@ log_lik_asym_laplace <- function(i, prep, ...) {
 
 log_lik_zero_inflated_asym_laplace <- function(i, prep, ...) {
   args <- list(
-    mu = get_dpar(prep, "mu", i), 
+    mu = get_dpar(prep, "mu", i),
     sigma = get_dpar(prep, "sigma", i),
     quantile = get_dpar(prep, "quantile", i),
     zi = get_dpar(prep, "zi", i)
@@ -658,7 +658,7 @@ log_lik_zero_inflated_asym_laplace <- function(i, prep, ...) {
 log_lik_cox <- function(i, prep, ...) {
   args <- list(
     mu = get_dpar(prep, "mu", i),
-    bhaz = prep$bhaz$bhaz[, i], 
+    bhaz = prep$bhaz$bhaz[, i],
     cbhaz = prep$bhaz$cbhaz[, i]
   )
   out <- log_lik_censor(dist = "cox", args = args, i = i, prep = prep)
@@ -725,8 +725,8 @@ log_lik_zero_inflated_negbinomial <- function(i, prep) {
 }
 
 log_lik_zero_inflated_binomial <- function(i, prep) {
-  trials <- prep$data$trials[i] 
-  mu <- get_dpar(prep, "mu", i) 
+  trials <- prep$data$trials[i]
+  mu <- get_dpar(prep, "mu", i)
   zi <- get_dpar(prep, "zi", i)
   args <- list(size = trials, prob = mu, zi = zi)
   out <- log_lik_censor("zero_inflated_binomial", args, i, prep)
@@ -735,9 +735,9 @@ log_lik_zero_inflated_binomial <- function(i, prep) {
 }
 
 log_lik_zero_inflated_beta_binomial <- function(i, prep) {
-  trials <- prep$data$trials[i] 
-  mu <- get_dpar(prep, "mu", i) 
-  phi <- get_dpar(prep, "phi", i) 
+  trials <- prep$data$trials[i]
+  mu <- get_dpar(prep, "mu", i)
+  phi <- get_dpar(prep, "phi", i)
   zi <- get_dpar(prep, "zi", i)
   args <- nlist(size = trials, mu, phi, zi)
   out <- log_lik_censor("zero_inflated_beta_binomial", args, i, prep)
@@ -759,13 +759,13 @@ log_lik_zero_one_inflated_beta <- function(i, prep) {
   zoi <- get_dpar(prep, "zoi", i)
   coi <- get_dpar(prep, "coi", i)
   if (prep$data$Y[i] %in% c(0, 1)) {
-    out <- dbinom(1, size = 1, prob = zoi, log = TRUE) + 
+    out <- dbinom(1, size = 1, prob = zoi, log = TRUE) +
       dbinom(prep$data$Y[i], size = 1, prob = coi, log = TRUE)
   } else {
     phi <- get_dpar(prep, "phi", i)
     mu <- get_dpar(prep, "mu", i)
     args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-    out <- dbinom(0, size = 1, prob = zoi, log = TRUE) + 
+    out <- dbinom(0, size = 1, prob = zoi, log = TRUE) +
       do_call(dbeta, c(prep$data$Y[i], args, log = TRUE))
   }
   log_lik_weight(out, i = i, prep = prep)
@@ -824,13 +824,13 @@ log_lik_cumulative <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  if (y == 1) { 
+  if (y == 1) {
     out <- log(inv_link(eta[, 1], prep$family$link))
   } else if (y == nthres + 1) {
-    out <- log(1 - inv_link(eta[, y - 1], prep$family$link)) 
+    out <- log(1 - inv_link(eta[, y - 1], prep$family$link))
   } else {
     out <- log(
-      inv_link(eta[, y], prep$family$link) - 
+      inv_link(eta[, y], prep$family$link) -
         inv_link(eta[, y - 1], prep$family$link)
     )
   }
@@ -844,11 +844,11 @@ log_lik_sratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)), 
+  q <- sapply(seq_len(min(y, nthres)),
     function(k) 1 - inv_link(eta[, k], prep$family$link)
   )
   if (y == 1) {
-    out <- log(1 - q[, 1]) 
+    out <- log(1 - q[, 1])
   } else if (y == 2) {
     out <- log(1 - q[, 2]) + log(q[, 1])
   } else if (y == nthres + 1) {
@@ -866,7 +866,7 @@ log_lik_cratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)), 
+  q <- sapply(seq_len(min(y, nthres)),
     function(k) inv_link(eta[, k], prep$family$link)
   )
   if (y == 1) {
@@ -888,23 +888,23 @@ log_lik_acat <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  if (prep$family$link == "logit") { # more efficient calculation 
+  if (prep$family$link == "logit") { # more efficient calculation
     q <- sapply(1:nthres, function(k) eta[, k])
-    p <- cbind(rep(0, nrow(eta)), q[, 1], 
+    p <- cbind(rep(0, nrow(eta)), q[, 1],
                matrix(0, nrow = nrow(eta), ncol = nthres - 1))
     if (nthres > 1L) {
-      p[, 3:(nthres + 1)] <- 
+      p[, 3:(nthres + 1)] <-
         sapply(3:(nthres + 1), function(k) rowSums(q[, 1:(k - 1)]))
     }
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
-    q <- sapply(1:nthres, function(k) 
+    q <- sapply(1:nthres, function(k)
       inv_link(eta[, k], prep$family$link))
-    p <- cbind(apply(1 - q[, 1:nthres], 1, prod), 
+    p <- cbind(apply(1 - q[, 1:nthres], 1, prod),
                matrix(0, nrow = nrow(eta), ncol = nthres))
     if (nthres > 1L) {
-      p[, 2:nthres] <- sapply(2:nthres, function(k) 
-        apply(as.matrix(q[, 1:(k - 1)]), 1, prod) * 
+      p[, 2:nthres] <- sapply(2:nthres, function(k)
+        apply(as.matrix(q[, 1:(k - 1)]), 1, prod) *
           apply(as.matrix(1 - q[, k:nthres]), 1, prod))
     }
     p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
@@ -962,7 +962,7 @@ log_lik_censor <- function(dist, args, i, prep) {
 
 # adjust log_lik in truncated models
 # @param x vector of log_lik values
-# @param cdf a cumulative distribution function 
+# @param cdf a cumulative distribution function
 # @param args arguments passed to cdf
 # @param i observation number
 # @param prep a brmsprep object

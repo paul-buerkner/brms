@@ -15,7 +15,7 @@ data_predictor(x, ...)
 A named list of data related to predictor variables.
 }
 \description{
-Prepare data related to predictor variables in \pkg{brms}. 
+Prepare data related to predictor variables in \pkg{brms}.
 Only exported for use in package development.
 }
 \keyword{internal}

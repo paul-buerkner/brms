@@ -1,17 +1,17 @@
 #' Extract response values
-#' 
+#'
 #' Extract response values from a \code{\link{brmsfit}} object.
-#' 
+#'
 #' @param x A \code{\link{brmsfit}} object.
 #' @param resp Optional names of response variables for which to extract values.
 #' @param warn For internal use only.
 #' @param ... Further arguments passed to \code{\link{standata}}.
 #' @inheritParams posterior_predict.brmsfit
-#' 
+#'
 #' @return Returns a vector of response values for univariate models and a
 #'   matrix of response values with one column per response variable for
 #'   multivariate models.
-#' 
+#'
 #' @keywords internal
 #' @export
 get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
@@ -46,15 +46,15 @@ get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
 }
 
 #' Prepare Response Data
-#' 
-#' Prepare data related to response variables in \pkg{brms}. 
+#'
+#' Prepare data related to response variables in \pkg{brms}.
 #' Only exported for use in package development.
-#' 
+#'
 #' @param x An \R object.
 #' @param ... Further arguments passed to or from other methods.
-#' 
+#'
 #' @return A named list of data related to response variables.
-#' 
+#'
 #' @keywords internal
 #' @export
 data_response <- function(x, ...) {
@@ -170,7 +170,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (isTRUE(is.finite(trials))) {
         message("Using the maximum response value as the number of trials.")
         warning2(
-          "Using 'binomial' families without specifying 'trials' ", 
+          "Using 'binomial' families without specifying 'trials' ",
           "on the left-hand side of the model formula is deprecated."
         )
       } else if (!is.null(basis$trials)) {
@@ -263,7 +263,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     warning2("Addition argument 'cat' is deprecated. Use 'thres' instead. ",
              "See ?brmsformula for more details.")
   }
-  
+
   if (is.formula(x$adforms$se)) {
     se <- get_ad_values(x, "se", "se", data)
     if (!is.numeric(se)) {
@@ -457,12 +457,12 @@ data_mixture <- function(bterms, data2, prior) {
 data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
   out <- list()
   if (!is_cox(bterms$family)) {
-    return(out) 
+    return(out)
   }
   y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
-  args <- bterms$family$bhaz 
+  args <- bterms$family$bhaz
   bs <- basis$basis_matrix
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs) 
+  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
   sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bterms$resp)
@@ -477,7 +477,7 @@ data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
 # @param integrate compute the I-spline instead of the M-spline basis?
 # @param basis optional precomputed basis matrix
 # @return the design matrix of the baseline hazard function
-bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE, 
+bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
                               basis = NULL) {
   require_package("splines2")
   if (!is.null(basis)) {
@@ -493,11 +493,11 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
   stopifnot(is.list(args))
   args$x <- y
   if (!is.null(args$intercept)) {
-    args$intercept <- as_one_logical(args$intercept) 
+    args$intercept <- as_one_logical(args$intercept)
   }
   if (is.null(args$Boundary.knots)) {
     # avoid 'knots' outside 'Boundary.knots' error (#1143)
-    # we also need a smaller lower boundary knot to avoid lp = -Inf 
+    # we also need a smaller lower boundary knot to avoid lp = -Inf
     # the below choices are ad-hoc and may need further thought
     min_y <- min(y, na.rm = TRUE)
     max_y <- max(y, na.rm = TRUE)
@@ -540,14 +540,14 @@ extract_cat_names <- function(x, data) {
 # @return a data.frame with columns 'thres' and 'group'
 extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
-  
+
   if (is.null(x$adforms)) {
     x$adforms <- terms_ad(x$formula, x$family)
   }
   nthres <- get_ad_values(x, "thres", "thres", data)
   if (any(!is_wholenumber(nthres) | nthres < 1L)) {
     stop2("Number of thresholds must be a positive integer.")
-  }  
+  }
   grthres <- get_ad_values(x, "thres", "gr", data)
   if (!is.null(grthres)) {
     # grouping variable was specified

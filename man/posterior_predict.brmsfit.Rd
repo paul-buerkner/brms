@@ -36,14 +36,14 @@ if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
 
-\item{transform}{(Deprecated) A function or a character string naming 
+\item{transform}{(Deprecated) A function or a character string naming
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{negative_rt}{Only relevant for Wiener diffusion models. 
+\item{negative_rt}{Only relevant for Wiener diffusion models.
 A flag indicating whether response times of responses
 on the lower boundary should be returned as negative values.
 This allows to distinguish responses on the upper and
@@ -56,13 +56,13 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
-\item{ntrys}{Parameter used in rejection sampling 
-for truncated discrete models only 
+\item{ntrys}{Parameter used in rejection sampling
+for truncated discrete models only
 (defaults to \code{5}). See Details for more information.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
@@ -88,12 +88,12 @@ is incorporated in \code{posterior_predict}. However, the estimated means of
 both methods averaged across draws should be very similar.
 }
 \details{
-\code{NA} values within factors in \code{newdata}, 
-  are interpreted as if all dummy variables of this factor are 
-  zero. This allows, for instance, to make predictions of the grand mean 
+\code{NA} values within factors in \code{newdata},
+  are interpreted as if all dummy variables of this factor are
+  zero. This allows, for instance, to make predictions of the grand mean
   when using sum coding.
 
-In multilevel models, it is possible to 
+In multilevel models, it is possible to
 allow new levels of grouping factors to be used in the predictions.
 This can be controlled via argument \code{allow_new_levels}.
 New levels can be sampled in multiple ways, which can be controlled
@@ -115,7 +115,7 @@ For truncated discrete models only: In the absence of any general
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient), 
+fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
            data = kidney, family = "exponential", init = "0")
 
 ## predicted responses

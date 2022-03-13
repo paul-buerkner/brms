@@ -10,10 +10,10 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}}
 
-\item{digits}{The number of significant digits for printing out the summary; 
+\item{digits}{The number of significant digits for printing out the summary;
 defaults to 2. The effective sample size is always rounded to integers.}
 
-\item{...}{Additional arguments that would be passed 
+\item{...}{Additional arguments that would be passed
 to method \code{summary} of \code{brmsfit}.}
 }
 \description{

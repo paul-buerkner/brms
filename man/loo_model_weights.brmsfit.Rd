@@ -15,15 +15,15 @@ passed to the underlying post-processing functions.
 In particular, see \code{\link{prepare_predictions}} for further
 supported arguments.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{
 A named vector of model weights.
 }
 \description{
-Compute model weights for \code{brmsfit} objects via stacking 
+Compute model weights for \code{brmsfit} objects via stacking
 or pseudo-BMA weighting. For more details, see
 \code{\link[loo:loo_model_weights]{loo::loo_model_weights}}.
 }
@@ -35,7 +35,7 @@ fit1 <- brm(rating ~ treat + period + carry,
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler, family = "gaussian")
-loo_model_weights(fit1, fit2)   
-}  
+loo_model_weights(fit1, fit2)
+}
 
 }

@@ -7,17 +7,17 @@
 compare_ic(..., x = NULL, ic = c("loo", "waic", "kfold"))
 }
 \arguments{
-\item{...}{At least two objects returned by 
+\item{...}{At least two objects returned by
 \code{\link{waic}} or \code{\link{loo}}.
-Alternatively, \code{brmsfit} objects with information 
+Alternatively, \code{brmsfit} objects with information
 criteria precomputed via \code{\link{add_ic}}
 may be passed, as well.}
 
 \item{x}{A \code{list} containing the same types of objects as
 can be passed via \code{...}.}
 
-\item{ic}{The name of the information criterion to be extracted 
-from \code{brmsfit} objects. Ignored if information 
+\item{ic}{The name of the information criterion to be extracted
+from \code{brmsfit} objects. Ignored if information
 criterion objects are only passed directly.}
 }
 \value{
@@ -30,7 +30,7 @@ Deprecated and will be removed in the future. Please use
 \code{\link{loo_compare}} instead.
 }
 \details{
-See \code{\link{loo_compare}} for the recommended way 
+See \code{\link{loo_compare}} for the recommended way
   of comparing models with the \pkg{loo} package.
 }
 \examples{

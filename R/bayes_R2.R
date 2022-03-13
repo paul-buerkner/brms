@@ -1,42 +1,42 @@
 #' Compute a Bayesian version of R-squared for regression models
-#' 
+#'
 #' @aliases bayes_R2
-#' 
+#'
 #' @inheritParams predict.brmsfit
-#' @param ... Further arguments passed to 
+#' @param ... Further arguments passed to
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}},
 #'   which is used in the computation of the R-squared values.
-#' 
+#'
 #' @return If \code{summary = TRUE}, an M x C matrix is returned
-#'  (M = number of response variables and c = \code{length(probs) + 2}) 
+#'  (M = number of response variables and c = \code{length(probs) + 2})
 #'  containing summary statistics of the Bayesian R-squared values.
 #'  If \code{summary = FALSE}, the posterior draws of the Bayesian
 #'  R-squared values are returned in an S x M matrix (S is the number of draws).
-#'  
+#'
 #' @details For an introduction to the approach, see Gelman et al. (2018)
 #'  and \url{https://github.com/jgabry/bayes_R2/}.
-#'   
+#'
 #' @references Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2018).
 #'   R-squared for Bayesian regression models, \emph{The American Statistician}.
 #'   \code{10.1080/00031305.2018.1549100} (Preprint available at
 #'   \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf})
-#'  
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #' summary(fit)
 #' bayes_R2(fit)
-#' 
+#'
 #' # compute R2 with new data
 #' nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
 #' bayes_R2(fit, newdata = nd)
 #' }
-#' 
+#'
 #' @method bayes_R2 brmsfit
 #' @importFrom rstantools bayes_R2
 #' @export bayes_R2
 #' @export
-bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE, 
+bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
                              robust = FALSE, probs = c(0.025, 0.975), ...) {
   contains_draws(object)
   object <- restructure(object)
@@ -52,7 +52,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       R2 <- posterior_summary(R2, probs = probs, robust = robust)
     }
     return(R2)
-  } 
+  }
   family <- family(object, resp = resp)
   if (conv_cats_dpars(family)) {
     stop2("'bayes_R2' is not defined for unordered categorical models.")

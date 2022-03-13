@@ -1,13 +1,13 @@
 #' Extract Prior Draws
-#' 
-#' Extract prior draws of specified parameters 
-#' 
+#'
+#' Extract prior draws of specified parameters
+#'
 #' @aliases prior_draws.brmsfit prior_samples
-#' 
+#'
 #' @param x An \code{R} object typically of class \code{brmsfit}.
 #' @inheritParams as.data.frame.brmsfit
 #' @param ... Arguments passed to individual methods (if applicable).
-#'   
+#'
 #' @details To make use of this function, the model must contain draws of
 #'   prior distributions. This can be ensured by setting \code{sample_prior =
 #'   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
@@ -16,25 +16,25 @@
 #'   by default. If you want to treat the intercept as part of all the other
 #'   regression coefficients, so that sampling from its prior becomes possible,
 #'   use \code{... ~ 0 + Intercept + ...} in the formulas.
-#'   
+#'
 #' @return A \code{data.frame} containing the prior draws.
-#' 
+#'
 #' @examples
 #' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry + (1|subject), 
-#'            data = inhaler, family = "cumulative", 
-#'            prior = set_prior("normal(0,2)", class = "b"), 
+#' fit <- brm(rating ~ treat + period + carry + (1|subject),
+#'            data = inhaler, family = "cumulative",
+#'            prior = set_prior("normal(0,2)", class = "b"),
 #'            sample_prior = TRUE)
-#' 
+#'
 #' # extract all prior draws
 #' draws1 <- prior_draws(fit)
 #' head(draws1)
-#' 
+#'
 #' # extract prior draws for the coefficient of 'treat'
 #' draws2 <- prior_draws(fit, "b_treat")
 #' head(draws2)
 #' }
-#' 
+#'
 #' @export
 prior_draws.brmsfit <- function(x, variable = NULL, pars = NULL, ...) {
   variable <- use_alias(variable, pars)
@@ -73,13 +73,13 @@ prior_draws.brmsfit <- function(x, variable = NULL, pars = NULL, ...) {
 }
 
 #' @rdname prior_draws.brmsfit
-#' @export 
+#' @export
 prior_draws <- function(x, ...) {
   UseMethod("prior_draws")
 }
 
 #' @export
-prior_draws.default <- function(x, variable = NULL, pars = NULL, 
+prior_draws.default <- function(x, variable = NULL, pars = NULL,
                                 regex = FALSE, fixed = FALSE, ...) {
   call <- match.call()
   if ("pars" %in% names(call)) {
@@ -95,9 +95,9 @@ prior_draws.default <- function(x, variable = NULL, pars = NULL,
     if (regex) {
       hat <- substr(variable, 1, 1) == "^"
       variable <- ifelse(hat, substr(variable, 2, nchar(variable)), variable)
-      variable <- paste0("^prior_", variable)  
+      variable <- paste0("^prior_", variable)
     } else {
-      variable <- paste0("prior_", variable) 
+      variable <- paste0("prior_", variable)
     }
   }
   x <- as_draws_df(as.data.frame(x))
@@ -113,7 +113,7 @@ prior_draws.default <- function(x, variable = NULL, pars = NULL,
 }
 
 #' @rdname prior_draws.brmsfit
-#' @export 
+#' @export
 prior_samples <- function(x, ...) {
   warning2("'prior_samples' is deprecated. Please use 'prior_draws' instead.")
   UseMethod("prior_draws")
@@ -141,8 +141,8 @@ ignore_prior <- function(x, variable) {
       out <- p_par %in% p_intercepts
       if (out) {
         warning2(
-          "Sampling from the prior of an overall intercept is not ", 
-          "possible by default. See the documentation of the ", 
+          "Sampling from the prior of an overall intercept is not ",
+          "possible by default. See the documentation of the ",
           "'sample_prior' argument in help('brm')."
         )
       }

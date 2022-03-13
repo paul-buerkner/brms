@@ -20,27 +20,27 @@ default, a hopefully not too large selection of variables is plotted.}
 \item{regex}{Logical; Indicates whether \code{variable} should
 be treated as regular expressions. Defaults to \code{FALSE}.}
 
-\item{fixed}{(Deprecated) Indicates whether parameter names 
+\item{fixed}{(Deprecated) Indicates whether parameter names
 should be matched exactly (\code{TRUE}) or treated as
 regular expressions (\code{FALSE}). Default is \code{FALSE}
 and only works with argument \code{pars}.}
 
-\item{...}{Further arguments to be passed to 
+\item{...}{Further arguments to be passed to
 \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.}
 }
 \description{
-A \code{\link[graphics:pairs]{pairs}} 
+A \code{\link[graphics:pairs]{pairs}}
 method that is customized for MCMC output.
 }
 \details{
-For a detailed description see  
+For a detailed description see
   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt 
-           + (1|patient) + (1|visit), 
-           data = epilepsy, family = "poisson")  
+fit <- brm(count ~ zAge + zBase * Trt
+           + (1|patient) + (1|visit),
+           data = epilepsy, family = "poisson")
 pairs(fit, variable = variables(fit)[1:3])
 pairs(fit, variable = "^sd_", regex = TRUE)
 }

@@ -7,17 +7,17 @@
 mmc(...)
 }
 \arguments{
-\item{...}{One or more terms containing covariates 
+\item{...}{One or more terms containing covariates
 corresponding to the grouping levels specified in \code{\link{mm}}.}
 }
 \value{
 A matrix with covariates as columns.
 }
 \description{
-Specify covariates that vary over different levels 
+Specify covariates that vary over different levels
 of multi-membership grouping factors thus requiring
 special treatment. This function is almost solely useful,
-when called in combination with \code{\link{mm}}. 
+when called in combination with \code{\link{mm}}.
 Outside of multi-membership terms it will behave
 very much like \code{\link{cbind}}.
 }
@@ -30,7 +30,7 @@ dat <- data.frame(
 )
 
 # multi-membership model with level specific covariate values
-dat$xc <- (dat$x1 + dat$x2) / 2 
+dat$xc <- (dat$x1 + dat$x2) / 2
 fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 summary(fit)
 }

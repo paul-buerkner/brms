@@ -51,9 +51,9 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
@@ -79,12 +79,12 @@ estimated means of both methods averaged across draws should be very
 similar.
 }
 \details{
-\code{NA} values within factors in \code{newdata}, 
-  are interpreted as if all dummy variables of this factor are 
-  zero. This allows, for instance, to make predictions of the grand mean 
+\code{NA} values within factors in \code{newdata},
+  are interpreted as if all dummy variables of this factor are
+  zero. This allows, for instance, to make predictions of the grand mean
   when using sum coding.
 
-In multilevel models, it is possible to 
+In multilevel models, it is possible to
 allow new levels of grouping factors to be used in the predictions.
 This can be controlled via argument \code{allow_new_levels}.
 New levels can be sampled in multiple ways, which can be controlled
@@ -95,7 +95,7 @@ other useful arguments to control specific aspects of the predictions.
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject), 
+fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler)
 
 ## compute expected predictions

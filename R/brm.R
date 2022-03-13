@@ -1,19 +1,19 @@
 #' Fit Bayesian Generalized (Non-)Linear Multivariate Multilevel Models
-#' 
-#' Fit Bayesian generalized (non-)linear multivariate multilevel models 
-#' using Stan for full Bayesian inference. A wide range of distributions 
-#' and link functions are supported, allowing users to fit -- among others -- 
-#' linear, robust linear, count data, survival, response times, ordinal, 
-#' zero-inflated, hurdle, and even self-defined mixture models all in a 
-#' multilevel context. Further modeling options include non-linear and 
-#' smooth terms, auto-correlation structures, censored data, meta-analytic 
-#' standard errors, and quite a few more. In addition, all parameters of the 
-#' response distributions can be predicted in order to perform distributional 
-#' regression. Prior specifications are flexible and explicitly encourage 
+#'
+#' Fit Bayesian generalized (non-)linear multivariate multilevel models
+#' using Stan for full Bayesian inference. A wide range of distributions
+#' and link functions are supported, allowing users to fit -- among others --
+#' linear, robust linear, count data, survival, response times, ordinal,
+#' zero-inflated, hurdle, and even self-defined mixture models all in a
+#' multilevel context. Further modeling options include non-linear and
+#' smooth terms, auto-correlation structures, censored data, meta-analytic
+#' standard errors, and quite a few more. In addition, all parameters of the
+#' response distributions can be predicted in order to perform distributional
+#' regression. Prior specifications are flexible and explicitly encourage
 #' users to apply prior distributions that actually reflect their beliefs.
 #' In addition, model fit can easily be assessed and compared with
 #' posterior predictive checks and leave-one-out cross-validation.
-#' 
+#'
 #' @param formula An object of class \code{\link[stats:formula]{formula}},
 #'   \code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
 #'   be coerced to that classes): A symbolic description of the model to be
@@ -34,7 +34,7 @@
 #'   \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 #'   for more help.
 #' @param data2 A named \code{list} of objects containing data, which
-#'   cannot be passed via argument \code{data}. Required for some objects 
+#'   cannot be passed via argument \code{data}. Required for some objects
 #'   used in autocorrelation structures to specify dependency structures
 #'   as well as for within-group covariance matrices.
 #' @param autocor (Deprecated) An optional \code{\link{cor_brms}} object
@@ -56,7 +56,7 @@
 #'   matrices should correspond to columns in \code{data} that are used as
 #'   grouping factors. All levels of the grouping factor should appear as
 #'   rownames of the corresponding matrix. This argument can be used, among
-#'   others to model pedigrees and phylogenetic effects. 
+#'   others to model pedigrees and phylogenetic effects.
 #'   It is now recommended to specify those matrices in the formula
 #'   interface using the \code{\link{gr}} and related functions. See
 #'   \code{vignette("brms_phylogenetics")} for more details.
@@ -153,7 +153,7 @@
 #'   be included in the Stan code (defaults to \code{TRUE}). Setting it
 #'   to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
 #'   sampling efficiency may be increased but some post processing functions
-#'   such as \code{\link{bridge_sampler}} will not be available. Can be 
+#'   such as \code{\link{bridge_sampler}} will not be available. Can be
 #'   controlled globally for the current \R session via the `brms.normalize`
 #'   option.
 #' @param algorithm Character string naming the estimation approach to use.
@@ -170,7 +170,7 @@
 #'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
 #'   \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
 #'   respectively. Additionally a \code{"mock"} backend is available to make
-#'   testing \pkg{brms} and packages that depend on it easier. 
+#'   testing \pkg{brms} and packages that depend on it easier.
 #'   The \code{"mock"} backend does not actually do any fitting, it only checks
 #'   the generated Stan code for correctness and then returns whatever is passed
 #'   in an additional \code{mock_fit} argument as the result of the fit.
@@ -201,14 +201,14 @@
 #'   fitted model object is saved via \code{\link{saveRDS}} in a file named
 #'   after the string supplied in \code{file}. The \code{.rds} extension is
 #'   added automatically. If the file already exists, \code{brm} will load and
-#'   return the saved model object instead of refitting the model. 
+#'   return the saved model object instead of refitting the model.
 #'   Unless you specify the \code{file_refit} argument as well, the existing
 #'   files won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
 #' @param file_refit Modifies when the fit stored via the \code{file} parameter
 #'   is re-used. Can be set globally for the current \R session via the
-#'   \code{"brms.file_refit"} option (see \code{\link{options}}). 
+#'   \code{"brms.file_refit"} option (see \code{\link{options}}).
 #'   For \code{"never"} (default) the fit is always loaded if it
 #'   exists and fitting is skipped. For \code{"always"} the model is always
 #'   refitted. If set to \code{"on_change"}, brms will
@@ -225,19 +225,19 @@
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created
 #'   Stan model outside of \pkg{brms} and want to feed it back into the package.
-#' @param rename For internal use only. 
+#' @param rename For internal use only.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
-#' @param ... Further arguments passed to Stan. 
+#' @param ... Further arguments passed to Stan.
 #'   For \code{backend = "rstan"} the arguments are passed to
 #'   \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 #'   For \code{backend = "cmdstanr"} the arguments are passed to the
 #'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
-#' 
+#'
 #' @return An object of class \code{brmsfit}, which contains the posterior
 #'   draws along with many other useful information about the model. Use
 #'   \code{methods(class = "brmsfit")} for an overview on available methods.
-#'  
+#'
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #'
 #' @details Fit a generalized (non-)linear multivariate multilevel model via
@@ -294,13 +294,13 @@
 #'   usually be larger than the current default of \code{10}. For more details
 #'   on the \code{control} argument see \code{\link[rstan:stan]{stan}}.
 #'
-#' @references 
-#' Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
-#' Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
+#' @references
+#' Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel
+#' Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28.
 #' \code{doi:10.18637/jss.v080.i01}
-#' 
-#' Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
-#' with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+#'
+#' Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling
+#' with the R Package brms. \emph{The R Journal}. 10(1), 395–411.
 #' \code{doi:10.32614/RJ-2018-017}
 #'
 #' @seealso \code{\link{brms}}, \code{\link{brmsformula}},
@@ -365,7 +365,7 @@
 #' # Non-linear Gaussian model
 #' fit5 <- brm(
 #'   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-#'      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+#'      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
 #'      nl = TRUE),
 #'   data = loss, family = gaussian(),
 #'   prior = c(
@@ -406,8 +406,8 @@
 #' library(future)
 #' plan(multiprocess)
 #' fit7 <- update(fit7, future = TRUE)
-#' 
-#' 
+#'
+#'
 #' # fit a model manually via rstan
 #' scode <- make_stancode(count ~ Trt, data = epilepsy)
 #' sdata <- make_standata(count ~ Trt, data = epilepsy)
@@ -424,26 +424,26 @@
 #' @import stats
 #' @import Rcpp
 #' @export
-brm <- function(formula, data, family = gaussian(), prior = NULL, 
-                autocor = NULL, data2 = NULL, cov_ranef = NULL, 
+brm <- function(formula, data, family = gaussian(), prior = NULL,
+                autocor = NULL, data2 = NULL, cov_ranef = NULL,
                 sample_prior = "no", sparse = NULL, knots = NULL,
-                stanvars = NULL, stan_funs = NULL, fit = NA, 
-                save_pars = NULL, save_ranef = NULL, 
-                save_mevars = NULL, save_all_pars = NULL, 
-                init = NULL, inits = NULL, chains = 4, iter = 2000, 
+                stanvars = NULL, stan_funs = NULL, fit = NA,
+                save_pars = NULL, save_ranef = NULL,
+                save_mevars = NULL, save_all_pars = NULL,
+                init = NULL, inits = NULL, chains = 4, iter = 2000,
                 warmup = floor(iter / 2), thin = 1,
-                cores = getOption("mc.cores", 1), 
+                cores = getOption("mc.cores", 1),
                 threads = getOption("brms.threads", NULL),
                 opencl = getOption("brms.opencl", NULL),
                 normalize = getOption("brms.normalize", TRUE),
-                control = NULL, 
+                control = NULL,
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
-                future = getOption("future", FALSE), silent = 1, 
+                future = getOption("future", FALSE), silent = 1,
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, file_refit = getOption("brms.file_refit", "never"), 
+                file = NULL, file_refit = getOption("brms.file_refit", "never"),
                 empty = FALSE, rename = TRUE, ...) {
-  
+
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
@@ -454,7 +454,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       return(x)
     }
   }
-  
+
   # validate arguments later passed to Stan
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
@@ -472,7 +472,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-  
+
   # initialize brmsfit object
   if (is.brmsfit(fit)) {
     # re-use existing model
@@ -494,23 +494,23 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     backend <- x$backend
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
-  } else {  
+  } else {
     # build new model
     formula <- validate_formula(
-      formula, data = data, family = family, 
+      formula, data = data, family = family,
       autocor = autocor, sparse = sparse,
       cov_ranef = cov_ranef
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
     data2 <- validate_data2(
-      data2, bterms = bterms, 
+      data2, bterms = bterms,
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
     data_name <- substitute_name(data)
     data <- validate_data(
-      data, bterms = bterms, 
+      data, bterms = bterms,
       data2 = data2, knots = knots
     )
     attr(data, "data_name") <- data_name
@@ -520,23 +520,23 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     save_pars <- validate_save_pars(
-      save_pars, save_ranef = save_ranef, 
+      save_pars, save_ranef = save_ranef,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
     ranef <- tidy_ranef(bterms, data = data)
     # generate Stan code
     model <- .make_stancode(
-      bterms, data = data, prior = prior, 
+      bterms, data = data, prior = prior,
       stanvars = stanvars, save_model = save_model,
       backend = backend, threads = threads, opencl = opencl,
       normalize = normalize
     )
-    
+
     # initialize S3 object
     x <- brmsfit(
-      formula = formula, data = data, data2 = data2, prior = prior, 
-      stanvars = stanvars, model = model, algorithm = algorithm, 
+      formula = formula, data = data, data2 = data2, prior = prior,
+      stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
       save_pars = save_pars, ranef = ranef, family = family
     )
@@ -544,15 +544,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .make_standata(
-      bterms, data = data, prior = prior, data2 = data2, 
+      bterms, data = data, prior = prior, data2 = data2,
       stanvars = stanvars, threads = threads
     )
-    
+
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot
       return(x)
     }
-    
+
     if (!is.null(file) && file_refit == "on_change") {
       x_from_file <- read_brmsfit(file)
       if (!is.null(x_from_file)) {
@@ -565,7 +565,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
         }
       }
     }
-    
+
     # compile the Stan model
     compile_args <- stan_model_args
     compile_args$model <- model
@@ -575,7 +575,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     compile_args$silent <- silent
     model <- do_call(compile_model, compile_args)
   }
-  
+
   # fit the Stan model
   fit_args <- nlist(
     model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
@@ -585,7 +585,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
 
   # rename parameters to have human readable names
   if (rename) {
-    x <- rename_pars(x) 
+    x <- rename_pars(x)
   }
   if (!is.null(file)) {
     x <- write_brmsfit(x, file)
