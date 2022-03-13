@@ -21,7 +21,7 @@ ggplot2::theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
-income <- factor(sample(income_options, 100, TRUE), 
+income <- factor(sample(income_options, 100, TRUE),
                  levels = income_options, ordered = TRUE)
 mean_ls <- c(30, 60, 70, 75)
 ls <- mean_ls[income] + rnorm(100, sd = 7)

@@ -1,11 +1,11 @@
 #' K-Fold Cross-Validation
-#' 
+#'
 #' Perform exact K-fold cross-validation by refitting the model \eqn{K}
 #' times each leaving out one-\eqn{K}th of the original data.
 #' Folds can be run in parallel using the \pkg{future} package.
-#' 
+#'
 #' @aliases kfold
-#' 
+#'
 #' @inheritParams loo.brmsfit
 #' @param K The number of subsets of equal (if possible) size
 #'   into which the data will be partitioned for performing
@@ -13,13 +13,13 @@
 #'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
 #'   number of observations in the data then \eqn{K}-fold cross-validation is
 #'   equivalent to exact leave-one-out cross-validation.
-#' @param Ksub Optional number of subsets (of those subsets defined by \code{K}) 
-#'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
-#'   will be performed on all subsets. If \code{Ksub} is a single integer, 
+#' @param Ksub Optional number of subsets (of those subsets defined by \code{K})
+#'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation
+#'   will be performed on all subsets. If \code{Ksub} is a single integer,
 #'   \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
 #'   If \code{Ksub} consists of multiple integers or a one-dimensional array
-#'   (created via \code{as.array}) potentially of length one, the corresponding 
-#'   subsets will be used. This argument is primarily useful, if evaluation of 
+#'   (created via \code{as.array}) potentially of length one, the corresponding
+#'   subsets will be used. This argument is primarily useful, if evaluation of
 #'   all subsets is infeasible for some reason.
 #' @param folds Determines how the subsets are being constructed.
 #'   Possible values are \code{NULL} (the default), \code{"stratified"},
@@ -31,55 +31,55 @@
 #'   What exactly is done with this variable depends on argument \code{folds}.
 #'   More information is provided in the 'Details' section.
 #' @param exact_loo Deprecated! Please use \code{folds = "loo"} instead.
-#' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
-#'   the returned object to store the cross-validated \code{brmsfit} 
-#'   objects and the indices of the omitted observations for each fold. 
+#' @param save_fits If \code{TRUE}, a component \code{fits} is added to
+#'   the returned object to store the cross-validated \code{brmsfit}
+#'   objects and the indices of the omitted observations for each fold.
 #'   Defaults to \code{FALSE}.
 #' @param future_args A list of further arguments passed to
 #'   \code{\link[future:future]{future}} for additional control over parallel
 #'   execution if activated.
-#'   
-#' @return \code{kfold} returns an object that has a similar structure as the 
+#'
+#' @return \code{kfold} returns an object that has a similar structure as the
 #'   objects returned by the \code{loo} and \code{waic} methods and
 #'   can be used with the same post-processing functions.
-#'    
+#'
 #' @details The \code{kfold} function performs exact \eqn{K}-fold
-#'   cross-validation. First the data are partitioned into \eqn{K} folds 
-#'   (i.e. subsets) of equal (or as close to equal as possible) size by default. 
-#'   Then the model is refit \eqn{K} times, each time leaving out one of the 
-#'   \code{K} subsets. If \eqn{K} is equal to the total number of observations 
-#'   in the data then \eqn{K}-fold cross-validation is equivalent to exact 
-#'   leave-one-out cross-validation (to which \code{loo} is an efficient 
-#'   approximation). The \code{compare_ic} function is also compatible with 
+#'   cross-validation. First the data are partitioned into \eqn{K} folds
+#'   (i.e. subsets) of equal (or as close to equal as possible) size by default.
+#'   Then the model is refit \eqn{K} times, each time leaving out one of the
+#'   \code{K} subsets. If \eqn{K} is equal to the total number of observations
+#'   in the data then \eqn{K}-fold cross-validation is equivalent to exact
+#'   leave-one-out cross-validation (to which \code{loo} is an efficient
+#'   approximation). The \code{compare_ic} function is also compatible with
 #'   the objects returned by \code{kfold}.
-#'   
-#'   The subsets can be constructed in multiple different ways: 
+#'
+#'   The subsets can be constructed in multiple different ways:
 #'   \itemize{
-#'   \item If both \code{folds} and \code{group} are \code{NULL}, the subsets 
-#'   are randomly chosen so that they have equal (or as close to equal as 
-#'   possible) size. 
-#'   \item If \code{folds} is \code{NULL} but \code{group} is specified, the 
-#'   data is split up into subsets, each time omitting all observations of one 
-#'   of the factor levels, while ignoring argument \code{K}. 
-#'   \item If \code{folds = "stratified"} the subsets are stratified after 
+#'   \item If both \code{folds} and \code{group} are \code{NULL}, the subsets
+#'   are randomly chosen so that they have equal (or as close to equal as
+#'   possible) size.
+#'   \item If \code{folds} is \code{NULL} but \code{group} is specified, the
+#'   data is split up into subsets, each time omitting all observations of one
+#'   of the factor levels, while ignoring argument \code{K}.
+#'   \item If \code{folds = "stratified"} the subsets are stratified after
 #'   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_stratified}}.
 #'   \item If \code{folds = "grouped"} the subsets are split by
 #'   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_grouped}}.
 #'   \item If \code{folds = "loo"} exact leave-one-out cross-validation
 #'   will be performed and \code{K} will be ignored. Further, if \code{group}
-#'   is specified, all observations corresponding to the factor level of the 
-#'   currently predicted single value are omitted. Thus, in this case, the 
+#'   is specified, all observations corresponding to the factor level of the
+#'   currently predicted single value are omitted. Thus, in this case, the
 #'   predicted values are only a subset of the omitted ones.
-#'   \item If \code{folds} is a numeric vector, it must contain one element per 
-#'   observation in the data. Each element of the vector is an integer in 
-#'   \code{1:K} indicating to which of the \code{K} folds the corresponding 
-#'   observation belongs. There are some convenience functions available in 
-#'   the \pkg{loo} package that create integer vectors to use for this purpose 
-#'   (see the Examples section below and also the 
+#'   \item If \code{folds} is a numeric vector, it must contain one element per
+#'   observation in the data. Each element of the vector is an integer in
+#'   \code{1:K} indicating to which of the \code{K} folds the corresponding
+#'   observation belongs. There are some convenience functions available in
+#'   the \pkg{loo} package that create integer vectors to use for this purpose
+#'   (see the Examples section below and also the
 #'   \link[loo:kfold-helpers]{kfold-helpers} page).
 #'   }
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'            data = epilepsy, family = poisson())
@@ -87,19 +87,19 @@
 #' (loo1 <- loo(fit1))
 #' # perform 10-fold cross validation
 #' (kfold1 <- kfold(fit1, chains = 1))
-#' 
+#'
 #' # use the future package for parallelization
 #' library(future)
 #' plan(multiprocess)
 #' kfold(fit1, chains = 1)
-#' }   
-#'  
+#' }
+#'
 #' @seealso \code{\link{loo}}, \code{\link{reloo}}
-#'  
+#'
 #' @importFrom loo kfold
 #' @export kfold
 #' @export
-kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL, 
+kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
                           group = NULL, exact_loo = NULL, compare = TRUE,
                           resp = NULL, model_names = NULL, save_fits = FALSE,
                           future_args = list()) {
@@ -110,7 +110,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     folds <- "loo"
   }
   c(args) <- nlist(
-    criterion = "kfold", K, Ksub, folds, group, 
+    criterion = "kfold", K, Ksub, folds, group,
     compare, resp, save_fits, future_args, use_stored
   )
   do_call(compute_loolist, args)
@@ -201,7 +201,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     }
     Ksub <- sort(Ksub)
   }
-  
+
   # split dots for use in log_lik and update
   dots <- list(...)
   ll_arg_names <- arg_names("log_lik")
@@ -211,7 +211,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   ll_args$combine <- TRUE
   up_args <- dots[setdiff(names(dots), ll_arg_names)]
   up_args$refresh <- 0
-  
+
   # function to be run inside future::future
   .kfold_k <- function(k) {
     if (fold_type == "loo" && !is.null(group)) {
@@ -234,14 +234,14 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     if (save_fits) out$fit <- fit
     return(out)
   }
-  
+
   futures <- vector("list", length(Ksub))
   lppds <- obs_order <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(list(), dim = c(length(Ksub), 3))
     dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
   }
-  
+
   x <- recompile_model(x)
   future_args$FUN <- .kfold_k
   future_args$seed <- TRUE
@@ -260,7 +260,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     obs_order[[ks]] <- tmp$predicted
     lppds[[ks]] <- tmp$lppds
   }
-  
+
   lppds <- do_call(cbind, lppds)
   elpds <- apply(lppds, 2, log_mean_exp)
   # make sure elpds are put back in the right order
@@ -290,52 +290,52 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 }
 
 #' Predictions from K-Fold Cross-Validation
-#' 
-#' Compute and evaluate predictions after performing K-fold 
-#' cross-validation via \code{\link{kfold}}. 
-#' 
+#'
+#' Compute and evaluate predictions after performing K-fold
+#' cross-validation via \code{\link{kfold}}.
+#'
 #' @param x Object of class \code{'kfold'} computed by \code{\link{kfold}}.
 #'   For \code{kfold_predict} to work, the fitted model objects need to have
 #'   been stored via argument \code{save_fits} of \code{\link{kfold}}.
 #' @param method The method used to make predictions. Either \code{"predict"}
 #'   or \code{"fitted"}. See \code{\link{predict.brmsfit}} for details.
 #' @inheritParams predict.brmsfit
-#' 
+#'
 #' @return A \code{list} with two slots named \code{'y'} and \code{'yrep'}.
 #'   Slot \code{y} contains the vector of observed responses.
 #'   Slot \code{yrep} contains the matrix of predicted responses,
 #'   with rows being posterior draws and columns being observations.
-#'   
+#'
 #' @seealso \code{\link{kfold}}
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit <- brm(count ~ zBase * Trt + (1|patient),
 #'            data = epilepsy, family = poisson())
-#'             
+#'
 #' # perform k-fold cross validation
 #' (kf <- kfold(fit, save_fits = TRUE, chains = 1))
-#' 
+#'
 #' # define a loss function
 #' rmse <- function(y, yrep) {
 #'   yrep_mean <- colMeans(yrep)
 #'   sqrt(mean((yrep_mean - y)^2))
 #' }
-#' 
+#'
 #' # predict responses and evaluate the loss
 #' kfp <- kfold_predict(kf)
 #' rmse(y = kfp$y, yrep = kfp$yrep)
 #' }
-#'   
+#'
 #' @export
-kfold_predict <- function(x, method = c("predict", "fitted"), 
+kfold_predict <- function(x, method = c("predict", "fitted"),
                           resp = NULL, ...) {
   if (!inherits(x, "kfold")) {
     stop2("'x' must be a 'kfold' object.")
   }
   if (!all(c("fits", "data") %in% names(x))) {
     stop2(
-      "Slots 'fits' and 'data' are required. ", 
+      "Slots 'fits' and 'data' are required. ",
       "Please run kfold with 'save_fits = TRUE'."
     )
   }
@@ -354,7 +354,7 @@ kfold_predict <- function(x, method = c("predict", "fitted"),
     newdata <- x$data[predicted_k, , drop = FALSE]
     y[obs_names] <- get_y(fit_k, resp, newdata = newdata, ...)
     yrep[, obs_names] <- method(
-      fit_k, newdata = newdata, resp = resp, 
+      fit_k, newdata = newdata, resp = resp,
       allow_new_levels = TRUE, summary = FALSE, ...
     )
   }

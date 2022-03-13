@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{correlation}{Logical; if \code{FALSE} (the default), compute 
+\item{correlation}{Logical; if \code{FALSE} (the default), compute
 the covariance matrix, if \code{TRUE}, compute the correlation matrix.}
 
 \item{pars}{Optional names of coefficients to extract.
@@ -21,16 +21,16 @@ By default, all coefficients are extracted.}
 covariance or correlation matrix of population-level parameters
 }
 \description{
-Get a point estimate of the covariance or 
+Get a point estimate of the covariance or
 correlation matrix of population-level parameters
 }
 \details{
-Estimates are obtained by calculating the maximum likelihood 
+Estimates are obtained by calculating the maximum likelihood
   covariances (correlations) of the posterior draws.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
            data = epilepsy, family = gaussian(), chains = 2)
 vcov(fit)
 }

@@ -16,7 +16,7 @@ A \code{brmsfit} object compatible with the latest version
   of \pkg{brms}.
 }
 \description{
-Restructure old \code{brmsfit} objects to work with 
+Restructure old \code{brmsfit} objects to work with
 the latest \pkg{brms} version. This function is called
 internally when applying post-processing methods.
 However, in order to avoid unnecessary run time caused

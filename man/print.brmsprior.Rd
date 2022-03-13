@@ -9,8 +9,8 @@
 \arguments{
 \item{x}{An object of class \code{brmsprior}.}
 
-\item{show_df}{Logical; Print priors as a single 
-\code{data.frame} (\code{TRUE}) or as a sequence of 
+\item{show_df}{Logical; Print priors as a single
+\code{data.frame} (\code{TRUE}) or as a sequence of
 sampling statements (\code{FALSE})?}
 
 \item{...}{Currently ignored.}

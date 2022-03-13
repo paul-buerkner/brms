@@ -8,27 +8,27 @@
 mvbrmsformula(..., flist = NULL, rescor = NULL)
 }
 \arguments{
-\item{...}{Objects of class \code{formula} or \code{brmsformula}, 
+\item{...}{Objects of class \code{formula} or \code{brmsformula},
 each specifying a univariate model. See \code{\link{brmsformula}}
 for details on how to specify univariate models.}
 
-\item{flist}{Optional list of formulas, which are treated in the 
+\item{flist}{Optional list of formulas, which are treated in the
 same way as formulas passed via the \code{...} argument.}
 
 \item{rescor}{Logical; Indicates if residual correlation between
 the response variables should be modeled. Currently, this is only
 possible in multivariate \code{gaussian} and \code{student} models.
-If \code{NULL} (the default), \code{rescor} is internally set to 
+If \code{NULL} (the default), \code{rescor} is internally set to
 \code{TRUE} when possible.}
 }
 \value{
 An object of class \code{mvbrmsformula}, which
-  is essentially a \code{list} containing all model formulas 
+  is essentially a \code{list} containing all model formulas
   as well as some additional information for multivariate models.
 }
 \description{
 Set up a multivariate model formula for use in the \pkg{brms} package
-allowing to define (potentially non-linear) additive multilevel 
+allowing to define (potentially non-linear) additive multilevel
 models for all parameters of the assumed response distributions.
 }
 \details{

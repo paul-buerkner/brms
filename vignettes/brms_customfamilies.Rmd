@@ -2,7 +2,7 @@
 title: "Define Custom Response Distributions with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
@@ -43,7 +43,7 @@ will explain how to specify such *custom families* in **brms**. By doing that,
 users can benefit from the modeling flexibility and post-processing options of
 **brms** even when using self-defined response distributions.
 If you have built a custom family that you want to make available to other
-users, you can submit a pull request to this 
+users, you can submit a pull request to this
 [GitHub repository](https://github.com/paul-buerkner/custom-brms-families).
 
 ## A Case Study
@@ -83,7 +83,7 @@ Predicting `incidence` by `period` and a varying intercept of `herd` is straight
 forward in **brms**:
 
 ```{r fit1, results='hide'}
-fit1 <- brm(incidence | trials(size) ~ period + (1|herd), 
+fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
             data = cbpp, family = binomial())
 ```
 
@@ -174,7 +174,7 @@ stan_funs <- "
 ```
 
 For the model fitting, we will only need `beta_binomial2_lpmf`, but
-`beta_binomial2_rng` will come in handy when it comes to post-processing. 
+`beta_binomial2_rng` will come in handy when it comes to post-processing.
 We define:
 
 ```{r stanvars}
@@ -193,7 +193,7 @@ We now have all components together to fit our custom beta-binomial model:
 
 ```{r fit2, results='hide'}
 fit2 <- brm(
-  incidence | vint(size) ~ period + (1|herd), data = cbpp, 
+  incidence | vint(size) ~ period + (1|herd), data = cbpp,
   family = beta_binomial2, stanvars = stanvars
 )
 ```

@@ -5,7 +5,7 @@ logit <- function(p) {
   log(p) - log1p(-p)
 }
 
-inv_logit <- function(x) { 
+inv_logit <- function(x) {
   1 / (1 + exp(-x))
 }
 
@@ -69,54 +69,54 @@ step <- function(x) {
 }
 
 #' Logarithm with a minus one offset.
-#' 
+#'
 #' Computes \code{log(x - 1)}.
-#' 
+#'
 #' @param x A numeric or complex vector.
 #' @param base A positive or complex number: the base with respect to which
 #'   logarithms are computed. Defaults to \emph{e} = \code{exp(1)}.
-#'     
+#'
 #' @export
 logm1 <- function(x, base = exp(1)) {
   log(x - 1, base = base)
 }
 
 #' Exponential function plus one.
-#' 
+#'
 #' Computes \code{exp(x) + 1}.
-#' 
+#'
 #' @param x A numeric or complex vector.
-#' 
+#'
 #' @export
 expp1 <- function(x) {
   exp(x) + 1
 }
 
 #' Scaled logit-link
-#' 
+#'
 #' Computes \code{logit((x - lb) / (ub - lb))}
-#' 
+#'
 #' @param x A numeric or complex vector.
 #' @param lb Lower bound defaulting to \code{0}.
 #' @param ub Upper bound defaulting to \code{1}.
-#' 
+#'
 #' @return A numeric or complex vector.
-#' 
+#'
 #' @export
 logit_scaled <- function(x, lb = 0, ub = 1) {
   logit((x - lb) / (ub - lb))
 }
 
 #' Scaled inverse logit-link
-#' 
+#'
 #' Computes \code{inv_logit(x) * (ub - lb) + lb}
-#' 
+#'
 #' @param x A numeric or complex vector.
 #' @param lb Lower bound defaulting to \code{0}.
 #' @param ub Upper bound defaulting to \code{1}.
-#' 
+#'
 #' @return A numeric or complex vector between \code{lb} and \code{ub}.
-#' 
+#'
 #' @export
 inv_logit_scaled <- function(x, lb = 0, ub = 1) {
   inv_logit(x) * (ub - lb) + lb

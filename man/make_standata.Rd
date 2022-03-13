@@ -53,7 +53,7 @@ It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
 \item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects 
+cannot be passed via argument \code{data}. Required for some objects
 used in autocorrelation structures to specify dependency structures
 as well as for within-group covariance matrices.}
 
@@ -62,7 +62,7 @@ as well as for within-group covariance matrices.}
 matrices should correspond to columns in \code{data} that are used as
 grouping factors. All levels of the grouping factor should appear as
 rownames of the corresponding matrix. This argument can be used, among
-others to model pedigrees and phylogenetic effects. 
+others to model pedigrees and phylogenetic effects.
 It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
@@ -101,21 +101,21 @@ for basis construction of smoothing terms. See
 \item{...}{Other arguments for internal use.}
 }
 \value{
-A named list of objects containing the required data 
+A named list of objects containing the required data
   to fit a \pkg{brms} model with \pkg{Stan}.
 }
 \description{
 Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 }
 \examples{
-sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
+sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject),
                         data = inhaler, family = "cumulative")
 str(sdata1)
 
 sdata2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
                         data = epilepsy, family = "poisson")
 str(sdata2)
-         
+
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

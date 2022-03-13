@@ -1,5 +1,5 @@
 #' Autocorrelation structures
-#' 
+#'
 #' Specify autocorrelation terms in \pkg{brms} models. Currently supported terms
 #' are \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
 #' \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}}, and
@@ -7,45 +7,45 @@
 #' passed to the \code{autocor} argument of \code{\link{brmsformula}} in the
 #' form of a one-sided formula. For deprecated ways of specifying
 #' autocorrelation terms, see \code{\link{cor_brms}}.
-#' 
+#'
 #' @name autocor-terms
-#' 
-#' @details The autocor term functions are almost solely useful when called in 
-#' formulas passed to the \pkg{brms} package. They do not evaluate its 
+#'
+#' @details The autocor term functions are almost solely useful when called in
+#' formulas passed to the \pkg{brms} package. They do not evaluate its
 #' arguments -- but exist purely to help set up a model with autocorrelation
 #' terms.
-#' 
+#'
 #' @seealso \code{\link{brmsformula}}, \code{\link{acformula}},
 #'   \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
 #'   \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}},
 #'   \code{\link{fcor}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' # specify autocor terms within the formula
 #' y ~ x + arma(p = 1, q = 1) + car(M)
-#' 
+#'
 #' # specify autocor terms in the 'autocor' argument
 #' bf(y ~ x, autocor = ~ arma(p = 1, q = 1) + car(M))
-#' 
+#'
 #' # specify autocor terms via 'acformula'
 #' bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(M))
-NULL 
+NULL
 
 #' Set up ARMA(p,q) correlation structures
-#' 
+#'
 #' Set up an autoregressive moving average (ARMA) term of order (p, q) in
 #' \pkg{brms}. The function does not evaluate its arguments -- it exists purely
 #' to help set up a model with ARMA terms.
-#' 
+#'
 #' @param time An optional time variable specifying the time ordering
-#'   of the observations. By default, the existing order of the observations 
+#'   of the observations. By default, the existing order of the observations
 #'   in the data is used.
 #' @param gr An optional grouping variable. If specified, the correlation
 #'   structure is assumed to apply only to observations within the same grouping
 #'   level.
-#' @param p A non-negative integer specifying the autoregressive (AR) 
-#'   order of the ARMA structure. Default is \code{1}.  
-#' @param q A non-negative integer specifying the moving average (MA) 
+#' @param p A non-negative integer specifying the autoregressive (AR)
+#'   order of the ARMA structure. Default is \code{1}.
+#' @param q A non-negative integer specifying the moving average (MA)
 #'   order of the ARMA structure. Default is \code{1}.
 #' @param cov A flag indicating whether ARMA effects should be estimated by
 #'   means of residual covariance matrices. This is currently only possible for
@@ -53,15 +53,15 @@ NULL
 #'   natural residuals, latent residuals are added automatically. If
 #'   \code{FALSE} (the default), a regression formulation is used that is
 #'   considerably faster and allows for ARMA effects of order higher than 1 but
-#'   is only available for \code{gaussian} models and some of its 
+#'   is only available for \code{gaussian} models and some of its
 #'   generalizations.
-#'   
-#' @return An object of class \code{'arma_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'arma_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#' 
+#'
 #' @seealso \code{\link{autocor-terms}}, \code{\link{ar}}, \code{\link{ma}},
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' data("LakeHuron")
@@ -69,7 +69,7 @@ NULL
 #' fit <- brm(x ~ arma(p = 2, q = 1), data = LakeHuron)
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
   label <- deparse(match.call())
@@ -79,19 +79,19 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
 }
 
 #' Set up AR(p) correlation structures
-#' 
+#'
 #' Set up an autoregressive (AR) term of order p in \pkg{brms}. The function
 #' does not evaluate its arguments -- it exists purely to help set up a model
 #' with AR terms.
-#' 
+#'
 #' @inheritParams arma
-#'   
-#' @return An object of class \code{'arma_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'arma_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#' 
+#'
 #' @seealso \code{\link{autocor-terms}}, \code{\link{arma}}, \code{\link{ma}}
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' data("LakeHuron")
@@ -99,7 +99,7 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
 #' fit <- brm(x ~ ar(p = 2), data = LakeHuron)
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
   label <- deparse(match.call())
@@ -109,19 +109,19 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
 }
 
 #' Set up MA(q) correlation structures
-#' 
+#'
 #' Set up a moving average (MA) term of order q in \pkg{brms}. The function does
 #' not evaluate its arguments -- it exists purely to help set up a model with
 #' MA terms.
-#' 
+#'
 #' @inheritParams arma
-#'   
-#' @return An object of class \code{'arma_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'arma_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#' 
+#'
 #' @seealso \code{\link{autocor-terms}}, \code{\link{arma}}, \code{\link{ar}}
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' data("LakeHuron")
@@ -129,7 +129,7 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
 #' fit <- brm(x ~ ma(p = 2), data = LakeHuron)
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
   label <- deparse(match.call())
@@ -156,7 +156,7 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
   }
   cov <- as_one_logical(cov)
   if (cov && (p > 1 || q > 1)) {
-    stop2("Covariance formulation of ARMA structures is ", 
+    stop2("Covariance formulation of ARMA structures is ",
           "only possible for effects of maximal order one.")
   }
   label <- as_one_character(label)
@@ -166,19 +166,19 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
 }
 
 #' Set up COSY correlation structures
-#' 
+#'
 #' Set up a compounds symmetry (COSY) term in \pkg{brms}. The function does
 #' not evaluate its arguments -- it exists purely to help set up a model with
 #' COSY terms.
-#' 
+#'
 #' @inheritParams arma
-#'   
-#' @return An object of class \code{'cosy_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'cosy_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#' 
+#'
 #' @seealso \code{\link{autocor-terms}}
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' data("lh")
@@ -186,7 +186,7 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
 #' fit <- brm(x ~ cosy(), data = lh)
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 #' @export
 cosy <- function(time = NA, gr = NA) {
@@ -201,50 +201,50 @@ cosy <- function(time = NA, gr = NA) {
 }
 
 #' Spatial simultaneous autoregressive (SAR) structures
-#' 
+#'
 #' Set up an spatial simultaneous autoregressive (SAR) term in \pkg{brms}. The
 #' function does not evaluate its arguments -- it exists purely to help set up a
 #' model with SAR terms.
-#' 
+#'
 #' @param M An object specifying the spatial weighting matrix.
-#'   Can be either the spatial weight matrix itself or an 
+#'   Can be either the spatial weight matrix itself or an
 #'   object of class \code{listw} or \code{nb}, from which
 #'   the spatial weighting matrix can be computed.
-#' @param type Type of the SAR structure. Either \code{"lag"} 
-#'   (for SAR of the response values) or \code{"error"} 
+#' @param type Type of the SAR structure. Either \code{"lag"}
+#'   (for SAR of the response values) or \code{"error"}
 #'   (for SAR of the residuals). More information is
 #'   provided in the 'Details' section.
-#'   
+#'
 #' @details The \code{lagsar} structure implements SAR of the response values:
 #'   \deqn{y = \rho W y + \eta + e}
-#'   The \code{errorsar} structure implements SAR of the residuals: 
-#'   \deqn{y = \eta + u, u = \rho W u + e} 
+#'   The \code{errorsar} structure implements SAR of the residuals:
+#'   \deqn{y = \eta + u, u = \rho W u + e}
 #'   In the above equations, \eqn{\eta} is the predictor term and \eqn{e} are
 #'   independent normally or t-distributed residuals. Currently, only families
 #'   \code{gaussian} and \code{student} support SAR structures.
-#' 
-#' @return An object of class \code{'sar_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'sar_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#'   
+#'
 #' @seealso \code{\link{autocor-terms}}
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' data(oldcol, package = "spdep")
-#' fit1 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "lag"), 
+#' fit1 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "lag"),
 #'             data = COL.OLD, data2 = list(COL.nb = COL.nb),
 #'             chains = 2, cores = 2)
 #' summary(fit1)
 #' plot(fit1)
-#' 
-#' fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"), 
+#'
+#' fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
 #'             data = COL.OLD, data2 = list(COL.nb = COL.nb),
 #'             chains = 2, cores = 2)
 #' summary(fit2)
 #' plot(fit2)
 #' }
-#' 
+#'
 #' @export
 sar <- function(M, type = "lag") {
   label <- deparse(match.call())
@@ -261,11 +261,11 @@ sar <- function(M, type = "lag") {
 }
 
 #' Spatial conditional autoregressive (CAR) structures
-#' 
+#'
 #' Set up an spatial conditional autoregressive (CAR) term in \pkg{brms}. The
 #' function does not evaluate its arguments -- it exists purely to help set up a
-#' model with CAR terms. 
-#' 
+#' model with CAR terms.
+#'
 #' @param M Adjacency matrix of locations. All non-zero entries are treated as
 #'   if the two locations are adjacent. If \code{gr} is specified, the row names
 #'   of \code{M} have to match the levels of the grouping factor.
@@ -277,31 +277,31 @@ sar <- function(M, type = "lag") {
 #'   \code{"escar"} (exact sparse CAR), \code{"esicar"} (exact sparse intrinsic
 #'   CAR), \code{"icar"} (intrinsic CAR), and \code{"bym2"}. More information is
 #'   provided in the 'Details' section.
-#'   
-#' @return An object of class \code{'car_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'car_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#'   
+#'
 #' @seealso \code{\link{autocor-terms}}
-#' 
-#' @details The \code{escar} and \code{esicar} types are 
+#'
+#' @details The \code{escar} and \code{esicar} types are
 #'   implemented based on the case study of Max Joseph
-#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
+#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and
 #'   \code{bym2} type is implemented based on the case study of Mitzi Morris
 #'   (\url{https://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
-#'   
+#'
 #' @examples
 #' \dontrun{
 #' # generate some spatial data
 #' east <- north <- 1:10
 #' Grid <- expand.grid(east, north)
 #' K <- nrow(Grid)
-#' 
+#'
 #' # set up distance and neighbourhood matrices
 #' distance <- as.matrix(dist(Grid))
 #' W <- array(0, c(K, K))
-#' W[distance == 1] <- 1 	
-#' 
+#' W[distance == 1] <- 1
+#'
 #' # generate the covariates and response data
 #' x1 <- rnorm(K)
 #' x2 <- rnorm(K)
@@ -314,14 +314,14 @@ sar <- function(M, type = "lag") {
 #' size <- rep(50, K)
 #' y <- rbinom(n = K, size = size, prob = prob)
 #' dat <- data.frame(y, size, x1, x2)
-#' 
+#'
 #' # fit a CAR model
-#' fit <- brm(y | trials(size) ~ x1 + x2 + car(W), 
+#' fit <- brm(y | trials(size) ~ x1 + x2 + car(W),
 #'            data = dat, data2 = list(W = W),
-#'            family = binomial()) 
+#'            family = binomial())
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 car <- function(M, gr = NA, type = "escar") {
   label <- deparse(match.call())
@@ -340,31 +340,31 @@ car <- function(M, gr = NA, type = "escar") {
 }
 
 #' Fixed residual correlation (FCOR) structures
-#' 
+#'
 #' Set up a fixed residual correlation (FCOR) term in \pkg{brms}. The function
 #' does not evaluate its arguments -- it exists purely to help set up a model
 #' with FCOR terms.
 #'
 #' @param M Known correlation/covariance matrix of the response variable.
-#'   If a vector is passed, it will be used as diagonal entries 
+#'   If a vector is passed, it will be used as diagonal entries
 #'   (variances) and correlations/covariances will be set to zero.
 #'   The actual covariance matrix used in the likelihood is obtained
 #'   by multiplying \code{M} by the square of the residual standard
 #'   deviation parameter \code{sigma} estimated as part of the model.
 #'
-#' @return An object of class \code{'fcor_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#' @return An object of class \code{'fcor_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#'   
+#'
 #' @seealso \code{\link{autocor-terms}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' dat <- data.frame(y = rnorm(3))
 #' V <- cbind(c(0.5, 0.3, 0.2), c(0.3, 1, 0.1), c(0.2, 0.1, 0.2))
 #' fit <- brm(y ~ 1 + fcor(V), data = dat, data2 = list(V = V))
 #' }
-#' 
+#'
 #' @export
 fcor <- function(M) {
   label <- deparse(match.call())
@@ -417,7 +417,7 @@ tidy_acef.default <- function(x, ...) {
 tidy_acef.mvbrmsterms <- function(x, ...) {
   out <- lapply(x$terms, tidy_acef, ...)
   out <- do_call(rbind, out)
-  structure(out, class = acef_class()) 
+  structure(out, class = acef_class())
 }
 
 #' @export
@@ -435,7 +435,7 @@ tidy_acef.brmsterms <- function(x, ...) {
   }
   if (use_ac_cov(out)) {
     if (isTRUE(x$rescor)) {
-      stop2("Explicit covariance terms cannot be modeled ", 
+      stop2("Explicit covariance terms cannot be modeled ",
             "when 'rescor' is estimated at the same time.")
     }
   }
@@ -638,7 +638,7 @@ validate_fcor_matrix <- function(M) {
 
 # regex to extract all parameter names of autocorrelation structures
 regex_autocor_pars <- function() {
-  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", 
+  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar",
          "car", "sdcar", "rhocar")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")

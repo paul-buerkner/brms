@@ -2,7 +2,7 @@
 title: "Estimating Multivariate Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
@@ -41,7 +41,7 @@ data("BTdata", package = "MCMCglmm")
 head(BTdata)
 ```
 
-## Basic Multivariate Models 
+## Basic Multivariate Models
 
 We begin with a relatively simple multivariate normal model.
 
@@ -155,7 +155,7 @@ bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +
   gaussian()
 
 fit3 <- brm(
-  bf_tarsus + bf_back + set_rescor(FALSE), 
+  bf_tarsus + bf_back + set_rescor(FALSE),
   data = BTdata, chains = 2, cores = 2,
   control = list(adapt_delta = 0.95)
 )
@@ -189,5 +189,5 @@ flexibility of univariate models is retained in multivariate models.
 ## References
 
 Hadfield JD, Nutall A, Osorio D, Owens IPF (2007). Testing the phenotypic
-gambit: phenotypic, genetic and environmental correlations of colour. 
+gambit: phenotypic, genetic and environmental correlations of colour.
 *Journal of Evolutionary Biology*, 20(2), 549-557.

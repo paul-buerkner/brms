@@ -1,18 +1,18 @@
   /* squareplus inverse link function (squareplus itself)
-   * Args: 
+   * Args:
    *   x: a scalar in (-Inf, Inf)
-   * Returns: 
+   * Returns:
    *   a positive scalar
-   */ 
-   real squareplus(real x) { 
+   */
+   real squareplus(real x) {
      return (x + sqrt(x^2 + 4)) / 2;
    }
   /* squareplus link function (inverse squareplus)
-   * Args: 
+   * Args:
    *   x: a positive scalar
-   * Returns: 
+   * Returns:
    *   a scalar in (-Inf, Inf)
-   */ 
-   real inv_squareplus(real x) { 
+   */
+   real inv_squareplus(real x) {
      return (x^2 - 1) / x;
    }

@@ -1,11 +1,11 @@
 #' The Student-t Distribution
-#' 
-#' Density, distribution function, quantile function and random generation 
+#'
+#' Density, distribution function, quantile function and random generation
 #' for the Student-t distribution with location \code{mu}, scale \code{sigma},
 #' and degrees of freedom \code{df}.
-#' 
-#' @name StudentT 
-#' 
+#'
+#' @name StudentT
+#'
 #' @param x,q Vector of quantiles.
 #' @param p Vector of probabilities.
 #' @param n Number of draws to sample from the distribution.
@@ -13,14 +13,14 @@
 #' @param sigma Vector of scale values.
 #' @param df Vector of degrees of freedom.
 #' @param log,log.p Logical; If \code{TRUE}, values are returned on the log scale.
-#' @param lower.tail Logical; If \code{TRUE} (default), return P(X <= x). 
+#' @param lower.tail Logical; If \code{TRUE} (default), return P(X <= x).
 #'   Else, return P(X > x) .
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @seealso \code{\link[stats:TDist]{TDist}}
-#' 
+#'
 #' @export
 dstudent_t <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
   if (isTRUE(any(sigma < 0))) {
@@ -35,7 +35,7 @@ dstudent_t <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
 
 #' @rdname StudentT
 #' @export
-pstudent_t <- function(q, df, mu = 0, sigma = 1, 
+pstudent_t <- function(q, df, mu = 0, sigma = 1,
                        lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
@@ -55,31 +55,31 @@ qstudent_t <-  function(p, df, mu = 0, sigma = 1) {
 #' @rdname StudentT
 #' @export
 rstudent_t <- function(n, df, mu = 0, sigma = 1) {
-  if (isTRUE(any(sigma < 0))) {     
+  if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
   mu + sigma * rt(n, df = df)
 }
 
 #' The Multivariate Normal Distribution
-#' 
-#' Density function and random generation for the multivariate normal 
+#'
+#' Density function and random generation for the multivariate normal
 #' distribution with mean vector \code{mu} and covariance matrix \code{Sigma}.
-#' 
+#'
 #' @name MultiNormal
-#' 
+#'
 #' @inheritParams StudentT
-#' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
+#' @param x Vector or matrix of quantiles. If \code{x} is a matrix,
 #'   each row is taken to be a quantile.
 #' @param mu Mean vector with length equal to the number of dimensions.
 #' @param Sigma Covariance matrix.
 #' @param check Logical; Indicates whether several input checks
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
-#'   
+#'
 #' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
 #' for details on the parameterization
-#'   
+#'
 #' @export
 dmulti_normal <- function(x, mu, Sigma, log = FALSE, check = FALSE) {
   if (is.vector(x) || length(dim(x)) == 1L) {
@@ -127,25 +127,25 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 }
 
 #' The Multivariate Student-t Distribution
-#' 
+#'
 #' Density function and random generation for the multivariate Student-t
 #' distribution with location vector \code{mu}, covariance matrix \code{Sigma},
 #' and degrees of freedom \code{df}.
-#' 
+#'
 #' @name MultiStudentT
-#' 
+#'
 #' @inheritParams StudentT
-#' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
+#' @param x Vector or matrix of quantiles. If \code{x} is a matrix,
 #'   each row is taken to be a quantile.
 #' @param mu Location vector with length equal to the number of dimensions.
 #' @param Sigma Covariance matrix.
 #' @param check Logical; Indicates whether several input checks
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
-#'   
+#'
 #' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
 #'   for details on the parameterization
-#'   
+#'
 #' @export
 dmulti_student_t <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   if (is.vector(x) || length(dim(x)) == 1L) {
@@ -169,7 +169,7 @@ dmulti_student_t <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   chol_Sigma <- chol(Sigma)
   rooti <- backsolve(chol_Sigma, t(x) - mu, transpose = TRUE)
   quads <- colSums(rooti^2)
-  out <- lgamma((p + df)/2) - (lgamma(df / 2) + sum(log(diag(chol_Sigma))) + 
+  out <- lgamma((p + df)/2) - (lgamma(df / 2) + sum(log(diag(chol_Sigma))) +
          p / 2 * log(pi * df)) - 0.5 * (df + p) * log1p(quads / df)
   if (!log) {
     out <- exp(out)
@@ -190,14 +190,14 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
 }
 
 #' The (Multivariate) Logistic Normal Distribution
-#' 
-#' Density function and random generation for the (multivariate) logistic normal 
+#'
+#' Density function and random generation for the (multivariate) logistic normal
 #' distribution with latent mean vector \code{mu} and covariance matrix \code{Sigma}.
-#' 
+#'
 #' @name LogisticNormal
-#' 
+#'
 #' @inheritParams StudentT
-#' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
+#' @param x Vector or matrix of quantiles. If \code{x} is a matrix,
 #'   each row is taken to be a quantile.
 #' @param mu Mean vector with length equal to the number of dimensions.
 #' @param Sigma Covariance matrix.
@@ -206,9 +206,9 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
 #' @param check Logical; Indicates whether several input checks
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
-#'   
+#'
 #' @export
-dlogistic_normal <- function(x, mu, Sigma, refcat = 1, log = FALSE, 
+dlogistic_normal <- function(x, mu, Sigma, refcat = 1, log = FALSE,
                              check = FALSE) {
   if (is.vector(x) || length(dim(x)) == 1L) {
     x <- matrix(x, ncol = length(x))
@@ -229,13 +229,13 @@ rlogistic_normal <- function(n, mu, Sigma, refcat = 1, check = FALSE) {
 }
 
 #' The Skew-Normal Distribution
-#' 
-#' Density, distribution function, and random generation for the 
-#' skew-normal distribution with mean \code{mu}, 
+#'
+#' Density, distribution function, and random generation for the
+#' skew-normal distribution with mean \code{mu},
 #' standard deviation \code{sigma}, and skewness \code{alpha}.
-#' 
+#'
 #' @name SkewNormal
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of mean values.
@@ -244,15 +244,15 @@ rlogistic_normal <- function(n, mu, Sigma, refcat = 1, check = FALSE) {
 #' @param xi Optional vector of location values.
 #'   If \code{NULL} (the default), will be computed internally.
 #' @param omega Optional vector of scale values.
-#'   If \code{NULL} (the default), will be computed internally. 
-#' @param tol Tolerance of the approximation used in the 
+#'   If \code{NULL} (the default), will be computed internally.
+#' @param tol Tolerance of the approximation used in the
 #'   computation of quantiles.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
-dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0, 
+dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0,
                          xi = NULL, omega = NULL, log = FALSE) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be greater than 0.")
@@ -260,13 +260,13 @@ dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0,
   args <- cp2dp(mu, sigma, alpha, xi = xi, omega = omega, x = x)
   out <- with(args, {
     # do it like sn::dsn
-    z <- (x - xi) / omega 
+    z <- (x - xi) / omega
     if (length(alpha) == 1L) {
       alpha <- rep(alpha, length(z))
     }
     logN <- -log(sqrt(2 * pi)) - log(omega) - z^2 / 2
     logS <- ifelse(
-      abs(alpha) < Inf, 
+      abs(alpha) < Inf,
       pnorm(alpha * z, log.p = TRUE),
       log(as.numeric(sign(alpha) * z > 0))
     )
@@ -280,8 +280,8 @@ dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0,
 }
 
 #' @rdname SkewNormal
-#' @export 
-pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0, 
+#' @export
+pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0,
                          xi = NULL, omega = NULL,
                          lower.tail = TRUE, log.p = FALSE) {
   require_package("mnormt")
@@ -324,9 +324,9 @@ pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0,
 
 #' @rdname SkewNormal
 #' @export
-qskew_normal <- function(p, mu = 0, sigma = 1, alpha = 0, 
+qskew_normal <- function(p, mu = 0, sigma = 1, alpha = 0,
                          xi = NULL, omega = NULL,
-                         lower.tail = TRUE, log.p = FALSE, 
+                         lower.tail = TRUE, log.p = FALSE,
                          tol = 1e-8) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
@@ -348,14 +348,14 @@ qskew_normal <- function(p, mu = 0, sigma = 1, alpha = 0,
     g1 <- cum[, 3] / cum[, 2]^(3 / 2)
     g2 <- cum[, 4] / cum[, 2]^2
     x <- qnorm(p)
-    x <- x + (x^2 - 1) * g1 / 6 + 
-      x * (x^2 - 3) * g2 / 24 - 
+    x <- x + (x^2 - 1) * g1 / 6 +
+      x * (x^2 - 3) * g2 / 24 -
       x * (2 * x^2 - 5) * g1^2 / 36
     x <- cum[, 1] + sqrt(cum[, 2]) * x
     px <- pskew_normal(x, xi = 0, omega = 1, alpha = alpha)
     max_err <- 1
     while (max_err > tol) {
-      x1 <- x - (px - p) / 
+      x1 <- x - (px - p) /
         dskew_normal(x, xi = 0, omega = 1, alpha = alpha)
       x <- x1
       px <- pskew_normal(x, xi = 0, omega = 1, alpha = alpha)
@@ -386,25 +386,25 @@ rskew_normal <- function(n, mu = 0, sigma = 1, alpha = 0,
     z2 <- rnorm(n)
     id <- z2 > args$alpha * z1
     z1[id] <- -z1[id]
-    xi + omega * z1 
+    xi + omega * z1
   })
 }
 
 # convert skew-normal mixed-CP to DP parameterization
-# @return a data.frame containing all relevant parameters 
-cp2dp <- function(mu = 0, sigma = 1, alpha = 0, 
+# @return a data.frame containing all relevant parameters
+cp2dp <- function(mu = 0, sigma = 1, alpha = 0,
                   xi = NULL, omega = NULL, ...) {
   delta <- alpha / sqrt(1 + alpha^2)
   if (is.null(omega)) {
     omega <- sigma / sqrt(1 - 2 / pi * delta^2)
-  } 
+  }
   if (is.null(xi)) {
     xi <- mu - omega * delta * sqrt(2 / pi)
   }
   expand(dots = nlist(mu, sigma, alpha, xi, omega, delta, ...))
 }
 
-# helper function for qskew_normal 
+# helper function for qskew_normal
 # code basis taken from sn::sn.cumulants
 # uses xi and omega rather than mu and sigma
 skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
@@ -425,17 +425,17 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
     kappa[2] <- 1 + kappa[2]
     return(kappa)
   }
-  
+
   args <- expand(dots = nlist(xi, omega, alpha))
   with(args, {
     # do it like sn::sn.cumulants
     delta <- alpha / sqrt(1 + alpha^2)
     kv <- cumulants_half_norm(n)
     if (length(kv) > n)  {
-      kv <- kv[-(n + 1)] 
+      kv <- kv[-(n + 1)]
     }
     kv[2] <- kv[2] - 1
-    kappa <- outer(delta, 1:n, "^") * 
+    kappa <- outer(delta, 1:n, "^") *
       matrix(rep(kv, length(xi)), ncol = n, byrow = TRUE)
     kappa[, 2] <- kappa[, 2] + 1
     kappa <- kappa * outer(omega, 1:n, "^")
@@ -450,20 +450,20 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 }
 
 #' The von Mises Distribution
-#' 
-#' Density, distribution function, and random generation for the 
+#'
+#' Density, distribution function, and random generation for the
 #' von Mises distribution with location \code{mu}, and precision \code{kappa}.
-#' 
+#'
 #' @name VonMises
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param kappa Vector of precision values.
 #' @param acc Accuracy of numerical approximations.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
 dvon_mises <- function(x, mu, kappa, log = FALSE) {
   if (isTRUE(any(kappa < 0))) {
@@ -480,7 +480,7 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
 
 #' @rdname VonMises
 #' @export
-pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 
+pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
                        log.p = FALSE, acc = 1e-20) {
   if (isTRUE(any(kappa < 0))) {
     stop2("kappa must be non-negative")
@@ -494,8 +494,8 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
   mu <- args$mu
   kappa <- args$kappa
   rm(args)
-  
-  # code basis taken from CircStats::pvm but improved 
+
+  # code basis taken from CircStats::pvm but improved
   # considerably with respect to speed and stability
   rec_sum <- function(q, kappa, acc, sum = 0, i = 1) {
     # compute the sum of of besselI functions recursively
@@ -505,16 +505,16 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
     if (sum(rd)) {
       sum[rd] <- rec_sum(
         q[rd], kappa[rd], acc, sum = sum[rd], i = i + 1
-      ) 
+      )
     }
     sum
   }
-  
+
   .pvon_mises <- function(q, kappa, acc) {
     sum <- rec_sum(q, kappa, acc)
     q / pi2 + sum / (pi * besselI(kappa, nu = 0))
   }
-  
+
   out <- rep(NA, length(mu))
   zero_mu <- mu == 0
   if (sum(zero_mu)) {
@@ -525,7 +525,7 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
     upper <- (q[lq_mu] - mu[lq_mu]) %% pi2
     upper[upper == 0] <- pi2
     lower <- (-mu[lq_mu]) %% pi2
-    out[lq_mu] <- 
+    out[lq_mu] <-
       .pvon_mises(upper, kappa[lq_mu], acc) -
       .pvon_mises(lower, kappa[lq_mu], acc)
   }
@@ -533,7 +533,7 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
   if (sum(uq_mu)) {
     upper <- q[uq_mu] - mu[uq_mu]
     lower <- mu[uq_mu] %% pi2
-    out[uq_mu] <- 
+    out[uq_mu] <-
       .pvon_mises(upper, kappa[uq_mu], acc) +
       .pvon_mises(lower, kappa[uq_mu], acc)
   }
@@ -558,8 +558,8 @@ rvon_mises <- function(n, mu, kappa) {
   rm(args)
   pi <- base::pi
   mu <- mu + pi
-  
-  # code basis taken from CircStats::rvm but improved 
+
+  # code basis taken from CircStats::rvm but improved
   # considerably with respect to speed and stability
   rvon_mises_outer <- function(r, mu, kappa) {
     n <- length(r)
@@ -573,31 +573,31 @@ rvon_mises <- function(n, mu, kappa) {
     inner <- !outer
     out <- rep(NA, n)
     if (sum(inner)) {
-      out[inner] <- rvon_mises_inner(f[inner], mu[inner]) 
+      out[inner] <- rvon_mises_inner(f[inner], mu[inner])
     }
     if (sum(outer)) {
       # evaluate recursively until a valid sample is found
-      out[outer] <- rvon_mises_outer(r[outer], mu[outer], kappa[outer])      
+      out[outer] <- rvon_mises_outer(r[outer], mu[outer], kappa[outer])
     }
     out
   }
-  
+
   rvon_mises_inner <- function(f, mu) {
     n <- length(f)
     U3 <- runif(n, 0, 1)
     (sign(U3 - 0.5) * acos(f) + mu) %% (2 * pi)
   }
-  
+
   a <- 1 + (1 + 4 * (kappa^2))^0.5
   b <- (a - (2 * a)^0.5) / (2 * kappa)
   r <- (1 + b^2) / (2 * b)
   # indicates underflow due to kappa being close to zero
-  is_uf <- is.na(r) | is.infinite(r) 
+  is_uf <- is.na(r) | is.infinite(r)
   not_uf <- !is_uf
   out <- rep(NA, n)
   if (sum(is_uf)) {
-    out[is_uf] <- runif(sum(is_uf), 0, 2 * pi) 
-  } 
+    out[is_uf] <- runif(sum(is_uf), 0, 2 * pi)
+  }
   if (sum(not_uf)) {
     out[not_uf] <- rvon_mises_outer(r[not_uf], mu[not_uf], kappa[not_uf])
   }
@@ -605,24 +605,24 @@ rvon_mises <- function(n, mu, kappa) {
 }
 
 #' The Exponentially Modified Gaussian Distribution
-#' 
-#' Density, distribution function, and random generation 
+#'
+#' Density, distribution function, and random generation
 #' for the exponentially modified Gaussian distribution with
-#' mean \code{mu} and standard deviation \code{sigma} of the gaussian 
+#' mean \code{mu} and standard deviation \code{sigma} of the gaussian
 #' component, as well as scale \code{beta} of the exponential
 #' component.
-#' 
-#' @name ExGaussian 
-#' 
+#'
+#' @name ExGaussian
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of means of the combined distribution.
 #' @param sigma Vector of standard deviations of the gaussian component.
 #' @param beta Vector of scales of the exponential component.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
 dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   if (isTRUE(any(sigma < 0))) {
@@ -635,9 +635,9 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   args <- do_call(expand, args)
   args$mu <- with(args, mu - beta)
   args$z <- with(args, x - mu - sigma^2 / beta)
-  
-  out <- with(args, 
-    -log(beta) - (z + sigma^2 / (2 * beta)) / beta + 
+
+  out <- with(args,
+    -log(beta) - (z + sigma^2 / (2 * beta)) / beta +
       pnorm(z / sigma, log.p = TRUE)
   )
   if (!log) {
@@ -648,7 +648,7 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
 
 #' @rdname ExGaussian
 #' @export
-pexgaussian <- function(q, mu, sigma, beta, 
+pexgaussian <- function(q, mu, sigma, beta,
                         lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
@@ -660,18 +660,18 @@ pexgaussian <- function(q, mu, sigma, beta,
   args <- do_call(expand, args)
   args$mu <- with(args, mu - beta)
   args$z <- with(args, q - mu - sigma^2 / beta)
-  
-  out <- with(args, 
-    pnorm((q - mu) / sigma) - pnorm(z / sigma) * 
-      exp(((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) / 
+
+  out <- with(args,
+    pnorm((q - mu) / sigma) - pnorm(z / sigma) *
+      exp(((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) /
             (2 * sigma^2))
   )
   if (!lower.tail) {
     out <- 1 - out
-  } 
+  }
   if (log.p) {
-    out <- log(out) 
-  } 
+    out <- log(out)
+  }
   out
 }
 
@@ -689,22 +689,22 @@ rexgaussian <- function(n, mu, sigma, beta) {
 }
 
 #' The Frechet Distribution
-#' 
-#' Density, distribution function, quantile function and random generation 
+#'
+#' Density, distribution function, quantile function and random generation
 #' for the Frechet distribution with location \code{loc}, scale \code{scale},
 #' and shape \code{shape}.
-#' 
+#'
 #' @name Frechet
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param loc Vector of locations.
 #' @param scale Vector of scales.
 #' @param shape Vector of shapes.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
 dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   if (isTRUE(any(scale <= 0))) {
@@ -716,10 +716,10 @@ dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   x <- (x - loc) / scale
   args <- nlist(x, loc, scale, shape)
   args <- do_call(expand, args)
-  out <- with(args, 
+  out <- with(args,
     log(shape / scale) - (1 + shape) * log(x) - x^(-shape)
   )
-  if (!log) { 
+  if (!log) {
     out <- exp(out)
   }
   out
@@ -727,7 +727,7 @@ dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
 
 #' @rdname Frechet
 #' @export
-pfrechet <- function(q, loc = 0, scale = 1, shape = 1, 
+pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
                      lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(scale <= 0))) {
     stop2("Argument 'scale' must be positive.")
@@ -748,7 +748,7 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
 
 #' @rdname Frechet
 #' @export
-qfrechet <- function(p, loc = 0, scale = 1, shape = 1, 
+qfrechet <- function(p, loc = 0, scale = 1, shape = 1,
                      lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
     stop("'p' must contain probabilities in (0,1)")
@@ -781,22 +781,22 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
 }
 
 #' The Shifted Log Normal Distribution
-#' 
-#' Density, distribution function, quantile function and random generation 
-#' for the shifted log normal distribution with mean \code{meanlog}, 
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the shifted log normal distribution with mean \code{meanlog},
 #' standard deviation \code{sdlog}, and shift parameter \code{shift}.
-#' 
+#'
 #' @name Shifted_Lognormal
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param meanlog Vector of means.
 #' @param sdlog Vector of standard deviations.
 #' @param shift Vector of shifts.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
 dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
   args <- nlist(dist = "lnorm", x, shift, meanlog, sdlog, log)
@@ -805,7 +805,7 @@ dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
 
 #' @rdname Shifted_Lognormal
 #' @export
-pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0, 
+pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0,
                            lower.tail = TRUE, log.p = FALSE) {
   args <- nlist(dist = "lnorm", q, shift, meanlog, sdlog, lower.tail, log.p)
   do_call(pshifted, args)
@@ -813,7 +813,7 @@ pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0,
 
 #' @rdname Shifted_Lognormal
 #' @export
-qshifted_lnorm <- function(p, meanlog = 0, sdlog = 1, shift = 0, 
+qshifted_lnorm <- function(p, meanlog = 0, sdlog = 1, shift = 0,
                            lower.tail = TRUE, log.p = FALSE) {
   args <- nlist(dist = "lnorm", p, shift, meanlog, sdlog, lower.tail, log.p)
   do_call(qshifted, args)
@@ -827,21 +827,21 @@ rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
 }
 
 #' The Inverse Gaussian Distribution
-#' 
-#' Density, distribution function, and random generation 
-#' for the inverse Gaussian distribution with location \code{mu}, 
+#'
+#' Density, distribution function, and random generation
+#' for the inverse Gaussian distribution with location \code{mu},
 #' and shape \code{shape}.
-#' 
+#'
 #' @name InvGaussian
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param shape Vector of shapes.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
 dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
   if (isTRUE(any(mu <= 0))) {
@@ -853,7 +853,7 @@ dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
   args <- nlist(x, mu, shape)
   args <- do_call(expand, args)
   out <- with(args,
-    0.5 * log(shape / (2 * pi)) -  
+    0.5 * log(shape / (2 * pi)) -
     1.5 * log(x) - 0.5 * shape * (x - mu)^2 / (x * mu^2)
   )
   if (!log) {
@@ -875,7 +875,7 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   args <- nlist(q, mu, shape)
   args <- do_call(expand, args)
   out <- with(args,
-    pnorm(sqrt(shape / q) * (q / mu - 1)) + 
+    pnorm(sqrt(shape / q) * (q / mu - 1)) +
       exp(2 * shape / mu) * pnorm(-sqrt(shape / q) * (q / mu + 1))
   )
   if (!lower.tail) {
@@ -903,31 +903,31 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
   args <- do_call(expand, args)
   # algorithm from wikipedia
   args$y <- rnorm(n)^2
-  args$x <- with(args, 
-    mu + (mu^2 * y) / (2 * shape) - mu / (2 * shape) * 
-      sqrt(4 * mu * shape * y + mu^2 * y^2) 
+  args$x <- with(args,
+    mu + (mu^2 * y) / (2 * shape) - mu / (2 * shape) *
+      sqrt(4 * mu * shape * y + mu^2 * y^2)
   )
   args$z <- runif(n)
   with(args, ifelse(z <= mu / (mu + x), x, mu^2 / x))
 }
 
 #' The Generalized Extreme Value Distribution
-#' 
-#' Density, distribution function, and random generation 
-#' for the generalized extreme value distribution with 
+#'
+#' Density, distribution function, and random generation
+#' for the generalized extreme value distribution with
 #' location \code{mu}, scale \code{sigma} and shape \code{xi}.
-#' 
+#'
 #' @name GenExtremeValue
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param sigma Vector of scales.
 #' @param xi Vector of shapes.
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
 dgen_extreme_value <- function(x, mu = 0, sigma = 1, xi = 0, log = FALSE) {
   if (isTRUE(any(sigma <= 0))) {
@@ -938,13 +938,13 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1, xi = 0, log = FALSE) {
   args <- do_call(expand, args)
   args$t <- with(args, 1 + xi * x)
   out <- with(args, ifelse(
-    xi == 0, 
+    xi == 0,
     -log(sigma) - x - exp(-x),
     -log(sigma) - (1 + 1 / xi) * log(t) - t^(-1 / xi)
   ))
   if (!log) {
     out <- exp(out)
-  } 
+  }
   out
 }
 
@@ -959,7 +959,7 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
   args <- nlist(q, mu, sigma, xi)
   args <- do_call(expand, args)
   out <- with(args, ifelse(
-    xi == 0, 
+    xi == 0,
     exp(-exp(-q)),
     exp(-(1 + xi * q)^(-1 / xi))
   ))
@@ -988,30 +988,30 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
 }
 
 #' The Asymmetric Laplace Distribution
-#' 
-#' Density, distribution function, quantile function and random generation 
-#' for the asymmetric Laplace distribution with location \code{mu}, 
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the asymmetric Laplace distribution with location \code{mu},
 #' scale \code{sigma} and asymmetry parameter \code{quantile}.
-#' 
+#'
 #' @name AsymLaplace
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param sigma Vector of scales.
 #' @param quantile Asymmetry parameter corresponding to quantiles
 #'   in quantile regression (hence the name).
-#'   
+#'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
-#' 
+#'
 #' @export
-dasym_laplace <- function(x, mu = 0, sigma = 1, quantile = 0.5, 
+dasym_laplace <- function(x, mu = 0, sigma = 1, quantile = 0.5,
                           log = FALSE) {
-  out <- ifelse(x < mu, 
-    yes = (quantile * (1 - quantile) / sigma) * 
+  out <- ifelse(x < mu,
+    yes = (quantile * (1 - quantile) / sigma) *
            exp((1 - quantile) * (x - mu) / sigma),
-    no = (quantile * (1 - quantile) / sigma) * 
+    no = (quantile * (1 - quantile) / sigma) *
           exp(-quantile * (x - mu) / sigma)
   )
   if (log) {
@@ -1024,15 +1024,15 @@ dasym_laplace <- function(x, mu = 0, sigma = 1, quantile = 0.5,
 #' @export
 pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
-  out <- ifelse(q < mu, 
-    yes = quantile * exp((1 - quantile) * (q - mu) / sigma), 
+  out <- ifelse(q < mu,
+    yes = quantile * exp((1 - quantile) * (q - mu) / sigma),
     no = 1 - (1 - quantile) * exp(-quantile * (q - mu) / sigma)
   )
   if (!lower.tail) {
     out <- 1 - out
   }
   if (log.p) {
-    out <- log(out) 
+    out <- log(out)
   }
   out
 }
@@ -1050,8 +1050,8 @@ qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
   if (length(quantile) == 1L) {
     quantile <- rep(quantile, length(mu))
   }
-  ifelse(p < quantile, 
-    yes = mu + ((sigma * log(p / quantile)) / (1 - quantile)), 
+  ifelse(p < quantile,
+    yes = mu + ((sigma * log(p / quantile)) / (1 - quantile)),
     no = mu - ((sigma * log((1 - p) / (1 - quantile))) / quantile)
   )
 }
@@ -1064,20 +1064,20 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 }
 
 # The Discrete Weibull Distribution
-# 
-# Density, distribution function, quantile function and random generation 
+#
+# Density, distribution function, quantile function and random generation
 # for the discrete Weibull distribution with location \code{mu} and
 # shape \code{shape}.
-# 
+#
 # @name DiscreteWeibull
-# 
+#
 # @inheritParams StudentT
 # @param mu Location parameter in the unit interval.
 # @param shape Positive shape parameter.
-# 
+#
 # @details See \code{vignette("brms_families")} for details
 # on the parameterization.
-# 
+#
 # @export
 ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
   if (isTRUE(any(mu < 0 | mu > 1))) {
@@ -1205,7 +1205,7 @@ rcom_poisson <- function(n, mu, shape, M = 10000) {
     out[not_found] <- NA
     nfailed <- sum(not_found)
     warning2(
-      "Drawing random numbers from the 'com_poisson' ", 
+      "Drawing random numbers from the 'com_poisson' ",
       "distribution failed in ", nfailed, " cases."
     )
   }
@@ -1219,7 +1219,7 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   x <- args$x
   mu <- args$mu
   shape <- args$shape
-  
+
   log_mu <- log(mu)
   log_Z <- log_Z_com_poisson(log_mu, shape)
   out <- rep(0, length(x))
@@ -1237,7 +1237,7 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   out[out > 0] <- 0
   if (!lower.tail) {
     out <- log1m_exp(out)
-  } 
+  }
   if (!log.p) {
     out <- exp(out)
   }
@@ -1249,7 +1249,7 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
 # @param shape shape parameter
 # @param M maximal evaluated element of the series
 # @param thres threshold for new elements at which to stop evaluation
-# @param approx use a closed form approximation of the mean if appropriate? 
+# @param approx use a closed form approximation of the mean if appropriate?
 log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
                               approx = TRUE) {
   if (isTRUE(any(shape <= 0))) {
@@ -1262,7 +1262,7 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
   args <- expand(log_mu = log_mu, shape = shape)
   log_mu <- args$log_mu
   shape <- args$shape
-  
+
   out <- rep(NA, length(log_mu))
   dim(out) <- attributes(args)$max_dim
   use_poisson <- shape == 1
@@ -1292,7 +1292,7 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
     lfac <- 0
     k <- 2
     converged <- FALSE
-    while (!converged && k <= M) { 
+    while (!converged && k <= M) {
       lfac <- lfac + log(k)
       term <- shape * (k * log_mu - lfac)
       out_exact <- log_sum_exp(out_exact, term)
@@ -1305,7 +1305,7 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
         "Approximating the normalizing constant of the 'com_poisson' ",
         "distribution failed and results may be inaccurate."
       )
-    } 
+    }
   }
   out
 }
@@ -1317,12 +1317,12 @@ log_Z_com_poisson_approx <- function(log_mu, shape) {
   shape2 <- shape^2
   # first 4 terms of the residual series
   log_sum_resid <- log(
-    1 + shape_mu^(-1) * (shape2 - 1) / 24 + 
+    1 + shape_mu^(-1) * (shape2 - 1) / 24 +
       shape_mu^(-2) * (shape2 - 1) / 1152 * (shape2 + 23) +
-      shape_mu^(-3) * (shape2 - 1) / 414720 * 
+      shape_mu^(-3) * (shape2 - 1) / 414720 *
         (5 * shape2^2 - 298 * shape2 + 11237)
   )
-  shape_mu + log_sum_resid - 
+  shape_mu + log_sum_resid -
     ((log(2 * pi) + log_mu) * (shape - 1) / 2 + log(shape) / 2)
 }
 
@@ -1331,7 +1331,7 @@ log_Z_com_poisson_approx <- function(log_mu, shape) {
 # @param shape shape parameter
 # @param M maximal evaluated element of the series
 # @param thres threshold for new elements at which to stop evaluation
-# @param approx use a closed form approximation of the mean if appropriate? 
+# @param approx use a closed form approximation of the mean if appropriate?
 mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
                              approx = TRUE) {
   if (isTRUE(any(shape <= 0))) {
@@ -1344,7 +1344,7 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
   args <- expand(mu = mu, shape = shape)
   mu <- args$mu
   shape <- args$shape
-  
+
   out <- rep(NA, length(mu))
   dim(out) <- attributes(args)$max_dim
   use_poisson <- shape == 1
@@ -1359,7 +1359,7 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
       out[use_approx] <- mean_com_poisson_approx(
         mu[use_approx], shape[use_approx]
       )
-    } 
+    }
   }
   use_exact <- is.na(out)
   if (any(use_exact)) {
@@ -1376,7 +1376,7 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
     lfac <- 0
     k <- 2
     converged <- FALSE
-    while (!converged && k <= M) { 
+    while (!converged && k <= M) {
       log_k <- log(k)
       lfac <- lfac + log_k
       term <- shape * (k * log_mu - lfac)
@@ -1399,27 +1399,27 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
 # approximate the mean of COM-Poisson distribution
 # based on doi:10.1007/s10463-017-0629-6
 mean_com_poisson_approx <- function(mu, shape) {
-  term <- 1 - (shape - 1) / (2 * shape) * mu^(-1) - 
-    (shape^2 - 1) / (24 * shape^2) * mu^(-2) - 
+  term <- 1 - (shape - 1) / (2 * shape) * mu^(-1) -
+    (shape^2 - 1) / (24 * shape^2) * mu^(-2) -
     (shape^2 - 1) / (24 * shape^3) * mu^(-3)
   mu * term
 }
 
 #' The Dirichlet Distribution
-#' 
+#'
 #' Density function and random number generation for the dirichlet
 #' distribution with shape parameter vector \code{alpha}.
-#' 
+#'
 #' @name Dirichlet
-#' 
+#'
 #' @inheritParams StudentT
 #' @param x Matrix of quantiles. Each row corresponds to one probability vector.
 #' @param alpha Matrix of positive shape parameters. Each row corresponds to one
 #'   probability vector.
 #'
-#' @details See \code{vignette("brms_families")} for details on the 
+#' @details See \code{vignette("brms_families")} for details on the
 #' parameterization.
-#' 
+#'
 #' @export
 ddirichlet <- function(x, alpha, log = FALSE) {
   log <- as_one_logical(log)
@@ -1445,11 +1445,11 @@ ddirichlet <- function(x, alpha, log = FALSE) {
   if (isTRUE(any(alpha <= 0))) {
     stop2("alpha must be positive.")
   }
-  out <- lgamma(rowSums(alpha)) - rowSums(lgamma(alpha)) + 
+  out <- lgamma(rowSums(alpha)) - rowSums(lgamma(alpha)) +
     rowSums((alpha - 1) * log(x))
   if (!log) {
     out <- exp(out)
-  } 
+  }
   return(out)
 }
 
@@ -1477,40 +1477,40 @@ rdirichlet <- function(n, alpha) {
 }
 
 #' The Wiener Diffusion Model Distribution
-#' 
+#'
 #' Density function and random generation for the Wiener
 #' diffusion model distribution with boundary separation \code{alpha},
-#' non-decision time \code{tau}, bias  \code{beta} and 
+#' non-decision time \code{tau}, bias  \code{beta} and
 #' drift rate \code{delta}.
-#' 
+#'
 #' @name Wiener
-#' 
+#'
 #' @inheritParams StudentT
 #' @param alpha Boundary separation parameter.
 #' @param tau Non-decision time parameter.
 #' @param beta Bias parameter.
 #' @param delta Drift rate parameter.
-#' @param resp Response: \code{"upper"} or \code{"lower"}. 
-#'   If no character vector, it is coerced to logical 
-#'   where \code{TRUE} indicates \code{"upper"} and 
+#' @param resp Response: \code{"upper"} or \code{"lower"}.
+#'   If no character vector, it is coerced to logical
+#'   where \code{TRUE} indicates \code{"upper"} and
 #'   \code{FALSE} indicates \code{"lower"}.
 #' @param types Which types of responses to return? By default,
-#'   return both the response times \code{"q"} and the dichotomous 
-#'   responses \code{"resp"}. If either \code{"q"} or \code{"resp"}, 
+#'   return both the response times \code{"q"} and the dichotomous
+#'   responses \code{"resp"}. If either \code{"q"} or \code{"resp"},
 #'   return only one of the two types.
 #' @param backend Name of the package to use as backend for the computations.
 #'   Either \code{"Rwiener"} (the default) or \code{"rtdists"}.
 #'   Can be set globally for the current \R session via the
 #'   \code{"wiener_backend"} option (see \code{\link{options}}).
-#'   
-#' @details 
+#'
+#' @details
 #' These are wrappers around functions of the \pkg{RWiener} or \pkg{rtdists}
 #' package (depending on the chosen \code{backend}). See
 #' \code{vignette("brms_families")} for details on the parameterization.
-#' 
+#'
 #' @seealso \code{\link[RWiener:wienerdist]{wienerdist}},
 #'   \code{\link[rtdists:Diffusion]{Diffusion}}
-#' 
+#'
 #' @export
 dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE,
                     backend = getOption("wiener_backend", "Rwiener")) {
@@ -1519,7 +1519,7 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE,
   beta <- as.numeric(beta)
   delta <- as.numeric(delta)
   if (!is.character(resp)) {
-    resp <- ifelse(resp, "upper", "lower") 
+    resp <- ifelse(resp, "upper", "lower")
   }
   log <- as_one_logical(log)
   backend <- match.arg(backend, c("Rwiener", "rtdists"))
@@ -1530,11 +1530,11 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE,
   do_call(.dwiener, args)
 }
 
-# dwiener using Rwiener as backend 
+# dwiener using Rwiener as backend
 .dwiener_Rwiener <- function(x, alpha, tau, beta, delta, resp, log) {
   require_package("RWiener")
   .dwiener <- Vectorize(
-    RWiener::dwiener, 
+    RWiener::dwiener,
     c("q", "alpha", "tau", "beta", "delta", "resp")
   )
   args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
@@ -1545,7 +1545,7 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE,
 .dwiener_rtdists <- function(x, alpha, tau, beta, delta, resp, log) {
   require_package("rtdists")
   args <- list(
-    rt = x, response = resp, a = alpha, 
+    rt = x, response = resp, a = alpha,
     t0 = tau, z = beta * alpha, v = delta
   )
   out <- do_call(rtdists::ddiffusion, args)
@@ -1571,7 +1571,7 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
   do_call(.rwiener, args)
 }
 
-# rwiener using Rwiener as backend 
+# rwiener using Rwiener as backend
 .rwiener_Rwiener <- function(n, alpha, tau, beta, delta, types) {
   require_package("RWiener")
   max_len <- max(lengths(list(alpha, tau, beta, delta)))
@@ -1594,7 +1594,7 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
   # vectorized version of .rwiener_num
   .rwiener <- function(...) {
     fun <- Vectorize(
-      .rwiener_num, 
+      .rwiener_num,
       c("alpha", "tau", "beta", "delta"),
       SIMPLIFY = FALSE
     )
@@ -1604,7 +1604,7 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
   do_call(.rwiener, args)
 }
 
-# rwiener using rtdists as backend 
+# rwiener using rtdists as backend
 .rwiener_rtdists <- function(n, alpha, tau, beta, delta, types) {
   require_package("rtdists")
   max_len <- max(lengths(list(alpha, tau, beta, delta)))
@@ -1629,7 +1629,7 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
 
 # density of the cox proportional hazards model
 # @param x currently ignored as the information is passed
-#   via 'bhaz' and 'cbhaz'. Before exporting the cox distribution 
+#   via 'bhaz' and 'cbhaz'. Before exporting the cox distribution
 #   functions, this needs to be refactored so that x is actually used
 # @param mu positive location parameter
 # @param bhaz baseline hazard
@@ -1672,11 +1672,11 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
 }
 
 #' Zero-Inflated Distributions
-#' 
+#'
 #' Density and distribution functions for zero-inflated distributions.
-#' 
+#'
 #' @name ZeroInflated
-#' 
+#'
 #' @inheritParams StudentT
 #' @param zi zero-inflation probability
 #' @param mu,lambda location parameter
@@ -1684,8 +1684,8 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
 #' @param phi precision parameter
 #' @param size number of trials
 #' @param prob probability of success on each trial
-#' 
-#' @details 
+#'
+#' @details
 #' The density of a zero-inflated distribution can be specified as follows.
 #' If \eqn{x = 0} set \eqn{f(x) = \theta + (1 - \theta) * g(0)}.
 #' Else set \eqn{f(x) = (1 - \theta) * g(x)},
@@ -1701,7 +1701,7 @@ dzero_inflated_poisson <- function(x, lambda, zi, log = FALSE) {
 
 #' @rdname ZeroInflated
 #' @export
-pzero_inflated_poisson <- function(q, lambda, zi, lower.tail = TRUE, 
+pzero_inflated_poisson <- function(q, lambda, zi, lower.tail = TRUE,
                                    log.p = FALSE) {
   pars <- nlist(lambda)
   .pzero_inflated(q, "pois", zi, pars, lower.tail, log.p)
@@ -1746,7 +1746,7 @@ dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
 
 #' @rdname ZeroInflated
 #' @export
-pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi, 
+pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi,
                                          lower.tail = TRUE, log.p = FALSE) {
   pars <- nlist(size, mu, phi)
   .pzero_inflated(q, "beta_binom", zi, pars, lower.tail, log.p)
@@ -1762,7 +1762,7 @@ dzero_inflated_beta <- function(x, shape1, shape2, zi, log = FALSE) {
 
 #' @rdname ZeroInflated
 #' @export
-pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE, 
+pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
                                 log.p = FALSE) {
   pars <- nlist(shape1, shape2)
   # zi_beta is technically a hurdle model
@@ -1771,7 +1771,7 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
 
 # @rdname ZeroInflated
 # @export
-dzero_inflated_asym_laplace <- function(x, mu, sigma, quantile, zi, 
+dzero_inflated_asym_laplace <- function(x, mu, sigma, quantile, zi,
                                         log = FALSE) {
   pars <- nlist(mu, sigma, quantile)
   # zi_asym_laplace is technically a hurdle model
@@ -1780,11 +1780,11 @@ dzero_inflated_asym_laplace <- function(x, mu, sigma, quantile, zi,
 
 # @rdname ZeroInflated
 # @export
-pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi, 
+pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
                                         lower.tail = TRUE, log.p = FALSE) {
   pars <- nlist(mu, sigma, quantile)
   # zi_asym_laplace is technically a hurdle model
-  .phurdle(q, "asym_laplace", zi, pars, lower.tail, log.p, 
+  .phurdle(q, "asym_laplace", zi, pars, lower.tail, log.p,
            type = "real", lb = -Inf, ub = Inf)
 }
 
@@ -1800,8 +1800,8 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
   x <- args$x
   zi <- args$zi
   pars <- args[names(pars)]
-  pdf <- paste0("d", dist) 
-  out <- ifelse(x == 0, 
+  pdf <- paste0("d", dist)
+  out <- ifelse(x == 0,
     log(zi + (1 - zi) * do_call(pdf, c(0, pars))),
     log(1 - zi) + do_call(pdf, c(list(x), pars, log = TRUE))
   )
@@ -1850,18 +1850,18 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
 }
 
 #' Hurdle Distributions
-#' 
+#'
 #' Density and distribution functions for hurdle distributions.
-#' 
+#'
 #' @name Hurdle
-#' 
+#'
 #' @inheritParams StudentT
 #' @param hu hurdle probability
 #' @param mu,lambda location parameter
 #' @param shape shape parameter
 #' @param sigma,scale scale parameter
-#' 
-#' @details 
+#'
+#' @details
 #' The density of a hurdle distribution can be specified as follows.
 #' If \eqn{x = 0} set \eqn{f(x) = \theta}. Else set
 #' \eqn{f(x) = (1 - \theta) * g(x) / (1 - G(0))}
@@ -1878,7 +1878,7 @@ dhurdle_poisson <- function(x, lambda, hu, log = FALSE) {
 
 #' @rdname Hurdle
 #' @export
-phurdle_poisson <- function(q, lambda, hu, lower.tail = TRUE, 
+phurdle_poisson <- function(q, lambda, hu, lower.tail = TRUE,
                             log.p = FALSE) {
   pars <- nlist(lambda)
   .phurdle(q, "pois", hu, pars, lower.tail, log.p, type = "int")
@@ -1893,7 +1893,7 @@ dhurdle_negbinomial <- function(x, mu, shape, hu, log = FALSE) {
 
 #' @rdname Hurdle
 #' @export
-phurdle_negbinomial <- function(q, mu, shape, hu, lower.tail = TRUE, 
+phurdle_negbinomial <- function(q, mu, shape, hu, lower.tail = TRUE,
                                 log.p = FALSE) {
   pars <- nlist(mu, size = shape)
   .phurdle(q, "nbinom", hu, pars, lower.tail, log.p, type = "int")
@@ -1908,7 +1908,7 @@ dhurdle_gamma <- function(x, shape, scale, hu, log = FALSE) {
 
 #' @rdname Hurdle
 #' @export
-phurdle_gamma <- function(q, shape, scale, hu, lower.tail = TRUE, 
+phurdle_gamma <- function(q, shape, scale, hu, lower.tail = TRUE,
                           log.p = FALSE) {
   pars <- nlist(shape, scale)
   .phurdle(q, "gamma", hu, pars, lower.tail, log.p, type = "real")
@@ -1949,7 +1949,7 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   } else {
     lccdf0 <- 0
   }
-  out <- ifelse(x == 0, 
+  out <- ifelse(x == 0,
     log(hu),
     log(1 - hu) + do_call(pdf, c(list(x), pars, log = TRUE)) - lccdf0
   )
@@ -1966,7 +1966,7 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
 # @param type support of distribution (int or real)
 # @param lb lower bound of the conditional distribution
 # @param ub upper bound of the conditional distribution
-.phurdle <- function(q, dist, hu, pars, lower.tail, log.p, type, 
+.phurdle <- function(q, dist, hu, pars, lower.tail, log.p, type,
                      lb = 0, ub = Inf) {
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
@@ -2020,7 +2020,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 }
 
 # generic inverse link function for the categorical family
-# 
+#
 # @param x Matrix (S x `ncat` or S x `ncat - 1` (depending on `refcat_obj`),
 #   with S denoting the number of posterior draws and `ncat` denoting the number
 #   of response categories) with values of `eta` for one observation (see
@@ -2030,7 +2030,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 # @param refcat Integer indicating the reference category to be inserted in 'x'.
 #   If NULL, `x` is not modified at all.
 # @param log Logical (length 1) indicating whether to log the return value.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the inverse-link function applied to
@@ -2038,7 +2038,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 #   values as the matrix just described, but for N observations.
 inv_link_categorical <- function(x, refcat = 1, log = FALSE) {
   if (!is.null(refcat)) {
-    x <- insert_refcat(x, refcat = refcat)    
+    x <- insert_refcat(x, refcat = refcat)
   }
   if (log) {
     out <- log_softmax(x)
@@ -2049,7 +2049,7 @@ inv_link_categorical <- function(x, refcat = 1, log = FALSE) {
 }
 
 # generic link function for the categorical family
-# 
+#
 # @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
 #   `ncat` denoting the number of response categories) of probabilities for the
 #   response categories or an array (S x N x `ncat`) containing the same values
@@ -2057,7 +2057,7 @@ inv_link_categorical <- function(x, refcat = 1, log = FALSE) {
 # @param refcat Numeric (length 1) giving the index of the reference category.
 # @param return_refcat Logical (length 1) indicating whether to include the
 #   reference category in the return value.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat` or S x `ncat - 1`
 #   (depending on `return_refcat`), with S denoting the number of posterior
 #   draws and `ncat` denoting the number of response categories) containing the
@@ -2083,7 +2083,7 @@ link_categorical <- function(x, refcat = 1, return_refcat = FALSE) {
 
 # CDF of the categorical distribution with the softmax transform
 # @param q positive integers not greater than ncat
-# @param eta the linear predictor (of length or ncol ncat)  
+# @param eta the linear predictor (of length or ncol ncat)
 # @param log.p return values on the log scale?
 pcategorical <- function(q, eta, log.p = FALSE) {
   p <- dcategorical(seq_len(max(q)), eta = eta)
@@ -2116,7 +2116,7 @@ dmultinomial <- function(x, eta, log = FALSE) {
 }
 
 # density of the cumulative distribution
-# 
+#
 # @param x Integer vector containing response category indices to return the
 #   "densities" (probability masses) for.
 # @param eta Vector (length S, with S denoting the number of posterior draws) of
@@ -2127,7 +2127,7 @@ dmultinomial <- function(x, eta, log = FALSE) {
 # @param disc Vector (length S, with S denoting the number of posterior draws,
 #   or length 1 for recycling) of discrimination parameter draws.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return A matrix (S x `length(x)`) containing the values of the inverse-link
 #   function applied to `disc * (thres - eta)`.
 dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
@@ -2137,18 +2137,18 @@ dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
   } else {
     out <- inv_link_cumulative(eta, link = link)
   }
-  out[, x, drop = FALSE] 
+  out[, x, drop = FALSE]
 }
 
 # generic inverse link function for the cumulative family
-# 
+#
 # @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) with values of
 #   `disc * (thres - eta)` for one observation (see dcumulative()) or an array
 #   (S x N x `ncat - 1`) containing the same values as the matrix just
 #   described, but for N observations.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the inverse-link function applied to
@@ -2164,13 +2164,13 @@ inv_link_cumulative <- function(x, link) {
 }
 
 # generic link function for the cumulative family
-# 
+#
 # @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
 #   `ncat` denoting the number of response categories) of probabilities for the
 #   response categories or an array (S x N x `ncat`) containing the same values
 #   as the matrix just described, but for N observations.
 # @param link Character string (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the link function applied to `x`. If
@@ -2189,7 +2189,7 @@ link_cumulative <- function(x, link) {
 }
 
 # density of the sratio distribution
-# 
+#
 # @param x Integer vector containing response category indices to return the
 #   "densities" (probability masses) for.
 # @param eta Vector (length S, with S denoting the number of posterior draws) of
@@ -2200,7 +2200,7 @@ link_cumulative <- function(x, link) {
 # @param disc Vector (length S, with S denoting the number of posterior draws,
 #   or length 1 for recycling) of discrimination parameter draws.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return A matrix (S x `length(x)`) containing the values of the inverse-link
 #   function applied to `disc * (thres - eta)`.
 dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
@@ -2214,14 +2214,14 @@ dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
 }
 
 # generic inverse link function for the sratio family
-# 
+#
 # @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) with values of
 #   `disc * (thres - eta)` for one observation (see dsratio()) or an array
 #   (S x N x `ncat - 1`) containing the same values as the matrix just
 #   described, but for N observations.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the inverse-link function applied to
@@ -2243,13 +2243,13 @@ inv_link_sratio <- function(x, link) {
 }
 
 # generic link function for the sratio family
-# 
+#
 # @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
 #   `ncat` denoting the number of response categories) of probabilities for the
 #   response categories or an array (S x N x `ncat`) containing the same values
 #   as the matrix just described, but for N observations.
 # @param link Character string (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the link function applied to `x`. If
@@ -2275,7 +2275,7 @@ link_sratio <- function(x, link) {
 }
 
 # density of the cratio distribution
-# 
+#
 # @param x Integer vector containing response category indices to return the
 #   "densities" (probability masses) for.
 # @param eta Vector (length S, with S denoting the number of posterior draws) of
@@ -2286,7 +2286,7 @@ link_sratio <- function(x, link) {
 # @param disc Vector (length S, with S denoting the number of posterior draws,
 #   or length 1 for recycling) of discrimination parameter draws.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return A matrix (S x `length(x)`) containing the values of the inverse-link
 #   function applied to `disc * (thres - eta)`.
 dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
@@ -2300,14 +2300,14 @@ dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
 }
 
 # generic inverse link function for the cratio family
-# 
+#
 # @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) with values of
 #   `disc * (thres - eta)` for one observation (see dcratio()) or an array
 #   (S x N x `ncat - 1`) containing the same values as the matrix just
 #   described, but for N observations.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the inverse-link function applied to
@@ -2329,13 +2329,13 @@ inv_link_cratio <- function(x, link) {
 }
 
 # generic link function for the cratio family
-# 
+#
 # @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
 #   `ncat` denoting the number of response categories) of probabilities for the
 #   response categories or an array (S x N x `ncat`) containing the same values
 #   as the matrix just described, but for N observations.
 # @param link Character string (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the link function applied to `x`. If
@@ -2361,7 +2361,7 @@ link_cratio <- function(x, link) {
 }
 
 # density of the acat distribution
-# 
+#
 # @param x Integer vector containing response category indices to return the
 #   "densities" (probability masses) for.
 # @param eta Vector (length S, with S denoting the number of posterior draws) of
@@ -2372,7 +2372,7 @@ link_cratio <- function(x, link) {
 # @param disc Vector (length S, with S denoting the number of posterior draws,
 #   or length 1 for recycling) of discrimination parameter draws.
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return A matrix (S x `length(x)`) containing the values of the inverse-link
 #   function applied to `disc * (thres - eta)`.
 dacat <- function(x, eta, thres, disc = 1, link = "logit") {
@@ -2386,12 +2386,12 @@ dacat <- function(x, eta, thres, disc = 1, link = "logit") {
 }
 
 # generic inverse link function for the acat family
-# 
+#
 # @param x Matrix (S x `ncat - 1`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) with values of
 #   `disc * (thres - eta)` (see dacat()).
 # @param link Character vector (length 1) giving the name of the link function.
-# 
+#
 # @return A matrix (S x `ncat`, with S denoting the number of posterior draws
 #   and `ncat` denoting the number of response categories) containing the values
 #   of the inverse-link function applied to `x`.
@@ -2402,7 +2402,7 @@ inv_link_acat <- function(x, link) {
   marg_noncat <- seq_along(dim(x))[-ndim]
   ones_arr <- array(1, dim = c(dim_noncat, 1))
   dim_t <- c(nthres, dim_noncat)
-  if (link == "logit") { 
+  if (link == "logit") {
     # faster evaluation in this case
     exp_x_cumprod <- aperm(
       array(apply(exp(x), marg_noncat, cumprod), dim = dim_t),
@@ -2420,7 +2420,7 @@ inv_link_acat <- function(x, link) {
       marg_noncat, cumprod
     )
     Sx_cumprod_rev <- aperm(
-      array(Sx_cumprod_rev, dim = dim_t), 
+      array(Sx_cumprod_rev, dim = dim_t),
       perm = c(marg_noncat + 1, 1)
     )
     Sx_cumprod_rev <- slice(
@@ -2434,13 +2434,13 @@ inv_link_acat <- function(x, link) {
 }
 
 # generic link function for the acat family
-# 
+#
 # @param x Matrix (S x `ncat`, with S denoting the number of posterior draws and
 #   `ncat` denoting the number of response categories) of probabilities for the
 #   response categories or an array (S x N x `ncat`) containing the same values
 #   as the matrix just described, but for N observations.
 # @param link Character string (length 1) giving the name of the link function.
-# 
+#
 # @return If `x` is a matrix, then a matrix (S x `ncat - 1`, with S denoting the
 #   number of posterior draws and `ncat` denoting the number of response
 #   categories) containing the values of the link function applied to `x`. If
@@ -2484,7 +2484,7 @@ dbeta_binom <- function(x, size, mu = 1, phi = 1, log = FALSE) {
 }
 
 # PMF of the beta-binomial distribution
-pbeta_binom <- function(q, size, mu = 1, phi = 1, lower.tail = TRUE, 
+pbeta_binom <- function(q, size, mu = 1, phi = 1, lower.tail = TRUE,
                         log.p = FALSE) {
   require_package("extraDistr")
   extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,

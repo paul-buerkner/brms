@@ -18,7 +18,7 @@ that should be part of the conditions.}
 A \code{data.frame} where each row indicates a condition.
 }
 \description{
-This is a helper function to prepare fully crossed conditions primarily 
+This is a helper function to prepare fully crossed conditions primarily
 for use with the \code{conditions} argument of \code{\link{conditional_effects}}.
 Automatically creates labels for each row in the \code{cond__} column.
 }

@@ -178,21 +178,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>In contrast to generalized linear models, priors on population-level parameters (i.e., ‘fixed effects’) are often mandatory to identify a non-linear model. Thus, <strong>brms</strong> requires the user to explicitly specify these priors. In the present example, we used a <code>normal(1, 2)</code> prior on (the population-level intercept of) <code>b1</code>, while we used a <code>normal(0, 2)</code> prior on (the population-level intercept of) <code>b2</code>. Setting priors is a non-trivial task in all kinds of models, especially in non-linear models, so you should always invest some time to think of appropriate priors. Quite often, you may be forced to change your priors after fitting a non-linear model for the first time, when you observe different MCMC chains converging to different posterior regions. This is a clear sign of an identification problem and one solution is to set stronger (i.e., more narrow) priors.</p>
 <p>To obtain summaries of the fitted model, we apply</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit1)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: y ~ b1 * exp(b2 * x) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: y ~ b1 * exp(b2 * x)
          b1 ~ 1
          b2 ~ 1
-   Data: dat1 (Number of observations: 100) 
+   Data: dat1 (Number of observations: 100)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 b1_Intercept     2.01      0.11     1.78     2.23 1.00     1793     1999
 b2_Intercept     0.73      0.05     0.63     0.83 1.00     1844     1879
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     0.95      0.07     0.83     1.10 1.00     2549     2236
 
@@ -207,19 +207,19 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>We might be also interested in comparing our non-linear model to a classical linear model.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">brm</span>(y <span class="sc">~</span> x, <span class="at">data =</span> dat1)</span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit2)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: y ~ x 
-   Data: dat1 (Number of observations: 100) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: y ~ x
+   Data: dat1 (Number of observations: 100)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept     2.52      0.12     2.28     2.76 1.00     4144     3089
 x             1.34      0.12     1.11     1.58 1.00     3816     2891
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma     1.18      0.09     1.03     1.36 1.00     4091     2921
 
@@ -260,17 +260,17 @@ Monte Carlo SE of elpd_loo is 0.1.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     99    99.0%   2765      
- (0.5, 0.7]   (ok)        1     1.0%   130       
-   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     99    99.0%   2765
+ (0.5, 0.7]   (ok)        1     1.0%   130
+   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;
 
 All Pareto k estimates are ok (k &lt; 0.7).
 See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Model comparisons:
      elpd_diff se_diff
-fit1   0.0       0.0  
+fit1   0.0       0.0
 fit2 -21.8       8.9  </code></pre>
 <p>Since smaller <code>LOOIC</code> values indicate better model fit, it is immediately evident that the non-linear model fits the data better, which is of course not too surprising since we simulated the data from exactly that model.</p>
 </div>
@@ -303,28 +303,28 @@ fit2 -21.8       8.9  </code></pre>
 <span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>We estimate a group-level effect of accident year (variable <code>AY</code>) for the ultimate loss <code>ult</code>. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of <code>ult</code>, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_loss)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: cum ~ ult * (1 - exp(-(dev/theta)^omega)) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = identity
+Formula: cum ~ ult * (1 - exp(-(dev/theta)^omega))
          ult ~ 1 + (1 | AY)
          omega ~ 1
          theta ~ 1
-   Data: loss (Number of observations: 55) 
+   Data: loss (Number of observations: 55)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
-~AY (Number of levels: 10) 
+Group-Level Effects:
+~AY (Number of levels: 10)
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(ult_Intercept)   754.22    238.12   421.69  1332.67 1.00     1117     1630
 
-Population-Level Effects: 
+Population-Level Effects:
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 ult_Intercept    5301.93    290.49  4739.12  5900.09 1.00     1160     1799
 omega_Intercept     1.33      0.05     1.24     1.43 1.00     2351     2573
 theta_Intercept    46.32      2.21    42.55    51.11 1.00     2160     2066
 
-Family Specific Parameters: 
+Family Specific Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma   140.08     15.76   113.81   174.42 1.00     2679     2396
 
@@ -358,14 +358,14 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>fit_ir1 <span class="ot">&lt;-</span> <span class="fu">brm</span>(answer <span class="sc">~</span> ability, <span class="at">data =</span> dat_ir, <span class="at">family =</span> <span class="fu">bernoulli</span>())</span></code></pre></div>
 <p>However, this model completely ignores the guessing probability and will thus likely come to biased estimates and predictions.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_ir1)</span></code></pre></div>
-<pre><code> Family: bernoulli 
-  Links: mu = logit 
-Formula: answer ~ ability 
-   Data: dat_ir (Number of observations: 300) 
+<pre><code> Family: bernoulli
+  Links: mu = logit
+Formula: answer ~ ability
+   Data: dat_ir (Number of observations: 300)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept     0.76      0.13     0.51     1.03 1.00     2804     2395
 ability       0.76      0.14     0.48     1.04 1.00     2900     2211
@@ -384,15 +384,15 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>It is very important to set the link function of the <code>bernoulli</code> family to <code>identity</code> or else we will apply two link functions. This is because our non-linear predictor term already contains the desired link function (<code>0.33 + 0.67 * inv_logit</code>), but the <code>bernoulli</code> family applies the default <code>logit</code> link on top of it. This will of course lead to strange and uninterpretable results. Thus, please make sure that you set the link function to <code>identity</code>, whenever your non-linear predictor term already contains the desired link function.</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_ir2)</span></code></pre></div>
-<pre><code> Family: bernoulli 
-  Links: mu = identity 
-Formula: answer ~ 0.33 + 0.67 * inv_logit(eta) 
+<pre><code> Family: bernoulli
+  Links: mu = identity
+Formula: answer ~ 0.33 + 0.67 * inv_logit(eta)
          eta ~ ability
-   Data: dat_ir (Number of observations: 300) 
+   Data: dat_ir (Number of observations: 300)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 eta_Intercept    -0.02      0.19    -0.41     0.36 1.00     2488     2170
 eta_ability       1.13      0.25     0.68     1.65 1.00     2560     2171
@@ -434,7 +434,7 @@ See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Model comparisons:
         elpd_diff se_diff
-fit_ir2  0.0       0.0   
+fit_ir2  0.0       0.0
 fit_ir1 -0.2       1.1   </code></pre>
 <p>shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don’t know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.</p>
 <div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>fit_ir3 <span class="ot">&lt;-</span> <span class="fu">brm</span>(</span>
@@ -448,16 +448,16 @@ fit_ir1 -0.2       1.1   </code></pre>
 <span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>Here, we model the guessing probability as a non-linear parameter making sure that it cannot exceed the interval <span class="math inline">\([0, 1]\)</span>. We did not estimate an intercept for <code>eta</code>, as this will lead to a bias in the estimated guessing parameter (try it out; this is an excellent example of how careful one has to be in non-linear models).</p>
 <div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_ir3)</span></code></pre></div>
-<pre><code> Family: bernoulli 
-  Links: mu = identity 
-Formula: answer ~ guess + (1 - guess) * inv_logit(eta) 
+<pre><code> Family: bernoulli
+  Links: mu = identity
+Formula: answer ~ guess + (1 - guess) * inv_logit(eta)
          eta ~ 0 + ability
          guess ~ 1
-   Data: dat_ir (Number of observations: 300) 
+   Data: dat_ir (Number of observations: 300)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 eta_ability         1.10      0.24     0.65     1.59 1.00     2530     1698
 guess_Intercept     0.33      0.05     0.22     0.42 1.00     2387     1867

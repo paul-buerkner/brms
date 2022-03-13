@@ -14,29 +14,29 @@
 
 \item{log}{Report Bayes factors on the log-scale?}
 
-\item{...}{Additional arguments passed to 
+\item{...}{Additional arguments passed to
 \code{\link[brms:bridge_sampler.brmsfit]{bridge_sampler}}.}
 }
 \description{
 Compute Bayes factors from marginal likelihoods.
 }
 \details{
-Computing the marginal likelihood requires samples 
+Computing the marginal likelihood requires samples
   of all variables defined in Stan's \code{parameters} block
   to be saved. Otherwise \code{bayes_factor} cannot be computed.
   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
   if you are planning to apply \code{bayes_factor} to your models.
-  
+
   The computation of Bayes factors based on bridge sampling requires
-  a lot more posterior samples than usual. A good conservative 
-  rule of thumb is perhaps 10-fold more samples (read: the default of 4000 
+  a lot more posterior samples than usual. A good conservative
+  rule of thumb is perhaps 10-fold more samples (read: the default of 4000
   samples may not be enough in many cases). If not enough posterior
-  samples are provided, the bridge sampling algorithm tends to be unstable, 
-  leading to considerably different results each time it is run. 
+  samples are provided, the bridge sampling algorithm tends to be unstable,
+  leading to considerably different results each time it is run.
   We thus recommend running \code{bayes_factor}
   multiple times to check the stability of the results.
 
-  More details are provided under 
+  More details are provided under
   \code{\link[bridgesampling:bf]{bridgesampling::bayes_factor}}.
 }
 \examples{
@@ -44,7 +44,7 @@ Computing the marginal likelihood requires samples
 # model with the treatment effect
 fit1 <- brm(
   count ~ zAge + zBase + Trt,
-  data = epilepsy, family = negbinomial(), 
+  data = epilepsy, family = negbinomial(),
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE
 )
@@ -53,7 +53,7 @@ summary(fit1)
 # model without the treatment effect
 fit2 <- brm(
   count ~ zAge + zBase,
-  data = epilepsy, family = negbinomial(), 
+  data = epilepsy, family = negbinomial(),
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE
 )

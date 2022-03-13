@@ -23,9 +23,9 @@ test_that("family functions returns expected results", {
   expect_equal(zero_inflated_poisson(log)$link, "log")
   expect_error(zero_inflated_poisson(list(1)), "zero_inflated_poisson")
   expect_equal(zero_inflated_negbinomial("log")$link, "log")
-  expect_error(zero_inflated_negbinomial("logit"), 
+  expect_error(zero_inflated_negbinomial("logit"),
                "zero_inflated_negbinomial")
-  expect_equal(zero_inflated_beta(logit)$family, 
+  expect_equal(zero_inflated_beta(logit)$family,
                "zero_inflated_beta")
   expect_equivalent(zero_inflated_binomial()$link_zi, "logit")
   expect_error(zero_inflated_binomial(y~x), "zero_inflated_binomial")
@@ -38,12 +38,12 @@ test_that("family functions returns expected results", {
   expect_equal(brmsfamily("gaussian", inverse)$link, "inverse")
   expect_equal(brmsfamily("geometric", "identity")$family, "geometric")
   expect_equal(brmsfamily("zi_poisson")$link_zi, "logit")
-  
-  expect_error(weibull(link_shape = "logit"), 
+
+  expect_error(weibull(link_shape = "logit"),
                "'logit' is not a supported link for parameter 'shape'")
   expect_error(weibull(link_shape = c("log", "logit")),
                "Cannot coerce 'alink' to a single character value")
-  
+
   expect_equal(zero_inflated_beta_binomial()$link, "logit")
   expect_equal(zero_inflated_beta_binomial('probit')$link, "probit")
   expect_equal(zero_inflated_beta_binomial()$link_phi, "log")
@@ -63,18 +63,18 @@ test_that("mixture returns expected results and errors", {
   expect_equal(brms:::family_names(mix), rep("gaussian", 3))
   mix <- mixture(gaussian, student, weibull, nmix = 3:1)
   expect_equal(
-    brms:::family_names(mix), 
+    brms:::family_names(mix),
     c(rep("gaussian", 3), rep("student", 2), "weibull")
   )
-  expect_error(mixture(gaussian, "x"), 
+  expect_error(mixture(gaussian, "x"),
                "x is not a supported family")
-  expect_error(mixture(poisson(), categorical()), 
+  expect_error(mixture(poisson(), categorical()),
                "Some of the families are not allowed in mixture models")
   expect_error(mixture(poisson, "cumulative"),
                "Cannot mix ordinal and non-ordinal families")
-  expect_error(mixture(lognormal, exgaussian, poisson()), 
+  expect_error(mixture(lognormal, exgaussian, poisson()),
                "Cannot mix families with real and integer support")
-  expect_error(mixture(lognormal), 
+  expect_error(mixture(lognormal),
                "Expecting at least 2 mixture components")
   expect_error(mixture(poisson, binomial, order = "x"),
                "Argument 'order' is invalid")

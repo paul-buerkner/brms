@@ -33,48 +33,48 @@ to display. If \code{NULL} (the default) all smooth terms
 are shown.}
 
 \item{int_conditions}{An optional named \code{list} whose elements are
-vectors of values of the variables specified in \code{effects}. 
-At these values, predictions are evaluated. The names of 
+vectors of values of the variables specified in \code{effects}.
+At these values, predictions are evaluated. The names of
 \code{int_conditions} have to match the variable names exactly.
 Additionally, the elements of the vectors may be named themselves,
 in which case their names appear as labels for the conditions in the plots.
 Instead of vectors, functions returning vectors may be passed and are
 applied on the original values of the corresponding variable.
-If \code{NULL} (the default), predictions are evaluated at the 
+If \code{NULL} (the default), predictions are evaluated at the
 \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 all categories for factor-like predictors.}
 
-\item{prob}{A value between 0 and 1 indicating the desired probability 
+\item{prob}{A value between 0 and 1 indicating the desired probability
 to be covered by the uncertainty intervals. The default is 0.95.}
 
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
-predictors. If \code{TRUE}, it is recommended 
-to set argument \code{ndraws} to a relatively small value 
+predictors. If \code{TRUE}, it is recommended
+to set argument \code{ndraws} to a relatively small value
 (e.g., \code{100}) in order to reduce computation time.}
 
-\item{resolution}{Number of support points used to generate 
-the plots. Higher resolution leads to smoother plots. 
+\item{resolution}{Number of support points used to generate
+the plots. Higher resolution leads to smoother plots.
 Defaults to \code{100}. If \code{surface} is \code{TRUE},
 this implies \code{10000} support points for interaction terms,
-so it might be necessary to reduce \code{resolution} 
+so it might be necessary to reduce \code{resolution}
 when only few RAM is available.}
 
-\item{too_far}{Positive number. 
-For surface plots only: Grid points that are too 
-far away from the actual data points can be excluded from the plot. 
-\code{too_far} determines what is too far. The grid is scaled into 
-the unit square and then grid points more than \code{too_far} 
+\item{too_far}{Positive number.
+For surface plots only: Grid points that are too
+far away from the actual data points can be excluded from the plot.
+\code{too_far} determines what is too far. The grid is scaled into
+the unit square and then grid points more than \code{too_far}
 from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
-\item{ndraws}{Positive integer indicating how many 
-posterior draws should be used. 
+\item{ndraws}{Positive integer indicating how many
+posterior draws should be used.
 If \code{NULL} (the default) all draws are used.
 Ignored if \code{draw_ids} is not \code{NULL}.}
 
 \item{draw_ids}{An integer vector specifying
-the posterior draws to be used. 
+the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
 \item{nsamples}{Deprecated alias of \code{ndraws}.}
@@ -87,9 +87,9 @@ uncertainty intervals. Please use argument \code{prob} instead.}
 \item{...}{Currently ignored.}
 }
 \value{
-For the \code{brmsfit} method, 
+For the \code{brmsfit} method,
 an object of class \code{brms_conditional_effects}. See
-\code{\link{conditional_effects}} for 
+\code{\link{conditional_effects}} for
 more details and documentation of the related plotting function.
 }
 \description{
@@ -102,7 +102,7 @@ Two-dimensional smooth terms will be visualized using
 }
 \examples{
 \dontrun{
-set.seed(0) 
+set.seed(0)
 dat <- mgcv::gamSim(1, n = 200, scale = 2)
 fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 # show all smooth terms

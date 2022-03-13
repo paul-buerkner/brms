@@ -53,10 +53,10 @@ calling \code{log_lik} directly, but rather when computing
 
 \item{combine}{Only relevant in multivariate models.
 Indicates if the log-likelihoods of the submodels should
-be combined per observation (i.e. added together; the default) 
+be combined per observation (i.e. added together; the default)
 or if the log-likelihoods should be returned separately.}
 
-\item{add_point_estimate}{For internal use only. Ensures compatibility 
+\item{add_point_estimate}{For internal use only. Ensures compatibility
 with the \code{\link{loo_subsample}} method.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
@@ -67,9 +67,9 @@ that control several aspects of data validation and prediction.}
 }
 \value{
 Usually, an S x N matrix containing the pointwise log-likelihood
- draws, where S is the number of draws and N is the number 
- of observations in the data. For multivariate models and if 
- \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+ draws, where S is the number of draws and N is the number
+ of observations in the data. For multivariate models and if
+ \code{combine} is \code{FALSE}, an S x N x R array is returned,
  where R is the number of response variables.
  If \code{pointwise = TRUE}, the output is a function
  with a \code{draws} attribute containing all relevant
@@ -79,12 +79,12 @@ Usually, an S x N matrix containing the pointwise log-likelihood
 Compute the Pointwise Log-Likelihood
 }
 \details{
-\code{NA} values within factors in \code{newdata}, 
-  are interpreted as if all dummy variables of this factor are 
-  zero. This allows, for instance, to make predictions of the grand mean 
+\code{NA} values within factors in \code{newdata},
+  are interpreted as if all dummy variables of this factor are
+  zero. This allows, for instance, to make predictions of the grand mean
   when using sum coding.
 
-In multilevel models, it is possible to 
+In multilevel models, it is possible to
 allow new levels of grouping factors to be used in the predictions.
 This can be controlled via argument \code{allow_new_levels}.
 New levels can be sampled in multiple ways, which can be controlled

@@ -176,17 +176,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>As can be seen in the model code, we have used <code>mvbind</code> notation to tell <strong>brms</strong> that both <code>tarsus</code> and <code>back</code> are separate response variables. The term <code>(1|p|fosternest)</code> indicates a varying intercept over <code>fosternest</code>. By writing <code>|p|</code> in between we indicate that all varying effects of <code>fosternest</code> should be modeled as correlated. This makes sense since we actually have two model parts, one for <code>tarsus</code> and one for <code>back</code>. The indicator <code>p</code> is arbitrary and can be replaced by other symbols that comes into your mind (for details about the multilevel syntax of <strong>brms</strong>, see <code>help(&quot;brmsformula&quot;)</code> and <code>vignette(&quot;brms_multilevel&quot;)</code>). Similarly, the term <code>(1|q|dam)</code> indicates correlated varying effects of the genetic mother of the chicks. Alternatively, we could have also modeled the genetic similarities through pedigrees and corresponding relatedness matrices, but this is not the focus of this vignette (please see <code>vignette(&quot;brms_phylogenetics&quot;)</code>). The model results are readily summarized via</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(fit1, <span class="st">&quot;loo&quot;</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit1)</span></code></pre></div>
-<pre><code> Family: MV(gaussian, gaussian) 
+<pre><code> Family: MV(gaussian, gaussian)
   Links: mu = identity; sigma = identity
-         mu = identity; sigma = identity 
-Formula: tarsus ~ sex + hatchdate + (1 | p | fosternest) + (1 | q | dam) 
-         back ~ sex + hatchdate + (1 | p | fosternest) + (1 | q | dam) 
-   Data: BTdata (Number of observations: 828) 
+         mu = identity; sigma = identity
+Formula: tarsus ~ sex + hatchdate + (1 | p | fosternest) + (1 | q | dam)
+         back ~ sex + hatchdate + (1 | p | fosternest) + (1 | q | dam)
+   Data: BTdata (Number of observations: 828)
   Draws: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 2000
 
-Group-Level Effects: 
-~dam (Number of levels: 106) 
+Group-Level Effects:
+~dam (Number of levels: 106)
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
 sd(tarsus_Intercept)                     0.48      0.05     0.39     0.58 1.00      602
 sd(back_Intercept)                       0.25      0.08     0.09     0.39 1.01      226
@@ -196,7 +196,7 @@ sd(tarsus_Intercept)                     1036
 sd(back_Intercept)                        314
 cor(tarsus_Intercept,back_Intercept)      481
 
-~fosternest (Number of levels: 104) 
+~fosternest (Number of levels: 104)
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
 sd(tarsus_Intercept)                     0.27      0.05     0.16     0.37 1.00      515
 sd(back_Intercept)                       0.35      0.06     0.24     0.47 1.00      360
@@ -206,7 +206,7 @@ sd(tarsus_Intercept)                      916
 sd(back_Intercept)                        909
 cor(tarsus_Intercept,back_Intercept)      401
 
-Population-Level Effects: 
+Population-Level Effects:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 tarsus_Intercept    -0.40      0.07    -0.54    -0.26 1.00      695     1251
 back_Intercept      -0.01      0.06    -0.14     0.11 1.00     1469     1534
@@ -217,12 +217,12 @@ back_sexMale         0.01      0.07    -0.12     0.14 1.00     2806     1325
 back_sexUNK          0.15      0.15    -0.13     0.44 1.00     2657     1427
 back_hatchdate      -0.09      0.05    -0.19     0.01 1.00     1154     1259
 
-Family Specific Parameters: 
+Family Specific Parameters:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2082     1542
 sigma_back       0.90      0.02     0.86     0.95 1.00     1722     1305
 
-Residual Correlations: 
+Residual Correlations:
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 rescor(tarsus,back)    -0.05      0.04    -0.12     0.02 1.00     2306     1253
 
@@ -250,17 +250,17 @@ R2back   0.1987498 0.02773145 0.1451680 0.2520722</code></pre>
 <p>Note that we have literally <em>added</em> the two model parts via the <code>+</code> operator, which is in this case equivalent to writing <code>mvbf(bf_tarsus, bf_back)</code>. See <code>help(&quot;brmsformula&quot;)</code> and <code>help(&quot;mvbrmsformula&quot;)</code> for more details about this syntax. Again, we summarize the model first.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(fit2, <span class="st">&quot;loo&quot;</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit2)</span></code></pre></div>
-<pre><code> Family: MV(gaussian, gaussian) 
+<pre><code> Family: MV(gaussian, gaussian)
   Links: mu = identity; sigma = identity
-         mu = identity; sigma = identity 
-Formula: tarsus ~ sex + (1 | p | fosternest) + (1 | q | dam) 
-         back ~ hatchdate + (1 | p | fosternest) + (1 | q | dam) 
-   Data: BTdata (Number of observations: 828) 
+         mu = identity; sigma = identity
+Formula: tarsus ~ sex + (1 | p | fosternest) + (1 | q | dam)
+         back ~ hatchdate + (1 | p | fosternest) + (1 | q | dam)
+   Data: BTdata (Number of observations: 828)
   Draws: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 2000
 
-Group-Level Effects: 
-~dam (Number of levels: 106) 
+Group-Level Effects:
+~dam (Number of levels: 106)
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
 sd(tarsus_Intercept)                     0.48      0.05     0.39     0.58 1.01      544
 sd(back_Intercept)                       0.24      0.08     0.08     0.39 1.00      216
@@ -270,7 +270,7 @@ sd(tarsus_Intercept)                     1293
 sd(back_Intercept)                        268
 cor(tarsus_Intercept,back_Intercept)      528
 
-~fosternest (Number of levels: 104) 
+~fosternest (Number of levels: 104)
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
 sd(tarsus_Intercept)                     0.27      0.05     0.16     0.37 1.01      621
 sd(back_Intercept)                       0.35      0.06     0.23     0.47 1.00      344
@@ -280,7 +280,7 @@ sd(tarsus_Intercept)                      769
 sd(back_Intercept)                        609
 cor(tarsus_Intercept,back_Intercept)      640
 
-Population-Level Effects: 
+Population-Level Effects:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 tarsus_Intercept    -0.41      0.07    -0.54    -0.28 1.00     1411     1486
 back_Intercept       0.00      0.05    -0.11     0.11 1.00     1985     1439
@@ -288,12 +288,12 @@ tarsus_sexMale       0.77      0.06     0.65     0.88 1.00     3578     1435
 tarsus_sexUNK        0.23      0.13    -0.03     0.47 1.00     3415     1612
 back_hatchdate      -0.08      0.05    -0.19     0.02 1.00     2131     1446
 
-Family Specific Parameters: 
+Family Specific Parameters:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma_tarsus     0.76      0.02     0.71     0.80 1.00     1869     1336
 sigma_back       0.90      0.02     0.85     0.95 1.00     1963     1211
 
-Residual Correlations: 
+Residual Correlations:
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 rescor(tarsus,back)    -0.05      0.04    -0.13     0.02 1.00     2548     1571
 
@@ -315,10 +315,10 @@ Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     808   97.6%   204       
- (0.5, 0.7]   (ok)        17    2.1%   166       
-   (0.7, 1]   (bad)        3    0.4%   13        
-   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     808   97.6%   204
+ (0.5, 0.7]   (ok)        17    2.1%   166
+   (0.7, 1]   (bad)        3    0.4%   13
+   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;
 See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Output of model &#39;fit2&#39;:
@@ -334,15 +334,15 @@ Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     810   97.8%   324       
- (0.5, 0.7]   (ok)        16    1.9%   98        
-   (0.7, 1]   (bad)        2    0.2%   28        
-   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     810   97.8%   324
+ (0.5, 0.7]   (ok)        16    1.9%   98
+   (0.7, 1]   (bad)        2    0.2%   28
+   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;
 See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Model comparisons:
      elpd_diff se_diff
-fit2  0.0       0.0   
+fit2  0.0       0.0
 fit1 -1.7       1.4   </code></pre>
 <p>Apparently, there is no noteworthy difference in the model fit. Accordingly, we do not really need to model <code>sex</code> and <code>hatchdate</code> for both response variables, but there is also no harm in including them (so I would probably just include them).</p>
 <p>To give you a glimpse of the capabilities of <strong>brms</strong>’ multivariate syntax, we change our model in various directions at the same time. Remember the slight left skewness of <code>tarsus</code>, which we will now model by using the <code>skew_normal</code> family instead of the <code>gaussian</code> family. Since we do not have a multivariate normal (or student-t) model, anymore, estimating residual correlations is no longer possible. We make this explicit using the <code>set_rescor</code> function. Further, we investigate if the relationship of <code>back</code> and <code>hatchdate</code> is really linear as previously assumed by fitting a non-linear spline of <code>hatchdate</code>. On top of it, we model separate residual variances of <code>tarsus</code> for male and female chicks.</p>
@@ -359,22 +359,22 @@ fit1 -1.7       1.4   </code></pre>
 <p>Again, we summarize the model and look at some posterior-predictive checks.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(fit3, <span class="st">&quot;loo&quot;</span>)</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit3)</span></code></pre></div>
-<pre><code> Family: MV(skew_normal, gaussian) 
+<pre><code> Family: MV(skew_normal, gaussian)
   Links: mu = identity; sigma = log; alpha = identity
-         mu = identity; sigma = identity 
-Formula: tarsus ~ sex + (1 | p | fosternest) + (1 | q | dam) 
+         mu = identity; sigma = identity
+Formula: tarsus ~ sex + (1 | p | fosternest) + (1 | q | dam)
          sigma ~ 0 + sex
-         back ~ s(hatchdate) + (1 | p | fosternest) + (1 | q | dam) 
-   Data: BTdata (Number of observations: 828) 
+         back ~ s(hatchdate) + (1 | p | fosternest) + (1 | q | dam)
+   Data: BTdata (Number of observations: 828)
   Draws: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 2000
 
-Smooth Terms: 
+Smooth Terms:
                        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sds(back_shatchdate_1)     2.07      1.05     0.42     4.52 1.00      550      555
 
-Group-Level Effects: 
-~dam (Number of levels: 106) 
+Group-Level Effects:
+~dam (Number of levels: 106)
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
 sd(tarsus_Intercept)                     0.47      0.05     0.38     0.58 1.01      616
 sd(back_Intercept)                       0.23      0.08     0.04     0.36 1.03      162
@@ -384,7 +384,7 @@ sd(tarsus_Intercept)                      895
 sd(back_Intercept)                         89
 cor(tarsus_Intercept,back_Intercept)      481
 
-~fosternest (Number of levels: 104) 
+~fosternest (Number of levels: 104)
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
 sd(tarsus_Intercept)                     0.26      0.05     0.16     0.37 1.00      469
 sd(back_Intercept)                       0.31      0.06     0.20     0.43 1.00      387
@@ -394,7 +394,7 @@ sd(tarsus_Intercept)                      999
 sd(back_Intercept)                        770
 cor(tarsus_Intercept,back_Intercept)      487
 
-Population-Level Effects: 
+Population-Level Effects:
                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 tarsus_Intercept        -0.41      0.07    -0.54    -0.28 1.00      625     1223
 back_Intercept           0.00      0.05    -0.10     0.10 1.00     1074     1369
@@ -405,7 +405,7 @@ sigma_tarsus_sexMale    -0.25      0.04    -0.33    -0.16 1.00     2003     1520
 sigma_tarsus_sexUNK     -0.40      0.13    -0.65    -0.14 1.00     1652     1289
 back_shatchdate_1       -0.22      3.21    -5.75     7.16 1.00      629     1017
 
-Family Specific Parameters: 
+Family Specific Parameters:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sigma_back       0.90      0.02     0.85     0.95 1.00     1925     1397
 alpha_tarsus    -1.20      0.46    -1.90     0.19 1.00     1088      495

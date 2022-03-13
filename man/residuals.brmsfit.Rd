@@ -36,11 +36,11 @@ if \code{NA}, include no group-level effects.}
 \item{method}{Method use to obtain predictions. Either
 \code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
 Using \code{"posterior_predict"} is recommended
-but \code{"posterior_epred"} is the current default for 
+but \code{"posterior_epred"} is the current default for
 reasons of backwards compatibility.}
 
-\item{type}{The type of the residuals, 
-either \code{"ordinary"} or \code{"pearson"}. 
+\item{type}{The type of the residuals,
+either \code{"ordinary"} or \code{"pearson"}.
 More information is provided under 'Details'.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
@@ -53,21 +53,21 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}..}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
@@ -94,7 +94,7 @@ Residuals of type \code{'ordinary'} are of the form \eqn{R = Y -
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject), 
+fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, cores = 2)
 
 ## extract residuals/predictive errors

@@ -33,7 +33,7 @@ based on \code{\link{kfold.brmsfit}}.}
 \item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 and for sampling group-level effects for new levels (in multilevel models).}
 
-\item{...}{Further arguments passed to 
+\item{...}{Further arguments passed to
 \code{\link[projpred:init_refmodel]{init_refmodel}}.}
 }
 \value{

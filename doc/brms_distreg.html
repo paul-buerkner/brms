@@ -228,21 +228,21 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data =</span> zinb, <span class="at">family =</span> <span class="fu">zero_inflated_poisson</span>())</span></code></pre></div>
 <p>Again, we summarize the results using the usual methods.</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_zinb1)</span></code></pre></div>
-<pre><code> Family: zero_inflated_poisson 
-  Links: mu = log; zi = identity 
-Formula: count ~ persons + child + camper 
-   Data: zinb (Number of observations: 250) 
+<pre><code> Family: zero_inflated_poisson
+  Links: mu = log; zi = identity
+Formula: count ~ persons + child + camper
+   Data: zinb (Number of observations: 250)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    -1.01      0.18    -1.35    -0.66 1.00     2694     2611
 persons       0.87      0.05     0.78     0.96 1.00     2712     2598
 child        -1.36      0.09    -1.55    -1.18 1.00     2612     2829
 camper        0.80      0.09     0.61     0.98 1.00     3365     2496
 
-Family Specific Parameters: 
+Family Specific Parameters:
    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 zi     0.41      0.04     0.32     0.49 1.00     3032     2644
 
@@ -256,15 +256,15 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>fit_zinb2 <span class="ot">&lt;-</span> <span class="fu">brm</span>(<span class="fu">bf</span>(count <span class="sc">~</span> persons <span class="sc">+</span> child <span class="sc">+</span> camper, zi <span class="sc">~</span> child), </span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data =</span> zinb, <span class="at">family =</span> <span class="fu">zero_inflated_poisson</span>())</span></code></pre></div>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_zinb2)</span></code></pre></div>
-<pre><code> Family: zero_inflated_poisson 
-  Links: mu = log; zi = logit 
-Formula: count ~ persons + child + camper 
+<pre><code> Family: zero_inflated_poisson
+  Links: mu = log; zi = logit
+Formula: count ~ persons + child + camper
          zi ~ child
-   Data: zinb (Number of observations: 250) 
+   Data: zinb (Number of observations: 250)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Population-Level Effects:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept       -1.08      0.18    -1.43    -0.73 1.00     2730     2949
 zi_Intercept    -0.95      0.27    -1.52    -0.49 1.00     3536     2905
@@ -303,27 +303,27 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">chains =</span> <span class="dv">2</span>, <span class="at">control =</span> <span class="fu">list</span>(<span class="at">adapt_delta =</span> <span class="fl">0.95</span>)</span>
 <span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_smooth1)</span></code></pre></div>
-<pre><code> Family: gaussian 
-  Links: mu = identity; sigma = log 
-Formula: y ~ s(x1) + s(x2) + (1 | fac) 
+<pre><code> Family: gaussian
+  Links: mu = identity; sigma = log
+Formula: y ~ s(x1) + s(x2) + (1 | fac)
          sigma ~ s(x0) + (1 | fac)
-   Data: dat_smooth (Number of observations: 200) 
+   Data: dat_smooth (Number of observations: 200)
   Draws: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 2000
 
-Smooth Terms: 
+Smooth Terms:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sds(sx1_1)           2.35      1.87     0.13     7.12 1.00      731      758
 sds(sx2_1)          18.45      5.09    10.77    31.16 1.00      752     1034
 sds(sigma_sx0_1)     0.81      0.76     0.02     2.86 1.00      732     1148
 
-Group-Level Effects: 
-~fac (Number of levels: 4) 
+Group-Level Effects:
+~fac (Number of levels: 4)
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)           4.38      1.90     2.15     9.34 1.00     1031     1246
 sd(sigma_Intercept)     0.16      0.18     0.01     0.69 1.00      650     1023
 
-Population-Level Effects: 
+Population-Level Effects:
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept          14.89      2.01    10.67    18.67 1.00      583     1022
 sigma_Intercept     0.81      0.13     0.57     1.09 1.00      755      534

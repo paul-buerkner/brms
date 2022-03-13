@@ -3,15 +3,15 @@
 # @param bterms object of class brmsterms
 # @param na.action function defining how to treat NAs
 # @param drop.unused.levels should unused factor levels be removed?
-# @param attr_terms a list of attributes of the terms object of 
+# @param attr_terms a list of attributes of the terms object of
 #   the original model.frame; only used with newdata;
 #   this ensures that (1) calls to 'poly' work correctly
-#   and (2) that the number of variables matches the number 
+#   and (2) that the number of variables matches the number
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
 validate_data <- function(data, bterms, data2 = list(), knots = NULL,
-                          na.action = na.omit2, drop.unused.levels = TRUE, 
+                          na.action = na.omit2, drop.unused.levels = TRUE,
                           attr_terms = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
@@ -33,7 +33,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
     missing_vars2 <- setdiff(missing_vars, names(data2))
     if (length(missing_vars2)) {
       stop2("The following variables can neither be found in ",
-            "'data' nor in 'data2':\n", collapse_comma(missing_vars2)) 
+            "'data' nor in 'data2':\n", collapse_comma(missing_vars2))
     }
     # all initially missing variables can be found in 'data2'
     # they are not necessarily of the length required for 'data'
@@ -42,7 +42,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
     all_vars_formula <- update(all_vars_formula, missing_vars_formula)
   }
   all_vars_terms <- terms(all_vars_formula)
-  # ensure that 'data2' comes first in the search path 
+  # ensure that 'data2' comes first in the search path
   # during the evaluation of model.frame
   terms_env <- environment(all_vars_terms)
   environment(all_vars_terms) <- as.environment(as.list(data2))
@@ -60,8 +60,8 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
           "or underscores at the end.")
   }
   if (!isTRUE(nrow(data) > 0L)) {
-    stop2("All observations in the data were removed ", 
-          "presumably because of NA values.") 
+    stop2("All observations in the data were removed ",
+          "presumably because of NA values.")
   }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
@@ -130,8 +130,8 @@ get_from_data2 <- function(x, data2) {
   get(x, data2)
 }
 
-# index observation based elements in 'data2' 
-# @param data2 a named list of objects 
+# index observation based elements in 'data2'
+# @param data2 a named list of objects
 # @param i observation based indices
 # @return data2 with potentially indexed elements
 subset_data2 <- function(data2, i) {
@@ -154,7 +154,7 @@ data_rsv_intercept <- function(data, bterms) {
   fe_forms <- get_effect(bterms, "fe")
   if (any(ulapply(fe_forms, no_int))) {
     if ("intercept" %in% ulapply(fe_forms, all_vars)) {
-      warning2("Reserved variable name 'intercept' is deprecated. ", 
+      warning2("Reserved variable name 'intercept' is deprecated. ",
                "Please use 'Intercept' instead.")
     }
     if (any(data[["intercept"]] != 1)) {
@@ -185,7 +185,7 @@ combine_groups <- function(data, ...) {
       }
       data[[group[[i]]]] <- new_var
     }
-  } 
+  }
   data
 }
 
@@ -283,7 +283,7 @@ na.omit2 <- function(object, bterms, ...) {
   if (is.mvbrmsterms(bterms)) {
     responses <- names(bterms$terms)
     subsets <- lapply(bterms$terms, get_ad_values, "subset", "subset", object)
-    vars_sub <- lapply(bterms$terms, function(x) all_vars(x$allvars)) 
+    vars_sub <- lapply(bterms$terms, function(x) all_vars(x$allvars))
   }
   vars_keep_na <- vars_keep_na(bterms)
   omit <- logical(nobs)
@@ -319,7 +319,7 @@ na.omit2 <- function(object, bterms, ...) {
     } else {
       for (ii in seq_len(d[2L])) {
         omit <- omit | (is_na[, ii] & !keep_na)
-      } 
+      }
     }
   }
   if (any(omit > 0L)) {
@@ -334,7 +334,7 @@ na.omit2 <- function(object, bterms, ...) {
   out
 }
 
-# get a single value per group 
+# get a single value per group
 # @param x vector of values to extract one value per group
 # @param gr vector of grouping values
 # @return a vector of the same length as unique(group)
@@ -343,7 +343,7 @@ get_one_value_per_group <- function(x, gr) {
   not_dupl_gr <- !duplicated(gr)
   gr_unique <- gr[not_dupl_gr]
   to_order <- order(gr_unique)
-  gr_unique <- gr_unique[to_order] 
+  gr_unique <- gr_unique[to_order]
   out <- x[not_dupl_gr][to_order]
   names(out) <- gr_unique
   out
@@ -364,11 +364,11 @@ get_data_name <- function(data) {
 }
 
 #' Validate New Data
-#' 
+#'
 #' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
 #' are a package developer, you will rarely need to call \code{validate_newdata}
 #' directly.
-#' 
+#'
 #' @inheritParams prepare_predictions
 #' @param newdata A \code{data.frame} containing new data to be validated.
 #' @param object A \code{brmsfit} object.
@@ -380,13 +380,13 @@ get_data_name <- function(data) {
 #'   If \code{NULL} (the default), all variables in the original data
 #'   are required (unless ignored for some other reason).
 #' @param ... Currently ignored.
-#' 
+#'
 #' @return A validated \code{'data.frame'} based on \code{newdata}.
-#' 
+#'
 #' @export
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
-  newdata2 = NULL, resp = NULL, check_response = TRUE, 
+  newdata2 = NULL, resp = NULL, check_response = TRUE,
   incl_autocor = TRUE, group_vars = NULL, req_vars = NULL, ...
 ) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
@@ -398,7 +398,7 @@ validate_newdata <- function(
   resp <- validate_resp(resp, object)
   new_formula <- update_re_terms(formula(object), re_formula)
   bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
- 
+
   # fill values of not required variables
   all_vars <- all.vars(bterms$allvars)
   if (is.null(req_vars)) {
@@ -451,7 +451,7 @@ validate_newdata <- function(
   newdata <- data_rsv_intercept(newdata, bterms)
   new_group_vars <- get_group_vars(bterms)
   if (allow_new_levels && length(new_group_vars)) {
-    # grouping factors do not need to be specified 
+    # grouping factors do not need to be specified
     # by the user if new levels are allowed
     mis_group_vars <- new_group_vars[!grepl(":", new_group_vars)]
     mis_group_vars <- setdiff(mis_group_vars, names(newdata))
@@ -460,7 +460,7 @@ validate_newdata <- function(
   newdata <- combine_groups(newdata, new_group_vars)
   # validate factor levels in newdata
   if (is.null(group_vars)) {
-    group_vars <- get_group_vars(object) 
+    group_vars <- get_group_vars(object)
   }
   do_check <- union(get_pred_vars(bterms), get_int_vars(bterms))
   # do not check variables from the 'unused' argument #1238
@@ -502,7 +502,7 @@ validate_newdata <- function(
             "\nLevels found: ", collapse_comma(new_levels)
           )
         }
-        newdata[[factor_names[i]]] <- 
+        newdata[[factor_names[i]]] <-
           factor(new_factor, old_levels, ordered = old_ordered)
         # don't use contrasts(.) here to avoid dimension checks
         attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
@@ -514,7 +514,7 @@ validate_newdata <- function(
   num_names <- setdiff(num_names, group_vars)
   for (nm in intersect(num_names, names(newdata))) {
     if (!anyNA(newdata[[nm]]) && !is.numeric(newdata[[nm]])) {
-      stop2("Variable '", nm, "' was originally ", 
+      stop2("Variable '", nm, "' was originally ",
             "numeric but is not in 'newdata'.")
     }
   }
@@ -560,14 +560,14 @@ validate_newdata <- function(
           "Consider setting argument 'allow_new_levels' to TRUE."
         )
       }
-    } 
+    }
   }
   # ensure correct handling of functions like 'poly' or 'scale'
   old_terms <- attr(object$data, "terms")
   attr_terms <- c("variables", "predvars")
   attr_terms <- attributes(old_terms)[attr_terms]
   newdata <- validate_data(
-    newdata, bterms = bterms, na.action = na.pass, 
+    newdata, bterms = bterms, na.action = na.pass,
     drop.unused.levels = FALSE, attr_terms = attr_terms,
     data2 = current_data2(object, newdata2),
     knots = get_knots(object$data)
@@ -585,7 +585,7 @@ fill_newdata <- function(newdata, vars, olddata = NULL, n = 1L) {
   vars <- setdiff(vars, names(newdata))
   if (is.null(olddata)) {
     if (length(vars)) {
-      newdata[, vars] <- NA 
+      newdata[, vars] <- NA
     }
     return(newdata)
   }
@@ -604,7 +604,7 @@ fill_newdata <- function(newdata, vars, olddata = NULL, n = 1L) {
   newdata
 }
 
-# validate new data2 
+# validate new data2
 validate_newdata2 <- function(newdata2, object, ...) {
   stopifnot(is.brmsfit(object))
   bterms <- brmsterms(object$formula)

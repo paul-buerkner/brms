@@ -27,7 +27,7 @@ rstudent_t(n, df, mu = 0, sigma = 1)
 
 \item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
 
 \item{p}{Vector of probabilities.}
@@ -35,7 +35,7 @@ Else, return P(X > x) .}
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, quantile function and random generation 
+Density, distribution function, quantile function and random generation
 for the Student-t distribution with location \code{mu}, scale \code{sigma},
 and degrees of freedom \code{df}.
 }

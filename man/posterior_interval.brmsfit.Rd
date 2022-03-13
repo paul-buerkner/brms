@@ -17,7 +17,7 @@ expressions by default unless \code{fixed = TRUE} is specified.}
 \item{variable}{A character vector providing the variables to extract.
 By default, all variables are extracted.}
 
-\item{prob}{A value between 0 and 1 indicating the desired probability 
+\item{prob}{A value between 0 and 1 indicating the desired probability
 to be covered by the uncertainty intervals. The default is 0.95.}
 
 \item{...}{More arguments passed to \code{\link{as.matrix.brmsfit}}.}

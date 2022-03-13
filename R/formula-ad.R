@@ -1,11 +1,11 @@
 #' Additional Response Information
-#' 
-#' Provide additional information on the response variable 
+#'
+#' Provide additional information on the response variable
 #' in \pkg{brms} models, such as censoring, truncation, or
 #' known measurement error.
-#' 
+#'
 #' @name addition-terms
-#' 
+#'
 #' @param x A vector; usually a variable defined in the data. Allowed values
 #'   depend on the function: \code{resp_se} and \code{resp_weights} require
 #'   positive numeric values. \code{resp_trials}, \code{resp_thres}, and
@@ -24,12 +24,12 @@
 #' @param scale Logical; Indicates whether weights should be scaled
 #'  so that the average weight equals one. Defaults to \code{FALSE}.
 #' @param y2 A vector specifying the upper bounds in interval censoring.
-#'  Will be ignored for non-interval censored observations. However, it 
+#'  Will be ignored for non-interval censored observations. However, it
 #'  should NOT be \code{NA} even for non-interval censored observations to
 #'  avoid accidental exclusion of these observations.
-#' @param lb A numeric vector or single numeric value specifying 
+#' @param lb A numeric vector or single numeric value specifying
 #'   the lower truncation bound.
-#' @param ub A numeric vector or single numeric value specifying 
+#' @param ub A numeric vector or single numeric value specifying
 #'   the upper truncation bound.
 #' @param sdy Optional known measurement error of the response
 #'   treated as standard deviation. If specified, handles
@@ -38,7 +38,7 @@
 #' @param denom A vector of positive numeric values specifying
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
-#' @param ... For \code{resp_vreal}, vectors of real values. 
+#' @param ... For \code{resp_vreal}, vectors of real values.
 #'   For \code{resp_vint}, vectors of integer values. In Stan,
 #'   these variables will be named \code{vreal1}, \code{vreal2}, ...,
 #'   and \code{vint1}, \code{vint2}, ..., respectively.
@@ -46,18 +46,18 @@
 #' @return A list of additional response information to be processed further
 #'   by \pkg{brms}.
 #'
-#' @details 
+#' @details
 #'   These functions are almost solely useful when
 #'   called in formulas passed to the \pkg{brms} package.
 #'   Within formulas, the \code{resp_} prefix may be omitted.
 #'   More information is given in the 'Details' section
 #'   of \code{\link{brmsformula}}.
-#'   
-#' @seealso 
-#'   \code{\link{brm}}, 
-#'   \code{\link{brmsformula}}   
-#'  
-#' @examples 
+#'
+#' @seealso
+#'   \code{\link{brm}},
+#'   \code{\link{brmsformula}}
+#'
+#' @examples
 #' \dontrun{
 #' ## Random effects meta-analysis
 #' nstudies <- 20
@@ -68,7 +68,7 @@
 #' fit1 <- brm(outcomes | se(sei, sigma = TRUE) ~ 1,
 #'             data = data1)
 #' summary(fit1)
-#' 
+#'
 #' ## Probit regression using the binomial family
 #' n <- sample(1:10, 100, TRUE)  # number of trials
 #' success <- rbinom(100, size = n, prob = 0.4)
@@ -77,19 +77,19 @@
 #' fit2 <- brm(success | trials(n) ~ x, data = data2,
 #'             family = binomial("probit"))
 #' summary(fit2)
-#' 
-#' ## Survival regression modeling the time between the first 
+#'
+#' ## Survival regression modeling the time between the first
 #' ## and second recurrence of an infection in kidney patients.
-#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #'             data = kidney, family = lognormal())
 #' summary(fit3)
-#' 
-#' ## Poisson model with truncated counts  
-#' fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt, 
+#'
+#' ## Poisson model with truncated counts
+#' fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt,
 #'             data = epilepsy, family = poisson())
 #' summary(fit4)
 #' }
-#'   
+#'
 NULL
 
 #' @rdname addition-terms
@@ -137,7 +137,7 @@ resp_cat <- function(x) {
   thres <- deparse(substitute(x))
   str_add(thres) <- " - 1"
   class_resp_special(
-    "thres", call = match.call(), 
+    "thres", call = match.call(),
     vars = nlist(thres, gr = "NA")
   )
 }
@@ -281,7 +281,7 @@ get_ad_vars.mvbrmsterms <- function(x, ad, ...) {
 # @param x vector of censoring indicators
 # @return transformed vector of censoring indicators
 prepare_cens <- function(x) {
-  .prepare_cens <- function(x) {  
+  .prepare_cens <- function(x) {
     stopifnot(length(x) == 1L)
     regx <- paste0("^", x)
     if (grepl(regx, "left")) {
@@ -322,7 +322,7 @@ get_cens <- function(bterms, data, resp = NULL) {
 # @param incl_family include the family in the derivation of the bounds?
 # @param stan return bounds in form of Stan syntax?
 # @return a list with elements 'lb' and 'ub' or corresponding Stan code
-trunc_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
+trunc_bounds <- function(bterms, data = NULL, incl_family = FALSE,
                          stan = FALSE, ...) {
   stopifnot(is.brmsterms(bterms))
   if (is.formula(bterms$adforms$trunc)) {
@@ -365,7 +365,7 @@ has_subset <- function(bterms) {
   } else {
     out <- FALSE
   }
-  out 
+  out
 }
 
 # construct a list of indices for cross-formula referencing
@@ -374,7 +374,7 @@ tidy_index <- function(x, data) {
   if (is.brmsterms(x)) {
     # ensure consistent format for both uni- and multivariate models
     out <- list(out)
-    names(out)[1] <- terms_resp(x$respform) 
+    names(out)[1] <- terms_resp(x$respform)
   }
   out
 }

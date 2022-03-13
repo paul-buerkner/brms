@@ -11,7 +11,7 @@ dmulti_student_t(x, df, mu, Sigma, log = FALSE, check = FALSE)
 rmulti_student_t(n, df, mu, Sigma, check = FALSE)
 }
 \arguments{
-\item{x}{Vector or matrix of quantiles. If \code{x} is a matrix, 
+\item{x}{Vector or matrix of quantiles. If \code{x} is a matrix,
 each row is taken to be a quantile.}
 
 \item{df}{Vector of degrees of freedom.}

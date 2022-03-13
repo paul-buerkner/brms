@@ -22,7 +22,7 @@ rinv_gaussian(n, mu = 1, shape = 1)
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
@@ -30,8 +30,8 @@ Else, return P(X > x) .}
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, and random generation 
-for the inverse Gaussian distribution with location \code{mu}, 
+Density, distribution function, and random generation
+for the inverse Gaussian distribution with location \code{mu},
 and shape \code{shape}.
 }
 \details{

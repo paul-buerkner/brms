@@ -142,10 +142,10 @@ fit_model <- function(model, backend, ...) {
 # @param model a compiled Stan model
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
-.fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin, 
-                             chains, cores, threads, opencl, init, exclude, 
+.fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin,
+                             chains, cores, threads, opencl, init, exclude,
                              seed, control, silent, future, ...) {
-  
+
   # some input checks and housekeeping
   if (use_threading(threads)) {
     if (utils::packageVersion("rstan") >= 2.26) {
@@ -167,15 +167,15 @@ fit_model <- function(model, backend, ...) {
     init <- get(init, mode = "function", envir = parent.frame())
   }
   args <- nlist(
-    object = model, data = sdata, iter, seed, 
+    object = model, data = sdata, iter, seed,
     init = init, pars = exclude, include = FALSE
   )
   dots <- list(...)
   args[names(dots)] <- dots
-  
+
   # do the actual sampling
   if (silent < 2) {
-    message("Start sampling") 
+    message("Start sampling")
   }
   if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(warmup, thin, control, show_messages = !silent)
@@ -194,19 +194,19 @@ fit_model <- function(model, backend, ...) {
           args$init <- init[i]
         }
         futures[[i]] <- future::future(
-          brms::do_call(rstan::sampling, args), 
+          brms::do_call(rstan::sampling, args),
           packages = "rstan",
           seed = TRUE
         )
       }
       for (i in seq_len(chains)) {
-        fits[[i]] <- future::value(futures[[i]]) 
+        fits[[i]] <- future::value(futures[[i]])
       }
       out <- rstan::sflist2stanfit(fits)
       rm(futures, fits)
     } else {
       c(args) <- nlist(chains, cores)
-      out <- do_call(rstan::sampling, args) 
+      out <- do_call(rstan::sampling, args)
     }
   } else if (algorithm %in% c("fullrank", "meanfield")) {
     # vb does not support parallel execution
@@ -223,10 +223,10 @@ fit_model <- function(model, backend, ...) {
 # @param model a compiled Stan model
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
-.fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin, 
-                                chains, cores, threads, opencl, init, exclude, 
+.fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin,
+                                chains, cores, threads, opencl, init, exclude,
                                 seed, control, silent, future, ...) {
-  
+
   require_package("cmdstanr")
   # some input checks and housekeeping
   class(sdata) <- "list"
@@ -256,7 +256,7 @@ fit_model <- function(model, backend, ...) {
   dots <- list(...)
   args[names(dots)] <- dots
   args[names(control)] <- control
-  
+
   chains <- as_one_numeric(chains)
   empty_model <- chains <= 0
   if (empty_model) {
@@ -268,16 +268,16 @@ fit_model <- function(model, backend, ...) {
     thin <- 1
     cores <- 1
   }
-  
+
   # do the actual sampling
   if (silent < 2) {
-    message("Start sampling") 
+    message("Start sampling")
   }
   if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(
       iter_sampling = iter - warmup,
-      iter_warmup = warmup, 
-      chains, thin, 
+      iter_warmup = warmup,
+      chains, thin,
       parallel_chains = cores,
       show_messages = !silent,
       fixed_param = algorithm == "fixed_param"
@@ -308,8 +308,8 @@ fit_model <- function(model, backend, ...) {
 }
 
 # fit model with a mock backend for testing
-.fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
-                            chains, cores, threads, opencl, init, exclude, 
+.fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin,
+                            chains, cores, threads, opencl, init, exclude,
                             seed, control, silent, future, mock_fit, ...) {
   if (is.function(mock_fit)) {
     out <- mock_fit()
@@ -351,20 +351,20 @@ needs_recompilation <- function(x) {
 }
 
 #' Recompile Stan models in \code{brmsfit} objects
-#' 
+#'
 #' Recompile the Stan model inside a \code{brmsfit} object, if necessary.
 #' This does not change the model, it simply recreates the executable
-#' so that sampling is possible again. 
-#' 
+#' so that sampling is possible again.
+#'
 #' @param x An object of class \code{brmsfit}.
 #' @param recompile Logical, indicating whether the Stan model should be
 #'   recompiled. If \code{NULL} (the default), \code{recompile_model} tries
 #'   to figure out internally, if recompilation is necessary. Setting it to
 #'   \code{FALSE} will cause \code{recompile_model} to always return the
 #'   \code{brmsfit} object unchanged.
-#'   
+#'
 #' @return A (possibly updated) \code{brmsfit} object.
-#' 
+#'
 #' @export
 recompile_model <- function(x, recompile = NULL) {
   stopifnot(is.brmsfit(x))
@@ -378,7 +378,7 @@ recompile_model <- function(x, recompile = NULL) {
   message("Recompiling the Stan model")
   backend <- x$backend %||% "rstan"
   new_model <- compile_model(
-    stancode(x), backend = backend, threads = x$threads, 
+    stancode(x), backend = backend, threads = x$threads,
     opencl = x$opencl, silent = 2
   )
   if (backend == "rstan") {
@@ -404,7 +404,7 @@ elapsed_time <- function(x) {
       sampling = out[, "sample"]
     )
     out$total <- out$warmup + out$sampling
-    rownames(out) <- NULL 
+    rownames(out) <- NULL
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$metadata$time$chains
   } else if (backend == "mock") {
@@ -434,12 +434,12 @@ require_backend <- function(backend, x) {
 }
 
 #' Threading in Stan
-#' 
+#'
 #' Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
 #' interface. Within-chain parallelization is experimental! We recommend its use
 #' only if you are experienced with Stan's \code{reduce_sum} function and have a
 #' slow running model that cannot be sped up by any other means.
-#' 
+#'
 #' @param threads Number of threads to use in within-chain parallelization.
 #' @param grainsize Number of observations evaluated together in one chunk on
 #'   one of the CPUs used for threading. If \code{NULL} (the default),
@@ -450,7 +450,7 @@ require_backend <- function(backend, x) {
 #'   \code{reduce_sum}? Defaults to \code{FALSE}. Setting it to \code{TRUE}
 #'   is required to achieve exact reproducibility of the model results
 #'   (if the random seed is set as well).
-#' 
+#'
 #' @return A \code{brmsthreads} object which can be passed to the
 #'   \code{threads} argument of \code{brm} and related functions.
 #'
@@ -463,10 +463,10 @@ require_backend <- function(backend, x) {
 #'   roughly the same amount of computing time, we recommend storing
 #'   observations in random order in the data. At least, please avoid sorting
 #'   observations after the response values. This is because the latter often
-#'   cause variations in the computing time of the pointwise log-likelihood, 
+#'   cause variations in the computing time of the pointwise log-likelihood,
 #'   which makes up a big part of the parallelized code.
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # this model just serves as an illustration
 #' # threading may not actually speed things up here
@@ -476,7 +476,7 @@ require_backend <- function(backend, x) {
 #'            backend = "cmdstanr")
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 threading <- function(threads = NULL, grainsize = NULL, static = FALSE) {
   out <- list(threads = NULL, grainsize = NULL)
@@ -511,7 +511,7 @@ validate_threads <- function(threads) {
     threads <- as_one_numeric(threads)
     threads <- threading(threads)
   } else if (!is.brmsthreads(threads)) {
-    stop2("Argument 'threads' needs to be numeric or ", 
+    stop2("Argument 'threads' needs to be numeric or ",
           "specified via the 'threading' function.")
   }
   threads
@@ -523,23 +523,23 @@ use_threading <- function(threads) {
 }
 
 #' GPU support in Stan via OpenCL
-#' 
-#' Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only 
+#'
+#' Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only
 #' some \pkg{Stan} functions can be run on a GPU at this point and so
 #' a lot of \pkg{brms} models won't benefit from OpenCL for now.
-#' 
+#'
 #' @param ids (integer vector of length 2) The platform and device IDs of the
 #'   OpenCL device to use for fitting. If you don't know the IDs of your OpenCL
 #'   device, \code{c(0,0)} is most likely what you need.
-#' 
+#'
 #' @return A \code{brmsopencl} object which can be passed to the
 #'   \code{opencl} argument of \code{brm} and related functions.
-#'   
+#'
 #' @details For more details on OpenCL in \pkg{Stan}, check out
 #' \url{https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl}
 #' as well as \url{https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html}.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # this model just serves as an illustration
 #' # OpenCL may not actually speed things up here
@@ -549,7 +549,7 @@ use_threading <- function(threads) {
 #'            backend = "cmdstanr")
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 opencl <- function(ids = NULL) {
   out <- list(ids = NULL)
@@ -575,7 +575,7 @@ validate_opencl <- function(opencl) {
   } else if (is.numeric(opencl)) {
     opencl <- opencl(opencl)
   } else if (!is.brmsopencl(opencl)) {
-    stop2("Argument 'opencl' needs to an integer vector or ", 
+    stop2("Argument 'opencl' needs to an integer vector or ",
           "specified via the 'opencl' function.")
   }
   opencl
@@ -627,7 +627,7 @@ file_refit_options <- function() {
   }
   stanc_flags <- c(
     "--auto-format",
-    "--canonicalize=deprecations,braces,parentheses" 
+    "--canonicalize=deprecations,braces,parentheses"
   )
   if (cmdstanr::cmdstan_version() >= "2.29.0") {
     require_package("processx")
@@ -645,7 +645,7 @@ file_refit_options <- function() {
     )
     if (overwrite_file) {
       cat(res$stdout, file = stan_file, sep = "\n")
-    }    
+    }
   }
   res$stdout
 }

@@ -27,14 +27,14 @@ A \code{list} with two slots named \code{'y'} and \code{'yrep'}.
   with rows being posterior draws and columns being observations.
 }
 \description{
-Compute and evaluate predictions after performing K-fold 
+Compute and evaluate predictions after performing K-fold
 cross-validation via \code{\link{kfold}}.
 }
 \examples{
 \dontrun{
 fit <- brm(count ~ zBase * Trt + (1|patient),
            data = epilepsy, family = poisson())
-            
+
 # perform k-fold cross validation
 (kf <- kfold(fit, save_fits = TRUE, chains = 1))
 
@@ -48,7 +48,7 @@ rmse <- function(y, yrep) {
 kfp <- kfold_predict(kf)
 rmse(y = kfp$y, yrep = kfp$yrep)
 }
-  
+
 }
 \seealso{
 \code{\link{kfold}}

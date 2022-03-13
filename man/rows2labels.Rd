@@ -12,10 +12,10 @@ rows2labels(x, digits = 2, sep = " & ", incl_vars = TRUE, ...)
 \item{digits}{Minimal number of decimal places shown in
 the labels of numeric variables.}
 
-\item{sep}{A single character string defining the separator 
+\item{sep}{A single character string defining the separator
 between variables used in the labels.}
 
-\item{incl_vars}{Indicates if variable names should 
+\item{incl_vars}{Indicates if variable names should
 be part of the labels. Defaults to \code{TRUE}.}
 
 \item{...}{Currently unused.}

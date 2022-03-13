@@ -28,7 +28,7 @@ exclude_pars.brmsfit <- function(x, ...) {
     } else if (is.character(save_pars$latent)) {
       sub_K <- K[!meef$xname %in% save_pars$latent]
       if (length(sub_K)) {
-        c(out) <- paste0("Xme_", sub_K) 
+        c(out) <- paste0("Xme_", sub_K)
       }
     }
   }
@@ -45,7 +45,7 @@ exclude_pars.brmsfit <- function(x, ...) {
       sub_ranef <- ranef[!ranef$group %in% save_pars$group, ]
       if (has_rows(sub_ranef)) {
         sub_p <- usc(combine_prefix(sub_ranef))
-        c(out) <- paste0("r_", sub_ranef$id, sub_p, "_", sub_ranef$cn) 
+        c(out) <- paste0("r_", sub_ranef$id, sub_p, "_", sub_ranef$cn)
       }
     }
     tranef <- get_dist_groups(ranef, "student")
@@ -103,8 +103,8 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_pars$all) {
     par_classes <- c(
-      "bQ", "hs_global", "hs_local", "hs_slab", "zb", "hs_localsp", 
-      "R2D2_tau2", "zbsp", "Intercept", "first_Intercept", 
+      "bQ", "hs_global", "hs_local", "hs_slab", "zb", "hs_localsp",
+      "R2D2_tau2", "zbsp", "Intercept", "first_Intercept",
       "merged_Intercept", "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
@@ -112,17 +112,17 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
     for (i in seq_rows(smef)) {
       nb <- seq_len(smef$nbases[i])
       c(out) <- paste0("zs", p, "_", i, "_", nb)
-    } 
+    }
   }
   out
 }
 
 #' Control Saving of Parameter Draws
-#' 
+#'
 #' Control which (draws of) parameters should be saved in a \pkg{brms}
-#' model. The output of this function is ment for usage in the 
+#' model. The output of this function is ment for usage in the
 #' \code{save_pars} argument of \code{\link{brm}}.
-#' 
+#'
 #' @param group A flag to indicate if group-level coefficients for
 #'   each level of the grouping factors should be saved (default is
 #'   \code{TRUE}). Set to \code{FALSE} to save memory. Alternatively,
@@ -143,10 +143,10 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
 #'   saved. These names should match the variable names inside the Stan code
 #'   before renaming. This feature is meant for power users only and will rarely
 #'   be useful outside of very special cases.
-#'   
+#'
 #' @return A list of class \code{"save_pars"}.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # don't store group-level coefficients
 #' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
@@ -154,9 +154,9 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
 #'            save_pars = save_pars(group = FALSE))
 #' variables(fit)
 #' }
-#'   
+#'
 #' @export
-save_pars <- function(group = TRUE, latent = FALSE, all = FALSE, 
+save_pars <- function(group = TRUE, latent = FALSE, all = FALSE,
                       manual = NULL) {
   out <- list()
   if (is.logical(group)) {
@@ -191,21 +191,21 @@ validate_save_pars <- function(save_pars, save_ranef = NULL, save_mevars = NULL,
   }
   if (!is.null(save_ranef)) {
     warning2(
-      "Argument 'save_ranef' is deprecated. Please use argument ", 
+      "Argument 'save_ranef' is deprecated. Please use argument ",
       "'group' in function 'save_pars()' instead."
     )
     save_pars$group <- as_one_logical(save_ranef)
   }
   if (!is.null(save_mevars)) {
     warning2(
-      "Argument 'save_mevars' is deprecated. Please use argument ", 
+      "Argument 'save_mevars' is deprecated. Please use argument ",
       "'latent' in function 'save_pars()' instead."
     )
     save_pars$latent <- as_one_logical(save_mevars)
   }
   if (!is.null(save_all_pars)) {
     warning2(
-      "Argument 'save_all_pars' is deprecated. Please use argument ", 
+      "Argument 'save_all_pars' is deprecated. Please use argument ",
       "'all' in function 'save_pars()' instead."
     )
     save_pars$all <- as_one_logical(save_all_pars)

@@ -70,14 +70,14 @@ so that the average weight equals one. Defaults to \code{FALSE}.}
 \item{gr}{A vector of grouping indicators.}
 
 \item{y2}{A vector specifying the upper bounds in interval censoring.
-Will be ignored for non-interval censored observations. However, it 
+Will be ignored for non-interval censored observations. However, it
 should NOT be \code{NA} even for non-interval censored observations to
 avoid accidental exclusion of these observations.}
 
-\item{lb}{A numeric vector or single numeric value specifying 
+\item{lb}{A numeric vector or single numeric value specifying
 the lower truncation bound.}
 
-\item{ub}{A numeric vector or single numeric value specifying 
+\item{ub}{A numeric vector or single numeric value specifying
 the upper truncation bound.}
 
 \item{sdy}{Optional known measurement error of the response
@@ -88,7 +88,7 @@ at the same time using the plausible-values-technique.}
 \item{denom}{A vector of positive numeric values specifying
 the denominator values from which the response rates are computed.}
 
-\item{...}{For \code{resp_vreal}, vectors of real values. 
+\item{...}{For \code{resp_vreal}, vectors of real values.
 For \code{resp_vint}, vectors of integer values. In Stan,
 these variables will be named \code{vreal1}, \code{vreal2}, ...,
 and \code{vint1}, \code{vint2}, ..., respectively.}
@@ -98,7 +98,7 @@ A list of additional response information to be processed further
   by \pkg{brms}.
 }
 \description{
-Provide additional information on the response variable 
+Provide additional information on the response variable
 in \pkg{brms} models, such as censoring, truncation, or
 known measurement error.
 }
@@ -130,20 +130,20 @@ fit2 <- brm(success | trials(n) ~ x, data = data2,
             family = binomial("probit"))
 summary(fit2)
 
-## Survival regression modeling the time between the first 
+## Survival regression modeling the time between the first
 ## and second recurrence of an infection in kidney patients.
-fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal())
 summary(fit3)
 
-## Poisson model with truncated counts  
-fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt, 
+## Poisson model with truncated counts
+fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt,
             data = epilepsy, family = poisson())
 summary(fit4)
 }
-  
+
 }
 \seealso{
-\code{\link{brm}}, 
+\code{\link{brm}},
   \code{\link{brmsformula}}
 }

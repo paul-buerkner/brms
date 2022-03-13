@@ -24,7 +24,7 @@ rexgaussian(n, mu, sigma, beta)
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
@@ -32,9 +32,9 @@ Else, return P(X > x) .}
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, and random generation 
+Density, distribution function, and random generation
 for the exponentially modified Gaussian distribution with
-mean \code{mu} and standard deviation \code{sigma} of the gaussian 
+mean \code{mu} and standard deviation \code{sigma} of the gaussian
 component, as well as scale \code{beta} of the exponential
 component.
 }

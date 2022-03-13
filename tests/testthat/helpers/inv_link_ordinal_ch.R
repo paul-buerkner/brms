@@ -61,7 +61,7 @@ inv_link_acat_ch <- function(x, link) {
   ncat <- dim(x)[ndim] + 1
   marg_noncat <- seq_along(dim(x))[-ndim]
   out <- vector("list", ncat)
-  if (link == "logit") { 
+  if (link == "logit") {
     # faster evaluation in this case
     out[[1]] <- array(1, dim = dim(x)[-ndim])
     out[[2]] <- exp(slice(x, ndim, 1))
@@ -77,7 +77,7 @@ inv_link_acat_ch <- function(x, link) {
     out[[1]] <- apply(1 - x, marg_noncat, prod)
     if (ncat > 2) {
       .othercatprod <- function(k) {
-        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_noncat, prod) * 
+        apply(slice(x, ndim, 1:(k - 1), drop = FALSE), marg_noncat, prod) *
           apply(slice(1 - x, ndim, k:(ncat - 1), drop = FALSE), marg_noncat, prod)
       }
       mid_cats <- 2:(ncat - 1)

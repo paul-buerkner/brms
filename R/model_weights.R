@@ -1,9 +1,9 @@
 #' Model Weighting Methods
-#' 
+#'
 #' Compute model weights in various ways, for instance, via
 #' stacking of posterior predictive distributions, Akaike weights,
 #' or marginal likelihoods.
-#' 
+#'
 #' @inheritParams loo.brmsfit
 #' @param weights Name of the criterion to compute weights from. Should be one
 #'   of \code{"loo"}, \code{"waic"}, \code{"kfold"}, \code{"stacking"} (current
@@ -15,26 +15,26 @@
 #'   used to compute Bayesian model averaging weights based on log marginal
 #'   likelihood values (make sure to specify reasonable priors in this case).
 #'   For some methods, \code{weights} may also be a numeric vector of
-#'   pre-specified weights. 
-#'   
+#'   pre-specified weights.
+#'
 #' @return A numeric vector of weights for the models.
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with 'treat' as predictor
 #' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
 #' summary(fit1)
-#' 
+#'
 #' # model without 'treat' as predictor
 #' fit2 <- brm(rating ~ period + carry, data = inhaler)
 #' summary(fit2)
-#' 
+#'
 #' # obtain Akaike weights based on the WAIC
 #' model_weights(fit1, fit2, weights = "waic")
 #' }
-#' 
+#'
 #' @export
-model_weights.brmsfit <- function(x, ..., weights = "stacking", 
+model_weights.brmsfit <- function(x, ..., weights = "stacking",
                                   model_names = NULL) {
   weights <- validate_weights_method(weights)
   args <- split_dots(x, ..., model_names = model_names)
@@ -88,66 +88,66 @@ validate_weights_method <- function(method) {
 }
 
 #' Posterior predictive draws averaged across models
-#' 
+#'
 #' Compute posterior predictive draws averaged across models.
 #' Weighting can be done in various ways, for instance using
-#' Akaike weights based on information criteria or 
+#' Akaike weights based on information criteria or
 #' marginal likelihoods.
-#' 
+#'
 #' @inheritParams model_weights.brmsfit
 #' @param method Method used to obtain predictions to average over. Should be
 #'   one of \code{"posterior_predict"} (default), \code{"posterior_epred"},
 #'   \code{"posterior_linpred"} or \code{"predictive_error"}.
-#' @param control Optional \code{list} of further arguments 
+#' @param control Optional \code{list} of further arguments
 #'   passed to the function specified in \code{weights}.
 #' @param ndraws Total number of posterior draws to use.
 #' @param nsamples Deprecated alias of \code{ndraws}.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
 #'   to make results reproducible.
-#' @param summary Should summary statistics 
+#' @param summary Should summary statistics
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.
-#' @param robust If \code{FALSE} (the default) the mean is used as 
-#'  the measure of central tendency and the standard deviation as 
-#'  the measure of variability. If \code{TRUE}, the median and the 
+#' @param robust If \code{FALSE} (the default) the mean is used as
+#'  the measure of central tendency and the standard deviation as
+#'  the measure of variability. If \code{TRUE}, the median and the
 #'  median absolute deviation (MAD) are applied instead.
 #'  Only used if \code{summary} is \code{TRUE}.
-#' @param probs  The percentiles to be computed by the \code{quantile} 
-#'  function. Only used if \code{summary} is \code{TRUE}. 
-#' 
-#' @return Same as the output of the method specified 
+#' @param probs  The percentiles to be computed by the \code{quantile}
+#'  function. Only used if \code{summary} is \code{TRUE}.
+#'
+#' @return Same as the output of the method specified
 #'   in argument \code{method}.
-#'   
+#'
 #' @details Weights are computed with the \code{\link{model_weights}} method.
-#'   
+#'
 #' @seealso \code{\link{model_weights}}, \code{\link{posterior_average}}
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with 'treat' as predictor
 #' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
 #' summary(fit1)
-#' 
+#'
 #' # model without 'treat' as predictor
 #' fit2 <- brm(rating ~ period + carry, data = inhaler)
 #' summary(fit2)
-#' 
+#'
 #' # compute model-averaged predicted values
 #' (df <- unique(inhaler[, c("treat", "period", "carry")]))
 #' pp_average(fit1, fit2, newdata = df)
-#' 
+#'
 #' # compute model-averaged fitted values
 #' pp_average(fit1, fit2, method = "fitted", newdata = df)
 #' }
-#' 
+#'
 #' @export
 pp_average.brmsfit <- function(
   x, ..., weights = "stacking", method = "posterior_predict",
-  ndraws = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), 
+  ndraws = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975),
   robust = FALSE, model_names = NULL, control = list(), seed = NULL
 ) {
   if (!is.null(seed)) {
-    set.seed(seed) 
+    set.seed(seed)
   }
   method <- validate_pp_method(method)
   ndraws <- use_alias(ndraws, nsamples)
@@ -178,7 +178,7 @@ pp_average.brmsfit <- function(
   }
   out <- do_call(rbind, out)
   if (summary) {
-    out <- posterior_summary(out, probs = probs, robust = robust) 
+    out <- posterior_summary(out, probs = probs, robust = robust)
   }
   attr(out, "weights") <- weights
   attr(out, "ndraws") <- ndraws
@@ -211,50 +211,50 @@ validate_weights <- function(weights, models, control = list()) {
 }
 
 #' Posterior draws of parameters averaged across models
-#' 
+#'
 #' Extract posterior draws of parameters averaged across models.
 #' Weighting can be done in various ways, for instance using
-#' Akaike weights based on information criteria or 
+#' Akaike weights based on information criteria or
 #' marginal likelihoods.
-#' 
+#'
 #' @inheritParams pp_average.brmsfit
 #' @param variable Names of variables (parameters) for which to average across
 #'   models. Only those variables can be averaged that appear in every model.
 #'   Defaults to all overlapping variables.
 #' @param pars Deprecated alias of \code{variable}.
-#' @param missing An optional numeric value or a named list of numeric values 
+#' @param missing An optional numeric value or a named list of numeric values
 #'   to use if a model does not contain a variable for which posterior draws
 #'   should be averaged. Defaults to \code{NULL}, in which case only those
 #'   variables can be averaged that are present in all of the models.
-#' 
+#'
 #' @return A \code{data.frame} of posterior draws.
-#' 
+#'
 #' @details Weights are computed with the \code{\link{model_weights}} method.
-#' 
+#'
 #' @seealso \code{\link{model_weights}}, \code{\link{pp_average}}
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with 'treat' as predictor
 #' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
 #' summary(fit1)
-#' 
+#'
 #' # model without 'treat' as predictor
 #' fit2 <- brm(rating ~ period + carry, data = inhaler)
 #' summary(fit2)
-#' 
+#'
 #' # compute model-averaged posteriors of overlapping parameters
 #' posterior_average(fit1, fit2, weights = "waic")
 #' }
-#' 
+#'
 #' @export
 posterior_average.brmsfit <- function(
-  x, ..., variable = NULL, pars = NULL, weights = "stacking", ndraws = NULL, 
+  x, ..., variable = NULL, pars = NULL, weights = "stacking", ndraws = NULL,
   nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
   seed = NULL
 ) {
   if (!is.null(seed)) {
-    set.seed(seed) 
+    set.seed(seed)
   }
   variable <- use_alias(variable, pars)
   ndraws <- use_alias(ndraws, nsamples)
@@ -272,7 +272,7 @@ posterior_average.brmsfit <- function(
     if (length(inv_vars)) {
       inv_vars <- collapse_comma(inv_vars)
       stop2(
-        "Parameters ", inv_vars, " cannot be found in all ", 
+        "Parameters ", inv_vars, " cannot be found in all ",
         "of the models. Consider using argument 'missing'."
       )
     }

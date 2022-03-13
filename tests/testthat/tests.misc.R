@@ -5,8 +5,8 @@ test_that("p performs correct indexing", {
   x <- rnorm(10)
   expect_equal(p(x, i = 3), x[3])
   A <- matrix(x, nrow = 5)
-  expect_equal(p(A, i = 3), A[3, , drop = FALSE]) 
-  expect_equal(p(A, i = 2, row = FALSE), A[, 2, drop = FALSE]) 
+  expect_equal(p(A, i = 3), A[3, , drop = FALSE])
+  expect_equal(p(A, i = 2, row = FALSE), A[, 2, drop = FALSE])
 })
 
 test_that("rmNULL removes all NULL entries", {
@@ -18,20 +18,20 @@ test_that("rmNULL removes all NULL entries", {
 
 test_that("rename returns an error on duplicated names", {
   expect_error(rename(c(letters[1:4],"a()","a["), check_dup = TRUE), fixed = TRUE,
-               paste("Internal renaming led to duplicated names.", 
+               paste("Internal renaming led to duplicated names.",
                      "\nOccured for: 'a', 'a()', 'a['"))
   expect_error(rename(c("aDb","a/b","b"), check_dup = TRUE), fixed = TRUE,
-               paste("Internal renaming led to duplicated names.", 
+               paste("Internal renaming led to duplicated names.",
                      "\nOccured for: 'aDb', 'a/b'"))
   expect_error(rename(c("log(a,b)","logab","bac","ba"), check_dup = TRUE), fixed = TRUE,
-               paste("Internal renaming led to duplicated names.", 
+               paste("Internal renaming led to duplicated names.",
                      "\nOccured for: 'log(a,b)', 'logab'"))
 })
 
 test_that("rename perform correct renaming", {
   names <- c("acd", "a[23]", "b__")
   expect_equal(
-    rename(names, c("[", "]", "__"), c(".", ".", ":")), 
+    rename(names, c("[", "]", "__"), c(".", ".", ":")),
     c("acd", "a.23.", "b:")
   )
   expect_equal(
@@ -44,11 +44,11 @@ test_that("collapse_lists performs correct collapsing after names", {
   x <- list(a = "a <- ", b = "b <- ")
   y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")
   expect_equal(collapse_lists(list()), list())
-  expect_equal(collapse_lists(x, y), 
-               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
+  expect_equal(collapse_lists(x, y),
+               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)",
                     c = "normal(0,1)"))
   expect_equal(collapse_lists(ls = list(c(x, c = "c <- "), y)),
-               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
+               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)",
                     c = "c <- normal(0,1)"))
 })
 

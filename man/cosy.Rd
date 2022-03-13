@@ -8,7 +8,7 @@ cosy(time = NA, gr = NA)
 }
 \arguments{
 \item{time}{An optional time variable specifying the time ordering
-of the observations. By default, the existing order of the observations 
+of the observations. By default, the existing order of the observations
 in the data is used.}
 
 \item{gr}{An optional grouping variable. If specified, the correlation
@@ -16,8 +16,8 @@ structure is assumed to apply only to observations within the same grouping
 level.}
 }
 \value{
-An object of class \code{'cosy_term'}, which is a list 
-  of arguments to be interpreted by the formula 
+An object of class \code{'cosy_term'}, which is a list
+  of arguments to be interpreted by the formula
   parsing functions of \pkg{brms}.
 }
 \description{

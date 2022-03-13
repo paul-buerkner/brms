@@ -184,19 +184,19 @@ p_i = \frac{\exp(\eta_i)}{1 + \exp(\eta_i)}
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> cbpp, <span class="at">family =</span> <span class="fu">binomial</span>())</span></code></pre></div>
 <p>In the summary output, we see that the incidence probability varies substantially over herds, but reduces over the course of the time as indicated by the negative coefficients of <code>period</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit1)</span></code></pre></div>
-<pre><code> Family: binomial 
-  Links: mu = logit 
-Formula: incidence | trials(size) ~ period + (1 | herd) 
-   Data: cbpp (Number of observations: 56) 
+<pre><code> Family: binomial
+  Links: mu = logit
+Formula: incidence | trials(size) ~ period + (1 | herd)
+   Data: cbpp (Number of observations: 56)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
-~herd (Number of levels: 15) 
+Group-Level Effects:
+~herd (Number of levels: 15)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.75      0.22     0.39     1.24 1.00     1327     2214
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    -1.41      0.25    -1.92    -0.94 1.00     2506     2615
 period2      -0.99      0.31    -1.61    -0.39 1.00     5268     2664
@@ -251,26 +251,26 @@ p_i \sim \text{Beta}(\alpha_i, \beta_i)
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>The summary output reveals that the uncertainty in the coefficients of <code>period</code> is somewhat larger than in the basic binomial model, which is the result of including the overdispersion parameter <code>phi</code> in the model. Apart from that, the results looks pretty similar.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit2)</span></code></pre></div>
-<pre><code> Family: beta_binomial2 
-  Links: mu = logit; phi = identity 
-Formula: incidence | vint(size) ~ period + (1 | herd) 
-   Data: cbpp (Number of observations: 56) 
+<pre><code> Family: beta_binomial2
+  Links: mu = logit; phi = identity
+Formula: incidence | vint(size) ~ period + (1 | herd)
+   Data: cbpp (Number of observations: 56)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
-~herd (Number of levels: 15) 
+Group-Level Effects:
+~herd (Number of levels: 15)
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 sd(Intercept)     0.40      0.26     0.02     0.97 1.00      965     1430
 
-Population-Level Effects: 
+Population-Level Effects:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 Intercept    -1.34      0.26    -1.87    -0.86 1.00     3941     2944
 period2      -1.00      0.39    -1.80    -0.25 1.00     3271     3012
 period3      -1.25      0.45    -2.18    -0.40 1.00     3620     2703
 period4      -1.53      0.51    -2.62    -0.59 1.00     3760     2600
 
-Family Specific Parameters: 
+Family Specific Parameters:
     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 phi    19.37     26.02     5.41    61.80 1.00      975      682
 
@@ -308,10 +308,10 @@ Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     42    75.0%   482       
- (0.5, 0.7]   (ok)       11    19.6%   488       
-   (0.7, 1]   (bad)       3     5.4%   42        
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     42    75.0%   482
+ (0.5, 0.7]   (ok)       11    19.6%   488
+   (0.7, 1]   (bad)       3     5.4%   42
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;
 See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Output of model &#39;fit2&#39;:
@@ -327,15 +327,15 @@ Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     49    87.5%   906       
- (0.5, 0.7]   (ok)        6    10.7%   271       
-   (0.7, 1]   (bad)       1     1.8%   79        
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     49    87.5%   906
+ (0.5, 0.7]   (ok)        6    10.7%   271
+   (0.7, 1]   (bad)       1     1.8%   79
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;
 See help(&#39;pareto-k-diagnostic&#39;) for details.
 
 Model comparisons:
      elpd_diff se_diff
-fit2  0.0       0.0   
+fit2  0.0       0.0
 fit1 -4.5       4.1   </code></pre>
 <p>Since larger <code>ELPD</code> values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.</p>
 <p>Next, we will define the function necessary for the <code>posterior_predict</code> method:</p>

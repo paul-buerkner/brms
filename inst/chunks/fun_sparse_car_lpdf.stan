@@ -1,4 +1,4 @@
- /* Return the log probability of a proper conditional autoregressive (CAR) 
+ /* Return the log probability of a proper conditional autoregressive (CAR)
   * prior with a sparse representation for the adjacency matrix
   * Full credit to Max Joseph (https://github.com/mbjoseph/CARstan)
   * Args:
@@ -32,6 +32,6 @@
     for (i in 1:Nloc) {
       ldet[i] = log1m(car * eigenW[i]);
     }
-    return 0.5 * (Nloc * log(tau) + sum(ldet) - 
+    return 0.5 * (Nloc * log(tau) + sum(ldet) -
            tau * (phit_D * phi - car * (phit_W * phi)));
   }

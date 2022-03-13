@@ -24,7 +24,7 @@ data("cbpp", package = "lme4")
 head(cbpp)
 
 ## ----fit1, results='hide'---------------------------------------------------------------
-fit1 <- brm(incidence | trials(size) ~ period + (1|herd), 
+fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
             data = cbpp, family = binomial())
 
 ## ----fit1_summary-----------------------------------------------------------------------
@@ -52,7 +52,7 @@ stanvars <- stanvar(scode = stan_funs, block = "functions")
 
 ## ----fit2, results='hide'---------------------------------------------------------------
 fit2 <- brm(
-  incidence | vint(size) ~ period + (1|herd), data = cbpp, 
+  incidence | vint(size) ~ period + (1|herd), data = cbpp,
   family = beta_binomial2, stanvars = stanvars
 )
 

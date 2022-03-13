@@ -24,7 +24,7 @@ An object of class \code{cor_cosy}, representing a compound symmetry
 }
 \description{
 This function is deprecated. Please see \code{\link{cosy}} for the new syntax.
-This functions is a constructor for the \code{cor_cosy} class, representing 
+This functions is a constructor for the \code{cor_cosy} class, representing
 a compound symmetry structure corresponding to uniform correlation.
 }
 \examples{

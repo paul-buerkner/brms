@@ -1,18 +1,18 @@
 #' Restructure Old \code{brmsfit} Objects
 #'
-#' Restructure old \code{brmsfit} objects to work with 
+#' Restructure old \code{brmsfit} objects to work with
 #' the latest \pkg{brms} version. This function is called
 #' internally when applying post-processing methods.
 #' However, in order to avoid unnecessary run time caused
 #' by the restructuring, I recommend explicitly calling
 #' \code{restructure} once per model after updating \pkg{brms}.
-#' 
+#'
 #' @param x An object of class \code{brmsfit}.
 #' @param ... Currently ignored.
-#'   
+#'
 #' @return A \code{brmsfit} object compatible with the latest version
 #'   of \pkg{brms}.
-#'   
+#'
 #' @export
 restructure <- function(x, ...) {
   stopifnot(is.brmsfit(x))
@@ -23,7 +23,7 @@ restructure <- function(x, ...) {
     # also added the rstan version in brms 1.5.0
     x$version <- list(brms = x$version)
   }
-  current_version <- utils::packageVersion("brms") 
+  current_version <- utils::packageVersion("brms")
   restr_version <- restructure_version(x)
   if (restr_version >= current_version) {
     # object is up to date with the current brms version
@@ -96,7 +96,7 @@ restructure_v2 <- function(x) {
     # internal handling of special effects terms has changed
     # this requires updating the 'terms' attribute of the data
     x$data <- rm_attr(x$data, c("brmsframe", "terms"))
-    x$data <- validate_data(x$data, bterms) 
+    x$data <- validate_data(x$data, bterms)
   }
   if (version < "2.8.9") {
     if (any(grepl("^loclev(\\[|_|$)", pars))) {
@@ -104,7 +104,7 @@ restructure_v2 <- function(x) {
     }
   }
   if (version < "2.10.4") {
-    # model fit criteria have been moved to x$criteria 
+    # model fit criteria have been moved to x$criteria
     criterion_names <- c("loo", "waic", "kfold", "R2", "marglik")
     criteria <- x[intersect(criterion_names, names(x))]
     x[criterion_names] <- NULL
@@ -122,12 +122,12 @@ restructure_v2 <- function(x) {
     # 'autocor' was integrated into the formula interface
     x$formula <- SW(validate_formula(x$formula))
     x$data2 <- validate_data2(
-      data2 = list(), bterms = bterms, 
+      data2 = list(), bterms = bterms,
       get_data2_autocor(x$formula)
     )
   }
   if (version < "2.11.3") {
-    # ordering after IDs matches the order of the posterior draws 
+    # ordering after IDs matches the order of the posterior draws
     # if multiple IDs are used for the same grouping factor (#835)
     x$ranef <- x$ranef[order(x$ranef$id), , drop = FALSE]
   }
@@ -182,7 +182,7 @@ restructure_v2 <- function(x) {
     save_mevars <- isTRUE(attr(x$exclude, "save_mevars"))
     save_all_pars <- isTRUE(attr(x$exclude, "save_all_pars"))
     x$save_pars <- SW(validate_save_pars(
-      save_pars(), save_ranef = save_ranef, 
+      save_pars(), save_ranef = save_ranef,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     ))
@@ -206,7 +206,7 @@ restructure_v1 <- function(x) {
   if (version < "1.0.0") {
     warning2(
       "Models fitted with brms < 1.0 are no longer offically ",
-      "supported and post-processing them may fail. I recommend ", 
+      "supported and post-processing them may fail. I recommend ",
       "refitting the model with the latest version of brms."
     )
   }
@@ -218,10 +218,10 @@ restructure_v1 <- function(x) {
   x$nonlinear <- x$partial <- x$threshold <- NULL
   bterms <- brmsterms(formula(x))
   x$data <- rm_attr(x$data, "brmsframe")
-  x$data <- validate_data(x$data, bterms) 
+  x$data <- validate_data(x$data, bterms)
   x$ranef <- tidy_ranef(bterms, model.frame(x))
   if ("prior_frame" %in% class(x$prior)) {
-    class(x$prior) <- c("brmsprior", "data.frame") 
+    class(x$prior) <- c("brmsprior", "data.frame")
   }
   if (is(x$autocor, "cov_fixed")) {
     # deprecated as of brms 1.4.0
@@ -250,11 +250,11 @@ restructure_v1 <- function(x) {
   if (version < "1.8.0.1") {
     att <- attributes(x$exclude)
     if (is.null(att$save_ranef)) {
-      attr(x$exclude, "save_ranef") <- 
+      attr(x$exclude, "save_ranef") <-
         any(grepl("^r_", variables(x))) || !nrow(x$ranef)
     }
     if (is.null(att$save_mevars)) {
-      attr(x$exclude, "save_mevars") <- 
+      attr(x$exclude, "save_mevars") <-
         any(grepl("^Xme_", variables(x)))
     }
   }
@@ -283,7 +283,7 @@ restructure_version <- function(x) {
   out <- x$version$restructure
   if (!is.package_version(out)) {
     # models restructured with brms 2.11.1 store it as an attribute
-    out <- attr(x, "restructured", exact = TRUE) 
+    out <- attr(x, "restructured", exact = TRUE)
   }
   if (!is.package_version(out)) {
     out <- x$version$brms
@@ -319,7 +319,7 @@ restructure_formula_v1 <- function(formula, nonlinear = NULL) {
 # parameters to be restructured in old brmsformula objects
 old_dpars <- function() {
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
-    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
+    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias",
     "quantile", "alpha", "theta")
 }
 
@@ -357,7 +357,7 @@ change_old_re <- function(ranef, pars, dims) {
       lc(out) <- change_simple(
         old_cor_names[i], new_cor_names[i], pars, dims
       )
-    } 
+    }
     # rename r-parameters
     old_r_name <- paste0("r_", nlpar, "_", g)
     new_r_name <- paste0("r_", g, "_", nlpar)
@@ -365,7 +365,7 @@ change_old_re <- function(ranef, pars, dims) {
     index_names <- make_index_names(levels, r$coef, dim = 2)
     new_r_names <- paste0(new_r_name, index_names)
     lc(out) <- change_simple(
-      old_r_name, new_r_names, pars, dims, 
+      old_r_name, new_r_names, pars, dims,
       pnames = new_r_name
     )
   }
@@ -402,7 +402,7 @@ change_old_re2 <- function(ranef, pars, dims) {
     )
     for (i in seq_along(old_cor_names)) {
       lc(out) <- change_simple(old_cor_names[i], new_cor_names[i], pars, dims)
-    } 
+    }
     # rename r-parameters
     for (nlpar in unique(r$nlpar)) {
       sub_r <- r[r$nlpar == nlpar, ]
@@ -412,7 +412,7 @@ change_old_re2 <- function(ranef, pars, dims) {
       index_names <- make_index_names(levels, sub_r$coef, dim = 2)
       new_r_names <- paste0(new_r_name, index_names)
       lc(out) <- change_simple(
-        old_r_name, new_r_names, pars, dims, 
+        old_r_name, new_r_names, pars, dims,
         pnames = new_r_name
       )
     }
@@ -448,7 +448,7 @@ change_old_sm <- function(bterms, data, pars, dims) {
     }
     return(out)
   }
-  
+
   out <- list()
   if (is.mvbrmsterms(bterms)) {
     for (r in bterms$responses) {
@@ -486,7 +486,7 @@ change_old_mo <- function(bterms, data, pars) {
     bmo_old <- pars[grepl(bmo_regex, pars)]
     bmo_new <- paste0(bmo_prefix, spef$coef)
     if (length(bmo_old) != length(bmo_new)) {
-      stop2("Restructuring failed. Please refit your ", 
+      stop2("Restructuring failed. Please refit your ",
             "model with the latest version of brms.")
     }
     for (i in seq_along(bmo_old)) {
@@ -508,7 +508,7 @@ change_old_mo <- function(bterms, data, pars) {
     }
     return(out)
   }
-  
+
   out <- list()
   if (is.mvbrmsterms(bterms)) {
     for (r in bterms$responses) {
@@ -558,7 +558,7 @@ change_old_categorical <- function(bterms, data, pars) {
 # as of brms 2.2 'mo' and 'me' terms are handled together
 change_old_bsp <- function(pars) {
   pos <- grepl("^(bmo|bme)_", pars)
-  if (!any(pos)) return(list()) 
+  if (!any(pos)) return(list())
   fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
   list(nlist(pos, fnames))
 }
@@ -575,7 +575,7 @@ change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
   out
 }
 
-# rescale old 'b' coefficients of monotonic effects 
+# rescale old 'b' coefficients of monotonic effects
 # to represent average instead of total differences
 rescale_old_mo <- function(x, ...) {
   UseMethod("rescale_old_mo")
@@ -621,7 +621,7 @@ rescale_old_mo.btl <- function(x, fit, ...) {
   warning2(
     "The parameterization of monotonic effects has changed in brms 2.8.4 ",
     "so that corresponding 'b' coefficients now represent average instead ",
-    "of total differences between categories. See vignette('brms_monotonic') ", 
+    "of total differences between categories. See vignette('brms_monotonic') ",
     "for more details. Parameters of old models are adjusted automatically."
   )
   p <- combine_prefix(x)
@@ -635,7 +635,7 @@ rescale_old_mo.btl <- function(x, fit, ...) {
     # scaling factor by which to divide the old 'b' coefficients
     D <- prod(ulapply(simo_regex, function(r) sum(grepl(r, all_pars))))
     for (j in seq_len(chains)) {
-      fit$fit@sim$samples[[j]][[bsp_par]] <- 
+      fit$fit@sim$samples[[j]][[bsp_par]] <-
         fit$fit@sim$samples[[j]][[bsp_par]] / D
     }
   }
@@ -663,7 +663,7 @@ update_old_family.brmsfamily <- function(x, ...) {
 #' @export
 update_old_family.customfamily <- function(x, ...) {
   if (!is.null(x$predict)) {
-    x$posterior_predict <- x$predict 
+    x$posterior_predict <- x$predict
     x$predict <- NULL
   }
   if (!is.null(x$fitted)) {

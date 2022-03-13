@@ -14,12 +14,12 @@ cor_errorsar(W)
 }
 \arguments{
 \item{W}{An object specifying the spatial weighting matrix.
-Can be either the spatial weight matrix itself or an 
+Can be either the spatial weight matrix itself or an
 object of class \code{listw} or \code{nb}, from which
 the spatial weighting matrix can be computed.}
 
-\item{type}{Type of the SAR structure. Either \code{"lag"} 
-(for SAR of the response values) or \code{"error"} 
+\item{type}{Type of the SAR structure. Either \code{"lag"}
+(for SAR of the response values) or \code{"error"}
 (for SAR of the residuals).}
 }
 \value{
@@ -38,20 +38,20 @@ In the above equations, \eqn{\eta} is the predictor term and
 \eqn{e} are independent normally or t-distributed residuals.
 }
 \details{
-Currently, only families \code{gaussian} and \code{student} 
+Currently, only families \code{gaussian} and \code{student}
   support SAR structures.
 }
 \examples{
 \dontrun{
 data(oldcol, package = "spdep")
-fit1 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
-            autocor = cor_lagsar(COL.nb), 
+fit1 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD,
+            autocor = cor_lagsar(COL.nb),
             chains = 2, cores = 2)
 summary(fit1)
 plot(fit1)
 
-fit2 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
-            autocor = cor_errorsar(COL.nb), 
+fit2 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD,
+            autocor = cor_errorsar(COL.nb),
             chains = 2, cores = 2)
 summary(fit2)
 plot(fit2)

@@ -1,28 +1,28 @@
 #' Interface to \pkg{shinystan}
-#' 
+#'
 #' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
-#' 
+#'
 #' @aliases launch_shinystan
-#' 
-#' @param object A fitted model object typically of class \code{brmsfit}. 
-#' @param rstudio Only relevant for RStudio users. 
-#' The default (\code{rstudio=FALSE}) is to launch the app 
-#' in the default web browser rather than RStudio's pop-up Viewer. 
-#' Users can change the default to \code{TRUE} 
+#'
+#' @param object A fitted model object typically of class \code{brmsfit}.
+#' @param rstudio Only relevant for RStudio users.
+#' The default (\code{rstudio=FALSE}) is to launch the app
+#' in the default web browser rather than RStudio's pop-up Viewer.
+#' Users can change the default to \code{TRUE}
 #' by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.
 #' @param ... Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}
-#' 
+#'
 #' @return An S4 shinystan object
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' fit <- brm(rating ~ treat + period + carry + (1|subject),
 #'            data = inhaler, family = "gaussian")
-#' launch_shinystan(fit)                         
+#' launch_shinystan(fit)
 #' }
-#' 
+#'
 #' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
-#' 
+#'
 #' @method launch_shinystan brmsfit
 #' @importFrom shinystan launch_shinystan
 #' @export launch_shinystan
@@ -33,7 +33,7 @@ launch_shinystan.brmsfit <- function(
   contains_draws(object)
   if (object$algorithm != "sampling") {
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
-  } 
+  }
   draws <- as.array(object)
   inc_warmup <- isTRUE(object$fit@sim$n_save[1] > niterations(object))
   warmup <- if (inc_warmup) nwarmup(object) else 0
@@ -48,10 +48,10 @@ launch_shinystan.brmsfit <- function(
     }
   }
   sso <- shinystan::as.shinystan(
-    X = draws, 
+    X = draws,
     model_name = object$fit@model_name,
-    warmup = warmup, 
-    sampler_params = sampler_params, 
+    warmup = warmup,
+    sampler_params = sampler_params,
     max_treedepth = max_td,
     algorithm = "NUTS"
   )

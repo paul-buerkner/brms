@@ -81,7 +81,7 @@ It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
 \item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects 
+cannot be passed via argument \code{data}. Required for some objects
 used in autocorrelation structures to specify dependency structures
 as well as for within-group covariance matrices.}
 
@@ -90,7 +90,7 @@ as well as for within-group covariance matrices.}
 matrices should correspond to columns in \code{data} that are used as
 grouping factors. All levels of the grouping factor should appear as
 rownames of the corresponding matrix. This argument can be used, among
-others to model pedigrees and phylogenetic effects. 
+others to model pedigrees and phylogenetic effects.
 It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
@@ -213,7 +213,7 @@ the \code{"brms.opencl"} option}
 be included in the Stan code (defaults to \code{TRUE}). Setting it
 to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
 sampling efficiency may be increased but some post processing functions
-such as \code{\link{bridge_sampler}} will not be available. Can be 
+such as \code{\link{bridge_sampler}} will not be available. Can be
 controlled globally for the current \R session via the `brms.normalize`
 option.}
 
@@ -238,7 +238,7 @@ fitting the Stan model. Options are \code{"rstan"} (the default) or
 \pkg{rstan} and \pkg{cmdstanr} packages are available at
 \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
 respectively. Additionally a \code{"mock"} backend is available to make
-testing \pkg{brms} and packages that depend on it easier. 
+testing \pkg{brms} and packages that depend on it easier.
 The \code{"mock"} backend does not actually do any fitting, it only checks
 the generated Stan code for correctness and then returns whatever is passed
 in an additional \code{mock_fit} argument as the result of the fit.}
@@ -272,7 +272,7 @@ named after the string supplied in \code{save_model}.}
 fitted model object is saved via \code{\link{saveRDS}} in a file named
 after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
-return the saved model object instead of refitting the model. 
+return the saved model object instead of refitting the model.
 Unless you specify the \code{file_refit} argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
@@ -280,7 +280,7 @@ is stored in the \code{brmsfit} object for later usage.}
 
 \item{file_refit}{Modifies when the fit stored via the \code{file} parameter
 is re-used. Can be set globally for the current \R session via the
-\code{"brms.file_refit"} option (see \code{\link{options}}). 
+\code{"brms.file_refit"} option (see \code{\link{options}}).
 For \code{"never"} (default) the fit is always loaded if it
 exists and fitting is skipped. For \code{"always"} the model is always
 refitted. If set to \code{"on_change"}, brms will
@@ -301,7 +301,7 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{rename}{For internal use only.}
 
-\item{...}{Further arguments passed to Stan. 
+\item{...}{Further arguments passed to Stan.
 For \code{backend = "rstan"} the arguments are passed to
 \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 For \code{backend = "cmdstanr"} the arguments are passed to the
@@ -313,16 +313,16 @@ An object of class \code{brmsfit}, which contains the posterior
   \code{methods(class = "brmsfit")} for an overview on available methods.
 }
 \description{
-Fit Bayesian generalized (non-)linear multivariate multilevel models 
-using Stan for full Bayesian inference. A wide range of distributions 
-and link functions are supported, allowing users to fit -- among others -- 
-linear, robust linear, count data, survival, response times, ordinal, 
-zero-inflated, hurdle, and even self-defined mixture models all in a 
-multilevel context. Further modeling options include non-linear and 
-smooth terms, auto-correlation structures, censored data, meta-analytic 
-standard errors, and quite a few more. In addition, all parameters of the 
-response distributions can be predicted in order to perform distributional 
-regression. Prior specifications are flexible and explicitly encourage 
+Fit Bayesian generalized (non-)linear multivariate multilevel models
+using Stan for full Bayesian inference. A wide range of distributions
+and link functions are supported, allowing users to fit -- among others --
+linear, robust linear, count data, survival, response times, ordinal,
+zero-inflated, hurdle, and even self-defined mixture models all in a
+multilevel context. Further modeling options include non-linear and
+smooth terms, auto-correlation structures, censored data, meta-analytic
+standard errors, and quite a few more. In addition, all parameters of the
+response distributions can be predicted in order to perform distributional
+regression. Prior specifications are flexible and explicitly encourage
 users to apply prior distributions that actually reflect their beliefs.
 In addition, model fit can easily be assessed and compared with
 posterior predictive checks and leave-one-out cross-validation.
@@ -441,7 +441,7 @@ summary(fit4)
 # Non-linear Gaussian model
 fit5 <- brm(
   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
      nl = TRUE),
   data = loss, family = gaussian(),
   prior = c(
@@ -497,12 +497,12 @@ summary(fit8)
 
 }
 \references{
-Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
-Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
+Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel
+Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28.
 \code{doi:10.18637/jss.v080.i01}
 
-Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
-with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling
+with the R Package brms. \emph{The R Journal}. 10(1), 395–411.
 \code{doi:10.32614/RJ-2018-017}
 }
 \seealso{

@@ -1,4 +1,4 @@
-# unless otherwise specified, functions return a named list 
+# unless otherwise specified, functions return a named list
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
@@ -36,13 +36,13 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
       r <- ranef[ranef$id == id, ]
       if (nrow(r) > 1L && r$cor[1]) {
         if (nzchar(r$by[1])) {
-          if (nzchar(r$cov[1])) { 
+          if (nzchar(r$cov[1])) {
             c(r_funs) <- "  #include 'fun_scale_r_cor_by_cov.stan'\n"
           } else {
             c(r_funs) <- "  #include 'fun_scale_r_cor_by.stan'\n"
           }
         } else {
-          if (nzchar(r$cov[1])) { 
+          if (nzchar(r$cov[1])) {
             c(r_funs) <- "  #include 'fun_scale_r_cor_cov.stan'\n"
           } else {
             c(r_funs) <- "  #include 'fun_scale_r_cor.stan'\n"
@@ -67,7 +67,7 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
   if (length(uni_mo)) {
     str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"
-  } 
+  }
   if (length(get_effect(bterms, "gp"))) {
     # TODO: include functions selectively
     str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
@@ -104,7 +104,7 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   }
   if (any(ulapply(acefs, has_ac_class, "car"))) {
     str_add(out$fun) <- glue(
-      "  #include 'fun_sparse_car_lpdf.stan'\n",      
+      "  #include 'fun_sparse_car_lpdf.stan'\n",
       "  #include 'fun_sparse_icar_lpdf.stan'\n"
     )
   }
@@ -123,17 +123,17 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
 # link function in Stan language
 # @param link name of the link function
 stan_link <- function(link) {
-  switch(link, 
+  switch(link,
     identity = "",
-    log = "log", 
+    log = "log",
     logm1 = "logm1",
     inverse = "inv",
-    sqrt = "sqrt", 
-    "1/mu^2" = "inv_square", 
-    logit = "logit", 
-    probit = "inv_Phi", 
-    probit_approx = "inv_Phi", 
-    cloglog = "cloglog", 
+    sqrt = "sqrt",
+    "1/mu^2" = "inv_square",
+    logit = "logit",
+    probit = "inv_Phi",
+    probit_approx = "inv_Phi",
+    cloglog = "cloglog",
     cauchit = "cauchit",
     tan_half = "tan_half",
     log1p = "log1p",
@@ -146,16 +146,16 @@ stan_link <- function(link) {
 # inverse link in Stan language
 # @param link name of the link function
 stan_inv_link <- function(link) {
-  switch(link, 
+  switch(link,
     identity = "",
-    log = "exp", 
+    log = "exp",
     logm1 = "expp1",
-    inverse = "inv", 
-    sqrt = "square", 
-    "1/mu^2" = "inv_sqrt", 
-    logit = "inv_logit", 
-    probit = "Phi", 
-    probit_approx = "Phi_approx", 
+    inverse = "inv",
+    sqrt = "square",
+    "1/mu^2" = "inv_sqrt",
+    logit = "inv_logit",
+    probit = "Phi",
+    probit_approx = "Phi_approx",
     cloglog = "inv_cloglog",
     cauchit = "inv_cauchit",
     tan_half = "inv_tan_half",
@@ -177,7 +177,7 @@ stan_vector <- function(...) {
 stan_cor_gen_comp <- function(cor, ncol) {
   Cor <- paste0(toupper(substring(cor, 1, 1)), substring(cor, 2))
   glue(
-    "  // extract upper diagonal of correlation matrix\n", 
+    "  // extract upper diagonal of correlation matrix\n",
     "  for (k in 1:{ncol}) {{\n",
     "    for (j in 1:(k - 1)) {{\n",
     "      {cor}[choose(k - 1, 2) + j] = {Cor}[j, k];\n",
@@ -186,9 +186,9 @@ stan_cor_gen_comp <- function(cor, ncol) {
   )
 }
 
-# indicates if a family-link combination has a built in 
+# indicates if a family-link combination has a built in
 # function in Stan (such as binomial_logit)
-# @param family a list with elements 'family' and 'link' 
+# @param family a list with elements 'family' and 'link'
 #   ideally a (brms)family object
 # @param bterms brmsterms object of the univariate model
 stan_has_built_in_fun <- function(family, bterms) {

@@ -44,19 +44,19 @@ it is possible to fix parameters to certain values by passing
 numbers or character strings in which case arguments have to be named
 to provide the parameter names. See 'Details' for more information.}
 
-\item{flist}{Optional list of formulas, which are treated in the 
+\item{flist}{Optional list of formulas, which are treated in the
 same way as formulas passed via the \code{...} argument.}
 
-\item{dpar}{Optional character string specifying the distributional 
+\item{dpar}{Optional character string specifying the distributional
 parameter to which the formulas passed via \code{...} and
 \code{flist} belong.}
 
-\item{resp}{Optional character string specifying the response 
+\item{resp}{Optional character string specifying the response
 variable to which the formulas passed via \code{...} and
 \code{flist} belong. Only relevant in multivariate models.}
 
 \item{loop}{Logical; Only used in non-linear models.
-Indicates if the computation of the non-linear formula should be 
+Indicates if the computation of the non-linear formula should be
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
 
@@ -67,8 +67,8 @@ Defaults to \code{TRUE} for distributional parameters
 and to \code{FALSE} for non-linear parameters.}
 
 \item{cmc}{Logical; Indicates whether automatic cell-mean coding
-should be enabled when removing the intercept by adding \code{0} 
-to the right-hand of model formulas. Defaults to \code{TRUE} to 
+should be enabled when removing the intercept by adding \code{0}
+to the right-hand of model formulas. Defaults to \code{TRUE} to
 mirror the behavior of standard \R formula parsing.}
 
 \item{sparse}{Logical; indicates whether the population-level design matrices
@@ -76,7 +76,7 @@ should be treated as sparse (defaults to \code{FALSE}). For design matrices
 with many zeros, this can considerably reduce required memory. Sampling
 speed is currently not improved or even slightly decreased.}
 
-\item{decomp}{Optional name of the decomposition used for the 
+\item{decomp}{Optional name of the decomposition used for the
 population-level design matrix. Defaults to \code{NULL} that is
 no decomposition. Other options currently available are
 \code{"QR"} for the QR decomposition that helps in fitting models
@@ -87,7 +87,7 @@ terms. All none autocorrelation terms in \code{autocor} will
 be silently ignored.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
-treated as specifying a non-linear model. By default, \code{formula} 
+treated as specifying a non-linear model. By default, \code{formula}
 is treated as an ordinary linear model formula.}
 
 \item{rescor}{Logical; Indicates if residual correlation between
@@ -99,10 +99,10 @@ Only relevant in multivariate models.}
 defined by \code{\link{me}} terms should be modeled. Defaults to \code{TRUE}.}
 }
 \value{
-For \code{lf} and \code{nlf} a \code{list} that can be 
-  passed to \code{\link[brms:brmsformula]{brmsformula}} or added 
-  to an existing \code{brmsformula} or \code{mvbrmsformula} object. 
-  For \code{set_nl} and \code{set_rescor} a logical value that can be 
+For \code{lf} and \code{nlf} a \code{list} that can be
+  passed to \code{\link[brms:brmsformula]{brmsformula}} or added
+  to an existing \code{brmsformula} or \code{mvbrmsformula} object.
+  For \code{set_nl} and \code{set_rescor} a logical value that can be
   added to an existing \code{brmsformula} or \code{mvbrmsformula} object.
 }
 \description{
@@ -111,8 +111,8 @@ formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
 }
 \examples{
 # add more formulas to the model
-bf(y ~ 1) + 
-  nlf(sigma ~ a * exp(b * x)) + 
+bf(y ~ 1) +
+  nlf(sigma ~ a * exp(b * x)) +
   lf(a ~ x, b ~ z + (1|g)) +
   gaussian()
 
@@ -120,12 +120,12 @@ bf(y ~ 1) +
 bf(y ~ a * inv_logit(x * b)) +
   lf(a + b ~ z) +
   set_nl(TRUE)
-  
+
 # specify a multivariate model
-bf(y1 ~ x + (1|g)) + 
+bf(y1 ~ x + (1|g)) +
   bf(y2 ~ z) +
   set_rescor(TRUE)
-  
+
 # add autocorrelation terms
 bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(W))
 }

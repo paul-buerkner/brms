@@ -13,8 +13,8 @@ form of a one-sided formula. For deprecated ways of specifying
 autocorrelation terms, see \code{\link{cor_brms}}.
 }
 \details{
-The autocor term functions are almost solely useful when called in 
-formulas passed to the \pkg{brms} package. They do not evaluate its 
+The autocor term functions are almost solely useful when called in
+formulas passed to the \pkg{brms} package. They do not evaluate its
 arguments -- but exist purely to help set up a model with autocorrelation
 terms.
 }

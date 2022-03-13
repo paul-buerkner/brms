@@ -25,12 +25,12 @@ ggplot2::theme_set(bayesplot::theme_default())
 set.seed(1234)
 ```
 
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/) 
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/)
 
-# brms 
+# brms
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
-[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) 
+[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 [![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
@@ -78,14 +78,14 @@ group-level intercept is incorporated to account for the resulting dependency in
 the data.
 
 ```{r fit1, results='hide', message=FALSE}
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient), 
+fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
 ```
 
 The results (i.e., posterior draws) can be investigated using
 
 ```{r summary}
-summary(fit1) 
+summary(fit1)
 ```
 
 On the top of the output, some general information on the model is given, such
@@ -118,8 +118,8 @@ can use the `plot` method. If we just want to see results of the regression
 coefficients of `Trt` and `zBase`, we go for
 
 ```{r plot}
-plot(fit1, variable = c("b_Trt1", "b_zBase")) 
-``` 
+plot(fit1, variable = c("b_Trt1", "b_zBase"))
+```
 
 A more detailed investigation can be performed by running
 `launch_shinystan(fit1)`. To better understand the relationship of the
@@ -159,7 +159,7 @@ this purpose, we include a second group-level intercept that captures possible
 overdispersion.
 
 ```{r fit2, results='hide', message=FALSE}
-fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs), 
+fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
             data = epilepsy, family = poisson())
 ```
 
@@ -192,12 +192,12 @@ appropriately so that developers get credit for their work.
 
 When using brms, please cite one or more of the following publications:
 
-- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models 
-  using Stan. *Journal of Statistical Software*. 80(1), 1-28. 
+- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models
+  using Stan. *Journal of Statistical Software*. 80(1), 1-28.
   doi.org/10.18637/jss.v080.i01
-- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R 
+- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
   Package brms. *The R Journal*. 10(1), 395-411. doi.org/10.32614/RJ-2018-017
-  
+
 As brms is a high-level interface to Stan, please additionally cite Stan:
 
 - Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B., Betancourt M.,

@@ -32,7 +32,7 @@ effects are allowed (defaults to \code{FALSE}). Only relevant if
 \code{newdata} is provided.}
 
 \item{newdata2}{A named \code{list} of objects containing new data, which
-cannot be passed via argument \code{newdata}. Required for some objects 
+cannot be passed via argument \code{newdata}. Required for some objects
 used in autocorrelation structures, or \code{\link{stanvars}}.}
 
 \item{resp}{Optional names of response variables. If specified, predictions

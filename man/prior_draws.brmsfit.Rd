@@ -42,9 +42,9 @@ To make use of this function, the model must contain draws of
 }
 \examples{
 \dontrun{
-fit <- brm(rating ~ treat + period + carry + (1|subject), 
-           data = inhaler, family = "cumulative", 
-           prior = set_prior("normal(0,2)", class = "b"), 
+fit <- brm(rating ~ treat + period + carry + (1|subject),
+           data = inhaler, family = "cumulative",
+           prior = set_prior("normal(0,2)", class = "b"),
            sample_prior = TRUE)
 
 # extract all prior draws

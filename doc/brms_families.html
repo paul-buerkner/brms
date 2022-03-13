@@ -79,8 +79,8 @@ f(y) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y - \mu}{\s
 f(y) = \frac{\Gamma((\nu + 1)/2)}{\Gamma(\nu/2)} \frac{1}{\sqrt{\nu\pi}\sigma}\left(1 + \frac{1}{\nu} \left(\frac{y - \mu}{\sigma}\right)^2\right)^{-(\nu+1)/2}
 \]</span></p>
 <p><span class="math inline">\(\Gamma\)</span> denotes the gamma function and <span class="math inline">\(\nu &gt; 1\)</span> are the degrees of freedom. As <span class="math inline">\(\nu \rightarrow \infty\)</span>, the student distribution becomes the gaussian distribution. The density of the <strong>skew_normal</strong> family is given by <span class="math display">\[
-f(y) = \frac{1}{\sqrt{2\pi}\sigma} 
- \exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right) 
+f(y) = \frac{1}{\sqrt{2\pi}\sigma}
+ \exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right)
 \left(1 + \text{erf} \left( \alpha \left(\frac{y - \xi}{\omega \sqrt{2}} \right) \right) \right)
 \]</span></p>
 <p>where <span class="math inline">\(\xi\)</span> is the location parameter, <span class="math inline">\(\omega\)</span> is the positive scale parameter, <span class="math inline">\(\alpha\)</span> the skewness parameter, and <span class="math inline">\(\text{erf}\)</span> denotes the error function of the gaussian distribution. To parameterize the skew-normal distribution in terms of the mean <span class="math inline">\(\mu\)</span> and standard deviation <span class="math inline">\(\sigma\)</span>, <span class="math inline">\(\omega\)</span> and <span class="math inline">\(\xi\)</span> are computed as <span class="math display">\[
@@ -103,7 +103,7 @@ f(y) = {y + \phi - 1 \choose y} \left(\frac{\mu}{\mu + \phi}\right)^{y}
 \left(\frac{\phi}{\mu + \phi}\right)^\phi
 \]</span> where <span class="math inline">\(\phi\)</span> is a positive precision parameter. For <span class="math inline">\(\phi \rightarrow \infty\)</span>, the negative binomial distribution becomes the poisson distribution. The density of the <strong>geometric</strong> family arises if <span class="math inline">\(\phi\)</span> is set to <span class="math inline">\(1\)</span>.</p>
 <!--
-The density of the **discrete_weibull** family is 
+The density of the **discrete_weibull** family is
 $$
 f(y) = \mu^{y^\alpha} - \mu^{(y + 1)^\alpha}
 $$
@@ -115,10 +115,10 @@ with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
 <p>With time-to-event models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[
 f(y) = \frac{1}{\sqrt{2\pi}\sigma y} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
 \]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation on the log-scale. The density of the <strong>Gamma</strong> family is given by <span class="math display">\[
-f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1} 
+f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1}
 \exp\left(-\frac{\alpha y}{\mu}\right)
 \]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The density of the <strong>weibull</strong> family is given by <span class="math display">\[
-f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1} 
+f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}
 \exp\left(-\left(\frac{y}{s}\right)^\alpha\right)
 \]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter and <span class="math inline">\(s = \mu / \Gamma(1 + 1 / \alpha)\)</span> is the scale parameter to that <span class="math inline">\(\mu\)</span> is the mean of the distribution. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution. The density of the <strong>inverse.gaussian</strong> family is given by <span class="math display">\[
 f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
@@ -164,7 +164,7 @@ f(y) = \frac{p (1 - p)}{\sigma} \exp\left(-\rho_p\left(\frac{y - \mu}{\sigma}\ri
 <p>The density of the <strong>Beta</strong> family for <span class="math inline">\(y \in (0,1)\)</span> is given by <span class="math display">\[
 f(y) = \frac{y^{\mu \phi - 1} (1-y)^{(1-\mu) \phi-1}}{B(\mu \phi, (1-\mu) \phi)}
 \]</span> where <span class="math inline">\(B\)</span> is the beta function and <span class="math inline">\(\phi\)</span> is a positive precision parameter. A multivariate generalization of the <strong>Beta</strong> family is the <strong>dirichlet</strong> family with density <span class="math display">\[
-f(y) = \frac{1}{B((\mu_{1}, \ldots, \mu_{K}) \phi)} 
+f(y) = \frac{1}{B((\mu_{1}, \ldots, \mu_{K}) \phi)}
   \prod_{k=1}^K y_{k}^{\mu_{k} \phi - 1}.
 \]</span> The <strong>dirichlet</strong> distribution is only implemented with the multivariate logit link function so that <span class="math display">\[
 \mu_{j} = \frac{\exp(\eta_{j})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
@@ -197,7 +197,7 @@ f(y) = \frac{\exp \left(\sum_{k=1}^{y} (\eta - \tau_{k}) \right)}
 <p>The <strong>categorical</strong> family is currently only implemented with the multivariate logit link function and has density <span class="math display">\[
 f(y) = \mu_{y} = \frac{\exp(\eta_{y})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
 \]</span> Note that <span class="math inline">\(\eta\)</span> does also depend on the category <span class="math inline">\(k\)</span>. For reasons of identifiability, <span class="math inline">\(\eta_{1}\)</span> is set to <span class="math inline">\(0\)</span>. A generalization of the <strong>categorical</strong> family to more than one trial is the <strong>multinomial</strong> family with density <span class="math display">\[
-f(y) = {N \choose y_{1}, y_{2}, \ldots, y_{K}} 
+f(y) = {N \choose y_{1}, y_{2}, \ldots, y_{K}}
   \prod_{k=1}^K \mu_{k}^{y_{k}}
 \]</span> where, for each category, <span class="math inline">\(\mu_{k}\)</span> is estimated via the multivariate logit link function shown above.</p>
 </div>
