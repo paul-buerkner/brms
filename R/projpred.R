@@ -170,7 +170,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # prepare data passed to projpred
-  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  data <- current_data(
+    object, newdata, resp = resp, check_response = TRUE,
+    allow_new_levels = TRUE
+  )
   attr(data, "terms") <- NULL
   args <- nlist(
     object, data, formula, family, dis, ref_predfun,
