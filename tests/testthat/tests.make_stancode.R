@@ -321,6 +321,11 @@ test_that("link functions appear in the Stan code", {
                "mu[n] = square(mu[n]);")
   expect_match2(make_stancode(y ~ s(x), dat, family = bernoulli()),
                 "target += bernoulli_logit_lpmf(Y | mu);")
+  
+  scode <- make_stancode(y ~ x, dat, family = beta_binomial('logit'))
+  expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
+  scode <- make_stancode(y ~ x, dat, family = beta_binomial('cloglog'))
+  expect_match2(scode, "mu[n] = inv_cloglog(mu[n]);")
 })
 
 test_that("Stan GLM primitives are applied correctly", {
@@ -1315,6 +1320,19 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   scode <- make_stancode(y | weights(x) + trunc(0, 30) ~ 1, dat)
   expect_match2(scode, "target += weights[n] * (normal_lpdf(Y[n] | mu[n], sigma) -")
   expect_match2(scode, "  log_diff_exp(normal_lcdf(ub[n] | mu[n], sigma),")
+  
+  expect_match2(
+    make_stancode(y | trials(y2) + weights(y2) ~ 1, dat, beta_binomial()),
+    "target += weights[n] * (beta_binomial_lpmf(Y[n] | trials[n], mu[n] * phi,"
+  )
+  expect_match2(
+    make_stancode(y | trials(y2) + trunc(0, 30) ~ 1, dat, beta_binomial()),
+    "log_diff_exp(beta_binomial_lcdf(ub[n] | trials[n], mu[n] * phi,"
+  )
+  expect_match2(
+    make_stancode(y | trials(y2) + cens(x, y2) ~ 1, dat, beta_binomial()),
+    "beta_binomial_lcdf(rcens[n] | trials[n], mu[n] * phi,"
+  )
 })
 
 test_that("noise-free terms appear in the Stan code", {

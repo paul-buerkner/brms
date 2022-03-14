@@ -911,6 +911,51 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
   with(args, ifelse(z <= mu / (mu + x), x, mu^2 / x))
 }
 
+#' The Beta-binomial Distribution
+#'
+#' Cumulative density & mass functions, and random number generation for the
+#' Beta-binomial distribution using the following re-parameterisation of the
+#' \href{https://mc-stan.org/docs/2_29/functions-reference/beta-binomial-distribution.html}{Stan
+#' Beta-binomial definition}:
+#' \itemize{
+#'  \item{\code{mu = alpha * beta}} mean probability of trial success.
+#'  \item{\code{phi = (1 - mu) * beta}} precision or over-dispersion, component.
+#' }
+#'
+#' @name BetaBinomial
+#'
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of means.
+#' @param phi Vector of precisions.
+#' 
+#' @export
+dbeta_binomial <- function(x, size, mu, phi, log = FALSE) {
+  require_package("extraDistr")
+  alpha <- mu * phi
+  beta <- (1 - mu) * phi
+  extraDistr::dbbinom(x, size, alpha = alpha, beta = beta, log = log)
+}
+
+#' @rdname BetaBinomial
+#' @export
+pbeta_binomial <- function(q, size, mu, phi, lower.tail = TRUE, log.p = FALSE) {
+  require_package("extraDistr")
+  alpha <- mu * phi
+  beta <- (1 - mu) * phi
+  extraDistr::pbbinom(q, size, alpha = alpha, beta = beta, 
+                      lower.tail = lower.tail, log.p = log.p)
+}
+
+#' @rdname BetaBinomial
+#' @export
+rbeta_binomial <- function(n, size, mu, phi) {
+  # beta location-scale probabilities
+  probs <- rbeta(n, mu * phi, (1 - mu) * phi)
+  # binomial draws
+  rbinom(n, size = size, prob = probs)
+}
+
 #' The Generalized Extreme Value Distribution
 #'
 #' Density, distribution function, and random generation
@@ -1741,7 +1786,7 @@ pzero_inflated_binomial <- function(q, size, prob, zi, lower.tail = TRUE,
 #' @export
 dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
   pars <- nlist(size, mu, phi)
-  .dzero_inflated(x, "beta_binom", zi, pars, log)
+  .dzero_inflated(x, "beta_binomial", zi, pars, log)
 }
 
 #' @rdname ZeroInflated
@@ -1749,7 +1794,7 @@ dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
 pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi,
                                          lower.tail = TRUE, log.p = FALSE) {
   pars <- nlist(size, mu, phi)
-  .pzero_inflated(q, "beta_binom", zi, pars, lower.tail, log.p)
+  .pzero_inflated(q, "beta_binomial", zi, pars, lower.tail, log.p)
 }
 
 #' @rdname ZeroInflated
@@ -2475,20 +2520,6 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   p <- do_call(paste0("d", family), args)
   .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
   cblapply(q, .fun)
-}
-
-# CDF of the beta-binomial distribution
-dbeta_binom <- function(x, size, mu = 1, phi = 1, log = FALSE) {
-  require_package("extraDistr")
-  extraDistr::dbbinom(x, size, alpha = mu * phi, beta = (1 - mu) * phi, log = log)
-}
-
-# PMF of the beta-binomial distribution
-pbeta_binom <- function(q, size, mu = 1, phi = 1, lower.tail = TRUE,
-                        log.p = FALSE) {
-  require_package("extraDistr")
-  extraDistr::pbbinom(q, size, alpha = mu * phi, beta = (1 - mu) * phi,
-                      lower.tail = lower.tail, log.p = log.p)
 }
 
 # helper functions to shift arbitrary distributions

@@ -141,8 +141,8 @@ test_that("posterior_predict for count and survival models runs without errors",
   trials <- sample(10:30, nobs, replace = TRUE)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    eta = matrix(rnorm(ns*nobs), ncol = nobs),
-    shape = rgamma(ns, 4), xi = 0
+    eta = matrix(rnorm(ns * nobs), ncol = nobs),
+    shape = rgamma(ns, 4), xi = 0, phi = rgamma(ns, 1)
   )
   prep$dpars$nu <- prep$dpars$sigma <- prep$dpars$shape + 1
   prep$data <- list(trials = trials)
@@ -150,6 +150,9 @@ test_that("posterior_predict for count and survival models runs without errors",
 
   prep$dpars$mu <- brms:::inv_cloglog(prep$dpars$eta)
   pred <- brms:::posterior_predict_binomial(i, prep = prep)
+  expect_equal(length(pred), ns)
+  
+  pred <- brms:::posterior_predict_beta_binomial(i, prep = prep)
   expect_equal(length(pred), ns)
 
   pred <- brms:::posterior_predict_discrete_weibull(i, prep = prep)

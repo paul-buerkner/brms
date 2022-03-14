@@ -12,8 +12,8 @@
 #' @param family A character string naming the distribution of the response
 #'   variable be used in the model. Currently, the following families are
 #'   supported: \code{gaussian}, \code{student}, \code{binomial},
-#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
-#'   \code{Gamma}, \code{skew_normal}, \code{lognormal},
+#'   \code{bernoulli}, \code{beta-binomial}, \code{poisson}, \code{negbinomial},
+#'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
 #'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 #'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
@@ -73,8 +73,9 @@
 #'   \item{Families \code{poisson}, \code{negbinomial}, and \code{geometric}
 #'   can be used for regression of unbounded count data.}
 #'
-#'   \item{Families \code{bernoulli} and \code{binomial} can be used for
-#'   binary regression (i.e., most commonly logistic regression).}
+#'   \item{Families \code{bernoulli}, \code{binomial}, and \code{beta_binomial}
+#'   can be used for binary regression (i.e., most commonly logistic
+#'   regression).}
 #'
 #'   \item{Families \code{categorical} and \code{multinomial} can be used for
 #'   multi-logistic regression when there are more than two possible outcomes.}
@@ -128,11 +129,11 @@
 #'   \code{hurdle_poisson}, and \code{hurdle_negbinomial} support
 #'   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 #'
-#'   \item{Families \code{binomial}, \code{bernoulli}, \code{Beta},
-#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
-#'   \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} support
-#'   \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
-#'   \code{cauchit}, and \code{identity}.}
+#'   \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
+#'   \code{Beta}, \code{zero_inflated_binomial},
+#'   \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta}, and
+#'   \code{zero_one_inflated_beta} support \code{logit}, \code{probit},
+#'   \code{probit_approx}, \code{cloglog}, \code{cauchit}, and \code{identity}.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
 #'   and \code{acat} support \code{logit}, \code{probit},
@@ -493,6 +494,13 @@ student <- function(link = "identity", link_sigma = "log", link_nu = "logm1") {
 bernoulli <- function(link = "logit") {
   slink <- substitute(link)
   .brmsfamily("bernoulli", link = link, slink = slink)
+}
+
+#' @rdname brmsfamily
+#' @export
+beta_binomial <- function(link = "logit", link_phi = "log") {
+  slink <- substitute(link)
+  .brmsfamily("beta_binomial", link = link, slink = slink, link_phi = link_phi)
 }
 
 #' @rdname brmsfamily
@@ -1844,7 +1852,7 @@ family_bounds.brmsterms <- function(x, ...) {
   } else if (family %in% c("categorical", ordinal_families)) {
     out <- list(lb = 1, ub = paste0("ncat", resp))
   } else if (family %in% c("binomial", "zero_inflated_binomial",
-                           "zero_inflated_beta_binomial")) {
+                           "beta_binomial", "zero_inflated_beta_binomial")) {
     out <- list(lb = 0, ub = paste0("trials", resp))
   } else if (family %in% "von_mises") {
     out <- list(lb = -pi, ub = pi)

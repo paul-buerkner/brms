@@ -491,6 +491,17 @@ posterior_predict_binomial <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_beta_binomial <- function(i, prep, ntrys = 5, ...) {
+  rdiscrete(
+    n = prep$ndraws, dist = "beta_binomial",
+    size = prep$data$trials[i],
+    mu = get_dpar(prep, "mu", i = i),
+    phi = get_dpar(prep, "phi", i = i),
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_bernoulli <- function(i, prep, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   rbinom(length(mu), size = 1, prob = mu)
@@ -826,11 +837,11 @@ posterior_predict_zero_inflated_beta_binomial <- function(i, prep, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
   ndraws <- prep$ndraws
-  # beta location-scale probabilities
-  probs <- rbeta(ndraws, mu * phi, (1 - mu) * phi)
+  draws <- rbeta_binomial(ndraws, size = trials, mu = mu, phi = phi)
   # compare with theta to incorporate the zero-inflation process
   zi <- runif(ndraws, 0, 1)
-  ifelse(zi < theta, 0, rbinom(ndraws, size = trials, prob = probs))
+  draws[zi < theta] <- 0
+  draws
 }
 
 posterior_predict_categorical <- function(i, prep, ...) {

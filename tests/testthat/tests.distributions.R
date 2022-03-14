@@ -105,6 +105,18 @@ test_that("inv_gaussian distribution functions run without errors", {
   expect_true(length(res) == n)
 })
 
+test_that("beta_binomial distribution functions run without errors", {
+  n <- 10
+  x <- rpois(n, lambda = 1)
+  
+  res <- dbeta_binomial(x, c(2, 10), mu = 0.4, phi = 1)
+  expect_true(length(res) == n)
+  res <- pbeta_binomial(x, c(2, 10), mu = 0.4, phi = 1)
+  expect_true(length(res) == n)
+  res <- rbeta_binomial(n, c(2, 10), mu = 0.4, phi = 1)
+  expect_true(length(res) == n)
+})
+
 test_that("gen_extreme_value distribution functions run without errors", {
   n <- 10
   x <- rgamma(n, 10, 3)
