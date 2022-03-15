@@ -41,7 +41,8 @@ jobs:
 
       - name: Install cmdstanr
         run: |
-          install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+          install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/",
+                                                 "https://cran.rstudio.com/"))
           cmdstanr::install_cmdstan(cores = parallel::detectCores())
         shell: Rscript {0}
 
