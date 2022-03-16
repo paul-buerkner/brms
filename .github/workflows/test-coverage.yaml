@@ -21,6 +21,9 @@ jobs:
         with:
           use-public-rspm: true
 
+      # As cmdstanr is not yet on CRAN, configure the action to only install the
+      # 'Depends' packages by default and then manually specify the 'Suggests'
+      # packages that are needed for R CMD CHECK
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: NA
@@ -36,7 +39,6 @@ jobs:
             ape
             https://github.com/stan-dev/cmdstanr
             RcppEigen
-            testthat
             emmeans
             projpred
             RWiener
@@ -51,7 +53,6 @@ jobs:
             usethis
             testthat
             covr
-            https://github.com/stan-dev/cmdstanr
 
       - name: Build Cmdstan
         run: |
