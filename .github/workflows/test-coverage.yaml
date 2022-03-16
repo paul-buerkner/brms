@@ -26,6 +26,7 @@ jobs:
           dependencies: NA
           extra-packages: |
             usethis
+            testthat
             covr
             https://github.com/stan-dev/cmdstanr
 
