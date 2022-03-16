@@ -39,16 +39,44 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install cmdstanr
+      # As cmdstanr is not yet on CRAN, configure the action to only install the
+      # 'Depends' packages by default and then manually specify the 'Suggests'
+      # packages that are needed for R CMD CHECK
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: NA
+          extra-packages: |
+            R.rsp
+            knitr
+            rcmdcheck
+            rmarkdown
+            lme4
+            mice
+            BH
+            MCMCglmm
+            ape
+            https://github.com/stan-dev/cmdstanr
+            RcppEigen
+            testthat
+            emmeans
+            projpred
+            RWiener
+            rtdists
+            extraDistr
+            spdep
+            mnormt
+            splines2
+            arm
+            statmod
+            diffobj
+
+      - name: Build Cmdstan
         run: |
-          install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/",
-                                                 "https://cran.rstudio.com/"))
+          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
           cmdstanr::install_cmdstan(cores = parallel::detectCores())
         shell: Rscript {0}
 
-
-      - uses: r-lib/actions/setup-r-dependencies@v1
-        with:
-          extra-packages: rcmdcheck
-
       - uses: r-lib/actions/check-r-package@v1
+        with:
+          build_args: '"--no-manual", "--no-build-vignettes"'
+          args: '"--no-manual", "--as-cran", "--ignore-vignettes"'
