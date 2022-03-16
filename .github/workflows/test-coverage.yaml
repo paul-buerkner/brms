@@ -25,6 +25,29 @@ jobs:
         with:
           dependencies: NA
           extra-packages: |
+            R.rsp
+            knitr
+            rcmdcheck
+            rmarkdown
+            lme4
+            mice
+            BH
+            MCMCglmm
+            ape
+            https://github.com/stan-dev/cmdstanr
+            RcppEigen
+            testthat
+            emmeans
+            projpred
+            RWiener
+            rtdists
+            extraDistr
+            spdep
+            mnormt
+            splines2
+            arm
+            statmod
+            diffobj
             usethis
             testthat
             covr
