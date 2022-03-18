@@ -16,14 +16,52 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: r-lib/actions/setup-r@v1
         with:
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v1
+      # As cmdstanr is not yet on CRAN, configure the action to only install the
+      # 'Depends' packages by default and then manually specify the 'Suggests'
+      # packages that are needed for R CMD CHECK
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: covr
+          dependencies: NA
+          extra-packages: |
+            R.rsp
+            knitr
+            rcmdcheck
+            rmarkdown
+            lme4
+            mice
+            BH
+            MCMCglmm
+            ape
+            https://github.com/stan-dev/cmdstanr
+            RcppEigen
+            emmeans
+            projpred
+            RWiener
+            rtdists
+            extraDistr
+            spdep
+            mnormt
+            splines2
+            arm
+            statmod
+            diffobj
+            usethis
+            testthat
+            covr
+
+      - name: Build Cmdstan
+        run: |
+          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
+          cmdstanr::install_cmdstan(cores = parallel::detectCores())
+        shell: Rscript {0}
 
       - name: Test coverage
         run: covr::codecov()
