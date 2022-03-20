@@ -34,7 +34,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: r-lib/actions/setup-pandoc@v1
+      - uses: r-lib/actions/setup-pandoc@v2
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
@@ -57,7 +57,7 @@ jobs:
             BH
             MCMCglmm
             ape
-            https://github.com/stan-dev/cmdstanr
+            stan-dev/cmdstanr
             RcppEigen
             testthat
             emmeans
@@ -78,7 +78,7 @@ jobs:
           cmdstanr::install_cmdstan(cores = parallel::detectCores())
         shell: Rscript {0}
 
-      - uses: r-lib/actions/check-r-package@v1
+      - uses: r-lib/actions/check-r-package@v2
         with:
-          build_args: '"--no-manual", "--no-build-vignettes"'
-          args: '"--no-manual", "--as-cran", "--ignore-vignettes"'
+          build_args: 'c("--no-manual", "--no-build-vignettes")'
+          args: 'c("--no-manual", "--as-cran", "--ignore-vignettes")'
