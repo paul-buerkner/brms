@@ -1320,7 +1320,7 @@ validate_formula.brmsformula <- function(
       }
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
-    multi_dpars <- valid_dpars(out$family, multi = TRUE)
+    multi_dpars <- valid_dpars(out$family, type = "multi")
     # 'rev' so that mu comes last but appears first in the end
     for (dp in rev(multi_dpars)) {
       dp_dpars <- make_stan_names(paste0(dp, predcats))

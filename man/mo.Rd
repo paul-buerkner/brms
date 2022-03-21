@@ -26,7 +26,6 @@ See Bürkner and Charpentier (2020) for the underlying theory. For
   see \code{help(brmsformula)} as well as \code{vignette("brms_monotonic")}.
 }
 \examples{
-
 \dontrun{
 # generate some data
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")

@@ -15,8 +15,8 @@ test_that("specified priors appear in the Stan code", {
 
   prior <- c(prior(std_normal(), coef = x1),
              prior(normal(0,2), coef = x2),
-             prior(normal(0,5), Intercept),
-             prior(cauchy(0,1), sd, group = g),
+             prior(normal(0,5), Intercept, lb = 0),
+             prior(cauchy(0,1), sd, group = g, lb = 1),
              prior(cauchy(0,2), sd, group = g, coef = x1),
              prior(gamma(1, 1), class = sd, group = h))
   scode <- make_stancode(y ~ x1*x2 + (x1*x2|g) + (1 | h), dat,
@@ -26,14 +26,14 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "lprior += normal_lpdf(b[2] | 0, 2)")
   expect_match2(scode, "lprior += normal_lpdf(Intercept | 0, 5)")
   expect_match2(scode, "lprior += cauchy_lpdf(sd_1[1] | 0, 1)")
-  expect_match2(scode, "- 1 * cauchy_lccdf(0 | 0, 1)")
+  expect_match2(scode, "- 1 * cauchy_lccdf(1 | 0, 1)")
   expect_match2(scode, "lprior += cauchy_lpdf(sd_1[2] | 0, 2)")
   expect_match2(scode, "lprior += student_t_lpdf(sigma | 3, 0, 3.7)")
   expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 3.7)")
   expect_match2(scode, "lprior += gamma_lpdf(sd_2 | 1, 1)")
   expect_match2(scode, "prior_b__1 = normal_rng(0,1);")
   expect_match2(scode, "prior_sd_1__1 = cauchy_rng(0,1)")
-  expect_match2(scode, "while (prior_sd_1__1 < 0)")
+  expect_match2(scode, "while (prior_sd_1__1 < 1)")
   expect_match2(scode, "prior_sd_2 = gamma_rng(1,1)")
   expect_match2(scode, "while (prior_sd_2 < 0)")
 
@@ -737,6 +737,7 @@ test_that("Stan code for logistic_normal models is correct", {
 test_that("Stan code for ARMA models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
   scode <- make_stancode(y ~ x + ar(time), dat, student())
+  expect_match2(scode, "vector[Kar] ar")
   expect_match2(scode, "err[n] = Y[n] - mu[n];")
   expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
 
@@ -769,16 +770,17 @@ test_that("Stan code for ARMA models is correct", {
     "err = scale_time_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);"
   )
   expect_match2(scode, "vector[N] mu = Intercept + Xc * b + err;")
-  expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10);")
+  expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10)")
 
   scode <- make_stancode(
     y ~ x + ar(time), dat, family = poisson,
     prior = prior(cauchy(0, 10), class = sderr)
   )
+  expect_match2(scode, "vector<lower=-1,upper=1>[Kar] ar")
   expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
   expect_match2(scode, "err = sderr * zerr;")
   expect_match2(scode, "vector[N] mu = Intercept + Xc * b + err;")
-  expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10);")
+  expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10)")
 })
 
 test_that("Stan code for compound symmetry models is correct", {
@@ -789,7 +791,7 @@ test_that("Stan code for compound symmetry models is correct", {
   )
   expect_match2(scode, "real<lower=0,upper=1> cosy;")
   expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
-  expect_match2(scode, "lprior += normal_lpdf(cosy | 0, 2);")
+  expect_match2(scode, "lprior += normal_lpdf(cosy | 0, 2)")
 
   scode <- make_stancode(bf(y ~ x + cosy(time), sigma ~ x), dat)
   expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, chol_cor")
@@ -1230,7 +1232,7 @@ test_that("Stan code of wiener diffusion models is correct", {
 
   scode <- make_stancode(bf(q | dec(resp) ~ x, ndt = 0.5),
                          data = dat, family = wiener())
-  expect_match2(scode, "real<lower=0,upper=min(Y)> ndt = 0.5;")
+  expect_match2(scode, "real ndt = 0.5;")
 
   expect_error(make_stancode(q ~ x, data = dat, family = wiener()),
                "Addition argument 'dec' is required for family 'wiener'")
@@ -1419,7 +1421,7 @@ test_that("by variables in grouping terms are handled correctly", {
   expect_match2(scode, "r_1_1 = (transpose(sd_1[1, Jby_1]) .* (z_1[1]));")
   scode <- make_stancode(y ~ x + (x | gr(g, by = z)), dat)
   expect_match2(scode, "r_1 = scale_r_cor_by(z_1, sd_1, L_1, Jby_1);")
-  expect_match2(scode, "lprior += student_t_lpdf(to_vector(sd_1) | 3, 0, 2.5);")
+  expect_match2(scode, "lprior += student_t_lpdf(to_vector(sd_1) | 3, 0, 2.5)")
   expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(L_1[5] | 1);")
 })
 
@@ -1509,7 +1511,7 @@ test_that("predicting zi and hu works correctly", {
 
 test_that("fixing auxiliary parameters is possible", {
   scode <- make_stancode(bf(y ~ 1, sigma = 0.5), data = list(y = rnorm(10)))
-  expect_match2(scode, "real<lower=0> sigma = 0.5;")
+  expect_match2(scode, "real sigma = 0.5;")
 })
 
 test_that("Stan code of quantile regression models is correct", {
@@ -1518,7 +1520,7 @@ test_that("Stan code of quantile regression models is correct", {
   expect_match2(scode, "target += asym_laplace_lpdf(Y[n] | mu[n], sigma, quantile)")
 
   scode <- make_stancode(bf(y ~ x, quantile = 0.75), data, family = asym_laplace())
-  expect_match2(scode, "real<lower=0,upper=1> quantile = 0.75;")
+  expect_match2(scode, "real quantile = 0.75;")
 
   scode <- make_stancode(y | cens(c) ~ x, data, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile)")
@@ -1868,6 +1870,7 @@ test_that("Stan code for CAR models is correct", {
   dat2 <- list(W = W)
 
   scode <- make_stancode(y ~ x + car(W), dat, data2 = dat2)
+  expect_match2(scode, "real<lower=0,upper=1> car;")
   expect_match2(scode, "real sparse_car_lpdf(vector phi")
   expect_match2(scode, "target += sparse_car_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
@@ -2238,7 +2241,7 @@ test_that("student-t group-level effects work without errors", {
   scode <- make_stancode(count ~ Trt + (1|gr(patient, dist = "st")), epilepsy)
   expect_match2(scode, "dfm_1 = sqrt(df_1 * udf_1);")
   expect_match2(scode, "dfm_1 .* (sd_1[1] * (z_1[1]));")
-  expect_match2(scode, "lprior += gamma_lpdf(df_1 | 2, 0.1);")
+  expect_match2(scode, "lprior += gamma_lpdf(df_1 | 2, 0.1)")
   expect_match2(scode, "target += inv_chi_square_lpdf(udf_1 | df_1);")
 
   bprior <- prior(normal(20, 5), class = df, group = patient)
@@ -2249,7 +2252,7 @@ test_that("student-t group-level effects work without errors", {
   expect_match2(scode,
     "r_1 = rep_matrix(dfm_1, M_1) .* scale_r_cor(z_1, sd_1, L_1);"
   )
-  expect_match2(scode, "lprior += normal_lpdf(df_1 | 20, 5);")
+  expect_match2(scode, "lprior += normal_lpdf(df_1 | 20, 5)")
 })
 
 test_that("centering design matrices can be changed correctly", {
