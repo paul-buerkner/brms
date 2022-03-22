@@ -259,8 +259,8 @@ test_that("varying slopes without overall effects work", {
   ce <- conditional_effects(fit1, conditions = conditions)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 
-  conditions <- data.frame(zAge = 0, zBase = 0,
-                           Trt = 0, visit = c(1:4, NA))
+  conditions <- data.frame(zAge = 0, zBase = 0, patient = 0,
+                           Trt = 0, visit_num = 1:5)
   ce <- conditional_effects(fit1, conditions = conditions, re_formula = NULL)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 

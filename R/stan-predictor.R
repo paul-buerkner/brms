@@ -319,9 +319,9 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       b_suffix <- ""
       b_comment <- "population-level effects"
       if (has_special_b_prior) {
+        stopif_prior_bound(prior, class = "b", ls = px)
         if (assign_b_tpar) {
           # only some special priors assign b in transformed parameters
-          stopif_prior_bound(prior, class = "b", ls = px)
           str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
           str_add(out$pll_args) <- glue(", vector b{p}")
         }
@@ -979,9 +979,9 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
 
   # prepare special effects coefficients
   if (stan_has_special_b_prior(bterms, prior)) {
+    stopif_prior_bound(prior, class = "b", ls = px)
     if (stan_assign_b_tpar(bterms, prior)) {
       # only some special priors assign b in transformed parameters
-      stopif_prior_bound(prior, class = "b", ls = px)
       str_add(out$tpar_def) <- glue(
         "  // special effects coefficients\n",
         "  vector[Ksp{p}] bsp{p};\n"

@@ -43,16 +43,16 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
 
   px <- as.data.frame(px, stringsAsFactors = FALSE)
   upx <- unique(px)
-  base_prior <- bound <- ""
   if (nrow(upx) > 1L) {
     # TODO: find a better solution to handle this case
     # can only happen for SD parameters of the same ID
-    base_prior <- rep(NA, nrow(upx))
+    base_prior <- lb <- ub <- rep(NA, nrow(upx))
     for (i in seq_rows(upx)) {
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx)
       base_prior[i] <- stan_base_prior(sub_prior)
-      bound[i] <- stan_base_prior(sub_prior, col = "bound")
+      lb[i] <- stan_base_prior(sub_prior, col = "lb")
+      ub[i] <- stan_base_prior(sub_prior, col = "ub")
     }
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually
@@ -63,15 +63,19 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       prior$prior[take_coef_prior] <- base_prior[take_base_prior]
     }
     base_prior <- base_prior[1]
-    if (length(unique(bound)) > 1L) {
+    if (length(unique(lb)) > 1L || length(unique(ub)) > 1L) {
       stop2("Conflicting boundary information for ", 
             "coefficients of class '", class, "'.")
     }
-    bound <- bound[1]
+    lb <- lb[1]
+    ub <- ub[1]
   } else {
     base_prior <- stan_base_prior(prior)
-    bound <- stan_base_prior(prior, col = "bound")
+    # TODO: select lb and ub separately or jointly?
+    lb <- stan_base_prior(prior, col = "lb")
+    ub <- stan_base_prior(prior, col = "ub")
   }
+  bound <- convert_bounds2stan(nlist(lb, ub))
 
   # generate stan prior statements
   out <- list()
@@ -651,8 +655,9 @@ stan_type_add_bounds <- function(type, bound) {
 }
 
 stopif_prior_bound <- function(prior, class, ...) {
-  bound <- stan_base_prior(prior, "bound", class = class, ...) 
-  if (nzchar(bound)) {
+  lb <- stan_base_prior(prior, "lb", class = class, ...) 
+  ub <- stan_base_prior(prior, "ub", class = class, ...) 
+  if (nzchar(lb) || nzchar(ub)) {
     stop2("Cannot add bounds to class '", class, "' for this prior.")
   }
   return(invisible(NULL))
