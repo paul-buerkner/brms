@@ -150,21 +150,18 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
     object, newdata = newdata, resp = resp,
     re_formula = NA, check_response = TRUE, ...
   )
-  # censored responses are misleading when displayed in pp_check
-  bterms <- brmsterms(object$formula)
-  cens <- get_cens(bterms, data, resp = resp)
-  if (!is.null(cens)) {
-    warning2("Censored responses are not shown in 'pp_check'.")
-    take <- !cens
-    if (!any(take)) {
-      stop2("No non-censored responses found.")
-    }
-    y <- y[take]
-    yrep <- yrep[, take, drop = FALSE]
+  
+  # prepare plotting arguments
+  ppc_args <- nlist(y, yrep)
+  if (!is.null(group)) {
+    ppc_args$group <- data[[group]]
   }
-  # most ... arguments are ment for the prediction function
-  for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
-  ppc_args <- c(list(y, yrep), dots[!for_pred])
+  if (!is.null(x)) {
+    ppc_args$x <- data[[x]]
+    if (!is_like_factor(ppc_args$x)) {
+      ppc_args$x <- as.numeric(ppc_args$x)
+    }
+  }
   if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
     ppc_args$psis_object <- do_call(
       compute_loo, c(pred_args, criterion = "psis")
@@ -175,14 +172,38 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
       do_call(compute_loo, c(pred_args, criterion = "psis"))
     )
   }
-  if (!is.null(group)) {
-    ppc_args$group <- data[[group]]
-  }
-  if (!is.null(x)) {
-    ppc_args$x <- data[[x]]
-    if (!is_like_factor(ppc_args$x)) {
-      ppc_args$x <- as.numeric(ppc_args$x)
+  
+  # censored responses are misleading when displayed in pp_check
+  bterms <- brmsterms(object$formula)
+  cens <- get_cens(bterms, data, resp = resp)
+  if (!is.null(cens) & type != 'km_overlay') {
+    warning2("Censored responses are not shown in 'pp_check'.")
+    take <- !cens
+    if (!any(take)) {
+      stop2("No non-censored responses found.")
+    }
+    ppc_args$y <- ppc_args$y[take]
+    ppc_args$yrep <- ppc_args$yrep[, take, drop = FALSE]
+    if (!is.null(ppc_args$group)) {
+      ppc_args$group <- ppc_args$group[take]
+    }
+    if (!is.null(ppc_args$x)) {
+      ppc_args$x <- ppc_args$x[take]
+    }
+    if (!is.null(ppc_args$psis_object)) {
+      # tidier to re-compute with subset
+      psis_args <- c(pred_args, criterion = "psis")
+      psis_args$newdata <- data[take, ]
+      ppc_args$psis_object <- do_call(compute_loo, psis_args)
+    }
+    if (!is.null(ppc_args$lw)) {
+      ppc_args$lw <- ppc_args$lw[,take]
     }
   }
+  
+  # most ... arguments are meant for the prediction function
+  for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
+  ppc_args <- c(ppc_args, dots[!for_pred])
+  
   do_call(ppc_fun, ppc_args)
 }

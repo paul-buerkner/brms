@@ -76,12 +76,27 @@ test_that("Survival model from brm doc works correctly", {
   me3 <- conditional_effects(fit3, method = "predict")
   expect_ggplot(plot(me3, ask = FALSE)[[2]])
   expect_range(LOO(fit3)$estimates[3, 1], 650, 740)
-
+  
+  # posterior checks of the censored model
+  expect_ggplot(SW(pp_check(
+    fit3, type = 'dens_overlay_grouped', group = 'sex', ndraws = 10
+  )))
+  expect_ggplot(SW(pp_check(
+    fit3, type = 'intervals', x = 'patient', ndraws = NULL
+  )))
+  expect_ggplot(SW(pp_check(fit3, type = 'loo_intervals', ndraws = NULL)))
+  expect_ggplot(SW(pp_check(fit3, type = 'loo_pit_overlay', ndraws = 10)))
+  
   # enables rstan specific functionality
   fit3 <- add_rstan_model(fit3)
   expect_range(LOO(fit3, moment_match = TRUE)$estimates[3, 1], 650, 740)
   bridge <- bridge_sampler(fit3)
   expect_true(is.numeric(bridge$logml))
+  
+  testthat::skip_if_not_installed("ggfortify")
+  expect_ggplot(SW(pp_check(
+    fit3, type = 'km_overlay', status_y = kidney$censored, ndraws = 10
+  )))
 })
 
 test_that("Binomial model from brm doc works correctly", {
