@@ -24,7 +24,8 @@ thanks to Urs Kalbitzer. (#1280)
 `projpred`'s K-fold CV. (#1286)
 * Fix response values in `make_standata` for `bernoulli` families
 when only 1s are present thanks to Facundo Munoz. (#1298)
-* Fix `pp_check` for censored responses to work for all plot types. (#1327) 
+* Fix `pp_check` for censored responses to work for all plot types
+thanks to Hayden Rabel. (#1327) 
 
 # brms 2.16.3
 
