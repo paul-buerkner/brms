@@ -759,7 +759,7 @@ add_rstan_model <- function(x, overwrite = FALSE) {
     message("Recompiling the model with 'rstan'")
     # threading is not yet supported by rstan and needs to be deactivated
     stanfit <- suppressMessages(rstan::stan(
-      model_code = stancode(x, threads = threading()),
+      model_code = stancode(x, threads = threading(), backend = "rstan"),
       data = standata(x), chains = 0
     ))
     x$fit@stanmodel <- stanfit@stanmodel
