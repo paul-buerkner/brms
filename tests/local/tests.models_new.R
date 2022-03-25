@@ -94,8 +94,10 @@ test_that("Survival model from brm doc works correctly", {
   expect_true(is.numeric(bridge$logml))
   
   testthat::skip_if_not_installed("ggfortify")
+  # TODO: automatically extract status_y within pp_check
   expect_ggplot(SW(pp_check(
-    fit3, type = 'km_overlay', status_y = kidney$censored, ndraws = 10
+    fit3, type = 'km_overlay', ndraws = 10,
+    status_y = 1 - kidney$censored
   )))
 })
 
