@@ -1235,8 +1235,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     }
   }
   # the remaining NAs are in coef priors which cannot have bounds yet
-  prior$lb[is.na(prior$lb)] <- ""
-  prior$ub[is.na(prior$ub)] <- ""
+  prior$lb[is.na(prior$lb)] <- prior$ub[is.na(prior$ub)] <- ""
   
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
@@ -1707,9 +1706,10 @@ convert_bounds2stan <- function(bounds, default = "") {
 # TODO: vectorize over a character vector of bounds?
 # complicated because of a mix of character and numeric values
 # to a named list with elements 'lb' and 'ub'
-convert_stan2bounds <- function(bound) {
+convert_stan2bounds <- function(bound, default = c(-Inf, Inf)) {
   bound <- as_one_character(bound)
-  out <- list(lb = -Inf, ub = Inf)
+  stopifnot(length(default) == 2L)
+  out <- list(lb = default[[1]], ub = default[[2]])
   if (!is.na(bound) && isTRUE(nzchar(bound))) {
     lb <- get_matches("(<|,)lower=[^,>]+", bound)
     if (isTRUE(nzchar(lb))) {

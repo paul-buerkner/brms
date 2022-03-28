@@ -2,7 +2,7 @@
 
 ### New Features
 
-* Add user control for boundaries of most parameters via 
+* Add full user control for boundaries of most parameters via 
 the `lb` and `ub` arguments of `set_prior` and related functions. 
 * Add family `logistic_normal` for simplex responses. (#1274)
 * Add argument `future_args` to `kfold` and `reloo` for additional
