@@ -1769,16 +1769,10 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
 prepare_print_prior <- function(x) {
   stopifnot(is.brmsprior(x))
   x$source[!nzchar(x$source)] <- "(unknown)"
-  # column names to vectorize over
+  # vectorize priors and bounds for pretty printing
   # TODO: improve efficiency of adding vectorization tags
-  cols <- c("group", "nlpar", "dpar", "resp", "class")
-  empty_strings <- rep("", 4)
   for (i in which(!nzchar(x$prior))) {
-    ls <- x[i, cols]
-    ls <- rbind(ls, c(empty_strings, ls$class))
-    ls <- as.list(ls)
-    sub_prior <- subset2(x, ls = ls)
-    base_prior <- stan_base_prior(sub_prior)
+    base_prior <- stan_base_prior(x, sel_prior = x[i, ])
     if (nzchar(base_prior)) {
       x$prior[i] <- base_prior
       x$source[i] <- "(vectorized)"
@@ -1786,7 +1780,11 @@ prepare_print_prior <- function(x) {
       x$prior[i] <- "(flat)"
     }
   }
-  # TODO: display vectorized printing of bounds
+  for (i in which(!nzchar(x$lb) & !nzchar(x$ub))) {
+    base_bounds <- stan_base_prior(x, c("lb", "ub"), sel_prior = x[i, ])
+    x$lb[i] <- base_bounds[, "lb"]
+    x$ub[i] <- base_bounds[, "ub"]
+  }
   x
 }
 
