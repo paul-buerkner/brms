@@ -273,13 +273,11 @@ stan_thres <- function(bterms, data, prior, normalize, ...) {
       for (i in seq_along(groups)) {
         str_add_list(out) <- stan_prior(
           prior, class = "Intercept", group = groups[i],
-          type = "real", prefix = "first_",
-          suffix = glue("{p}{gr[i]}"), px = px,
+          prefix = "first_", suffix = glue("{p}{gr[i]}"), px = px,
           comment = "first threshold", normalize = normalize
         )
         str_add_list(out) <- stan_prior(
-          prior, class = "delta", group = groups[i],
-          type = glue("real{bound}"), px = px, suffix = gr[i],
+          prior, class = "delta", group = groups[i], px = px, suffix = gr[i],
           comment = "distance between thresholds", normalize = normalize
         )
       }

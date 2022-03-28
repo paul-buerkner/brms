@@ -197,6 +197,33 @@ restructure_v2 <- function(x) {
     # non-unique variable names became apparent (#1218)
     x$fit <- repair_stanfit_names(x$fit)
   }
+  if (version < "2.16.12") {
+    # added full user control over parameter boundaries (#1324)
+    # explicit bounds need to be added to old priors as a result
+    x$prior$ub <- x$prior$lb <- NA
+    for (i in which(nzchar(x$prior$bound))) {
+      bounds <- convert_stan2bounds(x$prior$bound[i], default = c("", ""))
+      x$prior[i, c("lb", "ub")] <- bounds
+    }
+    x$prior$bound <- NULL
+    all_priors <- get_prior(x$formula, x$data, data2 = x$data2, internal = TRUE)
+    # checking for lb is sufficient because both bounds are NA at the same time
+    which_needs_bounds <- which(is.na(x$prior$lb) & !nzchar(x$prior$coef))
+    for (i in which_needs_bounds) {
+      # take the corresponding bounds from the default prior
+      prior_sub_i <- rbind(x$prior[i, ], all_priors)
+      prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
+      # should always have exactly one row but still check whether it has
+      # any rows at all to prevent things from breaking accidentally
+      if (NROW(prior_sub_i)) {
+        x$prior[i, c("lb", "ub")] <- prior_sub_i[1, c("lb", "ub")] 
+      } else {
+        x$prior[i, c("lb", "ub")] <- ""
+      }
+    }
+    x$prior$lb[is.na(x$prior$lb)] <- x$prior$ub[is.na(x$prior$ub)] <- ""
+    x$prior <- move2end(x$prior, "source")
+  }
   x
 }
 

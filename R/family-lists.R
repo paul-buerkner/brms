@@ -312,7 +312,8 @@
 .family_gen_extreme_value <- function() {
   list(
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
-    dpars = c("mu", "sigma", "xi"), type = "real",
+    dpars = c("mu", "sigma", "xi"), 
+    tmp_dpars = "xi", type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
     include = c("fun_gen_extreme_value.stan", "fun_scale_xi.stan"),
