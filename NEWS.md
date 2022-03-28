@@ -2,8 +2,8 @@
 
 ### New Features
 
-* Add full user control for boundaries of most parameters via 
-the `lb` and `ub` arguments of `set_prior` and related functions. 
+* Add full user control for boundaries of most parameters via the `lb` and 
+`ub` arguments of `set_prior` and related functions. (#878, #1094)
 * Add family `logistic_normal` for simplex responses. (#1274)
 * Add argument `future_args` to `kfold` and `reloo` for additional
 control over parallel execution via futures.
