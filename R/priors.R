@@ -981,6 +981,8 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     }
   }
   if (has_ac_class(acef, "cosy")) {
+    # cosy correlations may be negative in theory but
+    # this causes problems with divergent transitions (#878)
     prior <- prior + 
       brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
   }
