@@ -1206,32 +1206,42 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     prior <- prior[!invalid, ]
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
-  # merge user-specified priors with default priors
-  prior$new <- rep(TRUE, nrow(prior))
-  all_priors$new <- rep(FALSE, nrow(all_priors))
-  prior <- c(all_priors, prior)
   
   # include default parameter bounds; only new priors need bounds
-  # TODO: fill in defaults of both bounds if only one is given by the user?
   which_needs_lb <- which(is.na(prior$lb) & !nzchar(prior$coef))
   for (i in which_needs_lb) {
-    prior_sub_i <- prior[c(i, which(!prior$new)), ]
-    prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
-    stopifnot(NROW(prior_sub_i) == 1L)
-    prior$lb[i] <- prior_sub_i$lb
+    if (!is.na(prior$ub[i]) && nzchar(prior$ub[i])) {
+      # if ub is specified lb should be specified in the same line as well
+      prior$lb[i] <- stan_base_prior(all_priors, "lb", sel_prior = prior[i, ])
+    } else {
+      # take the corresponding lb from the default prior
+      prior_sub_i <- rbind(prior[i, ], all_priors)
+      prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
+      stopifnot(NROW(prior_sub_i) == 1L)
+      prior$lb[i] <- prior_sub_i$lb
+    }
   }
   which_needs_ub <- which(is.na(prior$ub) & !nzchar(prior$coef))
   for (i in which_needs_ub) {
-    prior_sub_i <- prior[c(i, which(!prior$new)), ]
-    prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
-    stopifnot(NROW(prior_sub_i) == 1L)
-    prior$ub[i] <- prior_sub_i$ub
+    if (!is.na(prior$lb[i]) && nzchar(prior$lb[i])) {
+      # if lb is specified ub should be specified in the same line as well
+      prior$ub[i] <- stan_base_prior(all_priors, "ub", sel_prior = prior[i, ])
+    } else {
+      # take the corresponding lb from the default prior
+      prior_sub_i <- rbind(prior[i, ], all_priors)
+      prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
+      stopifnot(NROW(prior_sub_i) == 1L)
+      prior$ub[i] <- prior_sub_i$ub
+    }
   }
+  # the remaining NAs are in coef priors which cannot have bounds yet
   prior$lb[is.na(prior$lb)] <- ""
   prior$ub[is.na(prior$ub)] <- ""
   
-  # remove now duplicated old priors
-  prior <- unique(prior, fromLast = TRUE)
+  # merge user-specified priors with default priors
+  prior$new <- rep(TRUE, nrow(prior))
+  all_priors$new <- rep(FALSE, nrow(all_priors))
+  prior <- c(all_priors, prior, replace = TRUE)
   check_prior_content(prior)
   
   # don't require priors on nlpars if some priors are not checked (#1124)
@@ -1296,19 +1306,18 @@ check_prior_content <- function(prior) {
     if (!nzchar(prior$prior[i]) || !prior$new[i]) {
       next
     }
-    # TODO: ensure that we always find the right base prior here
-    # msg_prior <- .print_prior(prior[i, , drop = FALSE])
-    # has_lb_prior <- grepl(lb_priors_regex, prior$prior[i])
-    # has_ulb_prior <- grepl(ulb_priors_regex, prior$prior[i])
-    # prior_sub <- subset2(prior, class = prior$class[i])
-    # has_lb <- nzchar(stan_base_prior(prior_sub, col = "lb"))
-    # has_ub <- nzchar(stan_base_prior(prior_sub, col = "ub"))
-    # if ((has_lb_prior || has_ulb_prior) && !has_lb) {
-    #   lb_warning <- paste0(lb_warning, msg_prior, "\n")
-    # }
-    # if (has_ulb_prior && !has_ub) {
-    #   ub_warning <- paste0(ub_warning, msg_prior, "\n")
-    # }
+    msg_prior <- .print_prior(prior[i, ])
+    has_lb_prior <- grepl(lb_priors_regex, prior$prior[i])
+    has_ulb_prior <- grepl(ulb_priors_regex, prior$prior[i])
+    base_bounds <- stan_base_prior(prior, c("lb", "ub"), sel_prior = prior[i, ])
+    has_lb <- nzchar(base_bounds[, "lb"])
+    has_ub <- nzchar(base_bounds[, "ub"])
+    if ((has_lb_prior || has_ulb_prior) && !has_lb) {
+      lb_warning <- paste0(lb_warning, msg_prior, "\n")
+    }
+    if (has_ulb_prior && !has_ub) {
+      ub_warning <- paste0(ub_warning, msg_prior, "\n")
+    }
     if (prior$class[i] %in% cormat_pars &&
         !grepl(cormat_regex, prior$prior[i])) {
       stop2(
@@ -1777,7 +1786,7 @@ prepare_print_prior <- function(x) {
       x$prior[i] <- "(flat)"
     }
   }
-  # TODO: vectorize printing of bounds
+  # TODO: display vectorized printing of bounds
   x
 }
 

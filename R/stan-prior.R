@@ -47,12 +47,12 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     # TODO: find a better solution to handle this case
     # can only happen for SD parameters of the same ID
     base_prior <- lb <- ub <- rep(NA, nrow(upx))
+    base_bounds <- data.frame(lb = lb, ub = ub)
     for (i in seq_rows(upx)) {
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx)
       base_prior[i] <- stan_base_prior(sub_prior)
-      lb[i] <- stan_base_prior(sub_prior, col = "lb")
-      ub[i] <- stan_base_prior(sub_prior, col = "ub")
+      base_bounds[i, ] <- stan_base_prior(sub_prior, col = c("lb", "ub"))
     }
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually
@@ -63,19 +63,17 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       prior$prior[take_coef_prior] <- base_prior[take_base_prior]
     }
     base_prior <- base_prior[1]
-    if (length(unique(lb)) > 1L || length(unique(ub)) > 1L) {
+    if (nrow(unique(base_bounds)) > 1L) {
       stop2("Conflicting boundary information for ", 
             "coefficients of class '", class, "'.")
     }
-    lb <- lb[1]
-    ub <- ub[1]
+    base_bounds <- base_bounds[1, ]
   } else {
     base_prior <- stan_base_prior(prior)
-    # TODO: select lb and ub separately or jointly?
-    lb <- stan_base_prior(prior, col = "lb")
-    ub <- stan_base_prior(prior, col = "ub")
+    # select both bounds together so that they come from the same base prior
+    base_bounds <- stan_base_prior(prior, col = c("lb", "ub"))
   }
-  bound <- convert_bounds2stan(nlist(lb, ub))
+  bound <- convert_bounds2stan(base_bounds)
 
   # generate stan prior statements
   out <- list()
@@ -208,30 +206,36 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   out
 }
 
-# get the base prior for all coefficients
-# this is the lowest level non-coefficient prior
+# extract base prior information for a given set of priors
+# the base prior is the lowest level, non-flat, non-coefficient prior
 # @param prior a brmsprior object
-# @return a character string defining the base prior
-stan_base_prior <- function(prior, col = "prior", ...) {
-  index <- stan_base_prior_index(prior, col = col, ...)
-  if (!length(index)) {
-    return("")
+# @param col columns for which base prior information is to be found
+# @param sel_prior optional brmsprior object to subset 'prior' before
+#   finding the base prior
+# @return the 'col' columns of the identified base prior
+stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
+  stopifnot(all(col %in% c("prior", "lb", "ub")))
+  if (!is.null(sel_prior)) {
+    # find the base prior using sel_prior for subsetting
+    stopifnot(is.brmsprior(sel_prior))
+    prior <- subset2(
+      prior, class = sel_prior$class, group = c(sel_prior$group, ""),
+      dpar = sel_prior$dpar, nlpar = sel_prior$nlpar, resp = sel_prior$resp,
+      ...
+    )
+  } else {
+    prior <- subset2(prior, ...)
   }
-  prior[index, col]
-}
-
-# get the base prior index for all coefficients
-# this is the lowest level non-coefficient prior
-# @param prior a brmsprior object
-# @return a single integer of integer(0) if no base prior can be found
-stan_base_prior_index <- function(prior, col = "prior", ...) {
-  prior <- subset2(prior, ...)
-  stopifnot(length(unique(prior$class)) <= 1, length(col) == 1L)
-  prior$index <- seq_rows(prior)
-  take <- !nzchar(prior$coef) & nzchar(prior[[col]])
+  stopifnot(length(unique(prior$class)) <= 1)
+  # take all rows with non-zero entries on any of the chosen columns
+  take <- !nzchar(prior$coef) & Reduce("|", lapply(prior[col], nzchar))
   prior <- prior[take, ]
   if (!NROW(prior)) {
-    return(integer(0))
+    if (length(col) == 1L) {
+      return("")
+    } else {
+      return(brmsprior()[, col])
+    }
   }
   vars <- c("group", "nlpar", "dpar", "resp", "class")
   for (v in vars) {
@@ -241,7 +245,7 @@ stan_base_prior_index <- function(prior, col = "prior", ...) {
     }
   }
   stopifnot(NROW(prior) == 1L)
-  prior$index
+  prior[, col]
 }
 
 # Stan prior in target += notation

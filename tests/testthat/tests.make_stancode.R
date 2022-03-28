@@ -16,26 +16,26 @@ test_that("specified priors appear in the Stan code", {
   prior <- c(prior(std_normal(), coef = x1),
              prior(normal(0,2), coef = x2),
              prior(normal(0,5), Intercept, lb = 0),
-             prior(cauchy(0,1), sd, group = g, lb = 1),
+             prior(cauchy(0,1), sd, group = g, lb = "", ub = 5),
              prior(cauchy(0,2), sd, group = g, coef = x1),
-             prior(gamma(1, 1), class = sd, group = h, lb = 0, ub = 10))
+             prior(gamma(1, 1), sd, group = h, ub = 10))
   scode <- make_stancode(y ~ x1*x2 + (x1*x2|g) + (1 | h), dat,
                          prior = prior, sample_prior = "yes")
-  expect_match2(scode, "vector<lower=1>[M_1] sd_1;")
+  expect_match2(scode, "vector<upper=5>[M_1] sd_1;")
   expect_match2(scode, "vector<lower=0,upper=10>[M_2] sd_2;")
   expect_match2(scode, "target += lprior;")
   expect_match2(scode, "lprior += std_normal_lpdf(b[1])")
   expect_match2(scode, "lprior += normal_lpdf(b[2] | 0, 2)")
   expect_match2(scode, "lprior += normal_lpdf(Intercept | 0, 5)")
   expect_match2(scode, "lprior += cauchy_lpdf(sd_1[1] | 0, 1)")
-  expect_match2(scode, "- 1 * cauchy_lccdf(1 | 0, 1)")
+  expect_match2(scode, "- 1 * cauchy_lcdf(5 | 0, 1)")
   expect_match2(scode, "lprior += cauchy_lpdf(sd_1[2] | 0, 2)")
   expect_match2(scode, "lprior += student_t_lpdf(sigma | 3, 0, 3.7)")
   expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 3.7)")
   expect_match2(scode, "lprior += gamma_lpdf(sd_2 | 1, 1)")
   expect_match2(scode, "prior_b__1 = normal_rng(0,1);")
   expect_match2(scode, "prior_sd_1__1 = cauchy_rng(0,1)")
-  expect_match2(scode, "while (prior_sd_1__1 < 1)")
+  expect_match2(scode, "while (prior_sd_1__1 > 5)")
   expect_match2(scode, "prior_sd_2 = gamma_rng(1,1)")
   expect_match2(scode, "while (prior_sd_2 < 0 || prior_sd_2 > 10)")
 
@@ -111,12 +111,12 @@ test_that("specified priors appear in the Stan code", {
   expect_true(!grepl("sigma \\|", scode))
 
   # commented out until fixes implemented in 'check_prior_content'
-  # prior <- prior(gamma(0, 1), coef = x1)
-  # expect_warning(make_stancode(y ~ x1, dat, prior = prior),
-  #                "no natural lower bound")
-  # prior <- prior(uniform(0,5), class = sd)
-  # expect_warning(make_stancode(y ~ x1 + (1|g), dat, prior = prior),
-  #                 "no natural upper bound")
+  prior <- prior(gamma(0, 1), coef = x1)
+  expect_warning(make_stancode(y ~ x1, dat, prior = prior),
+                 "no natural lower bound")
+  prior <- prior(uniform(0,5), class = sd)
+  expect_warning(make_stancode(y ~ x1 + (1|g), dat, prior = prior),
+                  "no natural upper bound")
   
   prior <- prior(uniform(-1, 1), class = cor)
   expect_error(
@@ -1461,8 +1461,10 @@ test_that("predicting zi and hu works correctly", {
   expect_true(!grepl("inv_logit\\(", scode))
 
   fam <- zero_inflated_binomial("probit", link_zi = "identity")
-  scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy,
-                         family = fam)
+  scode <- make_stancode(
+    bf(count ~ Trt, zi ~ Trt), epilepsy, family = fam, 
+    prior = prior("", class = Intercept, dpar = zi, lb = 0, ub = 1)
+  )
   expect_match2(scode,
     "target += zero_inflated_binomial_lpmf(Y[n] | trials[n], mu[n], zi[n])"
   )
@@ -1473,9 +1475,11 @@ test_that("predicting zi and hu works correctly", {
   expect_match2(scode,
                 "target += zero_inflated_beta_binomial_blogit_logit_lpmf(Y[n] | trials[n], mu[n], phi, zi[n])")
   expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
-  scode <-
-    make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy,
-                  zero_inflated_beta_binomial("probit", link_zi = "identity"))
+  scode <- make_stancode(
+    bf(count ~ Trt, zi ~ Trt), epilepsy,
+    zero_inflated_beta_binomial("probit", link_zi = "identity"),
+    prior = prior("", class = Intercept, dpar = zi, lb = 0, ub = 1)
+  )
   expect_match2(scode,
                 "target += zero_inflated_beta_binomial_lpmf(Y[n] | trials[n], mu[n], phi, zi[n])")
   expect_match2(scode, "mu[n] = Phi(mu[n]);")
@@ -1506,7 +1510,8 @@ test_that("predicting zi and hu works correctly", {
 
   scode <- make_stancode(
     bf(count ~ Trt, hu ~ Trt), epilepsy,
-    family = hurdle_gamma(link_hu = "identity")
+    family = hurdle_gamma(link_hu = "identity"),
+    prior = prior("", class = Intercept, dpar = hu, lb = 0, ub = 1)
   )
   expect_match2(scode, "target += hurdle_gamma_lpdf(Y[n] | shape, mu[n], hu[n])")
   expect_true(!grepl("inv_logit\\(", scode))
