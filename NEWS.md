@@ -15,6 +15,7 @@ zero-inflated binomial response models thanks to Hayden Rabel. (#1311)
 * Argument `brms_seed` has been added to `get_refmodel.brmsfit()`. (#1287)
 * Deprecate argument `inits` in favor of `init` for consistency
 with the Stan backends.
+* Improve speed of the `summary` method for high-dimensional models. (#1330)
 
 ### Bug Fixes
 
