@@ -42,7 +42,7 @@ $\Gamma$ denotes the gamma function and $\nu > 1$ are the degrees of freedom. As
 $\nu \rightarrow \infty$, the student distribution becomes the gaussian
 distribution. The density of the **skew_normal** family is given by
 $$
-f(y) = \frac{1}{\sqrt{2\pi}\sigma}
+f(y) = \frac{1}{\sqrt{2\pi}\omega}
  \exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right)
 \left(1 + \text{erf} \left( \alpha \left(\frac{y - \xi}{\omega \sqrt{2}} \right) \right) \right)
 $$
