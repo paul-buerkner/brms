@@ -1295,7 +1295,7 @@ check_prior_content <- function(prior) {
     "pareto", "pareto_type_2"
   )
   lb_priors_regex <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
-  ulb_priors <- c("beta", "uniform", "von_mises")
+  ulb_priors <- c("beta", "uniform", "von_mises", "beta_proportion")
   ulb_priors_regex <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
   cormat_pars <- c("cor", "L", "rescor", "Lrescor", "corme", "Lme", "lncor", "Llncor")
   cormat_regex <- "^((lkj)|(constant))"
