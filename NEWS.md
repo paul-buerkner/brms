@@ -30,6 +30,9 @@ thanks to Urs Kalbitzer. (#1280)
 when only 1s are present thanks to Facundo Munoz. (#1298)
 * Fix `pp_check` for censored responses to work for all plot types
 thanks to Hayden Rabel. (#1327) 
+* Ensure that argument `overwrite` in `add_criterion` works as expected 
+for all criteria thanks to Andrew Milne. (#1323)
+
 
 # brms 2.16.3
 
