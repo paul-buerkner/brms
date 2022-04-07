@@ -9,12 +9,13 @@
   object,
   type,
   ndraws = NULL,
-  nsamples = NULL,
+  prefix = c("ppc", "ppd"),
   group = NULL,
   x = NULL,
   newdata = NULL,
   resp = NULL,
   draw_ids = NULL,
+  nsamples = NULL,
   subset = NULL,
   ...
 )
@@ -34,7 +35,10 @@ If \code{NULL} all draws are used. If not specified,
 the number of posterior draws is chosen automatically.
 Ignored if \code{draw_ids} is not \code{NULL}.}
 
-\item{nsamples}{Deprecated alias of \code{ndraws}.}
+\item{prefix}{The prefix of the \pkg{bayesplot} function to be applied. 
+Either `"ppc"` (posterior predictive check; the default)
+or `"ppd"` (posterior predictive distribution), the latter being the same
+as the former except that the observed data is not shown for `"ppd"`.}
 
 \item{group}{Optional name of a factor variable in the model
 by which to stratify the ppc plot. This argument is required for
@@ -55,6 +59,8 @@ are performed only for the specified response variables.}
 
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
 
 \item{subset}{Deprecated alias of \code{draw_ids}.}
 

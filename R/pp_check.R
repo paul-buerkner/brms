@@ -16,6 +16,10 @@
 #'  If \code{NULL} all draws are used. If not specified,
 #'  the number of posterior draws is chosen automatically.
 #'  Ignored if \code{draw_ids} is not \code{NULL}.
+#' @param prefix The prefix of the \pkg{bayesplot} function to be applied. 
+#'  Either `"ppc"` (posterior predictive check; the default)
+#'  or `"ppd"` (posterior predictive distribution), the latter being the same
+#'  as the former except that the observed data is not shown for `"ppd"`.
 #' @param group Optional name of a factor variable in the model
 #'  by which to stratify the ppc plot. This argument is required for
 #'  ppc \code{*_grouped} types and ignored otherwise.
@@ -54,14 +58,15 @@
 #' @importFrom bayesplot pp_check
 #' @export pp_check
 #' @export
-pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
-                             group = NULL, x = NULL, newdata = NULL,
-                             resp = NULL, draw_ids = NULL, subset = NULL, ...) {
+pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd"),
+                             group = NULL, x = NULL, newdata = NULL, resp = NULL, 
+                             draw_ids = NULL, nsamples = NULL, subset = NULL, ...) {
   dots <- list(...)
   if (missing(type)) {
     type <- "dens_overlay"
   }
   type <- as_one_character(type)
+  prefix <- match.arg(prefix)
   if (!is.null(group)) {
     group <- as_one_character(group)
   }
@@ -72,13 +77,16 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
   ndraws <- use_alias(ndraws, nsamples)
   draw_ids <- use_alias(draw_ids, subset)
   resp <- validate_resp(resp, object, multiple = FALSE)
-  valid_types <- as.character(bayesplot::available_ppc(""))
-  valid_types <- sub("^ppc_", "", valid_types)
-  if (!type %in% valid_types) {
-    stop2("Type '", type, "' is not a valid ppc type. ",
-          "Valid types are:\n", collapse_comma(valid_types))
+  if (prefix == "ppc") {
+    # no type checking for prefix 'ppd' yet
+    valid_types <- as.character(bayesplot::available_ppc(""))
+    valid_types <- sub("^ppc_", "", valid_types)
+    if (!type %in% valid_types) {
+      stop2("Type '", type, "' is not a valid ppc type. ",
+            "Valid types are:\n", collapse_comma(valid_types))
+    }
   }
-  ppc_fun <- get(paste0("ppc_", type), asNamespace("bayesplot"))
+  ppc_fun <- get(paste0(prefix, "_", type), asNamespace("bayesplot"))
 
   object <- restructure(object)
   stopifnot_resp(object, resp)
@@ -131,7 +139,11 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
     }
   }
 
-  y <- get_y(object, resp = resp, newdata = newdata, ...)
+  y <- NULL
+  if (prefix == "ppc") {
+    # y is ignored in prefix 'ppd' plots
+    y <- get_y(object, resp = resp, newdata = newdata, ...) 
+  }
   draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- list(
     object, newdata = newdata, resp = resp,
@@ -152,7 +164,13 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
   )
   
   # prepare plotting arguments
-  ppc_args <- nlist(y, yrep)
+  ppc_args <- list()
+  if (prefix == "ppc") {
+    ppc_args$y <- y
+    ppc_args$yrep <- yrep
+  } else if (prefix == "ppd") {
+    ppc_args$ypred <- yrep
+  }
   if (!is.null(group)) {
     ppc_args$group <- data[[group]]
   }
