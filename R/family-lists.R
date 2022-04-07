@@ -50,8 +50,8 @@
 .family_binomial <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
@@ -63,8 +63,8 @@
 .family_bernoulli <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu"), type = "int",
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
@@ -102,8 +102,8 @@
 .family_beta <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi"), type = "real",
     ybounds = c(0, 1), closed = c(FALSE, FALSE),
@@ -499,8 +499,8 @@
 .family_zero_inflated_binomial <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
@@ -514,8 +514,8 @@
 .family_zero_inflated_beta_binomial <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi", "zi"),
     type = "int",
@@ -531,8 +531,8 @@
 .family_zero_inflated_beta <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi", "zi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
@@ -546,8 +546,8 @@
 .family_zero_one_inflated_beta <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit", "identity"
+      "logit", "probit", "probit_approx", "cloglog", 
+      "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi", "zoi", "coi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, TRUE),

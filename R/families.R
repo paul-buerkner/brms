@@ -132,7 +132,7 @@
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 #'   \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} support
 #'   \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
-#'   \code{cauchit}, and \code{identity}.}
+#'   \code{cauchit}, \code{identity}, and \code{log}.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
 #'   and \code{acat} support \code{logit}, \code{probit},

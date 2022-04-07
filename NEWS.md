@@ -9,6 +9,7 @@
 control over parallel execution via futures.
 * Add family `zero_inflated_beta_binomial` for potentially over-dispersed and
 zero-inflated binomial response models thanks to Hayden Rabel. (#1311)
+* Support the `log` link in binomial and beta type families. (#1316)
 
 ### Other changes
 
