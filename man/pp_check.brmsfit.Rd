@@ -96,6 +96,9 @@ pp_check(fit, type = "loo_pit")
 
 ## get an overview of all valid types
 pp_check(fit, type = "xyz")
+
+## get a plot without the observed data
+pp_check(fit, prefix = "ppd")
 }
 
 }
