@@ -33,6 +33,8 @@ when only 1s are present thanks to Facundo Munoz. (#1298)
 thanks to Hayden Rabel. (#1327) 
 * Ensure that argument `overwrite` in `add_criterion` works as expected 
 for all criteria thanks to Andrew Milne. (#1323)
+* Fix a problem in `launch_shinystan` occurring when warmup draws 
+were saved thanks to Frank Weber. (#1257, #1329)
 
 
 # brms 2.16.3
