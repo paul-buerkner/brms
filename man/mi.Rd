@@ -17,6 +17,8 @@ applications that I haven't thought of.}
 \description{
 Specify predictor term with missing values in \pkg{brms}. The function does
 not evaluate its arguments -- it exists purely to help set up a model.
+For documentation on how to specify missing values in response variables,
+see \code{\link{resp_mi}}.
 }
 \details{
 For detailed documentation see \code{help(brmsformula)}.

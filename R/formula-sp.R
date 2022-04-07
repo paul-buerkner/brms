@@ -66,6 +66,8 @@ me <- function(x, sdx, gr = NULL) {
 #'
 #' Specify predictor term with missing values in \pkg{brms}. The function does
 #' not evaluate its arguments -- it exists purely to help set up a model.
+#' For documentation on how to specify missing values in response variables,
+#' see \code{\link{resp_mi}}.
 #'
 #' @param x The variable containing missing values.
 #' @param idx An optional variable containing indices of observations in `x`
