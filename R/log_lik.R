@@ -434,6 +434,16 @@ log_lik_bernoulli <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_beta_binomial <- function(i, prep) {
+  trials <- prep$data$trials[i]
+  mu <- get_dpar(prep, "mu", i)
+  phi <- get_dpar(prep, "phi", i)
+  args <- nlist(size = trials, mu, phi)
+  out <- log_lik_censor("beta_binomial", args, i, prep)
+  out <- log_lik_truncate(out, pbeta_binomial, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_poisson <- function(i, prep) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)

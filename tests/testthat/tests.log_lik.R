@@ -184,7 +184,8 @@ test_that("log_lik for count and survival models works correctly", {
   prep$dpars <- list(
     eta = matrix(rnorm(ns*nobs), ncol = nobs),
     shape = rgamma(ns, 4),
-    xi = runif(ns, -1, 0.5)
+    xi = runif(ns, -1, 0.5),
+    phi = rgamma(ns, 1)
   )
   prep$dpars$sigma <- 1 / prep$dpars$shape
   prep$dpars$nu <- prep$dpars$shape + 1
@@ -201,7 +202,14 @@ test_that("log_lik for count and survival models works correctly", {
   )
   ll <- brms:::log_lik_binomial(i, prep = prep)
   expect_equal(ll, ll_binom)
-
+  
+  ll_beta_binom <- dbeta_binomial(
+    x = prep$data$Y[i], size = prep$data$trials[i],
+    mu = prep$dpars$mu[, i], phi = prep$dpars$phi, log = TRUE
+  )
+  ll <- brms:::log_lik_beta_binomial(i, prep = prep)
+  expect_equal(ll, ll_beta_binom)
+  
   # don't test the actual values as they will be -Inf for this data
   ll <- brms:::log_lik_discrete_weibull(i, prep = prep)
   expect_equal(length(ll), ns)

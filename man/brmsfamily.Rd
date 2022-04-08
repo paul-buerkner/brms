@@ -4,6 +4,7 @@
 \alias{brmsfamily}
 \alias{student}
 \alias{bernoulli}
+\alias{beta_binomial}
 \alias{negbinomial}
 \alias{geometric}
 \alias{lognormal}
@@ -67,6 +68,8 @@ brmsfamily(
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
 bernoulli(link = "logit")
+
+beta_binomial(link = "logit", link_phi = "log")
 
 negbinomial(link = "log", link_shape = "log")
 
@@ -152,8 +155,8 @@ acat(link = "logit", link_disc = "log", threshold = "flexible")
 \item{family}{A character string naming the distribution of the response
 variable be used in the model. Currently, the following families are
 supported: \code{gaussian}, \code{student}, \code{binomial},
-\code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
-\code{Gamma}, \code{skew_normal}, \code{lognormal},
+\code{bernoulli}, \code{beta-binomial}, \code{poisson}, \code{negbinomial},
+\code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
 \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
@@ -244,8 +247,9 @@ Below, we list common use cases for the different families.
   \item{Families \code{poisson}, \code{negbinomial}, and \code{geometric}
   can be used for regression of unbounded count data.}
 
-  \item{Families \code{bernoulli} and \code{binomial} can be used for
-  binary regression (i.e., most commonly logistic regression).}
+  \item{Families \code{bernoulli}, \code{binomial}, and \code{beta_binomial}
+  can be used for binary regression (i.e., most commonly logistic
+  regression).}
 
   \item{Families \code{categorical} and \code{multinomial} can be used for
   multi-logistic regression when there are more than two possible outcomes.}
@@ -299,10 +303,10 @@ Below, we list common use cases for the different families.
   \code{hurdle_poisson}, and \code{hurdle_negbinomial} support
   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 
-  \item{Families \code{binomial}, \code{bernoulli}, \code{Beta},
-  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
-  \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} support
-  \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
+  \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
+  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial}, 
+  \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
+  support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog}, 
   \code{cauchit}, \code{identity}, and \code{log}.}
 
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},

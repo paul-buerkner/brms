@@ -60,6 +60,18 @@
   )
 }
 
+.family_beta_binomial <- function() {
+  list(
+    links = c(
+      "logit", "probit", "probit_approx",
+      "cloglog", "cauchit", "softit", "identity"
+    ),
+    dpars = c("mu", "phi"), type = "int",
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "trials", "cens", "trunc", "index")
+  )
+}
+
 .family_bernoulli <- function() {
   list(
     links = c(

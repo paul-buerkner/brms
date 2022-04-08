@@ -68,6 +68,10 @@ test_that("posterior_epred helper functions run without errors", {
   fit$autocor <- brms:::cor_empty()
   fit$family <- fit$formula$family <- binomial()
   expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
+  
+  # pseudo beta-binomial model
+  fit$family <- fit$formula$family <- beta_binomial()
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
 
   # pseudo zero inflated binomial model
   fit$family <- fit$formula$family <- zero_inflated_binomial()

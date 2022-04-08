@@ -44,6 +44,11 @@ test_that("family functions returns expected results", {
   expect_error(weibull(link_shape = c("log", "logit")),
                "Cannot coerce 'alink' to a single character value")
 
+  expect_equal(beta_binomial()$link, "logit")
+  expect_equal(beta_binomial('probit')$link, "probit")
+  expect_equal(beta_binomial()$link_phi, "log")
+  expect_error(beta_binomial('log'))
+  expect_error(beta_binomial(link_phi = 'logit'))
   expect_equal(zero_inflated_beta_binomial()$link, "logit")
   expect_equal(zero_inflated_beta_binomial('probit')$link, "probit")
   expect_equal(zero_inflated_beta_binomial()$link_phi, "log")

@@ -576,6 +576,18 @@ stan_log_lik_binomial <- function(bterms, resp = "", mix = "", threads = NULL,
   sdist(lpdf, p$trials, p$mu)
 }
 
+stan_log_lik_beta_binomial <- function(bterms, resp = "", mix = "", 
+                                       threads = NULL, ...) {
+  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
+  n <- stan_nn(threads)
+  sdist(
+    "beta_binomial", 
+    paste0("trials", resp, n), 
+    paste0(p$mu, " * ", p$phi),
+    paste0("(1 - ", p$mu, ") * ", p$phi)
+  )
+}
+
 stan_log_lik_bernoulli <- function(bterms, resp = "", mix = "", threads = NULL,
                                    ...) {
   if (use_glm_primitive(bterms)) {
@@ -845,7 +857,6 @@ stan_log_lik_zero_inflated_beta_binomial <- function(bterms, resp = "",
   n <- stan_nn(threads)
   p$trials <- paste0("trials", resp, n)
   lpdf <- "zero_inflated_beta_binomial"
-  lpdf <- stan_log_lik_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("zi", bterms))
   sdist(lpdf, p$trials, p$mu, p$phi, p$zi)
 }
