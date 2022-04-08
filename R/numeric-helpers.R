@@ -133,7 +133,7 @@ log1p_exp <- function(x) {
 }
 
 log1m_exp <- function(x) {
-  ifelse(x < 0, log(1 - exp(x)), NaN)
+  ifelse(x < 0, log1p(-exp(x)), NaN)
 }
 
 log_diff_exp <- function(x, y) {
@@ -211,4 +211,16 @@ softit <- function(x) {
 inv_softit <- function(x) {
   y <- log1p_exp(x)
   y / (1 + y)
+}
+
+# inspired by inv_logit but with softplus instead of exp
+log_inv_softit <- function(x) {
+  y <- log1p_exp(x)
+  log(y) - log1p(y)
+}
+
+# inspired by inv_logit but with softplus instead of exp
+log1m_inv_softit <- function(x) {
+  y <- log1p_exp(x)
+  -log1p(y)
 }

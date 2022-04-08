@@ -68,6 +68,36 @@ inv_link <- function(x, link) {
   )
 }
 
+# log CDF for unit interval link functions
+# @param x an array of arbitrary dimension
+# @param link a character string defining the link
+log_cdf <- function(x, link) {
+  switch(link,
+    logit = log_inv_logit(x),
+    probit = pnorm(x, log.p = TRUE),
+    cauchit = pcauchy(x, log.p = TRUE),
+    cloglog = log1m_exp(-exp(x)),
+    probit_approx = pnorm(x, log.p = TRUE),
+    softit = log_inv_softit(x),
+    stop2("Link '", link, "' is not supported.")
+  )
+}
+
+# log CCDF for unit interval link functions
+# @param x an array of arbitrary dimension
+# @param link a character string defining the link
+log_ccdf <- function(x, link) {
+  switch(link,
+    logit = log1m_inv_logit(x),
+    probit = pnorm(x, log.p = TRUE, lower.tail = FALSE),
+    cauchit = pcauchy(x, log.p = TRUE, lower.tail = FALSE),
+    cloglog = -exp(x),
+    probit_approx = pnorm(x, log.p = TRUE, lower.tail = FALSE),
+    softit = log1m_inv_softit(x),
+    stop2("Link '", link, "' is not supported.")
+  )
+}
+
 # validate integers indicating which draws to subset
 validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
   ndraws_total <- ndraws(x)

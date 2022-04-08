@@ -550,6 +550,7 @@ stan_ordinal_lpmf <- function(family, link) {
       )
     }
   } else if (family %in% c("sratio", "cratio")) {
+    # TODO: support 'softit' link as well
     if (inv_link == "inv_cloglog") {
       qk <- str_if(
         family == "sratio",
@@ -620,7 +621,7 @@ stan_ordinal_lpmf <- function(family, link) {
         "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
         "       for (kk in k:(nthres)) p[k] = p[k] * (1 - q[kk]);\n",
         "     }}\n",
-        "     return log(p[y] / sum(p));\n",
+        "     return log(p[y]) - log(sum(p));\n",
         "   }}\n"
       )
     }

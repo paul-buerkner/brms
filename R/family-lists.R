@@ -386,7 +386,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit"
+      "cloglog", "cauchit"  # , "softit"
     ),
     dpars = c("mu", "disc"), type = "int",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -400,7 +400,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit", "softit"
+      "cloglog", "cauchit"  # , "softit"
     ),
     dpars = c("mu", "disc"), type = "int",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
