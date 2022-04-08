@@ -137,15 +137,15 @@ overdispersion via the parameter $\phi$.
 
 ## Fitting Custom Family Models
 
-The beta-binomial distribution is not natively supported in **brms** and so we
-will have to define it ourselves using the `custom_family` function. This
-function requires the family's name, the names of its parameters (`mu` and `phi`
-in our case), corresponding link functions (only applied if parameters are
-predicted), their theoretical lower and upper bounds (only applied if parameters
-are not predicted), information on whether the distribution is discrete or
-continuous, and finally, whether additional non-parameter variables need to be
-passed to the distribution. For our beta-binomial example, this results in the
-following custom family:
+The beta-binomial distribution is natively supported in **brms** nowadays, but
+we will still use it as an example to define it ourselves via the
+`custom_family` function. This function requires the family's name, the names of
+its parameters (`mu` and `phi` in our case), corresponding link functions (only
+applied if parameters are predicted), their theoretical lower and upper bounds
+(only applied if parameters are not predicted), information on whether the
+distribution is discrete or continuous, and finally, whether additional
+non-parameter variables need to be passed to the distribution. For our
+beta-binomial example, this results in the following custom family:
 
 ```{r beta_binomial2}
 beta_binomial2 <- custom_family(
