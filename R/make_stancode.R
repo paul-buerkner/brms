@@ -367,7 +367,7 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
     if ("backend" %in% names(cl)) {
       backend <- match.arg(backend, backend_choices())
       # older Stan versions do not support array syntax
-      if (require_old_stan_syntax(object, "2.29.0")) {
+      if (require_old_stan_syntax(object, backend, "2.29.0")) {
         regenerate <- TRUE
       }
       object$backend <- backend
@@ -447,7 +447,7 @@ normalize_stancode <- function(x) {
 
 # check if the currently installed Stan version requires older syntax 
 # than the Stan version with which the model was initially fitted
-require_old_stan_syntax <- function(object, version) {
+require_old_stan_syntax <- function(object, backend, version) {
   stopifnot(is.brmsfit(object))
   isTRUE(
     (object$backend == "rstan" && object$version$rstan >= version ||
@@ -456,4 +456,3 @@ require_old_stan_syntax <- function(object, version) {
          backend == "cmdstanr" && cmdstanr::cmdstan_version() < version)
   )
 }
-
