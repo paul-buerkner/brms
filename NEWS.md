@@ -1,4 +1,4 @@
-# brms 2.16.3++
+# brms 2.17.0
 
 ### New Features
 
@@ -35,6 +35,7 @@ thanks to Hayden Rabel. (#1327)
 for all criteria thanks to Andrew Milne. (#1323)
 * Fix a problem in `launch_shinystan` occurring when warmup draws 
 were saved thanks to Frank Weber. (#1257, #1329)
+* Fix numerical stability problems in `log_lik` for ordinal models. (#1192)
 
 
 # brms 2.16.3
