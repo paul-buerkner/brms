@@ -73,7 +73,7 @@ model_poisson <- brm(
 ## ---- benchmark, include=FALSE----------------------------------------------------------
 # Benchmarks given model with cross-product of tuning parameters CPU
 # cores, grainsize and iterations. Models are run with either static
-# or non-static scheduler and inits is set by default to 0 on the
+# or non-static scheduler and initial values are set by default to 0 on the
 # unconstrained scale. Function returns a data-frame with the
 # cross-product of the tuning parameters and as result column the
 # respective runtime.
@@ -93,7 +93,7 @@ benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100,
     run_benchmark <- function(cores, size, iter) {
         bench_fit <- update(
             scaling_model, warmup=0, iter = iter,
-            chains = 1, seed = 1234, inits = init, refresh = 0, save_warmup=TRUE,
+            chains = 1, seed = 1234, init = init, refresh = 0, save_warmup=TRUE,
             threads = threading(cores, grainsize = size, static = static),
             inv_metric=winfo$inv_metric[[1]],
             step_size=winfo$step_size[[1]],
@@ -110,7 +110,7 @@ benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100,
     cbind(cases, as.data.frame(t(res)))
 }
 
-benchmark_reference <- function(model, iter=100, inits=0) {
+benchmark_reference <- function(model, iter=100, init=0) {
     winfo <- extract_warmup_info(model)
     sims  <- rstan::extract(model$fit)
     init <- list(extract_draw(sims, 1))
@@ -124,7 +124,7 @@ benchmark_reference <- function(model, iter=100, inits=0) {
     run_benchmark_ref <- function(iter_bench) {
         bench_fit <- update(
             ref_model, warmup=0, iter = iter_bench,
-            chains = 1, seed = 1234, inits = init, refresh = 0,
+            chains = 1, seed = 1234, init = init, refresh = 0,
             inv_metric=winfo$inv_metric[[1]],
             step_size=winfo$step_size[[1]],
             adapt_engaged=FALSE
@@ -305,30 +305,30 @@ kable(scaling_cores, digits = 2)
 #  P <- 3
 #  # regression coefficients
 #  beta <- rnorm(P)
-#
+#  
 #  # sampled covariates, group means and fake data
 #  fake <- matrix(rnorm(N * P), ncol = P)
 #  dimnames(fake) <- list(NULL, paste0("x", 1:P))
-#
+#  
 #  # fixed effect part and sampled group membership
 #  fake <- transform(
 #    as.data.frame(fake),
 #    theta = fake %*% beta,
 #    g = sample.int(G, N, replace=TRUE)
 #  )
-#
+#  
 #  # add random intercept by group
 #  fake  <- merge(fake, data.frame(g = 1:G, eta = rnorm(G)), by = "g")
-#
+#  
 #  # linear predictor
 #  fake  <- transform(fake, mu = theta + eta)
-#
+#  
 #  # sample Poisson data
 #  fake  <- transform(fake, y = rpois(N, exp(mu)))
-#
+#  
 #  # shuffle order of data rows to ensure even distribution of computational effort
 #  fake <- fake[sample.int(N, N),]
-#
+#  
 #  # drop not needed row names
 #  rownames(fake) <- NULL
 
@@ -348,27 +348,27 @@ kable(scaling_cores, digits = 2)
 ## ---- eval=FALSE------------------------------------------------------------------------
 #  # Benchmarks given model with cross-product of tuning parameters CPU
 #  # cores, grainsize and iterations. Models are run with either static
-#  # or non-static scheduler and inits is set by default to 0 on the
+#  # or non-static scheduler and initial values are set by default to 0 on the
 #  # unconstrained scale. Function returns a data-frame with the
 #  # cross-product of the tuning parameters and as result column the
 #  # respective runtime.
 #  benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100,
 #                                  static = FALSE) {
-#
+#  
 #      winfo <- extract_warmup_info(model)
 #      sims  <- rstan::extract(model$fit)
 #      init <- list(extract_draw(sims, 1))
-#
+#  
 #      scaling_model <- update(
 #          model, refresh = 0,
 #          threads = threading(1, grainsize = grainsize[1], static = static),
 #          chains = 1, iter = 2, backend = "cmdstanr"
 #      )
-#
+#  
 #      run_benchmark <- function(cores, size, iter) {
 #          bench_fit <- update(
 #              scaling_model, warmup=0, iter = iter,
-#              chains = 1, seed = 1234, inits = init, refresh = 0, save_warmup=TRUE,
+#              chains = 1, seed = 1234, init = init, refresh = 0, save_warmup=TRUE,
 #              threads = threading(cores, grainsize = size, static = static),
 #              inv_metric=winfo$inv_metric[[1]],
 #              step_size=winfo$step_size[[1]],
@@ -376,72 +376,72 @@ kable(scaling_cores, digits = 2)
 #          )
 #          lf <- sum(subset(nuts_params(bench_fit, inc_warmup=TRUE), Parameter=="n_leapfrog__")$Value)
 #          elapsed <- sum(colSums(rstan::get_elapsed_time(bench_fit$fit)))
-#
+#  
 #          c(num_leapfrog=lf, runtime=elapsed)
 #      }
-#
+#  
 #      cases <- expand.grid(cores = cores, grainsize = grainsize, iter = iter)
 #      res <- with(cases, mapply(run_benchmark, cores, grainsize, iter))
 #      cbind(cases, as.data.frame(t(res)))
 #  }
-#
-#  benchmark_reference <- function(model, iter=100, inits=0) {
+#  
+#  benchmark_reference <- function(model, iter=100, init=0) {
 #      winfo <- extract_warmup_info(model)
 #      sims  <- rstan::extract(model$fit)
 #      init <- list(extract_draw(sims, 1))
-#
+#  
 #      ref_model <- update(
 #          model, refresh = 0,
 #          threads = NULL,
 #          chains = 1, iter = 2, backend = "cmdstanr"
 #      )
-#
+#  
 #      run_benchmark_ref <- function(iter_bench) {
 #          bench_fit <- update(
 #              ref_model, warmup=0, iter = iter_bench,
-#              chains = 1, seed = 1234, inits = init, refresh = 0,
+#              chains = 1, seed = 1234, init = init, refresh = 0,
 #              inv_metric=winfo$inv_metric[[1]],
 #              step_size=winfo$step_size[[1]],
 #              adapt_engaged=FALSE
 #          )
-#
+#  
 #          lf <- sum(subset(nuts_params(bench_fit, inc_warmup=TRUE), Parameter=="n_leapfrog__")$Value)
 #          elapsed <- sum(colSums(rstan::get_elapsed_time(bench_fit$fit)))
-#
+#  
 #          c(num_leapfrog=lf, runtime=elapsed)
 #      }
-#
+#  
 #      ref <- sapply(iter, run_benchmark_ref)
 #      ref <- cbind(as.data.frame(t(ref)), iter=iter)
 #      ref
 #  }
-#
+#  
 #  extract_warmup_info <- function(bfit) {
 #      adapt  <- lapply(rstan::get_adaptation_info(bfit$fit), strsplit, split="\\n")
 #      step_size  <- lapply(adapt, function(a) as.numeric(strsplit(a[[1]][[1]], " = ")[[1]][2]))
 #      inv_metric <- lapply(adapt, function(a) as.numeric(strsplit(sub("^# ", "", a[[1]][[3]]), ", ")[[1]]))
 #      list(step_size=step_size, inv_metric=inv_metric)
 #  }
-#
+#  
 #  extract_draw <- function(sims, draw) lapply(sims, abind::asub, idx=draw, dim=1, drop=FALSE)
-#
+#  
 
 ## ---- eval=FALSE------------------------------------------------------------------------
 #  scaling_chunking <- merge(scaling_chunking, chunking_bench, by = "grainsize")
-#
+#  
 #  single_chunk  <- transform(
 #      subset(scaling_chunking, chunks == 1),
 #      num_leapfrog_single = num_leapfrog, num_leapfrog = NULL,
 #      runtime_single = runtime, runtime = NULL,
 #      grainsize = NULL, chunks=NULL
 #  )
-#
+#  
 #  scaling_chunking <- transform(
 #      merge(scaling_chunking, single_chunk),
 #      slowdown = runtime/runtime_single,
 #      iter = factor(iter),
 #      runtime_single = NULL
 #  )
-#
+#  
 #  ref <- transform(ref, iter=factor(iter))
 

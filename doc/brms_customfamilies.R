@@ -33,7 +33,8 @@ summary(fit1)
 ## ----beta_binomial2---------------------------------------------------------------------
 beta_binomial2 <- custom_family(
   "beta_binomial2", dpars = c("mu", "phi"),
-  links = c("logit", "log"), lb = c(NA, 0),
+  links = c("logit", "log"),
+  lb = c(0, 0), ub = c(1, NA),
   type = "int", vars = "vint1[n]"
 )
 
