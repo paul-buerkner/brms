@@ -16,6 +16,8 @@ rbeta_binomial(n, size, mu, phi)
 \arguments{
 \item{x, q}{Vector of quantiles.}
 
+\item{size}{Vector of number of trials (zero or more).}
+
 \item{mu}{Vector of means.}
 
 \item{phi}{Vector of precisions.}

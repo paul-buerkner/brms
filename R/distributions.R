@@ -926,6 +926,7 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
 #'
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
+#' @param size Vector of number of trials (zero or more).
 #' @param mu Vector of means.
 #' @param phi Vector of precisions.
 #' 

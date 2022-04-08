@@ -369,7 +369,7 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
       # older Stan versions do not support array syntax
       requires_old_array_syntax <- isTRUE(
         object$backend == "cmdstanr" && object$version$cmdstan >= "2.29.0" &&
-        (backend == "rstan" && packageVersion("rstan") < "2.29.0" ||
+        (backend == "rstan" && utils::packageVersion("rstan") < "2.29.0" ||
          backend == "cmdstanr" && cmdstanr::cmdstan_version() < "2.29.0")
       )
       if (requires_old_array_syntax) {
