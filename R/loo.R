@@ -505,6 +505,8 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     # only computed criteria not already stored
     new_criteria <- criterion[ulapply(x$criteria[criterion], is.null)]
   }
+  # remove all criteria that are to be recomputed
+  x$criteria[new_criteria] <- NULL
   args <- list(x, ...)
   for (fun in intersect(new_criteria, loo_options)) {
     args$model_names <- model_name

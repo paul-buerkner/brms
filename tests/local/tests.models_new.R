@@ -76,12 +76,29 @@ test_that("Survival model from brm doc works correctly", {
   me3 <- conditional_effects(fit3, method = "predict")
   expect_ggplot(plot(me3, ask = FALSE)[[2]])
   expect_range(LOO(fit3)$estimates[3, 1], 650, 740)
-
+  
+  # posterior checks of the censored model
+  expect_ggplot(SW(pp_check(
+    fit3, type = 'dens_overlay_grouped', group = 'sex', ndraws = 10
+  )))
+  expect_ggplot(SW(pp_check(
+    fit3, type = 'intervals', x = 'patient', ndraws = NULL
+  )))
+  expect_ggplot(SW(pp_check(fit3, type = 'loo_intervals', ndraws = NULL)))
+  expect_ggplot(SW(pp_check(fit3, type = 'loo_pit_overlay', ndraws = 10)))
+  
   # enables rstan specific functionality
   fit3 <- add_rstan_model(fit3)
   expect_range(LOO(fit3, moment_match = TRUE)$estimates[3, 1], 650, 740)
   bridge <- bridge_sampler(fit3)
   expect_true(is.numeric(bridge$logml))
+  
+  testthat::skip_if_not_installed("ggfortify")
+  # TODO: automatically extract status_y within pp_check
+  expect_ggplot(SW(pp_check(
+    fit3, type = 'km_overlay', ndraws = 10,
+    status_y = 1 - kidney$censored
+  )))
 })
 
 test_that("Binomial model from brm doc works correctly", {
@@ -259,8 +276,8 @@ test_that("varying slopes without overall effects work", {
   ce <- conditional_effects(fit1, conditions = conditions)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 
-  conditions <- data.frame(zAge = 0, zBase = 0,
-                           Trt = 0, visit = c(1:4, NA))
+  conditions <- data.frame(zAge = 0, zBase = 0, patient = 0,
+                           Trt = 0, visit_num = 1:5)
   ce <- conditional_effects(fit1, conditions = conditions, re_formula = NULL)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 

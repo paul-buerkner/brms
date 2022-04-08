@@ -342,6 +342,7 @@ print.brmsmodel <- function(x, ...) {
 #'   to be \code{TRUE} by other arguments.
 #' @param threads Controls whether the Stan code should be threaded.
 #'   See \code{\link{threading}} for details.
+#' @param backend Controls the Stan backend. See \code{\link{brm}} for details.
 #' @param ... Further arguments passed to \code{\link{make_stancode}} if the
 #'   Stan code is regenerated.
 #'
@@ -349,7 +350,7 @@ print.brmsmodel <- function(x, ...) {
 #'
 #' @export
 stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
-                             threads = NULL, ...) {
+                             threads = NULL, backend = NULL, ...) {
   if (is.null(regenerate)) {
     # determine whether regenerating the Stan code is required
     regenerate <- FALSE
@@ -363,6 +364,19 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
       }
       object$threads <- threads
     }
+    if ("backend" %in% names(cl)) {
+      backend <- match.arg(backend, backend_choices())
+      # older Stan versions do not support array syntax
+      requires_old_array_syntax <- isTRUE(
+        object$backend == "cmdstanr" && object$version$cmdstan >= "2.29.0" &&
+        (backend == "rstan" && packageVersion("rstan") < "2.29.0" ||
+         backend == "cmdstanr" && cmdstanr::cmdstan_version() < "2.29.0")
+      )
+      if (requires_old_array_syntax) {
+        regenerate <- TRUE
+      }
+      object$backend <- backend
+    }
   }
   regenerate <- as_one_logical(regenerate)
   if (regenerate) {
@@ -375,6 +389,7 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
       stanvars = object$stanvars,
       sample_prior = get_sample_prior(object$prior),
       threads = object$threads,
+      backend = object$backend,
       ...
     )
   } else {

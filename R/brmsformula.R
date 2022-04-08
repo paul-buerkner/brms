@@ -217,7 +217,7 @@
 #'   information on the response variable. \code{fun} can be replaced with
 #'   either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc},
 #'   \code{trials}, \code{cat}, \code{dec}, \code{rate}, \code{vreal}, or
-#'   \code{vint}. Their meanings are explained below.
+#'   \code{vint}. Their meanings are explained below
 #'   (see also \code{\link{addition-terms}}).
 #'
 #'   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is
@@ -1320,7 +1320,7 @@ validate_formula.brmsformula <- function(
       }
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
-    multi_dpars <- valid_dpars(out$family, multi = TRUE)
+    multi_dpars <- valid_dpars(out$family, type = "multi")
     # 'rev' so that mu comes last but appears first in the end
     for (dp in rev(multi_dpars)) {
       dp_dpars <- make_stan_names(paste0(dp, predcats))

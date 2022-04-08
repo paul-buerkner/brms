@@ -4,8 +4,7 @@
 
 # brms
 
-[![Build
-Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
+[![R-CMD-check](https://github.com/paul-buerkner/brms/workflows/R-CMD-check/badge.svg)](https://github.com/paul-buerkner/brms/actions)
 [![Coverage
 Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN
@@ -35,9 +34,8 @@ with posterior predictive checks, cross-validation, and Bayes factors.
 
 ## Resources
 
--   [Introduction to
-    brms](https://doi.org/10.18637/jss.v080.i01) (Journal of
-    Statistical Software)
+-   [Introduction to brms](https://doi.org/10.18637/jss.v080.i01)
+    (Journal of Statistical Software)
 -   [Advanced multilevel modeling with
     brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html)
     (The R Journal)
@@ -74,27 +72,27 @@ The results (i.e., posterior draws) can be investigated using
 
 ``` r
 summary(fit1)
-#>  Family: poisson
-#>   Links: mu = log
-#> Formula: count ~ zAge + zBase * Trt + (1 | patient)
-#>    Data: epilepsy (Number of observations: 236)
-#> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-#>          total post-warmup samples = 4000
-#>
-#> Group-Level Effects:
-#> ~patient (Number of levels: 59)
+#>  Family: poisson 
+#>   Links: mu = log 
+#> Formula: count ~ zAge + zBase * Trt + (1 | patient) 
+#>    Data: epilepsy (Number of observations: 236) 
+#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+#>          total post-warmup draws = 4000
+#> 
+#> Group-Level Effects: 
+#> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> sd(Intercept)     0.58      0.07     0.46     0.74 1.00      810     1753
-#>
-#> Population-Level Effects:
+#> 
+#> Population-Level Effects: 
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      1.77      0.12     1.53     2.00 1.00      779     1319
 #> zAge           0.09      0.09    -0.09     0.26 1.00      684     1071
 #> zBase          0.70      0.12     0.46     0.95 1.00      847     1453
 #> Trt1          -0.27      0.17    -0.59     0.06 1.00      661     1046
 #> zBase:Trt1     0.05      0.16    -0.26     0.37 1.00      993     1624
-#>
-#> Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+#> 
+#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
@@ -195,46 +193,46 @@ leave-one-out (LOO) cross-validation.
 ``` r
 loo(fit1, fit2)
 #> Output of model 'fit1':
-#>
+#> 
 #> Computed from 4000 by 236 log-likelihood matrix
-#>
+#> 
 #>          Estimate   SE
 #> elpd_loo   -670.4 36.7
 #> p_loo        92.8 14.3
 #> looic      1340.8 73.3
 #> ------
 #> Monte Carlo SE of elpd_loo is NA.
-#>
+#> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     214   90.7%   251
-#>  (0.5, 0.7]   (ok)        17    7.2%   80
-#>    (0.7, 1]   (bad)        3    1.3%   81
-#>    (1, Inf)   (very bad)   2    0.8%   6
+#> (-Inf, 0.5]   (good)     214   90.7%   251       
+#>  (0.5, 0.7]   (ok)        17    7.2%   80        
+#>    (0.7, 1]   (bad)        3    1.3%   81        
+#>    (1, Inf)   (very bad)   2    0.8%   6         
 #> See help('pareto-k-diagnostic') for details.
-#>
+#> 
 #> Output of model 'fit2':
-#>
+#> 
 #> Computed from 4000 by 236 log-likelihood matrix
-#>
+#> 
 #>          Estimate   SE
 #> elpd_loo   -595.2 14.1
 #> p_loo       108.0  7.3
 #> looic      1190.4 28.2
 #> ------
 #> Monte Carlo SE of elpd_loo is NA.
-#>
+#> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)      82   34.7%   544
-#>  (0.5, 0.7]   (ok)       103   43.6%   153
-#>    (0.7, 1]   (bad)       47   19.9%   22
-#>    (1, Inf)   (very bad)   4    1.7%   7
+#> (-Inf, 0.5]   (good)      82   34.7%   544       
+#>  (0.5, 0.7]   (ok)       103   43.6%   153       
+#>    (0.7, 1]   (bad)       47   19.9%   22        
+#>    (1, Inf)   (very bad)   4    1.7%   7         
 #> See help('pareto-k-diagnostic') for details.
-#>
+#> 
 #> Model comparisons:
 #>      elpd_diff se_diff
-#> fit2   0.0       0.0
+#> fit2   0.0       0.0  
 #> fit1 -75.2      26.9
 ```
 

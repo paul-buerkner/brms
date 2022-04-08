@@ -636,6 +636,9 @@ test_that("pp_check has reasonable outputs", {
 
   pp <- SW(pp_check(fit1, type = "loo_pit", cores = 1))
   expect_ggplot(pp)
+  
+  # ppd plots work
+  expect_ggplot(pp_check(fit1, prefix = "ppd"))
 
   expect_ggplot(pp_check(fit3))
   expect_ggplot(pp_check(fit2, "ribbon", x = "Age"))

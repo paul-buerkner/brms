@@ -2,9 +2,13 @@
 #'
 #' Provide additional information on the response variable
 #' in \pkg{brms} models, such as censoring, truncation, or
-#' known measurement error.
+#' known measurement error. Detailed documentation on the use
+#' of each of these functions can be found in the Details section 
+#' of \code{\link{brmsformula}} (under "Additional response information").
 #'
 #' @name addition-terms
+#' @aliases se weights trials thres cat dec cens trunc 
+#' @aliases index rate subset vreal vint
 #'
 #' @param x A vector; usually a variable defined in the data. Allowed values
 #'   depend on the function: \code{resp_se} and \code{resp_weights} require
@@ -51,7 +55,7 @@
 #'   called in formulas passed to the \pkg{brms} package.
 #'   Within formulas, the \code{resp_} prefix may be omitted.
 #'   More information is given in the 'Details' section
-#'   of \code{\link{brmsformula}}.
+#'   of \code{\link{brmsformula}} (under "Additional response information").
 #'
 #' @seealso
 #'   \code{\link{brm}},

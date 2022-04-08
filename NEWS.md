@@ -1,19 +1,24 @@
-# brms 2.16.3++
+# brms 2.17.0
 
 ### New Features
 
+* Add full user control for boundaries of most parameters via the `lb` and 
+`ub` arguments of `set_prior` and related functions. (#878, #1094)
 * Add family `logistic_normal` for simplex responses. (#1274)
 * Add argument `future_args` to `kfold` and `reloo` for additional
 control over parallel execution via futures.
 * Add families `beta_binomial` & `zero_inflated_beta_binomial` for potentially
 over-dispersed and zero-inflated binomial response models thanks to Hayden
 Rabel. (#1319 & #1311)
+* Display `ppd_*` plots in `pp_check` via argument `prefix`. (#1313)
+* Support the `log` link in binomial and beta type families. (#1316)
 
 ### Other changes
 
 * Argument `brms_seed` has been added to `get_refmodel.brmsfit()`. (#1287)
 * Deprecate argument `inits` in favor of `init` for consistency
 with the Stan backends.
+* Improve speed of the `summary` method for high-dimensional models. (#1330)
 
 ### Bug Fixes
 
@@ -25,6 +30,14 @@ thanks to Urs Kalbitzer. (#1280)
 `projpred`'s K-fold CV. (#1286)
 * Fix response values in `make_standata` for `bernoulli` families
 when only 1s are present thanks to Facundo Munoz. (#1298)
+* Fix `pp_check` for censored responses to work for all plot types
+thanks to Hayden Rabel. (#1327) 
+* Ensure that argument `overwrite` in `add_criterion` works as expected 
+for all criteria thanks to Andrew Milne. (#1323)
+* Fix a problem in `launch_shinystan` occurring when warmup draws 
+were saved thanks to Frank Weber. (#1257, #1329)
+* Fix numerical stability problems in `log_lik` for ordinal models. (#1192)
+
 
 # brms 2.16.3
 

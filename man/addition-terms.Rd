@@ -2,6 +2,19 @@
 % Please edit documentation in R/formula-ad.R
 \name{addition-terms}
 \alias{addition-terms}
+\alias{se}
+\alias{weights}
+\alias{trials}
+\alias{thres}
+\alias{cat}
+\alias{dec}
+\alias{cens}
+\alias{trunc}
+\alias{index}
+\alias{rate}
+\alias{subset}
+\alias{vreal}
+\alias{vint}
 \alias{resp_se}
 \alias{resp_weights}
 \alias{resp_trials}
@@ -100,14 +113,16 @@ A list of additional response information to be processed further
 \description{
 Provide additional information on the response variable
 in \pkg{brms} models, such as censoring, truncation, or
-known measurement error.
+known measurement error. Detailed documentation on the use
+of each of these functions can be found in the Details section 
+of \code{\link{brmsformula}} (under "Additional response information").
 }
 \details{
 These functions are almost solely useful when
   called in formulas passed to the \pkg{brms} package.
   Within formulas, the \code{resp_} prefix may be omitted.
   More information is given in the 'Details' section
-  of \code{\link{brmsformula}}.
+  of \code{\link{brmsformula}} (under "Additional response information").
 }
 \examples{
 \dontrun{

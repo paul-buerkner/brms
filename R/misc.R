@@ -193,6 +193,11 @@ move2start <- function(x, first) {
   x[c(first, setdiff(names(x), first))]
 }
 
+# move elements to the end of a named object
+move2end <- function(x, last) {
+  x[c(setdiff(names(x), last), last)]
+}
+
 # wrapper around replicate but without simplifying
 repl <- function(expr, n) {
   replicate(n, expr, simplify = FALSE)

@@ -46,11 +46,13 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   if (nrow(upx) > 1L) {
     # TODO: find a better solution to handle this case
     # can only happen for SD parameters of the same ID
-    base_prior <- rep(NA, nrow(upx))
+    base_prior <- lb <- ub <- rep(NA, nrow(upx))
+    base_bounds <- data.frame(lb = lb, ub = ub)
     for (i in seq_rows(upx)) {
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx)
       base_prior[i] <- stan_base_prior(sub_prior)
+      base_bounds[i, ] <- stan_base_prior(sub_prior, col = c("lb", "ub"))
     }
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually
@@ -61,11 +63,17 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       prior$prior[take_coef_prior] <- base_prior[take_base_prior]
     }
     base_prior <- base_prior[1]
-    bound <- ""
+    if (nrow(unique(base_bounds)) > 1L) {
+      stop2("Conflicting boundary information for ", 
+            "coefficients of class '", class, "'.")
+    }
+    base_bounds <- base_bounds[1, ]
   } else {
     base_prior <- stan_base_prior(prior)
-    bound <- prior[!nzchar(prior$coef), "bound"]
+    # select both bounds together so that they come from the same base prior
+    base_bounds <- stan_base_prior(prior, col = c("lb", "ub"))
   }
+  bound <- convert_bounds2stan(base_bounds)
 
   # generate stan prior statements
   out <- list()
@@ -138,6 +146,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       if (!nzchar(coef_type)) {
         stop2("Can either estimate or fix all values of parameter '", par, "'.")
       }
+      coef_type <- stan_type_add_bounds(coef_type, bound)
       for (i in seq_along(estimated_coef_indices)) {
         index <- estimated_coef_indices[[i]]
         iu <- paste0(index, collapse = "_")
@@ -170,6 +179,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
 
   if (nzchar(type)) {
     # only define the parameter here if type is non-empty
+    type <- stan_type_add_bounds(type, bound)
     comment <- stan_comment(comment)
     par_definition <- glue("  {type} {par}{dim};{comment}\n")
     if (has_constant_priors) {
@@ -196,16 +206,36 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   out
 }
 
-# get the base prior for all coefficients
-# this is the lowest level non-coefficient prior
+# extract base prior information for a given set of priors
+# the base prior is the lowest level, non-flat, non-coefficient prior
 # @param prior a brmsprior object
-# @return a character string defining the base prior
-stan_base_prior <- function(prior) {
+# @param col columns for which base prior information is to be found
+# @param sel_prior optional brmsprior object to subset 'prior' before
+#   finding the base prior
+# @return the 'col' columns of the identified base prior
+stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
+  stopifnot(all(col %in% c("prior", "lb", "ub")))
+  if (!is.null(sel_prior)) {
+    # find the base prior using sel_prior for subsetting
+    stopifnot(is.brmsprior(sel_prior))
+    prior <- subset2(
+      prior, class = sel_prior$class, group = c(sel_prior$group, ""),
+      dpar = sel_prior$dpar, nlpar = sel_prior$nlpar, resp = sel_prior$resp,
+      ...
+    )
+  } else {
+    prior <- subset2(prior, ...)
+  }
   stopifnot(length(unique(prior$class)) <= 1)
-  take <- with(prior, !nzchar(coef) & nzchar(prior))
+  # take all rows with non-zero entries on any of the chosen columns
+  take <- !nzchar(prior$coef) & Reduce("|", lapply(prior[col], nzchar))
   prior <- prior[take, ]
   if (!NROW(prior)) {
-    return("")
+    if (length(col) == 1L) {
+      return("")
+    } else {
+      return(brmsprior()[, col])
+    }
   }
   vars <- c("group", "nlpar", "dpar", "resp", "class")
   for (v in vars) {
@@ -214,8 +244,8 @@ stan_base_prior <- function(prior) {
       prior <- prior[take, ]
     }
   }
-  stopifnot(NROW(prior) == 1)
-  prior$prior
+  stopifnot(NROW(prior) == 1L)
+  prior[, col]
 }
 
 # Stan prior in target += notation
@@ -254,7 +284,7 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   lpdf <- stan_lpdf_name(normalize)
   out <- glue("{prior_name}_{lpdf}({par}{prior_args})")
   par_class <- unique(get_matches("^[^_]+", par))
-  par_bound <- par_bounds(par_class, bound, resp = resp)
+  par_bound <- convert_stan2bounds(bound)
   prior_bound <- prior_bounds(prior_name)
   trunc_lb <- is.character(par_bound$lb) || par_bound$lb > prior_bound$lb
   trunc_ub <- is.character(par_bound$ub) || par_bound$ub < prior_bound$ub
@@ -618,6 +648,23 @@ stan_lpdf_name <- function(normalize, int = FALSE) {
     out <- ifelse(int, "lupmf", "lupdf")
   }
   out
+}
+
+# add bounds to a Stan type specification which may include dimensions
+stan_type_add_bounds <- function(type, bound) {
+  regex_dim <- "\\[.*$"
+  type_type <- sub(regex_dim, "", type)
+  type_dim <- get_matches(regex_dim, type, first = TRUE)
+  glue("{type_type}{bound}{type_dim}")
+}
+
+stopif_prior_bound <- function(prior, class, ...) {
+  lb <- stan_base_prior(prior, "lb", class = class, ...) 
+  ub <- stan_base_prior(prior, "ub", class = class, ...) 
+  if (nzchar(lb) || nzchar(ub)) {
+    stop2("Cannot add bounds to class '", class, "' for this prior.")
+  }
+  return(invisible(NULL))
 }
 
 # lprior plus equal

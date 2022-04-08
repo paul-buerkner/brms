@@ -361,43 +361,22 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   resp <- as_one_character(resp)
   dpar <- as_one_character(dpar)
   nlpar <- as_one_character(nlpar)
+  check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
-  check <- as_one_logical(check)
-  # validate boundaries
-  bound <- ""
-  if (class %in% c("ar", "ma") && (!is.na(lb) || !is.na(ub))) {
-    # changed in version 2.9.5
-    lb <- ub <- NA
-    warning2(
-      "Changing the boundaries of autocorrelation parameters ",
-      "is deprecated and will be ignored."
-    )
-  }
-  if (!is.na(lb) || !is.na(ub)) {
-    # TODO: extend the boundary interface to more parameter classes
-    boundary_classes <- c("b")
-    if (!class %in% boundary_classes) {
-      stop2("Currently boundaries are only allowed for classe(s) ",
-            collapse_comma(boundary_classes), "."
-      )
-    }
+  if (check && (!is.na(lb) || !is.na(ub))) {
+    # proper boundaries have been specified
     if (nzchar(coef)) {
+      # TODO: enable bounds for coefficients as well?
       stop2("Argument 'coef' may not be specified when using boundaries.")
-    }
-    # don't put spaces in boundary declarations
-    lb <- if (!is.na(lb)) paste0("lower=", lb)
-    ub <- if (!is.na(ub)) paste0("upper=", ub)
-    if (!is.null(lb) || !is.null(ub)) {
-      bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
     }
   }
   if (!check) {
     # prior will be added to the log-posterior as is
-    class <- coef <- group <- resp <- dpar <- nlpar <- bound <- ""
+    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- ""
   }
   source <- "user"
-  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, bound)
+  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, lb, ub)
   do_call(brmsprior, out)
 }
 
@@ -557,7 +536,8 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
       prior <- prior + brmsprior(class = "rescor", prior = "lkj(1)")
     }
     if (family_names(x)[1] %in% "student") {
-      prior <- prior + brmsprior(class = "nu", prior = "gamma(2, 0.1)")
+      prior <- prior + 
+        brmsprior(class = "nu", prior = "gamma(2, 0.1)", lb = "1")
     }
   }
   prior
@@ -599,7 +579,11 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
       dp_prior <- empty_prior()
     } else {
       # parameter is estimated
-      dp_prior <- brmsprior(def_dprior, class = dp, resp = x$resp)
+      dp_bound <- dpar_bounds(dp, suffix = x$resp, family = x$family)
+      dp_prior <- brmsprior(
+        def_dprior, class = dp, resp = x$resp, 
+        lb = dp_bound$lb, ub = dp_bound$ub
+      )
     }
     prior <- prior + dp_prior
   }
@@ -634,6 +618,7 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
   if (!is.null(sdy)) {
     prior <- prior +
       brmsprior(class = "meanme", resp = x$resp) +
+      # don't specify lb as we already have it in 'prior_Xme'
       brmsprior(class = "sdme", resp = x$resp)
   }
   # priors for autocorrelation parameters
@@ -697,9 +682,9 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
     if (has_equidistant_thres(bterms)) {
       # prior for the delta parameter for equidistant thresholds
       thres <- character(0)
-      bound <- str_if(has_ordered_thres(bterms), "<lower=0>")
+      lb <- str_if(has_ordered_thres(bterms), "0")
       prior <- prior + brmsprior(
-        class = "delta", group = group, bound = bound, ls = px
+        class = "delta", group = group, lb = lb, ls = px
       )
     }
     prior <- prior + brmsprior(
@@ -775,8 +760,10 @@ prior_Xme <- function(meef, internal = FALSE, ...) {
   prior <- empty_prior()
   if (nrow(meef)) {
     prior <- prior +
-      brmsprior(class = "meanme", coef = c("", meef$coef)) +
-      brmsprior(class = "sdme", coef = c("", meef$coef))
+      brmsprior(class = "meanme") +
+      brmsprior(class = "meanme", coef = meef$coef) +
+      brmsprior(class = "sdme", lb = "0") +
+      brmsprior(class = "sdme", coef = meef$coef)
     # priors for correlation parameters
     groups <- unique(meef$grname)
     for (i in seq_along(groups)) {
@@ -810,9 +797,10 @@ prior_gp <- function(bterms, data, def_scale_prior, ...) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
     prior <- prior +
-      brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
+      brmsprior(class = "sdgp", prior = def_scale_prior, ls = px,
+                lb = "0") +
       brmsprior(class = "sdgp", coef = unlist(gpef$sfx1), ls = px) +
-      brmsprior(class = "lscale", ls = px) +
+      brmsprior(class = "lscale", ls = px, lb = "0") +
       brmsprior(class = "lscale", prior = lscale_prior,
                 coef = names(lscale_prior), ls = px)
   }
@@ -897,7 +885,8 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
     def_scale_prior <- def_scale_prior[px$resp]
   }
   global_sd_prior <- brmsprior(
-    class = "sd", prior = def_scale_prior, ls = px
+    class = "sd", prior = def_scale_prior,
+    lb = "0", ls = px
   )
   prior <- prior + global_sd_prior
   for (id in unique(ranef$id)) {
@@ -907,6 +896,7 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
     urpx <- unique(rpx)
     # include group-level standard deviations
     prior <- prior +
+      # don't specify lb as we already have it above
       brmsprior(class = "sd", group = group, ls = urpx) +
       brmsprior(class = "sd", coef = r$coef, group = group, ls = rpx)
     # detect duplicated group-level effects
@@ -935,7 +925,8 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
   tranef <- get_dist_groups(ranef, "student")
   if (isTRUE(nrow(tranef) > 0L)) {
     prior <- prior +
-      brmsprior("gamma(2, 0.1)", class = "df", group = tranef$group)
+      brmsprior("gamma(2, 0.1)", class = "df", group = tranef$group,
+                lb = "1")
   }
   prior
 }
@@ -955,11 +946,10 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
     }
     # prior for SD parameters of the RE coefficients
     smterms <- unique(smef$term)
-    prior_strings <- c(def_scale_prior, rep("", length(smterms)))
-    prior <- prior + brmsprior(
-      class = "sds", coef = c("", smterms),
-      prior = prior_strings, ls = px
-    )
+    prior <- prior + 
+      brmsprior(prior = def_scale_prior, class = "sds", 
+                lb = "0", ls = px) +
+      brmsprior(class = "sds", coef = smterms, ls = px)
   }
   prior
 }
@@ -972,40 +962,57 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     return(prior)
   }
   px <- check_prefix(bterms)
+  p <- combine_prefix(px)
+  has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
   if (has_ac_class(acef, "arma")) {
     acef_arma <- subset2(acef, class = "arma")
+    # no boundaries are required in the conditional formulation
+    # when natural residuals automatically define the scale
+    need_arma_bound <- acef_arma$cov || has_ac_latent_residuals
+    arma_lb <- str_if(need_arma_bound, "-1")
+    arma_ub <- str_if(need_arma_bound, "1")
     if (acef_arma$p > 0) {
-      prior <- prior + brmsprior(class = "ar", ls = px)
+      prior <- prior + 
+        brmsprior(class = "ar", ls = px, lb = arma_lb, ub = arma_ub)
     }
     if (acef_arma$q > 0) {
-      prior <- prior + brmsprior(class = "ma", ls = px)
+      prior <- prior + 
+        brmsprior(class = "ma", ls = px, lb = arma_lb, ub = arma_ub)
     }
   }
   if (has_ac_class(acef, "cosy")) {
-    prior <- prior + brmsprior(class = "cosy", ls = px)
+    # cosy correlations may be negative in theory but
+    # this causes problems with divergent transitions (#878)
+    prior <- prior + 
+      brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
   }
   if (has_ac_latent_residuals(bterms)) {
     prior <- prior +
-      brmsprior(def_scale_prior, class = "sderr", ls = px)
+      brmsprior(def_scale_prior, class = "sderr", ls = px, lb = "0")
   }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
+    sar_lb <- glue("min_eigenMsar{p}")
+    sar_ub <- glue("max_eigenMsar{p}")
     if (acef_sar$type == "lag") {
-      prior <- prior + brmsprior(class = "lagsar", ls = px)
+      prior <- prior + 
+        brmsprior(class = "lagsar", lb = sar_lb, ub = sar_ub, ls = px)
     }
     if (acef_sar$type == "error") {
-      prior <- prior + brmsprior(class = "errorsar", ls = px)
+      prior <- prior + 
+        brmsprior(class = "errorsar", lb = sar_lb, ub = sar_ub, ls = px)
     }
   }
   if (has_ac_class(acef, "car")) {
     acef_car <- subset2(acef, class = "car")
     prior <- prior +
-      brmsprior(def_scale_prior, class = "sdcar", ls = px)
+      brmsprior(def_scale_prior, class = "sdcar", lb = "0", ls = px)
     if (acef_car$type %in% "escar") {
-      prior <- prior + brmsprior(class = "car", ls = px)
+      prior <- prior + 
+        brmsprior(class = "car", lb = "0", ub = "1", ls = px)
     } else if (acef_car$type %in% "bym2") {
       prior <- prior +
-        brmsprior("beta(1, 1)", class = "rhocar", ls = px)
+        brmsprior("beta(1, 1)", class = "rhocar", lb = "0", ub = "1", ls = px)
     }
   }
   prior
@@ -1201,11 +1208,43 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     prior <- prior[!invalid, ]
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
-  check_prior_content(prior)
+  
+  # include default parameter bounds; only new priors need bounds
+  which_needs_lb <- which(is.na(prior$lb) & !nzchar(prior$coef))
+  for (i in which_needs_lb) {
+    if (!is.na(prior$ub[i]) && nzchar(prior$ub[i])) {
+      # if ub is specified lb should be specified in the same line as well
+      prior$lb[i] <- stan_base_prior(all_priors, "lb", sel_prior = prior[i, ])
+    } else {
+      # take the corresponding lb from the default prior
+      prior_sub_i <- rbind(prior[i, ], all_priors)
+      prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
+      stopifnot(NROW(prior_sub_i) == 1L)
+      prior$lb[i] <- prior_sub_i$lb
+    }
+  }
+  which_needs_ub <- which(is.na(prior$ub) & !nzchar(prior$coef))
+  for (i in which_needs_ub) {
+    if (!is.na(prior$lb[i]) && nzchar(prior$lb[i])) {
+      # if lb is specified ub should be specified in the same line as well
+      prior$ub[i] <- stan_base_prior(all_priors, "ub", sel_prior = prior[i, ])
+    } else {
+      # take the corresponding lb from the default prior
+      prior_sub_i <- rbind(prior[i, ], all_priors)
+      prior_sub_i <- prior_sub_i[duplicated(prior_sub_i), ]
+      stopifnot(NROW(prior_sub_i) == 1L)
+      prior$ub[i] <- prior_sub_i$ub
+    }
+  }
+  # the remaining NAs are in coef priors which cannot have bounds yet
+  prior$lb[is.na(prior$lb)] <- prior$ub[is.na(prior$ub)] <- ""
+  
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
+  check_prior_content(prior)
+  
   # don't require priors on nlpars if some priors are not checked (#1124)
   require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
   prior <- validate_prior_special(
@@ -1213,7 +1252,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     require_nlpar_prior = require_nlpar_prior, ...
   )
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
-  # check and warn about valid but unused priors
+  # check and warn valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
     ls <- prior[i, c("class", "group", "resp", "dpar", "nlpar")]
     class(ls) <- "data.frame"
@@ -1247,85 +1286,71 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 # try to check if prior distributions are reasonable
 # @param prior A brmsprior object
 check_prior_content <- function(prior) {
-  if (!is.brmsprior(prior)) {
+  if (!is.brmsprior(prior) || !NROW(prior)) {
     return(invisible(TRUE))
   }
-  if (nrow(prior)) {
-    lb_priors <- c(
-      "lognormal", "chi_square", "inv_chi_square",
-      "scaled_inv_chi_square", "exponential", "gamma",
-      "inv_gamma", "weibull", "frechet", "rayleigh",
-      "pareto", "pareto_type_2"
-    )
-    lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
-    ulb_priors <- c("beta", "uniform", "von_mises")
-    ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
-    nb_pars <- c("b", "alpha", "xi")
-    lb_pars <- c(
-      "sigma", "shape", "nu", "phi", "kappa", "beta", "bs",
-      "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale"
-    )
-    cormat_pars <- c("cor", "rescor", "corme", "L", "Lrescor", "Lme")
-    lb_warning <- ub_warning <- ""
-    for (i in seq_rows(prior)) {
-      msg_prior <- .print_prior(prior[i, , drop = FALSE])
-      has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
-      has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
-      # priors with nchar(coef) inherit their boundaries
-      j <- which(with(prior,
-        class == class[i] & group == group[i] &
-        nlpar == nlpar[i] & !nzchar(coef)
-      ))
-      bound <- if (length(j)) prior$bound[j] else ""
-      has_lb <- grepl("lower", bound)
-      has_ub <- grepl("upper", bound)
-      if (prior$class[i] %in% nb_pars) {
-        if ((has_lb_prior || has_ulb_prior) && !has_lb) {
-          lb_warning <- paste0(lb_warning, msg_prior, "\n")
-        }
-        if (has_ulb_prior && !has_ub) {
-          ub_warning <- paste0(ub_warning, msg_prior, "\n")
-        }
-      } else if (prior$class[i] %in% lb_pars) {
-        if (has_ulb_prior && !has_ub) {
-          ub_warning <- paste0(ub_warning, msg_prior, "\n")
-        }
-      } else if (prior$class[i] %in% cormat_pars) {
-        regex <- "^((lkj)|(constant))"
-        if (nzchar(prior$prior[i]) && !grepl(regex, prior$prior[i])) {
-          stop2(
-            "The only supported prior for correlation matrices is ",
-            "the 'lkj' prior. See help(set_prior) for more details."
-          )
-        }
-      } else if (prior$class[i] %in% c("simo", "theta", "sbhaz")) {
-        regex <- "^((dirichlet)|(constant))\\("
-        if (nchar(prior$prior[i]) && !grepl(regex, prior$prior[i])) {
-          stop2(
-            "Currently 'dirichlet' is the only valid prior for ",
-            "simplex parameters. See help(set_prior) for more details."
-          )
-        }
-      }
+  lb_priors <- c(
+    "lognormal", "chi_square", "inv_chi_square", "scaled_inv_chi_square", 
+    "exponential", "gamma", "inv_gamma", "weibull", "frechet", "rayleigh",
+    "pareto", "pareto_type_2"
+  )
+  lb_priors_regex <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
+  ulb_priors <- c("beta", "uniform", "von_mises", "beta_proportion")
+  ulb_priors_regex <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
+  cormat_pars <- c("cor", "L", "rescor", "Lrescor", "corme", "Lme", "lncor", "Llncor")
+  cormat_regex <- "^((lkj)|(constant))"
+  simplex_pars <- c("simo", "theta", "sbhaz")
+  simplex_regex <- "^((dirichlet)|(constant))\\("
+  
+  lb_warning <- ub_warning <- ""
+  for (i in seq_rows(prior)) {
+    if (!nzchar(prior$prior[i]) || !prior$new[i]) {
+      next
     }
-    if (nchar(lb_warning)) {
-      warning2(
-        "It appears as if you have specified a lower bounded ",
-        "prior on a parameter that has no natural lower bound.",
-        "\nIf this is really what you want, please specify ",
-        "argument 'lb' of 'set_prior' appropriately.",
-        "\nWarning occurred for prior \n", lb_warning
+    msg_prior <- .print_prior(prior[i, ])
+    has_lb_prior <- grepl(lb_priors_regex, prior$prior[i])
+    has_ulb_prior <- grepl(ulb_priors_regex, prior$prior[i])
+    base_bounds <- stan_base_prior(prior, c("lb", "ub"), sel_prior = prior[i, ])
+    has_lb <- nzchar(base_bounds[, "lb"])
+    has_ub <- nzchar(base_bounds[, "ub"])
+    if ((has_lb_prior || has_ulb_prior) && !has_lb) {
+      lb_warning <- paste0(lb_warning, msg_prior, "\n")
+    }
+    if (has_ulb_prior && !has_ub) {
+      ub_warning <- paste0(ub_warning, msg_prior, "\n")
+    }
+    if (prior$class[i] %in% cormat_pars &&
+        !grepl(cormat_regex, prior$prior[i])) {
+      stop2(
+        "The only supported prior for correlation matrices is ",
+        "the 'lkj' prior. See help(set_prior) for more details."
       )
     }
-    if (nchar(ub_warning)) {
-      warning2(
-        "It appears as if you have specified an upper bounded ",
-        "prior on a parameter that has no natural upper bound.",
-        "\nIf this is really what you want, please specify ",
-        "argument 'ub' of 'set_prior' appropriately.",
-        "\nWarning occurred for prior \n", ub_warning
+    if (prior$class[i] %in% simplex_pars && 
+        !grepl(simplex_regex, prior$prior[i])) {
+      stop2(
+        "Currently 'dirichlet' is the only valid prior for ",
+        "simplex parameters. See help(set_prior) for more details."
       )
     }
+  }
+  if (nzchar(lb_warning)) {
+    warning2(
+      "It appears as if you have specified a lower bounded ",
+      "prior on a parameter that has no natural lower bound.",
+      "\nIf this is really what you want, please specify ",
+      "argument 'lb' of 'set_prior' appropriately.",
+      "\nWarning occurred for prior \n", lb_warning
+    )
+  }
+  if (nzchar(ub_warning)) {
+    warning2(
+      "It appears as if you have specified an upper bounded ",
+      "prior on a parameter that has no natural upper bound.",
+      "\nIf this is really what you want, please specify ",
+      "argument 'ub' of 'set_prior' appropriately.",
+      "\nWarning occurred for prior \n", ub_warning
+    )
   }
   invisible(TRUE)
 }
@@ -1531,26 +1556,9 @@ get_sample_prior <- function(prior) {
   validate_sample_prior(attr(prior, "sample_prior", TRUE))
 }
 
-# extract prior boundaries of a parameter
-# @param prior a brmsprior object
-# @param class,coef,group,px passed to 'subset2'
-get_bound <- function(prior, class = "b", coef = "",
-                      group = "", px = list()) {
-  stopifnot(is.brmsprior(prior))
-  class <- as_one_character(class)
-  if (!length(coef)) coef <- ""
-  if (!length(group)) group <- ""
-  bound <- subset2(prior, ls = c(nlist(class, coef, group), px))$bound
-  if (!length(bound)) bound <- ""
-  if (length(bound) != 1L) {
-    stop("Extracting parameter boundaries failed. Please report a bug.")
-  }
-  bound
-}
-
 # create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "",
-                      resp = "", dpar = "", nlpar = "", bound = "",
+                      resp = "", dpar = "", nlpar = "", lb = "", ub = "",
                       source = "", ls = list()) {
   if (length(ls)) {
     if (is.null(names(ls))) {
@@ -1566,7 +1574,7 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
   }
   out <- data.frame(
     prior, class, coef, group,
-    resp, dpar, nlpar, bound, source,
+    resp, dpar, nlpar, lb, ub, source,
     stringsAsFactors = FALSE
   )
   class(out) <- c("brmsprior", "data.frame")
@@ -1580,12 +1588,12 @@ empty_prior <- function() {
   brmsprior(
     prior = char0, source = char0, class = char0,
     coef = char0, group = char0, resp = char0,
-    dpar = char0, nlpar = char0, bound = char0
+    dpar = char0, nlpar = char0, lb = char0, ub = char0
   )
 }
 
 # natural upper and lower bounds for priors
-# @param a named list with elements 'lb and 'ub'
+# @param a named list with elements 'lb' and 'ub'
 prior_bounds <- function(prior) {
   switch(prior,
     lognormal = list(lb = 0, ub = Inf),
@@ -1609,7 +1617,7 @@ prior_bounds <- function(prior) {
 # all columns of brmsprior objects
 all_cols_prior <- function() {
   c("prior", "class", "coef", "group", "resp",
-    "dpar", "nlpar", "bound", "source")
+    "dpar", "nlpar", "lb", "ub", "source")
 }
 
 # relevant columns for duplication checks in brmsprior objects
@@ -1617,51 +1625,111 @@ rcols_prior <- function() {
   c("class", "coef", "group", "resp", "dpar", "nlpar")
 }
 
-# upper and lower bounds for parameter classes
-# @param par name of a distributional parameter
-# @param bound optional Stan code of boundaries to extract values from
-# @param resp optional name of the response variable
-# @return A named list with elements 'lb and 'ub'
-par_bounds <- function(par, bound = "", resp = "") {
-  resp <- usc(resp)
-  out <- switch(par,
-    sigma = list(lb = 0, ub = Inf),
-    shape = list(lb = 0, ub = Inf),
-    nu = list(lb = 1, ub = Inf),
-    phi = list(lb = 0, ub = Inf),
-    kappa = list(lb = 0, ub = Inf),
-    beta = list(lb = 0, ub = Inf),
-    zi = list(lb = 0, ub = 1),
-    hu = list(lb = 0, ub = 1),
-    zoi = list(lb = 0, ub = 1),
-    coi = list(lb = 0, ub = 1),
-    bs = list(lb = 0, ub = Inf),
-    ndt = list(lb = 0, ub = glue("min_Y{resp}")),
-    bias = list(lb = 0, ub = 1),
-    disc = list(lb = 0, ub = Inf),
-    quantile = list(lb = 0, ub = 1),
-    ar = list(lb = -1, ub = 1),
-    ma = list(lb = -1, ub = 1),
-    lagsar = list(lb = 0, ub = 1),
-    errorsar = list(lb = 0, ub = 1),
-    car = list(lb = 0, ub = 1),
-    sdcar = list(lb = 0, ub = Inf),
-    rhocar = list(lb = 0, ub = 1),
-    sigmaLL = list(lb = 0, ub = Inf),
-    sd = list(lb = 0, ub = Inf),
-    sds = list(lb = 0, ub = Inf),
-    sdgp = list(lb = 0, ub = Inf),
-    lscale = list(lb = 0, ub = Inf),
-    list(lb = -Inf, ub = Inf)
-  )
-  if (isTRUE(nzchar(bound))) {
-    opt_lb <- get_matches("(<|,)lower=[^,>]+", bound)
-    if (isTRUE(nzchar(opt_lb))) {
-      out$lb <- substr(opt_lb, 8, nchar(opt_lb))
+# default Stan definitions for distributional parameters
+# @param dpar name of a distributional parameter
+# @param suffix optional suffix of the parameter name
+# @param family optional brmsfamily object
+# @return a named list with numeric elements 'lb' and 'ub'
+dpar_bounds <- function(dpar, suffix = "", family = NULL) {
+  dpar <- as_one_character(dpar)
+  suffix <- usc(as_one_character(suffix))
+  if (is.mixfamily(family)) {
+    if (dpar_class(dpar) == "theta") {
+      return(list(lb = -Inf, ub = Inf))
     }
-    opt_ub <- get_matches("(<|,)upper=[^,>]+", bound)
-    if (isTRUE(nzchar(opt_ub))) {
-      out$ub <- substr(opt_ub, 8, nchar(opt_ub))
+    family <- family$mix[[as.numeric(dpar_id(dpar))]]
+  }
+  dpar_class <- dpar_class(dpar, family)
+  if (is.customfamily(family)) {
+    lb <- family$lb[[dpar_class]]
+    ub <- family$ub[[dpar_class]]
+    return(nlist(lb, ub))
+  }
+  min_Y <- glue("min_Y{suffix}")
+  out <- switch(dpar_class,
+    sigma = list(lb = "0", ub = ""),
+    shape = list(lb = "0", ub = ""),
+    nu = list(lb = "1", ub = ""),
+    phi = list(lb = "0", ub = ""),
+    kappa = list(lb = "0", ub = ""),
+    beta = list(lb = "0", ub = ""),
+    zi = list(lb = "0", ub = "1"),
+    hu = list(lb = "0", ub = "1"),
+    zoi = list(lb = "0", ub = "1"),
+    coi = list(lb = "0", ub = "1"),
+    bs = list(lb = "0", ub = ""),
+    ndt = list(lb = "0", ub = min_Y),
+    bias = list(lb = "0", ub = "1"),
+    disc = list(lb = "0", ub = ""),
+    quantile = list(lb = "0", ub = "1"),
+    xi = list(lb = "", ub = ""),
+    alpha = list(lb = "", ub = "")
+  )
+  out
+}
+
+# convert parameter bounds to Stan syntax
+# vectorized over both 'lb' and 'ub' vectors
+# @param bounds a named list with elements 'lb' and 'ub'
+# @param default default output if no proper bounds are specified
+convert_bounds2stan <- function(bounds, default = "") {
+  lb <- as.character(bounds$lb)
+  ub <- as.character(bounds$ub)
+  stopifnot(length(lb) == length(ub))
+  default <- as_one_character(default, allow_na = TRUE)
+  if (any(lb %in% "Inf")) {
+    stop2("Lower boundaries cannot be positive infinite.")
+  }
+  if (any(ub %in% "-Inf")) {
+    stop2("Upper boundaries cannot be negative infinite.")
+  }
+  lb <- ifelse(
+    !is.na(lb) & !lb %in% c("NA", "-Inf", ""), 
+    paste0("lower=", lb), ""
+  )
+  ub <- ifelse(
+    !is.na(ub) & !ub %in% c("NA", "Inf", ""), 
+    paste0("upper=", ub), ""
+  )
+  out <- ifelse(
+    nzchar(lb) & nzchar(ub), glue("<{lb},{ub}>"), 
+    ifelse(
+      nzchar(lb) & !nzchar(ub), glue("<{lb}>"),
+      ifelse(
+        !nzchar(lb) & nzchar(ub), glue("<{ub}>"),
+        default
+      )
+    )
+  )
+  out
+}
+
+# convert parameter bounds in Stan syntax 
+# TODO: vectorize over a character vector of bounds?
+# complicated because of a mix of character and numeric values
+# to a named list with elements 'lb' and 'ub'
+convert_stan2bounds <- function(bound, default = c(-Inf, Inf)) {
+  bound <- as_one_character(bound)
+  stopifnot(length(default) == 2L)
+  out <- list(lb = default[[1]], ub = default[[2]])
+  if (!is.na(bound) && isTRUE(nzchar(bound))) {
+    lb <- get_matches("(<|,)lower=[^,>]+", bound)
+    if (isTRUE(nzchar(lb))) {
+      lb <- substr(lb, 8, nchar(lb))
+      lb_num <- SW(as.numeric(lb))
+      if (!is.na(lb_num)) {
+        lb <- lb_num
+      }
+      out$lb <- lb
+    }
+    ub <- get_matches("(<|,)upper=[^,>]+", bound)
+    if (isTRUE(nzchar(ub))) {
+      ub <- substr(ub, 8, nchar(ub))
+      ub_num <- SW(as.numeric(ub))
+      if (!is.na(ub_num)) {
+        ub <- ub_num
+      }
+      out$ub <- ub
     }
   }
   out
@@ -1703,21 +1771,21 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
 prepare_print_prior <- function(x) {
   stopifnot(is.brmsprior(x))
   x$source[!nzchar(x$source)] <- "(unknown)"
-  # column names to vectorize over
-  cols <- c("group", "nlpar", "dpar", "resp", "class")
-  empty_strings <- rep("", 4)
+  # vectorize priors and bounds for pretty printing
+  # TODO: improve efficiency of adding vectorization tags
   for (i in which(!nzchar(x$prior))) {
-    ls <- x[i, cols]
-    ls <- rbind(ls, c(empty_strings, ls$class))
-    ls <- as.list(ls)
-    sub_prior <- subset2(x, ls = ls)
-    base_prior <- stan_base_prior(sub_prior)
+    base_prior <- stan_base_prior(x, sel_prior = x[i, ])
     if (nzchar(base_prior)) {
       x$prior[i] <- base_prior
       x$source[i] <- "(vectorized)"
     } else {
       x$prior[i] <- "(flat)"
     }
+  }
+  for (i in which(!nzchar(x$lb) & !nzchar(x$ub))) {
+    base_bounds <- stan_base_prior(x, c("lb", "ub"), sel_prior = x[i, ])
+    x$lb[i] <- base_bounds[, "lb"]
+    x$ub[i] <- base_bounds[, "ub"]
   }
   x
 }
@@ -1732,7 +1800,8 @@ prepare_print_prior <- function(x) {
   if (any(nzchar(c(resp, dpar, nlpar, coef)))) {
     group <- usc(group, "suffix")
   }
-  bound <- ifelse(nzchar(x$bound), paste0(x$bound, " "), "")
+  bound <- convert_bounds2stan(x[c("lb", "ub")])
+  bound <- ifelse(nzchar(bound), paste0(bound, " "), "")
   tilde <- ifelse(nzchar(x$class) | nzchar(group) | nzchar(coef), " ~ ", "")
   prior <- ifelse(nzchar(x$prior), x$prior, "(flat)")
   paste0(bound, x$class, group, resp, dpar, nlpar, coef, tilde, prior)

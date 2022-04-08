@@ -23,7 +23,6 @@ This function is almost solely useful when
 called in formulas passed to the \pkg{brms} package.
 }
 \examples{
-
 \dontrun{
 fit <- brm(rating ~ period + carry + cs(treat),
            data = inhaler, family = sratio("cloglog"),

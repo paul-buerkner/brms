@@ -834,14 +834,14 @@ log_lik_cumulative <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  if (y == 1) {
-    out <- log(inv_link(eta[, 1], prep$family$link))
-  } else if (y == nthres + 1) {
-    out <- log(1 - inv_link(eta[, y - 1], prep$family$link))
+  if (y == 1L) {
+    out <- log_cdf(eta[, 1L], prep$family$link)
+  } else if (y == nthres + 1L) {
+    out <- log_ccdf(eta[, y - 1L], prep$family$link)
   } else {
-    out <- log(
-      inv_link(eta[, y], prep$family$link) -
-        inv_link(eta[, y - 1], prep$family$link)
+    out <- log_diff_exp(
+      log_cdf(eta[, y], prep$family$link),
+      log_cdf(eta[, y - 1L], prep$family$link)
     )
   }
   log_lik_weight(out, i = i, prep = prep)
@@ -855,16 +855,16 @@ log_lik_sratio <- function(i, prep) {
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
   q <- sapply(seq_len(min(y, nthres)),
-    function(k) 1 - inv_link(eta[, k], prep$family$link)
+    function(k) log_ccdf(eta[, k], prep$family$link)
   )
-  if (y == 1) {
-    out <- log(1 - q[, 1])
-  } else if (y == 2) {
-    out <- log(1 - q[, 2]) + log(q[, 1])
-  } else if (y == nthres + 1) {
-    out <- rowSums(log(q))
+  if (y == 1L) {
+    out <- log1m_exp(q[, 1L])
+  } else if (y == 2L) {
+    out <- log1m_exp(q[, 2L]) + q[, 1L]
+  } else if (y == nthres + 1L) {
+    out <- rowSums(q)
   } else {
-    out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
+    out <- log1m_exp(q[, y]) + rowSums(q[, 1L:(y - 1L)])
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -877,16 +877,16 @@ log_lik_cratio <- function(i, prep) {
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
   q <- sapply(seq_len(min(y, nthres)),
-    function(k) inv_link(eta[, k], prep$family$link)
+    function(k) log_cdf(eta[, k], prep$family$link)
   )
-  if (y == 1) {
-    out <- log(1 - q[, 1])
-  }  else if (y == 2) {
-    out <- log(1 - q[, 2]) + log(q[, 1])
-  } else if (y == nthres + 1) {
-    out <- rowSums(log(q))
+  if (y == 1L) {
+    out <- log1m_exp(q[, 1L])
+  } else if (y == 2L) {
+    out <- log1m_exp(q[, 2L]) + q[, 1L]
+  } else if (y == nthres + 1L) {
+    out <- rowSums(q)
   } else {
-    out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
+    out <- log1m_exp(q[, y]) + rowSums(q[, 1L:(y - 1L)])
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -898,7 +898,9 @@ log_lik_acat <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  if (prep$family$link == "logit") { # more efficient calculation
+  # TODO: check if computation can be made more numerically stable
+  if (prep$family$link == "logit") { 
+    # more efficient computation for logit link
     q <- sapply(1:nthres, function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1],
                matrix(0, nrow = nrow(eta), ncol = nthres - 1))

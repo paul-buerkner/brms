@@ -130,10 +130,10 @@
 #'   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 #'
 #'   \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
-#'   \code{Beta}, \code{zero_inflated_binomial},
-#'   \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta}, and
-#'   \code{zero_one_inflated_beta} support \code{logit}, \code{probit},
-#'   \code{probit_approx}, \code{cloglog}, \code{cauchit}, and \code{identity}.}
+#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial}, 
+#'   \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
+#'   support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog}, 
+#'   \code{cauchit}, \code{identity}, and \code{log}.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
 #'   and \code{acat} support \code{logit}, \code{probit},
@@ -271,7 +271,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   )
   out[names(family_info)] <- family_info
   class(out) <- c("brmsfamily", "family")
-  all_valid_dpars <- c(valid_dpars(out), valid_dpars(out, multi = TRUE))
+  all_valid_dpars <- c(valid_dpars(out), valid_dpars(out, type = "multi"))
   for (dp in all_valid_dpars) {
     alink <- as.character(aux_links[[paste0("link_", dp)]])
     if (length(alink)) {
@@ -1230,26 +1230,32 @@ valid_dpars <- function(family, ...) {
 }
 
 #' @export
-valid_dpars.default <- function(family, multi = FALSE, ...) {
+valid_dpars.default <- function(family, type = NULL, ...) {
   if (!length(family)) {
-    return("mu")
+    if (is.null(type)) {
+      return("mu")
+    } else {
+      return(NULL)
+    }
   }
   family <- validate_family(family)
-  if (multi) {
-    out <- family_info(family, "multi_dpars", ...)
-  } else {
-    out <- family_info(family, "dpars", ...)
-  }
-  out
+  info <- paste0(usc(type, "suffix"), "dpars")
+  family_info(family, info, ...)
 }
 
 #' @export
-valid_dpars.mixfamily <- function(family, ...) {
-  out <- lapply(family$mix, valid_dpars, ...)
+valid_dpars.mixfamily <- function(family, type = NULL, ...) {
+  out <- lapply(family$mix, valid_dpars, type = type, ...)
   for (i in seq_along(out)) {
-    out[[i]] <- paste0(out[[i]], i)
+    if (length(out[[i]])) {
+      out[[i]] <- paste0(out[[i]], i) 
+    }
   }
-  c(unlist(out), paste0("theta", seq_along(out)))
+  out <- unlist(out)
+  if (is.null(type)) {
+    c(out) <- paste0("theta", seq_along(family$mix))
+  }
+  out
 }
 
 #' @export
@@ -1287,7 +1293,7 @@ dpar_class <- function(dpar, family = NULL) {
     if (conv_cats_dpars(family)) {
       # categorical-like models have non-integer suffixes
       # that will not be caught by the standard procedure
-      multi_dpars <- valid_dpars(family, multi = TRUE)
+      multi_dpars <- valid_dpars(family, type = "multi")
       for (dp in multi_dpars) {
         sel <- grepl(paste0("^", dp), out)
         out[sel] <- dp
@@ -1328,6 +1334,12 @@ links_dpars <- function(dpar) {
     alpha = c("identity", "log", "softplus", "squareplus"),
     theta = c("identity")
   )
+}
+
+# is a distributional parameter a mixture proportion?
+is_mix_proportion <- function(dpar, family) {
+  dpar_class <- dpar_class(dpar, family)
+  dpar_class %in% "theta" & is.mixfamily(family)
 }
 
 # generate a family object of a distributional parameter

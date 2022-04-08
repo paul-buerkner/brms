@@ -34,8 +34,8 @@ launch_shinystan.brmsfit <- function(
   if (object$algorithm != "sampling") {
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
   }
-  draws <- as.array(object)
   inc_warmup <- isTRUE(object$fit@sim$n_save[1] > niterations(object))
+  draws <- as.array(object, inc_warmup = inc_warmup)
   warmup <- if (inc_warmup) nwarmup(object) else 0
   sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = inc_warmup)
   control <- object$fit@stan_args[[1]]$control

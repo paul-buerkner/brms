@@ -246,7 +246,7 @@ models for all parameters of the assumed response distribution.
   information on the response variable. \code{fun} can be replaced with
   either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc},
   \code{trials}, \code{cat}, \code{dec}, \code{rate}, \code{vreal}, or
-  \code{vint}. Their meanings are explained below.
+  \code{vint}. Their meanings are explained below
   (see also \code{\link{addition-terms}}).
 
   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is

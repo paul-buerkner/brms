@@ -5,7 +5,14 @@
 \alias{stancode}
 \title{Extract Stan model code}
 \usage{
-\method{stancode}{brmsfit}(object, version = TRUE, regenerate = NULL, threads = NULL, ...)
+\method{stancode}{brmsfit}(
+  object,
+  version = TRUE,
+  regenerate = NULL,
+  threads = NULL,
+  backend = NULL,
+  ...
+)
 
 stancode(object, ...)
 }
@@ -23,6 +30,8 @@ to be \code{TRUE} by other arguments.}
 
 \item{threads}{Controls whether the Stan code should be threaded.
 See \code{\link{threading}} for details.}
+
+\item{backend}{Controls the Stan backend. See \code{\link{brm}} for details.}
 
 \item{...}{Further arguments passed to \code{\link{make_stancode}} if the
 Stan code is regenerated.}
