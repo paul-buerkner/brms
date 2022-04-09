@@ -44,7 +44,7 @@ tree and we thus have to adjust our model to incorporate this dependency. The
 examples discussed here are from chapter 11 of the book *Modern Phylogenetic
 Comparative Methods and the application in Evolutionary Biology* (de Villemeruil
 & Nakagawa, 2014). The necessary data can be downloaded from the corresponding
-website (http://www.mpcm-evolution.com/). Some of these models may take a few
+website (https://www.mpcm-evolution.com/). Some of these models may take a few
 minutes to fit.
 
 ## A Simple Phylogenetic Model
