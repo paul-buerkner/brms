@@ -308,7 +308,8 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode <- parse_model(scode, backend, silent = silent)
   }
   if (backend == "cmdstanr") {
-    if (cmdstanr::cmdstan_version() >= "2.29.0") {
+    if (requireNamespace("cmdstanr", quietly = TRUE) && 
+        cmdstanr::cmdstan_version() >= "2.29.0") {
       tmp_file <- cmdstanr::write_stan_file(scode)
       scode <- .canonicalize_stan_model(tmp_file, overwrite_file = FALSE)
     }

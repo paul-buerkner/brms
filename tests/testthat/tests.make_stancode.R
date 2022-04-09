@@ -2324,6 +2324,16 @@ test_that("to_vector() is correctly removed from prior of SD parameters", {
 })
 
 test_that("threaded Stan code is correct", {
+  # tests require cmdstanr which is not yet on CRAN
+  skip_on_cran()
+  
+  # only run if cmdstan >= 2.29 can be found on the system
+  # otherwise the canonicalized code will cause test failures
+  cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
+  found_cmdstan <- !is(cmdstan_version, "try-error")
+  skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
+  options(brms.backend = "cmdstanr")
+  
   dat <- data.frame(
     count = rpois(236, lambda = 20),
     visit = rep(1:4, each = 59),
@@ -2336,16 +2346,7 @@ test_that("threaded Stan code is correct", {
     gender = factor(c(rep("m", 30), rep("f", 29)))
   )
 
-  # only parse models if cmdstan >= 2.29 can be found on the system
-  # otherwise the canonicalized code will cause test failures
-  cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
-  found_cmdstan <- !is(cmdstan_version, "try-error")
-  options(
-    brms.parse_stancode = found_cmdstan && not_cran,
-    brms.backend = "cmdstanr"
-  )
   threads <- threading(2, grainsize = 20)
-
   bform <- bf(
     count ~ Trt*Age + mo(Exp) + s(Age) + offset(Age) + (1+Trt|visit),
     sigma ~ Trt + gp(Age) + gp(volume, by = Trt)
@@ -2399,14 +2400,15 @@ test_that("threaded Stan code is correct", {
 })
 
 test_that("Un-normalized Stan code is correct", {
-  # only parse models if cmdstan >= 2.29 can be found on the system
+  # tests require cmdstanr which is not yet on CRAN
+  skip_on_cran()
+  
+  # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
   found_cmdstan <- !is(cmdstan_version, "try-error")
-  options(
-    brms.parse_stancode = found_cmdstan && cmdstan_version >= "2.29.0" && not_cran,
-    brms.backend = "cmdstanr"
-  )
+  skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
+  options(brms.backend = "cmdstanr")
 
   scode <- make_stancode(
     count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
@@ -2475,13 +2477,15 @@ test_that("Un-normalized Stan code is correct", {
 })
 
 test_that("Canonicalizing Stan code is correct", {
-  # only canonicalize models if cmdstan >= 2.29 can be found on the system
+  # tests require cmdstanr which is not yet on CRAN
+  skip_on_cran()
+  
+  # only run if cmdstan >= 2.29 can be found on the system
+  # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
   found_cmdstan <- !is(cmdstan_version, "try-error")
-  skip_if(!found_cmdstan || cmdstan_version < "2.29.0")
-  options(
-    brms.backend = "cmdstanr"
-  )
+  skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
+  options(brms.backend = "cmdstanr")
 
   scode <- make_stancode(
     count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
