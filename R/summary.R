@@ -103,7 +103,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar", "rhocar", 
     "sd", "cor", "df", "sds", "sdgp", "lscale", "simo"
   )
-  incl_regex <- paste0("^", regex_or(incl_classes), "(_|$)")
+  incl_regex <- paste0("^", regex_or(incl_classes), "(_|$|\\[)")
   variables <- variables[grepl(incl_regex, variables)]
   draws <- as_draws_array(object, variable = variables)
   full_summary <- .summary(draws, variables, probs, robust)
