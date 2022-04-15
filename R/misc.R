@@ -30,7 +30,7 @@ p <- function(x, i = NULL, row = TRUE) {
 
 # extract parts of an object with selective dropping of dimensions
 # @param x,...,drop same as in x[..., drop]
-# @drop_dim: Optional numeric or logical vector controlling
+# @param drop_dim Optional numeric or logical vector controlling
 #   which dimensions to drop. Will overwrite argument 'drop'.
 extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   if (!length(dim(x))) {

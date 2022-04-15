@@ -470,7 +470,7 @@ get_theta <- function(prep, i = NULL) {
     }
     theta <- abind(theta, along = 3)
     for (n in seq_len(dim(theta)[2])) {
-      theta[, n, ] <- softmax(theta[, n, ])
+      theta[, n, ] <- softmax(slice(theta, 2, n))
     }
     if (length(i) == 1L) {
       dim(theta) <- dim(theta)[c(1, 3)]
@@ -566,7 +566,7 @@ get_Sigma <- function(prep, i = NULL, cor_name = NULL) {
     sigma <- abind(sigma, along = 3)
     Sigma <- array(dim = c(dim_mu(prep), nsigma, nsigma))
     for (n in seq_len(ncol(Sigma))) {
-      Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], cors)
+      Sigma[, n, , ] <- get_cov_matrix(slice(sigma, 2, n), cors)
     }
   }
   Sigma
