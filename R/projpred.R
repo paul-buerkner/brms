@@ -214,14 +214,6 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     allow_new_levels = TRUE
   )
   y <- unname(model.response(model.frame(respform, data, na.action = na.pass)))
-  aug_data <- is_categorical(formula) || is_ordinal(formula)
-  if (aug_data) {
-    y_lvls <- levels(as.factor(y))
-    if (!is_equal(y_lvls, get_cats(formula))) {
-      stop2("The augmented data approach requires all response categories to ",
-            "be present in the data passed to projpred.")
-    }
-  }
 
   # extract relevant auxiliary data
   # call standata to ensure the correct format of the data
