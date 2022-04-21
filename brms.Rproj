@@ -4,6 +4,7 @@ RestoreWorkspace: Default
 SaveWorkspace: Default
 AlwaysSaveHistory: Default
 
+StripTrailingWhitespace: Yes
 EnableCodeIndexing: Yes
 UseSpacesForTab: Yes
 NumSpacesForTab: 2
