@@ -438,6 +438,7 @@ posterior_epred_exgaussian <- function(prep) {
 }
 
 posterior_epred_wiener <- function(prep) {
+  # obtained from https://doi.org/10.1016/j.jmp.2009.01.006
   # mu is the drift rate
   with(prep$dpars,
    ndt - bias / mu + bs / mu *
