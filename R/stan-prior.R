@@ -64,7 +64,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     }
     base_prior <- base_prior[1]
     if (nrow(unique(base_bounds)) > 1L) {
-      stop2("Conflicting boundary information for ", 
+      stop2("Conflicting boundary information for ",
             "coefficients of class '", class, "'.")
     }
     base_bounds <- base_bounds[1, ]
@@ -385,6 +385,7 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       "  // R2D2 shrinkage parameters\n",
       "  real<lower=0,upper=1> R2D2_R2{p};  // R2 parameter\n"
     )
+    var_mult <- ""
     if (isTRUE(special$R2D2$autoscale)) {
       var_mult <- glue("sigma{usc(px$resp)}^2 * ")
     }
@@ -659,8 +660,8 @@ stan_type_add_bounds <- function(type, bound) {
 }
 
 stopif_prior_bound <- function(prior, class, ...) {
-  lb <- stan_base_prior(prior, "lb", class = class, ...) 
-  ub <- stan_base_prior(prior, "ub", class = class, ...) 
+  lb <- stan_base_prior(prior, "lb", class = class, ...)
+  ub <- stan_base_prior(prior, "ub", class = class, ...)
   if (nzchar(lb) || nzchar(ub)) {
     stop2("Cannot add bounds to class '", class, "' for this prior.")
   }
