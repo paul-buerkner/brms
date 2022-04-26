@@ -1,3 +1,11 @@
+# brms 2.17.0++
+
+### New Features
+
+* Support regression splines with fixed degrees of freedom 
+specified via `s(..., fx = TRUE)`.
+
+
 # brms 2.17.0
 
 ### New Features

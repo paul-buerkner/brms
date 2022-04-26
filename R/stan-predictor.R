@@ -100,7 +100,7 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
         dp_comment <- paste0(dp_comment, " (temporary)")
       }
       str_add_list(out) <- stan_prior(
-        prior, dp, prefix = prefix, suffix = resp, 
+        prior, dp, prefix = prefix, suffix = resp,
         header_type = "real", px = px,
         comment = dp_comment, normalize = normalize
       )
@@ -188,7 +188,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
   )
   if (family == "student") {
     str_add_list(out) <- stan_prior(
-      prior, class = "nu", header_type = "real", 
+      prior, class = "nu", header_type = "real",
       normalize = normalize
     )
   }
@@ -328,7 +328,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
-          px = px, suffix = p, header_type = "vector", 
+          px = px, suffix = p, header_type = "vector",
           comment = b_comment, normalize = normalize
         )
       }
@@ -346,7 +346,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
-          px = px, suffix = glue("Q{p}"), header_type = "vector", 
+          px = px, suffix = glue("Q{p}"), header_type = "vector",
           comment = b_comment, normalize = normalize
         )
       }
@@ -746,6 +746,9 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
     str_add(out$eta) <- glue(" + Xs{p}{slice} * bs{p}")
   }
   for (i in seq_rows(smef)) {
+    if (smef$nbases[[i]] == 0) {
+      next  # no penalized spline components present
+    }
     pi <- glue("{p}_{i}")
     nb <- seq_len(smef$nbases[[i]])
     str_add(out$data) <- glue(
@@ -1073,7 +1076,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       )
       str_add_list(out) <- stan_prior(
         prior, class = "lscale", coef = sfx2,
-        type = lscale_type, dim = lscale_dim, suffix = glue("{pi}"), 
+        type = lscale_type, dim = lscale_dim, suffix = glue("{pi}"),
         px = px, comment = lscale_comment, normalize = normalize
       )
       if (gr) {

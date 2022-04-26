@@ -143,10 +143,15 @@ data_sm <- function(bterms, data, basis = NULL) {
         colnames(lXs[[ns]]) <- paste0(sm$label, "_", seq_cols(lXs[[ns]]))
       }
       Zs <- rasm$rand
-      Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
-      tmp <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-      tmp <- setNames(tmp, paste0(c("nb", "knots"), p, "_", ns))
-      c(out) <- c(tmp, Zs)
+      sfx <- paste0(p, "_", ns)
+      out[[paste0("nb", sfx)]] <- length(Zs)
+      if (length(Zs)) {
+        names(Zs) <- paste0("Zs", sfx, "_", seq_along(Zs))
+        c(out) <- Zs
+        out[[paste0("knots", sfx)]] <- as.array(ulapply(Zs, ncol))
+      } else {
+        out[[paste0("knots", sfx)]] <- integer(0)
+      }
     }
   }
   Xs <- do_call(cbind, lXs)
@@ -964,20 +969,25 @@ s2rPred <- function(sm, data) {
   if (!is.null(re$trans.U)) {
     X <- X %*% re$trans.U
   }
-  X <- t(t(X) * re$trans.D)
-  # re-order columns according to random effect re-ordering
-  X[, re$rind] <- X[, re$pen.ind != 0]
-  # re-order penalization index in same way
-  pen.ind <- re$pen.ind
-  pen.ind[re$rind] <- pen.ind[pen.ind > 0]
-  # start returning the object
-  Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
-  out <- list(rand = list(), Xf = Xf)
-  for (i in seq_along(re$rand)) {
-    # loop over random effect matrices
-    out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
-    attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+  if (is.null(re$trans.D)) {
+    # regression spline without penalization
+    out <- list(Xf = X)
+  } else {
+    X <- t(t(X) * re$trans.D)
+    # re-order columns according to random effect re-ordering
+    X[, re$rind] <- X[, re$pen.ind != 0]
+    # re-order penalization index in same way
+    pen.ind <- re$pen.ind
+    pen.ind[re$rind] <- pen.ind[pen.ind > 0]
+    # start returning the object
+    Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
+    out <- list(rand = list(), Xf = Xf)
+    for (i in seq_along(re$rand)) {
+      # loop over random effect matrices
+      out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
+      attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+    }
+    names(out$rand) <- names(re$rand)
   }
-  names(out$rand) <- names(re$rand)
   out
 }
