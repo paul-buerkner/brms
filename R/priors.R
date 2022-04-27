@@ -2027,7 +2027,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #' @param prec_R2 precision of the Beta prior on the coefficient of determination R^2.
 #' @param cons_D2 concentration vector of the Dirichlet prior on the variance
 #'   decomposition parameters.
-#' @param autoscale Logical; indicating whether the horseshoe
+#' @param autoscale Logical; indicating whether the R2D2
 #'   prior should be scaled using the residual standard deviation
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 #'   Autoscaling is not applied for distributional parameters or
