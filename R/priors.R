@@ -227,7 +227,17 @@
 #'   between \code{0} and \code{1}. The default priors are flat over the
 #'   respective definition areas.
 #'
-#'   7. Distance parameters of monotonic effects
+#'   7. Parameters of measurement error terms
+#'
+#'   Latent variables induced via measurement error \code{\link{me}} terms
+#'   require both mean and standard deviation parameters, whose prior classes
+#'   are named \code{"meanme"} and \code{"sdme"}, respectively. If multiple
+#'   latent variables are induced this way, their correlation matrix will
+#'   be modeled as well and corresponding priors can be specified via the
+#'   \code{"corme"} class. All of the above parameters have flat priors over
+#'   their respective definition spaces by default.
+#'
+#'   8. Distance parameters of monotonic effects
 #'
 #'   As explained in the details section of \code{\link{brm}},
 #'   monotonic effects make use of a special parameter vector to
@@ -252,7 +262,7 @@
 #'   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
 #'   of the respective dimension.
 #'
-#'   8. Parameters for specific families
+#'   9. Parameters for specific families
 #'
 #'   Some families need additional parameters to be estimated.
 #'   Families \code{gaussian}, \code{student}, \code{skew_normal},
