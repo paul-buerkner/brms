@@ -14,7 +14,7 @@ R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE)
 \item{cons_D2}{concentration vector of the Dirichlet prior on the variance
 decomposition parameters.}
 
-\item{autoscale}{Logical; indicating whether the horseshoe
+\item{autoscale}{Logical; indicating whether the R2D2
 prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 Autoscaling is not applied for distributional parameters or

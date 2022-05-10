@@ -117,7 +117,7 @@ test_that("specified priors appear in the Stan code", {
   prior <- prior(uniform(0,5), class = sd)
   expect_warning(make_stancode(y ~ x1 + (1|g), dat, prior = prior),
                   "no natural upper bound")
-  
+
   prior <- prior(uniform(-1, 1), class = cor)
   expect_error(
     make_stancode(y ~ x1 + (x1|g), dat, prior = prior),
@@ -325,7 +325,7 @@ test_that("link functions appear in the Stan code", {
                "mu[n] = square(mu[n]);")
   expect_match2(make_stancode(y ~ s(x), dat, family = bernoulli()),
                 "target += bernoulli_logit_lpmf(Y | mu);")
-  
+
   scode <- make_stancode(y ~ x, dat, family = beta_binomial('logit'))
   expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
   scode <- make_stancode(y ~ x, dat, family = beta_binomial('cloglog'))
@@ -1326,7 +1326,7 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   scode <- make_stancode(y | weights(x) + trunc(0, 30) ~ 1, dat)
   expect_match2(scode, "target += weights[n] * (normal_lpdf(Y[n] | mu[n], sigma) -")
   expect_match2(scode, "  log_diff_exp(normal_lcdf(ub[n] | mu[n], sigma),")
-  
+
   expect_match2(
     make_stancode(y | trials(y2) + weights(y2) ~ 1, dat, beta_binomial()),
     "target += weights[n] * (beta_binomial_lpmf(Y[n] | trials[n], mu[n] * phi,"
@@ -1480,7 +1480,7 @@ test_that("predicting zi and hu works correctly", {
 
   fam <- zero_inflated_binomial("probit", link_zi = "identity")
   scode <- make_stancode(
-    bf(count ~ Trt, zi ~ Trt), epilepsy, family = fam, 
+    bf(count ~ Trt, zi ~ Trt), epilepsy, family = fam,
     prior = prior("", class = Intercept, dpar = zi, lb = 0, ub = 1)
   )
   expect_match2(scode,
@@ -2326,14 +2326,14 @@ test_that("to_vector() is correctly removed from prior of SD parameters", {
 test_that("threaded Stan code is correct", {
   # tests require cmdstanr which is not yet on CRAN
   skip_on_cran()
-  
+
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
   found_cmdstan <- !is(cmdstan_version, "try-error")
   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
   options(brms.backend = "cmdstanr")
-  
+
   dat <- data.frame(
     count = rpois(236, lambda = 20),
     visit = rep(1:4, each = 59),
@@ -2402,7 +2402,7 @@ test_that("threaded Stan code is correct", {
 test_that("Un-normalized Stan code is correct", {
   # tests require cmdstanr which is not yet on CRAN
   skip_on_cran()
-  
+
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
@@ -2479,7 +2479,7 @@ test_that("Un-normalized Stan code is correct", {
 test_that("Canonicalizing Stan code is correct", {
   # tests require cmdstanr which is not yet on CRAN
   skip_on_cran()
-  
+
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)

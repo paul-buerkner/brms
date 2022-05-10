@@ -536,7 +536,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
       prior <- prior + brmsprior(class = "rescor", prior = "lkj(1)")
     }
     if (family_names(x)[1] %in% "student") {
-      prior <- prior + 
+      prior <- prior +
         brmsprior(class = "nu", prior = "gamma(2, 0.1)", lb = "1")
     }
   }
@@ -581,7 +581,7 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
       # parameter is estimated
       dp_bound <- dpar_bounds(dp, suffix = x$resp, family = x$family)
       dp_prior <- brmsprior(
-        def_dprior, class = dp, resp = x$resp, 
+        def_dprior, class = dp, resp = x$resp,
         lb = dp_bound$lb, ub = dp_bound$ub
       )
     }
@@ -612,14 +612,6 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
       prior <- prior +
         brmsprior("lkj(1)", class = "lncor", resp = x$resp)
     }
-  }
-  # priors for noise-free response variables
-  sdy <- get_sdy(x, data)
-  if (!is.null(sdy)) {
-    prior <- prior +
-      brmsprior(class = "meanme", resp = x$resp) +
-      # don't specify lb as we already have it in 'prior_Xme'
-      brmsprior(class = "sdme", resp = x$resp)
   }
   # priors for autocorrelation parameters
   # prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
@@ -946,8 +938,8 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
     }
     # prior for SD parameters of the RE coefficients
     smterms <- unique(smef$term)
-    prior <- prior + 
-      brmsprior(prior = def_scale_prior, class = "sds", 
+    prior <- prior +
+      brmsprior(prior = def_scale_prior, class = "sds",
                 lb = "0", ls = px) +
       brmsprior(class = "sds", coef = smterms, ls = px)
   }
@@ -972,18 +964,18 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     arma_lb <- str_if(need_arma_bound, "-1")
     arma_ub <- str_if(need_arma_bound, "1")
     if (acef_arma$p > 0) {
-      prior <- prior + 
+      prior <- prior +
         brmsprior(class = "ar", ls = px, lb = arma_lb, ub = arma_ub)
     }
     if (acef_arma$q > 0) {
-      prior <- prior + 
+      prior <- prior +
         brmsprior(class = "ma", ls = px, lb = arma_lb, ub = arma_ub)
     }
   }
   if (has_ac_class(acef, "cosy")) {
     # cosy correlations may be negative in theory but
     # this causes problems with divergent transitions (#878)
-    prior <- prior + 
+    prior <- prior +
       brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
   }
   if (has_ac_latent_residuals(bterms)) {
@@ -995,11 +987,11 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     sar_lb <- glue("min_eigenMsar{p}")
     sar_ub <- glue("max_eigenMsar{p}")
     if (acef_sar$type == "lag") {
-      prior <- prior + 
+      prior <- prior +
         brmsprior(class = "lagsar", lb = sar_lb, ub = sar_ub, ls = px)
     }
     if (acef_sar$type == "error") {
-      prior <- prior + 
+      prior <- prior +
         brmsprior(class = "errorsar", lb = sar_lb, ub = sar_ub, ls = px)
     }
   }
@@ -1008,7 +1000,7 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     prior <- prior +
       brmsprior(def_scale_prior, class = "sdcar", lb = "0", ls = px)
     if (acef_car$type %in% "escar") {
-      prior <- prior + 
+      prior <- prior +
         brmsprior(class = "car", lb = "0", ub = "1", ls = px)
     } else if (acef_car$type %in% "bym2") {
       prior <- prior +
@@ -1208,7 +1200,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     prior <- prior[!invalid, ]
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
-  
+
   # include default parameter bounds; only new priors need bounds
   which_needs_lb <- which(is.na(prior$lb) & !nzchar(prior$coef))
   for (i in which_needs_lb) {
@@ -1238,13 +1230,13 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   # the remaining NAs are in coef priors which cannot have bounds yet
   prior$lb[is.na(prior$lb)] <- prior$ub[is.na(prior$ub)] <- ""
-  
+
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
   check_prior_content(prior)
-  
+
   # don't require priors on nlpars if some priors are not checked (#1124)
   require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
   prior <- validate_prior_special(
@@ -1290,7 +1282,7 @@ check_prior_content <- function(prior) {
     return(invisible(TRUE))
   }
   lb_priors <- c(
-    "lognormal", "chi_square", "inv_chi_square", "scaled_inv_chi_square", 
+    "lognormal", "chi_square", "inv_chi_square", "scaled_inv_chi_square",
     "exponential", "gamma", "inv_gamma", "weibull", "frechet", "rayleigh",
     "pareto", "pareto_type_2"
   )
@@ -1301,7 +1293,7 @@ check_prior_content <- function(prior) {
   cormat_regex <- "^((lkj)|(constant))"
   simplex_pars <- c("simo", "theta", "sbhaz")
   simplex_regex <- "^((dirichlet)|(constant))\\("
-  
+
   lb_warning <- ub_warning <- ""
   for (i in seq_rows(prior)) {
     if (!nzchar(prior$prior[i]) || !prior$new[i]) {
@@ -1326,7 +1318,7 @@ check_prior_content <- function(prior) {
         "the 'lkj' prior. See help(set_prior) for more details."
       )
     }
-    if (prior$class[i] %in% simplex_pars && 
+    if (prior$class[i] %in% simplex_pars &&
         !grepl(simplex_regex, prior$prior[i])) {
       stop2(
         "Currently 'dirichlet' is the only valid prior for ",
@@ -1684,15 +1676,15 @@ convert_bounds2stan <- function(bounds, default = "") {
     stop2("Upper boundaries cannot be negative infinite.")
   }
   lb <- ifelse(
-    !is.na(lb) & !lb %in% c("NA", "-Inf", ""), 
+    !is.na(lb) & !lb %in% c("NA", "-Inf", ""),
     paste0("lower=", lb), ""
   )
   ub <- ifelse(
-    !is.na(ub) & !ub %in% c("NA", "Inf", ""), 
+    !is.na(ub) & !ub %in% c("NA", "Inf", ""),
     paste0("upper=", ub), ""
   )
   out <- ifelse(
-    nzchar(lb) & nzchar(ub), glue("<{lb},{ub}>"), 
+    nzchar(lb) & nzchar(ub), glue("<{lb},{ub}>"),
     ifelse(
       nzchar(lb) & !nzchar(ub), glue("<{lb}>"),
       ifelse(
@@ -1704,7 +1696,7 @@ convert_bounds2stan <- function(bounds, default = "") {
   out
 }
 
-# convert parameter bounds in Stan syntax 
+# convert parameter bounds in Stan syntax
 # TODO: vectorize over a character vector of bounds?
 # complicated because of a mix of character and numeric values
 # to a named list with elements 'lb' and 'ub'

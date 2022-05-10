@@ -5,6 +5,12 @@
 * Support regression splines with fixed degrees of freedom 
 specified via `s(..., fx = TRUE)`.
 
+### Bug Fixes
+
+* Fix problems with missing boundaries of `sdme` parameters in models
+with known response standard errors as specified via `mi` terms thanks to
+Solomon Kurz. (#1348)
+
 
 # brms 2.17.0
 
