@@ -30,7 +30,7 @@ predictive_error.brmsfit <- function(
   resp = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
-  if ("re.form" %in% names(cl)) {
+  if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
   }
   .predictive_error(

@@ -49,7 +49,7 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                     nlpar = NULL, ndraws = NULL, draw_ids = NULL,
                                     sort = FALSE, ...) {
   cl <- match.call()
-  if ("re.form" %in% names(cl)) {
+  if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
   }
   contains_draws(object)
@@ -312,7 +312,7 @@ posterior_linpred.brmsfit <- function(
   incl_thres = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
-  if ("re.form" %in% names(cl)) {
+  if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
   }
   scale <- "linear"

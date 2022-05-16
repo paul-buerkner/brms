@@ -86,7 +86,7 @@ posterior_predict.brmsfit <- function(
   cores = NULL, ...
 ) {
   cl <- match.call()
-  if ("re.form" %in% names(cl)) {
+  if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
   }
   contains_draws(object)
