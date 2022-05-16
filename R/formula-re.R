@@ -643,7 +643,18 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
           rsub$gcall[[i]]$groups,
           function(g) extract_levels(get(g, data))
         ))
-        # store information of corresponding by levels
+        # fixes issue #1353
+        bysel <- ranef$group == names(levels)[i] &
+          nzchar(ranef$by) & !duplicated(ranef$by)
+        bysel <- which(bysel)
+        if (length(bysel) > 1L) {
+          stop2("Each grouping factor can only be associated with one 'by' variable.")
+        }
+        # ensure that a non-NULL by-variable is found if present
+        if (length(bysel) == 1L) {
+          rsub[i, ] <- ranef[bysel, ]
+        }
+        # store information of corresponding by-levels
         if (nzchar(rsub$by[i])) {
           stopifnot(rsub$type[i] %in% c("", "mmc"))
           by <- rsub$by[i]
