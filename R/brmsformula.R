@@ -1056,7 +1056,7 @@ set_mecor <- function(mecor = TRUE) {
   } else if (is.mvbrmsformula(e1)) {
     out <- plus_mvbrmsformula(e1, e2)
   } else {
-    stop2("Method '+.bform' not implemented for ", class(e1), " objects.")
+    stop2("Method '+.bform' not implemented for ", class(e1)[1], " objects.")
   }
   out
 }
@@ -1115,6 +1115,10 @@ plus_mvbrmsformula <- function(e1, e2) {
     e1$mecor <- e2[1]
   } else if (is.brmsformula(e2)) {
     e1 <- mvbf(e1, e2)
+  } else if (is.mvbrmsformula(e2)) {
+    # TODO: enable this option
+    stop2("Cannot add two 'mvbrmsformula' objects together. Instead, ",
+          "please add the individual 'brmsformula' objects directly.")
   } else if (is.ac_term(e2)) {
     stop2("Autocorrelation terms can only be specified on the right-hand ",
           "side of a formula, not added to a 'mvbrmsformula' object.")
@@ -1122,7 +1126,7 @@ plus_mvbrmsformula <- function(e1, e2) {
     resp <- attr(e2, "resp", TRUE)
     if (is.null(resp)) {
       stop2(
-        "Don't know how to add a ", class(e2), " object ",
+        "Don't know how to add a ", class(e2)[1], " object ",
         "without the response variable name. ",
         "See help('brmsformula-helpers') for more details."
       )
