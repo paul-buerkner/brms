@@ -20,7 +20,6 @@ Depends:
     Rcpp (>= 0.12.0),
     Matrix (>= 1.4.0),
     methods
-    Matrix
 Imports:
     rstan (>= 2.19.2),
     ggplot2 (>= 2.0.0),
