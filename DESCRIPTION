@@ -18,13 +18,14 @@ Authors@R:
 Depends:
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
+    Matrix (>= 1.4.0),
     methods
+    Matrix
 Imports:
     rstan (>= 2.19.2),
     ggplot2 (>= 2.0.0),
     loo (>= 2.3.1),
     posterior (>= 1.0.0),
-    Matrix (>= 1.4.0),
     mgcv (>= 1.8-13),
     rstantools (>= 2.1.1),
     bayesplot (>= 1.5.0),
