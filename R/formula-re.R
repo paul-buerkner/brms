@@ -795,15 +795,13 @@ get_levels <- function(...) {
 }
 
 extract_levels <- function(x) {
-  if (anyNA(x)) {
-    stop2("NAs are not allowed in grouping variables.")
-  }
+  # do not check for NAs according to #1355
   levels(factor(x))
 }
 
 # extract names of group-level effects
 # @param ranef output of tidy_ranef()
-# @param group optinal name of a grouping factor for
+# @param group optional name of a grouping factor for
 #   which to extract effect names
 # @param bylevels optional names of 'by' levels for
 #    which to extract effect names

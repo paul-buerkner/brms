@@ -166,9 +166,11 @@ test_that("conditional_effects has reasonable ouputs", {
     "Cannot use 'spaghetti' and 'surface' at the same time"
   )
 
-  me <- conditional_effects(fit1, effects = "Age:visit", re_formula = NULL)
+  me <- conditional_effects(fit1, effects = c("Age", "Age:visit"),
+                            re_formula = NULL)
+  expect_equal(nrow(me[[1]]), 100)
   exp_nrow <- 100 * length(unique(fit1$data$visit))
-  expect_equal(nrow(me[[1]]), exp_nrow)
+  expect_equal(nrow(me[[2]]), exp_nrow)
 
   mdata = data.frame(
     Age = c(-0.3, 0, 0.3),
@@ -636,7 +638,7 @@ test_that("pp_check has reasonable outputs", {
 
   pp <- SW(pp_check(fit1, type = "loo_pit", cores = 1))
   expect_ggplot(pp)
-  
+
   # ppd plots work
   expect_ggplot(pp_check(fit1, prefix = "ppd"))
 
