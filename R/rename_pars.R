@@ -58,10 +58,10 @@ change_effects.default <- function(x, ...) {
 }
 
 #' @export
-change_effects.mvbrmsterms <- function(x, pars, ...) {
+change_effects.mvbrmsterms <- function(x, data, pars, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    c(out) <- change_effects(x$terms[[i]], pars = pars, ...)
+    c(out) <- change_effects(x$terms[[i]], data = data, pars = pars, ...)
   }
   if (x$rescor) {
     rescor_names <- get_cornames(
@@ -73,19 +73,20 @@ change_effects.mvbrmsterms <- function(x, pars, ...) {
 }
 
 #' @export
-change_effects.brmsterms <- function(x, ...) {
+change_effects.brmsterms <- function(x, data, ...) {
+  data <- subset_data(data, x)
   out <- list()
   for (dp in names(x$dpars)) {
-    c(out) <- change_effects(x$dpars[[dp]], ...)
+    c(out) <- change_effects(x$dpars[[dp]], data = data, ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- change_effects(x$nlpars[[nlp]], ...)
+    c(out) <- change_effects(x$nlpars[[nlp]], data = data, ...)
   }
   if (is.formula(x$adforms$mi)) {
-    c(out) <- change_Ymi(x, ...)
+    c(out) <- change_Ymi(x, data = data, ...)
   }
-  c(out) <- change_thres(x, ...)
-  c(out) <- change_family_cor_pars(x, ...)
+  c(out) <- change_thres(x, data = data, ...)
+  c(out) <- change_family_cor_pars(x, data = data, ...)
   out
 }
 
