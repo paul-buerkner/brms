@@ -15,6 +15,9 @@
 #'   the posterior predictive distribution's mean
 #'   (see \code{\link{posterior_epred.brmsfit}}) while ignoring
 #'   arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
+#'   If you have specified a response transformation within the formula,
+#'   you need to set \code{epred} to \code{TRUE} for \pkg{emmeans} to
+#'   use this transformation.
 #' @param data,trms,xlev,grid,vcov. Arguments required by \pkg{emmeans}.
 #' @param ... Additional arguments passed to \pkg{emmeans}.
 #'
@@ -55,8 +58,13 @@ recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL,
     re_formula = re_formula, epred = epred
   )
   trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
-  # brms has no call component so the call is just a dummy
-  emmeans::recover_data(call("brms"), trms, "na.omit", data = object$data, ...)
+  # brms has no call component so the call is just a dummy for the most part
+  cl <- call("brms")
+  if (epred) {
+    # fixes issue #1360 for in-formula response transformations
+    cl$formula <- bterms$respform
+  }
+  emmeans::recover_data(cl, trms, "na.omit", data = object$data, ...)
 }
 
 # Calculate the basis for making predictions. In some sense, this is
