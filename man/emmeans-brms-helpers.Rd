@@ -52,7 +52,10 @@ effects; if \code{NA} (default), include no group-level effects.}
 \item{epred}{Logical. If \code{TRUE} compute predictions of
 the posterior predictive distribution's mean
 (see \code{\link{posterior_epred.brmsfit}}) while ignoring
-arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.}
+arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
+If you have specified a response transformation within the formula,
+you need to set \code{epred} to \code{TRUE} for \pkg{emmeans} to
+use this transformation.}
 
 \item{...}{Additional arguments passed to \pkg{emmeans}.}
 }
