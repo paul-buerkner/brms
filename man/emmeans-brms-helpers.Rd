@@ -75,18 +75,28 @@ coefficients.
 }
 \examples{
 \dontrun{
-fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
+fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal())
-summary(fit)
+summary(fit1)
 
 # summarize via 'emmeans'
 library(emmeans)
-rg <- ref_grid(fit)
+rg <- ref_grid(fit1)
 em <- emmeans(rg, "disease")
 summary(em, point.est = mean)
 
 # obtain estimates for the posterior predictive distribution's mean
-epred <- emmeans(fit, "disease", epred = TRUE)
+epred <- emmeans(fit1, "disease", epred = TRUE)
 summary(epred, point.est = mean)
+
+
+# model with transformed response variable
+fit2 <- brm(log(mpg) ~ factor(cyl), data = mtcars)
+summary(fit2)
+
+# results will be on the log scale by default
+emmeans(fit2, ~ cyl)
+# log transform is detected and can be adjusted automatically
+emmeans(fit2, ~ cyl, epred = TRUE, type = "response")
 }
 }
