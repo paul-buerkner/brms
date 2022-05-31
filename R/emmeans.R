@@ -105,7 +105,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     post.beta <- posterior_linpred(
       object, newdata = grid, re_formula = re_formula,
       resp = resp, dpar = dpar, nlpar = nlpar,
-      incl_autocor = FALSE, req_vars = req_vars, ...
+      incl_autocor = FALSE, req_vars = req_vars,
+      transform = FALSE, ...
     )
   }
   if (anyNA(post.beta)) {
