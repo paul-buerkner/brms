@@ -324,7 +324,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$cens <- as.array(cens)
     icens <- cens %in% 2
-    if (any(icens)) {
+    y2_expr <- get_ad_expr(x, "cens", "y2")
+    if (any(icens) || !is.null(y2_expr)) {
+      # interval censoring is required
+      # check for 'y2' above as well to prevent issue #1367
       y2 <- unname(get_ad_values(x, "cens", "y2", data))
       if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")

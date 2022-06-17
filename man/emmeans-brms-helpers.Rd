@@ -55,7 +55,7 @@ the posterior predictive distribution's mean
 arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
 If you have specified a response transformation within the formula,
 you need to set \code{epred} to \code{TRUE} for \pkg{emmeans} to
-use this transformation.}
+detect this transformation.}
 
 \item{...}{Additional arguments passed to \pkg{emmeans}.}
 }

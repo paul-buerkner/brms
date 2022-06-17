@@ -134,12 +134,12 @@ stan_response <- function(bterms, data, normalize) {
     )
   }
   if (is.formula(bterms$adforms$cens)) {
-    cens <- eval_rhs(bterms$adforms$cens)
     str_add(out$data) <- glue(
       "  int<lower=-1,upper=2> cens{resp}[N{resp}];  // indicates censoring\n"
     )
     str_add(out$pll_args) <- glue(", data int[] cens{resp}")
-    if (cens$vars$y2 != "NA") {
+    y2_expr <- get_ad_expr(bterms, "cens", "y2")
+    if (!is.null(y2_expr)) {
       # interval censoring is required
       if (rtype == "int") {
         str_add(out$data) <- glue(
