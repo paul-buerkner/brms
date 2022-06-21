@@ -646,7 +646,8 @@ prior_predictor.btl <- function(x, ...) {
 prior_predictor.btnl <- function(x, ...) {
   # thresholds are required even in non-linear ordinal models
   prior_thres(x, ...) +
-    prior_ac(x, ...)
+    prior_ac(x, ...) +
+    prior_bhaz(x, ...)
 }
 
 # priors for population-level parameters
