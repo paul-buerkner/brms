@@ -86,7 +86,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 
   # check if the model is supported by projpred
   bterms <- brmsterms(formula)
-  if (length(bterms$dpars) > 1L && !conv_cats_dpars(family$family)) {
+  if (length(bterms$dpars) > 1L && !conv_cats_dpars(family)) {
     stop2("Projpred does not support distributional models.")
   }
   if (length(bterms$nlpars) > 0L) {
