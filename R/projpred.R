@@ -13,8 +13,13 @@
 #' (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 #' If \code{NULL} (the default), \code{cvfun} is defined internally
 #' based on \code{\link{kfold.brmsfit}}.
+#' @param dis Passed to argument \code{dis} of
+#'   \code{\link[projpred:init_refmodel]{init_refmodel}}, but leave this at
+#'   \code{NULL} unless \pkg{projpred} complains about it.
 #' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 #'   and for sampling group-level effects for new levels (in multilevel models).
+#' @param latent See argument \code{latent} of
+#'   \code{\link[projpred:extend_family]{extend_family}}.
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
@@ -47,7 +52,8 @@
 #' plot(cv_vs)
 #' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
-                                 cvfun = NULL, brms_seed = NULL, ...) {
+                                 cvfun = NULL, dis = NULL, brms_seed = NULL,
+                                 latent = FALSE, ...) {
   require_package("projpred")
   object <- restructure(object)
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -76,11 +82,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   } else if (family$family == "beta") {
     family$family <- "Beta"
   }
-  # For the augmented-data approach, do not re-define ordinal or categorical
-  # families to preserve their family-specific extra arguments ("extra" meaning
-  # "additionally to `link`") like `refcat` and `thresholds` (see ?brmsfamily):
-  aug_data <- is_categorical(family) || is_ordinal(family)
-  if (!aug_data) {
+  aug_data <- (is_categorical(family) || is_ordinal(family)) && !latent
+  # For the augmented-data and the latent approach, do not re-define the family
+  # to preserve family-specific extra arguments ("extra" meaning "additionally
+  # to `link`") like `refcat` and `thresholds` (see ?brmsfamily):
+  if (!aug_data && !latent) {
     family <- get(family$family, mode = "function")(link = family$link)
   }
 
@@ -104,13 +110,14 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   formula[[2]] <- bterms$respform[[2]]
 
   # projpred requires the dispersion parameter if present
-  dis <- NULL
-  if (family$family == "gaussian") {
-    dis <- paste0("sigma", usc(resp))
-    dis <- as.data.frame(object, variable = dis)[[dis]]
-  } else if (family$family == "Gamma") {
-    dis <- paste0("shape", usc(resp))
-    dis <- as.data.frame(object, variable = dis)[[dis]]
+  if (is.null(dis) && !latent) {
+    if (family$family == "gaussian") {
+      dis <- paste0("sigma", usc(resp))
+      dis <- as.data.frame(object, variable = dis)[[dis]]
+    } else if (family$family == "Gamma") {
+      dis <- paste0("shape", usc(resp))
+      dis <- as.data.frame(object, variable = dis)[[dis]]
+    }
   }
 
   # allows to handle additional arguments implicitly
@@ -133,7 +140,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       object = fit, newdata, resp, allow_new_levels = TRUE,
       sample_new_levels = "gaussian"
     )
-    if (is_ordinal(family)) {
+    if (is_ordinal(family) && !latent) {
       c(lprd_args) <- list(incl_thres = TRUE)
     }
     out <- do_call(posterior_linpred, lprd_args)
@@ -170,7 +177,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     } else {
       brms_seed_k <- brms_seed + cvfit$projpred_k
     }
-    projpred::get_refmodel(cvfit, resp = resp, brms_seed = brms_seed_k, ...)
+    projpred::get_refmodel(cvfit, resp = resp, brms_seed = brms_seed_k,
+                           latent = latent, dis = dis, ...)
   }
 
   # prepare data passed to projpred
@@ -181,7 +189,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   attr(data, "terms") <- NULL
   args <- nlist(
     object, data, formula, family, dis, ref_predfun,
-    cvfun, extract_model_data, cvrefbuilder, ...
+    cvfun, extract_model_data, cvrefbuilder, latent, ...
   )
   if (aug_data) {
     c(args) <- list(
@@ -194,6 +202,55 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
         augdat_args_ilink = list(link = family$link)
       )
     }
+  } else if (latent) {
+    if (family$family == "cumulative") {
+      stopifnot(!is.null(family$cats))
+      draws_mat <- as_draws_matrix(object)
+      thres_regex <- paste0("^b", usc(combine_prefix(bterms)), "_Intercept\\[")
+      thres_draws <- prepare_draws(draws_mat, variable = thres_regex,
+                                   regex = TRUE)
+      if (ncol(thres_draws) > length(family$cats) - 1L) {
+        stop2("Currently, projpred does not support group-specific thresholds ",
+              "(argument `gr` of resp_thres()).")
+      }
+      # Note: Currently, `disc` should always be constantly 1 because
+      # distributional models are not allowed here.
+      disc_regex <- paste0("^", "disc", resp, "$")
+      disc_draws <- prepare_draws(draws_mat, variable = disc_regex,
+                                  regex = TRUE)
+      latent_ilink_tmp <- function(lpreds, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+        thres_agg <- projpred::cl_agg(thres_draws, cl = cl_ref,
+                                      wdraws = wdraws_ref)
+        disc_agg <- projpred::cl_agg(disc_draws, cl = cl_ref,
+                                     wdraws = wdraws_ref)
+        disc_agg <- as.vector(disc_agg)
+        lpreds_thres <- apply(thres_agg, 2, function(thres_agg_c) {
+          # Notes on dimensionalities (with S_agg = `nrow(lpreds)`):
+          # * `disc_agg` is a vector of length S_agg (because `disc` is not
+          #   predicted here),
+          # * `thres_agg` is S_agg x C_lat (with C_lat = `ncats - 1L` =
+          #   `nthres`) and thus `thres_agg_c` is a vector of length S_agg,
+          # * `lpreds` is S_agg x N (with N denoting the number of (possibly
+          #   new) observations (not necessarily the original number of
+          #   observations)).
+          disc_agg * (thres_agg_c - lpreds)
+        }, simplify = FALSE)
+        # Coerce to an S_agg x N x C_lat array:
+        lpreds_thres <- do.call(abind, c(lpreds_thres, rev.along = 0))
+        # Transform to response space, yielding an S_agg x N x C_cat array:
+        return(inv_link_cumulative(lpreds_thres, link = family$link))
+      }
+      c(args) <- list(latent_ilink = latent_ilink_tmp)
+      # Free up some memory:
+      rm(draws_mat)
+    }
+    # TODO: Add response-scale support for more families: For response-scale
+    # support, they all need a specific `latent_ilink` function; some families
+    # (those for which the response can be numeric) also require specific
+    # `latent_ll_oscale` and `latent_ppd_oscale` functions. The binomial family
+    # (and thereby also the brms::bernoulli() family) has response-scale support
+    # implemented natively in projpred.
   }
   do_call(projpred::init_refmodel, args)
 }
