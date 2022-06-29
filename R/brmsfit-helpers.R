@@ -103,6 +103,10 @@ validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
   ndraws_total <- ndraws(x)
   if (is.null(draw_ids) && !is.null(ndraws)) {
     ndraws <- as_one_integer(ndraws)
+    if (ndraws < 1 || ndraws > ndraws_total) {
+      stop2("Argument 'ndraws' should be between 1 and ",
+            "the maximum number of draws (", ndraws_total, ").")
+    }
     draw_ids <- sample(seq_len(ndraws_total), ndraws)
   }
   if (!is.null(draw_ids)) {
