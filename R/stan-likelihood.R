@@ -576,13 +576,13 @@ stan_log_lik_binomial <- function(bterms, resp = "", mix = "", threads = NULL,
   sdist(lpdf, p$trials, p$mu)
 }
 
-stan_log_lik_beta_binomial <- function(bterms, resp = "", mix = "", 
+stan_log_lik_beta_binomial <- function(bterms, resp = "", mix = "",
                                        threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   n <- stan_nn(threads)
   sdist(
-    "beta_binomial", 
-    paste0("trials", resp, n), 
+    "beta_binomial",
+    paste0("trials", resp, n),
     paste0(p$mu, " * ", p$phi),
     paste0("(1 - ", p$mu, ") * ", p$phi)
   )
@@ -614,27 +614,39 @@ stan_log_lik_com_poisson <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_gamma <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
+    paste0("shape", mix) %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  sdist("gamma", p$shape, p$mu)
+  # Stan uses shape-rate parameterization with rate = shape / mean
+  div_op <- str_if(reqn, " / ", " ./ ")
+  sdist("gamma", p$shape, paste0(p$shape, div_op, p$mu))
 }
 
 stan_log_lik_exponential <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  sdist("exponential", p$mu)
+  # Stan uses rate parameterization with rate = 1 / mean
+  sdist("exponential", paste0("inv(", p$mu, ")"))
 }
 
 stan_log_lik_weibull <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  sdist("weibull", p$shape, p$mu)
+  # Stan uses shape-scale parameterization for weibull
+  need_dot_div <- !reqn && paste0("shape", mix) %in% names(bterms$dpars)
+  div_op <- str_if(need_dot_div, " ./ ", " / ")
+  p$scale <- paste0(p$mu, div_op, "tgamma(1 + 1", div_op, p$shape, ")")
+  sdist("weibull", p$shape, p$scale)
 }
 
 stan_log_lik_frechet <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  sdist("frechet", p$nu, p$mu)
+  # Stan uses shape-scale parameterization for frechet
+  need_dot_div <- !reqn && paste0("nu", mix) %in% names(bterms$dpars)
+  div_op <- str_if(need_dot_div, " ./ ", " / ")
+  p$scale <- paste0(p$mu, div_op, "tgamma(1 - 1", div_op, p$nu, ")")
+  sdist("frechet", p$nu, p$scale)
 }
 
 stan_log_lik_gen_extreme_value <- function(bterms, resp = "", mix = "", ...) {
@@ -813,7 +825,8 @@ stan_log_lik_hurdle_gamma <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   usc_logit <- stan_log_lik_dpar_usc_logit("hu", bterms)
   lpdf <- paste0("hurdle_gamma", usc_logit)
-  sdist(lpdf, p$shape, p$mu, p$hu)
+  # Stan uses shape-rate parameterization for gamma with rate = shape / mean
+  sdist(lpdf, p$shape, paste0(p$shape, " / ", p$mu), p$hu)
 }
 
 stan_log_lik_hurdle_lognormal <- function(bterms, resp = "", mix = "", ...) {

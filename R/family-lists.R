@@ -50,7 +50,7 @@
 .family_binomial <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu"), type = "int",
@@ -75,7 +75,7 @@
 .family_bernoulli <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu"), type = "int",
@@ -114,7 +114,7 @@
 .family_beta <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi"), type = "real",
@@ -235,8 +235,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    specials = "transeta"  # see stan_eta_inv_link()
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index")
   )
 }
 
@@ -245,8 +244,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = c("mu", "shape"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    specials = "transeta"  # see stan_eta_inv_link()
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index")
   )
 }
 
@@ -255,8 +253,7 @@
     links = c("log", "identity", "inverse", "softplus", "squareplus"),
     dpars = "mu", type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    specials = "transeta"  # see stan_eta_inv_link()
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index")
   )
 }
 
@@ -266,8 +263,7 @@
     dpars = c("mu", "nu"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    include = "fun_logm1.stan",
-    specials = "transeta"  # see stan_eta_inv_link()
+    include = "fun_logm1.stan"
   )
 }
 
@@ -324,7 +320,7 @@
 .family_gen_extreme_value <- function() {
   list(
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
-    dpars = c("mu", "sigma", "xi"), 
+    dpars = c("mu", "sigma", "xi"),
     tmp_dpars = "xi", type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
@@ -511,7 +507,7 @@
 .family_zero_inflated_binomial <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "zi"), type = "int",
@@ -526,7 +522,7 @@
 .family_zero_inflated_beta_binomial <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi", "zi"),
@@ -543,7 +539,7 @@
 .family_zero_inflated_beta <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi", "zi"), type = "real",
@@ -558,7 +554,7 @@
 .family_zero_one_inflated_beta <- function() {
   list(
     links = c(
-      "logit", "probit", "probit_approx", "cloglog", 
+      "logit", "probit", "probit_approx", "cloglog",
       "cauchit", "softit", "identity", "log"
     ),
     dpars = c("mu", "phi", "zoi", "coi"), type = "real",

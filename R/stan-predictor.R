@@ -1938,11 +1938,8 @@ stan_eta_rsp <- function(r) {
 }
 
 # does eta need to be transformed manually using the link functions
-# @param family the model family
-# @param cens_or_trunc is the model censored or truncated?
 stan_eta_transform <- function(family, bterms) {
-  transeta <- "transeta" %in% family_info(family, "specials")
-  no_transform <- family$link == "identity" && !transeta ||
+  no_transform <- family$link == "identity" ||
     has_joint_link(family) && !is.customfamily(family)
   !no_transform && !stan_has_built_in_fun(family, bterms)
 }
@@ -1957,34 +1954,8 @@ stan_eta_inv_link <- function(dpar, bterms, resp = "") {
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
   if (stan_eta_transform(family, bterms)) {
-    dpar_id <- dpar_id(dpar)
-    pred_dpars <- names(bterms$dpars)
-    shape <- glue("shape{dpar_id}")
-    n_shape <- str_if(shape %in% pred_dpars, "[n]")
-    shape <- glue("{shape}{resp}{n_shape}")
-    nu <- glue("nu{dpar_id}")
-    n_nu <- str_if(nu %in% pred_dpars, "[n]")
-    nu <- glue("{nu}{resp}{n_nu}")
-
-    family_link <- str_if(
-      family$family %in% c("gamma", "hurdle_gamma", "exponential"),
-      paste0(family$family, "_", family$link), family$family
-    )
     inv_link <- stan_inv_link(family$link)
-    out <- switch(family_link,
-      c(glue("{inv_link}("), ")"),
-      gamma_log = c(glue("{shape} * exp(-("), "))"),
-      gamma_inverse = c(glue("{shape} * ("), ")"),
-      gamma_identity = c(glue("{shape} / ("), ")"),
-      hurdle_gamma_log = c(glue("{shape} * exp(-("), "))"),
-      hurdle_gamma_inverse = c(glue("{shape} * ("), ")"),
-      hurdle_gamma_identity = c(glue("{shape} / ("), ")"),
-      exponential_log = c("exp(-(", "))"),
-      exponential_inverse = c("(", ")"),
-      exponential_identity = c("inv(", ")"),
-      weibull = c(glue("{inv_link}("), glue(") / tgamma(1 + 1 / {shape})")),
-      frechet = c(glue("{inv_link}("), glue(") / tgamma(1 - 1 / {nu})"))
-    )
+    out <- c(paste0(inv_link, "("), ")")
   }
   out
 }
@@ -2035,6 +2006,8 @@ stan_dpar_comments <- function(dpar, family) {
 }
 
 # Stan code for transformations of distributional parameters
+# TODO: refactor into family-specific functions
+# TODO: add gamma and related families here to compute rate = shape / mean
 stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.brmsterms(bterms))
   out <- list()
