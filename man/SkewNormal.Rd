@@ -58,12 +58,10 @@ If \code{NULL} (the default), will be computed internally.}
 \item{omega}{Optional vector of scale values.
 If \code{NULL} (the default), will be computed internally.}
 
-\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
+\item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
-
-\item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{p}{Vector of probabilities.}
 

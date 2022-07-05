@@ -20,12 +20,10 @@ rinv_gaussian(n, mu = 1, shape = 1)
 
 \item{shape}{Vector of shapes.}
 
-\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
+\item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
-
-\item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{n}{Number of draws to sample from the distribution.}
 }
