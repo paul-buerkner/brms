@@ -58,24 +58,25 @@ summary(fit4)
 ## to avoid a recompilation when updating a 'cmdstanr'-backend fit in a fresh
 ## R session, set option 'cmdstanr_write_stan_file_dir' before creating the
 ## initial 'brmsfit'
-## CAUTION: the following code creates some permanent files (two
-## 'model_<hash>.stan' files and one 'model_<hash>(.exe)' executable) in the
-## current working directory, additionally to file 'fit_cmdstanr.rds' (which
-## is deleted afterwards)
-if (!file.exists("fit_cmdstanr.rds")) {
-  options(cmdstanr_write_stan_file_dir = getwd())
-  fit_cmdstanr <- brm(rate ~ conc + state,
-                      data = Puromycin,
-                      backend = "cmdstanr",
-                      file = "fit_cmdstanr")
-  # now restart the R session and run the following (after attaching 'brms')
-  fit_cmdstanr <- brm(rate ~ conc + state,
-                      data = Puromycin,
-                      backend = "cmdstanr",
-                      file = "fit_cmdstanr")
-  upd_cmdstanr <- update(fit_cmdstanr,
-                         formula. = rate ~ conc)
-}
+## CAUTION: the following code creates some files in the current working
+## directory: two 'model_<hash>.stan' files, one 'model_<hash>(.exe)'
+## executable, and one 'fit_cmdstanr_<some_number>.rds' file
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+options(cmdstanr_write_stan_file_dir = getwd())
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+# now restart the R session and run the following (after attaching 'brms')
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+upd_cmdstanr <- update(fit_cmdstanr,
+                       formula. = rate ~ conc)
 }
 
 }
