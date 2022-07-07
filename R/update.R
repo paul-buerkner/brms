@@ -62,7 +62,6 @@
 #'                       file = "fit_cmdstanr")
 #'   upd_cmdstanr <- update(fit_cmdstanr,
 #'                          formula. = rate ~ conc)
-#'   file.remove("fit_cmdstanr.rds")
 #' }
 #' }
 #'
