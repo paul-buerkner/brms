@@ -123,6 +123,13 @@ The \code{kfold} function performs exact \eqn{K}-fold
   (see the Examples section below and also the
   \link[loo:kfold-helpers]{kfold-helpers} page).
   }
+
+  When running \code{kfold} on a \code{brmsfit} created with the
+  \pkg{cmdstanr} backend in a different \R session, several recompilations
+  will be triggered because by default, \pkg{cmdstanr} writes the model
+  executable to a temporary directory. To avoid that, set option
+  \code{"cmdstanr_write_stan_file_dir"} to a nontemporary path of your choice
+  before creating the original \code{brmsfit} (see section 'Examples' below).
 }
 \examples{
 \dontrun{
@@ -137,6 +144,28 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 library(future)
 plan(multiprocess)
 kfold(fit1, chains = 1)
+
+## to avoid recompilations when running kfold() on a 'cmdstanr'-backend fit
+## in a fresh R session, set option 'cmdstanr_write_stan_file_dir' before
+## creating the initial 'brmsfit'
+## CAUTION: the following code creates some files in the current working
+## directory: two 'model_<hash>.stan' files, one 'model_<hash>(.exe)'
+## executable, and one 'fit_cmdstanr_<some_number>.rds' file
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+options(cmdstanr_write_stan_file_dir = getwd())
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+# now restart the R session and run the following (after attaching 'brms')
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 }
 
 }
