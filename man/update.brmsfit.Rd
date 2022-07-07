@@ -31,8 +31,8 @@ When updating a \code{brmsfit} created with the \pkg{cmdstanr}
   backend in a different \R session, a recompilation will be triggered
   because by default, \pkg{cmdstanr} writes the model executable to a
   temporary directory. To avoid that, set option
-  \code{"cmdstanr_write_stan_file_dir"} to a path of your choice before
-  creating the original \code{brmsfit} (see section 'Examples' below).
+  \code{"cmdstanr_write_stan_file_dir"} to a nontemporary path of your choice
+  before creating the original \code{brmsfit} (see section 'Examples' below).
 }
 \examples{
 \dontrun{
