@@ -26,6 +26,14 @@ arguments to be ignored.}
 \description{
 This method allows to update an existing \code{brmsfit} object.
 }
+\details{
+When updating a \code{brmsfit} created with the \pkg{cmdstanr}
+  backend in a different \R session, a recompilation will be triggered
+  because by default, \pkg{cmdstanr} writes the model executable to a
+  temporary directory. To avoid that, set option
+  \code{"cmdstanr_write_stan_file_dir"} to a path of your choice before
+  creating the original \code{brmsfit} (see section 'Examples' below).
+}
 \examples{
 \dontrun{
 fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
@@ -46,6 +54,29 @@ summary(fit3)
 fit4 <- update(fit1, family = weibull(), init = "0",
                prior = set_prior("normal(0,5)"))
 summary(fit4)
+
+## to avoid a recompilation when updating a 'cmdstanr'-backend fit in a fresh
+## R session, set option 'cmdstanr_write_stan_file_dir' before creating the
+## initial 'brmsfit'
+## CAUTION: the following code creates some files in the current working
+## directory: two 'model_<hash>.stan' files, one 'model_<hash>(.exe)'
+## executable, and one 'fit_cmdstanr_<some_number>.rds' file
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+options(cmdstanr_write_stan_file_dir = getwd())
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+# now restart the R session and run the following (after attaching 'brms')
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+upd_cmdstanr <- update(fit_cmdstanr,
+                       formula. = rate ~ conc)
 }
 
 }
