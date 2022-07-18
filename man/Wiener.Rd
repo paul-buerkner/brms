@@ -28,6 +28,8 @@ rwiener(
 )
 }
 \arguments{
+\item{x}{Vector of quantiles.}
+
 \item{alpha}{Boundary separation parameter.}
 
 \item{tau}{Non-decision time parameter.}
@@ -40,6 +42,8 @@ rwiener(
 If no character vector, it is coerced to logical
 where \code{TRUE} indicates \code{"upper"} and
 \code{FALSE} indicates \code{"lower"}.}
+
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{backend}{Name of the package to use as backend for the computations.
 Either \code{"Rwiener"} (the default) or \code{"rtdists"}.

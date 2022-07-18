@@ -29,10 +29,12 @@ rgen_extreme_value(n, mu = 0, sigma = 1, xi = 0)
 
 \item{xi}{Vector of shapes.}
 
-\item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
+
+\item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{n}{Number of draws to sample from the distribution.}
 }

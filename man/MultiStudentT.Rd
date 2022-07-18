@@ -20,6 +20,8 @@ each row is taken to be a quantile.}
 
 \item{Sigma}{Covariance matrix.}
 
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
+
 \item{check}{Logical; Indicates whether several input checks
 should be performed. Defaults to \code{FALSE} to improve
 efficiency.}
