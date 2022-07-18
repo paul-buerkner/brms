@@ -67,7 +67,7 @@ recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL,
     object, resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
-  trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
+  trms <- terms(bterms$allvars, data = object$data)
   # brms has no call component so the call is just a dummy for the most part
   cl <- call("brms")
   if (epred) {
@@ -106,7 +106,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
       object, newdata = grid, re_formula = re_formula,
       resp = resp, dpar = dpar, nlpar = nlpar,
       incl_autocor = FALSE, req_vars = req_vars,
-      transform = FALSE, ...
+      # offsets are handled by emmeans (#1096)
+      transform = FALSE, offset = FALSE, ...
     )
   }
   if (anyNA(post.beta)) {
@@ -223,6 +224,10 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
       stop2("emmeans is not yet supported for this brms model.")
     }
     out <- x$dpars[["mu"]]
+  }
+  if (!is.null(out$offset)) {
+    # ensure that offsets are detected by emmeans (#1096)
+    out$allvars <- allvars_formula(out$allvars, out$offset)
   }
   out$.misc <- emmeans::.std.link.labels(out$family, list())
   out
