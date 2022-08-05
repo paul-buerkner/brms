@@ -278,8 +278,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @param object An object of class \code{brmsfit}.
 #' @param transform Logical; if \code{FALSE}
 #'  (the default), draws of the linear predictor are returned.
-#'  If \code{TRUE}, draws of transformed linear predictor,
-#'  that is, after applying the link function are returned.
+#'  If \code{TRUE}, draws of the transformed linear predictor,
+#'  that is, after applying the inverse link function are returned.
 #' @param dpar Name of a predicted distributional parameter
 #'  for which draws are to be returned. By default, draws
 #'  of the main distributional parameter(s) \code{"mu"} are returned.

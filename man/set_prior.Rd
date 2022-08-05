@@ -343,18 +343,18 @@ Define priors for specific parameters or classes of parameters.
 }
 \section{Functions}{
 \itemize{
-\item \code{prior}: Alias of \code{set_prior} allowing to
+\item \code{prior()}: Alias of \code{set_prior} allowing to
 specify arguments as expressions without quotation marks.
 
-\item \code{prior_}: Alias of \code{set_prior} allowing to specify
+\item \code{prior_()}: Alias of \code{set_prior} allowing to specify
 arguments as as one-sided formulas or wrapped in \code{quote}.
 
-\item \code{prior_string}: Alias of \code{set_prior} allowing to
+\item \code{prior_string()}: Alias of \code{set_prior} allowing to
 specify arguments as strings.
 
-\item \code{empty_prior}: Create an empty \code{brmsprior} object.
-}}
+\item \code{empty_prior()}: Create an empty \code{brmsprior} object.
 
+}}
 \examples{
 ## use alias functions
 (prior1 <- prior(cauchy(0, 1), class = sd))

@@ -26,8 +26,8 @@
 
 \item{transform}{Logical; if \code{FALSE}
 (the default), draws of the linear predictor are returned.
-If \code{TRUE}, draws of transformed linear predictor,
-that is, after applying the link function are returned.}
+If \code{TRUE}, draws of the transformed linear predictor,
+that is, after applying the inverse link function are returned.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.
