@@ -6,7 +6,8 @@
 #'
 #' @name StudentT
 #'
-#' @param x,q Vector of quantiles.
+#' @param x Vector of quantiles.
+#' @param q Vector of quantiles.
 #' @param p Vector of probabilities.
 #' @param n Number of draws to sample from the distribution.
 #' @param mu Vector of location values.

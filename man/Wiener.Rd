@@ -28,6 +28,8 @@ rwiener(
 )
 }
 \arguments{
+\item{x}{Vector of quantiles.}
+
 \item{alpha}{Boundary separation parameter.}
 
 \item{tau}{Non-decision time parameter.}

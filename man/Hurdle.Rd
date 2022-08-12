@@ -29,11 +29,13 @@ dhurdle_lognormal(x, mu, sigma, hu, log = FALSE)
 phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
 }
 \arguments{
-\item{x, q}{Vector of quantiles.}
+\item{x}{Vector of quantiles.}
 
 \item{hu}{hurdle probability}
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
+
+\item{q}{Vector of quantiles.}
 
 \item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
