@@ -16,6 +16,7 @@ make_standata(
   stanvars = NULL,
   threads = getOption("brms.threads", NULL),
   knots = NULL,
+  drop_unused_levels = TRUE,
   ...
 )
 }
@@ -97,6 +98,9 @@ the current \R session via the \code{"brms.threads"} option (see
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
 
 \item{...}{Other arguments for internal use.}
 }

@@ -24,7 +24,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
                           autocor = NULL, data2 = NULL, cov_ranef = NULL,
                           sample_prior = "no", stanvars = NULL,
                           threads = getOption("brms.threads", NULL),
-                          knots = NULL, ...) {
+                          knots = NULL, drop_unused_levels = TRUE, ...) {
 
   if (is.brmsfit(formula)) {
     stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
@@ -41,7 +41,8 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   )
   data <- validate_data(
     data, bterms = bterms,
-    knots = knots, data2 = data2
+    knots = knots, data2 = data2,
+    drop_unused_levels = drop_unused_levels
   )
   prior <- .validate_prior(
     prior, bterms = bterms, data = data,

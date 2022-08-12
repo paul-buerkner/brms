@@ -181,7 +181,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     dots$save_pars <- object$save_pars
   }
   if (!"knots" %in% names(dots)) {
-    dots$knots <- attr(object$data, "knots")
+    dots$knots <- get_knots(object$data)
+  }
+  if (!"drop_unused_levels" %in% names(dots)) {
+    dots$drop_unused_levels <- get_drop_unused_levels(object$data)
   }
   if (!"normalize" %in% names(dots)) {
     dots$normalize <- is_normalized(object$model)
@@ -233,8 +236,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- NULL
     }
     bterms <- brmsterms(object$formula)
-    object$data <- validate_data(dots$data, bterms = bterms)
     object$data2 <- validate_data2(dots$data2, bterms = bterms)
+    object$data <- validate_data(
+      dots$data, bterms = bterms, data2 = object$data2,
+      knots = dots$knots, drop_unused_levels = dots$drop_unused_levels
+    )
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)

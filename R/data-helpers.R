@@ -1,8 +1,8 @@
 # update data for use in brms functions
 # @param data the data passed by the user
 # @param bterms object of class brmsterms
-# @param na.action function defining how to treat NAs
-# @param drop.unused.levels should unused factor levels be removed?
+# @param na_action function defining how to treat NAs
+# @param drop_unused_levels should unused factor levels be removed?
 # @param attr_terms a list of attributes of the terms object of
 #   the original model.frame; only used with newdata;
 #   this ensures that (1) calls to 'poly' work correctly
@@ -11,7 +11,7 @@
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
 validate_data <- function(data, bterms, data2 = list(), knots = NULL,
-                          na.action = na.omit2, drop.unused.levels = TRUE,
+                          na_action = na_omit, drop_unused_levels = TRUE,
                           attr_terms = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
@@ -52,9 +52,9 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   attr(data, "terms") <- NULL
   data <- model.frame(
     all_vars_terms, data, na.action = na.pass,
-    drop.unused.levels = drop.unused.levels
+    drop.unused.levels = drop_unused_levels
   )
-  data <- na.action(data, bterms = bterms)
+  data <- na_action(data, bterms = bterms)
   if (any(grepl("__|_$", colnames(data)))) {
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
@@ -67,6 +67,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
+  attr(data, "drop_unused_levels") <- drop_unused_levels
   data
 }
 
@@ -277,7 +278,7 @@ subset_data <- function(data, bterms) {
 }
 
 # like stats:::na.omit.data.frame but allows to certain NA values
-na.omit2 <- function(object, bterms, ...) {
+na_omit <- function(object, bterms, ...) {
   stopifnot(is.data.frame(object))
   nobs <- nrow(object)
   if (is.mvbrmsterms(bterms)) {
@@ -352,6 +353,10 @@ get_one_value_per_group <- function(x, gr) {
 # extract knots values for use in spline terms
 get_knots <- function(data) {
   attr(data, "knots", TRUE)
+}
+
+get_drop_unused_levels <- function(data) {
+  out <- attr(data, "drop_unused_levels", TRUE) %||% TRUE
 }
 
 # extract name of the data as originally passed by the user
@@ -567,8 +572,8 @@ validate_newdata <- function(
   attr_terms <- c("variables", "predvars")
   attr_terms <- attributes(old_terms)[attr_terms]
   newdata <- validate_data(
-    newdata, bterms = bterms, na.action = na.pass,
-    drop.unused.levels = FALSE, attr_terms = attr_terms,
+    newdata, bterms = bterms, na_action = na.pass,
+    drop_unused_levels = FALSE, attr_terms = attr_terms,
     data2 = current_data2(object, newdata2),
     knots = get_knots(object$data)
   )

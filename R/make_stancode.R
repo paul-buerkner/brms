@@ -21,6 +21,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL,
                           sample_prior = "no", stanvars = NULL,
                           stan_funs = NULL, knots = NULL,
+                          drop_unused_levels = TRUE,
                           threads = getOption("brms.threads", NULL),
                           normalize = getOption("brms.normalize", TRUE),
                           save_model = NULL, ...) {
@@ -41,7 +42,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   data <- validate_data(
     data, bterms = bterms,
-    data2 = data2, knots = knots
+    data2 = data2, knots = knots,
+    drop_unused_levels = drop_unused_levels
   )
   prior <- .validate_prior(
     prior, bterms = bterms, data = data,

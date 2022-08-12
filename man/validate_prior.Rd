@@ -12,6 +12,7 @@ validate_prior(
   sample_prior = "no",
   data2 = NULL,
   knots = NULL,
+  drop_unused_levels = TRUE,
   ...
 )
 }
@@ -61,6 +62,9 @@ as well as for within-group covariance matrices.}
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
 
 \item{...}{Other arguments for internal usage only.}
 }

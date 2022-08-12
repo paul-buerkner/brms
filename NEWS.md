@@ -6,6 +6,8 @@
 specified via `s(..., fx = TRUE)`.
 * Reuse user-specified control arguments originally passed 
 to the Stan backend in `update` and related methods. (#1373, #1378)
+* Allow to retain unused factors levels via `drop_unused_levels = FALSE` 
+in `brm` and related functions. (#1346)
 
 ### Other Changes
 

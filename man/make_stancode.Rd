@@ -17,6 +17,7 @@ make_stancode(
   stanvars = NULL,
   stan_funs = NULL,
   knots = NULL,
+  drop_unused_levels = TRUE,
   threads = getOption("brms.threads", NULL),
   normalize = getOption("brms.normalize", TRUE),
   save_model = NULL,
@@ -104,6 +105,9 @@ block of the generated \pkg{Stan} code. It is now recommended to use the
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
 
 \item{threads}{Number of threads to use in within-chain parallelization. For
 more control over the threading process, \code{threads} may also be a

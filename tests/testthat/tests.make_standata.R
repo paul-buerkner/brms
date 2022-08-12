@@ -1075,3 +1075,15 @@ test_that("NAs are allowed in unused interval censoring variables", {
     "'y2' should not be NA for interval censored observations"
   )
 })
+
+test_that("drop_unused_factor levels works correctly", {
+  dat <- data.frame(y = rnorm(10), x = factor(c("a", "b"), levels = c("a", "b", "c")))
+
+  # should drop level "c"
+  sdata <- make_standata(y ~ x, data = dat)
+  expect_equal(colnames(sdata$X), c("Intercept", "xb"))
+
+  # should not drop level "c"
+  sdata <- make_standata(y ~ x, data = dat, drop_unused_levels = FALSE)
+  expect_equal(colnames(sdata$X), c("Intercept", "xb", "xc"))
+})

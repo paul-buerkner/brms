@@ -11,6 +11,7 @@ get_prior(
   autocor = NULL,
   data2 = NULL,
   knots = NULL,
+  drop_unused_levels = TRUE,
   sparse = NULL,
   ...
 )
@@ -51,6 +52,9 @@ as well as for within-group covariance matrices.}
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
