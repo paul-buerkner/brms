@@ -10,6 +10,7 @@ specified via `s(..., fx = TRUE)`.
 * Fix problems with missing boundaries of `sdme` parameters in models
 with known response standard errors thanks to Solomon Kurz. (#1348)
 * Fix Stan code of `gamma` models with `softplus` link.
+* Allow for more flexible data inputs to `brm_multiple`. (#1383)
 
 
 # brms 2.17.0

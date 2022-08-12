@@ -220,7 +220,8 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
 
 # validity check for 'data' input of 'brm_multiple'
 is_data_list <- function(x) {
-  is.list(x) && is.vector(x)
+  # see also issue #1383
+  is.list(x) && (is.vector(x) || all(vapply(x, is.data.frame, logical(1L))))
 }
 
 # validity check for 'data2' input of 'brm_multiple'
