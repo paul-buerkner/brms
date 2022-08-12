@@ -143,8 +143,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
 
   if (utils::packageVersion("projpred") <= "2.0.2" && NROW(object$ranef)) {
-    warning2("Under projpred version <= 2.0.2, projpred's K-fold CV results ",
-             "may not be reproducible for multilevel brms reference models.")
+    warning2("In projpred versions <= 2.0.2, projpred's K-fold CV results may ",
+             "not be reproducible for multilevel brms reference models.")
   }
 
   # extract a list of K-fold sub-models
