@@ -93,7 +93,11 @@ control_params <- function(x, ...) {
 #' @export
 control_params.brmsfit <- function(x, pars = NULL, ...) {
   contains_draws(x)
-  out <- attr(x$fit@sim$samples[[1]], "args")$control
+  if (is_equal(x$backend, "cmdstanr")) {
+    out <- attr(x$fit, "metadata")$metadata
+  } else {
+    out <- attr(x$fit@sim$samples[[1]], "args")$control
+  }
   if (!is.null(pars)) {
     out <- out[pars]
   }

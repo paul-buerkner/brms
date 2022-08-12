@@ -13,6 +13,8 @@ to the Stan backend in `update` and related methods. (#1373, #1378)
 with known response standard errors thanks to Solomon Kurz. (#1348)
 * Fix Stan code of `gamma` models with `softplus` link.
 * Allow for more flexible data inputs to `brm_multiple`. (#1383)
+* Ensure that `control_params` returns the right values for
+models fitted with the `cmdstanr` backend. (#1390)
 
 
 # brms 2.17.0
