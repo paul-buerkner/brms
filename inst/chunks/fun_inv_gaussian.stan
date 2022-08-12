@@ -22,7 +22,7 @@
    real inv_gaussian_vector_lpdf(vector y, vector mu, real shape) {
      return 0.5 * rows(y) * log(shape / (2 * pi())) -
             1.5 * sum(log(y)) -
-            0.5 * shape * sum(square(y - mu) ./ (square(mu) * y));
+            0.5 * shape * sum(square(y - mu) ./ (square(mu) .* y));
    }
   /* inverse Gaussian log-CDF for a single quantile
    * Args:
