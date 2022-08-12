@@ -3,11 +3,11 @@
 #' Provide additional information on the response variable
 #' in \pkg{brms} models, such as censoring, truncation, or
 #' known measurement error. Detailed documentation on the use
-#' of each of these functions can be found in the Details section 
+#' of each of these functions can be found in the Details section
 #' of \code{\link{brmsformula}} (under "Additional response information").
 #'
 #' @name addition-terms
-#' @aliases se weights trials thres cat dec cens trunc 
+#' @aliases se weights trials thres cat dec cens trunc
 #' @aliases index rate subset vreal vint
 #'
 #' @param x A vector; usually a variable defined in the data. Allowed values
@@ -56,6 +56,10 @@
 #'   Within formulas, the \code{resp_} prefix may be omitted.
 #'   More information is given in the 'Details' section
 #'   of \code{\link{brmsformula}} (under "Additional response information").
+#'
+#'   It is highly recommended to use a single data variable as input
+#'   for `x` (instead of a more complicated expression) to make sure all
+#'   post-processing functions work as expected.
 #'
 #' @seealso
 #'   \code{\link{brm}},
@@ -427,4 +431,10 @@ check_cross_formula_indexing <- function(bterms) {
           "the 'idx' argument to be specified.")
   }
   invisible(TRUE)
+}
+
+# does an expression consist of a single variable?
+is_single_variable <- function(x) {
+  x <- as_one_character(x)
+  is_equal(x, all_vars(x))
 }

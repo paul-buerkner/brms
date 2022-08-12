@@ -114,7 +114,7 @@ A list of additional response information to be processed further
 Provide additional information on the response variable
 in \pkg{brms} models, such as censoring, truncation, or
 known measurement error. Detailed documentation on the use
-of each of these functions can be found in the Details section 
+of each of these functions can be found in the Details section
 of \code{\link{brmsformula}} (under "Additional response information").
 }
 \details{
@@ -123,6 +123,10 @@ These functions are almost solely useful when
   Within formulas, the \code{resp_} prefix may be omitted.
   More information is given in the 'Details' section
   of \code{\link{brmsformula}} (under "Additional response information").
+
+  It is highly recommended to use a single data variable as input
+  for `x` (instead of a more complicated expression) to make sure all
+  post-processing functions work as expected.
 }
 \examples{
 \dontrun{
