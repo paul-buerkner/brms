@@ -10,6 +10,7 @@ to the Stan backend in `update` and related methods. (#1373, #1378)
 in `brm` and related functions. (#1346)
 * Automatically update old default priors based on new input when 
 when updating models via `update.brmsfit`. (#1380)
+* Allow to use `dirichlet` priors for more parameter types. (#1165)
 
 ### Other Changes
 

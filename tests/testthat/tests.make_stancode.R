@@ -2294,6 +2294,14 @@ test_that("to_vector() is correctly removed from prior of SD parameters", {
   expect_match2(scode, "prior_sd_1__2 = normal_rng(0,0.01);")
 })
 
+test_that("Dirichlet priors can be flexibly included", {
+  # tests issue #1165
+  dat <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10))
+  bprior <- prior("dirichlet([1,2]')", class = "b")
+  scode <- make_stancode(y ~ x1 + x2, dat, prior = bprior)
+  expect_match2(scode, "simplex[Kc] b;")
+})
+
 test_that("threaded Stan code is correct", {
   # tests require cmdstanr which is not yet on CRAN
   skip_on_cran()

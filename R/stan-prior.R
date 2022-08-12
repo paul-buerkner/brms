@@ -179,6 +179,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
 
   if (nzchar(type)) {
     # only define the parameter here if type is non-empty
+    type <- stan_adjust_par_type(type, base_prior)
     type <- stan_type_add_bounds(type, bound)
     comment <- stan_comment(comment)
     par_definition <- glue("  {type} {par}{dim};{comment}\n")
@@ -659,6 +660,27 @@ stan_type_add_bounds <- function(type, bound) {
   glue("{type_type}{bound}{type_dim}")
 }
 
+# adjust the type of a parameter based on the assigned prior
+stan_adjust_par_type <- function(type, prior) {
+  # TODO: add support for more type-prior combination?
+  combs <- data.frame(
+    type = "vector",
+    prior = "dirichlet",
+    new_type = "simplex"
+  )
+  for (i in seq_rows(combs)) {
+    regex_type <- paste0("^", combs$type[i], "\\[?")
+    regex_prior <- paste0("^", combs$prior[i], "\\(")
+    if (grepl(regex_type, type) && grepl(regex_prior, prior)) {
+      brackets <- get_matches("\\[.*\\]$", type, first = TRUE)
+      type <- paste0(combs$new_type[i], brackets)
+      break
+    }
+  }
+  type
+}
+
+# stops if a prior bound is given
 stopif_prior_bound <- function(prior, class, ...) {
   lb <- stan_base_prior(prior, "lb", class = class, ...)
   ub <- stan_base_prior(prior, "ub", class = class, ...)
