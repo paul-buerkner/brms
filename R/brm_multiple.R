@@ -73,8 +73,9 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          sample_prior = c("no", "yes", "only"),
                          sparse = NULL, knots = NULL, stanvars = NULL,
                          stan_funs = NULL, silent = 1, recompile = FALSE,
-                         combine = TRUE, fit = NA, seed = NA,
-                         file = NULL, file_refit = "never", ...) {
+                         combine = TRUE, fit = NA,
+                         algorithm = getOption("brms.algorithm", "sampling"),
+                         seed = NA, file = NULL, file_refit = "never", ...) {
 
   combine <- as_one_logical(combine)
   file_refit <- match.arg(file_refit, file_refit_options())
@@ -94,6 +95,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     }
   }
 
+  algorithm <- match.arg(algorithm, algorithm_choices())
   silent <- validate_silent(silent)
   recompile <- as_one_logical(recompile)
   data_name <- substitute_name(data)
@@ -119,7 +121,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     args <- nlist(
       formula, data = data[[1]], family, prior, data2 = data2[[1]],
       autocor, cov_ranef, sample_prior, sparse, knots, stanvars,
-      stan_funs, silent, seed, ...
+      stan_funs, algorithm, silent, seed, ...
     )
     args$chains <- 0
     if (silent < 2) {
@@ -148,15 +150,20 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
       message("Fitting imputed model ", i)
     }
     fits[[i]] <- future::value(futures[[i]])
-    rhats[[i]] <- data.frame(as.list(rhat(fits[[i]])))
-    if (any(rhats[[i]] > 1.1, na.rm = TRUE)) {
-      warning2("Imputed model ", i, " did not converge.")
+    if (algorithm == "sampling") {
+      # TODO: replace by rhat of the posterior package
+      rhats[[i]] <- data.frame(as.list(rhat(fits[[i]])))
+      if (any(rhats[[i]] > 1.1, na.rm = TRUE)) {
+        warning2("Imputed model ", i, " did not converge.")
+      }
     }
   }
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
     attr(fits$data, "data_name") <- data_name
-    fits$rhats <- do_call(rbind, rhats)
+    if (algorithm == "sampling") {
+      fits$rhats <- do_call(rbind, rhats)
+    }
     class(fits) <- c("brmsfit_multiple", class(fits))
   }
   if (!is.null(file)) {

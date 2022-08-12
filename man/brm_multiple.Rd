@@ -21,6 +21,7 @@ brm_multiple(
   recompile = FALSE,
   combine = TRUE,
   fit = NA,
+  algorithm = getOption("brms.algorithm", "sampling"),
   seed = NA,
   file = NULL,
   file_refit = "never",
@@ -135,6 +136,14 @@ previous fit; defaults to \code{NA}. If \code{fit} is of class
 result is re-used and all arguments modifying the model code or data are
 ignored. It is not recommended to use this argument directly, but to call
 the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.}
+
+\item{algorithm}{Character string naming the estimation approach to use.
+Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+variational inference with independent normal distributions,
+\code{"fullrank"} for variational inference with a multivariate normal
+distribution, or \code{"fixed_param"} for sampling from fixed parameter
+values. Can be set globally for the current \R session via the
+\code{"brms.algorithm"} option (see \code{\link{options}}).}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
