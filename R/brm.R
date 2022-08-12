@@ -538,7 +538,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula = formula, data = data, data2 = data2, prior = prior,
       stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
-      save_pars = save_pars, ranef = ranef, family = family
+      save_pars = save_pars, ranef = ranef, family = family,
+      stan_args = list(...)
     )
     exclude <- exclude_pars(x)
     # generate Stan data before compiling the model to avoid

@@ -43,6 +43,9 @@ information on the priors used in the model.}
 
 \item{\code{opencl}}{An object of class `brmsopencl` created by \code{\link{opencl}}.}
 
+\item{\code{stan_args}}{Named list of additional control arguments that were passed
+to the Stan backend directly.}
+
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 among others containing the posterior draws.}
 

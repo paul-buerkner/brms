@@ -202,6 +202,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     control <- attr(object$fit@sim$samples[[1]], "args")$control
     control <- control[setdiff(names(control), names(dots$control))]
     dots$control[names(control)] <- control
+    # reuse backend arguments originally passed to brm via ... #1373
+    names_old_stan_args <- setdiff(names(object$stan_args), names(dots))
+    dots[names_old_stan_args] <- object$stan_args[names_old_stan_args]
   }
 
   if (is.null(recompile)) {

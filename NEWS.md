@@ -4,6 +4,8 @@
 
 * Support regression splines with fixed degrees of freedom 
 specified via `s(..., fx = TRUE)`.
+* Reuse user-specified control arguments originally passed 
+to the Stan backend in `update` and related methods. (#1373, #1378)
 
 ### Bug Fixes
 
