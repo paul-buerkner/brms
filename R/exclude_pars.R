@@ -71,18 +71,19 @@ exclude_pars.mvbrmsterms <- function(x, save_pars, ...) {
 }
 
 #' @export
-exclude_pars.brmsterms <- function(x, save_pars, ...) {
-  out <- "Lncor"
+exclude_pars.brmsterms <- function(x, data, save_pars, ...) {
   resp <- usc(combine_prefix(x))
+  data <- subset_data(data, x)
+  out <- "Lncor"
   if (!save_pars$all) {
     par_classes <- c("ordered_Intercept", "fixed_Intercept", "theta", "Llncor")
     c(out) <- paste0(par_classes, resp)
   }
   for (dp in names(x$dpars)) {
-    c(out) <- exclude_pars(x$dpars[[dp]], save_pars = save_pars, ...)
+    c(out) <- exclude_pars(x$dpars[[dp]], data = data, save_pars = save_pars, ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- exclude_pars(x$nlpars[[nlp]], save_pars = save_pars, ...)
+    c(out) <- exclude_pars(x$nlpars[[nlp]], data = data, save_pars = save_pars, ...)
   }
   if (is.formula(x$adforms$mi)) {
     if (!(isTRUE(save_pars$latent) || x$resp %in% save_pars$latent)) {

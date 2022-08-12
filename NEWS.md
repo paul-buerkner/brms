@@ -15,6 +15,8 @@ with known response standard errors thanks to Solomon Kurz. (#1348)
 * Allow for more flexible data inputs to `brm_multiple`. (#1383)
 * Ensure that `control_params` returns the right values for
 models fitted with the `cmdstanr` backend. (#1390)
+* Fix problems in multivariate spline models when using 
+the `subset` addition term. (#1385)
 
 
 # brms 2.17.0
