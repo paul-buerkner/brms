@@ -147,8 +147,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     if (!is.brmsprior(dots$prior)) {
       stop2("Argument 'prior' needs to be a 'brmsprior' object.")
     }
-    # update existing priors manually
-    dots$prior <- rbind(dots$prior, object$prior)
+    # update existing priors manually and keep only user-specified ones
+    # default priors are recomputed base on newdata if provided
+    old_user_prior <- subset2(object$prior, source = "user")
+    dots$prior <- rbind(dots$prior, old_user_prior)
     dupl_priors <- duplicated(dots$prior[, rcols_prior()])
     dots$prior <- dots$prior[!dupl_priors, ]
   }
@@ -240,6 +242,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$data <- validate_data(
       dots$data, bterms = bterms, data2 = object$data2,
       knots = dots$knots, drop_unused_levels = dots$drop_unused_levels
+    )
+    object$prior <- .validate_prior(
+      dots$prior, bterms = bterms, data = object$data,
+      sample_prior = dots$sample_prior
     )
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
