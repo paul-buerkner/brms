@@ -4,7 +4,6 @@ RestoreWorkspace: Default
 SaveWorkspace: Default
 AlwaysSaveHistory: Default
 
-StripTrailingWhitespace: Yes
 EnableCodeIndexing: Yes
 UseSpacesForTab: Yes
 NumSpacesForTab: 2
@@ -12,6 +11,8 @@ Encoding: UTF-8
 
 RnwWeave: knitr
 LaTeX: pdfLaTeX
+
+StripTrailingWhitespace: Yes
 
 BuildType: Package
 PackageUseDevtools: Yes
