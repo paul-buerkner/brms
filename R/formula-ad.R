@@ -10,17 +10,18 @@
 #' @aliases se weights trials thres cat dec cens trunc
 #' @aliases index rate subset vreal vint
 #'
-#' @param x A vector; usually a variable defined in the data. Allowed values
-#'   depend on the function: \code{resp_se} and \code{resp_weights} require
-#'   positive numeric values. \code{resp_trials}, \code{resp_thres}, and
-#'   \code{resp_cat} require positive integers. \code{resp_dec} requires
-#'   \code{0} and \code{1}, or alternatively \code{'lower'} and \code{'upper'}.
-#'   \code{resp_subset} requires \code{0} and \code{1}, or alternatively
-#'   \code{FALSE} and \code{TRUE}. \code{resp_cens} requires \code{'left'},
-#'   \code{'none'}, \code{'right'}, and \code{'interval'} (or equivalently
-#'   \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate left, no, right,
-#'   or interval censoring. \code{resp_index} does not make any requirements
-#'   other than the value being unique for each observation.
+#' @param x A vector; Ideally a single variable defined in the data (see
+#'   Details). Allowed values depend on the function: \code{resp_se} and
+#'   \code{resp_weights} require positive numeric values. \code{resp_trials},
+#'   \code{resp_thres}, and \code{resp_cat} require positive integers.
+#'   \code{resp_dec} requires \code{0} and \code{1}, or alternatively
+#'   \code{'lower'} and \code{'upper'}. \code{resp_subset} requires \code{0} and
+#'   \code{1}, or alternatively \code{FALSE} and \code{TRUE}. \code{resp_cens}
+#'   requires \code{'left'}, \code{'none'}, \code{'right'}, and
+#'   \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
+#'   \code{2}) to indicate left, no, right, or interval censoring.
+#'   \code{resp_index} does not make any requirements other than the value being
+#'   unique for each observation.
 #' @param sigma Logical; Indicates whether the residual standard deviation
 #'  parameter \code{sigma} should be included in addition to the known
 #'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
@@ -58,7 +59,7 @@
 #'   of \code{\link{brmsformula}} (under "Additional response information").
 #'
 #'   It is highly recommended to use a single data variable as input
-#'   for `x` (instead of a more complicated expression) to make sure all
+#'   for \code{x} (instead of a more complicated expression) to make sure all
 #'   post-processing functions work as expected.
 #'
 #' @seealso
@@ -99,6 +100,8 @@
 #' }
 #'
 NULL
+
+# TODO: split into separate docs for each function
 
 #' @rdname addition-terms
 #' @export
