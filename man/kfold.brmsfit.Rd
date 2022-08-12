@@ -23,10 +23,7 @@
 \arguments{
 \item{x}{A \code{brmsfit} object.}
 
-\item{...}{More \code{brmsfit} objects or further arguments
-passed to the underlying post-processing functions.
-In particular, see \code{\link{prepare_predictions}} for further
-supported arguments.}
+\item{...}{Further arguments passed to \code{\link{brm}}.}
 
 \item{K}{The number of subsets of equal (if possible) size
 into which the data will be partitioned for performing
