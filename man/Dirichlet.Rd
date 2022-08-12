@@ -16,6 +16,8 @@ rdirichlet(n, alpha)
 \item{alpha}{Matrix of positive shape parameters. Each row corresponds to one
 probability vector.}
 
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
+
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{

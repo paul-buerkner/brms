@@ -1,18 +1,18 @@
   /* compute the cauchit link
    * Args:
-   *   p: a scalar in (0, 1)
+   *   p: a vector in (0, 1)
    * Returns:
-   *   a scalar in (-Inf, Inf)
+   *   a vector in (-Inf, Inf)
    */
-   real cauchit(real p) {
+   vector cauchit(vector p) {
      return tan(pi() * (p - 0.5));
    }
   /* compute the inverse of the cauchit link
    * Args:
-   *   y: a scalar in (-Inf, Inf)
+   *   y: a vector in (-Inf, Inf)
    * Returns:
-   *   a scalar in (0, 1)
+   *   a vector in (0, 1)
    */
-   real inv_cauchit(real y) {
-     return cauchy_cdf(y, 0, 1);
+   vector inv_cauchit(vector y) {
+     return atan(y) / pi() + 0.5;
    }

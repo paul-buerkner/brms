@@ -1,9 +1,9 @@
   /* compute the cloglog link
    * Args:
-   *   p: a scalar in (0, 1)
+   *   p: a vector in (0, 1)
    * Returns:
-   *   a scalar in (-Inf, Inf)
+   *   a vector in (-Inf, Inf)
    */
-   real cloglog(real p) {
+   vector cloglog(vector p) {
      return log(-log1m(p));
    }

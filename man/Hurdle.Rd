@@ -33,10 +33,12 @@ phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
 
 \item{hu}{hurdle probability}
 
-\item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
+
+\item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{mu, lambda}{location parameter}
 

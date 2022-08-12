@@ -1,18 +1,18 @@
   /* compute the logm1 link
    * Args:
-   *   p: a positive scalar
+   *   p: a positive vector
    * Returns:
-   *   a scalar in (-Inf, Inf)
+   *   a vector in (-Inf, Inf)
    */
-   real logm1(real y) {
-     return log(y - 1);
+   vector logm1(vector y) {
+     return log(y - 1.0);
    }
   /* compute the inverse of the logm1 link
    * Args:
-   *   y: a scalar in (-Inf, Inf)
+   *   y: a vector in (-Inf, Inf)
    * Returns:
-   *   a positive scalar
+   *   a positive vector
    */
-   real expp1(real y) {
-     return exp(y) + 1;
+   vector expp1(vector y) {
+     return exp(y) + 1.0;
    }

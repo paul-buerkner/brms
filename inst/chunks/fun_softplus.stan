@@ -1,9 +1,9 @@
   /* softplus link function inverse to 'log1p_exp'
    * Args:
-   *   x: a positive scalar
+   *   x: a positive vector
    * Returns:
-   *   a scalar in (-Inf, Inf)
+   *   a vector in (-Inf, Inf)
    */
-   real log_expm1(real x) {
+   vector log_expm1(vector x) {
      return log(expm1(x));
    }
