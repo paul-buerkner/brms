@@ -381,6 +381,10 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       stop2("Argument 'coef' may not be specified when using boundaries.")
     }
   }
+  if (dpar == "mu") {
+    # distributional parameter 'mu' is currently implicit #1368
+    dpar <- ""
+  }
   if (!check) {
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- ""
