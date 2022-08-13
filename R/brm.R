@@ -229,7 +229,9 @@
 #'   Stan model outside of \pkg{brms} and want to feed it back into the package.
 #' @param rename For internal use only.
 #' @param stan_model_args A \code{list} of further arguments passed to
-#'   \code{\link[rstan:stan_model]{stan_model}}.
+#'   \code{\link[rstan:stan_model]{rstan::stan_model}} for \code{backend =
+#'   "rstan"} or to \code{cmdstanr::cmdstan_model} for \code{backend =
+#'   "cmdstanr"}, which allows to change how models are compiled.
 #' @param ... Further arguments passed to Stan.
 #'   For \code{backend = "rstan"} the arguments are passed to
 #'   \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
@@ -542,7 +544,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
       save_pars = save_pars, ranef = ranef, family = family,
-      stan_args = nlist(init, control, silent, ...)
+      stan_args = nlist(normalize, init, silent, control, stan_model_args, ...)
     )
     exclude <- exclude_pars(x)
     # generate Stan data before compiling the model to avoid

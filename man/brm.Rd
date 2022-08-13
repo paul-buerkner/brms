@@ -270,7 +270,9 @@ case, the model's Stan code is saved via \code{\link{cat}} in a text file
 named after the string supplied in \code{save_model}.}
 
 \item{stan_model_args}{A \code{list} of further arguments passed to
-\code{\link[rstan:stan_model]{stan_model}}.}
+\code{\link[rstan:stan_model]{rstan::stan_model}} for \code{backend =
+"rstan"} or to \code{cmdstanr::cmdstan_model} for \code{backend =
+"cmdstanr"}, which allows to change how models are compiled.}
 
 \item{file}{Either \code{NULL} or a character string. In the latter case, the
 fitted model object is saved via \code{\link{saveRDS}} in a file named
