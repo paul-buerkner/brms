@@ -72,12 +72,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots <- list(...)
   testmode <- isTRUE(dots[["testmode"]])
   dots$testmode <- NULL
-  silent <- dots[["silent"]]
-  if (!is.null(silent)) {
-    silent <- validate_silent(silent)
+  if ("silent" %in% names(dots)) {
+    dots$silent <- validate_silent(dots$silent)
   } else {
-    silent <- 1L
+    dots$silent <- object$stan_args$silent %||% 1L
   }
+  silent <- dots$silent
   object <- restructure(object)
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
