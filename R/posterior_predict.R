@@ -3,7 +3,7 @@
 #' Compute posterior draws of the posterior predictive distribution. Can be
 #' performed for the data used to fit the model (posterior predictive checks) or
 #' for new data. By definition, these draws have higher variance than draws
-#' of the means of the posterior predictive distribution computed by
+#' of the expected value of the posterior predictive distribution computed by
 #' \code{\link{posterior_epred.brmsfit}}. This is because the residual error
 #' is incorporated in \code{posterior_predict}. However, the estimated means of
 #' both methods averaged across draws should be very similar.
@@ -31,7 +31,7 @@
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.
 #'
-#' @return An \code{array} of predicted response values. In univariate models,
+#' @return An \code{array} of draws. In univariate models,
 #'   the output is as an S x N matrix, where S is the number of posterior
 #'   draws and N is the number of observations. In multivariate models, an
 #'   additional dimension is added to the output which indexes along the
