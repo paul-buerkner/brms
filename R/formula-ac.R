@@ -71,11 +71,11 @@ NULL
 #' }
 #'
 #' @export
-arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
+arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = NULL) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
-  .arma(time = time, gr = gr, p = p, q = q, cov = cov, label = label)
+  .arma(time = time, gr = gr, p = p, q = q, cov = cov, label = label, latent = latent)
 }
 
 #' Set up AR(p) correlation structures
@@ -101,11 +101,11 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
 #' }
 #'
 #' @export
-ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
+ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = NULL) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
-  .arma(time = time, gr = gr, p = p, q = 0, cov = cov, label = label)
+  .arma(time = time, gr = gr, p = p, q = 0, cov = cov, label = label, latent = latent)
 }
 
 #' Set up MA(q) correlation structures
@@ -131,15 +131,15 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
 #' }
 #'
 #' @export
-ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
+ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = NULL) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
-  .arma(time = time, gr = gr, p = 0, q = q, cov = cov, label = label)
+  .arma(time = time, gr = gr, p = 0, q = q, cov = cov, label = label, latent = latent)
 }
 
 # helper function to validate input to arma()
-.arma <- function(time, gr, p, q, cov, label) {
+.arma <- function(time, gr, p, q, cov, label, latent) {
   time <- as_one_variable(time)
   gr <- as_one_character(gr)
   stopif_illegal_group(gr)
@@ -159,8 +159,13 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
     stop2("Covariance formulation of ARMA structures is ",
           "only possible for effects of maximal order one.")
   }
+  latent <- as_one_logical(latent)
+  if (latent && !cov) {
+    stop2("Latent formulation of ARMA structures ",
+          "requires use of the covariance formulation.")
+  }
   label <- as_one_character(label)
-  out <- nlist(time, gr, p, q, cov, label)
+  out <- nlist(time, gr, p, q, cov, label, latent)
   class(out) <- c("arma_term", "ac_term")
   out
 }
