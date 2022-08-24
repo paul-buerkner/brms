@@ -462,6 +462,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "M")
   out[cnames] <- list(NA)
   out$cov <- out$nat_cov <- FALSE
+  out$latent <- latent
   out[names(px)] <- px
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
@@ -473,6 +474,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$p[i] <- ac$p
       out$q[i] <- ac$q
       out$cov[i] <- ac$cov
+      out$latent[i] <- ac$latent
     }
     if (is.cosy_term(ac)) {
       out$class[i] <- "cosy"
@@ -587,6 +589,11 @@ use_ac_cov_time <- function(x) {
 has_ac_latent_residuals <- function(bterms) {
   !has_natural_residuals(bterms) &&
     (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
+}
+
+# force use of latent residuals?
+use_latent_residuals <- function(bterms) {
+  has_ac_subset(bterms, latent = T)
 }
 
 # validate SAR matrices

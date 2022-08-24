@@ -1240,9 +1240,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   slice <- stan_slice(threads)
   has_natural_residuals <- has_natural_residuals(bterms)
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
+  force_latent_residuals <- use_latent_residuals(bterms)
   acef <- tidy_acef(bterms, data)
 
-  if (has_ac_latent_residuals) {
+  if (has_ac_latent_residuals || force_latent_residuals) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
     err_msg <- "Latent residuals are not implemented"
@@ -1410,7 +1411,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  // compute residual covariance matrix\n",
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
     )
-    if (has_ac_latent_residuals) {
+    if (has_ac_latent_residuals || force_latent_residuals) {
       str_add(out$tpar_comp) <- glue(
         "  // compute correlated time-series residuals\n",
         "  err{p} = scale_time_err(",
