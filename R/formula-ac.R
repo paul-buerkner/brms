@@ -71,7 +71,7 @@ NULL
 #' }
 #'
 #' @export
-arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = NULL) {
+arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = FALSE) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -101,7 +101,7 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = NULL) {
 #' }
 #'
 #' @export
-ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = NULL) {
+ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = FALSE) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -131,7 +131,7 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = NULL) {
 #' }
 #'
 #' @export
-ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = NULL) {
+ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = FALSE) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -462,7 +462,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "M")
   out[cnames] <- list(NA)
   out$cov <- out$nat_cov <- FALSE
-  out$latent <- latent
+  out$latent <- FALSE
   out[names(px)] <- px
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
