@@ -621,10 +621,11 @@ file_refit_options <- function() {
 
 .canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
   cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
-  out <- capture.output(
+  out <- utils::capture.output(
     cmdstan_mod$format(canonicalize = list("deprecations",
                                           "braces",
                                           "parentheses"),
-                      overwrite_file = overwrite_file))
+                      overwrite_file = overwrite_file,
+                      backup = FALSE))
   paste0(out, collapse = "\n")
 }

@@ -45,7 +45,7 @@ Imports:
 Suggests:
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
-    cmdstanr (>= 0.4.0),
+    cmdstanr (>= 0.5.0),
     projpred (>= 2.0.0),
     RWiener,
     rtdists,
