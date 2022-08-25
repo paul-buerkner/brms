@@ -619,13 +619,14 @@ file_refit_options <- function() {
   c("never", "always", "on_change")
 }
 
+# canonicalize Stan model file in accordance with the current Stan version
 .canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
   cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
   out <- utils::capture.output(
-    cmdstan_mod$format(canonicalize = list("deprecations",
-                                          "braces",
-                                          "parentheses"),
-                      overwrite_file = overwrite_file,
-                      backup = FALSE))
+    cmdstan_mod$format(
+      canonicalize = list("deprecations", "braces", "parentheses"),
+      overwrite_file = overwrite_file, backup = FALSE
+    )
+  )
   paste0(out, collapse = "\n")
 }
