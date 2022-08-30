@@ -391,6 +391,25 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
   lapply(tmp, .VarCorr)
 }
 
+#' Extract Autocorrelated Random Effects
+#' 
+#' This function extracts the grouped ARMA-correlated random effects
+#' from a multi-level model of class \code{brmsfit}.
+#' 
+#' @aliases autocor_ranef
+#' 
+#' @param x a model of class \code{brmsfit}
+#' @inheritParams fixef.brmsfit
+#' @param ... Currently ignored
+#' 
+#' @return A list of lists (one for each grouping factor).
+#' 
+#' @export
+#' @export autocor_ranef
+autocor_ranef.brmsfit <- function(object) {
+  NULL
+}
+
 #' @export
 model.frame.brmsfit <- function(formula, ...) {
   formula$data

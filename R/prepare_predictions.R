@@ -741,7 +741,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
     out$end_tg <- sdata[[paste0("end_tg", p)]]
   }
-  if (has_ac_latent_residuals(bterms)) {
+  if (has_ac_latent_residuals(bterms) || use_latent_residuals(bterms)) {
     err_regex <- paste0("^err", p, "\\[")
     has_err <- any(grepl(err_regex, colnames(draws)))
     if (has_err && !new) {
