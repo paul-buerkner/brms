@@ -38,7 +38,7 @@ read_csv_as_stanfit <- function(files, variables = NULL) {
   par_dims[pdims_num != 0] <- csfit$metadata$stan_variable_sizes[stanvars][pdims_num != 0]
 
   # @mode
-  mode <- if(n_iter_sample != 0) 0L else 2L
+  mode <- 0L
 
   # @sim
   rstan_diagn_order <- c("accept_stat__", "treedepth__", "stepsize__",
