@@ -933,10 +933,11 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   stopifnot(is.brmsterms(bterms))
   # the model can only have a single predicted parameter
   # and no additional residual or autocorrelation structure
+  non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   mu <- bterms$dpars[["mu"]]
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
-      isTRUE(bterms$rescor) || length(bterms$adforms) ||
-      is.formula(mu$ac)) {
+      isTRUE(bterms$rescor) || is.formula(mu$ac) ||
+      any(names(bterms$adforms) %in% non_glm_adterms)) {
     return(FALSE)
   }
   # supported families and link functions

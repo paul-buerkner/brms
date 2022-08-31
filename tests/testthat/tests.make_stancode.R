@@ -1933,7 +1933,7 @@ test_that("Stan code for missing value terms works correctly", {
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "Yl_x[Jmi_x] = Ymi_x;")
   expect_match2(scode, "(bsp_y[1]) * Yl_x[n] + (bsp_y[2]) * Yl_x[n] * Csp_y_1[n];")
-  expect_match2(scode, "target += normal_lpdf(Yl_x | mu_x, sigma_x);")
+  expect_match2(scode, "target += normal_id_glm_lpdf(Yl_x | Xc_x, Intercept_x, b_x, sigma_x);")
 
   bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
