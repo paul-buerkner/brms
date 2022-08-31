@@ -1,5 +1,7 @@
 context("Tests for read_csv_as_stanfit")
 
+library(cmdstanr)
+
 # fit model
 model_code <- "
 parameters {
@@ -40,13 +42,6 @@ fit_thinned <-  mod$sample(parallel_chains = 4,
 
 fit_variational <- mod$variational()
 
-fit_empty <- mod$sample(parallel_chains = 4,
-                        iter_warmup = 200,
-                        iter_sampling = 0,
-                        save_warmup = F)
-
-# fit_optimize <- mod$optimize() # brms doesn't support optimisation
-
 test_set <- list(
   single_chain = fit$output_files()[[1]],
   multi_chain = fit$output_files(),
@@ -78,29 +73,29 @@ compare_functions <- function(filename) {
 
 # tests
 test_that("read methods identical: single chain with samples", {
-  compare_funs2(test_set$single_chain)
+  compare_functions(test_set$single_chain)
   })
 
 test_that("read methods identical: multiple chains with samples", {
-  compare_funs2(test_set$multi_chain)
+  compare_functions(test_set$multi_chain)
 })
 
 test_that("read methods identical: warmup", {
-  compare_funs2(test_set$with_warmup)
+  compare_functions(test_set$with_warmup)
 })
 
 test_that("read methods identical: dense warmup", {
-  compare_funs2(test_set$dense_warmup)
+  compare_functions(test_set$dense_warmup)
 })
 
 test_that("read methods identical: no samples", {
-  compare_funs2(test_set$no_samples)
+  compare_functions(test_set$no_samples)
 })
 
 test_that("read methods identical: thinned samples", {
-  compare_funs2(test_set$thinned)
+  compare_functions(test_set$thinned)
 })
 
 test_that("read methods identical: variational inference", {
-  compare_funs2(test_set$VI)
+  compare_functions(test_set$VI)
 })
