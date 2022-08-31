@@ -130,9 +130,9 @@
 #'   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 #'
 #'   \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
-#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial}, 
+#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 #'   \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
-#'   support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog}, 
+#'   support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
 #'   \code{cauchit}, \code{identity}, and \code{log}.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
@@ -1248,7 +1248,7 @@ valid_dpars.mixfamily <- function(family, type = NULL, ...) {
   out <- lapply(family$mix, valid_dpars, type = type, ...)
   for (i in seq_along(out)) {
     if (length(out[[i]])) {
-      out[[i]] <- paste0(out[[i]], i) 
+      out[[i]] <- paste0(out[[i]], i)
     }
   }
   out <- unlist(out)
@@ -1869,7 +1869,7 @@ family_bounds.brmsterms <- function(x, ...) {
   } else if (family %in% "von_mises") {
     out <- list(lb = -pi, ub = pi)
   } else if (family %in% c("wiener", "shifted_lognormal")) {
-    out <- list(lb = paste("min_Y", resp), ub = Inf)
+    out <- list(lb = paste0("min_Y", resp), ub = Inf)
   } else {
     out <- list(lb = -Inf, ub = Inf)
   }

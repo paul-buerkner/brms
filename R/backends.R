@@ -619,33 +619,14 @@ file_refit_options <- function() {
   c("never", "always", "on_change")
 }
 
+# canonicalize Stan model file in accordance with the current Stan version
 .canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
-  if (os_is_windows()) {
-    stanc_cmd <- "bin/stanc.exe"
-  } else {
-    stanc_cmd <- "bin/stanc"
-  }
-  stanc_flags <- c(
-    "--auto-format",
-    "--canonicalize=deprecations,braces,parentheses"
-  )
-  if (cmdstanr::cmdstan_version() >= "2.29.0") {
-    require_package("processx")
-    res <- processx::run(
-      command = stanc_cmd,
-      args = c(stan_file, stanc_flags),
-      wd = cmdstanr::cmdstan_path(),
-      echo = FALSE,
-      echo_cmd = FALSE,
-      spinner = FALSE,
-      stderr_callback = function(x, p) {
-        message(x)
-      },
-      error_on_status = TRUE
+  cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
+  out <- utils::capture.output(
+    cmdstan_mod$format(
+      canonicalize = list("deprecations", "braces", "parentheses"),
+      overwrite_file = overwrite_file, backup = FALSE
     )
-    if (overwrite_file) {
-      cat(res$stdout, file = stan_file, sep = "\n")
-    }
-  }
-  res$stdout
+  )
+  paste0(out, collapse = "\n")
 }

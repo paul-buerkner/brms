@@ -2076,12 +2076,12 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
       xi <- glue("xi{id}")
       if (!xi %in% dp_names) {
         str_add(out$model_def) <- glue(
-          "  real {xi};  // scaled shape parameter\n"
+          "  real {xi}{p};  // scaled shape parameter\n"
         )
         sigma <- glue("sigma{id}")
         sfx <- str_if(sigma %in% names(bterms$dpars), "_vector")
         args <- sargs(
-          glue("tmp_{xi}"), glue("Y{p}"),
+          glue("tmp_{xi}{p}"), glue("Y{p}"),
           glue("mu{id}{p}"), glue("{sigma}{p}")
         )
         str_add(out$model_comp_dpar_trans) <- glue(

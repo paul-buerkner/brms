@@ -304,9 +304,9 @@ Below, we list common use cases for the different families.
   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 
   \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
-  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial}, 
+  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
   \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
-  support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog}, 
+  support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
   \code{cauchit}, \code{identity}, and \code{log}.}
 
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
