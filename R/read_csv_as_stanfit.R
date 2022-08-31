@@ -1,7 +1,8 @@
 # read in stan csvs via cmdstanr and repackage into a stanfit object
 
-read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics=NULL) {
+read_csv_as_stanfit <- function(files, variables = NULL) {
 
+  sampler_diagnostics <- NULL
   csfit <- cmdstanr::read_cmdstan_csv(files = files,
                                       variables = variables,
                                       sampler_diagnostics = sampler_diagnostics,
