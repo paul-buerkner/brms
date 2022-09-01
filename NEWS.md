@@ -14,6 +14,8 @@ when updating models via `update.brmsfit`. (#1380)
 
 ### Other Changes
 
+* Improve efficiency of converting models fitted with `backend = "cmdstanr"`
+to `stanfit` objects thanks to Simon Mills and Jacob Socolar. (#1331)
 * Allow for more `O1` optimization of brms-generated Stan models
 thanks to Aki Vehtari. (#1382)
 
