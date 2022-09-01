@@ -1,4 +1,5 @@
 context("Tests for read_csv_as_stanfit")
+skip("not run by default")
 
 library(cmdstanr)
 
