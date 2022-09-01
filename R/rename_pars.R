@@ -40,7 +40,7 @@ rename_pars <- function(x) {
   # perform the actual renaming in x$fit@sim
   x <- save_old_par_order(x)
   x <- do_renaming(x, change)
-  x$fit <- repair_stanfit_names(x$fit)
+  x$fit <- repair_stanfit(x$fit)
   x <- compute_quantities(x)
   x <- reorder_pars(x)
   x
