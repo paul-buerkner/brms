@@ -215,7 +215,7 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
-  out <- repair_stanfit_names(out)
+  out <- repair_stanfit(out)
   out
 }
 
@@ -252,7 +252,6 @@ fit_model <- function(model, backend, ...) {
   if (use_opencl(opencl)) {
     args$opencl_ids <- opencl$ids
   }
-  # TODO: exclude variables via 'exclude'
   dots <- list(...)
   args[names(dots)] <- dots
   args[names(control)] <- control
@@ -290,13 +289,17 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
-  # a lot of metadata is not stored via rstan::read_stan_csv
+  # not all metadata is not stored by read_csv_as_stanfit
   metadata <- cmdstanr::read_cmdstan_csv(
     out$output_files(), variables = "", sampler_diagnostics = ""
   )
+  # ensure that only relevant variables are read from CSV
+  variables <- repair_variable_names(metadata$metadata$variables)
+  variables <- unique(sub("\\[.+", "", variables))
+  variables <- setdiff(variables, exclude)
   # transform into stanfit object for consistent output structure
-  out <- rstan::read_stan_csv(out$output_files())
-  out <- repair_stanfit_names(out)
+  out <- read_csv_as_stanfit(out$output_files(), variables = variables)
+  out <- repair_stanfit(out)
   # allow updating the model without recompilation
   attributes(out)$CmdStanModel <- model
   attributes(out)$metadata <- metadata
@@ -595,8 +598,17 @@ validate_silent <- function(silent) {
   silent
 }
 
+# ensure that variable dimensions at the end are correctly written
+# convert names like b.1.1 to b[1,1]
+repair_variable_names <- function(x) {
+  x <- sub("\\.", "[", x)
+  x <- gsub("\\.", ",", x)
+  x[grep("\\[", x)] <- paste0(x[grep("\\[", x)], "]")
+  x
+}
+
 # repair parameter names of stanfit objects
-repair_stanfit_names <- function(x) {
+repair_stanfit <- function(x) {
   stopifnot(is.stanfit(x))
   if (!length(x@sim$fnames_oi)) {
     # nothing to rename
@@ -606,7 +618,7 @@ repair_stanfit_names <- function(x) {
   # this case happens rarely but might happen when sample_prior = "yes"
   x@sim$fnames_oi <- make.unique(as.character(x@sim$fnames_oi), "__")
   for (i in seq_along(x@sim$samples)) {
-    # rstan::read_stan_csv may have renamed dimension suffixes (#1218)
+    # stanfit may have renamed dimension suffixes (#1218)
     if (length(x@sim$samples[[i]]) == length(x@sim$fnames_oi)) {
       names(x@sim$samples[[i]]) <- x@sim$fnames_oi
     }

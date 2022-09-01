@@ -195,7 +195,7 @@ restructure_v2 <- function(x) {
   if (version < "2.16.1") {
     # problems with rstan::read_stan_csv as well as
     # non-unique variable names became apparent (#1218)
-    x$fit <- repair_stanfit_names(x$fit)
+    x$fit <- repair_stanfit(x$fit)
   }
   if (version < "2.16.12") {
     # added full user control over parameter boundaries (#1324)
