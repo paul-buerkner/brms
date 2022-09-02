@@ -741,7 +741,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
     out$end_tg <- sdata[[paste0("end_tg", p)]]
   }
-  if (has_ac_latent_residuals(bterms) || use_latent_residuals(bterms)) {
+  if (has_ac_latent_residuals(bterms)) {
     err_regex <- paste0("^err", p, "\\[")
     has_err <- any(grepl(err_regex, colnames(draws)))
     if (has_err && !new) {
@@ -755,6 +755,33 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
       out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
       sderr_regex <- paste0("^sderr", p, "$")
       out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
+      for (i in seq_len(out$N_tg)) {
+        obs <- with(out, begin_tg[i]:end_tg[i])
+        zeros <- rep(0, length(obs))
+        cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+        .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+        out$err[, obs] <- rblapply(seq_rows(draws), .err)
+      }
+    }
+  }
+  if (parameterize_ac_effects(bterms)) {
+    ### NOTE: this doesn't work yet
+    acef_regex <- paste0("^acef", p, "\\[")
+    has_acef <- any(grepl(acef_regex, colnames(draws)))
+    if (has_acef && !new) {
+      out$acef <- prepare_draws(draws, acef_regex, regex = TRUE)
+    } else {
+      if (!use_ac_cov_time(acef)) {
+        # this shouldn't ever happen, should hit an error earlier
+        stop2("Cannot predict new autocorrelated effects ",
+              "when using cov = FALSE in autocor terms.")
+      }
+      # need to sample autocorrelated effects
+      # conditional on estimated effects
+      out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+      sderr_regex <- paste0("^sderr", p, "$")
+      out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
+      is_observed <- !is.na(out$Y)
       for (i in seq_len(out$N_tg)) {
         obs <- with(out, begin_tg[i]:end_tg[i])
         zeros <- rep(0, length(obs))

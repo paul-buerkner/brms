@@ -591,8 +591,8 @@ has_ac_latent_residuals <- function(bterms) {
     (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
 }
 
-# force use of latent residuals?
-use_latent_residuals <- function(bterms) {
+# use explicitly parameterized autocor effects?
+parameterize_ac_effects <- function(bterms) {
   has_ac_subset(bterms, latent = T)
 }
 

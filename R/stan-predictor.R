@@ -1240,12 +1240,35 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   slice <- stan_slice(threads)
   has_natural_residuals <- has_natural_residuals(bterms)
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
-  force_latent_residuals <- use_latent_residuals(bterms)
+  parameterize_ac_effects <- parameterize_ac_effects(bterms)
   acef <- tidy_acef(bterms, data)
 
-  if (has_ac_latent_residuals || force_latent_residuals) {
+  if (parameterize_ac_effects) {
+    # if the latent flag was used, explicitly parameterize
+    # autocorrelated random effects
+    err_msg <- "Latent ARMA effects are not implemented"
+    if (is.btnl(bterms)) {
+      stop2(err_msg, " for non-linear models.")
+    }
+    str_add(out$par) <- glue(
+      "  vector[N{resp}] zacef{p};  // unscaled autocorrelated effects\n"
+    )
+    str_add_list(out) <- stan_prior(
+      prior, class = "sdacef", px = px, suffix = p,
+      comment = "SD of autocorrelated effects", normalize = normalize
+    )
+    str_add(out$tpar_def) <- glue(
+      "  vector[N{resp}] acef{p};  // outcome scale autocorrelated effects\n"
+    )
+    str_add(out$pll_args) <- glue(", vector acef{p}")
+    str_add(out$model_prior) <- glue(
+      "  target += std_normal_{lpdf}(zacef{p});\n"
+    )
+    str_add(out$eta) <- glue(" + acef{p}{slice}")
+  } else if (has_ac_latent_residuals) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
+    # don't need to do this if we already used the `latent` flag
     err_msg <- "Latent residuals are not implemented"
     if (is.btnl(bterms)) {
       stop2(err_msg, " for non-linear models.")
@@ -1266,7 +1289,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     )
     str_add(out$eta) <- glue(" + err{p}{slice}")
   }
-
+  
   # validity of the autocor terms has already been checked in 'tidy_acef'
   acef_arma <- subset2(acef, class = "arma")
   if (NROW(acef_arma)) {
@@ -1411,7 +1434,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  // compute residual covariance matrix\n",
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
     )
-    if (has_ac_latent_residuals || force_latent_residuals) {
+    if (has_ac_latent_residuals) {
       str_add(out$tpar_comp) <- glue(
         "  // compute correlated time-series residuals\n",
         "  err{p} = scale_time_err(",

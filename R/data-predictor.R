@@ -668,6 +668,9 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+    if (parameterize_ac_effects(acef)) {
+      out$level_tg <- unique(tgroup)
+    }
   }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
