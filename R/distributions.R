@@ -2088,10 +2088,9 @@ inv_link_categorical <- function(x, refcat = 1, log = FALSE) {
   if (!is.null(refcat)) {
     x <- insert_refcat(x, refcat = refcat)
   }
-  if (log) {
-    out <- log_softmax(x)
-  } else {
-    out <- softmax(x)
+  out <- log_softmax(x)
+  if (!log) {
+    out <- exp(out)
   }
   out
 }
