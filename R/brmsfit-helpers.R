@@ -474,7 +474,7 @@ get_theta <- function(prep, i = NULL) {
     }
     theta <- abind(theta, along = 3)
     for (n in seq_len(dim(theta)[2])) {
-      theta[, n, ] <- softmax(slice(theta, 2, n))
+      theta[, n, ] <- exp(log_softmax(slice(theta, 2, n)))
     }
     if (length(i) == 1L) {
       dim(theta) <- dim(theta)[c(1, 3)]

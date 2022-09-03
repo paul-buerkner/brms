@@ -173,19 +173,6 @@ fabs <- function(x) {
   abs(x)
 }
 
-softmax <- function(x) {
-  ndim <- length(dim(x))
-  if (ndim <= 1) {
-    x <- matrix(x, nrow = 1)
-    ndim <- length(dim(x))
-  }
-  x <- exp(x)
-  dim_noncat <- dim(x)[-ndim]
-  marg_noncat <- seq_along(dim(x))[-ndim]
-  catsum <- array(apply(x, marg_noncat, sum), dim = dim_noncat)
-  sweep(x, marg_noncat, catsum, "/")
-}
-
 log_softmax <- function(x) {
   ndim <- length(dim(x))
   if (ndim <= 1) {
