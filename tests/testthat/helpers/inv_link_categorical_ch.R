@@ -23,15 +23,14 @@ inv_link_categorical_ch <- function(x, log = FALSE, refcat_ins = TRUE) {
   ndraws <- dim(x)[1]
   nobsv <- dim(x)[2]
   ncat <- dim(x)[3]
-  .softmax <- if (log) {
-    log_softmax
-  } else {
-    softmax
-  }
   out <- aperm(
     array(
       sapply(seq_len(nobsv), function(i) {
-        .softmax(slice(x, 2, i))
+        out_i <- log_softmax(slice(x, 2, i))
+        if (!log) {
+          out_i <- exp(out_i)
+        }
+        out_i
       }, simplify = "array"),
       dim = c(ndraws, ncat, nobsv)
     ),
