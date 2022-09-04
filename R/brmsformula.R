@@ -526,8 +526,8 @@
 #'   they are internally normalized to form a probability vector.
 #'   If one seeks to predict the mixing proportions, all but
 #'   one of the them has to be predicted, while the remaining one is used
-#'   as the reference category to identify the model. The \code{softmax}
-#'   function is applied on the linear predictor terms to form a
+#'   as the reference category to identify the model. The so-called 'softmax'
+#'   transformation is applied on the linear predictor terms to form a
 #'   probability vector.
 #'
 #'   For more information on mixture models, see
