@@ -185,6 +185,11 @@ log_softmax <- function(x) {
   sweep(x, marg_noncat, catsum, "-")
 }
 
+softmax <- function(x) {
+  # log_softmax is more numerically stable #1401
+  exp(log_softmax(x))
+}
+
 inv_odds <- function(x) {
   x / (1 + x)
 }
