@@ -662,10 +662,10 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   model_name = gsub(".csv", "", basename(files[[1]]))
 
   # @model_pars
-  if (is.null(variables)) {
-    svars <- csfit$metadata$stan_variables
-  } else {
-    svars <- unique(gsub("\\[.*\\]", "", variables))
+  svars <- csfit$metadata$stan_variables
+  if (!is.null(variables)) {
+    variables_main <- unique(gsub("\\[.*\\]", "", variables))
+    svars <- intersect(variables_main, svars)
   }
   if ("lp__" %in% svars) {
     svars <- c(setdiff(svars, "lp__"), "lp__")
