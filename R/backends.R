@@ -662,30 +662,28 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   model_name = gsub(".csv", "", basename(files[[1]]))
 
   # @model_pars
-  stanvars <- csfit$metadata$stan_variables
-  if ("lp__" %in% stanvars) {
-    stanvars <- c(setdiff(stanvars, "lp__"), "lp__")
-  }
-
   if (is.null(variables)) {
-    pars_oi <- stanvars
+    svars <- csfit$metadata$stan_variables
   } else {
-    pars_oi <- unique(gsub("\\[.*\\]", "", variables))
+    svars <- unique(gsub("\\[.*\\]", "", variables))
   }
-
+  if ("lp__" %in% svars) {
+    svars <- c(setdiff(svars, "lp__"), "lp__")
+  }
+  pars_oi <- svars
   par_names <- csfit$metadata$model_params
 
   # @par_dims
-  par_dims <- vector("list", length(stanvars))
+  par_dims <- vector("list", length(svars))
 
-  names(par_dims) <- stanvars
+  names(par_dims) <- svars
   par_dims <- lapply(par_dims, function(x) x <- integer(0))
 
   pdims_num <- ulapply(
-    stanvars, function(x) sum(grepl(paste0("^", x, "\\[.*\\]$"), par_names))
+    svars, function(x) sum(grepl(paste0("^", x, "\\[.*\\]$"), par_names))
   )
   par_dims[pdims_num != 0] <-
-    csfit$metadata$stan_variable_sizes[stanvars][pdims_num != 0]
+    csfit$metadata$stan_variable_sizes[svars][pdims_num != 0]
 
   # @mode
   mode <- 0L
@@ -943,7 +941,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   new(
     "stanfit",
     model_name = model_name,
-    model_pars = stanvars,
+    model_pars = svars,
     par_dims = par_dims,
     mode = mode,
     sim = sim,
