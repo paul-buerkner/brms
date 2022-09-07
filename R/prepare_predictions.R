@@ -776,6 +776,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
         stop2("Cannot predict new autocorrelated effects ",
               "when using cov = FALSE in autocor terms.")
       }
+      
       # need to sample autocorrelated effects
       # conditional on estimated effects
       out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))

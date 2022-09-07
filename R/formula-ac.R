@@ -502,6 +502,11 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$M[i] <- ac$M
       out$cov[i] <- TRUE
     }
+    if (ac$latent && ac$gr != "NA") {
+      if (data) {
+        attr(out, "levels_tg") <- list(gr = unique(get(data, gr)))
+      }
+    }
   }
   # covariance matrices of natural residuals will be handled
   # directly in the likelihood function while latent residuals will
