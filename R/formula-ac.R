@@ -503,7 +503,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$cov[i] <- TRUE
     }
     if (ac$latent && ac$gr != "NA") {
-      if (data) {
+      if (!is.null(data)) {
         attr(out, "levels_tg") <- list(gr = unique(get(data, gr)))
       }
     }
