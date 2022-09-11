@@ -35,6 +35,7 @@ prepare_predictions.brmsfit <- function(
   bterms <- brmsterms(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
+  acef <- tidy_acef(bterms, x$data)
   new <- !is.null(newdata)
   sdata <- standata(
     x, newdata = newdata, re_formula = re_formula,
@@ -779,16 +780,25 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
       
       # need to sample autocorrelated effects
       # conditional on estimated effects
-      out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
-      sderr_regex <- paste0("^sderr", p, "$")
-      out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
+      out$acef <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+      sdacef_regex <- paste0("^sdacef", p, "$")
+      out$sdacef <- prepare_draws(draws, sdacef_regex, regex = TRUE)
       is_observed <- !is.na(out$Y)
+      acef_draws <- prepare_draws(draws, acef_regex, regex = TRUE)
       for (i in seq_len(out$N_tg)) {
-        obs <- with(out, begin_tg[i]:end_tg[i])
-        zeros <- rep(0, length(obs))
-        cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-        .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-        out$err[, obs] <- rblapply(seq_rows(draws), .err)
+        index_tg <- which(out$levels_tg[i] == attr(old_ac, "levels_tg"))
+
+        if (!length(index_tg)) {
+          # if it's a new level, sample a new autocorrelated effect
+          obs <- with(out, begin_tg[i]:end_tg[i])
+          zeros <- rep(0, length(obs))
+          cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+          .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+          out$err[, obs] <- rblapply(seq_rows(draws), .err)
+        } else {
+          obs <- with(out, begin_tg[i]:end_tg[i])
+          old_obs <- 
+        }
       }
     }
   }
