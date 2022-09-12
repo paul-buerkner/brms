@@ -502,16 +502,11 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$M[i] <- ac$M
       out$cov[i] <- TRUE
     }
-    if (ac$latent && ac$gr != "NA") {
-      if (!is.null(data)) {
-        attr(out, "levels_tg") <- list(gr = unique(get(data, gr)))
-      }
-    }
   }
   # covariance matrices of natural residuals will be handled
   # directly in the likelihood function while latent residuals will
   # be added to the linear predictor of the main parameter 'mu'
-  out$nat_cov <- out$cov & has_natural_residuals(x) & !parameterize_ac_effects(x)
+  out$nat_cov <- out$cov & has_natural_residuals(x) & !out$latent
   class(out) <- acef_class()
   # validate specified autocor terms
   if (any(duplicated(out$class))) {
