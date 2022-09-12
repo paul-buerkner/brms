@@ -80,7 +80,7 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
     in order to perform distributional regression. Prior specifications are 
     flexible and explicitly encourage users to apply prior distributions that
     actually reflect their prior knowledge. Models can easily be evaluated and
-    compared using serveral methods assessing posterior or prior predictions. 
+    compared using several methods assessing posterior or prior predictions. 
     References: Bürkner (2017) <doi:10.18637/jss.v080.i01>; 
     Bürkner (2018) <doi:10.32614/RJ-2018-017>;
     Bürkner (2021) <doi:10.18637/jss.v100.i05>; Carpenter et al. (2017)
