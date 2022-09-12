@@ -715,9 +715,6 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   out$acef <- acef
     p <- usc(combine_prefix(bterms))
   out$N_tg <- sdata[[paste0("N_tg", p)]]
-  if (!is.null(data)) {
-    old_sdata <- 
-  }
   if (has_ac_class(acef, "arma")) {
     acef_arma <- subset2(acef, class = "arma")
     out$Y <- sdata[[paste0("Y", p)]]
