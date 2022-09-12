@@ -1,5 +1,4 @@
-source("helpers/setup_model_tests.R")
-skip("only run after major changes or before releases")
+source("setup_tests_local.R")
 
 test_that("Multivariate GAMMs work correctly", {
   set.seed(4312)
