@@ -96,7 +96,7 @@ test_that("ordinal model with grouped thresholds works correctly", {
 
 
 test_that("projpred methods can be run", {
-  fit <- brm(count ~ zAge + zBase * Trt,
+  fit <- brm(count ~ zAge + zBase + Trt,
              data = epilepsy, family = poisson())
   summary(fit)
 
