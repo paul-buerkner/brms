@@ -107,8 +107,9 @@ test_that("projpred methods can be run", {
   expect_is(vs, "vsel")
 
   # perform variable selection with cross-validation
-  cv_vs <- cv_varsel(fit)
-  expect_is(vs, "vsel")
+  # takes very long and hence commented out
+  # cv_vs <- cv_varsel(fit)
+  # expect_is(vs, "vsel")
 })
 
 test_that(paste(
