@@ -1246,25 +1246,25 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   if (parameterize_ac_effects) {
     # if the latent flag was used, explicitly parameterize
     # autocorrelated random effects
-    err_msg <- "Latent ARMA effects are not implemented"
+    err_msg <- "Parameterized ARMA effects are not implemented"
     if (is.btnl(bterms)) {
       stop2(err_msg, " for non-linear models.")
     }
     str_add(out$par) <- glue(
-      "  vector[N{resp}] zacef{p};  // unscaled autocorrelated effects\n"
+      "  vector[N{resp}] zacranef{p};  // unscaled autocorrelated effects\n"
     )
     str_add_list(out) <- stan_prior(
-      prior, class = "sdacef", px = px, suffix = p,
+      prior, class = "sdacranef", px = px, suffix = p,
       comment = "SD of autocorrelated effects", normalize = normalize
     )
     str_add(out$tpar_def) <- glue(
-      "  vector[N{resp}] acef{p};  // outcome scale autocorrelated effects\n"
+      "  vector[N{resp}] acranef{p};  // outcome scale autocorrelated effects\n"
     )
-    str_add(out$pll_args) <- glue(", vector acef{p}")
+    str_add(out$pll_args) <- glue(", vector acranef{p}")
     str_add(out$model_prior) <- glue(
-      "  target += std_normal_{lpdf}(zacef{p});\n"
+      "  target += std_normal_{lpdf}(zacranef{p});\n"
     )
-    str_add(out$eta) <- glue(" + acef{p}{slice}")
+    str_add(out$eta) <- glue(" + acranef{p}{slice}")
   } else if (has_ac_latent_residuals) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
@@ -1439,6 +1439,13 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  // compute correlated time-series residuals\n",
         "  err{p} = scale_time_err(",
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+      )
+    }
+    if (parameterize_ac_effects) {
+      str_add(out$tpar_comp) <- glue(
+        "  // compute autocorrelated effects\n",
+        "  acranef{p} = scale_time_err(",
+        "zacranef{p}, sdacranef{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
     }
   }

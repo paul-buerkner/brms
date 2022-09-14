@@ -107,9 +107,10 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   for (dp in valid_dpars) {
     dp_regex <- paste0("^", dp, resp, "$")
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
-      old_acdata <- ifelse(parameterize_ac_effects(x$dpars[[dp]]),
-                           standata(x, data),
-                           NULL)
+      old_acdata <- NULL
+      if (parameterize_ac_effects(x$dpars[[dp]])) {
+        old_acdata <- make_standata(x, data)
+      }
       out$dpars[[dp]] <- prepare_predictions(
         x$dpars[[dp]], draws = draws,
         sdata = sdata, data = data, old_acdata = old_acdata, ...
@@ -704,7 +705,8 @@ prepare_predictions_re <- function(bterms, sdata, prep_ranef = list(),
 # prepare predictions of autocorrelation parameters
 # @param nat_cov extract terms for covariance matrices of natural residuals?
 prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
-                                   nat_cov = FALSE, new = FALSE, ...) {
+                                   nat_cov = FALSE, new = FALSE, 
+                                   old_acdata = NULL, ...) {
   out <- list()
   nat_cov <- as_one_logical(nat_cov)
   acef <- tidy_acef(bterms)
@@ -713,7 +715,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     return(out)
   }
   out$acef <- acef
-    p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bterms))
   out$N_tg <- sdata[[paste0("N_tg", p)]]
   if (has_ac_class(acef, "arma")) {
     acef_arma <- subset2(acef, class = "arma")
@@ -769,56 +771,64 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   }
   if (parameterize_ac_effects(bterms)) {
     ### NOTE: this doesn't work yet
-    acef_regex <- paste0("^acef", p, "\\[")
+    out$level_tg <- sdata[[paste0("level_tg", p)]]
+    acef_regex <- paste0("^acranef", p, "\\[")
+    zacef_regex <- paste0("^zacranef", p, "\\[")
     has_acef <- any(grepl(acef_regex, colnames(draws)))
     if (has_acef && !new) {
-      out$acef <- prepare_draws(draws, acef_regex, regex = TRUE)
+      out$acranef <- prepare_draws(draws, acef_regex, regex = TRUE)
+      out$zacranef <- prepare_draws(draws, zacef_regex, regex = TRUE)
     } else {
       if (!use_ac_cov_time(acef)) {
         # this shouldn't ever happen, should hit an error earlier
         stop2("Cannot predict new autocorrelated effects ",
               "when using cov = FALSE in autocor terms.")
       }
-      
       if (!is.null(old_acdata)) {
         # need to sample autocorrelated effects
         # conditional on estimated effects
-        old_levels <- old_acdata$levels_tg
+        old_levels <- old_acdata$level_tg
         old_begin_tg <- old_acdata$begin_tg
         old_end_tg <- old_acdata$end_tg
-        out$acef <- matrix(nrow = nrow(draws), ncol = length(out$Y))
-        sdacef_regex <- paste0("^sdacef", p, "$")
-        out$sdacef <- prepare_draws(draws, sdacef_regex, regex = TRUE)
+        out$acranef <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+        sdacef_regex <- paste0("^sdacranef", p, "$")
+        out$sdacranef <- prepare_draws(draws, sdacef_regex, regex = TRUE)
+        zacef_draws <- prepare_draws(draws, zacef_regex, regex = TRUE)
         is_observed <- !is.na(out$Y)
-        acef_draws <- prepare_draws(draws, acef_regex, regex = TRUE)
         for (i in seq_len(out$N_tg)) {
-          index_tg <- which(out$levels_tg[i] == old_levels)
+          index_tg <- which(out$level_tg[i] == old_levels)
           if (!length(index_tg)) {
             # if it's a new level, sample a new autocorrelated effect
             obs <- with(out, begin_tg[i]:end_tg[i])
             zeros <- rep(0, length(obs))
             cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
             .new_acef <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-            out$acef[, obs] <- rblapply(seq_rows(draws), .new_acef)
+            out$acranef[, obs] <- rblapply(seq_rows(draws), .new_acef)
           } else {
             # if it's an existing level, sample new effects conditional on 
             # estimated effects for observed times
             obs <- with(out, begin_tg[i]:end_tg[i])
-            old_obs <- old_begin_tg[i]:old_end_tg[i]
+            old_obs <- old_begin_tg[index_tg]:old_end_tg[index_tg]
             cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
             .cond_acef <- function(s) {
-              cov_chol <- chol(cov[s, , ])
-              vec <- rep(0, length(obs))
-              for (idx in obs) {
-                if (is_observed[idx]) {
-                  vec[idx] <- acef_draws[s, old_begin_tg[i] + (idx - begin_tg[i])]
-                } else {
-                  vec[idx] <- rnorm(1)
-                }
-              }
-              chol %*% vec
+              cov_chol <- t(chol(cov[s, , ]))
+              this_acef <- c(zacef_draws[s, old_obs], rnorm(length(obs) - length(old_obs)))
+              # TODO: make it possible for this to fill in gaps or pre-cast
+              # instead of only predicting future observations.
+              # Commented code below doesn't work
+              # this_acef <- rep(0, length(obs))
+              # old_obs_used <- 0
+              # for (idx in length(obs)) {
+              #   if (is_observed[obs[1] + idx - 1]) {
+              #     this_acef[idx] <- acef_draws[s, old_obs[1] + old_obs_used]
+              #     old_obs_used <- old_obs_used + 1
+              #   } else {
+              #     this_acef[idx] <- rnorm(1)
+              #   }
+              # }
+              t(cov_chol %*% this_acef)
             }
-            out$acef[, obs] <- rblapply(seq_rows(draws), .cond_acef)
+            out$acranef[, obs] <- rblapply(seq_rows(draws), .cond_acef)
           }
         }
       } else {
@@ -827,15 +837,15 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
                 "when using cov = FALSE in autocor terms.")
         }
         # need to sample correlated residuals
-        out$acef <- matrix(nrow = nrow(draws), ncol = length(out$Y))
-        sdacef_regex <- paste0("^sdacef", p, "$")
-        out$sdacef <- prepare_draws(draws, sdacef_regex, regex = TRUE)
+        out$acranef <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+        sdacef_regex <- paste0("^sdacranef", p, "$")
+        out$sdacranef <- prepare_draws(draws, sdacef_regex, regex = TRUE)
         for (i in seq_len(out$N_tg)) {
           obs <- with(out, begin_tg[i]:end_tg[i])
           zeros <- rep(0, length(obs))
           cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
           .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-          out$acef[, obs] <- rblapply(seq_rows(draws), .err)
+          out$acranef[, obs] <- rblapply(seq_rows(draws), .err)
         }
       }
     }

@@ -669,7 +669,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
     if (parameterize_ac_effects(acef)) {
-      out$level_tg <- unique(tgroup)
+      out$level_tg <- unique(data[[gr]])
     }
   }
   if (has_ac_class(acef, "sar")) {

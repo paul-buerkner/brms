@@ -255,7 +255,12 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
   }
   # prepare residual standard deviations
   if (latent) {
-    sigma2 <- as.numeric(prep$ac$sderr)^2
+    if (!is.null(prep$ac$sderr)) {
+      sigma2 <- as.numeric(prep$ac$sderr)^2
+    }
+    if (!is.null(prep$ac$sdacranef)) {
+      sigma2 <- as.numeric(prep$ac$sdacranef)^2
+    }
   } else {
     sigma <- get_dpar(prep, "sigma", i = obs)
     if (NCOL(sigma) > 1L) {
