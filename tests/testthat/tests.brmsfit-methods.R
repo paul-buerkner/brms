@@ -20,6 +20,12 @@ fit4 <- rename_pars(brms:::brmsfit_example4)
 fit5 <- rename_pars(brms:::brmsfit_example5)
 fit6 <- rename_pars(brms:::brmsfit_example6)
 
+# some high level info about the data sets
+nobs <- 40
+npatients <- 10
+nsubjects <- 8
+nvisits <- 4
+
 # test S3 methods in alphabetical order
 test_that("as_draws and friends have resonable outputs", {
   draws <- as_draws(fit1, variable = "b_Intercept")
@@ -131,9 +137,9 @@ test_that("coef has reasonable ouputs", {
   coef1 <- SM(coef(fit1, summary = FALSE))
   expect_equal(dim(coef1$visit), c(ndraws(fit1), 4, 9))
   coef2 <- SM(coef(fit2))
-  expect_equal(dim(coef2$patient), c(59, 4, 4))
+  expect_equal(dim(coef2$patient), c(npatients, 4, 4))
   coef4 <- SM(coef(fit4))
-  expect_equal(dim(coef4$subject), c(10, 4, 8))
+  expect_equal(dim(coef4$subject), c(nsubjects, 4, 8))
 })
 
 test_that("combine_models has reasonable ouputs", {
@@ -219,7 +225,7 @@ test_that("conditional_effects has reasonable ouputs", {
   me5 <- conditional_effects(fit5)
   expect_true(is(me5, "brms_conditional_effects"))
 
-  me6 <- conditional_effects(fit6, ndraws = 40)
+  me6 <- conditional_effects(fit6, ndraws = 20)
   expect_true(is(me6, "brms_conditional_effects"))
 })
 
@@ -457,9 +463,9 @@ test_that("loo has reasonable outputs", {
 test_that("loo_subsample has reasonable outputs", {
   skip_on_cran()
 
-  loo2 <- SW(loo_subsample(fit2, observations = 50))
+  loo2 <- SW(loo_subsample(fit2, observations = 30))
   expect_true(is.numeric(loo2$estimates))
-  expect_equal(nrow(loo2$pointwise), 50)
+  expect_equal(nrow(loo2$pointwise), 30)
   expect_output(print(loo2), "looic")
 })
 
@@ -530,24 +536,24 @@ test_that("model_weights has reasonable ouputs", {
 })
 
 test_that("ndraws and friends have reasonable ouputs", {
-  expect_equal(ndraws(fit1), 50)
+  expect_equal(ndraws(fit1), 25)
   expect_equal(nchains(fit1), 1)
-  expect_equal(niterations(fit1), 50)
+  expect_equal(niterations(fit1), 25)
 })
 
 test_that("ngrps has reasonable ouputs", {
   expect_equal(ngrps(fit1), list(visit = 4))
-  expect_equal(ngrps(fit2), list(patient = 59))
+  expect_equal(ngrps(fit2), list(patient = 10))
 })
 
 test_that("nobs has reasonable ouputs", {
-  expect_equal(nobs(fit1), nrow(epilepsy))
+  expect_equal(nobs(fit1), nobs)
 })
 
 test_that("nsamples has reasonable ouputs", {
-  expect_equal(SW(nsamples(fit1)), 50)
+  expect_equal(SW(nsamples(fit1)), 25)
   expect_equal(SW(nsamples(fit1, subset = 10:1)), 10)
-  expect_equal(SW(nsamples(fit1, incl_warmup = TRUE)), 200)
+  expect_equal(SW(nsamples(fit1, incl_warmup = TRUE)), 75)
 })
 
 test_that("pairs has reasonable outputs", {
@@ -627,13 +633,13 @@ test_that("pp_average has reasonable outputs", {
 
 test_that("pp_check has reasonable outputs", {
   expect_ggplot(pp_check(fit1))
-  expect_ggplot(pp_check(fit1, newdata = fit1$data[1:100, ]))
+  expect_ggplot(pp_check(fit1, newdata = fit1$data[1:10, ]))
   expect_ggplot(pp_check(fit1, "stat", ndraws = 5))
   expect_ggplot(pp_check(fit1, "error_binned"))
   pp <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
   expect_ggplot(pp)
   pp <- pp_check(fit1, type = "violin_grouped",
-                 group = "visit", newdata = fit1$data[1:100, ])
+                 group = "visit", newdata = fit1$data[1:10, ])
   expect_ggplot(pp)
 
   pp <- SW(pp_check(fit1, type = "loo_pit", cores = 1))
@@ -641,6 +647,9 @@ test_that("pp_check has reasonable outputs", {
 
   # ppd plots work
   expect_ggplot(pp_check(fit1, prefix = "ppd"))
+
+  # reduce test time on CRAN
+  skip_on_cran()
 
   expect_ggplot(pp_check(fit3))
   expect_ggplot(pp_check(fit2, "ribbon", x = "Age"))
@@ -711,14 +720,14 @@ test_that("predict has reasonable outputs", {
 
   pred <- predict(fit5)
   expect_equal(dim(pred), c(nobs(fit5), 4))
-  newdata <- fit5$data[1:10, ]
+  newdata <- fit5$data[1:5, ]
   newdata$patient <- "a"
   pred <- predict(fit5, newdata, allow_new_levels = TRUE,
                   sample_new_levels = "old_levels")
-  expect_equal(dim(pred), c(10, 4))
+  expect_equal(dim(pred), c(5, 4))
   pred <- predict(fit5, newdata, allow_new_levels = TRUE,
                   sample_new_levels = "gaussian")
-  expect_equal(dim(pred), c(10, 4))
+  expect_equal(dim(pred), c(5, 4))
 })
 
 test_that("predictive_error has reasonable outputs", {
@@ -754,7 +763,7 @@ test_that("prior_summary has reasonable outputs", {
 
 test_that("ranef has reasonable outputs", {
   ranef1 <- SM(ranef(fit1))
-  expect_equal(dim(ranef1$visit), c(4, 4, 2))
+  expect_equal(dim(ranef1$visit), c(nvisits, 4, 2))
 
   ranef1 <- SM(ranef(fit1, pars = "Trt1"))
   expect_equal(dimnames(ranef1$visit)[[3]], "Trt1")
@@ -763,7 +772,7 @@ test_that("ranef has reasonable outputs", {
   expect_equal(length(ranef1), 0L)
 
   ranef2 <- SM(ranef(fit2, summary = FALSE))
-  expect_equal(dim(ranef2$patient), c(ndraws(fit2), 59, 2))
+  expect_equal(dim(ranef2$patient), c(ndraws(fit2), npatients, 2))
 })
 
 test_that("residuals has reasonable outputs", {

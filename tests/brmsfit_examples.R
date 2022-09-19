@@ -1,26 +1,27 @@
 set.seed(1234)
+N <- 40
 dat <- data.frame(
-  count = rpois(236, lambda = 20),
-  visit = factor(rep(1:4, each = 59)),
-  patient = factor(rep(1:59, 4)),
-  Age = rnorm(236),
-  Trt = factor(sample(0:1, 236, TRUE)),
-  AgeSD = abs(rnorm(236, 1)),
-  Exp = factor(sample(1:5, 236, TRUE), ordered = TRUE),
-  volume = rnorm(236),
-  gender = factor(c(rep("m", 30), rep("f", 29)))
+  count = rpois(N, lambda = 20),
+  visit = factor(rep(1:4, each = N/4)),
+  patient = factor(rep(1:(N/4), 4)),
+  Age = rnorm(N),
+  Trt = factor(sample(0:1, N, TRUE)),
+  AgeSD = abs(rnorm(N, 1)),
+  Exp = factor(sample(1:5, N, TRUE), ordered = TRUE),
+  volume = rnorm(N),
+  gender = factor(c(rep("m", N/8), rep("f", N/8)))
 )
 
 dat2 <- data.frame(
-  rating = sample(1:4, 50, TRUE),
-  subject = rep(1:10, 5),
-  x1 = rnorm(50),
-  x2 = rnorm(50),
-  x3 = rnorm(50)
+  rating = sample(1:4, N, TRUE),
+  subject = rep(1:(N/5), 5),
+  x1 = rnorm(N),
+  x2 = rnorm(N),
+  x3 = rnorm(N)
 )
 
-warmup <- 150
-iter <- 200
+warmup <- 50
+iter <- 75
 chains <- 1
 stan_model_args <- list(save_dso = FALSE)
 
