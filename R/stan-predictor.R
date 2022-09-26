@@ -1243,29 +1243,30 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   parameterize_ac_effects <- parameterize_ac_effects(bterms)
   acef <- tidy_acef(bterms, data)
 
-  if (parameterize_ac_effects) {
-    # if the latent flag was used, explicitly parameterize
-    # autocorrelated random effects
-    err_msg <- "Parameterized ARMA effects are not implemented"
-    if (is.btnl(bterms)) {
-      stop2(err_msg, " for non-linear models.")
-    }
-    str_add(out$par) <- glue(
-      "  vector[N{resp}] zacranef{p};  // unscaled autocorrelated effects\n"
-    )
-    str_add_list(out) <- stan_prior(
-      prior, class = "sdacranef", px = px, suffix = p,
-      comment = "SD of autocorrelated effects", normalize = normalize
-    )
-    str_add(out$tpar_def) <- glue(
-      "  vector[N{resp}] acranef{p};  // outcome scale autocorrelated effects\n"
-    )
-    str_add(out$pll_args) <- glue(", vector acranef{p}")
-    str_add(out$model_prior) <- glue(
-      "  target += std_normal_{lpdf}(zacranef{p});\n"
-    )
-    str_add(out$eta) <- glue(" + acranef{p}{slice}")
-  } else if (has_ac_latent_residuals) {
+  # if (parameterize_ac_effects) {
+  #   # if the latent flag was used, explicitly parameterize
+  #   # autocorrelated random effects
+  #   err_msg <- "Parameterized ARMA effects are not implemented"
+  #   if (is.btnl(bterms)) {
+  #     stop2(err_msg, " for non-linear models.")
+  #   }
+  #   str_add(out$par) <- glue(
+  #     "  vector[N{resp}] zacranef{p};  // unscaled autocorrelated effects\n"
+  #   )
+  #   str_add_list(out) <- stan_prior(
+  #     prior, class = "sdacranef", px = px, suffix = p,
+  #     comment = "SD of autocorrelated effects", normalize = normalize
+  #   )
+  #   str_add(out$tpar_def) <- glue(
+  #     "  vector[N{resp}] acranef{p};  // outcome scale autocorrelated effects\n"
+  #   )
+  #   str_add(out$pll_args) <- glue(", vector acranef{p}")
+  #   str_add(out$model_prior) <- glue(
+  #     "  target += std_normal_{lpdf}(zacranef{p});\n"
+  #   )
+  #   str_add(out$eta) <- glue(" + acranef{p}{slice}")
+  # } 
+  if (has_ac_latent_residuals | parameterize_ac_effects) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
     # don't need to do this if we already used the `latent` flag
@@ -1434,20 +1435,20 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  // compute residual covariance matrix\n",
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
     )
-    if (has_ac_latent_residuals) {
+    if (has_ac_latent_residuals | parameterize_ac_effects) {
       str_add(out$tpar_comp) <- glue(
         "  // compute correlated time-series residuals\n",
         "  err{p} = scale_time_err(",
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
     }
-    if (parameterize_ac_effects) {
-      str_add(out$tpar_comp) <- glue(
-        "  // compute autocorrelated effects\n",
-        "  acranef{p} = scale_time_err(",
-        "zacranef{p}, sdacranef{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
-      )
-    }
+    # if (parameterize_ac_effects) {
+    #   str_add(out$tpar_comp) <- glue(
+    #     "  // compute autocorrelated effects\n",
+    #     "  acranef{p} = scale_time_err(",
+    #     "zacranef{p}, sdacranef{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+    #   )
+    # }
   }
 
   acef_sar <- subset2(acef, class = "sar")

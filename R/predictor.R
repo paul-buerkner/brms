@@ -444,9 +444,6 @@ predictor_ac <- function(eta, prep, i, fprep = NULL) {
     if (!is.null(prep$ac$err)) {
       # ARMA correlations via latent residuals
       eta <- eta + p(prep$ac$err, i, row = FALSE)
-    } else if (!is.null(prep$ac$acranef)) {
-      # Explicitly parameterized ARMA random effects
-      eta <- eta + p(prep$ac$acranef, i, row = FALSE)
     } else {
       # ARMA correlations via explicit natural residuals
       if (!is.null(i)) {
