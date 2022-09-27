@@ -159,9 +159,15 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       regex <- paste0(",", regex, "\\]$")
       rpars <- rpars[grepl(regex, rpars)]
     }
-    out[[g]] <- as.matrix(object, variable = rpars)
     levels <- attr(ranef, "levels")[[g]]
-    dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
+    if (length(rpars)) {
+      # draws of varying coefficients were saved
+      out[[g]] <- as.matrix(object, variable = rpars)
+      dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
+    } else {
+      # draws of varying coefficients were not saved
+      out[[g]] <- array(dim = c(ndraws(object), length(levels), length(coefs)))
+    }
     dimnames(out[[g]])[2:3] <- list(levels, coefs)
     if (summary) {
       out[[g]] <- posterior_summary(out[[g]], probs, robust)
