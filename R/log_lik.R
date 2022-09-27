@@ -899,7 +899,7 @@ log_lik_acat <- function(i, prep) {
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
   # TODO: check if computation can be made more numerically stable
-  if (prep$family$link == "logit") { 
+  if (prep$family$link == "logit") {
     # more efficient computation for logit link
     q <- sapply(1:nthres, function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1],
@@ -980,14 +980,23 @@ log_lik_censor <- function(dist, args, i, prep) {
 # @param prep a brmsprep object
 # @return vector of log_lik values
 log_lik_truncate <- function(x, cdf, args, i, prep) {
-  lb <- prep$data$lb[i]
-  ub <- prep$data$ub[i]
-  if (!(is.null(lb) && is.null(ub))) {
-    if (is.null(lb)) lb <- -Inf
-    if (is.null(ub)) ub <- Inf
-    x - log(do_call(cdf, c(ub, args)) - do_call(cdf, c(lb, args)))
+  lb <- prep$data[["lb"]][i]
+  ub <- prep$data[["ub"]][i]
+  if (is.null(lb) && is.null(ub)) {
+    return(x)
   }
-  x
+  args$log.p <- TRUE
+  if (!is.null(lb)) {
+    log_cdf_lb <- do_call(cdf, c(lb, args))
+  } else {
+    log_cdf_lb <- rep(-Inf, length(x))
+  }
+  if (!is.null(ub)) {
+    log_cdf_ub <- do_call(cdf, c(ub, args))
+  } else {
+    log_cdf_ub <- rep(0, length(x))
+  }
+  x - log_diff_exp(log_cdf_ub, log_cdf_lb)
 }
 
 # weight log_lik values according to defined weights
