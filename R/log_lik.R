@@ -985,14 +985,13 @@ log_lik_truncate <- function(x, cdf, args, i, prep) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
-  args$log.p <- TRUE
   if (!is.null(lb)) {
-    log_cdf_lb <- do_call(cdf, c(lb, args))
+    log_cdf_lb <- do_call(cdf, c(lb, args, log.p = TRUE))
   } else {
     log_cdf_lb <- rep(-Inf, length(x))
   }
   if (!is.null(ub)) {
-    log_cdf_ub <- do_call(cdf, c(ub, args))
+    log_cdf_ub <- do_call(cdf, c(ub, args, log.p = TRUE))
   } else {
     log_cdf_ub <- rep(0, length(x))
   }
