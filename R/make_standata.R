@@ -281,6 +281,15 @@ standata_basis_sp <- function(x, data, ...) {
 # prepare basis data related to autocorrelation structures
 standata_basis_ac <- function(x, data, ...) {
   out <- list()
+  
+  if (has_ac_class(x, "arma")) {
+    if (use_ac_cov_time(x)) {
+      time_var <- subset2(x, dim = "time")$time
+      gr <- subset2(x, dim = "time")$gr
+      out$times <- data[[time_var]]
+    }
+  }
+  
   if (has_ac_class(x, "car")) {
     gr <- get_ac_vars(x, "gr", class = "car")
     stopifnot(length(gr) <= 1L)

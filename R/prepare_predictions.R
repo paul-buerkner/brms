@@ -711,6 +711,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   nat_cov <- as_one_logical(nat_cov)
   acef <- tidy_acef(bterms)
   acef <- subset2(acef, nat_cov = nat_cov)
+  has_time_variable <- has_explicit_time_variable(bterms)
   if (!NROW(acef)) {
     return(out)
   }
@@ -746,6 +747,9 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
     out$end_tg <- sdata[[paste0("end_tg", p)]]
   }
+  if (has_explicit_ac_time(acef)) {
+    # out$time <- NULL
+  }
   if (has_ac_latent_residuals(bterms)) {
     err_regex <- paste0("^err", p, "\\[")
     has_err <- any(grepl(err_regex, colnames(draws)))
@@ -770,7 +774,6 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     }
   }
   if (parameterize_ac_effects(bterms)) {
-    ### NOTE: this doesn't work yet
     out$level_tg <- sdata[[paste0("level_tg", p)]]
     err_regex <- paste0("^err", p, "\\[")
     zerr_regex <- paste0("^zerr", p, "\\[")
@@ -799,23 +802,36 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
           index_tg <- which(out$level_tg[i] == old_levels)
           if (!length(index_tg)) {
             # if it's a new level, sample a new autocorrelated effect
-            obs <- with(out, begin_tg[i]:end_tg[i])
-            zeros <- rep(0, length(obs))
-            cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-            .new_acef <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-            out$err[, obs] <- rblapply(seq_rows(draws), .new_acef)
+            if (has_time_variable) {
+              
+            } else {
+              obs <- with(out, begin_tg[i]:end_tg[i])
+              zeros <- rep(0, length(obs))
+              cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+              .new_acef <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+              out$err[, obs] <- rblapply(seq_rows(draws), .new_acef)
+            }
+            
           } else {
             # if it's an existing level, sample new effects conditional on 
             # estimated effects for observed times
-            obs <- with(out, begin_tg[i]:end_tg[i])
-            old_obs <- old_begin_tg[index_tg]:old_end_tg[index_tg]
-            cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-            .cond_acef <- function(s) {
-              cov_chol <- t(chol(cov[s, , ]))
-              this_acef <- c(zerr_draws[s, old_obs], rnorm(length(obs) - length(old_obs)))
-              t(cov_chol %*% this_acef)
+            if (has_time_variable) {
+              
+            } else {
+              
             }
-            out$err[, obs] <- rblapply(seq_rows(draws), .cond_acef)
+            
+            
+            # Old version that sort of works:
+            # obs <- with(out, begin_tg[i]:end_tg[i])
+            # old_obs <- old_begin_tg[index_tg]:old_end_tg[index_tg]
+            # cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+            # .cond_acef <- function(s) {
+            #   cov_chol <- t(chol(cov[s, , ]))
+            #   this_acef <- c(zerr_draws[s, old_obs], rnorm(length(obs) - length(old_obs)))
+            #   t(cov_chol %*% this_acef)
+            # }
+            # out$err[, obs] <- rblapply(seq_rows(draws), .cond_acef)
           }
         }
       } else {

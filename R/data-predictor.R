@@ -638,6 +638,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   acef <- tidy_acef(bterms)
   if (has_ac_subset(bterms, dim = "time")) {
     gr <- subset2(acef, dim = "time")$gr
+    time_var <- subset2(acef, dim = "time")$time
     if (gr != "NA") {
       tgroup <- as.numeric(factor(data[[gr]]))
     } else {
@@ -670,6 +671,14 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
     if (parameterize_ac_effects(acef)) {
       out$level_tg <- unique(data[[gr]])
+    }
+    if (time != "NA") {
+      out$ac_time <- data[[time_var]]
+      if (parameterize_ac_effects(acef)) {
+        # This needs something more
+        out$n_latent_params <- length(unique(data[[time_var]]))
+        
+      }
     }
   }
   if (has_ac_class(acef, "sar")) {

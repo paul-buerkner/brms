@@ -596,6 +596,11 @@ parameterize_ac_effects <- function(bterms) {
   has_ac_subset(bterms, latent = T)
 }
 
+# do we have an explicit time variable?
+has_explicit_ac_time <- function(bterms) {
+  !has_ac_subset(bterms, time = "NA")
+}
+
 # validate SAR matrices
 validate_sar_matrix <- function(M) {
   if (is(M, "listw")) {
