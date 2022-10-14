@@ -701,9 +701,8 @@ stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
 stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
                              ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  n <- stan_nn(threads)
-  p$bhaz <- paste0("bhaz", resp, n)
-  p$cbhaz <- paste0("cbhaz", resp, n)
+  p$bhaz <- paste0("bhaz", resp, "[n]")
+  p$cbhaz <- paste0("cbhaz", resp, "[n]")
   lpdf <- "cox"
   if (bterms$family$link == "log") {
     str_add(lpdf) <- "_log"
