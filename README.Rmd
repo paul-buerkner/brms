@@ -95,7 +95,7 @@ deviations and (in case of more than one group-level effect per grouping factor;
 not displayed here) correlations between group-level effects. On the bottom of
 the output, population-level effects (i.e. regression coefficients) are
 displayed. If incorporated, autocorrelation effects and family specific
-parameters (e.g. the residual standard deviation 'sigma' in normal models) are
+parameters (e.g., the residual standard deviation 'sigma' in normal models) are
 also given.
 
 In general, every parameter is summarized using the mean ('Estimate') and the
@@ -108,10 +108,11 @@ not very strong and still insufficient by standard decision rules. Further, we
 find little evidence that the treatment effect varies with the baseline number
 of seizures.
 
-The last two values ('Eff.Sample' and 'Rhat') provide information on how well
-the algorithm could estimate the posterior distribution of this parameter. If
-'Rhat' is considerably greater than 1, the algorithm has not yet converged and
-it is necessary to run more iterations and / or set stronger priors.
+The last three values ('ESS_bulk', 'ESS_tail', and 'Rhat') provide information
+on how well the algorithm could estimate the posterior distribution of this
+parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet
+converged and it is necessary to run more iterations and / or set stronger
+priors.
 
 To visually investigate the chains as well as the posterior distributions, we
 can use the `plot` method. If we just want to see results of the regression
@@ -197,9 +198,14 @@ When using brms, please cite one or more of the following publications:
   doi.org/10.18637/jss.v080.i01
 - Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
   Package brms. *The R Journal*. 10(1), 395-411. doi.org/10.32614/RJ-2018-017
+- Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms and Stan. 
+  *Journal of Statistical Software*, 100(5), 1-54. doi:10.18637/jss.v100.i05
 
-As brms is a high-level interface to Stan, please additionally cite Stan:
+As brms is a high-level interface to Stan, please additionally cite Stan
+(see also https://mc-stan.org/users/citations/):
 
+- Stan Development Team. YEAR. Stan Modeling Language Users Guide and Reference 
+  Manual, VERSION. https://mc-stan.org
 - Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B., Betancourt M.,
   Brubaker M., Guo J., Li P., and Riddell A. (2017). Stan: A probabilistic
   programming language. *Journal of Statistical Software*. 76(1).
@@ -226,7 +232,7 @@ To install the latest release version from CRAN use
 install.packages("brms")
 ```
 
-The current developmental version can be downloaded from github via
+The current developmental version can be downloaded from GitHub via
 
 ```{r install_brms2, eval=FALSE}
 if (!requireNamespace("remotes")) {
