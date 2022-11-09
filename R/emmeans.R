@@ -153,6 +153,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   }
   resp <- validate_resp(resp, x)
   new_formula <- update_re_terms(formula(x), re_formula)
+  # autocorrelation terms are always excluded for emmeans predictions (#1424)
+  new_formula <- exclude_terms(new_formula, incl_autocor = FALSE)
   bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is_ordinal(bterms)) {
     warning2("brms' emmeans support for ordinal models is experimental ",
