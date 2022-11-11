@@ -12,6 +12,7 @@
   newdata = NULL,
   resp = NULL,
   check = TRUE,
+  recompile = FALSE,
   ...
 )
 }
@@ -37,6 +38,11 @@ are performed only for the specified response variables.}
 \item{check}{Logical; If \code{TRUE} (the default), some checks
 check are performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
+
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running moment matching on
+another machine than the one used to fit the model. No recompilation
+is done by default.}
 
 \item{...}{Further arguments passed to the underlying methods.
 Additional arguments initially passed to \code{\link{loo}},

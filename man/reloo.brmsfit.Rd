@@ -13,6 +13,7 @@
   newdata = NULL,
   resp = NULL,
   check = TRUE,
+  recompile = NULL,
   future_args = list(),
   ...
 )
@@ -44,6 +45,10 @@ are performed only for the specified response variables.}
 \item{check}{Logical; If \code{TRUE} (the default), some checks
 check are performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
+
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running \code{reloo} on
+another machine than the one used to fit the model.}
 
 \item{future_args}{A list of further arguments passed to
 \code{\link[future:future]{future}} for additional control over parallel

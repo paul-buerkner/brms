@@ -756,11 +756,12 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 # allows to call log_prob and other C++ using methods
 # on objects not created in the current R session
 # or objects created via another backend
-update_misc_env <- function(x, only_windows = FALSE) {
+update_misc_env <- function(x, recompile = FALSE, only_windows = FALSE) {
   stopifnot(is.brmsfit(x))
+  recompile <- as_one_logical(recompile)
   only_windows <- as_one_logical(only_windows)
-  if (!has_rstan_model(x)) {
-    x <- add_rstan_model(x)
+  if (recompile || !has_rstan_model(x)) {
+    x <- add_rstan_model(x, overwrite = TRUE)
   } else if (os_is_windows() || !only_windows) {
     # TODO: detect when updating .MISC is not required
     # TODO: find a more efficient way to update .MISC

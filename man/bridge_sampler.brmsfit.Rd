@@ -5,10 +5,15 @@
 \alias{bridge_sampler}
 \title{Log Marginal Likelihood via Bridge Sampling}
 \usage{
-\method{bridge_sampler}{brmsfit}(samples, ...)
+\method{bridge_sampler}{brmsfit}(samples, recompile = FALSE, ...)
 }
 \arguments{
 \item{samples}{A \code{brmsfit} object.}
+
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running bridge sampling on
+another machine than the one used to fit the model. No recompilation
+is done by default.}
 
 \item{...}{Additional arguments passed to
 \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.}

@@ -17,6 +17,7 @@
   resp = NULL,
   model_names = NULL,
   save_fits = FALSE,
+  recompile = NULL,
   future_args = list()
 )
 }
@@ -69,6 +70,10 @@ values as model names.}
 the returned object to store the cross-validated \code{brmsfit}
 objects and the indices of the omitted observations for each fold.
 Defaults to \code{FALSE}.}
+
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running \code{reloo} on
+another machine than the one used to fit the model.}
 
 \item{future_args}{A list of further arguments passed to
 \code{\link[future:future]{future}} for additional control over parallel

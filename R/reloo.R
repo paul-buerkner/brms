@@ -17,6 +17,9 @@
 #' @param check Logical; If \code{TRUE} (the default), some checks
 #'   check are performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled. This may be necessary if you are running \code{reloo} on
+#'   another machine than the one used to fit the model.
 #' @param future_args A list of further arguments passed to
 #'   \code{\link[future:future]{future}} for additional control over parallel
 #'   execution if activated.
@@ -51,8 +54,8 @@
 #'
 #' @export
 reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
-                          resp = NULL, check = TRUE, future_args = list(),
-                          ...) {
+                          resp = NULL, check = TRUE, recompile = NULL,
+                          future_args = list(), ...) {
   stopifnot(is.loo(loo), is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
@@ -123,7 +126,7 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     J, " problematic observation(s) found.",
     "\nThe model will be refit ", J, " times."
   )
-  x <- recompile_model(x)
+  x <- recompile_model(x, recompile = recompile)
   future_args$FUN <- .reloo
   future_args$seed <- TRUE
   for (j in seq_len(J)) {

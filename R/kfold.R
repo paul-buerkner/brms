@@ -35,6 +35,9 @@
 #'   the returned object to store the cross-validated \code{brmsfit}
 #'   objects and the indices of the omitted observations for each fold.
 #'   Defaults to \code{FALSE}.
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled. This may be necessary if you are running \code{reloo} on
+#'   another machine than the one used to fit the model.
 #' @param future_args A list of further arguments passed to
 #'   \code{\link[future:future]{future}} for additional control over parallel
 #'   execution if activated.
@@ -132,7 +135,7 @@
 kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
                           group = NULL, exact_loo = NULL, compare = TRUE,
                           resp = NULL, model_names = NULL, save_fits = FALSE,
-                          future_args = list()) {
+                          recompile = NULL, future_args = list()) {
   args <- split_dots(x, ..., model_names = model_names)
   use_stored <- ulapply(args$models, function(x) is_equal(x$kfold$K, K))
   if (!is.null(exact_loo) && as_one_logical(exact_loo)) {
@@ -140,8 +143,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     folds <- "loo"
   }
   c(args) <- nlist(
-    criterion = "kfold", K, Ksub, folds, group,
-    compare, resp, save_fits, future_args, use_stored
+    criterion = "kfold", K, Ksub, folds, group, compare,
+    resp, save_fits, recompile, future_args, use_stored
   )
   do_call(compute_loolist, args)
 }
@@ -150,8 +153,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 # @inheritParams kfold.brmsfit
 # @param model_name ignored but included to avoid being passed to '...'
 .kfold <- function(x, K, Ksub, folds, group, save_fits,
-                   newdata, resp, model_name, future_args = list(),
-                   newdata2 = NULL, ...) {
+                   newdata, resp, model_name, recompile = NULL,
+                   future_args = list(), newdata2 = NULL, ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
@@ -272,7 +275,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
   }
 
-  x <- recompile_model(x)
+  x <- recompile_model(x, recompile = recompile)
   future_args$FUN <- .kfold_k
   future_args$seed <- TRUE
   for (k in Ksub) {

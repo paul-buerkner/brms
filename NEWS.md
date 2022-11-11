@@ -1,3 +1,11 @@
+# brms 2.18.0+
+
+### New Features
+
+* Improve user control over model recompilation via argument `recompile`
+in post-processing methods that require a compiled Stan model.
+
+
 # brms 2.18.0
 
 ### New Features

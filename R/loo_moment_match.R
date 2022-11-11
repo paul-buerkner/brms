@@ -16,6 +16,10 @@
 #' @param check Logical; If \code{TRUE} (the default), some checks
 #'   check are performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled. This may be necessary if you are running moment matching on
+#'   another machine than the one used to fit the model. No recompilation
+#'   is done by default.
 #' @param ... Further arguments passed to the underlying methods.
 #'   Additional arguments initially passed to \code{\link{loo}},
 #'   for example, \code{newdata} or \code{resp} need to be passed
@@ -48,7 +52,8 @@
 #' @export loo_moment_match
 #' @export
 loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
-                                     resp = NULL, check = TRUE, ...) {
+                                     resp = NULL, check = TRUE,
+                                     recompile = FALSE, ...) {
   stopifnot(is.loo(loo), is.brmsfit(x))
   if (is.null(newdata)) {
     newdata <- model.frame(x)
@@ -66,8 +71,8 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
       )
     }
   }
-  # otherwise loo_moment_match might not work in a new R session
-  x <- update_misc_env(x)
+  # otherwise loo_moment_match may fail in a new R session or on another machine
+  x <- update_misc_env(x, recompile = recompile)
   out <- try(loo::loo_moment_match.default(
     x, loo = loo,
     post_draws = as.matrix,
@@ -82,7 +87,9 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   if (is(out, "try-error")) {
     stop2(
       "Moment matching failed. Perhaps you did not set ",
-      "'save_pars = save_pars(all = TRUE)' when fitting your model?"
+      "'save_pars = save_pars(all = TRUE)' when fitting your model? ",
+      "If you are running moment matching on another machine than the one ",
+      "used to fit the model, you may need to set recompile = TRUE."
     )
   }
   out
