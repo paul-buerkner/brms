@@ -667,6 +667,12 @@ test_that("pp_check has reasonable outputs", {
 
 test_that("posterior_epred has reasonable outputs", {
   expect_equal(dim(posterior_epred(fit1)), c(ndraws(fit1), nobs(fit1)))
+
+  # test that point_estimate produces identical draws
+  pe <- posterior_epred(fit1, point_estimate = "median",
+                        ndraws_point_estimate = 2)
+  expect_equal(nrow(pe), 2)
+  expect_true(all(pe[1, ] == pe[2, ]))
 })
 
 test_that("pp_mixture has reasonable outputs", {

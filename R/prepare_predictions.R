@@ -6,7 +6,7 @@ prepare_predictions.brmsfit <- function(
   incl_autocor = TRUE, oos = NULL, resp = NULL, ndraws = NULL, draw_ids = NULL,
   nsamples = NULL, subset = NULL, nug = NULL, smooths_only = FALSE,
   offset = TRUE, newdata2 = NULL, new_objects = NULL, point_estimate = NULL,
-  ...
+  ndraws_point_estimate = 1, ...
 ) {
 
   x <- restructure(x)
@@ -29,7 +29,7 @@ prepare_predictions.brmsfit <- function(
   draw_ids <- validate_draw_ids(x, draw_ids, ndraws)
   draws <- as_draws_matrix(x)
   draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
-  draws <- point_draws(draws, point_estimate)
+  draws <- point_draws(draws, point_estimate, ndraws_point_estimate)
 
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- brmsterms(new_formula)
@@ -1091,12 +1091,17 @@ prepare_draws <- function(x, variable, ...) {
 # currently used primarily for 'loo_subsample'
 # @param draws matrix of posterior draws
 # @param point_estimate optional name of the point estimate to be computed
+# @param ndraws_point_estimate number of repetitions of the point estimate's
+#   value in the form of pseudo draws
 # @return a draws_matrix with one row
-point_draws <- function(draws, point_estimate = NULL) {
+point_draws <- function(draws, point_estimate = NULL,
+                        ndraws_point_estimate = 1) {
   if (is.null(point_estimate)) {
     return(draws)
   }
   point_estimate <- match.arg(point_estimate, c("mean", "median"))
+  ndraws_point_estimate <- as_one_integer(ndraws_point_estimate)
+  stopifnot(ndraws_point_estimate > 0)
   variables <- colnames(draws)
   if (point_estimate == "mean") {
     draws <- matrixStats::colMeans2(draws)
@@ -1104,6 +1109,10 @@ point_draws <- function(draws, point_estimate = NULL) {
     draws <- matrixStats::colMedians(draws)
   }
   draws <- t(draws)
+  draws <- matrix(
+    draws, nrow = ndraws_point_estimate,
+    ncol = ncol(draws), byrow = TRUE
+  )
   colnames(draws) <- variables
   as_draws_matrix(draws)
 }
@@ -1194,6 +1203,9 @@ is.bprepnl <- function(x) {
 #'   be set to \code{"mean"} or \code{"median"}. This argument is primarily
 #'   implemented to ensure compatibility with the \code{\link{loo_subsample}}
 #'   method.
+#' @param ndraws_point_estimate Only used if \code{point_estimate} is not
+#'   \code{NULL}. How often shall the point estimate's value be repeated?
+#'   Defaults to \code{1}.
 #' @param ... Further arguments passed to \code{\link{validate_newdata}}.
 #'
 #' @return An object of class \code{'brmsprep'} or \code{'mvbrmsprep'},

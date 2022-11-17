@@ -4,6 +4,8 @@
 
 * Improve user control over model recompilation via argument `recompile`
 in post-processing methods that require a compiled Stan model.
+* Extend control over the `point_estimate` feature in `prepare_predictions`
+via the new argument `ndraws_point_estimate`.
 
 
 # brms 2.18.0

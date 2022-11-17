@@ -25,6 +25,7 @@
   newdata2 = NULL,
   new_objects = NULL,
   point_estimate = NULL,
+  ndraws_point_estimate = 1,
   ...
 )
 
@@ -109,6 +110,10 @@ of the parameters instead of their posterior draws? Defaults to
 be set to \code{"mean"} or \code{"median"}. This argument is primarily
 implemented to ensure compatibility with the \code{\link{loo_subsample}}
 method.}
+
+\item{ndraws_point_estimate}{Only used if \code{point_estimate} is not
+\code{NULL}. How often shall the point estimate's value be repeated?
+Defaults to \code{1}.}
 
 \item{...}{Further arguments passed to \code{\link{validate_newdata}}.}
 }
