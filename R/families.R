@@ -9,8 +9,8 @@
 #' You can also specify custom families for use in \pkg{brms} with
 #' the \code{\link{custom_family}} function.
 #'
-#' @param family A character string naming the distribution of the response
-#'   variable be used in the model. Currently, the following families are
+#' @param family A character string naming the distribution family of the response
+#'   variable to be used in the model. Currently, the following families are
 #'   supported: \code{gaussian}, \code{student}, \code{binomial},
 #'   \code{bernoulli}, \code{beta-binomial}, \code{poisson}, \code{negbinomial},
 #'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal},

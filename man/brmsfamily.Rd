@@ -152,8 +152,8 @@ cratio(link = "logit", link_disc = "log", threshold = "flexible")
 acat(link = "logit", link_disc = "log", threshold = "flexible")
 }
 \arguments{
-\item{family}{A character string naming the distribution of the response
-variable be used in the model. Currently, the following families are
+\item{family}{A character string naming the distribution family of the response
+variable to be used in the model. Currently, the following families are
 supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{bernoulli}, \code{beta-binomial}, \code{poisson}, \code{negbinomial},
 \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
