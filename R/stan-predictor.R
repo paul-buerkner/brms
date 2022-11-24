@@ -320,11 +320,14 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       b_comment <- "population-level effects"
       if (has_special_b_prior) {
         stopif_prior_bound(prior, class = "b", ls = px)
+        b_def <- glue("  {b_type} b{p};  // {b_comment}\n")
         if (assign_b_tpar) {
           # only some special priors assign b in transformed parameters
-          str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
-          str_add(out$pll_args) <- glue(", vector b{p}")
+          str_add(out$tpar_def) <- b_def
+        } else {
+          str_add(out$par) <- b_def
         }
+        str_add(out$pll_args) <- glue(", vector b{p}")
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
@@ -338,11 +341,14 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       b_suffix <- "Q"
       b_comment <- "regression coefficients at QR scale"
       if (has_special_b_prior) {
+        bQ_def <- glue("  {b_type} bQ{p};  // {b_comment}\n")
         if (assign_b_tpar) {
           # only some special priors assign b in transformed parameters
-          str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
-          str_add(out$pll_args) <- glue(", vector bQ{p}")
+          str_add(out$tpar_def) <- bQ_def
+        } else {
+          str_add(out$par) <- bQ_def
         }
+        str_add(out$pll_args) <- glue(", vector bQ{p}")
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
@@ -983,13 +989,17 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   # prepare special effects coefficients
   if (stan_has_special_b_prior(bterms, prior)) {
     stopif_prior_bound(prior, class = "b", ls = px)
+    bsp_def <- glue(
+      "  // special effects coefficients\n",
+      "  vector[Ksp{p}] bsp{p};\n"
+    )
     if (stan_assign_b_tpar(bterms, prior)) {
       # only some special priors assign b in transformed parameters
-      str_add(out$tpar_def) <- glue(
-        "  // special effects coefficients\n",
-        "  vector[Ksp{p}] bsp{p};\n"
-      )
+      str_add(out$tpar_def) <- bsp_def
+    } else {
+      str_add(out$par) <- bsp_def
     }
+    str_add(out$pll_args) <- glue(", vector bsp{p}")
   } else {
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = spef$coef,

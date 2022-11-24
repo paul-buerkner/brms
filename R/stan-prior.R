@@ -485,12 +485,8 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     )
   }
   if (!is.null(special$lasso)) {
-    str_add(out$par) <- glue(
-      "  vector[K{ct}{sp}] b{sp};  // population-level effects\n"
-    )
-    str_add(out$pll_args) <- glue(", vector b{sp}")
     str_add(out$model_prior) <- glue(
-      "{tp}double_exponential_lpdf(b{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
+      "{tp}double_exponential_lpdf(b{suffix}{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
     )
   }
   out
