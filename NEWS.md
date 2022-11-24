@@ -1,4 +1,4 @@
-# brms 2.18.0+
+# brms 2.18.0++
 
 ### New Features
 
@@ -6,6 +6,10 @@
 in post-processing methods that require a compiled Stan model.
 * Extend control over the `point_estimate` feature in `prepare_predictions`
 via the new argument `ndraws_point_estimate`.
+
+### Bug Fixes
+
+* Fix a Stan syntax error in threaded models with `lasso` priors. (#1427)
 
 
 # brms 2.18.0
