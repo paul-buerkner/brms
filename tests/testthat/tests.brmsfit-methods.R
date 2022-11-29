@@ -989,7 +989,7 @@ test_that("diagnostic convenience functions have reasonable outputs", {
   expect_true(is(log_posterior(fit1), "data.frame"))
   expect_true(is(nuts_params(fit1), "data.frame"))
   expect_true(is(rhat(fit1), "numeric"))
-  expect_true(is(neff_ratio(fit1), "numeric"))
+  expect_true(is(SW(neff_ratio(fit1)), "numeric"))
 })
 
 test_that("contrasts of grouping factors are not stored #214", {

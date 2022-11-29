@@ -59,7 +59,13 @@ nuts_params.brmsfit <- function(object, pars = NULL, ...) {
 #' @export
 rhat.brmsfit <- function(object, pars = NULL, ...) {
   contains_draws(object)
-  bayesplot::rhat(object$fit, pars = pars, ...)
+  # bayesplot uses outdated rhat code from rstan
+  # bayesplot::rhat(object$fit, pars = pars, ...)
+  draws <- as_draws_array(object, variable = pars, ...)
+  tmp <- posterior::summarize_draws(draws, rhat = posterior::rhat)
+  rhat <- tmp$rhat
+  names(rhat) <- tmp$variable
+  rhat
 }
 
 #' @rdname diagnostic-quantities
@@ -68,7 +74,14 @@ rhat.brmsfit <- function(object, pars = NULL, ...) {
 #' @export
 neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
   contains_draws(object)
-  bayesplot::neff_ratio(object$fit, pars = pars, ...)
+  # bayesplot uses outdated ess code from rstan
+  # bayesplot::neff_ratio(object$fit, pars = pars, ...)
+  draws <- as_draws_array(object, variable = pars, ...)
+  # currently uses ess_bulk as ess estimate for the central tendency
+  tmp <- posterior::summarize_draws(draws, ess = posterior::ess_bulk)
+  ess <- tmp$ess
+  names(ess) <- tmp$variable
+  ess / ndraws(draws)
 }
 
 #' Extract Control Parameters of the NUTS Sampler
