@@ -54,7 +54,7 @@ nuts_params.brmsfit <- function(object, pars = NULL, ...) {
 }
 
 #' @rdname diagnostic-quantities
-#' @importFrom bayesplot rhat
+#' @importFrom posterior rhat
 #' @export rhat
 #' @export
 rhat.brmsfit <- function(object, pars = NULL, ...) {
@@ -62,7 +62,7 @@ rhat.brmsfit <- function(object, pars = NULL, ...) {
   # bayesplot uses outdated rhat code from rstan
   # bayesplot::rhat(object$fit, pars = pars, ...)
   draws <- as_draws_array(object, variable = pars, ...)
-  tmp <- posterior::summarize_draws(draws, rhat = posterior::rhat)
+  tmp <- posterior::summarise_draws(draws, rhat = posterior::rhat)
   rhat <- tmp$rhat
   names(rhat) <- tmp$variable
   rhat
@@ -77,9 +77,11 @@ neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
   # bayesplot uses outdated ess code from rstan
   # bayesplot::neff_ratio(object$fit, pars = pars, ...)
   draws <- as_draws_array(object, variable = pars, ...)
-  # currently uses ess_bulk as ess estimate for the central tendency
-  tmp <- posterior::summarize_draws(draws, ess = posterior::ess_bulk)
-  ess <- tmp$ess
+  tmp <- posterior::summarise_draws(
+    draws, ess_bulk = posterior::ess_bulk, ess_tail = posterior::ess_tail
+  )
+  # min of ess_bulk and ess_tail mimics definition of posterior::rhat.default
+  ess <- matrixStats::rowMins(cbind(tmp$ess_bulk, tmp$ess_tail))
   names(ess) <- tmp$variable
   ess / ndraws(draws)
 }
