@@ -711,7 +711,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   nat_cov <- as_one_logical(nat_cov)
   acef <- tidy_acef(bterms)
   acef <- subset2(acef, nat_cov = nat_cov)
-  has_time_variable <- has_explicit_time_variable(bterms)
+  has_explicit_time <- has_explicit_ac_time(bterms)
   if (!NROW(acef)) {
     return(out)
   }
@@ -747,9 +747,9 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
     out$end_tg <- sdata[[paste0("end_tg", p)]]
   }
-  if (has_explicit_ac_time(acef)) {
-    # out$time <- NULL
-  }
+  # if (has_explicit_ac_time(acef)) {
+  #   # out$time <- NULL
+  # }
   if (has_ac_latent_residuals(bterms)) {
     err_regex <- paste0("^err", p, "\\[")
     has_err <- any(grepl(err_regex, colnames(draws)))
@@ -778,9 +778,12 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     err_regex <- paste0("^err", p, "\\[")
     zerr_regex <- paste0("^zerr", p, "\\[")
     has_err <- any(grepl(err_regex, colnames(draws)))
+    has_zerr <- any(grepl(zerr_regex, colnames(draws)))
     if (has_err && !new) {
       out$err <- prepare_draws(draws, err_regex, regex = TRUE)
-      out$zerr <- prepare_draws(draws, zerr_regex, regex = TRUE)
+      if (has_zerr) {
+        out$zerr <- prepare_draws(draws, zerr_regex, regex = TRUE)
+      }
     } else {
       if (!use_ac_cov_time(acef)) {
         # this shouldn't ever happen, should hit an error earlier
@@ -793,17 +796,37 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
         old_levels <- old_acdata$level_tg
         old_begin_tg <- old_acdata$begin_tg
         old_end_tg <- old_acdata$end_tg
-        out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+        
+        if (has_explicit_time) {
+          err_tp_regex <- paste0("^err_tp", p, "\\[")
+          out$ac_time_points <- sdata$ac_time_points
+          out$ac_time <- sdata$ac_time
+          out$begin_err_gr <- sdata$begin_err_gr
+          out$end_err_gr <- sdata$end_err_gr
+        }
+        
+        if (has_explicit_time) {
+          out$err_tp <- matrix(nrow = nrow(draws), ncol = length(out$ac_time_points))
+        } else {
+          out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+        }
         sderr_regex <- paste0("^sderr", p, "$")
         out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
         zerr_draws <- prepare_draws(draws, zerr_regex, regex = TRUE)
-        is_observed <- !is.na(out$Y)
+        err_draws <- prepare_draws(draws, err_tp_regex, regex = TRUE)
+        out$is_observed <- !is.na(out$Y)
         for (i in seq_len(out$N_tg)) {
           index_tg <- which(out$level_tg[i] == old_levels)
-          if (!length(index_tg)) {
-            # if it's a new level, sample a new autocorrelated effect
-            if (has_time_variable) {
-              
+          if (!length(index_tg) | !has_zerr) {
+            # if it's a new level or if latent errors were not saved,
+            # sample a new autocorrelated effect
+            if (has_explicit_time) {
+              times <- sdata$ac_time_points[sdata$begin_err_gr[i]:sdata$end_err_gr[i]]
+              obs <- with(out, begin_tg[i]:end_tg[i])
+              zeros <- rep(0, length(obs))
+              cov <- get_cov_matrix_ac(list(ac = out), times, latent = TRUE)
+              .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+              out$err_tp[, obs] < rblapply(seq_rows(draws), .err)
             } else {
               obs <- with(out, begin_tg[i]:end_tg[i])
               zeros <- rep(0, length(obs))
@@ -811,27 +834,58 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
               .new_acef <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
               out$err[, obs] <- rblapply(seq_rows(draws), .new_acef)
             }
-            
           } else {
             # if it's an existing level, sample new effects conditional on 
             # estimated effects for observed times
-            if (has_time_variable) {
+            if (has_explicit_time) {
+              new_times <- with(out, ac_time[begin_tg[i]:end_tg[i]])
+              new_tp <- with(out, ac_time_points[begin_err_gr[i]:end_err_gr[i]])
+              new_tp_idx <- with(out, begin_err_gr[i]:end_err_gr[i])
+              obs_mask <- with(out, is_observed[begin_tg[i]:end_tg[i]])
+              old_times <- old_acdata$ac_time[old_begin_tg[index_tg]:old_end_tg[index_tg]]
+              old_tp <- with(old_acdata, ac_time_points[begin_err_gr[index_tg]:end_err_gr[index_tg]])
+              old_err_idx <- old_acdata$latent_err_idx[old_begin_tg[index_tg]:old_end_tg[index_tg]]
+              old_err_uidx <- unique(old_err_idx)
               
+              cov <- get_cov_matrix_ac(list(ac=out), new_tp, latent = TRUE)
+              .cond_acef <- function(s) {
+                this_err <- vector(mode = "numeric", length = length(new_tp))
+                
+                observed_times <- unique(new_times[obs_mask])
+                unobserved_times <- unique(new_times[!obs_mask])
+                # Which indices in new_tp correspond to observed and unobserved times
+                observed_idx <- which(new_tp %in% observed_times)
+                unobserved_idx <- which(new_tp %in% unobserved_times)
+                old_tp_idx <- which(old_tp %in% observed_times)
+                
+                cov_11 <- cov[s, unobserved_idx, unobserved_idx]
+                cov_22 <- cov[s, observed_idx, observed_idx]
+                cov_12 <- cov[s, unobserved_idx, observed_idx]
+
+                cov_bar <- cov_11 - cov_12 %*% solve(cov_22) %*% t(cov_12)
+                mu_bar <- cov_12 %*% 
+                  solve(cov_22) %*% 
+                  err_draws[s, old_err_uidx[old_tp_idx]]
+
+                new_errs <- rmulti_normal(1, as.vector(mu_bar), Sigma = cov_bar)
+                
+                this_err[unobserved_idx] <- new_errs
+                this_err[observed_idx] <- err_draws[s, old_err_uidx[old_tp_idx]]
+
+                this_err
+              }
+              out$err_tp[, new_tp_idx] <- rblapply(seq_rows(draws), .cond_acef)
             } else {
-              
+              obs <- with(out, begin_tg[i]:end_tg[i])
+              old_obs <- old_begin_tg[index_tg]:old_end_tg[index_tg]
+              cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+              .cond_acef <- function(s) {
+                cov_chol <- t(chol(cov[s, , ]))
+                this_acef <- c(zerr_draws[s, old_obs], rnorm(length(obs) - length(old_obs)))
+                t(cov_chol %*% this_acef)
+              }
+              out$err[, obs] <- rblapply(seq_rows(draws), .cond_acef)
             }
-            
-            
-            # Old version that sort of works:
-            # obs <- with(out, begin_tg[i]:end_tg[i])
-            # old_obs <- old_begin_tg[index_tg]:old_end_tg[index_tg]
-            # cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-            # .cond_acef <- function(s) {
-            #   cov_chol <- t(chol(cov[s, , ]))
-            #   this_acef <- c(zerr_draws[s, old_obs], rnorm(length(obs) - length(old_obs)))
-            #   t(cov_chol %*% this_acef)
-            # }
-            # out$err[, obs] <- rblapply(seq_rows(draws), .cond_acef)
           }
         }
       } else {
@@ -878,6 +932,34 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   }
   out
 }
+
+.prepare_latent_ac <- function(bterms, sdata, old_acdata, ...) {
+  if (has_explicit_time) {
+    new_obs <- with(out, begin_tg[i]:end_tg[i])
+    old_obs <- old_begin_err[index_tg]:old_end_err[index_tg]
+    old_tp <- old_acdata$ac_time_points[old_obs]
+    
+    cov <- get_cov_matrix_ac(list(ac=out), new_obs, latent = TRUE)
+    .cond_acef <- function(s) {
+      cov_chol <- t(chol(cov[s, , ]))
+      this_err <- vector(mode = "numeric", length = length(new_obs))
+      k <- 1
+      for (obs in new_obs) {
+        if (!is_observed[obs]) {
+          this_err[k] <- rnorm(1, 0, 1)
+        } else {
+          t <- sdata$ac_time[obs]
+          fitted_re_idx <- which(old_tp == t) + old_begin_err[index_tg] - 1
+          this_err[k] <- zerr_draws[s, fitted_re_idx]
+        }
+        k <- k + 1
+      }
+      t(cov_chol %*% this_err)
+    }
+    out$err[, new_obs] <- rblapply(seq_rows(draws), .cond_acef)
+  }
+}
+
 
 prepare_predictions_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))

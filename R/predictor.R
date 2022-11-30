@@ -441,6 +441,9 @@ predictor_offset <- function(prep, i, nobs) {
 #   order for ARMA structures to work correctly
 predictor_ac <- function(eta, prep, i, fprep = NULL) {
   if (has_ac_class(prep$ac$acef, "arma")) {
+    if (!is.null(prep$ac$err_tp)) {
+      prep$ac$err <- .ac_time_err(prep)
+    }
     if (!is.null(prep$ac$err)) {
       # ARMA correlations via latent residuals
       eta <- eta + p(prep$ac$err, i, row = FALSE)
@@ -460,6 +463,22 @@ predictor_ac <- function(eta, prep, i, fprep = NULL) {
     eta <- eta + .predictor_re(Z = p(prep$ac$Zcar, i), r = prep$ac$rcar)
   }
   eta
+}
+
+# helper function to assign residual draws per-observation
+# given residual draws per-timepoint
+.ac_time_err <- function(prep) {
+  err <- matrix(nrow = nrow(prep$ac$err_tp), ncol = length(prep$ac$ac_time))
+  for (i in 1:length(prep$ac$level_tg)) {
+    times <- with(prep$ac, ac_time[begin_tg[i]:end_tg[i]])
+    tp <- with(prep$ac, ac_time_points[begin_err_gr[i]:end_err_gr[i]])
+    for (t_idx in 1:length(times)) {
+      tp_idx <- which(tp == times[t_idx]) + prep$ac$begin_err_gr[i] - 1
+      err_idx <- t_idx + prep$ac$begin_tg[i] - 1
+      err[, err_idx] <- prep$ac$err_tp[, tp_idx]
+    }
+  }
+  err
 }
 
 # add ARMA effects to a predictor matrix

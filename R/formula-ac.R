@@ -154,16 +154,17 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = FALSE) {
   if (!sum(p, q)) {
     stop2("At least one of 'p' and 'q' should be greater zero.")
   }
+  latent <- as_one_logical(latent)
+  if (latent && !cov) {
+    # latent formulation requires cov formulation
+    cov <- TRUE
+  }
   cov <- as_one_logical(cov)
   if (cov && (p > 1 || q > 1)) {
     stop2("Covariance formulation of ARMA structures is ",
           "only possible for effects of maximal order one.")
   }
-  latent <- as_one_logical(latent)
-  if (latent && !cov) {
-    stop2("Latent formulation of ARMA structures ",
-          "requires use of the covariance formulation.")
-  }
+  
   label <- as_one_character(label)
   out <- nlist(time, gr, p, q, cov, label, latent)
   class(out) <- c("arma_term", "ac_term")

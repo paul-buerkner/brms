@@ -672,12 +672,36 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     if (parameterize_ac_effects(acef)) {
       out$level_tg <- unique(data[[gr]])
     }
-    if (time != "NA") {
+    if (time_var != "NA") {
       out$ac_time <- data[[time_var]]
+      out$ac_time_points <- c()
       if (parameterize_ac_effects(acef)) {
-        # This needs something more
-        out$n_latent_params <- length(unique(data[[time_var]]))
-        
+        # build vector of indices for latent parameters
+        out$N_latent_err <- nrow(unique(data[, c(gr, time_var)]))
+        out$latent_err_idx <- vector(mode="integer", length=N)
+        out$begin_err_gr <- vector(mode="integer", length=length(out$level_tg))
+        out$end_err_gr <- vector(mode="integer", length=length(out$level_tg))
+        out$n_time_gr <- vector(mode="integer", length=length(out$level_tg))
+        gr_end <- 0
+        last_idx <- 0
+        par_gr_idx <- 1
+        for (gr_id in unique(data[[gr]])) {
+          out$begin_err_gr[par_gr_idx] <- last_idx + 1
+          data_gr <- subset(data, data[[gr]] == gr_id)
+          gr_times <- unique(data_gr[[time_var]])
+          out$ac_time_points <- c(out$ac_time_points, gr_times)
+          out$n_time_gr[par_gr_idx] <- length(gr_times)
+          for (j in seq_len(nrow(data_gr))) {
+            out$latent_err_idx[gr_end + j] <- 
+              last_idx + 
+              which(gr_times == data_gr[[j, time_var]])
+          }
+          gr_end <- gr_end + nrow(data_gr)
+          last_idx <- out$latent_err_idx[gr_end]
+          out$end_err_gr[par_gr_idx] <- last_idx
+          par_gr_idx <- par_gr_idx + 1
+        }
+        out$max_time_span <- max(out$ac_time[out$end_err_gr] - out$ac_time[out$begin_err_gr]) + 1
       }
     }
   }

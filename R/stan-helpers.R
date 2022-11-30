@@ -82,6 +82,7 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
       "  #include 'fun_normal_time.stan'\n",
       "  #include 'fun_student_t_time.stan'\n",
       "  #include 'fun_scale_time_err.stan'\n",
+      "  #include 'fun_scale_time_err_t.stan'\n",
       "  #include 'fun_cholesky_cor_ar1.stan'\n",
       "  #include 'fun_cholesky_cor_ma1.stan'\n",
       "  #include 'fun_cholesky_cor_arma1.stan'\n",
