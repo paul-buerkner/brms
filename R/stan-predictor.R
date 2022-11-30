@@ -1250,32 +1250,47 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   slice <- stan_slice(threads)
   has_natural_residuals <- has_natural_residuals(bterms)
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
+  parameterize_ac_effects <- parameterize_ac_effects(bterms)
+  has_explicit_time <- has_explicit_ac_time(bterms)
   acef <- tidy_acef(bterms, data)
 
-  if (has_ac_latent_residuals) {
+  if (has_ac_latent_residuals | parameterize_ac_effects) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
     err_msg <- "Latent residuals are not implemented"
     if (is.btnl(bterms)) {
       stop2(err_msg, " for non-linear models.")
     }
-    str_add(out$par) <- glue(
-      "  vector[N{resp}] zerr{p};  // unscaled residuals\n"
-    )
+    if (has_explicit_time) {
+      str_add(out$par) <- glue(
+        "  vector[N_latent_err{resp}] zerr{p};  // unscaled residuals\n"
+      )
+    } else {
+      str_add(out$par) <- glue(
+        "  vector[N{resp}] zerr{p};  // unscaled residuals\n"
+      )
+    }
     str_add_list(out) <- stan_prior(
       prior, class = "sderr", px = px, suffix = p,
       comment = "SD of residuals", normalize = normalize
     )
-    str_add(out$tpar_def) <- glue(
-      "  vector[N{resp}] err{p};  // actual residuals\n"
-    )
+    if (has_explicit_time) {
+      str_add(out$tpar_def) <- glue(
+        "  vector[N_latent_err{resp}] err_tp{p}; // per-time-point residuals\n",
+        "  vector[N{resp}] err{p};  // per-observation residuals\n"
+      )
+    } else {
+      str_add(out$tpar_def) <- glue(
+        "  vector[N{resp}] err{p};  // actual residuals\n"
+      ) 
+    }
     str_add(out$pll_args) <- glue(", vector err{p}")
     str_add(out$model_prior) <- glue(
       "  target += std_normal_{lpdf}(zerr{p});\n"
     )
     str_add(out$eta) <- glue(" + err{p}{slice}")
   }
-
+  
   # validity of the autocor terms has already been checked in 'tidy_acef'
   acef_arma <- subset2(acef, class = "arma")
   if (NROW(acef_arma)) {
@@ -1387,20 +1402,39 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int<lower=1> end_tg{p}[N_tg{p}];\n",
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
-    str_add(out$tdata_def) <- glue(
-      "  int max_nobs_tg{p} = max(nobs_tg{p});",
-      "  // maximum dimension of the autocorrelation matrix\n"
-    )
+    if (has_explicit_time) {
+      str_add(out$data) <- glue(
+        "  int<lower=1> N_latent_err{p};\n",
+        "  int<lower=1> max_time_span{p};\n",
+        "  int<lower=1> begin_err_gr{p}[N_tg{p}];\n",
+        "  int<lower=1> end_err_gr{p}[N_tg{p}];\n",
+        "  int<lower=1> n_time_gr{p}[N_tg{p}];\n",
+        "  int<lower=1> ac_time{p}[N{p}];\n",
+        "  int<lower=1> ac_time_points{p}[N_latent_err{p}];\n",
+        "  int<lower=1> latent_err_idx{p}[N{p}];\n"
+      )
+    } else {
+      str_add(out$tdata_def) <- glue(
+        "  int<lower=1> max_nobs_tg = max(nobs_tg);"
+      )
+    }
     if (!is.formula(bterms$adforms$se)) {
       str_add(out$tdata_def) <- glue(
         "  // no known standard errors specified by the user\n",
         "  vector[N{resp}] se2{p} = rep_vector(0.0, N{resp});\n"
       )
     }
-    str_add(out$tpar_def) <- glue(
-      "  // cholesky factor of the autocorrelation matrix\n",
-      "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] chol_cor{p};\n"
-    )
+    if (has_explicit_time) {
+      str_add(out$tpar_def) <- glue(
+        "  // cholesky factor of the autocorrelation matrix\n",
+        "  matrix[max_time_span{p}, max_time_span{p}] chol_cor{p};\n"
+      )
+    } else {
+      str_add(out$tpar_def) <- glue(
+        "  // cholesky factor of the autocorrelation matrix\n",
+        "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor{p};\n"
+      )
+    }
     if (acef_time_cov$class == "arma") {
       if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
         cor_fun <- "ar1"
@@ -1416,16 +1450,32 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       cor_fun <- "cosy"
       cor_args <- glue("cosy{p}")
     }
-    str_add(out$tpar_comp) <- glue(
-      "  // compute residual covariance matrix\n",
-      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
-    )
-    if (has_ac_latent_residuals) {
+    if (has_explicit_time) {
       str_add(out$tpar_comp) <- glue(
-        "  // compute correlated time-series residuals\n",
-        "  err{p} = scale_time_err(",
-        "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+        "  // compute residual covariance matrix\n",
+        "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_time_span{p});\n"
       )
+    } else {
+      str_add(out$tpar_comp) <- glue(
+        "  // compute residual covariance matrix\n",
+        "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
+      )
+    }
+    if (has_ac_latent_residuals | parameterize_ac_effects) {
+      if (has_explicit_time) {
+        str_add(out$tpar_comp) <- glue(
+          "  // compute correlated time-series residuals\n",
+          "  err_tp{p} = scale_time_err_t(",
+          "zerr{p}, sderr{p}, chol_cor{p}, n_time_gr{p}, begin_err_gr{p}, end_err_gr{p}, ac_time_points{p});\n",
+          "err{p} = err_tp{p}[latent_err_idx{p}];"
+        )
+      } else {
+        str_add(out$tpar_comp) <- glue(
+          "  // compute correlated time-series residuals\n",
+          "  err{p} = scale_time_err(",
+          "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+        )
+      }
     }
   }
 
