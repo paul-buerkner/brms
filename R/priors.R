@@ -1906,12 +1906,12 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   is greater \code{1}, the shape of the prior will no longer resemble
 #'   a horseshoe and it may be more appropriately called an hierarchical
 #'   shrinkage prior in this case.
-#' @param scale_slab Scale of the student-t prior of the regularization
-#'   parameter. Defaults to \code{2}. The original unregularized horseshoe
-#'   prior is obtained by setting \code{scale_slab} to infinite, which
-#'   we can approximate in practice by setting it to a very large real value.
-#' @param df_slab Degrees of freedom of the student-t prior of
-#'   the regularization parameter. Defaults to \code{4}.
+#' @param scale_slab Scale of the Student-t slab. Defaults to \code{2}. The
+#'   original unregularized horseshoe prior is obtained by setting
+#'   \code{scale_slab} to infinite, which we can approximate in practice by
+#'   setting it to a very large real value.
+#' @param df_slab Degrees of freedom of the student-t slab.
+#'   Defaults to \code{4}.
 #' @param par_ratio Ratio of the expected number of non-zero coefficients
 #'   to the expected number of zero coefficients. If specified,
 #'   \code{scale_global} is ignored and internally computed as

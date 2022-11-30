@@ -29,13 +29,13 @@ is greater \code{1}, the shape of the prior will no longer resemble
 a horseshoe and it may be more appropriately called an hierarchical
 shrinkage prior in this case.}
 
-\item{scale_slab}{Scale of the student-t prior of the regularization
-parameter. Defaults to \code{2}. The original unregularized horseshoe
-prior is obtained by setting \code{scale_slab} to infinite, which
-we can approximate in practice by setting it to a very large real value.}
+\item{scale_slab}{Scale of the Student-t slab. Defaults to \code{2}. The
+original unregularized horseshoe prior is obtained by setting
+\code{scale_slab} to infinite, which we can approximate in practice by
+setting it to a very large real value.}
 
-\item{df_slab}{Degrees of freedom of the student-t prior of
-the regularization parameter. Defaults to \code{4}.}
+\item{df_slab}{Degrees of freedom of the student-t slab.
+Defaults to \code{4}.}
 
 \item{par_ratio}{Ratio of the expected number of non-zero coefficients
 to the expected number of zero coefficients. If specified,
