@@ -1387,6 +1387,9 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int<lower=1> end_tg{p}[N_tg{p}];\n",
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
+    str_add(out$pll_args) <- glue(
+      ", int[] begin_tg{p}, int[] end_tg{p}, int[] nobs_tg{p}"
+    )
     str_add(out$tdata_def) <- glue(
       "  int max_nobs_tg{p} = max(nobs_tg{p});",
       "  // maximum dimension of the autocorrelation matrix\n"
@@ -1396,11 +1399,13 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  // no known standard errors specified by the user\n",
         "  vector[N{resp}] se2{p} = rep_vector(0.0, N{resp});\n"
       )
+      str_add(out$pll_args) <- glue(", data vector se2{p}")
     }
     str_add(out$tpar_def) <- glue(
       "  // cholesky factor of the autocorrelation matrix\n",
       "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] chol_cor{p};\n"
     )
+    str_add(out$pll_args) <- glue(", matrix chol_cor{p}")
     if (acef_time_cov$class == "arma") {
       if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
         cor_fun <- "ar1"
