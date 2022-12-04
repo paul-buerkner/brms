@@ -188,7 +188,6 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
 #' }
 #'
 #' @export
-#' @export
 cosy <- function(time = NA, gr = NA) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
@@ -197,6 +196,18 @@ cosy <- function(time = NA, gr = NA) {
   stopif_illegal_group(gr)
   out <- nlist(time, gr, label)
   class(out) <- c("cosy_term", "ac_term")
+  out
+}
+
+#' @export
+unstr <- function(time = NA, gr = NA) {
+  label <- deparse(match.call())
+  time <- deparse(substitute(time))
+  time <- as_one_variable(time)
+  gr <- deparse(substitute(gr))
+  stopif_illegal_group(gr)
+  out <- nlist(time, gr, label)
+  class(out) <- c("unstr_term", "ac_term")
   out
 }
 
@@ -476,6 +487,13 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$gr[i] <- ac$gr
       out$cov[i] <- TRUE
     }
+    if (is.unstr_term(ac)) {
+      out$class[i] <- "unstr"
+      out$dim[i] <- "time"
+      out$time[i] <- ac$time
+      out$gr[i] <- ac$gr
+      out$cov[i] <- TRUE
+    }
     if (is.sar_term(ac)) {
       out$class[i] <- "sar"
       out$dim[i] <- "space"
@@ -654,6 +672,10 @@ is.arma_term <- function(x) {
 
 is.cosy_term <- function(x) {
   inherits(x, "cosy_term")
+}
+
+is.unstr_term <- function(x) {
+  inherits(x, "unstr_term")
 }
 
 is.sar_term <- function(x) {

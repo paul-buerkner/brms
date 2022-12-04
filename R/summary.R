@@ -98,9 +98,9 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
 
   variables <- variables(object)
   incl_classes <- c(
-    "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm", 
-    valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", 
-    "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar", "rhocar", 
+    "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm",
+    valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", "sderr",
+    "cosy", "corerr", "lagsar", "errorsar", "car", "sdcar", "rhocar",
     "sd", "cor", "df", "sds", "sdgp", "lscale", "simo"
   )
   incl_regex <- paste0("^", regex_or(incl_classes), "(_|$|\\[)")

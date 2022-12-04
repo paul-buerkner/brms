@@ -545,8 +545,8 @@ do_renaming <- function(x, change) {
 # @param x brmsfit object
 reorder_pars <- function(x) {
   all_classes <- unique(c(
-    "b", "bs", "bsp", "bcs", "ar", "ma", "sderr", "lagsar", "errorsar",
-    "car", "rhocar", "sdcar", "cosy", "sd", "cor", "df", "sds", "sdgp",
+    "b", "bs", "bsp", "bcs", "ar", "ma", "sderr", "lagsar", "errorsar", "car",
+    "rhocar", "sdcar", "cosy", "correrr", "sd", "cor", "df", "sds", "sdgp",
     "lscale", valid_dpars(x), "lncor", "Intercept", "tmp", "rescor",
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz",
     "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior",

@@ -1374,10 +1374,24 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     )
   }
 
+  acef_unstr <- subset2(acef, class = "unstr")
+  if (NROW(acef_unstr)) {
+    # unstructured correlation matrix
+    # most code is shared with ARMA covariance models
+    # define prior on the Cholesky scale to consistency across
+    # autocorrelation structures
+    str_add_list(out) <- stan_prior(
+      prior, class = "Lcorerr", px = px, suffix = p,
+      type = glue("cholesky_factor_corr[n_unique_tg{p}]"),
+      comment = "cholesky factor of unstructured autocorrelation matrix",
+      normalize = normalize
+    )
+  }
+
   acef_time_cov <- subset2(acef, dim = "time", cov = TRUE)
   if (NROW(acef_time_cov)) {
     # use correlation structures in covariance matrix parameterization
-    # optional for ARMA models and obligatory for COSY models
+    # optional for ARMA models and obligatory for COSY and UNSTR models
     # can only model one covariance structure at a time
     stopifnot(NROW(acef_time_cov) == 1)
     str_add(out$data) <- glue(
@@ -1401,37 +1415,67 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       )
       str_add(out$pll_args) <- glue(", data vector se2{p}")
     }
-    str_add(out$tpar_def) <- glue(
-      "  // cholesky factor of the autocorrelation matrix\n",
-      "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] chol_cor{p};\n"
-    )
-    str_add(out$pll_args) <- glue(", matrix chol_cor{p}")
-    if (acef_time_cov$class == "arma") {
-      if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
-        cor_fun <- "ar1"
-        cor_args <- glue("ar{p}[1]")
-      } else if (acef_time_cov$p == 0 && acef_time_cov$q > 0) {
-        cor_fun <- "ma1"
-        cor_args <- glue("ma{p}[1]")
-      } else {
-        cor_fun <- "arma1"
-        cor_args <- glue("ar{p}[1], ma{p}[1]")
-      }
-    } else if (acef_time_cov$class == "cosy") {
-      cor_fun <- "cosy"
-      cor_args <- glue("cosy{p}")
-    }
-    str_add(out$tpar_comp) <- glue(
-      "  // compute residual covariance matrix\n",
-      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
-    )
-    if (has_ac_latent_residuals) {
-      str_add(out$tpar_comp) <- glue(
-        "  // compute correlated time-series residuals\n",
-        "  err{p} = scale_time_err(",
-        "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+    if (acef_time_cov$class == "unstr") {
+      # unstructured time-covariances require additional data and cannot
+      # be represented directly via Cholesky factors due to potentially
+      # different time subsets
+      str_add(out$data) <- glue(
+        "  int<lower=0> Iobs_tg{p}[N_tg{p}, max(nobs_tg{p})];\n",
+        "  int n_unique_tg{p};  // total number of unique time points\n",
+        "  int n_unique_corerr{p};  // number of unique correlations\n"
       )
+      if (has_ac_latent_residuals) {
+        str_add(out$tpar_comp) <- glue(
+          "  // compute correlated time-series residuals\n",
+          "  err{p} = scale_time_err_flex(",
+          "zerr{p}, sderr{p}, Lcorerr{p}, nobs_tg{p}, begin_tg{p}, end_tg{p}, Iobs_tg{p});\n"
+        )
+      }
+      str_add(out$gen_def) <- glue(
+        "  // compute group-level correlations\n",
+        "  corr_matrix[n_unique_tg{p}] Corerr{p}",
+        " = multiply_lower_tri_self_transpose(Lcorerr{p});\n",
+        "  vector<lower=-1,upper=1>[n_unique_corerr{p}] corerr{p};\n"
+      )
+      str_add(out$gen_comp) <- stan_cor_gen_comp(
+        glue("corerr{p}"), glue("n_unique_tg{p}")
+      )
+    } else {
+      # all other time-covariance structures can be represented directly
+      # through Cholesky factors of the correlation matrix
+      if (acef_time_cov$class == "arma") {
+        if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
+          cor_fun <- "ar1"
+          cor_args <- glue("ar{p}[1]")
+        } else if (acef_time_cov$p == 0 && acef_time_cov$q > 0) {
+          cor_fun <- "ma1"
+          cor_args <- glue("ma{p}[1]")
+        } else {
+          cor_fun <- "arma1"
+          cor_args <- glue("ar{p}[1], ma{p}[1]")
+        }
+      } else if (acef_time_cov$class == "cosy") {
+        cor_fun <- "cosy"
+        cor_args <- glue("cosy{p}")
+      }
+      str_add(out$tpar_def) <- glue(
+        "  // cholesky factor of the autocorrelation matrix\n",
+        "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] Lcorerr{p};\n"
+      )
+      str_add(out$pll_args) <- glue(", matrix Lcorerr{p}")
+      str_add(out$tpar_comp) <- glue(
+        "  // compute residual covariance matrix\n",
+        "  Lcorerr{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
+      )
+      if (has_ac_latent_residuals) {
+        str_add(out$tpar_comp) <- glue(
+          "  // compute correlated time-series residuals\n",
+          "  err{p} = scale_time_err(",
+          "zerr{p}, sderr{p}, Lcorerr{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+        )
+      }
     }
+
   }
 
   acef_sar <- subset2(acef, class = "sar")

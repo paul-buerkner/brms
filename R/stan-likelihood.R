@@ -368,13 +368,18 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   if (stan_log_lik_adj(bterms)) {
     stop2("Invalid addition arguments for this model.")
   }
+  flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
+  v <- c("Lcorerr", "se2", "nobs_tg", "begin_tg", "end_tg")
+  if (flex) {
+    c(v) <- "Iobs_tg"
+  }
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
   sdist(glue("normal_time_{sfx}"),
-    p$mu, p$sigma, p$chol_cor, p$se2,
-    p$nobs_tg, p$begin_tg, p$end_tg
+    p$mu, p$sigma, p$Lcorerr, p$se2,
+    p$nobs_tg, p$begin_tg, p$end_tg, p$Iobs_tg
   )
 }
 
@@ -427,13 +432,18 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   if (stan_log_lik_adj(bterms)) {
     stop2("Invalid addition arguments for this model.")
   }
+  flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
+  v <- c("Lcorerr", "se2", "nobs_tg", "begin_tg", "end_tg")
+  if (flex) {
+    c(v) <- "Iobs_tg"
+  }
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
   sdist(glue("student_t_time_{sfx}"),
-    p$nu, p$mu, p$sigma, p$chol_cor, p$se2,
-    p$nobs_tg, p$begin_tg, p$end_tg
+    p$nu, p$mu, p$sigma, p$Lcorerr, p$se2,
+    p$nobs_tg, p$begin_tg, p$end_tg, p$Iobs_tg
   )
 }
 
