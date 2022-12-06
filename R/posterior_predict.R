@@ -389,8 +389,9 @@ posterior_predict_student_mv <- function(i, prep, ...) {
 
 posterior_predict_gaussian_time <- function(i, prep, ...) {
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
+  Iobs <- prep$ac$Iobs_tg[i, ]
   mu <- as.matrix(get_dpar(prep, "mu", i = obs))
-  Sigma <- get_cov_matrix_ac(prep, obs)
+  Sigma <- get_cov_matrix_ac(prep, obs, Iobs = Iobs)
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
@@ -399,9 +400,10 @@ posterior_predict_gaussian_time <- function(i, prep, ...) {
 
 posterior_predict_student_time <- function(i, prep, ...) {
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
+  Iobs <- prep$ac$Iobs_tg[i, ]
   nu <- as.matrix(get_dpar(prep, "nu", i = obs))
   mu <- as.matrix(get_dpar(prep, "mu", i = obs))
-  Sigma <- get_cov_matrix_ac(prep, obs)
+  Sigma <- get_cov_matrix_ac(prep, obs, Iobs = Iobs)
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }

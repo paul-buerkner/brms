@@ -736,6 +736,11 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     cosy_regex <- paste0("^cosy", p, "$")
     out$cosy <- prepare_draws(draws, cosy_regex, regex = TRUE)
   }
+  if (has_ac_class(acef, "unstr")) {
+    cortime_regex <- paste0("^cortime", p, "__")
+    out$cortime <- prepare_draws(draws, cortime_regex, regex = TRUE)
+    out$Iobs_tg <- sdata[[paste0("Iobs_tg", p)]]
+  }
   if (use_ac_cov_time(acef)) {
     # prepare predictions for the covariance structures of time-series models
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
@@ -757,8 +762,9 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
       out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
       for (i in seq_len(out$N_tg)) {
         obs <- with(out, begin_tg[i]:end_tg[i])
+        Iobs <- out$Iobs_tg[i, ]
+        cov <- get_cov_matrix_ac(list(ac = out), obs, Iobs = Iobs, latent = TRUE)
         zeros <- rep(0, length(obs))
-        cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
         .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
         out$err[, obs] <- rblapply(seq_rows(draws), .err)
       }

@@ -214,8 +214,9 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
 # compute covariance matrices of autocor structures
 # @param prep a brmsprep object
 # @param obs observations for which to compute the covariance matrix
+# @param Iobs vector indicating to which time points obs belong
 # @param latent compute covariance matrix for latent residuals?
-get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
+get_cov_matrix_ac <- function(prep, obs = NULL, Iobs = NULL, latent = FALSE) {
   if (is.null(obs)) {
     obs <- seq_len(prep$nobs)
   }
@@ -238,6 +239,9 @@ get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
   } else if (has_ac_class(acef, "cosy")) {
     cosy <- as.numeric(prep$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
+  } else if (has_ac_class(acef, "unstr")) {
+    cortime <- prep$ac$cortime
+    cor <- get_cor_matrix_unstr(cortime, Iobs)
   } else if (has_ac_class(acef, "fcor")) {
     cor <- get_cor_matrix_fcor(prep$ac$Mfcor, ndraws)
   } else {
@@ -345,6 +349,17 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
     }
   }
   out
+}
+
+# compute unstructured time correlation matrices
+# @param cortime time correlation draws
+# @param Iobs indictor of rows/cols to consider in cortime
+# @return a numeric 'ndraws' x 'nobs' x 'nobs' array
+#   where nobs = length(Iobs[Iobs > 0])
+get_cor_matrix_unstr <- function(cortime, Iobs) {
+  stopifnot(length(Iobs) > 0L)
+  Iobs <- Iobs[Iobs > 0]
+  get_cor_matrix(cortime)[, Iobs, Iobs, drop = FALSE]
 }
 
 # prepare a fixed correlation matrix
