@@ -673,7 +673,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       new_times <- extract_levels(time_data)
       if (length(basis)) {
         times <- basis$times
-        # unstr estimates correlations only for given time point
+        # unstr estimates correlations only for given time points
         invalid_times <- setdiff(new_times, times)
         if (length(invalid_times)) {
           stop2("Cannot handle new time points in UNSTR models.")
@@ -683,10 +683,11 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       }
       out$n_unique_t <- length(times)
       out$n_unique_cortime <- out$n_unique_t * (out$n_unique_t - 1) / 2
-      out$Iobs_tg <- matrix(0L, out$N_tg, max(out$nobs_tg))
+      Jtime <- match(time_data, times)
+      out$Jtime_tg <- matrix(0L, out$N_tg, max(out$nobs_tg))
       for (i in seq_len(out$N_tg)) {
-        out$Iobs_tg[i, seq_len(out$nobs_tg[i])] <-
-          time_data[out$begin_tg[i]:out$end_tg[i]]
+        out$Jtime_tg[i, seq_len(out$nobs_tg[i])] <-
+          Jtime[out$begin_tg[i]:out$end_tg[i]]
       }
     }
   }

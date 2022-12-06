@@ -28,17 +28,17 @@
    *   nobs: number of observations in each group
    *   begin: the first observation in each group
    *   end: the last observation in each group
-   *   Iobs: array of time indices per group
+   *   Jtime: array of time indices per group
    * Returns:
    *   vector of scaled and correlated residuals
    */
    vector scale_time_err_flex(vector zerr, real sderr, matrix chol_cor,
-                              int[] nobs, int[] begin, int[] end, int[,] Iobs) {
+                              int[] nobs, int[] begin, int[] end, int[,] Jtime) {
      vector[rows(zerr)] err;
      matrix[rows(chol_cor), cols(chol_cor)] Cor;
      Cor = multiply_lower_tri_self_transpose(chol_cor);
      for (i in 1:size(nobs)) {
-       int iobs[nobs[i]] = Iobs[i, 1:nobs[i]];
+       int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
        err[begin[i]:end[i]] =
          sderr * cholesky_decompose(Cor[iobs, iobs]) * zerr[begin[i]:end[i]];
      }

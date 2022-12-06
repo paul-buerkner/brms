@@ -1420,7 +1420,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       # be represented directly via Cholesky factors due to potentially
       # different time subsets
       str_add(out$data) <- glue(
-        "  int<lower=0> Iobs_tg{p}[N_tg{p}, max(nobs_tg{p})];\n",
+        "  int<lower=0> Jtime_tg{p}[N_tg{p}, max(nobs_tg{p})];\n",
         "  int n_unique_t{p};  // total number of unique time points\n",
         "  int n_unique_cortime{p};  // number of unique correlations\n"
       )
@@ -1428,7 +1428,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err_flex(",
-          "zerr{p}, sderr{p}, Lcortime{p}, nobs_tg{p}, begin_tg{p}, end_tg{p}, Iobs_tg{p});\n"
+          "zerr{p}, sderr{p}, Lcortime{p}, nobs_tg{p}, begin_tg{p}, end_tg{p}, Jtime_tg{p});\n"
         )
       }
       str_add(out$gen_def) <- glue(

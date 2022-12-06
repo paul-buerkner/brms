@@ -82,20 +82,20 @@
    *   nobs: number of observations in each group
    *   begin: the first observation in each group
    *   end: the last observation in each group
-   *   Iobs: array of time indices per group
+   *   Jtime: array of time indices per group
    * Returns:
    *   sum of the log-PDF values of all observations
    */
   real normal_time_hom_flex_lpdf(vector y, vector mu, real sigma, matrix chol_cor,
                                  data vector se2, int[] nobs, int[] begin,
-                                 int[] end, int[,] Iobs) {
+                                 int[] end, int[,] Jtime) {
     int I = size(nobs);
     int has_se = max(se2) > 0;
     vector[I] lp;
     matrix[rows(chol_cor), cols(chol_cor)] Cor;
     Cor = multiply_lower_tri_self_transpose(chol_cor);
     for (i in 1:I) {
-      int iobs[nobs[i]] = Iobs[i, 1:nobs[i]];
+      int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Cov = sigma^2 * Cor[iobs, iobs];
       if (has_se) {
         Cov += diag_matrix(se2[begin[i]:end[i]]);
@@ -117,20 +117,20 @@
    *   nobs: number of observations in each group
    *   begin: the first observation in each group
    *   end: the last observation in each group
-   *   Iobs: array of time indices per group
+   *   Jtime: array of time indices per group
    * Returns:
    *   sum of the log-PDF values of all observations
    */
   real normal_time_het_flex_lpdf(vector y, vector mu, vector sigma, matrix chol_cor,
                                  data vector se2, int[] nobs, int[] begin,
-                                 int[] end, int[,] Iobs) {
+                                 int[] end, int[,] Jtime) {
     int I = size(nobs);
     int has_se = max(se2) > 0;
     vector[I] lp;
     matrix[rows(chol_cor), cols(chol_cor)] Cor;
     Cor = multiply_lower_tri_self_transpose(chol_cor);
     for (i in 1:I) {
-      int iobs[nobs[i]] = Iobs[i, 1:nobs[i]];
+      int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Cov = quad_form_diag(Cor[iobs, iobs], sigma[begin[i]:end[i]]);
       if (has_se) {
         Cov += diag_matrix(se2[begin[i]:end[i]]);

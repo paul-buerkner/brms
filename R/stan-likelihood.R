@@ -372,14 +372,14 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   v <- c("Lcortime", "se2", "nobs_tg", "begin_tg", "end_tg")
   if (flex) {
-    c(v) <- "Iobs_tg"
+    c(v) <- "Jtime_tg"
   }
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
   sdist(glue("normal_time_{sfx}"),
     p$mu, p$sigma, p$Lcortime, p$se2,
-    p$nobs_tg, p$begin_tg, p$end_tg, p$Iobs_tg
+    p$nobs_tg, p$begin_tg, p$end_tg, p$Jtime_tg
   )
 }
 
@@ -436,14 +436,14 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   v <- c("Lcortime", "se2", "nobs_tg", "begin_tg", "end_tg")
   if (flex) {
-    c(v) <- "Iobs_tg"
+    c(v) <- "Jtime_tg"
   }
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
   sdist(glue("student_t_time_{sfx}"),
     p$nu, p$mu, p$sigma, p$Lcortime, p$se2,
-    p$nobs_tg, p$begin_tg, p$end_tg, p$Iobs_tg
+    p$nobs_tg, p$begin_tg, p$end_tg, p$Jtime_tg
   )
 }
 
