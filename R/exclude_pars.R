@@ -74,9 +74,13 @@ exclude_pars.mvbrmsterms <- function(x, save_pars, ...) {
 exclude_pars.brmsterms <- function(x, data, save_pars, ...) {
   resp <- usc(combine_prefix(x))
   data <- subset_data(data, x)
-  out <- "Lncor"
+  par_classes <- c("Lncor", "Cortime")
+  out <- paste0(par_classes, resp)
   if (!save_pars$all) {
-    par_classes <- c("ordered_Intercept", "fixed_Intercept", "theta", "Llncor")
+    par_classes <- c(
+      "ordered_Intercept", "fixed_Intercept",
+      "theta", "Llncor", "Lcortime"
+    )
     c(out) <- paste0(par_classes, resp)
   }
   for (dp in names(x$dpars)) {

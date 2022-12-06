@@ -631,14 +631,13 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 }
 
 # data for autocorrelation variables
-# @param locations optional original locations for CAR models
 data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   out <- list()
   N <- nrow(data)
   acef <- tidy_acef(bterms)
   if (has_ac_subset(bterms, dim = "time")) {
-    gr <- subset2(acef, dim = "time")$gr
-    if (gr != "NA") {
+    gr <- get_ac_vars(acef, "gr", dim = "time")
+    if (isTRUE(nzchar(gr))) {
       tgroup <- as.numeric(factor(data[[gr]]))
     } else {
       tgroup <- rep(1, N)
@@ -668,6 +667,28 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+    if (has_ac_class(acef, "unstr")) {
+      time <- get_ac_vars(bterms, "time", dim = "time")
+      time_data <- get(time, data)
+      new_times <- extract_levels(time_data)
+      if (length(basis)) {
+        times <- basis$times
+        # unstr estimates correlations only for given time point
+        invalid_times <- setdiff(new_times, times)
+        if (length(invalid_times)) {
+          stop2("Cannot handle new time points in UNSTR models.")
+        }
+      } else {
+        times <- new_times
+      }
+      out$n_unique_t <- length(times)
+      out$n_unique_cortime <- out$n_unique_t * (out$n_unique_t - 1) / 2
+      out$Iobs_tg <- matrix(0L, out$N_tg, max(out$nobs_tg))
+      for (i in seq_len(out$N_tg)) {
+        out$Iobs_tg[i, seq_len(out$nobs_tg[i])] <-
+          time_data[out$begin_tg[i]:out$end_tg[i]]
+      }
+    }
   }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")

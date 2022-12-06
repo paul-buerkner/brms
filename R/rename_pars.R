@@ -98,7 +98,8 @@ change_effects.btl <- function(x, ...) {
     change_sm(x, ...),
     change_cs(x, ...),
     change_sp(x, ...),
-    change_gp(x, ...))
+    change_gp(x, ...),
+    change_ac(x, ...))
 }
 
 # helps in renaming fixed effects parameters
@@ -335,6 +336,19 @@ change_sm <- function(bterms, data, pars, ...) {
   out
 }
 
+# helps in renaming autocorrelation parameters
+change_ac <- function(bterms, data, pars, ...) {
+  out <- list()
+  acef <- tidy_acef(bterms)
+  if (has_ac_class(acef, "unstr")) {
+    time <- get_ac_vars(acef, "time", dim = "time")
+    times <- extract_levels(get(time, data))
+    cortime_names <- get_cornames(times, type = "cortime", brackets = FALSE)
+    lc(out) <- clist(grepl("^cortime\\[", pars), cortime_names)
+  }
+  out
+}
+
 # helps in renaming group-level parameters
 # @param ranef: data.frame returned by 'tidy_ranef'
 change_re <- function(ranef, pars, ...) {
@@ -546,7 +560,7 @@ do_renaming <- function(x, change) {
 reorder_pars <- function(x) {
   all_classes <- unique(c(
     "b", "bs", "bsp", "bcs", "ar", "ma", "sderr", "lagsar", "errorsar", "car",
-    "rhocar", "sdcar", "cosy", "correrr", "sd", "cor", "df", "sds", "sdgp",
+    "rhocar", "sdcar", "cosy", "cortime", "sd", "cor", "df", "sds", "sdgp",
     "lscale", valid_dpars(x), "lncor", "Intercept", "tmp", "rescor",
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz",
     "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior",

@@ -370,7 +370,7 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   }
   flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  v <- c("Lcorerr", "se2", "nobs_tg", "begin_tg", "end_tg")
+  v <- c("Lcortime", "se2", "nobs_tg", "begin_tg", "end_tg")
   if (flex) {
     c(v) <- "Iobs_tg"
   }
@@ -378,7 +378,7 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
   sdist(glue("normal_time_{sfx}"),
-    p$mu, p$sigma, p$Lcorerr, p$se2,
+    p$mu, p$sigma, p$Lcortime, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg, p$Iobs_tg
   )
 }
@@ -434,7 +434,7 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   }
   flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  v <- c("Lcorerr", "se2", "nobs_tg", "begin_tg", "end_tg")
+  v <- c("Lcortime", "se2", "nobs_tg", "begin_tg", "end_tg")
   if (flex) {
     c(v) <- "Iobs_tg"
   }
@@ -442,7 +442,7 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
   sdist(glue("student_t_time_{sfx}"),
-    p$nu, p$mu, p$sigma, p$Lcorerr, p$se2,
+    p$nu, p$mu, p$sigma, p$Lcortime, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg, p$Iobs_tg
   )
 }

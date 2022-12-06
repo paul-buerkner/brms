@@ -199,8 +199,9 @@ cosy <- function(time = NA, gr = NA) {
   out
 }
 
+#' TODO: document
 #' @export
-unstr <- function(time = NA, gr = NA) {
+unstr <- function(time, gr) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   time <- as_one_variable(time)
@@ -454,7 +455,7 @@ tidy_acef.brmsterms <- function(x, ...) {
 }
 
 #' @export
-tidy_acef.btl <- function(x, data = NULL, ...) {
+tidy_acef.btl <- function(x, ...) {
   form <- x[["ac"]]
   if (!is.formula(form)) {
     return(empty_acef())
@@ -656,6 +657,7 @@ validate_fcor_matrix <- function(M) {
 
 # regex to extract all parameter names of autocorrelation structures
 regex_autocor_pars <- function() {
+  # cortime is ignored here to allow custom renaming in summary.brmsfit
   p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar",
          "car", "sdcar", "rhocar")
   p <- paste0("(", p, ")", collapse = "|")

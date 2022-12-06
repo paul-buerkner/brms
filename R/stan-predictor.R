@@ -1250,7 +1250,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   slice <- stan_slice(threads)
   has_natural_residuals <- has_natural_residuals(bterms)
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
-  acef <- tidy_acef(bterms, data)
+  acef <- tidy_acef(bterms)
 
   if (has_ac_latent_residuals) {
     # families that do not have natural residuals require latent
@@ -1381,8 +1381,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     # define prior on the Cholesky scale to consistency across
     # autocorrelation structures
     str_add_list(out) <- stan_prior(
-      prior, class = "Lcorerr", px = px, suffix = p,
-      type = glue("cholesky_factor_corr[n_unique_tg{p}]"),
+      prior, class = "Lcortime", px = px, suffix = p,
+      type = glue("cholesky_factor_corr[n_unique_t{p}]"),
       comment = "cholesky factor of unstructured autocorrelation matrix",
       normalize = normalize
     )
@@ -1421,24 +1421,24 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       # different time subsets
       str_add(out$data) <- glue(
         "  int<lower=0> Iobs_tg{p}[N_tg{p}, max(nobs_tg{p})];\n",
-        "  int n_unique_tg{p};  // total number of unique time points\n",
-        "  int n_unique_corerr{p};  // number of unique correlations\n"
+        "  int n_unique_t{p};  // total number of unique time points\n",
+        "  int n_unique_cortime{p};  // number of unique correlations\n"
       )
       if (has_ac_latent_residuals) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err_flex(",
-          "zerr{p}, sderr{p}, Lcorerr{p}, nobs_tg{p}, begin_tg{p}, end_tg{p}, Iobs_tg{p});\n"
+          "zerr{p}, sderr{p}, Lcortime{p}, nobs_tg{p}, begin_tg{p}, end_tg{p}, Iobs_tg{p});\n"
         )
       }
       str_add(out$gen_def) <- glue(
         "  // compute group-level correlations\n",
-        "  corr_matrix[n_unique_tg{p}] Corerr{p}",
-        " = multiply_lower_tri_self_transpose(Lcorerr{p});\n",
-        "  vector<lower=-1,upper=1>[n_unique_corerr{p}] corerr{p};\n"
+        "  corr_matrix[n_unique_t{p}] Cortime{p}",
+        " = multiply_lower_tri_self_transpose(Lcortime{p});\n",
+        "  vector<lower=-1,upper=1>[n_unique_cortime{p}] cortime{p};\n"
       )
       str_add(out$gen_comp) <- stan_cor_gen_comp(
-        glue("corerr{p}"), glue("n_unique_tg{p}")
+        glue("cortime{p}"), glue("n_unique_t{p}")
       )
     } else {
       # all other time-covariance structures can be represented directly
@@ -1460,18 +1460,18 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       }
       str_add(out$tpar_def) <- glue(
         "  // cholesky factor of the autocorrelation matrix\n",
-        "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] Lcorerr{p};\n"
+        "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] Lcortime{p};\n"
       )
-      str_add(out$pll_args) <- glue(", matrix Lcorerr{p}")
+      str_add(out$pll_args) <- glue(", matrix Lcortime{p}")
       str_add(out$tpar_comp) <- glue(
         "  // compute residual covariance matrix\n",
-        "  Lcorerr{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
+        "  Lcortime{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
       )
       if (has_ac_latent_residuals) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err(",
-          "zerr{p}, sderr{p}, Lcorerr{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+          "zerr{p}, sderr{p}, Lcortime{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
         )
       }
     }
