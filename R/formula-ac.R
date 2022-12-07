@@ -2,11 +2,11 @@
 #'
 #' Specify autocorrelation terms in \pkg{brms} models. Currently supported terms
 #' are \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
-#' \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}}, and
-#' \code{\link{fcor}}. Terms can be directly specified within the formula, or
-#' passed to the \code{autocor} argument of \code{\link{brmsformula}} in the
-#' form of a one-sided formula. For deprecated ways of specifying
-#' autocorrelation terms, see \code{\link{cor_brms}}.
+#' \code{\link{cosy}}, \code{\link{unstr}}, \code{\link{sar}},
+#' \code{\link{car}}, and \code{\link{fcor}}. Terms can be directly specified
+#' within the formula, or passed to the \code{autocor} argument of
+#' \code{\link{brmsformula}} in the form of a one-sided formula. For deprecated
+#' ways of specifying autocorrelation terms, see \code{\link{cor_brms}}.
 #'
 #' @name autocor-terms
 #'
@@ -17,8 +17,8 @@
 #'
 #' @seealso \code{\link{brmsformula}}, \code{\link{acformula}},
 #'   \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
-#'   \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}},
-#'   \code{\link{fcor}}
+#'   \code{\link{cosy}}, \code{\link{unstr}}, \code{\link{sar}},
+#'   \code{\link{car}}, \code{\link{fcor}}
 #'
 #' @examples
 #' # specify autocor terms within the formula
@@ -199,7 +199,27 @@ cosy <- function(time = NA, gr = NA) {
   out
 }
 
-#' TODO: document
+#' Set up UNSTR correlation structures
+#'
+#' Set up an unstructured (UNSTR) correlation term in \pkg{brms}. The function does
+#' not evaluate its arguments -- it exists purely to help set up a model with
+#' UNSTR terms.
+#'
+#' @inheritParams arma
+#'
+#' @return An object of class \code{'unstr_term'}, which is a list
+#'   of arguments to be interpreted by the formula
+#'   parsing functions of \pkg{brms}.
+#'
+#' @seealso \code{\link{autocor-terms}}
+#'
+#' @examples
+#' \dontrun{
+#' # add an unstructured correlation matrix for visits within the same patient
+#' fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
+#' summary(fit)
+#' }
+#'
 #' @export
 unstr <- function(time, gr) {
   label <- deparse(match.call())
