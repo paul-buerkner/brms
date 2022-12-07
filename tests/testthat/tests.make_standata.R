@@ -287,6 +287,17 @@ test_that("make_standata returns correct data for ARMA terms", {
   sdata <- make_standata(bform, dat)
 })
 
+test_that("make_standata returns correct data for UNSTR covariance terms", {
+  dat <- data.frame(y = 1:12, x = rnorm(12), tim = c(5:1, 1:5, c(0, 4)),
+                    g = c(rep(3:4, 5), rep(2, 2)))
+
+  sdata <- make_standata(y ~ x + unstr(tim, g), data = dat)
+  expect_equal(sdata$n_unique_t, 6)
+  expect_equal(sdata$n_unique_cortime, 15)
+  Jtime <- rbind(c(1, 5, 0, 0, 0), 2:6, 2:6)
+  expect_equal(sdata$Jtime_tg, Jtime)
+})
+
 test_that("make_standata allows to retrieve the initial data order", {
   dat <- data.frame(y1 = rnorm(100), y2 = rnorm(100),
                           id = sample(1:10, 100, TRUE),

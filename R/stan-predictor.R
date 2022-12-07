@@ -1383,6 +1383,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "Lcortime", px = px, suffix = p,
       type = glue("cholesky_factor_corr[n_unique_t{p}]"),
+      header_type = "matrix",
       comment = "cholesky factor of unstructured autocorrelation matrix",
       normalize = normalize
     )
@@ -1424,6 +1425,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  int n_unique_t{p};  // total number of unique time points\n",
         "  int n_unique_cortime{p};  // number of unique correlations\n"
       )
+      str_add(out$pll_args) <- glue(", int[,] Jtime_tg{p}")
       if (has_ac_latent_residuals) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
