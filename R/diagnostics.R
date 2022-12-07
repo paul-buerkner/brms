@@ -61,7 +61,7 @@ rhat.brmsfit <- function(x, pars = NULL, ...) {
   contains_draws(object)
   # bayesplot uses outdated rhat code from rstan
   # bayesplot::rhat(object$fit, pars = pars, ...)
-  draws <- as_draws_array(object, variable = pars, ...)
+  draws <- as_draws_array(x, variable = pars, ...)
   tmp <- posterior::summarise_draws(draws, rhat = posterior::rhat)
   rhat <- tmp$rhat
   names(rhat) <- tmp$variable
