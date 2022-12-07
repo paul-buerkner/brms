@@ -988,7 +988,7 @@ test_that("waic has reasonable outputs", {
 test_that("diagnostic convenience functions have reasonable outputs", {
   expect_true(is(log_posterior(fit1), "data.frame"))
   expect_true(is(nuts_params(fit1), "data.frame"))
-  expect_true(is(rhat(fit1), "numeric"))
+  expect_true(is(rhat(fit1), "double"))
   expect_true(is(SW(neff_ratio(fit1)), "numeric"))
 })
 
