@@ -761,7 +761,7 @@ test_that("Stan code for ARMA models is correct", {
 
   bform <- bf(y ~ x, sigma ~ x) + acformula(~arma(time, cov = TRUE))
   scode <- make_stancode(bform, dat, family = student)
-  expect_match2(scode, "student_t_time_het_lpdf(Y | nu, mu, sigma, chol_cor")
+  expect_match2(scode, "student_t_time_het_lpdf(Y | nu, mu, sigma, Lcortime")
 
   bform <- bf(y ~ exp(eta) - 1, eta ~ x, autocor = ~ar(time), nl = TRUE)
   scode <- make_stancode(bform, dat, family = student,
@@ -773,9 +773,9 @@ test_that("Stan code for ARMA models is correct", {
     y ~ x + ar(time, cov = TRUE), dat, family = poisson,
     prior = prior(cauchy(0, 10), class = sderr)
   )
-  expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max_nobs_tg);")
+  expect_match2(scode, "Lcortime = cholesky_cor_ar1(ar[1], max_nobs_tg);")
   expect_match2(scode,
-    "err = scale_time_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);"
+    "err = scale_time_err(zerr, sderr, Lcortime, nobs_tg, begin_tg, end_tg);"
   )
   expect_match2(scode, "mu += Intercept + Xc * b + err;")
   expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10)")
@@ -798,14 +798,14 @@ test_that("Stan code for compound symmetry models is correct", {
     prior = prior(normal(0, 2), cosy)
   )
   expect_match2(scode, "real<lower=0,upper=1> cosy;")
-  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
+  expect_match2(scode, "Lcortime = cholesky_cor_cosy(cosy, max_nobs_tg);")
   expect_match2(scode, "lprior += normal_lpdf(cosy | 0, 2)")
 
   scode <- make_stancode(bf(y ~ x + cosy(time), sigma ~ x), dat)
-  expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, chol_cor")
+  expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, Lcortime")
 
   scode <- make_stancode(y ~ x + cosy(time), dat, family = poisson)
-  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
+  expect_match2(scode, "Lcortime = cholesky_cor_cosy(cosy, max_nobs_tg);")
 })
 
 test_that("Stan code for UNSTR covariance terms is correct", {
@@ -833,7 +833,7 @@ test_that("Stan code for UNSTR covariance terms is correct", {
   expect_match2(scode, "mu += Intercept + Xc * b + err;")
 })
 
-  test_that("Stan code for intercept only models is correct", {
+test_that("Stan code for intercept only models is correct", {
   expect_match2(make_stancode(rating ~ 1, data = inhaler),
                "b_Intercept = Intercept;")
   expect_match2(make_stancode(rating ~ 1, data = inhaler, family = cratio()),
