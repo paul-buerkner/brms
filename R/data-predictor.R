@@ -661,6 +661,8 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   }
   if (use_ac_cov_time(acef)) {
     # data for the 'covariance' versions of time-series structures
+    # TODO: change begin[i]:end[i] notation to slice[i]:(slice[i+1] - 1)
+    #   see comment on PR #1435
     out$N_tg <- length(unique(tgroup))
     out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
     out$nobs_tg <- as.array(with(out,
