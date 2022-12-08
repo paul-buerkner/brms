@@ -58,7 +58,7 @@ nuts_params.brmsfit <- function(object, pars = NULL, ...) {
 #' @export rhat
 #' @export
 rhat.brmsfit <- function(x, pars = NULL, ...) {
-  contains_draws(object)
+  contains_draws(x)
   # bayesplot uses outdated rhat code from rstan
   # bayesplot::rhat(object$fit, pars = pars, ...)
   draws <- as_draws_array(x, variable = pars, ...)
