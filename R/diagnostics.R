@@ -6,7 +6,7 @@
 #' @name diagnostic-quantities
 #' @aliases log_posterior nuts_params rhat neff_ratio
 #'
-#' @param object A \code{brmsfit} object.
+#' @param object,x A \code{brmsfit} object.
 #' @param pars An optional character vector of parameter names.
 #'   For \code{nuts_params} these will be NUTS sampler parameter
 #'   names rather than model parameters. If pars is omitted
