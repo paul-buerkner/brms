@@ -1,5 +1,5 @@
   /* multi-student-t log-PDF for time-series covariance structures
-   * in Cholesky parameterization and assuming heterogenous variances
+   * in Cholesky parameterization and assuming homogoneous variances
    * Args:
    *   y: response vector
    *   nu: degrees of freedom parameter
@@ -70,8 +70,8 @@
     return sum(lp);
   }
   /* multi-student-t log-PDF for time-series covariance structures
-   * assuming homogoneous variances
-   * allowx for flexible correlation matrix subsets
+   * in Cholesky parameterization and assuming homogoneous variances
+   * allows for flexible correlation matrix subsets
    * Args:
    *   y: response vector
    *   nu: degrees of freedom parameter
@@ -108,8 +108,8 @@
     return sum(lp);
   }
   /* multi-student-t log-PDF for time-series covariance structures
-   * assuming heterogenous variances
-   * allowx for flexible correlation matrix subsets
+   * in Cholesky parameterization and assuming heterogenous variances
+   * allows for flexible correlation matrix subsets
    * Args:
    *   y: response vector
    *   nu: degrees of freedom parameter
