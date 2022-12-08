@@ -1395,6 +1395,9 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     # optional for ARMA models and obligatory for COSY and UNSTR models
     # can only model one covariance structure at a time
     stopifnot(NROW(acef_time_cov) == 1)
+    if (use_threading(threads)) {
+      stop2("Threading is not supported for covariance-based autocorrelation models.")
+    }
     str_add(out$data) <- glue(
       "  // see the functions block for details\n",
       "  int<lower=1> N_tg{p};\n",
