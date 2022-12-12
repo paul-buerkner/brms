@@ -2156,7 +2156,7 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
   }
   if (any(families %in% "logistic_normal")) {
     stopifnot(length(families) == 1L)
-    predcats <- get_predcats(bterms$family)
+    predcats <- make_stan_names(get_predcats(bterms$family))
     sigma_dpars <- glue("sigma{predcats}")
     reqn <- sigma_dpars %in% names(bterms$dpars)
     n <- ifelse(reqn, "[n]", "")
