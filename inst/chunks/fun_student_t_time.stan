@@ -25,7 +25,7 @@
       Cov = sigma * chol_cor[1:nobs[i], 1:nobs[i]];
       Cov = multiply_lower_tri_self_transpose(Cov);
       if (has_se) {
-        Cov += diag_matrix(se2[begin[i]:end[i]]);
+        Cov = add_diag(Cov, se2[begin[i]:end[i]]);
       }
       lp[i] = multi_student_t_lpdf(
         y[begin[i]:end[i]] | nu, mu[begin[i]:end[i]], Cov
@@ -57,11 +57,10 @@
     vector[I] lp;
     for (i in 1:I) {
       matrix[nobs[i], nobs[i]] Cov;
-      Cov = diag_pre_multiply(sigma[begin[i]:end[i]],
-                              chol_cor[1:nobs[i], 1:nobs[i]]);
+      Cov = diag_pre_multiply(sigma[begin[i]:end[i]], chol_cor[1:nobs[i], 1:nobs[i]]);
       Cov = multiply_lower_tri_self_transpose(Cov);
       if (has_se) {
-        Cov += diag_matrix(se2[begin[i]:end[i]]);
+        Cov = add_diag(Cov, se2[begin[i]:end[i]]);
       }
       lp[i] = multi_student_t_lpdf(
         y[begin[i]:end[i]] | nu, mu[begin[i]:end[i]], Cov

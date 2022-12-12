@@ -24,7 +24,7 @@
       if (has_se) {
         // need to add 'se' to the covariance matrix itself
         L = multiply_lower_tri_self_transpose(L);
-        L += diag_matrix(se2[begin[i]:end[i]]);
+        L = add_diag(L, se2[begin[i]:end[i]]);
         L = cholesky_decompose(L);
       }
       lp[i] = multi_normal_cholesky_lpdf(
@@ -55,12 +55,11 @@
     vector[I] lp;
     for (i in 1:I) {
       matrix[nobs[i], nobs[i]] L;
-      L = diag_pre_multiply(sigma[begin[i]:end[i]],
-                            chol_cor[1:nobs[i], 1:nobs[i]]);
+      L = diag_pre_multiply(sigma[begin[i]:end[i]], chol_cor[1:nobs[i], 1:nobs[i]]);
       if (has_se) {
         // need to add 'se' to the covariance matrix itself
         L = multiply_lower_tri_self_transpose(L);
-        L += diag_matrix(se2[begin[i]:end[i]]);
+        L = add_diag(L, se2[begin[i]:end[i]]);
         L = cholesky_decompose(L);
       }
       lp[i] = multi_normal_cholesky_lpdf(
