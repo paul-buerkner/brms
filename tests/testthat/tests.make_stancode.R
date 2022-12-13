@@ -826,11 +826,10 @@ test_that("Stan code for UNSTR covariance terms is correct", {
 
   # test standard error
   scode <- make_stancode(
-    y | se(1, sigma = TRUE) ~ x + unstr(tim, g), data = dat,
-    family = gaussian(), prior = prior(lkj(4), cortime)
+    y | se(1, sigma = TRUE) ~ x + unstr(tim, g),
+    data = dat, family = gaussian(),
   )
   expect_match2(scode, "normal_time_hom_se_flex_lpdf(Y | mu, sigma, se2, Lcortime, nobs_tg, begin_tg, end_tg, Jtime_tg);")
-  expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(Lcortime | 4);")
 
   # test latent representation
   scode <- make_stancode(
@@ -839,6 +838,13 @@ test_that("Stan code for UNSTR covariance terms is correct", {
   )
   expect_match2(scode, "err = scale_time_err_flex(zerr, sderr, Lcortime, nobs_tg, begin_tg, end_tg,")
   expect_match2(scode, "mu += Intercept + Xc * b + err;")
+
+  # non-linear model
+  scode <- make_stancode(
+    bf(y ~ a, a ~ x, autocor = ~ unstr(tim, g), nl = TRUE),
+    data = dat, family = student(), prior = prior(normal(0,1), nlpar = a)
+  )
+  expect_match2(scode, "student_t_time_hom_flex_lpdf(Y | nu, mu, sigma, Lcortime, nobs_tg, begin_tg, end_tg, Jtime_tg);")
 })
 
 test_that("Stan code for intercept only models is correct", {

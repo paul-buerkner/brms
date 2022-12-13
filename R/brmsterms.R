@@ -903,7 +903,7 @@ get_effect.btl <- function(x, target = "fe", ...) {
 
 #' @export
 get_effect.btnl <- function(x, target = "fe", ...) {
-  NULL
+  x[[target]]
 }
 
 all_terms <- function(x) {

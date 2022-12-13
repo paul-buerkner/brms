@@ -3,6 +3,8 @@
 
 # define Stan functions or globally used transformed data
 # TODO: refactor to not require extraction of information from all model parts
+#   'expand_include_statements' removes duplicates which opens the door
+#   for adding Stan functions at better places rather than globally here
 stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
