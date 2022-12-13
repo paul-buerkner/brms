@@ -1412,13 +1412,6 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int max_nobs_tg{p} = max(nobs_tg{p});",
       "  // maximum dimension of the autocorrelation matrix\n"
     )
-    if (!is.formula(bterms$adforms$se)) {
-      str_add(out$tdata_def) <- glue(
-        "  // no known standard errors specified by the user\n",
-        "  vector[N{resp}] se2{p} = rep_vector(0.0, N{resp});\n"
-      )
-      str_add(out$pll_args) <- glue(", data vector se2{p}")
-    }
     if (acef_time_cov$class == "unstr") {
       # unstructured time-covariances require additional data and cannot
       # be represented directly via Cholesky factors due to potentially
