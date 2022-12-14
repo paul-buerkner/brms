@@ -13,16 +13,16 @@
    */
   real normal_time_hom_lpdf(vector y, vector mu, real sigma, matrix chol_cor,
                             int[] nobs, int[] begin, int[] end) {
-    real lp = 0.0;
     int I = size(nobs);
+    vector[I] lp;
     matrix[rows(chol_cor), cols(chol_cor)] L = sigma * chol_cor;
     for (i in 1:I) {
       matrix[nobs[i], nobs[i]] L_i = L[1:nobs[i], 1:nobs[i]];
-      lp += multi_normal_cholesky_lpdf(
+      lp[i] = multi_normal_cholesky_lpdf(
         y[begin[i]:end[i]] | mu[begin[i]:end[i]], L_i
       );
     }
-    return lp;
+    return sum(lp);
   }
   /* multi-normal log-PDF for time-series covariance structures
    * in Cholesky parameterization and assuming heterogenous variances
@@ -33,16 +33,16 @@
    */
   real normal_time_het_lpdf(vector y, vector mu, vector sigma, matrix chol_cor,
                             int[] nobs, int[] begin, int[] end) {
-    real lp = 0.0;
     int I = size(nobs);
+    vector[I] lp;
     for (i in 1:I) {
       matrix[nobs[i], nobs[i]] L_i;
       L_i = diag_pre_multiply(sigma[begin[i]:end[i]], chol_cor[1:nobs[i], 1:nobs[i]]);
-      lp += multi_normal_cholesky_lpdf(
+      lp[i] = multi_normal_cholesky_lpdf(
         y[begin[i]:end[i]] | mu[begin[i]:end[i]], L_i
       );
     }
-    return lp;
+    return sum(lp);
   }
   /* multi-normal log-PDF for time-series covariance structures
    * in Cholesky parameterization and assuming homogoneous variances
@@ -58,20 +58,21 @@
     int I = size(nobs);
     int has_lp[I] = rep_array(0, I);
     int i = 1;
-    matrix[rows(chol_cor), cols(chol_cor)] Cor;
-    Cor = multiply_lower_tri_self_transpose(chol_cor);
-    while (sum(has_lp) != I) {
+    matrix[rows(chol_cor), cols(chol_cor)] L;
+    matrix[rows(chol_cor), cols(chol_cor)] Cov;
+    L = sigma * chol_cor;
+    Cov = multiply_lower_tri_self_transpose(L);
+    while (i <= I) {
       int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
       int lp_terms[I-i+1] = rep_array(0, I-i+1);
       matrix[nobs[i], nobs[i]] L_i;
-      if (is_equal(iobs, sequence(1, rows(chol_cor)))) {
+      if (is_equal(iobs, sequence(1, rows(L)))) {
         // all timepoints are present in this group
-        L_i = chol_cor;
+        L_i = L;
       } else {
-        // arbitrary subsets cannot be taken on chol_cor directly
-        L_i = cholesky_decompose(Cor[iobs, iobs]);
+        // arbitrary subsets cannot be taken on L directly
+        L_i = cholesky_decompose(Cov[iobs, iobs]);
       }
-      L_i = sigma * L_i;
       has_lp[i] = 1;
       lp_terms[1] = 1;
       // find all additional groups where we have the same timepoints
@@ -86,7 +87,7 @@
         stack_vectors(y, nobs[i], lp_terms, begin[i:I], end[i:I]) |
         stack_vectors(mu, nobs[i], lp_terms, begin[i:I], end[i:I]), L_i
       );
-      while (has_lp[i] == 1 && i != I) {
+      while (i <= I && has_lp[i] == 1) {
         i += 1;
       }
     }
@@ -103,13 +104,13 @@
    */
   real normal_time_het_flex_lpdf(vector y, vector mu, vector sigma, matrix chol_cor,
                                  int[] nobs, int[] begin, int[] end, int[,] Jtime) {
-    real lp = 0.0;
     int I = size(nobs);
+    vector[I] lp;
     int has_lp[I] = rep_array(0, I);
     int i = 1;
     matrix[rows(chol_cor), cols(chol_cor)] Cor;
     Cor = multiply_lower_tri_self_transpose(chol_cor);
-    while (sum(has_lp) != I) {
+    while (i <= I) {
       int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Lcor_i;
       matrix[nobs[i], nobs[i]] L_i;
@@ -121,20 +122,20 @@
         Lcor_i = cholesky_decompose(Cor[iobs, iobs]);
       }
       L_i = diag_pre_multiply(sigma[begin[i]:end[i]], Lcor_i);
-      lp += multi_normal_cholesky_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], L_i);
+      lp[i] = multi_normal_cholesky_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], L_i);
       has_lp[i] = 1;
       // find all additional groups where we have the same timepoints
       for (j in (i+1):I) {
         if (has_lp[j] == 0 && is_equal(Jtime[j], Jtime[i]) == 1) {
           // group j may have different sigmas that group i
           L_i = diag_pre_multiply(sigma[begin[j]:end[j]], Lcor_i);
-          lp += multi_normal_cholesky_lpdf(y[begin[j]:end[j]] | mu[begin[j]:end[j]], L_i);
+          lp[j] = multi_normal_cholesky_lpdf(y[begin[j]:end[j]] | mu[begin[j]:end[j]], L_i);
           has_lp[j] = 1;
         }
       }
-      while (has_lp[i] == 1 && i != I) {
+      while (i <= I && has_lp[i] == 1) {
         i += 1;
       }
     }
-    return lp;
+    return sum(lp);
   }

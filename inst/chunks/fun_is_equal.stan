@@ -1,7 +1,7 @@
   // are two 1D integer arrays equal?
   int is_equal(int[] a, int[] b) {
     int n_a = size(a);
-    int n_b = size(a);
+    int n_b = size(b);
     if (n_a != n_b) {
       return 0;
     }
