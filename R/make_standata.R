@@ -283,12 +283,15 @@ standata_basis_ac <- function(x, data, ...) {
   out <- list()
   if (has_ac_class(x, "car")) {
     gr <- get_ac_vars(x, "gr", class = "car")
-    stopifnot(length(gr) <= 1L)
     if (isTRUE(nzchar(gr))) {
       out$locations <- extract_levels(get(gr, data))
     } else {
       out$locations <- NA
     }
+  }
+  if (has_ac_class(x, "unstr")) {
+    time <- get_ac_vars(x, "time", dim = "time")
+    out$times <- extract_levels(get(time, data))
   }
   out
 }

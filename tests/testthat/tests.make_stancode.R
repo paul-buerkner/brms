@@ -761,7 +761,7 @@ test_that("Stan code for ARMA models is correct", {
 
   bform <- bf(y ~ x, sigma ~ x) + acformula(~arma(time, cov = TRUE))
   scode <- make_stancode(bform, dat, family = student)
-  expect_match2(scode, "student_t_time_het_lpdf(Y | nu, mu, sigma, chol_cor")
+  expect_match2(scode, "student_t_time_het_lpdf(Y | nu, mu, sigma, Lcortime")
 
   bform <- bf(y ~ exp(eta) - 1, eta ~ x, autocor = ~ar(time), nl = TRUE)
   scode <- make_stancode(bform, dat, family = student,
@@ -773,9 +773,9 @@ test_that("Stan code for ARMA models is correct", {
     y ~ x + ar(time, cov = TRUE), dat, family = poisson,
     prior = prior(cauchy(0, 10), class = sderr)
   )
-  expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max_nobs_tg);")
+  expect_match2(scode, "Lcortime = cholesky_cor_ar1(ar[1], max_nobs_tg);")
   expect_match2(scode,
-    "err = scale_time_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);"
+    "err = scale_time_err(zerr, sderr, Lcortime, nobs_tg, begin_tg, end_tg);"
   )
   expect_match2(scode, "mu += Intercept + Xc * b + err;")
   expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10)")
@@ -798,14 +798,53 @@ test_that("Stan code for compound symmetry models is correct", {
     prior = prior(normal(0, 2), cosy)
   )
   expect_match2(scode, "real<lower=0,upper=1> cosy;")
-  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
+  expect_match2(scode, "Lcortime = cholesky_cor_cosy(cosy, max_nobs_tg);")
   expect_match2(scode, "lprior += normal_lpdf(cosy | 0, 2)")
 
   scode <- make_stancode(bf(y ~ x + cosy(time), sigma ~ x), dat)
-  expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, chol_cor")
+  expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, Lcortime")
 
   scode <- make_stancode(y ~ x + cosy(time), dat, family = poisson)
-  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
+  expect_match2(scode, "Lcortime = cholesky_cor_cosy(cosy, max_nobs_tg);")
+})
+
+test_that("Stan code for UNSTR covariance terms is correct", {
+  dat <- data.frame(y = 1:12, x = rnorm(12), tim = c(5:1, 1:5, c(0, 4)),
+                    g = c(rep(3:4, 5), rep(2, 2)))
+
+  scode <- make_stancode(y ~ x + unstr(tim, g), data = dat)
+  expect_match2(scode, "normal_time_hom_flex_lpdf(Y | mu, sigma, Lcortime, nobs_tg, begin_tg, end_tg, Jtime_tg);")
+  expect_match2(scode, "cortime[choose(k - 1, 2) + j] = Cortime[j, k];")
+  expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(Lcortime | 1);")
+
+  scode <- make_stancode(
+    y ~ x + unstr(tim, g), data = dat,
+    family = student(), prior = prior(lkj(4), cortime)
+  )
+  expect_match2(scode, "student_t_time_hom_flex_lpdf(Y | nu, mu, sigma, Lcortime, nobs_tg, begin_tg, end_tg, Jtime_tg);")
+  expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(Lcortime | 4);")
+
+  # test standard error
+  scode <- make_stancode(
+    y | se(1, sigma = TRUE) ~ x + unstr(tim, g),
+    data = dat, family = gaussian(),
+  )
+  expect_match2(scode, "normal_time_hom_se_flex_lpdf(Y | mu, sigma, se2, Lcortime, nobs_tg, begin_tg, end_tg, Jtime_tg);")
+
+  # test latent representation
+  scode <- make_stancode(
+    y ~ x + unstr(tim, g), data = dat,
+    family = poisson()
+  )
+  expect_match2(scode, "err = scale_time_err_flex(zerr, sderr, Lcortime, nobs_tg, begin_tg, end_tg,")
+  expect_match2(scode, "mu += Intercept + Xc * b + err;")
+
+  # non-linear model
+  scode <- make_stancode(
+    bf(y ~ a, a ~ x, autocor = ~ unstr(tim, g), nl = TRUE),
+    data = dat, family = student(), prior = prior(normal(0,1), nlpar = a)
+  )
+  expect_match2(scode, "student_t_time_hom_flex_lpdf(Y | nu, mu, sigma, Lcortime, nobs_tg, begin_tg, end_tg, Jtime_tg);")
 })
 
 test_that("Stan code for intercept only models is correct", {

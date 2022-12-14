@@ -6,11 +6,11 @@
 \description{
 Specify autocorrelation terms in \pkg{brms} models. Currently supported terms
 are \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
-\code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}}, and
-\code{\link{fcor}}. Terms can be directly specified within the formula, or
-passed to the \code{autocor} argument of \code{\link{brmsformula}} in the
-form of a one-sided formula. For deprecated ways of specifying
-autocorrelation terms, see \code{\link{cor_brms}}.
+\code{\link{cosy}}, \code{\link{unstr}}, \code{\link{sar}},
+\code{\link{car}}, and \code{\link{fcor}}. Terms can be directly specified
+within the formula, or passed to the \code{autocor} argument of
+\code{\link{brmsformula}} in the form of a one-sided formula. For deprecated
+ways of specifying autocorrelation terms, see \code{\link{cor_brms}}.
 }
 \details{
 The autocor term functions are almost solely useful when called in
@@ -31,6 +31,6 @@ bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(M))
 \seealso{
 \code{\link{brmsformula}}, \code{\link{acformula}},
   \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
-  \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}},
-  \code{\link{fcor}}
+  \code{\link{cosy}}, \code{\link{unstr}}, \code{\link{sar}},
+  \code{\link{car}}, \code{\link{fcor}}
 }

@@ -903,7 +903,7 @@ get_effect.btl <- function(x, target = "fe", ...) {
 
 #' @export
 get_effect.btnl <- function(x, target = "fe", ...) {
-  NULL
+  x[[target]]
 }
 
 all_terms <- function(x) {
@@ -924,7 +924,7 @@ regex_sp <- function(type = "all") {
   funs <- c(
     sm = "(s|(t2)|(te)|(ti))",
     gp = "gp", cs = "cse?", mmc = "mmc",
-    ac = "((arma)|(ar)|(ma)|(cosy)|(sar)|(car)|(fcor))"
+    ac = "((arma)|(ar)|(ma)|(cosy)|(unstr)|(sar)|(car)|(fcor))"
   )
   funs[all_sp_types()] <- all_sp_types()
   if ("sp" %in% type) {

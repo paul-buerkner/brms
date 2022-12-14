@@ -796,7 +796,10 @@ get_levels <- function(...) {
 
 extract_levels <- function(x) {
   # do not check for NAs according to #1355
-  levels(factor(x))
+  if (!is.factor(x)) {
+    x <- factor(x)
+  }
+  levels(x)
 }
 
 # extract names of group-level effects

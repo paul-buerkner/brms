@@ -98,9 +98,9 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
 
   variables <- variables(object)
   incl_classes <- c(
-    "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm", 
-    valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", 
-    "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar", "rhocar", 
+    "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm",
+    valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", "sderr",
+    "cosy", "cortime", "lagsar", "errorsar", "car", "sdcar", "rhocar",
     "sd", "cor", "df", "sds", "sdgp", "lscale", "simo"
   )
   incl_regex <- paste0("^", regex_or(incl_classes), "(_|$|\\[)")
@@ -159,6 +159,13 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   cor_pars <- variables[grepl(regex_autocor_pars(), variables)]
   out$cor_pars <- full_summary[cor_pars, , drop = FALSE]
   rownames(out$cor_pars) <- cor_pars
+  cortime_pars <- variables[grepl("^cortime_", variables)]
+  if (length(cortime_pars)) {
+    tmp <- full_summary[cortime_pars, , drop = FALSE]
+    cortime_pars <- sub("__", ",", sub("__", "(", cortime_pars))
+    rownames(tmp) <- paste0(cortime_pars, ")")
+    out$cor_pars <- rbind(out$cor_pars, tmp)
+  }
 
   # summary of group-level effects
   for (g in out$group) {

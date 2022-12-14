@@ -588,7 +588,8 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
       dp_prior <- prior_predictor(
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
-        def_dprior = def_dprior
+        def_dprior = def_dprior,
+        internal = internal
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
@@ -608,7 +609,8 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
     nlp_prior <- prior_predictor(
       x$nlpars[[nlp]], data = data,
       def_scale_prior = def_scale_prior,
-      def_dprior = def_dprior
+      def_dprior = def_dprior,
+      internal = internal
     )
     prior <- prior + nlp_prior
   }
@@ -964,7 +966,7 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
 }
 
 # priors for autocor parameters
-prior_ac <- function(bterms, def_scale_prior, ...) {
+prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
   prior <- empty_prior()
   acef <- tidy_acef(bterms)
   if (!NROW(acef)) {
@@ -994,6 +996,15 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     # this causes problems with divergent transitions (#878)
     prior <- prior +
       brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
+  }
+  if (has_ac_class(acef, "unstr")) {
+    if (internal) {
+      prior <- prior +
+        brmsprior("lkj_corr_cholesky(1)", class = "Lcortime", ls = px)
+    } else {
+      prior <- prior +
+        brmsprior("lkj(1)", class = "cortime", ls = px)
+    }
   }
   if (has_ac_latent_residuals(bterms)) {
     prior <- prior +
@@ -1195,8 +1206,8 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- prior[!no_checks, ]
   # check for duplicated priors
   prior$class <- rename(
-    prior$class, c("^cor$", "^rescor$", "^corme$", "^lncor"),
-    c("L", "Lrescor", "Lme", "Llncor"), fixed = FALSE
+    prior$class, c("^cor$", "^rescor$", "^corme$", "^lncor", "^cortime"),
+    c("L", "Lrescor", "Lme", "Llncor", "Lcortime"), fixed = FALSE
   )
   if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")
@@ -1307,7 +1318,10 @@ check_prior_content <- function(prior) {
   lb_priors_regex <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
   ulb_priors <- c("beta", "uniform", "von_mises", "beta_proportion")
   ulb_priors_regex <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
-  cormat_pars <- c("cor", "L", "rescor", "Lrescor", "corme", "Lme", "lncor", "Llncor")
+  cormat_pars <- c(
+    "cor", "L", "rescor", "Lrescor", "corme", "Lme",
+    "lncor", "Llncor", "cortime", "Lcortime"
+  )
   cormat_regex <- "^((lkj)|(constant))"
   simplex_pars <- c("simo", "theta", "sbhaz")
   simplex_regex <- "^((dirichlet)|(constant))\\("

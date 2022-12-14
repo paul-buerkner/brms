@@ -1,5 +1,29 @@
 source("setup_tests_local.R")
 
+test_that("UNSTR models work correctly", {
+  epilepsy2 <- epilepsy
+  epilepsy2$visit <- as.numeric(epilepsy2$visit)
+  fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy2)
+  print(fit)
+  expect_ggplot(pp_check(fit))
+
+  waic <- waic(fit)
+  expect_range(waic$estimates[3, 1], 1550, 1600)
+  # ensure the the correlation are actually included in the predictions
+  waic_without <- waic(fit, incl_autocor = FALSE)
+  expect_true(waic$estimates[3, 1] + 200 < waic_without$estimates[3, 1])
+
+  waic_new <- waic(fit, newdata = epilepsy2[1:100, ])
+  expect_range(waic_new $estimates[3, 1], 700, 760)
+
+  newdat <- epilepsy2[1:5, ]
+  newdat$visit[1] <- 5
+  expect_error(
+    waic(fit, newdata = newdat),
+    "Cannot handle new time points in UNSTR models"
+  )
+})
+
 test_that("SAR models work correctly", {
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb),

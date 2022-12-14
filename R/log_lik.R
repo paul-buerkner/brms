@@ -245,9 +245,10 @@ log_lik_student_mv <- function(i, prep) {
 
 log_lik_gaussian_time <- function(i, prep) {
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
+  Jtime <- prep$ac$Jtime_tg[i, ]
   Y <- as.numeric(prep$data$Y[obs])
   mu <- as.matrix(get_dpar(prep, "mu", i = obs))
-  Sigma <- get_cov_matrix_ac(prep, obs)
+  Sigma <- get_cov_matrix_ac(prep, obs, Jtime = Jtime)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
     Cinv <- solve(C)
@@ -264,10 +265,11 @@ log_lik_gaussian_time <- function(i, prep) {
 
 log_lik_student_time <- function(i, prep) {
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
+  Jtime <- prep$ac$Jtime_tg[i, ]
   Y <- as.numeric(prep$data$Y[obs])
   nu <- as.matrix(get_dpar(prep, "nu", i = obs))
   mu <- as.matrix(get_dpar(prep, "mu", i = obs))
-  Sigma <- get_cov_matrix_ac(prep, obs)
+  Sigma <- get_cov_matrix_ac(prep, obs, Jtime = Jtime)
   .log_lik <- function(s) {
     df <- nu[s, ]
     C <- as.matrix(Sigma[s, , ])
