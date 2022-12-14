@@ -80,7 +80,9 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   acefs <- lapply(acterms, tidy_acef)
   if (any(ulapply(acefs, has_ac_subset, dim = "time", cov = TRUE))) {
     str_add(out$fun) <- glue(
-      "  #include 'fun_is_equal.stan'\n"
+      "  #include 'fun_sequence.stan'\n",
+      "  #include 'fun_is_equal.stan'\n",
+      "  #include 'fun_stack_vectors.stan'\n"
     )
     if ("gaussian" %in% families) {
       str_add(out$fun) <- glue(
