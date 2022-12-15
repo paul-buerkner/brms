@@ -1685,6 +1685,11 @@ has_eta_minus_thres <- function(family) {
   "eta_minus_thres" %in% family_info(family, "specials")
 }
 
+# has an extra category that is not part of the ordinal scale (#1429)
+has_extra_cat <- function(family) {
+  "extra_cat" %in% family_info(family, "specials")
+}
+
 # get names of response categories
 get_cats <- function(family) {
   family_info(family, "cats")

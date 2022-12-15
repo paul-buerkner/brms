@@ -551,6 +551,8 @@ extract_thres_names <- function(x, data) {
   if (any(!is_wholenumber(nthres) | nthres < 1L)) {
     stop2("Number of thresholds must be a positive integer.")
   }
+  # has an extra category that is not part of the ordinal scale? (#1429)
+  diff <- ifelse(has_extra_cat(x$family), 2, 1)
   grthres <- get_ad_values(x, "thres", "gr", data)
   if (!is.null(grthres)) {
     # grouping variable was specified
@@ -564,7 +566,9 @@ extract_thres_names <- function(x, data) {
       nthres <- rep(NA, length(group))
       for (i in seq_along(group)) {
         take <- grthres %in% group[i]
-        nthres[i] <- extract_nthres(x$formula, data[take, , drop = FALSE])
+        nthres[i] <- extract_nthres(
+          x$formula, data[take, , drop = FALSE], diff = diff
+        )
       }
     } else if (length(nthres) == 1L) {
       # replicate number of thresholds across groups
@@ -587,7 +591,7 @@ extract_thres_names <- function(x, data) {
     group <- ""
     if (!length(nthres)) {
       # extract number of thresholds from the response values
-      nthres <- extract_nthres(x$formula, data)
+      nthres <- extract_nthres(x$formula, data, diff = diff)
     }
     if (length(nthres) > 1L) {
       stop2("Number of thresholds needs to be a single value.")
@@ -600,14 +604,16 @@ extract_thres_names <- function(x, data) {
 # extract threshold names from the response values
 # @param formula with the response on the LHS
 # @param data a data.frame from which to extract responses
+# @param diff difference between number of categories and number of thresholds
 # @return a single value for the number of thresholds
-extract_nthres <- function(formula, data) {
+extract_nthres <- function(formula, data, diff = 1) {
+  diff <- as_one_integer(diff)
   respform <- validate_resp_formula(formula)
   mr <- model.response(model.frame(respform, data))
   if (is_like_factor(mr)) {
-    out <- length(levels(factor(mr))) - 1
+    out <- length(levels(factor(mr)))
   } else {
-    out <- max(mr) - 1
+    out <- max(mr)
   }
-  out
+  out - diff
 }
