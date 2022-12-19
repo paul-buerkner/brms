@@ -1251,7 +1251,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     if (is.btnl(bterms)) {
       stop2(err_msg, " for non-linear models.")
     }
-    if (has_explicit_time) {
+    if (has_explicit_time & parameterize_ac_effects) {
       str_add(out$par) <- glue(
         "  vector[N_latent_err{resp}] zerr{p};  // unscaled residuals\n"
       )
@@ -1264,7 +1264,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       prior, class = "sderr", px = px, suffix = p,
       comment = "SD of residuals", normalize = normalize
     )
-    if (has_explicit_time) {
+    if (has_explicit_time & parameterize_ac_effects) {
       str_add(out$tpar_def) <- glue(
         "  vector[N_latent_err{resp}] err_tp{p}; // per-time-point residuals\n",
         "  vector[N{resp}] err{p};  // per-observation residuals\n"
@@ -1392,15 +1392,15 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int<lower=1> end_tg{p}[N_tg{p}];\n",
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
-    if (has_explicit_time) {
+    if (has_explicit_time & parameterize_ac_effects) {
       str_add(out$data) <- glue(
         "  int<lower=1> N_latent_err{p};\n",
         "  int<lower=1> max_time_span{p};\n",
         "  int<lower=1> begin_err_gr{p}[N_tg{p}];\n",
         "  int<lower=1> end_err_gr{p}[N_tg{p}];\n",
         "  int<lower=1> n_time_gr{p}[N_tg{p}];\n",
-        "  int<lower=1> ac_time{p}[N{p}];\n",
-        "  int<lower=1> ac_time_points{p}[N_latent_err{p}];\n",
+        "  int ac_time{p}[N{p}];\n",
+        "  int ac_time_points{p}[N_latent_err{p}];\n",
         "  int<lower=1> latent_err_idx{p}[N{p}];\n"
       )
     } else {
@@ -1414,7 +1414,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  vector[N{resp}] se2{p} = rep_vector(0.0, N{resp});\n"
       )
     }
-    if (has_explicit_time) {
+    if (has_explicit_time & parameterize_ac_effects) {
       str_add(out$tpar_def) <- glue(
         "  // cholesky factor of the autocorrelation matrix\n",
         "  matrix[max_time_span{p}, max_time_span{p}] chol_cor{p};\n"
@@ -1440,7 +1440,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       cor_fun <- "cosy"
       cor_args <- glue("cosy{p}")
     }
-    if (has_explicit_time) {
+    if (has_explicit_time & parameterize_ac_effects) {
       str_add(out$tpar_comp) <- glue(
         "  // compute residual covariance matrix\n",
         "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_time_span{p});\n"
@@ -1452,7 +1452,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       )
     }
     if (has_ac_latent_residuals | parameterize_ac_effects) {
-      if (has_explicit_time) {
+      if (has_explicit_time & parameterize_ac_effects) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err_tp{p} = scale_time_err_t(",

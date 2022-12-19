@@ -858,20 +858,22 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
                 unobserved_idx <- which(new_tp %in% unobserved_times)
                 old_tp_idx <- which(old_tp %in% observed_times)
                 
-                cov_11 <- cov[s, unobserved_idx, unobserved_idx]
-                cov_22 <- cov[s, observed_idx, observed_idx]
-                cov_12 <- cov[s, unobserved_idx, observed_idx]
-
-                cov_bar <- cov_11 - cov_12 %*% solve(cov_22) %*% t(cov_12)
-                mu_bar <- cov_12 %*% 
-                  solve(cov_22) %*% 
-                  err_draws[s, old_err_uidx[old_tp_idx]]
-
-                new_errs <- rmulti_normal(1, as.vector(mu_bar), Sigma = cov_bar)
+                # skip new err generation if all rows in this group are observed
+                if (!all(obs_mask)) {
+                  cov_11 <- cov[s, unobserved_idx, unobserved_idx]
+                  cov_22 <- cov[s, observed_idx, observed_idx]
+                  cov_12 <- cov[s, unobserved_idx, observed_idx]
+  
+                  cov_bar <- cov_11 - cov_12 %*% solve(cov_22) %*% t(cov_12)
+                  mu_bar <- cov_12 %*% 
+                    solve(cov_22) %*% 
+                    err_draws[s, old_err_uidx[old_tp_idx]]
+  
+                  new_errs <- rmulti_normal(1, as.vector(mu_bar), Sigma = cov_bar)
+                  this_err[unobserved_idx] <- new_errs
+                }
                 
-                this_err[unobserved_idx] <- new_errs
                 this_err[observed_idx] <- err_draws[s, old_err_uidx[old_tp_idx]]
-
                 this_err
               }
               out$err_tp[, new_tp_idx] <- rblapply(seq_rows(draws), .cond_acef)

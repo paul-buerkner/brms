@@ -701,7 +701,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
           out$end_err_gr[par_gr_idx] <- last_idx
           par_gr_idx <- par_gr_idx + 1
         }
-        out$max_time_span <- max(out$ac_time[out$end_err_gr] - out$ac_time[out$begin_err_gr]) + 1
+        out$max_time_span <- max(out$ac_time_points[out$end_err_gr] - out$ac_time_points[out$begin_err_gr]) + 1
       }
     }
   }
