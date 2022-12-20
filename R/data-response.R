@@ -92,13 +92,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (is.numeric(out$Y) && length(bin_levels) == 1L && !0 %in% bin_levels) {
       bin_levels <- c(0, bin_levels)
     }
-    out$Y <- as.numeric(as_factor(out$Y, levels = bin_levels)) - 1
+    out$Y <- as.integer(as_factor(out$Y, levels = bin_levels)) - 1
   }
   if (is_categorical(x$family)) {
-    out$Y <- as.numeric(as_factor(out$Y, levels = basis$resp_levels))
+    out$Y <- as.integer(as_factor(out$Y, levels = basis$resp_levels))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
-    out$Y <- as.numeric(out$Y)
+    diff <- ifelse(has_extra_cat(x$family), 1L, 0L)
+    out$Y <- as.integer(out$Y) - diff
   }
   if (check_response) {
     family4error <- family_names(x$family)
@@ -116,9 +117,12 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       }
     }
     if (is_ordinal(x$family)) {
-      if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
-        stop2("Family '", family4error, "' requires either positive ",
-              "integers or ordered factors as responses.")
+      extra_cat <- has_extra_cat(x$family)
+      min_int <- ifelse(extra_cat, 0L, 1L)
+      msg <- ifelse(extra_cat, "non-negative", "positive")
+      if (any(!is_wholenumber(out$Y)) || any(out$Y < min_int)) {
+        stop2("Family '", family4error, "' requires either ", msg,
+              " integers or ordered factors as responses.")
       }
     }
     if (use_int(x$family)) {
@@ -552,7 +556,7 @@ extract_thres_names <- function(x, data) {
     stop2("Number of thresholds must be a positive integer.")
   }
   # has an extra category that is not part of the ordinal scale? (#1429)
-  diff <- ifelse(has_extra_cat(x$family), 2, 1)
+  extra_cat <- has_extra_cat(x$family)
   grthres <- get_ad_values(x, "thres", "gr", data)
   if (!is.null(grthres)) {
     # grouping variable was specified
@@ -567,7 +571,8 @@ extract_thres_names <- function(x, data) {
       for (i in seq_along(group)) {
         take <- grthres %in% group[i]
         nthres[i] <- extract_nthres(
-          x$formula, data[take, , drop = FALSE], diff = diff
+          x$formula, data[take, , drop = FALSE],
+          extra_cat = extra_cat
         )
       }
     } else if (length(nthres) == 1L) {
@@ -591,7 +596,7 @@ extract_thres_names <- function(x, data) {
     group <- ""
     if (!length(nthres)) {
       # extract number of thresholds from the response values
-      nthres <- extract_nthres(x$formula, data, diff = diff)
+      nthres <- extract_nthres(x$formula, data, extra_cat = extra_cat)
     }
     if (length(nthres) > 1L) {
       stop2("Number of thresholds needs to be a single value.")
@@ -604,16 +609,19 @@ extract_thres_names <- function(x, data) {
 # extract threshold names from the response values
 # @param formula with the response on the LHS
 # @param data a data.frame from which to extract responses
-# @param diff difference between number of categories and number of thresholds
+# @param extra_cat is the first category an extra (hurdle) category?
 # @return a single value for the number of thresholds
-extract_nthres <- function(formula, data, diff = 1) {
-  diff <- as_one_integer(diff)
+extract_nthres <- function(formula, data, extra_cat = FALSE) {
+  extra_cat <- as_one_logical(extra_cat)
   respform <- validate_resp_formula(formula)
   mr <- model.response(model.frame(respform, data))
   if (is_like_factor(mr)) {
-    out <- length(levels(factor(mr)))
+    # the first factor level is the extra category
+    diff <- ifelse(extra_cat, 2L, 1L)
+    out <- length(levels(factor(mr))) - diff
   } else {
-    out <- max(mr)
+    # 0 is the extra category which does not affect max
+    out <- max(mr) - 1L
   }
-  out - diff
+  out
 }
