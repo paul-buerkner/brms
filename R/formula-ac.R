@@ -164,7 +164,6 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = FALSE) {
     stop2("Covariance formulation of ARMA structures is ",
           "only possible for effects of maximal order one.")
   }
-  
   label <- as_one_character(label)
   out <- nlist(time, gr, p, q, cov, label, latent)
   class(out) <- c("arma_term", "ac_term")

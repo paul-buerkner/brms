@@ -670,24 +670,33 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
     if (parameterize_ac_effects(acef)) {
-      out$level_tg <- unique(data[[gr]])
+      out$level_tg <- unique(tgroup)
     }
     if (time_var != "NA") {
       out$ac_time <- data[[time_var]]
       out$ac_time_points <- c()
       if (parameterize_ac_effects(acef)) {
         # build vector of indices for latent parameters
-        out$N_latent_err <- nrow(unique(data[, c(gr, time_var)]))
-        out$latent_err_idx <- vector(mode="integer", length=N)
-        out$begin_err_gr <- vector(mode="integer", length=length(out$level_tg))
-        out$end_err_gr <- vector(mode="integer", length=length(out$level_tg))
-        out$n_time_gr <- vector(mode="integer", length=length(out$level_tg))
+        if (gr != "NA") {
+          out$N_latent_err <- nrow(unique(data[, c(gr, time_var)]))
+        } else {
+          out$N_latent_err <- length(unique(data[, time_var]))
+        }
+        # out$latent_err_idx <- vector(mode="integer", length=N)
+        # out$begin_err_gr <- vector(mode="integer", length=length(out$level_tg))
+        # out$end_err_gr <- vector(mode="integer", length=length(out$level_tg))
+        # out$n_time_gr <- vector(mode="integer", length=length(out$level_tg))
+        out$latent_err_idx <- array(dim=N)
+        out$begin_err_gr <- array(dim=length(out$level_tg))
+        out$end_err_gr <- array(dim=length(out$level_tg))
+        out$n_time_gr <- array(dim=length(out$level_tg))
         gr_end <- 0
         last_idx <- 0
         par_gr_idx <- 1
-        for (gr_id in unique(data[[gr]])) {
+        # test: replace data[[gr]] with tgroup
+        for (gr_id in unique(tgroup)) {
           out$begin_err_gr[par_gr_idx] <- last_idx + 1
-          data_gr <- subset(data, data[[gr]] == gr_id)
+          data_gr <- subset(data, tgroup == gr_id)
           gr_times <- unique(data_gr[[time_var]])
           out$ac_time_points <- c(out$ac_time_points, gr_times)
           out$n_time_gr[par_gr_idx] <- length(gr_times)
