@@ -410,9 +410,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
 #'            data = bike_share_daily, family = gaussian(), chains = 2)
 #' ac_latent(fit)
 #' }
-#' @method ac_latent brmsfit
+#' 
 #' @export
-#' @export ac_latent
 ac_latent.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                               probs = c(0.025, 0.975), ...) {
   contains_draws(object)

@@ -935,34 +935,6 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   out
 }
 
-.prepare_latent_ac <- function(bterms, sdata, old_acdata, ...) {
-  if (has_explicit_time) {
-    new_obs <- with(out, begin_tg[i]:end_tg[i])
-    old_obs <- old_begin_err[index_tg]:old_end_err[index_tg]
-    old_tp <- old_acdata$ac_time_points[old_obs]
-    
-    cov <- get_cov_matrix_ac(list(ac=out), new_obs, latent = TRUE)
-    .cond_acef <- function(s) {
-      cov_chol <- t(chol(cov[s, , ]))
-      this_err <- vector(mode = "numeric", length = length(new_obs))
-      k <- 1
-      for (obs in new_obs) {
-        if (!is_observed[obs]) {
-          this_err[k] <- rnorm(1, 0, 1)
-        } else {
-          t <- sdata$ac_time[obs]
-          fitted_re_idx <- which(old_tp == t) + old_begin_err[index_tg] - 1
-          this_err[k] <- zerr_draws[s, fitted_re_idx]
-        }
-        k <- k + 1
-      }
-      t(cov_chol %*% this_err)
-    }
-    out$err[, new_obs] <- rblapply(seq_rows(draws), .cond_acef)
-  }
-}
-
-
 prepare_predictions_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))
   sdata[[paste0("offsets", p)]]
