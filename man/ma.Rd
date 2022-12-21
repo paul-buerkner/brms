@@ -4,7 +4,7 @@
 \alias{ma}
 \title{Set up MA(q) correlation structures}
 \usage{
-ma(time = NA, gr = NA, q = 1, cov = FALSE)
+ma(time = NA, gr = NA, q = 1, cov = FALSE, latent = FALSE)
 }
 \arguments{
 \item{time}{An optional time variable specifying the time ordering

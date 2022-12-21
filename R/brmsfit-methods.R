@@ -396,9 +396,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
 #' This function extracts the latent ARMA-correlated residuals
 #' from a multi-level model of class \code{brmsfit}.
 #' 
-#' @aliases autocor_ranef
+#' @aliases ac_latent
 #' 
-#' @param x a model of class \code{brmsfit}
 #' @inheritParams fixef.brmsfit
 #' @param ... Currently ignored
 #' 
@@ -411,6 +410,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
 #' ac_latent(fit)
 #' }
 #' 
+#' @method ac_latent brmsfit
 #' @export
 ac_latent.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                               probs = c(0.025, 0.975), ...) {
@@ -423,7 +423,11 @@ ac_latent.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   }
   sdata <- standata(object)
   gr <- acef$gr
-  draws <- as.matrix(object, variable = "err")
+  if (has_time) {
+    draws <- as.matrix(object, variable = "err_tp")
+  } else {
+    draws <- as.matrix(object, variable = "err")
+  }
   if (gr == "NA") {
     out <- list()
     out[[1]] <- draws
@@ -457,6 +461,11 @@ ac_latent.brmsfit <- function(object, summary = TRUE, robust = FALSE,
     }
   }
   out
+}
+
+#' @export
+ac_latent <- function(x, ...) {
+  UseMethod("ac_latent")
 }
 
 #' @export

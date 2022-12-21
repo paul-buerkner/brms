@@ -4,7 +4,7 @@
 \alias{arma}
 \title{Set up ARMA(p,q) correlation structures}
 \usage{
-arma(time = NA, gr = NA, p = 1, q = 1, cov = FALSE)
+arma(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = FALSE)
 }
 \arguments{
 \item{time}{An optional time variable specifying the time ordering

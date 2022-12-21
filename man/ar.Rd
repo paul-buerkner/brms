@@ -4,7 +4,7 @@
 \alias{ar}
 \title{Set up AR(p) correlation structures}
 \usage{
-ar(time = NA, gr = NA, p = 1, cov = FALSE)
+ar(time = NA, gr = NA, p = 1, cov = FALSE, latent = FALSE)
 }
 \arguments{
 \item{time}{An optional time variable specifying the time ordering
