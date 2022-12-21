@@ -670,7 +670,11 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
     if (parameterize_ac_effects(acef)) {
-      out$level_tg <- unique(tgroup)
+      if (gr != "NA") {
+        out$level_tg <- unique(data[[gr]])
+      } else {
+        out$level_tg <- 1
+      }
     }
     if (time_var != "NA") {
       out$ac_time <- data[[time_var]]
@@ -694,21 +698,33 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
         last_idx <- 0
         par_gr_idx <- 1
         # test: replace data[[gr]] with tgroup
-        for (gr_id in unique(tgroup)) {
-          out$begin_err_gr[par_gr_idx] <- last_idx + 1
-          data_gr <- subset(data, tgroup == gr_id)
-          gr_times <- unique(data_gr[[time_var]])
-          out$ac_time_points <- c(out$ac_time_points, gr_times)
-          out$n_time_gr[par_gr_idx] <- length(gr_times)
-          for (j in seq_len(nrow(data_gr))) {
-            out$latent_err_idx[gr_end + j] <- 
-              last_idx + 
+        if (gr == "NA") {
+          out$begin_err_gr <- 1
+          times <- unique(data[[time_var]])
+          out$ac_time_points <- times
+          out$n_time_gr[1] <- length(times)
+          for (j in seq_len(nrow(data))) {
+            out$latent_err_idx[j] <- 
               which(gr_times == data_gr[[j, time_var]])
           }
-          gr_end <- gr_end + nrow(data_gr)
-          last_idx <- out$latent_err_idx[gr_end]
-          out$end_err_gr[par_gr_idx] <- last_idx
-          par_gr_idx <- par_gr_idx + 1
+          out$end_err_gr[1] <- length(times)
+        } else {
+          for (gr_id in unique(data[[gr]])) {
+            out$begin_err_gr[par_gr_idx] <- last_idx + 1
+            data_gr <- subset(data, data[[gr]] == gr_id)
+            gr_times <- unique(data_gr[[time_var]])
+            out$ac_time_points <- c(out$ac_time_points, gr_times)
+            out$n_time_gr[par_gr_idx] <- length(gr_times)
+            for (j in seq_len(nrow(data_gr))) {
+              out$latent_err_idx[gr_end + j] <- 
+                last_idx + 
+                which(gr_times == data_gr[[j, time_var]])
+            }
+            gr_end <- gr_end + nrow(data_gr)
+            last_idx <- out$latent_err_idx[gr_end]
+            out$end_err_gr[par_gr_idx] <- last_idx
+            par_gr_idx <- par_gr_idx + 1
+          }
         }
         out$max_time_span <- max(out$ac_time_points[out$end_err_gr] - out$ac_time_points[out$begin_err_gr]) + 1
       }

@@ -109,7 +109,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       old_acdata <- NULL
       if (parameterize_ac_effects(x$dpars[[dp]])) {
-        old_acdata <- make_standata(x, data)
+        old_acdata <- make_standata(x, data, family = out$family)
       }
       out$dpars[[dp]] <- prepare_predictions(
         x$dpars[[dp]], draws = draws,
