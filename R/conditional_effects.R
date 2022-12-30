@@ -96,17 +96,17 @@
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{conditions}.
-#' @param points Logical. Indicates if the original data points
-#'   should be added via \code{\link{geom_jitter}}.
-#'   Default is \code{FALSE}. Note that only those data points will be added
-#'   that match the specified conditions defined in \code{conditions}.
-#'   For categorical predictors, the conditions have to match exactly.
-#'   For numeric predictors, argument \code{select_points} is used to
+#' @param points Logical. Indicates if the original data points should be added
+#'   via \code{\link{geom_jitter}}. Default is \code{FALSE}. Can be controlled
+#'   globally via the \code{brms.plot_points} option. Note that only those data
+#'   points will be added that match the specified conditions defined in
+#'   \code{conditions}. For categorical predictors, the conditions have to match
+#'   exactly. For numeric predictors, argument \code{select_points} is used to
 #'   determine, which points do match a condition.
-#' @param rug Logical. Indicates if a rug representation of predictor
-#'   values should be added via \code{\link{geom_rug}}.
-#'   Default is \code{FALSE}. Depends on \code{select_points} in the same
-#'   way as \code{points} does.
+#' @param rug Logical. Indicates if a rug representation of predictor values
+#'   should be added via \code{\link{geom_rug}}. Default is \code{FALSE}.
+#'   Depends on \code{select_points} in the same way as \code{points} does. Can
+#'   be controlled globally via the \code{brms.plot_rug} option.
 #' @param mean Logical. Only relevant for spaghetti plots.
 #'   If \code{TRUE} (the default), display the mean regression
 #'   line on top of the regression lines for each sample.
@@ -1019,7 +1019,8 @@ print.brms_conditional_effects <- function(x, ...) {
 #' @method plot brms_conditional_effects
 #' @export
 plot.brms_conditional_effects <- function(
-  x, ncol = NULL, points = FALSE, rug = FALSE, mean = TRUE,
+  x, ncol = NULL, points = getOption("brms.plot_points", FALSE),
+  rug = getOption("brms.plot_rug", FALSE), mean = TRUE,
   jitter_width = 0, stype = c("contour", "raster"),
   line_args = list(), cat_args = list(), errorbar_args = list(),
   surface_args = list(), spaghetti_args = list(), point_args = list(),

@@ -34,8 +34,8 @@ conditional_effects(x, ...)
 \method{plot}{brms_conditional_effects}(
   x,
   ncol = NULL,
-  points = FALSE,
-  rug = FALSE,
+  points = getOption("brms.plot_points", FALSE),
+  rug = getOption("brms.plot_rug", FALSE),
   mean = TRUE,
   jitter_width = 0,
   stype = c("contour", "raster"),
@@ -163,18 +163,18 @@ passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}
 If \code{NULL} (default), \code{ncol} is computed internally based
 on the number of rows of \code{conditions}.}
 
-\item{points}{Logical. Indicates if the original data points
-should be added via \code{\link{geom_jitter}}.
-Default is \code{FALSE}. Note that only those data points will be added
-that match the specified conditions defined in \code{conditions}.
-For categorical predictors, the conditions have to match exactly.
-For numeric predictors, argument \code{select_points} is used to
+\item{points}{Logical. Indicates if the original data points should be added
+via \code{\link{geom_jitter}}. Default is \code{FALSE}. Can be controlled
+globally via the \code{brms.plot_points} option. Note that only those data
+points will be added that match the specified conditions defined in
+\code{conditions}. For categorical predictors, the conditions have to match
+exactly. For numeric predictors, argument \code{select_points} is used to
 determine, which points do match a condition.}
 
-\item{rug}{Logical. Indicates if a rug representation of predictor
-values should be added via \code{\link{geom_rug}}.
-Default is \code{FALSE}. Depends on \code{select_points} in the same
-way as \code{points} does.}
+\item{rug}{Logical. Indicates if a rug representation of predictor values
+should be added via \code{\link{geom_rug}}. Default is \code{FALSE}.
+Depends on \code{select_points} in the same way as \code{points} does. Can
+be controlled globally via the \code{brms.plot_rug} option.}
 
 \item{mean}{Logical. Only relevant for spaghetti plots.
 If \code{TRUE} (the default), display the mean regression
