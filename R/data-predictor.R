@@ -699,13 +699,13 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
         par_gr_idx <- 1
         # test: replace data[[gr]] with tgroup
         if (gr == "NA") {
-          out$begin_err_gr <- 1
+          out$begin_err_gr[1] <- 1
           times <- unique(data[[time_var]])
           out$ac_time_points <- times
           out$n_time_gr[1] <- length(times)
           for (j in seq_len(nrow(data))) {
             out$latent_err_idx[j] <- 
-              which(gr_times == data_gr[[j, time_var]])
+              which(times == data[[j, time_var]])
           }
           out$end_err_gr[1] <- length(times)
         } else {

@@ -793,12 +793,11 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
       if (!is.null(old_acdata)) {
         # need to sample autocorrelated effects
         # conditional on estimated effects
-        old_levels <- old_acdata$level_tg
-        old_begin_tg <- old_acdata$begin_tg
-        old_end_tg <- old_acdata$end_tg
+        old_levels <- with(old_acdata, level_tg)
         
         if (has_explicit_time) {
           err_tp_regex <- paste0("^err_tp", p, "\\[")
+          err_draws <- prepare_draws(draws, err_tp_regex, regex = TRUE)
           out$ac_time_points <- sdata$ac_time_points
           out$ac_time <- sdata$ac_time
           out$begin_err_gr <- sdata$begin_err_gr
@@ -813,7 +812,6 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
         sderr_regex <- paste0("^sderr", p, "$")
         out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
         zerr_draws <- prepare_draws(draws, zerr_regex, regex = TRUE)
-        err_draws <- prepare_draws(draws, err_tp_regex, regex = TRUE)
         out$is_observed <- !is.na(out$Y)
         for (i in seq_len(out$N_tg)) {
           index_tg <- which(out$level_tg[i] == old_levels)
@@ -838,52 +836,57 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
             # if it's an existing level, sample new effects conditional on 
             # estimated effects for observed times
             if (has_explicit_time) {
-              new_times <- with(out, ac_time[begin_tg[i]:end_tg[i]])
               new_tp <- with(out, ac_time_points[begin_err_gr[i]:end_err_gr[i]])
               new_tp_idx <- with(out, begin_err_gr[i]:end_err_gr[i])
-              obs_mask <- with(out, is_observed[begin_tg[i]:end_tg[i]])
-              old_times <- old_acdata$ac_time[old_begin_tg[index_tg]:old_end_tg[index_tg]]
               old_tp <- with(old_acdata, ac_time_points[begin_err_gr[index_tg]:end_err_gr[index_tg]])
-              old_err_idx <- old_acdata$latent_err_idx[old_begin_tg[index_tg]:old_end_tg[index_tg]]
-              old_err_uidx <- unique(old_err_idx)
+              old_err_uidx <- unique(with(old_acdata, latent_err_idx[begin_tg[index_tg]:end_tg[index_tg]]))
+              all_tp <- sort(unique(c(old_tp, new_tp)))
               
-              cov <- get_cov_matrix_ac(list(ac=out), new_tp, latent = TRUE)
+              # Time points in new data but not old data
+              forecast_tp <- all_tp[which(!(all_tp %in% old_tp))]
+              # Time points in old data (and possibly new data)
+              observed_tp <- all_tp[which(all_tp %in% old_tp)]
+              cov <- get_cov_matrix_ac(list(ac=out), all_tp, latent = TRUE)
               .cond_acef <- function(s) {
                 this_err <- vector(mode = "numeric", length = length(new_tp))
                 
-                observed_times <- unique(new_times[obs_mask])
-                unobserved_times <- unique(new_times[!obs_mask])
-                # Which indices in new_tp correspond to observed and unobserved times
-                observed_idx <- which(new_tp %in% observed_times)
-                unobserved_idx <- which(new_tp %in% unobserved_times)
-                old_tp_idx <- which(old_tp %in% observed_times)
+                # Various indices for residuals and covariance matrices
+                condition_idx <- which(all_tp %in% old_tp)
+                observed_tp_idx <- which(observed_tp %in% new_tp)
+                forecast_tp_idx <- which(all_tp %in% forecast_tp)
+                observed_err_idx <- which(new_tp %in% observed_tp)
+                forecast_err_idx <- which(new_tp %in% forecast_tp)
+                old_tp_idx <- which(old_tp %in% observed_tp)
                 
-                # skip new err generation if all rows in this group are observed
-                if (!all(obs_mask)) {
-                  cov_11 <- cov[s, unobserved_idx, unobserved_idx]
-                  cov_22 <- cov[s, observed_idx, observed_idx]
-                  cov_12 <- cov[s, unobserved_idx, observed_idx]
-  
+                # skip new err generation if all timepoints in this group are observed
+                if (length(forecast_tp) > 0) {
+                  cov_11 <- cov[s, forecast_tp_idx, forecast_tp_idx]
+                  cov_22 <- cov[s, condition_idx, condition_idx]
+                  cov_12 <- array(cov[s, forecast_tp_idx, condition_idx],
+                                  dim = c(length(forecast_tp_idx), 
+                                          length(condition_idx)))
                   cov_bar <- cov_11 - cov_12 %*% solve(cov_22) %*% t(cov_12)
                   mu_bar <- cov_12 %*% 
                     solve(cov_22) %*% 
                     err_draws[s, old_err_uidx[old_tp_idx]]
-  
                   new_errs <- rmulti_normal(1, as.vector(mu_bar), Sigma = cov_bar)
-                  this_err[unobserved_idx] <- new_errs
+                  this_err[forecast_err_idx] <- new_errs
                 }
-                
-                this_err[observed_idx] <- err_draws[s, old_err_uidx[old_tp_idx]]
+                this_err[observed_err_idx] <- err_draws[s, old_err_uidx[observed_tp_idx]]
                 this_err
               }
               out$err_tp[, new_tp_idx] <- rblapply(seq_rows(draws), .cond_acef)
             } else {
               obs <- with(out, begin_tg[i]:end_tg[i])
-              old_obs <- old_begin_tg[index_tg]:old_end_tg[index_tg]
+              old_obs <- with(old_acdata, begin_tg[index_tg]:end_tg[index_tg])
+              if (length(obs) < length(old_obs)) {
+                stop2("Length of new data is shorter than old data. Cannot
+                      unambiguously select latent residuals to use.")
+              }
               cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
               .cond_acef <- function(s) {
                 cov_chol <- t(chol(cov[s, , ]))
-                this_acef <- c(zerr_draws[s, old_obs], rnorm(length(obs) - length(old_obs)))
+                this_acef <- c(zerr_draws[s, old_obs], rnorm(max(length(obs) - length(old_obs), 0)))
                 t(cov_chol %*% this_acef)
               }
               out$err[, obs] <- rblapply(seq_rows(draws), .cond_acef)

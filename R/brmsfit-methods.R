@@ -441,7 +441,7 @@ ac_latent.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       out[[1]] <- posterior_summary(out[[1]], robust = robust, probs = probs)
     }
   } else {
-    tg_levels <- unique(object$data[[gr]])
+    tg_levels <- as.character(unique(object$data[[gr]]))
     N_tg <- length(tg_levels)
     out <- named_list(tg_levels)
     for (g in seq_len(N_tg)) {
