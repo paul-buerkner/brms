@@ -183,8 +183,8 @@
 #'
 #' ## change colours to grey scale
 #' library(ggplot2)
-#' me <- conditional_effects(fit, "zBase:Trt")
-#' plot(me, plot = FALSE)[[1]] +
+#' ce <- conditional_effects(fit, "zBase:Trt")
+#' plot(ce, plot = FALSE)[[1]] +
 #'   scale_color_grey() +
 #'   scale_fill_grey()
 #'
@@ -214,11 +214,11 @@
 #' conditions <- make_conditions(fit3way, "zAge")
 #' conditional_effects(fit3way, "zBase:Trt", conditions = conditions)
 #' ## only include points close to the specified values of zAge
-#' me <- conditional_effects(
+#' ce <- conditional_effects(
 #'   fit3way, "zBase:Trt", conditions = conditions,
 #'   select_points = 0.1
 #' )
-#' plot(me, points = TRUE)
+#' plot(ce, points = TRUE)
 #' }
 #'
 #' @export
