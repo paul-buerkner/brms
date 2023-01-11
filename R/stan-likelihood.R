@@ -325,7 +325,9 @@ stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "",
     denom <- glue("log_{denom}")
     operator <- "+"
   } else {
-    is_pred <- dpar %in% c("mu", names(bterms$dpars))
+    # dpar without resp name or index
+    dpar_clean <- sub("(_|\\[).*", "", dpar)
+    is_pred <- dpar_clean %in% c("mu", names(bterms$dpars))
     operator <- str_if(reqn || !is_pred, "*", ".*")
   }
   glue("{dpar_transform} {operator} {denom}")
