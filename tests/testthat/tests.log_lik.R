@@ -365,6 +365,9 @@ test_that("log_lik for zero-inflated and hurdle models runs without erros", {
   ll <- brms:::log_lik_hurdle_gamma(8, prep = prep)
   expect_equal(length(ll), ns)
 
+  ll <- brms:::log_lik_hurdle_cumulative(3, prep = prep)
+  expect_equal(length(ll), ns)
+
   ll <- brms:::log_lik_zero_inflated_poisson(3, prep = prep)
   expect_equal(length(ll), ns)
 

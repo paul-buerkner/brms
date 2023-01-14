@@ -4,7 +4,7 @@
    * Returns:
    *   a vector in (-Inf, Inf)
    */
-   vector cauchit(vector p) {
+   real cauchit(real p) {
      return tan(pi() * (p - 0.5));
    }
   /* compute the inverse of the cauchit link
@@ -13,6 +13,6 @@
    * Returns:
    *   a vector in (0, 1)
    */
-   vector inv_cauchit(vector y) {
+   real inv_cauchit(real y) {
      return atan(y) / pi() + 0.5;
    }

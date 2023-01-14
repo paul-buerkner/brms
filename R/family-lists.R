@@ -480,6 +480,23 @@
   )
 }
 
+.family_hurdle_cumulative <- function() {
+  list(
+    links = c(
+      "logit", "probit", "probit_approx",
+      "cloglog", "cauchit", "softit"
+      ),
+    dpars = c("mu", "hu", "disc"), type = "int",
+    ybounds = c(-Inf, Inf), closed = c(NA, NA),
+    ad = c("weights", "subset", "thres", "cat", "index"),
+    specials = c(
+      "ordinal", "ordered_thres", "thres_minus_eta",
+      "joint_link", "ocs", "sbi_logit", "extra_cat"
+    ),
+    normalized = ""
+  )
+}
+
 .family_zero_inflated_poisson <- function() {
   list(
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),

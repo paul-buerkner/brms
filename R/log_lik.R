@@ -717,6 +717,31 @@ log_lik_hurdle_lognormal <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_hurdle_cumulative <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i = i)
+  hu <- get_dpar(prep, "hu", i = i)
+  disc <- get_dpar(prep, "disc", i = i)
+  thres <- subset_thres(prep, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (thres - mu)
+  y <- prep$data$Y[i]
+  if (y == 0) {
+    out <- dbinom(1, size = 1, prob = hu, log = TRUE)
+  } else if (y == 1L) {
+    out <- log_cdf(eta[, 1L], prep$family$link) + 
+      dbinom(0, size = 1, prob = hu, log = TRUE)
+  } else if (y == nthres + 1L) {
+    out <- log_ccdf(eta[, y - 1L], prep$family$link) + 
+      dbinom(0, size = 1, prob = hu, log = TRUE)
+  } else {
+    out <- log_diff_exp(
+      log_cdf(eta[, y], prep$family$link),
+      log_cdf(eta[, y - 1L], prep$family$link) 
+    ) + dbinom(0, size = 1, prob = hu, log = TRUE)
+  }
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_zero_inflated_poisson <- function(i, prep) {
   zi <- get_dpar(prep, "zi", i)
   lambda <- get_dpar(prep, "mu", i)

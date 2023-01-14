@@ -59,13 +59,21 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     str_add(out$fun) <- cglue("  #include '{family_files}'\n")
   }
   is_ordinal <- ulapply(families, is_ordinal)
-  if (any(is_ordinal)) {
+  has_extra_cat <- ulapply(families, has_extra_cat)
+  if (any(is_ordinal) & any(has_extra_cat)) {
+    ord_fams <- families[is_ordinal & has_extra_cat]
+    ord_links <- links[is_ordinal & has_extra_cat]
+    for (i in seq_along(ord_fams)) {
+      str_add(out$fun) <- stan_hurdle_cumulative_lpmf(ord_fams[i], ord_links[i])
+    }
+  } else if (any(is_ordinal)) {
     ord_fams <- families[is_ordinal]
     ord_links <- links[is_ordinal]
     for (i in seq_along(ord_fams)) {
       str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
     }
   }
+  
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
   if (length(uni_mo)) {
     str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"

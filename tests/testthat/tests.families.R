@@ -57,6 +57,15 @@ test_that("family functions returns expected results", {
   expect_error(zero_inflated_beta_binomial('sqrt'))
   expect_error(zero_inflated_beta_binomial(link_phi = 'logit'))
   expect_error(zero_inflated_beta_binomial(link_zi = 'log'))
+  expect_equal(hurdle_cumulative()$link, "logit")
+  expect_equal(hurdle_cumulative('probit')$link, "probit")
+  expect_equal(hurdle_cumulative('cauchit')$link, "cauchit")
+  expect_equal(hurdle_cumulative()$link_hu, "logit")
+  expect_equal(hurdle_cumulative()$link_disc, "log")
+  expect_error(hurdle_cumulative(link = "log")$link)
+  expect_error(hurdle_cumulative(link_hu = "probit")$link_hu)
+  expect_error(hurdle_cumulative(link_disc = "logit")$link_disc)
+
 })
 
 test_that("print brmsfamily works correctly", {

@@ -26,6 +26,7 @@
 \alias{hurdle_negbinomial}
 \alias{hurdle_gamma}
 \alias{hurdle_lognormal}
+\alias{hurdle_cumulative}
 \alias{zero_inflated_beta}
 \alias{zero_one_inflated_beta}
 \alias{zero_inflated_poisson}
@@ -117,6 +118,8 @@ hurdle_negbinomial(link = "log", link_shape = "log", link_hu = "logit")
 hurdle_gamma(link = "log", link_shape = "log", link_hu = "logit")
 
 hurdle_lognormal(link = "identity", link_sigma = "log", link_hu = "logit")
+
+hurdle_cumulative(link = "logit", link_hu = "logit", link_disc = "log", threshold = "felxible")
 
 zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
 

@@ -774,6 +774,28 @@ posterior_predict_hurdle_lognormal <- function(i, prep, ...) {
   ifelse(hu < theta, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
 }
 
+posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  hu <- brms::get_dpar(prep, "hu", i = i)
+  disc <- brms::get_dpar(prep, "disc", i = i)
+  thres <- subset_thres(prep)
+  nthres <- NCOL(thres)
+  ndraws <- prep$ndraws
+  p <- pordinal(
+    seq_len(nthres + 1),
+    eta = mu,
+    disc = disc,
+    thres = thres,
+    family = "cumulative",
+    link = prep$family$link
+  )
+  #draws <- first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
+  theta <- runif(ndraws, 0, 1)
+  draws <- ifelse(theta < hu, 0, first_greater(p, target = runif(prep$ndraws, min = 0, max = 1)))
+
+  return(draws)
+}
+
 posterior_predict_zero_inflated_beta <- function(i, prep, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(prep, "zi", i = i)
