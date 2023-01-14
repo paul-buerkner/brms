@@ -1634,6 +1634,11 @@ test_that("Stan code of addition term 'rate' is correct", {
   scode <- make_stancode(y | rate(time) ~ x, data, negbinomial())
   expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape * denom);")
 
+  bform <- bf(y | rate(time) ~ mi(x), shape ~ mi(x), family = negbinomial()) +
+    bf(x | mi() ~ 1, family = gaussian())
+  scode <- make_stancode(bform, data)
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y_y | mu_y + log_denom_y, shape_y .* denom_y);")
+
   scode <- make_stancode(y | rate(time) ~ x, data, brmsfamily("negbinomial2"))
   expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, inv(sigma) * denom);")
 
