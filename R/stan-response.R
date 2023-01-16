@@ -669,7 +669,7 @@ stan_ordinal_lpmf <- function(family, link) {
 stan_hurdle_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
   # TODO: generalize to non-cumulative families?
-  stopfifnot(family == "hurdle_cumulative")
+  stopifnot(family == "hurdle_cumulative")
   inv_link <- stan_inv_link(link)
   th <- function(k) {
     out <- glue("thres[{k}] - mu")
