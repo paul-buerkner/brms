@@ -4,6 +4,8 @@
 
 * Model unstructured autocorrelation matrices via the `unstr` term
 thanks to the help of Sebastian Weber. (#1435)
+* Model ordinal data with an extra category (non-response or similar)
+via the `hurdle_cumulative` family thanks to Stephen Wild. (#1448)
 * Improve user control over model recompilation via argument `recompile`
 in post-processing methods that require a compiled Stan model.
 * Extend control over the `point_estimate` feature in `prepare_predictions`
