@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.18.5
-Date: 2022-12-13
+Version: 2.18.6
+Date: 2023-01-16
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -15,7 +15,8 @@ Authors@R:
       person("Frank", "Weber", role = c("ctb")),
       person("Mattan S.", "Ben-Shachar", role = c("ctb")),
       person("Hayden", "Rabel", role = c("ctb")),
-      person("Simon C.", "Mills", role = c("ctb")))
+      person("Simon C.", "Mills", role = c("ctb")),
+      person("Stephen", "Wild", role = c("ctb")))
 Depends:
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),

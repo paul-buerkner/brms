@@ -151,7 +151,7 @@ test_that("posterior_predict for count and survival models runs without errors",
   prep$dpars$mu <- brms:::inv_cloglog(prep$dpars$eta)
   pred <- brms:::posterior_predict_binomial(i, prep = prep)
   expect_equal(length(pred), ns)
-  
+
   pred <- brms:::posterior_predict_beta_binomial(i, prep = prep)
   expect_equal(length(pred), ns)
 
@@ -267,7 +267,7 @@ test_that("posterior_predict for zero-inflated and hurdle models runs without er
   expect_equal(length(pred), ns)
 })
 
-test_that("posterior_predict for ordinal models runs without erros", {
+test_that("posterior_predict for ordinal models runs without errors", {
   ns <- 50
   nobs <- 8
   nthres <- 3
@@ -275,7 +275,8 @@ test_that("posterior_predict for ordinal models runs without erros", {
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = array(rnorm(ns * nobs), dim = c(ns, nobs)),
-    disc = rexp(ns)
+    disc = rexp(ns),
+    hu = rbeta(ns, 1, 1)
   )
   prep$thres$thres <- array(0, dim = c(ns, nthres))
   prep$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
@@ -299,6 +300,10 @@ test_that("posterior_predict for ordinal models runs without erros", {
 
   prep$family$link <- "probit"
   pred <- sapply(1:nobs, brms:::posterior_predict_acat, prep = prep)
+  expect_equal(dim(pred), c(ns, nobs))
+
+  prep$family$family <- "hurdle_cumulative"
+  pred <- sapply(1:nobs, brms:::posterior_predict_hurdle_cumulative, prep = prep)
   expect_equal(dim(pred), c(ns, nobs))
 })
 

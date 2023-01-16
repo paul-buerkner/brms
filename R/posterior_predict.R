@@ -726,63 +726,77 @@ posterior_predict_cox <- function(i, prep, ...) {
 }
 
 posterior_predict_hurdle_poisson <- function(i, prep, ...) {
-  # theta is the bernoulli hurdle parameter
-  theta <- get_dpar(prep, "hu", i = i)
+  # hu is the bernoulli hurdle parameter
+  hu <- get_dpar(prep, "hu", i = i)
   lambda <- get_dpar(prep, "mu", i = i)
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the hurdle process
-  hu <- runif(ndraws, 0, 1)
+  # compare with hu to incorporate the hurdle process
+  tmp <- runif(ndraws, 0, 1)
   # sample from a truncated poisson distribution
   # by adjusting lambda and adding 1
   t = -log(1 - runif(ndraws) * (1 - exp(-lambda)))
-  ifelse(hu < theta, 0, rpois(ndraws, lambda = lambda - t) + 1)
+  ifelse(tmp < hu, 0, rpois(ndraws, lambda = lambda - t) + 1)
 }
 
 posterior_predict_hurdle_negbinomial <- function(i, prep, ...) {
-  # theta is the bernoulli hurdle parameter
-  theta <- get_dpar(prep, "hu", i = i)
+  hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the hurdle process
-  hu <- runif(ndraws, 0, 1)
+  tmp <- runif(ndraws, 0, 1)
   # sample from an approximate(!) truncated negbinomial distribution
   # by adjusting mu and adding 1
   t = -log(1 - runif(ndraws) * (1 - exp(-mu)))
   shape <- get_dpar(prep, "shape", i = i)
-  ifelse(hu < theta, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
+  ifelse(tmp < hu, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
 }
 
 posterior_predict_hurdle_gamma <- function(i, prep, ...) {
-  # theta is the bernoulli hurdle parameter
-  theta <- get_dpar(prep, "hu", i = i)
+  hu <- get_dpar(prep, "hu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the hurdle process
-  hu <- runif(ndraws, 0, 1)
-  ifelse(hu < theta, 0, rgamma(ndraws, shape = shape, scale = scale))
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp < hu, 0, rgamma(ndraws, shape = shape, scale = scale))
 }
 
 posterior_predict_hurdle_lognormal <- function(i, prep, ...) {
-  # theta is the bernoulli hurdle parameter
-  theta <- get_dpar(prep, "hu", i = i)
+  hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the hurdle process
-  hu <- runif(ndraws, 0, 1)
-  ifelse(hu < theta, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp < hu, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
+}
+
+posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  hu <- get_dpar(prep, "hu", i = i)
+  disc <- get_dpar(prep, "disc", i = i)
+  thres <- subset_thres(prep)
+  nthres <- NCOL(thres)
+  ndraws <- prep$ndraws
+  p <- pordinal(
+    seq_len(nthres + 1L),
+    eta = mu,
+    disc = disc,
+    thres = thres,
+    family = "cumulative",
+    link = prep$family$link
+  )
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(
+    tmp < hu, 0L,
+    first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
+  )
 }
 
 posterior_predict_zero_inflated_beta <- function(i, prep, ...) {
-  # theta is the bernoulli hurdle parameter
-  theta <- get_dpar(prep, "zi", i = i)
+  zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  # compare with theta to incorporate the hurdle process
-  hu <- runif(prep$ndraws, 0, 1)
+  tmp <- runif(prep$ndraws, 0, 1)
   ifelse(
-    hu < theta, 0,
+    tmp < zi, 0,
     rbeta(prep$ndraws, shape1 = mu * phi, shape2 = (1 - mu) * phi)
   )
 }
@@ -792,57 +806,51 @@ posterior_predict_zero_one_inflated_beta <- function(i, prep, ...) {
   coi <- get_dpar(prep, "coi", i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  hu <- runif(prep$ndraws, 0, 1)
+  tmp <- runif(prep$ndraws, 0, 1)
   one_or_zero <- runif(prep$ndraws, 0, 1)
-  ifelse(hu < zoi,
+  ifelse(tmp < zoi,
     ifelse(one_or_zero < coi, 1, 0),
     rbeta(prep$ndraws, shape1 = mu * phi, shape2 = (1 - mu) * phi)
   )
 }
 
 posterior_predict_zero_inflated_poisson <- function(i, prep, ...) {
-  # theta is the bernoulli zero-inflation parameter
-  theta <- get_dpar(prep, "zi", i = i)
+  # zi is the bernoulli zero-inflation parameter
+  zi <- get_dpar(prep, "zi", i = i)
   lambda <- get_dpar(prep, "mu", i = i)
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the zero-inflation process
-  zi <- runif(ndraws, 0, 1)
-  ifelse(zi < theta, 0, rpois(ndraws, lambda = lambda))
+  # compare with zi to incorporate the zero-inflation process
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp < zi, 0L, rpois(ndraws, lambda = lambda))
 }
 
 posterior_predict_zero_inflated_negbinomial <- function(i, prep, ...) {
-  # theta is the bernoulli zero-inflation parameter
-  theta <- get_dpar(prep, "zi", i = i)
+  zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the zero-inflation process
-  zi <- runif(ndraws, 0, 1)
-  ifelse(zi < theta, 0, rnbinom(ndraws, mu = mu, size = shape))
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp < zi, 0L, rnbinom(ndraws, mu = mu, size = shape))
 }
 
 posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
-  # theta is the bernoulli zero-inflation parameter
-  theta <- get_dpar(prep, "zi", i = i)
+  zi <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   prob <- get_dpar(prep, "mu", i = i)
   ndraws <- prep$ndraws
-  # compare with theta to incorporate the zero-inflation process
-  zi <- runif(ndraws, 0, 1)
-  ifelse(zi < theta, 0, rbinom(ndraws, size = trials, prob = prob))
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp < zi, 0L, rbinom(ndraws, size = trials, prob = prob))
 }
 
 posterior_predict_zero_inflated_beta_binomial <- function(i, prep, ...) {
-  # theta is the bernoulli zero-inflation parameter
-  theta <- get_dpar(prep, "zi", i = i)
+  zi <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
   ndraws <- prep$ndraws
   draws <- rbeta_binomial(ndraws, size = trials, mu = mu, phi = phi)
-  # compare with theta to incorporate the zero-inflation process
-  zi <- runif(ndraws, 0, 1)
-  draws[zi < theta] <- 0
+  tmp <- runif(ndraws, 0, 1)
+  draws[tmp < zi] <- 0L
   draws
 }
 

@@ -63,7 +63,11 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     ord_fams <- families[is_ordinal]
     ord_links <- links[is_ordinal]
     for (i in seq_along(ord_fams)) {
-      str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
+      if (has_extra_cat(ord_fams[i])) {
+        str_add(out$fun) <- stan_hurdle_ordinal_lpmf(ord_fams[i], ord_links[i])
+      } else {
+        str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
+      }
     }
   }
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")

@@ -202,14 +202,14 @@ test_that("log_lik for count and survival models works correctly", {
   )
   ll <- brms:::log_lik_binomial(i, prep = prep)
   expect_equal(ll, ll_binom)
-  
+
   ll_beta_binom <- dbeta_binomial(
     x = prep$data$Y[i], size = prep$data$trials[i],
     mu = prep$dpars$mu[, i], phi = prep$dpars$phi, log = TRUE
   )
   ll <- brms:::log_lik_beta_binomial(i, prep = prep)
   expect_equal(ll, ll_beta_binom)
-  
+
   # don't test the actual values as they will be -Inf for this data
   ll <- brms:::log_lik_discrete_weibull(i, prep = prep)
   expect_equal(length(ll), ns)
@@ -347,7 +347,7 @@ test_that("log_lik for zero-inflated and hurdle models runs without erros", {
     shape = rgamma(ns, 4),
     phi = rgamma(ns, 1),
     zi = rbeta(ns, 1, 1),
-  coi = rbeta(ns, 5, 7)
+    coi = rbeta(ns, 5, 7)
   )
   prep$dpars$hu <- prep$dpars$zoi <- prep$dpars$zi
   prep$data <- list(Y = c(resp, rep(0, 4)), trials = trials)
@@ -394,7 +394,8 @@ test_that("log_lik for ordinal models runs without erros", {
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = array(rnorm(ns * nobs), dim = c(ns, nobs)),
-    disc = rexp(ns)
+    disc = rexp(ns),
+    hu = rbeta(ns, 1, 1)
   )
   prep$thres$thres <- array(0, dim = c(ns, nthres))
   prep$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
@@ -415,6 +416,9 @@ test_that("log_lik for ordinal models runs without erros", {
   prep$family$link <- "probit"
   ll <- sapply(1:nobs, brms:::log_lik_acat, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
+
+  ll <- brms:::log_lik_hurdle_cumulative(3, prep = prep)
+  expect_equal(length(ll), ns)
 })
 
 test_that("log_lik for categorical and related models runs without erros", {
