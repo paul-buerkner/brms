@@ -858,13 +858,12 @@ stan_log_lik_hurdle_lognormal <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
-                                 threads = NULL, ...) {
+                                           threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
     # TODO: support 'ordered_probit' as well
     lpdf <- "hurdle_cumulative_ordered_logistic"
-    #p[grepl("^disc", names(p))] <- NULL
   } else {
     lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
   }
@@ -889,8 +888,6 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
   }
   sdist(lpdf, p$mu, p$hu, p$disc, p$thres, p$Jthres)
 }
-
-
 
 stan_log_lik_zero_inflated_poisson <- function(bterms, resp = "", mix = "",
                                                ...) {
@@ -1048,14 +1045,11 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
 # use the ordered_logistic built-in functions
 use_ordered_logistic <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
-  isTRUE(bterms$family$family == "cumulative" |
-           bterms$family$family == "hurdle_cumulative" ) &&
+  isTRUE(bterms$family$family %in% c("cumulative", "hurdle_cumulative")) &&
     isTRUE(bterms$family$link == "logit") &&
     isTRUE(bterms$fdpars$disc$value == 1) &&
     !has_cs(bterms)
 }
-
-
 
 # prepare distribution and arguments for use in Stan
 sdist <- function(dist, ..., shift = "") {

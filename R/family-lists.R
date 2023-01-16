@@ -485,7 +485,7 @@
     links = c(
       "logit", "probit", "probit_approx",
       "cloglog", "cauchit", "softit"
-      ),
+    ),
     dpars = c("mu", "hu", "disc"), type = "int",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "thres", "cat", "index"),

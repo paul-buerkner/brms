@@ -119,7 +119,12 @@ hurdle_gamma(link = "log", link_shape = "log", link_hu = "logit")
 
 hurdle_lognormal(link = "identity", link_sigma = "log", link_hu = "logit")
 
-hurdle_cumulative(link = "logit", link_hu = "logit", link_disc = "log", threshold = "felxible")
+hurdle_cumulative(
+  link = "logit",
+  link_hu = "logit",
+  link_disc = "log",
+  threshold = "flexible"
+)
 
 zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
 
@@ -166,7 +171,7 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
 \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
-\code{hurdle_gamma}, \code{hurdle_lognormal},
+\code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
 \code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.}
@@ -286,10 +291,10 @@ Below, we list common use cases for the different families.
   \item{Families \code{hurdle_poisson}, \code{hurdle_negbinomial},
   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
-  \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta}, and
-  \code{zero_one_inflated_beta} allow to estimate zero-inflated and hurdle
-  models. These models can be very helpful when there are many zeros in the
-  data (or ones in case of one-inflated models)
+  \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta},
+  \code{zero_one_inflated_beta}, and \code{hurdle_cumulative} allow to estimate 
+  zero-inflated and hurdle models. These models can be very helpful when there 
+  are many zeros in the data (or ones in case of one-inflated models)
   that cannot be explained by the primary distribution of the response.}
   }
 
@@ -313,8 +318,8 @@ Below, we list common use cases for the different families.
   \code{cauchit}, \code{identity}, and \code{log}.}
 
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
-  and \code{acat} support \code{logit}, \code{probit},
-  \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
+  \code{acat}, and \code{hurdle_cumulative} support \code{logit}, 
+  \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
 
   \item{Families \code{categorical}, \code{multinomial}, and \code{dirichlet}
   support \code{logit}.}

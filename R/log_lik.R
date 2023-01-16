@@ -725,18 +725,18 @@ log_lik_hurdle_cumulative <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  if (y == 0) {
+  if (y == 0L) {
     out <- dbinom(1, size = 1, prob = hu, log = TRUE)
   } else if (y == 1L) {
-    out <- log_cdf(eta[, 1L], prep$family$link) + 
+    out <- log_cdf(eta[, 1L], prep$family$link) +
       dbinom(0, size = 1, prob = hu, log = TRUE)
   } else if (y == nthres + 1L) {
-    out <- log_ccdf(eta[, y - 1L], prep$family$link) + 
+    out <- log_ccdf(eta[, y - 1L], prep$family$link) +
       dbinom(0, size = 1, prob = hu, log = TRUE)
   } else {
     out <- log_diff_exp(
       log_cdf(eta[, y], prep$family$link),
-      log_cdf(eta[, y - 1L], prep$family$link) 
+      log_cdf(eta[, y - 1L], prep$family$link)
     ) + dbinom(0, size = 1, prob = hu, log = TRUE)
   }
   log_lik_weight(out, i = i, prep = prep)

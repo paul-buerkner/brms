@@ -664,10 +664,12 @@ stan_ordinal_lpmf <- function(family, link) {
   out
 }
 
-# log probability density for hurdle rodinal model
+# log probability density for hurdle ordinal models
 # @return a character string
-stan_hurdle_cumulative_lpmf <- function(family, link) {
+stan_hurdle_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
+  # TODO: generalize to non-cumulative families?
+  stopfifnot(family == "hurdle_cumulative")
   inv_link <- stan_inv_link(link)
   th <- function(k) {
     out <- glue("thres[{k}] - mu")
@@ -686,7 +688,7 @@ stan_hurdle_cumulative_lpmf <- function(family, link) {
     "   */\n",
     "   real {family}_{link}_lpmf(int y, real mu, real hu, real disc, vector thres) {{\n",
     "\n"
-  ) 
+  )
   # define the function body
   if (inv_link == "inv_logit") {
     str_add(out) <- glue(
@@ -694,7 +696,7 @@ stan_hurdle_cumulative_lpmf <- function(family, link) {
       "     if (y == 0) {{\n",
       "       return bernoulli_lpmf(1 | hu);\n",
       "     }} else if (y == 1) {{\n",
-      "       return log_inv_logit({th(1)}) +\n", 
+      "       return log_inv_logit({th(1)}) +\n",
       "                bernoulli_lpmf(0 | hu);\n",
       "     }} else if (y == nthres + 2) {{\n",
       "       return log1m_inv_logit({th('nthres')}) +\n",
@@ -725,23 +727,8 @@ stan_hurdle_cumulative_lpmf <- function(family, link) {
       "     return log(p);\n",
       "   }}\n"
     )
-    
-  } 
-  
-  # Use more efficient ordered_logistic function when disc == 1
-  str_add(out) <- glue(
-        "\n",
-        " // Use more efficient ordered_logistic function with disc == 1\n",
-        "   real hurdle_cumulative_ordered_logistic_lpmf(int y, real mu, real hu, real disc, vector thres) {{\n",
-        "     if (y == 0) {{\n",
-        "       return bernoulli_lpmf(1 | hu);\n",
-        "     }} else {{\n",
-        "       return ordered_logistic_lpmf(y | mu, thres) +\n", 
-        "                bernoulli_lpmf(0 | hu);\n",
-        "     }}\n",
-        "   }}\n"
-      )
-  
+  }
+
   # lpmf function for multiple merged thresholds
   str_add(out) <- glue(
     "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
@@ -760,9 +747,21 @@ stan_hurdle_cumulative_lpmf <- function(family, link) {
     "     return {family}_{link}_lpmf(y | mu, hu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
-  
+
   if (link == "logit") {
-    # use the more efficient 'ordered_logistic' built-in function
+    # use the more efficient ordered_logistic function when disc == 1
+    str_add(out) <- glue(
+      "\n",
+      " // Use more efficient ordered_logistic function with disc == 1\n",
+      "   real hurdle_cumulative_ordered_logistic_lpmf(int y, real mu, real hu, real disc, vector thres) {{\n",
+      "     if (y == 0) {{\n",
+      "       return bernoulli_lpmf(1 | hu);\n",
+      "     }} else {{\n",
+      "       return ordered_logistic_lpmf(y | mu, thres) +\n",
+      "                bernoulli_lpmf(0 | hu);\n",
+      "     }}\n",
+      "   }}\n"
+    )
     str_add(out) <- glue(
       "  /* use ordered-logistic log-PDF for a single response and merged thresholds\n",
       "   * Args:\n",

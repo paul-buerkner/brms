@@ -1011,51 +1011,50 @@ test_that("grouped ordinal thresholds appear in the Stan code", {
 
 
 test_that("Stan code of hurdle cumulative model is correct", {
-  dat <- data.frame(y = rep(0:4, 2), 
+  dat <- data.frame(y = rep(0:4, 2),
                     x1 = rnorm(10),
-                    x2 = rnorm(10), 
+                    x2 = rnorm(10),
                     g = factor(rep(1:2, 5)))
-  
+
   scode <- make_stancode(
     y ~ x1, dat, family = hurdle_cumulative(),
     prior = prior(normal(0, 2), Intercept, coef = 2)
   )
   expect_match2(scode,
-                "target += hurdle_cumulative_ordered_logistic_lpmf(Y[n] | mu[n], hu, disc, Intercept);"
+    "target += hurdle_cumulative_ordered_logistic_lpmf(Y[n] | mu[n], hu, disc, Intercept);"
   )
 
   scode <- make_stancode(
-    bf(y ~ x1, hu ~ x2), dat, 
+    bf(y ~ x1, hu ~ x2), dat,
     hurdle_cumulative("probit", threshold = "equidistant"),
     prior = prior(normal(0, 2), Intercept)
   )
-  
+
   expect_match2(scode, "real hurdle_cumulative_probit_lpmf(int y")
   expect_match2(scode, "p = Phi(disc * (thres[1] - mu)) * (1 - hu);")
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
-  
+
 
   # sum-to-zero thresholds
   scode <- make_stancode(
-    bf(y ~ x1, hu ~ x2, disc ~ g), dat, 
-    hurdle_cumulative("cauchit", threshold = "sum_to_zero"),
+    bf(y ~ x1, hu ~ x2, disc ~ g), dat,
+    hurdle_cumulative("cloglog", threshold = "sum_to_zero"),
     prior = prior(normal(0, 2), Intercept)
   )
   expect_match2(scode, "Intercept_stz = Intercept - mean(Intercept);")
-  expect_match2(scode, "hurdle_cumulative_cauchit_lpmf(Y[n] | mu[n], hu[n], disc[n], Intercept_stz);")
+  expect_match2(scode, "hurdle_cumulative_cloglog_lpmf(Y[n] | mu[n], hu[n], disc[n], Intercept_stz);")
   expect_match2(scode, "vector[nthres] b_Intercept = Intercept_stz;")
-  
-  
+
+
   # non-linear ordinal models
   scode <- make_stancode(
-    bf(y ~ eta, eta ~ x1, nl = TRUE), 
-    dat, 
+    bf(y ~ eta, eta ~ x1, nl = TRUE),
+    dat,
     family = hurdle_cumulative(),
     prior = prior(normal(0, 2), nlpar = eta)
   )
-  
   expect_match2(scode,
-                "target += hurdle_cumulative_ordered_logistic_lpmf(Y[n] | mu[n], hu, disc, Intercept);"
+    "target += hurdle_cumulative_ordered_logistic_lpmf(Y[n] | mu[n], hu, disc, Intercept);"
   )
 })
 
