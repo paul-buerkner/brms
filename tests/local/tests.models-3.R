@@ -142,6 +142,25 @@ test_that("Argument `incl_thres` works correctly for non-grouped thresholds", {
   expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
 })
 
+test_that("hurdle_cumulative family works correctly", {
+  inhaler2 <- inhaler
+  inhaler2$rating[1:10] <- 0
+  fit <- brm(
+    bf(rating ~ period + carry + treat, hu ~ treat),
+    data = inhaler2, family = hurdle_cumulative(),
+    prior = prior(normal(0,5)),
+    chains = 2, refresh = 0
+  )
+  print(fit)
+  expect_range(waic(fit)$estimates[3, 1], 950, 1050)
+  ncat <- length(unique(inhaler$rating))
+  expect_equal(dim(predict(fit)), c(nobs(fit), ncat))
+  expect_ggplot(plot(
+    SW(conditional_effects(fit)), ask = FALSE,
+    points = TRUE, point_args = list(width = 0.3)
+  )[[3]])
+})
+
 test_that("Mixture models work correctly", {
   set.seed(12346)
   dat <- data.frame(
