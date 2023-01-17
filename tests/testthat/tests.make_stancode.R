@@ -316,7 +316,7 @@ test_that("link functions appear in the Stan code", {
                               family = skew_normal("log")),
                "mu_y = exp(mu_y);")
   expect_match2(make_stancode(y ~ x, dat, family = von_mises(tan_half)),
-               "mu = inv_tan_half(mu);")
+               "mu = inv_tan_half_vector(mu);")
   expect_match2(make_stancode(y ~ x, dat, family = weibull()),
                 "mu = exp(mu);")
   expect_match2(make_stancode(y ~ x, dat, family = poisson("sqrt")),
@@ -328,6 +328,11 @@ test_that("link functions appear in the Stan code", {
   expect_match2(scode, "mu = inv_logit(mu);")
   scode <- make_stancode(y ~ x, dat, family = beta_binomial('cloglog'))
   expect_match2(scode, "mu = inv_cloglog(mu);")
+  scode <- make_stancode(y ~ x, dat, family = beta_binomial('cauchit'))
+  expect_match2(scode, "mu = inv_cauchit_vector(mu);")
+
+  scode <- make_stancode(y ~ x, dat, family = cumulative('cauchit'))
+  expect_match2(scode, "p = inv_cauchit(disc * (thres[1] - mu));")
 })
 
 test_that("Stan GLM primitives are applied correctly", {
@@ -444,27 +449,27 @@ test_that("self-defined functions appear in the Stan code", {
   # cauchit link
   scode <- make_stancode(rating ~ treat, data = inhaler,
                          family = bernoulli("cauchit"))
-  expect_match2(scode, "vector inv_cauchit(vector y)")
+  expect_match2(scode, "real inv_cauchit(real y)")
 
   # softplus link
   scode <- make_stancode(rating ~ treat, data = inhaler,
                          family = brmsfamily("poisson", "softplus"))
-  expect_match2(scode, "vector log_expm1(vector x)")
+  expect_match2(scode, "vector log_expm1_vector(vector x)")
 
   # squareplus link
   scode <- make_stancode(rating ~ treat, data = inhaler,
                          family = brmsfamily("poisson", "squareplus"))
-  expect_match2(scode, "vector squareplus(vector x)")
+  expect_match2(scode, "real squareplus(real x)")
 
   # tan_half link
   expect_match2(make_stancode(rating ~ treat, data = inhaler,
                               family = von_mises("tan_half")),
-               "vector inv_tan_half(vector y)")
+               "vector inv_tan_half_vector(vector y)")
 
   # logm1 link
   expect_match2(make_stancode(rating ~ treat, data = inhaler,
                               family = frechet()),
-                "vector expp1(vector y)")
+                "real expp1(real y)")
 
   # inverse gaussian models
   scode <- make_stancode(time | cens(censored) ~ age, data = kidney,
@@ -1125,7 +1130,7 @@ test_that("Stan code for non-linear models is correct", {
     data = data, prior = prior
   )
   expect_match2(scode,
-    "mu[n] = nlp_a[n] - exp(nlp_b[n] ^ C_1[n]) * (C_1[n] <= nlp_a[n]) * C_2[n];"
+    "mu[n] = (nlp_a[n] - exp(nlp_b[n] ^ C_1[n]) * (C_1[n] <= nlp_a[n]) * C_2[n]);"
   )
   expect_match2(scode, "vector[N] C_1;")
   expect_match2(scode, "int C_2[N];")
@@ -1134,14 +1139,14 @@ test_that("Stan code for non-linear models is correct", {
   scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist,
                             nl = TRUE, loop = FALSE),
                          data = data, prior = prior)
-  expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1);")
+  expect_match2(scode, "mu = (nlp_a - exp(nlp_b + C_1));")
 
   # check if that also works with threading
   scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist,
                             nl = TRUE, loop = FALSE),
                          data = data, prior = prior,
                          threads = threading(2), parse = FALSE)
-  expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1[start:end]);")
+  expect_match2(scode, "mu = (nlp_a - exp(nlp_b + C_1[start:end]));")
 
 
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
@@ -1186,9 +1191,9 @@ test_that("Stan code for nested non-linear parameters is correct", {
   bprior <- prior(normal(0, 1), nlpar = "a") +
     prior(normal(0, 1), nlpar = "b")
   scode <- make_stancode(bform, dat, prior = bprior)
-  expect_match2(scode, "nlp_lb[n] = inv_logit(nlp_a[n] / C_lb_1[n]);")
+  expect_match2(scode, "nlp_lb[n] = (inv_logit(nlp_a[n] / C_lb_1[n]));")
   expect_match2(scode,
-    "mu[n] = nlp_lb[n] + (1 - nlp_lb[n]) * inv_logit(nlp_b[n] * C_1[n]);"
+    "mu[n] = (nlp_lb[n] + (1 - nlp_lb[n]) * inv_logit(nlp_b[n] * C_1[n]));"
   )
 })
 
@@ -1776,8 +1781,8 @@ test_that("Stan code of mixture model is correct", {
   bprior <- prior(normal(0, 1), nlpar = "eta") +
     prior(normal(0, 1), nlpar = "a")
   scode <- make_stancode(bform, data = data, prior = bprior)
-  expect_match2(scode, "mu1[n] = nlp_eta[n] ^ 2;")
-  expect_match2(scode, "mu2[n] = log(nlp_eta[n]) + nlp_a[n];")
+  expect_match2(scode, "mu1[n] = (nlp_eta[n] ^ 2);")
+  expect_match2(scode, "mu2[n] = (log(nlp_eta[n]) + nlp_a[n]);")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

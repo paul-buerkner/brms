@@ -128,6 +128,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$dpars[[dp]]$respform <- y$respform
       y$dpars[[dp]]$adforms <- y$adforms
     }
+    y$dpars[[dp]]$transform <- stan_eta_transform(y$dpars[[dp]]$family, y)
     check_cs(y$dpars[[dp]])
   }
 

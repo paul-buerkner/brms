@@ -493,7 +493,7 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
 # @return a character string
 stan_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
-  inv_link <- stan_inv_link(link)
+  inv_link <- stan_inv_link(link, vectorize = FALSE)
   th <- function(k) {
     # helper function generating stan code inside inv_link(.)
     if (family %in% c("cumulative", "sratio")) {
@@ -670,7 +670,7 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
   # TODO: generalize to non-cumulative families?
   stopifnot(family == "hurdle_cumulative")
-  inv_link <- stan_inv_link(link)
+  inv_link <- stan_inv_link(link, vectorize = FALSE)
   th <- function(k) {
     out <- glue("thres[{k}] - mu")
     glue("disc * ({out})")

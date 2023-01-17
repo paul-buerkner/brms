@@ -55,9 +55,7 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
     dp_comment <- stan_dpar_comments(dp, family = x$family)
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       # distributional parameter is predicted
-      inv_link <- stan_eta_inv_link(dp, bterms = x, resp = resp)
-      dp_args <- list(dp_terms, inv_link = inv_link)
-      str_add_list(out) <- do_call(stan_predictor, c(dp_args, args))
+      str_add_list(out) <- do_call(stan_predictor, c(list(dp_terms), args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       # distributional parameter is fixed to constant
       if (is_mix_proportion(dp, family = x$family)) {
@@ -1668,9 +1666,7 @@ stan_offset <- function(bterms, threads, ...) {
 
 # Stan code for non-linear predictor terms
 # @param nlpars names of the non-linear parameters
-# @param inv_link character vector of length 2 defining the link to be applied
-stan_nl <- function(bterms, data, nlpars, threads, inv_link = rep("", 2), ...) {
-  stopifnot(length(inv_link) == 2L)
+stan_nl <- function(bterms, data, nlpars, threads, ...) {
   out <- list()
   resp <- usc(bterms$resp)
   par <- combine_prefix(bterms, keep_mu = TRUE, nlp = TRUE)
@@ -1724,17 +1720,25 @@ stan_nl <- function(bterms, data, nlpars, threads, inv_link = rep("", 2), ...) {
     "  vector[N{resp}] {par};\n"
   )
   if (bterms$loop) {
+    inv_link <- stan_inv_link(
+      bterms$family$link, vectorize = FALSE,
+      transform = bterms$transform
+    )
     str_add(out$model_comp_dpar_link) <- glue(
       "  for (n in 1:N{resp}) {{\n",
       stan_nn_def(threads),
       "    // compute non-linear predictor values\n",
-      "    {par}[n] = {inv_link[1]}{eta}{inv_link[2]};\n",
+      "    {par}[n] = {inv_link}({eta});\n",
       "  }}\n"
     )
   } else {
+    inv_link <- stan_inv_link(
+      bterms$family$link, vectorize = TRUE,
+      transform = bterms$transform
+    )
     str_add(out$model_comp_dpar_link) <- glue(
       "  // compute non-linear predictor values\n",
-      "  {par} = {inv_link[1]}{eta}{inv_link[2]};\n"
+      "  {par} = {inv_link}({eta});\n"
     )
   }
   out
@@ -1856,12 +1860,10 @@ stan_Xme <- function(meef, prior, threads, normalize) {
 # @param bterms btl object
 # @param ranef output of tidy_ranef
 # @param primitive use Stan's GLM likelihood primitives?
-# @param inv_link character vector of length 2 defining the link to be applied
 # @param ... currently unused
 # @return list of character strings containing Stan code
-stan_eta_combine <- function(out, bterms, ranef, threads, primitive,
-                             inv_link = c("", ""), ...) {
-  stopifnot(is.list(out), is.btl(bterms), length(inv_link) == 2L)
+stan_eta_combine <- function(out, bterms, ranef, threads, primitive, ...) {
+  stopifnot(is.list(out), is.btl(bterms))
   if (primitive && !has_special_terms(bterms)) {
     # only overall effects and perhaps an intercept are present
     # which will be evaluated directly in the GLM primitive likelihood
@@ -1893,9 +1895,13 @@ stan_eta_combine <- function(out, bterms, ranef, threads, primitive,
   }
   out$loopeta <- NULL
   # possibly transform eta before it is passed to the likelihood
-  if (sum(nzchar(inv_link))) {
+  inv_link <- stan_inv_link(
+    bterms$family$link, vectorize = TRUE,
+    transform = bterms$transform
+  )
+  if (nzchar(inv_link)) {
     str_add(out$model_comp_dpar_link) <- glue(
-      "  {eta} = {inv_link[1]}{eta}{inv_link[2]};\n"
+      "  {eta} = {inv_link}({eta});\n"
     )
   }
   out
@@ -1986,27 +1992,11 @@ stan_eta_rsp <- function(r) {
   out
 }
 
-# does eta need to be transformed manually using the link functions
+# does eta need to be transformed manually using the inv_link function
 stan_eta_transform <- function(family, bterms) {
   no_transform <- family$link == "identity" ||
     has_joint_link(family) && !is.customfamily(family)
   !no_transform && !stan_has_built_in_fun(family, bterms)
-}
-
-# correctly apply inverse link to eta
-# @param dpar name of the parameter for which to define the link
-# @param bterms object of class 'brmsterms'
-# @param resp name of the response variable
-# @return a single character string
-stan_eta_inv_link <- function(dpar, bterms, resp = "") {
-  stopifnot(is.brmsterms(bterms))
-  out <- rep("", 2)
-  family <- bterms$dpars[[dpar]]$family
-  if (stan_eta_transform(family, bterms)) {
-    inv_link <- stan_inv_link(family$link)
-    out <- c(paste0(inv_link, "("), ")")
-  }
-  out
 }
 
 # indicate if the population-level design matrix should be centered

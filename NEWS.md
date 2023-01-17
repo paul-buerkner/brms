@@ -14,6 +14,8 @@ via the new argument `ndraws_point_estimate`.
 ### Bug Fixes
 
 * Fix a Stan syntax error in threaded models with `lasso` priors. (#1427)
+* Fix Stan compilation issues for some of the more special 
+link functions such as `cauchit` or `softplus`.
 
 
 # brms 2.18.0
