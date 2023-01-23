@@ -10,11 +10,23 @@
 #' @param ... Arguments passed to \code{\link[mgcv:s]{mgcv::s}} or
 #'  \code{\link[mgcv:t2]{mgcv::t2}}.
 #'
-#' @details The function defined here are just simple wrappers
-#'  of the respective functions of the \pkg{mgcv} package.
+#' @details The function defined here are just simple wrappers of the respective
+#'   functions of the \pkg{mgcv} package. When using them, please cite the
+#'   appropriate references obtained via \code{citation("mgcv")}.
+#'
+#'  \pkg{brms} uses the "random effects" parameterization of smoothing splines
+#'  as explained in \code{\link[mgcv:gamm]{mgcv::gamm}}. A nice tutorial on this
+#'  topic can be found in Pedersen et al. (2019). The answers provided in this
+#'  \href{https://discourse.mc-stan.org/t/better-priors-non-flat-for-gams-brms/23012/4}{Stan discourse post}
+#'  may also be helpful.
 #'
 #' @seealso \code{\link{brmsformula}},
 #'   \code{\link[mgcv:s]{mgcv::s}}, \code{\link[mgcv:t2]{mgcv::t2}}
+#'
+#' @references
+#' Pedersen, E. J., Miller, D. L., Simpson, G. L., & Ross, N. (2019).
+#' Hierarchical generalized additive models in ecology: an introduction with
+#' mgcv. PeerJ.
 #'
 #' @examples
 #' \dontrun{
