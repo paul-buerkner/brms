@@ -721,8 +721,8 @@ deparse_no_string <- function(x) {
 
 # combine deparse lines into one string
 # since R 4.0 we also have base::deparse1 for this purpose
-deparse0 <- function(x, max_char = NULL) {
-  out <- collapse(deparse(x))
+deparse0 <- function(x, max_char = NULL, ...) {
+  out <- collapse(deparse(x, ...))
   if (isTRUE(max_char > 0)) {
     out <- substr(out, 1L, max_char)
   }

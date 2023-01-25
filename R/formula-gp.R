@@ -158,7 +158,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     c <- NA
   }
   scale <- as_one_logical(scale)
-  term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
+  term <- ulapply(vars, deparse0, backtick = TRUE, width.cutoff = 500L)
   out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, c)
   structure(out, class = "gp_term")
 }
