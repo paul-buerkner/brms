@@ -728,7 +728,7 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
   other <- as_one_logical(other)
   dots <- list(x, ...)
   names <- substitute(list(x, ...), env = parent.frame())[-1]
-  names <- ulapply(names, deparse_combine)
+  names <- ulapply(names, deparse0)
   if (length(names)) {
     if (!length(names(dots))) {
       names(dots) <- names

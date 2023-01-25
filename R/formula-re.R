@@ -48,7 +48,7 @@
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA,
                cov = NULL, dist = "gaussian") {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
     stop2("Grouping structure 'gr' expects only a single grouping term")
@@ -58,7 +58,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
-    by <- deparse_combine(by)
+    by <- deparse0(by)
   } else {
     by <- ""
   }
@@ -126,7 +126,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' @export
 mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
                id = NA, cov = NULL, dist = "gaussian") {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
     stop2("Multi-membership terms require at least two grouping variables.")
@@ -138,7 +138,7 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
-    by <- deparse_combine(by)
+    by <- deparse0(by)
   } else {
     by <- ""
   }
@@ -337,7 +337,7 @@ split_re_terms <- function(re_terms) {
       }
     }
     re_parts$mid[i] <- "|"
-    re_parts$rhs[i] <- deparse_combine(rhs_call)
+    re_parts$rhs[i] <- deparse0(rhs_call)
     new_re_terms[[i]] <- paste0(new_lhs, re_parts$mid[i], re_parts$rhs[i])
     new_re_terms[[i]] <- new_re_terms[[i]][order(type[[i]])]
     type[[i]] <- sort(type[[i]])

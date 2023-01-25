@@ -475,7 +475,7 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x))
+    model_name <- deparse0(substitute(x))
   }
   criterion <- unique(as.character(criterion))
   if (any(criterion == "R2")) {
@@ -751,7 +751,7 @@ add_loo <- function(x, model_name = NULL, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x))
+    model_name <- deparse0(substitute(x))
   }
   add_criterion(x, criterion = "loo", model_name = model_name, ...)
 }
@@ -763,7 +763,7 @@ add_waic <- function(x, model_name = NULL, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x))
+    model_name <- deparse0(substitute(x))
   }
   add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
@@ -794,7 +794,7 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x))
+    model_name <- deparse0(substitute(x))
   }
   add_criterion(x, criterion = ic, model_name = model_name, ...)
 }

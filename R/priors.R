@@ -2000,7 +2000,7 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
                       scale_slab = 2, df_slab = 4, par_ratio = NULL,
                       autoscale = TRUE) {
-  out <- deparse(match.call(), width.cutoff = 500L)
+  out <- deparse0(match.call())
   df <- as.numeric(df)
   df_global <- as.numeric(df_global)
   df_slab <- as.numeric(df_slab)
@@ -2070,7 +2070,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #'
 #' @export
 R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
-  out <- deparse(match.call(), width.cutoff = 500L)
+  out <- deparse0(match.call())
   mean_R2 <- as_one_numeric(mean_R2)
   prec_R2 <- as_one_numeric(prec_R2)
   cons_D2 <- as.numeric(cons_D2)
@@ -2134,7 +2134,7 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
 #'
 #' @export
 lasso <- function(df = 1, scale = 1) {
-  out <- deparse(match.call(), width.cutoff = 500L)
+  out <- deparse0(match.call())
   df <- as.numeric(df)
   scale <- as.numeric(scale)
   if (!isTRUE(df > 0)) {

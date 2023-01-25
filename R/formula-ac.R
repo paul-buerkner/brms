@@ -72,9 +72,9 @@ NULL
 #'
 #' @export
 arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
-  label <- deparse(match.call())
-  time <- deparse(substitute(time))
-  gr <- deparse(substitute(gr))
+  label <- deparse0(match.call())
+  time <- deparse0(substitute(time))
+  gr <- deparse0(substitute(gr))
   .arma(time = time, gr = gr, p = p, q = q, cov = cov, label = label)
 }
 
@@ -102,9 +102,9 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
 #'
 #' @export
 ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
-  label <- deparse(match.call())
-  time <- deparse(substitute(time))
-  gr <- deparse(substitute(gr))
+  label <- deparse0(match.call())
+  time <- deparse0(substitute(time))
+  gr <- deparse0(substitute(gr))
   .arma(time = time, gr = gr, p = p, q = 0, cov = cov, label = label)
 }
 
@@ -132,9 +132,9 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
 #'
 #' @export
 ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
-  label <- deparse(match.call())
-  time <- deparse(substitute(time))
-  gr <- deparse(substitute(gr))
+  label <- deparse0(match.call())
+  time <- deparse0(substitute(time))
+  gr <- deparse0(substitute(gr))
   .arma(time = time, gr = gr, p = 0, q = q, cov = cov, label = label)
 }
 
@@ -189,10 +189,10 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
 #'
 #' @export
 cosy <- function(time = NA, gr = NA) {
-  label <- deparse(match.call())
-  time <- deparse(substitute(time))
+  label <- deparse0(match.call())
+  time <- deparse0(substitute(time))
   time <- as_one_variable(time)
-  gr <- deparse(substitute(gr))
+  gr <- deparse0(substitute(gr))
   stopif_illegal_group(gr)
   out <- nlist(time, gr, label)
   class(out) <- c("cosy_term", "ac_term")
@@ -222,10 +222,10 @@ cosy <- function(time = NA, gr = NA) {
 #'
 #' @export
 unstr <- function(time, gr) {
-  label <- deparse(match.call())
-  time <- deparse(substitute(time))
+  label <- deparse0(match.call())
+  time <- deparse0(substitute(time))
   time <- as_one_variable(time)
-  gr <- deparse(substitute(gr))
+  gr <- deparse0(substitute(gr))
   stopif_illegal_group(gr)
   out <- nlist(time, gr, label)
   class(out) <- c("unstr_term", "ac_term")
@@ -279,11 +279,11 @@ unstr <- function(time, gr) {
 #'
 #' @export
 sar <- function(M, type = "lag") {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   if (missing(M)) {
     stop2("Argument 'M' is missing in sar().")
   }
-  M <- deparse(substitute(M))
+  M <- deparse0(substitute(M))
   M <- as_one_variable(M)
   options <- c("lag", "error")
   type <- match.arg(type, options)
@@ -356,13 +356,13 @@ sar <- function(M, type = "lag") {
 #'
 #' @export
 car <- function(M, gr = NA, type = "escar") {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   if (missing(M)) {
     stop2("Argument 'M' is missing in car().")
   }
-  M <- deparse(substitute(M))
+  M <- deparse0(substitute(M))
   M <- as_one_variable(M)
-  gr <- deparse(substitute(gr))
+  gr <- deparse0(substitute(gr))
   stopif_illegal_group(gr)
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
@@ -399,11 +399,11 @@ car <- function(M, gr = NA, type = "escar") {
 #'
 #' @export
 fcor <- function(M) {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   if (missing(M)) {
     stop2("Argument 'M' is missing in fcor().")
   }
-  M <- deparse(substitute(M))
+  M <- deparse0(substitute(M))
   M <- as_one_variable(M)
   out <- nlist(M, label)
   class(out) <- c("fcor_term", "ac_term")

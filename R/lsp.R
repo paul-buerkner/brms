@@ -7,7 +7,7 @@
 # @return a character vector of object names
 lsp <- function(package, what = "all", pattern = ".*") {
   if (!is.character(substitute(package)))
-    package <- deparse(substitute(package))
+    package <- deparse0(substitute(package))
   ns <- asNamespace(package)
 
   ## base package does not have NAMESPACE

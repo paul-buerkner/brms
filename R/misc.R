@@ -269,7 +269,7 @@ as_one_logical <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.logical(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single logical value.")
   }
   x
@@ -280,7 +280,7 @@ as_one_integer <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- SW(as.integer(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single integer value.")
   }
   x
@@ -291,7 +291,7 @@ as_one_numeric <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- SW(as.numeric(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single numeric value.")
   }
   x
@@ -302,7 +302,7 @@ as_one_character <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.character(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single character value.")
   }
   x
@@ -697,7 +697,7 @@ empty_data_frame <- function() {
 # @param value another named list-like object
 # @param dont_replace names of elements that cannot be replaced
 'replace_args<-' <- function(x, dont_replace = NULL, value) {
-  value_name <- deparse_combine(substitute(value), max_char = 100L)
+  value_name <- deparse0(substitute(value), max_char = 100L)
   value <- as.list(value)
   if (length(value) && is.null(names(value))) {
     stop2("Argument '", value_name, "' must be named.")
@@ -711,16 +711,17 @@ empty_data_frame <- function() {
   x
 }
 
-# deparse 'x' if it is no string
+# deparse0 'x' if it is no string
 deparse_no_string <- function(x) {
   if (!is.character(x)) {
-    x <- deparse_combine(x)
+    x <- deparse0(x)
   }
   x
 }
 
 # combine deparse lines into one string
-deparse_combine <- function(x, max_char = NULL) {
+# since R 4.0 we also have base::deparse1 for this purpose
+deparse0 <- function(x, max_char = NULL) {
   out <- collapse(deparse(x))
   if (isTRUE(max_char > 0)) {
     out <- substr(out, 1L, max_char)
@@ -859,7 +860,7 @@ get_matches_expr <- function(pattern, expr, ...) {
   for (i in seq_along(expr)) {
     sexpr <- try(expr[[i]], silent = TRUE)
     if (!is(sexpr, "try-error")) {
-      sexpr_char <- deparse_combine(sexpr)
+      sexpr_char <- deparse0(sexpr)
       out <- c(out, get_matches(pattern, sexpr_char, ...))
     }
     if (is.call(sexpr) || is.expression(sexpr)) {

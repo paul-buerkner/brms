@@ -231,7 +231,7 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
   }
   out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
   # required to find variables used solely in the response part
-  lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
+  lhs_resp <- function(x) deparse0(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
   out$respform <- formula(paste0("mvbind(", out$respform, ") ~ 1"))
   out$responses <- ulapply(out$terms, "[[", "resp")
@@ -511,7 +511,7 @@ terms_offset <- function(formula) {
     return(NULL)
   }
   vars <- attr(formula, "variables")
-  out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
+  out <- ulapply(pos, function(i) deparse0(vars[[i + 1]]))
   out <- str2formula(out)
   attr(out, "allvars") <- str2formula(all_vars(out))
   out

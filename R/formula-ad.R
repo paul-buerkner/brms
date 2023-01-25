@@ -106,7 +106,7 @@ NULL
 #' @rdname addition-terms
 #' @export
 resp_se <- function(x, sigma = FALSE) {
-  se <- deparse(substitute(x))
+  se <- deparse0(substitute(x))
   sigma <- as_one_logical(sigma)
   class_resp_special(
     "se", call = match.call(),
@@ -117,7 +117,7 @@ resp_se <- function(x, sigma = FALSE) {
 #' @rdname addition-terms
 #' @export
 resp_weights <- function(x, scale = FALSE) {
-  weights <- deparse(substitute(x))
+  weights <- deparse0(substitute(x))
   scale <- as_one_logical(scale)
   class_resp_special(
     "weights", call = match.call(),
@@ -128,15 +128,15 @@ resp_weights <- function(x, scale = FALSE) {
 #' @rdname addition-terms
 #' @export
 resp_trials <- function(x) {
-  trials <- deparse(substitute(x))
+  trials <- deparse0(substitute(x))
   class_resp_special("trials", call = match.call(), vars = nlist(trials))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_thres <- function(x, gr = NA) {
-  thres <- deparse(substitute(x))
-  gr <- deparse(substitute(gr))
+  thres <- deparse0(substitute(x))
+  gr <- deparse0(substitute(gr))
   class_resp_special("thres", call = match.call(), vars = nlist(thres, gr))
 }
 
@@ -145,7 +145,7 @@ resp_thres <- function(x, gr = NA) {
 resp_cat <- function(x) {
   # deprecated as of brms 2.10.5
   # number of thresholds = number of response categories - 1
-  thres <- deparse(substitute(x))
+  thres <- deparse0(substitute(x))
   str_add(thres) <- " - 1"
   class_resp_special(
     "thres", call = match.call(),
@@ -156,51 +156,51 @@ resp_cat <- function(x) {
 #' @rdname addition-terms
 #' @export
 resp_dec <- function(x) {
-  dec <- deparse(substitute(x))
+  dec <- deparse0(substitute(x))
   class_resp_special("dec", call = match.call(), vars = nlist(dec))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_cens <- function(x, y2 = NA) {
-  cens <- deparse(substitute(x))
-  y2 <- deparse(substitute(y2))
+  cens <- deparse0(substitute(x))
+  y2 <- deparse0(substitute(y2))
   class_resp_special("cens", call = match.call(), vars = nlist(cens, y2))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_trunc <- function(lb = -Inf, ub = Inf) {
-  lb <- deparse(substitute(lb))
-  ub <- deparse(substitute(ub))
+  lb <- deparse0(substitute(lb))
+  ub <- deparse0(substitute(ub))
   class_resp_special("trunc", call = match.call(), vars = nlist(lb, ub))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_mi <- function(sdy = NA) {
-  sdy <- deparse(substitute(sdy))
+  sdy <- deparse0(substitute(sdy))
   class_resp_special("mi", call = match.call(), vars = nlist(sdy))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_index <- function(x) {
-  index <- deparse(substitute(x))
+  index <- deparse0(substitute(x))
   class_resp_special("index", call = match.call(), vars = nlist(index))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_rate <- function(denom) {
-  denom <- deparse(substitute(denom))
+  denom <- deparse0(substitute(denom))
   class_resp_special("rate", call = match.call(), vars = nlist(denom))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_subset <- function(x) {
-  subset <- deparse(substitute(x))
+  subset <- deparse0(substitute(x))
   class_resp_special("subset", call = match.call(), vars = nlist(subset))
 }
 
@@ -226,7 +226,7 @@ resp_vint <- function(...) {
 class_resp_special <- function(type, call, vars = list(), flags = list()) {
   type <- as_one_character(type)
   stopifnot(is.call(call), is.list(vars), is.list(flags))
-  label <- deparse(call)
+  label <- deparse0(call)
   out <- nlist(type, call, label, vars, flags)
   class(out) <- c("resp_special")
   out

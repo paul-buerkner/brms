@@ -163,8 +163,8 @@ bridge_sampler.brmsfit <- function(samples, recompile = FALSE, ...) {
 #' @export bayes_factor
 #' @export
 bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
-  model_name_1 <- deparse_combine(substitute(x1))
-  model_name_2 <- deparse_combine(substitute(x2))
+  model_name_1 <- deparse0(substitute(x1))
+  model_name_2 <- deparse0(substitute(x2))
   match_response(list(x1, x2))
   bridge1 <- bridge_sampler(x1, ...)
   bridge2 <- bridge_sampler(x2, ...)

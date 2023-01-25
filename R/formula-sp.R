@@ -47,16 +47,16 @@
 #' @export
 me <- function(x, sdx, gr = NULL) {
   # use 'term' for consistency with other special terms
-  term <- deparse(substitute(x))
-  sdx <- deparse(substitute(sdx))
+  term <- deparse0(substitute(x))
+  sdx <- deparse0(substitute(sdx))
   gr <- substitute(gr)
   if (!is.null(gr)) {
-    gr <- deparse_combine(gr)
+    gr <- deparse0(gr)
     stopif_illegal_group(gr)
   } else {
     gr <- ""
   }
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   out <- nlist(term, sdx, gr, label)
   class(out) <- c("me_term", "sp_term")
   out
@@ -130,19 +130,19 @@ me <- function(x, sdx, gr = NULL) {
 #' @export
 mi <- function(x, idx = NA) {
   # use 'term' for consistency with other special terms
-  term <- deparse(substitute(x))
+  term <- deparse0(substitute(x))
   term_vars <- all_vars(term)
   if (!is_equal(term, term_vars)) {
     stop2("'mi' only accepts single untransformed variables.")
   }
-  idx <- deparse(substitute(idx))
+  idx <- deparse0(substitute(idx))
   if (idx != "NA") {
     idx_vars <- all_vars(idx)
     if (!is_equal(idx, idx_vars)) {
       stop2("'mi' only accepts single untransformed variables.")
     }
   }
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   out <- nlist(term, idx, label)
   class(out) <- c("mi_term", "sp_term")
   out
@@ -203,9 +203,9 @@ mi <- function(x, idx = NA) {
 #' @export
 mo <- function(x, id = NA) {
   # use 'term' for consistency with other special terms
-  term <- deparse(substitute(x))
+  term <- deparse0(substitute(x))
   id <- as_one_character(id, allow_na = TRUE)
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   out <- nlist(term, id, label)
   class(out) <- c("mo_term", "sp_term")
   out

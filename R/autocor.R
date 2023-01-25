@@ -225,7 +225,7 @@ cor_cosy <- function(formula = ~1) {
 #' @export
 cor_sar <- function(W, type = c("lag", "error")) {
   type <- match.arg(type)
-  W_name <- deparse(substitute(W))
+  W_name <- deparse0(substitute(W))
   W <- validate_sar_matrix(W)
   structure(
     nlist(W, W_name, type),
@@ -237,7 +237,7 @@ cor_sar <- function(W, type = c("lag", "error")) {
 #' @export
 cor_lagsar <- function(W) {
   out <- cor_sar(W, type = "lag")
-  out$W_name <- deparse(substitute(W))
+  out$W_name <- deparse0(substitute(W))
   out
 }
 
@@ -245,7 +245,7 @@ cor_lagsar <- function(W) {
 #' @export
 cor_errorsar <- function(W) {
   out <- cor_sar(W, type = "error")
-  out$W_name <- deparse(substitute(W))
+  out$W_name <- deparse0(substitute(W))
   out
 }
 
@@ -312,7 +312,7 @@ cor_errorsar <- function(W) {
 cor_car <- function(W, formula = ~1, type = "escar") {
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
-  W_name <- deparse(substitute(W))
+  W_name <- deparse0(substitute(W))
   W <- validate_car_matrix(W)
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
@@ -331,7 +331,7 @@ cor_car <- function(W, formula = ~1, type = "escar") {
 #' @export
 cor_icar <- function(W, formula = ~1) {
   out <- cor_car(W, formula, type = "icar")
-  out$W_name <- deparse(substitute(W))
+  out$W_name <- deparse0(substitute(W))
   out
 }
 
@@ -358,7 +358,7 @@ cor_icar <- function(W, formula = ~1) {
 #'
 #' @export
 cor_fixed <- function(V) {
-  V_name <- deparse(substitute(V))
+  V_name <- deparse0(substitute(V))
   if (is.vector(V)) {
     V <- diag(V)
   } else {

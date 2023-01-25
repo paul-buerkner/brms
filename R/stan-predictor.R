@@ -1709,7 +1709,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
     ",", "==", "!=", "<=", ">=", "<", ">", "!", "&&", "||"
   )
   regex <- glue("(?<!\\.){escape_all(syms)}(?!=)")
-  eta <- rm_wsp(collapse(deparse(bterms$formula[[2]])))
+  eta <- rm_wsp(deparse0(bterms$formula[[2]]))
   eta <- wsp(rename(eta, regex, wsp(syms), fixed = FALSE, perl = TRUE))
   vars <- c(wsp(nlpars), wsp(covars), " ( ", " ) ")
   new_vars <- c(new_nlpars, new_covars, "(", ")")

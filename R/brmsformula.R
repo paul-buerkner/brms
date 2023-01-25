@@ -1542,7 +1542,7 @@ update_adterms <- function(formula, adform, action = c("update", "replace")) {
     new_ad_terms <- paste(new_ad_terms, collapse = "+")
     new_ad_terms <- paste("|", new_ad_terms)
   }
-  resp <- gsub("\\|.+", "", deparse_combine(formula[[2]]))
+  resp <- gsub("\\|.+", "", deparse0(formula[[2]]))
   out <- formula(paste(resp, new_ad_terms, "~1"))
   out[[3]] <- formula[[3]]
   attributes(out) <- attributes(formula)

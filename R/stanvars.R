@@ -75,7 +75,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
       stop2("Argument 'x' is required if block = 'data'.")
     }
     if (is.null(name)) {
-      name <- deparse(substitute(x))
+      name <- deparse0(substitute(x))
     }
     name <- as_one_character(name)
     if (!is_equal(name, make.names(name)) || grepl("\\.", name)) {

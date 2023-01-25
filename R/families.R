@@ -244,7 +244,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   family_info$links <- NULL
   # non-standard evaluation of link
   if (!is.character(slink)) {
-    slink <- deparse(slink)
+    slink <- deparse0(slink)
   }
   if (!slink %in% ok_links) {
     if (is.character(link)) {
