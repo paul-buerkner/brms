@@ -497,6 +497,30 @@
   )
 }
 
+.family_mixcure_lognormal <- function() {
+  list(
+    links = c("identity", "inverse"),
+    dpars = c("mu", "sigma", "inc"), type = "real",
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
+    include = "fun_mixcure_lognormal.stan",
+    specials = c("logscale", "sbi_inc_logit"),
+    normalized = ""
+  )
+}
+
+.family_mixcure_weibull <- function() {
+  list(
+    links = c("identity", "inverse"),
+    dpars = c("mu", "sigma", "inc"), type = "real",
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
+    include = "fun_mixcure_weibull.stan",
+    specials = c("logscale", "sbi_inc_logit"),
+    normalized = ""
+  )
+}
+
 .family_zero_inflated_poisson <- function() {
   list(
     links = c("log", "identity", "sqrt", "softplus", "squareplus"),

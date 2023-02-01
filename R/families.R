@@ -35,6 +35,7 @@
 #' @param link_beta Link of auxiliary parameter \code{beta} if being predicted.
 #' @param link_zi Link of auxiliary parameter \code{zi} if being predicted.
 #' @param link_hu Link of auxiliary parameter \code{hu} if being predicted.
+#' @param link_inc Link of auxiliary parameter \code{inc} if being predicted.
 #' @param link_zoi Link of auxiliary parameter \code{zoi} if being predicted.
 #' @param link_coi Link of auxiliary parameter \code{coi} if being predicted.
 #' @param link_disc Link of auxiliary parameter \code{disc} if being predicted.
@@ -192,7 +193,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_shape = "log", link_nu = "logm1",
                        link_phi = "log", link_kappa = "log",
                        link_beta = "log", link_zi = "logit",
-                       link_hu = "logit", link_zoi = "logit",
+                       link_hu = "logit", link_inc = "logit",
+                       link_zoi = "logit",
                        link_coi = "logit", link_disc = "log",
                        link_bs = "log", link_ndt = "log",
                        link_bias = "logit", link_xi = "log1p",
@@ -206,7 +208,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_sigma = link_sigma, link_shape = link_shape,
     link_nu = link_nu, link_phi = link_phi,
     link_kappa = link_kappa, link_beta = link_beta,
-    link_zi = link_zi, link_hu = link_hu,
+    link_zi = link_zi, link_hu = link_hu, link_inc = link_inc,
     link_zoi = link_zoi, link_coi = link_coi,
     link_disc = link_disc, link_bs = link_bs,
     link_ndt = link_ndt, link_bias = link_bias,
@@ -733,6 +735,24 @@ hurdle_cumulative <- function(link = "logit", link_hu = "logit",
   .brmsfamily("hurdle_cumulative", link = link, slink = slink,
                link_hu = link_hu, link_disc = link_disc,
                threshold = threshold)
+}
+
+#' @rdname brmsfamily
+#' @export
+mixcure_lognormal <- function(link = "identity", link_sigma = "log",
+                              link_inc = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("mixcure_lognormal", link = link, slink = slink,
+              link_sigma = link_sigma, link_inc = link_inc)
+}
+
+#' @rdname brmsfamily
+#' @export
+mixcure_weibull <- function(link = "log", link_shape = "log",
+                            link_inc = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("mixcure_weibull", link = link, slink = slink,
+              link_shape = link_shape, link_inc = link_inc)
 }
 
 #' @rdname brmsfamily
@@ -1333,6 +1353,7 @@ links_dpars <- function(dpar) {
     beta = c("log", "identity", "softplus", "squareplus"),
     zi = c("logit", "identity"),
     hu = c("logit", "identity"),
+    inc = c("logit", "identity"),
     zoi = c("logit", "identity"),
     coi = c("logit", "identity"),
     disc = c("log", "identity", "softplus", "squareplus"),
@@ -1867,8 +1888,8 @@ family_bounds.brmsterms <- function(x, ...) {
     "gamma", "weibull", "exponential", "lognormal",
     "frechet", "inverse.gaussian",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-    "hurdle_lognormal", "zero_inflated_poisson",
-    "zero_inflated_negbinomial"
+    "hurdle_lognormal", "mixcure_lognormal", "mixcure_weibull",
+    "zero_inflated_poisson", "zero_inflated_negbinomial"
   )
   beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
   ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
