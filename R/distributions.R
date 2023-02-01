@@ -2118,7 +2118,7 @@ pmixcure_weibull <- function(q, mu, shape, inc, lower.tail = TRUE, log.p = FALSE
     pars <- args[names(pars)]
     cdf <- paste0("p", dist)
     # compute log CCDF values
-    # latency part (censored): [1 - pi(z)] + pi(z) * S(t | x)
+    # latency part (right-censored): [1 - pi(z)] + pi(z) * S(t | x)
     out <- matrixStats::logSumExp(c(
         1, -inc,
         inc + do_call(
