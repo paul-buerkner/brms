@@ -2093,8 +2093,7 @@ pmixcure_weibull <- function(q, mu, shape, inc, lower.tail = TRUE, log.p = FALSE
     inc <- args$inc
     pars <- args[names(pars)]
     pdf <- paste0("d", dist)
-    # incidence part (not censored)
-    # pi(z) * f(t | x)
+    # incidence part (not censored): pi(z) * f(t | x)
     out <- log(inc) + do_call(pdf, c(list(x), pars, log = TRUE))
     if (!log) {
         out <- exp(out)
@@ -2118,16 +2117,29 @@ pmixcure_weibull <- function(q, mu, shape, inc, lower.tail = TRUE, log.p = FALSE
     inc <- args$inc
     pars <- args[names(pars)]
     cdf <- paste0("p", dist)
-    # compute log CCDF values: latency part (censored)
-    # [1 - pi(z)] + pi(z) * S(t | x)
-    out <- 
-        matrixStats::logSumExp(c(
-            1, -inc,
-            inc + do_call(
-                cdf,
-                c(list(q), pars, lower.tail = FALSE, log.p = TRUE)
-            )
-        ))
+    # compute log CCDF values
+    # latency part (censored): [1 - pi(z)] + pi(z) * S(t | x)
+    out <- matrixStats::logSumExp(c(
+        1, -inc,
+        inc + do_call(
+            cdf,
+            c(list(q), pars, lower.tail = FALSE, log.p = TRUE)
+        )
+    ))
+    # take the limits of the distribution into account
+    out <- ifelse(q < lb, 0, out)
+    out <- ifelse(q > ub, -Inf, out)
+    if (lower.tail) {
+    out <- 1 - exp(out)
+        if (log.p) {
+          out <- log(out)
+        }
+    } else {
+        if (!log.p) {
+          out <- exp(out)
+        }
+    }
+    out
     if (lower.tail) {
         out <- 1 - exp(out)
         if (log.p) {
