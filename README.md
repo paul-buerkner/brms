@@ -268,7 +268,7 @@ When using brms, please cite one or more of the following publications:
     doi.org/10.32614/RJ-2018-017
 -   Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms
     and Stan. *Journal of Statistical Software*, 100(5), 1-54.
-    <doi:10.18637/jss.v100.i05>
+    doi.org/10.18637/jss.v100.i05
 
 As brms is a high-level interface to Stan, please additionally cite Stan
 (see also <https://mc-stan.org/users/citations/>):
@@ -278,7 +278,7 @@ As brms is a high-level interface to Stan, please additionally cite Stan
 -   Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B.,
     Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017).
     Stan: A probabilistic programming language. *Journal of Statistical
-    Software*. 76(1). 10.18637/jss.v076.i01
+    Software*. 76(1). doi.org/10.18637/jss.v076.i01
 
 Further, brms relies on several other R packages and, of course, on R
 itself. To find out how to cite R and its packages, use the `citation`
