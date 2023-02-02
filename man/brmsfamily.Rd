@@ -27,6 +27,8 @@
 \alias{hurdle_gamma}
 \alias{hurdle_lognormal}
 \alias{hurdle_cumulative}
+\alias{mixcure_lognormal}
+\alias{mixcure_weibull}
 \alias{zero_inflated_beta}
 \alias{zero_one_inflated_beta}
 \alias{zero_inflated_poisson}
@@ -52,6 +54,7 @@ brmsfamily(
   link_beta = "log",
   link_zi = "logit",
   link_hu = "logit",
+  link_inc = "logit",
   link_zoi = "logit",
   link_coi = "logit",
   link_disc = "log",
@@ -126,6 +129,10 @@ hurdle_cumulative(
   threshold = "flexible"
 )
 
+mixcure_lognormal(link = "identity", link_sigma = "log", link_inc = "logit")
+
+mixcure_weibull(link = "log", link_shape = "log", link_inc = "logit")
+
 zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
 
 zero_one_inflated_beta(
@@ -195,6 +202,8 @@ information on link functions supported by each family.}
 \item{link_zi}{Link of auxiliary parameter \code{zi} if being predicted.}
 
 \item{link_hu}{Link of auxiliary parameter \code{hu} if being predicted.}
+
+\item{link_inc}{Link of auxiliary parameter \code{inc} if being predicted.}
 
 \item{link_zoi}{Link of auxiliary parameter \code{zoi} if being predicted.}
 
