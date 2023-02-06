@@ -293,6 +293,37 @@ test_that("log_lik for count and survival models works correctly", {
   expect_equal(ll, ll_gen_extreme_value)
 })
 
+test_that("log_lik for mixcure models works correctly", {
+  ns <- 25
+  prep <- structure(list(), class = "brmsprep")
+  prep$dpars <- list(
+    shape = rgamma(ns, 4),
+    sigma = rchisq(ns, 3),
+    mu = matrix(rnorm(ns * 2), ncol = 2),
+    inc = runif(ns, 0, 1)
+  ) 
+  prep$dpars$sigma <- 1 / prep$dpars$shape
+  prep$dpars$nu <- prep$dpars$shape + 1
+  prep$data <- list(Y = rlnorm(ns))
+    
+  ll_mixcure_lognormal <- dmixcure_lognormal(
+    x = prep$data$Y[1], inc = prep$dpars$inc,
+    mu = prep$dpars$mu[, 1], sigma = prep$dpars$sigma, log = TRUE
+  )
+  ll <- brms:::log_lik_mixcure_lognormal(1, prep = prep)
+  expect_equal(ll, c(ll_mixcure_lognormal))
+    
+  dmixcure_weibull
+  ll_mixcure_weibull <- dmixcure_weibull(
+    x = prep$data$Y[1], inc = prep$dpars$inc,
+    shape = prep$dpars$shape,
+    scale = prep$dpars$mu[, 1] / gamma(1 + 1 / prep$dpars$shape),
+    log = TRUE
+  )
+  ll <- brms:::log_lik_mixcure_weibull(1, prep = prep)
+  expect_equal(ll, c(ll_mixcure_weibull))
+})
+
 test_that("log_lik for bernoulli and beta models works correctly", {
   ns <- 15
   nobs <- 10
