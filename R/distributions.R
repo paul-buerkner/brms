@@ -2068,14 +2068,14 @@ pmixcure_lognormal <- function(q, mu, sigma, inc, lower.tail = TRUE, log.p = FAL
 
 #' @rdname Mixcure
 #' @export
-dmixcure_weibull <- function(x, mu, shape, inc, log = FALSE) {
+dmixcure_weibull <- function(x, shape, scale, inc, log = FALSE) {
     pars <- list(shape = shape, scale = scale)
     .dmixcure(x, "weibull", inc, pars, log)
 }
 
 #' @rdname Mixcure
 #' @export
-pmixcure_weibull <- function(q, mu, shape, inc, lower.tail = TRUE, log.p = FALSE) {
+pmixcure_weibull <- function(q, shape, scale, inc, lower.tail = TRUE, log.p = FALSE) {
     pars <- list(shape = shape, scale = scale)
     .pmixcure(q, "weibull", inc, pars, lower.tail, log.p)
 }

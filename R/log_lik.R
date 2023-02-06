@@ -746,7 +746,7 @@ log_lik_mixcure_lognormal <- function(i, prep) {
   mu <- get_dpar(prep, "mu", i)
   sigma <- get_dpar(prep, "sigma", i = i)
   inc <- get_dpar(prep, "inc", i)
-  args <- nlist(mu, sigma, inc)
+  args <- nlist(mu = mu, sigma = sigma, inc = inc)
   out <- log_lik_censor("mixcure_lognormal", args, i, prep)
   out <- log_lik_truncate(out, pmixcure_lognormal, args, i, prep)
   log_lik_weight(out, i = i, prep = prep)
