@@ -753,16 +753,17 @@ log_lik_mixcure_lognormal <- function(i, prep) {
 }
 
 log_lik_mixcure_weibull <- function(i, prep) {
-    shape <- get_dpar(prep, "shape", i = i)
-    scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
-    args <- list(shape = shape, scale = scale)
-    out <- log_lik_censor(
-      dist = "mixcure_weibull", args = args, i = i, prep = prep
-    )
-    out <- log_lik_truncate(
-      out, cdf = pmixcure_weibull, args = args, i = i, prep = prep
-    )
-    log_lik_weight(out, i = i, prep = prep)
+  shape <- get_dpar(prep, "shape", i = i)
+  scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
+  inc <- get_dpar(prep, "inc", i)
+  args <- list(shape = shape, scale = scale, inc = inc)
+  out <- log_lik_censor(
+    dist = "mixcure_weibull", args = args, i = i, prep = prep
+  )
+  out <- log_lik_truncate(
+    out, cdf = pmixcure_weibull, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
 }
 
 log_lik_zero_inflated_poisson <- function(i, prep) {
