@@ -895,8 +895,9 @@ stan_log_lik_mixcure_lognormal <- function(bterms, resp = "", mix = "", ...) {
   lpdf <- paste0("mixcure_lognormal", usc_logit)
   sdist(lpdf, p$mu, p$sigma, p$inc)
 }
-                 
+
 stan_log_lik_mixcure_weibull <- function(bterms, resp = "", mix = "", ...) {
+  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   usc_logit <- stan_log_lik_dpar_usc_logit("inc", bterms)
   lpdf <- paste0("mixcure_weibull", usc_logit)
@@ -904,9 +905,9 @@ stan_log_lik_mixcure_weibull <- function(bterms, resp = "", mix = "", ...) {
   need_dot_div <- !reqn && paste0("shape", mix) %in% names(bterms$dpars)
   div_op <- str_if(need_dot_div, " ./ ", " / ")
   p$scale <- paste0(p$mu, div_op, "tgamma(1 + 1", div_op, p$shape, ")")
-  sdist("weibull", p$shape, p$scale, p$inc)
+  sdist(lpdf, p$scale, p$shape, p$inc)
 }
-                 
+
 stan_log_lik_zero_inflated_poisson <- function(bterms, resp = "", mix = "",
                                                ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
