@@ -485,6 +485,16 @@ posterior_epred_hurdle_lognormal <- function(prep) {
   with(prep$dpars, exp(mu + sigma^2 / 2) * (1 - hu))
 }
 
+posterior_epred_mixcure_lognormal <- function(prep) {
+  stop2("Cannot compute expected values of the posterior predictive ",
+        "distribution for family 'micure_lognormal'.")
+}
+
+posterior_epred_mixcure_weibull <- function(prep) {
+  stop2("Cannot compute expected values of the posterior predictive ",
+        "distribution for family 'micure_weibull'.")
+}
+
 posterior_epred_hurdle_cumulative <- function(prep) {
   adjust <- ifelse(prep$family$link == "identity", 0, 1)
   ncat_max <- max(prep$data$nthres) + adjust

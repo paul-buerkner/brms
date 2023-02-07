@@ -16,7 +16,8 @@ Authors@R:
       person("Mattan S.", "Ben-Shachar", role = c("ctb")),
       person("Hayden", "Rabel", role = c("ctb")),
       person("Simon C.", "Mills", role = c("ctb")),
-      person("Stephen", "Wild", role = c("ctb")))
+      person("Stephen", "Wild", role = c("ctb")),
+      person("Yanan", "Long",  role = c("ctb")))
 Depends:
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
