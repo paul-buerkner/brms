@@ -39,4 +39,8 @@ test_that("Mixture cure models work correctly", {
     print(prior_summary(fit2))
     expect_range(posterior_summary(fit2)["b_Intercept", "Estimate"], 4.9, 5.1)
     expect_range(posterior_summary(fit2)["b_inc_Intercept", "Estimate"], 0.95, 1.05)
+    
+    fit1 <- add_criterion(fit1, criterion = "loo" , moment_match = TRUE)
+    fit2 <- add_criterion(fit2, criterion = "loo" , moment_match = TRUE)
+    loo_compare(fit1, fit1)
 })
