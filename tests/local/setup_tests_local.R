@@ -1,5 +1,6 @@
 library(testthat)
 library(brms)
+library(mixcure)
 options(mc.cores = 2)
 ggplot2::theme_set(theme_default())
 # prevents rstan related crashes
