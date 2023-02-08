@@ -16,10 +16,10 @@
 #' @param dis Passed to argument \code{dis} of
 #'   \code{\link[projpred:init_refmodel]{init_refmodel}}, but leave this at
 #'   \code{NULL} unless \pkg{projpred} complains about it.
-#' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
-#'   and for sampling group-level effects for new levels (in multilevel models).
 #' @param latent See argument \code{latent} of
 #'   \code{\link[projpred:extend_family]{extend_family}}.
+#' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+#'   and for sampling group-level effects for new levels (in multilevel models).
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
@@ -52,8 +52,8 @@
 #' plot(cv_vs)
 #' }
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
-                                 cvfun = NULL, dis = NULL, brms_seed = NULL,
-                                 latent = FALSE, ...) {
+                                 cvfun = NULL, dis = NULL, latent = FALSE,
+                                 brms_seed = NULL, ...) {
   require_package("projpred")
   object <- restructure(object)
   resp <- validate_resp(resp, object, multiple = FALSE)
@@ -177,8 +177,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     } else {
       brms_seed_k <- brms_seed + cvfit$projpred_k
     }
-    projpred::get_refmodel(cvfit, resp = resp, brms_seed = brms_seed_k,
-                           latent = latent, dis = dis, ...)
+    projpred::get_refmodel(cvfit, resp = resp, dis = dis, latent = latent,
+                           brms_seed = brms_seed_k, ...)
   }
 
   # prepare data passed to projpred

@@ -10,8 +10,8 @@ get_refmodel.brmsfit(
   resp = NULL,
   cvfun = NULL,
   dis = NULL,
-  brms_seed = NULL,
   latent = FALSE,
+  brms_seed = NULL,
   ...
 )
 }
@@ -36,11 +36,11 @@ based on \code{\link{kfold.brmsfit}}.}
 \code{\link[projpred:init_refmodel]{init_refmodel}}, but leave this at
 \code{NULL} unless \pkg{projpred} complains about it.}
 
-\item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
-and for sampling group-level effects for new levels (in multilevel models).}
-
 \item{latent}{See argument \code{latent} of
 \code{\link[projpred:extend_family]{extend_family}}.}
+
+\item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+and for sampling group-level effects for new levels (in multilevel models).}
 
 \item{...}{Further arguments passed to
 \code{\link[projpred:init_refmodel]{init_refmodel}}.}
