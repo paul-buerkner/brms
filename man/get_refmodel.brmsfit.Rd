@@ -9,6 +9,8 @@ get_refmodel.brmsfit(
   newdata = NULL,
   resp = NULL,
   cvfun = NULL,
+  dis = NULL,
+  latent = FALSE,
   brms_seed = NULL,
   ...
 )
@@ -29,6 +31,13 @@ are performed only for the specified response variables.}
 (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 If \code{NULL} (the default), \code{cvfun} is defined internally
 based on \code{\link{kfold.brmsfit}}.}
+
+\item{dis}{Passed to argument \code{dis} of
+\code{\link[projpred:init_refmodel]{init_refmodel}}, but leave this at
+\code{NULL} unless \pkg{projpred} complains about it.}
+
+\item{latent}{See argument \code{latent} of
+\code{\link[projpred:extend_family]{extend_family}}.}
 
 \item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 and for sampling group-level effects for new levels (in multilevel models).}
