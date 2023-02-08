@@ -204,9 +204,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   } else if (latent) {
     if (family$family == "cumulative") {
-      c(args) <- list(
-        latent_ilink = get_latent_ilink_cumul(object = object, family = family,
-                                              bterms = bterms, resp = resp)
+      args$latent_ilink <- latent_ilink_cumulative(
+        object = object, family = family, bterms = bterms, resp = resp
       )
     }
     # TODO: If requested by users, add response-scale support for more families:
@@ -286,7 +285,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 #
 # @return A function to be supplied to projpred::extend_family()'s argument
 #   `latent_ilink`.
-get_latent_ilink_cumul <- function(object, family, bterms, resp) {
+latent_ilink_cumulative <- function(object, family, bterms, resp) {
   stopifnot(!is.null(family$cats))
   draws_mat <- as_draws_matrix(object)
   thres_regex <- paste0("^b", usc(combine_prefix(bterms)), "_Intercept\\[")
@@ -300,12 +299,9 @@ get_latent_ilink_cumul <- function(object, family, bterms, resp) {
   disc_regex <- paste0("^", "disc", resp, "$")
   disc_draws <- prepare_draws(draws_mat, variable = disc_regex, regex = TRUE)
 
-  latent_ilink_tmp <- function(lpreds, cl_ref,
-                               wdraws_ref = rep(1, length(cl_ref))) {
-    thres_agg <- projpred::cl_agg(thres_draws, cl = cl_ref,
-                                  wdraws = wdraws_ref)
-    disc_agg <- projpred::cl_agg(disc_draws, cl = cl_ref,
-                                 wdraws = wdraws_ref)
+  out <- function(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
+    thres_agg <- projpred::cl_agg(thres_draws, cl = cl_ref, wdraws = wdraws_ref)
+    disc_agg <- projpred::cl_agg(disc_draws, cl = cl_ref, wdraws = wdraws_ref)
     disc_agg <- as.vector(disc_agg)
     lpreds_thres <- apply(thres_agg, 2, function(thres_agg_c) {
       # Notes on dimensionalities (with S_agg = `nrow(lpreds)`):
@@ -323,9 +319,5 @@ get_latent_ilink_cumul <- function(object, family, bterms, resp) {
     # Transform to response space, yielding an S_agg x N x C_cat array:
     return(inv_link_cumulative(lpreds_thres, link = family$link))
   }
-
-  # Free up some memory:
-  rm(draws_mat)
-
-  return(latent_ilink_tmp)
+  out
 }
