@@ -204,53 +204,17 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   } else if (latent) {
     if (family$family == "cumulative") {
-      stopifnot(!is.null(family$cats))
-      draws_mat <- as_draws_matrix(object)
-      thres_regex <- paste0("^b", usc(combine_prefix(bterms)), "_Intercept\\[")
-      thres_draws <- prepare_draws(draws_mat, variable = thres_regex,
-                                   regex = TRUE)
-      if (ncol(thres_draws) > length(family$cats) - 1L) {
-        stop2("Currently, projpred does not support group-specific thresholds ",
-              "(argument `gr` of resp_thres()).")
-      }
-      # Note: Currently, `disc` should always be constantly 1 because
-      # distributional models are not allowed here.
-      disc_regex <- paste0("^", "disc", resp, "$")
-      disc_draws <- prepare_draws(draws_mat, variable = disc_regex,
-                                  regex = TRUE)
-      latent_ilink_tmp <- function(lpreds, cl_ref,
-                                   wdraws_ref = rep(1, length(cl_ref))) {
-        thres_agg <- projpred::cl_agg(thres_draws, cl = cl_ref,
-                                      wdraws = wdraws_ref)
-        disc_agg <- projpred::cl_agg(disc_draws, cl = cl_ref,
-                                     wdraws = wdraws_ref)
-        disc_agg <- as.vector(disc_agg)
-        lpreds_thres <- apply(thres_agg, 2, function(thres_agg_c) {
-          # Notes on dimensionalities (with S_agg = `nrow(lpreds)`):
-          # * `disc_agg` is a vector of length S_agg (because `disc` is not
-          #   predicted here),
-          # * `thres_agg` is S_agg x C_lat (with C_lat = `ncats - 1L` =
-          #   `nthres`) and thus `thres_agg_c` is a vector of length S_agg,
-          # * `lpreds` is S_agg x N (with N denoting the number of (possibly
-          #   new) observations (not necessarily the original number of
-          #   observations)).
-          disc_agg * (thres_agg_c - lpreds)
-        }, simplify = FALSE)
-        # Coerce to an S_agg x N x C_lat array:
-        lpreds_thres <- do.call(abind, c(lpreds_thres, rev.along = 0))
-        # Transform to response space, yielding an S_agg x N x C_cat array:
-        return(inv_link_cumulative(lpreds_thres, link = family$link))
-      }
-      c(args) <- list(latent_ilink = latent_ilink_tmp)
-      # Free up some memory:
-      rm(draws_mat)
+      c(args) <- list(
+        latent_ilink = get_latent_ilink_cumul(object = object, family = family,
+                                              bterms = bterms, resp = resp)
+      )
     }
-    # TODO: Add response-scale support for more families: For response-scale
-    # support, they all need a specific `latent_ilink` function; some families
-    # (those for which the response can be numeric) also require specific
-    # `latent_ll_oscale` and `latent_ppd_oscale` functions. The binomial family
-    # (and thereby also the brms::bernoulli() family) has response-scale support
-    # implemented natively in projpred.
+    # TODO: If requested by users, add response-scale support for more families:
+    # For response-scale support, they all need a specific `latent_ilink`
+    # function; some families (those for which the response can be numeric) also
+    # require specific `latent_ll_oscale` and `latent_ppd_oscale` functions. The
+    # binomial family (and thereby also the brms::bernoulli() family) has
+    # response-scale support implemented natively in projpred.
   }
   do_call(projpred::init_refmodel, args)
 }
@@ -304,4 +268,64 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     offset <- rep(0, length(y))
   }
   nlist(y, weights, offset)
+}
+
+# Construct the inverse-link function required for the latent projection in case
+# of the cumulative family.
+#
+# @param object See argument `object` of get_refmodel.brmsfit(), but here, the
+#   `object` as modified inside of get_refmodel.brmsfit() is required.
+# @param family The `family` object corresponding to `object` (taking `resp`
+#   into account). Could be re-inferred from `object` and `resp`, but for
+#   computational efficiency, this is avoided.
+# @param bterms The `brmsterms` object corresponding to `object` (or rather
+#   `object`'s `formula`, taking `resp` into account). Could be re-inferred from
+#   `object` and `resp`, but for computational efficiency, this is avoided.
+# @param resp See argument `resp` of get_refmodel.brmsfit(), but here, the
+#   `resp` as modified inside of get_refmodel.brmsfit() is required.
+#
+# @return A function to be supplied to projpred::extend_family()'s argument
+#   `latent_ilink`.
+get_latent_ilink_cumul <- function(object, family, bterms, resp) {
+  stopifnot(!is.null(family$cats))
+  draws_mat <- as_draws_matrix(object)
+  thres_regex <- paste0("^b", usc(combine_prefix(bterms)), "_Intercept\\[")
+  thres_draws <- prepare_draws(draws_mat, variable = thres_regex, regex = TRUE)
+  if (ncol(thres_draws) > length(family$cats) - 1L) {
+    stop2("Currently, projpred does not support group-specific thresholds ",
+          "(argument `gr` of resp_thres()).")
+  }
+  # Note: Currently, `disc` should always be constantly 1 because
+  # distributional models are not allowed here.
+  disc_regex <- paste0("^", "disc", resp, "$")
+  disc_draws <- prepare_draws(draws_mat, variable = disc_regex, regex = TRUE)
+
+  latent_ilink_tmp <- function(lpreds, cl_ref,
+                               wdraws_ref = rep(1, length(cl_ref))) {
+    thres_agg <- projpred::cl_agg(thres_draws, cl = cl_ref,
+                                  wdraws = wdraws_ref)
+    disc_agg <- projpred::cl_agg(disc_draws, cl = cl_ref,
+                                 wdraws = wdraws_ref)
+    disc_agg <- as.vector(disc_agg)
+    lpreds_thres <- apply(thres_agg, 2, function(thres_agg_c) {
+      # Notes on dimensionalities (with S_agg = `nrow(lpreds)`):
+      # * `disc_agg` is a vector of length S_agg (because `disc` is not
+      #   predicted here),
+      # * `thres_agg` is S_agg x C_lat (with C_lat = `ncats - 1L` =
+      #   `nthres`) and thus `thres_agg_c` is a vector of length S_agg,
+      # * `lpreds` is S_agg x N (with N denoting the number of (possibly
+      #   new) observations (not necessarily the original number of
+      #   observations)).
+      disc_agg * (thres_agg_c - lpreds)
+    }, simplify = FALSE)
+    # Coerce to an S_agg x N x C_lat array:
+    lpreds_thres <- do.call(abind, c(lpreds_thres, rev.along = 0))
+    # Transform to response space, yielding an S_agg x N x C_cat array:
+    return(inv_link_cumulative(lpreds_thres, link = family$link))
+  }
+
+  # Free up some memory:
+  rm(draws_mat)
+
+  return(latent_ilink_tmp)
 }
