@@ -319,5 +319,9 @@ latent_ilink_cumulative <- function(object, family, bterms, resp) {
     # Transform to response space, yielding an S_agg x N x C_cat array:
     return(inv_link_cumulative(lpreds_thres, link = family$link))
   }
+  # Free up some memory (keeping `draws_mat` would lead to unnecessary memory
+  # usage because `draws_mat` would continue to live in the environment of the
+  # returned function):
+  rm(draws_mat)
   out
 }
