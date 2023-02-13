@@ -207,6 +207,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       )
     }
   } else if (latent) {
+    if (utils::packageVersion("projpred") <= "2.3.0") {
+      stop2("For the latent projection, a projpred version > 2.3.0 is ",
+            "required.")
+    }
     if (family$family == "cumulative") {
       args$latent_ilink <- latent_ilink_cumulative(
         object = object, family = family, bterms = bterms, resp = resp
