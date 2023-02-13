@@ -623,5 +623,9 @@ extract_nthres <- function(formula, data, extra_cat = FALSE) {
     # 0 is the extra category which does not affect max
     out <- max(mr) - 1L
   }
+  if (out < 1L) {
+    stop2("Could not extract the number of thresholds. Use ordered factors ",
+          "or positive integers as your ordinal response.")
+  }
   out
 }
