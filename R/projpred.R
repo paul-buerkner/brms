@@ -94,6 +94,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   bterms <- brmsterms(formula)
   if (length(bterms$dpars) > 1L && !conv_cats_dpars(family)) {
     stop2("Projpred does not support distributional models.")
+  } else if (conv_cats_dpars(family) && length(formula$pforms)) {
+    stop2("Projpred does not support category-specific formulas.")
   }
   if (length(bterms$nlpars) > 0L) {
     stop2("Projpred does not support non-linear models.")
