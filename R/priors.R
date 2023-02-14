@@ -995,7 +995,8 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     prior <- prior +
       brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
   }
-  if (has_ac_latent_residuals(bterms) | parameterize_ac_effects(bterms)) {
+  # changed ac tag
+  if (has_ac_latent_residuals(bterms)) {
     prior <- prior +
       brmsprior(def_scale_prior, class = "sderr", ls = px, lb = "0")
   }

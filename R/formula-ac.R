@@ -587,14 +587,15 @@ use_ac_cov_time <- function(x) {
 
 # does the model need latent residuals for autocor structures?
 has_ac_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) &&
+  (!has_natural_residuals(bterms) ||
+     has_ac_subset(bterms, latent = T)) &&
     (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
 }
 
 # use explicitly parameterized autocor effects?
-parameterize_ac_effects <- function(bterms) {
-  has_ac_subset(bterms, latent = T)
-}
+# parameterize_ac_effects <- function(bterms) {
+#   has_ac_subset(bterms, latent = T)
+# }
 
 # do we have an explicit time variable?
 has_explicit_ac_time <- function(bterms) {

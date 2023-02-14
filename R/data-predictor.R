@@ -664,57 +664,49 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   if (use_ac_cov_time(acef)) {
     # data for the 'covariance' versions of time-series structures
     out$N_tg <- length(unique(tgroup))
-    out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-    out$nobs_tg <- as.array(with(out,
-      c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
-    ))
-    out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-    if (parameterize_ac_effects(acef)) {
+    # if using latent variables, add grouping levels
+    if (has_ac_latent_residuals(bterms)) {
       if (gr != "NA") {
         out$level_tg <- unique(data[[gr]])
       } else {
         out$level_tg <- 1
       }
-    }
-    if (time_var != "NA") {
-      out$ac_time <- data[[time_var]]
-      out$ac_time_points <- c()
-      if (parameterize_ac_effects(acef)) {
-        # build vector of indices for latent parameters
+      # If time variable is specified, set up grouping data
+      # and timepoint index.
+      if (time_var != "NA") {
+        out$ac_time <- data[, time_var]
+        out$ac_time_points <- c()
+        # Number of latent parameters needed
         if (gr != "NA") {
           out$N_latent_err <- nrow(unique(data[, c(gr, time_var)]))
         } else {
           out$N_latent_err <- length(unique(data[, time_var]))
         }
-        # out$latent_err_idx <- vector(mode="integer", length=N)
-        # out$begin_err_gr <- vector(mode="integer", length=length(out$level_tg))
-        # out$end_err_gr <- vector(mode="integer", length=length(out$level_tg))
-        # out$n_time_gr <- vector(mode="integer", length=length(out$level_tg))
         out$latent_err_idx <- array(dim=N)
-        out$begin_err_gr <- array(dim=length(out$level_tg))
-        out$end_err_gr <- array(dim=length(out$level_tg))
-        out$n_time_gr <- array(dim=length(out$level_tg))
+        out$begin_tg <- array(dim=length(out$level_tg))
+        out$end_tg <- array(dim=length(out$level_tg))
+        out$nobs_tg <- array(dim=length(out$level_tg))
+        # Build vector of latent error indices
         gr_end <- 0
         last_idx <- 0
         par_gr_idx <- 1
-        # test: replace data[[gr]] with tgroup
         if (gr == "NA") {
-          out$begin_err_gr[1] <- 1
+          out$begin_tg[1] <- 1
           times <- unique(data[[time_var]])
           out$ac_time_points <- times
-          out$n_time_gr[1] <- length(times)
+          out$nobs_tg[1] <- length(times)
           for (j in seq_len(nrow(data))) {
             out$latent_err_idx[j] <- 
               which(times == data[[j, time_var]])
           }
-          out$end_err_gr[1] <- length(times)
+          out$end_tg[1] <- length(times)
         } else {
           for (gr_id in unique(data[[gr]])) {
-            out$begin_err_gr[par_gr_idx] <- last_idx + 1
+            out$begin_tg[par_gr_idx] <- last_idx + 1
             data_gr <- subset(data, data[[gr]] == gr_id)
             gr_times <- unique(data_gr[[time_var]])
             out$ac_time_points <- c(out$ac_time_points, gr_times)
-            out$n_time_gr[par_gr_idx] <- length(gr_times)
+            out$nobs_tg[par_gr_idx] <- length(gr_times)
             for (j in seq_len(nrow(data_gr))) {
               out$latent_err_idx[gr_end + j] <- 
                 last_idx + 
@@ -722,13 +714,27 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
             }
             gr_end <- gr_end + nrow(data_gr)
             last_idx <- out$latent_err_idx[gr_end]
-            out$end_err_gr[par_gr_idx] <- last_idx
+            out$end_tg[par_gr_idx] <- last_idx
             par_gr_idx <- par_gr_idx + 1
           }
         }
-        out$max_time_span <- max(out$ac_time_points[out$end_err_gr] - out$ac_time_points[out$begin_err_gr]) + 1
+        out$max_time_span <- max(out$ac_time_points[out$end_tg] - out$ac_time_points[out$begin_tg]) + 1
+      } else {
+        out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
+        out$nobs_tg <- as.array(with(out,
+          c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+        ))
+        out$end_tg <- with(out, begin_tg + nobs_tg - 1)
       }
-    }
+      if (length(basis)) {
+        out$latent_err_idx_old <- basis$latent_err_idx
+        out$begin_tg_old <- basis$begin_tg
+        out$end_tg_old <- basis$end_tg
+        out$nobs_tg_old <- basis$nobs_tg
+        out$ac_time_points_old <- basis$ac_time_points
+        out$level_tg_old <- basis$level_tg
+      }
+    } 
   }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")

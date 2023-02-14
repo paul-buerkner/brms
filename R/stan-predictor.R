@@ -1240,18 +1240,20 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
   slice <- stan_slice(threads)
   has_natural_residuals <- has_natural_residuals(bterms)
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
-  parameterize_ac_effects <- parameterize_ac_effects(bterms)
   has_explicit_time <- has_explicit_ac_time(bterms)
   acef <- tidy_acef(bterms, data)
 
-  if (has_ac_latent_residuals | parameterize_ac_effects) {
+  if (has_ac_latent_residuals) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
     err_msg <- "Latent residuals are not implemented"
     if (is.btnl(bterms)) {
       stop2(err_msg, " for non-linear models.")
     }
-    if (has_explicit_time & parameterize_ac_effects) {
+    #changed ac effects tag
+    if (has_explicit_time && 
+        has_ac_latent_residuals &&
+        use_ac_cov_time(acef)) {
       str_add(out$par) <- glue(
         "  vector[N_latent_err{resp}] zerr{p};  // unscaled residuals\n"
       )
@@ -1264,7 +1266,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       prior, class = "sderr", px = px, suffix = p,
       comment = "SD of residuals", normalize = normalize
     )
-    if (has_explicit_time & parameterize_ac_effects) {
+    # changed ac effects tag
+    if (has_explicit_time && 
+        has_ac_latent_residuals &&
+        use_ac_cov_time(acef)) {
       str_add(out$tpar_def) <- glue(
         "  vector[N_latent_err{resp}] err_tp{p}; // per-time-point residuals\n",
         "  vector[N{resp}] err{p};  // per-observation residuals\n"
@@ -1392,14 +1397,14 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int<lower=1> end_tg{p}[N_tg{p}];\n",
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
-    if (has_explicit_time & parameterize_ac_effects) {
+    # changed ac tag
+    if (has_explicit_time & has_ac_latent_residuals) {
       str_add(out$data) <- glue(
         "  int<lower=1> N_latent_err{p};\n",
         "  int<lower=1> max_time_span{p};\n",
-        "  int<lower=1> begin_err_gr{p}[N_tg{p}];\n",
-        "  int<lower=1> end_err_gr{p}[N_tg{p}];\n",
-        "  int<lower=1> n_time_gr{p}[N_tg{p}];\n",
-        "  int ac_time{p}[N{p}];\n",
+        # "  int<lower=1> begin_err_gr{p}[N_tg{p}];\n",
+        # "  int<lower=1> end_err_gr{p}[N_tg{p}];\n",
+        # "  int<lower=1> n_time_gr{p}[N_tg{p}];\n",
         "  int ac_time_points{p}[N_latent_err{p}];\n",
         "  int<lower=1> latent_err_idx{p}[N{p}];\n"
       )
@@ -1414,7 +1419,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  vector[N{resp}] se2{p} = rep_vector(0.0, N{resp});\n"
       )
     }
-    if (has_explicit_time & parameterize_ac_effects) {
+    # changed ac tag
+    if (has_explicit_time & has_ac_latent_residuals) {
       str_add(out$tpar_def) <- glue(
         "  // cholesky factor of the autocorrelation matrix\n",
         "  matrix[max_time_span{p}, max_time_span{p}] chol_cor{p};\n"
@@ -1440,7 +1446,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       cor_fun <- "cosy"
       cor_args <- glue("cosy{p}")
     }
-    if (has_explicit_time & parameterize_ac_effects) {
+    # changed ac tag
+    if (has_explicit_time & has_ac_latent_residuals) {
       str_add(out$tpar_comp) <- glue(
         "  // compute residual covariance matrix\n",
         "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_time_span{p});\n"
@@ -1451,12 +1458,13 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
       )
     }
-    if (has_ac_latent_residuals | parameterize_ac_effects) {
-      if (has_explicit_time & parameterize_ac_effects) {
+    # changed ac tags
+    if (has_ac_latent_residuals) {
+      if (has_explicit_time) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err_tp{p} = scale_time_err_t(",
-          "zerr{p}, sderr{p}, chol_cor{p}, n_time_gr{p}, begin_err_gr{p}, end_err_gr{p}, ac_time_points{p});\n",
+          "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p}, ac_time_points{p});\n",
           "err{p} = err_tp{p}[latent_err_idx{p}];"
         )
       } else {

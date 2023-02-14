@@ -240,7 +240,7 @@ order_data <- function(data, bterms) {
       tv <- seq_rows(data)
     }
     if (any(duplicated(data.frame(gv, tv)))) {
-      if (!parameterize_ac_effects(bterms)) {
+      if (!has_ac_latent_residuals(bterms)) {
         stop2("Time points within groups must be unique\n
               unless using latent-variable formulation.")
       }

@@ -290,6 +290,11 @@ standata_basis_ac <- function(x, data, ...) {
       out$locations <- NA
     }
   }
+  if (has_ac_class(x, "arma")) {
+    if (has_ac_latent_residuals(x)) {
+      out <- data_ac(x, data, ...)
+    }
+  }
   out
 }
 

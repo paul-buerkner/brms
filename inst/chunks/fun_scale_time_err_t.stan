@@ -1,5 +1,5 @@
   /* scale and correlate time-series residuals
-   * aware of time variable (for skipped time points)
+   * aware of time variable (allowing skipped time points)
    * Args:
    *   zerr: standardized and independent residuals
    *   sderr: standard deviation of the residuals
@@ -22,7 +22,7 @@
          temp_times[j+1] = temp_times[j] +
                            (times[begin[i]+j] - times[begin[i]+j-1]);
        }
-       
+       // Transform residuals
        err[begin[i]:end[i]] =
          sderr * chol_cor[temp_times[1:n_times[i]], temp_times[1:n_times[i]]] * 
          zerr[begin[i]:end[i]];

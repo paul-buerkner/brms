@@ -1786,7 +1786,7 @@ prepare_family <- function(x) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
   acef <- tidy_acef(x)
-  if (use_ac_cov_time(acef) && has_natural_residuals(x) && !parameterize_ac_effects(x)) {
+  if (use_ac_cov_time(acef) && has_natural_residuals(x) && !has_ac_latent_residuals(x)) {
     family$fun <- paste0(family$family, "_time")
   } else if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
