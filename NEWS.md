@@ -10,8 +10,8 @@ via the `hurdle_cumulative` family thanks to Stephen Wild. (#1448)
 in post-processing methods that require a compiled Stan model.
 * Extend control over the `point_estimate` feature in `prepare_predictions`
 via the new argument `ndraws_point_estimate`.
-* Add support for the latent projection available in **projpred** versions >
-2.3.0.
+* Add support for the latent projection available in **projpred** versions >=
+2.4.0.
 
 ### Bug Fixes
 
