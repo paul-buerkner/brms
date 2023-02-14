@@ -18,6 +18,8 @@ via the new argument `ndraws_point_estimate`.
 * Fix a Stan syntax error in threaded models with `lasso` priors. (#1427)
 * Fix Stan compilation issues for some of the more special 
 link functions such as `cauchit` or `softplus`.
+* Fix a bug for predictions in **projpred**, previously requiring more variables
+in `newdata` than necessary. (#1457, #1459)
 
 
 # brms 2.18.0
