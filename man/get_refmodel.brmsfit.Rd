@@ -61,8 +61,8 @@ it manually yourself.
 }
 \details{
 Note that the \code{extract_model_data} function used internally by
-  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
-  \code{extract_y}. This is relevant for
+  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}.
+  This is relevant for
   \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
 }
 \examples{

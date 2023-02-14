@@ -25,8 +25,8 @@
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
 #' @details Note that the \code{extract_model_data} function used internally by
-#'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
-#'   \code{extract_y}. This is relevant for
+#'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}.
+#'   This is relevant for
 #'   \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
 #'
 #' @return A \code{refmodel} object to be used in conjunction with the
@@ -225,7 +225,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 
 # auxiliary data required in predictions via projpred
 # @return a named list with slots 'y', 'weights', and 'offset'
-.extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
+.extract_model_data <- function(object, newdata = NULL, resp = NULL,
+                                extract_y = TRUE, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
 
@@ -235,28 +236,43 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (!is.null(resp)) {
     formula <- formula$forms[[resp]]
   }
-  respform <- brmsterms(formula)$respform
-  data <- current_data(
-    object, newdata, resp = resp, check_response = TRUE,
-    allow_new_levels = TRUE
-  )
-  y <- unname(model.response(model.frame(respform, data, na.action = na.pass)))
+  bterms <- brmsterms(formula)
+  if (extract_y) {
+    respform <- bterms$respform
+    data <- current_data(
+      object, newdata, resp = resp, check_response = TRUE,
+      allow_new_levels = TRUE, req_vars = character()
+    )
+    y <- unname(model.response(model.frame(respform, data,
+                                           na.action = na.pass)))
+  } else {
+    y <- NULL
+  }
 
-  # extract relevant auxiliary data
+  # extract relevant auxiliary data (offsets and weights (or numbers of trials))
   # call standata to ensure the correct format of the data
+  # For this, we use `check_response = FALSE` and only include offsets and
+  # weights (or numbers of trials) in `req_vars` because of issue #1457 (note
+  # that all.vars(NULL) gives character(0), as desired).
+  req_vars <- unlist(lapply(bterms$dpars, function(x) all.vars(x[["offset"]])))
+  req_vars <- unique(req_vars)
+  c(req_vars) <- all.vars(bterms$adforms$weights)
+  c(req_vars) <- all.vars(bterms$adforms$trials)
   args <- nlist(
     object, newdata, resp,
     allow_new_levels = TRUE,
-    check_response = TRUE,
-    internal = TRUE
+    check_response = FALSE,
+    internal = TRUE,
+    req_vars = req_vars
   )
+  # TODO: Missing weights don't cause an error here (but they probably should):
   sdata <- do_call(standata, args)
 
   usc_resp <- usc(resp)
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
   if (is_binary(formula)) {
-    trials <- rep(1, length(y))
+    trials <- rep(1, sdata[["N"]])
   }
   if (!is.null(trials)) {
     if (!is.null(weights)) {
@@ -265,11 +281,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     weights <- trials
   }
   if (is.null(weights)) {
-    weights <- rep(1, length(y))
+    weights <- rep(1, sdata[["N"]])
   }
   offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   if (is.null(offset)) {
-    offset <- rep(0, length(y))
+    offset <- rep(0, sdata[["N"]])
   }
   nlist(y, weights, offset)
 }
