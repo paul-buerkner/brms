@@ -37,7 +37,8 @@ based on \code{\link{kfold.brmsfit}}.}
 \code{NULL} unless \pkg{projpred} complains about it.}
 
 \item{latent}{See argument \code{latent} of
-\code{\link[projpred:extend_family]{extend_family}}.}
+\code{\link[projpred:extend_family]{extend_family}}. Setting this to
+\code{TRUE} requires a \pkg{projpred} version >= 2.4.0.}
 
 \item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 and for sampling group-level effects for new levels (in multilevel models).}
