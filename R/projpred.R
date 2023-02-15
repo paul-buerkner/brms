@@ -267,10 +267,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   sdata <- do_call(standata, args)
 
   usc_resp <- usc(resp)
+  N <- sdata[[paste0("N", usc_resp)]]
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
   if (is_binary(formula)) {
-    trials <- rep(1, sdata[["N"]])
+    trials <- rep(1, N)
   }
   if (!is.null(trials)) {
     if (!is.null(weights)) {
@@ -279,11 +280,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     weights <- trials
   }
   if (is.null(weights)) {
-    weights <- rep(1, sdata[["N"]])
+    weights <- rep(1, N)
   }
   offset <- as.vector(sdata[[paste0("offsets", usc_resp)]])
   if (is.null(offset)) {
-    offset <- rep(0, sdata[["N"]])
+    offset <- rep(0, N)
   }
   nlist(y, weights, offset)
 }
