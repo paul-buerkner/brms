@@ -237,16 +237,14 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     formula <- formula$forms[[resp]]
   }
   bterms <- brmsterms(formula)
+  y <- NULL
   if (extract_y) {
-    respform <- bterms$respform
     data <- current_data(
       object, newdata, resp = resp, check_response = TRUE,
       allow_new_levels = TRUE, req_vars = character()
     )
-    y <- unname(model.response(model.frame(respform, data,
-                                           na.action = na.pass)))
-  } else {
-    y <- NULL
+    y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
+    y <- unname(y)
   }
 
   # extract relevant auxiliary data (offsets and weights (or numbers of trials))
