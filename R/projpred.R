@@ -241,7 +241,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (extract_y) {
     data <- current_data(
       object, newdata, resp = resp, check_response = TRUE,
-      allow_new_levels = TRUE, req_vars = character()
+      allow_new_levels = TRUE, req_vars = all.vars(bterms$respform)
     )
     y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
     y <- unname(y)

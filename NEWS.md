@@ -19,7 +19,7 @@ via the new argument `ndraws_point_estimate`.
 * Fix Stan compilation issues for some of the more special 
 link functions such as `cauchit` or `softplus`.
 * Fix a bug for predictions in **projpred**, previously requiring more variables
-in `newdata` than necessary. (#1457, #1459)
+in `newdata` than necessary. (#1457, #1459, #1460)
 
 
 # brms 2.18.0
