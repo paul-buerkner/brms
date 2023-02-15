@@ -263,7 +263,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     internal = TRUE,
     req_vars = req_vars
   )
-  # TODO: Missing weights don't cause an error here (but they probably should):
+  # NOTE: Missing weights don't cause an error here (see #1459)
   sdata <- do_call(standata, args)
 
   usc_resp <- usc(resp)
