@@ -504,7 +504,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_mixcure_lognormal.stan",
-    specials = c("logscale", "sbi_inc_logit"),
+    specials = c("logscale", "sbi_inc_logit", "sbi_inc_logit_cdf"),
     normalized = ""
   )
 }
@@ -516,7 +516,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_mixcure_weibull.stan",
-    specials = c("logscale", "sbi_inc_logit"),
+    specials = c("logscale", "sbi_inc_logit", "sbi_inc_logit_cdf"),
     normalized = ""
   )
 }

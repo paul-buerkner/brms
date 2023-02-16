@@ -283,13 +283,22 @@ stan_log_lik_simple_lpdf <- function(lpdf, link, bterms, sep = "_") {
 }
 
 # prepare _logit suffix for distributional parameters
-# used in zero-inflated, hurdle and mixcure models
+# used in zero-inflated and hurdle models
 stan_log_lik_dpar_usc_logit <- function(dpar, bterms) {
-  stopifnot(dpar %in% c("zi", "hu", "inc"))
+  stopifnot(dpar %in% c("zi", "hu"))
   stopifnot(is.brmsterms(bterms))
   cens_or_trunc <- stan_log_lik_adj(bterms, c("cens", "trunc"))
   usc_logit <- isTRUE(bterms$dpars[[dpar]]$family$link == "logit")
   str_if(usc_logit && !cens_or_trunc, "_logit")
+}
+
+# prepare _logit suffix for distributional parameters
+# used in mixcure models
+stan_log_lik_inc_usc_logit <- function(dpar, bterms) {
+  stopifnot(dpar %in% c("inc"))
+  stopifnot(is.brmsterms(bterms))
+  usc_logit <- isTRUE(bterms$dpars[[dpar]]$family$link == "logit")
+  str_if(usc_logit, "_logit")
 }
 
 # add 'se' to 'sigma' within the Stan likelihood
@@ -891,20 +900,17 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
 
 stan_log_lik_mixcure_lognormal <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  usc_logit <- stan_log_lik_dpar_usc_logit("inc", bterms)
+  usc_logit <- stan_log_lik_inc_usc_logit("inc", bterms)
   lpdf <- paste0("mixcure_lognormal", usc_logit)
   sdist(lpdf, p$mu, p$sigma, p$inc)
 }
 
 stan_log_lik_mixcure_weibull <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  usc_logit <- stan_log_lik_dpar_usc_logit("inc", bterms)
+  usc_logit <- stan_log_lik_inc_usc_logit("inc", bterms)
   lpdf <- paste0("mixcure_weibull", usc_logit)
   # Stan uses shape-scale parameterization for weibull
-  need_dot_div <- !reqn && paste0("shape", mix) %in% names(bterms$dpars)
-  div_op <- str_if(need_dot_div, " ./ ", " / ")
-  p$scale <- paste0(p$mu, div_op, "tgamma(1 + 1", div_op, p$shape, ")")
+  p$scale <- paste0(p$mu, "/ tgamma(1 + 1 / ", p$shape, ")")
   sdist(lpdf, p$scale, p$shape, p$inc)
 }
 
