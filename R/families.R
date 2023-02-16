@@ -1353,7 +1353,7 @@ links_dpars <- function(dpar) {
     beta = c("log", "identity", "softplus", "squareplus"),
     zi = c("logit", "identity"),
     hu = c("logit", "identity"),
-    inc = c("logit", "identity"),
+    inc = c("logit", "identity", "cloglog"),
     zoi = c("logit", "identity"),
     coi = c("logit", "identity"),
     disc = c("log", "identity", "softplus", "squareplus"),
