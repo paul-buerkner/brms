@@ -2,7 +2,7 @@
    * identity parameterization of the incidence part
    * Args:
    *   y: the response value
-   *   mu: location parameter on the unit interval
+   *   mu: positive scale parameter
    *   shape: positive shape parameter
    *   inc: incidence probability
    * Returns:
@@ -24,7 +24,7 @@
    * logit parameterization of the incidence part
    * Args:
    *   y: the response value
-   *   mu: location parameter on the unit interval
+   *   mu: positive scale parameter
    *   shape: positive shape parameter
    *   inc: incidence probability
    * Returns:
