@@ -2055,29 +2055,29 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
 #' @rdname Mixcure
 #' @export
 dmixcure_lognormal <- function(x, mu, sigma, inc, log = FALSE) {
-    pars <- list(meanlog = mu, sdlog = sigma)
-    .dmixcure(x, "lnorm", inc, pars, log)
+  pars <- list(meanlog = mu, sdlog = sigma)
+  .dmixcure(x, "lnorm", inc, pars, log)
 }
 
 #' @rdname Mixcure
 #' @export
 pmixcure_lognormal <- function(q, mu, sigma, inc, lower.tail = TRUE, log.p = FALSE) {
-    pars <- list(meanlog = mu, sdlog = sigma)
-    .pmixcure(q, "lnorm", inc, pars, lower.tail, log.p)
+  pars <- list(meanlog = mu, sdlog = sigma)
+  .pmixcure(q, "lnorm", inc, pars, lower.tail, log.p)
 }
 
 #' @rdname Mixcure
 #' @export
 dmixcure_weibull <- function(x, shape, scale, inc, log = FALSE) {
-    pars <- list(shape = shape, scale = scale)
-    .dmixcure(x, "weibull", inc, pars, log)
+  pars <- list(shape = shape, scale = scale)
+  .dmixcure(x, "weibull", inc, pars, log)
 }
 
 #' @rdname Mixcure
 #' @export
 pmixcure_weibull <- function(q, shape, scale, inc, lower.tail = TRUE, log.p = FALSE) {
-    pars <- list(shape = shape, scale = scale)
-    .pmixcure(q, "weibull", inc, pars, lower.tail, log.p)
+  pars <- list(shape = shape, scale = scale)
+  .pmixcure(q, "weibull", inc, pars, lower.tail, log.p)
 }
 
 # density of a mixcure distribution
@@ -2085,20 +2085,20 @@ pmixcure_weibull <- function(q, shape, scale, inc, lower.tail = TRUE, log.p = FA
 # @param inc bernoulli incidence parameter
 # @param pars list of parameters passed to pdf
 .dmixcure <- function(x, dist, inc, pars, log) {
-    stopifnot(is.list(pars))
-    dist <- as_one_character(dist)
-    log <- as_one_logical(log)
-    args <- expand(dots = c(nlist(x, inc), pars))
-    x <- args$x
-    inc <- args$inc
-    pars <- args[names(pars)]
-    pdf <- paste0("d", dist)
-    # incidence part (not censored): pi(z) * f(t | x)
-    out <- log(inc) + do_call(pdf, c(list(x), pars, log = TRUE))
-    if (!log) {
-        out <- exp(out)
-    }
-    out
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  log <- as_one_logical(log)
+  args <- expand(dots = c(nlist(x, inc), pars))
+  x <- args$x
+  inc <- args$inc
+  pars <- args[names(pars)]
+  pdf <- paste0("d", dist)
+  # incidence part (not censored): pi(z) * f(t | x)
+  out <- log(inc) + do_call(pdf, c(list(x), pars, log = TRUE))
+  if (!log) {
+    out <- exp(out)
+  }
+  out
 }
 
 # CDF of a mixcure distribution
@@ -2108,49 +2108,35 @@ pmixcure_weibull <- function(q, shape, scale, inc, lower.tail = TRUE, log.p = FA
 # @param lb lower bound of the conditional distribution
 # @param ub upper bound of the conditional distribution
 .pmixcure <- function(q, dist, inc, pars, lower.tail, log.p, lb = 0, ub = Inf) {
-    stopifnot(is.list(pars))
-    dist <- as_one_character(dist)
-    lower.tail <- as_one_logical(lower.tail)
-    log.p <- as_one_logical(log.p)
-    args <- expand(dots = c(nlist(q, inc), pars))
-    q <- args$q
-    inc <- args$inc
-    pars <- args[names(pars)]
-    cdf <- paste0("p", dist)
-    # compute log CCDF values
-    # latency part (right-censored): [1 - pi(z)] + pi(z) * S(t | x)
-    out <- matrixStats::logSumExp(c(
-        1, -inc,
-        inc + do_call(
-            cdf,
-            c(list(q), pars, lower.tail = FALSE, log.p = TRUE)
-        )
-    ))
-    # take the limits of the distribution into account
-    out <- ifelse(q < lb, 0, out)
-    out <- ifelse(q > ub, -Inf, out)
-    if (lower.tail) {
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  args <- expand(dots = c(nlist(q, inc), pars))
+  q <- args$q
+  inc <- args$inc
+  pars <- args[names(pars)]
+  cdf <- paste0("p", dist)
+  # compute log CCDF values
+  # latency part (right-censored): [1 - pi(z)] + pi(z) * S(t | x)
+  out <- matrixStats::logSumExp(c(
+    1, -inc,
+    inc + do_call(cdf, c(list(q), pars, lower.tail = FALSE, log.p = TRUE))
+  ))
+  # # take the limits of the distribution into account
+  out <- ifelse(q < lb, 0, out)
+  out <- ifelse(q > ub, -Inf, out)
+  if (lower.tail) {
     out <- 1 - exp(out)
-        if (log.p) {
-          out <- log(out)
-        }
-    } else {
-        if (!log.p) {
-          out <- exp(out)
-        }
+    if (log.p) {
+      out <- log(out)
     }
-    out
-    if (lower.tail) {
-        out <- 1 - exp(out)
-        if (log.p) {
-            out <- log(out)
-        }
-    } else {
-        if (!log.p) {
-          out <- exp(out)
-        }
+  } else {
+    if (!log.p) {
+      out <- exp(out)
     }
-    out
+  }
+  out
 }
 
 # density of the categorical distribution with the softmax transform
