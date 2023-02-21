@@ -2031,6 +2031,7 @@ stan_dpar_comments <- function(dpar, family) {
     beta = "scale parameter",
     zi = "zero-inflation probability",
     hu = "hurdle probability",
+    inc = "incidence probability",
     zoi = "zero-one-inflation probability",
     coi = "conditional one-inflation probability",
     bs = "boundary separation parameter",
