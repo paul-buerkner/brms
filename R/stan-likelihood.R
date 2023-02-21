@@ -121,10 +121,15 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", .
     s, "if (cens{resp}{n} == 0) {{\n",
     s, "{tp}{w}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
     s, "}} else if (cens{resp}{n} == 1) {{\n",
-    s, "{tp}{w}{ll$dist}_lccdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
-    s, "}} else if (cens{resp}{n} == -1) {{\n",
-    s, "{tp}{w}{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
+    s, "{tp}{w}{ll$dist}_lccdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
   )
+  if (!grepl("mixcure", ll$dist)) {
+    # Mixcure models should not have left-censoring
+    str_add(out) <- glue(
+      s, "}} else if (cens{resp}{n} == -1) {{\n",
+      s, "{tp}{w}{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
+    )
+  }
   if (cens$vars$y2 != "NA") {
     # interval censoring is required
     str_add(out) <- glue(
@@ -283,22 +288,13 @@ stan_log_lik_simple_lpdf <- function(lpdf, link, bterms, sep = "_") {
 }
 
 # prepare _logit suffix for distributional parameters
-# used in zero-inflated and hurdle models
+# used in zero-inflated, hurdle and mixcure models
 stan_log_lik_dpar_usc_logit <- function(dpar, bterms) {
-  stopifnot(dpar %in% c("zi", "hu"))
+  stopifnot(dpar %in% c("zi", "hu", "inc"))
   stopifnot(is.brmsterms(bterms))
   cens_or_trunc <- stan_log_lik_adj(bterms, c("cens", "trunc"))
   usc_logit <- isTRUE(bterms$dpars[[dpar]]$family$link == "logit")
-  str_if(usc_logit && !cens_or_trunc, "_logit")
-}
-
-# prepare _logit suffix for distributional parameters
-# used in mixcure models
-stan_log_lik_inc_usc_logit <- function(dpar, bterms) {
-  stopifnot(dpar %in% c("inc"))
-  stopifnot(is.brmsterms(bterms))
-  usc_logit <- isTRUE(bterms$dpars[[dpar]]$family$link == "logit")
-  str_if(usc_logit, "_logit")
+  str_if(usc_logit && (!cens_or_trunc || dpar == "inc"), "_logit")
 }
 
 # add 'se' to 'sigma' within the Stan likelihood
@@ -900,17 +896,17 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
 
 stan_log_lik_mixcure_lognormal <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  usc_logit <- stan_log_lik_inc_usc_logit("inc", bterms)
+  usc_logit <- stan_log_lik_dpar_usc_logit("inc", bterms)
   lpdf <- paste0("mixcure_lognormal", usc_logit)
   sdist(lpdf, p$mu, p$sigma, p$inc)
 }
 
 stan_log_lik_mixcure_weibull <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  usc_logit <- stan_log_lik_inc_usc_logit("inc", bterms)
+  usc_logit <- stan_log_lik_dpar_usc_logit("inc", bterms)
   lpdf <- paste0("mixcure_weibull", usc_logit)
   # Stan uses shape-scale parameterization for weibull
-  p$scale <- paste0(p$mu, "/ tgamma(1 + 1 / ", p$shape, ")")
+  p$scale <- paste0(p$mu, " / tgamma(1 + 1 / ", p$shape, ")")
   sdist(lpdf, p$scale, p$shape, p$inc)
 }
 
