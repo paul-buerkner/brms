@@ -755,11 +755,6 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
         out$zerr <- prepare_draws(draws, zerr_regex, regex = TRUE)
       }
     } else {
-      if (!use_ac_cov_time(acef)) {
-        # this shouldn't ever happen, should hit an error earlier
-        stop2("Cannot predict new autocorrelated effects ",
-              "when using cov = FALSE in autocor terms.")
-      }
       if (new) {
         # need to sample autocorrelated effects
         # conditional on estimated effects
@@ -778,11 +773,11 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
           out$err_tp <- matrix(nrow = nrow(draws), ncol = length(out$ac_time_points))
         } else {
           out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+          zerr_draws <- prepare_draws(draws, zerr_regex, regex = TRUE)
         }
         
         sderr_regex <- paste0("^sderr", p, "$")
         out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
-        zerr_draws <- prepare_draws(draws, zerr_regex, regex = TRUE)
         out$is_observed <- !is.na(out$Y)
         for (i in seq_len(out$N_tg)) {
           index_tg <- which(out$level_tg[i] == old_levels)

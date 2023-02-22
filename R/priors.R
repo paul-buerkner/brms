@@ -995,15 +995,10 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
     prior <- prior +
       brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
   }
-  # changed ac tag
   if (has_ac_latent_residuals(bterms)) {
     prior <- prior +
       brmsprior(def_scale_prior, class = "sderr", ls = px, lb = "0")
   }
-  # if (parameterize_ac_effects(bterms)) {
-  #   prior <- prior +
-  #     brmsprior(def_scale_prior, class = "sdacranef", ls = px, lb = "0")
-  # }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
     sar_lb <- glue("min_eigenMsar{p}")

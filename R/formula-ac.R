@@ -55,6 +55,10 @@ NULL
 #'   considerably faster and allows for ARMA effects of order higher than 1 but
 #'   is only available for \code{gaussian} models and some of its
 #'   generalizations.
+#' @param latent A flag indicating whether to use latent residuals even if
+#'   the model family has natural residuals. Setting to \code{TRUE} also
+#'   sets \code{cov} to \code{TRUE}. If a time variable is specified, latent
+#'   residuals are slower but allow multiple observations at a time point.
 #'
 #' @return An object of class \code{'arma_term'}, which is a list
 #'   of arguments to be interpreted by the formula
@@ -588,14 +592,9 @@ use_ac_cov_time <- function(x) {
 # does the model need latent residuals for autocor structures?
 has_ac_latent_residuals <- function(bterms) {
   (!has_natural_residuals(bterms) ||
-     has_ac_subset(bterms, latent = T)) &&
+     has_ac_subset(bterms, latent = TRUE)) &&
     (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
 }
-
-# use explicitly parameterized autocor effects?
-# parameterize_ac_effects <- function(bterms) {
-#   has_ac_subset(bterms, latent = T)
-# }
 
 # do we have an explicit time variable?
 has_explicit_ac_time <- function(bterms) {

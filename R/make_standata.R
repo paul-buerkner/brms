@@ -292,7 +292,7 @@ standata_basis_ac <- function(x, data, ...) {
   }
   if (has_ac_class(x, "arma")) {
     if (has_ac_latent_residuals(x)) {
-      out <- data_ac(x, data, ...)
+      out <- append(out, data_ac(x, data, ...))
     }
   }
   out
