@@ -487,12 +487,14 @@ posterior_epred_hurdle_lognormal <- function(prep) {
 
 posterior_epred_mixcure_lognormal <- function(prep) {
   stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'micure_lognormal'.")
+        "distribution for family 'micure_lognormal' because some values ",
+        "of the response are predicted to be infinite.")
 }
 
 posterior_epred_mixcure_weibull <- function(prep) {
   stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'micure_weibull'.")
+        "distribution for family 'micure_lognormal' because some values ",
+        "of the response are predicted to be infinite.")
 }
 
 posterior_epred_hurdle_cumulative <- function(prep) {
