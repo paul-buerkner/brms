@@ -768,6 +768,30 @@ posterior_predict_hurdle_lognormal <- function(i, prep, ...) {
   ifelse(tmp < hu, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
 }
 
+posterior_predict_mixcure_lognormal <- function(i, prep, ...) {
+  inc <- get_dpar(prep, "inc", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  ndraws <- prep$ndraws
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp > inc, Inf, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
+}
+
+posterior_predict_mixcure_weibull <- function(i, prep, ntrys = 5, ...) {
+  shape <- get_dpar(prep, "shape", i = i)
+  scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(
+    tmp > inc, Inf,
+    rcontinuous(
+      n = prep$ndraws, dist = "weibull",
+      shape = shape, scale = scale,
+      lb = prep$data$lb[i], ub = prep$data$ub[i],
+      ntrys = ntrys
+    )
+  )
+}
+
 posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   hu <- get_dpar(prep, "hu", i = i)
