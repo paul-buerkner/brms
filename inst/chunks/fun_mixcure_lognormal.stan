@@ -2,8 +2,8 @@
    * identity parameterization of the incidence part
    * Args:
    *   y: the response value
-   *   mu: mean parameter of the lognormal distribution
-   *   sigma: sd parameter of the lognormal distribution
+   *   mu: positive location parameter
+   *   sigma: positive scale parameter
    *   inc: incidence probability
    * Returns:
    *   a scalar to be added to the log posterior
@@ -24,8 +24,8 @@
    * logit parameterization of the incidence part
    * Args:
    *   y: the response value
-   *   mu: mean parameter of the lognormal distribution
-   *   sigma: sd parameter of the lognormal distribution
+   *   mu: positive location parameter
+   *   sigma: positive scale parameter
    *   inc: incidence probability
    * Returns:
    *   a scalar to be added to the log posterior
