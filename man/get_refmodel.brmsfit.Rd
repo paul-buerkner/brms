@@ -9,6 +9,8 @@ get_refmodel.brmsfit(
   newdata = NULL,
   resp = NULL,
   cvfun = NULL,
+  dis = NULL,
+  latent = FALSE,
   brms_seed = NULL,
   ...
 )
@@ -29,6 +31,14 @@ are performed only for the specified response variables.}
 (see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 If \code{NULL} (the default), \code{cvfun} is defined internally
 based on \code{\link{kfold.brmsfit}}.}
+
+\item{dis}{Passed to argument \code{dis} of
+\code{\link[projpred:init_refmodel]{init_refmodel}}, but leave this at
+\code{NULL} unless \pkg{projpred} complains about it.}
+
+\item{latent}{See argument \code{latent} of
+\code{\link[projpred:extend_family]{extend_family}}. Setting this to
+\code{TRUE} requires a \pkg{projpred} version >= 2.4.0.}
 
 \item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 and for sampling group-level effects for new levels (in multilevel models).}
@@ -51,8 +61,8 @@ it manually yourself.
 }
 \details{
 Note that the \code{extract_model_data} function used internally by
-  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs}, \code{orhs}, and
-  \code{extract_y}. This is relevant for
+  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}.
+  This is relevant for
   \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
 }
 \examples{
