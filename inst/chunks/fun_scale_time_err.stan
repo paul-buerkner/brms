@@ -21,7 +21,7 @@
      return err;
    }
   /* scale and correlate time-series residuals
-   * allowx for flexible correlation matrix subsets
+   * allows for flexible correlation matrix subsets
    * Deviating Args:
    *   Jtime: array of time indices per group
    * Returns:

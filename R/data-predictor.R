@@ -982,7 +982,7 @@ smoothCon <- function(object, data, ...) {
 }
 
 # Aid prediction from smooths represented as 'type = 2'
-# originally provided by Simon Wood
+# code obtained from the doc of ?mgcv::smooth2random
 # @param sm output of mgcv::smoothCon
 # @param data new data supplied for prediction
 # @return A list of the same structure as returned by mgcv::smoothCon
