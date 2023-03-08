@@ -518,7 +518,7 @@ get_all_effects.mvbrmsterms <- function(x, ...) {
 # @return a list with one element per valid effect / effects combination
 #   excludes all 3-way or higher interactions
 #' @export
-get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
+get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE, ...) {
   stopifnot(is.atomic(rsv_vars))
   out <- list()
   for (dp in names(x$dpars)) {
