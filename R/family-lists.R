@@ -329,6 +329,17 @@
   )
 }
 
+.family_loglogistic <- function() {
+  list(
+    links = c("log", "identity"),
+    dpars = c("mu", "shape"), type = "real",
+    ybounds = c(0, Inf), closed = c(FALSE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
+    include = "fun_loglogistic.stan",
+    specials = "logscale"
+  )
+}
+
 .family_von_mises <- function() {
   list(
     links = c("tan_half", "identity"),

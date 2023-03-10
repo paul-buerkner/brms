@@ -607,6 +607,13 @@ gen_extreme_value <- function(link = "identity", link_sigma = "log",
 
 #' @rdname brmsfamily
 #' @export
+loglogistic <- function(link = "log", link_shape = "log") {
+  slink <- substitute(link)
+  .brmsfamily("loglogistic", link = link, link_shape = link_shape)
+}
+
+#' @rdname brmsfamily
+#' @export
 exgaussian <- function(link = "identity", link_sigma = "log",
                        link_beta = "log") {
   slink <- substitute(link)
@@ -752,6 +759,15 @@ mixcure_weibull <- function(link = "log", link_shape = "log",
                             link_inc = "logit") {
   slink <- substitute(link)
   .brmsfamily("mixcure_weibull", link = link, slink = slink,
+              link_shape = link_shape, link_inc = link_inc)
+}
+
+#' @rdname brmsfamily
+#' @export
+mixcure_loglogistic <- function(link = "identity", link_shape = "log",
+                              link_inc = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("mixcure_loglogistic", link = link, slink = slink,
               link_shape = link_shape, link_inc = link_inc)
 }
 
@@ -1886,10 +1902,10 @@ family_bounds.brmsterms <- function(x, ...) {
   pos_families <- c(
     "poisson", "negbinomial", "negbinomial2", "geometric",
     "gamma", "weibull", "exponential", "lognormal",
-    "frechet", "inverse.gaussian",
+    "frechet", "inverse.gaussian", "loglogistic",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "mixcure_lognormal", "mixcure_weibull",
-    "zero_inflated_poisson", "zero_inflated_negbinomial"
+    "mixcure_loglogistic", "zero_inflated_poisson", "zero_inflated_negbinomial"
   )
   beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
   ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
