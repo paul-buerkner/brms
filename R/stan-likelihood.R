@@ -699,6 +699,11 @@ stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
   sdist(lpdf, p$mu, p$shape)
 }
 
+stan_log_lik_loglogistic <- function(bterms, resp = "", mix = "", ...) {
+  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
+  sdist("loglogistic", p$mu, p$shape)
+}
+
 stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
                                 ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
