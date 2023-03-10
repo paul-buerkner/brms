@@ -631,6 +631,16 @@ posterior_predict_gen_extreme_value <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_loglogistic <- function(i, prep, ntrys = 5, ...) {
+  rcontinuous(
+    n = prep$ndraws, dist = "llogis",
+    shape = get_dpar(prep, "shape", i = i),
+    scale = get_dpar(prep, "mu", i = i),
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_inverse.gaussian <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "inv_gaussian",

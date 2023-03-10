@@ -429,6 +429,13 @@ posterior_epred_gen_extreme_value <- function(prep) {
   with(prep$dpars, mu + sigma * (gamma(1 - xi) - 1) / xi)
 }
 
+posterior_epred_loglogistic <- function(prep) {
+  if (prep$dpar$shape <= 1) {
+    stop2("The mean is undefined for shape parameter <= 1.")
+  }
+  with(prep$dpars, scale * (pi / shape) / sin(pi / shape))
+}
+
 posterior_epred_inverse.gaussian <- function(prep) {
   prep$dpars$mu
 }
@@ -487,13 +494,19 @@ posterior_epred_hurdle_lognormal <- function(prep) {
 
 posterior_epred_mixcure_lognormal <- function(prep) {
   stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'micure_lognormal' because some values ",
+        "distribution for family 'mixcure_lognormal' because some values ",
         "of the response are predicted to be infinite.")
 }
 
 posterior_epred_mixcure_weibull <- function(prep) {
   stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'micure_lognormal' because some values ",
+        "distribution for family 'mixcure_weibull' because some values ",
+        "of the response are predicted to be infinite.")
+}
+
+posterior_epred_mixcure_loglogistic <- function(prep) {
+  stop2("Cannot compute expected values of the posterior predictive ",
+        "distribution for family 'mixcure_loglogistic' because some values ",
         "of the response are predicted to be infinite.")
 }
 
