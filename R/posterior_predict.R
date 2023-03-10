@@ -802,6 +802,15 @@ posterior_predict_mixcure_weibull <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_mixcure_loglogistic <- function(i, prep, ...) {
+  inc <- get_dpar(prep, "inc", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  ndraws <- prep$ndraws
+  tmp <- runif(ndraws, 0, 1)
+  ifelse(tmp > inc, Inf, rllogis(ndraws, meanlog = mu, sdlog = sigma))
+}
+
 posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   hu <- get_dpar(prep, "hu", i = i)
