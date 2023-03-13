@@ -61,7 +61,8 @@ test_that("skew_normal distribution functions run without errors", {
   res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n,
                       alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
-  res <- qskew_normal(x, mu = rnorm(n), sigma = 1:n,
+  p <- log(runif(n, 0, 1))
+  res <- qskew_normal(p, mu = rnorm(n), sigma = 1:n,
                       alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- rskew_normal(n, mu = rnorm(n), sigma = 10, alpha = -4:5)
@@ -108,7 +109,7 @@ test_that("inv_gaussian distribution functions run without errors", {
 test_that("beta_binomial distribution functions run without errors", {
   n <- 10
   x <- rpois(n, lambda = 1)
-  
+
   res <- dbeta_binomial(x, c(2, 10), mu = 0.4, phi = 1)
   expect_true(length(res) == n)
   res <- pbeta_binomial(x, c(2, 10), mu = 0.4, phi = 1)
