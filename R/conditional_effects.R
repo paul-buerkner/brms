@@ -899,7 +899,7 @@ prepare_cond_data <- function(data, conditions, int_conditions = NULL,
   }
   # no need to have the same value combination more than once
   data <- unique(data)
-  data <- data[do_call(order, as.list(data)), , drop = FALSE]
+  data <- data[do_call(order, unname(as.list(data))), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   cond_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
