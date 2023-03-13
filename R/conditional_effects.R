@@ -1017,6 +1017,7 @@ print.brms_conditional_effects <- function(x, ...) {
 
 #' @rdname conditional_effects.brmsfit
 #' @method plot brms_conditional_effects
+#' @importFrom rlang .data
 #' @export
 plot.brms_conditional_effects <- function(
   x, ncol = NULL, points = getOption("brms.plot_points", FALSE),
@@ -1062,12 +1063,12 @@ plot.brms_conditional_effects <- function(
     if (surface || ordinal) {
       # surface plots for two dimensional interactions or ordinal plots
       plots[[i]] <- ggplot(x[[i]]) +
-        aes_(~ effect1__, ~ effect2__) +
+        aes(.data[["effect1__"]], .data[["effect2__"]]) +
         labs(x = effects[1], y = effects[2])
       if (ordinal) {
         width <- ifelse(is_like_factor(x[[i]]$effect1__), 0.9, 1)
         .surface_args <- nlist(
-          mapping = aes_(fill = ~ estimate__),
+          mapping = aes(fill = .data[["estimate__"]]),
           height = 0.9, width = width
         )
         replace_args(.surface_args, dont_replace) <- surface_args
@@ -1077,15 +1078,15 @@ plot.brms_conditional_effects <- function(
           ylab(response)
       } else if (stype == "contour") {
         .surface_args <- nlist(
-          mapping = aes_(z = ~ estimate__, colour = ~ ..level..),
-          bins = 30, size = 1.3
+          mapping = aes(z = .data[["estimate__"]], colour = .data[["..level.."]]),
+          bins = 30, linewidth = 1.3
         )
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] +
           do_call(geom_contour, .surface_args) +
           scale_color_gradientn(colors = viridis6(), name = response)
       } else if (stype == "raster") {
-        .surface_args <- nlist(mapping = aes_(fill = ~ estimate__))
+        .surface_args <- nlist(mapping = aes(fill = .data[["estimate__"]]))
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] +
           do_call(geom_raster, .surface_args) +
@@ -1095,12 +1096,18 @@ plot.brms_conditional_effects <- function(
       # plot effects of single predictors or two-way interactions
       gvar <- if (length(effects) == 2L) "effect2__"
       spaghetti <- attr(x[[i]], "spaghetti")
-      plots[[i]] <- ggplot(x[[i]]) +
-        aes_string(x = "effect1__", y = "estimate__", colour = gvar) +
+      aes_tmp <- aes(x = .data[["effect1__"]], y = .data[["estimate__"]])
+      if (!is.null(gvar)) {
+        aes_tmp$colour <- aes(colour = .data[[gvar]])$colour
+      }
+      plots[[i]] <- ggplot(x[[i]]) + aes_tmp +
         labs(x = effects[1], y = response, colour = effects[2])
       if (is.null(spaghetti)) {
-        plots[[i]] <- plots[[i]] +
-          aes_string(ymin = "lower__", ymax = "upper__", fill = gvar) +
+        aes_tmp <- aes(ymin = .data[["lower__"]], ymax = .data[["upper__"]])
+        if (!is.null(gvar)) {
+          aes_tmp$fill <- aes(fill = .data[[gvar]])$fill
+        }
+        plots[[i]] <- plots[[i]] + aes_tmp +
           labs(fill = effects[2])
       }
       # extract suggested colors for later use
@@ -1109,13 +1116,13 @@ plot.brms_conditional_effects <- function(
       if (points && !categorical && !surface) {
         # add points first so that they appear behind the predictions
         .point_args <- list(
-          mapping = aes_string(x = "effect1__", y = "resp__"),
+          mapping = aes(x = .data[["effect1__"]], y = .data[["resp__"]]),
           data = df_points, inherit.aes = FALSE,
           size = 2 / ncond^0.25, height = 0, width = jitter_width
         )
         if (is_like_factor(df_points[, gvar])) {
           .point_args$mapping[c("colour", "fill")] <-
-            aes_string(colour = gvar, fill = gvar)
+            aes(colour = .data[[gvar]], fill = .data[[gvar]])
         }
         replace_args(.point_args, dont_replace) <- point_args
         plots[[i]] <- plots[[i]] +
@@ -1124,9 +1131,12 @@ plot.brms_conditional_effects <- function(
       if (!is.null(spaghetti)) {
         # add a regression line for each sample separately
         .spaghetti_args <- list(
-          aes_string(group = "sample__", colour = gvar),
-          data = spaghetti, stat = "identity", size = 0.5
+          aes(group = .data[["sample__"]]),
+          data = spaghetti, stat = "identity", linewidth = 0.5
         )
+        if (!is.null(gvar)) {
+          .spaghetti_args[[1]]$colour <- aes(colour = .data[[gvar]])$colour
+        }
         if (length(effects) == 1L) {
           .spaghetti_args$colour <- alpha("blue", 0.1)
         } else {
@@ -1143,7 +1153,9 @@ plot.brms_conditional_effects <- function(
         .line_args <- list(stat = "identity")
         if (!is.null(spaghetti)) {
           # display a white mean regression line
-          .line_args$mapping <- aes_string(group = gvar)
+          if (!is.null(gvar)) {
+            .line_args$mapping <- aes(group = .data[[gvar]])
+          }
           .line_args$colour <- alpha("white", 0.8)
         }
         replace_args(.line_args, dont_replace) <- line_args
@@ -1153,12 +1165,12 @@ plot.brms_conditional_effects <- function(
         }
         if (rug) {
           .rug_args <- list(
-            aes_string(x = "effect1__"), sides = "b",
+            aes(x = .data[["effect1__"]]), sides = "b",
             data = df_points, inherit.aes = FALSE
           )
           if (is_like_factor(df_points[, gvar])) {
             .point_args$mapping[c("colour", "fill")] <-
-              aes_string(colour = gvar, fill = gvar)
+              aes(colour = .data[[gvar]], fill = .data[[gvar]])
           }
           replace_args(.rug_args, dont_replace) <- rug_args
           plots[[i]] <- plots[[i]] +
