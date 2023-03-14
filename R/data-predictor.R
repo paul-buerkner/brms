@@ -674,7 +674,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       # If time variable is specified, set up grouping data
       # and timepoint index.
       if (time_var != "NA") {
-        out$ac_time <- data[, time_var]
+        out$ac_time <- data[[time_var]]
         out$ac_time_points <- c()
         # Number of latent parameters needed
         if (gr != "NA") {
@@ -683,10 +683,13 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
           out$N_latent_err <- length(unique(data[, time_var]))
         }
         out$latent_err_idx <- array(dim=N)
+        # merge to single assignment
         out$begin_tg <- array(dim=length(out$level_tg))
         out$end_tg <- array(dim=length(out$level_tg))
         out$nobs_tg <- array(dim=length(out$level_tg))
         # Build vector of latent error indices
+        # explain this a bit -- this works only if sorted
+        # by group
         gr_end <- 0
         last_idx <- 0
         par_gr_idx <- 1
@@ -695,23 +698,30 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
           times <- unique(data[[time_var]])
           out$ac_time_points <- times
           out$nobs_tg[1] <- length(times)
-          for (j in seq_len(nrow(data))) {
-            out$latent_err_idx[j] <- 
-              which(times == data[[j, time_var]])
-          }
+          # replace with match call
+          # for (j in seq_len(nrow(data))) {
+          #   out$latent_err_idx[j] <- 
+          #     which(times == data[j, time_var])
+          # }
+          out$latent_err_idx <- match(times, out$ac_time_points)
           out$end_tg[1] <- length(times)
         } else {
           for (gr_id in unique(data[[gr]])) {
             out$begin_tg[par_gr_idx] <- last_idx + 1
-            data_gr <- subset(data, data[[gr]] == gr_id)
+            # data_gr <- subset(data, data[[gr]] == gr_id)
+            # consider defining gr_values <- data[[gr]]
+            data[data[[gr]] == gr_id,]
             gr_times <- unique(data_gr[[time_var]])
             out$ac_time_points <- c(out$ac_time_points, gr_times)
             out$nobs_tg[par_gr_idx] <- length(gr_times)
-            for (j in seq_len(nrow(data_gr))) {
-              out$latent_err_idx[gr_end + j] <- 
-                last_idx + 
-                which(gr_times == data_gr[[j, time_var]])
-            }
+            # replace with match call
+            # for (j in seq_len(nrow(data_gr))) {
+            #   out$latent_err_idx[gr_end + j] <- 
+            #     last_idx + 
+            #     which(gr_times == data_gr[[j, time_var]])
+            # }
+            out$latent_err_idx[(gr_end+1):(gr_end + nrow)] <-
+              match(data_gr[[time_var]], gr_times)
             gr_end <- gr_end + nrow(data_gr)
             last_idx <- out$latent_err_idx[gr_end]
             out$end_tg[par_gr_idx] <- last_idx

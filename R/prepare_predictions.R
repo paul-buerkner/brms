@@ -781,27 +781,19 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
         out$is_observed <- !is.na(out$Y)
         for (i in seq_len(out$N_tg)) {
           index_tg <- which(out$level_tg[i] == old_levels)
-          if (!length(index_tg) | !has_zerr) {
+          if (!length(index_tg) | !has_err) {
             # if it's a new level or if latent errors were not saved,
             # sample a new autocorrelated effect
             if (!has_zerr) {
-              warning(paste("Latent parameter draws for group level",
-                            out$level_tg[i], "not found. Use save_pars",
-                            "when fitting to ensure draws are saved."), call. = FALSE)
+              warning2("Latent parameter draws for group level",
+                        out$level_tg[i], "not found. Use save_pars",
+                       "when fitting to ensure draws are saved.")
             }
-            if (has_explicit_time) {
-              times <- sdata$begin_tg[i]:sdata$end_tg[i]
-              zeros <- rep(0, length(times))
-              cov <- get_cov_matrix_ac(list(ac = out), times, latent = TRUE)
-              .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-              out$err_tp[, times] <- rblapply(seq_rows(draws), .err)
-            } else {
-              obs <- with(out, begin_tg[i]:end_tg[i])
-              zeros <- rep(0, length(obs))
-              cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-              .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-              out$err[, obs] <- rblapply(seq_rows(draws), .err)
-            }
+            times <- sdata$begin_tg[i]:sdata$end_tg[i]
+            zeros <- rep(0, length(times))
+            cov <- get_cov_matrix_ac(list(ac = out), times, latent = TRUE)
+            .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+            out$err_tp[, times] <- rblapply(seq_rows(draws), .err)
           } else {
             # if it's an existing level, sample new effects conditional on 
             # estimated effects for observed times
@@ -844,21 +836,31 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
               }
               out$err_tp[, out$begin_tg[i]:out$end_tg[i]] <- rblapply(seq_rows(draws), .cond_err)
             } else {
-              obs <- with(out, begin_tg[i]:end_tg[i])
-              old_obs <- with(sdata, begin_tg_old[index_tg]:end_tg_old[index_tg])
-              if (length(obs) < length(old_obs)) {
-                stop2("Length of at least one group in the new data", 
-                      "is shorter than in the training data. Cannot",
-                      "unambiguously select latent residuals to use.",
-                      "Consider setting a time variable.")
-              }
-              cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
-              .cond_err <- function(s) {
-                cov_chol <- t(chol(cov[s, , ]))
-                new_zerr <- c(zerr_draws[s, old_obs], rnorm(max(length(obs) - length(old_obs), 0)))
-                t(cov_chol %*% new_zerr)
-              }
-              out$err[, obs] <- rblapply(seq_rows(draws), .cond_err)
+              warning2("Latent autocorrelated models can only sample conditional",
+                       "on observed data when a time variable is set. Sampling a",
+                       "new latent residual instead. Consider setting a time",
+                       "variable.")
+              times <- sdata$begin_tg[i]:sdata$end_tg[i]
+              zeros <- rep(0, length(times))
+              cov <- get_cov_matrix_ac(list(ac = out), times, latent = TRUE)
+              .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+              out$err_tp[, times] <- rblapply(seq_rows(draws), .err)
+              #
+              # obs <- with(out, begin_tg[i]:end_tg[i])
+              # old_obs <- with(sdata, begin_tg_old[index_tg]:end_tg_old[index_tg])
+              # if (length(obs) < length(old_obs)) {
+              #   stop2("Length of at least one group in the new data", 
+              #         "is shorter than in the training data. Cannot",
+              #         "unambiguously select latent residuals to use.",
+              #         "Consider setting a time variable.")
+              # }
+              # cov <- get_cov_matrix_ac(list(ac = out), obs, latent = TRUE)
+              # .cond_err <- function(s) {
+              #   cov_chol <- t(chol(cov[s, , ]))
+              #   new_zerr <- c(zerr_draws[s, old_obs], rnorm(max(length(obs) - length(old_obs), 0)))
+              #   t(cov_chol %*% new_zerr)
+              # }
+              # out$err[, obs] <- rblapply(seq_rows(draws), .cond_err)
             }
           }
         }

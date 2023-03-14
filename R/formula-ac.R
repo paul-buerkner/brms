@@ -75,7 +75,7 @@ NULL
 #' }
 #'
 #' @export
-arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = FALSE) {
+arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = NULL) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -105,7 +105,7 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE, latent = FALSE) 
 #' }
 #'
 #' @export
-ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = FALSE) {
+ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = NULL) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -135,7 +135,7 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE, latent = FALSE) {
 #' }
 #'
 #' @export
-ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = FALSE) {
+ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = NULL) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -158,10 +158,12 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE, latent = FALSE) {
   if (!sum(p, q)) {
     stop2("At least one of 'p' and 'q' should be greater zero.")
   }
-  latent <- as_one_logical(latent)
-  if (latent && !cov) {
-    # latent formulation requires cov formulation
-    cov <- TRUE
+  if (!is.null(latent)) {
+    latent <- as_one_logical(latent)
+    if (latent && !cov) {
+      # latent formulation requires cov formulation
+      cov <- TRUE
+    }
   }
   cov <- as_one_logical(cov)
   if (cov && (p > 1 || q > 1)) {
