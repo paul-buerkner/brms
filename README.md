@@ -41,7 +41,7 @@ with posterior predictive checks, cross-validation, and Bayes factors.
     (The R Journal)
 -   [Website](https://paul-buerkner.github.io/brms/) (Website of brms
     with documentation and vignettes)
--   [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/)
+-   [Blog posts](https://paul-buerkner.github.io/software/brms-blogposts.html)
     (List of blog posts about brms)
 -   [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
     Discourse)

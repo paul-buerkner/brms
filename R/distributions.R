@@ -47,10 +47,12 @@ pstudent_t <- function(q, df, mu = 0, sigma = 1,
 
 #' @rdname StudentT
 #' @export
-qstudent_t <-  function(p, df, mu = 0, sigma = 1) {
+qstudent_t <-  function(p, df, mu = 0, sigma = 1,
+                        lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
   mu + sigma * qt(p, df = df)
 }
 
@@ -333,12 +335,7 @@ qskew_normal <- function(p, mu = 0, sigma = 1, alpha = 0,
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
-  if (log.p) {
-    p <- exp(p)
-  }
-  if (!lower.tail) {
-    p <- 1 - p
-  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
   args <- cp2dp(mu, sigma, alpha, xi = xi, omega = omega, p = p)
   out <- with(args, {
     # do it like sn::qsn
@@ -752,21 +749,13 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
 #' @export
 qfrechet <- function(p, loc = 0, scale = 1, shape = 1,
                      lower.tail = TRUE, log.p = FALSE) {
-  if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
-    stop("'p' must contain probabilities in (0,1)")
-  }
   if (isTRUE(any(scale <= 0))) {
     stop2("Argument 'scale' must be positive.")
   }
   if (isTRUE(any(shape <= 0))) {
     stop2("Argument 'shape' must be positive.")
   }
-  if (log.p) {
-    p <- exp(p)
-  }
-  if (!lower.tail) {
-    p <- 1 - p
-  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
   loc + scale * (-log(p))^(-1/shape)
 }
 
@@ -1022,6 +1011,24 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
 
 #' @rdname GenExtremeValue
 #' @export
+qgen_extreme_value <- function(p, mu = 0, sigma = 1, xi = 0,
+                               lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma bust be positive.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- nlist(p, mu, sigma, xi)
+  args <- do_call(expand, args)
+  out <- with(args, ifelse(
+    xi == 0,
+    mu - sigma * log(-log(p)),
+    mu + (sigma * (1 - (-log(p))^xi)) / xi
+  ))
+  out
+}
+
+#' @rdname GenExtremeValue
+#' @export
 rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
   if (isTRUE(any(sigma <= 0))) {
     stop2("sigma bust be positive.")
@@ -1089,12 +1096,7 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
 #' @export
 qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
-  if (log.p) {
-    p <- exp(p)
-  }
-  if (!lower.tail) {
-    p <- 1 - p
-  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
   if (length(quantile) == 1L) {
     quantile <- rep(quantile, length(mu))
   }
@@ -1175,12 +1177,7 @@ qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(shape <= 0))) {
     stop2("shape bust be positive.")
   }
-  if (log.p) {
-    p <- exp(p)
-  }
-  if (!lower.tail) {
-    p <- 1 - p
-  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
   ceiling((log(1 - p) / log(mu))^(1 / shape) - 1)
 }
 
@@ -2626,6 +2623,20 @@ qshifted <- function(dist, p, shift = 0, ...) {
 
 rshifted <- function(dist, n, shift = 0, ...) {
   do_call(paste0("r", dist), list(n, ...)) + shift
+}
+
+# validate argument p in q<dist> functions
+validate_p_dist <- function(p, lower.tail = TRUE, log.p = FALSE) {
+  if (log.p) {
+    p <- exp(p)
+  }
+  if (!lower.tail) {
+    p <- 1 - p
+  }
+  if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
+    stop2("'p' must contain probabilities in (0,1)")
+  }
+  p
 }
 
 # check if 'n' in r<dist> functions is valid
