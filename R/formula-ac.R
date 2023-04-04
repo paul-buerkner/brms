@@ -424,8 +424,6 @@ validate_autocor <- function(autocor) {
     return(NULL)
   }
   autocor <- as.formula(autocor)
-  # do not store environments in formulas #1476
-  environment(autocor) <- globalenv()
   att <- attributes(autocor)
   autocor <- terms_ac(autocor)
   if (!is.null(autocor) && !is.formula(autocor)) {

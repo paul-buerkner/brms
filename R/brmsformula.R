@@ -659,8 +659,6 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     out <- list(formula = as_formula(formula))
     class(out) <- "brmsformula"
   }
-  # do not store environments in formulas #1476
-  environment(out$formula) <- globalenv()
   # parse and validate dots arguments
   dots <- c(out$pforms, out$pfix, list(...), flist)
   dots <- lapply(dots, function(x) if (is.list(x)) x else list(x))
@@ -1195,8 +1193,6 @@ validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
     out <- named_list(par, formula)
   } else {
     formula <- try_formula
-    # do not store environments in formulas #1476
-    environment(formula) <- globalenv()
     if (!is.null(lhs(formula))) {
       resp_pars <- all.vars(formula[[2]])
       out <- named_list(resp_pars, list(formula))
