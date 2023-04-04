@@ -659,6 +659,8 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     out <- list(formula = as_formula(formula))
     class(out) <- "brmsformula"
   }
+  # do not store environments in formulas #1476
+  environment(out$formula) <- globalenv()
   # parse and validate dots arguments
   dots <- c(out$pforms, out$pfix, list(...), flist)
   dots <- lapply(dots, function(x) if (is.list(x)) x else list(x))
@@ -1193,6 +1195,8 @@ validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
     out <- named_list(par, formula)
   } else {
     formula <- try_formula
+    # do not store environments in formulas #1476
+    environment(formula) <- globalenv()
     if (!is.null(lhs(formula))) {
       resp_pars <- all.vars(formula[[2]])
       out <- named_list(resp_pars, list(formula))
@@ -1631,16 +1635,14 @@ lhs <- function(x) {
 # convert a string to a formula
 # @param x vector of strings to be converted
 # @param ... passed to formula()
-str2formula <- function(x, ..., collapse = "+") {
+str2formula <- function(x, env = parent.frame(), collapse = "+") {
   has_chars <- nzchar(x)
   if (length(x) && any(has_chars)) {
     out <- paste(x[has_chars], collapse = collapse)
   } else {
     out <- "1"
   }
-  out <- formula(paste("~", out), ...)
-  environment(out) <- parent.frame()
-  out
+  as.formula(paste("~", out), env = env)
 }
 
 # convert a formula to a character string
