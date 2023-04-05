@@ -1003,7 +1003,7 @@ read_brmsfit <- function(file) {
 # @param x a brmsfit object
 # @param file path to an rds file
 # @return NULL
-write_brmsfit <- function(x, file, compress = 'gzip') {
+write_brmsfit <- function(x, file, compress = "gzip") {
   stopifnot(is.brmsfit(x))
   file <- check_brmsfit_file(file)
   x$file <- file
