@@ -445,7 +445,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = 1,
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, compress = 'gzip',
+                file = NULL, compress = "gzip",
                 file_refit = getOption("brms.file_refit", "never"),
                 empty = FALSE, rename = TRUE, ...) {
 
