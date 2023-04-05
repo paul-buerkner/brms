@@ -208,8 +208,8 @@
 #'   files won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
-#' @param compress A character string, one of \code{"gzip"}, \code{"xz"}, or
-#'   \code{"bzip2"} (default \code{"gzip"}). If the \code{file} parameter is
+#' @param compress A character string, one of the compression algorithms supported
+#'   by \code{saveRDS} (default \code{"gzip"}). If the \code{file} parameter is
 #'   passed, this compression will be used when saving the fitted model object.
 #' @param file_refit Modifies when the fit stored via the \code{file} parameter
 #'   is re-used. Can be set globally for the current \R session via the
