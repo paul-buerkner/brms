@@ -29,6 +29,10 @@
 #'   result is re-used and all arguments modifying the model code or data are
 #'   ignored. It is not recommended to use this argument directly, but to call
 #'   the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.
+#' @param compress A character string, one of the compression algorithms supported
+#'   by \code{saveRDS} (default \code{"gzip"}). If the \code{file} parameter is
+#'   passed, this compression will be used when saving the combined fitted model 
+#'   object.
 #' @param ... Further arguments passed to \code{\link{brm}}.
 #'
 #' @details The combined model may issue false positive convergence warnings, as
@@ -75,7 +79,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          stan_funs = NULL, silent = 1, recompile = FALSE,
                          combine = TRUE, fit = NA,
                          algorithm = getOption("brms.algorithm", "sampling"),
-                         seed = NA, file = NULL, file_refit = "never", ...) {
+                         seed = NA, file = NULL, compress = "gzip",
+                         file_refit = "never", ...) {
 
   combine <- as_one_logical(combine)
   file_refit <- match.arg(file_refit, file_refit_options())
@@ -167,7 +172,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     class(fits) <- c("brmsfit_multiple", class(fits))
   }
   if (!is.null(file)) {
-    fits <- write_brmsfit(fits, file)
+    fits <- write_brmsfit(fits, file, compress)
   }
   fits
 }
