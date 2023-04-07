@@ -2052,6 +2052,24 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   out
 }
 
+#' Mixture cure (mixcure) Distributions
+#'
+#' Density and distribution functions for mixcure distributions.
+#'
+#' @name Mixcure
+#'
+#' @inheritParams StudentT
+#' @param inc incidence probability
+#' @param mu location parameter
+#' @param shape shape parameter
+#' @param sigma,scale scale parameter
+#'
+#' @details
+#' The mixcure distribution is a subclass of survival/time-to-event models
+#' where a subpopulation of the subjects are posited to be ``cured''
+#' i.e. event-free. Mathematically, 
+NULL
+
 #' @rdname Mixcure
 #' @export
 dmixcure_lognormal <- function(x, mu, sigma, inc, log = FALSE) {
@@ -2078,6 +2096,20 @@ dmixcure_weibull <- function(x, shape, scale, inc, log = FALSE) {
 pmixcure_weibull <- function(q, shape, scale, inc, lower.tail = TRUE, log.p = FALSE) {
   pars <- list(shape = shape, scale = scale)
   .pmixcure(q, "weibull", inc, pars, lower.tail, log.p)
+}
+
+#' @rdname Mixcure
+#' @export
+dmixcure_loglogistic <- function(x, shape, scale, inc, log = FALSE) {
+  pars <- list(shape = shape, scale = scale)
+  .dmixcure(x, "llogis", inc, pars, log)
+}
+
+#' @rdname Mixcure
+#' @export
+pmixcure_loglogistic <- function(q, shape, scale, inc, lower.tail = TRUE, log.p = FALSE) {
+  pars <- list(shape = shape, scale = scale)
+  .pmixcure(q, "llogis", inc, pars, lower.tail, log.p)
 }
 
 # density of a mixcure distribution
