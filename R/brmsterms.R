@@ -202,16 +202,17 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   y$allvars <- allvars_formula(
     lhsvars, advars, lapply(y$dpars, get_allvars),
     lapply(y$nlpars, get_allvars), y$time$allvars,
-    get_unused_arg_vars(y)
+    get_unused_arg_vars(y),
+    .env = environment(formula)
   )
   if (check_response) {
     # add y$respform to the left-hand side of y$allvars
     # avoid using update.formula as it is inefficient for longer formulas
     formula_allvars <- y$respform
     formula_allvars[[3]] <- y$allvars[[2]]
+    environment(formula_allvars) <- environment(y$allvars)
     y$allvars <- formula_allvars
   }
-  environment(y$allvars) <- environment(formula)
   y
 }
 
@@ -229,7 +230,10 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
     x$forms[[i]]$mv <- TRUE
     out$terms[[i]] <- brmsterms(x$forms[[i]], ...)
   }
-  out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
+  list_allvars <- lapply(out$terms, get_allvars)
+  out$allvars <- allvars_formula(
+    list_allvars, .env = environment(list_allvars[[1]])
+  )
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse0(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
@@ -262,7 +266,6 @@ terms_lf <- function(formula) {
     get_allvars(y$sm), get_allvars(y$gp),
     get_allvars(y$ac), get_allvars(y$offset)
   )
-  environment(y$allvars) <- environment(formula)
   structure(y, class = "btl")
 }
 
@@ -286,7 +289,6 @@ terms_nlf <- function(formula, nlpars, resp = "") {
     y$ac <- terms_ac(attr(formula, "autocor"))
   }
   y$allvars <- allvars_formula(covars, get_allvars(y$ac))
-  environment(y$allvars) <- environment(formula)
   y$loop <- loop
   structure(y, class = "btnl")
 }
@@ -705,7 +707,7 @@ check_fdpars <- function(x) {
 # combine all variables in one formuula
 # @param x (list of) formulas or character strings
 # @return a formula with all variables on the right-hand side
-allvars_formula <- function(...) {
+allvars_formula <- function(..., .env = parent.frame()) {
   out <- rmNULL(c(...))
   out <- collapse(ulapply(out, plus_rhs))
   all_vars <- all_vars(out)
@@ -714,7 +716,7 @@ allvars_formula <- function(...) {
     stop2("The following variable names are invalid: ",
           collapse_comma(invalid_vars))
   }
-  str2formula(c(out, all_vars))
+  str2formula(c(out, all_vars), env = .env)
 }
 
 # conveniently extract a formula of all relevant variables

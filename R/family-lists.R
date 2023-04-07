@@ -292,7 +292,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma", "ndt"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
     specials = "logscale"
   )
 }

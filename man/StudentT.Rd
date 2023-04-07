@@ -12,7 +12,7 @@ dstudent_t(x, df, mu = 0, sigma = 1, log = FALSE)
 
 pstudent_t(q, df, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE)
 
-qstudent_t(p, df, mu = 0, sigma = 1)
+qstudent_t(p, df, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE)
 
 rstudent_t(n, df, mu = 0, sigma = 1)
 }

@@ -1631,16 +1631,14 @@ lhs <- function(x) {
 # convert a string to a formula
 # @param x vector of strings to be converted
 # @param ... passed to formula()
-str2formula <- function(x, ..., collapse = "+") {
+str2formula <- function(x, env = parent.frame(), collapse = "+") {
   has_chars <- nzchar(x)
   if (length(x) && any(has_chars)) {
     out <- paste(x[has_chars], collapse = collapse)
   } else {
     out <- "1"
   }
-  out <- formula(paste("~", out), ...)
-  environment(out) <- parent.frame()
-  out
+  as.formula(paste("~", out), env = env)
 }
 
 # convert a formula to a character string
