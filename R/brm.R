@@ -208,7 +208,11 @@
 #'   files won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
-#' @param file_refit Modifies when the fit stored via the \code{file} parameter
+#' @param file_compress Logical or a character string, specifying one of the
+#'   compression algorithms supported by \code{\link{saveRDS}}. If the
+#'   \code{file} argument is provided, this compression will be used when saving
+#'   the fitted model object.
+#' @param file_refit Modifies when the fit stored via the \code{file} argument
 #'   is re-used. Can be set globally for the current \R session via the
 #'   \code{"brms.file_refit"} option (see \code{\link{options}}).
 #'   For \code{"never"} (default) the fit is always loaded if it
@@ -445,7 +449,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = 1,
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, file_refit = getOption("brms.file_refit", "never"),
+                file = NULL, file_compress = TRUE,
+                file_refit = getOption("brms.file_refit", "never"),
                 empty = FALSE, rename = TRUE, ...) {
 
   # optionally load brmsfit from file
@@ -594,7 +599,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- rename_pars(x)
   }
   if (!is.null(file)) {
-    x <- write_brmsfit(x, file)
+    x <- write_brmsfit(x, file, compress = file_compress)
   }
   x
 }

@@ -1002,12 +1002,13 @@ read_brmsfit <- function(file) {
 # write a brmsfit object to a file
 # @param x a brmsfit object
 # @param file path to an rds file
+# @param compress compression format supported by saveRDS
 # @return NULL
-write_brmsfit <- function(x, file) {
+write_brmsfit <- function(x, file, compress = TRUE) {
   stopifnot(is.brmsfit(x))
   file <- check_brmsfit_file(file)
   x$file <- file
-  saveRDS(x, file = file)
+  saveRDS(x, file = file, compress = compress)
   invisible(x)
 }
 
