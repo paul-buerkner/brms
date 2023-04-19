@@ -8,7 +8,7 @@
   object,
   newdata = NULL,
   re_formula = NULL,
-  method = "posterior_epred",
+  method = "posterior_predict",
   type = c("ordinary", "pearson"),
   resp = NULL,
   ndraws = NULL,
@@ -33,11 +33,10 @@ predictions of the grand mean when using sum coding.}
 the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{method}{Method use to obtain predictions. Either
-\code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
-Using \code{"posterior_predict"} is recommended
-but \code{"posterior_epred"} is the current default for
-reasons of backwards compatibility.}
+\item{method}{Method used to obtain predictions. Can be set to
+\code{"posterior_predict"} (the default), \code{"posterior_epred"},
+or \code{"posterior_linpred"}. For more details, see the respective
+function documentations.}
 
 \item{type}{The type of the residuals,
 either \code{"ordinary"} or \code{"pearson"}.

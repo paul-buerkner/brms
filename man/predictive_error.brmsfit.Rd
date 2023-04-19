@@ -10,6 +10,7 @@
   newdata = NULL,
   re_formula = NULL,
   re.form = NULL,
+  method = "posterior_predict",
   resp = NULL,
   ndraws = NULL,
   draw_ids = NULL,
@@ -31,6 +32,11 @@ the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
+
+\item{method}{Method used to obtain predictions. Can be set to
+\code{"posterior_predict"} (the default), \code{"posterior_epred"},
+or \code{"posterior_linpred"}. For more details, see the respective
+function documentations.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
