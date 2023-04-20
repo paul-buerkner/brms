@@ -536,7 +536,7 @@ prior_predictor.default <- function(x, ...) {
 prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior <- empty_prior()
   for (i in seq_along(x$terms)) {
-    prior <- prior + prior_predictor(x$terms[[i]], ...)
+    prior <- prior + prior_predictor(x$terms[[i]], internal = internal, ...)
   }
   for (cl in c("b", "Intercept")) {
     # deprecated; see warning in 'validate_prior_special'
