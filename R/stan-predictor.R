@@ -360,9 +360,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       )
     }
     str_add_list(out) <- stan_special_prior_local(
-      prior, class = "b", ncoef = length(fixef),
-      px = px, center_X = center_X, suffix = b_suffix,
-      normalize = normalize
+      prior, class = "b", px = px, center_X = center_X,
+      suffix = b_suffix, normalize = normalize
     )
   }
 
@@ -1008,8 +1007,8 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     )
   }
   stan_special_priors <- stan_special_prior_local(
-    prior, class = "bsp", ncoef = nrow(spef),
-    px = px, center_X = FALSE, normalize = normalize
+    prior, class = "bsp", px = px, center_X = FALSE,
+    normalize = normalize
   )
   out <- collapse_lists(out, stan_special_priors)
   out
