@@ -286,6 +286,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     str_add(out$data) <- glue(
       "  int<lower=1> K{p};",
       "  // number of population-level effects\n",
+      "  int<lower=0> Kc{p};",
+      "  // number of population-level effects after centering\n",
       "  matrix[N{resp}, K{p}] X{p};",
       "  // population-level design matrix\n"
     )
@@ -379,9 +381,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     if (length(fixef)) {
       sub_X_means <- glue(" - dot_product(means_X{p}, b{p})")
       if (is_ordinal(family)) {
-        # the intercept was already removed during the data preparation
         str_add(out$tdata_def) <- glue(
-          "  int Kc{p} = K{p};\n",
           "  matrix[N{resp}, Kc{p}] Xc{p};",
           "  // centered version of X{p}\n",
           "  vector[Kc{p}] means_X{p};",
@@ -395,7 +395,6 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
         )
       } else {
         str_add(out$tdata_def) <- glue(
-          "  int Kc{p} = K{p} - 1;\n",
           "  matrix[N{resp}, Kc{p}] Xc{p};",
           "  // centered version of X{p} without an intercept\n",
           "  vector[Kc{p}] means_X{p};",

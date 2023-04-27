@@ -461,10 +461,9 @@ stan_special_prior_local <- function(prior, class, px,
     if (class != "b") {
       stop2("The R2D2 prior does not yet support special coefficient classes.")
     }
-    m1 <- str_if(center_X, " -1")
     str_add(out$data) <- glue(
       "  // concentration vector of the D2 prior\n",
-      "  vector<lower=0>[K{sp}{m1}] R2D2_cons_D2{sp};\n"
+      "  vector<lower=0>[K{ct}{sp}] R2D2_cons_D2{sp};\n"
     )
     str_add(out$par) <- glue(
       "  // local parameters for the R2D2 prior\n",

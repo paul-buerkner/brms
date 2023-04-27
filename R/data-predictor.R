@@ -91,11 +91,14 @@ data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
 data_fe <- function(bterms, data) {
   out <- list()
   p <- usc(combine_prefix(bterms))
-  # the intercept is removed inside the Stan code for ordinal models
-  cols2remove <- if (is_ordinal(bterms)) "(Intercept)"
+  # the intercept is removed inside the Stan code for non-ordinal models
+  is_ord <- is_ordinal(bterms)
+  cols2remove <- if (is_ord) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
   avoid_dpars(colnames(X), bterms = bterms)
   out[[paste0("K", p)]] <- ncol(X)
+  # relevant if the intercept is treated separately to enable centering
+  out[[paste0("Kc", p)]] <- ncol(X) - ifelse(is_ord, 0, 1)
   out[[paste0("X", p)]] <- X
   out
 }
