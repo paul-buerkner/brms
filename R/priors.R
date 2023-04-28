@@ -2136,6 +2136,8 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
 #'
 #' @export
 lasso <- function(df = 1, scale = 1) {
+  stop2("The lasso prior is no longer supported in brms as of version 2.19.1. ",
+        "Please use the preferable horseshoe or R2D2 priors.")
   out <- deparse0(match.call())
   df <- as.numeric(df)
   scale <- as.numeric(scale)
@@ -2169,11 +2171,16 @@ is_special_prior <- function(prior, target = NULL) {
 # extract special prior information
 # @param prior a brmsprior object
 # @param px object from which the prefix can be extract
-get_special_prior <- function(prior, px = NULL) {
+# @param type type of the special prior
+get_special_prior <- function(prior, px = NULL, type = NULL) {
   out <- attr(prior, "special")
   if (!is.null(px)) {
     prefix <- combine_prefix(px, keep_mu = TRUE)
     out <- out[[prefix]]
+  }
+  if (!is.null(type)) {
+    stopifnot(length(type) == 1L)
+    out <- out[[type]]
   }
   out
 }

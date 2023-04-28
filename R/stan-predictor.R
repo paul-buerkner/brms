@@ -19,10 +19,12 @@ stan_predictor.btl <- function(x, ...) {
     stan_gp(x, ...),
     stan_ac(x, ...),
     stan_offset(x, ...),
-    stan_bhaz(x, ...),
-    stan_special_prior_global(x, ...)
+    stan_bhaz(x, ...)
   )
-  stan_eta_combine(out, bterms = x, ...)
+  out <- stan_special_prior_global(x, out = out, ...)
+  # TODO: change argument order in stan_eta_combine
+  out <- stan_eta_combine(out, bterms = x, ...)
+  out
 }
 
 # prepare Stan code for non-linear terms
@@ -282,6 +284,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
+  lpdf <- stan_lpdf_name(normalize)
+
   if (length(fixef)) {
     str_add(out$data) <- glue(
       "  int<lower=1> K{p};",
@@ -313,12 +317,12 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     }
     # prepare population-level coefficients
     b_type <- glue("vector[K{ct}{p}]")
-    has_special_b_prior <- stan_has_special_b_prior(bterms, prior)
+    has_special_prior <- stan_has_special_prior(bterms, prior)
     assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
     if (decomp == "none") {
       b_suffix <- ""
       b_comment <- "population-level effects"
-      if (has_special_b_prior) {
+      if (has_special_prior) {
         stopif_prior_bound(prior, class = "b", ls = px)
         b_def <- glue("  {b_type} b{p};  // {b_comment}\n")
         if (assign_b_tpar) {
@@ -340,7 +344,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       stopif_prior_bound(prior, class = "b", ls = px)
       b_suffix <- "Q"
       b_comment <- "regression coefficients at QR scale"
-      if (has_special_b_prior) {
+      if (has_special_prior) {
         bQ_def <- glue("  {b_type} bQ{p};  // {b_comment}\n")
         if (assign_b_tpar) {
           # only some special priors assign b in transformed parameters
@@ -361,10 +365,32 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
         "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
       )
     }
-    str_add_list(out) <- stan_special_prior_local(
-      prior, class = "b", px = px, center_X = center_X,
-      suffix = b_suffix, normalize = normalize
-    )
+
+    # str_add_list(out) <- stan_special_prior_local(
+    #   prior, class = "b", px = px, center_X = center_X,
+    #   suffix = b_suffix, normalize = normalize
+    # )
+
+    if (has_special_prior) {
+      # handle special shrinkage priors
+      str_add(out$par) <- glue(
+        "  // unscaled regression coefficients\n",
+        "  vector[K{ct}{p}] zb{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // standard deviation of the regression coefficients\n",
+        "  vector[K{ct}{p}] sdb{p};\n"
+      )
+      str_add(out$tpar_special_prior_local) <- glue(
+        "  // compute actual regression coefficients\n",
+        "  b{b_suffix}{p} = zb{p} .* sdb{p};\n"
+      )
+      str_add(out$model_prior) <- glue(
+        "{tp()}std_normal_{lpdf}(zb{p});\n"
+      )
+      str_add(out$prior_global_scales) <- glue(" sdb{p}")
+      str_add(out$prior_global_lengths) <- glue(" K{ct}{p}")
+    }
   }
 
   order_intercepts <- order_intercepts(bterms)
@@ -871,10 +897,13 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
                     normalize, ...) {
   out <- list()
   spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) return(out)
+  if (!nrow(spef)) {
+    return(out)
+  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
+  lpdf <- stan_lpdf_name(normalize)
   n <- stan_nn(threads)
   ranef <- subset2(ranef, type = "sp", ls = px)
   spef_coef <- rename(spef$term)
@@ -983,7 +1012,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   }
 
   # prepare special effects coefficients
-  if (stan_has_special_b_prior(bterms, prior)) {
+  if (stan_has_special_prior(bterms, prior)) {
     stopif_prior_bound(prior, class = "b", ls = px)
     bsp_def <- glue(
       "  // special effects coefficients\n",
@@ -992,7 +1021,25 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     if (stan_assign_b_tpar(bterms, prior)) {
       # only some special priors assign b in transformed parameters
       str_add(out$tpar_def) <- bsp_def
+      str_add(out$par) <- glue(
+        "  // unscaled regression coefficients\n",
+        "  vector[Ksp{p}] zbsp{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // standard deviation of the regression coefficients\n",
+        "  vector[Ksp{p}] sdbsp{p};\n"
+      )
+      str_add(out$tpar_special_prior_local) <- glue(
+        "  // compute actual regression coefficients\n",
+        "  bsp{p} = zbsp{p} .* sdbsp{p};\n"
+      )
+      str_add(out$model_prior) <- glue(
+        "{tp()}std_normal_{lpdf}(zbsp{p});\n"
+      )
+      str_add(out$prior_global_scales) <- glue(" sdbsp{p}")
+      str_add(out$prior_global_lengths) <- glue(" Ksp{p}")
     } else {
+      # TODO: can be removed if lasso is removed
       str_add(out$par) <- bsp_def
     }
     str_add(out$pll_args) <- glue(", vector bsp{p}")
@@ -1005,11 +1052,11 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
       normalize = normalize
     )
   }
-  stan_special_priors <- stan_special_prior_local(
-    prior, class = "bsp", px = px, center_X = FALSE,
-    normalize = normalize
-  )
-  out <- collapse_lists(out, stan_special_priors)
+  # stan_special_priors <- stan_special_prior_local(
+  #   prior, class = "bsp", px = px, center_X = FALSE,
+  #   normalize = normalize
+  # )
+  # out <- collapse_lists(out, stan_special_priors)
   out
 }
 
@@ -2005,10 +2052,13 @@ stan_center_X <- function(x) {
 }
 
 # indicate if the overall coefficients 'b' have a special prior
-stan_has_special_b_prior <- function(bterms, prior) {
+# TODO: switch argument order
+stan_has_special_prior <- function(bterms, prior, type = NULL) {
   special <- get_special_prior(prior, bterms)
-  !is.null(special$horseshoe) || !is.null(special$R2D2) ||
-    !is.null(special$lasso)
+  if (!is.null(type)) {
+    special <- special[type]
+  }
+  length(rmNULL(special)) > 0
 }
 
 # indicate if the overall coefficients 'b' should be

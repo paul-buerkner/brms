@@ -889,6 +889,16 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  if (!stan_has_special_prior(px, prior)) {
+    return(out)
+  }
+
+  # number of coefficients affected by the shrinkage prior
+  Kall <- sdata[[paste0("K", p)]] %||% 0 -
+    ifelse(stan_center_X(bterms), 1, 0) +
+    sdata[[paste0("Ksp", p)]] %||% 0
+  out[[paste0("Kall", p)]] <- Kall
+
   special <- get_special_prior(prior, px)
   if (!is.null(special$horseshoe)) {
     # data for the horseshoe prior
@@ -898,29 +908,27 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
       hs_data$scale_global <- special$horseshoe$par_ratio / sqrt(nrow(data))
     }
     names(hs_data) <- paste0("hs_", hs_names, p)
-    out <- c(out, hs_data)
+    c(out) <- hs_data
   }
   if (!is.null(special$R2D2)) {
     # data for the R2D2 prior
     R2D2_names <- c("mean_R2", "prec_R2", "cons_D2")
     R2D2_data <- special$R2D2[R2D2_names]
-    # number of coefficients minus the intercept
-    K <- sdata[[paste0("K", p)]] - ifelse(stan_center_X(bterms), 1, 0)
     if (length(R2D2_data$cons_D2) == 1L) {
-      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, K)
+      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, Kall)
     }
-    if (length(R2D2_data$cons_D2) != K) {
-      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", K)
+    if (length(R2D2_data$cons_D2) != Kall) {
+      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", Kall)
     }
     R2D2_data$cons_D2 <- as.array(R2D2_data$cons_D2)
     names(R2D2_data) <- paste0("R2D2_", R2D2_names, p)
-    out <- c(out, R2D2_data)
+    c(out) <- R2D2_data
   }
   if (!is.null(special$lasso)) {
     lasso_names <- c("df", "scale")
     lasso_data <- special$lasso[lasso_names]
     names(lasso_data) <- paste0("lasso_", lasso_names, p)
-    out <- c(out, lasso_data)
+    c(out) <- lasso_data
   }
   out
 }

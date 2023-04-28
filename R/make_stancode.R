@@ -249,7 +249,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef[["tpar_prior_const"]],
       scode_Xme[["tpar_prior_const"]],
       scode_predictor[["tpar_comp"]],
-      scode_predictor[["tpar_reg_prior"]],
+      scode_predictor[["tpar_special_prior_local"]],
       scode_ranef[["tpar_comp"]],
       scode_Xme[["tpar_comp"]],
       # lprior cannot contain _lupdf functions in transformed parameters

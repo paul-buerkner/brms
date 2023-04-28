@@ -344,8 +344,8 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
 
 # Stan code for global parameters of special priors
 # currently implemented are horseshoe and lasso
-stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
-  out <- list()
+stan_special_prior_global <- function(bterms, data, prior, normalize,
+                                      out = list(), ...) {
   tp <- tp()
   lpp <- lpp()
   lpdf <- stan_lpdf_name(normalize)
@@ -359,12 +359,14 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       "  real<lower=0> hs_df_global{p};  // global degrees of freedom\n",
       "  real<lower=0> hs_df_slab{p};  // slab degrees of freedom\n",
       "  real<lower=0> hs_scale_global{p};  // global prior scale\n",
-      "  real<lower=0> hs_scale_slab{p};  // slab prior scale\n"
+      "  real<lower=0> hs_scale_slab{p};  // slab prior scale\n",
+      "  int<lower=1> Kall{p};  // number of local scale parameters\n"
     )
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
       "  real<lower=0> hs_global{p};  // global shrinkage parameter\n",
-      "  real<lower=0> hs_slab{p};  // slab regularization parameter\n"
+      "  real<lower=0> hs_slab{p};  // slab regularization parameter\n",
+      "  vector<lower=0>[Kall{p}] hs_local{p};  // local parameters for the horseshoe prior\n"
     )
     hs_scale_global <- glue("hs_scale_global{p}")
     if (isTRUE(special$horseshoe$autoscale)) {
@@ -375,32 +377,68 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       str_if(normalize, "\n    - 1 * log(0.5)"), ";\n",
       "{lpp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
+    str_add(out$tpar_def) <- glue(
+      "  vector<lower=0>[Kall{p}] scales{p};  // local horseshoe scale parameters\n"
+    )
+    str_add(out$tpar_comp) <- glue(
+      "  // compute horseshoe scale parameters\n",
+      "  scales{p} = scales_horseshoe(hs_local{p}, hs_global{p}, hs_scale_slab{p}^2 * hs_slab{p});\n"
+    )
+    str_add(out$model_prior) <- glue(
+      "{tp}student_t_{lpdf}(hs_local{p} | hs_df{p}, 0, 1)",
+      str_if(normalize, "\n    - rows(hs_local{p}) * log(0.5)"), ";\n"
+    )
   }
   if (!is.null(special$R2D2)) {
     str_add(out$data) <- glue(
       "  // data for the R2D2 prior\n",
       "  real<lower=0> R2D2_mean_R2{p};  // mean of the R2 prior\n",
-      "  real<lower=0> R2D2_prec_R2{p};  // precision of the R2 prior\n"
+      "  real<lower=0> R2D2_prec_R2{p};  // precision of the R2 prior\n",
+      "  int<lower=1> Kall{p};  // number of local scale parameters\n",
+      "  // concentration vector of the D2 prior\n",
+      "  vector<lower=0>[Kall{p}] R2D2_cons_D2{p};\n"
     )
     str_add(out$par) <- glue(
-      "  // R2D2 shrinkage parameters\n",
-      "  real<lower=0,upper=1> R2D2_R2{p};  // R2 parameter\n"
+      "  // parameters of the R2D2 prior\n",
+      "  real<lower=0,upper=1> R2D2_R2{p};\n",
+      "  simplex[Kall{p}] R2D2_phi{p};\n"
     )
     var_mult <- ""
     if (isTRUE(special$R2D2$autoscale)) {
       var_mult <- glue("sigma{usc(px$resp)}^2 * ")
     }
     str_add(out$tpar_def) <- glue(
-      "  real R2D2_tau2{p};  // global R2D2 scale parameter\n"
+      "  real R2D2_tau2{p};  // global R2D2 scale parameter\n",
+      "  vector<lower=0>[Kall{p}] scales{p};  // local R2D2 scale parameters\n"
     )
     str_add(out$tpar_comp) <- glue(
-      "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n"
+      "  // compute R2D2 scale parameters\n",
+      "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n",
+      "  scales{p} = scales_R2D2(R2D2_phi{p}, R2D2_tau2{p});\n"
     )
     str_add(out$tpar_prior) <- glue(
       "{lpp}beta_{lpdf}(R2D2_R2{p} | R2D2_mean_R2{p} * R2D2_prec_R2{p}, ",
       "(1 - R2D2_mean_R2{p}) * R2D2_prec_R2{p});\n"
     )
+    str_add(out$model_prior) <- glue(
+      "{tp}dirichlet_{lpdf}(R2D2_phi{p} | R2D2_cons_D2{p});\n"
+    )
   }
+  # split up scales into subsets belonging to different parameter classes
+  # this connects the global to the local priors
+  scales <- strsplit(trimws(out$prior_global_scales), " ")[[1]]
+  lengths <- strsplit(trimws(out$prior_global_lengths), " ")[[1]]
+  lengths <- c("1", lengths)
+  for (i in seq_along(scales)) {
+    lower <- paste0(lengths[1:i], collapse = "+")
+    upper <- paste0(lengths[2:(i+1)], collapse = "+")
+    str_add(out$tpar_comp) <- glue(
+      "  {scales[i]} = scales{p}[({lower}):({upper})];\n"
+    )
+  }
+  # TODO: exclude and rename parameters correctly again
+  # TODO: remove lasso
+  # TODO: support the global horseshoe and R2D2 priors
   if (!is.null(special$lasso)) {
     str_add(out$data) <- glue(
       "  // data for the lasso prior\n",
