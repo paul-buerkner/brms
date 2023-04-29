@@ -884,7 +884,7 @@ data_cnl <- function(bterms, data) {
   exp(mean(log(Matrix::diag(Q_inv))))
 }
 
-# data for special priors such as horseshoe and lasso
+# data for special priors such as horseshoe and R2D2
 data_prior <- function(bterms, data, prior, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
@@ -924,12 +924,12 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
     names(R2D2_data) <- paste0("R2D2_", R2D2_names, p)
     c(out) <- R2D2_data
   }
-  if (!is.null(special$lasso)) {
-    lasso_names <- c("df", "scale")
-    lasso_data <- special$lasso[lasso_names]
-    names(lasso_data) <- paste0("lasso_", lasso_names, p)
-    c(out) <- lasso_data
-  }
+  # if (!is.null(special$lasso)) {
+  #   lasso_names <- c("df", "scale")
+  #   lasso_data <- special$lasso[lasso_names]
+  #   names(lasso_data) <- paste0("lasso_", lasso_names, p)
+  #   c(out) <- lasso_data
+  # }
   out
 }
 

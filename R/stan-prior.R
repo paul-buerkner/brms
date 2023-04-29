@@ -342,8 +342,7 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
   glue("  {par} = {prior_args}")
 }
 
-# Stan code for global parameters of special priors
-# currently implemented are horseshoe and lasso
+# Stan code for global parameters of special shrinkage priors
 stan_special_prior_global <- function(bterms, data, prior, normalize,
                                       out = list(), ...) {
   tp <- tp()
@@ -437,22 +436,21 @@ stan_special_prior_global <- function(bterms, data, prior, normalize,
     )
   }
   # TODO: exclude and rename parameters correctly again
-  # TODO: remove lasso
   # TODO: support the global horseshoe and R2D2 priors
-  if (!is.null(special$lasso)) {
-    str_add(out$data) <- glue(
-      "  // data for the lasso prior\n",
-      "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
-      "  real<lower=0> lasso_scale{p};  // prior scale\n"
-    )
-    str_add(out$par) <- glue(
-      "  // lasso shrinkage parameter\n",
-      "  real<lower=0> lasso_inv_lambda{p};\n"
-    )
-    str_add(out$tpar_prior) <- glue(
-      "{lpp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
-    )
-  }
+  # if (!is.null(special$lasso)) {
+  #   str_add(out$data) <- glue(
+  #     "  // data for the lasso prior\n",
+  #     "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
+  #     "  real<lower=0> lasso_scale{p};  // prior scale\n"
+  #   )
+  #   str_add(out$par) <- glue(
+  #     "  // lasso shrinkage parameter\n",
+  #     "  real<lower=0> lasso_inv_lambda{p};\n"
+  #   )
+  #   str_add(out$tpar_prior) <- glue(
+  #     "{lpp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
+  #   )
+  # }
   out
 }
 
@@ -463,70 +461,70 @@ stan_special_prior_global <- function(bterms, data, prior, normalize,
 # @param px named list to subset 'prior'
 # @param center_X is the design matrix centered?
 # @param suffix optional suffix of the 'b' coefficient vector
-stan_special_prior_local <- function(prior, class, px,
-                                     center_X = FALSE, suffix = "",
-                                     normalize = TRUE) {
-  class <- as_one_character(class)
-  stopifnot(class %in% c("b", "bsp"))
-  out <- list()
-  lpdf <- stan_lpdf_name(normalize)
-  p <- usc(combine_prefix(px))
-  sp <- paste0(sub("^b", "", class), p)
-  ct <- str_if(center_X, "c")
-  tp <- tp()
-  special <- get_special_prior(prior, px)
-  if (!is.null(special$horseshoe)) {
-    str_add(out$par) <- glue(
-      "  // local parameters for the horseshoe prior\n",
-      "  vector[K{ct}{sp}] zb{sp};\n",
-      "  vector<lower=0>[K{ct}{sp}] hs_local{sp};\n"
-    )
-    hs_args <- sargs(
-      glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"),
-      glue("hs_scale_slab{p}^2 * hs_slab{p}")
-    )
-    str_add(out$tpar_reg_prior) <- glue(
-      "  // compute the actual regression coefficients\n",
-      "  b{suffix}{sp} = horseshoe({hs_args});\n"
-    )
-    str_add(out$model_prior) <- glue(
-      "{tp}std_normal_{lpdf}(zb{sp});\n",
-      "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
-      str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
-    )
-  }
-  if (!is.null(special$R2D2)) {
-    if (class != "b") {
-      stop2("The R2D2 prior does not yet support special coefficient classes.")
-    }
-    str_add(out$data) <- glue(
-      "  // concentration vector of the D2 prior\n",
-      "  vector<lower=0>[K{ct}{sp}] R2D2_cons_D2{sp};\n"
-    )
-    str_add(out$par) <- glue(
-      "  // local parameters for the R2D2 prior\n",
-      "  vector[K{ct}{sp}] zb{sp};\n",
-      "  simplex[K{ct}{sp}] R2D2_phi{sp};\n"
-    )
-    R2D2_args <- sargs(
-      glue("zb{sp}"), glue("R2D2_phi{sp}"), glue("R2D2_tau2{p}")
-    )
-    str_add(out$tpar_reg_prior) <- glue(
-      "  // compute actual regression coefficients\n",
-      "  b{suffix}{sp} = R2D2({R2D2_args});\n"
-    )
-    str_add(out$model_prior) <- glue(
-      "{tp}std_normal_{lpdf}(zb{sp});\n",
-      "{tp}dirichlet_{lpdf}(R2D2_phi{sp} | R2D2_cons_D2{p});\n"
-    )
-  }
-  if (!is.null(special$lasso)) {
-    str_add(out$model_prior) <- glue(
-      "{tp}double_exponential_lpdf(b{suffix}{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
-    )
-  }
-  out
-}
+# stan_special_prior_local <- function(prior, class, px,
+#                                      center_X = FALSE, suffix = "",
+#                                      normalize = TRUE) {
+#   class <- as_one_character(class)
+#   stopifnot(class %in% c("b", "bsp"))
+#   out <- list()
+#   lpdf <- stan_lpdf_name(normalize)
+#   p <- usc(combine_prefix(px))
+#   sp <- paste0(sub("^b", "", class), p)
+#   ct <- str_if(center_X, "c")
+#   tp <- tp()
+#   special <- get_special_prior(prior, px)
+#   if (!is.null(special$horseshoe)) {
+#     str_add(out$par) <- glue(
+#       "  // local parameters for the horseshoe prior\n",
+#       "  vector[K{ct}{sp}] zb{sp};\n",
+#       "  vector<lower=0>[K{ct}{sp}] hs_local{sp};\n"
+#     )
+#     hs_args <- sargs(
+#       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"),
+#       glue("hs_scale_slab{p}^2 * hs_slab{p}")
+#     )
+#     str_add(out$tpar_reg_prior) <- glue(
+#       "  // compute the actual regression coefficients\n",
+#       "  b{suffix}{sp} = horseshoe({hs_args});\n"
+#     )
+#     str_add(out$model_prior) <- glue(
+#       "{tp}std_normal_{lpdf}(zb{sp});\n",
+#       "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
+#       str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
+#     )
+#   }
+#   if (!is.null(special$R2D2)) {
+#     if (class != "b") {
+#       stop2("The R2D2 prior does not yet support special coefficient classes.")
+#     }
+#     str_add(out$data) <- glue(
+#       "  // concentration vector of the D2 prior\n",
+#       "  vector<lower=0>[K{ct}{sp}] R2D2_cons_D2{sp};\n"
+#     )
+#     str_add(out$par) <- glue(
+#       "  // local parameters for the R2D2 prior\n",
+#       "  vector[K{ct}{sp}] zb{sp};\n",
+#       "  simplex[K{ct}{sp}] R2D2_phi{sp};\n"
+#     )
+#     R2D2_args <- sargs(
+#       glue("zb{sp}"), glue("R2D2_phi{sp}"), glue("R2D2_tau2{p}")
+#     )
+#     str_add(out$tpar_reg_prior) <- glue(
+#       "  // compute actual regression coefficients\n",
+#       "  b{suffix}{sp} = R2D2({R2D2_args});\n"
+#     )
+#     str_add(out$model_prior) <- glue(
+#       "{tp}std_normal_{lpdf}(zb{sp});\n",
+#       "{tp}dirichlet_{lpdf}(R2D2_phi{sp} | R2D2_cons_D2{p});\n"
+#     )
+#   }
+#   if (!is.null(special$lasso)) {
+#     str_add(out$model_prior) <- glue(
+#       "{tp}double_exponential_lpdf(b{suffix}{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
+#     )
+#   }
+#   out
+# }
 
 # combine unchecked priors for use in Stan
 # @param prior a brmsprior object

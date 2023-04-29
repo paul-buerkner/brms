@@ -105,10 +105,10 @@
 #'   population-level effect and avoid the centering parameterization,
 #'   use \code{0 + Intercept} on the right-hand side of the model formula.
 #'
-#'   A special shrinkage prior to be applied on population-level effects is the
-#'   (regularized) horseshoe prior and related priors. See
-#'   \code{\link{horseshoe}} for details. Another shrinkage prior is the
-#'   so-called lasso prior. See \code{\link{lasso}} for details.
+#'   A special shrinkage prior to be applied to the regression coefficients is
+#'   the (regularized) horseshoe prior and related priors. See
+#'   \code{\link{horseshoe}} for details. Another similar kind of shrinkage
+#'   prior with more intuitive hyperparameters is the \code{\link{R2D2}} prior.
 #'
 #'   In non-linear models, population-level effects are defined separately
 #'   for each non-linear parameter. Accordingly, it is necessary to specify
@@ -1513,14 +1513,14 @@ validate_prior_special.btl <- function(x, prior, data,
       )
     }
   }
-  # prepare special priors such as horseshoe or lasso
+  # prepare special priors such as horseshoe
   special <- list()
   b_index <- which(find_rows(prior, class = "b", coef = "", ls = px))
   stopifnot(length(b_index) <= 1L)
   if (length(b_index)) {
     b_prior <- prior$prior[b_index]
     if (any(is_special_prior(b_prior))) {
-      # horseshoe prior for population-level parameters
+      # shrinkage priors have been specified
       if (any(nzchar(prior[b_index, "bound"]))) {
         stop2("Setting boundaries on coefficients is not ",
               "allowed when using the special priors.")
@@ -1548,15 +1548,14 @@ validate_prior_special.btl <- function(x, prior, data,
         special$R2D2 <- attributes(eval2(b_prior))
         special$R2D2$autoscale <-
           isTRUE(special$R2D2$autoscale) && allow_autoscale
-      } else if (is_special_prior(b_prior, "lasso")) {
-        # the parameterization via double_exponential appears to be more
-        # efficient than an indirect parameterization via normal and
-        # exponential distributions; tested on 2017-06-09
-        # TODO: enable autoscaling for lasso as well?
-        special$lasso <- attributes(eval2(b_prior))
-        # deprecated in version 2.19.1 on 2023-04-27
-        warning2("The 'lasso' prior is deprecated and will be removed in the future.")
       }
+      # else if (is_special_prior(b_prior, "lasso")) {
+      #   # the parameterization via double_exponential appears to be more
+      #   # efficient than an indirect parameterization via normal and
+      #   # exponential distributions; tested on 2017-06-09
+      #   # TODO: enable autoscaling for lasso as well?
+      #   special$lasso <- attributes(eval2(b_prior))
+      # }
     }
   }
   prefix <- combine_prefix(px, keep_mu = TRUE)
@@ -2049,10 +2048,10 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #' \pkg{brms}. The function does not evaluate its arguments -- it exists purely
 #' to help set up the model.
 #'
-#' @param mean_R2 mean of the Beta prior on the coefficient of determination R^2.
-#' @param prec_R2 precision of the Beta prior on the coefficient of determination R^2.
-#' @param cons_D2 concentration vector of the Dirichlet prior on the variance
-#'   decomposition parameters.
+#' @param mean_R2 Mean of the Beta prior on the coefficient of determination R^2.
+#' @param prec_R2 Precision of the Beta prior on the coefficient of determination R^2.
+#' @param cons_D2 Concentration vector of the Dirichlet prior on the variance
+#'   decomposition parameters. Lower values imply more shrinkage.
 #' @param autoscale Logical; indicating whether the R2D2
 #'   prior should be scaled using the residual standard deviation
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
@@ -2071,7 +2070,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #' set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))
 #'
 #' @export
-R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
+R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE) {
   out <- deparse0(match.call())
   mean_R2 <- as_one_numeric(mean_R2)
   prec_R2 <- as_one_numeric(prec_R2)
@@ -2094,36 +2093,16 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
   out
 }
 
-#' Set up a lasso prior in \pkg{brms}
+#' (Defunct) Set up a lasso prior in \pkg{brms}
 #'
-#' Function used to set up a lasso prior for population-level effects
-#' in \pkg{brms}. The function does not evaluate its arguments --
-#' it exists purely to help set up the model.
+#' This functionality is no longer supported as of brms version 2.19.2. Please
+#' use the \code{\link{horseshoe}} or \code{\link{R2D2}} shrinkage priors instead.
 #'
 #' @param df Degrees of freedom of the chi-square prior of the inverse tuning
 #'   parameter. Defaults to \code{1}.
 #' @param scale Scale of the lasso prior. Defaults to \code{1}.
 #'
-#' @return A character string obtained by \code{match.call()} with
-#'   additional arguments.
-#'
-#' @details
-#'   The lasso prior is the Bayesian equivalent to the LASSO method for performing
-#'   variable selection (Park & Casella, 2008).
-#'   With this prior, independent Laplace (i.e. double exponential) priors
-#'   are placed on the population-level effects.
-#'   The scale of the Laplace priors depends on a tuning parameter
-#'   that controls the amount of shrinkage. In \pkg{brms}, the inverse
-#'   of the tuning parameter is used so that smaller values imply
-#'   more shrinkage. The inverse tuning parameter has a chi-square distribution
-#'   and with degrees of freedom controlled via argument \code{df}
-#'   of function \code{lasso} (defaults to \code{1}). For instance,
-#'   one can specify a lasso prior using \code{set_prior("lasso(1)")}.
-#'   To make sure that shrinkage can equally affect all coefficients,
-#'   predictors should be one the same scale.
-#'   If you do not want to standardized all variables,
-#'   you can adjust the general scale of the lasso prior via argument
-#'   \code{scale}, for instance, \code{lasso(1, scale = 10)}.
+#' @return An error indicating that the lasso prior is no longer supported.
 #'
 #' @references
 #' Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American
@@ -2131,13 +2110,11 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE) {
 #'
 #' @seealso \code{\link{set_prior}}
 #'
-#' @examples
-#' set_prior(lasso(df = 1, scale = 10))
-#'
 #' @export
 lasso <- function(df = 1, scale = 1) {
-  stop2("The lasso prior is no longer supported in brms as of version 2.19.1. ",
-        "Please use the preferable horseshoe or R2D2 priors.")
+  stop2("The lasso prior is no longer supported as of brms version 2.19.2. ",
+        "Please use the horseshoe or R2D2 shrinkage priors instead.")
+
   out <- deparse0(match.call())
   df <- as.numeric(df)
   scale <- as.numeric(scale)
@@ -2162,7 +2139,7 @@ lasso <- function(df = 1, scale = 1) {
 is_special_prior <- function(prior, target = NULL) {
   stopifnot(is.character(prior))
   if (is.null(target)) {
-    target <- c("horseshoe", "R2D2", "lasso")
+    target <- c("horseshoe", "R2D2")
   }
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)

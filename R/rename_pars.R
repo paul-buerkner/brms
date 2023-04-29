@@ -562,7 +562,7 @@ reorder_pars <- function(x) {
     "b", "bs", "bsp", "bcs", "ar", "ma", "sderr", "lagsar", "errorsar", "car",
     "rhocar", "sdcar", "cosy", "cortime", "sd", "cor", "df", "sds", "sdgp",
     "lscale", valid_dpars(x), "lncor", "Intercept", "tmp", "rescor",
-    "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz",
+    "delta", "simo", "r", "s", "zgp", "rcar", "sbhaz",
     "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior",
     "lprior", "lp"
   ))

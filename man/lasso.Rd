@@ -2,7 +2,7 @@
 % Please edit documentation in R/priors.R
 \name{lasso}
 \alias{lasso}
-\title{Set up a lasso prior in \pkg{brms}}
+\title{(Defunct) Set up a lasso prior in \pkg{brms}}
 \usage{
 lasso(df = 1, scale = 1)
 }
@@ -13,35 +13,11 @@ parameter. Defaults to \code{1}.}
 \item{scale}{Scale of the lasso prior. Defaults to \code{1}.}
 }
 \value{
-A character string obtained by \code{match.call()} with
-  additional arguments.
+An error indicating that the lasso prior is no longer supported.
 }
 \description{
-Function used to set up a lasso prior for population-level effects
-in \pkg{brms}. The function does not evaluate its arguments --
-it exists purely to help set up the model.
-}
-\details{
-The lasso prior is the Bayesian equivalent to the LASSO method for performing
-  variable selection (Park & Casella, 2008).
-  With this prior, independent Laplace (i.e. double exponential) priors
-  are placed on the population-level effects.
-  The scale of the Laplace priors depends on a tuning parameter
-  that controls the amount of shrinkage. In \pkg{brms}, the inverse
-  of the tuning parameter is used so that smaller values imply
-  more shrinkage. The inverse tuning parameter has a chi-square distribution
-  and with degrees of freedom controlled via argument \code{df}
-  of function \code{lasso} (defaults to \code{1}). For instance,
-  one can specify a lasso prior using \code{set_prior("lasso(1)")}.
-  To make sure that shrinkage can equally affect all coefficients,
-  predictors should be one the same scale.
-  If you do not want to standardized all variables,
-  you can adjust the general scale of the lasso prior via argument
-  \code{scale}, for instance, \code{lasso(1, scale = 10)}.
-}
-\examples{
-set_prior(lasso(df = 1, scale = 10))
-
+This functionality is no longer supported as of brms version 2.19.2. Please
+use the \code{\link{horseshoe}} or \code{\link{R2D2}} shrinkage priors instead.
 }
 \references{
 Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American

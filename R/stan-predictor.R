@@ -318,19 +318,20 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     # prepare population-level coefficients
     b_type <- glue("vector[K{ct}{p}]")
     has_special_prior <- stan_has_special_prior(bterms, prior)
-    assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
+    # assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
     if (decomp == "none") {
       b_suffix <- ""
       b_comment <- "population-level effects"
       if (has_special_prior) {
         stopif_prior_bound(prior, class = "b", ls = px)
-        b_def <- glue("  {b_type} b{p};  // {b_comment}\n")
-        if (assign_b_tpar) {
-          # only some special priors assign b in transformed parameters
-          str_add(out$tpar_def) <- b_def
-        } else {
-          str_add(out$par) <- b_def
-        }
+        str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
+        # b_def <- glue("  {b_type} b{p};  // {b_comment}\n")
+        # if (assign_b_tpar) {
+        #   # only some special priors assign b in transformed parameters
+        #   str_add(out$tpar_def) <- b_def
+        # } else {
+        #   str_add(out$par) <- b_def
+        # }
         str_add(out$pll_args) <- glue(", vector b{p}")
       } else {
         str_add_list(out) <- stan_prior(
@@ -345,13 +346,14 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       b_suffix <- "Q"
       b_comment <- "regression coefficients at QR scale"
       if (has_special_prior) {
-        bQ_def <- glue("  {b_type} bQ{p};  // {b_comment}\n")
-        if (assign_b_tpar) {
-          # only some special priors assign b in transformed parameters
-          str_add(out$tpar_def) <- bQ_def
-        } else {
-          str_add(out$par) <- bQ_def
-        }
+        str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
+        # bQ_def <- glue("  {b_type} bQ{p};  // {b_comment}\n")
+        # if (assign_b_tpar) {
+        #   # only some special priors assign b in transformed parameters
+        #   str_add(out$tpar_def) <- bQ_def
+        # } else {
+        #   str_add(out$par) <- bQ_def
+        # }
         str_add(out$pll_args) <- glue(", vector bQ{p}")
       } else {
         str_add_list(out) <- stan_prior(
@@ -1018,30 +1020,28 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
       "  // special effects coefficients\n",
       "  vector[Ksp{p}] bsp{p};\n"
     )
-    if (stan_assign_b_tpar(bterms, prior)) {
-      # only some special priors assign b in transformed parameters
-      str_add(out$tpar_def) <- bsp_def
-      str_add(out$par) <- glue(
-        "  // unscaled regression coefficients\n",
-        "  vector[Ksp{p}] zbsp{p};\n"
-      )
-      str_add(out$tpar_def) <- glue(
-        "  // standard deviation of the regression coefficients\n",
-        "  vector[Ksp{p}] sdbsp{p};\n"
-      )
-      str_add(out$tpar_special_prior_local) <- glue(
-        "  // compute actual regression coefficients\n",
-        "  bsp{p} = zbsp{p} .* sdbsp{p};\n"
-      )
-      str_add(out$model_prior) <- glue(
-        "{tp()}std_normal_{lpdf}(zbsp{p});\n"
-      )
-      str_add(out$prior_global_scales) <- glue(" sdbsp{p}")
-      str_add(out$prior_global_lengths) <- glue(" Ksp{p}")
-    } else {
-      # TODO: can be removed if lasso is removed
-      str_add(out$par) <- bsp_def
-    }
+    # if (stan_assign_b_tpar(bterms, prior)) {
+    str_add(out$tpar_def) <- bsp_def
+    str_add(out$par) <- glue(
+      "  // unscaled regression coefficients\n",
+      "  vector[Ksp{p}] zbsp{p};\n"
+    )
+    str_add(out$tpar_def) <- glue(
+      "  // standard deviation of the regression coefficients\n",
+      "  vector[Ksp{p}] sdbsp{p};\n"
+    )
+    str_add(out$tpar_special_prior_local) <- glue(
+      "  // compute actual regression coefficients\n",
+      "  bsp{p} = zbsp{p} .* sdbsp{p};\n"
+    )
+    str_add(out$model_prior) <- glue(
+      "{tp()}std_normal_{lpdf}(zbsp{p});\n"
+    )
+    str_add(out$prior_global_scales) <- glue(" sdbsp{p}")
+    str_add(out$prior_global_lengths) <- glue(" Ksp{p}")
+    # } else {
+    #   str_add(out$par) <- bsp_def
+    # }
     str_add(out$pll_args) <- glue(", vector bsp{p}")
   } else {
     str_add_list(out) <- stan_prior(
@@ -2063,10 +2063,10 @@ stan_has_special_prior <- function(bterms, prior, type = NULL) {
 
 # indicate if the overall coefficients 'b' should be
 # assigned in the transformed parameters block
-stan_assign_b_tpar <- function(bterms, prior) {
-  special <- get_special_prior(prior, bterms)
-  !is.null(special$horseshoe) || !is.null(special$R2D2)
-}
+# stan_assign_b_tpar <- function(bterms, prior) {
+#   special <- get_special_prior(prior, bterms)
+#   !is.null(special$horseshoe) || !is.null(special$R2D2)
+# }
 
 stan_dpar_comments <- function(dpar, family) {
   dpar_class <- dpar_class(dpar, family)

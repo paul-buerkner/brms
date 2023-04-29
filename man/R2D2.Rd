@@ -4,15 +4,15 @@
 \alias{R2D2}
 \title{R2-D2 Priors in \pkg{brms}}
 \usage{
-R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 1, autoscale = TRUE)
+R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE)
 }
 \arguments{
-\item{mean_R2}{mean of the Beta prior on the coefficient of determination R^2.}
+\item{mean_R2}{Mean of the Beta prior on the coefficient of determination R^2.}
 
-\item{prec_R2}{precision of the Beta prior on the coefficient of determination R^2.}
+\item{prec_R2}{Precision of the Beta prior on the coefficient of determination R^2.}
 
-\item{cons_D2}{concentration vector of the Dirichlet prior on the variance
-decomposition parameters.}
+\item{cons_D2}{Concentration vector of the Dirichlet prior on the variance
+decomposition parameters. Lower values imply more shrinkage.}
 
 \item{autoscale}{Logical; indicating whether the R2D2
 prior should be scaled using the residual standard deviation

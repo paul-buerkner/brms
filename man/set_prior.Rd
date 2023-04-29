@@ -146,10 +146,10 @@ Define priors for specific parameters or classes of parameters.
   population-level effect and avoid the centering parameterization,
   use \code{0 + Intercept} on the right-hand side of the model formula.
 
-  A special shrinkage prior to be applied on population-level effects is the
-  (regularized) horseshoe prior and related priors. See
-  \code{\link{horseshoe}} for details. Another shrinkage prior is the
-  so-called lasso prior. See \code{\link{lasso}} for details.
+  A special shrinkage prior to be applied to the regression coefficients is
+  the (regularized) horseshoe prior and related priors. See
+  \code{\link{horseshoe}} for details. Another similar kind of shrinkage
+  prior with more intuitive hyperparameters is the \code{\link{R2D2}} prior.
 
   In non-linear models, population-level effects are defined separately
   for each non-linear parameter. Accordingly, it is necessary to specify
