@@ -2178,6 +2178,9 @@ get_special_prior <- function(prior, px, class = NULL, main = FALSE) {
   out <- attr(prior, "special")
   prefix <- combine_prefix(px, keep_mu = TRUE)
   out <- out[[prefix]]
+  if (!length(out)) {
+    return(NULL)
+  }
   if (main) {
     # get the main special prior to extract arguments from
     main <- which(ulapply(out, "[[", "main"))
@@ -2189,6 +2192,7 @@ get_special_prior <- function(prior, px, class = NULL, main = FALSE) {
   } else if (!is.null(class)) {
     out <- out[[class]]
   } else {
+    # just extract info on any class for example the first
     out <- out[[1]]
   }
   out
