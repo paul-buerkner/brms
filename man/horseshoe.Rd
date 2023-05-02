@@ -11,7 +11,8 @@ horseshoe(
   scale_slab = 2,
   df_slab = 4,
   par_ratio = NULL,
-  autoscale = TRUE
+  autoscale = TRUE,
+  main = TRUE
 )
 }
 \arguments{
@@ -48,6 +49,11 @@ prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
+
+\item{main}{Logical; only relevant if the horseshoe prior spans multiple
+parameter classes. In this case, only arguments of the single instance for
+which \code{main} is \code{TRUE} will be used. See the Examples section
+below.}
 }
 \value{
 A character string obtained by \code{match.call()} with

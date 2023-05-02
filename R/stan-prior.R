@@ -343,32 +343,37 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
 }
 
 # Stan code for global parameters of special shrinkage priors
-stan_special_prior_global <- function(bterms, data, prior, normalize,
+stan_special_prior_global <- function(bterms, data, prior, ranef, normalize,
                                       out = list(), ...) {
   tp <- tp()
   lpp <- lpp()
   lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  special <- get_special_prior(prior, px)
-  if (!is.null(special$horseshoe)) {
+  if (!has_special_prior(prior, px)) {
+    return(out)
+  }
+  special <- get_special_prior(prior, px, main = TRUE)
+  str_add(out$data) <- glue(
+    "  int<lower=1> Kscales{p};  // number of local scale parameters\n"
+  )
+  if (special$name == "horseshoe") {
     str_add(out$data) <- glue(
       "  // data for the horseshoe prior\n",
       "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
       "  real<lower=0> hs_df_global{p};  // global degrees of freedom\n",
       "  real<lower=0> hs_df_slab{p};  // slab degrees of freedom\n",
       "  real<lower=0> hs_scale_global{p};  // global prior scale\n",
-      "  real<lower=0> hs_scale_slab{p};  // slab prior scale\n",
-      "  int<lower=1> Kall{p};  // number of local scale parameters\n"
+      "  real<lower=0> hs_scale_slab{p};  // slab prior scale\n"
     )
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
       "  real<lower=0> hs_global{p};  // global shrinkage parameter\n",
       "  real<lower=0> hs_slab{p};  // slab regularization parameter\n",
-      "  vector<lower=0>[Kall{p}] hs_local{p};  // local parameters for the horseshoe prior\n"
+      "  vector<lower=0>[Kscales{p}] hs_local{p};  // local parameters for the horseshoe prior\n"
     )
     hs_scale_global <- glue("hs_scale_global{p}")
-    if (isTRUE(special$horseshoe$autoscale)) {
+    if (isTRUE(special$autoscale)) {
       str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
     }
     str_add(out$tpar_prior) <- glue(
@@ -377,7 +382,7 @@ stan_special_prior_global <- function(bterms, data, prior, normalize,
       "{lpp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
     str_add(out$tpar_def) <- glue(
-      "  vector<lower=0>[Kall{p}] scales{p};  // local horseshoe scale parameters\n"
+      "  vector<lower=0>[Kscales{p}] scales{p};  // local horseshoe scale parameters\n"
     )
     str_add(out$tpar_comp) <- glue(
       "  // compute horseshoe scale parameters\n",
@@ -387,28 +392,26 @@ stan_special_prior_global <- function(bterms, data, prior, normalize,
       "{tp}student_t_{lpdf}(hs_local{p} | hs_df{p}, 0, 1)",
       str_if(normalize, "\n    - rows(hs_local{p}) * log(0.5)"), ";\n"
     )
-  }
-  if (!is.null(special$R2D2)) {
+  } else if (special$name == "R2D2") {
     str_add(out$data) <- glue(
       "  // data for the R2D2 prior\n",
       "  real<lower=0> R2D2_mean_R2{p};  // mean of the R2 prior\n",
       "  real<lower=0> R2D2_prec_R2{p};  // precision of the R2 prior\n",
-      "  int<lower=1> Kall{p};  // number of local scale parameters\n",
       "  // concentration vector of the D2 prior\n",
-      "  vector<lower=0>[Kall{p}] R2D2_cons_D2{p};\n"
+      "  vector<lower=0>[Kscales{p}] R2D2_cons_D2{p};\n"
     )
     str_add(out$par) <- glue(
       "  // parameters of the R2D2 prior\n",
       "  real<lower=0,upper=1> R2D2_R2{p};\n",
-      "  simplex[Kall{p}] R2D2_phi{p};\n"
+      "  simplex[Kscales{p}] R2D2_phi{p};\n"
     )
     var_mult <- ""
-    if (isTRUE(special$R2D2$autoscale)) {
+    if (isTRUE(special$autoscale)) {
       var_mult <- glue("sigma{usc(px$resp)}^2 * ")
     }
     str_add(out$tpar_def) <- glue(
       "  real R2D2_tau2{p};  // global R2D2 scale parameter\n",
-      "  vector<lower=0>[Kall{p}] scales{p};  // local R2D2 scale parameters\n"
+      "  vector<lower=0>[Kscales{p}] scales{p};  // local R2D2 scale parameters\n"
     )
     str_add(out$tpar_comp) <- glue(
       "  // compute R2D2 scale parameters\n",
@@ -427,6 +430,14 @@ stan_special_prior_global <- function(bterms, data, prior, normalize,
   # this connects the global to the local priors
   scales <- strsplit(trimws(out$prior_global_scales), " ")[[1]]
   lengths <- strsplit(trimws(out$prior_global_lengths), " ")[[1]]
+  out$prior_global_scales <- out$prior_global_lengths <- NULL
+  if (has_special_prior(prior, px, class = "sd")) {
+    # this has to be done here rather than in stan_re()
+    # because the latter is not local to a linear predictor
+    ids <- unique(subset2(ranef, ls = px)$id)
+    scales <- c(scales, glue("sd_{ids}"))
+    lengths <- c(lengths, glue("M_{ids}"))
+  }
   lengths <- c("1", lengths)
   for (i in seq_along(scales)) {
     lower <- paste0(lengths[1:i], collapse = "+")
@@ -657,6 +668,13 @@ stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
     }
   }
   out
+}
+
+# are multiple base priors supplied?
+# px list of class, dpar, etc. elements used to infer parameter suffixes
+stan_has_multiple_base_priors <- function(px) {
+  px <- as.data.frame(px, stringsAsFactors = FALSE)
+  nrow(unique(px)) > 1L
 }
 
 # check if any constant priors are present

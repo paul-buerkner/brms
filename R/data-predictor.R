@@ -15,22 +15,22 @@ data_predictor <- function(x, ...) {
 }
 
 #' @export
-data_predictor.mvbrmsterms <- function(x, data, basis = NULL, ...) {
+data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, basis = NULL, ...) {
   out <- list(N = nrow(data))
   for (r in names(x$terms)) {
     bs <- basis$resps[[r]]
-    c(out) <- data_predictor(x$terms[[r]], data = data, basis = bs, ...)
+    c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, basis = bs, ...)
   }
   out
 }
 
 #' @export
 data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
-                                     basis = NULL, ...) {
+                                     sdata = NULL, basis = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, data2, ranef, prior, ...)
+  args_eff <- nlist(data, data2, ranef, prior, sdata, ...)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
@@ -59,8 +59,8 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
 # @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
-                               prior = brmsprior(), index = NULL, basis = NULL,
-                               ...) {
+                               prior = brmsprior(), sdata = NULL,
+                               index = NULL, basis = NULL, ...) {
   out <- c(
     data_fe(x, data),
     data_sp(x, data, data2 = data2, prior = prior, index = index, basis = basis$sp),
@@ -72,7 +72,10 @@ data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
     data_offset(x, data),
     data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   )
-  c(out) <- data_prior(x, data, prior = prior, sdata = out)
+  c(out) <- data_prior(
+    x, data, prior = prior, ranef = ranef,
+    sdata = c(sdata, out)
+  )
   out
 }
 
@@ -97,8 +100,10 @@ data_fe <- function(bterms, data) {
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
   avoid_dpars(colnames(X), bterms = bterms)
   out[[paste0("K", p)]] <- ncol(X)
-  # relevant if the intercept is treated separately to enable centering
-  out[[paste0("Kc", p)]] <- ncol(X) - ifelse(is_ord, 0, 1)
+  if (stan_center_X(bterms)) {
+    # relevant if the intercept is treated separately to enable centering
+    out[[paste0("Kc", p)]] <- ncol(X) - ifelse(is_ord, 0, 1)
+  }
   out[[paste0("X", p)]] <- X
   out
 }
@@ -885,40 +890,48 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and R2D2
-data_prior <- function(bterms, data, prior, sdata = NULL) {
+data_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  if (!stan_has_special_prior(px, prior)) {
+  if (!has_special_prior(prior, px)) {
     return(out)
   }
 
   # number of coefficients affected by the shrinkage prior
-  Kall <- sdata[[paste0("K", p)]] %||% 0 -
-    ifelse(stan_center_X(bterms), 1, 0) +
-    sdata[[paste0("Ksp", p)]] %||% 0
-  out[[paste0("Kall", p)]] <- Kall
+  # compute all of that here to avoid having to pass the prior around
+  # to all the individual data preparation functions
+  Kscales <- 0
+  if (has_special_prior(prior, px, class = "b")) {
+    Kscales <- Kscales +
+      first_not_null(sdata[[paste0("Kc", p)]], sdata[[paste0("K", p)]], 0) +
+      sdata[[paste0("Ksp", p)]] %||% 0
+  }
+  if (has_special_prior(prior, px, class = "sd")) {
+    ids <- unique(subset2(ranef, ls = px)$id)
+    Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
+  }
+  out[[paste0("Kscales", p)]] <- Kscales
 
-  special <- get_special_prior(prior, px)
-  if (!is.null(special$horseshoe)) {
+  special <- get_special_prior(prior, px, main = TRUE)
+  if (special$name == "horseshoe") {
     # data for the horseshoe prior
     hs_names <- c("df", "df_global", "df_slab", "scale_global", "scale_slab")
-    hs_data <- special$horseshoe[hs_names]
-    if (!is.null(special$horseshoe$par_ratio)) {
-      hs_data$scale_global <- special$horseshoe$par_ratio / sqrt(nrow(data))
+    hs_data <- special[hs_names]
+    if (!is.null(special$par_ratio)) {
+      hs_data$scale_global <- special$par_ratio / sqrt(nrow(data))
     }
     names(hs_data) <- paste0("hs_", hs_names, p)
     c(out) <- hs_data
-  }
-  if (!is.null(special$R2D2)) {
+  } else if (special$name == "R2D2") {
     # data for the R2D2 prior
     R2D2_names <- c("mean_R2", "prec_R2", "cons_D2")
-    R2D2_data <- special$R2D2[R2D2_names]
+    R2D2_data <- special[R2D2_names]
     if (length(R2D2_data$cons_D2) == 1L) {
-      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, Kall)
+      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, Kscales)
     }
-    if (length(R2D2_data$cons_D2) != Kall) {
-      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", Kall)
+    if (length(R2D2_data$cons_D2) != Kscales) {
+      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", Kscales)
     }
     R2D2_data$cons_D2 <- as.array(R2D2_data$cons_D2)
     names(R2D2_data) <- paste0("R2D2_", R2D2_names, p)

@@ -116,7 +116,7 @@ change_fe <- function(bterms, data, pars, ...) {
     bnames <- paste0(b, "_", fixef)
     lc(out) <- clist(pos, bnames)
     c(out) <- change_prior(b, pars, names = fixef)
-    c(out) <- change_special_prior_local(bterms, fixef, pars)
+    # c(out) <- change_special_prior_local(bterms, fixef, pars)
   }
   out
 }
@@ -434,19 +434,20 @@ change_family_cor_pars <- function(x, pars, ...) {
 }
 
 # rename parameters related to special priors
-change_special_prior_local <- function(bterms, coef, pars, ...) {
-  out <- list()
-  p <- combine_prefix(bterms)
-  # rename parameters related to the R2D2 prior
-  pos_R2D2_phi <- grepl(paste0("^R2D2_phi", p), pars)
-  if (any(pos_R2D2_phi)) {
-    phi <- paste0("R2D2_phi", p)
-    new_phi <- paste0(phi, "_", coef)
-    lc(out) <- clist(pos_R2D2_phi, new_phi)
-    c(out) <- change_prior(phi, pars, names = coef, is_vector = TRUE)
-  }
-  out
-}
+# TODO: decide which prior hyper parameters need renaming
+# change_special_prior_local <- function(bterms, coef, pars, ...) {
+#   out <- list()
+#   p <- combine_prefix(bterms)
+#   # rename parameters related to the R2D2 prior
+#   pos_R2D2_phi <- grepl(paste0("^R2D2_phi", p), pars)
+#   if (any(pos_R2D2_phi)) {
+#     phi <- paste0("R2D2_phi", p)
+#     new_phi <- paste0(phi, "_", coef)
+#     lc(out) <- clist(pos_R2D2_phi, new_phi)
+#     c(out) <- change_prior(phi, pars, names = coef, is_vector = TRUE)
+#   }
+#   out
+# }
 
 # helps in renaming prior parameters
 # @param class the class of the parameters

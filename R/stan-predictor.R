@@ -290,8 +290,6 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     str_add(out$data) <- glue(
       "  int<lower=1> K{p};",
       "  // number of population-level effects\n",
-      "  int<lower=0> Kc{p};",
-      "  // number of population-level effects after centering\n",
       "  matrix[N{resp}, K{p}] X{p};",
       "  // population-level design matrix\n"
     )
@@ -317,7 +315,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     }
     # prepare population-level coefficients
     b_type <- glue("vector[K{ct}{p}]")
-    has_special_prior <- stan_has_special_prior(bterms, prior)
+    has_special_prior <- has_special_prior(prior, bterms, class = "b")
     # assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
     if (decomp == "none") {
       b_suffix <- ""
@@ -407,6 +405,10 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     # centering the design matrix improves convergence
     sub_X_means <- ""
     if (length(fixef)) {
+      str_add(out$data) <- glue(
+        "  int<lower=1> Kc{p};",
+        "  // number of population-level effects after centering\n"
+      )
       sub_X_means <- glue(" - dot_product(means_X{p}, b{p})")
       if (is_ordinal(family)) {
         str_add(out$tdata_def) <- glue(
@@ -598,8 +600,14 @@ stan_re <- function(ranef, prior, normalize, ...) {
       )
     }
   }
+
   # define standard deviation parameters
+  has_special_prior <- has_special_prior(prior, px, class = "sd")
   if (has_by) {
+    if (has_special_prior) {
+      stop2("Special priors on class 'sd' are not yet compatible ",
+            "with the 'by' argument.")
+    }
     str_add_list(out) <- stan_prior(
       prior, class = "sd", group = r$group[1], coef = r$coef,
       type = glue("matrix[M_{id}, Nby_{id}]"),
@@ -609,13 +617,25 @@ stan_re <- function(ranef, prior, normalize, ...) {
       normalize = normalize
     )
   } else {
-    str_add_list(out) <- stan_prior(
-      prior, class = "sd", group = r$group[1], coef = r$coef,
-      type = glue("vector[M_{id}]"), suffix = glue("_{id}"), px = px,
-      comment = "group-level standard deviations",
-      normalize = normalize
-    )
+    if (has_special_prior) {
+      if (stan_has_multiple_base_priors(px)) {
+        stop2("Special priors on class 'sd' are not yet compatible with ",
+              "group-level coefficients correlated across formulas.")
+      }
+      str_add(out$tpar_def) <- glue(
+        "  vector[M_{id}] sd_{id};  // group-level standard deviations\n"
+      )
+    } else {
+      str_add_list(out) <- stan_prior(
+        prior, class = "sd", group = r$group[1], coef = r$coef,
+        type = glue("vector[M_{id}]"), suffix = glue("_{id}"), px = px,
+        comment = "group-level standard deviations",
+        normalize = normalize
+      )
+    }
   }
+
+  # define group-level coefficients
   dfm <- ""
   tr <- get_dist_groups(r, "student")
   if (nrow(r) > 1L && r$cor[1]) {
@@ -1014,13 +1034,12 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   }
 
   # prepare special effects coefficients
-  if (stan_has_special_prior(bterms, prior)) {
+  if (has_special_prior(prior, bterms, class = "b")) {
     stopif_prior_bound(prior, class = "b", ls = px)
     bsp_def <- glue(
       "  // special effects coefficients\n",
       "  vector[Ksp{p}] bsp{p};\n"
     )
-    # if (stan_assign_b_tpar(bterms, prior)) {
     str_add(out$tpar_def) <- bsp_def
     str_add(out$par) <- glue(
       "  // unscaled regression coefficients\n",
@@ -1039,6 +1058,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     )
     str_add(out$prior_global_scales) <- glue(" sdbsp{p}")
     str_add(out$prior_global_lengths) <- glue(" Ksp{p}")
+    # if (stan_assign_b_tpar(bterms, prior)) {
     # } else {
     #   str_add(out$par) <- bsp_def
     # }
@@ -2049,16 +2069,6 @@ stan_eta_transform <- function(family, bterms) {
 stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) &&
     !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
-}
-
-# indicate if the overall coefficients 'b' have a special prior
-# TODO: switch argument order
-stan_has_special_prior <- function(bterms, prior, type = NULL) {
-  special <- get_special_prior(prior, bterms)
-  if (!is.null(type)) {
-    special <- special[type]
-  }
-  length(rmNULL(special)) > 0
 }
 
 # indicate if the overall coefficients 'b' should be

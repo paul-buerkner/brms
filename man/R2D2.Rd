@@ -4,7 +4,7 @@
 \alias{R2D2}
 \title{R2-D2 Priors in \pkg{brms}}
 \usage{
-R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE)
+R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE, main = TRUE)
 }
 \arguments{
 \item{mean_R2}{Mean of the Beta prior on the coefficient of determination R^2.}
@@ -19,6 +19,11 @@ prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
+
+\item{main}{Logical; only relevant if the horseshoe prior spans multiple
+parameter classes. In this case, only arguments of the single instance for
+which \code{main} is \code{TRUE} will be used. See the Examples section
+below.}
 }
 \description{
 Function used to set up R2D2 priors for population-level effects in

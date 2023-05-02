@@ -24,5 +24,5 @@ Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American
    Statistical Association, 103(482), 681-686.
 }
 \seealso{
-\code{\link{set_prior}}
+\code{\link{set_prior}}, \code{\link{horseshoe}}, \code{\link{R2D2}}
 }

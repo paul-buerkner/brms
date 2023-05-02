@@ -1515,49 +1515,59 @@ validate_prior_special.btl <- function(x, prior, data,
   }
   # prepare special priors such as horseshoe
   special <- list()
-  b_index <- which(find_rows(prior, class = "b", coef = "", ls = px))
-  stopifnot(length(b_index) <= 1L)
-  if (length(b_index)) {
-    b_prior <- prior$prior[b_index]
-    if (any(is_special_prior(b_prior))) {
+  special_classes <- c("b", "sd")
+  for (sc in special_classes) {
+    index <- which(find_rows(prior, class = sc, coef = "", group = "", ls = px))
+    if (!length(index)) {
+      next
+    }
+    stopifnot(length(index) <= 1L)
+    sub_prior <- prior$prior[index]
+    if (any(is_special_prior(sub_prior))) {
       # shrinkage priors have been specified
-      if (any(nzchar(prior[b_index, "bound"]))) {
-        stop2("Setting boundaries on coefficients is not ",
-              "allowed when using the special priors.")
+      if (sc == "b") {
+        if (any(nzchar(prior[index, "bound"]))) {
+          stop2("Setting boundaries on coefficients is not ",
+                "allowed when using the special priors.")
+        }
+        if (is.formula(x[["cs"]])) {
+          stop2("Special priors are not yet allowed ",
+                "in models with category-specific effects.")
+        }
       }
-      if (is.formula(x[["cs"]])) {
-        stop2("Special priors are not yet allowed ",
-              "in models with category-specific effects.")
-      }
-      b_coef_indices <- which(
-        find_rows(prior, class = "b", ls = px) &
-          !find_rows(prior, coef = c("", "Intercept"))
+
+      coef_indices <- which(
+        find_rows(prior, class = sc, ls = px) &
+          !find_rows(prior, class = sc, coef = "", group = "")
       )
-      if (any(nchar(prior$prior[b_coef_indices]))) {
+      if (any(nzchar(prior$prior[coef_indices]))) {
         stop2(
-          "Defining separate priors for single coefficients is not ",
-          "allowed when using special priors for the whole ",
-          "set of coefficients (except for the Intercept)."
+          "Defining separate priors for single coefficients or groups is not ",
+          "allowed when using special priors for the whole class."
         )
       }
-      if (is_special_prior(b_prior, "horseshoe")) {
-        special$horseshoe <- attributes(eval2(b_prior))
-        special$horseshoe$autoscale <-
-          isTRUE(special$horseshoe$autoscale) && allow_autoscale
-      } else if (is_special_prior(b_prior, "R2D2")) {
-        special$R2D2 <- attributes(eval2(b_prior))
-        special$R2D2$autoscale <-
-          isTRUE(special$R2D2$autoscale) && allow_autoscale
-      }
-      # else if (is_special_prior(b_prior, "lasso")) {
+
+      tmp <- attributes(eval2(sub_prior))
+      tmp$autoscale <- isTRUE(tmp$autoscale) && allow_autoscale
+      # if (is_special_prior(sub_prior, "horseshoe")) {
+      #   tmp <- attributes(eval2(sub_prior))
+      #   tmp$autoscale <- isTRUE(tmp$autoscale) && allow_autoscale
+      # } else if (is_special_prior(sub_prior, "R2D2")) {
+      #   tmp$R2D2 <- attributes(eval2(sub_prior))
+      #   tmp$R2D2$autoscale <-
+      #     isTRUE(tmp$R2D2$autoscale) && allow_autoscale
+      # }
+      # else if (is_special_prior(sub_prior, "lasso")) {
       #   # the parameterization via double_exponential appears to be more
       #   # efficient than an indirect parameterization via normal and
       #   # exponential distributions; tested on 2017-06-09
       #   # TODO: enable autoscaling for lasso as well?
-      #   special$lasso <- attributes(eval2(b_prior))
+      #   tmp$lasso <- attributes(eval2(sub_prior))
       # }
+      special[[sc]] <- tmp
     }
   }
+  # TODO: check for multiple special priors
   prefix <- combine_prefix(px, keep_mu = TRUE)
   attributes(prior)$special[[prefix]] <- special
   prior
@@ -1937,6 +1947,10 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 #'   Autoscaling is not applied for distributional parameters or
 #'   when the model does not contain the parameter \code{sigma}.
+#' @param main Logical; only relevant if the horseshoe prior spans multiple
+#'   parameter classes. In this case, only arguments of the single instance for
+#'   which \code{main} is \code{TRUE} will be used. See the Examples section
+#'   below.
 #'
 #' @return A character string obtained by \code{match.call()} with
 #'   additional arguments.
@@ -2000,13 +2014,15 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #' @export
 horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
                       scale_slab = 2, df_slab = 4, par_ratio = NULL,
-                      autoscale = TRUE) {
+                      autoscale = TRUE, main = TRUE) {
   out <- deparse0(match.call())
+  name <- "horseshoe"
   df <- as.numeric(df)
   df_global <- as.numeric(df_global)
   df_slab <- as.numeric(df_slab)
   scale_global <- as.numeric(scale_global)
   scale_slab <- as.numeric(scale_slab)
+  main <- as_one_logical(main)
   if (!isTRUE(df > 0)) {
     stop2("Invalid horseshoe prior: Degrees of freedom of ",
           "the local priors must be a single positive number.")
@@ -2035,8 +2051,8 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
   }
   autoscale <- as_one_logical(autoscale)
   att <- nlist(
-    df, df_global, df_slab, scale_global,
-    scale_slab, par_ratio, autoscale
+    name, df, df_global, df_slab, scale_global,
+    scale_slab, par_ratio, autoscale, main
   )
   attributes(out)[names(att)] <- att
   out
@@ -2057,6 +2073,10 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 #'   Autoscaling is not applied for distributional parameters or
 #'   when the model does not contain the parameter \code{sigma}.
+#' @param main Logical; only relevant if the horseshoe prior spans multiple
+#'   parameter classes. In this case, only arguments of the single instance for
+#'   which \code{main} is \code{TRUE} will be used. See the Examples section
+#'   below.
 #'
 #' @references
 #' Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020).
@@ -2070,11 +2090,15 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #' set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))
 #'
 #' @export
-R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE) {
+R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE,
+                 main = TRUE) {
   out <- deparse0(match.call())
+  name <- "R2D2"
   mean_R2 <- as_one_numeric(mean_R2)
   prec_R2 <- as_one_numeric(prec_R2)
   cons_D2 <- as.numeric(cons_D2)
+  main <- as_one_logical(main)
+  # TODO: check if any arguments have been passed if main = FALSE
   if (!(mean_R2 > 0 && mean_R2 < 1)) {
     stop2("Invalid R2D2 prior: Mean of the R2 prior ",
           "must be a single number in (0, 1).")
@@ -2088,7 +2112,7 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE) {
           "must be a vector of positive numbers.")
   }
   autoscale <- as_one_logical(autoscale)
-  att <- nlist(mean_R2, prec_R2, cons_D2, autoscale)
+  att <- nlist(name, mean_R2, prec_R2, cons_D2, autoscale, main)
   attributes(out)[names(att)] <- att
   out
 }
@@ -2108,27 +2132,26 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE) {
 #' Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American
 #'    Statistical Association, 103(482), 681-686.
 #'
-#' @seealso \code{\link{set_prior}}
+#' @seealso \code{\link{set_prior}}, \code{\link{horseshoe}}, \code{\link{R2D2}}
 #'
 #' @export
 lasso <- function(df = 1, scale = 1) {
   stop2("The lasso prior is no longer supported as of brms version 2.19.2. ",
         "Please use the horseshoe or R2D2 shrinkage priors instead.")
-
-  out <- deparse0(match.call())
-  df <- as.numeric(df)
-  scale <- as.numeric(scale)
-  if (!isTRUE(df > 0)) {
-    stop2("Invalid lasso prior: Degrees of freedom of the shrinkage ",
-          "parameter prior must be a single positive number.")
-  }
-  if (!isTRUE(scale > 0)) {
-    stop2("Invalid lasso prior: Scale of the Laplace ",
-          "priors must be a single positive number.")
-  }
-  att <- nlist(df, scale)
-  attributes(out)[names(att)] <- att
-  out
+  # out <- deparse0(match.call())
+  # df <- as.numeric(df)
+  # scale <- as.numeric(scale)
+  # if (!isTRUE(df > 0)) {
+  #   stop2("Invalid lasso prior: Degrees of freedom of the shrinkage ",
+  #         "parameter prior must be a single positive number.")
+  # }
+  # if (!isTRUE(scale > 0)) {
+  #   stop2("Invalid lasso prior: Scale of the Laplace ",
+  #         "priors must be a single positive number.")
+  # }
+  # att <- nlist(df, scale)
+  # attributes(out)[names(att)] <- att
+  # out
 }
 
 # check for the usage of special priors
@@ -2147,19 +2170,37 @@ is_special_prior <- function(prior, target = NULL) {
 
 # extract special prior information
 # @param prior a brmsprior object
+# @param class parameter class to be checked. the default ensures that
+#.  the presence of any special prior is always detected
 # @param px object from which the prefix can be extract
 # @param type type of the special prior
-get_special_prior <- function(prior, px = NULL, type = NULL) {
+get_special_prior <- function(prior, px, class = NULL, main = FALSE) {
   out <- attr(prior, "special")
-  if (!is.null(px)) {
-    prefix <- combine_prefix(px, keep_mu = TRUE)
-    out <- out[[prefix]]
-  }
-  if (!is.null(type)) {
-    stopifnot(length(type) == 1L)
-    out <- out[[type]]
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  out <- out[[prefix]]
+  if (main) {
+    # get the main special prior to extract arguments from
+    main <- which(ulapply(out, "[[", "main"))
+    if (length(main) != 1L) {
+      stop2("If special priors for multiple classes are given, all of them ",
+            "except for one must be marked with 'main = FALSE'.")
+    }
+    out <- out[[main]]
+  } else if (!is.null(class)) {
+    out <- out[[class]]
+  } else {
+    out <- out[[1]]
   }
   out
+}
+
+# is special prior information present?
+has_special_prior <- function(prior, px = NULL, class = NULL) {
+  if (is.null(px)) {
+    # is any special prior present?
+    return(length(rmNULL(attr(prior, "special"))) > 0L)
+  }
+  !is.null(get_special_prior(prior, px = px, class = class))
 }
 
 # check if parameters should be sampled only from the prior
