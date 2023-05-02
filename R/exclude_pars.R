@@ -108,8 +108,7 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_pars$all) {
     par_classes <- c(
-      # TODO: decide whether to exclude local shrinkage prior parameters
-      "bQ", "zb", "zbsp", "hs_local", "R2D2_phi", "scales",
+      "bQ", "zb", "zbsp", "zbs", "hs_local", "R2D2_phi", "scales",
       "Intercept", "first_Intercept", "merged_Intercept",
       "zcar", "nszcar", "zerr"
     )
