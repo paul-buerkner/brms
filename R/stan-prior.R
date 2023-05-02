@@ -343,8 +343,8 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
 }
 
 # Stan code for global parameters of special shrinkage priors
-stan_special_prior_global <- function(bterms, data, prior, ranef, normalize,
-                                      out = list(), ...) {
+stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) {
+  stopifnot(is.list(out))
   tp <- tp()
   lpp <- lpp()
   lpdf <- stan_lpdf_name(normalize)
@@ -446,8 +446,6 @@ stan_special_prior_global <- function(bterms, data, prior, ranef, normalize,
       "  {scales[i]} = scales{p}[({lower}):({upper})];\n"
     )
   }
-  # TODO: exclude and rename parameters correctly again
-  # TODO: support the global horseshoe and R2D2 priors
   # if (!is.null(special$lasso)) {
   #   str_add(out$data) <- glue(
   #     "  // data for the lasso prior\n",
@@ -462,6 +460,42 @@ stan_special_prior_global <- function(bterms, data, prior, ranef, normalize,
   #     "{lpp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
   #   )
   # }
+  out
+}
+
+# Stan code of normal priors on regression coefficients (class 'b')
+# in non-centered parameterization
+# @param suffix shared suffix of the involved variables
+# @param suffix2 suffix of the number of coefficients
+#   deviates from suffix in case of centering or QR decomposition
+stan_prior_b_non_centered <- function(suffix, suffix_b = "", suffix_K = "",
+                                      normalize = TRUE) {
+  out <- list()
+  b <- glue("b{suffix_b}")
+  K <- glue("K{suffix_K}")
+  lpdf <- stan_lpdf_name(normalize)
+  str_add(out$tpar_def) <- glue(
+    "  // regression coefficients\n",
+    "  vector[{K}{suffix}] {b}{suffix};\n"
+  )
+  str_add(out$par) <- glue(
+    "  // unscaled regression coefficients\n",
+    "  vector[{K}{suffix}] zb{suffix};\n"
+  )
+  str_add(out$tpar_def) <- glue(
+    "  // standard deviation of the regression coefficients\n",
+    "  vector[{K}{suffix}] sdb{suffix};\n"
+  )
+  str_add(out$tpar_prior_special) <- glue(
+    "  // compute actual regression coefficients\n",
+    "  {b}{suffix} = zb{suffix} .* sdb{suffix};\n"
+  )
+  str_add(out$model_prior) <- glue(
+    "{tp()}std_normal_{lpdf}(zb{suffix});\n"
+  )
+  str_add(out$prior_global_scales) <- glue(" sdb{suffix}")
+  str_add(out$prior_global_lengths) <- glue(" {K}{suffix}")
+  str_add(out$pll_args) <- glue(", vector {b}{suffix}")
   out
 }
 

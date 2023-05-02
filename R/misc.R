@@ -420,6 +420,18 @@ plapply <- function(X, FUN, cores = 1, ...) {
   out
 }
 
+# extract objects stored in each element of a list
+# @param x a list-like object
+# @param name name of the object to extract
+from_list <- function(x, name, ...) {
+  lapply(x, "[[", name, ...)
+}
+
+# same as from_list but unlisting the result
+ufrom_list <- function(x, name, ..., recursive = TRUE, use.names = TRUE) {
+  unlist(from_list(x, name, ...), recursive, use.names)
+}
+
 # check if the operating system is Windows
 os_is_windows <- function() {
   isTRUE(Sys.info()[['sysname']] == "Windows")

@@ -28,12 +28,11 @@ rename_pars <- function(x) {
     return(x)
   }
   bterms <- brmsterms(x$formula)
-  data <- model.frame(x)
   meef <- tidy_meef(bterms, data)
   pars <- variables(x)
   # find positions of parameters and define new names
   change <- c(
-    change_effects(bterms, data = data, pars = pars),
+    change_effects(bterms, data = x$data, pars = pars, prior = x$prior),
     change_re(x$ranef, pars = pars),
     change_Xme(meef, pars = pars)
   )
@@ -103,29 +102,39 @@ change_effects.btl <- function(x, ...) {
 }
 
 # helps in renaming fixed effects parameters
-change_fe <- function(bterms, data, pars, ...) {
+change_fe <- function(bterms, data, pars, prior, ...) {
   out <- list()
-  px <- check_prefix(bterms)
   fixef <- colnames(data_fe(bterms, data)$X)
   if (stan_center_X(bterms)) {
     fixef <- setdiff(fixef, "Intercept")
   }
-  if (length(fixef)) {
-    b <- paste0("b", usc(combine_prefix(px)))
-    pos <- grepl(paste0("^", b, "\\["), pars)
-    bnames <- paste0(b, "_", fixef)
-    lc(out) <- clist(pos, bnames)
-    c(out) <- change_prior(b, pars, names = fixef)
-    # c(out) <- change_special_prior_local(bterms, fixef, pars)
+  if (!length(fixef)) {
+    return(out)
   }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  b <- paste0("b", p)
+  pos <- grepl(paste0("^", b, "\\["), pars)
+  bnames <- paste0(b, "_", fixef)
+  lc(out) <- clist(pos, bnames)
+  c(out) <- change_prior(b, pars, names = fixef)
+  if (has_special_prior(prior, bterms, class = "b")) {
+    sdb <- paste0("sdb", p)
+    pos <- grepl(paste0("^", sdb, "\\["), pars)
+    sdb_names <- paste0(sdb, "_", fixef)
+    lc(out) <- clist(pos, sdb_names)
+  }
+  # c(out) <- change_special_prior_local(bterms, fixef, pars)
   out
 }
 
 # helps in renaming special effects parameters
-change_sp <- function(bterms, data, pars, ...) {
+change_sp <- function(bterms, data, pars, prior, ...) {
   out <- list()
   spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) return(out)
+  if (!nrow(spef)) {
+    return(out)
+  }
   p <- usc(combine_prefix(bterms))
   bsp <- paste0("bsp", p)
   pos <- grepl(paste0("^", bsp, "\\["), pars)
@@ -142,6 +151,12 @@ change_sp <- function(bterms, data, pars, ...) {
     c(out) <- change_prior(
       simo_old, pars, new_class = simo_new, is_vector = TRUE
     )
+  }
+  if (has_special_prior(prior, bterms, class = "b")) {
+    sdbsp <- paste0("sdbsp", p)
+    pos <- grepl(paste0("^", sdbsp, "\\["), pars)
+    sdbsp_names <- paste0(sdbsp, "_", spef$coef)
+    lc(out) <- clist(pos, sdbsp_names)
   }
   out
 }
@@ -301,7 +316,7 @@ change_gp <- function(bterms, data, pars, ...) {
 }
 
 # helps in renaming smoothing term parameters
-change_sm <- function(bterms, data, pars, ...) {
+change_sm <- function(bterms, data, pars, prior, ...) {
   out <- list()
   smef <- tidy_smef(bterms, data)
   if (NROW(smef)) {
@@ -314,22 +329,28 @@ change_sm <- function(bterms, data, pars, ...) {
       lc(out) <- clist(pos, bsnames)
       c(out) <- change_prior(bs, pars, names = Xs_names)
     }
+    if (has_special_prior(prior, bterms, class = "b")) {
+      sdbs <- paste0("sdbs", p)
+      pos <- grepl(paste0("^", sdbs, "\\["), pars)
+      sdbs_names <- paste0(sdbs, "_", Xs_names)
+      lc(out) <- clist(pos, sdbs_names)
+    }
+
     sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
     snames <- paste0(s, "_", smef$label)
     for (i in seq_rows(smef)) {
-      for (j in seq_len(smef$nbases[i])) {
-        ij <- paste0(i, "_", j)
-        sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
-        lc(out) <- clist(sds_pos, paste0(sds_names[i], "_", j))
-        spos <- grepl(paste0("^", s, "_", ij), pars)
+      nbases <- smef$nbases[i]
+      sds_pos <- grepl(paste0("^", sds, "_", i), pars)
+      sds_names_nb <- paste0(sds_names[i], "_", seq_len(nbases))
+      lc(out) <- clist(sds_pos, sds_names_nb)
+      new_class <- paste0(sds, "_", smef$label[i])
+      c(out) <- change_prior(paste0(sds, "_", i), pars, new_class = new_class)
+      for (j in seq_len(nbases)) {
+        spos <- grepl(paste0("^", s, "_", i, "_", j), pars)
         sfnames <- paste0(snames[i], "_", j, "[", seq_len(sum(spos)), "]")
         lc(out) <- clist(spos, sfnames)
-        new_prior_class <- paste0(sds, "_", smef$label[i], "_", j)
-        c(out) <- change_prior(
-          paste0(sds, "_", ij), pars, new_class = new_prior_class
-        )
       }
     }
   }
@@ -562,9 +583,9 @@ reorder_pars <- function(x) {
   all_classes <- unique(c(
     "b", "bs", "bsp", "bcs", "ar", "ma", "sderr", "lagsar", "errorsar", "car",
     "rhocar", "sdcar", "cosy", "cortime", "sd", "cor", "df", "sds", "sdgp",
-    "lscale", valid_dpars(x), "lncor", "Intercept", "tmp", "rescor",
-    "delta", "simo", "r", "s", "zgp", "rcar", "sbhaz",
-    "R2D2", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior",
+    "lscale", valid_dpars(x), "hs", "R2D2", "sdb", "sdbsp", "sdbs", "lncor",
+    "Intercept", "tmp", "rescor", "delta", "simo", "r", "s", "zgp", "rcar",
+    "sbhaz", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior",
     "lprior", "lp"
   ))
   # reorder parameter classes

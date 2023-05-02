@@ -1515,7 +1515,7 @@ validate_prior_special.btl <- function(x, prior, data,
   }
   # prepare special priors such as horseshoe
   special <- list()
-  special_classes <- c("b", "sd")
+  special_classes <- c("b", "sd", "sds", "sdgp")
   for (sc in special_classes) {
     index <- which(find_rows(prior, class = sc, coef = "", group = "", ls = px))
     if (!length(index)) {
@@ -1567,7 +1567,11 @@ validate_prior_special.btl <- function(x, prior, data,
       special[[sc]] <- tmp
     }
   }
-  # TODO: check for multiple special priors
+  # TODO: role out use of from_list() and ufrom_list()
+  special_names <- unique(ufrom_list(special, "name"))
+  if (length(special_names) > 1L) {
+    stop2("Currently only one special prior per formula is allowed.")
+  }
   prefix <- combine_prefix(px, keep_mu = TRUE)
   attributes(prior)$special[[prefix]] <- special
   prior

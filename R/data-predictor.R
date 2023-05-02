@@ -72,7 +72,7 @@ data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
     data_offset(x, data),
     data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   )
-  c(out) <- data_prior(
+  c(out) <- data_prior_global(
     x, data, prior = prior, ranef = ranef,
     sdata = c(sdata, out)
   )
@@ -890,7 +890,7 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and R2D2
-data_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
+data_prior_global <- function(bterms, data, prior, ranef, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -899,17 +899,26 @@ data_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
   }
 
   # number of coefficients affected by the shrinkage prior
-  # compute all of that here to avoid having to pass the prior around
+  # fully compute this here to avoid having to pass the prior around
   # to all the individual data preparation functions
   Kscales <- 0
   if (has_special_prior(prior, px, class = "b")) {
     Kscales <- Kscales +
       first_not_null(sdata[[paste0("Kc", p)]], sdata[[paste0("K", p)]], 0) +
-      sdata[[paste0("Ksp", p)]] %||% 0
+      sdata[[paste0("Ksp", p)]] %||% 0 +
+      sdata[[paste0("Ks", p)]] %||% 0
   }
   if (has_special_prior(prior, px, class = "sd")) {
     ids <- unique(subset2(ranef, ls = px)$id)
     Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
+  }
+  if (has_special_prior(prior, px, class = "sds")) {
+    take <- grepl(paste0("^nb", p, "_"), names(sdata))
+    Kscales <- Kscales + sum(unlist(sdata[take]))
+  }
+  if (has_special_prior(prior, px, class = "sdgp")) {
+    take <- grepl(paste0("^Kgp", p, "_"), names(sdata))
+    Kscales <- Kscales + sum(unlist(sdata[take]))
   }
   out[[paste0("Kscales", p)]] <- Kscales
 
