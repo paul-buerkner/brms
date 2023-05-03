@@ -24,6 +24,7 @@
 #'
 #' @export
 rename_pars <- function(x) {
+  # TODO: rename to rename_variables
   if (!length(x$fit@sim)) {
     return(x)
   }
@@ -47,6 +48,7 @@ rename_pars <- function(x) {
 
 # helps in renaming parameters after model fitting
 # @return a list whose elements can be interpreted by do_renaming
+# TODO: rename 'change' to 'rename' and 'effects' to 'predictor'
 change_effects <- function(x, ...) {
   UseMethod("change_effects")
 }
@@ -583,10 +585,10 @@ reorder_pars <- function(x) {
   all_classes <- unique(c(
     "b", "bs", "bsp", "bcs", "ar", "ma", "sderr", "lagsar", "errorsar", "car",
     "rhocar", "sdcar", "cosy", "cortime", "sd", "cor", "df", "sds", "sdgp",
-    "lscale", valid_dpars(x), "hs", "R2D2", "sdb", "sdbsp", "sdbs", "lncor",
-    "Intercept", "tmp", "rescor", "delta", "simo", "r", "s", "zgp", "rcar",
-    "sbhaz", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior",
-    "lprior", "lp"
+    "lscale", valid_dpars(x), "hs", "R2D2", "sdb", "sdbsp", "sdbs", "sdar",
+    "sdma", "lncor", "Intercept", "tmp", "rescor", "delta", "simo", "r", "s",
+    "zgp", "rcar", "sbhaz", "Ymi", "Yl", "meanme", "sdme", "corme", "Xme",
+    "prior", "lprior", "lp"
   ))
   # reorder parameter classes
   class <- get_matches("^[^_]+", x$fit@sim$pars_oi)

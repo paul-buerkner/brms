@@ -320,7 +320,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       # b_suffix <- ""
       # b_comment <- "population-level effects"
       if (has_special_prior) {
-        str_add_list(out) <- stan_prior_b_non_centered(
+        str_add_list(out) <- stan_prior_non_centered(
           suffix = p, suffix_K = ct, normalize = normalize
         )
         # stopif_prior_bound(prior, class = "b", ls = px)
@@ -346,8 +346,8 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
       # b_suffix <- "Q"
       # b_comment <- "regression coefficients at QR scale"
       if (has_special_prior) {
-        str_add_list(out) <- stan_prior_b_non_centered(
-          suffix = p, suffix_b = "Q", suffix_K = ct,
+        str_add_list(out) <- stan_prior_non_centered(
+          suffix = p, suffix_class = "Q", suffix_K = ct,
           normalize = normalize
         )
         # str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
@@ -795,7 +795,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
     )
     str_add(out$pll_args) <- glue(", data matrix Xs{p}")
     if (has_special_prior(prior, px, class = "b")) {
-      str_add_list(out) <- stan_prior_b_non_centered(
+      str_add_list(out) <- stan_prior_non_centered(
         suffix = glue("s{p}"), normalize = normalize
       )
     } else {
@@ -1055,7 +1055,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   # prepare special effects coefficients
   if (has_special_prior(prior, bterms, class = "b")) {
     stopif_prior_bound(prior, class = "b", ls = px)
-    str_add_list(out) <- stan_prior_b_non_centered(
+    str_add_list(out) <- stan_prior_non_centered(
       suffix = glue("sp{p}"), normalize = normalize
     )
     # bsp_def <- glue(
@@ -1355,10 +1355,18 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     str_add(out$par) <- glue(
       "  vector[N{resp}] zerr{p};  // unscaled residuals\n"
     )
-    str_add_list(out) <- stan_prior(
-      prior, class = "sderr", px = px, suffix = p,
-      comment = "SD of residuals", normalize = normalize
-    )
+    if (has_special_prior(prior, px, class = "sderr")) {
+      str_add(out$tpar_def) <- glue(
+        "  real<lower=0> sderr{p};  // SD of residuals\n"
+      )
+      str_add(out$prior_global_scales) <- glue(" sderr{p}")
+      str_add(out$prior_global_lengths) <- glue(" 1")
+    } else {
+      str_add_list(out) <- stan_prior(
+        prior, class = "sderr", px = px, suffix = p,
+        comment = "SD of residuals", normalize = normalize
+      )
+    }
     str_add(out$tpar_def) <- glue(
       "  vector[N{resp}] err{p};  // actual residuals\n"
     )
@@ -1435,24 +1443,42 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       )
     }
     if (acef_arma$p > 0) {
-      str_add_list(out) <- stan_prior(
-        prior, class = "ar", px = px, suffix = p,
-        coef = seq_along(acef_arma$p),
-        type = glue("vector[Kar{p}]"),
-        header_type = "vector",
-        comment = "autoregressive coefficients",
-        normalize = normalize
-      )
+      if (has_special_prior(prior, px, class = "ar")) {
+        if (acef_arma$cov) {
+          stop2("Cannot use shrinkage priors on 'ar' if cov = TRUE.")
+        }
+        str_add_list(out) <- stan_prior_non_centered(
+          class = "ar", suffix = p, suffix_K = "ar"
+        )
+      } else {
+        str_add_list(out) <- stan_prior(
+          prior, class = "ar", px = px, suffix = p,
+          coef = seq_along(acef_arma$p),
+          type = glue("vector[Kar{p}]"),
+          header_type = "vector",
+          comment = "autoregressive coefficients",
+          normalize = normalize
+        )
+      }
     }
     if (acef_arma$q > 0) {
-      str_add_list(out) <- stan_prior(
-        prior, class = "ma", px = px, suffix = p,
-        coef = seq_along(acef_arma$q),
-        type = glue("vector[Kma{p}]"),
-        header_type = "vector",
-        comment = "moving-average coefficients",
-        normalize = normalize
-      )
+      if (has_special_prior(prior, px, class = "ma")) {
+        if (acef_arma$cov) {
+          stop2("Cannot use shrinkage priors on 'ma' if cov = TRUE.")
+        }
+        str_add_list(out) <- stan_prior_non_centered(
+          class = "ma", suffix = p, suffix_K = "ma"
+        )
+      } else {
+        str_add_list(out) <- stan_prior(
+          prior, class = "ma", px = px, suffix = p,
+          coef = seq_along(acef_arma$q),
+          type = glue("vector[Kma{p}]"),
+          header_type = "vector",
+          comment = "moving-average coefficients",
+          normalize = normalize
+        )
+      }
     }
   }
 
@@ -1614,10 +1640,18 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int<lower=1> edges1{p}[Nedges{p}];\n",
       "  int<lower=1> edges2{p}[Nedges{p}];\n"
     )
-    str_add_list(out) <- stan_prior(
-      prior, class = "sdcar", px = px, suffix = p,
-      comment = "SD of the CAR structure", normalize = normalize
-    )
+    if (has_special_prior(prior, px, class = "sdcar")) {
+      str_add(out$tpar_def) <- glue(
+        "  real<lower=0> sdcar{p};  // SD of the CAR structure\n"
+      )
+      str_add(out$prior_global_scales) <- glue(" sdcar{p}")
+      str_add(out$prior_global_lengths) <- glue(" 1")
+    } else {
+      str_add_list(out) <- stan_prior(
+        prior, class = "sdcar", px = px, suffix = p,
+        comment = "SD of the CAR structure", normalize = normalize
+      )
+    }
     str_add(out$pll_args) <- glue(", vector rcar{p}, data int[] Jloc{p}")
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}{n}]")
     if (acef_car$type %in% c("escar", "esicar")) {

@@ -1206,8 +1206,10 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- prior[!no_checks, ]
   # check for duplicated priors
   prior$class <- rename(
-    prior$class, c("^cor$", "^rescor$", "^corme$", "^lncor", "^cortime"),
-    c("L", "Lrescor", "Lme", "Llncor", "Lcortime"), fixed = FALSE
+    prior$class,
+    c("^cor$", "^rescor$", "^corme$", "^lncor$", "^cortime$"),
+    c("L", "Lrescor", "Lme", "Llncor", "Lcortime"),
+    fixed = FALSE
   )
   if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")
@@ -1515,7 +1517,9 @@ validate_prior_special.btl <- function(x, prior, data,
   }
   # prepare special priors such as horseshoe
   special <- list()
-  special_classes <- c("b", "sd", "sds", "sdgp")
+  # the order of the classes doesn't matter but for consistency
+  # it is still the same as the order in the Stan code
+  special_classes <- c("b", "sds", "sdgp", "ar", "ma", "sderr", "sdcar", "sd")
   for (sc in special_classes) {
     index <- which(find_rows(prior, class = sc, coef = "", group = "", ls = px))
     if (!length(index)) {
@@ -1525,20 +1529,25 @@ validate_prior_special.btl <- function(x, prior, data,
     sub_prior <- prior$prior[index]
     if (any(is_special_prior(sub_prior))) {
       # shrinkage priors have been specified
-      if (sc == "b") {
-        if (any(nzchar(prior[index, "bound"]))) {
+      if (sc %in% c("b", "ar", "ma")) {
+        if (any(nzchar(prior[index, "lb"]) | nzchar(prior[index, "ub"]))) {
           stop2("Setting boundaries on coefficients is not ",
-                "allowed when using the special priors.")
+                "allowed when using special priors.")
         }
         if (is.formula(x[["cs"]])) {
           stop2("Special priors are not yet allowed ",
                 "in models with category-specific effects.")
         }
       }
-
+      if (sc %in% c("sds", "sdgp", "sderr", "sdcar", "sd")) {
+        if (any(prior[index, "lb"] != "0" | nzchar(prior[index, "ub"]))) {
+          stop2("Setting custom boundaries on SD parameters is not ",
+                "allowed when using special priors.")
+        }
+      }
       coef_indices <- which(
         find_rows(prior, class = sc, ls = px) &
-          !find_rows(prior, class = sc, coef = "", group = "")
+          !find_rows(prior, class = sc, group = "", coef = "")
       )
       if (any(nzchar(prior$prior[coef_indices]))) {
         stop2(
@@ -1546,17 +1555,8 @@ validate_prior_special.btl <- function(x, prior, data,
           "allowed when using special priors for the whole class."
         )
       }
-
       tmp <- attributes(eval2(sub_prior))
       tmp$autoscale <- isTRUE(tmp$autoscale) && allow_autoscale
-      # if (is_special_prior(sub_prior, "horseshoe")) {
-      #   tmp <- attributes(eval2(sub_prior))
-      #   tmp$autoscale <- isTRUE(tmp$autoscale) && allow_autoscale
-      # } else if (is_special_prior(sub_prior, "R2D2")) {
-      #   tmp$R2D2 <- attributes(eval2(sub_prior))
-      #   tmp$R2D2$autoscale <-
-      #     isTRUE(tmp$R2D2$autoscale) && allow_autoscale
-      # }
       # else if (is_special_prior(sub_prior, "lasso")) {
       #   # the parameterization via double_exponential appears to be more
       #   # efficient than an indirect parameterization via normal and

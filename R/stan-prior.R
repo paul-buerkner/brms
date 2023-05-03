@@ -442,8 +442,10 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
   for (i in seq_along(scales)) {
     lower <- paste0(lengths[1:i], collapse = "+")
     upper <- paste0(lengths[2:(i+1)], collapse = "+")
+    # some scale parameters are a scalar not a vector
+    bracket1 <- str_if(lengths[i+1] == "1", "[1]")
     str_add(out$tpar_comp) <- glue(
-      "  {scales[i]} = scales{p}[({lower}):({upper})];\n"
+      "  {scales[i]} = scales{p}[({lower}):({upper})]{bracket1};\n"
     )
   }
   # if (!is.null(special$lasso)) {
@@ -463,39 +465,37 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
   out
 }
 
-# Stan code of normal priors on regression coefficients (class 'b')
+# Stan code of normal priors on regression coefficients
 # in non-centered parameterization
+# @param class name of the coefficient class
 # @param suffix shared suffix of the involved variables
-# @param suffix2 suffix of the number of coefficients
-#   deviates from suffix in case of centering or QR decomposition
-stan_prior_b_non_centered <- function(suffix, suffix_b = "", suffix_K = "",
-                                      normalize = TRUE) {
+# @param suffix_class extra suffix of the class
+# @param suffix_K extra suffix of K (number of coefficients)
+stan_prior_non_centered <- function(class = "b", suffix = "", suffix_class = "",
+                                    suffix_K = "", normalize = TRUE) {
   out <- list()
-  b <- glue("b{suffix_b}")
-  K <- glue("K{suffix_K}")
+  csfx <- glue("{class}{suffix}")
+  csfx2 <- glue("{class}{suffix_class}{suffix}")
+  Ksfx <- glue("K{suffix_K}{suffix}")
   lpdf <- stan_lpdf_name(normalize)
   str_add(out$tpar_def) <- glue(
-    "  // regression coefficients\n",
-    "  vector[{K}{suffix}] {b}{suffix};\n"
+    "  vector[{Ksfx}] {csfx2};  // scaled coefficients\n"
   )
   str_add(out$par) <- glue(
-    "  // unscaled regression coefficients\n",
-    "  vector[{K}{suffix}] zb{suffix};\n"
+    "  vector[{Ksfx}] z{csfx};  // unscaled coefficients\n"
   )
   str_add(out$tpar_def) <- glue(
-    "  // standard deviation of the regression coefficients\n",
-    "  vector[{K}{suffix}] sdb{suffix};\n"
+    "  vector[{Ksfx}] sd{csfx};  // SDs of the coefficients\n"
   )
   str_add(out$tpar_prior_special) <- glue(
-    "  // compute actual regression coefficients\n",
-    "  {b}{suffix} = zb{suffix} .* sdb{suffix};\n"
+    "  {csfx2} = z{csfx} .* sd{csfx};  // scale coefficients\n"
   )
   str_add(out$model_prior) <- glue(
-    "{tp()}std_normal_{lpdf}(zb{suffix});\n"
+    "{tp()}std_normal_{lpdf}(z{csfx});\n"
   )
-  str_add(out$prior_global_scales) <- glue(" sdb{suffix}")
-  str_add(out$prior_global_lengths) <- glue(" {K}{suffix}")
-  str_add(out$pll_args) <- glue(", vector {b}{suffix}")
+  str_add(out$prior_global_scales) <- glue(" sd{csfx}")
+  str_add(out$prior_global_lengths) <- glue(" {Ksfx}")
+  str_add(out$pll_args) <- glue(", vector {csfx2}")
   out
 }
 

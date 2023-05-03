@@ -901,16 +901,14 @@ data_prior_global <- function(bterms, data, prior, ranef, sdata = NULL) {
   # number of coefficients affected by the shrinkage prior
   # fully compute this here to avoid having to pass the prior around
   # to all the individual data preparation functions
+  # the order of adding things to Kscales doesn't matter but for consistency
+  # it is still the same as the order in the Stan code
   Kscales <- 0
   if (has_special_prior(prior, px, class = "b")) {
     Kscales <- Kscales +
-      first_not_null(sdata[[paste0("Kc", p)]], sdata[[paste0("K", p)]], 0) +
+      sdata[[paste0("Kc", p)]] %||% sdata[[paste0("K", p)]] %||% 0 +
       sdata[[paste0("Ksp", p)]] %||% 0 +
       sdata[[paste0("Ks", p)]] %||% 0
-  }
-  if (has_special_prior(prior, px, class = "sd")) {
-    ids <- unique(subset2(ranef, ls = px)$id)
-    Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
   }
   if (has_special_prior(prior, px, class = "sds")) {
     take <- grepl(paste0("^nb", p, "_"), names(sdata))
@@ -919,6 +917,22 @@ data_prior_global <- function(bterms, data, prior, ranef, sdata = NULL) {
   if (has_special_prior(prior, px, class = "sdgp")) {
     take <- grepl(paste0("^Kgp", p, "_"), names(sdata))
     Kscales <- Kscales + sum(unlist(sdata[take]))
+  }
+  if (has_special_prior(prior, px, class = "ar")) {
+    Kscales <- Kscales + sdata[[paste0("Kar", p)]]
+  }
+  if (has_special_prior(prior, px, class = "ma")) {
+    Kscales <- Kscales + sdata[[paste0("Kma", p)]]
+  }
+  if (has_special_prior(prior, px, class = "sderr")) {
+    Kscales <- Kscales + 1
+  }
+  if (has_special_prior(prior, px, class = "sdcar")) {
+    Kscales <- Kscales + 1
+  }
+  if (has_special_prior(prior, px, class = "sd")) {
+    ids <- unique(subset2(ranef, ls = px)$id)
+    Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
   }
   out[[paste0("Kscales", p)]] <- Kscales
 

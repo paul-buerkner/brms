@@ -427,7 +427,7 @@ from_list <- function(x, name, ...) {
   lapply(x, "[[", name, ...)
 }
 
-# same as from_list but unlisting the result
+# unlist from_list output
 ufrom_list <- function(x, name, ..., recursive = TRUE, use.names = TRUE) {
   unlist(from_list(x, name, ...), recursive, use.names)
 }

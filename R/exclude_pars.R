@@ -1,5 +1,6 @@
 # list parameters NOT to be saved by Stan
 # @return a vector of parameter names to be excluded
+# TODO: rename to exclude_variables
 exclude_pars <- function(x, ...) {
   UseMethod("exclude_pars")
 }
@@ -108,8 +109,8 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_pars$all) {
     par_classes <- c(
-      "bQ", "zb", "zbsp", "zbs", "hs_local", "R2D2_phi", "scales",
-      "Intercept", "first_Intercept", "merged_Intercept",
+      "bQ", "zb", "zbsp", "zbs", "zar", "zma", "hs_local", "R2D2_phi",
+      "scales", "Intercept", "first_Intercept", "merged_Intercept",
       "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
