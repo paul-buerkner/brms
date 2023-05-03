@@ -1,6 +1,5 @@
 # list parameters NOT to be saved by Stan
 # @return a vector of parameter names to be excluded
-# TODO: rename to exclude_variables
 exclude_pars <- function(x, ...) {
   UseMethod("exclude_pars")
 }
