@@ -410,7 +410,7 @@ tidy_index <- function(x, data) {
     stop2("NAs are not allowed in 'index' variables.")
   }
   if (anyDuplicated(out)) {
-    stop2("Index of response '", names(out), "' contains duplicated values.")
+    stop2("Index of response '", x$resp, "' contains duplicated values.")
   }
   out
 }

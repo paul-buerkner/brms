@@ -5,6 +5,10 @@
 #' (posterior predictive checks) or for new data.
 #'
 #' @inheritParams posterior_predict.brmsfit
+#' @param method Method used to obtain predictions. Can be set to
+#'   \code{"posterior_predict"} (the default), \code{"posterior_epred"},
+#'   or \code{"posterior_linpred"}. For more details, see the respective
+#'   function documentations.
 #'
 #' @return An S x N \code{array} of predictive error draws, where S is the
 #'   number of posterior draws and N is the number of observations.
@@ -27,7 +31,8 @@
 #' @export predictive_error
 predictive_error.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
-  resp = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...
+  method = "posterior_predict", resp = NULL, ndraws = NULL,
+  draw_ids = NULL, sort = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -35,7 +40,7 @@ predictive_error.brmsfit <- function(
   }
   .predictive_error(
     object, newdata = newdata, re_formula = re_formula,
-    method = "posterior_predict", type = "ordinary", resp = resp,
+    method = method, type = "ordinary", resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, sort = sort, ...
   )
 }
@@ -46,11 +51,6 @@ predictive_error.brmsfit <- function(
 #' with additional arguments for obtaining summaries of the computed draws.
 #'
 #' @inheritParams predictive_error.brmsfit
-#' @param method Method use to obtain predictions. Either
-#'  \code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
-#'  Using \code{"posterior_predict"} is recommended
-#'  but \code{"posterior_epred"} is the current default for
-#'  reasons of backwards compatibility.
 #' @param type The type of the residuals,
 #'  either \code{"ordinary"} or \code{"pearson"}.
 #'  More information is provided under 'Details'.
@@ -89,7 +89,7 @@ predictive_error.brmsfit <- function(
 #'
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                              method = "posterior_epred",
+                              method = "posterior_predict",
                               type = c("ordinary", "pearson"),
                               resp = NULL, ndraws = NULL,
                               draw_ids = NULL, sort = FALSE,

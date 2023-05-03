@@ -176,15 +176,18 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_match2(scode, "R2D2_tau2 = sigma^2 * R2D2_R2 / (1 - R2D2_R2);")
 
   # lasso prior
-  scode <- make_stancode(y ~ x1*x2, data = dat,
-                         prior = prior(lasso(2, scale = 10)),
-                         sample_prior = TRUE)
+  expect_warning(
+    scode <- make_stancode(y ~ x1*x2, data = dat,
+                           prior = prior(lasso(2, scale = 10)),
+                           sample_prior = TRUE),
+    "The 'lasso' prior is deprecated"
+  )
   expect_match2(scode, "lprior += chi_square_lpdf(lasso_inv_lambda | lasso_df);")
   expect_match2(scode,
     "target += double_exponential_lpdf(b | 0, lasso_scale * lasso_inv_lambda);"
   )
 
-  scode <- make_stancode(x1 ~ mo(y), dat, prior = prior(lasso()))
+  scode <- SW(make_stancode(x1 ~ mo(y), dat, prior = prior(lasso())))
   expect_match2(scode,
     "double_exponential_lpdf(bsp | 0, lasso_scale * lasso_inv_lambda)"
   )
@@ -193,13 +196,13 @@ test_that("special shrinkage priors appear in the Stan code", {
   hs_a1 <- horseshoe(7, scale_global = 2, df_global = 3)
   lasso_a2 <- lasso(2, scale = 10)
   R2D2_a3 <- R2D2(0.5, 10)
-  scode <- make_stancode(
+  scode <- SW(make_stancode(
     bf(y ~ a1 + a2 + a3, a1 ~ x1, a2 ~ 0 + x2, a3 ~ x2, nl = TRUE),
     data = dat, sample_prior = TRUE,
     prior = c(set_prior(hs_a1, nlpar = "a1"),
               set_prior(lasso_a2, nlpar = "a2"),
               set_prior(R2D2_a3, nlpar = "a3"))
-  )
+  ))
   expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1;")
   expect_match2(scode, "real<lower=0> hs_global_a1;")
   expect_match2(scode,
@@ -231,12 +234,12 @@ test_that("special shrinkage priors appear in the Stan code", {
                "Scale of the global prior")
   expect_error(make_stancode(y ~ x1*x2, data = dat, prior = prior(lasso(-1))),
                "Degrees of freedom of the shrinkage parameter prior")
-  expect_error(make_stancode(y ~ cs(x1), dat, acat(), prior = prior(lasso())),
+  expect_error(make_stancode(y ~ cs(x1), dat, acat(), prior = prior(R2D2())),
                "Special priors are not yet allowed")
   bprior <- prior(horseshoe()) + prior(normal(0, 1), coef = "y")
   expect_error(make_stancode(x1 ~ y, dat, prior = bprior),
                "Defining separate priors for single coefficients")
-  expect_error(make_stancode(x1 ~ y, dat, prior = prior(lasso(), lb = 0)),
+  expect_error(make_stancode(x1 ~ y, dat, prior = prior(horseshoe(), lb = 0)),
                "Cannot add bounds to class 'b' for this prior")
 })
 
@@ -580,7 +583,7 @@ test_that("Stan code for multivariate models is correct", {
   form <- bf(mvbind(y1, y2) ~ x) + set_rescor(TRUE)
   prior <- prior(lasso(2, 10), resp = "y1") +
     prior(lasso(2, 10), resp = "y2")
-  scode <- make_stancode(form, dat, student(), prior = prior)
+  scode <- SW(make_stancode(form, dat, student(), prior = prior))
   expect_match2(scode, "target += multi_student_t_lpdf(Y | nu, Mu, Sigma);")
   expect_match2(scode, "matrix[nresp, nresp] Sigma = multiply_lower")
   expect_match2(scode, "lprior += gamma_lpdf(nu | 2, 0.1)")

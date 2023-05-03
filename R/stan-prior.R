@@ -420,13 +420,12 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
 
 # Stan code for local parameters of special priors
 # currently implemented are 'horseshoe'
-# @param class name of the parameter class
 # @param prior a brmsprior object
-# @param ncoef number of coefficients in the parameter
+# @param class name of the parameter class
 # @param px named list to subset 'prior'
 # @param center_X is the design matrix centered?
 # @param suffix optional suffix of the 'b' coefficient vector
-stan_special_prior_local <- function(prior, class, ncoef, px,
+stan_special_prior_local <- function(prior, class, px,
                                      center_X = FALSE, suffix = "",
                                      normalize = TRUE) {
   class <- as_one_character(class)

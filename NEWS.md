@@ -1,3 +1,10 @@
+# brms 2.19.0++
+
+### Other changes
+
+* Deprecate the `lasso` prior with the intention to remove it in brms 3.0.
+
+
 # brms 2.19.0
 
 ### New Features

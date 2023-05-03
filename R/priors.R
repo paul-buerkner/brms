@@ -536,7 +536,7 @@ prior_predictor.default <- function(x, ...) {
 prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior <- empty_prior()
   for (i in seq_along(x$terms)) {
-    prior <- prior + prior_predictor(x$terms[[i]], ...)
+    prior <- prior + prior_predictor(x$terms[[i]], internal = internal, ...)
   }
   for (cl in c("b", "Intercept")) {
     # deprecated; see warning in 'validate_prior_special'
@@ -1556,6 +1556,8 @@ validate_prior_special.btl <- function(x, prior, data,
         # exponential distributions; tested on 2017-06-09
         # TODO: enable autoscaling for lasso as well?
         special$lasso <- attributes(eval2(b_prior))
+        # deprecated in version 2.19.1 on 2023-04-27
+        warning2("The 'lasso' prior is deprecated and will be removed in the future.")
       }
     }
   }
