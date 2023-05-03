@@ -968,7 +968,7 @@ mvbrmsformula <- function(..., flist = NULL, rescor = NULL) {
   if (!is.null(rescor)) {
     rescor <- as_one_logical(rescor)
   }
-  responses <- ulapply(forms, "[[", "resp")
+  responses <- ufrom_list(forms, "resp")
   if (any(duplicated(responses))) {
     stop2("Cannot use the same response variable twice in the same model.")
   }
@@ -1035,10 +1035,10 @@ allow_rescor <- function(x) {
     return(FALSE)
   }
   parts <- if (is.mvbrmsformula(x)) x$forms else x$terms
-  families <- lapply(parts, "[[", "family")
+  families <- from_list(parts, "family")
   has_rescor <- ulapply(families, has_rescor)
   is_mixture <- ulapply(families, is.mixfamily)
-  family_names <- ulapply(families, "[[", "family")
+  family_names <- ufrom_list(families, "family")
   all(has_rescor) && !any(is_mixture) &&
     length(unique(family_names)) == 1L
 }

@@ -1567,7 +1567,6 @@ validate_prior_special.btl <- function(x, prior, data,
       special[[sc]] <- tmp
     }
   }
-  # TODO: role out use of from_list() and ufrom_list()
   special_names <- unique(ufrom_list(special, "name"))
   if (length(special_names) > 1L) {
     stop2("Currently only one special prior per formula is allowed.")
@@ -2187,7 +2186,7 @@ get_special_prior <- function(prior, px, class = NULL, main = FALSE) {
   }
   if (main) {
     # get the main special prior to extract arguments from
-    main <- which(ulapply(out, "[[", "main"))
+    main <- which(ufrom_list(out, "main"))
     if (length(main) != 1L) {
       stop2("If special priors for multiple classes are given, all of them ",
             "except for one must be marked with 'main = FALSE'.")

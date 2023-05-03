@@ -115,7 +115,7 @@ validate_data2 <- function(data2, bterms, ...) {
     attr(data2[[M]], "obs_based_matrix") <- TRUE
   }
   # validate within-group covariance matrices
-  cov_names <- ulapply(get_re(bterms)$gcall, "[[", "cov")
+  cov_names <- ufrom_list(get_re(bterms)$gcall, "cov")
   cov_names <- cov_names[nzchar(cov_names)]
   for (cov in cov_names) {
     data2[[cov]] <- validate_recov_matrix(get_from_data2(cov, data2))
@@ -416,7 +416,7 @@ validate_newdata <- function(
     # variables not used in the included model parts
     # do not need to be specified in newdata
     resp <- validate_resp(resp, bterms$responses)
-    form_req_vars <- lapply(bterms$terms[resp], "[[", "allvars")
+    form_req_vars <- from_list(bterms$terms[resp], "allvars")
     form_req_vars <- allvars_formula(form_req_vars)
     req_vars <- intersect(req_vars, all.vars(form_req_vars))
   }

@@ -135,7 +135,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    tmp <- lapply(x, "[[", name)
+    tmp <- from_list(x, name)
     out <- out & do_call(fun, list(tmp, ls[[name]]))
   }
   out

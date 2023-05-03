@@ -222,7 +222,7 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
       )
     }
   }
-  sflist <- lapply(models, "[[", "fit")
+  sflist <- from_list(models, "fit")
   models[[1]]$fit <- rstan::sflist2stanfit(sflist)
   models[[1]]
 }

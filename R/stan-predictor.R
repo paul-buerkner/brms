@@ -126,7 +126,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
   resp_type <- out[[1]]$resp_type
   out <- collapse_lists(ls = out)
   out$resp_type <- "vector"
-  adforms <- lapply(x$terms, "[[", "adforms")
+  adforms <- from_list(x$terms, "adforms")
   adnames <- unique(ulapply(adforms, names))
   adallowed <- c("se", "weights", "mi")
   if (!all(adnames %in% adallowed))  {
@@ -166,7 +166,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
     )
     str_add(out$pll_args) <- glue(", data vector weights")
   }
-  miforms <- rmNULL(lapply(adforms, "[[", "mi"))
+  miforms <- rmNULL(from_list(adforms, "mi"))
   if (length(miforms)) {
     str_add(out$model_no_pll_def) <- "  vector[nresp] Yl[N] = Y;\n"
     str_add(out$pll_args) <- ", vector[] Yl"

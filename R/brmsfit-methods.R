@@ -508,7 +508,7 @@ family.brmsfit <- function(object, resp = NULL, ...) {
   resp <- validate_resp(resp, object)
   if (!is.null(resp)) {
     # multivariate model
-    family <- lapply(object$formula$forms[resp], "[[", "family")
+    family <- from_list(object$formula$forms[resp], "family")
     if (length(resp) == 1L) {
       family <- family[[1]]
     }
