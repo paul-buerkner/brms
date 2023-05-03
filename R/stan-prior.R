@@ -448,20 +448,6 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
       "  {scales[i]} = scales{p}[({lower}):({upper})]{bracket1};\n"
     )
   }
-  # if (!is.null(special$lasso)) {
-  #   str_add(out$data) <- glue(
-  #     "  // data for the lasso prior\n",
-  #     "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
-  #     "  real<lower=0> lasso_scale{p};  // prior scale\n"
-  #   )
-  #   str_add(out$par) <- glue(
-  #     "  // lasso shrinkage parameter\n",
-  #     "  real<lower=0> lasso_inv_lambda{p};\n"
-  #   )
-  #   str_add(out$tpar_prior) <- glue(
-  #     "{lpp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
-  #   )
-  # }
   out
 }
 
@@ -487,7 +473,7 @@ stan_prior_non_centered <- function(class = "b", suffix = "", suffix_class = "",
   str_add(out$tpar_def) <- glue(
     "  vector[{Ksfx}] sd{csfx};  // SDs of the coefficients\n"
   )
-  str_add(out$tpar_prior_special) <- glue(
+  str_add(out$tpar_special_prior) <- glue(
     "  {csfx2} = z{csfx} .* sd{csfx};  // scale coefficients\n"
   )
   str_add(out$model_prior) <- glue(
@@ -498,78 +484,6 @@ stan_prior_non_centered <- function(class = "b", suffix = "", suffix_class = "",
   str_add(out$pll_args) <- glue(", vector {csfx2}")
   out
 }
-
-# Stan code for local parameters of special priors
-# currently implemented are 'horseshoe'
-# @param prior a brmsprior object
-# @param class name of the parameter class
-# @param px named list to subset 'prior'
-# @param center_X is the design matrix centered?
-# @param suffix optional suffix of the 'b' coefficient vector
-# stan_special_prior_local <- function(prior, class, px,
-#                                      center_X = FALSE, suffix = "",
-#                                      normalize = TRUE) {
-#   class <- as_one_character(class)
-#   stopifnot(class %in% c("b", "bsp"))
-#   out <- list()
-#   lpdf <- stan_lpdf_name(normalize)
-#   p <- usc(combine_prefix(px))
-#   sp <- paste0(sub("^b", "", class), p)
-#   ct <- str_if(center_X, "c")
-#   tp <- tp()
-#   special <- get_special_prior(prior, px)
-#   if (!is.null(special$horseshoe)) {
-#     str_add(out$par) <- glue(
-#       "  // local parameters for the horseshoe prior\n",
-#       "  vector[K{ct}{sp}] zb{sp};\n",
-#       "  vector<lower=0>[K{ct}{sp}] hs_local{sp};\n"
-#     )
-#     hs_args <- sargs(
-#       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"),
-#       glue("hs_scale_slab{p}^2 * hs_slab{p}")
-#     )
-#     str_add(out$tpar_reg_prior) <- glue(
-#       "  // compute the actual regression coefficients\n",
-#       "  b{suffix}{sp} = horseshoe({hs_args});\n"
-#     )
-#     str_add(out$model_prior) <- glue(
-#       "{tp}std_normal_{lpdf}(zb{sp});\n",
-#       "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
-#       str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
-#     )
-#   }
-#   if (!is.null(special$R2D2)) {
-#     if (class != "b") {
-#       stop2("The R2D2 prior does not yet support special coefficient classes.")
-#     }
-#     str_add(out$data) <- glue(
-#       "  // concentration vector of the D2 prior\n",
-#       "  vector<lower=0>[K{ct}{sp}] R2D2_cons_D2{sp};\n"
-#     )
-#     str_add(out$par) <- glue(
-#       "  // local parameters for the R2D2 prior\n",
-#       "  vector[K{ct}{sp}] zb{sp};\n",
-#       "  simplex[K{ct}{sp}] R2D2_phi{sp};\n"
-#     )
-#     R2D2_args <- sargs(
-#       glue("zb{sp}"), glue("R2D2_phi{sp}"), glue("R2D2_tau2{p}")
-#     )
-#     str_add(out$tpar_reg_prior) <- glue(
-#       "  // compute actual regression coefficients\n",
-#       "  b{suffix}{sp} = R2D2({R2D2_args});\n"
-#     )
-#     str_add(out$model_prior) <- glue(
-#       "{tp}std_normal_{lpdf}(zb{sp});\n",
-#       "{tp}dirichlet_{lpdf}(R2D2_phi{sp} | R2D2_cons_D2{p});\n"
-#     )
-#   }
-#   if (!is.null(special$lasso)) {
-#     str_add(out$model_prior) <- glue(
-#       "{tp}double_exponential_lpdf(b{suffix}{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
-#     )
-#   }
-#   out
-# }
 
 # combine unchecked priors for use in Stan
 # @param prior a brmsprior object
@@ -589,11 +503,11 @@ stan_unchecked_prior <- function(prior) {
 # @param par_declars the parameters block of the Stan code
 #   required to extract boundaries
 # @param gen_quantities Stan code from the generated quantities block
-# @param prior_special a list of values pertaining to special priors
+# @param special_prior a list of values pertaining to special priors
 #   such as horseshoe or lasso
 # @param sample_prior take draws from priors?
 stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
-                          prior_special, sample_prior = "yes") {
+                          special_prior, sample_prior = "yes") {
   if (!is_equal(sample_prior, "yes")) {
     return(list())
   }
@@ -745,7 +659,7 @@ stan_type_add_bounds <- function(type, bound) {
 
 # adjust the type of a parameter based on the assigned prior
 stan_adjust_par_type <- function(type, prior) {
-  # TODO: add support for more type-prior combination?
+  # TODO: add support for more type-prior combinations?
   combs <- data.frame(
     type = "vector",
     prior = "dirichlet",

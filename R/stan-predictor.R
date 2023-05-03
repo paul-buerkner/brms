@@ -315,24 +315,11 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     # prepare population-level coefficients
     b_type <- glue("vector[K{ct}{p}]")
     has_special_prior <- has_special_prior(prior, bterms, class = "b")
-    # assign_b_tpar <- stan_assign_b_tpar(bterms, prior)
     if (decomp == "none") {
-      # b_suffix <- ""
-      # b_comment <- "population-level effects"
       if (has_special_prior) {
         str_add_list(out) <- stan_prior_non_centered(
           suffix = p, suffix_K = ct, normalize = normalize
         )
-        # stopif_prior_bound(prior, class = "b", ls = px)
-        # str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
-        # b_def <- glue("  {b_type} b{p};  // {b_comment}\n")
-        # if (assign_b_tpar) {
-        #   # only some special priors assign b in transformed parameters
-        #   str_add(out$tpar_def) <- b_def
-        # } else {
-        #   str_add(out$par) <- b_def
-        # }
-        # str_add(out$pll_args) <- glue(", vector b{p}")
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
@@ -343,22 +330,11 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     } else {
       stopifnot(decomp == "QR")
       stopif_prior_bound(prior, class = "b", ls = px)
-      # b_suffix <- "Q"
-      # b_comment <- "regression coefficients at QR scale"
       if (has_special_prior) {
         str_add_list(out) <- stan_prior_non_centered(
           suffix = p, suffix_class = "Q", suffix_K = ct,
           normalize = normalize
         )
-        # str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
-        # bQ_def <- glue("  {b_type} bQ{p};  // {b_comment}\n")
-        # if (assign_b_tpar) {
-        #   # only some special priors assign b in transformed parameters
-        #   str_add(out$tpar_def) <- bQ_def
-        # } else {
-        #   str_add(out$par) <- bQ_def
-        # }
-        # str_add(out$pll_args) <- glue(", vector bQ{p}")
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "b", coef = fixef, type = b_type,
@@ -372,32 +348,6 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
         "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
       )
     }
-
-    # str_add_list(out) <- stan_special_prior_local(
-    #   prior, class = "b", px = px, center_X = center_X,
-    #   suffix = b_suffix, normalize = normalize
-    # )
-
-    # if (has_special_prior) {
-    #   # handle special shrinkage priors
-    #   str_add(out$par) <- glue(
-    #     "  // unscaled regression coefficients\n",
-    #     "  vector[K{ct}{p}] zb{p};\n"
-    #   )
-    #   str_add(out$tpar_def) <- glue(
-    #     "  // standard deviation of the regression coefficients\n",
-    #     "  vector[K{ct}{p}] sdb{p};\n"
-    #   )
-    #   str_add(out$tpar_prior_special) <- glue(
-    #     "  // compute actual regression coefficients\n",
-    #     "  b{b_suffix}{p} = zb{p} .* sdb{p};\n"
-    #   )
-    #   str_add(out$model_prior) <- glue(
-    #     "{tp()}std_normal_{lpdf}(zb{p});\n"
-    #   )
-    #   str_add(out$prior_global_scales) <- glue(" sdb{p}")
-    #   str_add(out$prior_global_lengths) <- glue(" K{ct}{p}")
-    # }
   }
 
   order_intercepts <- order_intercepts(bterms)
@@ -850,7 +800,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
       "  // actual spline coefficients\n",
       "  vector[knots{pi}[{nb}]] s{pi}_{nb};\n"
     )
-    str_add(out$tpar_prior_special) <- cglue(
+    str_add(out$tpar_special_prior) <- cglue(
       "  // compute actual spline coefficients\n",
       "  s{pi}_{nb} = sds{pi}[{nb}] * zs{pi}_{nb};\n"
     )
@@ -1058,33 +1008,6 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     str_add_list(out) <- stan_prior_non_centered(
       suffix = glue("sp{p}"), normalize = normalize
     )
-    # bsp_def <- glue(
-    #   "  // special effects coefficients\n",
-    #   "  vector[Ksp{p}] bsp{p};\n"
-    # )
-    # str_add(out$tpar_def) <- bsp_def
-    # str_add(out$par) <- glue(
-    #   "  // unscaled regression coefficients\n",
-    #   "  vector[Ksp{p}] zbsp{p};\n"
-    # )
-    # str_add(out$tpar_def) <- glue(
-    #   "  // standard deviation of the regression coefficients\n",
-    #   "  vector[Ksp{p}] sdbsp{p};\n"
-    # )
-    # str_add(out$tpar_prior_special) <- glue(
-    #   "  // compute actual regression coefficients\n",
-    #   "  bsp{p} = zbsp{p} .* sdbsp{p};\n"
-    # )
-    # str_add(out$model_prior) <- glue(
-    #   "{tp()}std_normal_{lpdf}(zbsp{p});\n"
-    # )
-    # str_add(out$prior_global_scales) <- glue(" sdbsp{p}")
-    # str_add(out$prior_global_lengths) <- glue(" Ksp{p}")
-    # # if (stan_assign_b_tpar(bterms, prior)) {
-    # # } else {
-    # #   str_add(out$par) <- bsp_def
-    # # }
-    # str_add(out$pll_args) <- glue(", vector bsp{p}")
   } else {
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = spef$coef,
@@ -1094,11 +1017,6 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
       normalize = normalize
     )
   }
-  # stan_special_priors <- stan_special_prior_local(
-  #   prior, class = "bsp", px = px, center_X = FALSE,
-  #   normalize = normalize
-  # )
-  # out <- collapse_lists(out, stan_special_priors)
   out
 }
 
@@ -2134,13 +2052,6 @@ stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) &&
     !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
 }
-
-# indicate if the overall coefficients 'b' should be
-# assigned in the transformed parameters block
-# stan_assign_b_tpar <- function(bterms, prior) {
-#   special <- get_special_prior(prior, bterms)
-#   !is.null(special$horseshoe) || !is.null(special$R2D2)
-# }
 
 stan_dpar_comments <- function(dpar, family) {
   dpar_class <- dpar_class(dpar, family)

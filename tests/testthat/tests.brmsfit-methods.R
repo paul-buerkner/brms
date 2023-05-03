@@ -749,7 +749,7 @@ test_that("prior_draws has reasonable outputs", {
   prs1 <- prior_draws(fit1)
   prior_names <- c(
     "Intercept", "b", paste0("simo_moExp1[", 1:4, "]"), "bsp",
-    "bs", "sds_sAge_1", "b_sigma", "Intercept_sigma", "nu",
+    "bs", "sds_sAge", "b_sigma", "Intercept_sigma", "nu",
     "sd_visit", "cor_visit"
   )
   expect_equal(colnames(prs1), prior_names)
@@ -815,9 +815,9 @@ test_that("stancode has reasonable outputs", {
 
 test_that("standata has reasonable outputs", {
   expect_equal(sort(names(standata(fit1))),
-    sort(c("N", "Y",  "Kar", "Kma", "J_lag", "K", "X", "Ksp", "Imo",
+    sort(c("N", "Y", "Kar", "Kma", "J_lag", "K", "Kc", "X", "Ksp", "Imo",
            "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", "nb_1",
-           "knots_1", "Zs_1_1", "Ks", "Xs", "offsets", "K_sigma",
+           "knots_1", "Zs_1_1", "Ks", "Xs", "offsets", "K_sigma", "Kc_sigma",
            "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only"))
   )
   expect_equal(sort(names(standata(fit2))),

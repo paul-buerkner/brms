@@ -72,7 +72,7 @@ data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
     data_offset(x, data),
     data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   )
-  c(out) <- data_prior_global(
+  c(out) <- data_special_prior(
     x, data, prior = prior, ranef = ranef,
     sdata = c(sdata, out)
   )
@@ -890,7 +890,7 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and R2D2
-data_prior_global <- function(bterms, data, prior, ranef, sdata = NULL) {
+data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -960,12 +960,6 @@ data_prior_global <- function(bterms, data, prior, ranef, sdata = NULL) {
     names(R2D2_data) <- paste0("R2D2_", R2D2_names, p)
     c(out) <- R2D2_data
   }
-  # if (!is.null(special$lasso)) {
-  #   lasso_names <- c("df", "scale")
-  #   lasso_data <- special$lasso[lasso_names]
-  #   names(lasso_data) <- paste0("lasso_", lasso_names, p)
-  #   c(out) <- lasso_data
-  # }
   out
 }
 

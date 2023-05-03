@@ -539,7 +539,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
     prior <- prior + prior_predictor(x$terms[[i]], internal = internal, ...)
   }
   for (cl in c("b", "Intercept")) {
-    # deprecated; see warning in 'validate_prior_special'
+    # deprecated; see warning in 'validate_special_prior'
     if (any(with(prior, class == cl & coef == ""))) {
       prior <- prior + brmsprior(class = cl)
     }
@@ -615,7 +615,7 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
     prior <- prior + nlp_prior
   }
   if (conv_cats_dpars(x$family)) {
-    # deprecated; see warning in 'validate_prior_special'
+    # deprecated; see warning in 'validate_special_prior'
     for (cl in c("b", "Intercept")) {
       if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
         prior <- prior + brmsprior(class = cl, resp  = x$resp)
@@ -1270,7 +1270,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 
   # don't require priors on nlpars if some priors are not checked (#1124)
   require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
-  prior <- validate_prior_special(
+  prior <- validate_special_prior(
     prior, bterms = bterms, data = data,
     require_nlpar_prior = require_nlpar_prior, ...
   )
@@ -1383,17 +1383,17 @@ check_prior_content <- function(prior) {
 
 # prepare special priors for use in Stan
 # required for priors that are not natively supported by Stan
-validate_prior_special <- function(x, ...) {
-  UseMethod("validate_prior_special")
+validate_special_prior <- function(x, ...) {
+  UseMethod("validate_special_prior")
 }
 
 #' @export
-validate_prior_special.default <- function(x, prior = empty_prior(), ...) {
+validate_special_prior.default <- function(x, prior = empty_prior(), ...) {
   prior
 }
 
 #' @export
-validate_prior_special.brmsprior <- function(x, bterms, ...) {
+validate_special_prior.brmsprior <- function(x, bterms, ...) {
   if (!NROW(x)) {
     return(x)
   }
@@ -1401,14 +1401,14 @@ validate_prior_special.brmsprior <- function(x, bterms, ...) {
     x$new <- TRUE
   }
   x$remove <- FALSE
-  x <- validate_prior_special(bterms, prior = x, ...)
+  x <- validate_special_prior(bterms, prior = x, ...)
   x <- x[!x$remove, ]
   x$new <- x$remove <- NULL
   x
 }
 
 #' @export
-validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
+validate_special_prior.mvbrmsterms <- function(x, prior = NULL, ...) {
   for (cl in c("b", "Intercept")) {
     # copy over the global population-level priors in MV models
     gi <- which(find_rows(prior, class = cl, coef = "", resp = ""))
@@ -1432,13 +1432,13 @@ validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
     }
   }
   for (i in seq_along(x$terms)) {
-    prior <- validate_prior_special(x$terms[[i]], prior = prior, ...)
+    prior <- validate_special_prior(x$terms[[i]], prior = prior, ...)
   }
   prior
 }
 
 #' @export
-validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
+validate_special_prior.brmsterms <- function(x, data, prior = NULL, ...) {
   data <- subset_data(data, x)
   if (is.null(prior)) {
     prior <- empty_prior()
@@ -1475,13 +1475,13 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   simple_sigma <- simple_sigma(x)
   for (dp in names(x$dpars)) {
     allow_autoscale <- dp == "mu" && simple_sigma
-    prior <- validate_prior_special(
+    prior <- validate_special_prior(
       x$dpars[[dp]], prior = prior, data = data,
       allow_autoscale = allow_autoscale, ...
     )
   }
   for (nlp in names(x$nlpars)) {
-    prior <- validate_prior_special(
+    prior <- validate_special_prior(
       x$nlpars[[nlp]], prior = prior, data = data,
       allow_autoscale = simple_sigma, ...
     )
@@ -1490,7 +1490,7 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
 }
 
 #' @export
-validate_prior_special.btnl <- function(x, prior, ...) {
+validate_special_prior.btnl <- function(x, prior, ...) {
   prior
 }
 
@@ -1499,7 +1499,7 @@ validate_prior_special.btnl <- function(x, prior, ...) {
 # @param require_nlpar_prior require priors on coefficients of nlpars?
 # @return a possibly updated brmsprior object with additional attributes
 #' @export
-validate_prior_special.btl <- function(x, prior, data,
+validate_special_prior.btl <- function(x, prior, data,
                                        allow_autoscale = TRUE,
                                        require_nlpar_prior = TRUE, ...) {
   allow_autoscale <- as_one_logical(allow_autoscale)
@@ -1534,6 +1534,7 @@ validate_prior_special.btl <- function(x, prior, data,
           stop2("Setting boundaries on coefficients is not ",
                 "allowed when using special priors.")
         }
+        # TODO: allow special priors also for 'cs' coefficients
         if (is.formula(x[["cs"]])) {
           stop2("Special priors are not yet allowed ",
                 "in models with category-specific effects.")
@@ -1557,13 +1558,6 @@ validate_prior_special.btl <- function(x, prior, data,
       }
       tmp <- attributes(eval2(sub_prior))
       tmp$autoscale <- isTRUE(tmp$autoscale) && allow_autoscale
-      # else if (is_special_prior(sub_prior, "lasso")) {
-      #   # the parameterization via double_exponential appears to be more
-      #   # efficient than an indirect parameterization via normal and
-      #   # exponential distributions; tested on 2017-06-09
-      #   # TODO: enable autoscaling for lasso as well?
-      #   tmp$lasso <- attributes(eval2(sub_prior))
-      # }
       special[[sc]] <- tmp
     }
   }
@@ -2052,6 +2046,10 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
       stop2("Argument 'par_ratio' must be greater 0.")
     }
   }
+  arg_names <- setdiff(names(call), c("", "main"))
+  if (!main && length(arg_names)) {
+    warning2("Arguments of the horseshoe prior are ignored if main = FALSE.")
+  }
   autoscale <- as_one_logical(autoscale)
   att <- nlist(
     name, df, df_global, df_slab, scale_global,
@@ -2095,13 +2093,13 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #' @export
 R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE,
                  main = TRUE) {
-  out <- deparse0(match.call())
+  call <- match.call()
+  out <- deparse0(call)
   name <- "R2D2"
   mean_R2 <- as_one_numeric(mean_R2)
   prec_R2 <- as_one_numeric(prec_R2)
   cons_D2 <- as.numeric(cons_D2)
   main <- as_one_logical(main)
-  # TODO: check if any arguments have been passed if main = FALSE
   if (!(mean_R2 > 0 && mean_R2 < 1)) {
     stop2("Invalid R2D2 prior: Mean of the R2 prior ",
           "must be a single number in (0, 1).")
@@ -2113,6 +2111,10 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE,
   if (any(cons_D2 <= 0)) {
     stop2("Invalid R2D2 prior: Concentration of the D2 prior ",
           "must be a vector of positive numbers.")
+  }
+  arg_names <- setdiff(names(call), c("", "main"))
+  if (!main && length(arg_names)) {
+    warning2("Arguments of the R2D2 prior are ignored if main = FALSE.")
   }
   autoscale <- as_one_logical(autoscale)
   att <- nlist(name, mean_R2, prec_R2, cons_D2, autoscale, main)
@@ -2141,20 +2143,6 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE,
 lasso <- function(df = 1, scale = 1) {
   stop2("The lasso prior is no longer supported as of brms version 2.19.2. ",
         "Please use the horseshoe or R2D2 shrinkage priors instead.")
-  # out <- deparse0(match.call())
-  # df <- as.numeric(df)
-  # scale <- as.numeric(scale)
-  # if (!isTRUE(df > 0)) {
-  #   stop2("Invalid lasso prior: Degrees of freedom of the shrinkage ",
-  #         "parameter prior must be a single positive number.")
-  # }
-  # if (!isTRUE(scale > 0)) {
-  #   stop2("Invalid lasso prior: Scale of the Laplace ",
-  #         "priors must be a single positive number.")
-  # }
-  # att <- nlist(df, scale)
-  # attributes(out)[names(att)] <- att
-  # out
 }
 
 # check for the usage of special priors

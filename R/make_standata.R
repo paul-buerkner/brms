@@ -83,7 +83,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     ranef <- tidy_ranef(bterms, data, old_levels = basis$levels)
     meef <- tidy_meef(bterms, data, old_levels = basis$levels)
     index <- tidy_index(bterms, data)
-    # pass as sdata so that data_prior_global knows about data_gr_global
+    # pass as sdata so that data_special_prior knows about data_gr_global
     sdata_gr_global <- data_gr_global(ranef, data2 = data2)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, data2 = data2, ranef = ranef,
