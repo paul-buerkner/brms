@@ -9,12 +9,12 @@
 # @param type Stan type used in the definition of the parameter
 #   if type is empty the parameter is not initialized inside 'stan_prior'
 # @param dim stan array dimension to be specified after the parameter name
-#   cannot be merged with 'suffix' as the latter should apply to
+#   cannot be expressed via 'suffix' as the latter should apply to
 #   individual coefficients while 'dim' should not
 #   TODO: decide whether to support arrays for parameters at all
 #   an alternative would be to specify elements directly as parameters
 # @param coef_type Stan type used in the definition of individual parameter
-#   coefficients; only relevant when mixing estimated and fixed coefficients
+#   coefficients
 # @param prefix a prefix to put at the parameter class
 # @param suffix a suffix to put at the parameter class
 # @param broadcast Stan type to which the prior should be broadcasted

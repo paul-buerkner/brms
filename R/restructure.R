@@ -49,7 +49,7 @@ restructure_v2 <- function(x) {
   pars <- variables(x)
   version <- restructure_version(x)
   if (version < "2.1.2") {
-    x <- do_renaming(x, change_old_bsp(pars))
+    x <- do_renaming(x, rename_old_bsp(pars))
   }
   if (version < "2.1.3") {
     if ("weibull" %in% family_names(x)) {
@@ -262,19 +262,19 @@ restructure_v1 <- function(x) {
   if (version < "0.10.1") {
     if (length(bterms$dpars$mu$nlpars)) {
       # nlpar and group have changed positions
-      change <- change_old_re(x$ranef, variables(x), x$fit@sim$dims_oi)
+      change <- rename_old_re(x$ranef, variables(x), x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
   }
   if (version < "1.0.0") {
     # double underscores were added to group-level parameters
-    change <- change_old_re2(x$ranef, variables(x), x$fit@sim$dims_oi)
+    change <- rename_old_re2(x$ranef, variables(x), x$fit@sim$dims_oi)
     x <- do_renaming(x, change)
   }
   if (version < "1.0.1.1") {
     # names of spline parameters had to be changed after
     # allowing for multiple covariates in one spline term
-    change <- change_old_sm(
+    change <- rename_old_sm(
       bterms, model.frame(x), variables(x), x$fit@sim$dims_oi
     )
     x <- do_renaming(x, change)
@@ -299,11 +299,11 @@ restructure_v1 <- function(x) {
   if (version < "1.9.0.4") {
     # names of monotonic parameters had to be changed after
     # allowing for interactions in monotonic terms
-    change <- change_old_mo(bterms, x$data, pars = variables(x))
+    change <- rename_old_mo(bterms, x$data, pars = variables(x))
     x <- do_renaming(x, change)
   }
   if (version >= "1.0.0" && version < "2.0.0") {
-    change <- change_old_categorical(bterms, x$data, pars = variables(x))
+    change <- rename_old_categorical(bterms, x$data, pars = variables(x))
     x <- do_renaming(x, change)
   }
   x
@@ -361,7 +361,7 @@ old_dpars <- function() {
 # @param pars names of all parameters in the model
 # @param dims dimension of parameters
 # @return a list whose elements can be interpreted by do_renaming
-change_old_re <- function(ranef, pars, dims) {
+rename_old_re <- function(ranef, pars, dims) {
   out <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -372,7 +372,7 @@ change_old_re <- function(ranef, pars, dims) {
     old_sd_names <- paste0("sd_", nlpar, "_", g, "_", r$coef)
     new_sd_names <- paste0("sd_", g, "_", nlpar, "_", r$coef)
     for (i in seq_along(old_sd_names)) {
-      lc(out) <- change_simple(
+      lc(out) <- rename_simple(
         old_sd_names[i], new_sd_names[i], pars, dims
       )
     }
@@ -386,7 +386,7 @@ change_old_re <- function(ranef, pars, dims) {
       type = paste0("cor_", nlpar, "_", g)
     )
     for (i in seq_along(old_cor_names)) {
-      lc(out) <- change_simple(
+      lc(out) <- rename_simple(
         old_cor_names[i], new_cor_names[i], pars, dims
       )
     }
@@ -396,7 +396,7 @@ change_old_re <- function(ranef, pars, dims) {
     levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
     new_r_names <- paste0(new_r_name, index_names)
-    lc(out) <- change_simple(
+    lc(out) <- rename_simple(
       old_r_name, new_r_names, pars, dims,
       pnames = new_r_name
     )
@@ -411,7 +411,7 @@ change_old_re <- function(ranef, pars, dims) {
 # @param pars names of all parameters in the model
 # @param dims dimension of parameters
 # @return a list whose elements can be interpreted by do_renaming
-change_old_re2 <- function(ranef, pars, dims) {
+rename_old_re2 <- function(ranef, pars, dims) {
   out <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -421,7 +421,7 @@ change_old_re2 <- function(ranef, pars, dims) {
     old_sd_names <- paste0("sd_", g, "_", nlpars_usc, r$coef)
     new_sd_names <- paste0("sd_", g, "__", nlpars_usc, r$coef)
     for (i in seq_along(old_sd_names)) {
-      lc(out) <- change_simple(old_sd_names[i], new_sd_names[i], pars, dims)
+      lc(out) <- rename_simple(old_sd_names[i], new_sd_names[i], pars, dims)
     }
     # rename cor-parameters
     new_cor_names <- get_cornames(
@@ -433,7 +433,7 @@ change_old_re2 <- function(ranef, pars, dims) {
       brackets = FALSE, sep = "_"
     )
     for (i in seq_along(old_cor_names)) {
-      lc(out) <- change_simple(old_cor_names[i], new_cor_names[i], pars, dims)
+      lc(out) <- rename_simple(old_cor_names[i], new_cor_names[i], pars, dims)
     }
     # rename r-parameters
     for (nlpar in unique(r$nlpar)) {
@@ -443,7 +443,7 @@ change_old_re2 <- function(ranef, pars, dims) {
       levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
       index_names <- make_index_names(levels, sub_r$coef, dim = 2)
       new_r_names <- paste0(new_r_name, index_names)
-      lc(out) <- change_simple(
+      lc(out) <- rename_simple(
         old_r_name, new_r_names, pars, dims,
         pnames = new_r_name
       )
@@ -454,8 +454,8 @@ change_old_re2 <- function(ranef, pars, dims) {
 
 # change names of spline parameters fitted with brms <= 1.0.1
 # this became necessary after allowing smooths with multiple covariates
-change_old_sm <- function(bterms, data, pars, dims) {
-  .change_old_sm <- function(bt) {
+rename_old_sm <- function(bterms, data, pars, dims) {
+  .rename_old_sm <- function(bt) {
     out <- list()
     smef <- tidy_smef(bt, data)
     if (nrow(smef)) {
@@ -467,11 +467,11 @@ change_old_sm <- function(bterms, data, pars, dims) {
       old_s_pars <- paste0("s_", old_smooths)
       new_s_pars <- paste0("s_", new_smooths, "_1")
       for (i in seq_along(old_smooths)) {
-        lc(out) <- change_simple(old_sds_pars[i], new_sds_pars[i], pars, dims)
+        lc(out) <- rename_simple(old_sds_pars[i], new_sds_pars[i], pars, dims)
         dim_s <- dims[[old_s_pars[i]]]
         if (!is.null(dim_s)) {
           new_s_par_indices <- paste0(new_s_pars[i], "[", seq_len(dim_s), "]")
-          lc(out) <- change_simple(
+          lc(out) <- rename_simple(
             old_s_pars[i], new_s_par_indices, pars, dims,
             pnames = new_s_pars[i]
           )
@@ -484,17 +484,17 @@ change_old_sm <- function(bterms, data, pars, dims) {
   out <- list()
   if (is.mvbrmsterms(bterms)) {
     for (r in bterms$responses) {
-      c(out) <- .change_old_sm(bterms$terms[[r]]$dpars$mu)
+      c(out) <- .rename_old_sm(bterms$terms[[r]]$dpars$mu)
     }
   } else if (is.brmsterms(bterms)) {
     for (dp in names(bterms$dpars)) {
       bt <- bterms$dpars[[dp]]
       if (length(bt$nlpars)) {
         for (nlp in names(bt$nlpars)) {
-          c(out) <- .change_old_sm(bt$nlpars[[nlp]])
+          c(out) <- .rename_old_sm(bt$nlpars[[nlp]])
         }
       } else {
-        c(out) <- .change_old_sm(bt)
+        c(out) <- .rename_old_sm(bt)
       }
     }
   }
@@ -503,8 +503,8 @@ change_old_sm <- function(bterms, data, pars, dims) {
 
 # change names of monotonic effects fitted with brms <= 1.9.0
 # this became necessary after implementing monotonic interactions
-change_old_mo <- function(bterms, data, pars) {
-  .change_old_mo <- function(bt) {
+rename_old_mo <- function(bterms, data, pars) {
+  .rename_old_mo <- function(bt) {
     out <- list()
     spef <- tidy_spef(bt, data)
     has_mo <- lengths(spef$calls_mo) > 0
@@ -523,7 +523,7 @@ change_old_mo <- function(bterms, data, pars) {
     }
     for (i in seq_along(bmo_old)) {
       pos <- grepl(paste0("^", bmo_old[i]), pars)
-      lc(out) <- clist(pos, fnames = bmo_new[i])
+      lc(out) <- rlist(pos, fnames = bmo_new[i])
     }
     simo_regex <- paste0("^simplex", p, "_[^_]+$")
     simo_old_all <- pars[grepl(simo_regex, pars)]
@@ -536,7 +536,7 @@ change_old_mo <- function(bterms, data, pars) {
       simo_new <- paste0("simo", p, "_", simo_coef[i])
       simo_index_part <- simo_index[grepl(regex_pos, simo_old_all)]
       simo_new <- paste0(simo_new, simo_index_part)
-      lc(out) <- clist(pos, fnames = simo_new)
+      lc(out) <- rlist(pos, fnames = simo_new)
     }
     return(out)
   }
@@ -544,17 +544,17 @@ change_old_mo <- function(bterms, data, pars) {
   out <- list()
   if (is.mvbrmsterms(bterms)) {
     for (r in bterms$responses) {
-      c(out) <- .change_old_mo(bterms$terms[[r]]$dpars$mu)
+      c(out) <- .rename_old_mo(bterms$terms[[r]]$dpars$mu)
     }
   } else if (is.brmsterms(bterms)) {
     for (dp in names(bterms$dpars)) {
       bt <- bterms$dpars[[dp]]
       if (length(bt$nlpars)) {
         for (nlp in names(bt$nlpars)) {
-          c(out) <- .change_old_mo(bt$nlpars[[nlp]])
+          c(out) <- .rename_old_mo(bt$nlpars[[nlp]])
         }
       } else {
-        c(out) <- .change_old_mo(bt)
+        c(out) <- .rename_old_mo(bt)
       }
     }
   }
@@ -563,7 +563,7 @@ change_old_mo <- function(bterms, data, pars) {
 
 # between version 1.0 and 2.0 categorical models used
 # the internal multivariate interface
-change_old_categorical <- function(bterms, data, pars) {
+rename_old_categorical <- function(bterms, data, pars) {
   stopifnot(is.brmsterms(bterms))
   if (!is_categorical(bterms$family)) {
     return(list())
@@ -588,7 +588,7 @@ change_old_categorical <- function(bterms, data, pars) {
 }
 
 # as of brms 2.2 'mo' and 'me' terms are handled together
-change_old_bsp <- function(pars) {
+rename_old_bsp <- function(pars) {
   pos <- grepl("^(bmo|bme)_", pars)
   if (!any(pos)) return(list())
   fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
@@ -596,11 +596,11 @@ change_old_bsp <- function(pars) {
 }
 
 # prepare for renaming of parameters in old models
-change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
+rename_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
   pos <- grepl(paste0("^", oldname), pars)
   if (any(pos)) {
     out <- nlist(pos, oldname, pnames, fnames, dims = dims[[oldname]])
-    class(out) <- c("clist", "list")
+    class(out) <- c("rlist", "list")
   } else {
     out <- NULL
   }

@@ -2,27 +2,28 @@ context("Tests for make_standata")
 
 test_that(paste("make_standata returns correct data names ",
                 "for fixed and random effects"), {
-  expect_equal(names(make_standata(rating ~ treat + period + carry
-                                   + (1|subject), data = inhaler)),
-               c("N", "Y",  "K", "X", "Z_1_1",
-                 "J_1", "N_1", "M_1", "NC_1", "prior_only"))
-  expect_equal(names(make_standata(rating ~ treat + period + carry
+  expect_equal(sort(names(make_standata(rating ~ treat + period + carry
+                                   + (1|subject), data = inhaler))),
+               sort(c("N", "Y",  "K", "Kc", "X", "Z_1_1",
+                 "J_1", "N_1", "M_1", "NC_1", "prior_only")))
+  expect_equal(sort(names(make_standata(rating ~ treat + period + carry
                                    + (1+treat|id|subject), data = inhaler,
-                                   family = "categorical")),
-               c("N", "Y", "ncat", "K_mu2", "X_mu2", "Z_1_mu2_1",
-                 "Z_1_mu2_2", "K_mu3", "X_mu3", "Z_1_mu3_3", "Z_1_mu3_4",
-                 "K_mu4", "X_mu4", "Z_1_mu4_5", "Z_1_mu4_6",
-                 "J_1", "N_1", "M_1", "NC_1", "prior_only"))
-  expect_equal(names(make_standata(rating ~ treat + period + carry
-                                   + (1+treat|subject), data = inhaler)),
-               c("N", "Y", "K", "X", "Z_1_1", "Z_1_2", "J_1", "N_1", "M_1",
-                 "NC_1", "prior_only"))
+                                   family = "categorical"))),
+               sort(c("N", "Y", "ncat", "K_mu2", "Kc_mu2", "X_mu2", "Z_1_mu2_1",
+                 "Z_1_mu2_2", "K_mu3", "Kc_mu3", "X_mu3", "Z_1_mu3_3", "Z_1_mu3_4",
+                 "K_mu4", "Kc_mu4", "X_mu4", "Z_1_mu4_5", "Z_1_mu4_6",
+                 "J_1", "N_1", "M_1", "NC_1", "prior_only")))
+  expect_equal(sort(names(make_standata(rating ~ treat + period + carry
+                                   + (1+treat|subject), data = inhaler))),
+               sort(c("N", "Y", "K", "Kc", "X", "Z_1_1", "Z_1_2", "J_1", "N_1", "M_1",
+                 "NC_1", "prior_only")))
 
   dat <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
-  expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), dat, "poisson")),
-               c("N", "Y", "K", "X", "Z_1_1", "Z_2_1",
+  expect_equal(sort(names(make_standata(y ~ 0 + Intercept + x + (1|g) + (1|h),
+                                        dat, "poisson"))),
+               sort(c("N", "Y", "K", "X", "Z_1_1", "Z_2_1",
                  "J_1", "J_2", "N_1", "M_1", "NC_1", "N_2", "M_2", "NC_2",
-                 "prior_only"))
+                 "prior_only")))
   expect_true(all(c("Z_1_1", "Z_1_2", "Z_2_1", "Z_2_2") %in%
                   names(make_standata(y ~ x + (1+x|g/h), dat))))
   expect_equal(make_standata(y ~ x + (1+x|g+h), dat),
@@ -44,19 +45,19 @@ test_that("make_standata returns correct data names for addition terms", {
   dat <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10),
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, dat, gaussian())),
-               c("N", "Y", "se", "K", "X", "sigma", "prior_only"))
+               c("N", "Y", "se", "K", "Kc", "X", "sigma", "prior_only"))
   expect_equal(names(make_standata(y | weights(w) ~ x, dat, "gaussian")),
-               c("N", "Y", "weights", "K", "X",  "prior_only"))
+               c("N", "Y", "weights", "K", "Kc", "X",  "prior_only"))
   expect_equal(names(make_standata(y | cens(c) ~ x, dat, "student")),
-               c("N", "Y", "cens", "K", "X", "prior_only"))
+               c("N", "Y", "cens", "K", "Kc", "X", "prior_only"))
   expect_equal(names(make_standata(y | trials(t) ~ x, dat, "binomial")),
-               c("N", "Y", "trials", "K", "X", "prior_only"))
+               c("N", "Y", "trials", "K", "Kc", "X", "prior_only"))
   expect_equal(names(make_standata(y | trials(10) ~ x, dat, "binomial")),
-               c("N", "Y", "trials", "K", "X", "prior_only"))
+               c("N", "Y", "trials", "K", "Kc", "X", "prior_only"))
   expect_equal(names(make_standata(y | thres(11) ~ x, dat, "acat")),
-               c("N", "Y", "nthres", "K", "X", "disc", "prior_only"))
+               c("N", "Y", "nthres", "K", "Kc", "X", "disc", "prior_only"))
   expect_equal(names(make_standata(y | thres(10) ~ x, dat, cumulative())),
-               c("N", "Y", "nthres", "K", "X", "disc", "prior_only"))
+               c("N", "Y", "nthres", "K", "Kc", "X", "disc", "prior_only"))
   sdata <- make_standata(y | trunc(0,20) ~ x, dat, "gaussian")
   expect_true(all(sdata$lb == 0) && all(sdata$ub == 20))
   sdata <- make_standata(y | trunc(ub = 21:30) ~ x, dat)
@@ -869,6 +870,8 @@ test_that("make_standata includes data for CAR models", {
 test_that("make_standata includes data of special priors", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
 
+  # TODO: add tests for global shrinkage priors
+
   # horseshoe prior
   hs <- horseshoe(7, scale_global = 2, df_global = 3,
                   df_slab = 6, scale_slab = 3)
@@ -889,25 +892,19 @@ test_that("make_standata includes data of special priors", {
                          prior = prior(R2D2(0.5, 10)))
   expect_equal(sdata$R2D2_mean_R2, 0.5)
   expect_equal(sdata$R2D2_prec_R2, 10)
-  expect_equal(sdata$R2D2_cons_D2, as.array(rep(1, 3)))
+  expect_equal(sdata$R2D2_cons_D2, as.array(rep(0.5, 3)))
 
-  # lasso prior
-  sdata <- make_standata(y ~ x1*x2, data = dat,
-                         prior = prior(lasso(2, scale = 10)))
-  expect_equal(sdata$lasso_df, 2)
-  expect_equal(sdata$lasso_scale, 10)
-
-  # horseshoe and lasso prior applied in a non-linear model
+  # horseshoe and R2D2 prior applied in a non-linear model
   hs_a1 <- horseshoe(7, scale_global = 2, df_global = 3)
-  lasso_a2 <- lasso(2, scale = 10)
+  R2D2_a2 <- R2D2(0.5, 10)
   sdata <- make_standata(
     bf(y ~ a1 + a2, a1 ~ x1, a2 ~ 0 + x2, nl = TRUE),
     data = dat, sample_prior = TRUE,
     prior = c(set_prior(hs_a1, nlpar = "a1"),
-              set_prior(lasso_a2, nlpar = "a2"))
+              set_prior(R2D2_a2, nlpar = "a2"))
   )
   expect_equal(sdata$hs_df_a1, 7)
-  expect_equal(sdata$lasso_df_a2, 2)
+  expect_equal(sdata$R2D2_mean_R2_a2, 0.5)
 })
 
 test_that("dots in formula are correctly expanded", {

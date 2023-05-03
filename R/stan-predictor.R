@@ -839,8 +839,8 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" nb{pi}")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sds", coef = smef$term[i],
-        suffix = pi, px = px, type = glue("vector[nb{pi}]"),
+        prior, class = "sds", coef = smef$term[i], suffix = pi, px = px,
+        type = glue("vector[nb{pi}]"), coef_type = glue("vector[nb{pi}]"),
         comment = "SDs of spline coefficients",
         normalize = normalize
       )
@@ -1144,8 +1144,8 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" Kgp{pi}")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sdgp", coef = sfx1,
-        type = glue("vector[Kgp{pi}]"), px = px, suffix = pi,
+        prior, class = "sdgp", coef = sfx1, px = px, suffix = pi,
+        type = glue("vector[Kgp{pi}]"), coef_type = glue("vector[Kgp{pi}]"),
         comment = "GP standard deviation parameters",
         normalize = normalize
       )

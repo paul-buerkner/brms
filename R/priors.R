@@ -2165,7 +2165,7 @@ lasso <- function(df = 1, scale = 1) {
 is_special_prior <- function(prior, target = NULL) {
   stopifnot(is.character(prior))
   if (is.null(target)) {
-    target <- c("horseshoe", "R2D2")
+    target <- c("horseshoe", "R2D2", "lasso")
   }
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)
@@ -2207,7 +2207,19 @@ has_special_prior <- function(prior, px = NULL, class = NULL) {
     # is any special prior present?
     return(length(rmNULL(attr(prior, "special"))) > 0L)
   }
-  !is.null(get_special_prior(prior, px = px, class = class))
+  .has_special_prior <- function(px) {
+    !is.null(get_special_prior(prior, px = px, class = class))
+  }
+  if (is.data.frame(px)) {
+    # this case occurs for group-level parameters
+    out <- FALSE
+    for (i in seq_rows(px)) {
+      out <- out || .has_special_prior(px[i, ])
+    }
+  } else {
+    out <- .has_special_prior(px)
+  }
+  out
 }
 
 # check if parameters should be sampled only from the prior
