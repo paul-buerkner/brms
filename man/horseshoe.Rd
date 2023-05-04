@@ -102,6 +102,13 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   from \code{0.8} to values closer to \code{1} will often be necessary.
   See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
+
+  Currently, the following classes support the horseshoe prior: \code{b}
+  (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+  \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+  coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+  latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+  (SD of varying coefficients).
 }
 \examples{
 set_prior(horseshoe(df = 3, par_ratio = 0.1))

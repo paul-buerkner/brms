@@ -2,7 +2,7 @@
 % Please edit documentation in R/priors.R
 \name{R2D2}
 \alias{R2D2}
-\title{R2-D2 Priors in \pkg{brms}}
+\title{R2D2 Priors in \pkg{brms}}
 \usage{
 R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE, main = TRUE)
 }
@@ -29,6 +29,21 @@ below.}
 Function used to set up R2D2 priors for population-level effects in
 \pkg{brms}. The function does not evaluate its arguments -- it exists purely
 to help set up the model.
+}
+\details{
+Currently, the following classes support the R2D2 prior: \code{b}
+  (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+  \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+  coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+  latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+  (SD of varying coefficients).
+
+  Even when the R2D2 prior is applied to multiple parameter classes at once,
+  the concentration vector (argument \code{cons_D2}) has to be provided
+  jointly in the the one instance of the prior where \code{main = TRUE}. The
+  order in which the elements of concentration vector correspond to the
+  classes' coefficients is the same as the order of the classes provided
+  above.
 }
 \examples{
 set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))

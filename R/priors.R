@@ -58,6 +58,12 @@
 #'   Below, we list the types of parameters in \pkg{brms} models,
 #'   for which the user can specify prior distributions.
 #'
+#'   Below, we provide details for the individual parameter classes that you can
+#'   set priors on. Often, it may not be immediately clear, which parameters are
+#'   present in the model. To get a full list of parameters and parameter
+#'   classes for which priors can be specified (depending on the model) use
+#'   function \code{\link{get_prior}}.
+#'
 #'   1. Population-level ('fixed') effects
 #'
 #'   Every Population-level effect has its own regression parameter
@@ -105,11 +111,6 @@
 #'   population-level effect and avoid the centering parameterization,
 #'   use \code{0 + Intercept} on the right-hand side of the model formula.
 #'
-#'   A special shrinkage prior to be applied to the regression coefficients is
-#'   the (regularized) horseshoe prior and related priors. See
-#'   \code{\link{horseshoe}} for details. Another similar kind of shrinkage
-#'   prior with more intuitive hyperparameters is the \code{\link{R2D2}} prior.
-#'
 #'   In non-linear models, population-level effects are defined separately
 #'   for each non-linear parameter. Accordingly, it is necessary to specify
 #'   the non-linear parameter in \code{set_prior} so that priors
@@ -119,6 +120,12 @@
 #'   \code{set_prior("<prior>", coef = "x", nlpar = "alpha")}.
 #'   As a shortcut we can use \code{set_prior("<prior>", nlpar = "alpha")}
 #'   to set the same prior on all population-level effects of \code{alpha} at once.
+#'
+#'   The same goes for specifying priors for specific distributional
+#'   parameters in the context of distributional regression, for example,
+#'   \code{set_prior("<prior>", coef = "x", dpar = "sigma")}.
+#'   For most other parameter classes (see below), you need to indicate
+#'   non-linear and distributional parameters in the same way as shown here.
 #'
 #'   If desired, population-level effects can be restricted to fall only
 #'   within a certain interval using the \code{lb} and \code{ub} arguments
@@ -133,7 +140,7 @@
 #'   (non-linear models are an important exception),
 #'   but if you really want to this is the way to go.
 #'
-#'   2. Standard deviations of group-level ('random') effects
+#'   2. Group-level ('random') effects
 #'
 #'   Each group-level effect of each grouping factor has a standard deviation named
 #'   \code{sd_<group>_<coef>}. Consider, for instance, the formula
@@ -155,16 +162,6 @@
 #'   To define a prior distribution only for a specific standard deviation
 #'   of a specific grouping factor, you may write \cr
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
-#'   Recommendations on useful prior distributions for
-#'   standard deviations are given in Gelman (2006), but note that he
-#'   is no longer recommending uniform priors, anymore. \cr
-#'
-#'   When defining priors on group-level parameters in non-linear models,
-#'   please make sure to specify the corresponding non-linear parameter
-#'   through the \code{nlpar} argument in the same way as
-#'   for population-level effects.
-#'
-#'   3. Correlations of group-level ('random') effects
 #'
 #'   If there is more than one group-level effect per grouping factor,
 #'   the correlations between those effects have to be estimated.
@@ -184,32 +181,29 @@
 #'   The corresponding parameter class of the Cholesky factors is \code{L},
 #'   but it is not recommended to specify priors for this parameter class directly.
 #'
-#'   4. Splines
+#'   4. Smoothing Splines
 #'
-#'   Splines are implemented in \pkg{brms} using the 'random effects'
-#'   formulation as explained in \code{\link[mgcv:gamm]{gamm}}).
-#'   Thus, each spline has its corresponding standard deviations
-#'   modeling the variability within this term. In \pkg{brms}, this
-#'   parameter class is called \code{sds} and priors can
-#'   be specified via \code{set_prior("<prior>", class = "sds",
-#'   coef = "<term label>")}. The default prior is the same as
-#'   for standard deviations of group-level effects.
+#'   Smoothing splines are implemented in \pkg{brms} using the 'random effects'
+#'   formulation as explained in \code{\link[mgcv:gamm]{gamm}}). Thus, each
+#'   spline has its corresponding standard deviations modeling the variability
+#'   within this term. In \pkg{brms}, this parameter class is called \code{sds}
+#'   and priors can be specified via
+#'   \code{set_prior("<prior>", class = "sds", coef = "<term label>")}.
+#'   The default prior is the same as for standard deviations of group-level effects.
 #'
 #'   5. Gaussian processes
 #'
-#'   Gaussian processes as currently implemented in \pkg{brms} have
-#'   two parameters, the standard deviation parameter \code{sdgp},
-#'   and characteristic length-scale parameter \code{lscale}
-#'   (see \code{\link{gp}} for more details). The default prior
-#'   of \code{sdgp} is the same as for standard deviations of
-#'   group-level effects. The default prior of \code{lscale}
-#'   is an informative inverse-gamma prior specifically tuned
-#'   to the covariates of the Gaussian process (for more details see
+#'   Gaussian processes as currently implemented in \pkg{brms} have two
+#'   parameters, the standard deviation parameter \code{sdgp}, and
+#'   characteristic length-scale parameter \code{lscale} (see \code{\link{gp}}
+#'   for more details). The default prior of \code{sdgp} is the same as for
+#'   standard deviations of group-level effects. The default prior of
+#'   \code{lscale} is an informative inverse-gamma prior specifically tuned to
+#'   the covariates of the Gaussian process (for more details see
 #'   \url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html}).
 #'   This tuned prior may be overly informative in some cases, so please
-#'   consider other priors as well to make sure inference is
-#'   robust to the prior specification. If tuning fails, a half-normal prior
-#'   is used instead.
+#'   consider other priors as well to make sure inference is robust to the prior
+#'   specification. If tuning fails, a half-normal prior is used instead.
 #'
 #'   6. Autocorrelation parameters
 #'
@@ -284,27 +278,37 @@
 #'   By default, \code{delta} has an improper flat prior over the reals.
 #'   The \code{von_mises} family needs the parameter \code{kappa}, representing
 #'   the concentration parameter. By default, \code{kappa} has prior
-#'   \code{gamma(2, 0.01)}. \cr
+#'   \code{gamma(2, 0.01)}.
+#'
 #'   Every family specific parameter has its own prior class, so that
 #'   \code{set_prior("<prior>", class = "<parameter>")} is the right way to go.
 #'   All of these priors are chosen to be weakly informative,
 #'   having only minimal influence on the estimations,
 #'   while improving convergence and sampling efficiency.
 #'
+#'   10. Shrinkage priors
+#'
+#'   To reduce the danger of overfitting in models with many predictor terms fit
+#'   on comparably sparse data, brms supports special shrinkage priors, namely
+#'   the (regularized) \code{\link{horseshoe}} and the \code{\link{R2D2}} prior.
+#'   These priors can be applied on many parameter classes, either directly on
+#'   the coefficient classes (e.g., class \code{b}), if directly setting priors
+#'   on them is supported, or on the corresponding standard deviation
+#'   hyperparameters (e.g., class \code{sd}) otherwise. Currently, the following
+#'   classes support shrinkage priors: \code{b} (overall regression
+#'   coefficients), \code{sds} (SDs of smoothing splines), \code{sdgp} (SDs of
+#'   Gaussian processes), \code{ar} (autoregressive coefficients), \code{ma}
+#'   (moving average coefficients), \code{sderr} (SD of latent residuals),
+#'   \code{sdcar} (SD of spatial CAR structures), \code{sd} (SD of varying
+#'   coefficients).
+#'
+#'   11. Fixing parameters to constants
+#'
 #'   Fixing parameters to constants is possible by using the \code{constant}
 #'   function, for example, \code{constant(1)} to fix a parameter to 1.
 #'   Broadcasting to vectors and matrices is done automatically.
 #'
-#'   Often, it may not be immediately clear, which parameters are present in the
-#'   model. To get a full list of parameters and parameter classes for which
-#'   priors can be specified (depending on the model) use function
-#'   \code{\link{get_prior}}.
-#'
 #' @seealso \code{\link{get_prior}}
-#'
-#' @references
-#' Gelman A. (2006). Prior distributions for variance parameters in hierarchical models.
-#'    Bayesian analysis, 1(3), 515 -- 534.
 #'
 #' @examples
 #' ## use alias functions
@@ -1990,6 +1994,13 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   See the documentation of \code{\link{brm}} for instructions
 #'   on how to increase \code{adapt_delta}.
 #'
+#'   Currently, the following classes support the horseshoe prior: \code{b}
+#'   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+#'   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+#'   coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+#'   latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+#'   (SD of varying coefficients).
+#'
 #' @references
 #' Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009).
 #'   Handling sparsity via the horseshoe.
@@ -2059,7 +2070,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
   out
 }
 
-#' R2-D2 Priors in \pkg{brms}
+#' R2D2 Priors in \pkg{brms}
 #'
 #' Function used to set up R2D2 priors for population-level effects in
 #' \pkg{brms}. The function does not evaluate its arguments -- it exists purely
@@ -2078,6 +2089,21 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #'   parameter classes. In this case, only arguments of the single instance for
 #'   which \code{main} is \code{TRUE} will be used. See the Examples section
 #'   below.
+#'
+#' @details
+#'   Currently, the following classes support the R2D2 prior: \code{b}
+#'   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+#'   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+#'   coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+#'   latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+#'   (SD of varying coefficients).
+#'
+#'   Even when the R2D2 prior is applied to multiple parameter classes at once,
+#'   the concentration vector (argument \code{cons_D2}) has to be provided
+#'   jointly in the the one instance of the prior where \code{main = TRUE}. The
+#'   order in which the elements of concentration vector correspond to the
+#'   classes' coefficients is the same as the order of the classes provided
+#'   above.
 #'
 #' @references
 #' Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020).
