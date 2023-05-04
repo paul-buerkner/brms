@@ -284,6 +284,10 @@ test_that("make_standata returns correct data for ARMA terms", {
   expect_equal(sdata$begin_tg, as.array(c(1, 6)))
   expect_equal(sdata$nobs_tg, as.array(c(5, 5)))
 
+  sdata <- make_standata(y ~ x + ar(tim), data = dat, family = poisson(),
+                         prior = prior(horseshoe(), class = sderr))
+  expect_equal(sdata$Kscales, 1)
+
   bform <- bf(y ~ exp(b * x), b ~ 1, nl = TRUE, autocor = ~arma())
   sdata <- make_standata(bform, dat)
 })
@@ -838,10 +842,12 @@ test_that("make_standata includes data for CAR models", {
 
   rownames(dat2$W) <- c("a", 2:9, "b")
   dat$group <- rep(c("a", "b"), each = 5)
-  sdata <- make_standata(y ~ x + car(W, gr = group), dat, data2 = dat2)
+  sdata <- make_standata(y ~ x + car(W, gr = group), dat, data2 = dat2,
+                         prior = prior(horseshoe(), class = sdcar))
   expect_equal(sdata$Nloc, 2)
   expect_equal(sdata$edges1, as.array(2))
   expect_equal(sdata$edges2, as.array(1))
+  expect_equal(sdata$Kscales, 1)
 
   sdata <- make_standata(y ~ x + car(W, group, type = "bym2"),
                          data = dat, data2 = dat2)
@@ -868,9 +874,8 @@ test_that("make_standata includes data for CAR models", {
 })
 
 test_that("make_standata includes data of special priors", {
-  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
-
-  # TODO: add tests for global shrinkage priors
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10),
+                    g = rep(1:2, each = 5), x3 = sample(1:5, 10, TRUE))
 
   # horseshoe prior
   hs <- horseshoe(7, scale_global = 2, df_global = 3,
@@ -905,6 +910,18 @@ test_that("make_standata includes data of special priors", {
   )
   expect_equal(sdata$hs_df_a1, 7)
   expect_equal(sdata$R2D2_mean_R2_a2, 0.5)
+
+  bform <- bf(y ~ x1*mo(x3) + (1|g) + gp(x3) + s(x2) +
+                arma(p = 2, q = 2, gr = g))
+  bprior <- prior(R2D2(cons_D2 = 11:1), class = b) +
+    prior(R2D2(main = FALSE), class = sd) +
+    prior(R2D2(main = FALSE), class = sds) +
+    prior(R2D2(main = FALSE), class = sdgp) +
+    prior(R2D2(main = FALSE), class = ar) +
+    prior(R2D2(main = FALSE), class = ma)
+  sdata <- make_standata(bform, data = dat, prior = bprior)
+  expect_equal(sdata$Kscales, 11)
+  expect_equal(sdata$R2D2_cons_D2, as.array(11:1))
 })
 
 test_that("dots in formula are correctly expanded", {

@@ -126,9 +126,8 @@ test_that("specified priors appear in the Stan code", {
 })
 
 test_that("special shrinkage priors appear in the Stan code", {
-  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
-
-  # TODO: add tests for global shrinkage priors
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10),
+                    g = rep(1:2, each = 5), x3 = sample(1:5, 10, TRUE))
 
   # horseshoe prior
   hs <- horseshoe(7, scale_global = 2, df_global = 3,
@@ -199,6 +198,27 @@ test_that("special shrinkage priors appear in the Stan code", {
     "scales_a1 = scales_horseshoe(hs_local_a1, hs_global_a1, hs_scale_slab_a1^2 * hs_slab_a1);"
   )
   expect_match2(scode, "scales_a2 = scales_R2D2(R2D2_phi_a2, R2D2_tau2_a2);")
+
+  # shrinkage priors can be applied globally
+  bform <- bf(y ~ x1*mo(x3) + (1|g) + gp(x3) + s(x2) +
+                arma(p = 2, q = 2, gr = g))
+  bprior <- prior(R2D2(), class = b) +
+    prior(R2D2(main = FALSE), class = sd) +
+    prior(R2D2(main = FALSE), class = sds) +
+    prior(R2D2(main = FALSE), class = sdgp) +
+    prior(R2D2(main = FALSE), class = ar) +
+    prior(R2D2(main = FALSE), class = ma)
+  scode <- make_stancode(bform, data = dat, prior = bprior)
+  expect_match2(scode, "sdb = scales[(1):(Kc)];")
+  expect_match2(scode, "sdbsp = scales[(1+Kc):(Kc+Ksp)];")
+  expect_match2(scode, "sdbs = scales[(1+Kc+Ksp):(Kc+Ksp+Ks)];")
+  expect_match2(scode, "sds_1 = scales[(1+Kc+Ksp+Ks):(Kc+Ksp+Ks+nb_1)];")
+  expect_match2(scode, "sdgp_1 = scales[(1+Kc+Ksp+Ks+nb_1):(Kc+Ksp+Ks+nb_1+Kgp_1)];")
+  expect_match2(scode, "sdar = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar)];")
+  expect_match2(scode, "sdma = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1+Kar):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma)];")
+  expect_match2(scode, "sd_1 = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma+M_1)];")
+  expect_match2(scode, "bsp = zbsp .* sdbsp;  // scale coefficients")
+  expect_match2(scode, "ar = zar .* sdar;  // scale coefficients")
 
   # check error messages
   expect_error(make_stancode(y ~ x1*x2, data = dat,
@@ -769,6 +789,14 @@ test_that("Stan code for ARMA models is correct", {
   expect_match2(scode, "err = sderr * zerr;")
   expect_match2(scode, "mu += Intercept + Xc * b + err;")
   expect_match2(scode, "lprior += cauchy_lpdf(sderr | 0, 10)")
+
+  # apply shrinkage priors on sderr
+  scode <- make_stancode(
+    y ~ x + ar(time), dat, family = poisson,
+    prior = prior(horseshoe(), class = b) +
+      prior(horseshoe(main = FALSE), class = sderr)
+  )
+  expect_match2(scode, "sderr = scales[(1+Kc):(Kc+1)][1];")
 })
 
 test_that("Stan code for compound symmetry models is correct", {
@@ -1937,7 +1965,7 @@ test_that("Stan code for SAR models is correct", {
 })
 
 test_that("Stan code for CAR models is correct", {
-  dat = data.frame(y = rnorm(10), x = rnorm(10))
+  dat <- data.frame(y = rnorm(10), x = rnorm(10))
   edges <- cbind(1:10, 10:1)
   W <- matrix(0, nrow = 10, ncol = 10)
   for (i in seq_len(nrow(edges))) {
@@ -1979,6 +2007,12 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "real sparse_car_lpdf(vector phi")
   expect_match2(scode, "target += sparse_car_lpdf(")
   expect_match2(scode, "sigma[n] += rcar_sigma[Jloc_sigma[n]]")
+
+  # apply shrinkage priors on a CAR term
+  scode <- make_stancode(bf(y ~ x + car(W)), dat, data2 = dat2,
+                         prior = prior(horseshoe(), class = b) +
+                           prior(horseshoe(main = FALSE), class = sdcar))
+  expect_match2(scode, "sdcar = scales[(1+Kc):(Kc+1)][1];")
 })
 
 test_that("Stan code for skew_normal models is correct", {

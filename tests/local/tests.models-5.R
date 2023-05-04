@@ -1,5 +1,31 @@
 source("setup_tests_local.R")
 
+test_that("global shrinkage priors work correctly", {
+  set.seed(2563)
+  dat <- epilepsy
+  dat$x1 <- sample(1:4, nrow(dat), TRUE)
+  dat$x2 <- sample(1:10, nrow(dat), TRUE)
+  dat$x3 <- sample(1:10, nrow(dat), TRUE)
+
+  bprior <- prior(R2D2(), class = b) +
+    prior(R2D2(main = FALSE), class = sd) +
+    prior(R2D2(main = FALSE), class = sds) +
+    prior(R2D2(main = FALSE), class = sdgp) +
+    prior(R2D2(main = FALSE), class = ar) +
+    prior(R2D2(main = FALSE), class = ma)
+
+  bform <- bf(count ~ Trt*Base+Age+mo(x1) + (1|patient) + gp(x2) + s(x3) +
+                arma(p = 2, q = 2, gr = patient))
+
+  fit <- brm(bform, data = dat, prior = bprior, cores = 4,
+             control = list(adapt_delta = 0.95), seed = 8892)
+  classes <- c("sdb", "sdbsp", "sdbs", "sdar", "sdma")
+  for (cl in classes) {
+    expect_true(any(grepl(paste0("^", cl), variables(fit))))
+  }
+  expect_range(SW(waic(fit))$estimates[3, 1], 1580, 1660)
+})
+
 test_that("Addition argument 'subset' works correctly", {
   set.seed(12454)
   data("BTdata", package = "MCMCglmm")

@@ -15,5 +15,6 @@ expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
 }
 
 SW <- suppressWarnings
+SM <- suppressMessages
 
 context("local tests")
