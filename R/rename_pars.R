@@ -31,7 +31,7 @@ rename_pars <- function(x) {
     return(x)
   }
   bterms <- brmsterms(x$formula)
-  meef <- tidy_meef(bterms, data)
+  meef <- tidy_meef(bterms, data = x$data)
   pars <- variables(x)
   # find positions of parameters and define new names
   to_rename <- c(
