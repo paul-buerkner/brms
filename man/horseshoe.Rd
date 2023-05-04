@@ -11,7 +11,8 @@ horseshoe(
   scale_slab = 2,
   df_slab = 4,
   par_ratio = NULL,
-  autoscale = TRUE
+  autoscale = TRUE,
+  main = TRUE
 )
 }
 \arguments{
@@ -48,6 +49,11 @@ prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
+
+\item{main}{Logical; only relevant if the horseshoe prior spans multiple
+parameter classes. In this case, only arguments of the single instance for
+which \code{main} is \code{TRUE} will be used. See the Examples section
+below.}
 }
 \value{
 A character string obtained by \code{match.call()} with
@@ -96,6 +102,13 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   from \code{0.8} to values closer to \code{1} will often be necessary.
   See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
+
+  Currently, the following classes support the horseshoe prior: \code{b}
+  (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+  \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+  coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+  latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+  (SD of varying coefficients).
 }
 \examples{
 set_prior(horseshoe(df = 3, par_ratio = 0.1))

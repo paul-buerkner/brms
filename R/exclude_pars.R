@@ -108,9 +108,9 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_pars$all) {
     par_classes <- c(
-      "bQ", "hs_global", "hs_local", "hs_slab", "zb", "hs_localsp",
-      "R2D2_tau2", "zbsp", "Intercept", "first_Intercept",
-      "merged_Intercept", "zcar", "nszcar", "zerr"
+      "bQ", "zb", "zbsp", "zbs", "zar", "zma", "hs_local", "R2D2_phi",
+      "scales", "Intercept", "first_Intercept", "merged_Intercept",
+      "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
     smef <- tidy_smef(x, data)

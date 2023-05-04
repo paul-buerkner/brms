@@ -1,8 +1,14 @@
 # brms 2.19.0++
 
+### New Features
+
+* Apply the `horseshoe` and `R2D2` priors globally, that is, for
+all additive predictor terms specified in the same formula. (#1492)
+
 ### Other changes
 
-* Deprecate the `lasso` prior with the intention to remove it in brms 3.0.
+* No longer support the `lasso` prior as it is not a good shrinkage prior
+and incompatible with the newly implemented global shrinkage prior framework.
 
 
 # brms 2.19.0

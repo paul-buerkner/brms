@@ -135,7 +135,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    tmp <- lapply(x, "[[", name)
+    tmp <- from_list(x, name)
     out <- out & do_call(fun, list(tmp, ls[[name]]))
   }
   out
@@ -418,6 +418,18 @@ plapply <- function(X, FUN, cores = 1, ...) {
     }
   }
   out
+}
+
+# extract objects stored in each element of a list
+# @param x a list-like object
+# @param name name of the object to extract
+from_list <- function(x, name, ...) {
+  lapply(x, "[[", name, ...)
+}
+
+# unlist from_list output
+ufrom_list <- function(x, name, ..., recursive = TRUE, use.names = TRUE) {
+  unlist(from_list(x, name, ...), recursive, use.names)
 }
 
 # check if the operating system is Windows

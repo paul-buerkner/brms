@@ -621,7 +621,7 @@ prepare_predictions_re <- function(bterms, sdata, prep_ranef = list(),
   }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  ranef_px <- lapply(prep_ranef, "[[", "ranef")
+  ranef_px <- from_list(prep_ranef, "ranef")
   ranef_px <- do_call(rbind, ranef_px)
   ranef_px <- subset2(ranef_px, ls = px)
   if (!NROW(ranef_px)) {

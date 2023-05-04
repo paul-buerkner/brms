@@ -485,7 +485,7 @@ get_sdy <- function(x, data = NULL) {
 get_me_groups <- function(x) {
   uni_me <- get_uni_me(x)
   out <- lapply(uni_me, eval2)
-  out <- ulapply(out, "[[", "gr")
+  out <- ufrom_list(out, "gr")
   out[nzchar(out)]
 }
 

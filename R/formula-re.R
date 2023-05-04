@@ -410,7 +410,7 @@ check_re_formula <- function(re_formula, formula) {
       new <- new[found, ]
       if (NROW(new)) {
         forms <- ulapply(new$form, formula2str, rm = 1)
-        groups <- ulapply(new$gcall, "[[", "label")
+        groups <- ufrom_list(new$gcall, "label")
         re_terms <- paste("(", forms, "|", groups, ")")
         re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
       } else {
@@ -766,7 +766,7 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
 
 # get names of grouping variables of re terms
 get_re_groups <- function(x, ...) {
-  ulapply(get_re(x)$gcall, "[[", "groups")
+  ufrom_list(get_re(x)$gcall, "groups")
 }
 
 # extract information about groups with a certain distribution

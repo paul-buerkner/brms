@@ -9,12 +9,12 @@
 # @param type Stan type used in the definition of the parameter
 #   if type is empty the parameter is not initialized inside 'stan_prior'
 # @param dim stan array dimension to be specified after the parameter name
-#   cannot be merged with 'suffix' as the latter should apply to
+#   cannot be expressed via 'suffix' as the latter should apply to
 #   individual coefficients while 'dim' should not
 #   TODO: decide whether to support arrays for parameters at all
 #   an alternative would be to specify elements directly as parameters
 # @param coef_type Stan type used in the definition of individual parameter
-#   coefficients; only relevant when mixing estimated and fixed coefficients
+#   coefficients
 # @param prefix a prefix to put at the parameter class
 # @param suffix a suffix to put at the parameter class
 # @param broadcast Stan type to which the prior should be broadcasted
@@ -342,17 +342,22 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
   glue("  {par} = {prior_args}")
 }
 
-# Stan code for global parameters of special priors
-# currently implemented are horseshoe and lasso
-stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
-  out <- list()
+# Stan code for global parameters of special shrinkage priors
+stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) {
+  stopifnot(is.list(out))
   tp <- tp()
   lpp <- lpp()
   lpdf <- stan_lpdf_name(normalize)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  special <- get_special_prior(prior, px)
-  if (!is.null(special$horseshoe)) {
+  if (!has_special_prior(prior, px)) {
+    return(out)
+  }
+  special <- get_special_prior(prior, px, main = TRUE)
+  str_add(out$data) <- glue(
+    "  int<lower=1> Kscales{p};  // number of local scale parameters\n"
+  )
+  if (special$name == "horseshoe") {
     str_add(out$data) <- glue(
       "  // data for the horseshoe prior\n",
       "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
@@ -364,10 +369,11 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
       "  real<lower=0> hs_global{p};  // global shrinkage parameter\n",
-      "  real<lower=0> hs_slab{p};  // slab regularization parameter\n"
+      "  real<lower=0> hs_slab{p};  // slab regularization parameter\n",
+      "  vector<lower=0>[Kscales{p}] hs_local{p};  // local parameters for the horseshoe prior\n"
     )
     hs_scale_global <- glue("hs_scale_global{p}")
-    if (isTRUE(special$horseshoe$autoscale)) {
+    if (isTRUE(special$autoscale)) {
       str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
     }
     str_add(out$tpar_prior) <- glue(
@@ -375,119 +381,107 @@ stan_special_prior_global <- function(bterms, data, prior, normalize, ...) {
       str_if(normalize, "\n    - 1 * log(0.5)"), ";\n",
       "{lpp}inv_gamma_{lpdf}(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
-  }
-  if (!is.null(special$R2D2)) {
+    str_add(out$tpar_def) <- glue(
+      "  vector<lower=0>[Kscales{p}] scales{p};  // local horseshoe scale parameters\n"
+    )
+    str_add(out$tpar_comp) <- glue(
+      "  // compute horseshoe scale parameters\n",
+      "  scales{p} = scales_horseshoe(hs_local{p}, hs_global{p}, hs_scale_slab{p}^2 * hs_slab{p});\n"
+    )
+    str_add(out$model_prior) <- glue(
+      "{tp}student_t_{lpdf}(hs_local{p} | hs_df{p}, 0, 1)",
+      str_if(normalize, "\n    - rows(hs_local{p}) * log(0.5)"), ";\n"
+    )
+  } else if (special$name == "R2D2") {
     str_add(out$data) <- glue(
       "  // data for the R2D2 prior\n",
       "  real<lower=0> R2D2_mean_R2{p};  // mean of the R2 prior\n",
-      "  real<lower=0> R2D2_prec_R2{p};  // precision of the R2 prior\n"
+      "  real<lower=0> R2D2_prec_R2{p};  // precision of the R2 prior\n",
+      "  // concentration vector of the D2 prior\n",
+      "  vector<lower=0>[Kscales{p}] R2D2_cons_D2{p};\n"
     )
     str_add(out$par) <- glue(
-      "  // R2D2 shrinkage parameters\n",
-      "  real<lower=0,upper=1> R2D2_R2{p};  // R2 parameter\n"
+      "  // parameters of the R2D2 prior\n",
+      "  real<lower=0,upper=1> R2D2_R2{p};\n",
+      "  simplex[Kscales{p}] R2D2_phi{p};\n"
     )
     var_mult <- ""
-    if (isTRUE(special$R2D2$autoscale)) {
+    if (isTRUE(special$autoscale)) {
       var_mult <- glue("sigma{usc(px$resp)}^2 * ")
     }
     str_add(out$tpar_def) <- glue(
-      "  real R2D2_tau2{p};  // global R2D2 scale parameter\n"
+      "  real R2D2_tau2{p};  // global R2D2 scale parameter\n",
+      "  vector<lower=0>[Kscales{p}] scales{p};  // local R2D2 scale parameters\n"
     )
     str_add(out$tpar_comp) <- glue(
-      "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n"
+      "  // compute R2D2 scale parameters\n",
+      "  R2D2_tau2{p} = {var_mult}R2D2_R2{p} / (1 - R2D2_R2{p});\n",
+      "  scales{p} = scales_R2D2(R2D2_phi{p}, R2D2_tau2{p});\n"
     )
     str_add(out$tpar_prior) <- glue(
       "{lpp}beta_{lpdf}(R2D2_R2{p} | R2D2_mean_R2{p} * R2D2_prec_R2{p}, ",
       "(1 - R2D2_mean_R2{p}) * R2D2_prec_R2{p});\n"
     )
+    str_add(out$model_prior) <- glue(
+      "{tp}dirichlet_{lpdf}(R2D2_phi{p} | R2D2_cons_D2{p});\n"
+    )
   }
-  if (!is.null(special$lasso)) {
-    str_add(out$data) <- glue(
-      "  // data for the lasso prior\n",
-      "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
-      "  real<lower=0> lasso_scale{p};  // prior scale\n"
-    )
-    str_add(out$par) <- glue(
-      "  // lasso shrinkage parameter\n",
-      "  real<lower=0> lasso_inv_lambda{p};\n"
-    )
-    str_add(out$tpar_prior) <- glue(
-      "{lpp}chi_square_{lpdf}(lasso_inv_lambda{p} | lasso_df{p});\n"
+  # split up scales into subsets belonging to different parameter classes
+  # this connects the global to the local priors
+  scales <- strsplit(trimws(out$prior_global_scales), " ")[[1]]
+  lengths <- strsplit(trimws(out$prior_global_lengths), " ")[[1]]
+  out$prior_global_scales <- out$prior_global_lengths <- NULL
+  if (has_special_prior(prior, px, class = "sd")) {
+    # this has to be done here rather than in stan_re()
+    # because the latter is not local to a linear predictor
+    ids <- unique(subset2(ranef, ls = px)$id)
+    scales <- c(scales, glue("sd_{ids}"))
+    lengths <- c(lengths, glue("M_{ids}"))
+  }
+  lengths <- c("1", lengths)
+  for (i in seq_along(scales)) {
+    lower <- paste0(lengths[1:i], collapse = "+")
+    upper <- paste0(lengths[2:(i+1)], collapse = "+")
+    # some scale parameters are a scalar not a vector
+    bracket1 <- str_if(lengths[i+1] == "1", "[1]")
+    str_add(out$tpar_comp) <- glue(
+      "  {scales[i]} = scales{p}[({lower}):({upper})]{bracket1};\n"
     )
   }
   out
 }
 
-# Stan code for local parameters of special priors
-# currently implemented are 'horseshoe'
-# @param prior a brmsprior object
-# @param class name of the parameter class
-# @param px named list to subset 'prior'
-# @param center_X is the design matrix centered?
-# @param suffix optional suffix of the 'b' coefficient vector
-stan_special_prior_local <- function(prior, class, px,
-                                     center_X = FALSE, suffix = "",
-                                     normalize = TRUE) {
-  class <- as_one_character(class)
-  stopifnot(class %in% c("b", "bsp"))
+# Stan code of normal priors on regression coefficients
+# in non-centered parameterization
+# @param class name of the coefficient class
+# @param suffix shared suffix of the involved variables
+# @param suffix_class extra suffix of the class
+# @param suffix_K extra suffix of K (number of coefficients)
+stan_prior_non_centered <- function(class = "b", suffix = "", suffix_class = "",
+                                    suffix_K = "", normalize = TRUE) {
   out <- list()
+  csfx <- glue("{class}{suffix}")
+  csfx2 <- glue("{class}{suffix_class}{suffix}")
+  Ksfx <- glue("K{suffix_K}{suffix}")
   lpdf <- stan_lpdf_name(normalize)
-  p <- usc(combine_prefix(px))
-  sp <- paste0(sub("^b", "", class), p)
-  ct <- str_if(center_X, "c")
-  tp <- tp()
-  special <- get_special_prior(prior, px)
-  if (!is.null(special$horseshoe)) {
-    str_add(out$par) <- glue(
-      "  // local parameters for the horseshoe prior\n",
-      "  vector[K{ct}{sp}] zb{sp};\n",
-      "  vector<lower=0>[K{ct}{sp}] hs_local{sp};\n"
-    )
-    hs_args <- sargs(
-      glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"),
-      glue("hs_scale_slab{p}^2 * hs_slab{p}")
-    )
-    str_add(out$tpar_reg_prior) <- glue(
-      "  // compute the actual regression coefficients\n",
-      "  b{suffix}{sp} = horseshoe({hs_args});\n"
-    )
-    str_add(out$model_prior) <- glue(
-      "{tp}std_normal_{lpdf}(zb{sp});\n",
-      "{tp}student_t_{lpdf}(hs_local{sp} | hs_df{p}, 0, 1)",
-      str_if(normalize, "\n    - rows(hs_local{sp}) * log(0.5)"), ";\n"
-    )
-  }
-  if (!is.null(special$R2D2)) {
-    if (class != "b") {
-      stop2("The R2D2 prior does not yet support special coefficient classes.")
-    }
-    m1 <- str_if(center_X, " -1")
-    str_add(out$data) <- glue(
-      "  // concentration vector of the D2 prior\n",
-      "  vector<lower=0>[K{sp}{m1}] R2D2_cons_D2{sp};\n"
-    )
-    str_add(out$par) <- glue(
-      "  // local parameters for the R2D2 prior\n",
-      "  vector[K{ct}{sp}] zb{sp};\n",
-      "  simplex[K{ct}{sp}] R2D2_phi{sp};\n"
-    )
-    R2D2_args <- sargs(
-      glue("zb{sp}"), glue("R2D2_phi{sp}"), glue("R2D2_tau2{p}")
-    )
-    str_add(out$tpar_reg_prior) <- glue(
-      "  // compute actual regression coefficients\n",
-      "  b{suffix}{sp} = R2D2({R2D2_args});\n"
-    )
-    str_add(out$model_prior) <- glue(
-      "{tp}std_normal_{lpdf}(zb{sp});\n",
-      "{tp}dirichlet_{lpdf}(R2D2_phi{sp} | R2D2_cons_D2{p});\n"
-    )
-  }
-  if (!is.null(special$lasso)) {
-    str_add(out$model_prior) <- glue(
-      "{tp}double_exponential_lpdf(b{suffix}{sp} | 0, lasso_scale{p} * lasso_inv_lambda{p});\n"
-    )
-  }
+  str_add(out$tpar_def) <- glue(
+    "  vector[{Ksfx}] {csfx2};  // scaled coefficients\n"
+  )
+  str_add(out$par) <- glue(
+    "  vector[{Ksfx}] z{csfx};  // unscaled coefficients\n"
+  )
+  str_add(out$tpar_def) <- glue(
+    "  vector[{Ksfx}] sd{csfx};  // SDs of the coefficients\n"
+  )
+  str_add(out$tpar_special_prior) <- glue(
+    "  {csfx2} = z{csfx} .* sd{csfx};  // scale coefficients\n"
+  )
+  str_add(out$model_prior) <- glue(
+    "{tp()}std_normal_{lpdf}(z{csfx});\n"
+  )
+  str_add(out$prior_global_scales) <- glue(" sd{csfx}")
+  str_add(out$prior_global_lengths) <- glue(" {Ksfx}")
+  str_add(out$pll_args) <- glue(", vector {csfx2}")
   out
 }
 
@@ -509,11 +503,11 @@ stan_unchecked_prior <- function(prior) {
 # @param par_declars the parameters block of the Stan code
 #   required to extract boundaries
 # @param gen_quantities Stan code from the generated quantities block
-# @param prior_special a list of values pertaining to special priors
+# @param special_prior a list of values pertaining to special priors
 #   such as horseshoe or lasso
 # @param sample_prior take draws from priors?
 stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
-                          prior_special, sample_prior = "yes") {
+                          special_prior, sample_prior = "yes") {
   if (!is_equal(sample_prior, "yes")) {
     return(list())
   }
@@ -624,6 +618,13 @@ stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
   out
 }
 
+# are multiple base priors supplied?
+# px list of class, dpar, etc. elements used to infer parameter suffixes
+stan_has_multiple_base_priors <- function(px) {
+  px <- as.data.frame(px, stringsAsFactors = FALSE)
+  nrow(unique(px)) > 1L
+}
+
 # check if any constant priors are present
 # @param prior a vector of character strings
 stan_is_constant_prior <- function(prior) {
@@ -658,7 +659,7 @@ stan_type_add_bounds <- function(type, bound) {
 
 # adjust the type of a parameter based on the assigned prior
 stan_adjust_par_type <- function(type, prior) {
-  # TODO: add support for more type-prior combination?
+  # TODO: add support for more type-prior combinations?
   combs <- data.frame(
     type = "vector",
     prior = "dirichlet",

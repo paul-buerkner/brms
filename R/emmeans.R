@@ -179,7 +179,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     out$terms[[i]] <- .extract_par_terms(out$terms[[i]], epred = epred, ...)
   }
   out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
-  misc_list <- unique(lapply(out$terms, "[[", ".misc"))
+  misc_list <- unique(from_list(out$terms, ".misc"))
   if (length(misc_list) > 1L){
     stop2("brms' emmeans support for multivariate models is limited ",
           "to cases where all univariate models have the same family.")
