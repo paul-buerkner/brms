@@ -2211,8 +2211,8 @@ get_special_prior <- function(prior, px, class = NULL, main = FALSE) {
     } else {
       main <- which(ufrom_list(out, "main"))
       if (length(main) != 1L) {
-        stop2("If special priors for multiple classes are given, all of them ",
-              "except for one must be marked with 'main = FALSE'.")
+        stop2("If special priors for multiple classes are given, ",
+              "exactly one of them must be marked with 'main = TRUE'.")
       }
       out <- out[[main]]
     }
