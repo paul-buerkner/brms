@@ -913,12 +913,12 @@ test_that("make_standata includes data of special priors", {
 
   bform <- bf(y ~ x1*mo(x3) + (1|g) + gp(x3) + s(x2) +
                 arma(p = 2, q = 2, gr = g))
-  bprior <- prior(R2D2(cons_D2 = 11:1), class = b) +
-    prior(R2D2(main = FALSE), class = sd) +
-    prior(R2D2(main = FALSE), class = sds) +
-    prior(R2D2(main = FALSE), class = sdgp) +
-    prior(R2D2(main = FALSE), class = ar) +
-    prior(R2D2(main = FALSE), class = ma)
+  bprior <- prior(R2D2(cons_D2 = 11:1, main = TRUE), class = b) +
+    prior(R2D2(), class = sd) +
+    prior(R2D2(), class = sds) +
+    prior(R2D2(), class = sdgp) +
+    prior(R2D2(), class = ar) +
+    prior(R2D2(), class = ma)
   sdata <- make_standata(bform, data = dat, prior = bprior)
   expect_equal(sdata$Kscales, 11)
   expect_equal(sdata$R2D2_cons_D2, as.array(11:1))

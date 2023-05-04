@@ -7,12 +7,12 @@ test_that("global shrinkage priors work correctly", {
   dat$x2 <- sample(1:10, nrow(dat), TRUE)
   dat$x3 <- sample(1:10, nrow(dat), TRUE)
 
-  bprior <- prior(R2D2(), class = b) +
-    prior(R2D2(main = FALSE), class = sd) +
-    prior(R2D2(main = FALSE), class = sds) +
-    prior(R2D2(main = FALSE), class = sdgp) +
-    prior(R2D2(main = FALSE), class = ar) +
-    prior(R2D2(main = FALSE), class = ma)
+  bprior <- prior(R2D2(main = TRUE), class = b) +
+    prior(R2D2(), class = sd) +
+    prior(R2D2(), class = sds) +
+    prior(R2D2(), class = sdgp) +
+    prior(R2D2(), class = ar) +
+    prior(R2D2(), class = ma)
   bform <- bf(count ~ Trt * Base + Age + mo(x1) + (1|patient) +
                 gp(x2) + s(x3) + arma(p = 2, q = 2, gr = patient))
   fit <- brm(bform, data = dat, prior = bprior, cores = 4,

@@ -4,7 +4,7 @@
 \alias{R2D2}
 \title{R2D2 Priors in \pkg{brms}}
 \usage{
-R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE, main = TRUE)
+R2D2(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE, main = FALSE)
 }
 \arguments{
 \item{mean_R2}{Mean of the Beta prior on the coefficient of determination R^2.}
@@ -20,10 +20,11 @@ prior should be scaled using the residual standard deviation
 Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
 
-\item{main}{Logical; only relevant if the horseshoe prior spans multiple
-parameter classes. In this case, only arguments of the single instance for
-which \code{main} is \code{TRUE} will be used. See the Examples section
-below.}
+\item{main}{Logical (defaults to \code{FALSE}); only relevant if the R2D2
+prior spans multiple parameter classes. In this case, only arguments given
+in the single instance where \code{main} is \code{TRUE} will be used.
+Arguments given in other instances of the prior will be ignored.
+See the Examples section below.}
 }
 \description{
 Function used to set up R2D2 priors for population-level effects in
@@ -48,12 +49,20 @@ Currently, the following classes support the R2D2 prior: \code{b}
 \examples{
 set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))
 
+# specify the R2D2 prior across multiple parameter classes
+set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10, main = TRUE), class = "b") +
+  set_prior(R2D2(), class = "sd")
+
 }
 \references{
 Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020).
-  Bayesian regression using a prior on the model fit: The R2-D2 shrinkage
-  prior. Journal of the American Statistical Association.
-  \url{https://arxiv.org/pdf/1609.00046.pdf}
+Bayesian regression using a prior on the model fit: The R2-D2 shrinkage
+prior. Journal of the American Statistical Association.
+\url{https://arxiv.org/pdf/1609.00046.pdf}
+
+Aguilar J. E. & Bürkner P. C. (2022). Intuitive Joint Priors for Bayesian
+Linear Multilevel Models: The R2D2M2 prior. ArXiv preprint.
+\url{https://arxiv.org/pdf/2208.07132.pdf}
 }
 \seealso{
 \code{\link{set_prior}}

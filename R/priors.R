@@ -1948,10 +1948,11 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 #'   Autoscaling is not applied for distributional parameters or
 #'   when the model does not contain the parameter \code{sigma}.
-#' @param main Logical; only relevant if the horseshoe prior spans multiple
-#'   parameter classes. In this case, only arguments of the single instance for
-#'   which \code{main} is \code{TRUE} will be used. See the Examples section
-#'   below.
+#' @param main Logical (defaults to \code{FALSE}); only relevant if the horseshoe
+#'   prior spans multiple parameter classes. In this case, only arguments given
+#'   in the single instance where \code{main} is \code{TRUE} will be used.
+#'   Arguments given in other instances of the prior will be ignored.
+#'   See the Examples section below.
 #'
 #' @return A character string obtained by \code{match.call()} with
 #'   additional arguments.
@@ -2002,27 +2003,31 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   (SD of varying coefficients).
 #'
 #' @references
-#' Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009).
-#'   Handling sparsity via the horseshoe.
-#'   In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
+#' Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). Handling sparsity via
+#' the horseshoe. Artificial Intelligence and Statistics.
+#' \url{http://proceedings.mlr.press/v5/carvalho09a}
 #'
-#' Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global
-#'    Shrinkage Parameter in the Horseshoe Prior.
-#'    \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+#' Piironen J. & Vehtari A. (2017). On the Hyperprior Choice for the Global
+#' Shrinkage Parameter in the Horseshoe Prior. Artificial Intelligence and
+#' Statistics. \url{https://arxiv.org/pdf/1610.05559v1.pdf}
 #'
 #' Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
-#'    in the horseshoe and other shrinkage priors.
-#'    \url{https://arxiv.org/abs/1707.01694}
+#' in the horseshoe and other shrinkage priors. Electronic Journal of
+#' Statistics. \url{https://arxiv.org/abs/1707.01694}
 #'
 #' @seealso \code{\link{set_prior}}
 #'
 #' @examples
 #' set_prior(horseshoe(df = 3, par_ratio = 0.1))
 #'
+#' # specify the horseshoe prior across multiple parameter classes
+#' set_prior(horseshoe(df = 3, par_ratio = 0.1, main = TRUE), class = "b") +
+#'   set_prior(horseshoe(), class = "sd")
+#'
 #' @export
 horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
                       scale_slab = 2, df_slab = 4, par_ratio = NULL,
-                      autoscale = TRUE, main = TRUE) {
+                      autoscale = TRUE, main = FALSE) {
   out <- deparse0(match.call())
   name <- "horseshoe"
   df <- as.numeric(df)
@@ -2057,10 +2062,6 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
       stop2("Argument 'par_ratio' must be greater 0.")
     }
   }
-  arg_names <- setdiff(names(call), c("", "main"))
-  if (!main && length(arg_names)) {
-    warning2("Arguments of the horseshoe prior are ignored if main = FALSE.")
-  }
   autoscale <- as_one_logical(autoscale)
   att <- nlist(
     name, df, df_global, df_slab, scale_global,
@@ -2085,10 +2086,11 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 #'   Autoscaling is not applied for distributional parameters or
 #'   when the model does not contain the parameter \code{sigma}.
-#' @param main Logical; only relevant if the horseshoe prior spans multiple
-#'   parameter classes. In this case, only arguments of the single instance for
-#'   which \code{main} is \code{TRUE} will be used. See the Examples section
-#'   below.
+#' @param main Logical (defaults to \code{FALSE}); only relevant if the R2D2
+#'   prior spans multiple parameter classes. In this case, only arguments given
+#'   in the single instance where \code{main} is \code{TRUE} will be used.
+#'   Arguments given in other instances of the prior will be ignored.
+#'   See the Examples section below.
 #'
 #' @details
 #'   Currently, the following classes support the R2D2 prior: \code{b}
@@ -2107,20 +2109,27 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #'
 #' @references
 #' Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020).
-#'   Bayesian regression using a prior on the model fit: The R2-D2 shrinkage
-#'   prior. Journal of the American Statistical Association.
-#'   \url{https://arxiv.org/pdf/1609.00046.pdf}
+#' Bayesian regression using a prior on the model fit: The R2-D2 shrinkage
+#' prior. Journal of the American Statistical Association.
+#' \url{https://arxiv.org/pdf/1609.00046.pdf}
+#'
+#' Aguilar J. E. & Bürkner P. C. (2022). Intuitive Joint Priors for Bayesian
+#' Linear Multilevel Models: The R2D2M2 prior. ArXiv preprint.
+#' \url{https://arxiv.org/pdf/2208.07132.pdf}
 #'
 #' @seealso \code{\link{set_prior}}
 #'
 #' @examples
 #' set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10))
 #'
+#' # specify the R2D2 prior across multiple parameter classes
+#' set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10, main = TRUE), class = "b") +
+#'   set_prior(R2D2(), class = "sd")
+#'
 #' @export
 R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE,
-                 main = TRUE) {
-  call <- match.call()
-  out <- deparse0(call)
+                 main = FALSE) {
+  out <- deparse0(match.call())
   name <- "R2D2"
   mean_R2 <- as_one_numeric(mean_R2)
   prec_R2 <- as_one_numeric(prec_R2)
@@ -2137,10 +2146,6 @@ R2D2 <- function(mean_R2 = 0.5, prec_R2 = 2, cons_D2 = 0.5, autoscale = TRUE,
   if (any(cons_D2 <= 0)) {
     stop2("Invalid R2D2 prior: Concentration of the D2 prior ",
           "must be a vector of positive numbers.")
-  }
-  arg_names <- setdiff(names(call), c("", "main"))
-  if (!main && length(arg_names)) {
-    warning2("Arguments of the R2D2 prior are ignored if main = FALSE.")
   }
   autoscale <- as_one_logical(autoscale)
   att <- nlist(name, mean_R2, prec_R2, cons_D2, autoscale, main)
@@ -2200,12 +2205,17 @@ get_special_prior <- function(prior, px, class = NULL, main = FALSE) {
   }
   if (main) {
     # get the main special prior to extract arguments from
-    main <- which(ufrom_list(out, "main"))
-    if (length(main) != 1L) {
-      stop2("If special priors for multiple classes are given, all of them ",
-            "except for one must be marked with 'main = FALSE'.")
+    if (length(out) == 1L) {
+      # only one class present which must then be main
+      out <- out[[1]]
+    } else {
+      main <- which(ufrom_list(out, "main"))
+      if (length(main) != 1L) {
+        stop2("If special priors for multiple classes are given, all of them ",
+              "except for one must be marked with 'main = FALSE'.")
+      }
+      out <- out[[main]]
     }
-    out <- out[[main]]
   } else if (!is.null(class)) {
     out <- out[[class]]
   } else {
