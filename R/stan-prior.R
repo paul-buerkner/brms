@@ -426,18 +426,20 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
       "{tp}dirichlet_{lpdf}(R2D2_phi{p} | R2D2_cons_D2{p});\n"
     )
   }
+
+  if (has_special_prior(prior, px, class = "sd")) {
+    # this has to be done here rather than in stan_re()
+    # because the latter is not local to a linear predictor
+    ids <- unique(subset2(ranef, ls = px)$id)
+    str_add(out$prior_global_scales) <- glue(" sd_{ids}")
+    str_add(out$prior_global_lengths) <- glue(" M_{ids}")
+  }
   # split up scales into subsets belonging to different parameter classes
   # this connects the global to the local priors
   scales <- strsplit(trimws(out$prior_global_scales), " ")[[1]]
   lengths <- strsplit(trimws(out$prior_global_lengths), " ")[[1]]
   out$prior_global_scales <- out$prior_global_lengths <- NULL
-  if (has_special_prior(prior, px, class = "sd")) {
-    # this has to be done here rather than in stan_re()
-    # because the latter is not local to a linear predictor
-    ids <- unique(subset2(ranef, ls = px)$id)
-    scales <- c(scales, glue("sd_{ids}"))
-    lengths <- c(lengths, glue("M_{ids}"))
-  }
+
   lengths <- c("1", lengths)
   for (i in seq_along(scales)) {
     lower <- paste0(lengths[1:i], collapse = "+")
