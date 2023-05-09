@@ -431,8 +431,8 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
     # this has to be done here rather than in stan_re()
     # because the latter is not local to a linear predictor
     ids <- unique(subset2(ranef, ls = px)$id)
-    str_add(out$prior_global_scales) <- glue(" sd_{ids}")
-    str_add(out$prior_global_lengths) <- glue(" M_{ids}")
+    str_add(out$prior_global_scales) <- cglue(" sd_{ids}")
+    str_add(out$prior_global_lengths) <- cglue(" M_{ids}")
   }
   # split up scales into subsets belonging to different parameter classes
   # this connects the global to the local priors
@@ -473,7 +473,7 @@ stan_prior_non_centered <- function(class = "b", suffix = "", suffix_class = "",
     "  vector[{Ksfx}] z{csfx};  // unscaled coefficients\n"
   )
   str_add(out$tpar_def) <- glue(
-    "  vector[{Ksfx}] sd{csfx};  // SDs of the coefficients\n"
+    "  vector<lower=0>[{Ksfx}] sd{csfx};  // SDs of the coefficients\n"
   )
   str_add(out$tpar_special_prior) <- glue(
     "  {csfx2} = z{csfx} .* sd{csfx};  // scale coefficients\n"

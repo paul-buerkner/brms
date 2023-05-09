@@ -200,7 +200,7 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_match2(scode, "scales_a2 = scales_R2D2(R2D2_phi_a2, R2D2_tau2_a2);")
 
   # shrinkage priors can be applied globally
-  bform <- bf(y ~ x1*mo(x3) + (1|g) + gp(x3) + s(x2) +
+  bform <- bf(y ~ x1*mo(x3) + (1|g) + (1|x1) + gp(x3) + s(x2) +
                 arma(p = 2, q = 2, gr = g))
   bprior <- prior(R2D2(main = TRUE), class = b) +
     prior(R2D2(), class = sd) +
@@ -217,6 +217,7 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_match2(scode, "sdar = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar)];")
   expect_match2(scode, "sdma = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1+Kar):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma)];")
   expect_match2(scode, "sd_1 = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma+M_1)];")
+  expect_match2(scode, "sd_2 = scales[(1+Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma+M_1):(Kc+Ksp+Ks+nb_1+Kgp_1+Kar+Kma+M_1+M_2)];")
   expect_match2(scode, "bsp = zbsp .* sdbsp;  // scale coefficients")
   expect_match2(scode, "ar = zar .* sdar;  // scale coefficients")
 
