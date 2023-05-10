@@ -11,7 +11,8 @@ horseshoe(
   scale_slab = 2,
   df_slab = 4,
   par_ratio = NULL,
-  autoscale = TRUE
+  autoscale = TRUE,
+  main = FALSE
 )
 }
 \arguments{
@@ -48,6 +49,12 @@ prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
+
+\item{main}{Logical (defaults to \code{FALSE}); only relevant if the horseshoe
+prior spans multiple parameter classes. In this case, only arguments given
+in the single instance where \code{main} is \code{TRUE} will be used.
+Arguments given in other instances of the prior will be ignored.
+See the Examples section below.}
 }
 \value{
 A character string obtained by \code{match.call()} with
@@ -96,23 +103,34 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   from \code{0.8} to values closer to \code{1} will often be necessary.
   See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
+
+  Currently, the following classes support the horseshoe prior: \code{b}
+  (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+  \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+  coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+  latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+  (SD of varying coefficients).
 }
 \examples{
 set_prior(horseshoe(df = 3, par_ratio = 0.1))
 
+# specify the horseshoe prior across multiple parameter classes
+set_prior(horseshoe(df = 3, par_ratio = 0.1, main = TRUE), class = "b") +
+  set_prior(horseshoe(), class = "sd")
+
 }
 \references{
-Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009).
-  Handling sparsity via the horseshoe.
-  In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
+Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). Handling sparsity via
+the horseshoe. Artificial Intelligence and Statistics.
+\url{http://proceedings.mlr.press/v5/carvalho09a}
 
-Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global
-   Shrinkage Parameter in the Horseshoe Prior.
-   \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+Piironen J. & Vehtari A. (2017). On the Hyperprior Choice for the Global
+Shrinkage Parameter in the Horseshoe Prior. Artificial Intelligence and
+Statistics. \url{https://arxiv.org/pdf/1610.05559v1.pdf}
 
 Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
-   in the horseshoe and other shrinkage priors.
-   \url{https://arxiv.org/abs/1707.01694}
+in the horseshoe and other shrinkage priors. Electronic Journal of
+Statistics. \url{https://arxiv.org/abs/1707.01694}
 }
 \seealso{
 \code{\link{set_prior}}

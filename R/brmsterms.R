@@ -150,7 +150,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$nlpars[[nlp]]$resp <- resp
       check_cs(y$nlpars[[nlp]])
     }
-    used_nlpars <- ulapply(c(y$dpars, y$nlpars), "[[", "used_nlpars")
+    used_nlpars <- ufrom_list(c(y$dpars, y$nlpars), "used_nlpars")
     unused_nlpars <- setdiff(nlpars, used_nlpars)
     if (length(unused_nlpars)) {
       stop2(
@@ -160,7 +160,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       )
     }
     # sort non-linear parameters after dependency
-    used_nlpars <- lapply(y$nlpars, "[[", "used_nlpars")
+    used_nlpars <- from_list(y$nlpars, "used_nlpars")
     sorted_nlpars <- sort_dependencies(used_nlpars)
     y$nlpars <- y$nlpars[sorted_nlpars]
   }
@@ -238,7 +238,7 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
   lhs_resp <- function(x) deparse0(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
   out$respform <- formula(paste0("mvbind(", out$respform, ") ~ 1"))
-  out$responses <- ulapply(out$terms, "[[", "resp")
+  out$responses <- ufrom_list(out$terms, "resp")
   out$rescor <- x$rescor
   out$mecor <- x$mecor
   out$cov_ranef <- x$cov_ranef
@@ -473,8 +473,8 @@ terms_gp <- function(formula) {
     return(NULL)
   }
   eterms <- lapply(out, eval2, envir = environment())
-  covars <- lapply(eterms, "[[", "term")
-  byvars <- lapply(eterms, "[[", "by")
+  covars <- from_list(eterms, "term")
+  byvars <- from_list(eterms, "by")
   allvars <- str2formula(unlist(c(covars, byvars)))
   allvars <- str2formula(all_vars(allvars))
   if (!length(all_vars(allvars))) {
@@ -494,8 +494,8 @@ terms_ac <- function(formula) {
   }
   eterms <- lapply(out, eval2, envir = environment())
   allvars <- unlist(c(
-    lapply(eterms, "[[", "time"),
-    lapply(eterms, "[[", "gr")
+    from_list(eterms, "time"),
+    from_list(eterms, "gr")
   ))
   allvars <- str2formula(all_vars(allvars))
   out <- str2formula(out)

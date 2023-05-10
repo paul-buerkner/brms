@@ -24,11 +24,8 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   } else if (any(links == "softit")) {
     str_add(out$fun) <- "  #include 'fun_softit.stan'\n"
   }
-  special <- get_special_prior(prior)
-  if (!isNULL(lapply(special, "[[", "horseshoe"))) {
+  if (has_special_prior(prior)) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
-  }
-  if (!isNULL(lapply(special, "[[", "R2D2"))) {
     str_add(out$fun) <- "  #include 'fun_r2d2.stan'\n"
   }
   if (nrow(ranef)) {

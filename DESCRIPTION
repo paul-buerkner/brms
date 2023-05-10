@@ -2,7 +2,7 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.19.1
+Version: 2.19.2
 Date: 2023-04-27
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",

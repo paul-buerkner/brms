@@ -2,21 +2,24 @@
 % Please edit documentation in R/rename_pars.R
 \name{rename_pars}
 \alias{rename_pars}
-\title{Rename Parameters}
+\title{Rename parameters in brmsfit objects}
 \usage{
 rename_pars(x)
 }
 \arguments{
-\item{x}{A brmsfit object.}
+\item{x}{A \code{brmsfit} object.}
 }
 \value{
-A brmfit object with adjusted parameter names.
+A \code{brmsfit} object with adjusted parameter names.
 }
 \description{
-Rename parameters within the \code{stanfit} object after model fitting to
-ensure reasonable parameter names. This function is usually called
-automatically by \code{\link{brm}} and users will rarely be required to call
-it themselves.
+Rename parameters within the \code{stanfit} object
+after model fitting to ensure reasonable parameter names. This function is
+usually called automatically by \code{\link{brm}} and users will rarely be
+required to call it themselves.
+}
+\details{
+Function \code{rename_pars} is a deprecated alias of \code{rename_pars}.
 }
 \examples{
 \dontrun{
