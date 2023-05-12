@@ -1078,7 +1078,10 @@ plot.brms_conditional_effects <- function(
           ylab(response)
       } else if (stype == "contour") {
         .surface_args <- nlist(
-          mapping = aes(z = .data[["estimate__"]], colour = after_stat(level)),
+          mapping = aes(
+            z = .data[["estimate__"]],
+            colour = after_stat(.data[["level"]])
+          ),
           bins = 30, linewidth = 1.3
         )
         replace_args(.surface_args, dont_replace) <- surface_args
