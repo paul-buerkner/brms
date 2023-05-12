@@ -30,6 +30,8 @@
 #'   to the Stan backend directly.
 #' @slot fit An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 #'   among others containing the posterior draws.
+#' @slot basis An object that contains a small subset of the Stan data
+#'   created at fitting time, which is needed to process new data correctly.
 #' @slot criteria An empty \code{list} for adding model fit criteria
 #'   after estimation of the model.
 #' @slot file Optional name of a file in which the model object was stored in
@@ -58,9 +60,10 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
                     ranef = empty_ranef(), save_pars = NULL,
                     algorithm = "sampling", backend = "rstan",
                     threads = threading(), opencl = opencl(),
-                    stan_args = list(), fit = NULL, criteria = list(),
-                    file = NULL, family = NULL, autocor = NULL,
-                    cov_ranef = NULL, stan_funs = NULL, data.name = "") {
+                    stan_args = list(), fit = NULL, basis = NULL,
+                    criteria = list(), file = NULL, family = NULL,
+                    autocor = NULL, cov_ranef = NULL, stan_funs = NULL,
+                    data.name = "") {
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan"),
@@ -73,8 +76,8 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
   }
   x <- nlist(
     formula, data, prior, data2, stanvars, model, ranef,
-    save_pars, algorithm, backend, threads, opencl, stan_args, fit, criteria,
-    file, version, family, autocor, cov_ranef, stan_funs, data.name
+    save_pars, algorithm, backend, threads, opencl, stan_args, fit, basis,
+    criteria, file, version, family, autocor, cov_ranef, stan_funs, data.name
   )
   class(x) <- "brmsfit"
   x
