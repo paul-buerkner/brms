@@ -4,6 +4,7 @@
 
 * Apply the `horseshoe` and `R2D2` priors globally, that is, for
 all additive predictor terms specified in the same formula. (#1492)
+* Use `as.brmsprior` to transform objects into a `brmsprior`. (#1491)
 
 ### Other Changes
 
@@ -12,10 +13,11 @@ and incompatible with the newly implemented global shrinkage prior framework.
 
 ### Bug Fixes
 
-* Fix a long-standing bug in the post-processing of spline models that could lead to
-non-sensible results if predictions were performed on a different machine than
-where the model was originally fitted. Special thanks to Simon Wood, Ruben
-Arslan, Marta Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
+* Fix a long-standing bug in the post-processing of spline models that could 
+lead to non-sensible results if predictions were performed on a different
+machine than where the model was originally fitted. Special thanks to Simon 
+Wood, Ruben Arslan, Marta Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
+* Fix a bunch of minor issues occuring for rare feature combinations.
 
 
 # brms 2.19.0

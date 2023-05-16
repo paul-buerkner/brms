@@ -1875,6 +1875,39 @@ c.brmsprior <- function(x, ..., replace = FALSE) {
   c(e1, e2)
 }
 
+#' Transform into a brmsprior object
+#'
+#' Try to transform an object into a \code{brmsprior} object.
+#'
+#' @param x An object to be transformed.
+#' @return A \code{brmsprior} object if the transformation was possible.
+#'
+#' @export
+as.brmsprior <- function(x) {
+  if (is.brmsprior(x)) {
+    return(x)
+  }
+  x <- as.data.frame(x)
+  if (!"prior" %in% names(x)) {
+    stop2("Column 'prior' is required.")
+  }
+  x$prior <- as.character(x$prior)
+
+  defaults <- c(
+    class = "b", coef = "", group = "", resp = "",
+    dpar = "", nlpar = "", lb = NA, ub = NA
+  )
+  for (v in names(defaults)) {
+    if (!v %in% names(x)) {
+      x[[v]] <- defaults[v]
+    }
+    x[[v]] <- as.character(x[[v]])
+  }
+  x$source <- "user"
+  all_vars <- c("prior", names(defaults), "source")
+  x[, all_vars, drop = FALSE]
+}
+
 #' @export
 duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
   # compare only specific columns of the brmsprior object

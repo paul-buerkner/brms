@@ -128,3 +128,13 @@ test_that("overall intercept priors are adjusted for the intercept", {
   int_prior <- prior1$prior[prior1$class == "Intercept"]
   expect_equal(int_prior, "student_t(3, -8, 2.5)")
 })
+
+test_that("as.brmsprior works correctly", {
+  dat <- data.frame(prior = "normal(0,1)", x = "test", coef = c("a", "b"))
+  bprior <- as.brmsprior(dat)
+  expect_equal(bprior$prior, rep("normal(0,1)", 2))
+  expect_equal(bprior$class, rep("b", 2))
+  expect_equal(bprior$coef, c("a", "b"))
+  expect_equal(bprior$x, NULL)
+  expect_equal(bprior$lb, rep(NA_character_, 2))
+})
