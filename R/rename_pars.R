@@ -322,7 +322,7 @@ rename_sm <- function(bterms, data, pars, prior, ...) {
   out <- list()
   smef <- tidy_smef(bterms, data)
   if (NROW(smef)) {
-    p <- usc(combine_prefix(bterms), "prefix")
+    p <- usc(combine_prefix(bterms))
     Xs_names <- attr(smef, "Xs_names")
     if (length(Xs_names)) {
       bs <- paste0("bs", p)
@@ -363,11 +363,14 @@ rename_sm <- function(bterms, data, pars, prior, ...) {
 rename_ac <- function(bterms, data, pars, ...) {
   out <- list()
   acef <- tidy_acef(bterms)
+  resp <- usc(bterms$resp)
   if (has_ac_class(acef, "unstr")) {
     time <- get_ac_vars(acef, "time", dim = "time")
     times <- extract_levels(get(time, data))
-    cortime_names <- get_cornames(times, type = "cortime", brackets = FALSE)
-    lc(out) <- rlist(grepl("^cortime\\[", pars), cortime_names)
+    corname <- paste0("cortime", resp)
+    regex <- paste0("^", corname, "\\[")
+    cortime_names <- get_cornames(times, type = corname, brackets = FALSE)
+    lc(out) <- rlist(grepl(regex, pars), cortime_names)
   }
   out
 }
