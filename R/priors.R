@@ -351,7 +351,7 @@
 #'
 #' # define priors in a vectorized manner
 #' # useful in particular for categorical or multivariate models
-#' set_prior("normal(0, 2)", dpar = c("muA", "muB", "muC"))
+#' set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
