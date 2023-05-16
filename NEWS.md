@@ -10,6 +10,8 @@ all additive predictor terms specified in the same formula. (#1492)
 
 * No longer support the `lasso` prior as it is not a good shrinkage prior
 and incompatible with the newly implemented global shrinkage prior framework.
+* No longer support multiple deprecated prior options for categorical and
+multivariate models after around 3 years of deprecation. (#1420)
 
 ### Bug Fixes
 

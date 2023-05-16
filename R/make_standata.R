@@ -46,8 +46,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   )
   prior <- .validate_prior(
     prior, bterms = bterms, data = data,
-    sample_prior = sample_prior,
-    require_nlpar_prior = FALSE
+    sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)

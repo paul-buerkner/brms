@@ -1180,9 +1180,6 @@ test_that("Stan code for non-linear models is correct", {
     "sigma[n] = exp(nlp_a1[n] * exp( - C_sigma_1[n] / (nlp_a2[n] + C_sigma_2[n])))"
   )
   expect_match2(scode, "lprior += normal_lpdf(b_a2 | 0, 5)")
-
-  expect_error(make_stancode(bform, data, family = skew_normal()),
-               "Priors on population-level coefficients are required")
 })
 
 test_that("Stan code for nested non-linear parameters is correct", {
