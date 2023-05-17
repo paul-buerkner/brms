@@ -25,6 +25,39 @@ test_that("global shrinkage priors work correctly", {
   expect_range(SW(waic(fit))$estimates[3, 1], 1580, 1660)
 })
 
+test_that("Non-linear matrix covariates work correctly", {
+  set.seed(2134)
+  N <- 100
+  dat <- data.frame(y=rnorm(N))
+  dat$X <- matrix(rnorm(N*2), N, 2)
+
+  nlfun_stan <- "
+    real nlfun(real a, real b, real c, row_vector X) {
+       return a + b * X[1] + c * X[2];
+    }
+  "
+  nlstanvar <- stanvar(scode = nlfun_stan, block = "functions")
+
+  # fit the model
+  bform <- bf(y~nlfun(a, b, c, X), a~1, b~1, c~1, nl = TRUE)
+  fit <- brm(bform, dat, stanvars = nlstanvar)
+  b <- as.matrix(fit, variable = "b_b_Intercept")
+  # fit benchmark model that should yield the same results up to MCMC error
+  fit2 <- brm(y~X, dat)
+  b2 <- as.matrix(fit2, variable = "b_X1")
+  expect_range(mean(b) - mean(b2), -0.1, 0.1)
+
+  # test that post processing works too
+  nlfun <- function(a, b, c, X) {
+    a + b * X[, , 1] + c * X[, , 2]
+  }
+  expect_equal(dim(posterior_epred(fit)), c(ndraws(fit), nobs(fit)))
+  expect_equal(dim(posterior_predict(fit)), c(ndraws(fit), nobs(fit)))
+
+  lcomp <- loo(fit, fit2)$diffs
+  expect_range(lcomp[2, 1], -1, 1)
+})
+
 test_that("Addition argument 'subset' works correctly", {
   set.seed(12454)
   data("BTdata", package = "MCMCglmm")
@@ -116,8 +149,6 @@ test_that("ordinal model with grouped thresholds works correctly", {
   dimnames(thres_minus_eta_ch) <- new_arrnms
   expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
 })
-
-
 
 test_that("projpred methods can be run", {
   fit <- brm(count ~ zAge + zBase + Trt,

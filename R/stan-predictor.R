@@ -1733,19 +1733,36 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
       slice <- stan_slice(threads)
     }
     slice <- paste0(slice, " ")
-    str_add(out$data) <- "  // covariate vectors for non-linear functions\n"
+    str_add(out$data) <- "  // covariates for non-linear functions\n"
     for (i in seq_along(covars)) {
-      is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
+      cname <- glue("C{p}_{i}")
+      is_integer <- is.integer(data_cnl[[cname]])
+      is_matrix <- is.matrix(data_cnl[[cname]])
+      dim2 <- dim(data_cnl[[cname]])[2]
       if (is_integer) {
-        str_add(out$data) <- glue(
-          "  int C{p}_{i}[N{resp}];\n"
-        )
-        str_add(out$pll_args) <- glue(", data int[] C{p}_{i}")
+        if (is_matrix) {
+          str_add(out$data) <- glue(
+            "  int C{p}_{i}[N{resp}, {dim2}];\n"
+          )
+          str_add(out$pll_args) <- glue(", data int[,] C{p}_{i}")
+        } else {
+          str_add(out$data) <- glue(
+            "  int C{p}_{i}[N{resp}];\n"
+          )
+          str_add(out$pll_args) <- glue(", data int[] C{p}_{i}")
+        }
       } else {
-        str_add(out$data) <- glue(
-          "  vector[N{resp}] C{p}_{i};\n"
-        )
-        str_add(out$pll_args) <- glue(", data vector C{p}_{i}")
+        if (is_matrix) {
+          str_add(out$data) <- glue(
+            "  matrix[N{resp}, {dim2}] C{p}_{i};\n"
+          )
+          str_add(out$pll_args) <- glue(", data matrix C{p}_{i}")
+        } else {
+          str_add(out$data) <- glue(
+            "  vector[N{resp}] C{p}_{i};\n"
+          )
+          str_add(out$pll_args) <- glue(", data vector C{p}_{i}")
+        }
       }
       new_covars[i] <- glue(" C{p}_{i}{slice}")
     }

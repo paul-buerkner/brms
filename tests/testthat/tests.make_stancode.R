@@ -1198,6 +1198,35 @@ test_that("Stan code for nested non-linear parameters is correct", {
   )
 })
 
+test_that("make_stancode is correct for non-linear matrix covariates", {
+  N <- 10
+  dat <- data.frame(y=rnorm(N))
+  dat$X <- matrix(rnorm(N*2), N, 2)
+  dat$X2 <- matrix(1L:4L, N, 2)
+
+  # numeric matrix
+  nlfun_stan <- "
+    real nlfun(real a, real b, real c, row_vector X) {
+       return a + b * X[1] + c * X[2];
+    }
+  "
+  nlstanvar <- stanvar(scode = nlfun_stan, block = "functions")
+  bform <- bf(y~nlfun(a, b, c, X), a~1, b~1, c~1, nl = TRUE)
+  scode <- make_stancode(bform, dat, stanvars = nlstanvar)
+  expect_match2(scode, "matrix[N, 2] C_1;")
+
+  # integer matrix
+  nlfun_stan_int <- "
+    real nlfun(real a, real b, real c, int[] X) {
+       return a + b * X[1] + c * X[2];
+    }
+  "
+  nlstanvar <- stanvar(scode = nlfun_stan_int, block = "functions")
+  bform <- bf(y~nlfun(a, b, c, X2), a~1, b~1, c~1, nl = TRUE)
+  scode <- make_stancode(bform, dat, stanvars = nlstanvar)
+  expect_match2(scode, "int C_1[N, 2];")
+})
+
 test_that("make_stancode accepts very long non-linear formulas", {
   data <- data.frame(y = rnorm(10), this_is_a_very_long_predictor = rnorm(10))
   expect_silent(make_stancode(bf(y ~ b0 + this_is_a_very_long_predictor +

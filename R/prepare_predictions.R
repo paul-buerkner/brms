@@ -205,10 +205,13 @@ prepare_predictions.btnl <- function(x, draws, sdata, ...) {
   class(out) <- "bprepnl"
   p <- usc(combine_prefix(x))
   covars <- all.vars(x$covars)
-  dim <- c(out$ndraws, out$nobs)
   for (i in seq_along(covars)) {
     cvalues <- sdata[[paste0("C", p, "_", i)]]
-    out$C[[covars[i]]] <- data2draws(cvalues, dim = dim)
+    cdim <- c(out$ndraws, out$nobs)
+    if (is.matrix(cvalues)) {
+      c(cdim) <- dim(cvalues)[2]
+    }
+    out$C[[covars[i]]] <- data2draws(cvalues, dim = cdim)
   }
   out
 }

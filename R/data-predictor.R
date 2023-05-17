@@ -846,10 +846,12 @@ data_cnl <- function(bterms, data) {
       # need to apply factor contrasts
       cform <- str2formula(covars[i])
       cvalues <- get_model_matrix(cform, data, cols2remove = "(Intercept)")
-      if (NCOL(cvalues) > 1) {
-        stop2("Factors with more than two levels are not allowed as covariates.")
+      if (NCOL(cvalues) == 1L) {
+        dim(cvalues) <- NULL
       }
-      cvalues <- cvalues[, 1]
+    }
+    if (isTRUE(dim(cvalues) > 2L)) {
+      stop2("Non-linear covariates should be vectors or matrices.")
     }
     out[[paste0("C", p, "_", i)]] <- as.array(cvalues)
   }
