@@ -5,6 +5,7 @@
 * Apply the `horseshoe` and `R2D2` priors globally, that is, for
 all additive predictor terms specified in the same formula. (#1492)
 * Use `as.brmsprior` to transform objects into a `brmsprior`. (#1491)
+* Use matrix data as non-linear covariates. (#1488)
 
 ### Other Changes
 
