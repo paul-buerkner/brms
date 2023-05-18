@@ -10,6 +10,12 @@
 #' @param x An object of class \code{brmsfit}.
 #' @param ... Currently ignored.
 #'
+#' @details
+#' If you are restructuring an old spline model (fitted with brms < 2.19.3) to
+#' avoid prediction inconsistencies between machines (see GitHub issue #1465),
+#' please make sure to \code{restructure} your model on the machine on which it
+#' was originally fitted.
+#'
 #' @return A \code{brmsfit} object compatible with the latest version
 #'   of \pkg{brms}.
 #'

@@ -16,10 +16,11 @@ multivariate models after around 3 years of deprecation. (#1420)
 
 ### Bug Fixes
 
-* Fix a long-standing bug in the post-processing of spline models that could 
+* Fix a long-standing bug in the post-processing of spline models that could
 lead to non-sensible results if predictions were performed on a different
-machine than where the model was originally fitted. Special thanks to Simon 
-Wood, Ruben Arslan, Marta Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
+machine than where the model was originally fitted. Old spline models can be
+repaired via `restructure`. Special thanks to Simon Wood, Ruben Arslan, Marta
+Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
 * Fix a bunch of minor issues occuring for rare feature combinations.
 
 

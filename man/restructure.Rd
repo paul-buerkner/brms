@@ -23,3 +23,9 @@ However, in order to avoid unnecessary run time caused
 by the restructuring, I recommend explicitly calling
 \code{restructure} once per model after updating \pkg{brms}.
 }
+\details{
+If you are restructuring an old spline model (fitted with brms < 2.19.3) to
+avoid prediction inconsistencies between machines (see GitHub issue #1465),
+please make sure to \code{restructure} your model on the machine on which it
+was originally fitted.
+}
