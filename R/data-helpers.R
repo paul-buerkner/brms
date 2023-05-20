@@ -264,6 +264,7 @@ subset_data <- function(data, bterms) {
     # cross-formula indexing is no longer trivial for subsetted models
     check_cross_formula_indexing(bterms)
     data <- data[subset, , drop = FALSE]
+    attr(data, "subset") <- subset
   }
   if (!NROW(data)) {
     stop2(

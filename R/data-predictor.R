@@ -117,41 +117,39 @@ data_sm <- function(bterms, data, basis = NULL) {
   }
   p <- usc(combine_prefix(bterms))
   new <- length(basis) > 0L
-  if (!new) {
-    knots <- get_knots(data)
-    basis <- named_list(smterms)
-    for (i in seq_along(smterms)) {
-      # the spline penalty has changed in 2.8.7 (#646)
-      diagonal.penalty <- !require_old_default("2.8.7")
-      basis[[i]] <- smoothCon(
+  knots <- get_knots(data)
+  diagonal.penalty <- !require_old_default("2.8.7")
+  bylevels <- named_list(smterms)
+  ns <- 0
+  lXs <- list()
+  for (i in seq_along(smterms)) {
+    if (new) {
+      sm <- basis[[i]]$sm
+    } else {
+      sm <- smoothCon(
         eval2(smterms[i]), data = data,
         knots = knots, absorb.cons = TRUE,
         diagonal.penalty = diagonal.penalty
       )
     }
-  }
-  bylevels <- named_list(smterms)
-  ns <- 0
-  lXs <- list()
-  for (i in seq_along(basis)) {
     # may contain multiple terms when 'by' is a factor
-    for (j in seq_along(basis[[i]])) {
+    for (j in seq_along(sm)) {
       ns <- ns + 1
-      sm <- basis[[i]][[j]]
-      if (length(sm$by.level)) {
-        bylevels[[i]][j] <- sm$by.level
+      if (length(sm[[j]]$by.level)) {
+        bylevels[[i]][j] <- sm[[j]]$by.level
       }
       if (new) {
-        # prepare rasm for use with new data
-        rasm <- s2rPred(sm, data)
+        # prepare smooths for use with new data
+        # mgcv smooths are based on machine-specific SVD (#1465)
+        re <- s2rPred(sm[[j]], re = basis[[i]]$re[[j]], data = data)
       } else {
-        rasm <- mgcv::smooth2random(sm, names(data), type = 2)
+        re <- mgcv::smooth2random(sm[[j]], names(data), type = 2)
       }
-      lXs[[ns]] <- rasm$Xf
+      lXs[[ns]] <- re$Xf
       if (NCOL(lXs[[ns]])) {
-        colnames(lXs[[ns]]) <- paste0(sm$label, "_", seq_cols(lXs[[ns]]))
+        colnames(lXs[[ns]]) <- paste0(sm[[j]]$label, "_", seq_cols(lXs[[ns]]))
       }
-      Zs <- rasm$rand
+      Zs <- re$rand
       sfx <- paste0(p, "_", ns)
       out[[paste0("nb", sfx)]] <- length(Zs)
       if (length(Zs)) {
@@ -848,10 +846,12 @@ data_cnl <- function(bterms, data) {
       # need to apply factor contrasts
       cform <- str2formula(covars[i])
       cvalues <- get_model_matrix(cform, data, cols2remove = "(Intercept)")
-      if (NCOL(cvalues) > 1) {
-        stop2("Factors with more than two levels are not allowed as covariates.")
+      if (NCOL(cvalues) == 1L) {
+        dim(cvalues) <- NULL
       }
-      cvalues <- cvalues[, 1]
+    }
+    if (isTRUE(dim(cvalues) > 2L)) {
+      stop2("Non-linear covariates should be vectors or matrices.")
     }
     out[[paste0("C", p, "_", i)]] <- as.array(cvalues)
   }
@@ -1025,10 +1025,10 @@ smoothCon <- function(object, data, ...) {
 # Aid prediction from smooths represented as 'type = 2'
 # code obtained from the doc of ?mgcv::smooth2random
 # @param sm output of mgcv::smoothCon
+# @param re output of mgcv::smooth2random
 # @param data new data supplied for prediction
-# @return A list of the same structure as returned by mgcv::smoothCon
-s2rPred <- function(sm, data) {
-  re <- mgcv::smooth2random(sm, names(data), type = 2)
+# @return A list of the same structure as returned by mgcv::smooth2random
+s2rPred <- function(sm, re, data) {
   # prediction matrix for new data
   X <- PredictMat(sm, data)
   # transform to RE parameterization

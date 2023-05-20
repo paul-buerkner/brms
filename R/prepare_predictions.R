@@ -60,7 +60,7 @@ prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
   if (length(resp) > 1) {
     if (has_subset(x)) {
       stop2("Argument 'resp' must be a single variable name ",
-            "for models using addition argument 'draw_ids'.")
+            "for models using addition argument 'subset'.")
     }
     out <- list(ndraws = nrow(draws), nobs = sdata$N)
     out$resps <- named_list(resp)
@@ -101,7 +101,14 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   resp <- usc(combine_prefix(x))
   out <- nlist(ndraws, nobs, resp = x$resp)
   out$family <- prepare_family(x)
+
   out$old_order <- attr(sdata, "old_order")
+  if (has_subset(x)) {
+    # old_order has length equal to the full number of observations
+    # which is inappropriate for subsetted responses (#1483)
+    out$old_order <- as.numeric(factor(out$old_order[attr(data, "subset")]))
+  }
+
   valid_dpars <- valid_dpars(x)
   out$dpars <- named_list(valid_dpars)
   for (dp in valid_dpars) {
@@ -198,10 +205,13 @@ prepare_predictions.btnl <- function(x, draws, sdata, ...) {
   class(out) <- "bprepnl"
   p <- usc(combine_prefix(x))
   covars <- all.vars(x$covars)
-  dim <- c(out$ndraws, out$nobs)
   for (i in seq_along(covars)) {
     cvalues <- sdata[[paste0("C", p, "_", i)]]
-    out$C[[covars[i]]] <- data2draws(cvalues, dim = dim)
+    cdim <- c(out$ndraws, out$nobs)
+    if (is.matrix(cvalues)) {
+      c(cdim) <- dim(cvalues)[2]
+    }
+    out$C[[covars[i]]] <- data2draws(cvalues, dim = cdim)
   }
   out
 }

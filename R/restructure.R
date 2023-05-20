@@ -10,6 +10,12 @@
 #' @param x An object of class \code{brmsfit}.
 #' @param ... Currently ignored.
 #'
+#' @details
+#' If you are restructuring an old spline model (fitted with brms < 2.19.3) to
+#' avoid prediction inconsistencies between machines (see GitHub issue #1465),
+#' please make sure to \code{restructure} your model on the machine on which it
+#' was originally fitted.
+#'
 #' @return A \code{brmsfit} object compatible with the latest version
 #'   of \pkg{brms}.
 #'
@@ -226,8 +232,15 @@ restructure_v2 <- function(x) {
   }
   if (version < "2.17.6") {
     # a slot was added that stores additional control arguments
-    # that are directly passed to the Stan backends for later reuse #1373
+    # that are directly passed to the Stan backends for later reuse (#1373)
     x$stan_args <- list()
+  }
+  if (version < "2.19.3") {
+    # a slot was added to store parts of the Stan data computed at fitting time.
+    # storing this is strictly required only for spline models but there it is
+    # critical due to the machine-specific output of SVD (#1465)
+    bterms <- brmsterms(x$formula)
+    x$basis <- standata_basis(bterms, data = x$data)
   }
   x
 }

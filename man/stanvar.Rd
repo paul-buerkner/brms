@@ -51,6 +51,10 @@ program blocks. This is primarily useful for defining more complex
 priors, for refitting models without recompilation despite
 changing priors, or for defining custom Stan functions.
 }
+\details{
+The \code{stanvar} function is not vectorized. Instead, multiple
+\code{stanvars} objects can be added together via \code{+} (see Examples).
+}
 \examples{
 bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
 stanvars <- stanvar(5, name = "mean_intercept")

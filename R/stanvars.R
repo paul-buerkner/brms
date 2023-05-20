@@ -31,6 +31,10 @@
 #'
 #' @return An object of class \code{stanvars}.
 #'
+#' @details
+#' The \code{stanvar} function is not vectorized. Instead, multiple
+#' \code{stanvars} objects can be added together via \code{+} (see Examples).
+#'
 #' @examples
 #' bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
 #' stanvars <- stanvar(5, name = "mean_intercept")

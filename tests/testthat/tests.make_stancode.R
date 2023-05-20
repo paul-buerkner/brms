@@ -1180,9 +1180,6 @@ test_that("Stan code for non-linear models is correct", {
     "sigma[n] = exp(nlp_a1[n] * exp( - C_sigma_1[n] / (nlp_a2[n] + C_sigma_2[n])))"
   )
   expect_match2(scode, "lprior += normal_lpdf(b_a2 | 0, 5)")
-
-  expect_error(make_stancode(bform, data, family = skew_normal()),
-               "Priors on population-level coefficients are required")
 })
 
 test_that("Stan code for nested non-linear parameters is correct", {
@@ -1199,6 +1196,35 @@ test_that("Stan code for nested non-linear parameters is correct", {
   expect_match2(scode,
     "mu[n] = (nlp_lb[n] + (1 - nlp_lb[n]) * inv_logit(nlp_b[n] * C_1[n]));"
   )
+})
+
+test_that("make_stancode is correct for non-linear matrix covariates", {
+  N <- 10
+  dat <- data.frame(y=rnorm(N))
+  dat$X <- matrix(rnorm(N*2), N, 2)
+  dat$X2 <- matrix(1L:4L, N, 2)
+
+  # numeric matrix
+  nlfun_stan <- "
+    real nlfun(real a, real b, real c, row_vector X) {
+       return a + b * X[1] + c * X[2];
+    }
+  "
+  nlstanvar <- stanvar(scode = nlfun_stan, block = "functions")
+  bform <- bf(y~nlfun(a, b, c, X), a~1, b~1, c~1, nl = TRUE)
+  scode <- make_stancode(bform, dat, stanvars = nlstanvar)
+  expect_match2(scode, "matrix[N, 2] C_1;")
+
+  # integer matrix
+  nlfun_stan_int <- "
+    real nlfun(real a, real b, real c, int[] X) {
+       return a + b * X[1] + c * X[2];
+    }
+  "
+  nlstanvar <- stanvar(scode = nlfun_stan_int, block = "functions")
+  bform <- bf(y~nlfun(a, b, c, X2), a~1, b~1, c~1, nl = TRUE)
+  scode <- make_stancode(bform, dat, stanvars = nlstanvar)
+  expect_match2(scode, "int C_1[N, 2];")
 })
 
 test_that("make_stancode accepts very long non-linear formulas", {

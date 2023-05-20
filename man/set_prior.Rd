@@ -402,6 +402,10 @@ make_stancode(count ~ zAge + zBase + (1 | patient),
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 
+# define priors in a vectorized manner
+# useful in particular for categorical or multivariate models
+set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
+
 }
 \seealso{
 \code{\link{get_prior}}

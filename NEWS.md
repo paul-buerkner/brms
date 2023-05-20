@@ -4,11 +4,24 @@
 
 * Apply the `horseshoe` and `R2D2` priors globally, that is, for
 all additive predictor terms specified in the same formula. (#1492)
+* Use `as.brmsprior` to transform objects into a `brmsprior`. (#1491)
+* Use matrix data as non-linear covariates. (#1488)
 
-### Other changes
+### Other Changes
 
 * No longer support the `lasso` prior as it is not a good shrinkage prior
 and incompatible with the newly implemented global shrinkage prior framework.
+* No longer support multiple deprecated prior options for categorical and
+multivariate models after around 3 years of deprecation. (#1420)
+
+### Bug Fixes
+
+* Fix a long-standing bug in the post-processing of spline models that could
+lead to non-sensible results if predictions were performed on a different
+machine than where the model was originally fitted. Old spline models can be
+repaired via `restructure`. Special thanks to Simon Wood, Ruben Arslan, Marta
+Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
+* Fix a bunch of minor issues occuring for rare feature combinations.
 
 
 # brms 2.19.0

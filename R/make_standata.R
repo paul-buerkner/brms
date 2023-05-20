@@ -46,8 +46,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   )
   prior <- .validate_prior(
     prior, bterms = bterms, data = data,
-    sample_prior = sample_prior,
-    require_nlpar_prior = FALSE
+    sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)
@@ -156,10 +155,12 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   stanvars <- add_newdata_stanvars(object$stanvars, data2)
 
-  basis <- NULL
-  if (!is.null(newdata)) {
-    # 'basis' contains information from original Stan data
-    # required to correctly predict from new data
+  basis <- object$basis
+  if (is.null(basis)) {
+    # this case should not happen actually, perhaps when people use
+    # the 'empty' feature. But computing it here will be fine
+    # for almost all models, only causing potential problems for processing
+    # of splines on new machines (#1465)
     basis <- standata_basis(bterms, data = object$data)
   }
   .make_standata(
@@ -176,6 +177,8 @@ standata <- function(object, ...) {
 }
 
 # prepare basis data required for correct predictions from new data
+# TODO: eventually export this function if we want to ensure full compatibility
+#   with the 'empty' feature. see ?rename_pars for an example
 standata_basis <- function(x, data, ...) {
   UseMethod("standata_basis")
 }
@@ -253,7 +256,13 @@ standata_basis_sm <- function(x, data, ...) {
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- do_call(smoothCon, sc_args)
+      sm <- do_call(smoothCon, sc_args)
+      re <- vector("list", length(sm))
+      for (j in seq_along(sm)) {
+        re[[j]] <- mgcv::smooth2random(sm[[j]], names(data), type = 2)
+      }
+      out[[i]]$sm <- sm
+      out[[i]]$re <- re
     }
   }
   out

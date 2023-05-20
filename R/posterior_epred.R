@@ -711,8 +711,18 @@ posterior_epred_lagsar <- function(prep) {
 # expand data to dimension appropriate for
 # vectorized multiplication with posterior draws
 data2draws <- function(x, dim) {
-  stopifnot(length(dim) == 2L, length(x) %in% c(1, dim[2]))
-  matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+  stopifnot(length(dim) %in% 2:3)
+  if (length(dim) == 2) {
+    # expand vector into a matrix of draws
+    stopifnot(length(x) %in% c(1, dim[2]))
+    out <- matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+  } else {
+    # expand matrix into an array of draws
+    stopifnot(length(x) == 1 || is_equal(dim(x), dim[2:3]))
+    out <- array(x, dim = c(dim[2:3], dim[1]))
+    out <- aperm(out, perm = c(3, 1, 2))
+  }
+  out
 }
 
 # expected dimension of the main parameter 'mu'

@@ -49,6 +49,9 @@ to the Stan backend directly.}
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 among others containing the posterior draws.}
 
+\item{\code{basis}}{An object that contains a small subset of the Stan data
+created at fitting time, which is needed to process new data correctly.}
+
 \item{\code{criteria}}{An empty \code{list} for adding model fit criteria
 after estimation of the model.}
 

@@ -565,6 +565,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     devAskNewPage(ask = FALSE)
   }
   hyps <- limit_chars(x$hypothesis$Hypothesis, chars = chars)
+  if (!is.null(x$hypothesis$Group)) {
+    hyps <- paste0(x$hypothesis$Group, ":  ", hyps)
+  }
   names(samples)[seq_along(hyps)] <- hyps
   nplots <- ceiling(length(hyps) / N)
   plots <- vector(mode = "list", length = nplots)

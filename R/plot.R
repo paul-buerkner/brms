@@ -98,9 +98,9 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
 # list all parameter classes to be included in plots by default
 default_plot_variables <- function(family) {
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_",
-    paste0("^", valid_dpars(family), "$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar",
-    "^car", "^sdcar", "^sds_", "^sdgp_", "^lscale_")
+    paste0("^", valid_dpars(family), "$"), "^delta$", "^theta",
+    "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", "^car", "^sdcar",
+    "^sdb_", "^sdbsp_", "^sdbs_", "^sds_", "^sdgp_", "^lscale_")
 }
 
 #' MCMC Plots Implemented in \pkg{bayesplot}

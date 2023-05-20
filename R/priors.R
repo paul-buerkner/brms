@@ -349,6 +349,10 @@
 #' prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 #' make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 #'
+#' # define priors in a vectorized manner
+#' # useful in particular for categorical or multivariate models
+#' set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
+#'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",
@@ -586,13 +590,13 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
   }
   # priors for distributional parameters
   for (dp in valid_dpars) {
-    def_dprior <- def_dprior(x, dp, data = data)
+    def_dpar_prior <- def_dpar_prior(x, dp, data = data)
     if (!is.null(x$dpars[[dp]])) {
       # parameter is predicted
       dp_prior <- prior_predictor(
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
-        def_dprior = def_dprior,
+        def_dpar_prior = def_dpar_prior,
         internal = internal
       )
     } else if (!is.null(x$fdpars[[dp]])) {
@@ -602,7 +606,7 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
       # parameter is estimated
       dp_bound <- dpar_bounds(dp, suffix = x$resp, family = x$family)
       dp_prior <- brmsprior(
-        def_dprior, class = dp, resp = x$resp,
+        def_dpar_prior, class = dp, resp = x$resp,
         lb = dp_bound$lb, ub = dp_bound$ub
       )
     }
@@ -613,18 +617,9 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
     nlp_prior <- prior_predictor(
       x$nlpars[[nlp]], data = data,
       def_scale_prior = def_scale_prior,
-      def_dprior = def_dprior,
       internal = internal
     )
     prior <- prior + nlp_prior
-  }
-  if (conv_cats_dpars(x$family)) {
-    # deprecated; see warning in 'validate_special_prior'
-    for (cl in c("b", "Intercept")) {
-      if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
-        prior <- prior + brmsprior(class = cl, resp  = x$resp)
-      }
-    }
   }
   if (is_logistic_normal(x$family)) {
     if (internal) {
@@ -635,8 +630,6 @@ prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
         brmsprior("lkj(1)", class = "lncor", resp = x$resp)
     }
   }
-  # priors for autocorrelation parameters
-  # prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
   prior
 }
 
@@ -663,14 +656,14 @@ prior_predictor.btnl <- function(x, ...) {
 }
 
 # priors for population-level parameters
-prior_fe <- function(bterms, data, def_dprior = "", ...) {
+prior_fe <- function(bterms, data, def_dpar_prior = "", ...) {
   prior <- empty_prior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
   center_X <- stan_center_X(bterms)
   if (center_X && !is_ordinal(bterms)) {
     # priors for ordinal thresholds are provided in 'prior_thres'
-    prior <- prior + brmsprior(def_dprior, class = "Intercept", ls = px)
+    prior <- prior + brmsprior(def_dpar_prior, class = "Intercept", ls = px)
     fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
@@ -1043,7 +1036,7 @@ prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
 }
 
 # default priors for distributional parameters
-def_dprior <- function(x, dpar, data = NULL) {
+def_dpar_prior <- function(x, dpar, data = NULL) {
   stopifnot(is.brmsterms(x))
   dpar <- as_one_character(dpar)
   resp <- usc(x$resp)
@@ -1194,10 +1187,8 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 }
 
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bterms, data, sample_prior,
-                            require_nlpar_prior = TRUE, ...) {
+.validate_prior <- function(prior, bterms, data, sample_prior, ...) {
   sample_prior <- validate_sample_prior(sample_prior)
-  require_nlpar_prior <- as_one_logical(require_nlpar_prior)
   all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors
@@ -1274,12 +1265,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- c(all_priors, prior, replace = TRUE)
   check_prior_content(prior)
 
-  # don't require priors on nlpars if some priors are not checked (#1124)
-  require_nlpar_prior <- require_nlpar_prior && !any(no_checks)
-  prior <- validate_special_prior(
-    prior, bterms = bterms, data = data,
-    require_nlpar_prior = require_nlpar_prior, ...
-  )
+  prior <- validate_special_prior(prior, bterms = bterms, data = data, ...)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
@@ -1415,28 +1401,6 @@ validate_special_prior.brmsprior <- function(x, bterms, ...) {
 
 #' @export
 validate_special_prior.mvbrmsterms <- function(x, prior = NULL, ...) {
-  for (cl in c("b", "Intercept")) {
-    # copy over the global population-level priors in MV models
-    gi <- which(find_rows(prior, class = cl, coef = "", resp = ""))
-    prior$remove[gi] <- TRUE
-    if (!any(nzchar(prior$prior[gi]))) {
-      next
-    }
-    # allowing global priors in multivariate models implies conceptual problems
-    # in the specification of default priors as it becomes unclear on which
-    # prior level they should be defined
-    warning2("Specifying global priors for regression coefficients in ",
-             "multivariate models is deprecated. Please specify priors ",
-             "separately for each response variable.")
-    for (r in x$responses) {
-      rows <- which(find_rows(prior, class = cl, coef = "", resp = r))
-      for (ri in rows) {
-        if (isTRUE(!prior$new[ri] || !nzchar(prior$prior[ri]))) {
-          prior$prior[ri] <- prior$prior[gi]
-        }
-      }
-    }
-  }
   for (i in seq_along(x$terms)) {
     prior <- validate_special_prior(x$terms[[i]], prior = prior, ...)
   }
@@ -1448,35 +1412,6 @@ validate_special_prior.brmsterms <- function(x, data, prior = NULL, ...) {
   data <- subset_data(data, x)
   if (is.null(prior)) {
     prior <- empty_prior()
-  }
-  if (conv_cats_dpars(x$family)) {
-    for (cl in c("b", "Intercept")) {
-      gi <- which(find_rows(
-        prior, class = cl, coef = "",
-        dpar = "", nlpar = "", resp = x$resp
-      ))
-      prior$remove[gi] <- TRUE
-      if (!any(nzchar(prior$prior[gi]))) {
-        next
-      }
-      # allowing global priors in categorical models implies conceptual problems
-      # in the specification of default priors as it becomes unclear on which
-      # prior level they should be defined
-      warning2("Specifying global priors for regression coefficients in ",
-               "categorical models is deprecated. Please specify priors ",
-               "separately for each response category.")
-      for (dp in names(x$dpars)) {
-        rows <- which(find_rows(
-          prior, class = cl, coef = "",
-          dpar = dp, nlpar = "", resp = x$resp
-        ))
-        for (dpi in rows) {
-          if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
-            prior$prior[dpi] <- prior$prior[gi]
-          }
-        }
-      }
-    }
   }
   simple_sigma <- simple_sigma(x)
   for (dp in names(x$dpars)) {
@@ -1502,25 +1437,12 @@ validate_special_prior.btnl <- function(x, prior, ...) {
 
 # prepare special priors that cannot be passed to Stan as is
 # @param allow_autoscale allow autoscaling by parameter sigma?
-# @param require_nlpar_prior require priors on coefficients of nlpars?
 # @return a possibly updated brmsprior object with additional attributes
 #' @export
-validate_special_prior.btl <- function(x, prior, data,
-                                       allow_autoscale = TRUE,
-                                       require_nlpar_prior = TRUE, ...) {
+validate_special_prior.btl <- function(x, prior, data, allow_autoscale = TRUE,
+                                       ...) {
   allow_autoscale <- as_one_logical(allow_autoscale)
-  require_nlpar_prior <- as_one_logical(require_nlpar_prior)
   px <- check_prefix(x)
-  if (is_nlpar(x) && no_center(x$fe)) {
-    nlp_prior <- subset2(prior, ls = px)
-    if (!any(nzchar(nlp_prior$prior)) && require_nlpar_prior) {
-      stop2(
-        "Priors on population-level coefficients are required in ",
-        "non-linear models, but none were found for parameter ",
-        "'", px$nlpar, "'. See help(set_prior) for more details."
-      )
-    }
-  }
   # prepare special priors such as horseshoe
   special <- list()
   # the order of the classes doesn't matter but for consistency
@@ -1876,6 +1798,39 @@ c.brmsprior <- function(x, ..., replace = FALSE) {
     stop2("Cannot add '", class(e2)[1], "' objects to the prior.")
   }
   c(e1, e2)
+}
+
+#' Transform into a brmsprior object
+#'
+#' Try to transform an object into a \code{brmsprior} object.
+#'
+#' @param x An object to be transformed.
+#' @return A \code{brmsprior} object if the transformation was possible.
+#'
+#' @export
+as.brmsprior <- function(x) {
+  if (is.brmsprior(x)) {
+    return(x)
+  }
+  x <- as.data.frame(x)
+  if (!"prior" %in% names(x)) {
+    stop2("Column 'prior' is required.")
+  }
+  x$prior <- as.character(x$prior)
+
+  defaults <- c(
+    class = "b", coef = "", group = "", resp = "",
+    dpar = "", nlpar = "", lb = NA, ub = NA
+  )
+  for (v in names(defaults)) {
+    if (!v %in% names(x)) {
+      x[[v]] <- defaults[v]
+    }
+    x[[v]] <- as.character(x[[v]])
+  }
+  x$source <- "user"
+  all_vars <- c("prior", names(defaults), "source")
+  x[, all_vars, drop = FALSE]
 }
 
 #' @export
