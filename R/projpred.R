@@ -21,6 +21,9 @@
 #'   \code{TRUE} requires a \pkg{projpred} version >= 2.4.0.
 #' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 #'   and for sampling group-level effects for new levels (in multilevel models).
+#'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
+#'   \code{NULL}, then the pseudorandom number generator (PRNG) state is reset
+#'   (to the state before calling this function) upon exiting this function.
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
