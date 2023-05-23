@@ -103,6 +103,7 @@ over-dispersed and zero-inflated binomial response models thanks to Hayden
 Rabel. (#1319 & #1311)
 * Display `ppd_*` plots in `pp_check` via argument `prefix`. (#1313)
 * Support the `log` link in binomial and beta type families. (#1316)
+* Support **projpred**'s augmented-data projection. (#1292, #1294)
 
 ### Other changes
 
