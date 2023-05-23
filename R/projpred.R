@@ -66,9 +66,11 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # Infer "sub-seeds":
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   if (!is.null(brms_seed)) {
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
     set.seed(brms_seed)
   }
   kfold_seed <- sample.int(.Machine$integer.max, 1)
