@@ -191,6 +191,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
 
   # prepare data passed to projpred
+  if (!is.null(newdata)) {
+    warning2("Argument 'newdata' of get_refmodel.brmsfit() is deprecated and ",
+             "will be removed in the future.")
+  }
   data <- current_data(
     object, newdata, resp = resp, check_response = TRUE,
     allow_new_levels = TRUE
