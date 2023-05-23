@@ -22,14 +22,6 @@ machine than where the model was originally fitted. Old spline models can be
 repaired via `restructure`. Special thanks to Simon Wood, Ruben Arslan, Marta
 Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
 * Fix a bunch of minor issues occuring for rare feature combinations.
-* When exiting `get_refmodel.brmsfit()`, the pseudorandom number generator
-(PRNG) state is reset (to the state before calling `get_refmodel.brmsfit()`)
-only if argument `brms_seed` is not `NULL`. Since `NULL` is the default for
-`brms_seed`, this means that previously, two repeated calls to
-`get_refmodel.brmsfit()` with no PRNG-using code between them would use the same
-PRNG state. With this bug fix, users may safely set a seed once before any calls
-to `get_refmodel.brmsfit()` (e.g., at the beginning of their script) and then
-leave `brms_seed` at its default. (#1502)
 
 
 # brms 2.19.0
