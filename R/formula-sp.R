@@ -518,7 +518,7 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   attributes(new_formula) <- attributes(formula)
   out <- get_model_matrix(new_formula, data, ...)
   # recover original column names
-  colnames(out) <- rename(colnames(out), dummies, terms_replace)
+  colnames(out) <- rm_wsp(rename(colnames(out), dummies, terms_replace))
   out
 }
 
