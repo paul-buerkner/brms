@@ -436,9 +436,9 @@ terms_sp <- function(formula) {
   if (!length(out)) {
     return(NULL)
   }
-  uni_mo <- trim_wsp(get_matches_expr(regex_sp("mo"), out))
-  uni_me <- trim_wsp(get_matches_expr(regex_sp("me"), out))
-  uni_mi <- trim_wsp(get_matches_expr(regex_sp("mi"), out))
+  uni_mo <- get_matches_expr(regex_sp("mo"), out)
+  uni_me <- get_matches_expr(regex_sp("me"), out)
+  uni_mi <- get_matches_expr(regex_sp("mi"), out)
   # remove the intercept as it is handled separately
   out <- str2formula(c("0", out))
   attr(out, "int") <- FALSE
@@ -956,7 +956,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
   if (is.formula(x)) {
     x <- all_terms(x)
   } else {
-    x <- as.character(x)
+    x <- trim_wsp(as.character(x))
   }
   complete <- as_one_logical(complete)
   ranef <- as_one_logical(ranef)
@@ -972,7 +972,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
     inv <- out[lengths(matches) > 1L]
     if (!length(inv)) {
       # each term must be exactly equal to the special function call
-      inv <- out[trim_wsp(unlist(matches)) != out]
+      inv <- out[unlist(matches) != out]
     }
     if (length(inv)) {
       stop2("The term '", inv[1], "' is invalid in brms syntax.")

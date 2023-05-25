@@ -359,7 +359,7 @@ tidy_spef <- function(x, data) {
     return(empty_data_frame())
   }
   mm <- sp_model_matrix(form, data, rename = FALSE)
-  out <- data.frame(term = trim_wsp(colnames(mm)), stringsAsFactors = FALSE)
+  out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
   calls_cols <- c(paste0("calls_", all_sp_types()), "joint_call")
   list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo")
@@ -517,8 +517,10 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   new_formula <- str2formula(terms_comb)
   attributes(new_formula) <- attributes(formula)
   out <- get_model_matrix(new_formula, data, ...)
+  # fixes issue #1504
+  colnames(out) <- rm_wsp(colnames(out))
   # recover original column names
-  colnames(out) <- rm_wsp(rename(colnames(out), dummies, terms_replace))
+  colnames(out) <- rename(colnames(out), dummies, terms_replace)
   out
 }
 
