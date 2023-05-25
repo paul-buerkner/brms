@@ -103,7 +103,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   out$family <- prepare_family(x)
 
   out$old_order <- attr(sdata, "old_order")
-  if (has_subset(x)) {
+  if (has_subset(x) && !is.null(out$old_order)) {
     # old_order has length equal to the full number of observations
     # which is inappropriate for subsetted responses (#1483)
     out$old_order <- as.numeric(factor(out$old_order[attr(data, "subset")]))
