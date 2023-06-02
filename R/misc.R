@@ -879,7 +879,7 @@ get_matches_expr <- function(pattern, expr, ...) {
       out <- c(out, get_matches_expr(pattern, sexpr, ...))
     }
   }
-  unique(out)
+  trim_wsp(unique(out))
 }
 
 # like 'grepl' but handles (parse trees of) expressions

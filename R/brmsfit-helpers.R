@@ -760,7 +760,7 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
 # @return the 'eta' matrix with possibly reordered columns
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   stopifnot(length(dim(eta)) %in% c(2L, 3L))
-  if (is.null(old_order) || sort) {
+  if (!length(old_order) || sort) {
     return(eta)
   }
   stopifnot(length(old_order) == NCOL(eta))
