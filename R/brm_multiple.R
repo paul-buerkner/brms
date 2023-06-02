@@ -223,8 +223,14 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
     }
   }
   sflist <- from_list(models, "fit")
-  models[[1]]$fit <- rstan::sflist2stanfit(sflist)
-  models[[1]]
+  out <- models[[1]]
+  out$fit <- rstan::sflist2stanfit(sflist)
+  if (out$backend == "cmdstanr") {
+    att <- attributes(models[[1]]$fit)
+    attributes(out$fit)$CmdStanModel <- att$CmdStanModel
+    attributes(out$fit)$metadata <- att$metadata
+  }
+  out
 }
 
 # validity check for 'data' input of 'brm_multiple'
