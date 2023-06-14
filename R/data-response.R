@@ -86,11 +86,17 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   if (is_binary(x$family)) {
     bin_levels <- basis$resp_levels
     if (is.null(bin_levels)) {
-      bin_levels <- sort(unique(out$Y))
+      bin_levels <- levels(as.factor(out$Y))
     }
-    # fixes issue #1298
-    if (is.numeric(out$Y) && length(bin_levels) == 1L && !0 %in% bin_levels) {
-      bin_levels <- c(0, bin_levels)
+    # fixes issues #1298 and #1511
+    if (is.numeric(out$Y) && length(bin_levels) == 1L) {
+      if (0 %in% bin_levels) {
+        # 1 as default event level
+        bin_levels <- c(0, 1)
+      } else {
+        # 0 as default non-event level
+        bin_levels <- c(0, bin_levels)
+      }
     }
     out$Y <- as.integer(as_factor(out$Y, levels = bin_levels)) - 1
   }
