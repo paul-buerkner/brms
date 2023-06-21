@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2023-02-21" />
+<meta name="date" content="2023-02-25" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -240,7 +240,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h1 class="title toc-ignore">Parameterization of Response Distributions
 in brms</h1>
 <h4 class="author">Paul Bürkner</h4>
-<h4 class="date">2023-02-21</h4>
+<h4 class="date">2023-02-25</h4>
 
 
 <div id="TOC">
@@ -381,12 +381,17 @@ family is given by <span class="math display">\[
 f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp
 \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
 \]</span> where <span class="math inline">\(\alpha\)</span> is a
-positive shape parameter. The <strong>cox</strong> family implements Cox
-proportional hazards model which assumes a hazard function of the form
-<span class="math inline">\(h(y) = h_0(y) \mu\)</span> with baseline
-hazard <span class="math inline">\(h_0(y)\)</span> expressed via
-M-splines (which integrate to I-splines) in order to ensure
-monotonicity. The density of the cox model is then given by <span class="math display">\[
+positive shape parameter. The density of the
+<strong>log-logistic</strong> family is given by <span class="math display">\[
+f(y) = \frac{\
+\left(\frac{\beta}{\alpha}\right)
+\left(\frac{y}{\alpha}\right)^{\beta-1}\
+}{\left(1 + \left(\frac{y}{\alpha}\right)^\beta\right)^2}
+\]</span> The <strong>cox</strong> family implements Cox proportional
+hazards model which assumes a hazard function of the form <span class="math inline">\(h(y) = h_0(y) \mu\)</span> with baseline hazard
+<span class="math inline">\(h_0(y)\)</span> expressed via M-splines
+(which integrate to I-splines) in order to ensure monotonicity. The
+density of the cox model is then given by <span class="math display">\[
 f(y) = h(y) S(y)
 \]</span> where <span class="math inline">\(S(y)\)</span> is the
 survival function implied by <span class="math inline">\(h(y)\)</span>.</p>
@@ -395,10 +400,10 @@ survival function implied by <span class="math inline">\(h(y)\)</span>.</p>
 <p>These models extend the time-to-event models by dropping the
 assumption that all subjects will experience the event. Instead, for
 mixcure models, we assume that the population can be divided into 2
-groups, one for cured and the other for uncured, with incidence
-probability <span class="math inline">\(\pi\)</span>, with the uncured
-part having a proper time-to-event density. These models only make sense
-in the presence of right-censoring. Let <span class="math inline">\(y\)</span> be the observed time (event or
+groups, one for the cured and the other for the uncured. The probability
+of belonging to the uncured subpopulation (incidence) is <span class="math inline">\(\pi \in (0, 1)\)</span> and the uncured part has a
+proper time-to-event distribution (latency). As such, these models only
+make sense in the presence of right-censoring. Let <span class="math inline">\(y\)</span> be the observed time (event or
 censoring), <span class="math inline">\(t\)</span> be the (partially
 latent) actual event time, treated as <span class="math inline">\(\infty\)</span> for a cured subject, and <span class="math inline">\(\delta = \mathbf{1}(y \leqslant t)\)</span> the
 event indicator. The joint density is then <span class="math display">\[
@@ -406,7 +411,7 @@ f(y, t) = \left[ \pi f_{\mathrm{E}}(y) \right]^{\delta} \times \left[ (1
 - \pi) (1 - F_{\mathrm{E}}(y)) \right]^{1 - \delta},
 \]</span> where <span class="math inline">\(f_{\mathrm{E}}\)</span> and
 <span class="math inline">\(F_{\mathrm{E}}\)</span> are the proper
-density and distribution for the incidence part, repsectively. Currently
+density and distribution for the latency part, repsectively. Currently
 implemented families are <strong>mixcure_lognormal</strong> and
 <strong>mixcure_weibull</strong>.</p>
 </div>

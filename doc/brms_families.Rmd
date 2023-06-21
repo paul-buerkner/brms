@@ -125,7 +125,14 @@ is set to $1$ for either the gamma or Weibull distribution. The density of the
 $$
 f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
 $$
-where $\alpha$ is a positive shape parameter. The **cox** family implements Cox
+where $\alpha$ is a positive shape parameter. The density of the **log-logistic** family
+is given by
+$$
+f(y) = \frac{\
+\left(\frac{\beta}{\alpha}\right) \left(\frac{y}{\alpha}\right)^{\beta-1}\
+}{\left(1 + \left(\frac{y}{\alpha}\right)^\beta\right)^2}
+$$
+The **cox** family implements Cox
 proportional hazards model which assumes a hazard function of the form $h(y) =
 h_0(y) \mu$ with baseline hazard $h_0(y)$ expressed via M-splines (which
 integrate to I-splines) in order to ensure monotonicity. The density of the cox
@@ -138,16 +145,17 @@ where $S(y)$ is the survival function implied by $h(y)$.
 ### Mixture Cure (mixcure) Models 
 These models extend the time-to-event models by dropping the assumption that all subjects will
 experience the event. Instead, for mixcure models, we assume that the population can be divided
-into 2 groups, one for cured and the other for uncured, with incidence probability $\pi$, with
-the uncured part having a proper time-to-event density. These models only make sense in the presence
-of right-censoring. Let $y$ be the observed time (event or censoring), $t$ be the (partially latent)
+into 2 groups, one for the cured and the other for the uncured. The probability of belonging to the
+uncured subpopulation (incidence) is $\pi \in (0, 1)$ and the uncured part has a proper time-to-event
+distribution (latency). As such, these models only make sense in the presence of right-censoring.
+Let $y$ be the observed time (event or censoring), $t$ be the (partially latent)
 actual event time, treated as $\infty$ for a cured subject, and $\delta = \mathbf{1}(y \leqslant t)$ the
 event indicator. The joint density is then
 $$
 f(y, t) = \left[ \pi f_{\mathrm{E}}(y) \right]^{\delta} \times \left[ (1 - \pi) (1 - F_{\mathrm{E}}(y)) \right]^{1 - \delta},
 $$
 where $f_{\mathrm{E}}$ and $F_{\mathrm{E}}$ are the proper density and distribution for the 
-incidence part, repsectively. Currently implemented families are **mixcure_lognormal** and **mixcure_weibull**.
+latency part, repsectively. Currently implemented families are **mixcure_lognormal** and **mixcure_weibull**.
 
 ## Extreme value models
 
