@@ -618,11 +618,11 @@ validate_newdata2 <- function(newdata2, object, ...) {
 }
 
 # extract the current data
-current_data <- function(object, newdata = NULL, skip_validate = FALSE, ...) {
+current_data <- function(object, newdata = NULL, skip_validate_data = FALSE, ...) {
   stopifnot(is.brmsfit(object))
   if (is.null(newdata)) {
     data <- object$data
-  } else if(skip_validate) {
+  } else if(skip_validate_data) {
     data <- newdata
   } else {
     data <- validate_newdata(newdata, object = object, ...)
@@ -631,10 +631,12 @@ current_data <- function(object, newdata = NULL, skip_validate = FALSE, ...) {
 }
 
 # extract the current data2
-current_data2 <- function(object, newdata2 = NULL, ...) {
+current_data2 <- function(object, newdata2 = NULL, skip_validate_data = FALSE, ...) {
   stopifnot(is.brmsfit(object))
   if (is.null(newdata2)) {
     data2 <- object$data2
+  } else if(skip_validate_data) {
+    data2 <- newdata2
   } else {
     data2 <- validate_newdata2(newdata2, object = object, ...)
   }
