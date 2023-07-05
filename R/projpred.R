@@ -187,7 +187,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       brms_seed_k <- brms_seed + cvfit$projpred_k
     }
     projpred::get_refmodel(cvfit, resp = resp, dis = dis, latent = latent,
-                           brms_seed = brms_seed_k, ...)
+                           brms_seed = brms_seed_k,
+                           called_from_cvrefbuilder = TRUE, ...)
   }
 
   # prepare data passed to projpred
