@@ -148,7 +148,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   bterms <- brmsterms(formula)
 
   newdata2 <- use_alias(newdata2, new_objects)
-  data2 <- current_data2(object, newdata2, ...)
+  data2 <- current_data2(object, newdata2)
   data <- current_data(
     object, newdata, newdata2 = data2,
     re_formula = re_formula, ...
