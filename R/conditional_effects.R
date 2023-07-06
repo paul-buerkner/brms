@@ -564,14 +564,14 @@ get_all_effects_type <- function(x, type) {
     term_parts <- unlist(strsplit(terms[i], split = ":"))
     vars <- vector("list", length(term_parts))
     for (j in seq_along(term_parts)) {
-      if (grepl_expr(regex_type, term_parts[j])) {
-        # evaluate a special term to extract variables
-        tmp <- eval2(term_parts[j])
-        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by)), "NA")
-      } else {
-        # extract all variables from an ordinary term
-        vars[[j]] <- all_vars(term_parts[j])
+      matches <- get_matches_expr(regex_type, term_parts[j])
+      for (k in seq_along(matches)) {
+        # evaluate special terms to extract variables
+        tmp <- eval2(matches[[k]])
+        c(vars[[j]]) <- setdiff(unique(c(tmp$term, tmp$by)), "NA")
       }
+      # extract all variables not part of any special term
+      c(vars[[j]]) <- setdiff(all_vars(term_parts[j]), all_vars(matches))
     }
     vars <- unique(unlist(vars))
     out[[i]] <- str2formula(vars, collapse = "*")
