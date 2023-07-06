@@ -55,6 +55,7 @@
 #' summary(cv_vs)
 #' plot(cv_vs)
 #' }
+#' @exportS3Method projpred::get_refmodel brmsfit
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                                  cvfun = NULL, dis = NULL, latent = FALSE,
                                  brms_seed = NULL, ...) {

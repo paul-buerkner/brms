@@ -18,7 +18,7 @@ Authors@R:
       person("Simon C.", "Mills", role = c("ctb")),
       person("Stephen", "Wild", role = c("ctb")))
 Depends:
-    R (>= 3.5.0),
+    R (>= 3.6.0),
     Rcpp (>= 0.12.0),
     methods
 Imports:
