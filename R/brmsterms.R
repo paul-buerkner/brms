@@ -921,6 +921,7 @@ all_terms <- function(x) {
 
 # generate a regular expression to extract special terms
 # @param type one or more special term types to be extracted
+# TODO: rule out expressions such as mi(y) + mi(x)
 regex_sp <- function(type = "all") {
   choices <- c("all", "sp", "sm", "gp", "cs", "mmc", "ac", all_sp_types())
   type <- unique(match.arg(type, choices, several.ok = TRUE))
@@ -969,13 +970,14 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
   if (complete) {
     matches <- lapply(out, get_matches_expr, pattern = regex)
     # each term may contain only one special function call
-    inv <- out[lengths(matches) > 1L]
-    if (!length(inv)) {
+    invalid <- out[lengths(matches) > 1L]
+    if (!length(invalid)) {
       # each term must be exactly equal to the special function call
-      inv <- out[unlist(matches) != out]
+      invalid <- out[unlist(matches) != out]
     }
-    if (length(inv)) {
-      stop2("The term '", inv[1], "' is invalid in brms syntax.")
+    # TODO: some terms can be part of I() calls (#1520); reflect this here?
+    if (length(invalid)) {
+      stop2("The term '", invalid[1], "' is invalid in brms syntax.")
     }
   }
   out
