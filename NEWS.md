@@ -14,6 +14,8 @@ and incompatible with the newly implemented global shrinkage prior framework.
 * No longer support multiple deprecated prior options for categorical and
 multivariate models after around 3 years of deprecation. (#1420)
 * Deprecate argument `newdata` of `get_refmodel.brmsfit()`. (#1502)
+* Disallow binomial models without `trials` argument after several years
+of deprecation. (#1501)
 
 ### Bug Fixes
 

@@ -65,10 +65,12 @@ test_that("posterior_epred helper functions run without errors", {
   expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
 
   # pseudo binomial model
+  old_formula <- fit$formula$formula
+  fit$formula$formula <- update(fit$formula$formula, . | trials(100) ~ .)
   fit$autocor <- brms:::cor_empty()
   fit$family <- fit$formula$family <- binomial()
   expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
-  
+
   # pseudo beta-binomial model
   fit$family <- fit$formula$family <- beta_binomial()
   expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
@@ -82,6 +84,7 @@ test_that("posterior_epred helper functions run without errors", {
   expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(ndraws, nobs))
 
   # pseudo hurdle poisson model
+  fit$formula$formula <- old_formula
   fit$family <- fit$formula$family <- hurdle_poisson()
   fit$formula <- bf(count ~ Trt*Age + mo(Exp) + offset(Age) + (1+Trt|visit),
                     family = family(fit))
