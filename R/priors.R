@@ -1728,6 +1728,9 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
 # prepare pretty printing of brmsprior objects
 prepare_print_prior <- function(x) {
   stopifnot(is.brmsprior(x))
+  if (is.null(x$source)) {
+    x$source <- ""
+  }
   x$source[!nzchar(x$source)] <- "(unknown)"
   # vectorize priors and bounds for pretty printing
   # TODO: improve efficiency of adding vectorization tags
