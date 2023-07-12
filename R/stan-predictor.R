@@ -753,7 +753,8 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
         prior, class = "b", coef = Xs_names,
         type = glue("vector[Ks{p}]"), suffix = glue("s{p}"),
         header_type = "vector", px = px,
-        comment = "spline coefficients", normalize = normalize
+        comment = "unpenalized spline coefficients",
+        normalize = normalize
       )
     }
     str_add(out$eta) <- glue(" + Xs{p}{slice} * bs{p}")
@@ -765,7 +766,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
     pi <- glue("{p}_{i}")
     nb <- seq_len(smef$nbases[[i]])
     str_add(out$data) <- glue(
-      "  // data for spline {smef$byterm[i]}\n",
+      "  // data for spline {i}\n",
       "  int nb{pi};  // number of bases\n",
       "  int knots{pi}[nb{pi}];  // number of knots\n"
     )
@@ -775,15 +776,16 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
     )
     str_add(out$pll_args) <- cglue(", data matrix Zs{pi}_{nb}")
     str_add(out$par) <- glue(
-      "  // parameters for spline {smef$byterm[i]}\n"
+      "  // parameters for spline {i}\n"
     )
     str_add(out$par) <- cglue(
-      "  // standarized spline coefficients\n",
+      "  // standardized penalized spline coefficients\n",
       "  vector[knots{pi}[{nb}]] zs{pi}_{nb};\n"
     )
     if (has_special_prior(prior, px, class = "sds")) {
       str_add(out$tpar_def) <- glue(
-        "  vector<lower=0>[nb{pi}] sds{pi};  // SDs of spline coefficients\n"
+        "  // SDs of penalized spline coefficients\n",
+        "  vector<lower=0>[nb{pi}] sds{pi};\n"
       )
       str_add(out$prior_global_scales) <- glue(" sds{pi}")
       str_add(out$prior_global_lengths) <- glue(" nb{pi}")
@@ -791,17 +793,17 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
       str_add_list(out) <- stan_prior(
         prior, class = "sds", coef = smef$term[i], suffix = pi, px = px,
         type = glue("vector[nb{pi}]"), coef_type = glue("vector[nb{pi}]"),
-        comment = "SDs of spline coefficients",
+        comment = "SDs of penalized spline coefficients",
         normalize = normalize
       )
     }
     # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- cglue(
-      "  // actual spline coefficients\n",
+      "  // penalized spline coefficients\n",
       "  vector[knots{pi}[{nb}]] s{pi}_{nb};\n"
     )
     str_add(out$tpar_special_prior) <- cglue(
-      "  // compute actual spline coefficients\n",
+      "  // compute penalized spline coefficients\n",
       "  s{pi}_{nb} = sds{pi}[{nb}] * zs{pi}_{nb};\n"
     )
     str_add(out$pll_args) <- cglue(", vector s{pi}_{nb}")
