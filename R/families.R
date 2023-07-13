@@ -110,8 +110,8 @@
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
 #'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
 #'   \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta},
-#'   \code{zero_one_inflated_beta}, and \code{hurdle_cumulative} allow to estimate 
-#'   zero-inflated and hurdle models. These models can be very helpful when there 
+#'   \code{zero_one_inflated_beta}, and \code{hurdle_cumulative} allow to estimate
+#'   zero-inflated and hurdle models. These models can be very helpful when there
 #'   are many zeros in the data (or ones in case of one-inflated models)
 #'   that cannot be explained by the primary distribution of the response.}
 #'   }
@@ -136,7 +136,7 @@
 #'   \code{cauchit}, \code{identity}, and \code{log}.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
-#'   \code{acat}, and \code{hurdle_cumulative} support \code{logit}, 
+#'   \code{acat}, and \code{hurdle_cumulative} support \code{logit},
 #'   \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
 #'
 #'   \item{Families \code{categorical}, \code{multinomial}, and \code{dirichlet}
@@ -693,9 +693,10 @@ cox <- function(link = "log", bhaz = NULL) {
 
 #' @rdname brmsfamily
 #' @export
-hurdle_poisson <- function(link = "log") {
+hurdle_poisson <- function(link = "log", link_hu = "logit") {
   slink <- substitute(link)
-  .brmsfamily("hurdle_poisson", link = link, slink = slink)
+  .brmsfamily("hurdle_poisson", link = link, slink = slink,
+              link_hu = link_hu)
 }
 
 #' @rdname brmsfamily
@@ -726,7 +727,7 @@ hurdle_lognormal <- function(link = "identity", link_sigma = "log",
 }
 
 #' @rdname brmsfamily
-#' @export 
+#' @export
 hurdle_cumulative <- function(link = "logit", link_hu = "logit",
                               link_disc = "log", threshold = "flexible") {
   slink <- substitute(link)

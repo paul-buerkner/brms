@@ -111,7 +111,7 @@ asym_laplace(link = "identity", link_sigma = "log", link_quantile = "logit")
 
 cox(link = "log", bhaz = NULL)
 
-hurdle_poisson(link = "log")
+hurdle_poisson(link = "log", link_hu = "logit")
 
 hurdle_negbinomial(link = "log", link_shape = "log", link_hu = "logit")
 
@@ -292,8 +292,8 @@ Below, we list common use cases for the different families.
   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
   \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta},
-  \code{zero_one_inflated_beta}, and \code{hurdle_cumulative} allow to estimate 
-  zero-inflated and hurdle models. These models can be very helpful when there 
+  \code{zero_one_inflated_beta}, and \code{hurdle_cumulative} allow to estimate
+  zero-inflated and hurdle models. These models can be very helpful when there
   are many zeros in the data (or ones in case of one-inflated models)
   that cannot be explained by the primary distribution of the response.}
   }
@@ -318,7 +318,7 @@ Below, we list common use cases for the different families.
   \code{cauchit}, \code{identity}, and \code{log}.}
 
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
-  \code{acat}, and \code{hurdle_cumulative} support \code{logit}, 
+  \code{acat}, and \code{hurdle_cumulative} support \code{logit},
   \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
 
   \item{Families \code{categorical}, \code{multinomial}, and \code{dirichlet}
