@@ -1,4 +1,4 @@
-# brms 2.19.0++
+# brms 2.20.0
 
 ### New Features
 
@@ -24,7 +24,7 @@ lead to non-sensible results if predictions were performed on a different
 machine than where the model was originally fitted. Old spline models can be
 repaired via `restructure`. Special thanks to Simon Wood, Ruben Arslan, Marta
 Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
-* Fix a bunch of minor issues occuring for rare feature combinations.
+* Fix a bunch of minor issues occurring for rare feature combinations.
 
 
 # brms 2.19.0
