@@ -586,7 +586,6 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
                                        env = globalenv(), ...) {
   # TODO: support argument 'vectorize'
   # TODO: support argument 'env'
-  stopifnot(!vectorize)
   funs <- stanmodel$expose_functions(global = TRUE)
   funs
 }
