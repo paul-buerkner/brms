@@ -543,7 +543,7 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
   vectorize <- as_one_logical(vectorize)
   stanmodel <- compiled_model(x)
   if (x$backend == "cmdstanr") {
-    if ("expose_functions" %in% names(stanmodel) & !vectorize) {
+    if ("expose_functions" %in% names(stanmodel)) {
       funs <- .expose_functions_cmdstanr(
         stanmodel, vectorize = vectorize, env = env, ...
       )
@@ -567,12 +567,12 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
 }
 
 # expose stan functions via rstan
-.expose_functions_rstan <- function(stanmodel, vectorize = FALSE,
-                                    env = globalenv(), ...) {
+.expose_functions_rstan <- function(stanmodel, vectorize, env, ...) {
   if (vectorize) {
-    funs <- rstan::expose_stan_functions(stanmodel, env = environment(), ...)
+    fun_env <- new.env()
+    funs <- rstan::expose_stan_functions(stanmodel, env = fun_env, ...)
     for (i in seq_along(funs)) {
-      FUN <- Vectorize(get(funs[i], mode = "function"))
+      FUN <- Vectorize(get(funs[i], pos = fun_env, mode = "function"))
       assign(funs[i], FUN, pos = env)
     }
   } else {
@@ -582,11 +582,18 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
 }
 
 # expose stan functions via cmdstanr
-.expose_functions_cmdstanr <- function(stanmodel, vectorize = FALSE,
-                                       env = globalenv(), ...) {
-  # TODO: support argument 'vectorize'
-  # TODO: support argument 'env'
-  funs <- stanmodel$expose_functions(global = TRUE)
+.expose_functions_cmdstanr <- function(stanmodel, vectorize, env, ...) {
+  suppressMessages(stanmodel$expose_functions())
+  fun_env <- stanmodel$functions
+  funs <- names(fun_env)
+  funs <- setdiff(funs, c("fun_names", "compiled", "hpp_code"))
+  for (i in seq_along(funs)) {
+    FUN <- get(funs[i], pos = fun_env, mode = "function")
+    if (vectorize) {
+      FUN <- Vectorize(FUN)
+    }
+    assign(funs[i], FUN, pos = env)
+  }
   funs
 }
 
