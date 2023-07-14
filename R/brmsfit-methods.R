@@ -572,7 +572,7 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
     fun_env <- new.env()
     funs <- rstan::expose_stan_functions(stanmodel, env = fun_env, ...)
     for (i in seq_along(funs)) {
-      FUN <- Vectorize(get(funs[i], pos = fun_env, mode = "function"))
+      FUN <- Vectorize(get(funs[i], pos = fun_env))
       assign(funs[i], FUN, pos = env)
     }
   } else {
@@ -586,9 +586,12 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
   suppressMessages(stanmodel$expose_functions())
   fun_env <- stanmodel$functions
   funs <- names(fun_env)
-  funs <- setdiff(funs, c("fun_names", "compiled", "hpp_code"))
   for (i in seq_along(funs)) {
-    FUN <- get(funs[i], pos = fun_env, mode = "function")
+    FUN <- get(funs[i], pos = fun_env)
+    # cmdstanr adds some non-functions to the environment
+    if (!is.function(FUN)) {
+      next
+    }
     if (vectorize) {
       FUN <- Vectorize(FUN)
     }
