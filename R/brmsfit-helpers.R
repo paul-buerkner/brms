@@ -988,7 +988,7 @@ read_brmsfit <- function(file) {
     )
   }
   x <- suppressWarnings(try(readRDS(file), silent = TRUE))
-  if (!is(x, "try-error")) {
+  if (!is_try_error(x)) {
     if (!is.brmsfit(x)) {
       stop2("Object loaded via 'file' is not of class 'brmsfit'.")
     }

@@ -805,7 +805,7 @@ combine_formulas <- function(formula1, formula2, lhs = "", update = FALSE) {
 has_terms <- function(formula) {
   stopifnot(is.formula(formula))
   terms <- try(terms(rhs(formula)), silent = TRUE)
-  is(terms, "try-error") ||
+  is_try_error(terms) ||
     length(attr(terms, "term.labels")) ||
     length(attr(terms, "offset"))
 }
@@ -1012,7 +1012,7 @@ has_intercept <- function(formula) {
   } else {
     formula <- as.formula(formula)
     try_terms <- try(terms(formula), silent = TRUE)
-    if (is(try_terms, "try-error")) {
+    if (is_try_error(try_terms)) {
       out <- FALSE
     } else {
       out <- as.logical(attr(try_terms, "intercept"))
@@ -1038,12 +1038,12 @@ has_rsv_intercept <- function(formula, has_intercept = NULL) {
     return(.has_rsv_intercept(formula, has_intercept))
   }
   formula <- try(as.formula(formula), silent = TRUE)
-  if (is(formula, "try-error")) {
+  if (is_try_error(formula)) {
     return(FALSE)
   }
   if (is.null(has_intercept)) {
     try_terms <- try(terms(formula), silent = TRUE)
-    if (is(try_terms, "try-error")) {
+    if (is_try_error(try_terms)) {
       return(FALSE)
     }
     has_intercept <- has_intercept(try_terms)

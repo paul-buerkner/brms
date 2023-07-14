@@ -20,7 +20,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
     knots <- get_knots(data)
   }
   data <- try(as.data.frame(data), silent = TRUE)
-  if (is(data, "try-error")) {
+  if (is_try_error(data)) {
     stop2("Argument 'data' must be coercible to a data.frame.")
   }
   if (!isTRUE(nrow(data) > 0L)) {
@@ -396,7 +396,7 @@ validate_newdata <- function(
   incl_autocor = TRUE, group_vars = NULL, req_vars = NULL, ...
 ) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
-  if (is(newdata, "try-error")) {
+  if (is_try_error(newdata)) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
   object <- restructure(object)

@@ -359,7 +359,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
                       lb = NA, ub = NA, check = TRUE) {
   input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, check)
   input <- try(as.data.frame(input), silent = TRUE)
-  if (is(input, "try-error")) {
+  if (is_try_error(input)) {
     stop2("Processing arguments of 'set_prior' has failed:\n", input)
   }
   out <- vector("list", nrow(input))
@@ -1848,7 +1848,7 @@ duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
 eval_dirichlet <- function(prior, len = NULL, env = NULL) {
   dirichlet <- function(...) {
     out <- try(as.numeric(c(...)))
-    if (is(out, "try-error")) {
+    if (is_try_error(out)) {
       stop2("Something went wrong. Did you forget to store ",
             "auxiliary data in the 'data2' argument?")
     }

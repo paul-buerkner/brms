@@ -70,7 +70,7 @@ predictor.bprepnl <- function(prep, i = NULL, fprep = NULL, ...) {
     # assumes fully vectorized version of 'nlform'
     eta <- try(eval(prep$nlform, args), silent = TRUE)
   }
-  if (is(eta, "try-error")) {
+  if (is_try_error(eta)) {
     if (grepl("could not find function", eta)) {
       eta <- rename(eta, "Error in eval(expr, envir, enclos) : ", "")
       vectorize <- str_if(prep$loop, ", vectorize = TRUE")
@@ -97,7 +97,7 @@ predictor_fe <- function(prep, i) {
     return(0)
   }
   eta <- try(.predictor_fe(X = p(fe[["X"]], i), b = fe[["b"]]))
-  if (is(eta, "try-error")) {
+  if (is_try_error(eta)) {
     stop2(
       "Something went wrong (see the error message above). ",
       "Perhaps you transformed numeric variables ",
@@ -125,7 +125,7 @@ predictor_re <- function(prep, i) {
   group <- names(re[["r"]])
   for (g in group) {
     eta_g <- try(.predictor_re(Z = p(re[["Z"]][[g]], i), r = re[["r"]][[g]]))
-    if (is(eta_g, "try-error")) {
+    if (is_try_error(eta_g)) {
       stop2(
         "Something went wrong (see the error message above). ",
         "Perhaps you transformed numeric variables ",

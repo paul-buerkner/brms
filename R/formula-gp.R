@@ -312,7 +312,7 @@ choose_L <- function(x, c) {
 # return an informative error message if it fails
 try_nug <- function(expr, nug) {
   out <- try(expr, silent = TRUE)
-  if (is(out, "try-error")) {
+  if (is_try_error(out)) {
     stop2("The Gaussian process covariance matrix is not positive ",
           "definite.\nThis occurs for numerical reasons. Setting ",
           "'nug' above ", nug, " may help.")

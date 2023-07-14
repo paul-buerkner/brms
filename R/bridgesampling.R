@@ -88,7 +88,7 @@ bridge_sampler.brmsfit <- function(samples, recompile = FALSE, ...) {
   # otherwise bridge_sampler may fail in a new R session or on another machine
   samples <- update_misc_env(samples, recompile = recompile)
   out <- try(bridge_sampler(samples$fit, ...))
-  if (is(out, "try-error")) {
+  if (is_try_error(out)) {
     stop2(
       "Bridgesampling failed. Perhaps you did not set ",
       "'save_pars = save_pars(all = TRUE)' when fitting your model? ",

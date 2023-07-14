@@ -2447,7 +2447,7 @@ test_that("threaded Stan code is correct", {
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
-  found_cmdstan <- !is(cmdstan_version, "try-error")
+  found_cmdstan <- !is_try_error(cmdstan_version)
   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
   options(brms.backend = "cmdstanr")
 
@@ -2523,7 +2523,7 @@ test_that("Un-normalized Stan code is correct", {
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
-  found_cmdstan <- !is(cmdstan_version, "try-error")
+  found_cmdstan <- !is_try_error(cmdstan_version)
   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
   options(brms.backend = "cmdstanr")
 
@@ -2600,7 +2600,7 @@ test_that("Canonicalizing Stan code is correct", {
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
-  found_cmdstan <- !is(cmdstan_version, "try-error")
+  found_cmdstan <- !is_try_error(cmdstan_version)
   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
   options(brms.backend = "cmdstanr")
 

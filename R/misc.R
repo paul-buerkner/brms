@@ -767,7 +767,7 @@ eval_silent <- function(expr, type = "output", try = FALSE,
       try_out <- try(utils::capture.output(
         out <- eval(expr, envir), type = type, ...
       ))
-      if (is(try_out, "try-error")) {
+      if (is_try_error(try_out)) {
         # try again without suppressing error messages
         out <- eval(expr, envir)
       }
@@ -871,7 +871,7 @@ get_matches_expr <- function(pattern, expr, ...) {
   out <- NULL
   for (i in seq_along(expr)) {
     sexpr <- try(expr[[i]], silent = TRUE)
-    if (!is(sexpr, "try-error")) {
+    if (!is_try_error(sexpr)) {
       sexpr_char <- deparse0(sexpr)
       out <- c(out, get_matches(pattern, sexpr_char, ...))
     }
@@ -1023,6 +1023,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   }
   warning2(msg)
   invisible(NULL)
+}
+
+# check if x is a try-error resulting from try()
+is_try_error <- function(x) {
+  inherits(x, "try-error")
 }
 
 # check if verbose mode is activated
