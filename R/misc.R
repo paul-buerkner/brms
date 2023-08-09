@@ -53,7 +53,7 @@ extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   }
   keep <- dim(out) > 1L | !drop_dim
   new_dim <- dim(out)[keep]
-  if (length(new_dim) == 1L) {
+  if (length(new_dim) <= 1L) {
     # use vectors instead of 1D arrays
     new_dim <- NULL
   }
