@@ -364,7 +364,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       # take information from original data
       Jmo <- basis$Jmo
     } else {
-      Jmo <- as.array(ulapply(Xmo, max))
+      Jmo <- as.array(ulapply(Xmo, attr, "max"))
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters

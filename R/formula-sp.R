@@ -579,6 +579,7 @@ get_mo_values <- function(term, data) {
   x <- eval2(term$term, data)
   if (is.ordered(x)) {
     # counting starts at zero
+    max_value <- length(levels(x)) - 1
     x <- as.numeric(x) - 1
   } else if (all(is_wholenumber(x))) {
     min_value <- attr(x, "min")
@@ -586,13 +587,16 @@ get_mo_values <- function(term, data) {
       min_value <- min(x)
     }
     x <- x - min_value
+    max_value <- max(x)
   } else {
     stop2(
       "Monotonic predictors must be integers or ordered ",
       "factors. Error occurred for variable '", term$term, "'."
     )
   }
-  as.array(x)
+  x <- as.array(x)
+  attr(x, "max") <- max_value
+  x
 }
 
 # prepare 'sp_term' objects
