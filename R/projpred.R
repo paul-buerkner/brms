@@ -61,6 +61,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                                  brms_seed = NULL, ...) {
   require_package("projpred")
   object <- restructure(object)
+  stopifnot_resp(object, resp)
   resp <- validate_resp(resp, object, multiple = FALSE)
   formula <- formula(object)
   if (!is.null(resp)) {

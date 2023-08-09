@@ -65,10 +65,10 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                resp = NULL, ndraws = NULL, draw_ids = NULL,
                                log = FALSE, summary = TRUE, robust = FALSE,
                                probs = c(0.025, 0.975), ...) {
-  stopifnot_resp(x, resp)
   log <- as_one_logical(log)
   contains_draws(x)
   x <- restructure(x)
+  stopifnot_resp(x, resp)
   if (is_mv(x)) {
     resp <- validate_resp(resp, x$formula$responses, multiple = FALSE)
     family <- x$family[[resp]]

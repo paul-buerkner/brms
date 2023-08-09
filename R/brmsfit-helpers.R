@@ -11,6 +11,7 @@ is_mv <- function(x) {
 }
 
 stopifnot_resp <- function(x, resp = NULL) {
+  # TODO: merge into validate_resp?
   if (is_mv(x) && length(resp) != 1L) {
     stop2("Argument 'resp' must be a single variable name ",
           "when applying this method to a multivariate model.")
