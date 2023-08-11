@@ -382,13 +382,6 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
-  if (check && (!is.na(lb) || !is.na(ub))) {
-    # proper boundaries have been specified
-    if (nzchar(coef)) {
-      # TODO: enable bounds for coefficients as well?
-      stop2("Argument 'coef' may not be specified when using boundaries.")
-    }
-  }
   if (dpar == "mu") {
     # distributional parameter 'mu' is currently implicit #1368
     dpar <- ""
@@ -1256,6 +1249,12 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   # the remaining NAs are in coef priors which cannot have bounds yet
   prior$lb[is.na(prior$lb)] <- prior$ub[is.na(prior$ub)] <- ""
+
+  # boundaries on individual coefficients are not yet supported
+  # TODO: enable bounds for coefficients as well?
+  if (any((nzchar(prior$lb) | nzchar(prior$ub)) & nzchar(prior$coef))) {
+    stop2("Prior argument 'coef' may not be specified when using boundaries.")
+  }
 
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
