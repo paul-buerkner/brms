@@ -670,7 +670,11 @@ apply_dpar_inv_link <- function(dpar, family) {
 # in categorical-like models using the softmax response function
 insert_refcat <- function(eta, refcat = 1) {
   stopifnot(is.array(eta))
-  refcat <- as_one_integer(refcat)
+  refcat <- as_one_integer(refcat, allow_na = TRUE)
+  if (isNA(refcat)) {
+    # no reference category used
+    return(eta)
+  }
   # need to add zeros for the reference category
   ndim <- length(dim(eta))
   dim_noncat <- dim(eta)[-ndim]
