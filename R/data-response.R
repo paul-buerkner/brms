@@ -617,7 +617,8 @@ extract_nthres <- function(formula, data, extra_cat = FALSE) {
   }
   if (out < 1L) {
     stop2("Could not extract the number of thresholds. Use ordered factors ",
-          "or positive integers as your ordinal response.")
+          "or positive integers as your ordinal response and ensure that ",
+          "more than on response category is present.")
   }
   out
 }
