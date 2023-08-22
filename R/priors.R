@@ -1829,7 +1829,9 @@ as.brmsprior <- function(x) {
   }
   x$source <- "user"
   all_vars <- c("prior", names(defaults), "source")
-  x[, all_vars, drop = FALSE]
+  x <- x[, all_vars, drop = FALSE]
+  class(x) <- c("brmsprior", "data.frame")
+  x
 }
 
 #' @export
