@@ -1,3 +1,11 @@
+# brms 2.20.0++
+
+### Other Changes
+
+* Switch to the new array syntax of Stan. This increases the version 
+requirements of Stan to >= 2.26.
+
+
 # brms 2.20.0
 
 ### New Features
