@@ -29,12 +29,12 @@ stan_response <- function(bterms, data, normalize) {
   if (has_multicol(family)) {
     if (rtype == "real") {
       str_add(out$data) <- glue(
-        "  vector[ncat{resp}] Y{resp}[N{resp}];  // response array\n"
+        "  array[N{resp}] vector[ncat{resp}] Y{resp};  // response array\n"
       )
       str_add(out$pll_args) <- glue(", data vector[] Y{resp}")
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
-        "  int Y{resp}[N{resp}, ncat{resp}];  // response array\n"
+        "  array[N{resp}, ncat{resp}] int Y{resp};  // response array\n"
       )
       str_add(out$pll_args) <- glue(", data int[,] Y{resp}")
     }
@@ -47,7 +47,7 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$pll_args) <- glue(", data vector Y{resp}")
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
-        "  int Y{resp}[N{resp}];  // response variable\n"
+        "  array[N{resp}] int Y{resp};  // response variable\n"
       )
       str_add(out$pll_args) <- glue(", data int[] Y{resp}")
     }
@@ -59,7 +59,7 @@ stan_response <- function(bterms, data, normalize) {
   }
   if (has_trials(family) || is.formula(bterms$adforms$trials)) {
     str_add(out$data) <- glue(
-      "  int trials{resp}[N{resp}];  // number of trials\n"
+      "  array[N{resp}] int trials{resp};  // number of trials\n"
     )
     str_add(out$pll_args) <- glue(", data int[] trials{resp}")
   }
@@ -74,15 +74,15 @@ stan_response <- function(bterms, data, normalize) {
     if (any(nzchar(groups))) {
       str_add(out$data) <- glue(
         "  int<lower=1> ngrthres{resp};  // number of threshold groups\n",
-        "  int<lower=1> nthres{resp}[ngrthres{resp}];  // number of thresholds\n",
-        "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
+        "  array[ngrthres{resp}] int<lower=1> nthres{resp};  // number of thresholds\n",
+        "  array[N{resp}, 2] int<lower=1> Jthres{resp};  // threshold indices\n"
       )
       str_add(out$tdata_def) <- glue(
         "  int<lower=1> nmthres{resp} = sum(nthres{resp});",
         "  // total number of thresholds\n",
-        "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];",
+        "  array[ngrthres{resp}] int<lower=1> Kthres_start{resp};",
         "  // start index per threshold group\n",
-        "  int<lower=1> Kthres_end{resp}[ngrthres{resp}];",
+        "  array[ngrthres{resp}] int<lower=1> Kthres_end{resp};",
         "  // end index per threshold group\n"
       )
       str_add(out$tdata_comp) <- glue(
@@ -116,7 +116,7 @@ stan_response <- function(bterms, data, normalize) {
   }
   if (is.formula(bterms$adforms$dec)) {
     str_add(out$data) <- glue(
-      "  int<lower=0,upper=1> dec{resp}[N{resp}];  // decisions\n"
+      "  array[N{resp}] int<lower=0,upper=1> dec{resp};  // decisions\n"
     )
     str_add(out$pll_args) <- glue(", data int[] dec{resp}")
   }
@@ -135,7 +135,7 @@ stan_response <- function(bterms, data, normalize) {
   }
   if (is.formula(bterms$adforms$cens)) {
     str_add(out$data) <- glue(
-      "  int<lower=-1,upper=2> cens{resp}[N{resp}];  // indicates censoring\n"
+      "  array[N{resp}] int<lower=-1,upper=2> cens{resp};  // indicates censoring\n"
     )
     str_add(out$pll_args) <- glue(", data int[] cens{resp}")
     y2_expr <- get_ad_expr(bterms, "cens", "y2")
@@ -143,7 +143,7 @@ stan_response <- function(bterms, data, normalize) {
       # interval censoring is required
       if (rtype == "int") {
         str_add(out$data) <- glue(
-          "  int rcens{resp}[N{resp}];"
+          "  array[N{resp}] int rcens{resp};"
         )
         str_add(out$pll_args) <- glue(", data int[] rcens{resp}")
       } else {
@@ -158,13 +158,13 @@ stan_response <- function(bterms, data, normalize) {
   bounds <- trunc_bounds(bterms, data = data)
   if (any(bounds$lb > -Inf)) {
     str_add(out$data) <- glue(
-      "  {rtype} lb{resp}[N{resp}];  // lower truncation bounds;\n"
+      "  array[N{resp}] {rtype} lb{resp};  // lower truncation bounds;\n"
     )
     str_add(out$pll_args) <- glue(", data {rtype}[] lb{resp}")
   }
   if (any(bounds$ub < Inf)) {
     str_add(out$data) <- glue(
-      "  {rtype} ub{resp}[N{resp}];  // upper truncation bounds\n"
+      "  array[N{resp}] {rtype} ub{resp};  // upper truncation bounds\n"
     )
     str_add(out$pll_args) <- glue(", data {rtype}[] ub{resp}")
   }
@@ -176,7 +176,7 @@ stan_response <- function(bterms, data, normalize) {
       # response is modeled without measurement error
       str_add(out$data) <- glue(
         "  int<lower=0> Nmi{resp};  // number of missings\n",
-        "  int<lower=1> Jmi{resp}[Nmi{resp}];  // positions of missings\n"
+        "  array[Nmi{resp}] int<lower=1> Jmi{resp};  // positions of missings\n"
       )
       str_add(out$par) <- glue(
         "  vector{Ybounds}[Nmi{resp}] Ymi{resp};  // estimated missings\n"
@@ -195,7 +195,7 @@ stan_response <- function(bterms, data, normalize) {
         "  vector<lower=0>[N{resp}] noise{resp};\n",
         "  // information about non-missings\n",
         "  int<lower=0> Nme{resp};\n",
-        "  int<lower=1> Jme{resp}[Nme{resp}];\n"
+        "  array[Nme{resp}] int<lower=1> Jme{resp};\n"
       )
       str_add(out$par) <- glue(
         "  vector{Ybounds}[N{resp}] Yl{resp};  // latent variable\n"
@@ -213,7 +213,7 @@ stan_response <- function(bterms, data, normalize) {
     k <- length(vreal$vars)
     str_add(out$data) <- cglue(
       "  // data for custom real vectors\n",
-      "  real vreal{seq_len(k)}{resp}[N{resp}];\n"
+      "  array[N{resp}] real vreal{seq_len(k)}{resp};\n"
     )
     str_add(out$pll_args) <- cglue(", data real[] vreal{seq_len(k)}{resp}")
   }
@@ -223,7 +223,7 @@ stan_response <- function(bterms, data, normalize) {
     k <- length(vint$vars)
     str_add(out$data) <- cglue(
       "  // data for custom integer vectors\n",
-      "  int vint{seq_len(k)}{resp}[N{resp}];\n"
+      "  array[N{resp}] int vint{seq_len(k)}{resp};\n"
     )
     str_add(out$pll_args) <- cglue(", data int[] vint{seq_len(k)}{resp}")
   }
