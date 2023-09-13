@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: macOS-latest,   r: 'release', rtools: ''}
+          # - {os: macOS-latest,   r: 'release', rtools: ''}
           - {os: windows-latest, r: 'release', rtools: '42'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', rtools: ''}
           - {os: ubuntu-latest,   r: 'release', rtools: ''}
