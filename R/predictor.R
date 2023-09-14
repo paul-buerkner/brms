@@ -59,7 +59,12 @@ predictor.bprepnl <- function(prep, i = NULL, fprep = NULL, ...) {
     # when 'nlform' must be evaluated jointly across observations
     # and hence 'loop' had been set to FALSE
     for (i in seq_along(args)) {
-      args[[i]] <- split(args[[i]], row(args[[i]]))
+      old_dim <- dim(args[[i]])
+      args[[i]] <- split(args[[i]], slice.index(args[[i]], 1))
+      if (length(old_dim) > 2L) {
+        # split drops array dimensions which need to be restored
+        args[[i]] <- lapply(args[[i]], "dim<-", old_dim[-1])
+      }
     }
     .fun <- function(...) eval(prep$nlform, list(...))
     eta <- try(
