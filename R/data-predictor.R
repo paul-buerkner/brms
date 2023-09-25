@@ -976,7 +976,7 @@ data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
 #   For details see ?stats::model.matrix
 get_model_matrix <- function(formula, data = environment(formula),
                              cols2remove = NULL, rename = TRUE, ...) {
-  stopifnot(is.atomic(cols2remove))
+  stopifnot(is_atomic_or_null(cols2remove))
   terms <- validate_terms(formula)
   if (is.null(terms)) {
     return(NULL)

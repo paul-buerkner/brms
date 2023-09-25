@@ -241,6 +241,10 @@ first_not_null <- function(...) {
   out
 }
 
+is_atomic_or_null <- function(x) {
+  is.atomic(x) || is.null(x)
+}
+
 isNA <- function(x) {
   length(x) == 1L && is.na(x)
 }

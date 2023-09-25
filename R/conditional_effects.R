@@ -519,7 +519,7 @@ get_all_effects.mvbrmsterms <- function(x, ...) {
 #   excludes all 3-way or higher interactions
 #' @export
 get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE, ...) {
-  stopifnot(is.atomic(rsv_vars))
+  stopifnot(is_atomic_or_null(rsv_vars))
   out <- list()
   for (dp in names(x$dpars)) {
     out <- c(out, get_all_effects(x$dpars[[dp]]))
