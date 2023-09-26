@@ -1217,7 +1217,7 @@ test_that("make_stancode is correct for non-linear matrix covariates", {
 
   # integer matrix
   nlfun_stan_int <- "
-    real nlfun(real a, real b, real c, int[] X) {
+    real nlfun(real a, real b, real c, array[] int X) {
        return a + b * X[1] + c * X[2];
     }
   "
@@ -2204,7 +2204,7 @@ test_that("argument 'stanvars' is handled correctly", {
                          stanvars = stanvars, threads = threading(2),
                          parse = FALSE)
   expect_match2(scode,
-    "partial_log_lik_lpmf(int[] seq, int start, int end, data int[] Y, real Intercept, data real foo, real tau)"
+    "partial_log_lik_lpmf(array[] int seq, int start, int end, data array[] int Y, real Intercept, data real foo, real tau)"
   )
   expect_match2(scode,
     "reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Intercept, foo, tau)"
@@ -2347,7 +2347,7 @@ test_that("custom families are handled correctly", {
     loop = FALSE
   )
   stan_funs_vec <- "
-    real beta_binomial2_vec_lpmf(int[] y, vector mu, real phi, int[] N, real[] R) {
+    real beta_binomial2_vec_lpmf(array[] int y, vector mu, real phi, array[] int N, array[] real R) {
       return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
     }
     int beta_binomial2_rng(real mu, real phi, int N, real R) {
