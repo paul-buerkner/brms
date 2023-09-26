@@ -121,7 +121,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
       partial_log_lik <- paste0(
         "// compute partial sums of the log-likelihood\n",
-        "real partial_log_lik", resp, "_lpmf(int[] seq", resp,
+        "real partial_log_lik", resp, "_lpmf(array[] int seq", resp,
         ", int start, int end", pll_args$typed, ") {\n",
         "  real ptarget = 0;\n",
         "  int N = end - start + 1;\n",

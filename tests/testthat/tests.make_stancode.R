@@ -2470,9 +2470,9 @@ test_that("threaded Stan code is correct", {
   )
   scode <- make_stancode(bform, dat, family = student(), threads = threads)
   expect_match2(scode, "real partial_log_lik_lpmf(array[] int seq, int start,")
-  expect_match2(scode, "mu[n] += bsp[1] * mo(simo_1, Xmo_1[nn])")
-  expect_match2(scode, "ptarget += student_t_lpdf(Y[start : end] | nu, mu, sigma);")
-  expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start : end]]")
+  expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[nn])")
+  expect_match2(scode, "ptarget += student_t_lpdf(Y[start:end] | nu, mu, sigma);")
+  expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start:end]]")
   expect_match2(scode, ".* gp_pred_sigma_2_1[Jgp_sigma_2_1[which_gp_sigma_2_1]];")
   expect_match2(scode, "sigma[start_at_one(Igp_sigma_2_2[which_gp_sigma_2_2], start)] +=")
   expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y,")
@@ -2481,7 +2481,7 @@ test_that("threaded Stan code is correct", {
     visit ~ cs(Trt) + Age, dat, family = sratio(),
     threads = threads,
   )
-  expect_match2(scode, "matrix[N, nthres] mucs = Xcs[start : end] * bcs;")
+  expect_match2(scode, "matrix[N, nthres] mucs = Xcs[start:end] * bcs;")
   expect_match2(scode,
     "ptarget += sratio_logit_lpmf(Y[nn] | mu[n], disc, Intercept")
   expect_match2(scode, " - transpose(mucs[n]));")
@@ -2493,18 +2493,18 @@ test_that("threaded Stan code is correct", {
     threads = threads
   )
   expect_match2(scode, "mu[n] = exp(nlp_a[n] * C_1[nn] ^ nlp_b[n]);")
-  expect_match2(scode, "ptarget += gamma_lpdf(Y[start : end] | shape, shape ./ mu);")
+  expect_match2(scode, "ptarget += gamma_lpdf(Y[start:end] | shape, shape ./ mu);")
 
   bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(TRUE)
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
-  expect_match2(scode, "ptarget += multi_normal_cholesky_lpdf(Y[start : end] | Mu, LSigma);")
+  expect_match2(scode, "ptarget += multi_normal_cholesky_lpdf(Y[start:end] | Mu, LSigma);")
 
   bform <- bf(brms::mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat, gaussian(), threads = threads)
   expect_match2(scode, "target += reduce_sum(partial_log_lik_count_lpmf, seq_count,")
   expect_match2(scode, "target += reduce_sum(partial_log_lik_Exp_lpmf, seq_Exp,")
   expect_match2(scode,
-    "ptarget += normal_id_glm_lpdf(Y_Exp[start : end] | Xc_Exp[start : end], Intercept_Exp, b_Exp, sigma_Exp);"
+    "ptarget += normal_id_glm_lpdf(Y_Exp[start:end] | Xc_Exp[start:end], Intercept_Exp, b_Exp, sigma_Exp);"
   )
 
   scode <- make_stancode(
@@ -2548,8 +2548,8 @@ test_that("Un-normalized Stan code is correct", {
     normalize = FALSE, threads = threading(2)
   )
   expect_match2(scode, "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, Xc, b,")
-  expect_match2(scode, "                     Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
-  expect_match2(scode, "ptarget += poisson_log_glm_lupmf(Y[start : end] | Xc[start : end], mu, b);")
+  expect_match2(scode, "Intercept, J_1, Z_1_1, r_1_1, J_2, Z_2_1, r_2_1);")
+  expect_match2(scode, "ptarget += poisson_log_glm_lupmf(Y[start:end] | Xc[start:end], mu, b);")
   expect_match2(scode, "lprior += student_t_lupdf(b | 5, 0, 10);")
   expect_match2(scode, "lprior += student_t_lupdf(Intercept | 3, 1.4, 2.5);")
   expect_match2(scode, "lprior += cauchy_lupdf(sd_1 | 0, 2);")
@@ -2562,7 +2562,7 @@ test_that("Un-normalized Stan code is correct", {
     normalize = FALSE
   )
   expect_match2(scode, "target += sratio_cloglog_lpmf(Y[n] | mu[n], disc, Intercept")
-  expect_match2(scode, "                                                  - transpose(mucs[n]));")
+  expect_match2(scode, "- transpose(mucs[n]));")
 
   # Check that user-specified custom distributions stay normalized
   dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))

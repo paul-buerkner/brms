@@ -158,7 +158,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
     "    Y[n] = {stan_vector(glue('Y_{resp}[n]'))};\n",
     "  }}\n"
   )
-  str_add(out$pll_args) <- ", data vector[] Y"
+  str_add(out$pll_args) <- ", data array[] vector Y"
   if (any(adnames %in% "weights")) {
     str_add(out$tdata_def) <- glue(
       "  // weights of the pointwise log-likelihood\n",
@@ -168,8 +168,8 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
   }
   miforms <- rmNULL(from_list(adforms, "mi"))
   if (length(miforms)) {
-    str_add(out$model_no_pll_def) <- "  vector[nresp] Yl[N] = Y;\n"
-    str_add(out$pll_args) <- ", vector[] Yl"
+    str_add(out$model_no_pll_def) <- " array[N] vector[nresp] Yl = Y;\n"
+    str_add(out$pll_args) <- ", array[] vector Yl"
     for (i in seq_along(miforms)) {
       j <- match(names(miforms)[i], resp)
       # needs to happen outside of reduce_sum
@@ -510,7 +510,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
         "  // multi-membership weights\n"
       )
       str_add(out$pll_args) <- cglue(
-        ", data int[] J_{id}{res}_{ng}, data real[] W_{id}{res}_{ng}"
+        ", data array[] int J_{id}{res}_{ng}, data array[] real W_{id}{res}_{ng}"
       )
     }
   } else {
@@ -519,7 +519,7 @@ stan_re <- function(ranef, prior, normalize, ...) {
       "  // grouping indicator per observation\n"
     )
     str_add(out$pll_args) <- cglue(
-      ", data int[] J_{id}{uresp}"
+      ", data array[] int J_{id}{uresp}"
     )
   }
   if (has_by) {
@@ -970,7 +970,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
           "  array[N{resp}] int Xmo{p}_{j};  // monotonic variable\n"
         )
         str_add(out$pll_args) <- glue(
-          ", int[] Xmo{p}_{j}, vector simo{p}_{j}"
+          ", array[] int Xmo{p}_{j}, vector simo{p}_{j}"
         )
         if (is.na(id) || j_id == j) {
           # no ID or first appearance of the ID
@@ -1001,7 +1001,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     str_add(out$data) <- glue(
       "  array[N{resp}] int {idxl};  // matching indices\n"
     )
-    str_add(out$pll_args) <- glue(", data int[] {idxl}")
+    str_add(out$pll_args) <- glue(", data array[] int {idxl}")
   }
 
   # prepare special effects coefficients
@@ -1095,7 +1095,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
         "  vector[{Ngp}[{J}]] Cgp{pi}_{J};\n"
       )
       str_add(out$pll_args) <- cglue(
-        ", data int[] {Igp}, data vector Cgp{pi}_{J}"
+        ", data array[] int {Igp}, data vector Cgp{pi}_{J}"
       )
       str_add_list(out) <- stan_prior(
         prior, class = "lscale", coef = sfx2,
@@ -1111,7 +1111,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
           "  // indices of latent GP groups per observation\n",
           "  array[{Ngp}[{J}]] int<lower=1> Jgp{pi}_{J};\n"
         )
-        str_add(out$pll_args) <- cglue(", data int[] Jgp{pi}_{J}")
+        str_add(out$pll_args) <- cglue(", data array[] int Jgp{pi}_{J}")
       }
       if (is_approx) {
         str_add(out$data) <-
@@ -1185,7 +1185,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
           "  // indices of latent GP groups per observation\n",
           "  array[N{resp}] int<lower=1> Jgp{pi};\n"
         )
-        str_add(out$pll_args) <- glue(", data int[] Jgp{pi}")
+        str_add(out$pll_args) <- glue(", data array[] int Jgp{pi}")
       }
       Cgp <- ""
       if (bynum) {
@@ -1445,7 +1445,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  array[N_tg{p}] int<lower=1> nobs_tg{p};\n"
     )
     str_add(out$pll_args) <- glue(
-      ", int[] begin_tg{p}, int[] end_tg{p}, int[] nobs_tg{p}"
+      ", array[] int begin_tg{p}, array[] int end_tg{p}, array[] int nobs_tg{p}"
     )
     str_add(out$tdata_def) <- glue(
       "  int max_nobs_tg{p} = max(nobs_tg{p});",
@@ -1460,7 +1460,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  int n_unique_t{p};  // total number of unique time points\n",
         "  int n_unique_cortime{p};  // number of unique correlations\n"
       )
-      str_add(out$pll_args) <- glue(", int[,] Jtime_tg{p}")
+      str_add(out$pll_args) <- glue(", array[,] int Jtime_tg{p}")
       if (has_ac_latent_residuals) {
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
@@ -1572,7 +1572,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         comment = "SD of the CAR structure", normalize = normalize
       )
     }
-    str_add(out$pll_args) <- glue(", vector rcar{p}, data int[] Jloc{p}")
+    str_add(out$pll_args) <- glue(", vector rcar{p}, data array[] int Jloc{p}")
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}{n}]")
     if (acef_car$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
@@ -1746,12 +1746,12 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
           str_add(out$data) <- glue(
             "  array[N{resp}, {dim2}] int C{p}_{i};\n"
           )
-          str_add(out$pll_args) <- glue(", data int[,] C{p}_{i}")
+          str_add(out$pll_args) <- glue(", data array[,] int C{p}_{i}")
         } else {
           str_add(out$data) <- glue(
             "  array[N{resp}] int C{p}_{i};\n"
           )
-          str_add(out$pll_args) <- glue(", data int[] C{p}_{i}")
+          str_add(out$pll_args) <- glue(", data array[] int C{p}_{i}")
         }
       } else {
         if (is_matrix) {
@@ -1834,7 +1834,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
         "  int<lower=0> Nme_{i};  // number of latent values\n",
         "  array[N] int<lower=1> Jme_{i};  // group index per observation\n"
       )
-      str_add(out$pll_args) <- glue(", data int[] Jme_{i}")
+      str_add(out$pll_args) <- glue(", data array[] int Jme_{i}")
     } else {
       Nme <- "N"
     }

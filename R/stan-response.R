@@ -31,7 +31,7 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$data) <- glue(
         "  array[N{resp}] vector[ncat{resp}] Y{resp};  // response array\n"
       )
-      str_add(out$pll_args) <- glue(", data vector[] Y{resp}")
+      str_add(out$pll_args) <- glue(", data array[] vector Y{resp}")
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
         "  array[N{resp}, ncat{resp}] int Y{resp};  // response array\n"
@@ -40,7 +40,7 @@ stan_response <- function(bterms, data, normalize) {
     }
   } else {
     if (rtype == "real") {
-      # type vector (instead of real[]) is required by some PDFs
+      # type vector (instead of array real) is required by some PDFs
       str_add(out$data) <- glue(
         "  vector[N{resp}] Y{resp};  // response variable\n"
       )
@@ -49,7 +49,7 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$data) <- glue(
         "  array[N{resp}] int Y{resp};  // response variable\n"
       )
-      str_add(out$pll_args) <- glue(", data int[] Y{resp}")
+      str_add(out$pll_args) <- glue(", data array[] int Y{resp}")
     }
   }
   if (has_ndt(family)) {
@@ -61,7 +61,7 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  array[N{resp}] int trials{resp};  // number of trials\n"
     )
-    str_add(out$pll_args) <- glue(", data int[] trials{resp}")
+    str_add(out$pll_args) <- glue(", data array[] int trials{resp}")
   }
   if (is.formula(bterms$adforms$weights)) {
     str_add(out$data) <- glue(
@@ -94,7 +94,7 @@ stan_response <- function(bterms, data, normalize) {
         "  }}\n"
       )
       str_add(out$pll_args) <- glue(
-        ", data int[] nthres{resp}, data int[,] Jthres{resp}"
+        ", data array[] int nthres{resp}, data array[,] int Jthres{resp}"
       )
     } else {
       str_add(out$data) <- glue(
@@ -118,7 +118,7 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  array[N{resp}] int<lower=0,upper=1> dec{resp};  // decisions\n"
     )
-    str_add(out$pll_args) <- glue(", data int[] dec{resp}")
+    str_add(out$pll_args) <- glue(", data array[] int dec{resp}")
   }
   if (is.formula(bterms$adforms$rate)) {
     str_add(out$data) <- glue(
@@ -137,7 +137,7 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  array[N{resp}] int<lower=-1,upper=2> cens{resp};  // indicates censoring\n"
     )
-    str_add(out$pll_args) <- glue(", data int[] cens{resp}")
+    str_add(out$pll_args) <- glue(", data array[] int cens{resp}")
     y2_expr <- get_ad_expr(bterms, "cens", "y2")
     if (!is.null(y2_expr)) {
       # interval censoring is required
@@ -145,7 +145,7 @@ stan_response <- function(bterms, data, normalize) {
         str_add(out$data) <- glue(
           "  array[N{resp}] int rcens{resp};"
         )
-        str_add(out$pll_args) <- glue(", data int[] rcens{resp}")
+        str_add(out$pll_args) <- glue(", data array[] int rcens{resp}")
       } else {
         str_add(out$data) <- glue(
           "  vector[N{resp}] rcens{resp};"
@@ -160,13 +160,13 @@ stan_response <- function(bterms, data, normalize) {
     str_add(out$data) <- glue(
       "  array[N{resp}] {rtype} lb{resp};  // lower truncation bounds;\n"
     )
-    str_add(out$pll_args) <- glue(", data {rtype}[] lb{resp}")
+    str_add(out$pll_args) <- glue(", data array[] {rtype} lb{resp}")
   }
   if (any(bounds$ub < Inf)) {
     str_add(out$data) <- glue(
       "  array[N{resp}] {rtype} ub{resp};  // upper truncation bounds\n"
     )
-    str_add(out$pll_args) <- glue(", data {rtype}[] ub{resp}")
+    str_add(out$pll_args) <- glue(", data array[] {rtype} ub{resp}")
   }
   if (is.formula(bterms$adforms$mi)) {
     # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
@@ -215,7 +215,7 @@ stan_response <- function(bterms, data, normalize) {
       "  // data for custom real vectors\n",
       "  array[N{resp}] real vreal{seq_len(k)}{resp};\n"
     )
-    str_add(out$pll_args) <- cglue(", data real[] vreal{seq_len(k)}{resp}")
+    str_add(out$pll_args) <- cglue(", data array[] real vreal{seq_len(k)}{resp}")
   }
   if (is.formula(bterms$adforms$vint)) {
     # vectors of integer values for use in custom families
@@ -225,7 +225,7 @@ stan_response <- function(bterms, data, normalize) {
       "  // data for custom integer vectors\n",
       "  array[N{resp}] int vint{seq_len(k)}{resp};\n"
     )
-    str_add(out$pll_args) <- cglue(", data int[] vint{seq_len(k)}{resp}")
+    str_add(out$pll_args) <- cglue(", data array[] int vint{seq_len(k)}{resp}")
   }
   out
 }
@@ -639,7 +639,7 @@ stan_ordinal_lpmf <- function(family, link) {
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
     "   real {family}_{link}_merged_lpmf(",
-    "int y, real mu, real disc, vector thres, int[] j) {{\n",
+    "int y, real mu, real disc, vector thres, array[] int j) {{\n",
     "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
@@ -656,7 +656,7 @@ stan_ordinal_lpmf <- function(family, link) {
       "   *   a scalar to be added to the log posterior\n",
       "   */\n",
       "   real ordered_logistic_merged_lpmf(",
-      "int y, real mu, vector thres, int[] j) {{\n",
+      "int y, real mu, vector thres, array[] int j) {{\n",
       "     return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);\n",
       "   }}\n"
     )
@@ -743,7 +743,7 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
     "   real {family}_{link}_merged_lpmf(",
-    "int y, real mu, real hu, real disc, vector thres, int[] j) {{\n",
+    "int y, real mu, real hu, real disc, vector thres, array[] int j) {{\n",
     "     return {family}_{link}_lpmf(y | mu, hu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
@@ -774,7 +774,7 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
       "   *   a scalar to be added to the log posterior\n",
       "   */\n",
       "   real hurdle_cumulative_ordered_logistic_merged_lpmf(",
-      "int y, real mu, real hu, real disc, vector thres, int[] j) {{\n",
+      "int y, real mu, real hu, real disc, vector thres, array[] int j) {{\n",
       "     return hurdle_cumulative_ordered_logistic_lpmf(y | mu, hu, disc, thres[j[1]:j[2]]);\n",
       "   }}\n"
     )
