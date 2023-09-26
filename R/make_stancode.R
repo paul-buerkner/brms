@@ -309,13 +309,13 @@ make_stancode <- function(formula, data, family = gaussian(),
   if (parse) {
     scode <- parse_model(scode, backend, silent = silent)
   }
-  if (backend == "cmdstanr") {
-    if (requireNamespace("cmdstanr", quietly = TRUE) &&
-        cmdstanr::cmdstan_version() >= "2.29.0") {
-      tmp_file <- cmdstanr::write_stan_file(scode)
-      scode <- .canonicalize_stan_model(tmp_file, overwrite_file = FALSE)
-    }
-  }
+  # if (backend == "cmdstanr") {
+  #   if (requireNamespace("cmdstanr", quietly = TRUE) &&
+  #       cmdstanr::cmdstan_version() >= "2.29.0") {
+  #     tmp_file <- cmdstanr::write_stan_file(scode)
+  #     scode <- .canonicalize_stan_model(tmp_file, overwrite_file = FALSE)
+  #   }
+  # }
   if (is.character(save_model)) {
     cat(scode, file = save_model)
   }

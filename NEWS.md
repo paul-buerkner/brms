@@ -1,3 +1,11 @@
+# brms 2.20.3+
+
+### Other Changes
+
+* No longer automatically canonicalize the Stan code if cmdstanr is used
+as backend. (#1544)
+
+
 # brms 2.20.3
 
 ### Other Changes
