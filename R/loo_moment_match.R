@@ -84,7 +84,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     newdata = newdata,
     resp = resp, ...
   ))
-  if (is(out, "try-error")) {
+  if (is_try_error(out)) {
     stop2(
       "Moment matching failed. Perhaps you did not set ",
       "'save_pars = save_pars(all = TRUE)' when fitting your model? ",

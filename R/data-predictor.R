@@ -364,7 +364,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       # take information from original data
       Jmo <- basis$Jmo
     } else {
-      Jmo <- as.array(ulapply(Xmo, max))
+      Jmo <- as.array(ulapply(Xmo, attr, "max"))
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters
@@ -976,7 +976,7 @@ data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
 #   For details see ?stats::model.matrix
 get_model_matrix <- function(formula, data = environment(formula),
                              cols2remove = NULL, rename = TRUE, ...) {
-  stopifnot(is.atomic(cols2remove))
+  stopifnot(is_atomic_or_null(cols2remove))
   terms <- validate_terms(formula)
   if (is.null(terms)) {
     return(NULL)

@@ -31,14 +31,14 @@
                               int[] nobs, int[] begin, int[] end, int[,] Jtime) {
      vector[rows(zerr)] err;
      int I = size(nobs);
-     int has_err[I] = rep_array(0, I);
+     array[I] int has_err = rep_array(0, I);
      int i = 1;
      matrix[rows(chol_cor), cols(chol_cor)] L;
      matrix[rows(chol_cor), cols(chol_cor)] Cov;
      L = sderr * chol_cor;
      Cov = multiply_lower_tri_self_transpose(L);
      while (i <= I) {
-       int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
+       array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
        matrix[nobs[i], nobs[i]] L_i;
        if (is_equal(iobs, sequence(1, rows(L)))) {
          // all timepoints are present in this group

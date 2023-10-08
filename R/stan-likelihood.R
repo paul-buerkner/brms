@@ -68,7 +68,7 @@ stan_log_lik.mixfamily <- function(x, bterms, threads, ...) {
     "  // likelihood of the mixture model\n",
     "  for (n in 1:N{resp}) {{\n",
     stan_nn_def(threads),
-    "    real ps[{length(ll)}];\n"
+    "    array[{length(ll)}] real ps;\n"
   )
   str_add(out) <- collapse("    ", ll)
   str_add(out) <- glue(

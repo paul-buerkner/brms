@@ -1,4 +1,20 @@
-# brms 2.19.0++
+# brms 2.20.3+
+
+### Other Changes
+
+* No longer automatically canonicalize the Stan code if cmdstanr is used
+as backend. (#1544)
+
+
+# brms 2.20.3
+
+### Other Changes
+
+* Switch to the new array syntax of Stan. This increases the version 
+requirements of Stan to >= 2.26.
+
+
+# brms 2.20.0
 
 ### New Features
 
@@ -14,6 +30,8 @@ and incompatible with the newly implemented global shrinkage prior framework.
 * No longer support multiple deprecated prior options for categorical and
 multivariate models after around 3 years of deprecation. (#1420)
 * Deprecate argument `newdata` of `get_refmodel.brmsfit()`. (#1502)
+* Disallow binomial models without `trials` argument after several years
+of deprecation. (#1501)
 
 ### Bug Fixes
 
@@ -22,7 +40,7 @@ lead to non-sensible results if predictions were performed on a different
 machine than where the model was originally fitted. Old spline models can be
 repaired via `restructure`. Special thanks to Simon Wood, Ruben Arslan, Marta
 Kołczyńska, Patrick Hogan, and Urs Kalbitzer. (#1465)
-* Fix a bunch of minor issues occuring for rare feature combinations.
+* Fix a bunch of minor issues occurring for rare feature combinations.
 
 
 # brms 2.19.0

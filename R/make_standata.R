@@ -210,12 +210,6 @@ standata_basis.brmsterms <- function(x, data, ...) {
   }
   # old levels are required to select the right indices for new levels
   out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
-  if (has_trials(x$family)) {
-    # trials should not be computed based on new data
-    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
-    # partially match via $ to be independent of the response suffix
-    out$trials <- datr$trials
-  }
   if (is_binary(x$family) || is_categorical(x$family)) {
     y <- model.response(model.frame(x$respform, data, na.action = na.pass))
     out$resp_levels <- levels(as.factor(y))

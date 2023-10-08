@@ -162,8 +162,6 @@ test_that("make_standata returns correct values for addition terms", {
                as.array(c(rep(1:0, 4), 0)))
   expect_equal(make_standata(y | cens(c4, y + 2) ~ 1, data = dat)$rcens,
                as.array(c(rep(0, 5), dat$y[6:9] + 2)))
-  sdata <- suppressWarnings(make_standata(s ~ 1, dat, family = "binomial"))
-  expect_equal(sdata$trials, as.array(rep(9, 9)))
   expect_equal(make_standata(s | trials(10) ~ 1, dat,
                              family = "binomial")$trials,
                as.array(rep(10, 9)))

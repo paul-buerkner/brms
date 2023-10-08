@@ -55,6 +55,7 @@ prepare_predictions.brmsfit <- function(
   )
 }
 
+#' @export
 prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
   resp <- validate_resp(resp, x$responses)
   if (length(resp) > 1) {

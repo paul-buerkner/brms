@@ -56,15 +56,15 @@
                                  int[] nobs, int[] begin, int[] end, int[,] Jtime) {
     real lp = 0.0;
     int I = size(nobs);
-    int has_lp[I] = rep_array(0, I);
+    array[I] int has_lp = rep_array(0, I);
     int i = 1;
     matrix[rows(chol_cor), cols(chol_cor)] L;
     matrix[rows(chol_cor), cols(chol_cor)] Cov;
     L = sigma * chol_cor;
     Cov = multiply_lower_tri_self_transpose(L);
     while (i <= I) {
-      int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
-      int lp_terms[I-i+1] = rep_array(0, I-i+1);
+      array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
+      array[I-i+1] int lp_terms = rep_array(0, I-i+1);
       matrix[nobs[i], nobs[i]] L_i;
       if (is_equal(iobs, sequence(1, rows(L)))) {
         // all timepoints are present in this group
@@ -106,12 +106,12 @@
                                  int[] nobs, int[] begin, int[] end, int[,] Jtime) {
     int I = size(nobs);
     vector[I] lp;
-    int has_lp[I] = rep_array(0, I);
+    array[I] int has_lp = rep_array(0, I);
     int i = 1;
     matrix[rows(chol_cor), cols(chol_cor)] Cor;
     Cor = multiply_lower_tri_self_transpose(chol_cor);
     while (i <= I) {
-      int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
+      array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Lcor_i;
       matrix[nobs[i], nobs[i]] L_i;
       if (is_equal(iobs, sequence(1, rows(chol_cor)))) {

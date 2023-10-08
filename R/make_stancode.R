@@ -121,7 +121,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
       partial_log_lik <- paste0(
         "// compute partial sums of the log-likelihood\n",
-        "real partial_log_lik", resp, "_lpmf(int[] seq", resp,
+        "real partial_log_lik", resp, "_lpmf(array[] int seq", resp,
         ", int start, int end", pll_args$typed, ") {\n",
         "  real ptarget = 0;\n",
         "  int N = end - start + 1;\n",
@@ -309,13 +309,13 @@ make_stancode <- function(formula, data, family = gaussian(),
   if (parse) {
     scode <- parse_model(scode, backend, silent = silent)
   }
-  if (backend == "cmdstanr") {
-    if (requireNamespace("cmdstanr", quietly = TRUE) &&
-        cmdstanr::cmdstan_version() >= "2.29.0") {
-      tmp_file <- cmdstanr::write_stan_file(scode)
-      scode <- .canonicalize_stan_model(tmp_file, overwrite_file = FALSE)
-    }
-  }
+  # if (backend == "cmdstanr") {
+  #   if (requireNamespace("cmdstanr", quietly = TRUE) &&
+  #       cmdstanr::cmdstan_version() >= "2.29.0") {
+  #     tmp_file <- cmdstanr::write_stan_file(scode)
+  #     scode <- .canonicalize_stan_model(tmp_file, overwrite_file = FALSE)
+  #   }
+  # }
   if (is.character(save_model)) {
     cat(scode, file = save_model)
   }

@@ -13,7 +13,7 @@
                             int[] Jby, matrix Lcov) {
     vector[num_elements(z)] z_flat = to_vector(z);
     vector[num_elements(z)] r = rep_vector(0, num_elements(z));
-    matrix[rows(L[1]), cols(L[1])] LC[size(L)];
+    array[size(L)] matrix[rows(L[1]), cols(L[1])] LC;
     int rows_z = rows(z);
     int rows_L = rows(L[1]);
     for (i in 1:size(LC)) {

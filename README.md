@@ -6,7 +6,7 @@
 
 [![R-CMD-check](https://github.com/paul-buerkner/brms/workflows/R-CMD-check/badge.svg)](https://github.com/paul-buerkner/brms/actions)
 [![Coverage
-Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
+Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://app.codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN
 Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 [![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)

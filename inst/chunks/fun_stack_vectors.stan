@@ -5,7 +5,7 @@
                          int[] begin, int[] end) {
     int S = sum(stack);
     int G = size(stack);
-    vector[n] stacked[S];
+    array[S] vector[n] stacked;
     int j = 1;
     for (i in 1:G) {
       if (stack[i] == 1) {

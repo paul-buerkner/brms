@@ -628,7 +628,7 @@ compute_xi.brmsfit <- function(x, ...) {
     return(x)
   }
   draws <- try(extract_draws(x))
-  if (is(draws, "try-error")) {
+  if (is_try_error(draws)) {
     warning2("Trying to compute 'xi' was unsuccessful. ",
              "Some S3 methods may not work as expected.")
     return(x)

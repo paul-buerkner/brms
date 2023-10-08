@@ -24,9 +24,9 @@ parse_model <- function(model, backend, ...) {
 .parse_model_cmdstanr <- function(model, silent = 1, ...) {
   require_package("cmdstanr")
   temp_file <- cmdstanr::write_stan_file(model)
-  if (cmdstanr::cmdstan_version() >= "2.29.0") {
-    .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
-  }
+  # if (cmdstanr::cmdstan_version() >= "2.29.0") {
+  #   .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
+  # }
   out <- eval_silent(
     cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
     type = "message", try = TRUE, silent = silent
@@ -71,7 +71,7 @@ compile_model <- function(model, backend, ...) {
     message("Compiling Stan program...")
   }
   if (use_threading(threads)) {
-    if (utils::packageVersion("rstan") >= 2.26) {
+    if (utils::packageVersion("rstan") >= "2.26") {
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
@@ -97,9 +97,9 @@ compile_model <- function(model, backend, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
-  if (cmdstanr::cmdstan_version() >= "2.29.0") {
-    .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
-  }
+  # if (cmdstanr::cmdstan_version() >= "2.29.0") {
+  #   .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
+  # }
   if (use_threading(threads)) {
     args$cpp_options$stan_threads <- TRUE
   }
@@ -148,7 +148,7 @@ fit_model <- function(model, backend, ...) {
 
   # some input checks and housekeeping
   if (use_threading(threads)) {
-    if (utils::packageVersion("rstan") >= 2.26) {
+    if (utils::packageVersion("rstan") >= "2.26") {
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
@@ -632,16 +632,18 @@ file_refit_options <- function() {
 }
 
 # canonicalize Stan model file in accordance with the current Stan version
-.canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
-  cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
-  out <- utils::capture.output(
-    cmdstan_mod$format(
-      canonicalize = list("deprecations", "braces", "parentheses"),
-      overwrite_file = overwrite_file, backup = FALSE
-    )
-  )
-  paste0(out, collapse = "\n")
-}
+# this function may no longer be needed due to rstan 2.26+ now being on CRAN
+# for more details see https://github.com/paul-buerkner/brms/issues/1544
+# .canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
+#   cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
+#   out <- utils::capture.output(
+#     cmdstan_mod$format(
+#       canonicalize = list("deprecations", "braces", "parentheses"),
+#       overwrite_file = overwrite_file, backup = FALSE
+#     )
+#   )
+#   paste0(out, collapse = "\n")
+# }
 
 # read in stan CSVs via cmdstanr and repackage into a stanfit object
 # efficient replacement of rstan::read_stan_csv

@@ -22,7 +22,7 @@
    *   an integer array
    */
   int[] which_range(int[] x, int start, int end) {
-    int out[size_range(x, start, end)];
+    array[size_range(x, start, end)] int out;
     int j = 1;
     for (i in 1:size(x)) {
       if (x[i] >= start && x[i] <= end) {
@@ -40,7 +40,7 @@
    *   an integer array
    */
   int[] start_at_one(int[] x, int start) {
-    int out[size(x)];
+    array[size(x)] int out;
     for (i in 1:size(x)) {
       out[i] = x[i] - start + 1;
     }

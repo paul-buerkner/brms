@@ -12,32 +12,19 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2023-02-25" />
+<meta name="date" content="2023-10-08" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
-<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
-// be compatible with the behavior of Pandoc < 2.8).
-document.addEventListener('DOMContentLoaded', function(e) {
-  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
-  var i, h, a;
-  for (i = 0; i < hs.length; i++) {
-    h = hs[i];
-    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
-    a = h.attributes;
-    while (a.length > 0) h.removeAttribute(a[0].name);
-  }
-});
-</script>
 
 <style type="text/css">
-code{white-space: pre-wrap;}
-span.smallcaps{font-variant: small-caps;}
-span.underline{text-decoration: underline;}
-div.column{display: inline-block; vertical-align: top; width: 50%;}
-div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-ul.task-list{list-style: none;}
-</style>
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
 
@@ -237,115 +224,64 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Parameterization of Response Distributions
-in brms</h1>
+<h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author">Paul Bürkner</h4>
-<h4 class="date">2023-02-25</h4>
+<h4 class="date">2023-10-08</h4>
 
 
 <div id="TOC">
 <ul>
-<li><a href="#notation" id="toc-notation">Notation</a></li>
-<li><a href="#location-shift-models" id="toc-location-shift-models">Location shift models</a></li>
-<li><a href="#binary-and-count-data-models" id="toc-binary-and-count-data-models">Binary and count data
-models</a></li>
-<li><a href="#time-to-event-models" id="toc-time-to-event-models">Time-to-event models</a>
-<ul>
-<li><a href="#mixture-cure-mixcure-models" id="toc-mixture-cure-mixcure-models">Mixture Cure (mixcure)
-Models</a></li>
-</ul></li>
-<li><a href="#extreme-value-models" id="toc-extreme-value-models">Extreme value models</a></li>
-<li><a href="#response-time-models" id="toc-response-time-models">Response time models</a></li>
-<li><a href="#quantile-regression" id="toc-quantile-regression">Quantile
-regression</a></li>
-<li><a href="#probability-models" id="toc-probability-models">Probability models</a></li>
-<li><a href="#circular-models" id="toc-circular-models">Circular
-models</a></li>
-<li><a href="#ordinal-and-categorical-models" id="toc-ordinal-and-categorical-models">Ordinal and categorical
-models</a></li>
-<li><a href="#zero-inflated-and-hurdle-models" id="toc-zero-inflated-and-hurdle-models">Zero-inflated and hurdle
-models</a></li>
+<li><a href="#notation">Notation</a></li>
+<li><a href="#location-shift-models">Location shift models</a></li>
+<li><a href="#binary-and-count-data-models">Binary and count data models</a></li>
+<li><a href="#time-to-event-models">Time-to-event models</a></li>
+<li><a href="#extreme-value-models">Extreme value models</a></li>
+<li><a href="#response-time-models">Response time models</a></li>
+<li><a href="#quantile-regression">Quantile regression</a></li>
+<li><a href="#probability-models">Probability models</a></li>
+<li><a href="#circular-models">Circular models</a></li>
+<li><a href="#ordinal-and-categorical-models">Ordinal and categorical models</a></li>
+<li><a href="#zero-inflated-and-hurdle-models">Zero-inflated and hurdle models</a></li>
 </ul>
 </div>
 
-<p>The purpose of this vignette is to discuss the parameterizations of
-the families (i.e., response distributions) used in brms. For a more
-general overview of the package see
-<code>vignette(&quot;brms_overview&quot;)</code>.</p>
+<p>The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in brms. For a more general overview of the package see <code>vignette(&quot;brms_overview&quot;)</code>.</p>
 <div id="notation" class="section level2">
 <h2>Notation</h2>
-<p>Throughout this vignette, we denote values of the response variable
-as <span class="math inline">\(y\)</span>, a density function as <span class="math inline">\(f\)</span>, and use <span class="math inline">\(\mu\)</span> to refer to the main model parameter,
-which is usually the mean of the response distribution or some closely
-related quantity. In a regression framework, <span class="math inline">\(\mu\)</span> is not estimated directly but
-computed as <span class="math inline">\(\mu = g(\eta)\)</span>, where
-<span class="math inline">\(\eta\)</span> is a predictor term (see
-<code>help(brmsformula)</code> for details) and <span class="math inline">\(g\)</span> is the response function (i.e., inverse
-of the link function).</p>
+<p>Throughout this vignette, we denote values of the response variable as <span class="math inline">\(y\)</span>, a density function as <span class="math inline">\(f\)</span>, and use <span class="math inline">\(\mu\)</span> to refer to the main model parameter, which is usually the mean of the response distribution or some closely related quantity. In a regression framework, <span class="math inline">\(\mu\)</span> is not estimated directly but computed as <span class="math inline">\(\mu = g(\eta)\)</span>, where <span class="math inline">\(\eta\)</span> is a predictor term (see <code>help(brmsformula)</code> for details) and <span class="math inline">\(g\)</span> is the response function (i.e., inverse of the link function).</p>
 </div>
 <div id="location-shift-models" class="section level2">
 <h2>Location shift models</h2>
 <p>The density of the <strong>gaussian</strong> family is given by <span class="math display">\[
-f(y) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y -
-\mu}{\sigma}\right)^2\right)
+f(y) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y - \mu}{\sigma}\right)^2\right)
 \]</span></p>
-<p>where <span class="math inline">\(\sigma\)</span> is the residual
-standard deviation. The density of the <strong>student</strong> family
-is given by <span class="math display">\[
-f(y) = \frac{\Gamma((\nu + 1)/2)}{\Gamma(\nu/2)}
-\frac{1}{\sqrt{\nu\pi}\sigma}\left(1 + \frac{1}{\nu} \left(\frac{y -
-\mu}{\sigma}\right)^2\right)^{-(\nu+1)/2}
+<p>where <span class="math inline">\(\sigma\)</span> is the residual standard deviation. The density of the <strong>student</strong> family is given by <span class="math display">\[
+f(y) = \frac{\Gamma((\nu + 1)/2)}{\Gamma(\nu/2)} \frac{1}{\sqrt{\nu\pi}\sigma}\left(1 + \frac{1}{\nu} \left(\frac{y - \mu}{\sigma}\right)^2\right)^{-(\nu+1)/2}
 \]</span></p>
-<p><span class="math inline">\(\Gamma\)</span> denotes the gamma
-function and <span class="math inline">\(\nu &gt; 1\)</span> are the
-degrees of freedom. As <span class="math inline">\(\nu \rightarrow
-\infty\)</span>, the student distribution becomes the gaussian
-distribution. The density of the <strong>skew_normal</strong> family is
-given by <span class="math display">\[
+<p><span class="math inline">\(\Gamma\)</span> denotes the gamma function and <span class="math inline">\(\nu &gt; 1\)</span> are the degrees of freedom. As <span class="math inline">\(\nu \rightarrow \infty\)</span>, the student distribution becomes the gaussian distribution. The density of the <strong>skew_normal</strong> family is given by <span class="math display">\[
 f(y) = \frac{1}{\sqrt{2\pi}\omega}
-\exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right)
-\left(1 + \text{erf} \left( \alpha \left(\frac{y - \xi}{\omega \sqrt{2}}
-\right) \right) \right)
+ \exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right)
+\left(1 + \text{erf} \left( \alpha \left(\frac{y - \xi}{\omega \sqrt{2}} \right) \right) \right)
 \]</span></p>
-<p>where <span class="math inline">\(\xi\)</span> is the location
-parameter, <span class="math inline">\(\omega\)</span> is the positive
-scale parameter, <span class="math inline">\(\alpha\)</span> the
-skewness parameter, and <span class="math inline">\(\text{erf}\)</span>
-denotes the error function of the gaussian distribution. To parameterize
-the skew-normal distribution in terms of the mean <span class="math inline">\(\mu\)</span> and standard deviation <span class="math inline">\(\sigma\)</span>, <span class="math inline">\(\omega\)</span> and <span class="math inline">\(\xi\)</span> are computed as <span class="math display">\[
-\omega = \frac{\sigma}{\sqrt{1 - \frac{2}{\pi} \frac{\alpha^2}{1 +
-\alpha^2}}}
+<p>where <span class="math inline">\(\xi\)</span> is the location parameter, <span class="math inline">\(\omega\)</span> is the positive scale parameter, <span class="math inline">\(\alpha\)</span> the skewness parameter, and <span class="math inline">\(\text{erf}\)</span> denotes the error function of the gaussian distribution. To parameterize the skew-normal distribution in terms of the mean <span class="math inline">\(\mu\)</span> and standard deviation <span class="math inline">\(\sigma\)</span>, <span class="math inline">\(\omega\)</span> and <span class="math inline">\(\xi\)</span> are computed as <span class="math display">\[
+\omega = \frac{\sigma}{\sqrt{1 - \frac{2}{\pi} \frac{\alpha^2}{1 + \alpha^2}}}
 \]</span></p>
 <p><span class="math display">\[
-\xi = \mu - \omega \frac{\alpha}{\sqrt{1 + \alpha^2}}
-\sqrt{\frac{2}{\pi}}
+\xi = \mu - \omega \frac{\alpha}{\sqrt{1 + \alpha^2}} \sqrt{\frac{2}{\pi}}
 \]</span></p>
-<p>If <span class="math inline">\(\alpha = 0\)</span>, the skew-normal
-distribution becomes the gaussian distribution. For location shift
-models, <span class="math inline">\(y\)</span> can be any real
-value.</p>
+<p>If <span class="math inline">\(\alpha = 0\)</span>, the skew-normal distribution becomes the gaussian distribution. For location shift models, <span class="math inline">\(y\)</span> can be any real value.</p>
 </div>
 <div id="binary-and-count-data-models" class="section level2">
 <h2>Binary and count data models</h2>
 <p>The density of the <strong>binomial</strong> family is given by <span class="math display">\[
 f(y) = {N \choose y} \mu^{y} (1-\mu)^{N - y}
-\]</span> where <span class="math inline">\(N\)</span> is the number of
-trials and <span class="math inline">\(y \in \{0, ... , N\}\)</span>.
-When all <span class="math inline">\(N\)</span> are <span class="math inline">\(1\)</span> (i.e., <span class="math inline">\(y
-\in \{0,1\}\)</span>), the <strong>bernoulli</strong> distribution for
-binary data arises.</p>
-<p>For <span class="math inline">\(y \in \mathbb{N}_0\)</span>, the
-density of the <strong>poisson</strong> family is given by <span class="math display">\[
+\]</span> where <span class="math inline">\(N\)</span> is the number of trials and <span class="math inline">\(y \in \{0, ... , N\}\)</span>. When all <span class="math inline">\(N\)</span> are <span class="math inline">\(1\)</span> (i.e., <span class="math inline">\(y \in \{0,1\}\)</span>), the <strong>bernoulli</strong> distribution for binary data arises.</p>
+<p>For <span class="math inline">\(y \in \mathbb{N}_0\)</span>, the density of the <strong>poisson</strong> family is given by <span class="math display">\[
 f(y) = \frac{\mu^{y}}{y!} \exp(-\mu)
-\]</span> The density of the <strong>negbinomial</strong> (negative
-binomial) family is <span class="math display">\[
+\]</span> The density of the <strong>negbinomial</strong> (negative binomial) family is <span class="math display">\[
 f(y) = {y + \phi - 1 \choose y} \left(\frac{\mu}{\mu + \phi}\right)^{y}
 \left(\frac{\phi}{\mu + \phi}\right)^\phi
-\]</span> where <span class="math inline">\(\phi\)</span> is a positive
-precision parameter. For <span class="math inline">\(\phi \rightarrow
-\infty\)</span>, the negative binomial distribution becomes the poisson
-distribution. The density of the <strong>geometric</strong> family
-arises if <span class="math inline">\(\phi\)</span> is set to <span class="math inline">\(1\)</span>.</p>
+\]</span> where <span class="math inline">\(\phi\)</span> is a positive precision parameter. For <span class="math inline">\(\phi \rightarrow \infty\)</span>, the negative binomial distribution becomes the poisson distribution. The density of the <strong>geometric</strong> family arises if <span class="math inline">\(\phi\)</span> is set to <span class="math inline">\(1\)</span>.</p>
 <!--
 The density of the **discrete_weibull** family is
 $$
@@ -356,274 +292,121 @@ with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
 </div>
 <div id="time-to-event-models" class="section level2">
 <h2>Time-to-event models</h2>
-<p>With time-to-event models we mean all models that are defined on the
-positive reals only, that is <span class="math inline">\(y \in
-\mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong>
-family is given by <span class="math display">\[
-f(y) = \frac{1}{\sqrt{2\pi}\sigma y}
-\exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
-\]</span> where <span class="math inline">\(\sigma\)</span> is the
-residual standard deviation on the log-scale. The density of the
-<strong>Gamma</strong> family is given by <span class="math display">\[
+<p>With time-to-event models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[
+f(y) = \frac{1}{\sqrt{2\pi}\sigma y} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
+\]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation on the log-scale. The density of the <strong>Gamma</strong> family is given by <span class="math display">\[
 f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1}
 \exp\left(-\frac{\alpha y}{\mu}\right)
-\]</span> where <span class="math inline">\(\alpha\)</span> is a
-positive shape parameter. The density of the <strong>weibull</strong>
-family is given by <span class="math display">\[
+\]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The density of the <strong>weibull</strong> family is given by <span class="math display">\[
 f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}
 \exp\left(-\left(\frac{y}{s}\right)^\alpha\right)
-\]</span> where <span class="math inline">\(\alpha\)</span> is again a
-positive shape parameter and <span class="math inline">\(s = \mu /
-\Gamma(1 + 1 / \alpha)\)</span> is the scale parameter to that <span class="math inline">\(\mu\)</span> is the mean of the distribution. The
-<strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull
-distribution. The density of the <strong>inverse.gaussian</strong>
-family is given by <span class="math display">\[
-f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp
-\left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
-\]</span> where <span class="math inline">\(\alpha\)</span> is a
-positive shape parameter. The density of the
-<strong>log-logistic</strong> family is given by <span class="math display">\[
+\]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter and <span class="math inline">\(s = \mu / \Gamma(1 + 1 / \alpha)\)</span> is the scale parameter to that <span class="math inline">\(\mu\)</span> is the mean of the distribution. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution. The density of the <strong>inverse.gaussian</strong> family is given by <span class="math display">\[
+f(y) = \left(\frac{\alpha}{2 \pi y^3}\right)^{1/2} \exp \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y} \right)
+\]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The density of the <strong>log-logistic</strong> family is given by <span class="math display">\[
 f(y) = \frac{\
-\left(\frac{\beta}{\alpha}\right)
-\left(\frac{y}{\alpha}\right)^{\beta-1}\
+\left(\frac{\beta}{\alpha}\right) \left(\frac{y}{\alpha}\right)^{\beta-1}\
 }{\left(1 + \left(\frac{y}{\alpha}\right)^\beta\right)^2}
-\]</span> The <strong>cox</strong> family implements Cox proportional
-hazards model which assumes a hazard function of the form <span class="math inline">\(h(y) = h_0(y) \mu\)</span> with baseline hazard
-<span class="math inline">\(h_0(y)\)</span> expressed via M-splines
-(which integrate to I-splines) in order to ensure monotonicity. The
-density of the cox model is then given by <span class="math display">\[
+\]</span> The <strong>cox</strong> family implements Cox proportional hazards model which assumes a hazard function of the form <span class="math inline">\(h(y) = h_0(y) \mu\)</span> with baseline hazard <span class="math inline">\(h_0(y)\)</span> expressed via M-splines (which integrate to I-splines) in order to ensure monotonicity. The density of the cox model is then given by <span class="math display">\[
 f(y) = h(y) S(y)
-\]</span> where <span class="math inline">\(S(y)\)</span> is the
-survival function implied by <span class="math inline">\(h(y)\)</span>.</p>
-<div id="mixture-cure-mixcure-models" class="section level3">
-<h3>Mixture Cure (mixcure) Models</h3>
-<p>These models extend the time-to-event models by dropping the
-assumption that all subjects will experience the event. Instead, for
-mixcure models, we assume that the population can be divided into 2
-groups, one for the cured and the other for the uncured. The probability
-of belonging to the uncured subpopulation (incidence) is <span class="math inline">\(\pi \in (0, 1)\)</span> and the uncured part has a
-proper time-to-event distribution (latency). As such, these models only
-make sense in the presence of right-censoring. Let <span class="math inline">\(y\)</span> be the observed time (event or
-censoring), <span class="math inline">\(t\)</span> be the (partially
-latent) actual event time, treated as <span class="math inline">\(\infty\)</span> for a cured subject, and <span class="math inline">\(\delta = \mathbf{1}(y \leqslant t)\)</span> the
-event indicator. The joint density is then <span class="math display">\[
-f(y, t) = \left[ \pi f_{\mathrm{E}}(y) \right]^{\delta} \times \left[ (1
-- \pi) (1 - F_{\mathrm{E}}(y)) \right]^{1 - \delta},
-\]</span> where <span class="math inline">\(f_{\mathrm{E}}\)</span> and
-<span class="math inline">\(F_{\mathrm{E}}\)</span> are the proper
-density and distribution for the latency part, repsectively. Currently
-implemented families are <strong>mixcure_lognormal</strong> and
-<strong>mixcure_weibull</strong>.</p>
-</div>
+\]</span> where <span class="math inline">\(S(y)\)</span> is the survival function implied by <span class="math inline">\(h(y)\)</span>.</p>
 </div>
 <div id="extreme-value-models" class="section level2">
 <h2>Extreme value models</h2>
-<p>Modeling extremes requires special distributions. One may use the
-<strong>weibull</strong> distribution (see above) or the
-<strong>frechet</strong> distribution with density <span class="math display">\[
-f(y) = \frac{\nu}{s} \left(\frac{y}{s}\right)^{-1-\nu}
-\exp\left(-\left(\frac{y}{s}\right)^{-\nu}\right)
-\]</span> where <span class="math inline">\(s = \mu / \Gamma(1 - 1 /
-\nu)\)</span> is a positive scale parameter and <span class="math inline">\(\nu &gt; 1\)</span> is a shape parameter so that
-<span class="math inline">\(\mu\)</span> predicts the mean of the
-Frechet distribution. A generalization of both distributions is the
-generalized extreme value distribution (family
-<strong>gen_extreme_value</strong>) with density <span class="math display">\[
-f(y) = \frac{1}{\sigma} t(y)^{-1 - 1 / \xi} \exp(-t(y))
+<p>Modeling extremes requires special distributions. One may use the <strong>weibull</strong> distribution (see above) or the <strong>frechet</strong> distribution with density <span class="math display">\[
+f(y) = \frac{\nu}{s} \left(\frac{y}{s}\right)^{-1-\nu} \exp\left(-\left(\frac{y}{s}\right)^{-\nu}\right)
+\]</span> where <span class="math inline">\(s = \mu / \Gamma(1 - 1 / \nu)\)</span> is a positive scale parameter and <span class="math inline">\(\nu &gt; 1\)</span> is a shape parameter so that <span class="math inline">\(\mu\)</span> predicts the mean of the Frechet distribution. A generalization of both distributions is the generalized extreme value distribution (family <strong>gen_extreme_value</strong>) with density <span class="math display">\[
+f(y) = \frac{1}{\sigma} t(y)^{\xi + 1} \exp(-t(y))
 \]</span> where <span class="math display">\[
-t(y) = \left(1 + \xi \left(\frac{y - \mu}{\sigma} \right)\right)^{-1 /
-\xi}
+t(y) = \left(1 + \xi \left(\frac{y - \mu}{\sigma} \right)\right)^{-1 / \xi}
 \]</span> with positive scale parameter <span class="math inline">\(\sigma\)</span> and shape parameter <span class="math inline">\(\xi\)</span>.</p>
 </div>
 <div id="response-time-models" class="section level2">
 <h2>Response time models</h2>
-<p>One family that is especially suited to model reaction times is the
-<strong>exgaussian</strong> (‘exponentially modified Gaussian’) family.
-Its density is given by</p>
+<p>One family that is especially suited to model reaction times is the <strong>exgaussian</strong> (‘exponentially modified Gaussian’) family. Its density is given by</p>
 <p><span class="math display">\[
-f(y) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi +
-\sigma^2 / \beta - 2 y \right) \right) \text{erfc}\left(\frac{\xi +
-\sigma^2 / \beta - y}{\sqrt{2} \sigma} \right)
-\]</span> where <span class="math inline">\(\beta\)</span> is the scale
-(inverse rate) of the exponential component, <span class="math inline">\(\xi\)</span> is the mean of the Gaussian
-component, <span class="math inline">\(\sigma\)</span> is the standard
-deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error
-function. We parameterize <span class="math inline">\(\mu = \xi +
-\beta\)</span> so that the main predictor term equals the mean of the
-distribution.</p>
-<p>Another family well suited for modeling response times is the
-<strong>shifted_lognormal</strong> distribution. It’s density equals
-that of the <strong>lognormal</strong> distribution except that the
-whole distribution is shifted to the right by a positive parameter
-called <em>ndt</em> (for consistency with the <strong>wiener</strong>
-diffusion model explained below).</p>
-<p>A family concerned with the combined modeling of reaction times and
-corresponding binary responses is the <strong>wiener</strong> diffusion
-model. It has four model parameters each with a natural interpretation.
-The parameter <span class="math inline">\(\alpha &gt; 0\)</span>
-describes the separation between two boundaries of the diffusion
-process, <span class="math inline">\(\tau &gt; 0\)</span> describes the
-non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial
-bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift
-rate to the boundaries (a positive value indicates a drift towards to
-upper boundary). The density for the reaction time at the upper boundary
-is given by</p>
+f(y) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi + \sigma^2 / \beta - 2 y \right) \right) \text{erfc}\left(\frac{\xi + \sigma^2 / \beta - y}{\sqrt{2} \sigma} \right)
+\]</span> where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(\xi\)</span> is the mean of the Gaussian component, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function. We parameterize <span class="math inline">\(\mu = \xi + \beta\)</span> so that the main predictor term equals the mean of the distribution.</p>
+<p>Another family well suited for modeling response times is the <strong>shifted_lognormal</strong> distribution. It’s density equals that of the <strong>lognormal</strong> distribution except that the whole distribution is shifted to the right by a positive parameter called <em>ndt</em> (for consistency with the <strong>wiener</strong> diffusion model explained below).</p>
+<p>A family concerned with the combined modeling of reaction times and corresponding binary responses is the <strong>wiener</strong> diffusion model. It has four model parameters each with a natural interpretation. The parameter <span class="math inline">\(\alpha &gt; 0\)</span> describes the separation between two boundaries of the diffusion process, <span class="math inline">\(\tau &gt; 0\)</span> describes the non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary). The density for the reaction time at the upper boundary is given by</p>
 <p><span class="math display">\[
 f(y) = \frac{\alpha}{(y-\tau)^3/2}
 \exp \! \left(- \delta \alpha \beta - \frac{\delta^2(y-\tau)}{2}\right)
 \sum_{k = - \infty}^{\infty} (2k + \beta)
 \phi \! \left(\frac{2k + \alpha \beta}{\sqrt{y - \tau}}\right)
 \]</span></p>
-<p>where <span class="math inline">\(\phi(x)\)</span> denotes the
-standard normal density function. The density at the lower boundary can
-be obtained by substituting <span class="math inline">\(1 -
-\beta\)</span> for <span class="math inline">\(\beta\)</span> and <span class="math inline">\(-\delta\)</span> for <span class="math inline">\(\delta\)</span> in the above equation. In brms the
-parameters <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\tau\)</span>, and <span class="math inline">\(\beta\)</span> are modeled as auxiliary parameters
-named <em>bs</em> (‘boundary separation’), <em>ndt</em> (‘non-decision
-time’), and <em>bias</em> respectively, whereas the drift rate <span class="math inline">\(\delta\)</span> is modeled via the ordinary model
-formula that is as <span class="math inline">\(\delta =
-\mu\)</span>.</p>
+<p>where <span class="math inline">\(\phi(x)\)</span> denotes the standard normal density function. The density at the lower boundary can be obtained by substituting <span class="math inline">\(1 - \beta\)</span> for <span class="math inline">\(\beta\)</span> and <span class="math inline">\(-\delta\)</span> for <span class="math inline">\(\delta\)</span> in the above equation. In brms the parameters <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\tau\)</span>, and <span class="math inline">\(\beta\)</span> are modeled as auxiliary parameters named <em>bs</em> (‘boundary separation’), <em>ndt</em> (‘non-decision time’), and <em>bias</em> respectively, whereas the drift rate <span class="math inline">\(\delta\)</span> is modeled via the ordinary model formula that is as <span class="math inline">\(\delta = \mu\)</span>.</p>
 </div>
 <div id="quantile-regression" class="section level2">
 <h2>Quantile regression</h2>
-<p>Quantile regression is implemented via family
-<strong>asym_laplace</strong> (asymmetric Laplace distribution) with
-density</p>
+<p>Quantile regression is implemented via family <strong>asym_laplace</strong> (asymmetric Laplace distribution) with density</p>
 <p><span class="math display">\[
-f(y) = \frac{p (1 - p)}{\sigma} \exp\left(-\rho_p\left(\frac{y -
-\mu}{\sigma}\right)\right)
-\]</span> where <span class="math inline">\(\rho_p\)</span> is given by
-<span class="math inline">\(\rho_p(x) = x (p - I_{x &lt; 0})\)</span>
-and <span class="math inline">\(I_A\)</span> is the indicator function
-of set <span class="math inline">\(A\)</span>. The parameter <span class="math inline">\(\sigma\)</span> is a positive scale parameter and
-<span class="math inline">\(p\)</span> is the <em>quantile</em>
-parameter taking on values in <span class="math inline">\((0,
-1)\)</span>. For this distribution, we have <span class="math inline">\(P(Y &lt; g(\eta)) = p\)</span>. Thus, quantile
-regression can be performed by fixing <span class="math inline">\(p\)</span> to the quantile to interest.</p>
+f(y) = \frac{p (1 - p)}{\sigma} \exp\left(-\rho_p\left(\frac{y - \mu}{\sigma}\right)\right)
+\]</span> where <span class="math inline">\(\rho_p\)</span> is given by <span class="math inline">\(\rho_p(x) = x (p - I_{x &lt; 0})\)</span> and <span class="math inline">\(I_A\)</span> is the indicator function of set <span class="math inline">\(A\)</span>. The parameter <span class="math inline">\(\sigma\)</span> is a positive scale parameter and <span class="math inline">\(p\)</span> is the <em>quantile</em> parameter taking on values in <span class="math inline">\((0, 1)\)</span>. For this distribution, we have <span class="math inline">\(P(Y &lt; g(\eta)) = p\)</span>. Thus, quantile regression can be performed by fixing <span class="math inline">\(p\)</span> to the quantile to interest.</p>
 </div>
 <div id="probability-models" class="section level2">
 <h2>Probability models</h2>
 <p>The density of the <strong>Beta</strong> family for <span class="math inline">\(y \in (0,1)\)</span> is given by <span class="math display">\[
-f(y) = \frac{y^{\mu \phi - 1} (1-y)^{(1-\mu) \phi-1}}{B(\mu \phi,
-(1-\mu) \phi)}
-\]</span> where <span class="math inline">\(B\)</span> is the beta
-function and <span class="math inline">\(\phi\)</span> is a positive
-precision parameter. A multivariate generalization of the
-<strong>Beta</strong> family is the <strong>dirichlet</strong> family
-with density <span class="math display">\[
+f(y) = \frac{y^{\mu \phi - 1} (1-y)^{(1-\mu) \phi-1}}{B(\mu \phi, (1-\mu) \phi)}
+\]</span> where <span class="math inline">\(B\)</span> is the beta function and <span class="math inline">\(\phi\)</span> is a positive precision parameter. A multivariate generalization of the <strong>Beta</strong> family is the <strong>dirichlet</strong> family with density <span class="math display">\[
 f(y) = \frac{1}{B((\mu_{1}, \ldots, \mu_{K}) \phi)}
   \prod_{k=1}^K y_{k}^{\mu_{k} \phi - 1}.
-\]</span> The <strong>dirichlet</strong> family is implemented with the
-multivariate logit link function so that <span class="math display">\[
+\]</span> The <strong>dirichlet</strong> family is implemented with the multivariate logit link function so that <span class="math display">\[
 \mu_{j} = \frac{\exp(\eta_{j})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
-\]</span> For reasons of identifiability, <span class="math inline">\(\eta_{\rm ref}\)</span> is set to <span class="math inline">\(0\)</span>, where <span class="math inline">\({\rm
-ref}\)</span> is one of the response categories chosen as reference.</p>
-<p>An alternative to the <strong>dirichlet</strong> family is the
-<strong>logistic_normal</strong> family with density <span class="math display">\[
+\]</span> For reasons of identifiability, <span class="math inline">\(\eta_{\rm ref}\)</span> is set to <span class="math inline">\(0\)</span>, where <span class="math inline">\({\rm ref}\)</span> is one of the response categories chosen as reference.</p>
+<p>An alternative to the <strong>dirichlet</strong> family is the <strong>logistic_normal</strong> family with density <span class="math display">\[
 f(y) = \frac{1}{\prod_{k=1}^K y_k} \times
   \text{multivariate_normal}(\tilde{y} \, | \, \mu, \sigma, \Omega)
-\]</span> where <span class="math inline">\(\tilde{y}\)</span> is the
-multivariate logit transformed response <span class="math display">\[
-\tilde{y} = (\log(y_1 / y_{\rm ref}), \ldots, \log(y_{\rm ref-1} /
-y_{\rm ref}),
-             \log(y_{\rm ref+1} / y_{\rm ref}), \ldots, \log(y_K /
-y_{\rm ref}))
-\]</span> of dimension <span class="math inline">\(K-1\)</span>
-(excluding the reference category), which is modeled as multivariate
-normally distributed with latent mean and standard deviation vectors
-<span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma\)</span>, as well as correlation matrix
-<span class="math inline">\(\Omega\)</span>.</p>
+\]</span> where <span class="math inline">\(\tilde{y}\)</span> is the multivariate logit transformed response <span class="math display">\[
+\tilde{y} = (\log(y_1 / y_{\rm ref}), \ldots, \log(y_{\rm ref-1} / y_{\rm ref}),
+             \log(y_{\rm ref+1} / y_{\rm ref}), \ldots, \log(y_K / y_{\rm ref}))
+\]</span> of dimension <span class="math inline">\(K-1\)</span> (excluding the reference category), which is modeled as multivariate normally distributed with latent mean and standard deviation vectors <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma\)</span>, as well as correlation matrix <span class="math inline">\(\Omega\)</span>.</p>
 </div>
 <div id="circular-models" class="section level2">
 <h2>Circular models</h2>
 <p>The density of the <strong>von_mises</strong> family for <span class="math inline">\(y \in (-\pi,\pi)\)</span> is given by <span class="math display">\[
 f(y) = \frac{\exp(\kappa \cos(y - \mu))}{2\pi I_0(\kappa)}
-\]</span> where <span class="math inline">\(I_0\)</span> is the modified
-Bessel function of order 0 and <span class="math inline">\(\kappa\)</span> is a positive precision
-parameter.</p>
+\]</span> where <span class="math inline">\(I_0\)</span> is the modified Bessel function of order 0 and <span class="math inline">\(\kappa\)</span> is a positive precision parameter.</p>
 </div>
 <div id="ordinal-and-categorical-models" class="section level2">
 <h2>Ordinal and categorical models</h2>
-<p>For ordinal and categorical models, <span class="math inline">\(y\)</span> is one of the categories <span class="math inline">\(1, ..., K\)</span>. The intercepts of ordinal
-models are called thresholds and are denoted as <span class="math inline">\(\tau_k\)</span>, with <span class="math inline">\(k \in \{1, ..., K-1\}\)</span>, whereas <span class="math inline">\(\eta\)</span> does not contain a fixed effects
-intercept. Note that the applied link functions <span class="math inline">\(h\)</span> are technically distribution functions
-<span class="math inline">\(\mathbb{R} \rightarrow [0,1]\)</span>. The
-density of the <strong>cumulative</strong> family (implementing the most
-basic ordinal model) is given by <span class="math display">\[
+<p>For ordinal and categorical models, <span class="math inline">\(y\)</span> is one of the categories <span class="math inline">\(1, ..., K\)</span>. The intercepts of ordinal models are called thresholds and are denoted as <span class="math inline">\(\tau_k\)</span>, with <span class="math inline">\(k \in \{1, ..., K-1\}\)</span>, whereas <span class="math inline">\(\eta\)</span> does not contain a fixed effects intercept. Note that the applied link functions <span class="math inline">\(h\)</span> are technically distribution functions <span class="math inline">\(\mathbb{R} \rightarrow [0,1]\)</span>. The density of the <strong>cumulative</strong> family (implementing the most basic ordinal model) is given by <span class="math display">\[
 f(y) = g(\tau_{y + 1} - \eta) - g(\tau_{y} - \eta)
 \]</span></p>
-<p>The densities of the <strong>sratio</strong> (stopping ratio) and
-<strong>cratio</strong> (continuation ratio) families are given by <span class="math display">\[
-f(y) =  g(\tau_{y + 1} - \eta) \prod_{k = 1}^{y} (1 - g(\tau_{k} -
-\eta))
+<p>The densities of the <strong>sratio</strong> (stopping ratio) and <strong>cratio</strong> (continuation ratio) families are given by <span class="math display">\[
+f(y) =  g(\tau_{y + 1} - \eta) \prod_{k = 1}^{y} (1 - g(\tau_{k} - \eta))
 \]</span> and <span class="math display">\[
 f(y) = (1 - g(\eta - \tau_{y + 1})) \prod_{k = 1}^{y} g(\eta - \tau_{k})
 \]</span></p>
-<p>respectively. Note that both families are equivalent for symmetric
-link functions such as logit or probit. The density of the
-<strong>acat</strong> (adjacent category) family is given by <span class="math display">\[
+<p>respectively. Note that both families are equivalent for symmetric link functions such as logit or probit. The density of the <strong>acat</strong> (adjacent category) family is given by <span class="math display">\[
 f(y) = \frac{\prod_{k=1}^{y} g(\eta - \tau_{k})
-  \prod_{k=y+1}^K(1-g(\eta - \tau_{k}))}{\sum_{k=0}^K\prod_{j=1}^k
-g(\eta-\tau_{j})
+  \prod_{k=y+1}^K(1-g(\eta - \tau_{k}))}{\sum_{k=0}^K\prod_{j=1}^k g(\eta-\tau_{j})
   \prod_{j=k+1}^K(1-g(\eta - \tau_{j}))}
 \]</span> For the logit link, this can be simplified to <span class="math display">\[
 f(y) = \frac{\exp \left(\sum_{k=1}^{y} (\eta - \tau_{k}) \right)}
   {\sum_{k=0}^K \exp\left(\sum_{j=1}^k (\eta - \tau_{j}) \right)}
-\]</span> The linear predictor <span class="math inline">\(\eta\)</span>
-can be generalized to also depend on the category <span class="math inline">\(k\)</span> for a subset of predictors. This leads
-to category specific effects (for details on how to specify them see
-<code>help(brm)</code>). Note that <strong>cumulative</strong> and
-<strong>sratio</strong> models use <span class="math inline">\(\tau -
-\eta\)</span>, whereas <strong>cratio</strong> and <strong>acat</strong>
-use <span class="math inline">\(\eta - \tau\)</span>. This is done to
-ensure that larger values of <span class="math inline">\(\eta\)</span>
-increase the probability of <em>higher</em> response categories.</p>
-<p>The <strong>categorical</strong> family is currently only implemented
-with the multivariate logit link function and has density <span class="math display">\[
+\]</span> The linear predictor <span class="math inline">\(\eta\)</span> can be generalized to also depend on the category <span class="math inline">\(k\)</span> for a subset of predictors. This leads to category specific effects (for details on how to specify them see <code>help(brm)</code>). Note that <strong>cumulative</strong> and <strong>sratio</strong> models use <span class="math inline">\(\tau - \eta\)</span>, whereas <strong>cratio</strong> and <strong>acat</strong> use <span class="math inline">\(\eta - \tau\)</span>. This is done to ensure that larger values of <span class="math inline">\(\eta\)</span> increase the probability of <em>higher</em> response categories.</p>
+<p>The <strong>categorical</strong> family is currently only implemented with the multivariate logit link function and has density <span class="math display">\[
 f(y) = \mu_{y} = \frac{\exp(\eta_{y})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
-\]</span> Note that <span class="math inline">\(\eta\)</span> does also
-depend on the category <span class="math inline">\(k\)</span>. For
-reasons of identifiability, <span class="math inline">\(\eta_{1}\)</span> is set to <span class="math inline">\(0\)</span>. A generalization of the
-<strong>categorical</strong> family to more than one trial is the
-<strong>multinomial</strong> family with density <span class="math display">\[
+\]</span> Note that <span class="math inline">\(\eta\)</span> does also depend on the category <span class="math inline">\(k\)</span>. For reasons of identifiability, <span class="math inline">\(\eta_{1}\)</span> is set to <span class="math inline">\(0\)</span>. A generalization of the <strong>categorical</strong> family to more than one trial is the <strong>multinomial</strong> family with density <span class="math display">\[
 f(y) = {N \choose y_{1}, y_{2}, \ldots, y_{K}}
   \prod_{k=1}^K \mu_{k}^{y_{k}}
-\]</span> where, for each category, <span class="math inline">\(\mu_{k}\)</span> is estimated via the multivariate
-logit link function shown above.</p>
+\]</span> where, for each category, <span class="math inline">\(\mu_{k}\)</span> is estimated via the multivariate logit link function shown above.</p>
 </div>
 <div id="zero-inflated-and-hurdle-models" class="section level2">
 <h2>Zero-inflated and hurdle models</h2>
-<p><strong>Zero-inflated</strong> and <strong>hurdle</strong> families
-extend existing families by adding special processes for responses that
-are zero. The density of a <strong>zero-inflated</strong> family is
-given by <span class="math display">\[
+<p><strong>Zero-inflated</strong> and <strong>hurdle</strong> families extend existing families by adding special processes for responses that are zero. The density of a <strong>zero-inflated</strong> family is given by <span class="math display">\[
 f_z(y) = z + (1 - z) f(0) \quad \text{if } y = 0 \\
 f_z(y) = (1 - z) f(y) \quad \text{if } y &gt; 0
-\]</span> where <span class="math inline">\(z\)</span> denotes the
-zero-inflation probability. Currently implemented families are
-<strong>zero_inflated_poisson</strong>,
-<strong>zero_inflated_binomial</strong>,
-<strong>zero_inflated_negbinomial</strong>, and
-<strong>zero_inflated_beta</strong>.</p>
+\]</span> where <span class="math inline">\(z\)</span> denotes the zero-inflation probability. Currently implemented families are <strong>zero_inflated_poisson</strong>, <strong>zero_inflated_binomial</strong>, <strong>zero_inflated_negbinomial</strong>, and <strong>zero_inflated_beta</strong>.</p>
 <p>The density of a <strong>hurdle</strong> family is given by <span class="math display">\[
 f_z(y) = z \quad \text{if } y = 0 \\
 f_z(y) = (1 - z) f(y) / (1 - f(0)) \quad \text{if } y &gt; 0
-\]</span> Currently implemented families are
-<strong>hurdle_poisson</strong>, <strong>hurdle_negbinomial</strong>,
-<strong>hurdle_gamma</strong>, and
-<strong>hurdle_lognormal</strong>.</p>
-<p>The density of a <strong>zero-one-inflated</strong> family is given
-by <span class="math display">\[
+\]</span> Currently implemented families are <strong>hurdle_poisson</strong>, <strong>hurdle_negbinomial</strong>, <strong>hurdle_gamma</strong>, and <strong>hurdle_lognormal</strong>.</p>
+<p>The density of a <strong>zero-one-inflated</strong> family is given by <span class="math display">\[
 f_{\alpha, \gamma}(y) = \alpha (1 - \gamma) \quad \text{if } y = 0 \\
 f_{\alpha, \gamma}(y) = \alpha \gamma \quad \text{if } y = 1 \\
-f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0,
-1\}
-\]</span> where <span class="math inline">\(\alpha\)</span> is the
-zero-one-inflation probability (i.e. the probability that zero or one
-occurs) and <span class="math inline">\(\gamma\)</span> is the
-conditional one-inflation probability (i.e. the probability that one
-occurs rather than zero). Currently implemented families are
-<strong>zero_one_inflated_beta</strong>.</p>
+f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0, 1\}
+\]</span> where <span class="math inline">\(\alpha\)</span> is the zero-one-inflation probability (i.e. the probability that zero or one occurs) and <span class="math inline">\(\gamma\)</span> is the conditional one-inflation probability (i.e. the probability that one occurs rather than zero). Currently implemented families are <strong>zero_one_inflated_beta</strong>.</p>
 </div>
 
 

@@ -541,26 +541,63 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 expose_functions.brmsfit <- function(x, vectorize = FALSE,
                                      env = globalenv(), ...) {
   vectorize <- as_one_logical(vectorize)
+  stanmodel <- compiled_model(x)
   if (x$backend == "cmdstanr") {
-    # cmdstanr does not yet support 'expose_stan_functions' itself (#1176)
-    scode  <- strsplit(stancode(x), "\n")[[1]]
-    data_line <- grep("^data[ ]+\\{$", scode)
-    scode <- paste0(c(scode[seq_len(data_line - 1)], "\n"), collapse = "\n")
-    stanmodel <- tempfile(fileext = ".stan")
-    cat(scode, file = stanmodel)
+    if ("expose_functions" %in% names(stanmodel)) {
+      funs <- .expose_functions_cmdstanr(
+        stanmodel, vectorize = vectorize, env = env, ...
+      )
+    } else {
+      # older versions of cmdstanr cannot export stan functions (#1176)
+      scode  <- strsplit(stancode(x), "\n")[[1]]
+      data_line <- grep("^data[ ]+\\{$", scode)
+      scode <- paste0(c(scode[seq_len(data_line - 1)], "\n"), collapse = "\n")
+      stanmodel <- tempfile(fileext = ".stan")
+      cat(scode, file = stanmodel)
+      funs <- .expose_functions_rstan(
+        stanmodel, vectorize = vectorize, env = env, ...
+      )
+    }
   } else {
-    stanmodel <- x$fit
+    funs <- .expose_functions_rstan(
+      stanmodel, vectorize = vectorize, env = env, ...
+    )
   }
+  invisible(funs)
+}
+
+# expose stan functions via rstan
+.expose_functions_rstan <- function(stanmodel, vectorize, env, ...) {
   if (vectorize) {
-    funs <- rstan::expose_stan_functions(stanmodel, env = environment(), ...)
+    fun_env <- new.env()
+    funs <- rstan::expose_stan_functions(stanmodel, env = fun_env, ...)
     for (i in seq_along(funs)) {
-      FUN <- Vectorize(get(funs[i], mode = "function"))
+      FUN <- Vectorize(get(funs[i], pos = fun_env))
       assign(funs[i], FUN, pos = env)
     }
   } else {
     funs <- rstan::expose_stan_functions(stanmodel, env = env, ...)
   }
-  invisible(funs)
+  funs
+}
+
+# expose stan functions via cmdstanr
+.expose_functions_cmdstanr <- function(stanmodel, vectorize, env, ...) {
+  suppressMessages(stanmodel$expose_functions())
+  fun_env <- stanmodel$functions
+  funs <- names(fun_env)
+  for (i in seq_along(funs)) {
+    FUN <- get(funs[i], pos = fun_env)
+    # cmdstanr adds some non-functions to the environment
+    if (!is.function(FUN)) {
+      next
+    }
+    if (vectorize) {
+      FUN <- Vectorize(FUN)
+    }
+    assign(funs[i], FUN, pos = env)
+  }
+  funs
 }
 
 #' @rdname expose_functions.brmsfit

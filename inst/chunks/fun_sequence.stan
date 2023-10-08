@@ -6,7 +6,7 @@
    *   an integer sequence from start to end
    */
   int[] sequence(int start, int end) {
-    int seq[end - start + 1];
+    array[end - start + 1] int seq;
     for (n in 1:num_elements(seq)) {
       seq[n] = n + start - 1;
     }

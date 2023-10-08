@@ -169,7 +169,7 @@ $\nu > 1$ is a shape parameter so that $\mu$ predicts the mean of the Frechet
 distribution. A generalization of both distributions is the generalized extreme
 value distribution (family **gen_extreme_value**) with density
 $$
-f(y) = \frac{1}{\sigma} t(y)^{-1 - 1 / \xi} \exp(-t(y))
+f(y) = \frac{1}{\sigma} t(y)^{\xi + 1} \exp(-t(y))
 $$
 where
 $$

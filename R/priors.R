@@ -359,7 +359,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
                       lb = NA, ub = NA, check = TRUE) {
   input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, check)
   input <- try(as.data.frame(input), silent = TRUE)
-  if (is(input, "try-error")) {
+  if (is_try_error(input)) {
     stop2("Processing arguments of 'set_prior' has failed:\n", input)
   }
   out <- vector("list", nrow(input))
@@ -382,13 +382,6 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
-  if (check && (!is.na(lb) || !is.na(ub))) {
-    # proper boundaries have been specified
-    if (nzchar(coef)) {
-      # TODO: enable bounds for coefficients as well?
-      stop2("Argument 'coef' may not be specified when using boundaries.")
-    }
-  }
   if (dpar == "mu") {
     # distributional parameter 'mu' is currently implicit #1368
     dpar <- ""
@@ -1259,6 +1252,12 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   # the remaining NAs are in coef priors which cannot have bounds yet
   prior$lb[is.na(prior$lb)] <- prior$ub[is.na(prior$ub)] <- ""
 
+  # boundaries on individual coefficients are not yet supported
+  # TODO: enable bounds for coefficients as well?
+  if (any((nzchar(prior$lb) | nzchar(prior$ub)) & nzchar(prior$coef))) {
+    stop2("Prior argument 'coef' may not be specified when using boundaries.")
+  }
+
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
@@ -1731,6 +1730,9 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
 # prepare pretty printing of brmsprior objects
 prepare_print_prior <- function(x) {
   stopifnot(is.brmsprior(x))
+  if (is.null(x$source)) {
+    x$source <- ""
+  }
   x$source[!nzchar(x$source)] <- "(unknown)"
   # vectorize priors and bounds for pretty printing
   # TODO: improve efficiency of adding vectorization tags
@@ -1830,7 +1832,9 @@ as.brmsprior <- function(x) {
   }
   x$source <- "user"
   all_vars <- c("prior", names(defaults), "source")
-  x[, all_vars, drop = FALSE]
+  x <- x[, all_vars, drop = FALSE]
+  class(x) <- c("brmsprior", "data.frame")
+  x
 }
 
 #' @export
@@ -1848,7 +1852,7 @@ duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
 eval_dirichlet <- function(prior, len = NULL, env = NULL) {
   dirichlet <- function(...) {
     out <- try(as.numeric(c(...)))
-    if (is(out, "try-error")) {
+    if (is_try_error(out)) {
       stop2("Something went wrong. Did you forget to store ",
             "auxiliary data in the 'data2' argument?")
     }

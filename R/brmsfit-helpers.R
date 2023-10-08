@@ -11,6 +11,7 @@ is_mv <- function(x) {
 }
 
 stopifnot_resp <- function(x, resp = NULL) {
+  # TODO: merge into validate_resp?
   if (is_mv(x) && length(resp) != 1L) {
     stop2("Argument 'resp' must be a single variable name ",
           "when applying this method to a multivariate model.")
@@ -669,7 +670,11 @@ apply_dpar_inv_link <- function(dpar, family) {
 # in categorical-like models using the softmax response function
 insert_refcat <- function(eta, refcat = 1) {
   stopifnot(is.array(eta))
-  refcat <- as_one_integer(refcat)
+  refcat <- as_one_integer(refcat, allow_na = TRUE)
+  if (isNA(refcat)) {
+    # no reference category used
+    return(eta)
+  }
   # need to add zeros for the reference category
   ndim <- length(dim(eta))
   dim_noncat <- dim(eta)[-ndim]
@@ -988,7 +993,7 @@ read_brmsfit <- function(file) {
     )
   }
   x <- suppressWarnings(try(readRDS(file), silent = TRUE))
-  if (!is(x, "try-error")) {
+  if (!is_try_error(x)) {
     if (!is.brmsfit(x)) {
       stop2("Object loaded via 'file' is not of class 'brmsfit'.")
     }

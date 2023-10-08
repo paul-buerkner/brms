@@ -48,8 +48,8 @@ test_that("ARMA models work correctly", {
 test_that("categorical models work correctly", {
   fit2 <- brm(rating ~ period + carry + treat + (1|test|subject),
               data = inhaler, family = categorical, iter = 500,
-              prior = c(prior(normal(0,5), "b"),
-                        prior(normal(0,5), "Intercept")),
+              prior = c(set_prior("normal(0,5)", "b", dpar = c("mu2", "mu3", "mu4")),
+                        set_prior("normal(0,5)", "Intercept", dpar = c("mu2", "mu3", "mu4"))),
               chains = 2, refresh = 0)
   print(fit2)
   expect_range(WAIC(fit2)$estimates[3, 1], 830, 900)

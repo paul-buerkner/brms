@@ -125,7 +125,7 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
 #' Control Saving of Parameter Draws
 #'
 #' Control which (draws of) parameters should be saved in a \pkg{brms}
-#' model. The output of this function is ment for usage in the
+#' model. The output of this function is meant for usage in the
 #' \code{save_pars} argument of \code{\link{brm}}.
 #'
 #' @param group A flag to indicate if group-level coefficients for
