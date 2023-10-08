@@ -2,6 +2,9 @@ source("setup_tests_local.R")
 library(mixcure)
 data(leukaemia)
 
+# set.seed(49238475)
+set.seed(772039)
+
 test_that("The generation of Stan code for mixture cure models work correctly", {
   brms:::expect_match2(make_stancode(
     formula = bf(
