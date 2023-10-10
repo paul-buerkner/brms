@@ -278,7 +278,8 @@ fit_model <- function(model, backend, ...) {
       iter_warmup = warmup,
       chains, thin,
       parallel_chains = cores,
-      show_messages = !silent,
+      show_messages = silent < 2,
+      show_exceptions = silent == 0,
       fixed_param = algorithm == "fixed_param"
     )
     out <- do_call(model$sample, args)
