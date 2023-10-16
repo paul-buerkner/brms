@@ -193,9 +193,9 @@ fit_serial <- brm(
 )
 ```
 
-Then running this model with threading requires `cmdstanr` as backend and you
-can simply add threading support to an existing model with the `update`
-mechanism as:
+Then you can simply add threading support to an existing model with the 
+`update` mechanism as follows, provided your stan version is at least
+2.26 (whether using `rstan` or `cmdstan`):
 
 ```{r, eval=FALSE}
 fit_parallel <- update(
