@@ -963,7 +963,11 @@ log_lik_mixture <- function(i, prep, mix = TRUE, zihu = FALSE) {
   
   families <- family_names(prep$family)
   
-  n_zi <- sum(is.zihufamily(families)) + sum(families == "zero_one_inflated_beta")
+  if (zihu) {
+    n_zi <- sum(is.zihufamily(families)) + sum(families == "zero_one_inflated_beta")
+  } else {
+    n_zi <- 0
+  }
   
   if (!mix & zihu) {
     out <- array(NA, dim = c(prep$ndraws, 1 + n_zi))

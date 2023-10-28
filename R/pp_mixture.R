@@ -95,6 +95,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (z_mix & !any_zihu) {
     stop2("Method 'pp_mixture(..., z_mix = TRUE)' can only be applied to zero-inflated and hurdle models.")
   }
+  
   if (!is.mixfamily(family) & !z_mix) {
     stop2("Method 'pp_mixture' can only be applied to mixture models.")
   }
@@ -140,66 +141,6 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 pp_mixture <- function(x, ...) {
   UseMethod("pp_mixture")
 }
-
-# 
-# latent_zi_state_prob <- function (brmsfit, ...) {
-#   fam <- brmsfit$family$family
-#   if(!is.zifamily(fam)) {
-#     stop2(paste0(
-#       "latent zi probs available only for discrete zero-inflated families (",
-#       paste(zi_families(), collapse = ", "),
-#       "). Supplied brmsfit has family: ",
-#       fam
-#     ))
-#   }
-#   lik <- exp(log_lik(brmsfit, ...))
-#   zi_lik_given_obs_zero <- posterior_linpred(
-#     brmsfit, 
-#     dpar = "zi",
-#     transform = TRUE,
-#     ...
-#   )
-#   resp_name <- brmsfit$formula$resp
-#   resp_data <- brmsfit$data[[resp_name]]
-#   resp_is_zero <- as.integer(resp_data == 0)
-#   zi_lik <- sweep(zi_lik_given_obs_zero, MARGIN=2, resp_is_zero, `*`)
-#   zi_lik / lik
-# }
-# 
-# 
-# latent_hu_state_prob <- function (brmsfit) {
-#   fam <- brmsfit$family$family
-#   if(!is.hufamily(fam)) {
-#     stop2(paste0(
-#       "latent hu probs available only for hurdle and zero-inflated continuous families (",
-#       paste(hu_families(), collapse = ", "),
-#       "). Supplied brmsfit has family: ",
-#       fam
-#     ))
-#   }
-#   
-#   resp_name <- brmsfit$formula$resp 
-#   
-#   if (is.null(newdata)) {
-#     the_data <- brmsfit$data
-#   } else {
-#     the_data <- newdata
-#   }
-#   
-#   if (fam == "zero_one_inflated_beta") {
-#     out <- data.frame(
-#       ni = as.integer(!(the_data[[resp]] %in% c(0, 1))),
-#       zi = as.integer(the_data[[resp]] == 0),
-#       oi = as.integer(the_data[[resp]] == 1)
-#   } else {
-#     out <- data.frame(
-#       ni = as.integer(the_data != 0),
-#       zi = as.integer(the_data == 0)
-#     )
-#   }
-#   out
-# }
-# 
 
 #' List of all hurdle families, where "hurdle" means anything where observed 
 #' zeros are guaranteed to be due to the zero-inflation component.
