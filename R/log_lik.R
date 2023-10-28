@@ -956,15 +956,60 @@ log_lik_custom <- function(i, prep) {
   custom_family_method(prep$family, "log_lik")(i, prep)
 }
 
-log_lik_mixture <- function(i, prep) {
+log_lik_mixture <- function(i, prep, mix = TRUE, zihu = FALSE) {
+  if (!mix & !zihu) {
+    stop2("at least one of mix or zihu must be TRUE")
+  }
+  
   families <- family_names(prep$family)
-  theta <- get_theta(prep, i = i)
-  out <- array(NA, dim = dim(theta))
-  for (j in seq_along(families)) {
-    log_lik_fun <- paste0("log_lik_", families[j])
+  
+  n_zi <- sum(is.zihufamily(families)) + sum(families == "zero_one_inflated_beta")
+  
+  if (!mix & zihu) {
+    out <- array(NA, dim = c(prep$ndraws, 1 + n_zi))
+  } else {
+    theta <- get_theta(prep, i = i)
+    out <- array(NA, dim = c(nrow(theta), ncol(theta) + n_zi))
+  }
+  
+  j <- 0
+  for (j1 in seq_along(families)) {
+    log_lik_fun <- paste0("log_lik_", families[j1])
     log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
-    tmp_draws <- pseudo_prep_for_mixture(prep, j)
-    out[, j] <- exp(log(theta[, j]) + log_lik_fun(i, tmp_draws))
+    if (is.mixfamily(prep$family)) {
+      tmp_draws <- pseudo_prep_for_mixture(prep, j1)
+    } else {
+      tmp_draws <- prep
+    }
+    if (mix) {
+      tmp_out <- exp(log(theta[, j1]) + log_lik_fun(i, tmp_draws))
+    } else {
+      tmp_out <- 1
+    }
+    
+    if (zihu & is.zihufamily(families[j1])) {
+      j <- j + 1
+      if (is.hufamily(families[j1])) {
+        zero_prob <- as.integer(prep$data$Y[1] == 0)
+      } else {
+        zero_prob <- as.integer(prep$data$Y[i] == 0) * 
+          tmp_draws$dpars$zi / exp(log_lik_fun(i, tmp_draws))
+      }
+      out[, j] <- tmp_out * zero_prob
+      
+      if (families[j1] == "zero_one_inflated_beta") {
+        j <- j + 1
+        one_prob <- as.integer(prep$data$Y[i] == 1)
+        out[, j] <- tmp_out * one_prob
+      } else {
+        one_prob <- 0
+      }
+      j <- j + 1
+      out[, j] <- tmp_out * (1 - (zero_prob + one_prob))
+    } else {
+      j <- j + 1
+      out[, j] <- tmp_out
+    }
   }
   if (isTRUE(prep[["pp_mixture"]])) {
     out <- log(out) - log(rowSums(out))
