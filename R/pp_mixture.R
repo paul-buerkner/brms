@@ -88,7 +88,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (!is.mixfamily(family)) {
     all_families <- family$family
   } else {
-    all_families <- lapply(fit$family$mix, get_family)
+    all_families <- lapply(x$family$mix, get_family)
   }
   any_zihu <- any(unlist(lapply(all_families, is.zihufamily)))
   
