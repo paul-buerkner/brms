@@ -298,6 +298,7 @@ fit_model <- function(model, backend, ...) {
   variables <- repair_variable_names(metadata$metadata$variables)
   variables <- unique(sub("\\[.+", "", variables))
   variables <- setdiff(variables, exclude)
+  # temp fix for cmdstanr not recognizing the variable names it produces  #1473
   variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
   # transform into stanfit object for consistent output structure
   out <- read_csv_as_stanfit(out$output_files(), variables = variables)
@@ -942,7 +943,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   sdate <- do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
   sdate <- format(sdate, "%a %b %d %X %Y")
 
-  out <- new(
+  new(
     "stanfit",
     model_name = model_name,
     model_pars = svars,
@@ -955,5 +956,4 @@ read_csv_as_stanfit <- function(files, variables = NULL,
     date = sdate,  # not the time of sampling
     .MISC = new.env(parent = emptyenv())
   )
-  return(out)
 }
