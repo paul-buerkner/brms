@@ -943,7 +943,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   sdate <- do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
   sdate <- format(sdate, "%a %b %d %X %Y")
 
-  new(
+  out <- new(
     "stanfit",
     model_name = model_name,
     model_pars = svars,
@@ -956,4 +956,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
     date = sdate,  # not the time of sampling
     .MISC = new.env(parent = emptyenv())
   )
+  assign("summary", rstan:::summary_sim(out@sim), envir = out@.MISC)
+  out@.MISC$summary$khat <- NA
+  out
 }
