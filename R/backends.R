@@ -298,6 +298,8 @@ fit_model <- function(model, backend, ...) {
   variables <- repair_variable_names(metadata$metadata$variables)
   variables <- unique(sub("\\[.+", "", variables))
   variables <- setdiff(variables, exclude)
+  # temp fix for cmdstanr not recognizing the variable names it produces  #1473
+  variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
   # transform into stanfit object for consistent output structure
   out <- read_csv_as_stanfit(out$output_files(), variables = variables)
   out <- repair_stanfit(out)
