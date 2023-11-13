@@ -5,6 +5,10 @@
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
 
+### Bug Fixes
+
+* Remove some remaining uses of Stan's old array syntax.
+
 
 # brms 2.20.3
 

@@ -7,7 +7,7 @@
   * Returns:
   *   matrix of scaled group-level effects
   */
-  matrix scale_r_cor_by(matrix z, matrix SD, matrix[] L, int[] Jby) {
+  matrix scale_r_cor_by(matrix z, matrix SD, array[] matrix L, array[] int Jby) {
     // r is stored in another dimension order than z
     matrix[cols(z), rows(z)] r;
     array[size(L)] matrix[rows(L[1]), cols(L[1])] LC;

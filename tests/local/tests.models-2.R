@@ -238,7 +238,7 @@ test_that("Nested non-linear models work correctly", {
 test_that("Non-linear non-looped model predictions work correctly in blocked order", {
   loss_alt <- transform(loss, row=as.integer(1:nrow(loss)), nr=nrow(loss), test=as.integer(0))
   scode_growth <- "
-    vector growth_test(vector ult, int[] dev, vector theta, vector omega, int[] row, int[] test) {
+    vector growth_test(vector ult, array[] int dev, vector theta, vector omega, array[] int row, array[] int test) {
       int N = rows(ult);
       vector[N] mu;
       int rows_sorted = 1;

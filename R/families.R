@@ -1122,7 +1122,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'
 #' # define the corresponding Stan density function
 #' stan_density_vec <- "
-#'   real beta_binomial2_lpmf(int[] y, vector mu, real phi, int[] N) {
+#'   real beta_binomial2_lpmf(array[] int y, vector mu, real phi, array[] int N) {
 #'     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
 #'   }
 #' "
