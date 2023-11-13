@@ -137,7 +137,7 @@ make_stancode <- function(formula, data, family = gaussian(),
         ", seq", resp, ", grainsize", pll_args$plain, ");\n"
       )
       str_add(scode_predictor[[i]][["tdata_def"]]) <- glue(
-        "  int seq{resp}[N{resp}] = sequence(1, N{resp});\n"
+        "  array[N{resp}] int seq{resp} = sequence(1, N{resp});\n"
       )
     }
     scode_predictor <- collapse_lists(ls = scode_predictor)
