@@ -93,13 +93,3 @@ Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2019).
 Pareto smoothed importance sampling.
 \href{https://arxiv.org/abs/1507.02646}{preprint arXiv:1507.02646}
 }
-\seealso{
-\itemize{
-\item \code{\link[loo:loo]{loo()}} for approximate LOO-CV using PSIS.
-\item \link[loo]{pareto-k-diagnostic} for PSIS diagnostics.
-\item The \strong{loo} package \href{https://mc-stan.org/loo/articles/index.html}{vignettes}
-for demonstrations.
-\item The \href{https://mc-stan.org/loo/articles/online-only/faq.html}{FAQ page} on
-the \strong{loo} website for answers to frequently asked questions.
-}
-}

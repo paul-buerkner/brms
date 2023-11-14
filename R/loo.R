@@ -299,7 +299,7 @@ loo_criteria <- function() {
   psis(x, newdata = newdata, resp = resp, model_name = model_name, ...)
 }
 
-#' @inherit loo::psis return title description details seealso references
+#' @inherit loo::psis return title description details references
 #'
 #' @aliases psis psis.brmsfit
 #'
