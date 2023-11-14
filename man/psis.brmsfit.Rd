@@ -5,10 +5,12 @@
 \alias{psis}
 \title{Pareto smoothed importance sampling (PSIS)}
 \usage{
-\method{psis}{brmsfit}(x, newdata = NULL, resp = NULL, model_name, ...)
+\method{psis}{brmsfit}(log_ratios, newdata = NULL, resp = NULL, model_name, ...)
 }
 \arguments{
-\item{x}{A fitted model object of class \code{brmsfit}.}
+\item{log_ratios}{A fitted model object of class \code{brmsfit}.
+Argument is named "log_ratios" to match the argument name of the
+\code{\link[loo:psis]{loo::psis}} generic function.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.
@@ -19,7 +21,7 @@ predictions of the grand mean when using sum coding.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{model_name}{ignored but included to avoid being passed to '...'}
+\item{model_name}{Currently ignored.}
 
 \item{...}{Further arguments passed to \code{\link{log_lik}} and
 \code{\link[loo:psis]{loo::psis}}.}
@@ -76,8 +78,7 @@ For PSIS diagnostics see the \link[loo]{pareto-k-diagnostic} page.
 }
 \examples{
 \dontrun{
-fit <- brm(rating ~ treat + period + carry,
-            data = inhaler)
+fit <- brm(rating ~ treat + period + carry, data = inhaler)
 psis(fit)
 }
 }

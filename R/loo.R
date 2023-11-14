@@ -294,32 +294,35 @@ loo_criteria <- function() {
   do_call("waic", loo_args, pkg = "loo")
 }
 
+# alias of psis for convenient use in compute_loo()
 .psis <- function(x, newdata, resp, model_name, ...) {
-  psis(x, newdata, resp, model_name, ...)
+  psis(x, newdata = newdata, resp = resp, model_name = model_name, ...)
 }
 
 #' @inherit loo::psis return title description details seealso references
 #'
 #' @aliases psis psis.brmsfit
 #'
-#' @param x A fitted model object of class \code{brmsfit}.
-#' @param model_name ignored but included to avoid being passed to '...'
+#' @param log_ratios A fitted model object of class \code{brmsfit}.
+#'   Argument is named "log_ratios" to match the argument name of the
+#'   \code{\link[loo:psis]{loo::psis}} generic function.
+#' @param model_name Currently ignored.
 #' @param ... Further arguments passed to \code{\link{log_lik}} and
-#'            \code{\link[loo:psis]{loo::psis}}.
+#'   \code{\link[loo:psis]{loo::psis}}.
 #' @inheritParams log_lik.brmsfit
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
+#' fit <- brm(rating ~ treat + period + carry, data = inhaler)
 #' psis(fit)
 #'}
 #' @importFrom loo psis
 #' @export psis
 #' @export
-psis.brmsfit <- function(x, newdata = NULL, resp = NULL, model_name, ...) {
+psis.brmsfit <- function(log_ratios, newdata = NULL, resp = NULL,
+                         model_name, ...) {
   loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp,
+    log_ratios, newdata = newdata, resp = resp,
     pointwise = FALSE, ...
   )
   loo_args$log_ratios <- -loo_args$x
