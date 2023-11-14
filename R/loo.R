@@ -294,9 +294,30 @@ loo_criteria <- function() {
   do_call("waic", loo_args, pkg = "loo")
 }
 
-# compute 'psis' criterion using the 'loo' package
-# @param model_name ignored but included to avoid being passed to '...'
 .psis <- function(x, newdata, resp, model_name, ...) {
+  psis(x, newdata, resp, model_name, ...)
+}
+
+#' @inherit loo::psis return title description details seealso references
+#'
+#' @aliases psis psis.brmsfit
+#'
+#' @param x A fitted model object of class \code{brmsfit}.
+#' @param model_name ignored but included to avoid being passed to '...'
+#' @param ... Further arguments passed to \code{\link{log_lik}} and
+#'            \code{\link[loo:psis]{loo::psis}}.
+#' @inheritParams log_lik.brmsfit
+#'
+#' @examples
+#' \dontrun{
+#' fit <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' psis(fit)
+#'}
+#' @importFrom loo psis
+#' @export psis
+#' @export
+psis.brmsfit <- function(x, newdata = NULL, resp = NULL, model_name, ...) {
   loo_args <- prepare_loo_args(
     x, newdata = newdata, resp = resp,
     pointwise = FALSE, ...
