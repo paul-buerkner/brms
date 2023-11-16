@@ -5,7 +5,7 @@
 \alias{psis}
 \title{Pareto smoothed importance sampling (PSIS)}
 \usage{
-\method{psis}{brmsfit}(log_ratios, newdata = NULL, resp = NULL, model_name, ...)
+\method{psis}{brmsfit}(log_ratios, newdata = NULL, resp = NULL, model_name = NULL, ...)
 }
 \arguments{
 \item{log_ratios}{A fitted model object of class \code{brmsfit}.

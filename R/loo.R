@@ -320,7 +320,7 @@ loo_criteria <- function() {
 #' @export psis
 #' @export
 psis.brmsfit <- function(log_ratios, newdata = NULL, resp = NULL,
-                         model_name, ...) {
+                         model_name = NULL, ...) {
   loo_args <- prepare_loo_args(
     log_ratios, newdata = newdata, resp = resp,
     pointwise = FALSE, ...
