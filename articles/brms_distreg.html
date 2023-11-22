@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
       </span>
     </div>
 
@@ -54,55 +56,55 @@
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="http://mc-stan.org/rstan" class="external-link">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="http://mc-stan.org/rstanarm" class="external-link">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="http://mc-stan.org/bayesplot" class="external-link">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="http://mc-stan.org/shinystan" class="external-link">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="http://mc-stan.org/loo" class="external-link">loo</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/projpred">projpred</a>
+      <a href="http://mc-stan.org/projpred" class="external-link">projpred</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="http://mc-stan.org/rstantools" class="external-link">rstantools</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="http://mc-stan.org" class="external-link">Stan</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://twitter.com/mcmc_stan">
-    <span class="fas fa-twitter"></span>
+  <a href="https://twitter.com/mcmc_stan" class="external-link">
+    <span class="fa fa-twitter"></span>
      
   </a>
 </li>
 <li>
-  <a href="https://github.com/stan-dev/brms">
-    <span class="fas fa-github"></span>
+  <a href="https://github.com/stan-dev/brms" class="external-link">
+    <span class="fa fa-github"></span>
      
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
-    <span class="fas fa-users"></span>
+  <a href="http://discourse.mc-stan.org/" class="external-link">
+    <span class="fa fa-users"></span>
      
   </a>
 </li>
@@ -116,95 +118,166 @@
 
       
 
-      </header><script src="brms_distreg_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Estimating Distributional Models with brms</h1>
-                        <h4 class="author">Paul Bürkner</h4>
+                        <h4 data-toc-skip class="author">Paul
+Bürkner</h4>
             
-            <h4 class="date">2021-08-26</h4>
+            <h4 data-toc-skip class="date">2023-11-23</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_distreg.Rmd"><code>vignettes/brms_distreg.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_distreg.Rmd" class="external-link"><code>vignettes/brms_distreg.Rmd</code></a></small>
       <div class="hidden name"><code>brms_distreg.Rmd</code></div>
 
     </div>
 
     
     
-<div id="introduction" class="section level2">
-<h2 class="hasAnchor">
-<a href="#introduction" class="anchor"></a>Introduction</h2>
-<p>This vignette provides an introduction on how to fit distributional regression models with <strong>brms</strong>. We use the term <em>distributional model</em> to refer to a model, in which we can specify predictor terms for all parameters of the assumed response distribution. In the vast majority of regression model implementations, only the location parameter (usually the mean) of the response distribution depends on the predictors and corresponding regression parameters. Other parameters (e.g., scale or shape parameters) are estimated as auxiliary parameters assuming them to be constant across observations. This assumption is so common that most researchers applying regression models are often (in my experience) not aware of the possibility of relaxing it. This is understandable insofar as relaxing this assumption drastically increase model complexity and thus makes models hard to fit. Fortunately, <strong>brms</strong> uses <strong>Stan</strong> on the backend, which is an incredibly flexible and powerful tool for estimating Bayesian models so that model complexity is much less of an issue.</p>
-<p>Suppose we have a normally distributed response variable. Then, in basic linear regression, we specify a predictor term <span class="math inline">\(\eta_{\mu}\)</span> for the mean parameter <span class="math inline">\(\mu\)</span> of the normal distribution. The second parameter of the normal distribution – the residual standard deviation <span class="math inline">\(\sigma\)</span> – is assumed to be constant across observations. We estimate <span class="math inline">\(\sigma\)</span> but do not try to <em>predict</em> it. In a distributional model, however, we do exactly this by specifying a predictor term <span class="math inline">\(\eta_{\sigma}\)</span> for <span class="math inline">\(\sigma\)</span> in addition to the predictor term <span class="math inline">\(\eta_{\mu}\)</span>. Ignoring group-level effects for the moment, the linear predictor of a parameter <span class="math inline">\(\theta\)</span> for observation <span class="math inline">\(n\)</span> has the form</p>
-<p><span class="math display">\[\eta_{\theta n} = \sum_{i = 1}^{K_{\theta}} b_{\theta i} x_{\theta i n}\]</span> where <span class="math inline">\(x_{\theta i n}\)</span> denotes the value of the <span class="math inline">\(i\)</span>th predictor of parameter <span class="math inline">\(\theta\)</span> for observation <span class="math inline">\(n\)</span> and <span class="math inline">\(b_{\theta i}\)</span> is the <span class="math inline">\(i\)</span>th regression coefficient of parameter <span class="math inline">\(\theta\)</span>. A distributional normal model with response variable <span class="math inline">\(y\)</span> can then be written as</p>
-<p><span class="math display">\[y_n \sim \mathcal{N}\left(\eta_{\mu n}, \, \exp(\eta_{\sigma n}) \right)\]</span> We used the exponential function around <span class="math inline">\(\eta_{\sigma}\)</span> to reflect that <span class="math inline">\(\sigma\)</span> constitutes a standard deviation and thus only takes on positive values, while a linear predictor can be any real number.</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p>This vignette provides an introduction on how to fit distributional
+regression models with <strong>brms</strong>. We use the term
+<em>distributional model</em> to refer to a model, in which we can
+specify predictor terms for all parameters of the assumed response
+distribution. In the vast majority of regression model implementations,
+only the location parameter (usually the mean) of the response
+distribution depends on the predictors and corresponding regression
+parameters. Other parameters (e.g., scale or shape parameters) are
+estimated as auxiliary parameters assuming them to be constant across
+observations. This assumption is so common that most researchers
+applying regression models are often (in my experience) not aware of the
+possibility of relaxing it. This is understandable insofar as relaxing
+this assumption drastically increase model complexity and thus makes
+models hard to fit. Fortunately, <strong>brms</strong> uses
+<strong>Stan</strong> on the backend, which is an incredibly flexible
+and powerful tool for estimating Bayesian models so that model
+complexity is much less of an issue.</p>
+<p>Suppose we have a normally distributed response variable. Then, in
+basic linear regression, we specify a predictor term <span class="math inline">\(\eta_{\mu}\)</span> for the mean parameter <span class="math inline">\(\mu\)</span> of the normal distribution. The
+second parameter of the normal distribution – the residual standard
+deviation <span class="math inline">\(\sigma\)</span> – is assumed to be
+constant across observations. We estimate <span class="math inline">\(\sigma\)</span> but do not try to <em>predict</em>
+it. In a distributional model, however, we do exactly this by specifying
+a predictor term <span class="math inline">\(\eta_{\sigma}\)</span> for
+<span class="math inline">\(\sigma\)</span> in addition to the predictor
+term <span class="math inline">\(\eta_{\mu}\)</span>. Ignoring
+group-level effects for the moment, the linear predictor of a parameter
+<span class="math inline">\(\theta\)</span> for observation <span class="math inline">\(n\)</span> has the form</p>
+<p><span class="math display">\[\eta_{\theta n} = \sum_{i =
+1}^{K_{\theta}} b_{\theta i} x_{\theta i n}\]</span> where <span class="math inline">\(x_{\theta i n}\)</span> denotes the value of the
+<span class="math inline">\(i\)</span>th predictor of parameter <span class="math inline">\(\theta\)</span> for observation <span class="math inline">\(n\)</span> and <span class="math inline">\(b_{\theta i}\)</span> is the <span class="math inline">\(i\)</span>th regression coefficient of parameter
+<span class="math inline">\(\theta\)</span>. A distributional normal
+model with response variable <span class="math inline">\(y\)</span> can
+then be written as</p>
+<p><span class="math display">\[y_n \sim \mathcal{N}\left(\eta_{\mu n},
+\, \exp(\eta_{\sigma n}) \right)\]</span> We used the exponential
+function around <span class="math inline">\(\eta_{\sigma}\)</span> to
+reflect that <span class="math inline">\(\sigma\)</span> constitutes a
+standard deviation and thus only takes on positive values, while a
+linear predictor can be any real number.</p>
 </div>
-<div id="a-simple-distributional-model" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-simple-distributional-model" class="anchor"></a>A simple distributional model</h2>
-<p>Unequal variance models are possibly the most simple, but nevertheless very important application of distributional models. Suppose we have two groups of patients: One group receives a treatment (e.g., an antidepressive drug) and another group receives placebo. Since the treatment may not work equally well for all patients, the symptom variance of the treatment group may be larger than the symptom variance of the placebo group after some weeks of treatment. For simplicity, assume that we only investigate the post-treatment values.</p>
+<div class="section level2">
+<h2 id="a-simple-distributional-model">A simple distributional model<a class="anchor" aria-label="anchor" href="#a-simple-distributional-model"></a>
+</h2>
+<p>Unequal variance models are possibly the most simple, but
+nevertheless very important application of distributional models.
+Suppose we have two groups of patients: One group receives a treatment
+(e.g., an antidepressive drug) and another group receives placebo. Since
+the treatment may not work equally well for all patients, the symptom
+variance of the treatment group may be larger than the symptom variance
+of the placebo group after some weeks of treatment. For simplicity,
+assume that we only investigate the post-treatment values.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"treat"</span>, <span class="st">"placebo"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>
-<span class="va">symptom_post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, mean <span class="op">=</span> <span class="fl">1</span>, sd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>
-<span class="va">dat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">group</span>, <span class="va">symptom_post</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">dat1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treat"</span>, <span class="st">"placebo"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span><span class="va">symptom_post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, mean <span class="op">=</span> <span class="fl">1</span>, sd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">group</span>, <span class="va">symptom_post</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dat1</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  group symptom_post
-1 treat    3.9742731
-2 treat    2.0082371
-3 treat    2.7892969
-4 treat    1.2384645
-5 treat   -0.5734985
-6 treat   -1.7505618</code></pre>
-<p>The following model estimates the effect of <code>group</code> on both the mean and the residual standard deviation of the normal response distribution.</p>
+1 treat     2.194539
+2 treat     0.987512
+3 treat     3.737652
+4 treat    -1.065380
+5 treat    -1.701475
+6 treat     2.391118</code></pre>
+<p>The following model estimates the effect of <code>group</code> on
+both the mean and the residual standard deviation of the normal response
+distribution.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">symptom_post</span> <span class="op">~</span> <span class="va">group</span>, <span class="va">sigma</span> <span class="op">~</span> <span class="va">group</span><span class="op">)</span>, 
-            data <span class="op">=</span> <span class="va">dat1</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">symptom_post</span> <span class="op">~</span> <span class="va">group</span>, <span class="va">sigma</span> <span class="op">~</span> <span class="va">group</span><span class="op">)</span>,</span>
+<span>            data <span class="op">=</span> <span class="va">dat1</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Useful summary statistics and plots can be obtained via</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit1</span>, N <span class="op">=</span> <span class="fl">2</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit1</span>, N <span class="op">=</span> <span class="fl">2</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-3-2.png" width="60%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-3-3.png" width="60%" style="display: block; margin: auto;"></p>
-<p>The population-level effect <code>sigma_grouptreat</code>, which is the contrast of the two residual standard deviations on the log-scale, reveals that the variances of both groups are indeed different. This impression is confirmed when looking at the <code>conditional_effects</code> of <code>group</code>. Going one step further, we can compute the residual standard deviations on the original scale using the <code>hypothesis</code> method.</p>
+<p>The population-level effect <code>sigma_grouptreat</code>, which is
+the contrast of the two residual standard deviations on the log-scale,
+reveals that the variances of both groups are indeed different. This
+impression is confirmed when looking at the
+<code>conditional_effects</code> of <code>group</code>. Going one step
+further, we can compute the residual standard deviations on the original
+scale using the <code>hypothesis</code> method.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"exp(sigma_Intercept) = 0"</span>,
-         <span class="st">"exp(sigma_Intercept + sigma_grouptreat) = 0"</span><span class="op">)</span>
-<span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">hyp</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"exp(sigma_Intercept) = 0"</span>,</span>
+<span>         <span class="st">"exp(sigma_Intercept + sigma_grouptreat) = 0"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">hyp</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class b:
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (exp(sigma_Interc... = 0     1.07      0.15     0.84     1.41         NA        NA    *
-2 (exp(sigma_Interc... = 0     2.30      0.31     1.79     3.00         NA        NA    *
+1 (exp(sigma_Interc... = 0     1.07      0.15     0.83     1.41         NA        NA    *
+2 (exp(sigma_Interc... = 0     2.17      0.30     1.68     2.86         NA        NA    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
 for two-sided hypotheses, the value tested against lies outside the 95%-CI.
 Posterior probabilities of point hypotheses assume equal prior probabilities.</code></pre>
-<p>We may also directly compare them and plot the posterior distribution of their difference.</p>
+<p>We may also directly compare them and plot the posterior distribution
+of their difference.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="st">"exp(sigma_Intercept + sigma_grouptreat) &gt; exp(sigma_Intercept)"</span>
-<span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">hyp</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="st">"exp(sigma_Intercept + sigma_grouptreat) &gt; exp(sigma_Intercept)"</span></span>
+<span><span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">hyp</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class b:
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (exp(sigma_Interc... &gt; 0     1.23      0.35     0.69     1.83       3999         1    *
+1 (exp(sigma_Interc... &gt; 0     1.11      0.33     0.61     1.68        Inf         1    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
 for two-sided hypotheses, the value tested against lies outside the 95%-CI.
 Posterior probabilities of point hypotheses assume equal prior probabilities.</code></pre>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">hyp</span>, chars <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hyp</span>, chars <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-5-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Indeed, the residual standard deviation of the treatment group seems to larger than that of the placebo group. Moreover the magnitude of this difference is pretty similar to what we expected due to the values we put into the data simulations.</p>
+<p>Indeed, the residual standard deviation of the treatment group seems
+to larger than that of the placebo group. Moreover the magnitude of this
+difference is pretty similar to what we expected due to the values we
+put into the data simulations.</p>
 </div>
-<div id="zero-inflated-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#zero-inflated-models" class="anchor"></a>Zero-Inflated Models</h2>
-<p>Another important application of the distributional regression framework are so called zero-inflated models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if one seeks to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros which, when not modeled appropriately, can seriously distort parameter estimates. Here, we consider an example dealing with the number of fish caught by various groups of people. On the UCLA website (), the data are described as follows: “The state wildlife biologists want to model how many fish are being caught by fishermen at a state park. Visitors are asked how long they stayed, how many people were in the group, were there children in the group and how many fish were caught. Some visitors do not fish, but there is no data on whether a person fished or not. Some visitors who did fish did not catch any fish so there are excess zeros in the data because of the people that did not fish.”</p>
+<div class="section level2">
+<h2 id="zero-inflated-models">Zero-Inflated Models<a class="anchor" aria-label="anchor" href="#zero-inflated-models"></a>
+</h2>
+<p>Another important application of the distributional regression
+framework are so called zero-inflated models. These models are helpful
+whenever there are more zeros in the response variable than one would
+naturally expect. For example, if one seeks to predict the number of
+cigarettes people smoke per day and also includes non-smokers, there
+will be a huge amount of zeros which, when not modeled appropriately,
+can seriously distort parameter estimates. Here, we consider an example
+dealing with the number of fish caught by various groups of people. On
+the UCLA website (), the data are described as follows: “The state
+wildlife biologists want to model how many fish are being caught by
+fishermen at a state park. Visitors are asked how long they stayed, how
+many people were in the group, were there children in the group and how
+many fish were caught. Some visitors do not fish, but there is no data
+on whether a person fished or not. Some visitors who did fish did not
+catch any fish so there are excess zeros in the data because of the
+people that did not fish.”</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">zinb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="st">"https://paul-buerkner.github.io/data/fish.csv"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">zinb</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">zinb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"https://paul-buerkner.github.io/data/fish.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">zinb</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  nofish livebait camper persons child         xb         zg count
 1      1        0      0       1     0 -0.8963146  3.0504048     0
 2      0        1      1       1     0 -0.5583450  1.7461489     0
@@ -212,13 +285,18 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 4      0        1      1       2     1 -0.9562981 -0.6015257     0
 5      0        1      0       1     0  0.4368910  0.5277091     1
 6      0        1      1       4     2  1.3944855 -0.7075348     0</code></pre>
-<p>As predictors we choose the number of people per group, the number of children, as well as whether the group consists of campers. Many groups may not even try catching any fish at all (thus leading to many zero responses) and so we fit a zero-inflated Poisson model to the data. For now, we assume a constant zero-inflation probability across observations.</p>
+<p>As predictors we choose the number of people per group, the number of
+children, as well as whether the group consists of campers. Many groups
+may not even try catching any fish at all (thus leading to many zero
+responses) and so we fit a zero-inflated Poisson model to the data. For
+now, we assume a constant zero-inflation probability across
+observations.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit_zinb1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">persons</span> <span class="op">+</span> <span class="va">child</span> <span class="op">+</span> <span class="va">camper</span>, 
-                 data <span class="op">=</span> <span class="va">zinb</span>, family <span class="op">=</span> <span class="fu"><a href="../reference/brmsfamily.html">zero_inflated_poisson</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit_zinb1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">persons</span> <span class="op">+</span> <span class="va">child</span> <span class="op">+</span> <span class="va">camper</span>,</span>
+<span>                 data <span class="op">=</span> <span class="va">zinb</span>, family <span class="op">=</span> <span class="fu"><a href="../reference/brmsfamily.html">zero_inflated_poisson</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Again, we summarize the results using the usual methods.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit_zinb1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_zinb1</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: zero_inflated_poisson 
   Links: mu = log; zi = identity 
 Formula: count ~ persons + child + camper 
@@ -228,28 +306,43 @@ Formula: count ~ persons + child + camper
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.01      0.17    -1.35    -0.68 1.00     3014     2868
-persons       0.87      0.04     0.79     0.96 1.00     3097     2835
-child        -1.37      0.10    -1.56    -1.17 1.00     2874     2132
-camper        0.80      0.09     0.62     0.98 1.00     3318     2689
+Intercept    -1.01      0.18    -1.37    -0.68 1.00     2439     2727
+persons       0.87      0.05     0.79     0.96 1.00     2529     2871
+child        -1.37      0.09    -1.55    -1.18 1.00     2261     2432
+camper        0.80      0.10     0.62     0.99 1.00     3093     2349
 
 Family Specific Parameters: 
    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-zi     0.41      0.05     0.32     0.49 1.00     3159     2575
+zi     0.41      0.04     0.32     0.49 1.00     2269     2122
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_zinb1</span><span class="op">)</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_zinb1</span><span class="op">)</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-8-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-8-2.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-8-3.png" width="60%" style="display: block; margin: auto;"></p>
-<p>According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and groups with more children catch less fish. The zero-inflation probability <code>zi</code> is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the Poisson distribution itself (hence the name zero-<em>inflation</em>). If you want to treat all zeros as originating from a separate process, you can use hurdle models instead (not shown here).</p>
-<p>Now, we try to additionally predict the zero-inflation probability by the number of children. The underlying reasoning is that we expect groups with more children to not even try catching fish. Most children are just terribly bad at waiting for hours until something happens. From a purely statistical perspective, zero-inflated (and hurdle) distributions are a mixture of two processes and predicting both parts of the model is natural and often very reasonable to make full use of the data.</p>
+<p>According to the parameter estimates, larger groups catch more fish,
+campers catch more fish than non-campers, and groups with more children
+catch less fish. The zero-inflation probability <code>zi</code> is
+pretty large with a mean of 41%. Please note that the probability of
+catching no fish is actually higher than 41%, but parts of this
+probability are already modeled by the Poisson distribution itself
+(hence the name zero-<em>inflation</em>). If you want to treat all zeros
+as originating from a separate process, you can use hurdle models
+instead (not shown here).</p>
+<p>Now, we try to additionally predict the zero-inflation probability by
+the number of children. The underlying reasoning is that we expect
+groups with more children to not even try catching fish. Most children
+are just terribly bad at waiting for hours until something happens. From
+a purely statistical perspective, zero-inflated (and hurdle)
+distributions are a mixture of two processes and predicting both parts
+of the model is natural and often very reasonable to make full use of
+the data.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit_zinb2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">persons</span> <span class="op">+</span> <span class="va">child</span> <span class="op">+</span> <span class="va">camper</span>, <span class="va">zi</span> <span class="op">~</span> <span class="va">child</span><span class="op">)</span>, 
-                 data <span class="op">=</span> <span class="va">zinb</span>, family <span class="op">=</span> <span class="fu"><a href="../reference/brmsfamily.html">zero_inflated_poisson</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit_zinb2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">persons</span> <span class="op">+</span> <span class="va">child</span> <span class="op">+</span> <span class="va">camper</span>, <span class="va">zi</span> <span class="op">~</span> <span class="va">child</span><span class="op">)</span>,</span>
+<span>                 data <span class="op">=</span> <span class="va">zinb</span>, family <span class="op">=</span> <span class="fu"><a href="../reference/brmsfamily.html">zero_inflated_poisson</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit_zinb2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_zinb2</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: zero_inflated_poisson 
   Links: mu = log; zi = logit 
 Formula: count ~ persons + child + camper 
@@ -260,49 +353,73 @@ Formula: count ~ persons + child + camper
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       -1.08      0.18    -1.43    -0.73 1.00     3219     2666
-zi_Intercept    -0.96      0.26    -1.52    -0.48 1.00     4070     2404
-persons          0.89      0.05     0.80     0.99 1.00     3169     2969
-child           -1.18      0.09    -1.37    -0.99 1.00     3177     2738
-camper           0.78      0.09     0.60     0.96 1.00     3887     2510
-zi_child         1.22      0.28     0.70     1.79 1.00     3884     2491
+Intercept       -1.08      0.18    -1.45    -0.72 1.00     2993     2565
+zi_Intercept    -0.95      0.26    -1.47    -0.47 1.00     3773     2809
+persons          0.89      0.05     0.80     0.99 1.00     3134     2832
+child           -1.18      0.10    -1.37    -0.99 1.00     3196     2663
+camper           0.78      0.09     0.59     0.96 1.00     3402     2416
+zi_child         1.21      0.27     0.69     1.75 1.00     3604     2964
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_zinb2</span><span class="op">)</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_zinb2</span><span class="op">)</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-10-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-10-2.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-10-3.png" width="60%" style="display: block; margin: auto;"></p>
-<p>To transform the linear predictor of <code>zi</code> into a probability, <strong>brms</strong> applies the logit-link:</p>
-<p><span class="math display">\[logit(zi) = \log\left(\frac{zi}{1-zi}\right) = \eta_{zi}\]</span></p>
-<p>The logit-link takes values within <span class="math inline">\([0, 1]\)</span> and returns values on the real line. Thus, it allows the transition between probabilities and linear predictors.</p>
-<p>According to the model, trying to fish with children not only decreases the overall number fish caught (as implied by the Poisson part of the model) but also drastically increases your change of catching no fish at all (as implied by the zero-inflation part) most likely because groups with more children are not even trying.</p>
+<p>To transform the linear predictor of <code>zi</code> into a
+probability, <strong>brms</strong> applies the logit-link:</p>
+<p><span class="math display">\[logit(zi) =
+\log\left(\frac{zi}{1-zi}\right) = \eta_{zi}\]</span></p>
+<p>The logit-link takes values within <span class="math inline">\([0,
+1]\)</span> and returns values on the real line. Thus, it allows the
+transition between probabilities and linear predictors.</p>
+<p>According to the model, trying to fish with children not only
+decreases the overall number fish caught (as implied by the Poisson part
+of the model) but also drastically increases your change of catching no
+fish at all (as implied by the zero-inflation part) most likely because
+groups with more children are not even trying.</p>
 </div>
-<div id="additive-distributional-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#additive-distributional-models" class="anchor"></a>Additive Distributional Models</h2>
-<p>In the examples so far, we did not have multilevel data and thus did not fully use the capabilities of the distributional regression framework of <strong>brms</strong>. In the example presented below, we will not only show how to deal with multilevel data in distributional models, but also how to incorporate smooth terms (i.e., splines) into the model. In many applications, we have no or only a very vague idea how the relationship between a predictor and the response looks like. A very flexible approach to tackle this problems is to use splines and let them figure out the form of the relationship. For illustration purposes, we simulate some data with the <strong>mgcv</strong> package, which is also used in <strong>brms</strong> to prepare smooth terms.</p>
+<div class="section level2">
+<h2 id="additive-distributional-models">Additive Distributional Models<a class="anchor" aria-label="anchor" href="#additive-distributional-models"></a>
+</h2>
+<p>In the examples so far, we did not have multilevel data and thus did
+not fully use the capabilities of the distributional regression
+framework of <strong>brms</strong>. In the example presented below, we
+will not only show how to deal with multilevel data in distributional
+models, but also how to incorporate smooth terms (i.e., splines) into
+the model. In many applications, we have no or only a very vague idea
+how the relationship between a predictor and the response looks like. A
+very flexible approach to tackle this problems is to use splines and let
+them figure out the form of the relationship. For illustration purposes,
+we simulate some data with the <strong>mgcv</strong> package, which is
+also used in <strong>brms</strong> to prepare smooth terms.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">dat_smooth</span> <span class="op">&lt;-</span> <span class="fu">mgcv</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/gamSim.html">gamSim</a></span><span class="op">(</span>eg <span class="op">=</span> <span class="fl">6</span>, n <span class="op">=</span> <span class="fl">200</span>, scale <span class="op">=</span> <span class="fl">2</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">dat_smooth</span> <span class="op">&lt;-</span> <span class="fu">mgcv</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/gamSim.html" class="external-link">gamSim</a></span><span class="op">(</span>eg <span class="op">=</span> <span class="fl">6</span>, n <span class="op">=</span> <span class="fl">200</span>, scale <span class="op">=</span> <span class="fl">2</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Gu &amp; Wahba 4 term additive model</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">dat_smooth</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span></code></pre></div>
-<pre><code>          y         x0         x1         x2         x3         f
-1  4.488816 0.22147678 0.09096177 0.02076171 0.54618481  5.554062
-2 17.917863 0.15671848 0.93978568 0.43197839 0.02116174 16.971293
-3 17.062938 0.04234043 0.08558315 0.12430001 0.82084248 15.544868
-4 23.538628 0.28821458 0.98277362 0.06712216 0.21164849 22.221771
-5 20.227194 0.99291576 0.90178957 0.21954234 0.30443948 17.990976
-6 13.453964 0.86848323 0.56097010 0.16511310 0.07993094 17.280645</code></pre>
-<p>The data contains the predictors <code>x0</code> to <code>x3</code> as well as the grouping factor <code>fac</code> indicating the nested structure of the data. We predict the response variable <code>y</code> using smooth terms of <code>x1</code> and <code>x2</code> and a varying intercept of <code>fac</code>. In addition, we assume the residual standard deviation <code>sigma</code> to vary by a smoothing term of <code>x0</code> and a varying intercept of <code>fac</code>.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dat_smooth</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<pre><code>          y        x0         x1         x2         x3        f
+1  8.150939 0.6903092 0.04804987 0.94618692 0.02080101  5.75658
+2 14.109712 0.1798620 0.25672053 0.70941441 0.01699261 11.51515
+3 18.363342 0.5003717 0.70256600 0.86150502 0.76198548 15.34990
+4 25.898951 0.6707133 0.59502683 0.15013151 0.61529975 23.65822
+5  9.629659 0.2669276 0.68993387 0.08383681 0.10526496 10.91666
+6 12.015831 0.2215343 0.77371085 0.75898767 0.06962474 13.87182</code></pre>
+<p>The data contains the predictors <code>x0</code> to <code>x3</code>
+as well as the grouping factor <code>fac</code> indicating the nested
+structure of the data. We predict the response variable <code>y</code>
+using smooth terms of <code>x1</code> and <code>x2</code> and a varying
+intercept of <code>fac</code>. In addition, we assume the residual
+standard deviation <code>sigma</code> to vary by a smoothing term of
+<code>x0</code> and a varying intercept of <code>fac</code>.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit_smooth1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu"><a href="../reference/s.html">s</a></span><span class="op">(</span><span class="va">x1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/s.html">s</a></span><span class="op">(</span><span class="va">x2</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">fac</span><span class="op">)</span>, <span class="va">sigma</span> <span class="op">~</span> <span class="fu"><a href="../reference/s.html">s</a></span><span class="op">(</span><span class="va">x0</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">fac</span><span class="op">)</span><span class="op">)</span>,
-  data <span class="op">=</span> <span class="va">dat_smooth</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>,
-  chains <span class="op">=</span> <span class="fl">2</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit_smooth1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu"><a href="../reference/s.html">s</a></span><span class="op">(</span><span class="va">x1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/s.html">s</a></span><span class="op">(</span><span class="va">x2</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">fac</span><span class="op">)</span>, <span class="va">sigma</span> <span class="op">~</span> <span class="fu"><a href="../reference/s.html">s</a></span><span class="op">(</span><span class="va">x0</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">fac</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">dat_smooth</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit_smooth1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_smooth1</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = log 
 Formula: y ~ s(x1) + s(x2) + (1 | fac) 
@@ -313,31 +430,34 @@ Formula: y ~ s(x1) + s(x2) + (1 | fac)
 
 Smooth Terms: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sds(sx1_1)           2.23      1.75     0.13     6.79 1.00      787      510
-sds(sx2_1)          21.89      5.98    13.41    36.16 1.00      948     1356
-sds(sigma_sx0_1)     1.34      1.42     0.07     5.38 1.00      478      667
+sds(sx1_1)           1.89      1.57     0.06     5.72 1.00      679      525
+sds(sx2_1)          20.89      5.74    12.79    35.10 1.00      662      894
+sds(sigma_sx0_1)     0.70      0.69     0.02     2.56 1.00      774     1111
 
 Group-Level Effects: 
 ~fac (Number of levels: 4) 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)           5.01      2.21     2.26    10.76 1.00     1068     1082
-sd(sigma_Intercept)     0.14      0.25     0.00     0.66 1.00      498      393
+sd(Intercept)           4.76      2.03     2.29    10.12 1.00     1016     1118
+sd(sigma_Intercept)     0.14      0.18     0.00     0.55 1.00      644      826
 
 Population-Level Effects: 
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept          15.36      2.37    10.47    20.10 1.00      841     1051
-sigma_Intercept     0.75      0.16     0.53     0.98 1.00      785      359
-sx1_1              11.58      4.99     0.34    21.80 1.00     1147      899
-sx2_1              26.41     13.88    -0.06    53.36 1.00     1686     1427
-sigma_sx0_1        -1.35      2.72    -7.50     3.55 1.00     1073      843
+Intercept          15.02      2.09    10.60    19.10 1.00      891      911
+sigma_Intercept     0.73      0.12     0.46     0.97 1.00     1150      850
+sx1_1              11.00      4.67     2.07    21.60 1.00     1101      921
+sx2_1              68.77     15.32    38.71    98.40 1.00     1585     1167
+sigma_sx0_1        -0.58      1.80    -5.34     2.22 1.01      699      648
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_smooth1</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_smooth1</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-13-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-13-2.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-13-3.png" width="60%" style="display: block; margin: auto;"></p>
-<p>This model is likely an overkill for the data at hand, but nicely demonstrates the ease with which one can specify complex models with <strong>brms</strong> and to fit them using <strong>Stan</strong> on the backend.</p>
+<p>This model is likely an overkill for the data at hand, but nicely
+demonstrates the ease with which one can specify complex models with
+<strong>brms</strong> and to fit them using <strong>Stan</strong> on the
+backend.</p>
 </div>
   </div>
 
@@ -352,11 +472,13 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 
 
       <footer><div class="copyright">
-  <p>Developed by Paul-Christian Bürkner.</p>
+  <p></p>
+<p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
@@ -364,6 +486,8 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 
   
 
+
+  
 
   </body>
 </html>

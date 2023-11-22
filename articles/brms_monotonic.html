@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
       </span>
     </div>
 
@@ -54,55 +56,55 @@
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="http://mc-stan.org/rstan" class="external-link">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="http://mc-stan.org/rstanarm" class="external-link">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="http://mc-stan.org/bayesplot" class="external-link">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="http://mc-stan.org/shinystan" class="external-link">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="http://mc-stan.org/loo" class="external-link">loo</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/projpred">projpred</a>
+      <a href="http://mc-stan.org/projpred" class="external-link">projpred</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="http://mc-stan.org/rstantools" class="external-link">rstantools</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="http://mc-stan.org" class="external-link">Stan</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://twitter.com/mcmc_stan">
-    <span class="fas fa-twitter"></span>
+  <a href="https://twitter.com/mcmc_stan" class="external-link">
+    <span class="fa fa-twitter"></span>
      
   </a>
 </li>
 <li>
-  <a href="https://github.com/stan-dev/brms">
-    <span class="fas fa-github"></span>
+  <a href="https://github.com/stan-dev/brms" class="external-link">
+    <span class="fa fa-github"></span>
      
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
-    <span class="fas fa-users"></span>
+  <a href="http://discourse.mc-stan.org/" class="external-link">
+    <span class="fa fa-users"></span>
      
   </a>
 </li>
@@ -116,45 +118,81 @@
 
       
 
-      </header><script src="brms_monotonic_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Estimating Monotonic Effects with brms</h1>
-                        <h4 class="author">Paul Bürkner</h4>
+                        <h4 data-toc-skip class="author">Paul
+Bürkner</h4>
             
-            <h4 class="date">2021-08-26</h4>
+            <h4 data-toc-skip class="date">2023-11-23</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_monotonic.Rmd"><code>vignettes/brms_monotonic.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_monotonic.Rmd" class="external-link"><code>vignettes/brms_monotonic.Rmd</code></a></small>
       <div class="hidden name"><code>brms_monotonic.Rmd</code></div>
 
     </div>
 
     
     
-<div id="introduction" class="section level2">
-<h2 class="hasAnchor">
-<a href="#introduction" class="anchor"></a>Introduction</h2>
-<p>This vignette is about monotonic effects, a special way of handling discrete predictors that are on an ordinal or higher scale (Bürkner &amp; Charpentier, in review). A predictor, which we want to model as monotonic (i.e., having a monotonically increasing or decreasing relationship with the response), must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumed to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, <span class="math inline">\(b\)</span>, takes care of the direction and size of the effect similar to an ordinary regression parameter. If the monotonic effect is used in a linear model, <span class="math inline">\(b\)</span> can be interpreted as the expected average difference between two adjacent categories of the ordinal predictor. An additional parameter vector, <span class="math inline">\(\zeta\)</span>, estimates the normalized distances between consecutive predictor categories which thus defines the shape of the monotonic effect. For a single monotonic predictor, <span class="math inline">\(x\)</span>, the linear predictor term of observation <span class="math inline">\(n\)</span> looks as follows:</p>
-<p><span class="math display">\[\eta_n = b D \sum_{i = 1}^{x_n} \zeta_i\]</span></p>
-<p>The parameter <span class="math inline">\(b\)</span> can take on any real value, while <span class="math inline">\(\zeta\)</span> is a simplex, which means that it satisfies <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^D \zeta_i = 1\)</span> with <span class="math inline">\(D\)</span> being the number of elements of <span class="math inline">\(\zeta\)</span>. Equivalently, <span class="math inline">\(D\)</span> is the number of categories (or highest integer in the data) minus 1, since we start counting categories from zero to simplify the notation.</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p>This vignette is about monotonic effects, a special way of handling
+discrete predictors that are on an ordinal or higher scale (Bürkner
+&amp; Charpentier, in review). A predictor, which we want to model as
+monotonic (i.e., having a monotonically increasing or decreasing
+relationship with the response), must either be integer valued or an
+ordered factor. As opposed to a continuous predictor, predictor
+categories (or integers) are not assumed to be equidistant with respect
+to their effect on the response variable. Instead, the distance between
+adjacent predictor categories (or integers) is estimated from the data
+and may vary across categories. This is realized by parameterizing as
+follows: One parameter, <span class="math inline">\(b\)</span>, takes
+care of the direction and size of the effect similar to an ordinary
+regression parameter. If the monotonic effect is used in a linear model,
+<span class="math inline">\(b\)</span> can be interpreted as the
+expected average difference between two adjacent categories of the
+ordinal predictor. An additional parameter vector, <span class="math inline">\(\zeta\)</span>, estimates the normalized distances
+between consecutive predictor categories which thus defines the shape of
+the monotonic effect. For a single monotonic predictor, <span class="math inline">\(x\)</span>, the linear predictor term of
+observation <span class="math inline">\(n\)</span> looks as follows:</p>
+<p><span class="math display">\[\eta_n = b D \sum_{i = 1}^{x_n}
+\zeta_i\]</span></p>
+<p>The parameter <span class="math inline">\(b\)</span> can take on any
+real value, while <span class="math inline">\(\zeta\)</span> is a
+simplex, which means that it satisfies <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^D \zeta_i = 1\)</span> with <span class="math inline">\(D\)</span> being the number of elements of <span class="math inline">\(\zeta\)</span>. Equivalently, <span class="math inline">\(D\)</span> is the number of categories (or highest
+integer in the data) minus 1, since we start counting categories from
+zero to simplify the notation.</p>
 </div>
-<div id="a-simple-monotonic-model" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-simple-monotonic-model" class="anchor"></a>A Simple Monotonic Model</h2>
-<p>A main application of monotonic effects are ordinal predictors that can be modeled this way without falsely treating them either as continuous or as unordered categorical predictors. In Psychology, for instance, this kind of data is omnipresent in the form of Likert scale items, which are often treated as being continuous for convenience without ever testing this assumption. As an example, suppose we are interested in the relationship of yearly income (in $) and life satisfaction measured on an arbitrary scale from 0 to 100. Usually, people are not asked for the exact income. Instead, they are asked to rank themselves in one of certain classes, say: ‘below 20k’, ‘between 20k and 40k’, ‘between 40k and 100k’ and ‘above 100k’. We use some simulated data for illustration purposes.</p>
+<div class="section level2">
+<h2 id="a-simple-monotonic-model">A Simple Monotonic Model<a class="anchor" aria-label="anchor" href="#a-simple-monotonic-model"></a>
+</h2>
+<p>A main application of monotonic effects are ordinal predictors that
+can be modeled this way without falsely treating them either as
+continuous or as unordered categorical predictors. In Psychology, for
+instance, this kind of data is omnipresent in the form of Likert scale
+items, which are often treated as being continuous for convenience
+without ever testing this assumption. As an example, suppose we are
+interested in the relationship of yearly income (in $) and life
+satisfaction measured on an arbitrary scale from 0 to 100. Usually,
+people are not asked for the exact income. Instead, they are asked to
+rank themselves in one of certain classes, say: ‘below 20k’, ‘between
+20k and 40k’, ‘between 40k and 100k’ and ‘above 100k’. We use some
+simulated data for illustration purposes.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">income_options</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"below_20"</span>, <span class="st">"20_to_40"</span>, <span class="st">"40_to_100"</span>, <span class="st">"greater_100"</span><span class="op">)</span>
-<span class="va">income</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span><span class="op">(</span><span class="va">income_options</span>, <span class="fl">100</span>, <span class="cn">TRUE</span><span class="op">)</span>, 
-                 levels <span class="op">=</span> <span class="va">income_options</span>, ordered <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="va">mean_ls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">70</span>, <span class="fl">75</span><span class="op">)</span>
-<span class="va">ls</span> <span class="op">&lt;-</span> <span class="va">mean_ls</span><span class="op">[</span><span class="va">income</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, sd <span class="op">=</span> <span class="fl">7</span><span class="op">)</span>
-<span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">income</span>, <span class="va">ls</span><span class="op">)</span></code></pre></div>
-<p>We now proceed with analyzing the data modeling <code>income</code> as a monotonic effect.</p>
+<code class="sourceCode R"><span><span class="va">income_options</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below_20"</span>, <span class="st">"20_to_40"</span>, <span class="st">"40_to_100"</span>, <span class="st">"greater_100"</span><span class="op">)</span></span>
+<span><span class="va">income</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">income_options</span>, <span class="fl">100</span>, <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>                 levels <span class="op">=</span> <span class="va">income_options</span>, ordered <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">mean_ls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">70</span>, <span class="fl">75</span><span class="op">)</span></span>
+<span><span class="va">ls</span> <span class="op">&lt;-</span> <span class="va">mean_ls</span><span class="op">[</span><span class="va">income</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, sd <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">income</span>, <span class="va">ls</span><span class="op">)</span></span></code></pre></div>
+<p>We now proceed with analyzing the data modeling <code>income</code>
+as a monotonic effect.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
 <p>The summary methods yield</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) 
@@ -164,35 +202,39 @@ Formula: ls ~ mo(income)
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    27.47      1.44    24.72    30.28 1.00     2367     2537
-moincome     15.43      0.61    14.22    16.61 1.00     2279     2295
+Intercept    30.90      1.56    27.83    33.92 1.00     2578     2098
+moincome     14.75      0.71    13.31    16.15 1.00     2792     2145
 
 Simplex Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.70      0.03     0.63     0.77 1.00     3143     2502
-moincome1[2]     0.27      0.04     0.19     0.34 1.00     3531     3188
-moincome1[3]     0.03      0.03     0.00     0.10 1.00     2392     1550
+moincome1[1]     0.70      0.04     0.62     0.78 1.00     3493     2755
+moincome1[2]     0.12      0.05     0.03     0.22 1.00     3350     1609
+moincome1[3]     0.18      0.04     0.09     0.26 1.00     3944     2583
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.90      0.51     5.98     8.03 1.00     2990     1968
+sigma     7.39      0.53     6.42     8.50 1.00     3482     2683
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit1</span>, variable <span class="op">=</span> <span class="st">"simo"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit1</span>, variable <span class="op">=</span> <span class="st">"simo"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-3-2.png" width="60%" style="display: block; margin: auto;"></p>
-<p>The distributions of the simplex parameter of <code>income</code>, as shown in the <code>plot</code> method, demonstrate that the largest difference (about 70% of the difference between minimum and maximum category) is between the first two categories.</p>
-<p>Now, let’s compare of monotonic model with two common alternative models. (a) Assume <code>income</code> to be continuous:</p>
+<p>The distributions of the simplex parameter of <code>income</code>, as
+shown in the <code>plot</code> method, demonstrate that the largest
+difference (about 70% of the difference between minimum and maximum
+category) is between the first two categories.</p>
+<p>Now, let’s compare of monotonic model with two common alternative
+models. (a) Assume <code>income</code> to be continuous:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">dat</span><span class="op">$</span><span class="va">income_num</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">income</span><span class="op">)</span>
-<span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="va">income_num</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">dat</span><span class="op">$</span><span class="va">income_num</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">income</span><span class="op">)</span></span>
+<span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="va">income_num</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ income_num 
@@ -202,22 +244,22 @@ Formula: ls ~ income_num
 
 Population-Level Effects: 
            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     22.47      2.63    17.31    27.83 1.00     3823     2927
-income_num    14.34      0.96    12.47    16.22 1.00     3788     2962
+Intercept     24.82      2.50    19.97    29.76 1.00     3902     2962
+income_num    13.62      0.90    11.86    15.31 1.00     3567     2738
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma    10.75      0.77     9.38    12.44 1.00     3794     2924
+sigma     9.91      0.73     8.59    11.53 1.00     4012     2716
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>or (b) Assume <code>income</code> to be an unordered factor:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/contrasts.html">contrasts</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">income</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/contrast.html">contr.treatment</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>
-<span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="va">income</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/contrasts.html" class="external-link">contrasts</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">income</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/contrast.html" class="external-link">contr.treatment</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="va">income</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit3</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit3</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ income 
@@ -227,29 +269,30 @@ Formula: ls ~ income
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    27.27      1.46    24.50    30.19 1.00     2939     2575
-income2      32.62      1.97    28.64    36.46 1.00     3196     2984
-income3      45.85      2.14    41.58    50.06 1.00     3156     3040
-income4      45.87      1.96    41.90    49.77 1.00     3042     2970
+Intercept    30.69      1.56    27.57    33.63 1.00     2764     2798
+income2      31.05      2.12    26.90    35.26 1.00     3205     2960
+income3      36.43      2.18    32.31    40.76 1.00     2906     2680
+income4      44.59      2.07    40.64    48.72 1.00     3191     3362
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.90      0.51     5.99     7.99 1.00     3818     2756
+sigma     7.40      0.55     6.43     8.56 1.00     3690     2814
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>We can easily compare the fit of the three models using leave-one-out cross-validation.</p>
+<p>We can easily compare the fit of the three models using leave-one-out
+cross-validation.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span>, <span class="va">fit3</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span>, <span class="va">fit3</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Output of model 'fit1':
 
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -336.7  6.6
-p_loo         4.3  0.6
-looic       673.5 13.2
+elpd_loo   -343.9  6.9
+p_loo         4.7  0.7
+looic       687.7 13.7
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -261,9 +304,9 @@ Output of model 'fit2':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -380.5  5.9
-p_loo         2.6  0.4
-looic       761.0 11.8
+elpd_loo   -372.5  6.8
+p_loo         2.9  0.5
+looic       745.0 13.6
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -275,9 +318,9 @@ Output of model 'fit3':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -337.0  6.6
-p_loo         4.9  0.7
-looic       674.0 13.2
+elpd_loo   -343.9  6.9
+p_loo         4.8  0.7
+looic       687.8 13.7
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -287,21 +330,47 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
      elpd_diff se_diff
 fit1   0.0       0.0  
-fit3  -0.3       0.8  
-fit2 -43.8       6.1  </code></pre>
-<p>The monotonic model fits better than the continuous model, which is not surprising given that the relationship between <code>income</code> and <code>ls</code> is non-linear. The monotonic and the unordered factor model have almost identical fit in this example, but this may not be the case for other data sets.</p>
+fit3   0.0       0.2  
+fit2 -28.6       6.3  </code></pre>
+<p>The monotonic model fits better than the continuous model, which is
+not surprising given that the relationship between <code>income</code>
+and <code>ls</code> is non-linear. The monotonic and the unordered
+factor model have almost identical fit in this example, but this may not
+be the case for other data sets.</p>
 </div>
-<div id="setting-prior-distributions" class="section level2">
-<h2 class="hasAnchor">
-<a href="#setting-prior-distributions" class="anchor"></a>Setting Prior Distributions</h2>
-<p>In the previous monotonic model, we have implicitly assumed that all differences between adjacent categories were a-priori the same, or formulated correctly, had the same prior distribution. In the following, we want to show how to change this assumption. The canonical prior distribution of a simplex parameter is the Dirichlet distribution, a multivariate generalization of the beta distribution. It is non-zero for all valid simplexes (i.e., <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^D \zeta_i = 1\)</span>) and zero otherwise. The Dirichlet prior has a single parameter <span class="math inline">\(\alpha\)</span> of the same length as <span class="math inline">\(\zeta\)</span>. The higher <span class="math inline">\(\alpha_i\)</span> the higher the a-priori probability of higher values of <span class="math inline">\(\zeta_i\)</span>. Suppose that, before looking at the data, we expected that the same amount of additional money matters more for people who generally have less money. This translates into a higher a-priori values of <span class="math inline">\(\zeta_1\)</span> (difference between ‘below_20’ and ‘20_to_40’) and hence into higher values of <span class="math inline">\(\alpha_1\)</span>. We choose <span class="math inline">\(\alpha_1 = 2\)</span> and <span class="math inline">\(\alpha_2 = \alpha_3 = 1\)</span>, the latter being the default value of <span class="math inline">\(\alpha\)</span>. To fit the model we write:</p>
+<div class="section level2">
+<h2 id="setting-prior-distributions">Setting Prior Distributions<a class="anchor" aria-label="anchor" href="#setting-prior-distributions"></a>
+</h2>
+<p>In the previous monotonic model, we have implicitly assumed that all
+differences between adjacent categories were a-priori the same, or
+formulated correctly, had the same prior distribution. In the following,
+we want to show how to change this assumption. The canonical prior
+distribution of a simplex parameter is the Dirichlet distribution, a
+multivariate generalization of the beta distribution. It is non-zero for
+all valid simplexes (i.e., <span class="math inline">\(\zeta_i \in
+[0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^D \zeta_i =
+1\)</span>) and zero otherwise. The Dirichlet prior has a single
+parameter <span class="math inline">\(\alpha\)</span> of the same length
+as <span class="math inline">\(\zeta\)</span>. The higher <span class="math inline">\(\alpha_i\)</span> the higher the a-priori
+probability of higher values of <span class="math inline">\(\zeta_i\)</span>. Suppose that, before looking at
+the data, we expected that the same amount of additional money matters
+more for people who generally have less money. This translates into a
+higher a-priori values of <span class="math inline">\(\zeta_1\)</span>
+(difference between ‘below_20’ and ‘20_to_40’) and hence into higher
+values of <span class="math inline">\(\alpha_1\)</span>. We choose <span class="math inline">\(\alpha_1 = 2\)</span> and <span class="math inline">\(\alpha_2 = \alpha_3 = 1\)</span>, the latter being
+the default value of <span class="math inline">\(\alpha\)</span>. To fit
+the model we write:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">prior4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu"><a href="../reference/brmsfamily.html">dirichlet</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"simo"</span>, coef <span class="op">=</span> <span class="st">"moincome1"</span><span class="op">)</span>
-<span class="va">fit4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span>,
-            prior <span class="op">=</span> <span class="va">prior4</span>, sample_prior <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<p>The <code>1</code> at the end of <code>"moincome1"</code> may appear strange when first working with monotonic effects. However, it is necessary as one monotonic term may be associated with multiple simplex parameters, if interactions of multiple monotonic variables are included in the model.</p>
+<code class="sourceCode R"><span><span class="va">prior4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu"><a href="../reference/brmsfamily.html">dirichlet</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"simo"</span>, coef <span class="op">=</span> <span class="st">"moincome1"</span><span class="op">)</span></span>
+<span><span class="va">fit4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span>,</span>
+<span>            prior <span class="op">=</span> <span class="va">prior4</span>, sample_prior <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>The <code>1</code> at the end of <code>"moincome1"</code> may appear
+strange when first working with monotonic effects. However, it is
+necessary as one monotonic term may be associated with multiple simplex
+parameters, if interactions of multiple monotonic variables are included
+in the model.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit4</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit4</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) 
@@ -311,39 +380,45 @@ Formula: ls ~ mo(income)
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    27.42      1.46    24.55    30.21 1.00     2634     2514
-moincome     15.44      0.61    14.21    16.64 1.00     2602     2250
+Intercept    30.85      1.54    27.87    33.98 1.00     2652     2513
+moincome     14.75      0.71    13.36    16.09 1.00     2533     2624
 
 Simplex Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.70      0.03     0.64     0.76 1.00     2801     1977
-moincome1[2]     0.26      0.04     0.19     0.34 1.00     3163     2849
-moincome1[3]     0.03      0.03     0.00     0.10 1.00     2795     1837
+moincome1[1]     0.70      0.04     0.62     0.78 1.00     2920     2457
+moincome1[2]     0.12      0.05     0.03     0.21 1.00     2692     1692
+moincome1[3]     0.18      0.04     0.09     0.26 1.00     3699     2372
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.91      0.50     6.01     7.99 1.00     2981     2422
+sigma     7.40      0.56     6.39     8.63 1.00     2548     2322
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>We have used <code>sample_prior = TRUE</code> to also obtain draws from the prior distribution of <code>simo_moincome1</code> so that we can visualized it.</p>
+<p>We have used <code>sample_prior = TRUE</code> to also obtain draws
+from the prior distribution of <code>simo_moincome1</code> so that we
+can visualized it.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit4</span>, variable <span class="op">=</span> <span class="st">"prior_simo"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span>, N <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit4</span>, variable <span class="op">=</span> <span class="st">"prior_simo"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span>, N <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-11-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>As is visible in the plots, <code>simo_moincome1[1]</code> was a-priori on average twice as high as <code>simo_moincome1[2]</code> and <code>simo_moincome1[3]</code> as a result of setting <span class="math inline">\(\alpha_1\)</span> to 2.</p>
+<p>As is visible in the plots, <code>simo_moincome1[1]</code> was
+a-priori on average twice as high as <code>simo_moincome1[2]</code> and
+<code>simo_moincome1[3]</code> as a result of setting <span class="math inline">\(\alpha_1\)</span> to 2.</p>
 </div>
-<div id="modeling-interactions-of-monotonic-variables" class="section level2">
-<h2 class="hasAnchor">
-<a href="#modeling-interactions-of-monotonic-variables" class="anchor"></a>Modeling interactions of monotonic variables</h2>
+<div class="section level2">
+<h2 id="modeling-interactions-of-monotonic-variables">Modeling interactions of monotonic variables<a class="anchor" aria-label="anchor" href="#modeling-interactions-of-monotonic-variables"></a>
+</h2>
 <p>Suppose, we have additionally asked participants for their age.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">dat</span><span class="op">$</span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">40</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
-<p>We are not only interested in the main effect of age but also in the interaction of income and age. Interactions with monotonic variables can be specified in the usual way using the <code><a href="https://rdrr.io/r/base/Arithmetic.html">*</a></code> operator:</p>
+<code class="sourceCode R"><span><span class="va">dat</span><span class="op">$</span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">40</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<p>We are not only interested in the main effect of age but also in the
+interaction of income and age. Interactions with monotonic variables can
+be specified in the usual way using the <code>*</code> operator:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span><span class="op">*</span><span class="va">age</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span><span class="op">*</span><span class="va">age</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit5</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit5</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) * age 
@@ -353,44 +428,48 @@ Formula: ls ~ mo(income) * age
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       26.41      4.70    17.56    36.52 1.00     1188     1836
-age              0.03      0.11    -0.21     0.24 1.00     1094     1633
-moincome        14.74      2.15    10.31    18.82 1.00      844     1464
-moincome:age     0.02      0.05    -0.09     0.13 1.00      811     1487
+Intercept       32.73      5.04    22.90    42.72 1.00     1361     2253
+age             -0.04      0.11    -0.27     0.18 1.00     1353     1900
+moincome        16.85      2.77    11.55    22.37 1.00      837     1614
+moincome:age    -0.05      0.07    -0.19     0.07 1.00      845     1519
 
 Simplex Parameters: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.71      0.06     0.60     0.87 1.00     1175      921
-moincome1[2]         0.25      0.06     0.10     0.35 1.00     1345      930
-moincome1[3]         0.04      0.03     0.00     0.12 1.00     2319     1470
-moincome:age1[1]     0.38      0.25     0.01     0.87 1.00     2048     1774
-moincome:age1[2]     0.36      0.24     0.02     0.85 1.00     2132     2273
-moincome:age1[3]     0.27      0.22     0.01     0.81 1.00     1923     2486
+moincome1[1]         0.65      0.08     0.49     0.79 1.00      958     1981
+moincome1[2]         0.14      0.06     0.04     0.27 1.00     2291     1753
+moincome1[3]         0.21      0.07     0.08     0.37 1.00     1290     1974
+moincome:age1[1]     0.31      0.23     0.01     0.82 1.00     1830     2001
+moincome:age1[2]     0.29      0.22     0.01     0.80 1.00     2249     1930
+moincome:age1[3]     0.41      0.25     0.02     0.87 1.00     1447     2229
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.96      0.51     6.04     8.03 1.00     3257     2856
+sigma     7.35      0.54     6.38     8.54 1.00     2783     2477
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit5</span>, <span class="st">"income:age"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit5</span>, <span class="st">"income:age"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-14-1.png" width="60%" style="display: block; margin: auto;"></p>
 </div>
-<div id="modelling-monotonic-group-level-effects" class="section level2">
-<h2 class="hasAnchor">
-<a href="#modelling-monotonic-group-level-effects" class="anchor"></a>Modelling Monotonic Group-Level Effects</h2>
-<p>Suppose that the 100 people in our sample data were drawn from 10 different cities; 10 people per city. Thus, we add an identifier for <code>city</code> to the data and add some city-related variation to <code>ls</code>.</p>
+<div class="section level2">
+<h2 id="modelling-monotonic-group-level-effects">Modelling Monotonic Group-Level Effects<a class="anchor" aria-label="anchor" href="#modelling-monotonic-group-level-effects"></a>
+</h2>
+<p>Suppose that the 100 people in our sample data were drawn from 10
+different cities; 10 people per city. Thus, we add an identifier for
+<code>city</code> to the data and add some city-related variation to
+<code>ls</code>.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">dat</span><span class="op">$</span><span class="va">city</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
-<span class="va">var_city</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">10</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
-<span class="va">dat</span><span class="op">$</span><span class="va">ls</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">$</span><span class="va">ls</span> <span class="op">+</span> <span class="va">var_city</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">city</span><span class="op">]</span></code></pre></div>
-<p>With the following code, we fit a multilevel model assuming the intercept and the effect of <code>income</code> to vary by city:</p>
+<code class="sourceCode R"><span><span class="va">dat</span><span class="op">$</span><span class="va">city</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">var_city</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">dat</span><span class="op">$</span><span class="va">ls</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">$</span><span class="va">ls</span> <span class="op">+</span> <span class="va">var_city</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">city</span><span class="op">]</span></span></code></pre></div>
+<p>With the following code, we fit a multilevel model assuming the
+intercept and the effect of <code>income</code> to vary by city:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit6</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span><span class="op">*</span><span class="va">age</span> <span class="op">+</span> <span class="op">(</span><span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span> <span class="op">|</span> <span class="va">city</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit6</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">ls</span> <span class="op">~</span> <span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span><span class="op">*</span><span class="va">age</span> <span class="op">+</span> <span class="op">(</span><span class="fu"><a href="../reference/mo.html">mo</a></span><span class="op">(</span><span class="va">income</span><span class="op">)</span> <span class="op">|</span> <span class="va">city</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit6</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit6</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) * age + (mo(income) | city) 
@@ -401,39 +480,44 @@ Formula: ls ~ mo(income) * age + (mo(income) | city)
 Group-Level Effects: 
 ~city (Number of levels: 10) 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)               6.17      2.70     1.64    12.47 1.00     1123      932
-sd(moincome)                1.63      1.06     0.10     3.98 1.00      929     1151
-cor(Intercept,moincome)    -0.43      0.47    -0.97     0.79 1.00     2230     2291
+sd(Intercept)               9.86      3.25     5.07    17.61 1.00     1439     2372
+sd(moincome)                0.94      0.77     0.04     2.90 1.00     2101     2160
+cor(Intercept,moincome)    -0.03      0.58    -0.95     0.95 1.00     4617     2492
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       26.57      5.23    16.29    37.02 1.00     2112     2501
-age              0.05      0.12    -0.18     0.28 1.00     2050     2354
-moincome        15.16      2.34    10.54    19.85 1.00     1733     2101
-moincome:age     0.00      0.06    -0.11     0.12 1.00     1640     1467
+Intercept       34.87      6.53    21.82    47.64 1.00     1492     2460
+age             -0.03      0.13    -0.28     0.22 1.00     1632     2341
+moincome        17.54      3.17    11.39    23.73 1.00     1275     1496
+moincome:age    -0.06      0.07    -0.21     0.07 1.00     1227     1408
 
 Simplex Parameters: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.70      0.07     0.59     0.87 1.00     2009     1272
-moincome1[2]         0.25      0.06     0.09     0.36 1.00     2283     1332
-moincome1[3]         0.05      0.03     0.00     0.13 1.00     3222     1905
-moincome:age1[1]     0.37      0.24     0.02     0.84 1.00     3671     2554
-moincome:age1[2]     0.35      0.24     0.02     0.86 1.00     3046     3322
-moincome:age1[3]     0.28      0.22     0.01     0.80 1.00     3472     2763
+moincome1[1]         0.63      0.08     0.48     0.80 1.00     1355     1387
+moincome1[2]         0.14      0.06     0.03     0.26 1.00     3266     1398
+moincome1[3]         0.23      0.08     0.08     0.40 1.00     1552     1624
+moincome:age1[1]     0.28      0.21     0.01     0.79 1.00     3522     2453
+moincome:age1[2]     0.27      0.21     0.01     0.78 1.00     3423     2644
+moincome:age1[3]     0.45      0.26     0.02     0.90 1.00     2054     2741
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.99      0.58     5.95     8.20 1.00     2225     3102
+sigma     7.53      0.61     6.43     8.77 1.00     3891     2684
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>reveals that the effect of <code>income</code> varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed <code>income</code> to have the same effect across cities.</p>
+<p>reveals that the effect of <code>income</code> varies only little
+across cities. For the present data, this is not overly surprising given
+that, in the data simulations, we assumed <code>income</code> to have
+the same effect across cities.</p>
 </div>
-<div id="references" class="section level2">
-<h2 class="hasAnchor">
-<a href="#references" class="anchor"></a>References</h2>
-<p>Bürkner P. C. &amp; Charpentier, E. (in review). <a href="https://psyarxiv.com/9qkhj/">Monotonic Effects: A Principled Approach for Including Ordinal Predictors in Regression Models</a>. <em>PsyArXiv preprint</em>.</p>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Bürkner P. C. &amp; Charpentier, E. (in review). <a href="https://psyarxiv.com/9qkhj/" class="external-link">Monotonic Effects: A Principled
+Approach for Including Ordinal Predictors in Regression Models</a>.
+<em>PsyArXiv preprint</em>.</p>
 </div>
   </div>
 
@@ -448,11 +532,13 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 
 
       <footer><div class="copyright">
-  <p>Developed by Paul-Christian Bürkner.</p>
+  <p></p>
+<p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
@@ -460,6 +546,8 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 
   
 
+
+  
 
   </body>
 </html>

@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
       </span>
     </div>
 
@@ -54,55 +56,55 @@
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="http://mc-stan.org/rstan" class="external-link">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="http://mc-stan.org/rstanarm" class="external-link">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="http://mc-stan.org/bayesplot" class="external-link">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="http://mc-stan.org/shinystan" class="external-link">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="http://mc-stan.org/loo" class="external-link">loo</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/projpred">projpred</a>
+      <a href="http://mc-stan.org/projpred" class="external-link">projpred</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="http://mc-stan.org/rstantools" class="external-link">rstantools</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="http://mc-stan.org" class="external-link">Stan</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://twitter.com/mcmc_stan">
-    <span class="fas fa-twitter"></span>
+  <a href="https://twitter.com/mcmc_stan" class="external-link">
+    <span class="fa fa-twitter"></span>
      
   </a>
 </li>
 <li>
-  <a href="https://github.com/stan-dev/brms">
-    <span class="fas fa-github"></span>
+  <a href="https://github.com/stan-dev/brms" class="external-link">
+    <span class="fa fa-github"></span>
      
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
-    <span class="fas fa-users"></span>
+  <a href="http://discourse.mc-stan.org/" class="external-link">
+    <span class="fa fa-users"></span>
      
   </a>
 </li>
@@ -116,28 +118,44 @@
 
       
 
-      </header><script src="brms_missings_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Handle Missing Values with brms</h1>
-                        <h4 class="author">Paul Bürkner</h4>
+                        <h4 data-toc-skip class="author">Paul
+Bürkner</h4>
             
-            <h4 class="date">2021-08-26</h4>
+            <h4 data-toc-skip class="date">2023-11-23</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_missings.Rmd"><code>vignettes/brms_missings.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_missings.Rmd" class="external-link"><code>vignettes/brms_missings.Rmd</code></a></small>
       <div class="hidden name"><code>brms_missings.Rmd</code></div>
 
     </div>
 
     
     
-<div id="introduction" class="section level2">
-<h2 class="hasAnchor">
-<a href="#introduction" class="anchor"></a>Introduction</h2>
-<p>Many real world data sets contain missing values for various reasons. Generally, we have quite a few options to handle those missing values. The easiest solution is to remove all rows from the data set, where one or more variables are missing. However, if values are not missing completely at random, this will likely lead to bias in our analysis. Accordingly, we usually want to impute missing values in one way or the other. Here, we will consider two very general approaches using <strong>brms</strong>: (1) Impute missing values <em>before</em> the model fitting with multiple imputation, and (2) impute missing values on the fly <em>during</em> model fitting<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. As a simple example, we will use the <code>nhanes</code> data set, which contains information on participants’ <code>age</code>, <code>bmi</code> (body mass index), <code>hyp</code> (hypertensive), and <code>chl</code> (total serum cholesterol). For the purpose of the present vignette, we are primarily interested in predicting <code>bmi</code> by <code>age</code> and <code>chl</code>.</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p>Many real world data sets contain missing values for various reasons.
+Generally, we have quite a few options to handle those missing values.
+The easiest solution is to remove all rows from the data set, where one
+or more variables are missing. However, if values are not missing
+completely at random, this will likely lead to bias in our analysis.
+Accordingly, we usually want to impute missing values in one way or the
+other. Here, we will consider two very general approaches using
+<strong>brms</strong>: (1) Impute missing values <em>before</em> the
+model fitting with multiple imputation, and (2) impute missing values on
+the fly <em>during</em> model fitting<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. As a simple example, we will use the
+<code>nhanes</code> data set, which contains information on
+participants’ <code>age</code>, <code>bmi</code> (body mass index),
+<code>hyp</code> (hypertensive), and <code>chl</code> (total serum
+cholesterol). For the purpose of the present vignette, we are primarily
+interested in predicting <code>bmi</code> by <code>age</code> and
+<code>chl</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"nhanes"</span>, package <span class="op">=</span> <span class="st">"mice"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">nhanes</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"nhanes"</span>, package <span class="op">=</span> <span class="st">"mice"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">nhanes</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  age  bmi hyp chl
 1   1   NA  NA  NA
 2   2 22.7   1 187
@@ -146,19 +164,51 @@
 5   1 20.4   1 113
 6   3   NA  NA 184</code></pre>
 </div>
-<div id="imputation-before-model-fitting" class="section level2">
-<h2 class="hasAnchor">
-<a href="#imputation-before-model-fitting" class="anchor"></a>Imputation before model fitting</h2>
-<p>There are many approaches allowing us to impute missing data before the actual model fitting takes place. From a statistical perspective, multiple imputation is one of the best solutions. Each missing value is not imputed once but <code>m</code> times leading to a total of <code>m</code> fully imputed data sets. The model can then be fitted to each of those data sets separately and results are pooled across models, afterwards. One widely applied package for multiple imputation is <strong>mice</strong> (Buuren &amp; Groothuis-Oudshoorn, 2010) and we will use it in the following in combination with <strong>brms</strong>. Here, we apply the default settings of <strong>mice</strong>, which means that all variables will be used to impute missing values in all other variables and imputation functions automatically chosen based on the variables’ characteristics.</p>
+<div class="section level2">
+<h2 id="imputation-before-model-fitting">Imputation before model fitting<a class="anchor" aria-label="anchor" href="#imputation-before-model-fitting"></a>
+</h2>
+<p>There are many approaches allowing us to impute missing data before
+the actual model fitting takes place. From a statistical perspective,
+multiple imputation is one of the best solutions. Each missing value is
+not imputed once but <code>m</code> times leading to a total of
+<code>m</code> fully imputed data sets. The model can then be fitted to
+each of those data sets separately and results are pooled across models,
+afterwards. One widely applied package for multiple imputation is
+<strong>mice</strong> (Buuren &amp; Groothuis-Oudshoorn, 2010) and we
+will use it in the following in combination with <strong>brms</strong>.
+Here, we apply the default settings of <strong>mice</strong>, which
+means that all variables will be used to impute missing values in all
+other variables and imputation functions automatically chosen based on
+the variables’ characteristics.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice">mice</a></span><span class="op">)</span>
-<span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html">mice</a></span><span class="op">(</span><span class="va">nhanes</span>, m <span class="op">=</span> <span class="fl">5</span>, print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
-<p>Now, we have <code>m = 5</code> imputed data sets stored within the <code>imp</code> object. In practice, we will likely need more than <code>5</code> of those to accurately account for the uncertainty induced by the missingness, perhaps even in the area of <code>100</code> imputed data sets (Zhou &amp; Reiter, 2010). Of course, this increases the computational burden by a lot and so we stick to <code>m = 5</code> for the purpose of this vignette. Regardless of the value of <code>m</code>, we can either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass <code>imp</code> directly. The latter works because <strong>brms</strong> offers special support for data imputed by <strong>mice</strong>. We will go with the latter approach, since it is less typing. Fitting our model of interest with <strong>brms</strong> to the multiple imputed data sets is straightforward.</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
+<span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">nhanes</span>, m <span class="op">=</span> <span class="fl">5</span>, print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>Now, we have <code>m = 5</code> imputed data sets stored within the
+<code>imp</code> object. In practice, we will likely need more than
+<code>5</code> of those to accurately account for the uncertainty
+induced by the missingness, perhaps even in the area of <code>100</code>
+imputed data sets (Zhou &amp; Reiter, 2010). Of course, this increases
+the computational burden by a lot and so we stick to <code>m = 5</code>
+for the purpose of this vignette. Regardless of the value of
+<code>m</code>, we can either extract those data sets and then pass them
+to the actual model fitting function as a list of data frames, or pass
+<code>imp</code> directly. The latter works because
+<strong>brms</strong> offers special support for data imputed by
+<strong>mice</strong>. We will go with the latter approach, since it is
+less typing. Fitting our model of interest with <strong>brms</strong> to
+the multiple imputed data sets is straightforward.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit_imp1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm_multiple.html">brm_multiple</a></span><span class="op">(</span><span class="va">bmi</span> <span class="op">~</span> <span class="va">age</span><span class="op">*</span><span class="va">chl</span>, data <span class="op">=</span> <span class="va">imp</span>, chains <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></code></pre></div>
-<p>The returned fitted model is an ordinary <code>brmsfit</code> object containing the posterior draws of all <code>m</code> submodels. While pooling across models is not necessarily straightforward in classical statistics, it is trivial in a Bayesian framework. Here, pooling results of multiple imputed data sets is simply achieved by combining the posterior draws of the submodels. Accordingly, all post-processing methods can be used out of the box without having to worry about pooling at all.</p>
+<code class="sourceCode R"><span><span class="va">fit_imp1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm_multiple.html">brm_multiple</a></span><span class="op">(</span><span class="va">bmi</span> <span class="op">~</span> <span class="va">age</span><span class="op">*</span><span class="va">chl</span>, data <span class="op">=</span> <span class="va">imp</span>, chains <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p>The returned fitted model is an ordinary <code>brmsfit</code> object
+containing the posterior draws of all <code>m</code> submodels. While
+pooling across models is not necessarily straightforward in classical
+statistics, it is trivial in a Bayesian framework. Here, pooling results
+of multiple imputed data sets is simply achieved by combining the
+posterior draws of the submodels. Accordingly, all post-processing
+methods can be used out of the box without having to worry about pooling
+at all.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit_imp1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_imp1</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: bmi ~ age * chl 
@@ -168,53 +218,104 @@ Formula: bmi ~ age * chl
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    14.26      8.31    -1.76    31.39 1.09       76      269
-age           0.98      4.69    -8.93     9.84 1.04      190      569
-chl           0.10      0.05     0.00     0.18 1.13       51      171
-age:chl      -0.02      0.02    -0.07     0.03 1.07      103       NA
+Intercept    15.70      8.08    -0.21    31.42 1.15       45      262
+age           0.74      4.64    -8.24     9.93 1.07      105     1028
+chl           0.09      0.04     0.00     0.17 1.13       51      489
+age:chl      -0.02      0.02    -0.07     0.02 1.05      141     2750
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     3.25      0.56     2.34     4.53 1.10       65       NA
+sigma     3.15      0.55     2.26     4.38 1.11       58      328
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>In the summary output, we notice that some <code>Rhat</code> values are higher than <span class="math inline">\(1.1\)</span> indicating possible convergence problems. For models based on multiple imputed data sets, this is often a <strong>false positive</strong>: Chains of different submodels may not overlay each other exactly, since there were fitted to different data. We can see the chains on the right-hand side of</p>
+<p>In the summary output, we notice that some <code>Rhat</code> values
+are higher than <span class="math inline">\(1.1\)</span> indicating
+possible convergence problems. For models based on multiple imputed data
+sets, this is often a <strong>false positive</strong>: Chains of
+different submodels may not overlay each other exactly, since there were
+fitted to different data. We can see the chains on the right-hand side
+of</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fit_imp1</span>, variable <span class="op">=</span> <span class="st">"^b"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_imp1</span>, variable <span class="op">=</span> <span class="st">"^b"</span>, regex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_missings_files/figure-html/unnamed-chunk-5-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Such non-overlaying chains imply high <code>Rhat</code> values without there actually being any convergence issue. Accordingly, we have to investigate the convergence of the submodels separately, which we can do by looking at</p>
+<p>Such non-overlaying chains imply high <code>Rhat</code> values
+without there actually being any convergence issue. Accordingly, we have
+to investigate the convergence of the submodels separately, which we can
+do by looking at</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">fit_imp1</span><span class="op">$</span><span class="va">rhats</span>, <span class="fl">2</span><span class="op">)</span></code></pre></div>
-<pre><code>  b_Intercept b_age b_chl b_age.chl sigma lp__
-1           1     1     1         1     1 1.01
-2           1     1     1         1     1 1.00
-3           1     1     1         1     1 1.00
-4           1     1     1         1     1 1.00
-5           1     1     1         1     1 1.00</code></pre>
-<p>The convergence of each of the submodels looks good. Accordingly, we can proceed with further post-processing and interpretation of the results. For instance, we could investigate the combined effect of <code>age</code> and <code>chl</code>.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_imp1</span><span class="op">$</span><span class="va">rhats</span>, <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<pre><code>  b_Intercept b_age b_chl b_age.chl sigma lprior lp__
+1        1.00  1.00  1.00      1.00     1      1    1
+2        1.00  1.00  1.00      1.00     1      1    1
+3        1.01  1.01  1.01      1.01     1      1    1
+4        1.00  1.00  1.00      1.00     1      1    1
+5        1.00  1.00  1.00      1.01     1      1    1</code></pre>
+<p>The convergence of each of the submodels looks good. Accordingly, we
+can proceed with further post-processing and interpretation of the
+results. For instance, we could investigate the combined effect of
+<code>age</code> and <code>chl</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_imp1</span>, <span class="st">"age:chl"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_imp1</span>, <span class="st">"age:chl"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_missings_files/figure-html/unnamed-chunk-7-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>To summarize, the advantages of multiple imputation are obvious: One can apply it to all kinds of models, since model fitting functions do not need to know that the data sets were imputed, beforehand. Also, we do not need to worry about pooling across submodels when using fully Bayesian methods. The only drawback is the amount of time required for model fitting. Estimating Bayesian models is already quite slow with just a single data set and it only gets worse when working with multiple imputation.</p>
-<div id="compatibility-with-other-multiple-imputation-packages" class="section level3">
-<h3 class="hasAnchor">
-<a href="#compatibility-with-other-multiple-imputation-packages" class="anchor"></a>Compatibility with other multiple imputation packages</h3>
-<p><strong>brms</strong> offers built-in support for <strong>mice</strong> mainly because I use the latter in some of my own research projects. Nevertheless, <code>brm_multiple</code> supports all kinds of multiple imputation packages as it also accepts a <em>list</em> of data frames as input for its <code>data</code> argument. Thus, you just need to extract the imputed data frames in the form of a list, which can then be passed to <code>brm_multiple</code>. Most multiple imputation packages have some built-in functionality for this task. When using the <strong>mi</strong> package, for instance, you simply need to call the <code>mi::complete</code> function to get the desired output.</p>
+<p>To summarize, the advantages of multiple imputation are obvious: One
+can apply it to all kinds of models, since model fitting functions do
+not need to know that the data sets were imputed, beforehand. Also, we
+do not need to worry about pooling across submodels when using fully
+Bayesian methods. The only drawback is the amount of time required for
+model fitting. Estimating Bayesian models is already quite slow with
+just a single data set and it only gets worse when working with multiple
+imputation.</p>
+<div class="section level3">
+<h3 id="compatibility-with-other-multiple-imputation-packages">Compatibility with other multiple imputation packages<a class="anchor" aria-label="anchor" href="#compatibility-with-other-multiple-imputation-packages"></a>
+</h3>
+<p><strong>brms</strong> offers built-in support for
+<strong>mice</strong> mainly because I use the latter in some of my own
+research projects. Nevertheless, <code>brm_multiple</code> supports all
+kinds of multiple imputation packages as it also accepts a <em>list</em>
+of data frames as input for its <code>data</code> argument. Thus, you
+just need to extract the imputed data frames in the form of a list,
+which can then be passed to <code>brm_multiple</code>. Most multiple
+imputation packages have some built-in functionality for this task. When
+using the <strong>mi</strong> package, for instance, you simply need to
+call the <code>mi::complete</code> function to get the desired
+output.</p>
 </div>
 </div>
-<div id="imputation-during-model-fitting" class="section level2">
-<h2 class="hasAnchor">
-<a href="#imputation-during-model-fitting" class="anchor"></a>Imputation during model fitting</h2>
-<p>Imputation during model fitting is generally thought to be more complex than imputation before model fitting, because one has to take care of everything within one step. This remains true when imputing missing values with <strong>brms</strong>, but possibly to a somewhat smaller degree. Consider again the <code>nhanes</code> data with the goal to predict <code>bmi</code> by <code>age</code>, and <code>chl</code>. Since <code>age</code> contains no missing values, we only have to take special care of <code>bmi</code> and <code>chl</code>. We need to tell the model two things. (1) Which variables contain missing values and how they should be predicted, as well as (2) which of these imputed variables should be used as predictors. In <strong>brms</strong> we can do this as follows:</p>
+<div class="section level2">
+<h2 id="imputation-during-model-fitting">Imputation during model fitting<a class="anchor" aria-label="anchor" href="#imputation-during-model-fitting"></a>
+</h2>
+<p>Imputation during model fitting is generally thought to be more
+complex than imputation before model fitting, because one has to take
+care of everything within one step. This remains true when imputing
+missing values with <strong>brms</strong>, but possibly to a somewhat
+smaller degree. Consider again the <code>nhanes</code> data with the
+goal to predict <code>bmi</code> by <code>age</code>, and
+<code>chl</code>. Since <code>age</code> contains no missing values, we
+only have to take special care of <code>bmi</code> and <code>chl</code>.
+We need to tell the model two things. (1) Which variables contain
+missing values and how they should be predicted, as well as (2) which of
+these imputed variables should be used as predictors. In
+<strong>brms</strong> we can do this as follows:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">bform</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">bmi</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="va">chl</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
-  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">chl</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/brmsformula-helpers.html">set_rescor</a></span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span>
-<span class="va">fit_imp2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">bform</span>, data <span class="op">=</span> <span class="va">nhanes</span><span class="op">)</span></code></pre></div>
-<p>The model has become multivariate, as we no longer only predict <code>bmi</code> but also <code>chl</code> (see <code><a href="../articles/brms_multivariate.html">vignette("brms_multivariate")</a></code> for details about the multivariate syntax of <strong>brms</strong>). We ensure that missings in both variables will be modeled rather than excluded by adding <code>| mi()</code> on the left-hand side of the formulas<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. We write <code><a href="../reference/mi.html">mi(chl)</a></code> on the right-hand side of the formula for <code>bmi</code> to ensure that the estimated missing values of <code>chl</code> will be used in the prediction of <code>bmi</code>. The summary is a bit more cluttered as we get coefficients for both response variables, but apart from that we can interpret coefficients in the usual way.</p>
+<code class="sourceCode R"><span><span class="va">bform</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">bmi</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="va">chl</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">chl</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/brmsformula-helpers.html">set_rescor</a></span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_imp2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">bform</span>, data <span class="op">=</span> <span class="va">nhanes</span><span class="op">)</span></span></code></pre></div>
+<p>The model has become multivariate, as we no longer only predict
+<code>bmi</code> but also <code>chl</code> (see
+<code><a href="../articles/brms_multivariate.html">vignette("brms_multivariate")</a></code> for details about the
+multivariate syntax of <strong>brms</strong>). We ensure that missings
+in both variables will be modeled rather than excluded by adding
+<code>| mi()</code> on the left-hand side of the formulas<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. We write
+<code>mi(chl)</code> on the right-hand side of the formula for
+<code>bmi</code> to ensure that the estimated missing values of
+<code>chl</code> will be used in the prediction of <code>bmi</code>. The
+summary is a bit more cluttered as we get coefficients for both response
+variables, but apart from that we can interpret coefficients in the
+usual way.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit_imp2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_imp2</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: MV(gaussian, gaussian) 
   Links: mu = identity; sigma = identity
          mu = identity; sigma = identity 
@@ -226,50 +327,84 @@ Formula: bmi | mi() ~ age * mi(chl)
 
 Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-bmi_Intercept    13.94      8.74    -2.67    31.20 1.01     1189     1666
-chl_Intercept   141.44     25.81    90.13   191.32 1.00     2646     2989
-bmi_age           2.67      5.49    -7.89    13.90 1.01     1169     2025
-chl_age          28.83     13.88     2.05    56.74 1.00     2323     2503
-bmi_michl         0.10      0.04     0.01     0.18 1.00     1309     1630
-bmi_michl:age    -0.03      0.02    -0.08     0.02 1.01     1167     1903
+bmi_Intercept    13.95      8.69    -3.02    31.45 1.00     1547     1800
+chl_Intercept   141.77     25.27    92.52   193.54 1.00     2444     2272
+bmi_age           2.60      5.50    -8.10    14.10 1.00     1320     1553
+chl_age          28.64     13.31     1.86    54.00 1.00     2405     2781
+bmi_michl         0.10      0.05     0.00     0.18 1.00     1640     1680
+bmi_michl:age    -0.03      0.02    -0.08     0.02 1.00     1369     1538
 
 Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma_bmi     3.39      0.82     2.18     5.24 1.00     1393     2175
-sigma_chl    40.67      7.88    28.64    58.70 1.00     1956     2390
+sigma_bmi     3.37      0.78     2.21     5.17 1.00     1361     2077
+sigma_chl    40.37      7.64    28.37    58.13 1.00     2133     2586
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_imp2</span>, <span class="st">"age:chl"</span>, resp <span class="op">=</span> <span class="st">"bmi"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit_imp2</span>, <span class="st">"age:chl"</span>, resp <span class="op">=</span> <span class="st">"bmi"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_missings_files/figure-html/unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>The results look pretty similar to those obtained from multiple imputation, but be aware that this may not be generally the case. In multiple imputation, the default is to impute all variables based on all other variables, while in the ‘one-step’ approach, we have to explicitly specify the variables used in the imputation. Thus, arguably, multiple imputation is easier to apply. An obvious advantage of the ‘one-step’ approach is that the model needs to be fitted only once instead of <code>m</code> times. Also, within the <strong>brms</strong> framework, we can use multilevel structure and complex non-linear relationships for the imputation of missing values, which is not achieved as easily in standard multiple imputation software. On the downside, it is currently not possible to impute discrete variables, because <strong>Stan</strong> (the engine behind <strong>brms</strong>) does not allow estimating discrete parameters.</p>
-<div id="combining-measurement-error-and-missing-values" class="section level3">
-<h3 class="hasAnchor">
-<a href="#combining-measurement-error-and-missing-values" class="anchor"></a>Combining measurement error and missing values</h3>
-<p>Missing value terms in <strong>brms</strong> cannot only handle missing values but also measurement error, or arbitrary combinations of the two. In fact, we can think of a missing value as a value with infinite measurement error. Thus, <code>mi</code> terms are a natural (and somewhat more verbose) generalization of the now soft deprecated <code>me</code> terms. Suppose we had measured the variable <code>chl</code> with some known error:</p>
+<p>The results look pretty similar to those obtained from multiple
+imputation, but be aware that this may not be generally the case. In
+multiple imputation, the default is to impute all variables based on all
+other variables, while in the ‘one-step’ approach, we have to explicitly
+specify the variables used in the imputation. Thus, arguably, multiple
+imputation is easier to apply. An obvious advantage of the ‘one-step’
+approach is that the model needs to be fitted only once instead of
+<code>m</code> times. Also, within the <strong>brms</strong> framework,
+we can use multilevel structure and complex non-linear relationships for
+the imputation of missing values, which is not achieved as easily in
+standard multiple imputation software. On the downside, it is currently
+not possible to impute discrete variables, because <strong>Stan</strong>
+(the engine behind <strong>brms</strong>) does not allow estimating
+discrete parameters.</p>
+<div class="section level3">
+<h3 id="combining-measurement-error-and-missing-values">Combining measurement error and missing values<a class="anchor" aria-label="anchor" href="#combining-measurement-error-and-missing-values"></a>
+</h3>
+<p>Missing value terms in <strong>brms</strong> cannot only handle
+missing values but also measurement error, or arbitrary combinations of
+the two. In fact, we can think of a missing value as a value with
+infinite measurement error. Thus, <code>mi</code> terms are a natural
+(and somewhat more verbose) generalization of the now soft deprecated
+<code>me</code> terms. Suppose we had measured the variable
+<code>chl</code> with some known error:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">nhanes</span><span class="op">$</span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html">rexp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">nhanes</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></code></pre></div>
-<p>Then we can go ahead an include this information into the model as follows:</p>
+<code class="sourceCode R"><span><span class="va">nhanes</span><span class="op">$</span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">nhanes</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p>Then we can go ahead an include this information into the model as
+follows:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">bform</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">bmi</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="va">chl</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
-  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">chl</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/brmsformula-helpers.html">set_rescor</a></span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span>
-<span class="va">fit_imp3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">bform</span>, data <span class="op">=</span> <span class="va">nhanes</span><span class="op">)</span></code></pre></div>
-<p>Summarizing and post-processing the model continues to work as usual.</p>
+<code class="sourceCode R"><span><span class="va">bform</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">bmi</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="va">chl</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span><span class="op">(</span><span class="va">chl</span> <span class="op">|</span> <span class="fu"><a href="../reference/mi.html">mi</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/brmsformula-helpers.html">set_rescor</a></span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_imp3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">bform</span>, data <span class="op">=</span> <span class="va">nhanes</span><span class="op">)</span></span></code></pre></div>
+<p>Summarizing and post-processing the model continues to work as
+usual.</p>
 </div>
 </div>
-<div id="references" class="section level2">
-<h2 class="hasAnchor">
-<a href="#references" class="anchor"></a>References</h2>
-<p>Buuren, S. V. &amp; Groothuis-Oudshoorn, K. (2010). mice: Multivariate imputation by chained equations in R. <em>Journal of Statistical Software</em>, 1-68. doi.org/10.18637/jss.v045.i03</p>
-<p>Zhou, X. &amp; Reiter, J. P. (2010). A Note on Bayesian Inference After Multiple Imputation. <em>The American Statistician</em>, 64(2), 159-163. doi.org/10.1198/tast.2010.09109</p>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Buuren, S. V. &amp; Groothuis-Oudshoorn, K. (2010). mice:
+Multivariate imputation by chained equations in R. <em>Journal of
+Statistical Software</em>, 1-68. doi.org/10.18637/jss.v045.i03</p>
+<p>Zhou, X. &amp; Reiter, J. P. (2010). A Note on Bayesian Inference
+After Multiple Imputation. <em>The American Statistician</em>, 64(2),
+159-163. doi.org/10.1198/tast.2010.09109</p>
 </div>
-<div class="footnotes">
+<div class="footnotes footnotes-end-of-document">
 <hr>
 <ol>
-<li id="fn1"><p>Actually, there is a third approach that only applies to missings in response variables. If we want to impute missing responses, we just fit the model using the observed responses and than impute the missings <em>after</em> fitting the model by means of posterior prediction. That is, we supply the predictor values corresponding to missing responses to the <code>predict</code> method.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
-<li id="fn2"><p>We don’t really need this for <code>bmi</code>, since <code>bmi</code> is not used as a predictor for another variable. Accordingly, we could also – and equivalently – impute missing values of <code>bmi</code> <em>after</em> model fitting by means of posterior prediction.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>Actually, there is a third approach that only applies to
+missings in response variables. If we want to impute missing responses,
+we just fit the model using the observed responses and than impute the
+missings <em>after</em> fitting the model by means of posterior
+prediction. That is, we supply the predictor values corresponding to
+missing responses to the <code>predict</code> method.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>We don’t really need this for <code>bmi</code>, since
+<code>bmi</code> is not used as a predictor for another variable.
+Accordingly, we could also – and equivalently – impute missing values of
+<code>bmi</code> <em>after</em> model fitting by means of posterior
+prediction.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
   </div>
@@ -285,11 +420,13 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 
 
       <footer><div class="copyright">
-  <p>Developed by Paul-Christian Bürkner.</p>
+  <p></p>
+<p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
@@ -297,6 +434,8 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 
   
 
+
+  
 
   </body>
 </html>

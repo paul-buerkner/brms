@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
       </span>
     </div>
 
@@ -54,55 +56,55 @@
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="http://mc-stan.org/rstan" class="external-link">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="http://mc-stan.org/rstanarm" class="external-link">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="http://mc-stan.org/bayesplot" class="external-link">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="http://mc-stan.org/shinystan" class="external-link">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="http://mc-stan.org/loo" class="external-link">loo</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/projpred">projpred</a>
+      <a href="http://mc-stan.org/projpred" class="external-link">projpred</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="http://mc-stan.org/rstantools" class="external-link">rstantools</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="http://mc-stan.org" class="external-link">Stan</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://twitter.com/mcmc_stan">
-    <span class="fas fa-twitter"></span>
+  <a href="https://twitter.com/mcmc_stan" class="external-link">
+    <span class="fa fa-twitter"></span>
      
   </a>
 </li>
 <li>
-  <a href="https://github.com/stan-dev/brms">
-    <span class="fas fa-github"></span>
+  <a href="https://github.com/stan-dev/brms" class="external-link">
+    <span class="fa fa-github"></span>
      
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
-    <span class="fas fa-users"></span>
+  <a href="http://discourse.mc-stan.org/" class="external-link">
+    <span class="fa fa-users"></span>
      
   </a>
 </li>
@@ -116,33 +118,54 @@
 
       
 
-      </header><script src="brms_customfamilies_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Define Custom Response Distributions with brms</h1>
-                        <h4 class="author">Paul Bürkner</h4>
+      <h1 data-toc-skip>Define Custom Response Distributions with
+brms</h1>
+                        <h4 data-toc-skip class="author">Paul
+Bürkner</h4>
             
-            <h4 class="date">2021-08-26</h4>
+            <h4 data-toc-skip class="date">2023-11-23</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_customfamilies.Rmd"><code>vignettes/brms_customfamilies.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_customfamilies.Rmd" class="external-link"><code>vignettes/brms_customfamilies.Rmd</code></a></small>
       <div class="hidden name"><code>brms_customfamilies.Rmd</code></div>
 
     </div>
 
     
     
-<div id="introduction" class="section level2">
-<h2 class="hasAnchor">
-<a href="#introduction" class="anchor"></a>Introduction</h2>
-<p>The <strong>brms</strong> package comes with a lot of built-in response distributions – usually called <em>families</em> in R – to specify among others linear, count data, survival, response times, or ordinal models (see <code><a href="../reference/brmsfamily.html">help(brmsfamily)</a></code> for an overview). Despite supporting over two dozen families, there is still a long list of distributions, which are not natively supported. The present vignette will explain how to specify such <em>custom families</em> in <strong>brms</strong>. By doing that, users can benefit from the modeling flexibility and post-processing options of <strong>brms</strong> even when using self-defined response distributions. If you have built a custom family that you want to make available to other users, you can submit a pull request to this <a href="https://github.com/paul-buerkner/custom-brms-families">GitHub repository</a>.</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p>The <strong>brms</strong> package comes with a lot of built-in
+response distributions – usually called <em>families</em> in R – to
+specify among others linear, count data, survival, response times, or
+ordinal models (see <code><a href="../reference/brmsfamily.html">help(brmsfamily)</a></code> for an overview).
+Despite supporting over two dozen families, there is still a long list
+of distributions, which are not natively supported. The present vignette
+will explain how to specify such <em>custom families</em> in
+<strong>brms</strong>. By doing that, users can benefit from the
+modeling flexibility and post-processing options of
+<strong>brms</strong> even when using self-defined response
+distributions. If you have built a custom family that you want to make
+available to other users, you can submit a pull request to this <a href="https://github.com/paul-buerkner/custom-brms-families" class="external-link">GitHub
+repository</a>.</p>
 </div>
-<div id="a-case-study" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-case-study" class="anchor"></a>A Case Study</h2>
-<p>As a case study, we will use the <code>cbpp</code> data of the <strong>lme4</strong> package, which describes the development of the CBPP disease of cattle in Africa. The data set contains four variables: <code>period</code> (the time period), <code>herd</code> (a factor identifying the cattle herd), <code>incidence</code> (number of new disease cases for a given herd and time period), as well as <code>size</code> (the herd size at the beginning of a given time period).</p>
+<div class="section level2">
+<h2 id="a-case-study">A Case Study<a class="anchor" aria-label="anchor" href="#a-case-study"></a>
+</h2>
+<p>As a case study, we will use the <code>cbpp</code> data of the
+<strong>lme4</strong> package, which describes the development of the
+CBPP disease of cattle in Africa. The data set contains four variables:
+<code>period</code> (the time period), <code>herd</code> (a factor
+identifying the cattle herd), <code>incidence</code> (number of new
+disease cases for a given herd and time period), as well as
+<code>size</code> (the herd size at the beginning of a given time
+period).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"cbpp"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">cbpp</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"cbpp"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cbpp</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  herd incidence size period
 1    1         2   14      1
 2    1         3   12      2
@@ -150,21 +173,37 @@
 4    1         0    5      4
 5    2         3   22      1
 6    2         1   18      2</code></pre>
-<p>In a first step, we will be predicting <code>incidence</code> using a simple binomial model, which will serve as our baseline model. For observed number of events <span class="math inline">\(y\)</span> (<code>incidence</code> in our case) and total number of trials <span class="math inline">\(T\)</span> (<code>size</code>), the probability mass function of the binomial distribution is defined as</p>
+<p>In a first step, we will be predicting <code>incidence</code> using a
+simple binomial model, which will serve as our baseline model. For
+observed number of events <span class="math inline">\(y\)</span>
+(<code>incidence</code> in our case) and total number of trials <span class="math inline">\(T\)</span> (<code>size</code>), the probability
+mass function of the binomial distribution is defined as</p>
 <p><span class="math display">\[
 P(y | T, p) = \binom{T}{y} p^{y} (1 - p)^{N-y}
 \]</span></p>
-<p>where <span class="math inline">\(p\)</span> is the event probability. In the classical binomial model, we will directly predict <span class="math inline">\(p\)</span> on the logit-scale, which means that for each observation <span class="math inline">\(i\)</span> we compute the success probability <span class="math inline">\(p_i\)</span> as</p>
+<p>where <span class="math inline">\(p\)</span> is the event
+probability. In the classical binomial model, we will directly predict
+<span class="math inline">\(p\)</span> on the logit-scale, which means
+that for each observation <span class="math inline">\(i\)</span> we
+compute the success probability <span class="math inline">\(p_i\)</span>
+as</p>
 <p><span class="math display">\[
 p_i = \frac{\exp(\eta_i)}{1 + \exp(\eta_i)}
 \]</span></p>
-<p>where <span class="math inline">\(\eta_i\)</span> is the linear predictor term of observation <span class="math inline">\(i\)</span> (see <code>vignette("brms_overview")</code> for more details on linear predictors in <strong>brms</strong>). Predicting <code>incidence</code> by <code>period</code> and a varying intercept of <code>herd</code> is straight forward in <strong>brms</strong>:</p>
+<p>where <span class="math inline">\(\eta_i\)</span> is the linear
+predictor term of observation <span class="math inline">\(i\)</span>
+(see <code>vignette("brms_overview")</code> for more details on linear
+predictors in <strong>brms</strong>). Predicting <code>incidence</code>
+by <code>period</code> and a varying intercept of <code>herd</code> is
+straight forward in <strong>brms</strong>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">incidence</span> <span class="op">|</span> <span class="fu">trials</span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op">~</span> <span class="va">period</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">herd</span><span class="op">)</span>, 
-            data <span class="op">=</span> <span class="va">cbpp</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">binomial</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>In the summary output, we see that the incidence probability varies substantially over herds, but reduces over the course of the time as indicated by the negative coefficients of <code>period</code>.</p>
+<code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span><span class="va">incidence</span> <span class="op">|</span> <span class="fu"><a href="../reference/addition-terms.html">trials</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op">~</span> <span class="va">period</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">herd</span><span class="op">)</span>,</span>
+<span>            data <span class="op">=</span> <span class="va">cbpp</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>In the summary output, we see that the incidence probability varies
+substantially over herds, but reduces over the course of the time as
+indicated by the negative coefficients of <code>period</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: binomial 
   Links: mu = logit 
 Formula: incidence | trials(size) ~ period + (1 | herd) 
@@ -175,70 +214,118 @@ Formula: incidence | trials(size) ~ period + (1 | herd)
 Group-Level Effects: 
 ~herd (Number of levels: 15) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.76      0.22     0.40     1.27 1.01     1422     2386
+sd(Intercept)     0.76      0.22     0.41     1.29 1.00     1408     1825
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.40      0.25    -1.91    -0.92 1.00     2134     2103
-period2      -0.99      0.31    -1.60    -0.39 1.00     4216     2995
-period3      -1.13      0.33    -1.79    -0.49 1.00     4998     3327
-period4      -1.62      0.45    -2.58    -0.81 1.00     4547     2649
+Intercept    -1.40      0.26    -1.94    -0.92 1.00     2116     2780
+period2      -1.00      0.31    -1.63    -0.41 1.00     4500     2980
+period3      -1.14      0.33    -1.82    -0.52 1.00     4577     2816
+period4      -1.62      0.45    -2.56    -0.81 1.00     4520     3151
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>A drawback of the binomial model is that – after taking into account the linear predictor – its variance is fixed to <span class="math inline">\(\text{Var}(y_i) = T_i p_i (1 - p_i)\)</span>. All variance exceeding this value cannot be not taken into account by the model. There are multiple ways of dealing with this so called <em>overdispersion</em> and the solution described below will serve as an illustrative example of how to define custom families in <strong>brms</strong>.</p>
+<p>A drawback of the binomial model is that – after taking into account
+the linear predictor – its variance is fixed to <span class="math inline">\(\text{Var}(y_i) = T_i p_i (1 - p_i)\)</span>. All
+variance exceeding this value cannot be not taken into account by the
+model. There are multiple ways of dealing with this so called
+<em>overdispersion</em> and the solution described below will serve as
+an illustrative example of how to define custom families in
+<strong>brms</strong>.</p>
 </div>
-<div id="the-beta-binomial-distribution" class="section level2">
-<h2 class="hasAnchor">
-<a href="#the-beta-binomial-distribution" class="anchor"></a>The Beta-Binomial Distribution</h2>
-<p>The <em>beta-binomial</em> model is a generalization of the <em>binomial</em> model with an additional parameter to account for overdispersion. In the beta-binomial model, we do not predict the binomial probability <span class="math inline">\(p_i\)</span> directly, but assume it to be beta distributed with hyperparameters <span class="math inline">\(\alpha &gt; 0\)</span> and <span class="math inline">\(\beta &gt; 0\)</span>:</p>
+<div class="section level2">
+<h2 id="the-beta-binomial-distribution">The Beta-Binomial Distribution<a class="anchor" aria-label="anchor" href="#the-beta-binomial-distribution"></a>
+</h2>
+<p>The <em>beta-binomial</em> model is a generalization of the
+<em>binomial</em> model with an additional parameter to account for
+overdispersion. In the beta-binomial model, we do not predict the
+binomial probability <span class="math inline">\(p_i\)</span> directly,
+but assume it to be beta distributed with hyperparameters <span class="math inline">\(\alpha &gt; 0\)</span> and <span class="math inline">\(\beta &gt; 0\)</span>:</p>
 <p><span class="math display">\[
 p_i \sim \text{Beta}(\alpha_i, \beta_i)
 \]</span></p>
-<p>The <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> parameters are both hard to interpret and generally not recommended for use in regression models. Thus, we will apply a different parameterization with parameters <span class="math inline">\(\mu \in [0, 1]\)</span> and <span class="math inline">\(\phi &gt; 0\)</span>, which we will call <span class="math inline">\(\text{Beta2}\)</span>:</p>
+<p>The <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> parameters are both hard to
+interpret and generally not recommended for use in regression models.
+Thus, we will apply a different parameterization with parameters <span class="math inline">\(\mu \in [0, 1]\)</span> and <span class="math inline">\(\phi &gt; 0\)</span>, which we will call <span class="math inline">\(\text{Beta2}\)</span>:</p>
 <p><span class="math display">\[
 \text{Beta2}(\mu, \phi) = \text{Beta}(\mu \phi, (1-\mu) \phi)
 \]</span></p>
-<p>The parameters <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\phi\)</span> specify the mean and precision parameter, respectively. By defining</p>
+<p>The parameters <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\phi\)</span> specify the mean and precision
+parameter, respectively. By defining</p>
 <p><span class="math display">\[
 \mu_i = \frac{\exp(\eta_i)}{1 + \exp(\eta_i)}
 \]</span></p>
-<p>we still predict the expected probability by means of our transformed linear predictor (as in the original binomial model), but account for potential overdispersion via the parameter <span class="math inline">\(\phi\)</span>.</p>
+<p>we still predict the expected probability by means of our transformed
+linear predictor (as in the original binomial model), but account for
+potential overdispersion via the parameter <span class="math inline">\(\phi\)</span>.</p>
 </div>
-<div id="fitting-custom-family-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#fitting-custom-family-models" class="anchor"></a>Fitting Custom Family Models</h2>
-<p>The beta-binomial distribution is not natively supported in <strong>brms</strong> and so we will have to define it ourselves using the <code>custom_family</code> function. This function requires the family’s name, the names of its parameters (<code>mu</code> and <code>phi</code> in our case), corresponding link functions (only applied if parameters are predicted), their theoretical lower and upper bounds (only applied if parameters are not predicted), information on whether the distribution is discrete or continuous, and finally, whether additional non-parameter variables need to be passed to the distribution. For our beta-binomial example, this results in the following custom family:</p>
+<div class="section level2">
+<h2 id="fitting-custom-family-models">Fitting Custom Family Models<a class="anchor" aria-label="anchor" href="#fitting-custom-family-models"></a>
+</h2>
+<p>The beta-binomial distribution is natively supported in
+<strong>brms</strong> nowadays, but we will still use it as an example
+to define it ourselves via the <code>custom_family</code> function. This
+function requires the family’s name, the names of its parameters
+(<code>mu</code> and <code>phi</code> in our case), corresponding link
+functions (only applied if parameters are predicted), their theoretical
+lower and upper bounds (only applied if parameters are not predicted),
+information on whether the distribution is discrete or continuous, and
+finally, whether additional non-parameter variables need to be passed to
+the distribution. For our beta-binomial example, this results in the
+following custom family:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">beta_binomial2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/custom_family.html">custom_family</a></span><span class="op">(</span>
-  <span class="st">"beta_binomial2"</span>, dpars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"mu"</span>, <span class="st">"phi"</span><span class="op">)</span>,
-  links <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"logit"</span>, <span class="st">"log"</span><span class="op">)</span>, lb <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">0</span><span class="op">)</span>,
-  type <span class="op">=</span> <span class="st">"int"</span>, vars <span class="op">=</span> <span class="st">"vint1[n]"</span>
-<span class="op">)</span></code></pre></div>
-<p>The name <code>vint1</code> for the variable containing the number of trials is not chosen arbitrarily as we will see below. Next, we have to provide the relevant <strong>Stan</strong> functions if the distribution is not defined in <strong>Stan</strong> itself. For the <code>beta_binomial2</code> distribution, this is straight forward since the ordinal <code>beta_binomial</code> distribution is already implemented.</p>
+<code class="sourceCode R"><span><span class="va">beta_binomial2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/custom_family.html">custom_family</a></span><span class="op">(</span></span>
+<span>  <span class="st">"beta_binomial2"</span>, dpars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mu"</span>, <span class="st">"phi"</span><span class="op">)</span>,</span>
+<span>  links <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"logit"</span>, <span class="st">"log"</span><span class="op">)</span>,</span>
+<span>  lb <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, ub <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"int"</span>, vars <span class="op">=</span> <span class="st">"vint1[n]"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The name <code>vint1</code> for the variable containing the number of
+trials is not chosen arbitrarily as we will see below. Next, we have to
+provide the relevant <strong>Stan</strong> functions if the distribution
+is not defined in <strong>Stan</strong> itself. For the
+<code>beta_binomial2</code> distribution, this is straight forward since
+the ordinal <code>beta_binomial</code> distribution is already
+implemented.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">stan_funs</span> <span class="op">&lt;-</span> <span class="st">"
-  real beta_binomial2_lpmf(int y, real mu, real phi, int T) {
-    return beta_binomial_lpmf(y | T, mu * phi, (1 - mu) * phi);
-  }
-  int beta_binomial2_rng(real mu, real phi, int T) {
-    return beta_binomial_rng(T, mu * phi, (1 - mu) * phi);
-  }
-"</span></code></pre></div>
-<p>For the model fitting, we will only need <code>beta_binomial2_lpmf</code>, but <code>beta_binomial2_rng</code> will come in handy when it comes to post-processing. We define:</p>
+<code class="sourceCode R"><span><span class="va">stan_funs</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
+<span><span class="st">  real beta_binomial2_lpmf(int y, real mu, real phi, int T) {</span></span>
+<span><span class="st">    return beta_binomial_lpmf(y | T, mu * phi, (1 - mu) * phi);</span></span>
+<span><span class="st">  }</span></span>
+<span><span class="st">  int beta_binomial2_rng(real mu, real phi, int T) {</span></span>
+<span><span class="st">    return beta_binomial_rng(T, mu * phi, (1 - mu) * phi);</span></span>
+<span><span class="st">  }</span></span>
+<span><span class="st">"</span></span></code></pre></div>
+<p>For the model fitting, we will only need
+<code>beta_binomial2_lpmf</code>, but <code>beta_binomial2_rng</code>
+will come in handy when it comes to post-processing. We define:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/stanvar.html">stanvar</a></span><span class="op">(</span>scode <span class="op">=</span> <span class="va">stan_funs</span>, block <span class="op">=</span> <span class="st">"functions"</span><span class="op">)</span></code></pre></div>
-<p>To provide information about the number of trials (an integer variable), we are going to use the addition argument <code>vint()</code>, which can only be used in custom families. Similarly, if we needed to include additional vectors of real data, we would use <code>vreal()</code>. Actually, for this particular example, we could more elegantly apply the addition argument <code>trials()</code> instead of <code>vint()</code>as in the basic binomial model. However, since the present vignette is meant to give a general overview of the topic, we will go with the more general method.</p>
-<p>We now have all components together to fit our custom beta-binomial model:</p>
+<code class="sourceCode R"><span><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/stanvar.html">stanvar</a></span><span class="op">(</span>scode <span class="op">=</span> <span class="va">stan_funs</span>, block <span class="op">=</span> <span class="st">"functions"</span><span class="op">)</span></span></code></pre></div>
+<p>To provide information about the number of trials (an integer
+variable), we are going to use the addition argument
+<code><a href="../reference/addition-terms.html">vint()</a></code>, which can only be used in custom families.
+Similarly, if we needed to include additional vectors of real data, we
+would use <code><a href="../reference/addition-terms.html">vreal()</a></code>. Actually, for this particular example,
+we could more elegantly apply the addition argument
+<code><a href="../reference/addition-terms.html">trials()</a></code> instead of <code><a href="../reference/addition-terms.html">vint()</a></code>as in the basic
+binomial model. However, since the present vignette is meant to give a
+general overview of the topic, we will go with the more general
+method.</p>
+<p>We now have all components together to fit our custom beta-binomial
+model:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="va">incidence</span> <span class="op">|</span> <span class="fu">vint</span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op">~</span> <span class="va">period</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">herd</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">cbpp</span>, 
-  family <span class="op">=</span> <span class="va">beta_binomial2</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span>
-<span class="op">)</span></code></pre></div>
-<p>The summary output reveals that the uncertainty in the coefficients of <code>period</code> is somewhat larger than in the basic binomial model, which is the result of including the overdispersion parameter <code>phi</code> in the model. Apart from that, the results looks pretty similar.</p>
+<code class="sourceCode R"><span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="va">incidence</span> <span class="op">|</span> <span class="fu"><a href="../reference/addition-terms.html">vint</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op">~</span> <span class="va">period</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">herd</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">cbpp</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">beta_binomial2</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The summary output reveals that the uncertainty in the coefficients
+of <code>period</code> is somewhat larger than in the basic binomial
+model, which is the result of including the overdispersion parameter
+<code>phi</code> in the model. Apart from that, the results looks pretty
+similar.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: beta_binomial2 
   Links: mu = logit; phi = identity 
 Formula: incidence | vint(size) ~ period + (1 | herd) 
@@ -249,60 +336,114 @@ Formula: incidence | vint(size) ~ period + (1 | herd)
 Group-Level Effects: 
 ~herd (Number of levels: 15) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.38      0.25     0.02     0.94 1.00      939     1442
+sd(Intercept)     0.39      0.25     0.02     0.94 1.00     1137     2035
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.35      0.26    -1.87    -0.85 1.00     4144     3018
-period2      -0.99      0.40    -1.79    -0.22 1.00     4301     2940
-period3      -1.26      0.47    -2.23    -0.38 1.00     3680     2786
-period4      -1.55      0.53    -2.66    -0.58 1.00     3156     2066
+Intercept    -1.35      0.25    -1.86    -0.87 1.00     3055     2525
+period2      -1.00      0.41    -1.83    -0.20 1.00     3490     2597
+period3      -1.25      0.45    -2.19    -0.44 1.00     3361     2489
+period4      -1.54      0.52    -2.61    -0.60 1.00     3231     2622
 
 Family Specific Parameters: 
     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-phi    17.22     14.65     5.27    51.30 1.00     1454     1557
+phi    17.84     15.94     5.49    61.13 1.00     1714     1393
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </div>
-<div id="post-processing-custom-family-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#post-processing-custom-family-models" class="anchor"></a>Post-Processing Custom Family Models</h2>
-<p>Some post-processing methods such as <code>summary</code> or <code>plot</code> work out of the box for custom family models. However, there are three particularly important methods, which require additional input by the user. These are <code>posterior_epred</code>, <code>posterior_predict</code> and <code>log_lik</code> computing predicted mean values, predicted response values, and log-likelihood values, respectively. They are not only relevant for their own sake, but also provide the basis of many other post-processing methods. For instance, we may be interested in comparing the fit of the binomial model with that of the beta-binomial model by means of approximate leave-one-out cross-validation implemented in method <code>loo</code>, which in turn requires <code>log_lik</code> to be working.</p>
-<p>The <code>log_lik</code> function of a family should be named <code>log_lik_&lt;family-name&gt;</code> and have the two arguments <code>i</code> (indicating observations) and <code>prep</code>. You don’t have to worry too much about how <code>prep</code> is created (if you are interested, check out the <code>prepare_predictions</code> function). Instead, all you need to know is that parameters are stored in slot <code>dpars</code> and data are stored in slot <code>data</code>. Generally, parameters take on the form of a <span class="math inline">\(S \times N\)</span> matrix (with <span class="math inline">\(S =\)</span> number of posterior draws and <span class="math inline">\(N =\)</span> number of observations) if they are predicted (as is <code>mu</code> in our example) and a vector of size <span class="math inline">\(N\)</span> if the are not predicted (as is <code>phi</code>).</p>
-<p>We could define the complete log-likelihood function in R directly, or we can expose the self-defined <strong>Stan</strong> functions and apply them. The latter approach is usually more convenient, but the former is more stable and the only option when implementing custom families in other R packages building upon <strong>brms</strong>. For the purpose of the present vignette, we will go with the latter approach.</p>
+<div class="section level2">
+<h2 id="post-processing-custom-family-models">Post-Processing Custom Family Models<a class="anchor" aria-label="anchor" href="#post-processing-custom-family-models"></a>
+</h2>
+<p>Some post-processing methods such as <code>summary</code> or
+<code>plot</code> work out of the box for custom family models. However,
+there are three particularly important methods, which require additional
+input by the user. These are <code>posterior_epred</code>,
+<code>posterior_predict</code> and <code>log_lik</code> computing
+predicted mean values, predicted response values, and log-likelihood
+values, respectively. They are not only relevant for their own sake, but
+also provide the basis of many other post-processing methods. For
+instance, we may be interested in comparing the fit of the binomial
+model with that of the beta-binomial model by means of approximate
+leave-one-out cross-validation implemented in method <code>loo</code>,
+which in turn requires <code>log_lik</code> to be working.</p>
+<p>The <code>log_lik</code> function of a family should be named
+<code>log_lik_&lt;family-name&gt;</code> and have the two arguments
+<code>i</code> (indicating observations) and <code>prep</code>. You
+don’t have to worry too much about how <code>prep</code> is created (if
+you are interested, check out the <code>prepare_predictions</code>
+function). Instead, all you need to know is that parameters are stored
+in slot <code>dpars</code> and data are stored in slot
+<code>data</code>. Generally, parameters take on the form of a <span class="math inline">\(S \times N\)</span> matrix (with <span class="math inline">\(S =\)</span> number of posterior draws and <span class="math inline">\(N =\)</span> number of observations) if they are
+predicted (as is <code>mu</code> in our example) and a vector of size
+<span class="math inline">\(N\)</span> if the are not predicted (as is
+<code>phi</code>).</p>
+<p>We could define the complete log-likelihood function in R directly,
+or we can expose the self-defined <strong>Stan</strong> functions and
+apply them. The latter approach is usually more convenient, but the
+former is more stable and the only option when implementing custom
+families in other R packages building upon <strong>brms</strong>. For
+the purpose of the present vignette, we will go with the latter
+approach.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/expose_functions.brmsfit.html">expose_functions</a></span><span class="op">(</span><span class="va">fit2</span>, vectorize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<p>and define the required <code>log_lik</code> functions with a few lines of code.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">log_lik_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">i</span>, <span class="va">prep</span><span class="op">)</span> <span class="op">{</span>
-  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span>
-  <span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"phi"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span>
-  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>
-  <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">Y</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>
-  <span class="fu">beta_binomial2_lpmf</span><span class="op">(</span><span class="va">y</span>, <span class="va">mu</span>, <span class="va">phi</span>, <span class="va">trials</span><span class="op">)</span>
-<span class="op">}</span></code></pre></div>
-<p>The <code>get_dpar</code> function will do the necessary transformations to handle both the case when the distributional parameters are predicted separately for each row and when they are the same for the whole fit.</p>
-<p>With that being done, all of the post-processing methods requiring <code>log_lik</code> will work as well. For instance, model comparison can simply be performed via</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/expose_functions.brmsfit.html">expose_functions</a></span><span class="op">(</span><span class="va">fit2</span>, vectorize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<pre><code>Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
+clang -arch arm64 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/opt/R/arm64/include   -fPIC  -falign-functions=64 -Wall -g -O2  -c foo.c -o foo.o
+In file included from &lt;built-in&gt;:1:
+In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Dense:1:
+In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Core:88:
+/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
+namespace Eigen {
+^
+/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
+namespace Eigen {
+               ^
+               ;
+In file included from &lt;built-in&gt;:1:
+In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Dense:1:
+/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
+#include &lt;complex&gt;
+         ^~~~~~~~~
+3 errors generated.
+make: *** [foo.o] Error 1</code></pre>
+<p>and define the required <code>log_lik</code> functions with a few
+lines of code.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">log_lik_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">i</span>, <span class="va">prep</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
+<span>  <span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"phi"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
+<span>  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>  <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">Y</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>  <span class="fu">beta_binomial2_lpmf</span><span class="op">(</span><span class="va">y</span>, <span class="va">mu</span>, <span class="va">phi</span>, <span class="va">trials</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The <code>get_dpar</code> function will do the necessary
+transformations to handle both the case when the distributional
+parameters are predicted separately for each row and when they are the
+same for the whole fit.</p>
+<p>With that being done, all of the post-processing methods requiring
+<code>log_lik</code> will work as well. For instance, model comparison
+can simply be performed via</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Output of model 'fit1':
 
 Computed from 4000 by 56 log-likelihood matrix
 
          Estimate   SE
-elpd_loo    -99.3  9.9
-p_loo        21.5  4.0
-looic       198.5 19.8
+elpd_loo    -99.9 10.2
+p_loo        22.1  4.3
+looic       199.8 20.4
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     43    76.8%   848       
- (0.5, 0.7]   (ok)        8    14.3%   180       
-   (0.7, 1]   (bad)       5     8.9%   74        
+(-Inf, 0.5]   (good)     40    71.4%   683       
+ (0.5, 0.7]   (ok)       11    19.6%   382       
+   (0.7, 1]   (bad)       5     8.9%   64        
    (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
@@ -311,62 +452,100 @@ Output of model 'fit2':
 Computed from 4000 by 56 log-likelihood matrix
 
          Estimate   SE
-elpd_loo    -94.9  8.2
-p_loo        10.8  1.9
-looic       189.9 16.5
+elpd_loo    -94.7  8.3
+p_loo        10.7  2.0
+looic       189.5 16.5
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     49    87.5%   817       
- (0.5, 0.7]   (ok)        5     8.9%   229       
-   (0.7, 1]   (bad)       2     3.6%   197       
+(-Inf, 0.5]   (good)     50    89.3%   1009      
+ (0.5, 0.7]   (ok)        4     7.1%   680       
+   (0.7, 1]   (bad)       2     3.6%   102       
    (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit2  0.0       0.0   
-fit1 -4.3       4.2   </code></pre>
-<p>Since larger <code>ELPD</code> values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.</p>
-<p>Next, we will define the function necessary for the <code>posterior_predict</code> method:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">posterior_predict_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">i</span>, <span class="va">prep</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span>
-  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span>
-  <span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"phi"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span>
-  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>
-  <span class="fu">beta_binomial2_rng</span><span class="op">(</span><span class="va">mu</span>, <span class="va">phi</span>, <span class="va">trials</span><span class="op">)</span>
-<span class="op">}</span></code></pre></div>
-<p>The <code>posterior_predict</code> function looks pretty similar to the corresponding <code>log_lik</code> function, except that we are now creating random draws of the response instead of log-likelihood values. Again, we are using an exposed <strong>Stan</strong> function for convenience. Make sure to add a <code>...</code> argument to your <code>posterior_predict</code> function even if you are not using it, since some families require additional arguments. With <code>posterior_predict</code> to be working, we can engage for instance in posterior-predictive checking:</p>
+fit1 -5.2       4.3   </code></pre>
+<p>Since larger <code>ELPD</code> values indicate better fit, we see
+that the beta-binomial model fits somewhat better, although the
+corresponding standard error reveals that the difference is not that
+substantial.</p>
+<p>Next, we will define the function necessary for the
+<code>posterior_predict</code> method:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></code></pre></div>
-<p><img src="brms_customfamilies_files/figure-html/pp_check-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>When defining the <code>posterior_epred</code> function, you have to keep in mind that it has only a <code>prep</code> argument and should compute the mean response values for all observations at once. Since the mean of the beta-binomial distribution is <span class="math inline">\(\text{E}(y) = \mu T\)</span> definition of the corresponding <code>posterior_epred</code> function is not too complicated, but we need to get the dimension of parameters and data in line.</p>
+<code class="sourceCode R"><span><span class="va">posterior_predict_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">i</span>, <span class="va">prep</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
+<span>  <span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"phi"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
+<span>  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>  <span class="fu">beta_binomial2_rng</span><span class="op">(</span><span class="va">mu</span>, <span class="va">phi</span>, <span class="va">trials</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The <code>posterior_predict</code> function looks pretty similar to
+the corresponding <code>log_lik</code> function, except that we are now
+creating random draws of the response instead of log-likelihood values.
+Again, we are using an exposed <strong>Stan</strong> function for
+convenience. Make sure to add a <code>...</code> argument to your
+<code>posterior_predict</code> function even if you are not using it,
+since some families require additional arguments. With
+<code>posterior_predict</code> to be working, we can engage for instance
+in posterior-predictive checking:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">posterior_epred_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">prep</span><span class="op">)</span> <span class="op">{</span>
-  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span><span class="op">)</span>
-  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span>
-  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="va">trials</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">mu</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">mu</span><span class="op">)</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-  <span class="va">mu</span> <span class="op">*</span> <span class="va">trials</span>
-<span class="op">}</span></code></pre></div>
-<p>A post-processing method relying directly on <code>posterior_epred</code> is <code>conditional_effects</code>, which allows to visualize effects of predictors.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="brms_customfamilies_files/figure-html/pp_check-1.png" width="60%" style="display: block; margin: auto;"></p>
+<p>When defining the <code>posterior_epred</code> function, you have to
+keep in mind that it has only a <code>prep</code> argument and should
+compute the mean response values for all observations at once. Since the
+mean of the beta-binomial distribution is <span class="math inline">\(\text{E}(y) = \mu T\)</span> definition of the
+corresponding <code>posterior_epred</code> function is not too
+complicated, but we need to get the dimension of parameters and data in
+line.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit2</span>, conditions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">posterior_epred_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">prep</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span><span class="op">)</span></span>
+<span>  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span></span>
+<span>  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">trials</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">mu</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mu</span><span class="op">)</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="va">mu</span> <span class="op">*</span> <span class="va">trials</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>A post-processing method relying directly on
+<code>posterior_epred</code> is <code>conditional_effects</code>, which
+allows to visualize effects of predictors.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit2</span>, conditions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_customfamilies_files/figure-html/conditional_effects-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>For ease of interpretation we have set <code>size</code> to 1 so that the y-axis of the above plot indicates probabilities.</p>
+<p>For ease of interpretation we have set <code>size</code> to 1 so that
+the y-axis of the above plot indicates probabilities.</p>
 </div>
-<div id="turning-a-custom-family-into-a-native-family" class="section level2">
-<h2 class="hasAnchor">
-<a href="#turning-a-custom-family-into-a-native-family" class="anchor"></a>Turning a Custom Family into a Native Family</h2>
-<p>Family functions built natively into <strong>brms</strong> are safer to use and more convenient, as they require much less user input. If you think that your custom family is general enough to be useful to other users, please feel free to open an issue on <a href="https://github.com/paul-buerkner/brms/issues">GitHub</a> so that we can discuss all the details. Provided that we agree it makes sense to implement your family natively in brms, the following steps are required (<code>foo</code> is a placeholder for the family name):</p>
+<div class="section level2">
+<h2 id="turning-a-custom-family-into-a-native-family">Turning a Custom Family into a Native Family<a class="anchor" aria-label="anchor" href="#turning-a-custom-family-into-a-native-family"></a>
+</h2>
+<p>Family functions built natively into <strong>brms</strong> are safer
+to use and more convenient, as they require much less user input. If you
+think that your custom family is general enough to be useful to other
+users, please feel free to open an issue on <a href="https://github.com/paul-buerkner/brms/issues" class="external-link">GitHub</a> so that
+we can discuss all the details. Provided that we agree it makes sense to
+implement your family natively in brms, the following steps are required
+(<code>foo</code> is a placeholder for the family name):</p>
 <ul>
-<li>In <code>family-lists.R</code>, add function <code>.family_foo</code> which should contain basic information about your family (you will find lots of examples for other families there).</li>
-<li>In <code>families.R</code>, add family function <code>foo</code> which should be a simple wrapper around <code>.brmsfamily</code>.</li>
-<li>In <code>stan-likelihood.R</code>, add function <code>stan_log_lik_foo</code> which provides the likelihood of the family in Stan language.</li>
-<li>If necessary, add self-defined Stan functions in separate files under <code>inst/chunks</code>.</li>
-<li>Add functions <code>posterior_predict_foo</code>, <code>posterior_epred_foo</code> and <code>log_lik_foo</code> to <code>posterior_predict.R</code>, <code>posterior_epred.R</code> and <code>log_lik.R</code>, respectively.</li>
-<li>If necessary, add distribution functions to <code>distributions.R</code>.</li>
+<li>In <code>family-lists.R</code>, add function
+<code>.family_foo</code> which should contain basic information about
+your family (you will find lots of examples for other families
+there).</li>
+<li>In <code>families.R</code>, add family function <code>foo</code>
+which should be a simple wrapper around <code>.brmsfamily</code>.</li>
+<li>In <code>stan-likelihood.R</code>, add function
+<code>stan_log_lik_foo</code> which provides the likelihood of the
+family in Stan language.</li>
+<li>If necessary, add self-defined Stan functions in separate files
+under <code>inst/chunks</code>.</li>
+<li>Add functions <code>posterior_predict_foo</code>,
+<code>posterior_epred_foo</code> and <code>log_lik_foo</code> to
+<code>posterior_predict.R</code>, <code>posterior_epred.R</code> and
+<code>log_lik.R</code>, respectively.</li>
+<li>If necessary, add distribution functions to
+<code>distributions.R</code>.</li>
 </ul>
 </div>
   </div>
@@ -382,11 +561,13 @@ fit1 -4.3       4.2   </code></pre>
 
 
       <footer><div class="copyright">
-  <p>Developed by Paul-Christian Bürkner.</p>
+  <p></p>
+<p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
@@ -394,6 +575,8 @@ fit1 -4.3       4.2   </code></pre>
 
   
 
+
+  
 
   </body>
 </html>

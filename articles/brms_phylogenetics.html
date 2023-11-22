@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.16.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
       </span>
     </div>
 
@@ -54,55 +56,55 @@
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="http://mc-stan.org/rstan" class="external-link">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="http://mc-stan.org/rstanarm" class="external-link">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="http://mc-stan.org/bayesplot" class="external-link">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="http://mc-stan.org/shinystan" class="external-link">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="http://mc-stan.org/loo" class="external-link">loo</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/projpred">projpred</a>
+      <a href="http://mc-stan.org/projpred" class="external-link">projpred</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="http://mc-stan.org/rstantools" class="external-link">rstantools</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="http://mc-stan.org" class="external-link">Stan</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://twitter.com/mcmc_stan">
-    <span class="fas fa-twitter"></span>
+  <a href="https://twitter.com/mcmc_stan" class="external-link">
+    <span class="fa fa-twitter"></span>
      
   </a>
 </li>
 <li>
-  <a href="https://github.com/stan-dev/brms">
-    <span class="fas fa-github"></span>
+  <a href="https://github.com/stan-dev/brms" class="external-link">
+    <span class="fa fa-github"></span>
      
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
-    <span class="fas fa-users"></span>
+  <a href="http://discourse.mc-stan.org/" class="external-link">
+    <span class="fa fa-users"></span>
      
   </a>
 </li>
@@ -116,37 +118,54 @@
 
       
 
-      </header><script src="brms_phylogenetics_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Estimating Phylogenetic Multilevel Models with brms</h1>
-                        <h4 class="author">Paul Bürkner</h4>
+      <h1 data-toc-skip>Estimating Phylogenetic Multilevel Models with
+brms</h1>
+                        <h4 data-toc-skip class="author">Paul
+Bürkner</h4>
             
-            <h4 class="date">2021-08-26</h4>
+            <h4 data-toc-skip class="date">2023-11-23</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_phylogenetics.Rmd"><code>vignettes/brms_phylogenetics.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_phylogenetics.Rmd" class="external-link"><code>vignettes/brms_phylogenetics.Rmd</code></a></small>
       <div class="hidden name"><code>brms_phylogenetics.Rmd</code></div>
 
     </div>
 
     
     
-<div id="introduction" class="section level2">
-<h2 class="hasAnchor">
-<a href="#introduction" class="anchor"></a>Introduction</h2>
-<p>In the present vignette, we want to discuss how to specify phylogenetic multilevel models using <strong>brms</strong>. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependency. The examples discussed here are from chapter 11 of the book <em>Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology</em> (de Villemeruil &amp; Nakagawa, 2014). The necessary data can be downloaded from the corresponding website (<a href="http://www.mpcm-evolution.com/" class="uri">http://www.mpcm-evolution.com/</a>). Some of these models may take a few minutes to fit.</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p>In the present vignette, we want to discuss how to specify
+phylogenetic multilevel models using <strong>brms</strong>. These models
+are relevant in evolutionary biology when data of many species are
+analyzed at the same time. The usual approach would be to model species
+as a grouping factor in a multilevel model and estimate varying
+intercepts (and possibly also varying slopes) over species. However,
+species are not independent as they come from the same phylogenetic tree
+and we thus have to adjust our model to incorporate this dependency. The
+examples discussed here are from chapter 11 of the book <em>Modern
+Phylogenetic Comparative Methods and the application in Evolutionary
+Biology</em> (de Villemeruil &amp; Nakagawa, 2014). The necessary data
+can be downloaded from the corresponding website (<a href="https://www.mpcm-evolution.com/" class="external-link uri">https://www.mpcm-evolution.com/</a>). Some of these models
+may take a few minutes to fit.</p>
 </div>
-<div id="a-simple-phylogenetic-model" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-simple-phylogenetic-model" class="anchor"></a>A Simple Phylogenetic Model</h2>
-<p>Assume we have measurements of a phenotype, <code>phen</code> (say the body size), and a <code>cofactor</code> variable (say the temperature of the environment). We prepare the data using the following code.</p>
+<div class="section level2">
+<h2 id="a-simple-phylogenetic-model">A Simple Phylogenetic Model<a class="anchor" aria-label="anchor" href="#a-simple-phylogenetic-model"></a>
+</h2>
+<p>Assume we have measurements of a phenotype, <code>phen</code> (say
+the body size), and a <code>cofactor</code> variable (say the
+temperature of the environment). We prepare the data using the following
+code.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">phylo</span> <span class="op">&lt;-</span> <span class="fu">ape</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ape/man/read.nexus.html">read.nexus</a></span><span class="op">(</span><span class="st">"https://paul-buerkner.github.io/data/phylo.nex"</span><span class="op">)</span>
-<span class="va">data_simple</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.table</a></span><span class="op">(</span>
-  <span class="st">"https://paul-buerkner.github.io/data/data_simple.txt"</span>, 
-  header <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">data_simple</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">phylo</span> <span class="op">&lt;-</span> <span class="fu">ape</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ape/man/read.nexus.html" class="external-link">read.nexus</a></span><span class="op">(</span><span class="st">"https://paul-buerkner.github.io/data/phylo.nex"</span><span class="op">)</span></span>
+<span><span class="va">data_simple</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span></span>
+<span>  <span class="st">"https://paul-buerkner.github.io/data/data_simple.txt"</span>,</span>
+<span>  header <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">data_simple</span><span class="op">)</span></span></code></pre></div>
 <pre><code>       phen  cofactor phylo
 1 107.06595 10.309588  sp_1
 2  79.61086  9.690507  sp_2
@@ -154,26 +173,39 @@
 4 143.28705 19.087673  sp_4
 5 139.60993 15.658404  sp_5
 6  68.50657  6.005236  sp_6</code></pre>
-<p>The <code>phylo</code> object contains information on the relationship between species. Using this information, we can construct a covariance matrix of species (Hadfield &amp; Nakagawa, 2010).</p>
+<p>The <code>phylo</code> object contains information on the
+relationship between species. Using this information, we can construct a
+covariance matrix of species (Hadfield &amp; Nakagawa, 2010).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu">ape</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ape/man/vcv.phylo.html">vcv.phylo</a></span><span class="op">(</span><span class="va">phylo</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu">ape</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ape/man/vcv.phylo.html" class="external-link">vcv.phylo</a></span><span class="op">(</span><span class="va">phylo</span><span class="op">)</span></span></code></pre></div>
 <p>Now we are ready to fit our first phylogenetic multilevel model:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">model_simple</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="va">phen</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span>, 
-  data <span class="op">=</span> <span class="va">data_simple</span>, 
-  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>, 
-  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,
-  prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="st">"b"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">50</span><span class="op">)</span>, <span class="st">"Intercept"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0</span>, <span class="fl">20</span><span class="op">)</span>, <span class="st">"sd"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0</span>, <span class="fl">20</span><span class="op">)</span>, <span class="st">"sigma"</span><span class="op">)</span>
-  <span class="op">)</span>
-<span class="op">)</span></code></pre></div>
-<p>With the exception of <code>(1|gr(phylo, cov = A))</code> instead of <code>(1|phylo)</code> this is a basic multilevel model with a varying intercept over species (<code>phylo</code> is an indicator of species in this data set). However, by using <code>cov = A</code> in the <code>gr</code> function, we make sure that species are correlated as specified by the covariance matrix <code>A</code>. We pass <code>A</code> itself via the <code>data2</code> argument which can be used for any kinds of data that does not fit into the regular structure of the <code>data</code> argument. Setting priors is not required for achieving good convergence for this model, but it improves sampling speed a bit. After fitting, the results can be investigated in detail.</p>
+<code class="sourceCode R"><span><span class="va">model_simple</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="va">phen</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_simple</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="st">"b"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">50</span><span class="op">)</span>, <span class="st">"Intercept"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0</span>, <span class="fl">20</span><span class="op">)</span>, <span class="st">"sd"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0</span>, <span class="fl">20</span><span class="op">)</span>, <span class="st">"sigma"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>With the exception of <code>(1|gr(phylo, cov = A))</code> instead of
+<code>(1|phylo)</code> this is a basic multilevel model with a varying
+intercept over species (<code>phylo</code> is an indicator of species in
+this data set). However, by using <code>cov = A</code> in the
+<code>gr</code> function, we make sure that species are correlated as
+specified by the covariance matrix <code>A</code>. We pass
+<code>A</code> itself via the <code>data2</code> argument which can be
+used for any kinds of data that does not fit into the regular structure
+of the <code>data</code> argument. Setting priors is not required for
+achieving good convergence for this model, but it improves sampling
+speed a bit. After fitting, the results can be investigated in
+detail.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">model_simple</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model_simple</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: phen ~ cofactor + (1 | gr(phylo, cov = A)) 
@@ -184,30 +216,31 @@ Formula: phen ~ cofactor + (1 | gr(phylo, cov = A))
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)    14.47      2.13    10.51    18.81 1.00     1005     2322
+sd(Intercept)    14.42      2.13    10.56    18.81 1.00     1052     2405
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    38.06      7.12    23.92    51.90 1.00     1890     2496
-cofactor      5.17      0.13     4.91     5.44 1.00     5590     3161
+Intercept    38.15      6.92    24.54    51.65 1.00     2214     2550
+cofactor      5.17      0.14     4.90     5.45 1.00     5467     3252
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     9.22      0.71     7.89    10.66 1.00     1397     2558
+sigma     9.25      0.74     7.84    10.72 1.00     1258     2345
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">model_simple</span>, N <span class="op">=</span> <span class="fl">2</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">model_simple</span>, N <span class="op">=</span> <span class="fl">2</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-4-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-4-2.png" width="60%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">model_simple</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> </code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">model_simple</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-4-3.png" width="60%" style="display: block; margin: auto;"></p>
-<p>The so called phylogenetic signal (often symbolize by <span class="math inline">\(\lambda\)</span>) can be computed with the <code>hypothesis</code> method and is roughly <span class="math inline">\(\lambda = 0.7\)</span> for this example.</p>
+<p>The so called phylogenetic signal (often symbolize by <span class="math inline">\(\lambda\)</span>) can be computed with the
+<code>hypothesis</code> method and is roughly <span class="math inline">\(\lambda = 0.7\)</span> for this example.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="st">"sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0"</span>
-<span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">model_simple</span>, <span class="va">hyp</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="st">"sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0"</span></span>
+<span><span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">model_simple</span>, <span class="va">hyp</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class :
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
 1 (sd_phylo__Interc... = 0      0.7      0.08     0.52     0.84         NA        NA    *
@@ -217,22 +250,25 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 for two-sided hypotheses, the value tested against lies outside the 95%-CI.
 Posterior probabilities of point hypotheses assume equal prior probabilities.</code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">hyp</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hyp</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-5-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Note that the phylogenetic signal is just a synonym of the intra-class correlation (ICC) used in the context phylogenetic analysis.</p>
+<p>Note that the phylogenetic signal is just a synonym of the
+intra-class correlation (ICC) used in the context phylogenetic
+analysis.</p>
 </div>
-<div id="a-phylogenetic-model-with-repeated-measurements" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-phylogenetic-model-with-repeated-measurements" class="anchor"></a>A Phylogenetic Model with Repeated Measurements</h2>
-<p>Often, we have multiple observations per species and this allows to fit more complicated phylogenetic models.</p>
+<div class="section level2">
+<h2 id="a-phylogenetic-model-with-repeated-measurements">A Phylogenetic Model with Repeated Measurements<a class="anchor" aria-label="anchor" href="#a-phylogenetic-model-with-repeated-measurements"></a>
+</h2>
+<p>Often, we have multiple observations per species and this allows to
+fit more complicated phylogenetic models.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">data_repeat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.table</a></span><span class="op">(</span>
-  <span class="st">"https://paul-buerkner.github.io/data/data_repeat.txt"</span>, 
-  header <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span>
-<span class="va">data_repeat</span><span class="op">$</span><span class="va">spec_mean_cf</span> <span class="op">&lt;-</span> 
-  <span class="fu"><a href="https://rdrr.io/r/base/with.html">with</a></span><span class="op">(</span><span class="va">data_repeat</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span><span class="op">(</span><span class="va">cofactor</span>, <span class="va">phylo</span><span class="op">)</span>, <span class="va">mean</span><span class="op">)</span><span class="op">[</span><span class="va">phylo</span><span class="op">]</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">data_repeat</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">data_repeat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span></span>
+<span>  <span class="st">"https://paul-buerkner.github.io/data/data_repeat.txt"</span>,</span>
+<span>  header <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">data_repeat</span><span class="op">$</span><span class="va">spec_mean_cf</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">data_repeat</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="va">cofactor</span>, <span class="va">phylo</span><span class="op">)</span>, <span class="va">mean</span><span class="op">)</span><span class="op">[</span><span class="va">phylo</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">data_repeat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>       phen  cofactor species phylo spec_mean_cf
 1 107.41919 11.223724    sp_1  sp_1    10.309588
 2 109.16403  9.805934    sp_1  sp_1    10.309588
@@ -240,25 +276,33 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 4 121.54341  8.355349    sp_1  sp_1    10.309588
 5 105.31638 11.854510    sp_1  sp_1    10.309588
 6  64.99859  4.314015    sp_2  sp_2     3.673914</code></pre>
-<p>The variable <code>spec_mean_cf</code> just contains the mean of the cofactor for each species. The code for the repeated measurement phylogenetic model looks as follows:</p>
+<p>The variable <code>spec_mean_cf</code> just contains the mean of the
+cofactor for each species. The code for the repeated measurement
+phylogenetic model looks as follows:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">model_repeat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="va">phen</span> <span class="op">~</span> <span class="va">spec_mean_cf</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">species</span><span class="op">)</span>, 
-  data <span class="op">=</span> <span class="va">data_repeat</span>, 
-  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>, 
-  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,
-  prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">10</span><span class="op">)</span>, <span class="st">"b"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span><span class="op">)</span>, <span class="st">"Intercept"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>,<span class="fl">0</span>,<span class="fl">20</span><span class="op">)</span>, <span class="st">"sd"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>,<span class="fl">0</span>,<span class="fl">20</span><span class="op">)</span>, <span class="st">"sigma"</span><span class="op">)</span>
-  <span class="op">)</span>,
-  sample_prior <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, 
-  iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">1000</span>
-<span class="op">)</span></code></pre></div>
-<p>The variables <code>phylo</code> and <code>species</code> are identical as they are both identifiers of the species. However, we model the phylogenetic covariance only for <code>phylo</code> and thus the <code>species</code> variable accounts for any specific effect that would be independent of the phylogenetic relationship between species (e.g., environmental or niche effects). Again we can obtain model summaries as well as estimates of the phylogenetic signal.</p>
+<code class="sourceCode R"><span><span class="va">model_repeat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="va">phen</span> <span class="op">~</span> <span class="va">spec_mean_cf</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">species</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_repeat</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">10</span><span class="op">)</span>, <span class="st">"b"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">50</span><span class="op">)</span>, <span class="st">"Intercept"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>,<span class="fl">0</span>,<span class="fl">20</span><span class="op">)</span>, <span class="st">"sd"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>,<span class="fl">0</span>,<span class="fl">20</span><span class="op">)</span>, <span class="st">"sigma"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  sample_prior <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">1000</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The variables <code>phylo</code> and <code>species</code> are
+identical as they are both identifiers of the species. However, we model
+the phylogenetic covariance only for <code>phylo</code> and thus the
+<code>species</code> variable accounts for any specific effect that
+would be independent of the phylogenetic relationship between species
+(e.g., environmental or niche effects). Again we can obtain model
+summaries as well as estimates of the phylogenetic signal.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">model_repeat1</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model_repeat1</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species) 
@@ -269,54 +313,58 @@ Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species)
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)    16.45      1.92    12.85    20.38 1.00     1391     1982
+sd(Intercept)    16.34      1.87    12.80    20.11 1.00     1346     2503
 
 ~species (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     4.97      0.85     3.27     6.59 1.00     1110     1132
+sd(Intercept)     5.01      0.83     3.33     6.60 1.00      851     1476
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       36.21      7.90    20.48    51.45 1.00     4261     3699
-spec_mean_cf     5.10      0.10     4.89     5.30 1.00     8356     4645
+Intercept       36.16      7.61    21.05    50.87 1.00     2709     3085
+spec_mean_cf     5.10      0.10     4.89     5.30 1.00     5197     4307
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     8.10      0.21     7.71     8.52 1.00     5400     3959
+sigma     8.10      0.21     7.71     8.52 1.00     5459     3768
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span>
-  <span class="st">"sd_phylo__Intercept^2 /"</span>, 
-  <span class="st">"(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"</span>
-<span class="op">)</span>
-<span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">model_repeat1</span>, <span class="va">hyp</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>  <span class="st">"sd_phylo__Intercept^2 /"</span>,</span>
+<span>  <span class="st">"(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">model_repeat1</span>, <span class="va">hyp</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class :
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.84          0         0    *
+1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.83          0         0    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
 for two-sided hypotheses, the value tested against lies outside the 95%-CI.
 Posterior probabilities of point hypotheses assume equal prior probabilities.</code></pre>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">hyp</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hyp</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>So far, we have completely ignored the variability of the cofactor within species. To incorporate this into the model, we define</p>
+<p>So far, we have completely ignored the variability of the cofactor
+within species. To incorporate this into the model, we define</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">data_repeat</span><span class="op">$</span><span class="va">within_spec_cf</span> <span class="op">&lt;-</span> <span class="va">data_repeat</span><span class="op">$</span><span class="va">cofactor</span> <span class="op">-</span> <span class="va">data_repeat</span><span class="op">$</span><span class="va">spec_mean_cf</span></code></pre></div>
-<p>and then fit it again using <code>within_spec_cf</code> as an additional predictor.</p>
+<code class="sourceCode R"><span><span class="va">data_repeat</span><span class="op">$</span><span class="va">within_spec_cf</span> <span class="op">&lt;-</span> <span class="va">data_repeat</span><span class="op">$</span><span class="va">cofactor</span> <span class="op">-</span> <span class="va">data_repeat</span><span class="op">$</span><span class="va">spec_mean_cf</span></span></code></pre></div>
+<p>and then fit it again using <code>within_spec_cf</code> as an
+additional predictor.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">model_repeat2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html">update</a></span><span class="op">(</span>
-  <span class="va">model_repeat1</span>, formula <span class="op">=</span> <span class="op">~</span> <span class="va">.</span> <span class="op">+</span> <span class="va">within_spec_cf</span>,
-  newdata <span class="op">=</span> <span class="va">data_repeat</span>, chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, 
-  iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">1000</span>
-<span class="op">)</span></code></pre></div>
-<p>The results are almost unchanged, with apparently no relationship between the phenotype and the within species variance of <code>cofactor</code>.</p>
+<code class="sourceCode R"><span><span class="va">model_repeat2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span></span>
+<span>  <span class="va">model_repeat1</span>, formula <span class="op">=</span> <span class="op">~</span> <span class="va">.</span> <span class="op">+</span> <span class="va">within_spec_cf</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">data_repeat</span>, chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">1000</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The results are almost unchanged, with apparently no relationship
+between the phenotype and the within species variance of
+<code>cofactor</code>.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">model_repeat2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model_repeat2</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species) + within_spec_cf 
@@ -327,32 +375,32 @@ Formula: phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species) + within
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)    16.54      1.88    13.00    20.43 1.00     1814     3078
+sd(Intercept)    16.43      1.87    12.99    20.42 1.00     1112     1673
 
 ~species (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     4.95      0.83     3.26     6.54 1.00     1231     2262
+sd(Intercept)     5.01      0.85     3.31     6.63 1.00      781     1225
 
 Population-Level Effects: 
                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept         36.36      7.93    20.30    51.78 1.00     4841     4094
-spec_mean_cf       5.10      0.11     4.89     5.30 1.00     9222     4482
-within_spec_cf    -0.06      0.18    -0.43     0.30 1.00    10781     3282
+Intercept         36.13      7.81    20.35    51.36 1.00     2489     3055
+spec_mean_cf       5.10      0.10     4.90     5.30 1.00     6416     4241
+within_spec_cf    -0.06      0.19    -0.43     0.31 1.00    10948     3575
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     8.11      0.20     7.73     8.53 1.00     5785     4053
+sigma     8.11      0.20     7.73     8.52 1.00     6512     4186
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>Also, the phylogenetic signal remains more or less the same.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span>
-  <span class="st">"sd_phylo__Intercept^2 /"</span>, 
-  <span class="st">"(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"</span>
-<span class="op">)</span>
-<span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">model_repeat2</span>, <span class="va">hyp</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>  <span class="st">"sd_phylo__Intercept^2 /"</span>,</span>
+<span>  <span class="st">"(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">model_repeat2</span>, <span class="va">hyp</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class :
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
 1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.84          0         0    *
@@ -362,17 +410,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 for two-sided hypotheses, the value tested against lies outside the 95%-CI.
 Posterior probabilities of point hypotheses assume equal prior probabilities.</code></pre>
 </div>
-<div id="a-phylogenetic-meta-analysis" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-phylogenetic-meta-analysis" class="anchor"></a>A Phylogenetic Meta-Analysis</h2>
-<p>Let’s say we have Fisher’s z-transformed correlation coefficients <span class="math inline">\(Zr\)</span> per species along with corresponding sample sizes (e.g., correlations between male coloration and reproductive success):</p>
+<div class="section level2">
+<h2 id="a-phylogenetic-meta-analysis">A Phylogenetic Meta-Analysis<a class="anchor" aria-label="anchor" href="#a-phylogenetic-meta-analysis"></a>
+</h2>
+<p>Let’s say we have Fisher’s z-transformed correlation coefficients
+<span class="math inline">\(Zr\)</span> per species along with
+corresponding sample sizes (e.g., correlations between male coloration
+and reproductive success):</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">data_fisher</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.table</a></span><span class="op">(</span>
-  <span class="st">"https://paul-buerkner.github.io/data/data_effect.txt"</span>, 
-  header <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span>
-<span class="va">data_fisher</span><span class="op">$</span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">data_fisher</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">data_fisher</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">data_fisher</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span></span>
+<span>  <span class="st">"https://paul-buerkner.github.io/data/data_effect.txt"</span>,</span>
+<span>  header <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">data_fisher</span><span class="op">$</span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_fisher</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">data_fisher</span><span class="op">)</span></span></code></pre></div>
 <pre><code>          Zr  N phylo obs
 1 0.28917549 13  sp_1   1
 2 0.02415579 40  sp_2   2
@@ -380,22 +431,29 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 4 0.09831239 40  sp_4   4
 5 0.13780152 66  sp_5   5
 6 0.13710587 41  sp_6   6</code></pre>
-<p>We assume the sampling variance to be known and as <span class="math inline">\(V(Zr) = \frac{1}{N - 3}\)</span> for Fisher’s values, where <span class="math inline">\(N\)</span> is the sample size per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that <strong>brms</strong> requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of <code>obs</code> represents the residual variance, which we have to model explicitly in a meta-analytic model.</p>
+<p>We assume the sampling variance to be known and as <span class="math inline">\(V(Zr) = \frac{1}{N - 3}\)</span> for Fisher’s
+values, where <span class="math inline">\(N\)</span> is the sample size
+per species. Incorporating the known sampling variance into the model is
+straight forward. One has to keep in mind though, that
+<strong>brms</strong> requires the sampling standard deviation (square
+root of the variance) as input instead of the variance itself. The
+group-level effect of <code>obs</code> represents the residual variance,
+which we have to model explicitly in a meta-analytic model.</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">model_fisher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="va">Zr</span> <span class="op">|</span> <span class="fu">se</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">sqrt</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="va">N</span> <span class="op">-</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">obs</span><span class="op">)</span>, 
-  data <span class="op">=</span> <span class="va">data_fisher</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>, 
-  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,
-  prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="st">"Intercept"</span><span class="op">)</span>,
-    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="st">"sd"</span><span class="op">)</span>
-  <span class="op">)</span>,
-  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span>,
-  chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">1000</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">model_fisher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="va">Zr</span> <span class="op">|</span> <span class="fu"><a href="../reference/addition-terms.html">se</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="va">N</span> <span class="op">-</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">obs</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_fisher</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="st">"Intercept"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">student_t</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="st">"sd"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span>,</span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">1000</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>A summary of the fitted model is obtained via</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">model_fisher</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model_fisher</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: Zr | se(sqrt(1/(N - 3))) ~ 1 + (1 | gr(phylo, cov = A)) + (1 | obs) 
@@ -406,15 +464,15 @@ Formula: Zr | se(sqrt(1/(N - 3))) ~ 1 + (1 | gr(phylo, cov = A)) + (1 | obs)
 Group-Level Effects: 
 ~obs (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.05      0.03     0.00     0.10 1.00      986     2447
+sd(Intercept)     0.05      0.03     0.00     0.10 1.00      934     1785
 
 ~phylo (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.07      0.04     0.00     0.14 1.00      845     1962
+sd(Intercept)     0.07      0.04     0.00     0.15 1.00      919     1913
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     0.16      0.04     0.08     0.24 1.00     4188     3032
+Intercept     0.16      0.04     0.08     0.24 1.00     3100     2401
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -424,21 +482,27 @@ Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">model_fisher</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">model_fisher</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-16-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>The meta-analytic mean (i.e., the model intercept) is <span class="math inline">\(0.16\)</span> with a credible interval of <span class="math inline">\([0.08, 0.25]\)</span>. Thus the mean correlation across species is positive according to the model.</p>
+<p>The meta-analytic mean (i.e., the model intercept) is <span class="math inline">\(0.16\)</span> with a credible interval of <span class="math inline">\([0.08, 0.25]\)</span>. Thus the mean correlation
+across species is positive according to the model.</p>
 </div>
-<div id="a-phylogenetic-count-data-model" class="section level2">
-<h2 class="hasAnchor">
-<a href="#a-phylogenetic-count-data-model" class="anchor"></a>A phylogenetic count-data model</h2>
-<p>Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitly suited for count data, for instance the Poisson distribution. The following data set (again retrieved from mpcm-evolution.org) provides an example.</p>
+<div class="section level2">
+<h2 id="a-phylogenetic-count-data-model">A phylogenetic count-data model<a class="anchor" aria-label="anchor" href="#a-phylogenetic-count-data-model"></a>
+</h2>
+<p>Suppose that we analyze a phenotype that consists of counts instead
+of being a continuous variable. In such a case, the normality assumption
+will likely not be justified and it is recommended to use a distribution
+explicitly suited for count data, for instance the Poisson distribution.
+The following data set (again retrieved from mpcm-evolution.org)
+provides an example.</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">data_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.table</a></span><span class="op">(</span>
-  <span class="st">"https://paul-buerkner.github.io/data/data_pois.txt"</span>, 
-  header <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span>
-<span class="va">data_pois</span><span class="op">$</span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">data_pois</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">data_pois</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">data_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span></span>
+<span>  <span class="st">"https://paul-buerkner.github.io/data/data_pois.txt"</span>,</span>
+<span>  header <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">data_pois</span><span class="op">$</span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_pois</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">data_pois</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  phen_pois   cofactor phylo obs
 1         1  7.8702830  sp_1   1
 2         0  3.4690529  sp_2   2
@@ -446,18 +510,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 4        14 18.2286628  sp_4   4
 5         1  2.5302806  sp_5   5
 6         1  0.5145559  sp_6   6</code></pre>
-<p>As the Poisson distribution does not have a natural overdispersion parameter, we model the residual variance via the group-level effects of <code>obs</code> (e.g., see Lawless, 1987).</p>
+<p>As the Poisson distribution does not have a natural overdispersion
+parameter, we model the residual variance via the group-level effects of
+<code>obs</code> (e.g., see Lawless, 1987).</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">model_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="va">phen_pois</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">obs</span><span class="op">)</span>, 
-  data <span class="op">=</span> <span class="va">data_pois</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">poisson</a></span><span class="op">(</span><span class="st">"log"</span><span class="op">)</span>, 
-  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,
-  chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">4000</span>,
-  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">model_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="va">phen_pois</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">obs</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_pois</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="st">"log"</span><span class="op">)</span>,</span>
+<span>  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,</span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">4000</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>Again, we obtain a summary of the fitted model via</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">model_pois</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model_pois</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: poisson 
   Links: mu = log 
 Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) + (1 | obs) 
@@ -468,34 +534,35 @@ Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) + (1 | obs)
 Group-Level Effects: 
 ~obs (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.19      0.08     0.02     0.34 1.01      505      532
+sd(Intercept)     0.19      0.08     0.02     0.34 1.00      575      610
 
 ~phylo (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.18      0.10     0.02     0.41 1.00      723      984
+sd(Intercept)     0.18      0.10     0.03     0.41 1.00      771     1336
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -2.09      0.21    -2.51    -1.69 1.00     2441     2437
-cofactor      0.25      0.01     0.23     0.27 1.00     3367     2759
+Intercept    -2.09      0.21    -2.50    -1.68 1.00     2596     2098
+cofactor      0.25      0.01     0.23     0.27 1.00     3560     3236
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">model_pois</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> </code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">model_pois</span><span class="op">)</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-19-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Now, assume we ignore the fact that the phenotype is count data and fit a linear normal model instead.</p>
+<p>Now, assume we ignore the fact that the phenotype is count data and
+fit a linear normal model instead.</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">model_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span>
-  <span class="va">phen_pois</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span>, 
-  data <span class="op">=</span> <span class="va">data_pois</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>, 
-  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,
-  chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">4000</span>,
-  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">model_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span><span class="op">(</span></span>
+<span>  <span class="va">phen_pois</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="fu"><a href="../reference/gr.html">gr</a></span><span class="op">(</span><span class="va">phylo</span>, cov <span class="op">=</span> <span class="va">A</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_pois</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,</span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">4000</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">model_normal</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model_normal</span><span class="op">)</span></span></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) 
@@ -506,30 +573,40 @@ Formula: phen_pois ~ cofactor + (1 | gr(phylo, cov = A))
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.69      0.50     0.03     1.90 1.00     1284     2120
+sd(Intercept)     0.69      0.50     0.02     1.90 1.00     1135     1819
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -3.07      0.61    -4.28    -1.88 1.00     4236     2680
-cofactor      0.68      0.04     0.60     0.77 1.00     7249     2770
+Intercept    -3.07      0.62    -4.31    -1.87 1.00     4575     2673
+cofactor      0.68      0.04     0.60     0.77 1.00     8645     2568
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     3.44      0.18     3.10     3.80 1.00     5633     2853
+sigma     3.44      0.18     3.10     3.80 1.00     5570     2629
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>We see that <code>cofactor</code> has a positive relationship with the phenotype in both models. One should keep in mind, though, that the estimates of the Poisson model are on the log-scale, as we applied the canonical log-link function in this example. Therefore, estimates are not comparable to a linear normal model even if applied to the same data. What we can compare, however, is the model fit, for instance graphically via posterior predictive checks.</p>
+<p>We see that <code>cofactor</code> has a positive relationship with
+the phenotype in both models. One should keep in mind, though, that the
+estimates of the Poisson model are on the log-scale, as we applied the
+canonical log-link function in this example. Therefore, estimates are
+not comparable to a linear normal model even if applied to the same
+data. What we can compare, however, is the model fit, for instance
+graphically via posterior predictive checks.</p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">model_pois</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">model_pois</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-22-1.png" width="60%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">model_normal</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">model_normal</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-22-2.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Apparently, the distribution of the phenotype predicted by the Poisson model resembles the original distribution of the phenotype pretty closely, while the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.</p>
+<p>Apparently, the distribution of the phenotype predicted by the
+Poisson model resembles the original distribution of the phenotype
+pretty closely, while the normal models fails to do so. We can also
+apply leave-one-out cross-validation for direct numerical comparison of
+model fit.</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">model_pois</span>, <span class="va">model_normal</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">model_pois</span>, <span class="va">model_normal</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Output of model 'model_pois':
 
 Computed from 4000 by 200 log-likelihood matrix
@@ -537,15 +614,15 @@ Computed from 4000 by 200 log-likelihood matrix
          Estimate   SE
 elpd_loo   -348.5 17.0
 p_loo        30.7  3.5
-looic       697.0 34.0
+looic       696.9 34.1
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     169   84.5%   435       
- (0.5, 0.7]   (ok)        28   14.0%   152       
-   (0.7, 1]   (bad)        3    1.5%   178       
+(-Inf, 0.5]   (good)     175   87.5%   479       
+ (0.5, 0.7]   (ok)        21   10.5%   143       
+   (0.7, 1]   (bad)        4    2.0%   94        
    (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
@@ -554,16 +631,16 @@ Output of model 'model_normal':
 Computed from 4000 by 200 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -536.0 15.8
-p_loo        10.0  2.2
-looic      1072.0 31.7
+elpd_loo   -535.9 15.8
+p_loo         9.9  2.1
+looic      1071.7 31.6
 ------
 Monte Carlo SE of elpd_loo is 0.1.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     199   99.5%   677       
- (0.5, 0.7]   (ok)         1    0.5%   428       
+(-Inf, 0.5]   (good)     199   99.5%   585       
+ (0.5, 0.7]   (ok)         1    0.5%   1603      
    (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;      
    (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
 
@@ -573,20 +650,41 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
              elpd_diff se_diff
 model_pois      0.0       0.0 
-model_normal -187.5      18.0 </code></pre>
-<p>Since smaller values of loo indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family <code>negative_binomial</code>), which already contains an overdispersion parameter so that modeling a varying intercept of <code>obs</code> becomes obsolete.</p>
+model_normal -187.4      18.0 </code></pre>
+<p>Since smaller values of loo indicate better fit, it is again evident
+that the Poisson model fits the data better than the normal model. Of
+course, the Poisson model is not the only reasonable option here. For
+instance, you could use a negative binomial model (via family
+<code>negative_binomial</code>), which already contains an
+overdispersion parameter so that modeling a varying intercept of
+<code>obs</code> becomes obsolete.</p>
 </div>
-<div id="phylogenetic-models-with-multiple-group-level-effects" class="section level2">
-<h2 class="hasAnchor">
-<a href="#phylogenetic-models-with-multiple-group-level-effects" class="anchor"></a>Phylogenetic models with multiple group-level effects</h2>
-<p>In the above examples, we have only used a single group-level effect (i.e., a varying intercept) for the phylogenetic grouping factors. In <strong>brms</strong>, it is also possible to estimate multiple group-level effects (e.g., a varying intercept and a varying slope) for these grouping factors. However, it requires repeatedly computing Kronecker products of covariance matrices while fitting the model. This will be very slow especially when the grouping factors have many levels and matrices are thus large.</p>
+<div class="section level2">
+<h2 id="phylogenetic-models-with-multiple-group-level-effects">Phylogenetic models with multiple group-level effects<a class="anchor" aria-label="anchor" href="#phylogenetic-models-with-multiple-group-level-effects"></a>
+</h2>
+<p>In the above examples, we have only used a single group-level effect
+(i.e., a varying intercept) for the phylogenetic grouping factors. In
+<strong>brms</strong>, it is also possible to estimate multiple
+group-level effects (e.g., a varying intercept and a varying slope) for
+these grouping factors. However, it requires repeatedly computing
+Kronecker products of covariance matrices while fitting the model. This
+will be very slow especially when the grouping factors have many levels
+and matrices are thus large.</p>
 </div>
-<div id="references" class="section level2">
-<h2 class="hasAnchor">
-<a href="#references" class="anchor"></a>References</h2>
-<p>de Villemeruil P. &amp; Nakagawa, S. (2014) General quantitative genetic methods for comparative biology. In: <em>Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice</em> (ed. Garamszegi L.) Springer, New York. pp. 287-303.</p>
-<p>Hadfield, J. D. &amp; Nakagawa, S. (2010) General quantitative genetic methods for comparative biology: phylogenies, taxonomies, and multi-trait models for continuous and categorical characters. <em>Journal of Evolutionary Biology</em>. 23. 494-508.</p>
-<p>Lawless, J. F. (1987). Negative binomial and mixed Poisson regression. <em>Canadian Journal of Statistics</em>, 15(3), 209-225.</p>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>de Villemeruil P. &amp; Nakagawa, S. (2014) General quantitative
+genetic methods for comparative biology. In: <em>Modern phylogenetic
+comparative methods and their application in evolutionary biology:
+concepts and practice</em> (ed. Garamszegi L.) Springer, New York.
+pp. 287-303.</p>
+<p>Hadfield, J. D. &amp; Nakagawa, S. (2010) General quantitative
+genetic methods for comparative biology: phylogenies, taxonomies, and
+multi-trait models for continuous and categorical characters.
+<em>Journal of Evolutionary Biology</em>. 23. 494-508.</p>
+<p>Lawless, J. F. (1987). Negative binomial and mixed Poisson
+regression. <em>Canadian Journal of Statistics</em>, 15(3), 209-225.</p>
 </div>
   </div>
 
@@ -601,11 +699,13 @@ model_normal -187.5      18.0 </code></pre>
 
 
       <footer><div class="copyright">
-  <p>Developed by Paul-Christian Bürkner.</p>
+  <p></p>
+<p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
@@ -613,6 +713,8 @@ model_normal -187.5      18.0 </code></pre>
 
   
 
+
+  
 
   </body>
 </html>

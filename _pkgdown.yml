@@ -46,7 +46,7 @@ home:
 articles:
   - title: "Getting Started"
     desc: >
-       These vignettes demonstrate how to use various features of the **brms** package.     
+       These vignettes demonstrate how to use various features of the **brms** package.
     contents:
       - brms_customfamilies
       - brms_distreg
@@ -56,3 +56,4 @@ articles:
       - brms_multivariate
       - brms_nonlinear
       - brms_phylogenetics
+      - brms_threading
