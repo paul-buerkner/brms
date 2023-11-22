@@ -1,36 +1,36 @@
 #' Parse Formulas of \pkg{brms} Models
-#' 
+#'
 #' Parse formulas objects for use in \pkg{brms}.
-#' 
+#'
 #' @aliases parse_bf
-#' 
+#'
 #' @inheritParams brm
-#' @param check_response Logical; Indicates whether the left-hand side 
-#'   of \code{formula} (i.e. response variables and addition arguments) 
+#' @param check_response Logical; Indicates whether the left-hand side
+#'   of \code{formula} (i.e. response variables and addition arguments)
 #'   should be parsed. If \code{FALSE}, \code{formula} may also be one-sided.
-#' @param resp_rhs_all Logical; Indicates whether to also include response 
-#'   variables on the right-hand side of formula \code{.$allvars}, 
+#' @param resp_rhs_all Logical; Indicates whether to also include response
+#'   variables on the right-hand side of formula \code{.$allvars},
 #'   where \code{.} represents the output of \code{brmsterms}.
 #' @param ... Further arguments passed to or from other methods.
-#'  
-#' @return An object of class \code{brmsterms} or \code{mvbrmsterms} 
-#'   (for multivariate models), which is a \code{list} containing all 
-#'   required information initially stored in \code{formula} 
-#'   in an easier to use format, basically a list of formulas 
+#'
+#' @return An object of class \code{brmsterms} or \code{mvbrmsterms}
+#'   (for multivariate models), which is a \code{list} containing all
+#'   required information initially stored in \code{formula}
+#'   in an easier to use format, basically a list of formulas
 #'   (not an abstract syntax tree).
-#' 
+#'
 #' @details This is the main formula parsing function of \pkg{brms}.
 #'   It should usually not be called directly, but is exported to allow
-#'   package developers making use of the formula syntax implemented 
+#'   package developers making use of the formula syntax implemented
 #'   in \pkg{brms}. As long as no other packages depend on this functions,
 #'   it may be changed without deprecation warnings, when new features make
 #'   this necessary.
-#'   
-#' @seealso 
-#'   \code{\link{brm}}, 
+#'
+#' @seealso
+#'   \code{\link{brm}},
 #'   \code{\link{brmsformula}},
 #'   \code{\link{mvbrmsformula}}
-#' 
+#'
 #' @export
 brmsterms <- function(formula, ...) {
   UseMethod("brmsterms")
@@ -52,7 +52,7 @@ brmsterms.default <- function(formula, ...) {
 
 #' @rdname brmsterms
 #' @export
-brmsterms.brmsformula <- function(formula, check_response = TRUE, 
+brmsterms.brmsformula <- function(formula, check_response = TRUE,
                                   resp_rhs_all = TRUE, ...) {
   x <- validate_formula(formula)
   mv <- isTRUE(x$mv)
@@ -63,22 +63,22 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   y <- nlist(formula, family, mv, rescor, mecor)
   y$cov_ranef <- x$cov_ranef
   class(y) <- "brmsterms"
-  
+
   if (check_response) {
     # extract response variables
     y$respform <- validate_resp_formula(formula, empty_ok = FALSE)
     if (mv) {
-      y$resp <- terms_resp(y$respform) 
+      y$resp <- terms_resp(y$respform)
     } else {
       y$resp <- ""
     }
   }
-  
+
   # extract addition arguments
   adforms <- terms_ad(formula, family, check_response)
   advars <- str2formula(ulapply(adforms, all_vars))
   y$adforms[names(adforms)] <- adforms
-  
+
   # centering would lead to incorrect results for grouped threshold vectors
   # as each threshold vector only affects a subset of observations
   if (!is.null(get_ad_expr(y, "thres", "gr"))) {
@@ -89,7 +89,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       attr(x$pforms[[dp]], "center") <- FALSE
     }
   }
-  
+
   # combine the main formula with formulas for the 'mu' parameters
   if (is.mixfamily(family)) {
     mu_dpars <- paste0("mu", seq_along(family$mix))
@@ -107,13 +107,13 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
     x$pforms[["mu"]] <- combine_formulas(formula, x$pforms[["mu"]], "mu")
     x$pforms <- move2start(x$pforms, "mu")
   }
-  
+
   # predicted distributional parameters
   resp <- ifelse(mv && !is.null(y$resp), y$resp, "")
   dpars <- intersect(names(x$pforms), valid_dpars(family))
   dpar_forms <- x$pforms[dpars]
   nlpars <- setdiff(names(x$pforms), dpars)
-  
+
   y$dpars <- named_list(dpars)
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
@@ -128,15 +128,16 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$dpars[[dp]]$respform <- y$respform
       y$dpars[[dp]]$adforms <- y$adforms
     }
+    y$dpars[[dp]]$transform <- stan_eta_transform(y$dpars[[dp]]$family, y)
     check_cs(y$dpars[[dp]])
   }
-  
+
   y$nlpars <- named_list(nlpars)
   if (length(nlpars)) {
     nlpar_forms <- x$pforms[nlpars]
     for (nlp in nlpars) {
       if (is.null(attr(nlpar_forms[[nlp]], "center"))) {
-        # design matrices of non-linear parameters will not be 
+        # design matrices of non-linear parameters will not be
         # centered by default to make prior specification easier
         attr(nlpar_forms[[nlp]], "center") <- FALSE
       }
@@ -149,21 +150,21 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$nlpars[[nlp]]$resp <- resp
       check_cs(y$nlpars[[nlp]])
     }
-    used_nlpars <- ulapply(c(y$dpars, y$nlpars), "[[", "used_nlpars")
+    used_nlpars <- ufrom_list(c(y$dpars, y$nlpars), "used_nlpars")
     unused_nlpars <- setdiff(nlpars, used_nlpars)
     if (length(unused_nlpars)) {
       stop2(
-        "The parameter '", unused_nlpars[1], "' is not a ", 
+        "The parameter '", unused_nlpars[1], "' is not a ",
         "valid distributional or non-linear parameter. ",
         "Did you forget to set 'nl = TRUE'?"
       )
     }
     # sort non-linear parameters after dependency
-    used_nlpars <- lapply(y$nlpars, "[[", "used_nlpars")
+    used_nlpars <- from_list(y$nlpars, "used_nlpars")
     sorted_nlpars <- sort_dependencies(used_nlpars)
     y$nlpars <- y$nlpars[sorted_nlpars]
   }
-  
+
   # fixed distributional parameters
   valid_dpars <- valid_dpars(y)
   inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars)
@@ -194,23 +195,24 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
     y$fdpars[[dp]] <- list(value = x$pfix[[dp]], dpar = dp)
   }
   check_fdpars(y$fdpars)
-  
+
   # make a formula containing all required variables
-  unused_vars <- all_vars(attr(x$formula, "unused"))
+  y$unused <- attr(x$formula, "unused")
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
   y$allvars <- allvars_formula(
-    lhsvars, advars, lapply(y$dpars, get_allvars), 
+    lhsvars, advars, lapply(y$dpars, get_allvars),
     lapply(y$nlpars, get_allvars), y$time$allvars,
-    unused_vars
+    get_unused_arg_vars(y),
+    .env = environment(formula)
   )
   if (check_response) {
     # add y$respform to the left-hand side of y$allvars
     # avoid using update.formula as it is inefficient for longer formulas
-    formula_allvars <- y$respform 
+    formula_allvars <- y$respform
     formula_allvars[[3]] <- y$allvars[[2]]
+    environment(formula_allvars) <- environment(y$allvars)
     y$allvars <- formula_allvars
   }
-  environment(y$allvars) <- environment(formula)
   y
 }
 
@@ -228,12 +230,15 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
     x$forms[[i]]$mv <- TRUE
     out$terms[[i]] <- brmsterms(x$forms[[i]], ...)
   }
-  out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
+  list_allvars <- lapply(out$terms, get_allvars)
+  out$allvars <- allvars_formula(
+    list_allvars, .env = environment(list_allvars[[1]])
+  )
   # required to find variables used solely in the response part
-  lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
+  lhs_resp <- function(x) deparse0(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
   out$respform <- formula(paste0("mvbind(", out$respform, ") ~ 1"))
-  out$responses <- ulapply(out$terms, "[[", "resp")
+  out$responses <- ufrom_list(out$terms, "resp")
   out$rescor <- x$rescor
   out$mecor <- x$mecor
   out$cov_ranef <- x$cov_ranef
@@ -252,7 +257,7 @@ terms_lf <- function(formula) {
   for (t in types) {
     tmp <- do_call(paste0("terms_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
-      y[[t]] <- tmp 
+      y[[t]] <- tmp
     }
   }
   y$allvars <- allvars_formula(
@@ -261,7 +266,6 @@ terms_lf <- function(formula) {
     get_allvars(y$sm), get_allvars(y$gp),
     get_allvars(y$ac), get_allvars(y$offset)
   )
-  environment(y$allvars) <- environment(formula)
   structure(y, class = "btl")
 }
 
@@ -282,10 +286,9 @@ terms_nlf <- function(formula, nlpars, resp = "") {
   covars <- setdiff(all_vars, nlpars)
   y$covars <- structure(str2formula(covars), int = FALSE)
   if (!"ac" %in% excluded_term_types(formula)) {
-    y$ac <- terms_ac(attr(formula, "autocor")) 
+    y$ac <- terms_ac(attr(formula, "autocor"))
   }
   y$allvars <- allvars_formula(covars, get_allvars(y$ac))
-  environment(y$allvars) <- environment(formula)
   y$loop <- loop
   structure(y, class = "btnl")
 }
@@ -318,12 +321,12 @@ terms_ad <- function(formula, family = NULL, check_response = TRUE) {
           if (!is.na(x[[a]]) && a %in% valid_ads) {
             x[[a]] <- str2formula(x[[a]])
           } else {
-            stop2("Argument '", a, "' is not supported for ", 
+            stop2("Argument '", a, "' is not supported for ",
                   "family '", summary(family), "'.")
-          } 
+          }
         } else if (length(matches) > 1L) {
           stop2("Each addition argument may only be defined once.")
-        } 
+        }
       }
       if (length(ad_terms)) {
         stop2("The following addition terms are invalid:\n",
@@ -386,12 +389,12 @@ terms_re <- function(formula) {
     form <- str2formula(re_parts$lhs[i])
     group <- paste0(gcall$type, collapse(gcall$groups))
     out[[i]] <- data.frame(
-      group = group, gtype = gcall$type, gn = i, 
+      group = group, gtype = gcall$type, gn = i,
       id = gcall$id, type = type[i], cor = gcall$cor,
       stringsAsFactors = FALSE
     )
     out[[i]]$gcall <- list(gcall)
-    out[[i]]$form <- list(form) 
+    out[[i]]$form <- list(form)
     # gather all variables used in the group-level term
     # at this point 'cs' terms are no longer recognized as such
     ftype <- str_if(type[i] %in% "cs", "", type[i])
@@ -426,16 +429,16 @@ terms_cs <- function(formula) {
   out
 }
 
-# extract special effects terms 
+# extract special effects terms
 terms_sp <- function(formula) {
   types <- c("mo", "me", "mi")
   out <- find_terms(formula, types, complete = FALSE)
   if (!length(out)) {
-    return(NULL) 
+    return(NULL)
   }
-  uni_mo <- trim_wsp(get_matches_expr(regex_sp("mo"), out))
-  uni_me <- trim_wsp(get_matches_expr(regex_sp("me"), out))
-  uni_mi <- trim_wsp(get_matches_expr(regex_sp("mi"), out))
+  uni_mo <- get_matches_expr(regex_sp("mo"), out)
+  uni_me <- get_matches_expr(regex_sp("me"), out)
+  uni_mi <- get_matches_expr(regex_sp("mi"), out)
   # remove the intercept as it is handled separately
   out <- str2formula(c("0", out))
   attr(out, "int") <- FALSE
@@ -455,7 +458,7 @@ terms_sm <- function(formula) {
     return(NULL)
   }
   if (any(grepl("^(te|ti)\\(", out))) {
-    stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
+    stop2("Tensor product smooths 'te' and 'ti' are not yet ",
           "implemented in brms. Consider using 't2' instead.")
   }
   out <- str2formula(out)
@@ -470,8 +473,8 @@ terms_gp <- function(formula) {
     return(NULL)
   }
   eterms <- lapply(out, eval2, envir = environment())
-  covars <- lapply(eterms, "[[", "term")
-  byvars <- lapply(eterms, "[[", "by")
+  covars <- from_list(eterms, "term")
+  byvars <- from_list(eterms, "by")
   allvars <- str2formula(unlist(c(covars, byvars)))
   allvars <- str2formula(all_vars(allvars))
   if (!length(all_vars(allvars))) {
@@ -491,8 +494,8 @@ terms_ac <- function(formula) {
   }
   eterms <- lapply(out, eval2, envir = environment())
   allvars <- unlist(c(
-    lapply(eterms, "[[", "time"),
-    lapply(eterms, "[[", "gr")
+    from_list(eterms, "time"),
+    from_list(eterms, "gr")
   ))
   allvars <- str2formula(all_vars(allvars))
   out <- str2formula(out)
@@ -503,14 +506,14 @@ terms_ac <- function(formula) {
 # extract offset terms
 terms_offset <- function(formula) {
   if (!is.terms(formula)) {
-    formula <- terms(as.formula(formula)) 
+    formula <- terms(as.formula(formula))
   }
   pos <- attr(formula, "offset")
   if (is.null(pos)) {
     return(NULL)
   }
   vars <- attr(formula, "variables")
-  out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
+  out <- ulapply(pos, function(i) deparse0(vars[[i + 1]]))
   out <- str2formula(out)
   attr(out, "allvars") <- str2formula(all_vars(out))
   out
@@ -540,12 +543,12 @@ terms_resp <- function(formula, check_names = TRUE) {
   if (length(expr) <= 1L) {
     out <- deparse_no_string(expr)
   } else {
-    str_fun <- deparse_no_string(expr[[1]]) 
+    str_fun <- deparse_no_string(expr[[1]])
     used_mvbind <- grepl("^(brms:::?)?mvbind$", str_fun)
     if (used_mvbind) {
       out <- ulapply(expr[-1], deparse_no_string)
     } else {
-      out <- deparse_no_string(expr) 
+      out <- deparse_no_string(expr)
     }
   }
   if (check_names) {
@@ -555,22 +558,22 @@ terms_resp <- function(formula, check_names = TRUE) {
 }
 
 #' Checks if argument is a \code{brmsterms} object
-#' 
+#'
 #' @param x An \R object
-#' 
+#'
 #' @seealso \code{\link[brms:brmsterms]{brmsterms}}
-#' 
+#'
 #' @export
 is.brmsterms <- function(x) {
   inherits(x, "brmsterms")
 }
 
 #' Checks if argument is a \code{mvbrmsterms} object
-#' 
+#'
 #' @param x An \R object
-#' 
+#'
 #' @seealso \code{\link[brms:brmsterms]{brmsterms}}
-#' 
+#'
 #' @export
 is.mvbrmsterms <- function(x) {
   inherits(x, "mvbrmsterms")
@@ -596,14 +599,14 @@ as.brmsterms <- function(x) {
   )
   info <- get(paste0(".family_", families[1]))()
   out$family[names(info)] <- info
-  out$sigma_pred <- any(ulapply(x$terms, 
+  out$sigma_pred <- any(ulapply(x$terms,
     function(x) "sigma" %in% names(x$dpar) || is.formula(x$adforms$se)
   ))
   weight_forms <- rmNULL(lapply(x$terms, function(x) x$adforms$weights))
   if (length(weight_forms)) {
     str_wf <- unique(ulapply(weight_forms, formula2str))
     if (length(str_wf) > 1L) {
-      stop2("All responses should use the same", 
+      stop2("All responses should use the same",
             "weights if 'rescor' is estimated.")
     }
     out$adforms$weights <- weight_forms[[1]]
@@ -638,7 +641,7 @@ avoid_dpars <- function(names, bterms) {
 }
 
 vars_prefix <- function() {
-  c("dpar", "resp", "nlpar") 
+  c("dpar", "resp", "nlpar")
 }
 
 # check and tidy parameter prefixes
@@ -656,11 +659,11 @@ check_prefix <- function(x, keep_mu = FALSE) {
       x[[i]] <- ""
     }
     x[[i]] <- ifelse(
-      !keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "mu", 
+      !keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "mu",
       yes = "", no = x[[i]]
     )
     x[[i]] <- ifelse(
-      keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "", 
+      keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "",
       yes = "mu", no = x[[i]]
     )
   }
@@ -684,7 +687,7 @@ combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
 check_fdpars <- function(x) {
   stopifnot(is.null(x) || is.list(x))
   pos_pars <- c(
-    "sigma", "shape", "nu", "phi", "kappa", 
+    "sigma", "shape", "nu", "phi", "kappa",
     "beta", "disc", "bs", "ndt", "theta"
   )
   prob_pars <- c("zi", "hu", "bias", "quantile")
@@ -704,16 +707,16 @@ check_fdpars <- function(x) {
 # combine all variables in one formuula
 # @param x (list of) formulas or character strings
 # @return a formula with all variables on the right-hand side
-allvars_formula <- function(...) {
+allvars_formula <- function(..., .env = parent.frame()) {
   out <- rmNULL(c(...))
   out <- collapse(ulapply(out, plus_rhs))
   all_vars <- all_vars(out)
   invalid_vars <- setdiff(all_vars, make.names(all_vars))
   if (length(invalid_vars)) {
     stop2("The following variable names are invalid: ",
-          collapse_comma(invalid_vars)) 
+          collapse_comma(invalid_vars))
   }
-  str2formula(c(out, all_vars))
+  str2formula(c(out, all_vars), env = .env)
 }
 
 # conveniently extract a formula of all relevant variables
@@ -769,7 +772,7 @@ is.terms <- function(x) {
 # @param lhs character string to define the left-hand side of the output
 # @param update a flag to indicate whether updating should be allowed.
 #   Defaults to FALSE to maintain backwards compatibility
-# @return a formula object 
+# @return a formula object
 combine_formulas <- function(formula1, formula2, lhs = "", update = FALSE) {
   stopifnot(is.formula(formula1))
   stopifnot(is.null(formula2) || is.formula(formula2))
@@ -795,16 +798,16 @@ combine_formulas <- function(formula1, formula2, lhs = "", update = FALSE) {
   out <- eval2(paste0(lhs, " ~ ", rhs))
   attributes(out)[names(att)] <- att
   out
-} 
+}
 
 # does the formula contain any terms?
 # @return TRUE or FALSE
 has_terms <- function(formula) {
   stopifnot(is.formula(formula))
   terms <- try(terms(rhs(formula)), silent = TRUE)
-  is(terms, "try-error") || 
+  is_try_error(terms) ||
     length(attr(terms, "term.labels")) ||
-    length(attr(terms, "offset")) 
+    length(attr(terms, "offset"))
 }
 
 # has a linear formula any terms except overall effects?
@@ -903,7 +906,7 @@ get_effect.btl <- function(x, target = "fe", ...) {
 
 #' @export
 get_effect.btnl <- function(x, target = "fe", ...) {
-  NULL
+  x[[target]]
 }
 
 all_terms <- function(x) {
@@ -917,14 +920,15 @@ all_terms <- function(x) {
 }
 
 # generate a regular expression to extract special terms
-# @param type one or more special term types to be extracted 
+# @param type one or more special term types to be extracted
+# TODO: rule out expressions such as mi(y) + mi(x)
 regex_sp <- function(type = "all") {
   choices <- c("all", "sp", "sm", "gp", "cs", "mmc", "ac", all_sp_types())
   type <- unique(match.arg(type, choices, several.ok = TRUE))
   funs <- c(
-    sm = "(s|(t2)|(te)|(ti))", 
-    gp = "gp", cs = "cse?", mmc = "mmc", 
-    ac = "((arma)|(ar)|(ma)|(cosy)|(sar)|(car)|(fcor))"
+    sm = "(s|(t2)|(te)|(ti))",
+    gp = "gp", cs = "cse?", mmc = "mmc",
+    ac = "((arma)|(ar)|(ma)|(cosy)|(unstr)|(sar)|(car)|(fcor))"
   )
   funs[all_sp_types()] <- all_sp_types()
   if ("sp" %in% type) {
@@ -953,7 +957,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
   if (is.formula(x)) {
     x <- all_terms(x)
   } else {
-    x <- as.character(x)
+    x <- trim_wsp(as.character(x))
   }
   complete <- as_one_logical(complete)
   ranef <- as_one_logical(ranef)
@@ -966,13 +970,14 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
   if (complete) {
     matches <- lapply(out, get_matches_expr, pattern = regex)
     # each term may contain only one special function call
-    inv <- out[lengths(matches) > 1L]
-    if (!length(inv)) {
+    invalid <- out[lengths(matches) > 1L]
+    if (!length(invalid)) {
       # each term must be exactly equal to the special function call
-      inv <- out[trim_wsp(unlist(matches)) != out]
+      invalid <- out[unlist(matches) != out]
     }
-    if (length(inv)) {
-      stop2("The term '", inv[1], "' is invalid in brms syntax.")
+    # TODO: some terms can be part of I() calls (#1520); reflect this here?
+    if (length(invalid)) {
+      stop2("The term '", invalid[1], "' is invalid in brms syntax.")
     }
   }
   out
@@ -981,7 +986,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
 # validate a terms object (or one that can be coerced to it)
 # for use primarily in 'get_model_matrix'
 # @param x any R object
-# @return a (possibly amended) terms object or NULL 
+# @return a (possibly amended) terms object or NULL
 #   if 'x' could not be coerced to a terms object
 validate_terms <- function(x) {
   no_int <- no_int(x)
@@ -999,7 +1004,7 @@ validate_terms <- function(x) {
   }
   x
 }
- 
+
 # checks if the formula contains an intercept
 has_intercept <- function(formula) {
   if (is.terms(formula)) {
@@ -1007,11 +1012,11 @@ has_intercept <- function(formula) {
   } else {
     formula <- as.formula(formula)
     try_terms <- try(terms(formula), silent = TRUE)
-    if (is(try_terms, "try-error")) {
+    if (is_try_error(try_terms)) {
       out <- FALSE
     } else {
       out <- as.logical(attr(try_terms, "intercept"))
-    } 
+    }
   }
   out
 }
@@ -1033,14 +1038,14 @@ has_rsv_intercept <- function(formula, has_intercept = NULL) {
     return(.has_rsv_intercept(formula, has_intercept))
   }
   formula <- try(as.formula(formula), silent = TRUE)
-  if (is(formula, "try-error")) {
+  if (is_try_error(formula)) {
     return(FALSE)
-  } 
+  }
   if (is.null(has_intercept)) {
     try_terms <- try(terms(formula), silent = TRUE)
-    if (is(try_terms, "try-error")) {
+    if (is_try_error(try_terms)) {
       return(FALSE)
-    } 
+    }
     has_intercept <- has_intercept(try_terms)
   }
   .has_rsv_intercept(formula, has_intercept)
@@ -1072,7 +1077,7 @@ check_cs <- function(bterms) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   if (has_cs(bterms)) {
     if (!is_equal(dpar_class(bterms$dpar), "mu")) {
-      stop2("Category specific effects are only supported ", 
+      stop2("Category specific effects are only supported ",
             "for the main parameter 'mu'.")
     }
     if (!(is.null(bterms$family) || allow_cs(bterms$family))) {
@@ -1106,6 +1111,31 @@ check_accidental_helper_functions <- function(formula) {
     }
   }
   invisible(TRUE)
+}
+
+# extract names of variables added via the 'unused' argument
+get_unused_arg_vars <- function(x, ...) {
+  UseMethod("get_unused_arg_vars")
+}
+
+#' @export
+get_unused_arg_vars.brmsformula <- function(x, ...) {
+  all_vars(attr(x$formula, "unused"))
+}
+
+#' @export
+get_unused_arg_vars.mvbrmsformula <- function(x, ...) {
+  unique(ulapply(x$forms, get_unused_arg_vars, ...))
+}
+
+#' @export
+get_unused_arg_vars.brmsterms <- function(x, ...) {
+  all_vars(x$unused)
+}
+
+#' @export
+get_unused_arg_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_unused_arg_vars, ...))
 }
 
 # extract elements from objects

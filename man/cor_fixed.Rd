@@ -9,7 +9,7 @@ cor_fixed(V)
 }
 \arguments{
 \item{V}{Known covariance matrix of the response variable.
-If a vector is passed, it will be used as diagonal entries 
+If a vector is passed, it will be used as diagonal entries
 (variances) and covariances will be set to zero.}
 }
 \value{

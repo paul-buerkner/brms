@@ -16,10 +16,16 @@ A \code{brmsfit} object compatible with the latest version
   of \pkg{brms}.
 }
 \description{
-Restructure old \code{brmsfit} objects to work with 
+Restructure old \code{brmsfit} objects to work with
 the latest \pkg{brms} version. This function is called
 internally when applying post-processing methods.
 However, in order to avoid unnecessary run time caused
 by the restructuring, I recommend explicitly calling
 \code{restructure} once per model after updating \pkg{brms}.
+}
+\details{
+If you are restructuring an old spline model (fitted with brms < 2.19.3) to
+avoid prediction inconsistencies between machines (see GitHub issue #1465),
+please make sure to \code{restructure} your model on the machine on which it
+was originally fitted.
 }

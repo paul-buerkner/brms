@@ -16,7 +16,7 @@ A \code{brmsopencl} object which can be passed to the
   \code{opencl} argument of \code{brm} and related functions.
 }
 \description{
-Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only 
+Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only
 some \pkg{Stan} functions can be run on a GPU at this point and so
 a lot of \pkg{brms} models won't benefit from OpenCL for now.
 }

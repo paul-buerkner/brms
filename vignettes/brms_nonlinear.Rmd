@@ -2,7 +2,7 @@
 title: "Estimating Non-Linear Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
@@ -21,8 +21,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -44,13 +44,13 @@ can be written as follows:
 $$\eta_n = \sum_{i = 1}^K b_i x_{ni}$$
 
 where $b_i$ is the regression coefficient of predictor $i$ and $x_{ni}$ is the
-data of predictor $i$ for observation $n$. This also compromises interaction
+data of predictor $i$ for observation $n$. This also comprises interaction
 terms and various other data transformations. However, the structure of $\eta_n$
 is always linear in the sense that the regression coefficients $b_i$ are
 multiplied by some predictor values and then summed up. This implies that the
 hypothetical predictor term
 
-$$\eta_n = b_1 \exp(b_2 x_n)$$ 
+$$\eta_n = b_1 \exp(b_2 x_n)$$
 
 would *not* be a *linear* predictor anymore and we could not fit it using
 classical techniques of generalized linear models. We thus need a more general
@@ -181,7 +181,7 @@ and translate the proposed model into a non-linear **brms** model.
 ```{r, results='hide'}
 fit_loss <- brm(
   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
      nl = TRUE),
   data = loss, family = gaussian(),
   prior = c(
@@ -212,7 +212,7 @@ Next, we show marginal effects separately for each year.
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
 me_loss <- conditional_effects(
-  fit_loss, conditions = conditions, 
+  fit_loss, conditions = conditions,
   re_formula = NULL, method = "predict"
 )
 plot(me_loss, ncol = 5, points = TRUE)
@@ -264,7 +264,7 @@ follows:
 fit_ir2 <- brm(
   bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
      eta ~ ability, nl = TRUE),
-  data = dat_ir, family = bernoulli("identity"), 
+  data = dat_ir, family = bernoulli("identity"),
   prior = prior(normal(0, 5), nlpar = "eta")
 )
 ```
@@ -282,7 +282,7 @@ summary(fit_ir2)
 plot(conditional_effects(fit_ir2), points = TRUE)
 ```
 
-Comparing model fit via leave-one-out cross-validation 
+Comparing model fit via leave-one-out cross-validation
 
 ```{r}
 loo(fit_ir1, fit_ir2)
@@ -296,9 +296,9 @@ done changing the previous model just a bit.
 
 ```{r, results='hide'}
 fit_ir3 <- brm(
-  bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
+  bf(answer ~ guess + (1 - guess) * inv_logit(eta),
     eta ~ 0 + ability, guess ~ 1, nl = TRUE),
-  data = dat_ir, family = bernoulli("identity"), 
+  data = dat_ir, family = bernoulli("identity"),
   prior = c(
     prior(normal(0, 5), nlpar = "eta"),
     prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)
@@ -325,7 +325,7 @@ with varying intercepts) becomes necessary as we have multiple observations per
 item and person. Luckily, this can all be done within the non-linear framework
 of **brms** and I hope that this vignette serves as a good starting point.
 
-## References 
+## References
 
 Gesmann M. & Morris J. (2020). Hierarchical Compartmental Reserving Models.
 *CAS Research Papers*.

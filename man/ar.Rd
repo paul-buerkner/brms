@@ -8,14 +8,14 @@ ar(time = NA, gr = NA, p = 1, cov = FALSE)
 }
 \arguments{
 \item{time}{An optional time variable specifying the time ordering
-of the observations. By default, the existing order of the observations 
+of the observations. By default, the existing order of the observations
 in the data is used.}
 
 \item{gr}{An optional grouping variable. If specified, the correlation
 structure is assumed to apply only to observations within the same grouping
 level.}
 
-\item{p}{A non-negative integer specifying the autoregressive (AR) 
+\item{p}{A non-negative integer specifying the autoregressive (AR)
 order of the ARMA structure. Default is \code{1}.}
 
 \item{cov}{A flag indicating whether ARMA effects should be estimated by
@@ -24,12 +24,12 @@ stationary ARMA effects of order 1. If the model family does not have
 natural residuals, latent residuals are added automatically. If
 \code{FALSE} (the default), a regression formulation is used that is
 considerably faster and allows for ARMA effects of order higher than 1 but
-is only available for \code{gaussian} models and some of its 
+is only available for \code{gaussian} models and some of its
 generalizations.}
 }
 \value{
-An object of class \code{'arma_term'}, which is a list 
-  of arguments to be interpreted by the formula 
+An object of class \code{'arma_term'}, which is a list
+  of arguments to be interpreted by the formula
   parsing functions of \pkg{brms}.
 }
 \description{

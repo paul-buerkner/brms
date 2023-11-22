@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit_multiple}.}
 
-\item{formula.}{Changes to the formula; for details see 
+\item{formula.}{Changes to the formula; for details see
 \code{\link{update.formula}} and \code{\link{brmsformula}}.}
 
 \item{newdata}{List of \code{data.frames} to update the model with new data.
@@ -26,7 +26,7 @@ This method allows to update an existing \code{brmsfit_multiple} object.
 library(mice)
 imp <- mice(nhanes2)
 
-# initially fit the model 
+# initially fit the model
 fit_imp1 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 summary(fit_imp1)
 

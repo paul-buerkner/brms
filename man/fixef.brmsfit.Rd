@@ -20,13 +20,13 @@
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{pars}{Optional names of coefficients to extract.
@@ -37,16 +37,16 @@ By default, all coefficients are extracted.}
 \value{
 If \code{summary} is \code{TRUE}, a matrix returned
   by \code{\link{posterior_summary}} for the population-level effects.
-  If \code{summary} is \code{FALSE}, a matrix with one row per 
+  If \code{summary} is \code{FALSE}, a matrix with one row per
   posterior draw and one column per population-level effect.
 }
 \description{
-Extract the population-level ('fixed') effects 
+Extract the population-level ('fixed') effects
 from a \code{brmsfit} object.
 }
 \examples{
 \dontrun{
-fit <- brm(time | cens(censored) ~ age + sex + disease, 
+fit <- brm(time | cens(censored) ~ age + sex + disease,
            data = kidney, family = "exponential")
 fixef(fit)
 # extract only some coefficients

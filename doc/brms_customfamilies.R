@@ -9,8 +9,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -24,7 +24,7 @@ data("cbpp", package = "lme4")
 head(cbpp)
 
 ## ----fit1, results='hide'---------------------------------------------------------------
-fit1 <- brm(incidence | trials(size) ~ period + (1|herd), 
+fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
             data = cbpp, family = binomial())
 
 ## ----fit1_summary-----------------------------------------------------------------------
@@ -33,7 +33,8 @@ summary(fit1)
 ## ----beta_binomial2---------------------------------------------------------------------
 beta_binomial2 <- custom_family(
   "beta_binomial2", dpars = c("mu", "phi"),
-  links = c("logit", "log"), lb = c(NA, 0),
+  links = c("logit", "log"),
+  lb = c(0, 0), ub = c(1, NA),
   type = "int", vars = "vint1[n]"
 )
 
@@ -52,7 +53,7 @@ stanvars <- stanvar(scode = stan_funs, block = "functions")
 
 ## ----fit2, results='hide'---------------------------------------------------------------
 fit2 <- brm(
-  incidence | vint(size) ~ period + (1|herd), data = cbpp, 
+  incidence | vint(size) ~ period + (1|herd), data = cbpp,
   family = beta_binomial2, stanvars = stanvars
 )
 

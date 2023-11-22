@@ -11,6 +11,7 @@ get_prior(
   autocor = NULL,
   data2 = NULL,
   knots = NULL,
+  drop_unused_levels = TRUE,
   sparse = NULL,
   ...
 )
@@ -44,13 +45,16 @@ It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
 \item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects 
+cannot be passed via argument \code{data}. Required for some objects
 used in autocorrelation structures to specify dependency structures
 as well as for within-group covariance matrices.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
@@ -68,23 +72,23 @@ A data.frame with columns \code{prior}, \code{class}, \code{coef},
   column is empty except for internal default priors.
 }
 \description{
-Get information on all parameters (and parameter classes) for which priors 
+Get information on all parameters (and parameter classes) for which priors
 may be specified including default priors.
 }
 \examples{
 ## get all parameters and parameters classes to define priors on
 (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-                    data = epilepsy, family = poisson()))   
-         
+                    data = epilepsy, family = poisson()))
+
 ## define a prior on all population-level effects a once
 prior$prior[1] <- "normal(0,10)"
 
 ## define a specific prior on the population-level effect of Trt
-prior$prior[5] <- "student_t(10, 0, 5)"       
+prior$prior[5] <- "student_t(10, 0, 5)"
 
 ## verify that the priors indeed found their way into Stan's model code
 make_stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-              data = epilepsy, family = poisson(), 
+              data = epilepsy, family = poisson(),
               prior = prior)
 
 }

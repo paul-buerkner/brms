@@ -1,5 +1,5 @@
-#' @details 
-#' In multilevel models, it is possible to 
+#' @details
+#' In multilevel models, it is possible to
 #' allow new levels of grouping factors to be used in the predictions.
 #' This can be controlled via argument \code{allow_new_levels}.
 #' New levels can be sampled in multiple ways, which can be controlled

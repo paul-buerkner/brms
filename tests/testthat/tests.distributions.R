@@ -16,7 +16,7 @@ test_that("multivariate normal and student distributions work correctly", {
   expect_equal(dmulti_student_t(1:3, mu = mu, Sigma = Sigma, df = 10, log = TRUE),
                mnormt::dmt(1:3, df = 10, mean = mu, S = Sigma, log = TRUE))
   expect_equal(dim(rmulti_normal(7, mu = mu, Sigma = Sigma)), c(7, 3))
-  expect_equal(dim(rmulti_student_t(7, mu = mu, Sigma = Sigma, df = 10)), 
+  expect_equal(dim(rmulti_student_t(7, mu = mu, Sigma = Sigma, df = 10)),
                c(7, 3))
   # test errors
   expect_error(dmulti_normal(1:3, mu = rnorm(2), Sigma = Sigma, check = TRUE),
@@ -58,10 +58,11 @@ test_that("skew_normal distribution functions run without errors", {
   x <- rnorm(n, 10, 3)
   res <- dskew_normal(x, mu = 1, sigma = 2, alpha = 1)
   expect_true(length(res) == n)
-  res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n, 
+  res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n,
                       alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
-  res <- qskew_normal(x, mu = rnorm(n), sigma = 1:n, 
+  p <- log(runif(n, 0, 1))
+  res <- qskew_normal(p, mu = rnorm(n), sigma = 1:n,
                       alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- rskew_normal(n, mu = rnorm(n), sigma = 10, alpha = -4:5)
@@ -73,7 +74,7 @@ test_that("exgaussian distribution functions run without errors", {
   x <- rnorm(n, 10, 3)
   res <- dexgaussian(x, mu = 1, sigma = 2, beta = 1)
   expect_true(length(res) == n)
-  res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n, 
+  res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n,
                      beta = 3, log.p = TRUE)
   expect_true(length(res) == n)
   res <- rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
@@ -105,6 +106,18 @@ test_that("inv_gaussian distribution functions run without errors", {
   expect_true(length(res) == n)
 })
 
+test_that("beta_binomial distribution functions run without errors", {
+  n <- 10
+  x <- rpois(n, lambda = 1)
+
+  res <- dbeta_binomial(x, c(2, 10), mu = 0.4, phi = 1)
+  expect_true(length(res) == n)
+  res <- pbeta_binomial(x, c(2, 10), mu = 0.4, phi = 1)
+  expect_true(length(res) == n)
+  res <- rbeta_binomial(n, c(2, 10), mu = 0.4, phi = 1)
+  expect_true(length(res) == n)
+})
+
 test_that("gen_extreme_value distribution functions run without errors", {
   n <- 10
   x <- rgamma(n, 10, 3)
@@ -123,7 +136,7 @@ test_that("asym_laplace distribution functions run without errors", {
   expect_true(length(res) == n)
   res <- pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
   expect_true(length(res) == n)
-  res <- rasym_laplace(n, mu = rnorm(n), sigma = 10, 
+  res <- rasym_laplace(n, mu = rnorm(n), sigma = 10,
                        quantile = runif(n, 0, 1))
   expect_true(length(res) == n)
 })
@@ -131,22 +144,27 @@ test_that("asym_laplace distribution functions run without errors", {
 test_that("zero-inflated distribution functions run without errors", {
   n <- 10
   x <- rpois(n, lambda = 1)
-  
+
   res <- dzero_inflated_poisson(x, lambda = 1, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_poisson(x, lambda = 1, zi = 0.1)
   expect_true(length(res) == n)
-  
+
   res <- dzero_inflated_negbinomial(x, mu = 2, shape = 5, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_negbinomial(x, mu = 2, shape = 5, zi = 0.1)
   expect_true(length(res) == n)
-  
+
   res <- dzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
   expect_true(length(res) == n)
-  
+
+  res <- dzero_inflated_beta_binomial(x, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- pzero_inflated_beta_binomial(x, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
+  expect_true(length(res) == n)
+
   x <- c(rbeta(n - 2, shape1 = 2, shape2 = 3), 0, 0)
   res <- dzero_inflated_beta(x, shape1 = 2, shape2 = 3, zi = 0.1)
   expect_true(length(res) == n)
@@ -157,22 +175,22 @@ test_that("zero-inflated distribution functions run without errors", {
 test_that("hurdle distribution functions run without errors", {
   n <- 10
   x <- rpois(n, lambda = 1)
-  
+
   res <- dhurdle_poisson(x, lambda = 1, hu = 0.1)
   expect_true(length(res) == n)
   res <- phurdle_poisson(x, lambda = 1, hu = 0.1)
   expect_true(length(res) == n)
-  
+
   res <- dhurdle_negbinomial(x, mu = 2, shape = 5, hu = 0.1)
   expect_true(length(res) == n)
   res <- phurdle_negbinomial(x, mu = 2, shape = 5, hu = 0.1)
   expect_true(length(res) == n)
-  
+
   res <- dhurdle_gamma(x, shape = 1, scale = 3, hu = 0.1)
   expect_true(length(res) == n)
   res <- phurdle_gamma(x, shape = 1, scale = 3, hu = 0.1)
   expect_true(length(res) == n)
-  
+
   res <- dhurdle_lognormal(x, mu = 2, sigma = 5, hu = 0.1)
   expect_true(length(res) == n)
   res <- phurdle_lognormal(x, mu = 2, sigma = 5, hu = 0.1)
@@ -188,11 +206,11 @@ test_that("wiener distribution functions run without errors", {
   beta <- 0.5
   delta <- rnorm(n)
   resp <- sample(c(0, 1), n, TRUE)
-  
+
   d1 <- dwiener(x, alpha, tau, beta, delta, resp, backend = "Rwiener")
   d2 <- dwiener(x, alpha, tau, beta, delta, resp, backend = "rtdists")
   expect_equal(d1, d2)
-  
+
   r1 <- rwiener(n, alpha, tau, beta, delta, backend = "Rwiener")
   r2 <- rwiener(n, alpha, tau, beta, delta, backend = "rtdists")
   expect_equal(names(r1), names(r2))
@@ -234,21 +252,21 @@ test_that("d<ordinal_family>() works correctly", {
           d_cumul_ch <- inv_link_cumulative_ch(thres_eta, link = link)
           expect_equivalent(d_cumul, d_cumul_ch)
           expect_equal(dim(d_cumul), c(ndraws, ncat))
-          
+
           # sratio():
           d_sratio <- dsratio(seq_len(ncat),
                               eta_test, thres_test, link = link)
           d_sratio_ch <- inv_link_sratio_ch(thres_eta, link = link)
           expect_equivalent(d_sratio, d_sratio_ch)
           expect_equal(dim(d_sratio), c(ndraws, ncat))
-          
+
           # cratio():
           d_cratio <- dcratio(seq_len(ncat),
                               eta_test, thres_test, link = link)
           d_cratio_ch <- inv_link_cratio_ch(eta_thres, link = link)
           expect_equivalent(d_cratio, d_cratio_ch)
           expect_equal(dim(d_cratio), c(ndraws, ncat))
-          
+
           # acat():
           d_acat <- dacat(seq_len(ncat),
                           eta_test, thres_test, link = link)
@@ -276,19 +294,19 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
           il_cumul_ch <- inv_link_cumulative_ch(x_test, link = link)
           expect_equivalent(il_cumul, il_cumul_ch)
           expect_equal(dim(il_cumul), c(ndraws, nobsv, ncat))
-          
+
           # sratio():
           il_sratio <- inv_link_sratio(x_test, link = link)
           il_sratio_ch <- inv_link_sratio_ch(x_test, link = link)
           expect_equivalent(il_sratio, il_sratio_ch)
           expect_equal(dim(il_sratio), c(ndraws, nobsv, ncat))
-          
+
           # cratio():
           il_cratio <- inv_link_cratio(nx_test, link = link)
           il_cratio_ch <- inv_link_cratio_ch(nx_test, link = link)
           expect_equivalent(il_cratio, il_cratio_ch)
           expect_equal(dim(il_cratio), c(ndraws, nobsv, ncat))
-          
+
           # acat():
           il_acat <- inv_link_acat(nx_test, link = link)
           il_acat_ch <- inv_link_acat_ch(nx_test, link = link)
@@ -314,19 +332,19 @@ test_that("link_<ordinal_family>() works correctly for arrays", {
           l_cumul_ch <- link_cumulative_ch(x_test, link = link)
           expect_equivalent(l_cumul, l_cumul_ch)
           expect_equal(dim(l_cumul), c(ndraws, nobsv, ncat - 1))
-          
+
           # sratio():
           l_sratio <- link_sratio(x_test, link = link)
           l_sratio_ch <- link_sratio_ch(x_test, link = link)
           expect_equivalent(l_sratio, l_sratio_ch)
           expect_equal(dim(l_sratio), c(ndraws, nobsv, ncat - 1))
-          
+
           # cratio():
           l_cratio <- link_cratio(x_test, link = link)
           l_cratio_ch <- link_cratio_ch(x_test, link = link)
           expect_equivalent(l_cratio, l_cratio_ch)
           expect_equal(dim(l_cratio), c(ndraws, nobsv, ncat - 1))
-          
+
           # acat():
           l_acat <- link_acat(x_test, link = link)
           l_acat_ch <- link_acat_ch(x_test, link = link)
@@ -350,17 +368,17 @@ test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
           l_cumul <- link_cumulative(x_test, link = link)
           il_cumul <- inv_link_cumulative(l_cumul, link = link)
           expect_equivalent(il_cumul, x_test)
-          
+
           # sratio():
           l_sratio <- link_sratio(x_test, link = link)
           il_sratio <- inv_link_sratio(l_sratio, link = link)
           expect_equivalent(il_sratio, x_test)
-          
+
           # cratio():
           l_cratio <- link_cratio(x_test, link = link)
           il_cratio <- inv_link_cratio(l_cratio, link = link)
           expect_equivalent(il_cratio, x_test)
-          
+
           # acat():
           l_acat <- link_acat(x_test, link = link)
           il_acat <- inv_link_acat(l_acat, link = link)
@@ -384,17 +402,17 @@ test_that("link_<ordinal_family>() inverts inv_link_<ordinal_family>()", {
           il_cumul <- inv_link_cumulative(x_test, link = link)
           l_cumul <- link_cumulative(il_cumul, link = link)
           expect_equivalent(l_cumul, x_test)
-          
+
           # sratio():
           il_sratio <- inv_link_sratio(x_test, link = link)
           l_sratio <- link_sratio(il_sratio, link = link)
           expect_equivalent(l_sratio, x_test)
-          
+
           # cratio():
           il_cratio <- inv_link_cratio(x_test, link = link)
           l_cratio <- link_cratio(il_cratio, link = link)
           expect_equivalent(l_cratio, x_test)
-          
+
           # acat():
           il_acat <- inv_link_acat(x_test, link = link)
           l_acat <- link_acat(il_acat, link = link)
@@ -493,15 +511,16 @@ test_that("dcategorical() works correctly", {
   source(testthat::test_path(file.path("helpers", "simopts_catlike_oneobs.R")))
   for (ndraws in ndraws_vec) {
     for (ncat in ncat_vec) {
-      eta_test_list <- list(cbind(0,
-                                  matrix(rnorm(ndraws * (ncat - 1)),
-                                         nrow = ndraws)))
+      eta_test_list <- list(cbind(
+        0, matrix(rnorm(ndraws * (ncat - 1)), nrow = ndraws)
+      ))
       if (ndraws == 1) {
         eta_test_list <- c(eta_test_list, list(c(0, rnorm(ncat - 1))))
       }
       for (eta_test in eta_test_list) {
         d_categorical <- dcategorical(seq_len(ncat), eta_test)
-        d_categorical_ch <- inv_link_categorical_ch(eta_test)
+        d_categorical_ch <- inv_link_categorical_ch(eta_test,
+                                                    refcat_ins = FALSE)
         expect_equivalent(d_categorical, d_categorical_ch)
         expect_equal(dim(d_categorical), c(ndraws, ncat))
       }
@@ -517,8 +536,6 @@ test_that("inv_link_categorical() works correctly for arrays", {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
                         dim = c(ndraws, nobsv, ncat - 1))
-        zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
-        x_test <- abind::abind(zeros_arr, x_test)
         il_categorical <- inv_link_categorical(x_test)
         il_categorical_ch <- inv_link_categorical_ch(x_test)
         expect_equivalent(il_categorical, il_categorical_ch)
@@ -539,7 +556,7 @@ test_that("link_categorical() works correctly for arrays", {
         l_categorical <- link_categorical(x_test)
         l_categorical_ch <- link_categorical_ch(x_test)
         expect_equivalent(l_categorical, l_categorical_ch)
-        expect_equal(dim(l_categorical), c(ndraws, nobsv, ncat))
+        expect_equal(dim(l_categorical), c(ndraws, nobsv, ncat - 1))
       }
     }
   }
@@ -567,8 +584,6 @@ test_that("link_categorical() inverts inv_link_categorical()", {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
                         dim = c(ndraws, nobsv, ncat - 1))
-        zeros_arr <- array(0, dim = c(ndraws, nobsv, 1))
-        x_test <- abind::abind(zeros_arr, x_test)
         il_categorical <- inv_link_categorical(x_test)
         l_categorical <- link_categorical(il_categorical)
         expect_equivalent(l_categorical, x_test)

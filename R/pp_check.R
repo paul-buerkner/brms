@@ -1,67 +1,75 @@
 #' Posterior Predictive Checks for \code{brmsfit} Objects
-#' 
+#'
 #' Perform posterior predictive checks with the help
 #' of the \pkg{bayesplot} package.
-#' 
+#'
 #' @aliases pp_check
-#' 
+#'
 #' @param object An object of class \code{brmsfit}.
 #' @param type Type of the ppc plot as given by a character string.
 #'   See \code{\link[bayesplot:PPC-overview]{PPC}} for an overview
 #'   of currently supported types. You may also use an invalid
-#'   type (e.g. \code{type = "xyz"}) to get a list of supported 
+#'   type (e.g. \code{type = "xyz"}) to get a list of supported
 #'   types in the resulting error message.
 #' @param ndraws Positive integer indicating how many
 #'  posterior draws should be used.
 #'  If \code{NULL} all draws are used. If not specified,
 #'  the number of posterior draws is chosen automatically.
 #'  Ignored if \code{draw_ids} is not \code{NULL}.
+#' @param prefix The prefix of the \pkg{bayesplot} function to be applied. 
+#'  Either `"ppc"` (posterior predictive check; the default)
+#'  or `"ppd"` (posterior predictive distribution), the latter being the same
+#'  as the former except that the observed data is not shown for `"ppd"`.
 #' @param group Optional name of a factor variable in the model
 #'  by which to stratify the ppc plot. This argument is required for
 #'  ppc \code{*_grouped} types and ignored otherwise.
-#' @param x Optional name of a variable in the model. 
-#'  Only used for ppc types having an \code{x} argument 
+#' @param x Optional name of a variable in the model.
+#'  Only used for ppc types having an \code{x} argument
 #'  and ignored otherwise.
 #' @param ... Further arguments passed to \code{\link{predict.brmsfit}}
 #'   as well as to the PPC function specified in \code{type}.
 #' @inheritParams prepare_predictions.brmsfit
-#' 
+#'
 #' @return A ggplot object that can be further
 #'  customized using the \pkg{ggplot2} package.
-#' 
-#' @details For a detailed explanation of each of the ppc functions, 
-#' see the \code{\link[bayesplot:PPC-overview]{PPC}} 
-#' documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} 
+#'
+#' @details For a detailed explanation of each of the ppc functions,
+#' see the \code{\link[bayesplot:PPC-overview]{PPC}}
+#' documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}}
 #' package.
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' fit <-  brm(count ~ zAge + zBase * Trt
 #'             + (1|patient) + (1|obs),
 #'             data = epilepsy, family = poisson())
-#' 
+#'
 #' pp_check(fit)  # shows dens_overlay plot by default
 #' pp_check(fit, type = "error_hist", ndraws = 11)
 #' pp_check(fit, type = "scatter_avg", ndraws = 100)
 #' pp_check(fit, type = "stat_2d")
 #' pp_check(fit, type = "rootogram")
 #' pp_check(fit, type = "loo_pit")
-#' 
+#'
 #' ## get an overview of all valid types
 #' pp_check(fit, type = "xyz")
-#' }
 #' 
+#' ## get a plot without the observed data
+#' pp_check(fit, prefix = "ppd")
+#' }
+#'
 #' @importFrom bayesplot pp_check
 #' @export pp_check
 #' @export
-pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
-                             group = NULL, x = NULL, newdata = NULL,
-                             resp = NULL, draw_ids = NULL, subset = NULL, ...) {
+pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd"),
+                             group = NULL, x = NULL, newdata = NULL, resp = NULL, 
+                             draw_ids = NULL, nsamples = NULL, subset = NULL, ...) {
   dots <- list(...)
   if (missing(type)) {
     type <- "dens_overlay"
   }
   type <- as_one_character(type)
+  prefix <- match.arg(prefix)
   if (!is.null(group)) {
     group <- as_one_character(group)
   }
@@ -72,13 +80,16 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
   ndraws <- use_alias(ndraws, nsamples)
   draw_ids <- use_alias(draw_ids, subset)
   resp <- validate_resp(resp, object, multiple = FALSE)
-  valid_types <- as.character(bayesplot::available_ppc(""))
-  valid_types <- sub("^ppc_", "", valid_types)
-  if (!type %in% valid_types) {
-    stop2("Type '", type, "' is not a valid ppc type. ", 
-          "Valid types are:\n", collapse_comma(valid_types))
+  if (prefix == "ppc") {
+    # no type checking for prefix 'ppd' yet
+    valid_types <- as.character(bayesplot::available_ppc(""))
+    valid_types <- sub("^ppc_", "", valid_types)
+    if (!type %in% valid_types) {
+      stop2("Type '", type, "' is not a valid ppc type. ",
+            "Valid types are:\n", collapse_comma(valid_types))
+    }
   }
-  ppc_fun <- get(paste0("ppc_", type), asNamespace("bayesplot"))
+  ppc_fun <- get(paste0(prefix, "_", type), asNamespace("bayesplot"))
 
   object <- restructure(object)
   stopifnot_resp(object, resp)
@@ -111,18 +122,18 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
   if (!ndraws_given) {
     aps_types <- c(
       "error_scatter_avg", "error_scatter_avg_vs_x",
-      "intervals", "intervals_grouped", "loo_pit", 
-      "loo_intervals", "loo_ribbon", "ribbon", 
-      "ribbon_grouped", "rootogram", "scatter_avg", 
-      "scatter_avg_grouped", "stat", "stat_2d", 
-      "stat_freqpoly_grouped", "stat_grouped", 
+      "intervals", "intervals_grouped", "loo_pit",
+      "loo_intervals", "loo_ribbon", "ribbon",
+      "ribbon_grouped", "rootogram", "scatter_avg",
+      "scatter_avg_grouped", "stat", "stat_2d",
+      "stat_freqpoly_grouped", "stat_grouped",
       "violin_grouped"
     )
     if (!is.null(draw_ids)) {
       ndraws <- NULL
     } else if (type %in% aps_types) {
       ndraws <- NULL
-      message("Using all posterior draws for ppc type '", 
+      message("Using all posterior draws for ppc type '",
               type, "' by default.")
     } else {
       ndraws <- 10
@@ -130,11 +141,15 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
               type, "' by default.")
     }
   }
-  
-  y <- get_y(object, resp = resp, newdata = newdata, ...)
+
+  y <- NULL
+  if (prefix == "ppc") {
+    # y is ignored in prefix 'ppd' plots
+    y <- get_y(object, resp = resp, newdata = newdata, ...) 
+  }
   draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- list(
-    object, newdata = newdata, resp = resp, 
+    object, newdata = newdata, resp = resp,
     draw_ids = draw_ids, ...
   )
   yrep <- do_call(method, pred_args)
@@ -145,35 +160,19 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
     y <- y[take]
     yrep <- yrep[, take, drop = FALSE]
   }
-  
+
   data <- current_data(
-    object, newdata = newdata, resp = resp, 
+    object, newdata = newdata, resp = resp,
     re_formula = NA, check_response = TRUE, ...
   )
-  # censored responses are misleading when displayed in pp_check
-  bterms <- brmsterms(object$formula)
-  cens <- get_cens(bterms, data, resp = resp)
-  if (!is.null(cens)) {
-    warning2("Censored responses are not shown in 'pp_check'.")
-    take <- !cens
-    if (!any(take)) {
-      stop2("No non-censored responses found.")
-    }
-    y <- y[take]
-    yrep <- yrep[, take, drop = FALSE]
-  }
-  # most ... arguments are ment for the prediction function
-  for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
-  ppc_args <- c(list(y, yrep), dots[!for_pred])
-  if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
-    ppc_args$psis_object <- do_call(
-      compute_loo, c(pred_args, criterion = "psis")
-    )
-  }
-  if ("lw" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
-    ppc_args$lw <- weights(
-      do_call(compute_loo, c(pred_args, criterion = "psis"))
-    )
+  
+  # prepare plotting arguments
+  ppc_args <- list()
+  if (prefix == "ppc") {
+    ppc_args$y <- y
+    ppc_args$yrep <- yrep
+  } else if (prefix == "ppd") {
+    ppc_args$ypred <- yrep
   }
   if (!is.null(group)) {
     ppc_args$group <- data[[group]]
@@ -184,5 +183,48 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, nsamples = NULL,
       ppc_args$x <- as.numeric(ppc_args$x)
     }
   }
+  if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
+    ppc_args$psis_object <- do_call(
+      compute_loo, c(pred_args, criterion = "psis")
+    )
+  }
+  if ("lw" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
+    ppc_args$lw <- weights(
+      do_call(compute_loo, c(pred_args, criterion = "psis"))
+    )
+  }
+  
+  # censored responses are misleading when displayed in pp_check
+  bterms <- brmsterms(object$formula)
+  cens <- get_cens(bterms, data, resp = resp)
+  if (!is.null(cens) & type != 'km_overlay') {
+    warning2("Censored responses are not shown in 'pp_check'.")
+    take <- !cens
+    if (!any(take)) {
+      stop2("No non-censored responses found.")
+    }
+    ppc_args$y <- ppc_args$y[take]
+    ppc_args$yrep <- ppc_args$yrep[, take, drop = FALSE]
+    if (!is.null(ppc_args$group)) {
+      ppc_args$group <- ppc_args$group[take]
+    }
+    if (!is.null(ppc_args$x)) {
+      ppc_args$x <- ppc_args$x[take]
+    }
+    if (!is.null(ppc_args$psis_object)) {
+      # tidier to re-compute with subset
+      psis_args <- c(pred_args, criterion = "psis")
+      psis_args$newdata <- data[take, ]
+      ppc_args$psis_object <- do_call(compute_loo, psis_args)
+    }
+    if (!is.null(ppc_args$lw)) {
+      ppc_args$lw <- ppc_args$lw[,take]
+    }
+  }
+  
+  # most ... arguments are meant for the prediction function
+  for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
+  ppc_args <- c(ppc_args, dots[!for_pred])
+  
   do_call(ppc_fun, ppc_args)
 }

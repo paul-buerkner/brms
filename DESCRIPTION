@@ -2,9 +2,9 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.16.2
-Date: 2021-08-26
-Authors@R: 
+Version: 2.20.6
+Date: 2023-11-13
+Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
       person("Jonah", "Gabry", role = c("ctb")),
@@ -13,13 +13,16 @@ Authors@R:
       person("Martin", "Modrak", role = c("ctb")),
       person("Hamada S.", "Badr", role = c("ctb")),
       person("Frank", "Weber", role = c("ctb")),
-      person("Mattan S.", "Ben-Shachar", role = c("ctb")))
-Depends: 
-    R (>= 3.5.0),
+      person("Mattan S.", "Ben-Shachar", role = c("ctb")),
+      person("Hayden", "Rabel", role = c("ctb")),
+      person("Simon C.", "Mills", role = c("ctb")),
+      person("Stephen", "Wild", role = c("ctb")))
+Depends:
+    R (>= 3.6.0),
     Rcpp (>= 0.12.0),
     methods
-Imports: 
-    rstan (>= 2.19.2),
+Imports:
+    rstan (>= 2.26.0),
     ggplot2 (>= 2.0.0),
     loo (>= 2.3.1),
     posterior (>= 1.0.0),
@@ -28,9 +31,9 @@ Imports:
     rstantools (>= 2.1.1),
     bayesplot (>= 1.5.0),
     shinystan (>= 2.4.0),
-    projpred (>= 2.0.0),
     bridgesampling (>= 0.3-0),
     glue (>= 1.3.0),
+    rlang (>= 1.0.0),
     future (>= 1.19.0),
     matrixStats,
     nleqslv,
@@ -42,12 +45,15 @@ Imports:
     parallel,
     grDevices,
     backports
-Suggests: 
+Suggests:
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
-    cmdstanr (>= 0.4.0),
+    cmdstanr (>= 0.5.0),
+    projpred (>= 2.0.0),
     RWiener,
     rtdists,
+    extraDistr,
+    processx,
     mice,
     spdep,
     mnormt,
@@ -65,28 +71,30 @@ Suggests:
     knitr,
     rmarkdown
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
-    using 'Stan' for full Bayesian inference. A wide range of distributions 
-    and link functions are supported, allowing users to fit -- among others -- 
-    linear, robust linear, count data, survival, response times, ordinal, 
-    zero-inflated, hurdle, and even self-defined mixture models all in a 
-    multilevel context. Further modeling options include non-linear and 
-    smooth terms, auto-correlation structures, censored data, meta-analytic 
-    standard errors, and quite a few more. In addition, all parameters of the 
-    response distribution can be predicted in order to perform distributional 
-    regression. Prior specifications are flexible and explicitly encourage 
-    users to apply prior distributions that actually reflect their beliefs.
-    Model fit can easily be assessed and compared with posterior predictive 
-    checks and leave-one-out cross-validation. References: Bürkner (2017)
-    <doi:10.18637/jss.v080.i01>; Bürkner (2018) <doi:10.32614/RJ-2018-017>;
-    Carpenter et al. (2017) <doi:10.18637/jss.v076.i01>.
+    using 'Stan' for full Bayesian inference. A wide range of distributions
+    and link functions are supported, allowing users to fit -- among others --
+    linear, robust linear, count data, survival, response times, ordinal,
+    zero-inflated, hurdle, and even self-defined mixture models all in a
+    multilevel context. Further modeling options include both theory-driven and
+    data-driven non-linear terms, auto-correlation structures, censoring and 
+    truncation, meta-analytic standard errors, and quite a few more. 
+    In addition, all parameters of the response distribution can be predicted 
+    in order to perform distributional regression. Prior specifications are 
+    flexible and explicitly encourage users to apply prior distributions that
+    actually reflect their prior knowledge. Models can easily be evaluated and
+    compared using several methods assessing posterior or prior predictions. 
+    References: Bürkner (2017) <doi:10.18637/jss.v080.i01>; 
+    Bürkner (2018) <doi:10.32614/RJ-2018-017>;
+    Bürkner (2021) <doi:10.18637/jss.v100.i05>; Carpenter et al. (2017)
+    <doi:10.18637/jss.v076.i01>.
 LazyData: true
 NeedsCompilation: no
 License: GPL-2
-URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/
+URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, https://paul-buerkner.github.io/brms/
 BugReports: https://github.com/paul-buerkner/brms/issues
 Additional_repositories:
     https://mc-stan.org/r-packages/
-VignetteBuilder: 
+VignetteBuilder:
     knitr,
     R.rsp
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3

@@ -5,18 +5,18 @@ context("Tests for brms error messages")
 test_that("brm works fully with mock backend", {
   skip_on_cran()
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
-  
+
   # Positive control - forced error gets thrown and propagated
-  expect_error(brm(y ~ x + (1|g), dat, backend = "mock", 
+  expect_error(brm(y ~ x + (1|g), dat, backend = "mock",
                    stan_model_args = list(compile_error = "Test error")),
                "Test error")
-  
+
   # Positive control - bad Stan code from stanvars gets an error
   expect_error(suppressMessages(
-     brm(y ~ x + (1|g), dat, backend = "mock", 
+     brm(y ~ x + (1|g), dat, backend = "mock",
          stanvars = stanvar(scode = "invalid;", block = "model"))
   ))
-  
+
   # Testing some models
   mock_fit <- brm(y ~ x + (1|g), dat, mock_fit = 1, backend = "mock", rename = FALSE)
   expect_equal(mock_fit$fit, 1)
@@ -25,43 +25,43 @@ test_that("brm works fully with mock backend", {
 test_that("brm(file = xx) works fully with mock backend", {
   skip_on_cran()
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
-  
+
   file <- tempfile(fileext = ".rds")
-  mock_fit1 <- brm(y ~ x + (1|g), dat, mock_fit = "stored", backend = "mock", 
+  mock_fit1 <- brm(y ~ x + (1|g), dat, mock_fit = "stored", backend = "mock",
                    rename = FALSE, file = file)
   expect_true(file.exists(file))
 
-  mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock", 
+  mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock",
                    rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
-  
-  # In default settings, even using different data/model should result in the 
+
+  # In default settings, even using different data/model should result in the
   # model being loaded from file
   changed_data <- dat[1:8, ]
-  mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock", 
+  mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock",
                    rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
-  
+
   # Now test using file_refit = "on_change" which should be more clever
   # No change
-  mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock", 
+  mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock",
                    rename = FALSE, file = file)
   expect_equal(mock_fit2$fit, "stored")
-  
-  
+
+
   # Change data, but not code
-  mock_fit2 <- brm(y ~ x + (1|g), changed_data, mock_fit = "new", backend = "mock", 
+  mock_fit2 <- brm(y ~ x + (1|g), changed_data, mock_fit = "new", backend = "mock",
                    rename = FALSE, file = file, file_refit = "on_change")
   expect_equal(mock_fit2$fit, "new")
-  
+
   # Change code but not data
-  mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock", 
+  mock_fit2 <- brm(y ~ x + (1|g), dat, mock_fit = "new", backend = "mock",
                    rename = FALSE, file = file, file_refit = "on_change",
                    prior = prior(normal(0,2), class = sd))
   expect_equal(mock_fit2$fit, "new")
 
   # Change both
-  mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock", 
+  mock_fit2 <- brm(y ~ x + 0, changed_data, mock_fit = "new", backend = "mock",
                    rename = FALSE, file = file, file_refit = "on_change")
   expect_equal(mock_fit2$fit, "new")
 })
@@ -69,9 +69,9 @@ test_that("brm(file = xx) works fully with mock backend", {
 
 test_that("brm produces expected errors", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
-  
+
   # formula parsing
-  expect_error(brm(~ x + (1|g), dat, file = "test"), 
+  expect_error(brm(~ x + (1|g), dat, file = "test"),
                "Response variable is missing")
   expect_error(brm(bf(y ~ a, nl = TRUE)),
                "No non-linear parameters specified")
@@ -88,9 +88,9 @@ test_that("brm produces expected errors", {
                "The following addition terms are invalid:")
   expect_error(brm(bf(y ~ x, shape ~ x), family = gaussian()),
                "The parameter 'shape' is not a valid distributional")
-  expect_error(brm(y ~ x + (1|abc|g/x), dat), 
+  expect_error(brm(y ~ x + (1|abc|g/x), dat),
                "Can only combine group-level terms")
-  expect_error(brm(y ~ x + (1|g) + (x|g), dat), 
+  expect_error(brm(y ~ x + (1|g) + (x|g), dat),
                "Duplicated group-level effects are not allowed")
   expect_error(brm(y~mo(g)*t2(x), dat), fixed = TRUE,
                "The term 'mo(g):t2(x)' is invalid")
@@ -100,26 +100,24 @@ test_that("brm produces expected errors", {
                "Variable 'x' is used in different calls to 'me'")
   expect_error(brm(y ~ 1 + set_rescor(TRUE), data = dat),
                "Function 'set_rescor' should not be part")
-  
+
   # autocorrelation
-  expect_error(brm(y ~ ar(x+y, g), dat), 
+  expect_error(brm(y ~ ar(x+y, g), dat),
                "Cannot coerce 'x \\+ y' to a single variable name")
-  expect_error(brm(y ~ ar(gr = g1/g2), dat), 
+  expect_error(brm(y ~ ar(gr = g1/g2), dat),
                "Illegal grouping term 'g1/g2'")
   expect_error(brm(y ~ ma(x), dat, poisson()),
                "Please set cov = TRUE")
   expect_error(brm(bf(y ~ 1) + arma(x), dat),
                "Autocorrelation terms can only be specified")
-  
+
   # ordinal models
   expect_error(brm(rating ~ treat + (cs(period)|subject),
-                   data = inhaler, family = categorical()), 
+                   data = inhaler, family = categorical()),
                "Category specific effects are not supported")
-  
+
   # families and links
-  expect_error(brm(y ~ x, dat, family = gaussian("logit")), 
-               "'logit' is not a supported link for family 'gaussian'")
-  expect_error(brm(y ~ x, dat, family = poisson("inverse")), 
+  expect_error(brm(y ~ x, dat, family = poisson("inverse")),
                "'inverse' is not a supported link for family 'poisson'")
   expect_error(brm(y ~ x, dat, family = c("weibull", "sqrt")),
                "'sqrt' is not a supported link for family 'weibull'")

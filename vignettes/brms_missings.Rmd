@@ -2,13 +2,13 @@
 title: "Handle Missing Values with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
   %\VignetteIndexEntry{Handle Missing Values with brms}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}  
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
@@ -22,8 +22,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",

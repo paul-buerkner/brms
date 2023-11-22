@@ -2,9 +2,9 @@ context("Tests for formula parsing functions")
 
 test_that("brmsterms finds all variables in very long formulas", {
   expect_equal(
-    all.vars(brmsterms(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
-                                 psi_api_ident + psi_api_intere + psi_api_groupint)$all), 
-    all.vars(t2_brand_recall ~ t2_brand_recall + psi_expsi + psi_api_probsolv + psi_api_ident + 
+    all.vars(brmsterms(t2_brand_recall ~ psi_expsi + psi_api_probsolv +
+                                 psi_api_ident + psi_api_intere + psi_api_groupint)$all),
+    all.vars(t2_brand_recall ~ t2_brand_recall + psi_expsi + psi_api_probsolv + psi_api_ident +
                  psi_api_intere + psi_api_groupint)
   )
 })
@@ -22,15 +22,15 @@ test_that("brmsterms correctly handles auxiliary parameter 'mu'", {
   bterms1 <- brmsterms(y ~ x + (x|g))
   bterms2 <- brmsterms(bf(y ~ 1, mu ~ x + (x|g)))
   expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
-  
+
   # commented out for now as updating is not yet enabled
   # bterms1 <- brmsterms(bf(y ~ z + x + (x|g)))
   # bterms2 <- brmsterms(bf(y ~ z, lf(mu ~ x + (x|g))))
   # expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
-  # 
+  #
   # bterms1 <- brmsterms(bf(y ~ z, lf(mu ~ x + (x|g), cmc = FALSE)))
   # expect_true(!attr(bterms1$dpars$mu$fe, "cmc"))
-  # 
+  #
   # expect_error(brmsterms(bf(y ~ z, mu ~ x + (x|g), nl = TRUE)),
   #              "Cannot combine non-linear formulas")
 })
@@ -54,7 +54,7 @@ test_that("check_re_formula returns correct REs", {
   expect_equivalent(form, ~ (1 + Trt_c | gr(visit)))
   form <- check_re_formula(~ (0 + Trt_c | visit) + (1|patient), old_form)
   expect_equivalent(form, ~ (1|gr(patient)) + (0 + Trt_c | gr(visit)))
-  
+
   # checks for fix of issue #844
   old_form <- y ~ 0 + x1 + x2 + (0 + x1 + x2 | x3)
   expect_error(
@@ -69,12 +69,12 @@ test_that("update_re_terms works correctly", {
                     y ~ x*z + (1|gr(patient)))
   expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ 1), y ~ x)
   expect_equivalent(update_re_terms(y ~ 1|patient, ~ 1), y ~ 1)
-  expect_equivalent(update_re_terms(y ~ -1 + x + (1+visit|patient), NA), 
+  expect_equivalent(update_re_terms(y ~ -1 + x + (1+visit|patient), NA),
                     y ~ -1 + x)
-  expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NULL), 
+  expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NULL),
                     y ~ x + (1+visit|patient))
   expect_equivalent(update_re_terms(y ~ (1|patient), NA), y ~ 1)
-  expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)), 
+  expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)),
                     y ~ x + (1|gr(visit)))
   expect_equivalent(update_re_terms(y ~ x + (1|visit), ~ (1|visit) + (x|visit)),
                     y ~ x + (1|gr(visit)))

@@ -22,15 +22,14 @@ evaluate its arguments -- it exists purely to help set up a model.
 }
 \details{
 See Bürkner and Charpentier (2020) for the underlying theory. For
-  detailed documentation of the formula syntax used for monotonic terms, 
+  detailed documentation of the formula syntax used for monotonic terms,
   see \code{help(brmsformula)} as well as \code{vignette("brms_monotonic")}.
 }
 \examples{
-  
 \dontrun{
 # generate some data
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
-income <- factor(sample(income_options, 100, TRUE), 
+income <- factor(sample(income_options, 100, TRUE),
                  levels = income_options, ordered = TRUE)
 mean_ls <- c(30, 60, 70, 75)
 ls <- mean_ls[income] + rnorm(100, sd = 7)
@@ -52,12 +51,12 @@ plot(conditional_effects(fit2), points = TRUE)
 fit3 <- brm(ls ~ mo(income, id = "i")*x, data = dat)
 summary(fit3)
 plot(conditional_effects(fit3), points = TRUE)
-} 
- 
+}
+
 }
 \references{
 Bürkner P. C. & Charpentier E. (2020). Modeling Monotonic Effects of Ordinal
-Predictors in Regression Models. British Journal of Mathematical and 
+Predictors in Regression Models. British Journal of Mathematical and
 Statistical Psychology. doi:10.1111/bmsp.12195
 }
 \seealso{

@@ -36,7 +36,7 @@ A list of class \code{"save_pars"}.
 }
 \description{
 Control which (draws of) parameters should be saved in a \pkg{brms}
-model. The output of this function is ment for usage in the 
+model. The output of this function is meant for usage in the
 \code{save_pars} argument of \code{\link{brm}}.
 }
 \examples{
@@ -47,5 +47,5 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
            save_pars = save_pars(group = FALSE))
 variables(fit)
 }
-  
+
 }

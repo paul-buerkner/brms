@@ -1,10 +1,10 @@
 #' Display Conditional Effects of Predictors
-#' 
-#' Display conditional effects of one or more numeric and/or categorical 
+#'
+#' Display conditional effects of one or more numeric and/or categorical
 #' predictors including two-way interaction effects.
-#' 
+#'
 #' @aliases marginal_effects marginal_effects.brmsfit
-#' 
+#'
 #' @param x An object of class \code{brmsfit}.
 #' @param effects An optional character vector naming effects (main effects or
 #'   interactions) for which to compute conditional plots. Interactions are
@@ -15,8 +15,8 @@
 #'   even if not originally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
 #'   to condition on. Each effect defined in \code{effects} will
-#'   be plotted separately for each row of \code{conditions}. Values in the 
-#'   \code{cond__} column will be used as titles of the subplots. If \code{cond__} 
+#'   be plotted separately for each row of \code{conditions}. Values in the
+#'   \code{cond__} column will be used as titles of the subplots. If \code{cond__}
 #'   is not given, the row names will be used for this purpose instead.
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   See \code{\link{make_conditions}} for an easy way to define conditions.
@@ -26,69 +26,69 @@
 #'   variables of this factor are zero. This allows, for instance, to make
 #'   predictions of the grand mean when using sum coding.
 #' @param int_conditions An optional named \code{list} whose elements are
-#'   vectors of values of the variables specified in \code{effects}. 
-#'   At these values, predictions are evaluated. The names of 
+#'   vectors of values of the variables specified in \code{effects}.
+#'   At these values, predictions are evaluated. The names of
 #'   \code{int_conditions} have to match the variable names exactly.
 #'   Additionally, the elements of the vectors may be named themselves,
 #'   in which case their names appear as labels for the conditions in the plots.
 #'   Instead of vectors, functions returning vectors may be passed and are
 #'   applied on the original values of the corresponding variable.
-#'   If \code{NULL} (the default), predictions are evaluated at the 
+#'   If \code{NULL} (the default), predictions are evaluated at the
 #'   \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 #'   all categories for factor-like predictors.
 #' @param re_formula A formula containing group-level effects to be considered
 #'   in the conditional predictions. If \code{NULL}, include all group-level
 #'   effects; if \code{NA} (default), include no group-level effects.
-#' @param robust If \code{TRUE} (the default) the median is used as the 
+#' @param robust If \code{TRUE} (the default) the median is used as the
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
-#' @param prob A value between 0 and 1 indicating the desired probability 
+#' @param prob A value between 0 and 1 indicating the desired probability
 #'   to be covered by the uncertainty intervals. The default is 0.95.
 #' @param probs (Deprecated) The quantiles to be used in the computation of
 #'   uncertainty intervals. Please use argument \code{prob} instead.
-#' @param method Method used to obtain predictions. Can be set to 
+#' @param method Method used to obtain predictions. Can be set to
 #'   \code{"posterior_epred"} (the default), \code{"posterior_predict"},
 #'   or \code{"posterior_linpred"}. For more details, see the respective
 #'   function documentations.
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
-#'   predictors. If \code{TRUE}, it is recommended 
-#'   to set argument \code{ndraws} to a relatively small value 
+#'   predictors. If \code{TRUE}, it is recommended
+#'   to set argument \code{ndraws} to a relatively small value
 #'   (e.g., \code{100}) in order to reduce computation time.
-#' @param surface Logical. Indicates if interactions or 
-#'   two-dimensional smooths should be visualized as a surface. 
-#'   Defaults to \code{FALSE}. The surface type can be controlled 
+#' @param surface Logical. Indicates if interactions or
+#'   two-dimensional smooths should be visualized as a surface.
+#'   Defaults to \code{FALSE}. The surface type can be controlled
 #'   via argument \code{stype} of the related plotting method.
-#' @param categorical Logical. Indicates if effects of categorical 
+#' @param categorical Logical. Indicates if effects of categorical
 #'   or ordinal models should be shown in terms of probabilities
 #'   of response categories. Defaults to \code{FALSE}.
 #' @param ordinal (Deprecated) Please use argument \code{categorical}.
 #'   Logical. Indicates if effects in ordinal models
 #'   should be visualized as a raster with the response categories
 #'   on the y-axis. Defaults to \code{FALSE}.
-#' @param transform A function or a character string naming 
+#' @param transform A function or a character string naming
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed. Only allowed
 #'   if \code{method = "posterior_predict"}.
-#' @param resolution Number of support points used to generate 
-#'   the plots. Higher resolution leads to smoother plots. 
+#' @param resolution Number of support points used to generate
+#'   the plots. Higher resolution leads to smoother plots.
 #'   Defaults to \code{100}. If \code{surface} is \code{TRUE},
 #'   this implies \code{10000} support points for interaction terms,
-#'   so it might be necessary to reduce \code{resolution} 
+#'   so it might be necessary to reduce \code{resolution}
 #'   when only few RAM is available.
-#' @param too_far Positive number. 
-#'   For surface plots only: Grid points that are too 
-#'   far away from the actual data points can be excluded from the plot. 
-#'   \code{too_far} determines what is too far. The grid is scaled into 
-#'   the unit square and then grid points more than \code{too_far} 
+#' @param too_far Positive number.
+#'   For surface plots only: Grid points that are too
+#'   far away from the actual data points can be excluded from the plot.
+#'   \code{too_far} determines what is too far. The grid is scaled into
+#'   the unit square and then grid points more than \code{too_far}
 #'   from the predictor variables are excluded. By default, all
 #'   grid points are used. Ignored for non-surface plots.
-#' @param select_points Positive number. 
-#'   Only relevant if \code{points} or \code{rug} are set to \code{TRUE}: 
-#'   Actual data points of numeric variables that 
-#'   are too far away from the values specified in \code{conditions} 
-#'   can be excluded from the plot. Values are scaled into 
-#'   the unit interval and then points more than \code{select_points} 
-#'   from the values in \code{conditions} are excluded. 
+#' @param select_points Positive number.
+#'   Only relevant if \code{points} or \code{rug} are set to \code{TRUE}:
+#'   Actual data points of numeric variables that
+#'   are too far away from the values specified in \code{conditions}
+#'   can be excluded from the plot. Values are scaled into
+#'   the unit interval and then points more than \code{select_points}
+#'   from the values in \code{conditions} are excluded.
 #'   By default, all points are used.
 #' @param ... Further arguments such as \code{draw_ids} or \code{ndraws}
 #'   passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.
@@ -96,53 +96,53 @@
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{conditions}.
-#' @param points Logical. Indicates if the original data points
-#'   should be added via \code{\link{geom_jitter}}.
-#'   Default is \code{FALSE}. Note that only those data points will be added
-#'   that match the specified conditions defined in \code{conditions}.
-#'   For categorical predictors, the conditions have to match exactly. 
-#'   For numeric predictors, argument \code{select_points} is used to
+#' @param points Logical. Indicates if the original data points should be added
+#'   via \code{\link{geom_jitter}}. Default is \code{FALSE}. Can be controlled
+#'   globally via the \code{brms.plot_points} option. Note that only those data
+#'   points will be added that match the specified conditions defined in
+#'   \code{conditions}. For categorical predictors, the conditions have to match
+#'   exactly. For numeric predictors, argument \code{select_points} is used to
 #'   determine, which points do match a condition.
-#' @param rug Logical. Indicates if a rug representation of predictor
-#'   values should be added via \code{\link{geom_rug}}.
-#'   Default is \code{FALSE}. Depends on \code{select_points} in the same
-#'   way as \code{points} does.
+#' @param rug Logical. Indicates if a rug representation of predictor values
+#'   should be added via \code{\link{geom_rug}}. Default is \code{FALSE}.
+#'   Depends on \code{select_points} in the same way as \code{points} does. Can
+#'   be controlled globally via the \code{brms.plot_rug} option.
 #' @param mean Logical. Only relevant for spaghetti plots.
-#'   If \code{TRUE} (the default), display the mean regression 
+#'   If \code{TRUE} (the default), display the mean regression
 #'   line on top of the regression lines for each sample.
-#' @param jitter_width Only used if \code{points = TRUE}: 
+#' @param jitter_width Only used if \code{points = TRUE}:
 #'   Amount of horizontal jittering of the data points.
-#'   Mainly useful for ordinal models. Defaults to \code{0} that 
+#'   Mainly useful for ordinal models. Defaults to \code{0} that
 #'   is no jittering.
 #' @param stype Indicates how surface plots should be displayed.
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @param line_args Only used in plots of continuous predictors:
-#'   A named list of arguments passed to 
+#'   A named list of arguments passed to
 #'   \code{\link{geom_smooth}}.
 #' @param cat_args Only used in plots of categorical predictors:
-#'   A named list of arguments passed to 
+#'   A named list of arguments passed to
 #'   \code{\link{geom_point}}.
 #' @param errorbar_args Only used in plots of categorical predictors:
-#'   A named list of arguments passed to 
+#'   A named list of arguments passed to
 #'   \code{\link{geom_errorbar}}.
 #' @param surface_args Only used in surface plots:
-#'   A named list of arguments passed to 
+#'   A named list of arguments passed to
 #'   \code{\link{geom_contour}} or
 #'   \code{\link{geom_raster}}
 #'   (depending on argument \code{stype}).
 #' @param spaghetti_args Only used in spaghetti plots:
-#'   A named list of arguments passed to 
+#'   A named list of arguments passed to
 #'   \code{\link{geom_smooth}}.
-#' @param point_args Only used if \code{points = TRUE}: 
-#'   A named list of arguments passed to 
+#' @param point_args Only used if \code{points = TRUE}:
+#'   A named list of arguments passed to
 #'   \code{\link{geom_jitter}}.
-#' @param rug_args Only used if \code{rug = TRUE}: 
-#'   A named list of arguments passed to 
+#' @param rug_args Only used if \code{rug = TRUE}:
+#'   A named list of arguments passed to
 #'   \code{\link{geom_rug}}.
-#' @param facet_args Only used if if multiple condtions are provided: 
-#'   A named list of arguments passed to 
+#' @param facet_args Only used if if multiple condtions are provided:
+#'   A named list of arguments passed to
 #'   \code{\link{facet_wrap}}.
-#' 
+#'
 #' @return An object of class \code{'brms_conditional_effects'} which is a
 #'   named list with one data.frame per effect containing all information
 #'   required to generate conditional effects plots. Among others, these
@@ -152,11 +152,11 @@
 #'   bounds of the uncertainty interval of the response), as well as
 #'   \code{cond__} (used in faceting when \code{conditions} contains multiple
 #'   rows).
-#'   
-#'   The corresponding \code{plot} method returns a named 
-#'   list of \code{\link{ggplot}} objects, which can be further 
+#'
+#'   The corresponding \code{plot} method returns a named
+#'   list of \code{\link{ggplot}} objects, which can be further
 #'   customized using the \pkg{ggplot2} package.
-#'   
+#'
 #' @details When creating \code{conditional_effects} for a particular predictor
 #'   (or interaction of two predictors), one has to choose the values of all
 #'   other predictors to condition on. By default, the mean is used for
@@ -167,39 +167,39 @@
 #'   used in the conditioning, in order not to create the false impression of
 #'   bad model fit, where it is just due to conditioning on certain factor
 #'   levels.
-#'   
+#'
 #'   To fully change colors of the created plots, one has to amend both
 #'   \code{scale_colour} and \code{scale_fill}. See
 #'   \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}} for
 #'   more details.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
-#'            data = epilepsy, family = poisson()) 
-#'            
+#'            data = epilepsy, family = poisson())
+#'
 #' ## plot all conditional effects
 #' plot(conditional_effects(fit), ask = FALSE)
-#' 
+#'
 #' ## change colours to grey scale
 #' library(ggplot2)
-#' me <- conditional_effects(fit, "zBase:Trt")
-#' plot(me, plot = FALSE)[[1]] + 
+#' ce <- conditional_effects(fit, "zBase:Trt")
+#' plot(ce, plot = FALSE)[[1]] +
 #'   scale_color_grey() +
 #'   scale_fill_grey()
-#' 
+#'
 #' ## only plot the conditional interaction effect of 'zBase:Trt'
 #' ## for different values for 'zAge'
 #' conditions <- data.frame(zAge = c(-1, 0, 1))
-#' plot(conditional_effects(fit, effects = "zBase:Trt", 
+#' plot(conditional_effects(fit, effects = "zBase:Trt",
 #'                          conditions = conditions))
-#'                       
+#'
 #' ## also incorporate group-level effects variance over patients
 #' ## also add data points and a rug representation of predictor values
-#' plot(conditional_effects(fit, effects = "zBase:Trt", 
-#'                          conditions = conditions, re_formula = NULL), 
+#' plot(conditional_effects(fit, effects = "zBase:Trt",
+#'                          conditions = conditions, re_formula = NULL),
 #'      points = TRUE, rug = TRUE)
-#'  
+#'
 #' ## change handling of two-way interactions
 #' int_conditions <- list(
 #'   zBase = setNames(c(-2, 1, 0), c("b", "c", "a"))
@@ -207,28 +207,28 @@
 #' conditional_effects(fit, effects = "Trt:zBase",
 #'                     int_conditions = int_conditions)
 #' conditional_effects(fit, effects = "Trt:zBase",
-#'                     int_conditions = list(zBase = quantile))        
-#'      
+#'                     int_conditions = list(zBase = quantile))
+#'
 #' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #' conditions <- make_conditions(fit3way, "zAge")
 #' conditional_effects(fit3way, "zBase:Trt", conditions = conditions)
 #' ## only include points close to the specified values of zAge
-#' me <- conditional_effects(
-#'   fit3way, "zBase:Trt", conditions = conditions, 
+#' ce <- conditional_effects(
+#'   fit3way, "zBase:Trt", conditions = conditions,
 #'   select_points = 0.1
 #' )
-#' plot(me, points = TRUE)
+#' plot(ce, points = TRUE)
 #' }
-#' 
+#'
 #' @export
-conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                        int_conditions = NULL, re_formula = NA, 
-                                        prob = 0.95, robust = TRUE, 
+conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
+                                        int_conditions = NULL, re_formula = NA,
+                                        prob = 0.95, robust = TRUE,
                                         method = "posterior_epred",
                                         spaghetti = FALSE, surface = FALSE,
                                         categorical = FALSE, ordinal = FALSE,
-                                        transform = NULL, resolution = 100, 
+                                        transform = NULL, resolution = 100,
                                         select_points = 0, too_far = 0,
                                         probs = NULL, ...) {
   probs <- validate_ci_bounds(prob, probs = probs)
@@ -241,12 +241,12 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- brmsterms(new_formula)
-  
+
   if (!is.null(transform) && method != "posterior_predict") {
     stop2("'transform' is only allowed if 'method = posterior_predict'.")
   }
   if (ordinal) {
-    warning2("Argument 'ordinal' is deprecated. ", 
+    warning2("Argument 'ordinal' is deprecated. ",
              "Please use 'categorical' instead.")
   }
   rsv_vars <- rsv_vars(bterms)
@@ -271,19 +271,19 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     ae_coll <- ulapply(ae_coll, paste, collapse = ":")
     matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
     if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
-      invalid <- effects[setdiff(seq_along(effects), sort(matches))]  
+      invalid <- effects[setdiff(seq_along(effects), sort(matches))]
       invalid <- ulapply(invalid, paste, collapse = ":")
       warning2(
         "Some specified effects are invalid for this model: ",
-        collapse_comma(invalid), "\nValid effects are ", 
+        collapse_comma(invalid), "\nValid effects are ",
         "(combinations of): ", collapse_comma(ae_coll)
       )
     }
     effects <- unique(effects[sort(matches)])
     if (!length(effects)) {
       stop2(
-        "All specified effects are invalid for this model.\n", 
-        "Valid effects are (combinations of): ", 
+        "All specified effects are invalid for this model.\n",
+        "Valid effects are (combinations of): ",
         collapse_comma(ae_coll)
       )
     }
@@ -293,7 +293,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     if (any(int_effs)) {
       effects <- effects[!int_effs]
       warning2(
-        "Interactions cannot be plotted directly if 'categorical' ", 
+        "Interactions cannot be plotted directly if 'categorical' ",
         "is TRUE. Please use argument 'conditions' instead."
       )
     }
@@ -303,10 +303,10 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   }
   mf <- model.frame(x)
   conditions <- prepare_conditions(
-    x, conditions = conditions, effects = effects, 
+    x, conditions = conditions, effects = effects,
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_conditions <- lapply(int_conditions, 
+  int_conditions <- lapply(int_conditions,
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
   int_vars <- get_int_vars(bterms)
@@ -315,26 +315,26 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   for (i in seq_along(effects)) {
     eff <- effects[[i]]
     cond_data <- prepare_cond_data(
-      mf[, eff, drop = FALSE], conditions = conditions, 
+      mf[, eff, drop = FALSE], conditions = conditions,
       int_conditions = int_conditions, int_vars = int_vars,
-      group_vars = group_vars, surface = surface, 
+      group_vars = group_vars, surface = surface,
       resolution = resolution, reorder = use_def_effects
     )
     if (surface && length(eff) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
-        g1 = cond_data[[eff[1]]], 
-        g2 = cond_data[[eff[2]]], 
+        g1 = cond_data[[eff[1]]],
+        g2 = cond_data[[eff[2]]],
         d1 = mf[, eff[1]],
         d2 = mf[, eff[2]],
         dist = too_far)
-      cond_data <- cond_data[!ex_too_far, ]  
+      cond_data <- cond_data[!ex_too_far, ]
     }
     c(out) <- conditional_effects(
-      bterms, fit = x, cond_data = cond_data, method = method, 
-      surface = surface, spaghetti = spaghetti, categorical = categorical, 
-      ordinal = ordinal, re_formula = re_formula, transform = transform, 
-      conditions = conditions, int_conditions = int_conditions, 
+      bterms, fit = x, cond_data = cond_data, method = method,
+      surface = surface, spaghetti = spaghetti, categorical = categorical,
+      ordinal = ordinal, re_formula = re_formula, transform = transform,
+      conditions = conditions, int_conditions = int_conditions,
       select_points = select_points, probs = probs, robust = robust,
       ...
     )
@@ -363,8 +363,8 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
 # @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
 conditional_effects.brmsterms <- function(
-  x, fit, cond_data, int_conditions, method, surface, 
-  spaghetti, categorical, ordinal, probs, robust, 
+  x, fit, cond_data, int_conditions, method, surface,
+  spaghetti, categorical, ordinal, probs, robust,
   dpar = NULL, nlpar = NULL, resp = NULL, ...
 ) {
   stopifnot(is.brmsfit(fit))
@@ -372,7 +372,7 @@ conditional_effects.brmsterms <- function(
   types <- attr(cond_data, "types")
   catscale <- NULL
   pred_args <- list(
-    fit, newdata = cond_data, allow_new_levels = TRUE, 
+    fit, newdata = cond_data, allow_new_levels = TRUE,
     dpar = dpar, nlpar = nlpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
@@ -382,13 +382,13 @@ conditional_effects.brmsterms <- function(
   }
   out <- do_call(method, pred_args)
   rownames(cond_data) <- NULL
-  
+
   if (categorical || ordinal) {
     if (method != "posterior_epred") {
       stop2("Can only use 'categorical' with method = 'posterior_epred'.")
     }
     if (!is_polytomous(x)) {
-      stop2("Argument 'categorical' may only be used ", 
+      stop2("Argument 'categorical' may only be used ",
             "for categorical or ordinal models.")
     }
     if (categorical && ordinal) {
@@ -409,7 +409,7 @@ conditional_effects.brmsterms <- function(
     if (is_ordinal(x$family) && is.null(dpar) && method != "posterior_linpred") {
       warning2(
         "Predictions are treated as continuous variables in ",
-        "'conditional_effects' by default which is likely invalid ", 
+        "'conditional_effects' by default which is likely invalid ",
         "for ordinal families. Please set 'categorical' to TRUE."
       )
       if (method == "posterior_epred") {
@@ -417,7 +417,7 @@ conditional_effects.brmsterms <- function(
       }
     }
   }
-  
+
   cond_data <- add_effects__(cond_data, effects)
   first_numeric <- types[1] %in% "numeric"
   second_numeric <- types[2] %in% "numeric"
@@ -433,7 +433,7 @@ conditional_effects.brmsterms <- function(
       levels(cond_data$effect2__) <- labels2
     }
   }
-  
+
   spag <- NULL
   if (first_numeric && spaghetti) {
     if (surface) {
@@ -450,9 +450,12 @@ conditional_effects.brmsterms <- function(
     }
     spag <- data.frame(as.numeric(t(spag)), factor(sample))
     colnames(spag) <- c("estimate__", "sample__")
-    spag <- cbind(cond_data, spag)
+    # ensures that 'cbind' works even in the presence of matrix columns
+    cond_data_spag <- repl(cond_data, nrow(spag) / nrow(cond_data))
+    cond_data_spag <- Reduce(rbind, cond_data_spag)
+    spag <- cbind(cond_data_spag, spag)
   }
-  
+
   out <- posterior_summary(out, probs = probs, robust = robust)
   if (categorical || ordinal) {
     out <- do_call(rbind, array2list(out))
@@ -515,8 +518,8 @@ get_all_effects.mvbrmsterms <- function(x, ...) {
 # @return a list with one element per valid effect / effects combination
 #   excludes all 3-way or higher interactions
 #' @export
-get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
-  stopifnot(is.atomic(rsv_vars))
+get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE, ...) {
+  stopifnot(is_atomic_or_null(rsv_vars))
   out <- list()
   for (dp in names(x$dpars)) {
     out <- c(out, get_all_effects(x$dpars[[dp]]))
@@ -535,16 +538,16 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
       int <- as.list(as.data.frame(t(int), stringsAsFactors = FALSE))
       int <- unique(unname(lapply(int, sort)))
       out <- c(as.list(out), int)
-    } 
+    }
   }
   unique(out[lengths(out) <= 2L])
 }
 
 #' @export
 get_all_effects.btl <- function(x, ...) {
-  c(get_var_combs(x[["fe"]], x[["cs"]]), 
+  c(get_var_combs(x[["fe"]], x[["cs"]]),
     get_all_effects_type(x, "sp"),
-    get_all_effects_type(x, "sm"), 
+    get_all_effects_type(x, "sm"),
     get_all_effects_type(x, "gp"))
 }
 
@@ -561,14 +564,14 @@ get_all_effects_type <- function(x, type) {
     term_parts <- unlist(strsplit(terms[i], split = ":"))
     vars <- vector("list", length(term_parts))
     for (j in seq_along(term_parts)) {
-      if (grepl_expr(regex_type, term_parts[j])) {
-        # evaluate a special term to extract variables
-        tmp <- eval2(term_parts[j])
-        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by)), "NA") 
-      } else {
-        # extract all variables from an ordinary term
-        vars[[j]] <- all_vars(term_parts[j])
+      matches <- get_matches_expr(regex_type, term_parts[j])
+      for (k in seq_along(matches)) {
+        # evaluate special terms to extract variables
+        tmp <- eval2(matches[[k]])
+        c(vars[[j]]) <- setdiff(unique(c(tmp$term, tmp$by)), "NA")
       }
+      # extract all variables not part of any special term
+      c(vars[[j]]) <- setdiff(all_vars(term_parts[j]), all_vars(matches))
     }
     vars <- unique(unlist(vars))
     out[[i]] <- str2formula(vars, collapse = "*")
@@ -607,8 +610,8 @@ get_int_vars.brmsterms <- function(x, ...) {
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
-# transform posterior draws of ordinal probabilities to a 
-# continuous scale assuming equidistance between adjacent categories 
+# transform posterior draws of ordinal probabilities to a
+# continuous scale assuming equidistance between adjacent categories
 # @param x an ndraws x nobs x ncat array of posterior draws
 # @return an ndraws x nobs matrix of posterior draws
 ordinal_probs_continuous <- function(x) {
@@ -621,23 +624,23 @@ ordinal_probs_continuous <- function(x) {
 }
 
 #' Prepare Fully Crossed Conditions
-#' 
-#' This is a helper function to prepare fully crossed conditions primarily 
+#'
+#' This is a helper function to prepare fully crossed conditions primarily
 #' for use with the \code{conditions} argument of \code{\link{conditional_effects}}.
 #' Automatically creates labels for each row in the \code{cond__} column.
-#' 
+#'
 #' @param x An \R object from which to extract the variables
 #'   that should be part of the conditions.
 #' @param vars Names of the variables that should be part of the conditions.
 #' @param ... Arguments passed to \code{\link{rows2labels}}.
-#' 
+#'
 #' @return A \code{data.frame} where each row indicates a condition.
-#' 
+#'
 #' @details For factor like variables, all levels are used as conditions.
 #'   For numeric variables, \code{mean + (-1:1) * SD} are used as conditions.
-#'   
+#'
 #' @seealso \code{\link{conditional_effects}}, \code{\link{rows2labels}}
-#'   
+#'
 #' @examples
 #' df <- data.frame(x = c("a", "b"), y = rnorm(10))
 #' make_conditions(df, vars = c("x", "y"))
@@ -675,23 +678,23 @@ get_cond__ <- function(x) {
 }
 
 #' Convert Rows to Labels
-#' 
-#' Convert information in rows to labels for each row. 
-#' 
+#'
+#' Convert information in rows to labels for each row.
+#'
 #' @param x A \code{data.frame} for which to extract labels.
 #' @param digits Minimal number of decimal places shown in
 #'   the labels of numeric variables.
-#' @param sep A single character string defining the separator 
+#' @param sep A single character string defining the separator
 #'   between variables used in the labels.
-#' @param incl_vars Indicates if variable names should 
+#' @param incl_vars Indicates if variable names should
 #'   be part of the labels. Defaults to \code{TRUE}.
 #' @param ... Currently unused.
-#' 
+#'
 #' @return A character vector of the same length as the number
 #'   of rows of \code{x}.
-#'   
+#'
 #' @seealso \code{\link{make_conditions}}, \code{\link{conditional_effects}}
-#' 
+#'
 #' @export
 rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {
   x <- as.data.frame(x)
@@ -754,7 +757,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   trial_vars <- all_vars(bterms$adforms$trials)
   trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
   if (length(trial_vars)) {
-    message("Setting all 'trials' variables to 1 by ", 
+    message("Setting all 'trials' variables to 1 by ",
             "default if not specified otherwise.")
     req_vars <- setdiff(req_vars, trial_vars)
     for (v in trial_vars) {
@@ -795,7 +798,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   unused_vars <- setdiff(names(conditions), all_vars)
   if (length(unused_vars)) {
     warning2(
-      "The following variables in 'conditions' are not ", 
+      "The following variables in 'conditions' are not ",
       "part of the model:\n", collapse_comma(unused_vars)
     )
   }
@@ -820,8 +823,8 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
 #   the predictors of interest
 # @param reorder reorder predictors so that numeric ones come first?
 prepare_cond_data <- function(data, conditions, int_conditions = NULL,
-                              int_vars = NULL, group_vars = NULL, 
-                              surface = FALSE, resolution = 100, 
+                              int_vars = NULL, group_vars = NULL,
+                              surface = FALSE, resolution = 100,
                               reorder = TRUE) {
   effects <- names(data)
   stopifnot(length(effects) %in% c(1L, 2L))
@@ -896,7 +899,7 @@ prepare_cond_data <- function(data, conditions, int_conditions = NULL,
   }
   # no need to have the same value combination more than once
   data <- unique(data)
-  data <- data[do_call(order, as.list(data)), , drop = FALSE]
+  data <- data[do_call(order, unname(as.list(data))), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   cond_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
@@ -918,7 +921,7 @@ vars_specified <- function(vars, data) {
 # prepare data points based on the provided conditions
 # allows to add data points to conditional effects plots
 # @return a data.frame containing the data points to be plotted
-make_point_frame <- function(bterms, mf, effects, conditions, 
+make_point_frame <- function(bterms, mf, effects, conditions,
                              select_points = 0, transform = NULL, ...) {
   stopifnot(is.brmsterms(bterms), is.data.frame(mf))
   effects <- intersect(effects, names(mf))
@@ -948,7 +951,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
       cond <- cond[, not_na, drop = FALSE]
       mf_tmp <- mf[, not_na, drop = FALSE]
       if (ncol(mf_tmp)) {
-        is_num <- sapply(mf_tmp, is.numeric) 
+        is_num <- sapply(mf_tmp, is.numeric)
         is_num <- is_num & !names(mf_tmp) %in% groups
         if (sum(is_num)) {
           # handle numeric variables
@@ -1014,13 +1017,15 @@ print.brms_conditional_effects <- function(x, ...) {
 
 #' @rdname conditional_effects.brmsfit
 #' @method plot brms_conditional_effects
-#' @export 
+#' @importFrom rlang .data
+#' @export
 plot.brms_conditional_effects <- function(
-  x, ncol = NULL, points = FALSE, rug = FALSE, mean = TRUE, 
+  x, ncol = NULL, points = getOption("brms.plot_points", FALSE),
+  rug = getOption("brms.plot_rug", FALSE), mean = TRUE,
   jitter_width = 0, stype = c("contour", "raster"),
-  line_args = list(), cat_args = list(), errorbar_args = list(), 
-  surface_args = list(), spaghetti_args = list(), point_args = list(), 
-  rug_args = list(), facet_args = list(), theme = NULL, ask = TRUE, 
+  line_args = list(), cat_args = list(), errorbar_args = list(),
+  surface_args = list(), spaghetti_args = list(), point_args = list(),
+  rug_args = list(), facet_args = list(), theme = NULL, ask = TRUE,
   plot = TRUE, ...
 ) {
   dots <- list(...)
@@ -1028,7 +1033,7 @@ plot.brms_conditional_effects <- function(
   stype <- match.arg(stype)
   smooths_only <- isTRUE(attr(x, "smooths_only"))
   if (points && smooths_only) {
-    stop2("Argument 'points' is invalid for objects ", 
+    stop2("Argument 'points' is invalid for objects ",
           "returned by 'conditional_smooths'.")
   }
   if (!is_equal(jitter_width, 0)) {
@@ -1043,7 +1048,7 @@ plot.brms_conditional_effects <- function(
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  dont_replace <- c("mapping", "data", "inherit.aes") 
+  dont_replace <- c("mapping", "data", "inherit.aes")
   plots <- named_list(names(x))
   for (i in seq_along(x)) {
     response <- attr(x[[i]], "response")
@@ -1057,46 +1062,55 @@ plot.brms_conditional_effects <- function(
     ordinal <- isTRUE(attr(x[[i]], "ordinal"))
     if (surface || ordinal) {
       # surface plots for two dimensional interactions or ordinal plots
-      plots[[i]] <- ggplot(x[[i]]) + 
-        aes_(~ effect1__, ~ effect2__) +
+      plots[[i]] <- ggplot(x[[i]]) +
+        aes(.data[["effect1__"]], .data[["effect2__"]]) +
         labs(x = effects[1], y = effects[2])
       if (ordinal) {
         width <- ifelse(is_like_factor(x[[i]]$effect1__), 0.9, 1)
         .surface_args <- nlist(
-          mapping = aes_(fill = ~ estimate__), 
+          mapping = aes(fill = .data[["estimate__"]]),
           height = 0.9, width = width
         )
         replace_args(.surface_args, dont_replace) <- surface_args
-        plots[[i]] <- plots[[i]] + 
-          do_call(geom_tile, .surface_args) + 
-          scale_fill_gradientn(colors = viridis6(), name = catscale) + 
+        plots[[i]] <- plots[[i]] +
+          do_call(geom_tile, .surface_args) +
+          scale_fill_gradientn(colors = viridis6(), name = catscale) +
           ylab(response)
       } else if (stype == "contour") {
         .surface_args <- nlist(
-          mapping = aes_(z = ~ estimate__, colour = ~ ..level..),
-          bins = 30, size = 1.3
+          mapping = aes(
+            z = .data[["estimate__"]],
+            colour = after_stat(.data[["level"]])
+          ),
+          bins = 30, linewidth = 1.3
         )
         replace_args(.surface_args, dont_replace) <- surface_args
-        plots[[i]] <- plots[[i]] + 
+        plots[[i]] <- plots[[i]] +
           do_call(geom_contour, .surface_args) +
           scale_color_gradientn(colors = viridis6(), name = response)
       } else if (stype == "raster") {
-        .surface_args <- nlist(mapping = aes_(fill = ~ estimate__))
+        .surface_args <- nlist(mapping = aes(fill = .data[["estimate__"]]))
         replace_args(.surface_args, dont_replace) <- surface_args
-        plots[[i]] <- plots[[i]] + 
-          do_call(geom_raster, .surface_args) + 
+        plots[[i]] <- plots[[i]] +
+          do_call(geom_raster, .surface_args) +
           scale_fill_gradientn(colors = viridis6(), name = response)
       }
     } else {
       # plot effects of single predictors or two-way interactions
       gvar <- if (length(effects) == 2L) "effect2__"
       spaghetti <- attr(x[[i]], "spaghetti")
-      plots[[i]] <- ggplot(x[[i]]) + 
-        aes_string(x = "effect1__", y = "estimate__", colour = gvar) +
+      aes_tmp <- aes(x = .data[["effect1__"]], y = .data[["estimate__"]])
+      if (!is.null(gvar)) {
+        aes_tmp$colour <- aes(colour = .data[[gvar]])$colour
+      }
+      plots[[i]] <- ggplot(x[[i]]) + aes_tmp +
         labs(x = effects[1], y = response, colour = effects[2])
       if (is.null(spaghetti)) {
-        plots[[i]] <- plots[[i]] +
-          aes_string(ymin = "lower__", ymax = "upper__", fill = gvar) +
+        aes_tmp <- aes(ymin = .data[["lower__"]], ymax = .data[["upper__"]])
+        if (!is.null(gvar)) {
+          aes_tmp$fill <- aes(fill = .data[[gvar]])$fill
+        }
+        plots[[i]] <- plots[[i]] + aes_tmp +
           labs(fill = effects[2])
       }
       # extract suggested colors for later use
@@ -1105,24 +1119,27 @@ plot.brms_conditional_effects <- function(
       if (points && !categorical && !surface) {
         # add points first so that they appear behind the predictions
         .point_args <- list(
-          mapping = aes_string(x = "effect1__", y = "resp__"),
+          mapping = aes(x = .data[["effect1__"]], y = .data[["resp__"]]),
           data = df_points, inherit.aes = FALSE,
           size = 2 / ncond^0.25, height = 0, width = jitter_width
         )
         if (is_like_factor(df_points[, gvar])) {
-          .point_args$mapping[c("colour", "fill")] <- 
-            aes_string(colour = gvar, fill = gvar)
+          .point_args$mapping[c("colour", "fill")] <-
+            aes(colour = .data[[gvar]], fill = .data[[gvar]])
         }
         replace_args(.point_args, dont_replace) <- point_args
-        plots[[i]] <- plots[[i]] + 
+        plots[[i]] <- plots[[i]] +
           do_call(geom_jitter, .point_args)
       }
       if (!is.null(spaghetti)) {
         # add a regression line for each sample separately
         .spaghetti_args <- list(
-          aes_string(group = "sample__", colour = gvar),
-          data = spaghetti, stat = "identity", size = 0.5
+          aes(group = .data[["sample__"]]),
+          data = spaghetti, stat = "identity", linewidth = 0.5
         )
+        if (!is.null(gvar)) {
+          .spaghetti_args[[1]]$colour <- aes(colour = .data[[gvar]])$colour
+        }
         if (length(effects) == 1L) {
           .spaghetti_args$colour <- alpha("blue", 0.1)
         } else {
@@ -1139,25 +1156,27 @@ plot.brms_conditional_effects <- function(
         .line_args <- list(stat = "identity")
         if (!is.null(spaghetti)) {
           # display a white mean regression line
-          .line_args$mapping <- aes_string(group = gvar)
+          if (!is.null(gvar)) {
+            .line_args$mapping <- aes(group = .data[[gvar]])
+          }
           .line_args$colour <- alpha("white", 0.8)
         }
         replace_args(.line_args, dont_replace) <- line_args
         if (mean || is.null(spaghetti)) {
-          plots[[i]] <- plots[[i]] + 
+          plots[[i]] <- plots[[i]] +
             do_call(geom_smooth, .line_args)
         }
         if (rug) {
           .rug_args <- list(
-            aes_string(x = "effect1__"), sides = "b", 
+            aes(x = .data[["effect1__"]]), sides = "b",
             data = df_points, inherit.aes = FALSE
           )
           if (is_like_factor(df_points[, gvar])) {
-            .point_args$mapping[c("colour", "fill")] <- 
-              aes_string(colour = gvar, fill = gvar)
+            .point_args$mapping[c("colour", "fill")] <-
+              aes(colour = .data[[gvar]], fill = .data[[gvar]])
           }
           replace_args(.rug_args, dont_replace) <- rug_args
-          plots[[i]] <- plots[[i]] + 
+          plots[[i]] <- plots[[i]] +
             do_call(geom_rug, .rug_args)
         }
       } else {
@@ -1167,12 +1186,12 @@ plot.brms_conditional_effects <- function(
           size = 4 / ncond^0.25
         )
         .errorbar_args <- list(
-          position = position_dodge(width = 0.4), 
+          position = position_dodge(width = 0.4),
           width = 0.3
         )
         replace_args(.cat_args, dont_replace) <- cat_args
         replace_args(.errorbar_args, dont_replace) <- errorbar_args
-        plots[[i]] <- plots[[i]] + 
+        plots[[i]] <- plots[[i]] +
           do_call(geom_point, .cat_args) +
           do_call(geom_errorbar, .errorbar_args)
       }
@@ -1188,7 +1207,7 @@ plot.brms_conditional_effects <- function(
       }
       .facet_args <- nlist(facets = "cond__", ncol)
       replace_args(.facet_args, dont_replace) <- facet_args
-      plots[[i]] <- plots[[i]] + 
+      plots[[i]] <- plots[[i]] +
         do_call(facet_wrap, .facet_args)
     }
     plots[[i]] <- plots[[i]] + theme

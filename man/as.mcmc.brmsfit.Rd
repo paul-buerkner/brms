@@ -17,18 +17,18 @@
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{pars}{Names of parameters for which posterior samples 
+\item{pars}{Names of parameters for which posterior samples
 should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted.}
 
-\item{fixed}{Indicates whether parameter names 
+\item{fixed}{Indicates whether parameter names
 should be matched exactly (\code{TRUE}) or treated as
 regular expressions (\code{FALSE}). Default is \code{FALSE}.}
 
 \item{combine_chains}{Indicates whether chains should be combined.}
 
 \item{inc_warmup}{Indicates if the warmup samples should be included.
-Default is \code{FALSE}. Warmup samples are used to tune the 
+Default is \code{FALSE}. Warmup samples are used to tune the
 parameters of the sampling algorithm and should not be analyzed.}
 
 \item{...}{currently unused}

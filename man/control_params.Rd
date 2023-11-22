@@ -22,6 +22,6 @@ See \code{\link[rstan:stan]{stan}} for more details.}
 A named \code{list} with control parameter values.
 }
 \description{
-Extract control parameters of the NUTS sampler such as 
+Extract control parameters of the NUTS sampler such as
 \code{adapt_delta} or \code{max_treedepth}.
 }

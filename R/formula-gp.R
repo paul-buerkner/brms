@@ -1,27 +1,27 @@
-# R helper functions for Gaussian Processes 
+# R helper functions for Gaussian Processes
 
 #' Set up Gaussian process terms in \pkg{brms}
-#' 
+#'
 #' Set up a Gaussian process (GP) term in \pkg{brms}. The function does not
 #' evaluate its arguments -- it exists purely to help set up a model with
 #' GP terms.
-#' 
+#'
 #' @param ... One or more predictors for the GP.
-#' @param by A numeric or factor variable of the same length as 
-#'   each predictor. In the numeric vector case, the elements multiply 
-#'   the values returned by the GP. In the factor variable 
+#' @param by A numeric or factor variable of the same length as
+#'   each predictor. In the numeric vector case, the elements multiply
+#'   the values returned by the GP. In the factor variable
 #'   case, a separate GP is fitted for each factor level.
 #' @param k Optional number of basis functions for computing approximate
 #'   GPs. If \code{NA} (the default), exact GPs are computed.
-#' @param cov Name of the covariance kernel. By default, 
+#' @param cov Name of the covariance kernel. By default,
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
-#' @param iso A flag to indicate whether an isotropic (\code{TRUE}; the 
-#'   default) of a non-isotropic GP should be used. 
+#' @param iso A flag to indicate whether an isotropic (\code{TRUE}; the
+#'   default) or a non-isotropic GP should be used.
 #'   In the former case, the same amount of smoothing is applied to all
 #'   predictors. In the latter case, predictors may have different smoothing.
-#'   Ignored if only a single predictors is supplied.
-#' @param gr Logical; Indicates if auto-grouping should be used (defaults 
-#'   to \code{TRUE}). If enabled, observations sharing the same 
+#'   Ignored if only a single predictor is supplied.
+#' @param gr Logical; Indicates if auto-grouping should be used (defaults
+#'   to \code{TRUE}). If enabled, observations sharing the same
 #'   predictor values will be represented by the same latent variable
 #'   in the GP. This will improve sampling efficiency
 #'   drastically if the number of unique predictor combinations is small
@@ -36,90 +36,90 @@
 #'   Scaling also affects the estimated length-scale parameters
 #'   in that they resemble those of scaled predictors (not of the original
 #'   predictors) if \code{scale} is \code{TRUE}.
-#' @param c Numeric value only used in approximate GPs. Defines the 
+#' @param c Numeric value only used in approximate GPs. Defines the
 #'   multiplicative constant of the predictors' range over which
-#'   predictions should be computed. A good default could be \code{c = 5/4} 
+#'   predictions should be computed. A good default could be \code{c = 5/4}
 #'   but we are still working on providing better recommendations.
-#'   
+#'
 #' @details A GP is a stochastic process, which
-#'  describes the relation between one or more predictors 
-#'  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
+#'  describes the relation between one or more predictors
+#'  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where
 #'  \eqn{d} is the number of predictors. A GP is the
 #'  generalization of the multivariate normal distribution
 #'  to an infinite number of dimensions. Thus, it can be
-#'  interpreted as a prior over functions. Any finite sample 
-#'  realized from this stochastic process is jointly multivariate 
+#'  interpreted as a prior over functions. The values of \eqn{f( )}
+#'  at any finite set of locations are jointly multivariate
 #'  normal, with a covariance matrix defined by the covariance
-#'  kernel \eqn{k_p(x)}, where \eqn{p} is the vector of parameters
+#'  kernel \eqn{k_p(x_i, x_j)}, where \eqn{p} is the vector of parameters
 #'  of the GP:
-#'  \deqn{f(x) ~ MVN(0, k_p(x))}
-#'  The smoothness and general behavior of the function \eqn{f} 
-#'  depends only on the choice of covariance kernel. 
+#'  \deqn{(f(x_1), \ldots f(x_n) \sim MVN(0, (k_p(x_i, x_j))_{i,j=1}^n) .}
+#'  The smoothness and general behavior of the function \eqn{f}
+#'  depends only on the choice of covariance kernel.
 #'  For a more detailed introduction to Gaussian processes,
 #'  see \url{https://en.wikipedia.org/wiki/Gaussian_process}.
-#'  
+#'
 #'  Below, we describe the currently supported covariance kernels:
 #'  \itemize{
 #'    \item{"exp_quad": }{The exponentiated-quadratic kernel is defined as
-#'    \eqn{k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j ||^2 / (2 lscale^2))},
-#'    where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a 
-#'    standard deviation parameter, and \eqn{lscale} is characteristic 
-#'    length-scale parameter. The latter practically measures how close two 
-#'    points \eqn{x_i} and \eqn{x_j} have to be to influence each other 
+#'    \eqn{k(x_i, x_j) = sdgp^2 \exp(- || x_i - x_j ||^2 / (2 lscale^2))},
+#'    where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a
+#'    standard deviation parameter, and \eqn{lscale} is characteristic
+#'    length-scale parameter. The latter practically measures how close two
+#'    points \eqn{x_i} and \eqn{x_j} have to be to influence each other
 #'    substantially.}
 #'  }
 #'
-#'  In the current implementation, \code{"exp_quad"} is the only supported 
+#'  In the current implementation, \code{"exp_quad"} is the only supported
 #'  covariance kernel. More options will follow in the future.
-#'  
-#' @return An object of class \code{'gp_term'}, which is a list 
-#'   of arguments to be interpreted by the formula 
+#'
+#' @return An object of class \code{'gp_term'}, which is a list
+#'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
-#'   
+#'
 #' @examples
 #' \dontrun{
 #' # simulate data using the mgcv package
 #' dat <- mgcv::gamSim(1, n = 30, scale = 2)
-#' 
+#'
 #' # fit a simple GP model
 #' fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 #' summary(fit1)
 #' me1 <- conditional_effects(fit1, ndraws = 200, spaghetti = TRUE)
 #' plot(me1, ask = FALSE, points = TRUE)
-#' 
+#'
 #' # fit a more complicated GP model
 #' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
 #' summary(fit2)
 #' me2 <- conditional_effects(fit2, ndraws = 200, spaghetti = TRUE)
 #' plot(me2, ask = FALSE, points = TRUE)
-#' 
+#'
 #' # fit a multivariate GP model
 #' fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
 #' summary(fit3)
 #' me3 <- conditional_effects(fit3, ndraws = 200, spaghetti = TRUE)
 #' plot(me3, ask = FALSE, points = TRUE)
-#' 
+#'
 #' # compare model fit
 #' LOO(fit1, fit2, fit3)
-#' 
+#'
 #' # simulate data with a factor covariate
 #' dat2 <- mgcv::gamSim(4, n = 90, scale = 2)
-#' 
+#'
 #' # fit separate gaussian processes for different levels of 'fac'
 #' fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
 #' summary(fit4)
 #' plot(conditional_effects(fit4), points = TRUE)
 #' }
-#' 
+#'
 #' @seealso \code{\link{brmsformula}}
 #' @export
-gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE, 
+gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
                gr = TRUE, cmc = TRUE, scale = TRUE, c = NULL) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   call <- match.call()
-  label <- deparse(call)
+  label <- deparse0(call)
   vars <- as.list(substitute(list(...)))[-1]
-  by <- deparse(substitute(by))
+  by <- deparse0(substitute(by))
   cmc <- as_one_logical(cmc)
   if (is.null(call[["gr"]]) && require_old_default("2.12.8")) {
     # the default of 'gr' has changed in version 2.12.8
@@ -158,7 +158,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     c <- NA
   }
   scale <- as_one_logical(scale)
-  term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
+  term <- ulapply(vars, deparse0, backtick = TRUE, width.cutoff = 500L)
   out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, c)
   structure(out, class = "gp_term")
 }
@@ -177,7 +177,7 @@ tidy_gpef <- function(x, data) {
   }
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
-  out$cons <- out$byvars <- out$covars <- 
+  out$cons <- out$byvars <- out$covars <-
     out$sfx1 <- out$sfx2 <- out$c <- vector("list", nterms)
   for (i in seq_len(nterms)) {
     gp <- eval2(out$term[i])
@@ -292,7 +292,7 @@ eigen_fun_cov_exp_quad <- function(x, m, L) {
   stopifnot(length(m) == D, length(L) == D)
   out <- vector("list", D)
   for (i in seq_cols(x)) {
-    out[[i]] <- 1 / sqrt(L[i]) * 
+    out[[i]] <- 1 / sqrt(L[i]) *
       sin((m[i] * pi) / (2 * L[i]) * (x[, i] + L[i]))
   }
   Reduce("*", out)
@@ -308,12 +308,12 @@ choose_L <- function(x, c) {
   c * range
 }
 
-# try to evaluate a GP term and 
+# try to evaluate a GP term and
 # return an informative error message if it fails
 try_nug <- function(expr, nug) {
   out <- try(expr, silent = TRUE)
-  if (is(out, "try-error")) {
-    stop2("The Gaussian process covariance matrix is not positive ", 
+  if (is_try_error(out)) {
+    stop2("The Gaussian process covariance matrix is not positive ",
           "definite.\nThis occurs for numerical reasons. Setting ",
           "'nug' above ", nug, " may help.")
   }

@@ -1,43 +1,49 @@
 #' Compute exact cross-validation for problematic observations
-#' 
+#'
 #' Compute exact cross-validation for problematic observations for which
 #' approximate leave-one-out cross-validation may return incorrect results.
 #' Models for problematic observations can be run in parallel using the
 #' \pkg{future} package.
-#' 
+#'
 #' @inheritParams predict.brmsfit
 #' @param x An \R object of class \code{brmsfit} or \code{loo} depending
 #'   on the method.
 #' @param loo An \R object of class \code{loo}.
 #' @param fit An \R object of class \code{brmsfit}.
-#' @param k_threshold The threshold at which Pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#' @param k_threshold The threshold at which Pareto \eqn{k}
+#'   estimates are treated as problematic. Defaults to \code{0.7}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 #'   for more details.
 #' @param check Logical; If \code{TRUE} (the default), some checks
 #'   check are performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
-#' @param ... Further arguments passed to 
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled. This may be necessary if you are running \code{reloo} on
+#'   another machine than the one used to fit the model.
+#' @param future_args A list of further arguments passed to
+#'   \code{\link[future:future]{future}} for additional control over parallel
+#'   execution if activated.
+#' @param ... Further arguments passed to
 #'   \code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.
-#'   
+#'
 #' @return An object of the class \code{loo}.
-#' 
-#' @details 
+#'
+#' @details
 #' Warnings about Pareto \eqn{k} estimates indicate observations
 #' for which the approximation to LOO is problematic (this is described in
-#' detail in Vehtari, Gelman, and Gabry (2017) and the 
+#' detail in Vehtari, Gelman, and Gabry (2017) and the
 #' \pkg{\link[loo:loo-package]{loo}} package documentation).
 #' If there are \eqn{J} observations with \eqn{k} estimates above
-#' \code{k_threshold}, then \code{reloo} will refit the original model 
-#' \eqn{J} times, each time leaving out one of the \eqn{J} 
+#' \code{k_threshold}, then \code{reloo} will refit the original model
+#' \eqn{J} times, each time leaving out one of the \eqn{J}
 #' problematic observations. The pointwise contributions of these observations
 #' to the total ELPD are then computed directly and substituted for the
 #' previous estimates from these \eqn{J} observations that are stored in the
 #' original \code{loo} object.
-#' 
+#'
 #' @seealso \code{\link{loo}}, \code{\link{kfold}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'             data = epilepsy, family = poisson())
@@ -45,17 +51,18 @@
 #' (loo1 <- loo(fit1))
 #' (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
 #' }
-#' 
+#'
 #' @export
-reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL, 
-                          resp = NULL, check = TRUE, ...) {
-  stopifnot(is.loo(loo), is.brmsfit(x))
+reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
+                          resp = NULL, check = TRUE, recompile = NULL,
+                          future_args = list(), ...) {
+  stopifnot(is.loo(loo), is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"
   }
   if (is.null(newdata)) {
-    mf <- model.frame(x) 
+    mf <- model.frame(x)
   } else {
     mf <- as.data.frame(newdata)
   }
@@ -86,7 +93,7 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     )
     return(loo)
   }
-  
+
   # split dots for use in log_lik and update
   dots <- list(...)
   ll_arg_names <- arg_names("log_lik")
@@ -99,7 +106,7 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   up_arg_names <- setdiff(names(dots), setdiff(ll_arg_names, "cores"))
   up_args <- dots[up_arg_names]
   up_args$refresh <- 0
-  
+
   .reloo <- function(j) {
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
@@ -113,20 +120,22 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     ll_args$newdata2 <- subset_data2(x$data2, omitted)
     return(do_call(log_lik, ll_args))
   }
-  
+
   lls <- futures <- vector("list", J)
   message(
-    J, " problematic observation(s) found.", 
+    J, " problematic observation(s) found.",
     "\nThe model will be refit ", J, " times."
   )
+  x <- recompile_model(x, recompile = recompile)
+  future_args$FUN <- .reloo
+  future_args$seed <- TRUE
   for (j in seq_len(J)) {
     message(
       "\nFitting model ", j, " out of ", J,
       " (leaving out observation ", obs[j], ")"
     )
-    futures[[j]] <- future::future(
-      .reloo(j), packages = "brms", seed = TRUE
-    )
+    future_args$args <- list(j)
+    futures[[j]] <- do_call("futureCall", future_args, pkg = "future")
   }
   for (j in seq_len(J)) {
     lls[[j]] <- future::value(futures[[j]])

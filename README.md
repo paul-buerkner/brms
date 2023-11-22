@@ -4,10 +4,9 @@
 
 # brms
 
-[![Build
-Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
+[![R-CMD-check](https://github.com/paul-buerkner/brms/workflows/R-CMD-check/badge.svg)](https://github.com/paul-buerkner/brms/actions)
 [![Coverage
-Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
+Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://app.codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN
 Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 [![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
@@ -35,15 +34,14 @@ with posterior predictive checks, cross-validation, and Bayes factors.
 
 ## Resources
 
--   [Introduction to
-    brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of
-    Statistical Software)
+-   [Introduction to brms](https://doi.org/10.18637/jss.v080.i01)
+    (Journal of Statistical Software)
 -   [Advanced multilevel modeling with
     brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html)
     (The R Journal)
 -   [Website](https://paul-buerkner.github.io/brms/) (Website of brms
     with documentation and vignettes)
--   [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/)
+-   [Blog posts](https://paul-buerkner.github.io/software/brms-blogposts.html)
     (List of blog posts about brms)
 -   [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
     Discourse)
@@ -66,35 +64,35 @@ intercept is incorporated to account for the resulting dependency in the
 data.
 
 ``` r
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient), 
+fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
 ```
 
 The results (i.e., posterior draws) can be investigated using
 
 ``` r
-summary(fit1) 
+summary(fit1)
 #>  Family: poisson 
 #>   Links: mu = log 
 #> Formula: count ~ zAge + zBase * Trt + (1 | patient) 
 #>    Data: epilepsy (Number of observations: 236) 
-#> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-#>          total post-warmup samples = 4000
+#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+#>          total post-warmup draws = 4000
 #> 
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.58      0.07     0.46     0.74 1.00      810     1753
+#> sd(Intercept)     0.58      0.07     0.46     0.73 1.01      768     1579
 #> 
 #> Population-Level Effects: 
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.77      0.12     1.53     2.00 1.00      779     1319
-#> zAge           0.09      0.09    -0.09     0.26 1.00      684     1071
-#> zBase          0.70      0.12     0.46     0.95 1.00      847     1453
-#> Trt1          -0.27      0.17    -0.59     0.06 1.00      661     1046
-#> zBase:Trt1     0.05      0.16    -0.26     0.37 1.00      993     1624
+#> Intercept      1.77      0.11     1.54     1.99 1.00      753     1511
+#> zAge           0.09      0.08    -0.07     0.26 1.00      830     1429
+#> zBase          0.70      0.12     0.47     0.95 1.00      678     1389
+#> Trt1          -0.26      0.16    -0.59     0.05 1.01      709     1356
+#> zBase:Trt1     0.05      0.17    -0.29     0.37 1.01      721     1404
 #> 
-#> Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
@@ -106,7 +104,7 @@ terms of standard deviations and (in case of more than one group-level
 effect per grouping factor; not displayed here) correlations between
 group-level effects. On the bottom of the output, population-level
 effects (i.e. regression coefficients) are displayed. If incorporated,
-autocorrelation effects and family specific parameters (e.g. the
+autocorrelation effects and family specific parameters (e.g., the
 residual standard deviation ‘sigma’ in normal models) are also given.
 
 In general, every parameter is summarized using the mean (‘Estimate’)
@@ -120,18 +118,18 @@ insufficient by standard decision rules. Further, we find little
 evidence that the treatment effect varies with the baseline number of
 seizures.
 
-The last two values (‘Eff.Sample’ and ‘Rhat’) provide information on how
-well the algorithm could estimate the posterior distribution of this
-parameter. If ‘Rhat’ is considerably greater than 1, the algorithm has
-not yet converged and it is necessary to run more iterations and / or
-set stronger priors.
+The last three values (‘ESS_bulk’, ‘ESS_tail’, and ‘Rhat’) provide
+information on how well the algorithm could estimate the posterior
+distribution of this parameter. If ‘Rhat’ is considerably greater than
+1, the algorithm has not yet converged and it is necessary to run more
+iterations and / or set stronger priors.
 
 To visually investigate the chains as well as the posterior
 distributions, we can use the `plot` method. If we just want to see
 results of the regression coefficients of `Trt` and `zBase`, we go for
 
 ``` r
-plot(fit1, variable = c("b_Trt1", "b_zBase")) 
+plot(fit1, variable = c("b_Trt1", "b_zBase"))
 ```
 
 <img src="man/figures/README-plot-1.png" width="60%" style="display: block; margin: auto;" />
@@ -157,8 +155,8 @@ previous seizures. Than we can use
 newdata <- data.frame(Trt = c(0, 1), zAge = 0, zBase = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error Q2.5 Q97.5
-#> [1,]   5.8980  2.505627    2    11
-#> [2,]   4.5595  2.162320    1     9
+#> [1,]  5.90325  2.486249    2    11
+#> [2,]  4.59025  2.180262    1     9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the
@@ -169,8 +167,8 @@ line.
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error     Q2.5    Q97.5
-#> [1,] 5.917144 0.7056695 4.632004 7.387471
-#> [2,] 4.529949 0.5360204 3.544085 5.624005
+#> [1,] 5.918847 0.6762827 4.666180 7.308699
+#> [2,] 4.554778 0.5144053 3.630642 5.659664
 ```
 
 Both methods return the same estimate (up to random error), while the
@@ -185,7 +183,7 @@ distribution. For this purpose, we include a second group-level
 intercept that captures possible overdispersion.
 
 ``` r
-fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs), 
+fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
             data = epilepsy, family = poisson())
 ```
 
@@ -199,18 +197,18 @@ loo(fit1, fit2)
 #> Computed from 4000 by 236 log-likelihood matrix
 #> 
 #>          Estimate   SE
-#> elpd_loo   -670.4 36.7
-#> p_loo        92.8 14.3
-#> looic      1340.8 73.3
+#> elpd_loo   -671.6 35.8
+#> p_loo        94.6 13.6
+#> looic      1343.3 71.6
 #> ------
 #> Monte Carlo SE of elpd_loo is NA.
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     214   90.7%   251       
-#>  (0.5, 0.7]   (ok)        17    7.2%   80        
-#>    (0.7, 1]   (bad)        3    1.3%   81        
-#>    (1, Inf)   (very bad)   2    0.8%   6         
+#> (-Inf, 0.5]   (good)     209   88.6%   546       
+#>  (0.5, 0.7]   (ok)        18    7.6%   125       
+#>    (0.7, 1]   (bad)        7    3.0%   23        
+#>    (1, Inf)   (very bad)   2    0.8%   12        
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Output of model 'fit2':
@@ -218,24 +216,24 @@ loo(fit1, fit2)
 #> Computed from 4000 by 236 log-likelihood matrix
 #> 
 #>          Estimate   SE
-#> elpd_loo   -595.2 14.1
-#> p_loo       108.0  7.3
-#> looic      1190.4 28.2
+#> elpd_loo   -596.2 14.1
+#> p_loo       108.5  7.3
+#> looic      1192.3 28.3
 #> ------
 #> Monte Carlo SE of elpd_loo is NA.
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)      82   34.7%   544       
-#>  (0.5, 0.7]   (ok)       103   43.6%   153       
-#>    (0.7, 1]   (bad)       47   19.9%   22        
-#>    (1, Inf)   (very bad)   4    1.7%   7         
+#> (-Inf, 0.5]   (good)     84    35.6%   755       
+#>  (0.5, 0.7]   (ok)       96    40.7%   171       
+#>    (0.7, 1]   (bad)      50    21.2%   25        
+#>    (1, Inf)   (very bad)  6     2.5%   10        
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Model comparisons:
 #>      elpd_diff se_diff
 #> fit2   0.0       0.0  
-#> fit1 -75.2      26.9
+#> fit1 -75.5      26.3
 ```
 
 The `loo` output when comparing models is a little verbose. We first see
@@ -268,14 +266,19 @@ When using brms, please cite one or more of the following publications:
 -   Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the
     R Package brms. *The R Journal*. 10(1), 395-411.
     doi.org/10.32614/RJ-2018-017
+-   Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms
+    and Stan. *Journal of Statistical Software*, 100(5), 1-54.
+    doi.org/10.18637/jss.v100.i05
 
-As brms is a high-level interface to Stan, please additionally cite
-Stan:
+As brms is a high-level interface to Stan, please additionally cite Stan
+(see also <https://mc-stan.org/users/citations/>):
 
+-   Stan Development Team. YEAR. Stan Modeling Language Users Guide and
+    Reference Manual, VERSION. <https://mc-stan.org>
 -   Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B.,
     Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017).
     Stan: A probabilistic programming language. *Journal of Statistical
-    Software*. 76(1). 10.18637/jss.v076.i01
+    Software*. 76(1). doi.org/10.18637/jss.v076.i01
 
 Further, brms relies on several other R packages and, of course, on R
 itself. To find out how to cite R and its packages, use the `citation`
@@ -300,7 +303,7 @@ To install the latest release version from CRAN use
 install.packages("brms")
 ```
 
-The current developmental version can be downloaded from github via
+The current developmental version can be downloaded from GitHub via
 
 ``` r
 if (!requireNamespace("remotes")) {

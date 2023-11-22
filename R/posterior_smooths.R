@@ -1,8 +1,8 @@
 #' Posterior Predictions of Smooth Terms
-#' 
+#'
 #' Compute posterior predictions of smooth \code{s} and \code{t2} terms of
 #' models fitted with \pkg{brms}.
-#' 
+#'
 #' @inheritParams posterior_epred.brmsfit
 #' @param smooth Name of a single smooth term for which predictions should
 #'   be computed.
@@ -11,24 +11,24 @@
 #'   used. Only those variables appearing in the chosen \code{smooth} term are
 #'   required.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @return An S x N matrix, where S is the number of
 #'   posterior draws and N is the number of observations.
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
-#' set.seed(0) 
+#' set.seed(0)
 #' dat <- mgcv::gamSim(1, n = 200, scale = 2)
 #' fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #' summary(fit)
-#' 
+#'
 #' newdata <- data.frame(x2 = seq(0, 1, 10))
 #' str(posterior_smooths(fit, smooth = "s(x2)", newdata = newdata))
 #' }
-#' 
+#'
 #' @export
-posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL, 
-                                      resp = NULL, dpar = NULL, nlpar = NULL, 
+posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL,
+                                      resp = NULL, dpar = NULL, nlpar = NULL,
                                       ndraws = NULL, draw_ids = NULL, ...) {
   resp <- validate_resp(resp, object, multiple = FALSE)
   bterms <- brmsterms(exclude_terms(object$formula, smooths_only = TRUE))
@@ -64,7 +64,7 @@ posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL,
 }
 
 #' @export
-posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL, 
+posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
                                   ndraws = NULL, draw_ids = NULL,
                                   nsamples = NULL, subset = NULL, ...) {
   smooth <- rm_wsp(as_one_character(smooth))
@@ -74,7 +74,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)
   if (!smooth %in% smterms) {
-    stop2("Term '", smooth, "' cannot be found. Available ", 
+    stop2("Term '", smooth, "' cannot be found. Available ",
           "smooth terms are: ", collapse_comma(smterms))
   }
   # find relevant variables
@@ -84,7 +84,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   req_vars <- c(covars, byvars)
   # prepare predictions for splines
   sdata <- standata(
-    fit, newdata, re_formula = NA, internal = TRUE, 
+    fit, newdata, re_formula = NA, internal = TRUE,
     check_response = FALSE, req_vars = req_vars
   )
   draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)

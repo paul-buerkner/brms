@@ -50,37 +50,37 @@ one of \code{"posterior_predict"} (default), \code{"posterior_epred"},
 
 \item{nsamples}{Deprecated alias of \code{ndraws}.}
 
-\item{summary}{Should summary statistics 
+\item{summary}{Should summary statistics
  (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 
-\item{control}{Optional \code{list} of further arguments 
+\item{control}{Optional \code{list} of further arguments
 passed to the function specified in \code{weights}.}
 
 \item{seed}{A single numeric value passed to \code{\link{set.seed}}
 to make results reproducible.}
 }
 \value{
-Same as the output of the method specified 
+Same as the output of the method specified
   in argument \code{method}.
 }
 \description{
 Compute posterior predictive draws averaged across models.
 Weighting can be done in various ways, for instance using
-Akaike weights based on information criteria or 
+Akaike weights based on information criteria or
 marginal likelihoods.
 }
 \details{

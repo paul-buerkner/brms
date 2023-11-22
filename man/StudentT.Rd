@@ -12,12 +12,12 @@ dstudent_t(x, df, mu = 0, sigma = 1, log = FALSE)
 
 pstudent_t(q, df, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE)
 
-qstudent_t(p, df, mu = 0, sigma = 1)
+qstudent_t(p, df, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE)
 
 rstudent_t(n, df, mu = 0, sigma = 1)
 }
 \arguments{
-\item{x, q}{Vector of quantiles.}
+\item{x}{Vector of quantiles.}
 
 \item{df}{Vector of degrees of freedom.}
 
@@ -25,17 +25,21 @@ rstudent_t(n, df, mu = 0, sigma = 1)
 
 \item{sigma}{Vector of scale values.}
 
-\item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{q}{Vector of quantiles.}
+
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
+
+\item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{p}{Vector of probabilities.}
 
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, quantile function and random generation 
+Density, distribution function, quantile function and random generation
 for the Student-t distribution with location \code{mu}, scale \code{sigma},
 and degrees of freedom \code{df}.
 }

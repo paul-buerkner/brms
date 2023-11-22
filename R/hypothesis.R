@@ -1,39 +1,39 @@
 #' Non-Linear Hypothesis Testing
-#' 
-#' Perform non-linear hypothesis testing for all model parameters. 
-#' 
+#'
+#' Perform non-linear hypothesis testing for all model parameters.
+#'
 #' @param x An \code{R} object. If it is no \code{brmsfit} object,
 #'  it must be coercible to a \code{data.frame}.
-#'  In the latter case, the variables used in the \code{hypothesis} argument 
+#'  In the latter case, the variables used in the \code{hypothesis} argument
 #'  need to correspond to column names of \code{x}, while the rows
 #'  are treated as representing posterior draws of the variables.
-#' @param hypothesis A character vector specifying one or more 
+#' @param hypothesis A character vector specifying one or more
 #'  non-linear hypothesis concerning parameters of the model.
-#' @param class A string specifying the class of parameters being tested. 
-#'  Default is "b" for population-level effects. 
-#'  Other typical options are "sd" or "cor". 
+#' @param class A string specifying the class of parameters being tested.
+#'  Default is "b" for population-level effects.
+#'  Other typical options are "sd" or "cor".
 #'  If \code{class = NULL}, all parameters can be tested
-#'  against each other, but have to be specified with their full name 
-#'  (see also \code{\link[brms:draws-index-brms]{variables}}) 
-#' @param group Name of a grouping factor to evaluate only 
+#'  against each other, but have to be specified with their full name
+#'  (see also \code{\link[brms:draws-index-brms]{variables}})
+#' @param group Name of a grouping factor to evaluate only
 #'  group-level effects parameters related to this grouping factor.
 #' @param alpha The alpha-level of the tests (default is 0.05;
 #'  see 'Details' for more information).
-#' @param robust If \code{FALSE} (the default) the mean is used as 
-#'  the measure of central tendency and the standard deviation as 
-#'  the measure of variability. If \code{TRUE}, the median and the 
+#' @param robust If \code{FALSE} (the default) the mean is used as
+#'  the measure of central tendency and the standard deviation as
+#'  the measure of variability. If \code{TRUE}, the median and the
 #'  median absolute deviation (MAD) are applied instead.
 #' @param scope Indicates where to look for the variables specified in
 #'  \code{hypothesis}. If \code{"standard"}, use the full parameter names
 #'  (subject to the restriction given by \code{class} and \code{group}).
-#'  If \code{"coef"} or \code{"ranef"}, compute the hypothesis for all levels 
-#'  of the grouping factor given in \code{"group"}, based on the 
+#'  If \code{"coef"} or \code{"ranef"}, compute the hypothesis for all levels
+#'  of the grouping factor given in \code{"group"}, based on the
 #'  output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 #'  respectively.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
 #'  to make results reproducible.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @details Among others, \code{hypothesis} computes an evidence ratio
 #'   (\code{Evid.Ratio}) for each hypothesis. For a one-sided hypothesis, this
 #'   is just the posterior probability (\code{Post.Prob}) under the hypothesis
@@ -57,7 +57,7 @@
 #'   coefficients. When interpreting Bayes factors, make sure that your priors
 #'   are reasonable and carefully chosen, as the result will depend heavily on
 #'   the priors. In particular, avoid using default priors.
-#'   
+#'
 #'   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
 #'   small or large evidence, respectively, in favor of the tested hypothesis.
 #'   For one-sided hypotheses pairs, this basically means that all posterior
@@ -66,7 +66,7 @@
 #'   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
 #'   where \code{S} denotes the number of posterior draws used in the
 #'   computations.
-#'  
+#'
 #'   The argument \code{alpha} specifies the size of the credible interval
 #'   (i.e., Bayesian confidence interval). For instance, if we tested a
 #'   two-sided hypothesis and set \code{alpha = 0.05} (5\%) an, the credible
@@ -76,65 +76,65 @@
 #'   hypotheses in a similar manner as in the frequentist null-hypothesis
 #'   testing framework, we strongly argue against using arbitrary cutoffs (e.g.,
 #'   \code{p < .05}) to determine the 'existence' of an effect.
-#' 
+#'
 #' @return A \code{\link{brmshypothesis}} object.
-#' 
+#'
 #' @seealso \code{\link{brmshypothesis}}
-#' 
+#'
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' ## define priors
 #' prior <- c(set_prior("normal(0,2)", class = "b"),
 #'            set_prior("student_t(10,0,1)", class = "sigma"),
 #'            set_prior("student_t(10,0,1)", class = "sd"))
-#' 
+#'
 #' ## fit a linear mixed effects models
 #' fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #'            data = kidney, family = lognormal(),
-#'            prior = prior, sample_prior = "yes", 
+#'            prior = prior, sample_prior = "yes",
 #'            control = list(adapt_delta = 0.95))
-#' 
+#'
 #' ## perform two-sided hypothesis testing
 #' (hyp1 <- hypothesis(fit, "sexfemale = age + diseasePKD"))
 #' plot(hyp1)
 #' hypothesis(fit, "exp(age) - 3 = 0", alpha = 0.01)
-#' 
+#'
 #' ## perform one-sided hypothesis testing
 #' hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
-#' 
-#' hypothesis(fit, "age < Intercept", 
+#'
+#' hypothesis(fit, "age < Intercept",
 #'            class = "sd", group  = "patient")
-#' 
+#'
 #' ## test the amount of random intercept variance on all variance
 #' h <- paste("sd_patient__Intercept^2 / (sd_patient__Intercept^2 +",
 #'            "sd_patient__age^2 + sigma^2) = 0")
 #' (hyp2 <- hypothesis(fit, h, class = NULL))
 #' plot(hyp2)
-#' 
+#'
 #' ## test more than one hypothesis at once
 #' h <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
 #' (hyp3 <- hypothesis(fit, h))
 #' plot(hyp3, ignore_prior = TRUE)
-#' 
+#'
 #' ## compute hypotheses for all levels of a grouping factor
 #' hypothesis(fit, "age = 0", scope = "coef", group = "patient")
-#' 
+#'
 #' ## use the default method
 #' dat <- as.data.frame(fit)
 #' str(dat)
 #' hypothesis(dat, "b_age > 0")
 #' }
-#' 
+#'
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                scope = c("standard", "ranef", "coef"),
-                               alpha = 0.05, robust = FALSE, seed = NULL, 
+                               alpha = 0.05, robust = FALSE, seed = NULL,
                                ...) {
   # use a seed as prior_draws.brmsfit randomly permutes draws
   if (!is.null(seed)) {
-    set.seed(seed) 
+    set.seed(seed)
   }
   contains_draws(x)
   x <- restructure(x)
@@ -142,7 +142,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   scope <- match.arg(scope)
   if (scope == "standard") {
     if (!length(class)) {
-      class <- "" 
+      class <- ""
     }
     class <- as_one_character(class)
     if (nzchar(group)) {
@@ -151,7 +151,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       class <- paste0(class, "_")
     }
     out <- .hypothesis(
-      x, hypothesis, class = class, alpha = alpha, 
+      x, hypothesis, class = class, alpha = alpha,
       robust = robust, ...
     )
   } else {
@@ -175,7 +175,7 @@ hypothesis <- function(x, ...) {
 
 #' @rdname hypothesis.brmsfit
 #' @export
-hypothesis.default <- function(x, hypothesis, alpha = 0.05, 
+hypothesis.default <- function(x, hypothesis, alpha = 0.05,
                                robust = FALSE, ...) {
   x <- as.data.frame(x)
   .hypothesis(
@@ -185,34 +185,34 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05,
 }
 
 #' Descriptions of \code{brmshypothesis} Objects
-#' 
+#'
 #' A \code{brmshypothesis} object contains posterior draws
-#' as well as summary statistics of non-linear hypotheses as 
+#' as well as summary statistics of non-linear hypotheses as
 #' returned by \code{\link{hypothesis}}.
-#' 
+#'
 #' @name brmshypothesis
-#' 
-#' @param ignore_prior A flag indicating if prior distributions 
+#'
+#' @param ignore_prior A flag indicating if prior distributions
 #'  should also be plotted. Only used if priors were specified on
 #'  the relevant parameters.
-#' @param digits Minimal number of significant digits, 
+#' @param digits Minimal number of significant digits,
 #'   see \code{\link[base:print.default]{print.default}}.
 #' @param chars Maximum number of characters of each hypothesis
 #'  to print or plot. If \code{NULL}, print the full hypotheses.
 #'  Defaults to \code{20}.
 #' @param colors Two values specifying the colors of the posterior
 #'  and prior density respectively. If \code{NULL} (the default)
-#'  colors are taken from the current color scheme of 
+#'  colors are taken from the current color scheme of
 #'  the \pkg{bayesplot} package.
 #' @param ... Currently ignored.
 #' @inheritParams plot.brmsfit
-#' 
-#' @details 
+#'
+#' @details
 #' The two most important elements of a \code{brmshypothesis} object are
 #' \code{hypothesis}, which is a data.frame containing the summary estimates
-#' of the hypotheses, and \code{samples}, which is a data.frame containing 
+#' of the hypotheses, and \code{samples}, which is a data.frame containing
 #' the corresponding posterior draws.
-#' 
+#'
 #' @seealso \code{\link{hypothesis}}
 NULL
 
@@ -223,7 +223,7 @@ NULL
 # @param class prefix of the parameters in the hypotheses
 # @param alpha the 'alpha-level' as understood by frequentist statistics
 # @return a 'brmshypothesis' object
-.hypothesis <- function(x, hypothesis, class, alpha, robust, 
+.hypothesis <- function(x, hypothesis, class, alpha, robust,
                         combine = TRUE, ...) {
   if (!is.character(hypothesis) || !length(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
@@ -236,8 +236,8 @@ NULL
   out <- vector("list", length(hypothesis))
   for (i in seq_along(out)) {
     out[[i]] <- eval_hypothesis(
-      hypothesis[i], x = x, class = class, 
-      alpha = alpha, robust = robust, 
+      hypothesis[i], x = x, class = class,
+      alpha = alpha, robust = robust,
       name = names(hypothesis)[i]
     )
   }
@@ -259,7 +259,7 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   out <- vector("list", length(levels))
   for (l in seq_along(levels)) {
     out[[l]] <- .hypothesis(
-      x[[l]], hypothesis, class = "", 
+      x[[l]], hypothesis, class = "",
       alpha = alpha, combine = FALSE, ...
     )
     for (i in seq_along(out[[l]])) {
@@ -342,7 +342,7 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   }
   measures <- c(measures, "quantile", "evidence_ratio")
   sm <- lapply(
-    measures, get_estimate, draws = samples, probs = probs, 
+    measures, get_estimate, draws = samples, probs = probs,
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
@@ -367,12 +367,12 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   nlist(summary = sm, samples, prior_samples)
 }
 
-# find all valid variable names in a string 
+# find all valid variable names in a string
 # @param x a character string
 # @param dot are dots allowed in variable names?
 # @param brackets allow brackets at the end of variable names?
 # @return all valid variable names within the string
-# @note does not use the R parser itself to allow for double points, 
+# @note does not use the R parser itself to allow for double points,
 #   square brackets, and commas at the end of names
 find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   x <- gsub("[[:space:]]", "", as_one_character(x))
@@ -385,7 +385,7 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   )
   pos_all <- gregexpr(regex_all, x)[[1]]
   regex_fun <- paste0(
-    "([^([:digit:]|[:punct:])]", if (dot) "|\\.", ")", 
+    "([^([:digit:]|[:punct:])]", if (dot) "|\\.", ")",
     "[[:alnum:]_", if (dot) "\\.", "]*\\("
   )
   pos_fun <- gregexpr(regex_fun, x)[[1]]
@@ -437,7 +437,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
   dots <- list(...)
   dots <- dots[names(dots) %in% names(formals("density.default"))]
   dots$n <- n
-  
+
   eval_density <- function(x, point) {
     # evaluate density of x at point
     from <- min(x)
@@ -450,7 +450,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
     dens <- do_call(density, c(nlist(x, from, to), dots))
     return(spline(dens$x, dens$y, xout = point)$y)
   }
-  
+
   out <- ulapply(point, eval_density, x = x)
   if (!is.null(y)) {
     y <- as.numeric(y)
@@ -460,13 +460,13 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
 }
 
 # compute the evidence ratio between two disjunct hypotheses
-# @param x posterior draws 
+# @param x posterior draws
 # @param cut the cut point between the two hypotheses
 # @param wsign direction of the hypothesis
 # @param prior_samples optional prior draws for two-sided hypothesis
 # @param ... optional arguments passed to density_ratio
 # @return the evidence ratio of the two hypothesis
-evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
+evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
                            prior_samples = NULL, ...) {
   wsign <- match.arg(wsign)
   if (wsign == "equal") {
@@ -480,7 +480,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     out <- out / (length(x) - out)
   } else if (wsign == "greater") {
     out <- length(which(x > cut))
-    out <- out / (length(x) - out)  
+    out <- out / (length(x) - out)
   }
   out
 }
@@ -510,7 +510,7 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   ptwo <- (1 - x$alpha) * 100
   cat(glue(
     "---\n'CI': {pone}%-CI for one-sided and {ptwo}%-CI for two-sided hypotheses.\n",
-    "'*': For one-sided hypotheses, the posterior probability exceeds {ptwo}%;\n", 
+    "'*': For one-sided hypotheses, the posterior probability exceeds {ptwo}%;\n",
     "for two-sided hypotheses, the value tested against lies outside the {ptwo}%-CI.\n",
     "Posterior probabilities of point hypotheses assume equal prior probabilities.\n"
   ))
@@ -522,7 +522,7 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
                                 chars = 40, colors = NULL,
-                                theme = NULL, ask = TRUE, 
+                                theme = NULL, ask = TRUE,
                                 plot = TRUE,  ...) {
   dots <- list(...)
   if (!is.data.frame(x$samples)) {
@@ -536,9 +536,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   if (length(colors) != 2L) {
     stop2("Argument 'colors' must be of length 2.")
   }
-  
+
   .plot_fun <- function(samples) {
-    gg <- ggplot(samples, aes_string(x = "values")) + 
+    gg <- ggplot(samples, aes(x = .data[["values"]])) +
       facet_wrap("ind", ncol = 1, scales = "free") +
       xlab("") + ylab("") + theme +
       theme(axis.text.y = element_blank(),
@@ -548,12 +548,12 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
         geom_density(alpha = 0.7, fill = colors[1], na.rm = TRUE)
     } else {
       gg <- gg +
-        geom_density(aes_string(fill = "Type"), alpha = 0.7, na.rm = TRUE) + 
+        geom_density(aes(fill = .data[["Type"]]), alpha = 0.7, na.rm = TRUE) +
         scale_fill_manual(values = colors)
     }
     return(gg)
   }
-  
+
   samples <- cbind(x$samples, Type = "Posterior")
   if (!ignore_prior) {
     prior_samples <- cbind(x$prior_samples, Type = "Prior")
@@ -565,6 +565,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     devAskNewPage(ask = FALSE)
   }
   hyps <- limit_chars(x$hypothesis$Hypothesis, chars = chars)
+  if (!is.null(x$hypothesis$Group)) {
+    hyps <- paste0(x$hypothesis$Group, ":  ", hyps)
+  }
   names(samples)[seq_along(hyps)] <- hyps
   nplots <- ceiling(length(hyps) / N)
   plots <- vector(mode = "list", length = nplots)
@@ -582,5 +585,5 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
       if (i == 1) devAskNewPage(ask = ask)
     }
   }
-  invisible(plots) 
+  invisible(plots)
 }

@@ -11,43 +11,50 @@ horseshoe(
   scale_slab = 2,
   df_slab = 4,
   par_ratio = NULL,
-  autoscale = TRUE
+  autoscale = TRUE,
+  main = FALSE
 )
 }
 \arguments{
-\item{df}{Degrees of freedom of student-t prior of the 
+\item{df}{Degrees of freedom of student-t prior of the
 local shrinkage parameters. Defaults to \code{1}.}
 
-\item{scale_global}{Scale of the student-t prior of the global shrinkage 
-parameter. Defaults to \code{1}. 
-In linear models, \code{scale_global} will internally be 
+\item{scale_global}{Scale of the student-t prior of the global shrinkage
+parameter. Defaults to \code{1}.
+In linear models, \code{scale_global} will internally be
 multiplied by the residual standard deviation parameter \code{sigma}.}
 
-\item{df_global}{Degrees of freedom of student-t prior of the 
+\item{df_global}{Degrees of freedom of student-t prior of the
 global shrinkage parameter. Defaults to \code{1}. If \code{df_global}
 is greater \code{1}, the shape of the prior will no longer resemble
 a horseshoe and it may be more appropriately called an hierarchical
 shrinkage prior in this case.}
 
-\item{scale_slab}{Scale of the student-t prior of the regularization
-parameter. Defaults to \code{2}. The original unregularized horseshoe 
-prior is obtained by setting \code{scale_slab} to infinite, which
-we can approximate in practice by setting it to a very large real value.}
+\item{scale_slab}{Scale of the Student-t slab. Defaults to \code{2}. The
+original unregularized horseshoe prior is obtained by setting
+\code{scale_slab} to infinite, which we can approximate in practice by
+setting it to a very large real value.}
 
-\item{df_slab}{Degrees of freedom of the student-t prior of 
-the regularization parameter. Defaults to \code{4}.}
+\item{df_slab}{Degrees of freedom of the student-t slab.
+Defaults to \code{4}.}
 
-\item{par_ratio}{Ratio of the expected number of non-zero coefficients 
+\item{par_ratio}{Ratio of the expected number of non-zero coefficients
 to the expected number of zero coefficients. If specified,
 \code{scale_global} is ignored and internally computed as
-\code{par_ratio / sqrt(N)}, where \code{N} is the total number 
+\code{par_ratio / sqrt(N)}, where \code{N} is the total number
 of observations in the data.}
 
 \item{autoscale}{Logical; indicating whether the horseshoe
 prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
-Autoscaling is not applied for distributional parameters or 
+Autoscaling is not applied for distributional parameters or
 when the model does not contain the parameter \code{sigma}.}
+
+\item{main}{Logical (defaults to \code{FALSE}); only relevant if the horseshoe
+prior spans multiple parameter classes. In this case, only arguments given
+in the single instance where \code{main} is \code{TRUE} will be used.
+Arguments given in other instances of the prior will be ignored.
+See the Examples section below.}
 }
 \value{
 A character string obtained by \code{match.call()} with
@@ -63,56 +70,67 @@ the model.
 The horseshoe prior is a special shrinkage prior initially proposed by
   Carvalho et al. (2009).
   It is symmetric around zero with fat tails and an infinitely large spike
-  at zero. This makes it ideal for sparse models that have 
-  many regression coefficients, although only a minority of them is non-zero. 
-  The horseshoe prior can be applied on all population-level effects at once 
+  at zero. This makes it ideal for sparse models that have
+  many regression coefficients, although only a minority of them is non-zero.
+  The horseshoe prior can be applied on all population-level effects at once
   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
-  The \code{1} implies that the student-t prior of the local shrinkage 
-  parameters has 1 degrees of freedom. This may, however, lead to an 
+  The \code{1} implies that the student-t prior of the local shrinkage
+  parameters has 1 degrees of freedom. This may, however, lead to an
   increased number of divergent transition in \pkg{Stan}.
-  Accordingly, increasing the degrees of freedom to slightly higher values 
-  (e.g., \code{3}) may often be a better option, although the prior 
-  no longer resembles a horseshoe in this case. 
+  Accordingly, increasing the degrees of freedom to slightly higher values
+  (e.g., \code{3}) may often be a better option, although the prior
+  no longer resembles a horseshoe in this case.
   Further, the scale of the global shrinkage parameter plays an important role
   in amount of shrinkage applied. It defaults to \code{1},
   but this may result in too few shrinkage (Piironen & Vehtari, 2016).
   It is thus possible to change the scale using argument \code{scale_global}
   of the horseshoe prior, for instance \code{horseshoe(1, scale_global = 0.5)}.
-  In linear models, \code{scale_global} will internally be multiplied by the 
-  residual standard deviation parameter \code{sigma}. See Piironen and 
+  In linear models, \code{scale_global} will internally be multiplied by the
+  residual standard deviation parameter \code{sigma}. See Piironen and
   Vehtari (2016) for recommendations how to properly set the global scale.
-  The degrees of freedom of the global shrinkage prior may also be 
-  adjusted via argument \code{df_global}. 
-  Piironen and Vehtari (2017) recommend to specifying the ratio of the 
-  expected number of non-zero coefficients to the expected number of zero 
+  The degrees of freedom of the global shrinkage prior may also be
+  adjusted via argument \code{df_global}.
+  Piironen and Vehtari (2017) recommend to specifying the ratio of the
+  expected number of non-zero coefficients to the expected number of zero
   coefficients \code{par_ratio} rather than \code{scale_global} directly.
-  As proposed by Piironen and Vehtari (2017), an additional regularization 
+  As proposed by Piironen and Vehtari (2017), an additional regularization
   is applied that only affects non-zero coefficients. The amount of
   regularization can be controlled via \code{scale_slab} and \code{df_slab}.
-  To make sure that shrinkage can equally affect all coefficients, 
-  predictors should be one the same scale. 
+  To make sure that shrinkage can equally affect all coefficients,
+  predictors should be one the same scale.
   Generally, models with horseshoe priors a more likely than other models
-  to have divergent transitions so that increasing \code{adapt_delta} 
+  to have divergent transitions so that increasing \code{adapt_delta}
   from \code{0.8} to values closer to \code{1} will often be necessary.
   See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
+
+  Currently, the following classes support the horseshoe prior: \code{b}
+  (overall regression coefficients), \code{sds} (SDs of smoothing splines),
+  \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
+  coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
+  latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
+  (SD of varying coefficients).
 }
 \examples{
 set_prior(horseshoe(df = 3, par_ratio = 0.1))
 
+# specify the horseshoe prior across multiple parameter classes
+set_prior(horseshoe(df = 3, par_ratio = 0.1, main = TRUE), class = "b") +
+  set_prior(horseshoe(), class = "sd")
+
 }
 \references{
-Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). 
-  Handling sparsity via the horseshoe. 
-  In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
-   
-Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global 
-   Shrinkage Parameter in the Horseshoe Prior. 
-   \url{https://arxiv.org/pdf/1610.05559v1.pdf}
-   
+Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). Handling sparsity via
+the horseshoe. Artificial Intelligence and Statistics.
+\url{http://proceedings.mlr.press/v5/carvalho09a}
+
+Piironen J. & Vehtari A. (2017). On the Hyperprior Choice for the Global
+Shrinkage Parameter in the Horseshoe Prior. Artificial Intelligence and
+Statistics. \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+
 Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
-   in the horseshoe and other shrinkage priors. 
-   \url{https://arxiv.org/abs/1707.01694}
+in the horseshoe and other shrinkage priors. Electronic Journal of
+Statistics. \url{https://arxiv.org/abs/1707.01694}
 }
 \seealso{
 \code{\link{set_prior}}

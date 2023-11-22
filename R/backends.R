@@ -24,6 +24,9 @@ parse_model <- function(model, backend, ...) {
 .parse_model_cmdstanr <- function(model, silent = 1, ...) {
   require_package("cmdstanr")
   temp_file <- cmdstanr::write_stan_file(model)
+  # if (cmdstanr::cmdstan_version() >= "2.29.0") {
+  #   .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
+  # }
   out <- eval_silent(
     cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
     type = "message", try = TRUE, silent = silent
@@ -68,7 +71,7 @@ compile_model <- function(model, backend, ...) {
     message("Compiling Stan program...")
   }
   if (use_threading(threads)) {
-    if (utils::packageVersion("rstan") >= 2.26) {
+    if (utils::packageVersion("rstan") >= "2.26") {
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
@@ -94,6 +97,9 @@ compile_model <- function(model, backend, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
+  # if (cmdstanr::cmdstan_version() >= "2.29.0") {
+  #   .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
+  # }
   if (use_threading(threads)) {
     args$cpp_options$stan_threads <- TRUE
   }
@@ -136,13 +142,13 @@ fit_model <- function(model, backend, ...) {
 # @param model a compiled Stan model
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
-.fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin, 
-                             chains, cores, threads, opencl, inits, exclude, 
+.fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin,
+                             chains, cores, threads, opencl, init, exclude,
                              seed, control, silent, future, ...) {
-  
+
   # some input checks and housekeeping
   if (use_threading(threads)) {
-    if (utils::packageVersion("rstan") >= 2.26) {
+    if (utils::packageVersion("rstan") >= "2.26") {
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
@@ -155,19 +161,21 @@ fit_model <- function(model, backend, ...) {
     stop2("OpenCL is not supported by backend 'rstan' version ",
           utils::packageVersion("rstan"), ".")
   }
-  if (is.character(inits) && !inits %in% c("random", "0")) {
-    inits <- get(inits, mode = "function", envir = parent.frame())
+  if (is.null(init)) {
+    init <- "random"
+  } else if (is.character(init) && !init %in% c("random", "0")) {
+    init <- get(init, mode = "function", envir = parent.frame())
   }
   args <- nlist(
-    object = model, data = sdata, iter, seed, 
-    init = inits, pars = exclude, include = FALSE
+    object = model, data = sdata, iter, seed,
+    init = init, pars = exclude, include = FALSE
   )
   dots <- list(...)
   args[names(dots)] <- dots
-  
+
   # do the actual sampling
   if (silent < 2) {
-    message("Start sampling") 
+    message("Start sampling")
   }
   if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(warmup, thin, control, show_messages = !silent)
@@ -182,23 +190,23 @@ fit_model <- function(model, backend, ...) {
       futures <- fits <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_id <- i
-        if (is.list(inits)) {
-          args$init <- inits[i]
+        if (is.list(init)) {
+          args$init <- init[i]
         }
         futures[[i]] <- future::future(
-          brms::do_call(rstan::sampling, args), 
+          brms::do_call(rstan::sampling, args),
           packages = "rstan",
           seed = TRUE
         )
       }
       for (i in seq_len(chains)) {
-        fits[[i]] <- future::value(futures[[i]]) 
+        fits[[i]] <- future::value(futures[[i]])
       }
       out <- rstan::sflist2stanfit(fits)
       rm(futures, fits)
     } else {
       c(args) <- nlist(chains, cores)
-      out <- do_call(rstan::sampling, args) 
+      out <- do_call(rstan::sampling, args)
     }
   } else if (algorithm %in% c("fullrank", "meanfield")) {
     # vb does not support parallel execution
@@ -207,6 +215,7 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
+  out <- repair_stanfit(out)
   out
 }
 
@@ -214,36 +223,39 @@ fit_model <- function(model, backend, ...) {
 # @param model a compiled Stan model
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
-.fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin, 
-                                chains, cores, threads, opencl, inits, exclude, 
+.fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin,
+                                chains, cores, threads, opencl, init, exclude,
                                 seed, control, silent, future, ...) {
-  
+
   require_package("cmdstanr")
   # some input checks and housekeeping
   class(sdata) <- "list"
   if (isNA(seed)) {
     seed <- NULL
   }
-  if (is_equal(inits, "random")) {
-    inits <- NULL
-  } else if (is_equal(inits, "0")) {
-    inits <- 0
+  if (is_equal(init, "random")) {
+    init <- NULL
+  } else if (is_equal(init, "0")) {
+    init <- 0
   }
   if (future) {
     stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
   }
-  args <- nlist(data = sdata, seed, init = inits)
+  args <- nlist(data = sdata, seed, init)
   if (use_threading(threads)) {
-    args$threads_per_chain <- threads$threads
+    if (algorithm %in% c("sampling", "fixed_param")) {
+      args$threads_per_chain <- threads$threads
+    } else if (algorithm %in% c("fullrank", "meanfield")) {
+      args$threads <- threads$threads
+    }
   }
   if (use_opencl(opencl)) {
     args$opencl_ids <- opencl$ids
   }
-  # TODO: exclude variables via 'exclude'
   dots <- list(...)
   args[names(dots)] <- dots
   args[names(control)] <- control
-  
+
   chains <- as_one_numeric(chains)
   empty_model <- chains <= 0
   if (empty_model) {
@@ -255,18 +267,19 @@ fit_model <- function(model, backend, ...) {
     thin <- 1
     cores <- 1
   }
-  
+
   # do the actual sampling
   if (silent < 2) {
-    message("Start sampling") 
+    message("Start sampling")
   }
   if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(
       iter_sampling = iter - warmup,
-      iter_warmup = warmup, 
-      chains, thin, 
+      iter_warmup = warmup,
+      chains, thin,
       parallel_chains = cores,
-      show_messages = !silent,
+      show_messages = silent < 2,
+      show_exceptions = silent == 0,
       fixed_param = algorithm == "fixed_param"
     )
     out <- do_call(model$sample, args)
@@ -277,13 +290,19 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
-  # a lot of metadata is not stored via rstan::read_stan_csv
+  # not all metadata is not stored by read_csv_as_stanfit
   metadata <- cmdstanr::read_cmdstan_csv(
     out$output_files(), variables = "", sampler_diagnostics = ""
   )
+  # ensure that only relevant variables are read from CSV
+  variables <- repair_variable_names(metadata$metadata$variables)
+  variables <- unique(sub("\\[.+", "", variables))
+  variables <- setdiff(variables, exclude)
+  # temp fix for cmdstanr not recognizing the variable names it produces  #1473
+  variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
   # transform into stanfit object for consistent output structure
-  out <- rstan::read_stan_csv(out$output_files())
-  out <- repair_stanfit_names(out)
+  out <- read_csv_as_stanfit(out$output_files(), variables = variables)
+  out <- repair_stanfit(out)
   # allow updating the model without recompilation
   attributes(out)$CmdStanModel <- model
   attributes(out)$metadata <- metadata
@@ -295,8 +314,8 @@ fit_model <- function(model, backend, ...) {
 }
 
 # fit model with a mock backend for testing
-.fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin, 
-                            chains, cores, threads, opencl, inits, exclude, 
+.fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin,
+                            chains, cores, threads, opencl, init, exclude,
                             seed, control, silent, future, mock_fit, ...) {
   if (is.function(mock_fit)) {
     out <- mock_fit()
@@ -306,7 +325,7 @@ fit_model <- function(model, backend, ...) {
   out
 }
 
-# extract the compiled model
+# extract the compiled stan model
 # @param x brmsfit object
 compiled_model <- function(x) {
   stopifnot(is.brmsfit(x))
@@ -316,9 +335,66 @@ compiled_model <- function(x) {
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$CmdStanModel
   } else if (backend == "mock") {
-    stop2("Compiled models not supported in the mock backend.")
+    stop2("'compiled_model' is not supported in the mock backend.")
   }
   out
+}
+
+# Does the model need recompilation before being able to sample again?
+needs_recompilation <- function(x) {
+  stopifnot(is.brmsfit(x))
+  backend <- x$backend %||% "rstan"
+  if (backend == "rstan") {
+    # TODO: figure out when rstan requires recompilation
+    out <- FALSE
+  } else if (backend == "cmdstanr") {
+    exe_file <- attributes(x$fit)$CmdStanModel$exe_file()
+    out <- !is.character(exe_file) || !file.exists(exe_file)
+  } else if (backend == "mock") {
+    out <- FALSE
+  }
+  out
+}
+
+#' Recompile Stan models in \code{brmsfit} objects
+#'
+#' Recompile the Stan model inside a \code{brmsfit} object, if necessary.
+#' This does not change the model, it simply recreates the executable
+#' so that sampling is possible again.
+#'
+#' @param x An object of class \code{brmsfit}.
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled. If \code{NULL} (the default), \code{recompile_model} tries
+#'   to figure out internally, if recompilation is necessary. Setting it to
+#'   \code{FALSE} will cause \code{recompile_model} to always return the
+#'   \code{brmsfit} object unchanged.
+#'
+#' @return A (possibly updated) \code{brmsfit} object.
+#'
+#' @export
+recompile_model <- function(x, recompile = NULL) {
+  stopifnot(is.brmsfit(x))
+  if (is.null(recompile)) {
+    recompile <- needs_recompilation(x)
+  }
+  recompile <- as_one_logical(recompile)
+  if (!recompile) {
+    return(x)
+  }
+  message("Recompiling the Stan model")
+  backend <- x$backend %||% "rstan"
+  new_model <- compile_model(
+    stancode(x), backend = backend, threads = x$threads,
+    opencl = x$opencl, silent = 2
+  )
+  if (backend == "rstan") {
+    x$fit@stanmodel <- new_model
+  } else if (backend == "cmdstanr") {
+    attributes(x)$CmdStanModel <- new_model
+  } else if (backend == "mock") {
+    stop2("'recompile_model' is not supported in the mock backend.")
+  }
+  x
 }
 
 # extract the elapsed time during model fitting
@@ -334,7 +410,7 @@ elapsed_time <- function(x) {
       sampling = out[, "sample"]
     )
     out$total <- out$warmup + out$sampling
-    rownames(out) <- NULL 
+    rownames(out) <- NULL
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$metadata$time$chains
   } else if (backend == "mock") {
@@ -364,12 +440,12 @@ require_backend <- function(backend, x) {
 }
 
 #' Threading in Stan
-#' 
+#'
 #' Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
 #' interface. Within-chain parallelization is experimental! We recommend its use
 #' only if you are experienced with Stan's \code{reduce_sum} function and have a
 #' slow running model that cannot be sped up by any other means.
-#' 
+#'
 #' @param threads Number of threads to use in within-chain parallelization.
 #' @param grainsize Number of observations evaluated together in one chunk on
 #'   one of the CPUs used for threading. If \code{NULL} (the default),
@@ -380,7 +456,7 @@ require_backend <- function(backend, x) {
 #'   \code{reduce_sum}? Defaults to \code{FALSE}. Setting it to \code{TRUE}
 #'   is required to achieve exact reproducibility of the model results
 #'   (if the random seed is set as well).
-#' 
+#'
 #' @return A \code{brmsthreads} object which can be passed to the
 #'   \code{threads} argument of \code{brm} and related functions.
 #'
@@ -393,10 +469,10 @@ require_backend <- function(backend, x) {
 #'   roughly the same amount of computing time, we recommend storing
 #'   observations in random order in the data. At least, please avoid sorting
 #'   observations after the response values. This is because the latter often
-#'   cause variations in the computing time of the pointwise log-likelihood, 
+#'   cause variations in the computing time of the pointwise log-likelihood,
 #'   which makes up a big part of the parallelized code.
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # this model just serves as an illustration
 #' # threading may not actually speed things up here
@@ -406,7 +482,7 @@ require_backend <- function(backend, x) {
 #'            backend = "cmdstanr")
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 threading <- function(threads = NULL, grainsize = NULL, static = FALSE) {
   out <- list(threads = NULL, grainsize = NULL)
@@ -441,7 +517,7 @@ validate_threads <- function(threads) {
     threads <- as_one_numeric(threads)
     threads <- threading(threads)
   } else if (!is.brmsthreads(threads)) {
-    stop2("Argument 'threads' needs to be numeric or ", 
+    stop2("Argument 'threads' needs to be numeric or ",
           "specified via the 'threading' function.")
   }
   threads
@@ -453,23 +529,23 @@ use_threading <- function(threads) {
 }
 
 #' GPU support in Stan via OpenCL
-#' 
-#' Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only 
+#'
+#' Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only
 #' some \pkg{Stan} functions can be run on a GPU at this point and so
 #' a lot of \pkg{brms} models won't benefit from OpenCL for now.
-#' 
+#'
 #' @param ids (integer vector of length 2) The platform and device IDs of the
 #'   OpenCL device to use for fitting. If you don't know the IDs of your OpenCL
 #'   device, \code{c(0,0)} is most likely what you need.
-#' 
+#'
 #' @return A \code{brmsopencl} object which can be passed to the
 #'   \code{opencl} argument of \code{brm} and related functions.
-#'   
+#'
 #' @details For more details on OpenCL in \pkg{Stan}, check out
 #' \url{https://mc-stan.org/docs/2_26/cmdstan-guide/parallelization.html#opencl}
 #' as well as \url{https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html}.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # this model just serves as an illustration
 #' # OpenCL may not actually speed things up here
@@ -479,7 +555,7 @@ use_threading <- function(threads) {
 #'            backend = "cmdstanr")
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 opencl <- function(ids = NULL) {
   out <- list(ids = NULL)
@@ -505,7 +581,7 @@ validate_opencl <- function(opencl) {
   } else if (is.numeric(opencl)) {
     opencl <- opencl(opencl)
   } else if (!is.brmsopencl(opencl)) {
-    stop2("Argument 'opencl' needs to an integer vector or ", 
+    stop2("Argument 'opencl' needs to an integer vector or ",
           "specified via the 'opencl' function.")
   }
   opencl
@@ -525,15 +601,30 @@ validate_silent <- function(silent) {
   silent
 }
 
-# repairs parameter names of stanfit objects
-repair_stanfit_names <- function(x) {
+# ensure that variable dimensions at the end are correctly written
+# convert names like b.1.1 to b[1,1]
+repair_variable_names <- function(x) {
+  x <- sub("\\.", "[", x)
+  x <- gsub("\\.", ",", x)
+  x[grep("\\[", x)] <- paste0(x[grep("\\[", x)], "]")
+  x
+}
+
+# repair parameter names of stanfit objects
+repair_stanfit <- function(x) {
   stopifnot(is.stanfit(x))
+  if (!length(x@sim$fnames_oi)) {
+    # nothing to rename
+    return(x)
+  }
   # the posterior package cannot deal with non-unique parameter names
   # this case happens rarely but might happen when sample_prior = "yes"
-  x@sim$fnames_oi <- make.unique(x@sim$fnames_oi, "__")
+  x@sim$fnames_oi <- make.unique(as.character(x@sim$fnames_oi), "__")
   for (i in seq_along(x@sim$samples)) {
-    # rstan::read_stan_csv may have renamed dimension suffixes (#1218)
-    names(x@sim$samples[[i]]) <- x@sim$fnames_oi
+    # stanfit may have renamed dimension suffixes (#1218)
+    if (length(x@sim$samples[[i]]) == length(x@sim$fnames_oi)) {
+      names(x@sim$samples[[i]]) <- x@sim$fnames_oi
+    }
   }
   x
 }
@@ -541,4 +632,328 @@ repair_stanfit_names <- function(x) {
 # possible options for argument 'file_refit'
 file_refit_options <- function() {
   c("never", "always", "on_change")
+}
+
+# canonicalize Stan model file in accordance with the current Stan version
+# this function may no longer be needed due to rstan 2.26+ now being on CRAN
+# for more details see https://github.com/paul-buerkner/brms/issues/1544
+# .canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
+#   cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
+#   out <- utils::capture.output(
+#     cmdstan_mod$format(
+#       canonicalize = list("deprecations", "braces", "parentheses"),
+#       overwrite_file = overwrite_file, backup = FALSE
+#     )
+#   )
+#   paste0(out, collapse = "\n")
+# }
+
+# read in stan CSVs via cmdstanr and repackage into a stanfit object
+# efficient replacement of rstan::read_stan_csv
+# @param files character vector of CSV files names where draws are stored
+# @param variables character vectors of variables to extract draws for
+# @param sampler_diagnostics character vectors of diagnostics to extract
+# @return a stanfit object
+read_csv_as_stanfit <- function(files, variables = NULL,
+                                sampler_diagnostics = NULL) {
+
+  csfit <- cmdstanr::read_cmdstan_csv(
+    files = files, variables = variables,
+    sampler_diagnostics = sampler_diagnostics,
+    format = NULL
+  )
+
+  # @model_name
+  model_name = gsub(".csv", "", basename(files[[1]]))
+
+  # @model_pars
+  svars <- csfit$metadata$stan_variables
+  if (!is.null(variables)) {
+    variables_main <- unique(gsub("\\[.*\\]", "", variables))
+    svars <- intersect(variables_main, svars)
+  }
+  if ("lp__" %in% svars) {
+    svars <- c(setdiff(svars, "lp__"), "lp__")
+  }
+  pars_oi <- svars
+  par_names <- csfit$metadata$model_params
+
+  # @par_dims
+  par_dims <- vector("list", length(svars))
+
+  names(par_dims) <- svars
+  par_dims <- lapply(par_dims, function(x) x <- integer(0))
+
+  pdims_num <- ulapply(
+    svars, function(x) sum(grepl(paste0("^", x, "\\[.*\\]$"), par_names))
+  )
+  par_dims[pdims_num != 0] <-
+    csfit$metadata$stan_variable_sizes[svars][pdims_num != 0]
+
+  # @mode
+  mode <- 0L
+
+  # @sim
+  rstan_diagn_order <- c("accept_stat__", "treedepth__", "stepsize__",
+                         "divergent__", "n_leapfrog__", "energy__")
+
+  if (!is.null(sampler_diagnostics)) {
+    rstan_diagn_order <- rstan_diagn_order[rstan_diagn_order %in% sampler_diagnostics]
+  }
+
+  res_vars <- c(".chain", ".iteration", ".draw")
+  if ("post_warmup_draws" %in% names(csfit)) {
+    # for MCMC samplers
+    n_chains <- max(
+      nchains(csfit$warmup_draws),
+      nchains(csfit$post_warmup_draws)
+    )
+    n_iter_warmup <- niterations(csfit$warmup_draws)
+    n_iter_sample <- niterations(csfit$post_warmup_draws)
+    if (n_iter_warmup > 0) {
+      csfit$warmup_draws <- as_draws_df(csfit$warmup_draws)
+      csfit$warmup_sampler_diagnostics <-
+        as_draws_df(csfit$warmup_sampler_diagnostics)
+    }
+    if (n_iter_sample > 0) {
+      csfit$post_warmup_draws <- as_draws_df(csfit$post_warmup_draws)
+      csfit$post_warmup_sampler_diagnostics <-
+        as_draws_df(csfit$post_warmup_sampler_diagnostics)
+    }
+
+    # called 'samples' for consistency with rstan
+    samples <- rbind(csfit$warmup_draws, csfit$post_warmup_draws)
+    # manage memory
+    csfit$warmup_draws <- NULL
+    csfit$post_warmup_draws <- NULL
+
+    # prepare sampler diagnostics
+    diagnostics <- rbind(csfit$warmup_sampler_diagnostics,
+                         csfit$post_warmup_sampler_diagnostics)
+    # manage memory
+    csfit$warmup_sampler_diagnostics <- NULL
+    csfit$post_warmup_sampler_diagnostics <- NULL
+    # convert to regular data.frame
+    diagnostics <- as.data.frame(diagnostics)
+    diag_chain_ids <- diagnostics$.chain
+    diagnostics[res_vars] <- NULL
+
+  } else if ("draws" %in% names(csfit)) {
+    # for variational inference "samplers"
+    n_chains <- 1
+    n_iter_warmup <- 0
+    n_iter_sample <- niterations(csfit$draws)
+    if (n_iter_sample > 0) {
+      csfit$draws <- as_draws_df(csfit$draws)
+    }
+
+    # called 'samples' for consistency with rstan
+    samples <- csfit$draws
+    # manage memory
+    csfit$draws <- NULL
+
+    # VI has no sampler diagnostics
+    diag_chain_ids <- rep(1L, nrow(samples))
+    diagnostics <- as.data.frame(matrix(nrow = nrow(samples), ncol = 0))
+  }
+
+  # convert to regular data.frame
+  samples <- as.data.frame(samples)
+  chain_ids <- samples$.chain
+  samples[res_vars] <- NULL
+  if ("lp__" %in% colnames(samples)) {
+    samples <- move2end(samples, "lp__")
+  }
+
+  fnames_oi <- colnames(samples)
+
+  colnames(samples) <- gsub("\\[", ".", colnames(samples))
+  colnames(samples) <- gsub("\\]", "", colnames(samples))
+  colnames(samples) <- gsub("\\,", ".", colnames(samples))
+
+  # split samples into chains
+  samples <- split(samples, chain_ids)
+  names(samples) <- NULL
+
+  # split diagnostics into chains
+  diagnostics <- split(diagnostics, diag_chain_ids)
+  names(diagnostics) <- NULL
+
+  #  @sim$sample: largely 113-130 from rstan::read_stan_csv
+  values <- list()
+  values$algorithm <- csfit$metadata$algorithm
+  values$engine <- csfit$metadata$engine
+  values$metric <- csfit$metadata$metric
+
+  sampler_t <- NULL
+  if (!is.null(values$algorithm)) {
+    if (values$algorithm == "rwm" || values$algorithm == "Metropolis") {
+      sampler_t <- "Metropolis"
+    } else if (values$algorithm == "hmc") {
+      if (values$engine == "static") {
+        sampler_t <- "HMC"
+      } else {
+        if (values$metric == "unit_e") {
+          sampler_t <- "NUTS(unit_e)"
+        } else if (values$metric == "diag_e") {
+          sampler_t <- "NUTS(diag_e)"
+        } else if (values$metric == "dense_e") {
+          sampler_t <- "NUTS(dense_e)"
+        }
+      }
+    }
+  }
+
+  adapt_info <- vector("list", 4)
+  idx_samples <- (n_iter_warmup + 1):(n_iter_warmup + n_iter_sample)
+
+  for (i in seq_along(samples)) {
+    m <- colMeans(samples[[i]][idx_samples, , drop=FALSE])
+    rownames(samples[[i]]) <- seq_rows(samples[[i]])
+    attr(samples[[i]], "sampler_params") <- diagnostics[[i]][rstan_diagn_order]
+    rownames(attr(samples[[i]], "sampler_params")) <- seq_rows(diagnostics[[i]])
+
+    # reformat back to text
+    if (is_equal(sampler_t, "NUTS(dense_e)")) {
+      mmatrix_txt <- "\n# Elements of inverse mass matrix:\n# "
+      mmat <- paste0(apply(csfit$inv_metric[[i]], 1, paste0, collapse=", "),
+                     collapse="\n# ")
+    } else {
+      mmatrix_txt <- "\n# Diagonal elements of inverse mass matrix:\n# "
+      mmat <- paste0(csfit$inv_metric[[i]], collapse = ", ")
+    }
+
+    adapt_info[[i]] <- paste0("# Step size = ",
+                              csfit$step_size[[i]],
+                              mmatrix_txt,
+                              mmat, "\n# ")
+
+    attr(samples[[i]], "adaptation_info") <- adapt_info[[i]]
+
+    attr(samples[[i]], "args") <- list(sampler_t = sampler_t, chain_id = i)
+
+    if (NROW(csfit$metadata$time)) {
+      time_i <- as.double(csfit$metadata$time[i, c("warmup", "sampling")])
+      names(time_i) <- c("warmup", "sample")
+      attr(samples[[i]], "elapsed_time") <- time_i
+    }
+
+    attr(samples[[i]], "mean_pars") <- m[-length(m)]
+    attr(samples[[i]], "mean_lp__") <- m["lp__"]
+  }
+
+  perm_lst <- lapply(seq_len(n_chains), function(id) sample.int(n_iter_sample))
+
+  # @sim
+  sim <- list(
+    samples = samples,
+    iter = csfit$metadata$iter_sampling + csfit$metadata$iter_warmup,
+    thin = csfit$metadata$thin,
+    warmup = csfit$metadata$iter_warmup,
+    chains = n_chains,
+    n_save = rep(n_iter_sample + n_iter_warmup, n_chains),
+    warmup2 = rep(n_iter_warmup, n_chains),
+    permutation = perm_lst,
+    pars_oi = pars_oi,
+    dims_oi = par_dims,
+    fnames_oi = fnames_oi,
+    n_flatnames = length(fnames_oi)
+  )
+
+  # @stan_args
+  sargs <- list(
+    stan_version_major = as.character(csfit$metadata$stan_version_major),
+    stan_version_minor = as.character(csfit$metadata$stan_version_minor),
+    stan_version_patch = as.character(csfit$metadata$stan_version_patch),
+    model = csfit$metadata$model_name,
+    start_datetime = gsub(" ", "", csfit$metadata$start_datetime),
+    method = csfit$metadata$method,
+    iter = csfit$metadata$iter_sampling + csfit$metadata$iter_warmup,
+    warmup = csfit$metadata$iter_warmup,
+    save_warmup = csfit$metadata$save_warmup,
+    thin = csfit$metadata$thin,
+    engaged = as.character(csfit$metadata$adapt_engaged),
+    gamma = csfit$metadata$gamma,
+    delta = csfit$metadata$adapt_delta,
+    kappa = csfit$metadata$kappa,
+    t0 = csfit$metadata$t0,
+    init_buffer = as.character(csfit$metadata$init_buffer),
+    term_buffer = as.character(csfit$metadata$term_buffer),
+    window = as.character(csfit$metadata$window),
+    algorithm = csfit$metadata$algorithm,
+    engine = csfit$metadata$engine,
+    max_depth = csfit$metadata$max_treedepth,
+    metric = csfit$metadata$metric,
+    metric_file = character(0), # not stored in metadata
+    stepsize = NA, # add in loop
+    stepsize_jitter = csfit$metadata$stepsize_jitter,
+    num_chains = as.character(csfit$metadata$num_chains),
+    chain_id = NA, # add in loop
+    file = character(0), # not stored in metadata
+    init = NA, # add in loop
+    seed = as.character(csfit$metadata$seed),
+    file = NA, # add in loop
+    diagnostic_file = character(0), # not stored in metadata
+    refresh = as.character(csfit$metadata$refresh),
+    sig_figs = as.character(csfit$metadata$sig_figs),
+    profile_file = csfit$metadata$profile_file,
+    num_threads = as.character(csfit$metadata$threads_per_chain),
+    stanc_version = gsub(" ", "", csfit$metadata$stanc_version),
+    stancflags = character(0), # not stored in metadata
+    adaptation_info = NA, # add in loop
+    has_time = is.numeric(csfit$metadata$time$total),
+    time_info = NA, # add in loop
+    sampler_t = sampler_t
+  )
+
+  sargs_rep <- replicate(n_chains, sargs, simplify = FALSE)
+
+  for (i in seq_along(sargs_rep)) {
+    sargs_rep[[i]]$chain_id <- i
+    sargs_rep[[i]]$stepsize <- csfit$metadata$step_size[i]
+    sargs_rep[[i]]$init <- as.character(csfit$metadata$init[i])
+    # two 'file' elements: select the second
+    file_idx <- which(names(sargs_rep[[i]]) == "file")
+    sargs_rep[[i]][[file_idx[2]]] <- files[[i]]
+
+    sargs_rep[[i]]$adaptation_info <- adapt_info[[i]]
+
+    if (NROW(csfit$metadata$time)) {
+      sargs_rep[[i]]$time_info <- paste0(
+        c("#  Elapsed Time: ", "#                ", "#                ", "# "),
+        c(csfit$metadata$time[i, c("warmup", "sampling", "total")], ""),
+        c(" seconds (Warm-up)", " seconds (Sampling)", " seconds (Total)", "")
+      )
+    }
+  }
+
+  # @stanmodel
+  null_dso <- new(
+    "cxxdso", sig = list(character(0)), dso_saved = FALSE,
+    dso_filename = character(0), modulename = character(0),
+    system = R.version$system, cxxflags = character(0),
+    .CXXDSOMISC = new.env(parent = emptyenv())
+  )
+  null_sm <- new(
+    "stanmodel", model_name = model_name, model_code = character(0),
+    model_cpp = list(), dso = null_dso
+  )
+
+  # @date
+  sdate <- do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
+  sdate <- format(sdate, "%a %b %d %X %Y")
+
+  new(
+    "stanfit",
+    model_name = model_name,
+    model_pars = svars,
+    par_dims = par_dims,
+    mode = mode,
+    sim = sim,
+    inits = list(),
+    stan_args = sargs_rep,
+    stanmodel = null_sm,
+    date = sdate,  # not the time of sampling
+    .MISC = new.env(parent = emptyenv())
+  )
 }

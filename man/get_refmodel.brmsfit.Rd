@@ -2,15 +2,16 @@
 % Please edit documentation in R/projpred.R
 \name{get_refmodel.brmsfit}
 \alias{get_refmodel.brmsfit}
-\alias{get_refmodel}
-\title{Get Reference Models}
+\title{Projection Predictive Variable Selection: Get Reference Model}
 \usage{
-\method{get_refmodel}{brmsfit}(
+get_refmodel.brmsfit(
   object,
   newdata = NULL,
   resp = NULL,
-  folds = NULL,
   cvfun = NULL,
+  dis = NULL,
+  latent = FALSE,
+  brms_seed = NULL,
   ...
 )
 }
@@ -26,26 +27,65 @@ predictions of the grand mean when using sum coding.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{folds}{Only used for k-fold variable selection. A vector of fold
-indices for each data point in data.}
-
 \item{cvfun}{Optional cross-validation function
-(see \code{\link[projpred:get-refmodel]{get_refmodel}} for details).
+(see \code{\link[projpred:get_refmodel]{get_refmodel}} for details).
 If \code{NULL} (the default), \code{cvfun} is defined internally
 based on \code{\link{kfold.brmsfit}}.}
 
-\item{...}{Further arguments passed to 
-\code{\link[projpred:get-refmodel]{init_refmodel}}.}
+\item{dis}{Passed to argument \code{dis} of
+\code{\link[projpred:init_refmodel]{init_refmodel}}, but leave this at
+\code{NULL} unless \pkg{projpred} complains about it.}
+
+\item{latent}{See argument \code{latent} of
+\code{\link[projpred:extend_family]{extend_family}}. Setting this to
+\code{TRUE} requires a \pkg{projpred} version >= 2.4.0.}
+
+\item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
+and for sampling group-level effects for new levels (in multilevel models).
+If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
+\code{NULL}, then the pseudorandom number generator (PRNG) state is reset
+(to the state before calling this function) upon exiting this function.}
+
+\item{...}{Further arguments passed to
+\code{\link[projpred:init_refmodel]{init_refmodel}}.}
 }
 \value{
-A \code{refmodel} object to be used in
-  \code{\link[projpred:varsel]{varsel}} and related variable selection
-  methods.
+A \code{refmodel} object to be used in conjunction with the
+  \pkg{projpred} package.
 }
 \description{
-Get reference model structure from \code{brmsfit} objects for use in
-\code{\link[projpred:varsel]{varsel}} and related variable selection methods.
-This method is called automatically when performing variable selection via
-\code{\link{varsel.brmsfit}} and so you will rarely need to call it manually
-yourself.
+The \code{get_refmodel.brmsfit} method can be used to create the reference
+model structure which is needed by the \pkg{projpred} package for performing
+a projection predictive variable selection. This method is called
+automatically when performing variable selection via
+\code{\link[projpred:varsel]{varsel}} or
+\code{\link[projpred:cv_varsel]{cv_varsel}}, so you will rarely need to call
+it manually yourself.
+}
+\details{
+Note that the \code{extract_model_data} function used internally by
+  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}.
+  This is relevant for
+  \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
+}
+\examples{
+\dontrun{
+# fit a simple model
+fit <- brm(count ~ zAge + zBase * Trt,
+           data = epilepsy, family = poisson())
+summary(fit)
+
+# The following code requires the 'projpred' package to be installed:
+library(projpred)
+
+# perform variable selection without cross-validation
+vs <- varsel(fit)
+summary(vs)
+plot(vs)
+
+# perform variable selection with cross-validation
+cv_vs <- cv_varsel(fit)
+summary(cv_vs)
+plot(cv_vs)
+}
 }

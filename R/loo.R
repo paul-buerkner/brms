@@ -1,11 +1,11 @@
 #' Efficient approximate leave-one-out cross-validation (LOO)
-#' 
-#' Perform approximate leave-one-out cross-validation based 
+#'
+#' Perform approximate leave-one-out cross-validation based
 #' on the posterior likelihood using the \pkg{loo} package.
 #' For more details see \code{\link[loo:loo]{loo}}.
-#' 
+#'
 #' @aliases loo LOO LOO.brmsfit
-#' 
+#'
 #' @param x A \code{brmsfit} object.
 #' @param ... More \code{brmsfit} objects or further arguments
 #'   passed to the underlying post-processing functions.
@@ -15,20 +15,20 @@
 #'  of the models should be compared to each other
 #'  via \code{\link{loo_compare}}.
 #' @param pointwise A flag indicating whether to compute the full
-#'  log-likelihood matrix at once or separately for each observation. 
-#'  The latter approach is usually considerably slower but 
-#'  requires much less working memory. Accordingly, if one runs 
+#'  log-likelihood matrix at once or separately for each observation.
+#'  The latter approach is usually considerably slower but
+#'  requires much less working memory. Accordingly, if one runs
 #'  into memory issues, \code{pointwise = TRUE} is the way to go.
-#' @param moment_match Logical; Indicate whether \code{\link{loo_moment_match}} 
+#' @param moment_match Logical; Indicate whether \code{\link{loo_moment_match}}
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
 #'  For most models, moment matching will only work if you have set
 #'  \code{save_pars = save_pars(all = TRUE)} when fitting the model with
 #'  \code{\link{brm}}. See \code{\link{loo_moment_match.brmsfit}} for more
 #'  details.
-#' @param reloo Logical; Indicate whether \code{\link{reloo}} 
+#' @param reloo Logical; Indicate whether \code{\link{reloo}}
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
-#' @param k_threshold The threshold at which pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#' @param k_threshold The threshold at which pareto \eqn{k}
+#'   estimates are treated as problematic. Defaults to \code{0.7}.
 #'   Only used if argument \code{reloo} is \code{TRUE}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
 #' @param save_psis Should the \code{"psis"} object created internally be saved
@@ -37,60 +37,60 @@
 #'   \code{\link{loo_moment_match}}.
 #' @param reloo_args Optional \code{list} of additional arguments passed to
 #'   \code{\link{reloo}}.
-#' @param model_names If \code{NULL} (the default) will use model names 
-#'   derived from deparsing the call. Otherwise will use the passed 
+#' @param model_names If \code{NULL} (the default) will use model names
+#'   derived from deparsing the call. Otherwise will use the passed
 #'   values as model names.
 #' @inheritParams predict.brmsfit
-#' 
+#'
 #' @details See \code{\link{loo_compare}} for details on model comparisons.
 #'  For \code{brmsfit} objects, \code{LOO} is an alias of \code{loo}.
 #'  Use method \code{\link{add_criterion}} to store
 #'  information criteria in the fitted model object for later usage.
-#'  
-#' @return If just one object is provided, an object of class \code{loo}. 
+#'
+#' @return If just one object is provided, an object of class \code{loo}.
 #'  If multiple objects are provided, an object of class \code{loolist}.
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler)
 #' (loo1 <- loo(fit1))
-#' 
+#'
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler)
-#' (loo2 <- loo(fit2))   
-#' 
+#' (loo2 <- loo(fit2))
+#'
 #' # compare both models
-#' loo_compare(loo1, loo2)                      
+#' loo_compare(loo1, loo2)
 #' }
-#' 
-#' @references 
+#'
+#' @references
 #' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics
 #' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
-#' 
-#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-#' Understanding predictive information criteria for Bayesian models. 
+#'
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014).
+#' Understanding predictive information criteria for Bayesian models.
 #' Statistics and Computing, 24, 997-1016.
-#' 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-#' and widely applicable information criterion in singular learning theory. 
+#'
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation
+#' and widely applicable information criterion in singular learning theory.
 #' The Journal of Machine Learning Research, 11, 3571-3594.
-#' 
+#'
 #' @importFrom loo loo is.loo
 #' @export loo
 #' @export
 loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, moment_match = FALSE,
                          reloo = FALSE, k_threshold = 0.7, save_psis = FALSE,
-                         moment_match_args = list(), reloo_args = list(), 
+                         moment_match_args = list(), reloo_args = list(),
                          model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
-    criterion = "loo", pointwise, compare, 
-    resp, k_threshold, save_psis, moment_match, 
+    criterion = "loo", pointwise, compare,
+    resp, k_threshold, save_psis, moment_match,
     reloo, moment_match_args, reloo_args
   )
   do_call(compute_loolist, args)
@@ -100,7 +100,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                         pointwise = FALSE, moment_match = FALSE,
                         reloo = FALSE, k_threshold = 0.7, save_psis = FALSE,
-                        moment_match_args = list(), reloo_args = list(), 
+                        moment_match_args = list(), reloo_args = list(),
                         model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(loo)
@@ -113,52 +113,52 @@ LOO <- function(x, ...) {
 }
 
 #' Widely Applicable Information Criterion (WAIC)
-#' 
+#'
 #' Compute the widely applicable information criterion (WAIC)
 #' based on the posterior likelihood using the \pkg{loo} package.
 #' For more details see \code{\link[loo:waic]{waic}}.
-#' 
+#'
 #' @aliases waic WAIC WAIC.brmsfit
-#' 
+#'
 #' @inheritParams loo.brmsfit
-#' 
-#' @details See \code{\link{loo_compare}} for details on model comparisons. 
+#'
+#' @details See \code{\link{loo_compare}} for details on model comparisons.
 #'  For \code{brmsfit} objects, \code{WAIC} is an alias of \code{waic}.
 #'  Use method \code{\link[brms:add_criterion]{add_criterion}} to store
 #'  information criteria in the fitted model object for later usage.
-#'  
-#' @return If just one object is provided, an object of class \code{loo}. 
+#'
+#' @return If just one object is provided, an object of class \code{loo}.
 #'  If multiple objects are provided, an object of class \code{loolist}.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler)
 #' (waic1 <- waic(fit1))
-#' 
+#'
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler)
-#' (waic2 <- waic(fit2))   
-#' 
+#' (waic2 <- waic(fit2))
+#'
 #' # compare both models
-#' loo_compare(waic1, waic2)                      
+#' loo_compare(waic1, waic2)
 #' }
-#' 
-#' @references 
+#'
+#' @references
 #' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics
 #' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
-#' 
-#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-#' Understanding predictive information criteria for Bayesian models. 
+#'
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014).
+#' Understanding predictive information criteria for Bayesian models.
 #' Statistics and Computing, 24, 997-1016.
-#' 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-#' and widely applicable information criterion in singular learning theory. 
+#'
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation
+#' and widely applicable information criterion in singular learning theory.
 #' The Journal of Machine Learning Research, 11, 3571-3594.
-#' 
+#'
 #' @importFrom loo waic
 #' @export waic
 #' @export
@@ -190,12 +190,12 @@ WAIC <- function(x, ...) {
 # @param ... more arguments passed to compute_loo
 # @return If length(models) > 1 an object of class 'loolist'
 #   If length(models) == 1 an object of class 'loo'
-compute_loolist <- function(models, criterion, use_stored = TRUE, 
+compute_loolist <- function(models, criterion, use_stored = TRUE,
                             compare = TRUE, ...) {
   criterion <- match.arg(criterion, loo_criteria())
   args <- nlist(criterion, ...)
   for (i in seq_along(models)) {
-    models[[i]] <- restructure(models[[i]]) 
+    models[[i]] <- restructure(models[[i]])
   }
   if (length(models) > 1L) {
     if (!match_nobs(models)) {
@@ -209,7 +209,7 @@ compute_loolist <- function(models, criterion, use_stored = TRUE,
       args$x <- models[[i]]
       args$model_name <- names(models)[i]
       args$use_stored <- use_stored[i]
-      out$loos[[i]] <- do_call(compute_loo, args) 
+      out$loos[[i]] <- do_call(compute_loo, args)
     }
     compare <- as_one_logical(compare)
     if (compare) {
@@ -222,7 +222,7 @@ compute_loolist <- function(models, criterion, use_stored = TRUE,
     args$x <- models[[1]]
     args$model_name <- names(models)
     args$use_stored <- use_stored
-    out <- do_call(compute_loo, args) 
+    out <- do_call(compute_loo, args)
   }
   out
 }
@@ -236,7 +236,7 @@ compute_loolist <- function(models, criterion, use_stored = TRUE,
 # @param use_stored use precomputed criterion objects if possible?
 # @param ... passed to the individual methods
 # @return an object of class 'loo'
-compute_loo <- function(x, criterion, newdata = NULL, resp = NULL, 
+compute_loo <- function(x, criterion, newdata = NULL, resp = NULL,
                         model_name = "", use_stored = TRUE, ...) {
   criterion <- match.arg(criterion, loo_criteria())
   model_name <- as_one_character(model_name)
@@ -257,30 +257,30 @@ loo_criteria <- function() {
 }
 
 # compute 'loo' criterion using the 'loo' package
-.loo <- function(x, pointwise, k_threshold, moment_match, reloo, 
-                 moment_match_args, reloo_args, newdata, 
+.loo <- function(x, pointwise, k_threshold, moment_match, reloo,
+                 moment_match_args, reloo_args, newdata,
                  resp, model_name, save_psis, ...) {
   loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp, 
-    pointwise = pointwise, save_psis = save_psis, 
+    x, newdata = newdata, resp = resp,
+    pointwise = pointwise, save_psis = save_psis,
     ...
   )
   out <- SW(do_call("loo", loo_args, pkg = "loo"))
   if (moment_match) {
     c(moment_match_args) <- nlist(
-      x, loo = out, newdata, resp, 
+      x, loo = out, newdata, resp,
       k_threshold, check = FALSE, ...
     )
     out <- do_call("loo_moment_match", moment_match_args)
   }
   if (reloo) {
     c(reloo_args) <- nlist(
-      x, loo = out, newdata, resp, 
+      x, loo = out, newdata, resp,
       k_threshold, check = FALSE, ...
     )
     out <- do_call("reloo", reloo_args)
   }
-  recommend_loo_options(out, k_threshold, moment_match, model_name) 
+  recommend_loo_options(out, k_threshold, moment_match, model_name)
   out
 }
 
@@ -288,17 +288,41 @@ loo_criteria <- function() {
 # @param model_name ignored but included to avoid being passed to '...'
 .waic <- function(x, pointwise, newdata, resp, model_name, ...) {
   loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp, 
+    x, newdata = newdata, resp = resp,
     pointwise = pointwise, ...
   )
   do_call("waic", loo_args, pkg = "loo")
 }
 
-# compute 'psis' criterion using the 'loo' package
-# @param model_name ignored but included to avoid being passed to '...'
+# alias of psis for convenient use in compute_loo()
 .psis <- function(x, newdata, resp, model_name, ...) {
+  psis(x, newdata = newdata, resp = resp, model_name = model_name, ...)
+}
+
+#' @inherit loo::psis return title description details references
+#'
+#' @aliases psis psis.brmsfit
+#'
+#' @param log_ratios A fitted model object of class \code{brmsfit}.
+#'   Argument is named "log_ratios" to match the argument name of the
+#'   \code{\link[loo:psis]{loo::psis}} generic function.
+#' @param model_name Currently ignored.
+#' @param ... Further arguments passed to \code{\link{log_lik}} and
+#'   \code{\link[loo:psis]{loo::psis}}.
+#' @inheritParams log_lik.brmsfit
+#'
+#' @examples
+#' \dontrun{
+#' fit <- brm(rating ~ treat + period + carry, data = inhaler)
+#' psis(fit)
+#'}
+#' @importFrom loo psis
+#' @export psis
+#' @export
+psis.brmsfit <- function(log_ratios, newdata = NULL, resp = NULL,
+                         model_name = NULL, ...) {
   loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp, 
+    log_ratios, newdata = newdata, resp = resp,
     pointwise = FALSE, ...
   )
   loo_args$log_ratios <- -loo_args$x
@@ -324,37 +348,37 @@ prepare_loo_args <- function(x, newdata, resp, pointwise, ...) {
 }
 
 #' Model comparison with the \pkg{loo} package
-#' 
+#'
 #' For more details see \code{\link[loo:loo_compare]{loo_compare}}.
-#' 
+#'
 #' @aliases loo_compare
-#' 
+#'
 #' @inheritParams loo.brmsfit
 #' @param ... More \code{brmsfit} objects.
-#' @param criterion The name of the criterion to be extracted 
+#' @param criterion The name of the criterion to be extracted
 #'   from \code{brmsfit} objects.
-#' 
+#'
 #' @details All \code{brmsfit} objects should contain precomputed
 #'   criterion objects. See \code{\link{add_criterion}} for more help.
-#'   
+#'
 #' @return An object of class "\code{compare.loo}".
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler)
 #' fit1 <- add_criterion(fit1, "waic")
-#' 
+#'
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler)
 #' fit2 <- add_criterion(fit2, "waic")
-#' 
+#'
 #' # compare both models
 #' loo_compare(fit1, fit2, criterion = "waic")
 #' }
-#' 
+#'
 #' @importFrom loo loo_compare
 #' @export loo_compare
 #' @export
@@ -377,18 +401,18 @@ loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
 }
 
 #' Model averaging via stacking or pseudo-BMA weighting.
-#' 
-#' Compute model weights for \code{brmsfit} objects via stacking 
+#'
+#' Compute model weights for \code{brmsfit} objects via stacking
 #' or pseudo-BMA weighting. For more details, see
 #' \code{\link[loo:loo_model_weights]{loo::loo_model_weights}}.
-#' 
+#'
 #' @aliases loo_model_weights
-#' 
+#'
 #' @inheritParams loo.brmsfit
-#' 
+#'
 #' @return A named vector of model weights.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
@@ -396,9 +420,9 @@ loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler, family = "gaussian")
-#' loo_model_weights(fit1, fit2)   
-#' }  
-#' 
+#' loo_model_weights(fit1, fit2)
+#' }
+#'
 #' @method loo_model_weights brmsfit
 #' @importFrom loo loo_model_weights
 #' @export loo_model_weights
@@ -407,12 +431,12 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   models <- args$models
   args$models <- NULL
-  log_lik_list <- lapply(models, function(x) 
+  log_lik_list <- lapply(models, function(x)
     do_call(log_lik, c(list(x), args))
   )
   args$x <- log_lik_list
   args$r_eff_list <- mapply(
-    r_eff_log_lik, log_lik_list, 
+    r_eff_log_lik, log_lik_list,
     fit = models, SIMPLIFY = FALSE
   )
   out <- do_call(loo::loo_model_weights, args)
@@ -421,17 +445,17 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 }
 
 #' Add model fit criteria to model objects
-#' 
+#'
 #' @param x An \R object typically of class \code{brmsfit}.
 #' @param criterion Names of model fit criteria
-#'   to compute. Currently supported are \code{"loo"}, 
+#'   to compute. Currently supported are \code{"loo"},
 #'   \code{"waic"}, \code{"kfold"}, \code{"loo_subsample"},
-#'   \code{"bayes_R2"} (Bayesian R-squared), 
-#'   \code{"loo_R2"} (LOO-adjusted R-squared), and 
+#'   \code{"bayes_R2"} (Bayesian R-squared),
+#'   \code{"loo_R2"} (LOO-adjusted R-squared), and
 #'   \code{"marglik"} (log marginal likelihood).
 #' @param model_name Optional name of the model. If \code{NULL}
 #'   (the default) the name is taken from the call to \code{x}.
-#' @param overwrite Logical; Indicates if already stored fit 
+#' @param overwrite Logical; Indicates if already stored fit
 #'   indices should be overwritten. Defaults to \code{FALSE}.
 #' @param file Either \code{NULL} or a character string. In the latter case, the
 #'   fitted model object including the newly added criterion values is saved via
@@ -444,15 +468,15 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #' @param force_save Logical; only relevant if \code{file} is specified and
 #'   ignored otherwise. If \code{TRUE}, the fitted model object will be saved
 #'   regardless of whether new criteria were added via \code{add_criterion}.
-#' @param ... Further arguments passed to the underlying 
+#' @param ... Further arguments passed to the underlying
 #'   functions computing the model fit criteria.
-#'   
+#'
 #' @return An object of the same class as \code{x}, but
 #'   with model fit criteria added for later usage.
-#'   
+#'
 #' @details Functions \code{add_loo} and \code{add_waic} are aliases of
 #'   \code{add_criterion} with fixed values for the \code{criterion} argument.
-#'   
+#'
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ Trt, data = epilepsy)
@@ -461,7 +485,7 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #' print(fit$criteria$loo)
 #' print(fit$criteria$waic)
 #' }
-#' 
+#'
 #' @export
 add_criterion <- function(x, ...) {
   UseMethod("add_criterion")
@@ -469,13 +493,13 @@ add_criterion <- function(x, ...) {
 
 #' @rdname add_criterion
 #' @export
-add_criterion.brmsfit <- function(x, criterion, model_name = NULL, 
+add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
                                   overwrite = FALSE, file = NULL,
                                   force_save = FALSE, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x)) 
+    model_name <- deparse0(substitute(x))
   }
   criterion <- unique(as.character(criterion))
   if (any(criterion == "R2")) {
@@ -505,6 +529,8 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     # only computed criteria not already stored
     new_criteria <- criterion[ulapply(x$criteria[criterion], is.null)]
   }
+  # remove all criteria that are to be recomputed
+  x$criteria[new_criteria] <- NULL
   args <- list(x, ...)
   for (fun in intersect(new_criteria, loo_options)) {
     args$model_names <- model_name
@@ -527,7 +553,7 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     }
     x$file <- file
     saveRDS(x, file = file)
-  } 
+  }
   x
 }
 
@@ -543,7 +569,7 @@ hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
   require_package("digest")
   stopifnot(is.brmsfit(x))
   sdata <- standata(
-    x, newdata = newdata, re_formula = NA, internal = TRUE, 
+    x, newdata = newdata, re_formula = NA, internal = TRUE,
     check_response = TRUE, only_response = TRUE
   )
   add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
@@ -555,7 +581,7 @@ hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
   out <- as.matrix(as.data.frame(rmNULL(out)))
   out <- p(out, attr(sdata, "old_order"))
   # see issue #642
-  attributes(out) <- NULL  
+  attributes(out) <- NULL
   digest::sha1(x = out, ...)
 }
 
@@ -565,7 +591,7 @@ hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
 # @return TRUE if the response parts of all models match and FALSE otherwise
 match_response <- function(models, ...) {
   if (length(models) <= 1L) {
-    out <- TRUE  
+    out <- TRUE
   } else {
     yhash <- lapply(models, hash_response, ...)
     yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
@@ -584,7 +610,7 @@ match_response <- function(models, ...) {
 # @return TRUE if the number of rows match
 match_nobs <- function(models, ...) {
   if (length(models) <= 1L) {
-    out <- TRUE  
+    out <- TRUE
   } else {
     nobs <- lapply(models, nobs)
     nobs_check <- ulapply(nobs, is_equal, nobs[[1]])
@@ -608,7 +634,7 @@ validate_models <- function(models, model_names, sub_names) {
     model_names <- as.character(sub_names)
   }
   if (length(model_names) != length(models)) {
-    stop2("Number of model names is not equal to the number of models.") 
+    stop2("Number of model names is not equal to the number of models.")
   }
   names(models) <- model_names
   for (i in seq_along(models)) {
@@ -621,7 +647,7 @@ validate_models <- function(models, model_names, sub_names) {
 
 # recommend options if approximate loo fails for some observations
 # @param moment_match has moment matching already been performed?
-recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE, 
+recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE,
                                   model_name = "") {
   if (isTRUE(nzchar(model_name))) {
     model_name <- paste0(" in model '", model_name, "'")
@@ -632,24 +658,24 @@ recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE,
   if (!moment_match && n > 0) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". It is recommended to set 'moment_match = TRUE' in order ", 
+      model_name, ". It is recommended to set 'moment_match = TRUE' in order ",
       "to perform moment matching for problematic observations. "
     )
     out <- "loo_moment_match"
   } else if (n > 0 && n <= 10) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". It is recommended to set 'reloo = TRUE' in order to ", 
+      model_name, ". It is recommended to set 'reloo = TRUE' in order to ",
       "calculate the ELPD without the assumption that these observations " ,
-      "are negligible. This will refit the model ", n, " times to compute ", 
+      "are negligible. This will refit the model ", n, " times to compute ",
       "the ELPDs for the problematic observations directly."
     )
     out <- "reloo"
   } else if (n > 10) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". With this many problematic observations, it may be more ", 
-      "appropriate to use 'kfold' with argument 'K = 10' to perform ", 
+      model_name, ". With this many problematic observations, it may be more ",
+      "appropriate to use 'kfold' with argument 'K = 10' to perform ",
       "10-fold cross-validation rather than LOO."
     )
     out <- "kfold"
@@ -677,7 +703,7 @@ r_eff_helper <- function(x, chain_id, allow_na = TRUE, ...) {
   out
 }
 
-# wrapper around r_eff_helper to compute efficiency 
+# wrapper around r_eff_helper to compute efficiency
 # of likelihood draws based on log-likelihood draws
 r_eff_log_lik <- function(x, ...) {
   UseMethod("r_eff_log_lik")
@@ -708,7 +734,7 @@ r_eff_log_lik.function <- function(x, fit, draws, allow_na = FALSE, ...) {
   }
   chain_id <- get_chain_id(draws$ndraws, fit)
   r_eff_helper(
-    lik_fun, chain_id = chain_id, draws = draws, 
+    lik_fun, chain_id = chain_id, draws = draws,
     allow_na = allow_na, ...
   )
 }
@@ -720,7 +746,7 @@ get_chain_id <- function(ndraws, fit) {
     chain_id <- rep(1L, ndraws)
   } else {
     nchains <- fit$fit@sim$chains
-    chain_id <- rep(seq_len(nchains), each = ndraws / nchains) 
+    chain_id <- rep(seq_len(nchains), each = ndraws / nchains)
   }
   chain_id
 }
@@ -749,7 +775,7 @@ add_loo <- function(x, model_name = NULL, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x)) 
+    model_name <- deparse0(substitute(x))
   }
   add_criterion(x, criterion = "loo", model_name = model_name, ...)
 }
@@ -761,25 +787,25 @@ add_waic <- function(x, model_name = NULL, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x)) 
+    model_name <- deparse0(substitute(x))
   }
   add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
 
 #' Add model fit criteria to model objects
-#' 
+#'
 #' Deprecated aliases of \code{\link{add_criterion}}.
-#' 
+#'
 #' @inheritParams add_criterion
 #' @param ic,value Names of model fit criteria
-#'   to compute. Currently supported are \code{"loo"}, 
-#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+#'   to compute. Currently supported are \code{"loo"},
+#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and
 #'   \code{"marglik"} (log marginal likelihood).
-#' 
+#'
 #' @return An object of the same class as \code{x}, but
 #'   with model fit criteria added for later usage.
 #'   Previously computed criterion objects will be overwritten.
-#' 
+#'
 #' @export
 add_ic <- function(x, ...) {
   UseMethod("add_ic")
@@ -792,7 +818,7 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
-    model_name <- deparse_combine(substitute(x)) 
+    model_name <- deparse0(substitute(x))
   }
   add_criterion(x, criterion = ic, model_name = model_name, ...)
 }
@@ -809,49 +835,49 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
 #' with \code{\link{waic}} or \code{\link{loo}}.
 #' Deprecated and will be removed in the future. Please use
 #' \code{\link{loo_compare}} instead.
-#' 
-#' @param ... At least two objects returned by 
+#'
+#' @param ... At least two objects returned by
 #'   \code{\link{waic}} or \code{\link{loo}}.
-#'   Alternatively, \code{brmsfit} objects with information 
+#'   Alternatively, \code{brmsfit} objects with information
 #'   criteria precomputed via \code{\link{add_ic}}
 #'   may be passed, as well.
 #' @param x A \code{list} containing the same types of objects as
 #'   can be passed via \code{...}.
-#' @param ic The name of the information criterion to be extracted 
-#'   from \code{brmsfit} objects. Ignored if information 
+#' @param ic The name of the information criterion to be extracted
+#'   from \code{brmsfit} objects. Ignored if information
 #'   criterion objects are only passed directly.
-#'   
+#'
 #' @return An object of class \code{iclist}.
-#' 
-#' @details See \code{\link{loo_compare}} for the recommended way 
+#'
+#' @details See \code{\link{loo_compare}} for the recommended way
 #'   of comparing models with the \pkg{loo} package.
-#' 
-#' @seealso 
+#'
+#' @seealso
 #'   \code{\link{loo}},
 #'   \code{\link{loo_compare}}
 #'   \code{\link{add_criterion}}
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler)
 #' waic1 <- waic(fit1)
-#' 
+#'
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler)
 #' waic2 <- waic(fit2)
-#' 
+#'
 #' # compare both models
 #' compare_ic(waic1, waic2)
 #' }
-#' 
+#'
 #' @export
 compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   # will be removed in brms 3.0
   warning2(
-    "'compare_ic' is deprecated and will be removed ", 
+    "'compare_ic' is deprecated and will be removed ",
     "in the future. Please use 'loo_compare' instead."
   )
   ic <- match.arg(ic)
@@ -867,7 +893,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
     }
   }
   if (!all(sapply(x, inherits, "loo"))) {
-    stop2("All inputs should have class 'loo' ", 
+    stop2("All inputs should have class 'loo' ",
           "or contain precomputed 'loo' objects.")
   }
   if (length(x) < 2L) {
@@ -881,7 +907,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
   if (!all(yhash_check)) {
     warning2(
-      "Model comparisons are likely invalid as the response ", 
+      "Model comparisons are likely invalid as the response ",
       "values of at least two models do not match."
     )
   }
@@ -894,7 +920,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   for (i in seq_len(n_models - 1)) {
     for (j in (i + 1):n_models) {
       tmp <- SW(loo::compare(x[[j]], x[[i]]))
-      ic_diffs[n, ] <- c(-2 * tmp[["elpd_diff"]], 2 * tmp[["se"]]) 
+      ic_diffs[n, ] <- c(-2 * tmp[["elpd_diff"]], 2 * tmp[["se"]])
       rnames[n] <- paste(names(x)[i], "-", names(x)[j])
       n <- n + 1
     }
@@ -916,7 +942,7 @@ print.iclist <- function(x, digits = 2, ...) {
     ic <- rownames(m[[1]]$estimates)[3]
     mat <- matrix(0, nrow = length(m), ncol = 2)
     dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
-    for (i in seq_along(m)) { 
+    for (i in seq_along(m)) {
       mat[i, ] <- m[[i]]$estimates[3, ]
     }
   } else {

@@ -1,39 +1,51 @@
-# This file contains functions dealing with the extended 
+# This file contains functions dealing with the extended
 # formula syntax to specify smooth terms via mgcv
 
 #' Defining smooths in \pkg{brms} formulas
-#' 
-#' Functions used in definition of smooth terms within a model formulas. 
-#' The function does not evaluate a (spline) smooth - it exists purely 
+#'
+#' Functions used in definition of smooth terms within a model formulas.
+#' The function does not evaluate a (spline) smooth - it exists purely
 #' to help set up a model using spline based smooths.
-#' 
+#'
 #' @param ... Arguments passed to \code{\link[mgcv:s]{mgcv::s}} or
 #'  \code{\link[mgcv:t2]{mgcv::t2}}.
-#'  
-#' @details The function defined here are just simple wrappers
-#'  of the respective functions of the \pkg{mgcv} package.
-#'  
+#'
+#' @details The function defined here are just simple wrappers of the respective
+#'   functions of the \pkg{mgcv} package. When using them, please cite the
+#'   appropriate references obtained via \code{citation("mgcv")}.
+#'
+#'  \pkg{brms} uses the "random effects" parameterization of smoothing splines
+#'  as explained in \code{\link[mgcv:gamm]{mgcv::gamm}}. A nice tutorial on this
+#'  topic can be found in Pedersen et al. (2019). The answers provided in this
+#'  \href{https://discourse.mc-stan.org/t/better-priors-non-flat-for-gams-brms/23012/4}{Stan discourse post}
+#'  may also be helpful.
+#'
 #' @seealso \code{\link{brmsformula}},
 #'   \code{\link[mgcv:s]{mgcv::s}}, \code{\link[mgcv:t2]{mgcv::t2}}
-#'  
+#'
+#' @references
+#' Pedersen, E. J., Miller, D. L., Simpson, G. L., & Ross, N. (2019).
+#' Hierarchical generalized additive models in ecology: an introduction with
+#' mgcv. PeerJ.
+#'
 #' @examples
 #' \dontrun{
 #' # simulate some data
 #' dat <- mgcv::gamSim(1, n = 200, scale = 2)
-#' 
+#'
 #' # fit univariate smooths for all predictors
-#' fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), 
+#' fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3),
 #'             data = dat, chains = 2)
 #' summary(fit1)
 #' plot(conditional_smooths(fit1), ask = FALSE)
-#' 
+#'
 #' # fit a more complicated smooth model
-#' fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3), 
+#' fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3),
 #'             data = dat, chains = 2)
 #' summary(fit2)
 #' plot(conditional_smooths(fit2), ask = FALSE)
 #' }
-#' 
+#'
 #' @export
 s <- function(...) {
   mgcv::s(...)
@@ -52,7 +64,7 @@ tidy_smef <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
-  form <- x[["sm"]] 
+  form <- x[["sm"]]
   if (!is.formula(form)) {
     return(empty_data_frame())
   }

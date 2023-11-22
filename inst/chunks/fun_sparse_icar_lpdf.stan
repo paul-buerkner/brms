@@ -1,4 +1,4 @@
- /* Return the log probability of an intrinsic conditional autoregressive 
+ /* Return the log probability of an intrinsic conditional autoregressive
   * (ICAR) prior with a sparse representation for the adjacency matrix
   * Full credit to Max Joseph (https://github.com/mbjoseph/CARstan)
   * Args:
@@ -14,9 +14,9 @@
   * Returns:
   *   Log probability density of CAR prior up to additive constant
   */
-  real sparse_icar_lpdf(vector phi, real sdcar, int Nloc, 
-                        int Nedges, data vector Nneigh, data vector eigenW, 
-                        int[] edges1, int[] edges2) {
+  real sparse_icar_lpdf(vector phi, real sdcar, int Nloc,
+                        int Nedges, data vector Nneigh, data vector eigenW,
+                        array[] int edges1, array[] int edges2) {
     real tau;  // precision parameter
     row_vector[Nloc] phit_D;  // phi' * D
     row_vector[Nloc] phit_W;  // phi' * W
@@ -27,6 +27,6 @@
       phit_W[edges1[i]] = phit_W[edges1[i]] + phi[edges2[i]];
       phit_W[edges2[i]] = phit_W[edges2[i]] + phi[edges1[i]];
     }
-    return 0.5 * ((Nloc - 1) * log(tau) - 
+    return 0.5 * ((Nloc - 1) * log(tau) -
            tau * (phit_D * phi - (phit_W * phi)));
   }

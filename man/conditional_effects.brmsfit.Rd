@@ -34,8 +34,8 @@ conditional_effects(x, ...)
 \method{plot}{brms_conditional_effects}(
   x,
   ncol = NULL,
-  points = FALSE,
-  rug = FALSE,
+  points = getOption("brms.plot_points", FALSE),
+  rug = getOption("brms.plot_rug", FALSE),
   mean = TRUE,
   jitter_width = 0,
   stype = c("contour", "raster"),
@@ -66,8 +66,8 @@ even if not originally modeled.}
 
 \item{conditions}{An optional \code{data.frame} containing variable values
 to condition on. Each effect defined in \code{effects} will
-be plotted separately for each row of \code{conditions}. Values in the 
-\code{cond__} column will be used as titles of the subplots. If \code{cond__} 
+be plotted separately for each row of \code{conditions}. Values in the
+\code{cond__} column will be used as titles of the subplots. If \code{cond__}
 is not given, the row names will be used for this purpose instead.
 It is recommended to only define a few rows in order to keep the plots clear.
 See \code{\link{make_conditions}} for an easy way to define conditions.
@@ -78,14 +78,14 @@ variables of this factor are zero. This allows, for instance, to make
 predictions of the grand mean when using sum coding.}
 
 \item{int_conditions}{An optional named \code{list} whose elements are
-vectors of values of the variables specified in \code{effects}. 
-At these values, predictions are evaluated. The names of 
+vectors of values of the variables specified in \code{effects}.
+At these values, predictions are evaluated. The names of
 \code{int_conditions} have to match the variable names exactly.
 Additionally, the elements of the vectors may be named themselves,
 in which case their names appear as labels for the conditions in the plots.
 Instead of vectors, functions returning vectors may be passed and are
 applied on the original values of the corresponding variable.
-If \code{NULL} (the default), predictions are evaluated at the 
+If \code{NULL} (the default), predictions are evaluated at the
 \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 all categories for factor-like predictors.}
 
@@ -93,29 +93,29 @@ all categories for factor-like predictors.}
 in the conditional predictions. If \code{NULL}, include all group-level
 effects; if \code{NA} (default), include no group-level effects.}
 
-\item{prob}{A value between 0 and 1 indicating the desired probability 
+\item{prob}{A value between 0 and 1 indicating the desired probability
 to be covered by the uncertainty intervals. The default is 0.95.}
 
-\item{robust}{If \code{TRUE} (the default) the median is used as the 
+\item{robust}{If \code{TRUE} (the default) the median is used as the
 measure of central tendency. If \code{FALSE} the mean is used instead.}
 
-\item{method}{Method used to obtain predictions. Can be set to 
+\item{method}{Method used to obtain predictions. Can be set to
 \code{"posterior_epred"} (the default), \code{"posterior_predict"},
 or \code{"posterior_linpred"}. For more details, see the respective
 function documentations.}
 
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
-predictors. If \code{TRUE}, it is recommended 
-to set argument \code{ndraws} to a relatively small value 
+predictors. If \code{TRUE}, it is recommended
+to set argument \code{ndraws} to a relatively small value
 (e.g., \code{100}) in order to reduce computation time.}
 
-\item{surface}{Logical. Indicates if interactions or 
-two-dimensional smooths should be visualized as a surface. 
-Defaults to \code{FALSE}. The surface type can be controlled 
+\item{surface}{Logical. Indicates if interactions or
+two-dimensional smooths should be visualized as a surface.
+Defaults to \code{FALSE}. The surface type can be controlled
 via argument \code{stype} of the related plotting method.}
 
-\item{categorical}{Logical. Indicates if effects of categorical 
+\item{categorical}{Logical. Indicates if effects of categorical
 or ordinal models should be shown in terms of probabilities
 of response categories. Defaults to \code{FALSE}.}
 
@@ -124,32 +124,32 @@ Logical. Indicates if effects in ordinal models
 should be visualized as a raster with the response categories
 on the y-axis. Defaults to \code{FALSE}.}
 
-\item{transform}{A function or a character string naming 
+\item{transform}{A function or a character string naming
 a function to be applied on the predicted responses
 before summary statistics are computed. Only allowed
 if \code{method = "posterior_predict"}.}
 
-\item{resolution}{Number of support points used to generate 
-the plots. Higher resolution leads to smoother plots. 
+\item{resolution}{Number of support points used to generate
+the plots. Higher resolution leads to smoother plots.
 Defaults to \code{100}. If \code{surface} is \code{TRUE},
 this implies \code{10000} support points for interaction terms,
-so it might be necessary to reduce \code{resolution} 
+so it might be necessary to reduce \code{resolution}
 when only few RAM is available.}
 
-\item{select_points}{Positive number. 
-Only relevant if \code{points} or \code{rug} are set to \code{TRUE}: 
-Actual data points of numeric variables that 
-are too far away from the values specified in \code{conditions} 
-can be excluded from the plot. Values are scaled into 
-the unit interval and then points more than \code{select_points} 
-from the values in \code{conditions} are excluded. 
+\item{select_points}{Positive number.
+Only relevant if \code{points} or \code{rug} are set to \code{TRUE}:
+Actual data points of numeric variables that
+are too far away from the values specified in \code{conditions}
+can be excluded from the plot. Values are scaled into
+the unit interval and then points more than \code{select_points}
+from the values in \code{conditions} are excluded.
 By default, all points are used.}
 
-\item{too_far}{Positive number. 
-For surface plots only: Grid points that are too 
-far away from the actual data points can be excluded from the plot. 
-\code{too_far} determines what is too far. The grid is scaled into 
-the unit square and then grid points more than \code{too_far} 
+\item{too_far}{Positive number.
+For surface plots only: Grid points that are too
+far away from the actual data points can be excluded from the plot.
+\code{too_far} determines what is too far. The grid is scaled into
+the unit square and then grid points more than \code{too_far}
 from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
@@ -163,72 +163,72 @@ passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}
 If \code{NULL} (default), \code{ncol} is computed internally based
 on the number of rows of \code{conditions}.}
 
-\item{points}{Logical. Indicates if the original data points
-should be added via \code{\link{geom_jitter}}.
-Default is \code{FALSE}. Note that only those data points will be added
-that match the specified conditions defined in \code{conditions}.
-For categorical predictors, the conditions have to match exactly. 
-For numeric predictors, argument \code{select_points} is used to
+\item{points}{Logical. Indicates if the original data points should be added
+via \code{\link{geom_jitter}}. Default is \code{FALSE}. Can be controlled
+globally via the \code{brms.plot_points} option. Note that only those data
+points will be added that match the specified conditions defined in
+\code{conditions}. For categorical predictors, the conditions have to match
+exactly. For numeric predictors, argument \code{select_points} is used to
 determine, which points do match a condition.}
 
-\item{rug}{Logical. Indicates if a rug representation of predictor
-values should be added via \code{\link{geom_rug}}.
-Default is \code{FALSE}. Depends on \code{select_points} in the same
-way as \code{points} does.}
+\item{rug}{Logical. Indicates if a rug representation of predictor values
+should be added via \code{\link{geom_rug}}. Default is \code{FALSE}.
+Depends on \code{select_points} in the same way as \code{points} does. Can
+be controlled globally via the \code{brms.plot_rug} option.}
 
 \item{mean}{Logical. Only relevant for spaghetti plots.
-If \code{TRUE} (the default), display the mean regression 
+If \code{TRUE} (the default), display the mean regression
 line on top of the regression lines for each sample.}
 
-\item{jitter_width}{Only used if \code{points = TRUE}: 
+\item{jitter_width}{Only used if \code{points = TRUE}:
 Amount of horizontal jittering of the data points.
-Mainly useful for ordinal models. Defaults to \code{0} that 
+Mainly useful for ordinal models. Defaults to \code{0} that
 is no jittering.}
 
 \item{stype}{Indicates how surface plots should be displayed.
 Either \code{"contour"} or \code{"raster"}.}
 
 \item{line_args}{Only used in plots of continuous predictors:
-A named list of arguments passed to 
+A named list of arguments passed to
 \code{\link{geom_smooth}}.}
 
 \item{cat_args}{Only used in plots of categorical predictors:
-A named list of arguments passed to 
+A named list of arguments passed to
 \code{\link{geom_point}}.}
 
 \item{errorbar_args}{Only used in plots of categorical predictors:
-A named list of arguments passed to 
+A named list of arguments passed to
 \code{\link{geom_errorbar}}.}
 
 \item{surface_args}{Only used in surface plots:
-A named list of arguments passed to 
+A named list of arguments passed to
 \code{\link{geom_contour}} or
 \code{\link{geom_raster}}
 (depending on argument \code{stype}).}
 
 \item{spaghetti_args}{Only used in spaghetti plots:
-A named list of arguments passed to 
+A named list of arguments passed to
 \code{\link{geom_smooth}}.}
 
-\item{point_args}{Only used if \code{points = TRUE}: 
-A named list of arguments passed to 
+\item{point_args}{Only used if \code{points = TRUE}:
+A named list of arguments passed to
 \code{\link{geom_jitter}}.}
 
-\item{rug_args}{Only used if \code{rug = TRUE}: 
-A named list of arguments passed to 
+\item{rug_args}{Only used if \code{rug = TRUE}:
+A named list of arguments passed to
 \code{\link{geom_rug}}.}
 
-\item{facet_args}{Only used if if multiple condtions are provided: 
-A named list of arguments passed to 
+\item{facet_args}{Only used if if multiple condtions are provided:
+A named list of arguments passed to
 \code{\link{facet_wrap}}.}
 
-\item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
-modifying the appearance of the plots. 
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
+modifying the appearance of the plots.
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 and \code{\link[bayesplot:theme_default]{theme_default}}.}
 
-\item{ask}{Logical; indicates if the user is prompted 
-before a new page is plotted. 
+\item{ask}{Logical; indicates if the user is prompted
+before a new page is plotted.
 Only used if \code{plot} is \code{TRUE}.}
 
 \item{plot}{Logical; indicates if plots should be
@@ -245,13 +245,13 @@ An object of class \code{'brms_conditional_effects'} which is a
   bounds of the uncertainty interval of the response), as well as
   \code{cond__} (used in faceting when \code{conditions} contains multiple
   rows).
-  
-  The corresponding \code{plot} method returns a named 
-  list of \code{\link{ggplot}} objects, which can be further 
+
+  The corresponding \code{plot} method returns a named
+  list of \code{\link{ggplot}} objects, which can be further
   customized using the \pkg{ggplot2} package.
 }
 \description{
-Display conditional effects of one or more numeric and/or categorical 
+Display conditional effects of one or more numeric and/or categorical
 predictors including two-way interaction effects.
 }
 \details{
@@ -265,7 +265,7 @@ When creating \code{conditional_effects} for a particular predictor
   used in the conditioning, in order not to create the false impression of
   bad model fit, where it is just due to conditioning on certain factor
   levels.
-  
+
   To fully change colors of the created plots, one has to amend both
   \code{scale_colour} and \code{scale_fill}. See
   \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}} for
@@ -274,30 +274,30 @@ When creating \code{conditional_effects} for a particular predictor
 \examples{
 \dontrun{
 fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
-           data = epilepsy, family = poisson()) 
-           
+           data = epilepsy, family = poisson())
+
 ## plot all conditional effects
 plot(conditional_effects(fit), ask = FALSE)
 
 ## change colours to grey scale
 library(ggplot2)
-me <- conditional_effects(fit, "zBase:Trt")
-plot(me, plot = FALSE)[[1]] + 
+ce <- conditional_effects(fit, "zBase:Trt")
+plot(ce, plot = FALSE)[[1]] +
   scale_color_grey() +
   scale_fill_grey()
 
 ## only plot the conditional interaction effect of 'zBase:Trt'
 ## for different values for 'zAge'
 conditions <- data.frame(zAge = c(-1, 0, 1))
-plot(conditional_effects(fit, effects = "zBase:Trt", 
+plot(conditional_effects(fit, effects = "zBase:Trt",
                          conditions = conditions))
-                      
+
 ## also incorporate group-level effects variance over patients
 ## also add data points and a rug representation of predictor values
-plot(conditional_effects(fit, effects = "zBase:Trt", 
-                         conditions = conditions, re_formula = NULL), 
+plot(conditional_effects(fit, effects = "zBase:Trt",
+                         conditions = conditions, re_formula = NULL),
      points = TRUE, rug = TRUE)
- 
+
 ## change handling of two-way interactions
 int_conditions <- list(
   zBase = setNames(c(-2, 1, 0), c("b", "c", "a"))
@@ -305,18 +305,18 @@ int_conditions <- list(
 conditional_effects(fit, effects = "Trt:zBase",
                     int_conditions = int_conditions)
 conditional_effects(fit, effects = "Trt:zBase",
-                    int_conditions = list(zBase = quantile))        
-     
+                    int_conditions = list(zBase = quantile))
+
 ## fit a model to illustrate how to plot 3-way interactions
 fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 conditions <- make_conditions(fit3way, "zAge")
 conditional_effects(fit3way, "zBase:Trt", conditions = conditions)
 ## only include points close to the specified values of zAge
-me <- conditional_effects(
-  fit3way, "zBase:Trt", conditions = conditions, 
+ce <- conditional_effects(
+  fit3way, "zBase:Trt", conditions = conditions,
   select_points = 0.1
 )
-plot(me, points = TRUE)
+plot(ce, points = TRUE)
 }
 
 }

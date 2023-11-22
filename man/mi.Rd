@@ -17,6 +17,8 @@ applications that I haven't thought of.}
 \description{
 Specify predictor term with missing values in \pkg{brms}. The function does
 not evaluate its arguments -- it exists purely to help set up a model.
+For documentation on how to specify missing values in response variables,
+see \code{\link{resp_mi}}.
 }
 \details{
 For detailed documentation see \code{help(brmsformula)}.
@@ -28,9 +30,9 @@ N <- nrow(nhanes)
 
 # simple model with missing data
 bform1 <- bf(bmi | mi() ~ age * mi(chl)) +
-  bf(chl | mi() ~ age) + 
+  bf(chl | mi() ~ age) +
   set_rescor(FALSE)
-  
+
 fit1 <- brm(bform1, data = nhanes)
 
 summary(fit1)
@@ -40,12 +42,12 @@ loo(fit1, newdata = na.omit(fit1$data))
 # simulate some measurement noise
 nhanes$se <- rexp(N, 2)
 
-# measurement noise can be handled within 'mi' terms 
+# measurement noise can be handled within 'mi' terms
 # with or without the presence of missing values
 bform2 <- bf(bmi | mi() ~ age * mi(chl)) +
-  bf(chl | mi(se) ~ age) + 
+  bf(chl | mi(se) ~ age) +
   set_rescor(FALSE)
-  
+
 fit2 <- brm(bform2, data = nhanes)
 
 summary(fit2)
@@ -57,12 +59,12 @@ nhanes$sub[1:2] <- FALSE
 nhanes$id <- 1:N
 nhanes$idx <- sample(3:N, N, TRUE)
 
-# this requires the addition term 'index' being specified 
+# this requires the addition term 'index' being specified
 # in the subsetted part of the model
 bform3 <- bf(bmi | mi() ~ age * mi(chl, idx)) +
-  bf(chl | mi(se) + subset(sub) + index(id) ~ age) + 
+  bf(chl | mi(se) + subset(sub) + index(id) ~ age) +
   set_rescor(FALSE)
-  
+
 fit3 <- brm(bform3, data = nhanes)
 
 summary(fit3)

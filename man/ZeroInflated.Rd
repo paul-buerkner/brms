@@ -8,6 +8,8 @@
 \alias{pzero_inflated_negbinomial}
 \alias{dzero_inflated_binomial}
 \alias{pzero_inflated_binomial}
+\alias{dzero_inflated_beta_binomial}
+\alias{pzero_inflated_beta_binomial}
 \alias{dzero_inflated_beta}
 \alias{pzero_inflated_beta}
 \title{Zero-Inflated Distributions}
@@ -24,6 +26,18 @@ dzero_inflated_binomial(x, size, prob, zi, log = FALSE)
 
 pzero_inflated_binomial(q, size, prob, zi, lower.tail = TRUE, log.p = FALSE)
 
+dzero_inflated_beta_binomial(x, size, mu, phi, zi, log = FALSE)
+
+pzero_inflated_beta_binomial(
+  q,
+  size,
+  mu,
+  phi,
+  zi,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
+
 dzero_inflated_beta(x, shape1, shape2, zi, log = FALSE)
 
 pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
@@ -37,7 +51,7 @@ pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
 
 \item{q}{Vector of quantiles.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
@@ -49,6 +63,8 @@ Else, return P(X > x) .}
 \item{size}{number of trials}
 
 \item{prob}{probability of success on each trial}
+
+\item{phi}{precision parameter}
 }
 \description{
 Density and distribution functions for zero-inflated distributions.

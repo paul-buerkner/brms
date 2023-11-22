@@ -23,7 +23,7 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{digits}{Minimal number of significant digits, 
+\item{digits}{Minimal number of significant digits,
 see \code{\link[base:print.default]{print.default}}.}
 
 \item{chars}{Maximum number of characters of each hypothesis
@@ -34,22 +34,22 @@ Defaults to \code{20}.}
 
 \item{N}{The number of parameters plotted per page.}
 
-\item{ignore_prior}{A flag indicating if prior distributions 
+\item{ignore_prior}{A flag indicating if prior distributions
 should also be plotted. Only used if priors were specified on
 the relevant parameters.}
 
 \item{colors}{Two values specifying the colors of the posterior
 and prior density respectively. If \code{NULL} (the default)
-colors are taken from the current color scheme of 
+colors are taken from the current color scheme of
 the \pkg{bayesplot} package.}
 
-\item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
-modifying the appearance of the plots. 
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
+modifying the appearance of the plots.
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 and \code{\link[bayesplot:theme_default]{theme_default}}.}
 
-\item{ask}{Logical; indicates if the user is prompted 
-before a new page is plotted. 
+\item{ask}{Logical; indicates if the user is prompted
+before a new page is plotted.
 Only used if \code{plot} is \code{TRUE}.}
 
 \item{plot}{Logical; indicates if plots should be
@@ -58,13 +58,13 @@ Defaults to \code{TRUE}.}
 }
 \description{
 A \code{brmshypothesis} object contains posterior draws
-as well as summary statistics of non-linear hypotheses as 
+as well as summary statistics of non-linear hypotheses as
 returned by \code{\link{hypothesis}}.
 }
 \details{
 The two most important elements of a \code{brmshypothesis} object are
 \code{hypothesis}, which is a data.frame containing the summary estimates
-of the hypotheses, and \code{samples}, which is a data.frame containing 
+of the hypotheses, and \code{samples}, which is a data.frame containing
 the corresponding posterior draws.
 }
 \seealso{

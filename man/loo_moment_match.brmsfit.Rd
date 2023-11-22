@@ -12,6 +12,7 @@
   newdata = NULL,
   resp = NULL,
   check = TRUE,
+  recompile = FALSE,
   ...
 )
 }
@@ -20,8 +21,8 @@
 
 \item{loo}{An object of class \code{loo} originally created from \code{x}.}
 
-\item{k_threshold}{The threshold at which Pareto \eqn{k} 
-estimates are treated as problematic. Defaults to \code{0.7}. 
+\item{k_threshold}{The threshold at which Pareto \eqn{k}
+estimates are treated as problematic. Defaults to \code{0.7}.
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 for more details.}
 
@@ -38,6 +39,11 @@ are performed only for the specified response variables.}
 check are performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
 
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running moment matching on
+another machine than the one used to fit the model. No recompilation
+is done by default.}
+
 \item{...}{Further arguments passed to the underlying methods.
 Additional arguments initially passed to \code{\link{loo}},
 for example, \code{newdata} or \code{resp} need to be passed
@@ -48,8 +54,8 @@ to work correctly.}
 An updated object of class \code{loo}.
 }
 \description{
-Moment matching for efficient approximate leave-one-out cross-validation 
-(LOO-CV). See \code{\link[loo:loo_moment_match]{loo_moment_match}} 
+Moment matching for efficient approximate leave-one-out cross-validation
+(LOO-CV). See \code{\link[loo:loo_moment_match]{loo_moment_match}}
 for more details.
 }
 \details{
@@ -64,7 +70,7 @@ The moment matching algorithm requires draws of all variables
 fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson(),
             save_pars = save_pars(all = TRUE))
-            
+
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
 (mmloo1 <- loo_moment_match(fit1, loo = loo1))
@@ -72,6 +78,6 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 
 }
 \references{
-Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2021). 
+Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2021).
   Implicitly Adaptive Importance Sampling. Statistics and Computing.
 }

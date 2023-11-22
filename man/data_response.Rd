@@ -15,7 +15,7 @@ data_response(x, ...)
 A named list of data related to response variables.
 }
 \description{
-Prepare data related to response variables in \pkg{brms}. 
+Prepare data related to response variables in \pkg{brms}.
 Only exported for use in package development.
 }
 \keyword{internal}

@@ -4,7 +4,7 @@
    *   x: array of numeric values of dimension NB x D
    *   sdgp: marginal SD parameter
    *   lscale: vector of length-scale parameters
-   * Returns: 
+   * Returns:
    *   numeric values of the function evaluated at 'x'
    */
   vector spd_cov_exp_quad(data vector[] x, real sdgp, vector lscale) {

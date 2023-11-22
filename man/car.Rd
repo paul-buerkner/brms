@@ -22,8 +22,8 @@ CAR), \code{"icar"} (intrinsic CAR), and \code{"bym2"}. More information is
 provided in the 'Details' section.}
 }
 \value{
-An object of class \code{'car_term'}, which is a list 
-  of arguments to be interpreted by the formula 
+An object of class \code{'car_term'}, which is a list
+  of arguments to be interpreted by the formula
   parsing functions of \pkg{brms}.
 }
 \description{
@@ -32,9 +32,9 @@ function does not evaluate its arguments -- it exists purely to help set up a
 model with CAR terms.
 }
 \details{
-The \code{escar} and \code{esicar} types are 
+The \code{escar} and \code{esicar} types are
   implemented based on the case study of Max Joseph
-  (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
+  (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and
   \code{bym2} type is implemented based on the case study of Mitzi Morris
   (\url{https://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 }
@@ -48,7 +48,7 @@ K <- nrow(Grid)
 # set up distance and neighbourhood matrices
 distance <- as.matrix(dist(Grid))
 W <- array(0, c(K, K))
-W[distance == 1] <- 1 	
+W[distance == 1] <- 1
 
 # generate the covariates and response data
 x1 <- rnorm(K)
@@ -64,9 +64,9 @@ y <- rbinom(n = K, size = size, prob = prob)
 dat <- data.frame(y, size, x1, x2)
 
 # fit a CAR model
-fit <- brm(y | trials(size) ~ x1 + x2 + car(W), 
+fit <- brm(y | trials(size) ~ x1 + x2 + car(W),
            data = dat, data2 = list(W = W),
-           family = binomial()) 
+           family = binomial())
 summary(fit)
 }
 

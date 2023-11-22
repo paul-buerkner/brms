@@ -21,27 +21,27 @@ posterior_samples(x, pars = NA, ...)
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{pars}{Names of parameters for which posterior samples 
+\item{pars}{Names of parameters for which posterior samples
 should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted.}
 
-\item{fixed}{Indicates whether parameter names 
+\item{fixed}{Indicates whether parameter names
 should be matched exactly (\code{TRUE}) or treated as
 regular expressions (\code{FALSE}). Default is \code{FALSE}.}
 
-\item{add_chain}{A flag indicating if the returned \code{data.frame} 
-should contain two additional columns. The \code{chain} column 
-indicates the chain in which each sample was generated, the \code{iter} 
+\item{add_chain}{A flag indicating if the returned \code{data.frame}
+should contain two additional columns. The \code{chain} column
+indicates the chain in which each sample was generated, the \code{iter}
 column indicates the iteration number within each chain.}
 
-\item{subset}{A numeric vector indicating the rows 
-(i.e., posterior samples) to be returned. 
+\item{subset}{A numeric vector indicating the rows
+(i.e., posterior samples) to be returned.
 If \code{NULL} (the default), all  posterior samples are returned.}
 
-\item{as.matrix}{Should the output be a \code{matrix} 
+\item{as.matrix}{Should the output be a \code{matrix}
 instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 
-\item{as.array}{Should the output be an \code{array} 
+\item{as.array}{Should the output be an \code{array}
 instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 
 \item{...}{Arguments passed to individual methods (if applicable).}
@@ -57,10 +57,10 @@ functions of the \pkg{posterior} package instead.
 }
 \examples{
 \dontrun{
-fit <- brm(rating ~ treat + period + carry + (1|subject), 
+fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, family = "cumulative")
 
-# extract posterior samples of population-level effects 
+# extract posterior samples of population-level effects
 samples1 <- posterior_samples(fit, pars = "^b")
 head(samples1)
 

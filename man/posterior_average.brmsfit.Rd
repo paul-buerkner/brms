@@ -51,16 +51,16 @@ pre-specified weights.}
 
 \item{nsamples}{Deprecated alias of \code{ndraws}.}
 
-\item{missing}{An optional numeric value or a named list of numeric values 
+\item{missing}{An optional numeric value or a named list of numeric values
 to use if a model does not contain a variable for which posterior draws
 should be averaged. Defaults to \code{NULL}, in which case only those
 variables can be averaged that are present in all of the models.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 
-\item{control}{Optional \code{list} of further arguments 
+\item{control}{Optional \code{list} of further arguments
 passed to the function specified in \code{weights}.}
 
 \item{seed}{A single numeric value passed to \code{\link{set.seed}}
@@ -72,7 +72,7 @@ A \code{data.frame} of posterior draws.
 \description{
 Extract posterior draws of parameters averaged across models.
 Weighting can be done in various ways, for instance using
-Akaike weights based on information criteria or 
+Akaike weights based on information criteria or
 marginal likelihoods.
 }
 \details{

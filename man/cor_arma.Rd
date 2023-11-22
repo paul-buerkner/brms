@@ -18,10 +18,10 @@ assumed to be uncorrelated. Defaults to \code{~ 1}, which corresponds to
 using the order of the observations in the data as a covariate, and no
 groups.}
 
-\item{p}{A non-negative integer specifying the autoregressive (AR) 
+\item{p}{A non-negative integer specifying the autoregressive (AR)
 order of the ARMA structure. Default is 0.}
 
-\item{q}{A non-negative integer specifying the moving average (MA) 
+\item{q}{A non-negative integer specifying the moving average (MA)
 order of the ARMA structure. Default is 0.}
 
 \item{r}{No longer supported.}
@@ -32,16 +32,16 @@ stationary ARMA effects of order 1. If the model family does not have
 natural residuals, latent residuals are added automatically. If
 \code{FALSE} (the default) a regression formulation is used that is
 considerably faster and allows for ARMA effects of order higher than 1 but
-is only available for \code{gaussian} models and some of its 
+is only available for \code{gaussian} models and some of its
 generalizations.}
 }
 \value{
-An object of class \code{cor_arma}, representing an 
+An object of class \code{cor_arma}, representing an
   autoregression-moving-average correlation structure.
 }
 \description{
 This function is deprecated. Please see \code{\link{arma}} for the new syntax.
-This functions is a constructor for the \code{cor_arma} class, representing 
+This functions is a constructor for the \code{cor_arma} class, representing
 an autoregression-moving average correlation structure of order (p, q).
 }
 \examples{

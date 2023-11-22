@@ -20,20 +20,20 @@ add_criterion(x, ...)
 \arguments{
 \item{x}{An \R object typically of class \code{brmsfit}.}
 
-\item{...}{Further arguments passed to the underlying 
+\item{...}{Further arguments passed to the underlying
 functions computing the model fit criteria.}
 
 \item{criterion}{Names of model fit criteria
-to compute. Currently supported are \code{"loo"}, 
+to compute. Currently supported are \code{"loo"},
 \code{"waic"}, \code{"kfold"}, \code{"loo_subsample"},
-\code{"bayes_R2"} (Bayesian R-squared), 
-\code{"loo_R2"} (LOO-adjusted R-squared), and 
+\code{"bayes_R2"} (Bayesian R-squared),
+\code{"loo_R2"} (LOO-adjusted R-squared), and
 \code{"marglik"} (log marginal likelihood).}
 
 \item{model_name}{Optional name of the model. If \code{NULL}
 (the default) the name is taken from the call to \code{x}.}
 
-\item{overwrite}{Logical; Indicates if already stored fit 
+\item{overwrite}{Logical; Indicates if already stored fit
 indices should be overwritten. Defaults to \code{FALSE}.}
 
 \item{file}{Either \code{NULL} or a character string. In the latter case, the

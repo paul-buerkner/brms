@@ -24,12 +24,12 @@ posterior_summary(x, ...)
 
 \item{...}{More arguments passed to or from other methods.}
 
-\item{probs}{The percentiles to be computed by the 
+\item{probs}{The percentiles to be computed by the
 \code{\link[stats:quantile]{quantile}} function.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.}
 
 \item{pars}{Deprecated alias of \code{variable}. For reasons of backwards

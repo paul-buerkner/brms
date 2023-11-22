@@ -30,7 +30,7 @@ p <- function(x, i = NULL, row = TRUE) {
 
 # extract parts of an object with selective dropping of dimensions
 # @param x,...,drop same as in x[..., drop]
-# @drop_dim: Optional numeric or logical vector controlling 
+# @param drop_dim Optional numeric or logical vector controlling
 #   which dimensions to drop. Will overwrite argument 'drop'.
 extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   if (!length(dim(x))) {
@@ -53,9 +53,9 @@ extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
   }
   keep <- dim(out) > 1L | !drop_dim
   new_dim <- dim(out)[keep]
-  if (length(new_dim) == 1L) {
+  if (length(new_dim) <= 1L) {
     # use vectors instead of 1D arrays
-    new_dim <- NULL  
+    new_dim <- NULL
   }
   dim(out) <- new_dim
   out
@@ -104,7 +104,7 @@ seq_dim <- function(x, dim) {
     len <- dim(x)[dim]
   }
   if (length(len) == 1L && !isNA(len)) {
-    out <- seq_len(len) 
+    out <- seq_len(len)
   } else {
     out <- integer(0)
   }
@@ -135,7 +135,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    tmp <- lapply(x, "[[", name)
+    tmp <- from_list(x, name)
     out <- out & do_call(fun, list(tmp, ls[[name]]))
   }
   out
@@ -181,7 +181,7 @@ array2list <- function(x) {
     out[[i]] <- eval2(paste0("x[", ind, i, "]"))
     if (length(dim(x)) > 2) {
       # avoid accidental dropping of other dimensions
-      dim(out[[i]]) <- dim(x)[-ndim] 
+      dim(out[[i]]) <- dim(x)[-ndim]
     }
   }
   names(out) <- dimnames(x)[[ndim]]
@@ -193,6 +193,11 @@ move2start <- function(x, first) {
   x[c(first, setdiff(names(x), first))]
 }
 
+# move elements to the end of a named object
+move2end <- function(x, last) {
+  x[c(setdiff(names(x), last), last)]
+}
+
 # wrapper around replicate but without simplifying
 repl <- function(expr, n) {
   replicate(n, expr, simplify = FALSE)
@@ -202,7 +207,7 @@ repl <- function(expr, n) {
 # @param A a matrix
 # @param target a vector of length nrow(A)
 # @param i column of A being checked first
-# @return a vector of the same length as target containing the 
+# @return a vector of the same length as target containing the
 #   column ids where A[,i] was first greater than target
 first_greater <- function(A, target, i = 1) {
   ifelse(target <= A[, i] | ncol(A) == i, i, first_greater(A, target, i + 1))
@@ -236,6 +241,10 @@ first_not_null <- function(...) {
   out
 }
 
+is_atomic_or_null <- function(x) {
+  is.atomic(x) || is.null(x)
+}
+
 isNA <- function(x) {
   length(x) == 1L && is.na(x)
 }
@@ -264,7 +273,7 @@ as_one_logical <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.logical(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single logical value.")
   }
   x
@@ -275,7 +284,7 @@ as_one_integer <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- SW(as.integer(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single integer value.")
   }
   x
@@ -286,7 +295,7 @@ as_one_numeric <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- SW(as.numeric(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single numeric value.")
   }
   x
@@ -297,7 +306,7 @@ as_one_character <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.character(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- deparse_combine(s, max_char = 100L)
+    s <- deparse0(s, max_char = 100L)
     stop2("Cannot coerce '", s, "' to a single character value.")
   }
   x
@@ -369,7 +378,7 @@ subset_keep_attr <- function(x, y) {
 }
 
 # check if 'x' is a whole number (integer)
-is_wholenumber <- function(x, tol = .Machine$double.eps) {  
+is_wholenumber <- function(x, tol = .Machine$double.eps) {
   if (is.numeric(x)) {
     out <- abs(x - round(x)) < tol
   } else {
@@ -413,6 +422,18 @@ plapply <- function(X, FUN, cores = 1, ...) {
     }
   }
   out
+}
+
+# extract objects stored in each element of a list
+# @param x a list-like object
+# @param name name of the object to extract
+from_list <- function(x, name, ...) {
+  lapply(x, "[[", name, ...)
+}
+
+# unlist from_list output
+ufrom_list <- function(x, name, ..., recursive = TRUE, use.names = TRUE) {
+  unlist(from_list(x, name, ...), recursive, use.names)
 }
 
 # check if the operating system is Windows
@@ -486,12 +507,12 @@ str_subset <- function(x, pattern, ...) {
 }
 
 # similar to glue::glue but specialized for generating Stan code
-glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(), 
+glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(),
                  open = "{", close = "}", na = "NA") {
   dots <- list(...)
   dots <- dots[lengths(dots) > 0L]
   args <- list(
-    .x = NULL, .sep = sep, .envir = envir, .open = open, 
+    .x = NULL, .sep = sep, .envir = envir, .open = open,
     .close = close, .na = na, .trim = FALSE,
     .transformer = zero_length_transformer
   )
@@ -527,7 +548,7 @@ require_package <- function(package, version = NULL) {
   if (!is.null(version)) {
     version <- as.package_version(version)
     if (utils::packageVersion(package) < version) {
-      stop2("Please install package '", package, 
+      stop2("Please install package '", package,
             "' version ", version, " or higher.")
     }
   }
@@ -542,14 +563,14 @@ require_package <- function(package, version = NULL) {
 # @param check_dup: logical; check for duplications in x after renaming
 # @param ... passed to 'gsub'
 # @return renamed character vector of the same length as x
-rename <- function(x, pattern = NULL, replacement = NULL, 
+rename <- function(x, pattern = NULL, replacement = NULL,
                    fixed = TRUE, check_dup = FALSE, ...) {
   pattern <- as.character(pattern)
   replacement <- as.character(replacement)
   if (!length(pattern) && !length(replacement)) {
-    # default renaming to avoid special characters in coeffcient names 
+    # default renaming to avoid special characters in coeffcient names
     pattern <- c(
-      " ", "(", ")", "[", "]", ",", "\"", "'", 
+      " ", "(", ")", "[", "]", ",", "\"", "'",
       "?", "+", "-", "*", "/", "^", "="
     )
     replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ")
@@ -638,7 +659,7 @@ is_named <- function(x) {
 #' deparsing function arguments. For large number of arguments (i.e., more
 #' than a few thousand) this function currently is somewhat inefficient
 #' and should be used with care in this case.
-#' 
+#'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
 #' @param args A list of arguments to the function call. The names attribute of
@@ -648,7 +669,7 @@ is_named <- function(x) {
 #' @param envir An environment within which to evaluate the call.
 #'
 #' @return The result of the (evaluated) function call.
-#' 
+#'
 #' @keywords internal
 #' @export
 do_call <- function(what, args, pkg = NULL, envir = parent.frame()) {
@@ -671,7 +692,7 @@ do_call <- function(what, args, pkg = NULL, envir = parent.frame()) {
   }
   if (is.function(what)) {
     args$.fun <- what
-    what <- ".fun" 
+    what <- ".fun"
   } else {
     what <- paste0("`", as_one_character(what), "`")
     if (!is.null(pkg)) {
@@ -692,7 +713,7 @@ empty_data_frame <- function() {
 # @param value another named list-like object
 # @param dont_replace names of elements that cannot be replaced
 'replace_args<-' <- function(x, dont_replace = NULL, value) {
-  value_name <- deparse_combine(substitute(value), max_char = 100L)
+  value_name <- deparse0(substitute(value), max_char = 100L)
   value <- as.list(value)
   if (length(value) && is.null(names(value))) {
     stop2("Argument '", value_name, "' must be named.")
@@ -706,17 +727,18 @@ empty_data_frame <- function() {
   x
 }
 
-# deparse 'x' if it is no string
+# deparse0 'x' if it is no string
 deparse_no_string <- function(x) {
   if (!is.character(x)) {
-    x <- deparse_combine(x)
+    x <- deparse0(x)
   }
   x
 }
 
 # combine deparse lines into one string
-deparse_combine <- function(x, max_char = NULL) {
-  out <- collapse(deparse(x))
+# since R 4.0 we also have base::deparse1 for this purpose
+deparse0 <- function(x, max_char = NULL, ...) {
+  out <- collapse(deparse(x, ...))
   if (isTRUE(max_char > 0)) {
     out <- substr(out, 1L, max_char)
   }
@@ -734,10 +756,10 @@ eval2 <- function(expr, envir = parent.frame(), ...) {
 # evaluate an expression without printing output or messages
 # @param expr expression to be evaluated
 # @param type type of output to be suppressed (see ?sink)
-# @param try wrap evaluation of expr in 'try' and 
+# @param try wrap evaluation of expr in 'try' and
 #   not suppress outputs if evaluation fails?
 # @param silent actually evaluate silently?
-eval_silent <- function(expr, type = "output", try = FALSE, 
+eval_silent <- function(expr, type = "output", try = FALSE,
                         silent = TRUE, ...) {
   try <- as_one_logical(try)
   silent <- as_one_logical(silent)
@@ -749,7 +771,7 @@ eval_silent <- function(expr, type = "output", try = FALSE,
       try_out <- try(utils::capture.output(
         out <- eval(expr, envir), type = type, ...
       ))
-      if (is(try_out, "try-error")) {
+      if (is_try_error(try_out)) {
         # try again without suppressing error messages
         out <- eval(expr, envir)
       }
@@ -827,7 +849,7 @@ SW <- function(expr) {
 # @param simplify return an atomic vector of matches?
 # @param first only return the first match in each string?
 # @return character vector containing matches
-get_matches <- function(pattern, text, simplify = TRUE, 
+get_matches <- function(pattern, text, simplify = TRUE,
                         first = FALSE, ...) {
   x <- regmatches(text, gregexpr(pattern, text, ...))
   if (first) {
@@ -853,20 +875,20 @@ get_matches_expr <- function(pattern, expr, ...) {
   out <- NULL
   for (i in seq_along(expr)) {
     sexpr <- try(expr[[i]], silent = TRUE)
-    if (!is(sexpr, "try-error")) {
-      sexpr_char <- deparse_combine(sexpr)
+    if (!is_try_error(sexpr)) {
+      sexpr_char <- deparse0(sexpr)
       out <- c(out, get_matches(pattern, sexpr_char, ...))
     }
     if (is.call(sexpr) || is.expression(sexpr)) {
       out <- c(out, get_matches_expr(pattern, sexpr, ...))
     }
   }
-  unique(out)
+  trim_wsp(unique(out))
 }
 
-# like 'grepl' but handles (parse trees of) expressions 
+# like 'grepl' but handles (parse trees of) expressions
 grepl_expr <- function(pattern, expr, ...) {
-  as.logical(ulapply(expr, function(e) 
+  as.logical(ulapply(expr, function(e)
     length(get_matches_expr(pattern, e, ...)) > 0L))
 }
 
@@ -930,7 +952,7 @@ wsp <- function(x = "", nsp = 1) {
     out <- ifelse(nzchar(x), paste0(sp, x, sp), sp)
   } else {
     out <- NULL
-  } 
+  }
   out
 }
 
@@ -991,7 +1013,7 @@ use_alias <- function(arg, alias = NULL, default = NULL, warn = TRUE) {
       alias_name <- gsub("^dots\\[\\[\"|\"\\]\\]$", "", alias_name)
     }
     if (warn) {
-      warning2("Argument '", alias_name, "' is deprecated. ", 
+      warning2("Argument '", alias_name, "' is deprecated. ",
                "Please use argument '", arg_name, "' instead.")
     }
   }
@@ -1005,6 +1027,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   }
   warning2(msg)
   invisible(NULL)
+}
+
+# check if x is a try-error resulting from try()
+is_try_error <- function(x) {
+  inherits(x, "try-error")
 }
 
 # check if verbose mode is activated
@@ -1024,8 +1051,8 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
 .onAttach <- function(libname, pkgname) {
   version <- utils::packageVersion("brms")
   packageStartupMessage(
-    "Loading 'brms' package (version ", version, "). Useful instructions\n", 
-    "can be found by typing help('brms'). A more detailed introduction\n", 
+    "Loading 'brms' package (version ", version, "). Useful instructions\n",
+    "can be found by typing help('brms'). A more detailed introduction\n",
     "to the package is available through vignette('brms_overview')."
   )
   invisible(NULL)
@@ -1037,7 +1064,7 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   backports::import(pkgname)
   # dynamically register the 'recover_data' and 'emm_basis'
   # methods needed by 'emmeans', if that package is installed
-  if (requireNamespace("emmeans", quietly = TRUE) && 
+  if (requireNamespace("emmeans", quietly = TRUE) &&
       utils::packageVersion("emmeans") >= "1.4.0") {
     emmeans::.emm_register("brmsfit", pkgname)
   }

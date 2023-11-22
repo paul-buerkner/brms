@@ -2,15 +2,15 @@
   // approximation based on doi:10.1007/s10463-017-0629-6
   // Args: see log_Z_com_poisson()
   real log_Z_com_poisson_approx(real log_mu, real nu) {
-    real nu_mu = nu * exp(log_mu); 
+    real nu_mu = nu * exp(log_mu);
     real nu2 = nu^2;
     // first 4 terms of the residual series
     real log_sum_resid = log1p(
-      nu_mu^(-1) * (nu2 - 1) / 24 + 
+      nu_mu^(-1) * (nu2 - 1) / 24 +
       nu_mu^(-2) * (nu2 - 1) / 1152 * (nu2 + 23) +
       nu_mu^(-3) * (nu2 - 1) / 414720 * (5 * nu2^2 - 298 * nu2 + 11237)
     );
-    return nu_mu + log_sum_resid  - 
+    return nu_mu + log_sum_resid  -
       ((log(2 * pi()) + log_mu) * (nu - 1) / 2 + log(nu) / 2);
   }
   // log normalizing constant of the COM Poisson distribution
@@ -64,8 +64,8 @@
     return log_Z;
   }
   // COM Poisson log-PMF for a single response (log parameterization)
-  // Args: 
-  //   y: the response value 
+  // Args:
+  //   y: the response value
   //   log_mu: log location parameter
   //   shape: positive shape parameter
   real com_poisson_log_lpmf(int y, real log_mu, real nu) {
@@ -102,7 +102,7 @@
     }
     log_Z = log_Z_com_poisson(log_mu, nu);
     if (y == 0) {
-      return -log_Z; 
+      return -log_Z;
     }
     // first 2 terms of the series
     log_num_terms[1] = log1p_exp(nu * log_mu);
@@ -114,5 +114,5 @@
   }
   // COM Poisson log-CCDF for a single response
   real com_poisson_lccdf(int y, real mu, real nu) {
-    return log1m_exp(com_poisson_lcdf(y | mu, nu));   
+    return log1m_exp(com_poisson_lcdf(y | mu, nu));
   }

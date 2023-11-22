@@ -58,7 +58,7 @@ models fitted with \pkg{brms}.
 }
 \examples{
 \dontrun{
-set.seed(0) 
+set.seed(0)
 dat <- mgcv::gamSim(1, n = 200, scale = 2)
 fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 summary(fit)

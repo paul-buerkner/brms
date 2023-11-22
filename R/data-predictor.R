@@ -1,13 +1,13 @@
 #' Prepare Predictor Data
-#' 
-#' Prepare data related to predictor variables in \pkg{brms}. 
+#'
+#' Prepare data related to predictor variables in \pkg{brms}.
 #' Only exported for use in package development.
-#' 
+#'
 #' @param x An \R object.
 #' @param ... Further arguments passed to or from other methods.
-#' 
+#'
 #' @return A named list of data related to predictor variables.
-#' 
+#'
 #' @keywords internal
 #' @export
 data_predictor <- function(x, ...) {
@@ -15,29 +15,29 @@ data_predictor <- function(x, ...) {
 }
 
 #' @export
-data_predictor.mvbrmsterms <- function(x, data, basis = NULL, ...) {
+data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, basis = NULL, ...) {
   out <- list(N = nrow(data))
   for (r in names(x$terms)) {
     bs <- basis$resps[[r]]
-    c(out) <- data_predictor(x$terms[[r]], data = data, basis = bs, ...)
+    c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, basis = bs, ...)
   }
   out
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, data2, prior, ranef, 
-                                     basis = NULL, ...) {
+data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
+                                     sdata = NULL, basis = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, data2, ranef, prior, ...)
+  args_eff <- nlist(data, data2, ranef, prior, sdata, ...)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
     if (is.numeric(x$fdpars[[dp]]$value)) {
-      out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value 
+      out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
     }
   }
   for (nlp in names(x$nlpars)) {
@@ -53,13 +53,13 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
 # @param data the data passed by the user
 # @param ranef object retuend by 'tidy_ranef'
 # @param prior an object of class brmsprior
-# @param basis information from original Stan data used to correctly 
+# @param basis information from original Stan data used to correctly
 #   predict from new data. See 'standata_basis' for details.
 # @param ... currently ignored
 # @return a named list of data to be passed to Stan
 #' @export
-data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
-                               prior = brmsprior(), data2 = list(),
+data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
+                               prior = brmsprior(), sdata = NULL,
                                index = NULL, basis = NULL, ...) {
   out <- c(
     data_fe(x, data),
@@ -72,17 +72,21 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
     data_offset(x, data),
     data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   )
-  c(out) <- data_prior(x, data, prior = prior, sdata = out)
+  c(out) <- data_special_prior(
+    x, data, prior = prior, ranef = ranef,
+    sdata = c(sdata, out)
+  )
   out
 }
 
 # prepare data for non-linear parameters for use in Stan
-#' @export 
-data_predictor.btnl <- function(x, data, data2 = list(), 
+#' @export
+data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
                                 basis = NULL, ...) {
   out <- list()
   c(out) <- data_cnl(x, data)
   c(out) <- data_ac(x, data, data2 = data2, basis = basis$ac)
+  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
   out
 }
 
@@ -90,11 +94,16 @@ data_predictor.btnl <- function(x, data, data2 = list(),
 data_fe <- function(bterms, data) {
   out <- list()
   p <- usc(combine_prefix(bterms))
-  # the intercept is removed inside the Stan code for ordinal models
-  cols2remove <- if (is_ordinal(bterms)) "(Intercept)"
+  # the intercept is removed inside the Stan code for non-ordinal models
+  is_ord <- is_ordinal(bterms)
+  cols2remove <- if (is_ord) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
   avoid_dpars(colnames(X), bterms = bterms)
   out[[paste0("K", p)]] <- ncol(X)
+  if (stan_center_X(bterms)) {
+    # relevant if the intercept is treated separately to enable centering
+    out[[paste0("Kc", p)]] <- ncol(X) - ifelse(is_ord, 0, 1)
+  }
   out[[paste0("X", p)]] <- X
   out
 }
@@ -108,45 +117,48 @@ data_sm <- function(bterms, data, basis = NULL) {
   }
   p <- usc(combine_prefix(bterms))
   new <- length(basis) > 0L
-  if (!new) {
-    knots <- get_knots(data)
-    basis <- named_list(smterms)
-    for (i in seq_along(smterms)) {
-      # the spline penalty has changed in 2.8.7 (#646)
-      diagonal.penalty <- !require_old_default("2.8.7")
-      basis[[i]] <- smoothCon(
-        eval2(smterms[i]), data = data, 
+  knots <- get_knots(data)
+  diagonal.penalty <- !require_old_default("2.8.7")
+  bylevels <- named_list(smterms)
+  ns <- 0
+  lXs <- list()
+  for (i in seq_along(smterms)) {
+    if (new) {
+      sm <- basis[[i]]$sm
+    } else {
+      sm <- smoothCon(
+        eval2(smterms[i]), data = data,
         knots = knots, absorb.cons = TRUE,
         diagonal.penalty = diagonal.penalty
       )
     }
-  }
-  bylevels <- named_list(smterms)
-  ns <- 0
-  lXs <- list()
-  for (i in seq_along(basis)) {
     # may contain multiple terms when 'by' is a factor
-    for (j in seq_along(basis[[i]])) {
+    for (j in seq_along(sm)) {
       ns <- ns + 1
-      sm <- basis[[i]][[j]]
-      if (length(sm$by.level)) {
-        bylevels[[i]][j] <- sm$by.level
+      if (length(sm[[j]]$by.level)) {
+        bylevels[[i]][j] <- sm[[j]]$by.level
       }
       if (new) {
-        # prepare rasm for use with new data
-        rasm <- s2rPred(sm, data)
+        # prepare smooths for use with new data
+        # mgcv smooths are based on machine-specific SVD (#1465)
+        re <- s2rPred(sm[[j]], re = basis[[i]]$re[[j]], data = data)
       } else {
-        rasm <- mgcv::smooth2random(sm, names(data), type = 2)
+        re <- mgcv::smooth2random(sm[[j]], names(data), type = 2)
       }
-      lXs[[ns]] <- rasm$Xf
+      lXs[[ns]] <- re$Xf
       if (NCOL(lXs[[ns]])) {
-        colnames(lXs[[ns]]) <- paste0(sm$label, "_", seq_cols(lXs[[ns]]))
+        colnames(lXs[[ns]]) <- paste0(sm[[j]]$label, "_", seq_cols(lXs[[ns]]))
       }
-      Zs <- rasm$rand
-      Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
-      tmp <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-      tmp <- setNames(tmp, paste0(c("nb", "knots"), p, "_", ns))
-      c(out) <- c(tmp, Zs)
+      Zs <- re$rand
+      sfx <- paste0(p, "_", ns)
+      out[[paste0("nb", sfx)]] <- length(Zs)
+      if (length(Zs)) {
+        names(Zs) <- paste0("Zs", sfx, "_", seq_along(Zs))
+        c(out) <- Zs
+        out[[paste0("knots", sfx)]] <- as.array(ulapply(Zs, ncol))
+      } else {
+        out[[paste0("knots", sfx)]] <- integer(0)
+      }
     }
   }
   Xs <- do_call(cbind, lXs)
@@ -166,7 +178,7 @@ data_re <- function(bterms, data, ranef) {
   take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
   ranef <- ranef[take, ]
   if (!nrow(ranef)) {
-    return(out) 
+    return(out)
   }
   gn <- unique(ranef$gn)
   for (i in seq_along(gn)) {
@@ -186,7 +198,7 @@ data_re <- function(bterms, data, ranef) {
         for (t in mmc_terms) {
           pos <- which(grepl_expr(escape_all(t), colnames(Z)))
           if (length(pos) != ng) {
-            stop2("Invalid term '", t, "': Expected ", ng, 
+            stop2("Invalid term '", t, "': Expected ", ng,
                   " coefficients but found ", length(pos), ".")
           }
           for (j in seq_along(Znames)) {
@@ -242,14 +254,14 @@ data_gr_local <- function(bterms, data, ranef) {
         weights <- as.matrix(eval_rhs(weights, data))
         if (!identical(dim(weights), c(nrow(data), ngs))) {
           stop2(
-            "Grouping structure 'mm' expects 'weights' to be ", 
+            "Grouping structure 'mm' expects 'weights' to be ",
             "a matrix with as many columns as grouping factors."
           )
         }
         if (scale) {
           if (isTRUE(any(weights < 0))) {
             stop2("Cannot scale negative weights.")
-          }         
+          }
           weights <- sweep(weights, 1, rowSums(weights), "/")
         }
       } else {
@@ -313,7 +325,7 @@ data_gr_global <- function(ranef, data2) {
       found_levels <- rownames(cov_mat)
       found <- levels %in% found_levels
       if (any(!found)) {
-        stop2("Levels of the within-group covariance matrix for '", group, 
+        stop2("Levels of the within-group covariance matrix for '", group,
               "' do not match names of the grouping levels.")
       }
       cov_mat <- cov_mat[levels, levels, drop = FALSE]
@@ -352,7 +364,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       # take information from original data
       Jmo <- basis$Jmo
     } else {
-      Jmo <- as.array(ulapply(Xmo, max))
+      Jmo <- as.array(ulapply(Xmo, attr, "max"))
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters
@@ -364,7 +376,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       if (is.na(ids[j]) || j_id == j) {
         # only evaluate priors without ID or first appearance of the ID
         # all other parameters will be copied over in the Stan code
-        simo_prior <- subset2(prior, 
+        simo_prior <- subset2(prior,
           class = "simo", coef = simo_coef[j], ls = px
         )
         con_simo <- eval_dirichlet(simo_prior$prior, Jmo[j], data2)
@@ -378,7 +390,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       idxl <- get(uni_mi$idx[j], data)
       if (is.null(index[[uni_mi$var[j]]])) {
         # the 'idx' argument needs to be mapped against 'index' addition terms
-        stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ", 
+        stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ",
               "term to compare with 'idx'. See ?mi for examples.")
       }
       idxl <- match(idxl, index[[uni_mi$var[j]]])
@@ -386,7 +398,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
         stop2("Could not match all indices in response '", uni_mi$var[j], "'.")
       }
       idxl_name <- paste0("idxl", p, "_", uni_mi$var[j], "_", uni_mi$idx2[j])
-      out[[idxl_name]] <- as.array(idxl) 
+      out[[idxl_name]] <- as.array(idxl)
     } else if (isTRUE(attr(index[[uni_mi$var[j]]], "subset"))) {
       # cross-formula referencing is required for subsetted variables
       stop2("mi() terms of subsetted variables require ",
@@ -446,8 +458,8 @@ data_Xme <- function(meef, data) {
           if (length(unique(Xn[take])) > 1L ||
               length(unique(noise[take])) > 1L) {
             stop2(
-              "Measured values and measurement error should be ", 
-              "unique for each group. Occured for level '", 
+              "Measured values and measurement error should be ",
+              "unique for each group. Occured for level '",
               levels[l], "' of group '", g, "'."
             )
           }
@@ -509,8 +521,8 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
         Cgp <- con_mat[, j]
         sfx <- paste0(pi, "_", j)
         tmp <- .data_gp(
-          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c, 
-          scale = scale, internal = internal, basis = basis, 
+          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c,
+          scale = scale, internal = internal, basis = basis,
           ...
         )
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
@@ -524,7 +536,7 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
       c(out) <- .data_gp(
-        Xgp, k = k, gr = gr, sfx = pi, c = c, 
+        Xgp, k = k, gr = gr, sfx = pi, c = c,
         scale = scale, internal = internal, basis = basis,
         ...
       )
@@ -550,7 +562,7 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 # @param sfx suffix to put at the end of data names
 # @param Cgp optional vector of values belonging to
 #   a certain contrast of a factor 'by' variable
-.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, 
+.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL,
                      scale = TRUE, internal = FALSE, basis = NULL) {
   out <- list()
   if (!is.null(Cgp)) {
@@ -625,17 +637,16 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 }
 
 # data for autocorrelation variables
-# @param locations optional original locations for CAR models
 data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   out <- list()
   N <- nrow(data)
   acef <- tidy_acef(bterms)
   if (has_ac_subset(bterms, dim = "time")) {
-    gr <- subset2(acef, dim = "time")$gr
-    if (gr != "NA") {
+    gr <- get_ac_vars(acef, "gr", dim = "time")
+    if (isTRUE(nzchar(gr))) {
       tgroup <- as.numeric(factor(data[[gr]]))
     } else {
-      tgroup <- rep(1, N) 
+      tgroup <- rep(1, N)
     }
   }
   if (has_ac_class(acef, "arma")) {
@@ -656,12 +667,37 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   }
   if (use_ac_cov_time(acef)) {
     # data for the 'covariance' versions of time-series structures
+    # TODO: change begin[i]:end[i] notation to slice[i]:(slice[i+1] - 1)
+    #   see comment on PR #1435
     out$N_tg <- length(unique(tgroup))
     out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-    out$nobs_tg <- as.array(with(out, 
+    out$nobs_tg <- as.array(with(out,
       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+    if (has_ac_class(acef, "unstr")) {
+      time <- get_ac_vars(bterms, "time", dim = "time")
+      time_data <- get(time, data)
+      new_times <- extract_levels(time_data)
+      if (length(basis)) {
+        times <- basis$times
+        # unstr estimates correlations only for given time points
+        invalid_times <- setdiff(new_times, times)
+        if (length(invalid_times)) {
+          stop2("Cannot handle new time points in UNSTR models.")
+        }
+      } else {
+        times <- new_times
+      }
+      out$n_unique_t <- length(times)
+      out$n_unique_cortime <- out$n_unique_t * (out$n_unique_t - 1) / 2
+      Jtime <- match(time_data, times)
+      out$Jtime_tg <- matrix(0L, out$N_tg, max(out$nobs_tg))
+      for (i in seq_len(out$N_tg)) {
+        out$Jtime_tg[i, seq_len(out$nobs_tg[i])] <-
+          Jtime[out$begin_tg[i]:out$end_tg[i]]
+      }
+    }
   }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
@@ -672,7 +708,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (!is_equal(dim(M), rep(N, 2))) {
-      stop2("Dimensions of 'M' for SAR terms must be equal to ", 
+      stop2("Dimensions of 'M' for SAR terms must be equal to ",
             "the number of observations.")
     }
     out$Msar <- as.matrix(M)
@@ -684,12 +720,12 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     acef_car <- subset2(acef, class = "car")
     locations <- NULL
     if (length(basis)) {
-      locations <- basis$locations 
+      locations <- basis$locations
     }
     M <- data2[[acef_car$M]]
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
-      new_locations <- levels(factor(loc_data))
+      new_locations <- extract_levels(loc_data)
       if (is.null(locations)) {
         locations <- new_locations
       } else {
@@ -705,7 +741,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       }
       found <- locations %in% rownames(M)
       if (any(!found)) {
-        stop2("Row names of 'M' for CAR terms do not match ", 
+        stop2("Row names of 'M' for CAR terms do not match ",
               "the names of the grouping levels.")
       }
       M <- M[locations, locations, drop = FALSE]
@@ -722,24 +758,24 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
           stop2("Cannot handle new data in CAR terms ",
                 "without a grouping factor.")
         } else {
-          stop2("Dimensions of 'M' for CAR terms must be equal ", 
+          stop2("Dimensions of 'M' for CAR terms must be equal ",
                 "to the number of observations.")
         }
       }
     }
-    M_tmp <- M
-    M_tmp[upper.tri(M_tmp)] <- NA
-    edges <- which(as.matrix(M_tmp == 1), arr.ind = TRUE)
+    edges_rows <- (Matrix::tril(M)@i + 1)
+    edges_cols <- sort(Matrix::triu(M)@i + 1) ## sort to make consistent with rows
+    edges <- cbind("rows" = edges_rows, "cols" = edges_cols)
     c(out) <- nlist(
-      Nloc, Jloc, Nedges = nrow(edges),  
-      edges1 = as.array(edges[, 1]), 
-      edges2 = as.array(edges[, 2])
+      Nloc, Jloc, Nedges = length(edges_rows),
+      edges1 = as.array(edges_rows),
+      edges2 = as.array(edges_cols)
     )
     if (acef_car$type %in% c("escar", "esicar")) {
       Nneigh <- Matrix::colSums(M)
       if (any(Nneigh == 0) && !length(basis)) {
         stop2(
-          "For exact sparse CAR, all locations should have at ", 
+          "For exact sparse CAR, all locations should have at ",
           "least one neighbor within the provided data set. ",
           "Consider using type = 'icar' instead."
         )
@@ -761,8 +797,8 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (nrow(M) != N) {
-      stop2("Dimensions of 'M' for FCOR terms must be equal ", 
-            "to the number of observations.") 
+      stop2("Dimensions of 'M' for FCOR terms must be equal ",
+            "to the number of observations.")
     }
     out$Mfcor <- M
     # simplifies code of choose_N
@@ -810,10 +846,12 @@ data_cnl <- function(bterms, data) {
       # need to apply factor contrasts
       cform <- str2formula(covars[i])
       cvalues <- get_model_matrix(cform, data, cols2remove = "(Intercept)")
-      if (NCOL(cvalues) > 1) {
-        stop2("Factors with more than two levels are not allowed as covariates.")
+      if (NCOL(cvalues) == 1L) {
+        dim(cvalues) <- NULL
       }
-      cvalues <- cvalues[, 1]
+    }
+    if (isTRUE(dim(cvalues) > 2L)) {
+      stop2("Non-linear covariates should be vectors or matrices.")
     }
     out[[paste0("C", p, "_", i)]] <- as.array(cvalues)
   }
@@ -829,15 +867,15 @@ data_cnl <- function(bterms, data) {
   stopifnot(is.matrix(edges), NCOL(edges) == 2)
   # Build the adjacency matrix
   adj_matrix <- Matrix::sparseMatrix(
-    i = edges[, 1], j = edges[, 2], x = 1, 
+    i = edges[, 1], j = edges[, 2], x = 1,
     symmetric = TRUE
   )
   # The ICAR precision matrix (which is singular)
   Q <- Matrix::Diagonal(Nloc, Matrix::rowSums(adj_matrix)) - adj_matrix
   # Add a small jitter to the diagonal for numerical stability
-  Q_pert <- Q + Matrix::Diagonal(Nloc) * 
+  Q_pert <- Q + Matrix::Diagonal(Nloc) *
     max(Matrix::diag(Q)) * sqrt(.Machine$double.eps)
-  # Compute the diagonal elements of the covariance matrix subject to the 
+  # Compute the diagonal elements of the covariance matrix subject to the
   # constraint that the entries of the ICAR sum to zero.
   .Q_inv <- function(Q) {
     Sigma <- Matrix::solve(Q)
@@ -851,43 +889,76 @@ data_cnl <- function(bterms, data) {
   exp(mean(log(Matrix::diag(Q_inv))))
 }
 
-# data for special priors such as horseshoe and lasso
-data_prior <- function(bterms, data, prior, sdata = NULL) {
+# data for special priors such as horseshoe and R2D2
+data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  special <- get_special_prior(prior, px)
-  if (!is.null(special$horseshoe)) {
+  if (!has_special_prior(prior, px)) {
+    return(out)
+  }
+
+  # number of coefficients affected by the shrinkage prior
+  # fully compute this here to avoid having to pass the prior around
+  # to all the individual data preparation functions
+  # the order of adding things to Kscales doesn't matter but for consistency
+  # it is still the same as the order in the Stan code
+  Kscales <- 0
+  if (has_special_prior(prior, px, class = "b")) {
+    Kscales <- Kscales +
+      sdata[[paste0("Kc", p)]] %||% sdata[[paste0("K", p)]] %||% 0 +
+      sdata[[paste0("Ksp", p)]] %||% 0 +
+      sdata[[paste0("Ks", p)]] %||% 0
+  }
+  if (has_special_prior(prior, px, class = "sds")) {
+    take <- grepl(paste0("^nb", p, "_"), names(sdata))
+    Kscales <- Kscales + sum(unlist(sdata[take]))
+  }
+  if (has_special_prior(prior, px, class = "sdgp")) {
+    take <- grepl(paste0("^Kgp", p, "_"), names(sdata))
+    Kscales <- Kscales + sum(unlist(sdata[take]))
+  }
+  if (has_special_prior(prior, px, class = "ar")) {
+    Kscales <- Kscales + sdata[[paste0("Kar", p)]]
+  }
+  if (has_special_prior(prior, px, class = "ma")) {
+    Kscales <- Kscales + sdata[[paste0("Kma", p)]]
+  }
+  if (has_special_prior(prior, px, class = "sderr")) {
+    Kscales <- Kscales + 1
+  }
+  if (has_special_prior(prior, px, class = "sdcar")) {
+    Kscales <- Kscales + 1
+  }
+  if (has_special_prior(prior, px, class = "sd")) {
+    ids <- unique(subset2(ranef, ls = px)$id)
+    Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
+  }
+  out[[paste0("Kscales", p)]] <- Kscales
+
+  special <- get_special_prior(prior, px, main = TRUE)
+  if (special$name == "horseshoe") {
     # data for the horseshoe prior
     hs_names <- c("df", "df_global", "df_slab", "scale_global", "scale_slab")
-    hs_data <- special$horseshoe[hs_names]
-    if (!is.null(special$horseshoe$par_ratio)) {
-      hs_data$scale_global <- special$horseshoe$par_ratio / sqrt(nrow(data))
+    hs_data <- special[hs_names]
+    if (!is.null(special$par_ratio)) {
+      hs_data$scale_global <- special$par_ratio / sqrt(nrow(data))
     }
-    names(hs_data) <- paste0("hs_", hs_names, p) 
-    out <- c(out, hs_data)
-  }
-  if (!is.null(special$R2D2)) {
+    names(hs_data) <- paste0("hs_", hs_names, p)
+    c(out) <- hs_data
+  } else if (special$name == "R2D2") {
     # data for the R2D2 prior
     R2D2_names <- c("mean_R2", "prec_R2", "cons_D2")
-    R2D2_data <- special$R2D2[R2D2_names]
-    # number of coefficients minus the intercept
-    K <- sdata[[paste0("K", p)]] - ifelse(stan_center_X(bterms), 1, 0)
+    R2D2_data <- special[R2D2_names]
     if (length(R2D2_data$cons_D2) == 1L) {
-      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, K)
+      R2D2_data$cons_D2 <- rep(R2D2_data$cons_D2, Kscales)
     }
-    if (length(R2D2_data$cons_D2) != K) {
-      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", K)
+    if (length(R2D2_data$cons_D2) != Kscales) {
+      stop2("Argument 'cons_D2' of the R2D2 prior must be of length 1 or ", Kscales)
     }
     R2D2_data$cons_D2 <- as.array(R2D2_data$cons_D2)
-    names(R2D2_data) <- paste0("R2D2_", R2D2_names, p) 
-    out <- c(out, R2D2_data)
-  }
-  if (!is.null(special$lasso)) {
-    lasso_names <- c("df", "scale")
-    lasso_data <- special$lasso[lasso_names]
-    names(lasso_data) <- paste0("lasso_", lasso_names, p) 
-    out <- c(out, lasso_data)
+    names(R2D2_data) <- paste0("R2D2_", R2D2_names, p)
+    c(out) <- R2D2_data
   }
   out
 }
@@ -896,7 +967,7 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
 # @param formula a formula object
 # @param data A data frame created with model.frame.
 #   If another sort of object, model.frame is called first.
-# @param cols2remove names of the columns to remove from 
+# @param cols2remove names of the columns to remove from
 #   the model matrix; mainly used for intercepts
 # @param rename rename column names via rename()?
 # @param ... passed to stats::model.matrix
@@ -905,7 +976,7 @@ data_prior <- function(bterms, data, prior, sdata = NULL) {
 #   For details see ?stats::model.matrix
 get_model_matrix <- function(formula, data = environment(formula),
                              cols2remove = NULL, rename = TRUE, ...) {
-  stopifnot(is.atomic(cols2remove))
+  stopifnot(is_atomic_or_null(cols2remove))
   terms <- validate_terms(formula)
   if (is.null(terms)) {
     return(NULL)
@@ -919,14 +990,14 @@ get_model_matrix <- function(formula, data = environment(formula),
     X <- X[, -cols2remove, drop = FALSE]
   }
   if (rename) {
-    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
+    colnames(X) <- rename(colnames(X), check_dup = TRUE)
   }
   X
 }
 
 # convenient wrapper around mgcv::PredictMat
 PredictMat <- function(object, data, ...) {
-  data <- rm_attr(data, "terms")
+  data <- sm_prepare_data(object, data)
   out <- mgcv::PredictMat(object, data = data, ...)
   if (length(dim(out)) < 2L) {
     # fixes issue #494
@@ -937,6 +1008,13 @@ PredictMat <- function(object, data, ...) {
 
 # convenient wrapper around mgcv::smoothCon
 smoothCon <- function(object, data, ...) {
+  data <- sm_prepare_data(object, data)
+  mgcv::smoothCon(object, data = data, ...)
+}
+
+# mgcv doesn't handle a lot of special data types well
+# need to prepare these variables manually beforehand
+sm_prepare_data <- function(object, data) {
   data <- rm_attr(data, "terms")
   vars <- setdiff(c(object$term, object$by), "NA")
   for (v in vars) {
@@ -948,36 +1026,41 @@ smoothCon <- function(object, data, ...) {
       data[[v]] <- as.numeric(data[[v]])
     }
   }
-  mgcv::smoothCon(object, data = data, ...)
+  data
 }
 
 # Aid prediction from smooths represented as 'type = 2'
-# originally provided by Simon Wood 
+# code obtained from the doc of ?mgcv::smooth2random
 # @param sm output of mgcv::smoothCon
+# @param re output of mgcv::smooth2random
 # @param data new data supplied for prediction
-# @return A list of the same structure as returned by mgcv::smoothCon
-s2rPred <- function(sm, data) {
-  re <- mgcv::smooth2random(sm, names(data), type = 2)
+# @return A list of the same structure as returned by mgcv::smooth2random
+s2rPred <- function(sm, re, data) {
   # prediction matrix for new data
-  X <- PredictMat(sm, data)   
+  X <- PredictMat(sm, data)
   # transform to RE parameterization
   if (!is.null(re$trans.U)) {
     X <- X %*% re$trans.U
   }
-  X <- t(t(X) * re$trans.D)
-  # re-order columns according to random effect re-ordering
-  X[, re$rind] <- X[, re$pen.ind != 0] 
-  # re-order penalization index in same way  
-  pen.ind <- re$pen.ind
-  pen.ind[re$rind] <- pen.ind[pen.ind > 0]
-  # start returning the object
-  Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
-  out <- list(rand = list(), Xf = Xf)
-  for (i in seq_along(re$rand)) { 
-    # loop over random effect matrices
-    out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
-    attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+  if (is.null(re$trans.D)) {
+    # regression spline without penalization
+    out <- list(Xf = X)
+  } else {
+    X <- t(t(X) * re$trans.D)
+    # re-order columns according to random effect re-ordering
+    X[, re$rind] <- X[, re$pen.ind != 0]
+    # re-order penalization index in same way
+    pen.ind <- re$pen.ind
+    pen.ind[re$rind] <- pen.ind[pen.ind > 0]
+    # start returning the object
+    Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
+    out <- list(rand = list(), Xf = Xf)
+    for (i in seq_along(re$rand)) {
+      # loop over random effect matrices
+      out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
+      attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+    }
+    names(out$rand) <- names(re$rand)
   }
-  names(out$rand) <- names(re$rand)
   out
 }

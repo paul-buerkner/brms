@@ -44,19 +44,19 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{log}{Logical; Indicates whether to return 
+\item{log}{Logical; Indicates whether to return
 probabilities on the log-scale.}
 
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
@@ -70,20 +70,20 @@ If \code{summary = FALSE}, an S x N x K array, where
 S is the number of posterior draws.
 }
 \description{
-Compute the posterior probabilities of mixture component 
+Compute the posterior probabilities of mixture component
 memberships for each observation including uncertainty
 estimates.
 }
 \details{
 The returned probabilities can be written as
-\eqn{P(Kn = k | Yn)}, that is the posterior probability 
-that observation n originates from component k. 
+\eqn{P(Kn = k | Yn)}, that is the posterior probability
+that observation n originates from component k.
 They are computed using Bayes' Theorem
 \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
 where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood
-of observation n for component k, \eqn{P(Kn = k)} is 
-the (posterior) mixing probability of component k 
-(i.e. parameter \code{theta<k>}), and 
+of observation n for component k, \eqn{P(Kn = k)} is
+the (posterior) mixing probability of component k
+(i.e. parameter \code{theta<k>}), and
 \deqn{P(Yn) = \sum (k=1,...,K) P(Yn | Kn = k) P(Kn = k)}
 is a normalizing constant.
 }
@@ -92,7 +92,7 @@ is a normalizing constant.
 ## simulate some data
 set.seed(1234)
 dat <- data.frame(
-  y = c(rnorm(100), rnorm(50, 2)), 
+  y = c(rnorm(100), rnorm(50, 2)),
   x = rnorm(150)
 )
 ## fit a simple normal mixture model
@@ -103,17 +103,17 @@ prior <- c(
   prior(dirichlet(2, 2), theta)
 )
 fit1 <- brm(bf(y ~ x), dat, family = mix,
-            prior = prior, chains = 2, inits = 0)
+            prior = prior, chains = 2, init = 0)
 summary(fit1)
-   
-## compute the membership probabilities         
+
+## compute the membership probabilities
 ppm <- pp_mixture(fit1)
 str(ppm)
 
 ## extract point estimates for each observation
 head(ppm[, 1, ])
 
-## classify every observation according to 
+## classify every observation according to
 ## the most likely component
 apply(ppm[, 1, ], 1, which.max)
 }

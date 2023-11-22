@@ -35,7 +35,7 @@ bayesplot::color_scheme_set("viridisC")
 fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
            data = epilepsy, family = poisson(), chains = 2)
 summary(fit)
-           
+
 # create various plots
 plot(marginal_effects(fit), ask = FALSE)
 pp_check(fit)

@@ -7,9 +7,9 @@
 # @return a character vector of object names
 lsp <- function(package, what = "all", pattern = ".*") {
   if (!is.character(substitute(package)))
-    package <- deparse(substitute(package))
+    package <- deparse0(substitute(package))
   ns <- asNamespace(package)
-  
+
   ## base package does not have NAMESPACE
   if (isBaseNamespace(ns)) {
     res <- ls(.BaseNamespaceEnv, all.names = TRUE)
@@ -20,7 +20,7 @@ lsp <- function(package, what = "all", pattern = ".*") {
       wh <- get('.__NAMESPACE__.', inherits = FALSE,
                 envir = asNamespace(package, base.OK = FALSE))
       what <- if (missing(what)) 'all'
-      else if ('?' %in% what) return(ls(wh)) 
+      else if ('?' %in% what) return(ls(wh))
       else ls(wh)[pmatch(what[1], ls(wh))]
       if (!is.null(what) && !any(what %in% c('all', ls(wh))))
         stop('\'what\' should be one of ',

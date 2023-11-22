@@ -2,7 +2,7 @@
 title: "Estimating Phylogenetic Multilevel Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
@@ -21,8 +21,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -44,7 +44,7 @@ tree and we thus have to adjust our model to incorporate this dependency. The
 examples discussed here are from chapter 11 of the book *Modern Phylogenetic
 Comparative Methods and the application in Evolutionary Biology* (de Villemeruil
 & Nakagawa, 2014). The necessary data can be downloaded from the corresponding
-website (http://www.mpcm-evolution.com/). Some of these models may take a few
+website (https://www.mpcm-evolution.com/). Some of these models may take a few
 minutes to fit.
 
 ## A Simple Phylogenetic Model
@@ -56,7 +56,7 @@ data using the following code.
 ```{r}
 phylo <- ape::read.nexus("https://paul-buerkner.github.io/data/phylo.nex")
 data_simple <- read.table(
-  "https://paul-buerkner.github.io/data/data_simple.txt", 
+  "https://paul-buerkner.github.io/data/data_simple.txt",
   header = TRUE
 )
 head(data_simple)
@@ -74,9 +74,9 @@ Now we are ready to fit our first phylogenetic multilevel model:
 
 ```{r, results='hide'}
 model_simple <- brm(
-  phen ~ cofactor + (1|gr(phylo, cov = A)), 
-  data = data_simple, 
-  family = gaussian(), 
+  phen ~ cofactor + (1|gr(phylo, cov = A)),
+  data = data_simple,
+  family = gaussian(),
   data2 = list(A = A),
   prior = c(
     prior(normal(0, 10), "b"),
@@ -100,7 +100,7 @@ can be investigated in detail.
 ```{r}
 summary(model_simple)
 plot(model_simple, N = 2, ask = FALSE)
-plot(conditional_effects(model_simple), points = TRUE) 
+plot(conditional_effects(model_simple), points = TRUE)
 ```
 
 The so called phylogenetic signal (often symbolize by $\lambda$) can be computed
@@ -123,10 +123,10 @@ complicated phylogenetic models.
 
 ```{r}
 data_repeat <- read.table(
-  "https://paul-buerkner.github.io/data/data_repeat.txt", 
+  "https://paul-buerkner.github.io/data/data_repeat.txt",
   header = TRUE
 )
-data_repeat$spec_mean_cf <- 
+data_repeat$spec_mean_cf <-
   with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 head(data_repeat)
 ```
@@ -137,9 +137,9 @@ follows:
 
 ```{r, results='hide'}
 model_repeat1 <- brm(
-  phen ~ spec_mean_cf + (1|gr(phylo, cov = A)) + (1|species), 
-  data = data_repeat, 
-  family = gaussian(), 
+  phen ~ spec_mean_cf + (1|gr(phylo, cov = A)) + (1|species),
+  data = data_repeat,
+  family = gaussian(),
   data2 = list(A = A),
   prior = c(
     prior(normal(0,10), "b"),
@@ -147,7 +147,7 @@ model_repeat1 <- brm(
     prior(student_t(3,0,20), "sd"),
     prior(student_t(3,0,20), "sigma")
   ),
-  sample_prior = TRUE, chains = 2, cores = 2, 
+  sample_prior = TRUE, chains = 2, cores = 2,
   iter = 4000, warmup = 1000
 )
 ```
@@ -165,7 +165,7 @@ summary(model_repeat1)
 
 ```{r}
 hyp <- paste(
-  "sd_phylo__Intercept^2 /", 
+  "sd_phylo__Intercept^2 /",
   "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 )
 (hyp <- hypothesis(model_repeat1, hyp, class = NULL))
@@ -184,7 +184,7 @@ and then fit it again using `within_spec_cf` as an additional predictor.
 ```{r, results='hide'}
 model_repeat2 <- update(
   model_repeat1, formula = ~ . + within_spec_cf,
-  newdata = data_repeat, chains = 2, cores = 2, 
+  newdata = data_repeat, chains = 2, cores = 2,
   iter = 4000, warmup = 1000
 )
 ```
@@ -200,7 +200,7 @@ Also, the phylogenetic signal remains more or less the same.
 
 ```{r}
 hyp <- paste(
-  "sd_phylo__Intercept^2 /", 
+  "sd_phylo__Intercept^2 /",
   "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 )
 (hyp <- hypothesis(model_repeat2, hyp, class = NULL))
@@ -215,7 +215,7 @@ coloration and reproductive success):
 
 ```{r}
 data_fisher <- read.table(
-  "https://paul-buerkner.github.io/data/data_effect.txt", 
+  "https://paul-buerkner.github.io/data/data_effect.txt",
   header = TRUE
 )
 data_fisher$obs <- 1:nrow(data_fisher)
@@ -232,8 +232,8 @@ a meta-analytic model.
 
 ```{r, results='hide'}
 model_fisher <- brm(
-  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|gr(phylo, cov = A)) + (1|obs), 
-  data = data_fisher, family = gaussian(), 
+  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|gr(phylo, cov = A)) + (1|obs),
+  data = data_fisher, family = gaussian(),
   data2 = list(A = A),
   prior = c(
     prior(normal(0, 10), "Intercept"),
@@ -266,7 +266,7 @@ retrieved from mpcm-evolution.org) provides an example.
 
 ```{r}
 data_pois <- read.table(
-  "https://paul-buerkner.github.io/data/data_pois.txt", 
+  "https://paul-buerkner.github.io/data/data_pois.txt",
   header = TRUE
 )
 data_pois$obs <- 1:nrow(data_pois)
@@ -279,8 +279,8 @@ Lawless, 1987).
 
 ```{r, results='hide'}
 model_pois <- brm(
-  phen_pois ~ cofactor + (1|gr(phylo, cov = A)) + (1|obs), 
-  data = data_pois, family = poisson("log"), 
+  phen_pois ~ cofactor + (1|gr(phylo, cov = A)) + (1|obs),
+  data = data_pois, family = poisson("log"),
   data2 = list(A = A),
   chains = 2, cores = 2, iter = 4000,
   control = list(adapt_delta = 0.95)
@@ -291,7 +291,7 @@ Again, we obtain a summary of the fitted model via
 
 ```{r}
 summary(model_pois)
-plot(conditional_effects(model_pois), points = TRUE) 
+plot(conditional_effects(model_pois), points = TRUE)
 ```
 
 Now, assume we ignore the fact that the phenotype is count data and fit a linear
@@ -299,8 +299,8 @@ normal model instead.
 
 ```{r, results='hide'}
 model_normal <- brm(
-  phen_pois ~ cofactor + (1|gr(phylo, cov = A)), 
-  data = data_pois, family = gaussian(), 
+  phen_pois ~ cofactor + (1|gr(phylo, cov = A)),
+  data = data_pois, family = gaussian(),
   data2 = list(A = A),
   chains = 2, cores = 2, iter = 4000,
   control = list(adapt_delta = 0.95)
@@ -352,8 +352,8 @@ levels and matrices are thus large.
 ## References
 
 de Villemeruil P. & Nakagawa, S. (2014) General quantitative genetic methods for
-comparative biology. In: 
-*Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice* 
+comparative biology. In:
+*Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice*
 (ed. Garamszegi L.) Springer, New York. pp. 287-303.
 
 Hadfield, J. D. & Nakagawa, S. (2010) General quantitative genetic methods for
@@ -361,5 +361,5 @@ comparative biology: phylogenies, taxonomies, and multi-trait models for
 continuous and categorical characters. *Journal of Evolutionary Biology*. 23.
 494-508.
 
-Lawless, J. F. (1987). Negative binomial and mixed Poisson regression. 
+Lawless, J. F. (1987). Negative binomial and mixed Poisson regression.
 *Canadian Journal of Statistics*, 15(3), 209-225.

@@ -1,14 +1,14 @@
-# This file contains functions dealing with the extended 
+# This file contains functions dealing with the extended
 # lme4-like formula syntax to specify group-level terms
 
 #' Set up basic grouping terms in \pkg{brms}
-#' 
+#'
 #' Function used to set up a basic grouping term in \pkg{brms}.
 #' The function does not evaluate its arguments --
 #' it exists purely to help set up a model with grouping terms.
 #' \code{gr} is called implicitly inside the package
 #' and there is usually no need to call it directly.
-#' 
+#'
 #' @param ... One or more terms containing grouping factors.
 #' @param by An optional factor variable, specifying sub-populations of the
 #'   groups. For each level of the \code{by} variable, a separate
@@ -27,28 +27,28 @@
 #'   of the same grouping factor are modeled as independent of each other.
 #' @param dist Name of the distribution of the group-level effects.
 #' Currently \code{"gaussian"} is the only option.
-#' 
+#'
 #' @seealso \code{\link{brmsformula}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # model using basic lme4-style formula
 #' fit1 <- brm(count ~ Trt + (1|patient), data = epilepsy)
 #' summary(fit1)
-#' 
+#'
 #' # equivalent model using 'gr' which is called anyway internally
 #' fit2 <- brm(count ~ Trt + (1|gr(patient)), data = epilepsy)
 #' summary(fit2)
-#' 
+#'
 #' # include Trt as a by variable
 #' fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
 #' summary(fit3)
 #' }
-#' 
+#'
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA,
                cov = NULL, dist = "gaussian") {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
     stop2("Grouping structure 'gr' expects only a single grouping term")
@@ -58,7 +58,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
-    by <- deparse_combine(by)
+    by <- deparse0(by)
   } else {
     by <- ""
   }
@@ -78,7 +78,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
-#' 
+#'
 #' Function to set up a multi-membership grouping term in \pkg{brms}.
 #' The function does not evaluate its arguments --
 #' it exists purely to help set up a model with grouping terms.
@@ -86,47 +86,47 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' @inheritParams gr
 #' @param weights A matrix specifying the weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
-#'  If \code{NULL} (the default), equally weights are used. 
+#'  If \code{NULL} (the default), equally weights are used.
 #' @param by An optional factor matrix, specifying sub-populations of the
 #'   groups. It should have as many columns as grouping terms specified in
 #'   \code{...}. For each level of the \code{by} variable, a separate
 #'   variance-covariance matrix will be fitted. Levels of the grouping factor
 #'   must be nested in levels of the \code{by} variable matrix.
-#' @param scale Logical; if \code{TRUE} (the default), 
+#' @param scale Logical; if \code{TRUE} (the default),
 #'  weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
-#'  
+#'
 #' @seealso \code{\link{brmsformula}}, \code{\link{mmc}}
-#'  
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # simulate some data
 #' dat <- data.frame(
 #'  y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
 #'  g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
 #' )
-#' 
+#'
 #' # multi-membership model with two members per group and equal weights
 #' fit1 <- brm(y ~ x1 + (1|mm(g1, g2)), data = dat)
 #' summary(fit1)
-#' 
+#'
 #' # weight the first member two times for than the second member
 #' dat$w1 <- rep(2, 100)
 #' dat$w2 <- rep(1, 100)
 #' fit2 <- brm(y ~ x1 + (1|mm(g1, g2, weights = cbind(w1, w2))), data = dat)
 #' summary(fit2)
-#' 
+#'
 #' # multi-membership model with level specific covariate values
 #' dat$xc <- (dat$x1 + dat$x2) / 2
 #' fit3 <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 #' summary(fit3)
 #' }
-#'   
+#'
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE, 
+mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
                id = NA, cov = NULL, dist = "gaussian") {
-  label <- deparse(match.call())
+  label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
     stop2("Multi-membership terms require at least two grouping variables.")
@@ -138,7 +138,7 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
-    by <- deparse_combine(by)
+    by <- deparse0(by)
   } else {
     by <- ""
   }
@@ -163,41 +163,41 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
     weightvars <- str2formula(weightvars)
   }
   nlist(
-    groups, weights, weightvars, allvars, label, 
+    groups, weights, weightvars, allvars, label,
     by, cor, id, cov, dist, type = "mm"
   )
 }
 
 #' Multi-Membership Covariates
-#' 
-#' Specify covariates that vary over different levels 
+#'
+#' Specify covariates that vary over different levels
 #' of multi-membership grouping factors thus requiring
 #' special treatment. This function is almost solely useful,
-#' when called in combination with \code{\link{mm}}. 
+#' when called in combination with \code{\link{mm}}.
 #' Outside of multi-membership terms it will behave
 #' very much like \code{\link{cbind}}.
-#' 
-#' @param ... One or more terms containing covariates 
+#'
+#' @param ... One or more terms containing covariates
 #'   corresponding to the grouping levels specified in \code{\link{mm}}.
-#' 
+#'
 #' @return A matrix with covariates as columns.
-#' 
+#'
 #' @seealso \code{\link{mm}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # simulate some data
 #' dat <- data.frame(
 #'   y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
 #'   g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
 #' )
-#' 
+#'
 #' # multi-membership model with level specific covariate values
-#' dat$xc <- (dat$x1 + dat$x2) / 2 
+#' dat$xc <- (dat$x1 + dat$x2) / 2
 #' fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 #' summary(fit)
 #' }
-#' 
+#'
 #' @export
 mmc <- function(...) {
   dots <- list(...)
@@ -230,7 +230,7 @@ stopif_illegal_group <- function(group) {
 }
 
 re_lhs <- function(re_terms) {
-  get_matches("^[^\\|]*", re_terms) 
+  get_matches("^[^\\|]*", re_terms)
 }
 
 re_mid <- function(re_terms) {
@@ -262,7 +262,7 @@ split_re_terms <- function(re_terms) {
     return(re_terms)
   }
   stopifnot(is.character(re_terms))
-  
+
   # split after grouping factor terms
   re_parts <- re_parts(re_terms)
   new_re_terms <- vector("list", length(re_terms))
@@ -270,7 +270,7 @@ split_re_terms <- function(re_terms) {
     new_re_rhs <- terms(formula(paste0("~", re_parts$rhs[i])))
     new_re_rhs <- attr(new_re_rhs, "term.labels")
     new_re_rhs <- ifelse(
-      !grepl("^(gr|mm)\\(", new_re_rhs), 
+      !grepl("^(gr|mm)\\(", new_re_rhs),
       paste0("gr(", new_re_rhs, ")"), new_re_rhs
     )
     new_re_terms[[i]] <- paste0(
@@ -278,7 +278,7 @@ split_re_terms <- function(re_terms) {
     )
   }
   re_terms <- unlist(new_re_terms)
-  
+
   # split after coefficient types
   re_parts <- re_parts(re_terms)
   new_re_terms <- type <- vector("list", length(re_terms))
@@ -331,13 +331,13 @@ split_re_terms <- function(re_terms) {
         id <- gcall$id
       }
       if (length(new_lhs) > 1 && isNA(id)) {
-        # ID is required to model coefficients as correlated 
+        # ID is required to model coefficients as correlated
         # if multiple types are provided within the same term
         rhs_call$id <- collapse(sample(0:9, 10, TRUE))
       }
     }
     re_parts$mid[i] <- "|"
-    re_parts$rhs[i] <- deparse_combine(rhs_call)
+    re_parts$rhs[i] <- deparse0(rhs_call)
     new_re_terms[[i]] <- paste0(new_lhs, re_parts$mid[i], re_parts$rhs[i])
     new_re_terms[[i]] <- new_re_terms[[i]][order(type[[i]])]
     type[[i]] <- sort(type[[i]])
@@ -358,7 +358,7 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
   out <- x[re_pos]
   if (brackets && length(out)) {
     out <- paste0("(", out, ")")
-  } 
+  }
   if (formula) {
     out <- str2formula(out)
   }
@@ -410,7 +410,7 @@ check_re_formula <- function(re_formula, formula) {
       new <- new[found, ]
       if (NROW(new)) {
         forms <- ulapply(new$form, formula2str, rm = 1)
-        groups <- ulapply(new$gcall, "[[", "label")
+        groups <- ufrom_list(new$gcall, "label")
         re_terms <- paste("(", forms, "|", groups, ")")
         re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
       } else {
@@ -509,9 +509,9 @@ get_re.btl <- function(x, ...) {
   if (is.null(re)) {
     re <- empty_re()
   }
-  re$resp <- rep(px$resp, nrow(re)) 
+  re$resp <- rep(px$resp, nrow(re))
   re$dpar <- rep(px$dpar, nrow(re))
-  re$nlpar <- rep(px$nlpar, nrow(re)) 
+  re$nlpar <- rep(px$nlpar, nrow(re))
   re
 }
 
@@ -520,7 +520,7 @@ get_re.btl <- function(x, ...) {
 # @param data data.frame containing all model variables
 # @param old_levels optional original levels of the grouping factors
 # @return a tidy data.frame with the following columns:
-#   id: ID of the group-level effect 
+#   id: ID of the group-level effect
 #   group: name of the grouping factor
 #   gn: number of the grouping term within the respective formula
 #   coef: name of the group-level effect
@@ -542,7 +542,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
   j <- 1
   for (i in seq_rows(re)) {
     if (!nzchar(re$type[i])) {
-      coef <- colnames(get_model_matrix(re$form[[i]], data)) 
+      coef <- colnames(get_model_matrix(re$form[[i]], data))
     } else if (re$type[i] == "sp") {
       coef <- tidy_spef(re$form[[i]], data)$coef
     } else if (re$type[i] == "mmc") {
@@ -566,7 +566,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
       group = re$group[[i]],
       gn = re$gn[[i]],
       gtype = re$gtype[[i]],
-      coef = coef, 
+      coef = coef,
       cn = NA,
       resp = re$resp[[i]],
       dpar = re$dpar[[i]],
@@ -582,11 +582,11 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     bylevels <- NULL
     if (nzchar(rdat$by[1])) {
       bylevels <- eval2(rdat$by[1], data)
-      bylevels <- rm_wsp(levels(factor(bylevels)))
+      bylevels <- rm_wsp(extract_levels(bylevels))
     }
     rdat$bylevels <- repl(bylevels, nrow(rdat))
     rdat$form <- repl(re$form[[i]], nrow(rdat))
-    rdat$gcall <- repl(re$gcall[[i]], nrow(rdat)) 
+    rdat$gcall <- repl(re$gcall[[i]], nrow(rdat))
     # prepare group-level IDs
     id <- re$id[[i]]
     if (is.na(id)) {
@@ -609,7 +609,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
         j <- j + 1
       }
     }
-    ranef[[i]] <- rdat 
+    ranef[[i]] <- rdat
   }
   ranef <- do_call(rbind, c(list(empty_ranef()), ranef))
   # check for overlap between different group types
@@ -640,10 +640,21 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
       for (i in seq_along(levels)) {
         # combine levels of all grouping factors within one grouping term
         levels[[i]] <- unique(ulapply(
-          rsub$gcall[[i]]$groups, 
-          function(g) levels(factor(get(g, data)))
+          rsub$gcall[[i]]$groups,
+          function(g) extract_levels(get(g, data))
         ))
-        # store information of corresponding by levels
+        # fixes issue #1353
+        bysel <- ranef$group == names(levels)[i] &
+          nzchar(ranef$by) & !duplicated(ranef$by)
+        bysel <- which(bysel)
+        if (length(bysel) > 1L) {
+          stop2("Each grouping factor can only be associated with one 'by' variable.")
+        }
+        # ensure that a non-NULL by-variable is found if present
+        if (length(bysel) == 1L) {
+          rsub[i, ] <- ranef[bysel, ]
+        }
+        # store information of corresponding by-levels
         if (nzchar(rsub$by[i])) {
           stopifnot(rsub$type[i] %in% c("", "mmc"))
           by <- rsub$by[i]
@@ -654,7 +665,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
             byvar <- as.matrix(byvar)
             if (!identical(dim(byvar), c(nrow(data), length(groups)))) {
               stop2(
-                "Grouping structure 'mm' expects 'by' to be ", 
+                "Grouping structure 'mm' expects 'by' to be ",
                 "a matrix with as many columns as grouping factors."
               )
             }
@@ -671,7 +682,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
           }
           df <- unique(df)
           if (nrow(df) > length(unique(J))) {
-            stop2("Some levels of ", collapse_comma(groups), 
+            stop2("Some levels of ", collapse_comma(groups),
                   " correspond to multiple levels of '", by, "'.")
           }
           df <- df[order(df$J), ]
@@ -679,7 +690,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
           attr(levels[[i]], "by") <- by_per_level
         }
       }
-      attr(ranef, "levels") <- levels 
+      attr(ranef, "levels") <- levels
     } else {
       # for newdata numeration has to depend on the original levels
       attr(ranef, "levels") <- old_levels
@@ -699,7 +710,7 @@ empty_ranef <- function() {
       id = numeric(0), group = character(0), gn = numeric(0),
       coef = character(0), cn = numeric(0), resp = character(0),
       dpar = character(0), nlpar = character(0), ggn = numeric(0),
-      cor = logical(0), type = character(0), form = character(0), 
+      cor = logical(0), type = character(0), form = character(0),
       stringsAsFactors = FALSE
     ),
     class = c("ranef_frame", "data.frame")
@@ -709,7 +720,7 @@ empty_ranef <- function() {
 empty_re <- function() {
   data.frame(
     group = character(0), gtype = character(0),
-    gn = numeric(0), id = numeric(0), type = character(0), 
+    gn = numeric(0), id = numeric(0), type = character(0),
     cor = logical(0), form = character(0)
   )
 }
@@ -720,7 +731,7 @@ is.ranef_frame <- function(x) {
 
 # extract names of all grouping variables
 get_group_vars <- function(x, ...) {
-  UseMethod("get_group_vars") 
+  UseMethod("get_group_vars")
 }
 
 #' @export
@@ -755,7 +766,7 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
 
 # get names of grouping variables of re terms
 get_re_groups <- function(x, ...) {
-  ulapply(get_re(x)$gcall, "[[", "groups")
+  ufrom_list(get_re(x)$gcall, "groups")
 }
 
 # extract information about groups with a certain distribution
@@ -783,11 +794,19 @@ get_levels <- function(...) {
   out[!duplicated(names(out))]
 }
 
+extract_levels <- function(x) {
+  # do not check for NAs according to #1355
+  if (!is.factor(x)) {
+    x <- factor(x)
+  }
+  levels(x)
+}
+
 # extract names of group-level effects
 # @param ranef output of tidy_ranef()
-# @param group optinal name of a grouping factor for
+# @param group optional name of a grouping factor for
 #   which to extract effect names
-# @param bylevels optional names of 'by' levels for 
+# @param bylevels optional names of 'by' levels for
 #    which to extract effect names
 # @return a vector of character strings
 get_rnames <- function(ranef, group = NULL, bylevels = NULL) {

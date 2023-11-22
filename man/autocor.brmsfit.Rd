@@ -18,7 +18,7 @@ are performed only for the specified response variables.}
 \item{...}{Currently unused.}
 }
 \value{
-A \code{cor_brms} object or a list of such objects for multivariate 
+A \code{cor_brms} object or a list of such objects for multivariate
   models. Not supported for models fitted with brms 2.11.1 or higher.
 }
 \description{

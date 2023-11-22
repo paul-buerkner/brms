@@ -5,12 +5,17 @@
 \alias{bridge_sampler}
 \title{Log Marginal Likelihood via Bridge Sampling}
 \usage{
-\method{bridge_sampler}{brmsfit}(samples, ...)
+\method{bridge_sampler}{brmsfit}(samples, recompile = FALSE, ...)
 }
 \arguments{
 \item{samples}{A \code{brmsfit} object.}
 
-\item{...}{Additional arguments passed to 
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running bridge sampling on
+another machine than the one used to fit the model. No recompilation
+is done by default.}
+
+\item{...}{Additional arguments passed to
 \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.}
 }
 \description{
@@ -26,13 +31,13 @@ Computing the marginal likelihood requires samples of all variables
   \code{bridge_sampler} cannot be computed. Thus, please set \code{save_pars
   = save_pars(all = TRUE)} in the call to \code{brm}, if you are planning to
   apply \code{bridge_sampler} to your models.
-  
+
   The computation of marginal likelihoods based on bridge sampling requires
-  a lot more posterior draws than usual. A good conservative 
-  rule of thump is perhaps 10-fold more draws (read: the default of 4000 
+  a lot more posterior draws than usual. A good conservative
+  rule of thump is perhaps 10-fold more draws (read: the default of 4000
   draws may not be enough in many cases). If not enough posterior
-  draws are provided, the bridge sampling algorithm tends to be 
-  unstable leading to considerably different results each time it is run. 
+  draws are provided, the bridge sampling algorithm tends to be
+  unstable leading to considerably different results each time it is run.
   We thus recommend running \code{bridge_sampler}
   multiple times to check the stability of the results.
 
@@ -44,7 +49,7 @@ Computing the marginal likelihood requires samples of all variables
 # model with the treatment effect
 fit1 <- brm(
   count ~ zAge + zBase + Trt,
-  data = epilepsy, family = negbinomial(), 
+  data = epilepsy, family = negbinomial(),
   prior = prior(normal(0, 1), class = b),
   save_pars = save_pars(all = TRUE)
 )
@@ -54,7 +59,7 @@ bridge_sampler(fit1)
 # model without the treatment effect
 fit2 <- brm(
   count ~ zAge + zBase,
-  data = epilepsy, family = negbinomial(), 
+  data = epilepsy, family = negbinomial(),
   prior = prior(normal(0, 1), class = b),
   save_pars = save_pars(all = TRUE)
 )

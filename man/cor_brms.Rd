@@ -5,18 +5,18 @@
 \alias{cor_brms-class}
 \title{(Deprecated) Correlation structure classes for the \pkg{brms} package}
 \description{
-Classes of correlation structures available in the \pkg{brms} package. 
-\code{cor_brms} is not a correlation structure itself, 
+Classes of correlation structures available in the \pkg{brms} package.
+\code{cor_brms} is not a correlation structure itself,
 but the class common to all correlation structures implemented in \pkg{brms}.
 }
 \section{Available correlation structures}{
 
 \describe{
-  \item{cor_arma}{autoregressive-moving average (ARMA) structure, 
+  \item{cor_arma}{autoregressive-moving average (ARMA) structure,
   with arbitrary orders for the autoregressive and moving
   average components}
   \item{cor_ar}{autoregressive (AR) structure of arbitrary order}
-  \item{cor_ma}{moving average (MA) structure of arbitrary order} 
+  \item{cor_ma}{moving average (MA) structure of arbitrary order}
   \item{cor_car}{Spatial conditional autoregressive (CAR) structure}
   \item{cor_sar}{Spatial simultaneous autoregressive (SAR) structure}
   \item{cor_fixed}{fixed user-defined covariance structure}
@@ -24,6 +24,6 @@ but the class common to all correlation structures implemented in \pkg{brms}.
 }
 
 \seealso{
-\code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, 
+\code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma},
       \link{cor_car}, \link{cor_sar}, \link{cor_fixed}}
 }

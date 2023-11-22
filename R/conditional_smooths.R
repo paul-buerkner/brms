@@ -1,56 +1,56 @@
 #' Display Smooth Terms
-#' 
+#'
 #' Display smooth \code{s} and \code{t2} terms of models
 #' fitted with \pkg{brms}.
-#' 
+#'
 #' @aliases marginal_smooths marginal_smooths.brmsfit
-#' 
+#'
 #' @inheritParams conditional_effects.brmsfit
 #' @param smooths Optional character vector of smooth terms
 #'   to display. If \code{NULL} (the default) all smooth terms
 #'   are shown.
-#' @param ndraws Positive integer indicating how many 
-#'   posterior draws should be used. 
+#' @param ndraws Positive integer indicating how many
+#'   posterior draws should be used.
 #'   If \code{NULL} (the default) all draws are used.
 #'   Ignored if \code{draw_ids} is not \code{NULL}.
 #' @param draw_ids An integer vector specifying
-#'   the posterior draws to be used. 
+#'   the posterior draws to be used.
 #'   If \code{NULL} (the default), all draws are used.
 #' @param nsamples Deprecated alias of \code{ndraws}.
 #' @param subset Deprecated alias of \code{draw_ids}.
 #' @param ... Currently ignored.
-#'   
-#' @return For the \code{brmsfit} method, 
+#'
+#' @return For the \code{brmsfit} method,
 #' an object of class \code{brms_conditional_effects}. See
-#' \code{\link{conditional_effects}} for 
+#' \code{\link{conditional_effects}} for
 #' more details and documentation of the related plotting function.
-#' 
+#'
 #' @details Two-dimensional smooth terms will be visualized using
 #'   either contour or raster plots.
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
-#' set.seed(0) 
+#' set.seed(0)
 #' dat <- mgcv::gamSim(1, n = 200, scale = 2)
 #' fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #' # show all smooth terms
 #' plot(conditional_smooths(fit), rug = TRUE, ask = FALSE)
 #' # show only the smooth term s(x2)
 #' plot(conditional_smooths(fit, smooths = "s(x2)"), ask = FALSE)
-#' 
+#'
 #' # fit and plot a two-dimensional smooth term
 #' fit2 <- brm(y ~ t2(x0, x2), data = dat)
 #' ms <- conditional_smooths(fit2)
 #' plot(ms, stype = "contour")
 #' plot(ms, stype = "raster")
 #' }
-#' 
+#'
 #' @export
 conditional_smooths.brmsfit <- function(x, smooths = NULL,
                                         int_conditions = NULL,
                                         prob = 0.95, spaghetti = FALSE,
                                         resolution = 100, too_far = 0,
-                                        ndraws = NULL, draw_ids = NULL, 
+                                        ndraws = NULL, draw_ids = NULL,
                                         nsamples = NULL, subset = NULL,
                                         probs = NULL, ...) {
   probs <- validate_ci_bounds(prob, probs = probs)
@@ -66,8 +66,8 @@ conditional_smooths.brmsfit <- function(x, smooths = NULL,
   bterms <- brmsterms(exclude_terms(x$formula, smooths_only = TRUE))
   out <- conditional_smooths(
     bterms, fit = x, smooths = smooths,
-    conditions = conditions, int_conditions = int_conditions, 
-    too_far = too_far, resolution = resolution, probs = probs, 
+    conditions = conditions, int_conditions = int_conditions,
+    too_far = too_far, resolution = resolution, probs = probs,
     spaghetti = spaghetti, draw_ids = draw_ids
   )
   if (!length(out)) {
@@ -116,13 +116,15 @@ conditional_smooths.brmsterms <- function(x, ...) {
 # @param ...: currently ignored
 # @return a named list with one element per smooth term
 #' @export
-conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions, 
-                                    probs, resolution, too_far, spaghetti, 
+conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
+                                    probs, resolution, too_far, spaghetti,
                                     ...) {
   stopifnot(is.brmsfit(fit))
   out <- list()
   mf <- model.frame(fit)
   smef <- tidy_smef(x, mf)
+  # fixes issue #1265
+  smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)
   if (!length(smooths)) {
     I <- seq_along(smterms)
@@ -146,10 +148,16 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     values <- named_list(vars)
     is_numeric <- setNames(rep(FALSE, ncovars), covars)
     for (cv in covars) {
-      if (is.numeric(mf[[cv]])) {
-        is_numeric[cv] <- TRUE
+      is_numeric[cv] <- is.numeric(mf[[cv]])
+      if (cv %in% names(int_conditions)) {
+        int_cond <- int_conditions[[cv]]
+        if (is.function(int_cond)) {
+          int_cond <- int_cond(mf[[cv]])
+        }
+        values[[cv]] <- int_cond
+      } else if (is_numeric[cv]) {
         values[[cv]] <- seq(
-          min(mf[[cv]]), max(mf[[cv]]), 
+          min(mf[[cv]]), max(mf[[cv]]),
           length.out = resolution
         )
       } else {
@@ -175,13 +183,13 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     if (ncovars == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
-        g1 = newdata[[covars[1]]], 
-        g2 = newdata[[covars[2]]], 
+        g1 = newdata[[covars[1]]],
+        g2 = newdata[[covars[2]]],
         d1 = mf[, covars[1]],
         d2 = mf[, covars[2]],
         dist = too_far
       )
-      newdata <- newdata[!ex_too_far, ]  
+      newdata <- newdata[!ex_too_far, ]
     }
     other_vars <- setdiff(names(conditions), vars)
     newdata <- fill_newdata(newdata, other_vars, conditions)
@@ -190,7 +198,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     cond_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     if (length(byvars)) {
       # byvars will be plotted as facets
-      cond_data$cond__ <- rows2labels(cond_data[, byvars, drop = FALSE]) 
+      cond_data$cond__ <- rows2labels(cond_data[, byvars, drop = FALSE])
     } else {
       cond_data$cond__ <- factor(1)
     }

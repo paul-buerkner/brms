@@ -1,17 +1,17 @@
 #' Extract response values
-#' 
+#'
 #' Extract response values from a \code{\link{brmsfit}} object.
-#' 
+#'
 #' @param x A \code{\link{brmsfit}} object.
 #' @param resp Optional names of response variables for which to extract values.
 #' @param warn For internal use only.
 #' @param ... Further arguments passed to \code{\link{standata}}.
 #' @inheritParams posterior_predict.brmsfit
-#' 
+#'
 #' @return Returns a vector of response values for univariate models and a
 #'   matrix of response values with one column per response variable for
 #'   multivariate models.
-#' 
+#'
 #' @keywords internal
 #' @export
 get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
@@ -46,15 +46,15 @@ get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
 }
 
 #' Prepare Response Data
-#' 
-#' Prepare data related to response variables in \pkg{brms}. 
+#'
+#' Prepare data related to response variables in \pkg{brms}.
 #' Only exported for use in package development.
-#' 
+#'
 #' @param x An \R object.
 #' @param ... Further arguments passed to or from other methods.
-#' 
+#'
 #' @return A named list of data related to response variables.
-#' 
+#'
 #' @keywords internal
 #' @export
 data_response <- function(x, ...) {
@@ -83,15 +83,29 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # TODO: rename 'Y' to 'y'
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
-  if (is_binary(x$family) || is_categorical(x$family)) {
-    out$Y <- as_factor(out$Y, levels = basis$resp_levels)
-    out$Y <- as.numeric(out$Y)
-    if (is_binary(x$family)) {
-      out$Y <- out$Y - 1
+  if (is_binary(x$family)) {
+    bin_levels <- basis$resp_levels
+    if (is.null(bin_levels)) {
+      bin_levels <- levels(as.factor(out$Y))
     }
+    # fixes issues #1298 and #1511
+    if (is.numeric(out$Y) && length(bin_levels) == 1L) {
+      if (0 %in% bin_levels) {
+        # 1 as default event level
+        bin_levels <- c(0, 1)
+      } else {
+        # 0 as default non-event level
+        bin_levels <- c(0, bin_levels)
+      }
+    }
+    out$Y <- as.integer(as_factor(out$Y, levels = bin_levels)) - 1
+  }
+  if (is_categorical(x$family)) {
+    out$Y <- as.integer(as_factor(out$Y, levels = basis$resp_levels))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
-    out$Y <- as.numeric(out$Y)
+    diff <- ifelse(has_extra_cat(x$family), 1L, 0L)
+    out$Y <- as.integer(out$Y) - diff
   }
   if (check_response) {
     family4error <- family_names(x$family)
@@ -109,9 +123,12 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       }
     }
     if (is_ordinal(x$family)) {
-      if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
-        stop2("Family '", family4error, "' requires either positive ",
-              "integers or ordered factors as responses.")
+      extra_cat <- has_extra_cat(x$family)
+      min_int <- ifelse(extra_cat, 0L, 1L)
+      msg <- ifelse(extra_cat, "non-negative", "positive")
+      if (any(!is_wholenumber(out$Y)) || any(out$Y < min_int)) {
+        stop2("Family '", family4error, "' requires either ", msg,
+              " integers or ordered factors as responses.")
       }
     }
     if (use_int(x$family)) {
@@ -124,9 +141,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("This model requires a response matrix.")
       }
     }
-    if (is_dirichlet(x$family)) {
+    if (is_simplex(x$family)) {
       if (!is_equal(rowSums(out$Y), rep(1, nrow(out$Y)))) {
-        stop2("Response values in dirichlet models must sum to 1.")
+        stop2("Response values in simplex models must sum to 1.")
       }
     }
     ybounds <- family_info(x$family, "ybounds")
@@ -156,31 +173,17 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # data for addition arguments of the response
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
-      if (is_multinomial(x$family)) {
-        stop2("Specifying 'trials' is required in multinomial models.")
-      }
-      trials <- round(max(out$Y, na.rm = TRUE))
-      if (isTRUE(is.finite(trials))) {
-        message("Using the maximum response value as the number of trials.")
-        warning2(
-          "Using 'binomial' families without specifying 'trials' ", 
-          "on the left-hand side of the model formula is deprecated."
-        )
-      } else if (!is.null(basis$trials)) {
-        trials <- max(basis$trials)
-      } else {
-        stop2("Could not compute the number of trials.")
-      }
-    } else if (is.formula(x$adforms$trials)) {
-      trials <- get_ad_values(x, "trials", "trials", data)
-      if (!is.numeric(trials)) {
-        stop2("Number of trials must be numeric.")
-      }
-      if (any(!is_wholenumber(trials) | trials < 0)) {
-        stop2("Number of trials must be non-negative integers.")
-      }
-    } else {
+      stop2("Specifying 'trials' is required for this model.")
+    }
+    if (!is.formula(x$adforms$trials)) {
       stop2("Argument 'trials' is misspecified.")
+    }
+    trials <- get_ad_values(x, "trials", "trials", data)
+    if (!is.numeric(trials)) {
+      stop2("Number of trials must be numeric.")
+    }
+    if (any(!is_wholenumber(trials) | trials < 0)) {
+      stop2("Number of trials must be non-negative integers.")
     }
     if (length(trials) == 1L) {
       trials <- rep(trials, nrow(data))
@@ -256,7 +259,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     warning2("Addition argument 'cat' is deprecated. Use 'thres' instead. ",
              "See ?brmsformula for more details.")
   }
-  
+
   if (is.formula(x$adforms$se)) {
     se <- get_ad_values(x, "se", "se", data)
     if (!is.numeric(se)) {
@@ -317,7 +320,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$cens <- as.array(cens)
     icens <- cens %in% 2
-    if (any(icens)) {
+    y2_expr <- get_ad_expr(x, "cens", "y2")
+    if (any(icens) || !is.null(y2_expr)) {
+      # interval censoring is required
+      # check for 'y2' above as well to prevent issue #1367
       y2 <- unname(get_ad_values(x, "cens", "y2", data))
       if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")
@@ -450,12 +456,12 @@ data_mixture <- function(bterms, data2, prior) {
 data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
   out <- list()
   if (!is_cox(bterms$family)) {
-    return(out) 
+    return(out)
   }
   y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
-  args <- bterms$family$bhaz 
+  args <- bterms$family$bhaz
   bs <- basis$basis_matrix
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs) 
+  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
   sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bterms$resp)
@@ -470,7 +476,7 @@ data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
 # @param integrate compute the I-spline instead of the M-spline basis?
 # @param basis optional precomputed basis matrix
 # @return the design matrix of the baseline hazard function
-bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE, 
+bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
                               basis = NULL) {
   require_package("splines2")
   if (!is.null(basis)) {
@@ -486,11 +492,11 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
   stopifnot(is.list(args))
   args$x <- y
   if (!is.null(args$intercept)) {
-    args$intercept <- as_one_logical(args$intercept) 
+    args$intercept <- as_one_logical(args$intercept)
   }
   if (is.null(args$Boundary.knots)) {
     # avoid 'knots' outside 'Boundary.knots' error (#1143)
-    # we also need a smaller lower boundary knot to avoid lp = -Inf 
+    # we also need a smaller lower boundary knot to avoid lp = -Inf
     # the below choices are ad-hoc and may need further thought
     min_y <- min(y, na.rm = TRUE)
     max_y <- max(y, na.rm = TRUE)
@@ -533,14 +539,16 @@ extract_cat_names <- function(x, data) {
 # @return a data.frame with columns 'thres' and 'group'
 extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
-  
+
   if (is.null(x$adforms)) {
     x$adforms <- terms_ad(x$formula, x$family)
   }
   nthres <- get_ad_values(x, "thres", "thres", data)
   if (any(!is_wholenumber(nthres) | nthres < 1L)) {
     stop2("Number of thresholds must be a positive integer.")
-  }  
+  }
+  # has an extra category that is not part of the ordinal scale? (#1429)
+  extra_cat <- has_extra_cat(x$family)
   grthres <- get_ad_values(x, "thres", "gr", data)
   if (!is.null(grthres)) {
     # grouping variable was specified
@@ -554,7 +562,10 @@ extract_thres_names <- function(x, data) {
       nthres <- rep(NA, length(group))
       for (i in seq_along(group)) {
         take <- grthres %in% group[i]
-        nthres[i] <- extract_nthres(x$formula, data[take, , drop = FALSE])
+        nthres[i] <- extract_nthres(
+          x$formula, data[take, , drop = FALSE],
+          extra_cat = extra_cat
+        )
       }
     } else if (length(nthres) == 1L) {
       # replicate number of thresholds across groups
@@ -577,7 +588,7 @@ extract_thres_names <- function(x, data) {
     group <- ""
     if (!length(nthres)) {
       # extract number of thresholds from the response values
-      nthres <- extract_nthres(x$formula, data)
+      nthres <- extract_nthres(x$formula, data, extra_cat = extra_cat)
     }
     if (length(nthres) > 1L) {
       stop2("Number of thresholds needs to be a single value.")
@@ -590,14 +601,24 @@ extract_thres_names <- function(x, data) {
 # extract threshold names from the response values
 # @param formula with the response on the LHS
 # @param data a data.frame from which to extract responses
+# @param extra_cat is the first category an extra (hurdle) category?
 # @return a single value for the number of thresholds
-extract_nthres <- function(formula, data) {
+extract_nthres <- function(formula, data, extra_cat = FALSE) {
+  extra_cat <- as_one_logical(extra_cat)
   respform <- validate_resp_formula(formula)
   mr <- model.response(model.frame(respform, data))
   if (is_like_factor(mr)) {
-    out <- length(levels(factor(mr))) - 1
+    # the first factor level is the extra category
+    diff <- ifelse(extra_cat, 2L, 1L)
+    out <- length(levels(factor(mr))) - diff
   } else {
-    out <- max(mr) - 1
+    # 0 is the extra category which does not affect max
+    out <- max(mr) - 1L
+  }
+  if (out < 1L) {
+    stop2("Could not extract the number of thresholds. Use ordered factors ",
+          "or positive integers as your ordinal response and ensure that ",
+          "more than on response category is present.")
   }
   out
 }

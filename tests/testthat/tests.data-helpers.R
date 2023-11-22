@@ -15,12 +15,12 @@ test_that("validate_newdata handles factors correctly", {
 
 test_that("validate_data returns correct model.frames", {
   dat <- data.frame(y = 1:5, x = 1:5, z = 6:10, g = 5:1)
-  
+
   bterms <- brmsterms(y ~ as.numeric(x) + (as.factor(z) | g),
                       family = gaussian())
   mf <- brms:::validate_data(dat, bterms = bterms)
   expect_true(all(c("x", "z") %in% names(mf)))
-  
+
   bterms <- brmsterms(y ~ 1 + (1|g/x/z), family = gaussian())
   mf <- brms:::validate_data(dat, bterms = bterms)
   expect_equal(mf[["g:x"]], paste0(dat$g, "_", dat$x))

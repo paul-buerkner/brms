@@ -14,48 +14,48 @@ test_that("array2list performs correct conversion", {
 })
 
 test_that("probit and probit_approx produce similar results", {
-  expect_equal(brms:::ilink(-10:10, "probit"), 
-               brms:::ilink(-10:10, "probit_approx"), 
+  expect_equal(brms:::inv_link(-10:10, "probit"),
+               brms:::inv_link(-10:10, "probit_approx"),
                tolerance = 1e-3)
 })
 
 test_that("autocorrelation matrices are computed correctly", {
   ar <- 0.5
   ma <- 0.3
-  
+
   ar_mat <- brms:::get_cor_matrix_ar1(ar = matrix(ar), nobs = 4)
-  expected_ar_mat <- 1 / (1 - ar^2) * 
+  expected_ar_mat <- 1 / (1 - ar^2) *
                      cbind(c(1, ar, ar^2, ar^3),
                            c(ar, 1, ar, ar^2),
                            c(ar^2, ar, 1, ar),
                            c(ar^3, ar^2, ar, 1))
   expect_equal(ar_mat[1, , ], expected_ar_mat)
-  
+
   ma_mat <- brms:::get_cor_matrix_ma1(ma = matrix(ma), nobs = 4)
   expected_ma_mat <- cbind(c(1+ma^2, ma, 0, 0),
                            c(ma, 1+ma^2, ma, 0),
                            c(0, ma, 1+ma^2, ma),
                            c(0, 0, ma, 1+ma^2))
   expect_equal(ma_mat[1, , ], expected_ma_mat)
-  
+
   arma_mat <- brms:::get_cor_matrix_arma1(
     ar = matrix(ar), ma = matrix(ma), nobs = 4
   )
   g0 <- 1 + ma^2 + 2 * ar * ma
   g1 <- (1 + ar * ma) * (ar + ma)
-  expected_arma_mat <- 1 / (1 - ar^2) * 
+  expected_arma_mat <- 1 / (1 - ar^2) *
                        cbind(c(g0, g1, g1 * ar, g1 * ar^2),
                              c(g1, g0, g1, g1 * ar),
                              c(g1 * ar, g1, g0, g1),
                              c(g1 * ar^2, g1 * ar, g1, g0))
   expect_equal(arma_mat[1, , ], expected_arma_mat)
-  
+
   cosy <- 0.6
   cosy_mat <- brms:::get_cor_matrix_cosy(cosy = as.matrix(cosy), nobs = 4)
   expected_cosy_mat <- matrix(cosy, 4, 4)
   diag(expected_cosy_mat) <- 1
   expect_equal(cosy_mat[1, , ], expected_cosy_mat)
-  
+
   ident_mat <- brms:::get_cor_matrix_ident(ndraws = 10, nobs = 4)
   expected_ident_mat <- diag(1, 4)
   expect_equal(ident_mat[1, , ], expected_ident_mat)
@@ -97,63 +97,63 @@ test_that("make_conditions works correctly", {
 
 test_that("brmsfit_needs_refit works correctly", {
   cache_tmp <- tempfile(fileext = ".rds")
-  
+
   expect_null(read_brmsfit(cache_tmp))
-  
+
   saveRDS(list(a = 1), file = cache_tmp)
   expect_error(read_brmsfit(cache_tmp))
-  
+
   data_model1 <- data.frame(y = rnorm(10), x = rnorm(10))
   fake_fit <- brm(y ~ x, data = data_model1, empty = TRUE)
-  
+
   fake_fit_file <- fake_fit
   fake_fit_file$file <- cache_tmp
-  
+
   scode_model1 <- make_stancode(y ~ x, data = data_model1)
   sdata_model1 <- make_standata(y ~ x, data = data_model1)
-  
+
   data_model2 <- data_model1
   data_model2$x[1] <- data_model2$x[1] + 1
   scode_model2 <- make_stancode(y ~ 0 + x, data = data_model2)
   sdata_model2 <- make_standata(y ~ 0 + x, data = data_model2)
-  
-  
+
+
   write_brmsfit(fake_fit, file = cache_tmp)
   cache_res <- read_brmsfit(file = cache_tmp)
   expect_equal(cache_res, fake_fit_file)
-  
+
   expect_false(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model1, 
+    cache_res, sdata = sdata_model1, scode = scode_model1,
     algorithm = "sampling", silent = TRUE))
   expect_false(brmsfit_needs_refit(
     cache_res, sdata = sdata_model1, scode = scode_model1, algorithm = NULL,
     silent = TRUE))
   expect_false(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = NULL, 
+    cache_res, sdata = sdata_model1, scode = NULL,
     algorithm = "sampling", silent = TRUE))
   expect_false(brmsfit_needs_refit(
     cache_res, sdata = NULL, scode = scode_model1, algorithm = "sampling",
     silent = TRUE))
-  
-  
+
+
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model2, scode = scode_model1, 
+    cache_res, sdata = sdata_model2, scode = scode_model1,
     algorithm = "sampling", silent = TRUE))
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model2, 
+    cache_res, sdata = sdata_model1, scode = scode_model2,
     algorithm = "sampling", silent = TRUE))
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model2, scode = scode_model2, 
+    cache_res, sdata = sdata_model2, scode = scode_model2,
     algorithm = "sampling", silent = TRUE))
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model1, 
+    cache_res, sdata = sdata_model1, scode = scode_model1,
     algorithm = "optimize", silent = TRUE))
-  
+
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = make_standata(y ~ x, data = data_model1, 
-                                     sample_prior = "only"), 
+    cache_res, sdata = make_standata(y ~ x, data = data_model1,
+                                     sample_prior = "only"),
     scode = scode_model1, algorithm = NULL, silent = TRUE))
-  
+
 })
 
 test_that("insert_refcat() works correctly", {
@@ -163,12 +163,16 @@ test_that("insert_refcat() works correctly", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         cats <- paste0("cat", 1:ncat)
+        ref_list <- list(
+          ref1 = 1,
+          reflast = ncat
+        )
         fam_list <- list(
-          fam_refNULL = categorical(),
           fam_ref1 = categorical(refcat = cats[1]),
           fam_reflast = categorical(refcat = cats[ncat])
         )
         if (ncat > 2) {
+          ref_list <- c(ref_list, list(ref2 = 2))
           fam_list <- c(fam_list, list(fam_ref2 = categorical(refcat = cats[2])))
         }
         eta_test_list <- list(array(rnorm(ndraws * nobsv * (ncat - 1)),
@@ -180,15 +184,17 @@ test_that("insert_refcat() works correctly", {
           )
         }
         for (eta_test in eta_test_list) {
-          for (fam in fam_list) {
+          for (i in seq_along(fam_list)) {
             # Emulate content of `fam` after fit:
+            fam <- fam_list[[i]]
             if (is.null(fam$refcat)) {
               fam$refcat <- cats[1]
             }
             fam$cats <- cats
-            
+            ref <- ref_list[[i]]
+
             # Perform the check:
-            eta_ref <- insert_refcat(eta_test, fam)
+            eta_ref <- insert_refcat(eta_test, ref)
             eta_ref_ch <- insert_refcat_ch(eta_test, fam)
             expect_equivalent(eta_ref, eta_ref_ch)
             if (length(dim(eta_test)) == 3) {

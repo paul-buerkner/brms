@@ -14,4 +14,7 @@ expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
   testthat::expect_true(all(object >= lower & object <= upper), ...)
 }
 
+SW <- suppressWarnings
+SM <- suppressMessages
+
 context("local tests")

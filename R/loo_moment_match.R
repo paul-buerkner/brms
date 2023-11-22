@@ -1,57 +1,62 @@
 #' Moment matching for efficient approximate leave-one-out cross-validation
-#' 
-#' Moment matching for efficient approximate leave-one-out cross-validation 
-#' (LOO-CV). See \code{\link[loo:loo_moment_match]{loo_moment_match}} 
+#'
+#' Moment matching for efficient approximate leave-one-out cross-validation
+#' (LOO-CV). See \code{\link[loo:loo_moment_match]{loo_moment_match}}
 #' for more details.
-#' 
+#'
 #' @aliases loo_moment_match
-#' 
+#'
 #' @inheritParams predict.brmsfit
 #' @param x An object of class \code{brmsfit}.
 #' @param loo An object of class \code{loo} originally created from \code{x}.
-#' @param k_threshold The threshold at which Pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#' @param k_threshold The threshold at which Pareto \eqn{k}
+#'   estimates are treated as problematic. Defaults to \code{0.7}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 #'   for more details.
 #' @param check Logical; If \code{TRUE} (the default), some checks
 #'   check are performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled. This may be necessary if you are running moment matching on
+#'   another machine than the one used to fit the model. No recompilation
+#'   is done by default.
 #' @param ... Further arguments passed to the underlying methods.
 #'   Additional arguments initially passed to \code{\link{loo}},
 #'   for example, \code{newdata} or \code{resp} need to be passed
 #'   again to \code{loo_moment_match} in order for the latter
 #'   to work correctly.
 #' @return An updated object of class \code{loo}.
-#' 
+#'
 #' @details The moment matching algorithm requires draws of all variables
 #'   defined in Stan's \code{parameters} block to be saved. Otherwise
 #'   \code{loo_moment_match} cannot be computed. Thus, please set
 #'   \code{save_pars = save_pars(all = TRUE)} in the call to \code{\link{brm}},
 #'   if you are planning to apply \code{loo_moment_match} to your models.
-#'   
-#' @references 
-#'   Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2021). 
+#'
+#' @references
+#'   Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2021).
 #'   Implicitly Adaptive Importance Sampling. Statistics and Computing.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'             data = epilepsy, family = poisson(),
 #'             save_pars = save_pars(all = TRUE))
-#'             
+#'
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
 #' (mmloo1 <- loo_moment_match(fit1, loo = loo1))
 #' }
-#' 
+#'
 #' @importFrom loo loo_moment_match
 #' @export loo_moment_match
 #' @export
-loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL, 
-                                     resp = NULL, check = TRUE, ...) {
+loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
+                                     resp = NULL, check = TRUE,
+                                     recompile = FALSE, ...) {
   stopifnot(is.loo(loo), is.brmsfit(x))
   if (is.null(newdata)) {
-    newdata <- model.frame(x) 
+    newdata <- model.frame(x)
   } else {
     newdata <- as.data.frame(newdata)
   }
@@ -66,23 +71,25 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
       )
     }
   }
-  # otherwise loo_moment_match might not work in a new R session
-  x <- update_misc_env(x)
+  # otherwise loo_moment_match may fail in a new R session or on another machine
+  x <- update_misc_env(x, recompile = recompile)
   out <- try(loo::loo_moment_match.default(
-    x, loo = loo, 
-    post_draws = as.matrix, 
-    log_lik_i = .log_lik_i, 
+    x, loo = loo,
+    post_draws = as.matrix,
+    log_lik_i = .log_lik_i,
     unconstrain_pars = .unconstrain_pars,
     log_prob_upars = .log_prob_upars,
     log_lik_i_upars = .log_lik_i_upars,
     k_threshold = k_threshold,
-    newdata = newdata, 
+    newdata = newdata,
     resp = resp, ...
   ))
-  if (is(out, "try-error")) {
+  if (is_try_error(out)) {
     stop2(
-      "Moment matching failed. Perhaps you did not set ", 
-      "'save_pars = save_pars(all = TRUE)' when fitting your model?"
+      "Moment matching failed. Perhaps you did not set ",
+      "'save_pars = save_pars(all = TRUE)' when fitting your model? ",
+      "If you are running moment matching on another machine than the one ",
+      "used to fit the model, you may need to set recompile = TRUE."
     )
   }
   out
@@ -140,7 +147,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     dims_oi = x$fit@sim$dims_oi_old,
     fnames_oi = x$fit@sim$fnames_oi_old,
     n_flatnames = length(x$fit@sim$fnames_oi_old)
-  ) 
+  )
   x$fit@stan_args <- list(
     list(chain_id = 1, iter = ndraws, thin = 1, warmup = 0)
   )
@@ -156,10 +163,10 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
 }
 
 # compute log_lik values based on the unconstrained parameters
-.log_lik_i_upars <- function(x, upars, i, ndraws = NULL, 
+.log_lik_i_upars <- function(x, upars, i, ndraws = NULL,
                              draw_ids = NULL, ...) {
   # do not pass draw_ids or ndraws further to avoid subsetting twice
-  x <- update_misc_env(x, only_windows = TRUE) 
+  x <- update_misc_env(x, only_windows = TRUE)
   x <- .update_pars(x, upars = upars, ...)
   .log_lik_i(x, i = i, ...)
 }

@@ -8,15 +8,15 @@ fcor(M)
 }
 \arguments{
 \item{M}{Known correlation/covariance matrix of the response variable.
-If a vector is passed, it will be used as diagonal entries 
+If a vector is passed, it will be used as diagonal entries
 (variances) and correlations/covariances will be set to zero.
 The actual covariance matrix used in the likelihood is obtained
 by multiplying \code{M} by the square of the residual standard
 deviation parameter \code{sigma} estimated as part of the model.}
 }
 \value{
-An object of class \code{'fcor_term'}, which is a list 
-  of arguments to be interpreted by the formula 
+An object of class \code{'fcor_term'}, which is a list
+  of arguments to be interpreted by the formula
   parsing functions of \pkg{brms}.
 }
 \description{

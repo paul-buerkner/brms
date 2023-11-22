@@ -4,7 +4,7 @@
 \alias{get_dpar}
 \title{Draws of a Distributional Parameter}
 \usage{
-get_dpar(prep, dpar, i = NULL, ilink = NULL)
+get_dpar(prep, dpar, i = NULL, inv_link = NULL)
 }
 \arguments{
 \item{prep}{A 'brmsprep' or 'mvbrmsprep' object created by
@@ -16,9 +16,9 @@ get_dpar(prep, dpar, i = NULL, ilink = NULL)
 If \code{NULL} (the default), all observation will be extracted.
 Ignored if \code{dpar} is not predicted.}
 
-\item{ilink}{Should the inverse link function be applied?
+\item{inv_link}{Should the inverse link function be applied?
 If \code{NULL} (the default), the value is chosen internally.
-In particular, \code{ilink} is \code{TRUE} by default for custom
+In particular, \code{inv_link} is \code{TRUE} by default for custom
 families.}
 }
 \value{
@@ -29,9 +29,9 @@ If the parameter is predicted and \code{i} is \code{NULL} or
   observations or length of \code{i} if specified.
 }
 \description{
-Get draws of a distributional parameter from a \code{brmsprep} or 
+Get draws of a distributional parameter from a \code{brmsprep} or
 \code{mvbrmsprep} object. This function is primarily useful when developing
-custom families or packages depending on \pkg{brms}. 
+custom families or packages depending on \pkg{brms}.
 This function lets callers easily handle both the case when the
 distributional parameter is predicted directly, via a (non-)linear
 predictor or fixed to a constant. See the vignette
@@ -44,6 +44,6 @@ posterior_predict_my_dist <- function(i, prep, ...) {
   mypar <- brms::get_dpar(prep, "mypar", i = i)
   my_rng(mu, mypar)
 }
-} 
+}
 
 }

@@ -2,36 +2,36 @@
 # A lot of other brmsfit methods have their own dedicated files.
 
 #' Extract Population-Level Estimates
-#' 
-#' Extract the population-level ('fixed') effects 
-#' from a \code{brmsfit} object. 
-#' 
+#'
+#' Extract the population-level ('fixed') effects
+#' from a \code{brmsfit} object.
+#'
 #' @aliases fixef
-#' 
+#'
 #' @inheritParams predict.brmsfit
 #' @param pars Optional names of coefficients to extract.
 #'   By default, all coefficients are extracted.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @return If \code{summary} is \code{TRUE}, a matrix returned
 #'   by \code{\link{posterior_summary}} for the population-level effects.
-#'   If \code{summary} is \code{FALSE}, a matrix with one row per 
+#'   If \code{summary} is \code{FALSE}, a matrix with one row per
 #'   posterior draw and one column per population-level effect.
-#' 
+#'
 #' @examples
 #' \dontrun{
-#' fit <- brm(time | cens(censored) ~ age + sex + disease, 
+#' fit <- brm(time | cens(censored) ~ age + sex + disease,
 #'            data = kidney, family = "exponential")
 #' fixef(fit)
 #' # extract only some coefficients
 #' fixef(fit, pars = c("age", "sex"))
 #' }
-#' 
+#'
 #' @method fixef brmsfit
 #' @export
 #' @export fixef
 #' @importFrom nlme fixef
-fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE, 
+fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
                            probs = c(0.025, 0.975), pars = NULL, ...) {
   contains_draws(object)
   all_pars <- variables(object)
@@ -52,22 +52,22 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 }
 
 #' Covariance and Correlation Matrix of Population-Level Effects
-#' 
-#' Get a point estimate of the covariance or 
+#'
+#' Get a point estimate of the covariance or
 #' correlation matrix of population-level parameters
-#' 
+#'
 #' @inheritParams fixef.brmsfit
-#' @param correlation Logical; if \code{FALSE} (the default), compute 
+#' @param correlation Logical; if \code{FALSE} (the default), compute
 #'   the covariance matrix, if \code{TRUE}, compute the correlation matrix.
-#' 
+#'
 #' @return covariance or correlation matrix of population-level parameters
-#' 
-#' @details Estimates are obtained by calculating the maximum likelihood 
-#'   covariances (correlations) of the posterior draws. 
-#'   
+#'
+#' @details Estimates are obtained by calculating the maximum likelihood
+#'   covariances (correlations) of the posterior draws.
+#'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' vcov(fit)
 #' }
@@ -87,7 +87,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
   draws <- as.data.frame(object, variable = fpars)
   names(draws) <- sub(fixef_pars(), "", names(draws))
   if (correlation) {
-    out <- cor(draws) 
+    out <- cor(draws)
   } else {
     out <- cov(draws)
   }
@@ -95,40 +95,40 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 }
 
 #' Extract Group-Level Estimates
-#' 
-#' Extract the group-level ('random') effects of each level 
-#' from a \code{brmsfit} object. 
-#' 
+#'
+#' Extract the group-level ('random') effects of each level
+#' from a \code{brmsfit} object.
+#'
 #' @aliases ranef
-#' 
+#'
 #' @inheritParams fixef.brmsfit
 #' @param groups Optional names of grouping variables
 #'   for which to extract effects.
 #' @param ... Currently ignored.
 #'
-#' @return A list of 3D arrays (one per grouping factor). 
-#'  If \code{summary} is \code{TRUE}, 
-#'  the 1st dimension contains the factor levels, 
-#'  the 2nd dimension contains the summary statistics 
+#' @return A list of 3D arrays (one per grouping factor).
+#'  If \code{summary} is \code{TRUE},
+#'  the 1st dimension contains the factor levels,
+#'  the 2nd dimension contains the summary statistics
 #'  (see \code{\link{posterior_summary}}), and
-#'  the 3rd dimension contains the group-level effects. 
+#'  the 3rd dimension contains the group-level effects.
 #'  If \code{summary} is \code{FALSE}, the 1st dimension contains
-#'  the posterior draws, the 2nd dimension contains the factor levels, 
-#'  and the 3rd dimension contains the group-level effects. 
-#'  
+#'  the posterior draws, the 2nd dimension contains the factor levels,
+#'  and the 3rd dimension contains the group-level effects.
+#'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' ranef(fit)
 #' }
-#' 
+#'
 #' @method ranef brmsfit
 #' @export
 #' @export ranef
 #' @importFrom nlme ranef
 ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
-                          probs = c(0.025, 0.975), pars = NULL, 
+                          probs = c(0.025, 0.975), pars = NULL,
                           groups = NULL, ...) {
   contains_draws(object)
   object <- restructure(object)
@@ -159,54 +159,60 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       regex <- paste0(",", regex, "\\]$")
       rpars <- rpars[grepl(regex, rpars)]
     }
-    out[[g]] <- as.matrix(object, variable = rpars)
     levels <- attr(ranef, "levels")[[g]]
-    dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
+    if (length(rpars)) {
+      # draws of varying coefficients were saved
+      out[[g]] <- as.matrix(object, variable = rpars)
+      dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
+    } else {
+      # draws of varying coefficients were not saved
+      out[[g]] <- array(dim = c(ndraws(object), length(levels), length(coefs)))
+    }
     dimnames(out[[g]])[2:3] <- list(levels, coefs)
     if (summary) {
       out[[g]] <- posterior_summary(out[[g]], probs, robust)
     }
   }
   rmNULL(out, recursive = FALSE)
-} 
+}
 
 #' Extract Model Coefficients
 #'
-#' Extract model coefficients, which are the sum of population-level 
+#' Extract model coefficients, which are the sum of population-level
 #' effects and corresponding group-level effects
-#' 
+#'
 #' @inheritParams ranef.brmsfit
 #' @param ... Further arguments passed to \code{\link{fixef.brmsfit}}
 #'   and \code{\link{ranef.brmsfit}}.
 #'
-#' @return A list of 3D arrays (one per grouping factor). 
-#'  If \code{summary} is \code{TRUE}, 
-#'  the 1st dimension contains the factor levels, 
-#'  the 2nd dimension contains the summary statistics 
+#' @return A list of 3D arrays (one per grouping factor).
+#'  If \code{summary} is \code{TRUE},
+#'  the 1st dimension contains the factor levels,
+#'  the 2nd dimension contains the summary statistics
 #'  (see \code{\link{posterior_summary}}), and
-#'  the 3rd dimension contains the group-level effects. 
+#'  the 3rd dimension contains the group-level effects.
 #'  If \code{summary} is \code{FALSE}, the 1st dimension contains
-#'  the posterior draws, the 2nd dimension contains the factor levels, 
-#'  and the 3rd dimension contains the group-level effects. 
-#'  
+#'  the posterior draws, the 2nd dimension contains the factor levels,
+#'  and the 3rd dimension contains the group-level effects.
+#'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' ## extract population and group-level coefficients separately
 #' fixef(fit)
 #' ranef(fit)
-#' ## extract combined coefficients 
+#' ## extract combined coefficients
 #' coef(fit)
 #' }
-#' 
+#'
 #' @export
 coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                          probs = c(0.025, 0.975), ...) {
   contains_draws(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
-    stop2("No group-level effects detected. Call method ", 
+    stop2("No group-level effects detected. Call method ",
           "'fixef' to access population-level effects.")
   }
   fixef <- fixef(object, summary = FALSE, ...)
@@ -230,7 +236,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   rm_fixef <- fixef_names %in% miss_fixef_no_digits
   fixef <- fixef[, !rm_fixef, drop = FALSE]
   fixef <- do_call(cbind, c(list(fixef), rmNULL(new_fixef)))
-  
+
   for (g in names(coef)) {
     # add missing coefficients to ranef
     ranef_names <- dimnames(coef[[g]])[[3]]
@@ -257,14 +263,14 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
         resp <- if (is_mv(object)) get_matches("^[^_]+", nm)
         family <- family(object, resp = resp)$family
         if (has_thres_minus_eta(family)) {
-          coef[[g]][, , nm] <- fixef[, nm] - coef[[g]][, , nm] 
+          coef[[g]][, , nm] <- fixef[, nm] - coef[[g]][, , nm]
         } else if (has_eta_minus_thres(family)) {
           coef[[g]][, , nm] <- coef[[g]][, , nm] - fixef[, nm]
         } else {
-          coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 
+          coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm]
         }
       } else {
-        coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 
+        coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm]
       }
     }
     if (summary) {
@@ -275,33 +281,33 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 }
 
 #' Extract Variance and Correlation Components
-#' 
-#' This function calculates the estimated standard deviations, 
-#' correlations and covariances of the group-level terms 
-#' in a multilevel model of class \code{brmsfit}. 
-#' For linear models, the residual standard deviations, 
-#' correlations and covariances are also returned. 
-#' 
+#'
+#' This function calculates the estimated standard deviations,
+#' correlations and covariances of the group-level terms
+#' in a multilevel model of class \code{brmsfit}.
+#' For linear models, the residual standard deviations,
+#' correlations and covariances are also returned.
+#'
 #' @aliases VarCorr
-#' 
-#' @param x An object of class \code{brmsfit}. 
+#'
+#' @param x An object of class \code{brmsfit}.
 #' @inheritParams fixef.brmsfit
-#' @param sigma Ignored (included for compatibility with 
+#' @param sigma Ignored (included for compatibility with
 #'  \code{\link[nlme:VarCorr]{VarCorr}}).
 #' @param ... Currently ignored.
-#' 
+#'
 #' @return A list of lists (one per grouping factor), each with
-#' three elements: a matrix containing the standard deviations, 
-#' an array containing the correlation matrix, and an array 
+#' three elements: a matrix containing the standard deviations,
+#' an array containing the correlation matrix, and an array
 #' containing the covariance matrix with variances on the diagonal.
-#' 
+#'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' VarCorr(fit)
 #' }
-#' 
+#'
 #' @method VarCorr brmsfit
 #' @import abind abind
 #' @importFrom nlme VarCorr
@@ -322,7 +328,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     found_cor_pars <- intersect(y$cor_pars, variables(x))
     if (length(found_cor_pars)) {
       cor <- as.matrix(x, variable = found_cor_pars)
-      if (length(found_cor_pars) < length(y$cor_pars)) { 
+      if (length(found_cor_pars) < length(y$cor_pars)) {
         # some correlations are missing and will be replaced by 0
         cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
         names(cor_all) <- y$cor_pars
@@ -348,7 +354,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     }
     return(out)
   }
-  
+
   if (nrow(x$ranef)) {
     get_names <- function(group) {
       # get names of group-level parameters
@@ -393,7 +399,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
 
 #' @export
 model.frame.brmsfit <- function(formula, ...) {
-  formula$data 
+  formula$data
 }
 
 #' (Deprecated) Number of Posterior Samples
@@ -451,17 +457,17 @@ nobs.brmsfit <- function(object, resp = NULL, ...) {
 }
 
 #' Number of Grouping Factor Levels
-#' 
+#'
 #' Extract the number of levels of one or more grouping factors.
-#' 
+#'
 #' @aliases ngrps.brmsfit
-#' 
+#'
 #' @param object An \R object.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @return A named list containing the number of levels per
 #'   grouping factor.
-#'   
+#'
 #' @export
 ngrps.brmsfit <- function(object, ...) {
   object <- restructure(object)
@@ -490,19 +496,19 @@ getCall.brmsfit <- function(x, ...) {
 }
 
 #' Extract Model Family Objects
-#' 
+#'
 #' @inheritParams posterior_predict.brmsfit
 #' @param ... Currently unused.
-#' 
+#'
 #' @return A \code{brmsfamily} object
 #' or a list of such objects for multivariate models.
-#' 
+#'
 #' @export
 family.brmsfit <- function(object, resp = NULL, ...) {
   resp <- validate_resp(resp, object)
   if (!is.null(resp)) {
     # multivariate model
-    family <- lapply(object$formula$forms[resp], "[[", "family")
+    family <- from_list(object$formula$forms[resp], "family")
     if (length(resp) == 1L) {
       family <- family[[1]]
     }
@@ -517,44 +523,81 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 }
 
 #' Expose user-defined \pkg{Stan} functions
-#' 
+#'
 #' Export user-defined \pkg{Stan} function and
-#' optionally vectorize them. For more details see 
+#' optionally vectorize them. For more details see
 #' \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
-#' 
+#'
 #' @param x An object of class \code{brmsfit}.
 #' @param vectorize Logical; Indicates if the exposed functions
-#'   should be vectorized via \code{\link{Vectorize}}. 
+#'   should be vectorized via \code{\link{Vectorize}}.
 #'   Defaults to \code{FALSE}.
 #' @param env Environment where the functions should be made
 #'   available. Defaults to the global environment.
-#' @param ... Further arguments passed to 
+#' @param ... Further arguments passed to
 #'   \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
-#' 
+#'
 #' @export
-expose_functions.brmsfit <- function(x, vectorize = FALSE, 
+expose_functions.brmsfit <- function(x, vectorize = FALSE,
                                      env = globalenv(), ...) {
   vectorize <- as_one_logical(vectorize)
+  stanmodel <- compiled_model(x)
   if (x$backend == "cmdstanr") {
-    # cmdstanr does not yet support 'expose_stan_functions' itself (#1176)
-    scode  <- strsplit(stancode(x), "\n")[[1]]
-    data_line <- grep("^data[ ]+\\{$", scode)
-    scode <- paste0(c(scode[seq_len(data_line - 1)], "\n"), collapse = "\n")
-    stanmodel <- tempfile(fileext = ".stan")
-    cat(scode, file = stanmodel)
+    if ("expose_functions" %in% names(stanmodel)) {
+      funs <- .expose_functions_cmdstanr(
+        stanmodel, vectorize = vectorize, env = env, ...
+      )
+    } else {
+      # older versions of cmdstanr cannot export stan functions (#1176)
+      scode  <- strsplit(stancode(x), "\n")[[1]]
+      data_line <- grep("^data[ ]+\\{$", scode)
+      scode <- paste0(c(scode[seq_len(data_line - 1)], "\n"), collapse = "\n")
+      stanmodel <- tempfile(fileext = ".stan")
+      cat(scode, file = stanmodel)
+      funs <- .expose_functions_rstan(
+        stanmodel, vectorize = vectorize, env = env, ...
+      )
+    }
   } else {
-    stanmodel <- x$fit
-  } 
+    funs <- .expose_functions_rstan(
+      stanmodel, vectorize = vectorize, env = env, ...
+    )
+  }
+  invisible(funs)
+}
+
+# expose stan functions via rstan
+.expose_functions_rstan <- function(stanmodel, vectorize, env, ...) {
   if (vectorize) {
-    funs <- rstan::expose_stan_functions(stanmodel, env = environment(), ...)
+    fun_env <- new.env()
+    funs <- rstan::expose_stan_functions(stanmodel, env = fun_env, ...)
     for (i in seq_along(funs)) {
-      FUN <- Vectorize(get(funs[i], mode = "function"))
-      assign(funs[i], FUN, pos = env) 
+      FUN <- Vectorize(get(funs[i], pos = fun_env))
+      assign(funs[i], FUN, pos = env)
     }
   } else {
     funs <- rstan::expose_stan_functions(stanmodel, env = env, ...)
   }
-  invisible(funs)
+  funs
+}
+
+# expose stan functions via cmdstanr
+.expose_functions_cmdstanr <- function(stanmodel, vectorize, env, ...) {
+  suppressMessages(stanmodel$expose_functions())
+  fun_env <- stanmodel$functions
+  funs <- names(fun_env)
+  for (i in seq_along(funs)) {
+    FUN <- get(funs[i], pos = fun_env)
+    # cmdstanr adds some non-functions to the environment
+    if (!is.function(FUN)) {
+      next
+    }
+    if (vectorize) {
+      FUN <- Vectorize(FUN)
+    }
+    assign(funs[i], FUN, pos = env)
+  }
+  funs
 }
 
 #' @rdname expose_functions.brmsfit

@@ -25,12 +25,12 @@ ggplot2::theme_set(bayesplot::theme_default())
 set.seed(1234)
 ```
 
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/) 
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](https://mc-stan.org/)
 
-# brms 
+# brms
 
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
-[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) 
+[![R-CMD-check](https://github.com/paul-buerkner/brms/workflows/R-CMD-check/badge.svg)](https://github.com/paul-buerkner/brms/actions)
+[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://app.codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 [![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
@@ -56,10 +56,10 @@ predictive checks, cross-validation, and Bayes factors.
 
 ## Resources
 
-* [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
+* [Introduction to brms](https://doi.org/10.18637/jss.v080.i01) (Journal of Statistical Software)
 * [Advanced multilevel modeling with brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html) (The R Journal)
 * [Website](https://paul-buerkner.github.io/brms/) (Website of brms with documentation and vignettes)
-* [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/) (List of blog posts about brms)
+* [Blog posts](https://paul-buerkner.github.io/software/brms-blogposts.html) (List of blog posts about brms)
 * [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
 
@@ -78,14 +78,14 @@ group-level intercept is incorporated to account for the resulting dependency in
 the data.
 
 ```{r fit1, results='hide', message=FALSE}
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient), 
+fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
 ```
 
 The results (i.e., posterior draws) can be investigated using
 
 ```{r summary}
-summary(fit1) 
+summary(fit1)
 ```
 
 On the top of the output, some general information on the model is given, such
@@ -95,7 +95,7 @@ deviations and (in case of more than one group-level effect per grouping factor;
 not displayed here) correlations between group-level effects. On the bottom of
 the output, population-level effects (i.e. regression coefficients) are
 displayed. If incorporated, autocorrelation effects and family specific
-parameters (e.g. the residual standard deviation 'sigma' in normal models) are
+parameters (e.g., the residual standard deviation 'sigma' in normal models) are
 also given.
 
 In general, every parameter is summarized using the mean ('Estimate') and the
@@ -108,18 +108,19 @@ not very strong and still insufficient by standard decision rules. Further, we
 find little evidence that the treatment effect varies with the baseline number
 of seizures.
 
-The last two values ('Eff.Sample' and 'Rhat') provide information on how well
-the algorithm could estimate the posterior distribution of this parameter. If
-'Rhat' is considerably greater than 1, the algorithm has not yet converged and
-it is necessary to run more iterations and / or set stronger priors.
+The last three values ('ESS_bulk', 'ESS_tail', and 'Rhat') provide information
+on how well the algorithm could estimate the posterior distribution of this
+parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet
+converged and it is necessary to run more iterations and / or set stronger
+priors.
 
 To visually investigate the chains as well as the posterior distributions, we
 can use the `plot` method. If we just want to see results of the regression
 coefficients of `Trt` and `zBase`, we go for
 
 ```{r plot}
-plot(fit1, variable = c("b_Trt1", "b_zBase")) 
-``` 
+plot(fit1, variable = c("b_Trt1", "b_zBase"))
+```
 
 A more detailed investigation can be performed by running
 `launch_shinystan(fit1)`. To better understand the relationship of the
@@ -159,7 +160,7 @@ this purpose, we include a second group-level intercept that captures possible
 overdispersion.
 
 ```{r fit2, results='hide', message=FALSE}
-fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs), 
+fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
             data = epilepsy, family = poisson())
 ```
 
@@ -192,18 +193,23 @@ appropriately so that developers get credit for their work.
 
 When using brms, please cite one or more of the following publications:
 
-- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models 
-  using Stan. *Journal of Statistical Software*. 80(1), 1-28. 
+- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models
+  using Stan. *Journal of Statistical Software*. 80(1), 1-28.
   doi.org/10.18637/jss.v080.i01
-- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R 
+- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
   Package brms. *The R Journal*. 10(1), 395-411. doi.org/10.32614/RJ-2018-017
-  
-As brms is a high-level interface to Stan, please additionally cite Stan:
+- Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms and Stan. 
+  *Journal of Statistical Software*, 100(5), 1-54. doi.org/10.18637/jss.v100.i05
 
+As brms is a high-level interface to Stan, please additionally cite Stan
+(see also https://mc-stan.org/users/citations/):
+
+- Stan Development Team. YEAR. Stan Modeling Language Users Guide and Reference 
+  Manual, VERSION. https://mc-stan.org
 - Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B., Betancourt M.,
   Brubaker M., Guo J., Li P., and Riddell A. (2017). Stan: A probabilistic
   programming language. *Journal of Statistical Software*. 76(1).
-  10.18637/jss.v076.i01
+  doi.org/10.18637/jss.v076.i01
 
 Further, brms relies on several other R packages and, of course, on R itself. To
 find out how to cite R and its packages, use the `citation` function. There are
@@ -226,7 +232,7 @@ To install the latest release version from CRAN use
 install.packages("brms")
 ```
 
-The current developmental version can be downloaded from github via
+The current developmental version can be downloaded from GitHub via
 
 ```{r install_brms2, eval=FALSE}
 if (!requireNamespace("remotes")) {

@@ -9,7 +9,7 @@ cs(expr)
 }
 \arguments{
 \item{expr}{Expression containing predictors,
-for which category specific effects should be estimated. 
+for which category specific effects should be estimated.
 For evaluation, \R formula syntax is applied.}
 }
 \description{
@@ -23,15 +23,14 @@ This function is almost solely useful when
 called in formulas passed to the \pkg{brms} package.
 }
 \examples{
-  
 \dontrun{
-fit <- brm(rating ~ period + carry + cs(treat), 
-           data = inhaler, family = sratio("cloglog"), 
+fit <- brm(rating ~ period + carry + cs(treat),
+           data = inhaler, family = sratio("cloglog"),
            prior = set_prior("normal(0,5)"), chains = 2)
 summary(fit)
 plot(fit, ask = FALSE)
-} 
- 
+}
+
 }
 \seealso{
 \code{\link{brmsformula}}

@@ -21,9 +21,11 @@ brm_multiple(
   recompile = FALSE,
   combine = TRUE,
   fit = NA,
+  algorithm = getOption("brms.algorithm", "sampling"),
   seed = NA,
   file = NULL,
-  file_refit = "never",
+  file_compress = TRUE,
+  file_refit = getOption("brms.file_refit", "never"),
   ...
 )
 }
@@ -72,7 +74,7 @@ within \code{formula}. See \code{\link{brmsformula}} for more details.}
 matrices should correspond to columns in \code{data} that are used as
 grouping factors. All levels of the grouping factor should appear as
 rownames of the corresponding matrix. This argument can be used, among
-others to model pedigrees and phylogenetic effects. 
+others to model pedigrees and phylogenetic effects.
 It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
@@ -136,6 +138,14 @@ result is re-used and all arguments modifying the model code or data are
 ignored. It is not recommended to use this argument directly, but to call
 the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.}
 
+\item{algorithm}{Character string naming the estimation approach to use.
+Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+variational inference with independent normal distributions,
+\code{"fullrank"} for variational inference with a multivariate normal
+distribution, or \code{"fixed_param"} for sampling from fixed parameter
+values. Can be set globally for the current \R session via the
+\code{"brms.algorithm"} option (see \code{\link{options}}).}
+
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
 randomly.}
@@ -144,15 +154,20 @@ randomly.}
 fitted model object is saved via \code{\link{saveRDS}} in a file named
 after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
-return the saved model object instead of refitting the model. 
+return the saved model object instead of refitting the model.
 Unless you specify the \code{file_refit} argument as well, the existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
 
-\item{file_refit}{Modifies when the fit stored via the \code{file} parameter
+\item{file_compress}{Logical or a character string, specifying one of the
+compression algorithms supported by \code{\link{saveRDS}}. If the
+\code{file} argument is provided, this compression will be used when saving
+the fitted model object.}
+
+\item{file_refit}{Modifies when the fit stored via the \code{file} argument
 is re-used. Can be set globally for the current \R session via the
-\code{"brms.file_refit"} option (see \code{\link{options}}). 
+\code{"brms.file_refit"} option (see \code{\link{options}}).
 For \code{"never"} (default) the fit is always loaded if it
 exists and fitting is skipped. For \code{"always"} the model is always
 refitted. If set to \code{"on_change"}, brms will

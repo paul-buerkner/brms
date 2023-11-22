@@ -30,16 +30,16 @@ Pass \code{NULL} to avoid this data check.}
 
 \item{silent}{Logical. If \code{TRUE}, no messages will be given.}
 
-\item{verbose}{Logical. If \code{TRUE} detailed report of the differences 
+\item{verbose}{Logical. If \code{TRUE} detailed report of the differences
 is printed to the console.}
 }
 \value{
 A boolean indicating whether a refit is needed.
 }
 \description{
-Checks whether a given cached fit can be used without refitting when 
+Checks whether a given cached fit can be used without refitting when
 \code{file_refit = "on_change"} is used.
-This function is internal and exposed only to facilitate debugging problems 
+This function is internal and exposed only to facilitate debugging problems
 with cached fits. The function may change or be removed in future versions
 and scripts should not use it.
 }

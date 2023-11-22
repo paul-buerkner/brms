@@ -25,19 +25,19 @@ fitted. The details of model specification are explained in
 
 \item{...}{Further arguments passed to or from other methods.}
 
-\item{check_response}{Logical; Indicates whether the left-hand side 
-of \code{formula} (i.e. response variables and addition arguments) 
+\item{check_response}{Logical; Indicates whether the left-hand side
+of \code{formula} (i.e. response variables and addition arguments)
 should be parsed. If \code{FALSE}, \code{formula} may also be one-sided.}
 
-\item{resp_rhs_all}{Logical; Indicates whether to also include response 
-variables on the right-hand side of formula \code{.$allvars}, 
+\item{resp_rhs_all}{Logical; Indicates whether to also include response
+variables on the right-hand side of formula \code{.$allvars},
 where \code{.} represents the output of \code{brmsterms}.}
 }
 \value{
-An object of class \code{brmsterms} or \code{mvbrmsterms} 
-  (for multivariate models), which is a \code{list} containing all 
-  required information initially stored in \code{formula} 
-  in an easier to use format, basically a list of formulas 
+An object of class \code{brmsterms} or \code{mvbrmsterms}
+  (for multivariate models), which is a \code{list} containing all
+  required information initially stored in \code{formula}
+  in an easier to use format, basically a list of formulas
   (not an abstract syntax tree).
 }
 \description{
@@ -46,13 +46,13 @@ Parse formulas objects for use in \pkg{brms}.
 \details{
 This is the main formula parsing function of \pkg{brms}.
   It should usually not be called directly, but is exported to allow
-  package developers making use of the formula syntax implemented 
+  package developers making use of the formula syntax implemented
   in \pkg{brms}. As long as no other packages depend on this functions,
   it may be changed without deprecation warnings, when new features make
   this necessary.
 }
 \seealso{
-\code{\link{brm}}, 
+\code{\link{brm}},
   \code{\link{brmsformula}},
   \code{\link{mvbrmsformula}}
 }

@@ -40,7 +40,7 @@ The adaptive scheduling procedure used by \code{reduce_sum} will
   roughly the same amount of computing time, we recommend storing
   observations in random order in the data. At least, please avoid sorting
   observations after the response values. This is because the latter often
-  cause variations in the computing time of the pointwise log-likelihood, 
+  cause variations in the computing time of the pointwise log-likelihood,
   which makes up a big part of the parallelized code.
 }
 \examples{

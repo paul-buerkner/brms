@@ -24,7 +24,7 @@ does not evaluate its arguments -- it exists purely to help set up a model.
 \details{
 For detailed documentation see \code{help(brmsformula)}.
 \code{me} terms are soft deprecated in favor of the more
-general and consistent \code{\link{mi}} terms. 
+general and consistent \code{\link{mi}} terms.
 By default, latent noise-free variables are assumed
 to be correlated. To change that, add \code{set_mecor(FALSE)}
 to your model formula object (see examples).
@@ -34,11 +34,11 @@ to your model formula object (see examples).
 # sample some data
 N <- 100
 dat <- data.frame(
-  y = rnorm(N), x1 = rnorm(N), 
+  y = rnorm(N), x1 = rnorm(N),
   x2 = rnorm(N), sdx = abs(rnorm(N, 1))
  )
-# fit a simple error-in-variables model 
-fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
+# fit a simple error-in-variables model
+fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat,
             save_pars = save_pars(latent = TRUE))
 summary(fit1)
 
@@ -46,7 +46,7 @@ summary(fit1)
 bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
 fit2 <- brm(bform, data = dat, save_pars = save_pars(latent = TRUE))
 summary(fit2)
-} 
+}
 
 }
 \seealso{

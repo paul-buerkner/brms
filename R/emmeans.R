@@ -1,12 +1,12 @@
 #' Support Functions for \pkg{emmeans}
-#' 
+#'
 #' Functions required for compatibility of \pkg{brms} with \pkg{emmeans}.
 #' Users are not required to call these functions themselves. Instead,
 #' they will be called automatically by the \code{emmeans} function
 #' of the \pkg{emmeans} package.
-#' 
+#'
 #' @name emmeans-brms-helpers
-#' 
+#'
 #' @inheritParams posterior_epred.brmsfit
 #' @param re_formula Optional formula containing group-level effects to be
 #'   considered in the prediction. If \code{NULL}, include all group-level
@@ -15,55 +15,76 @@
 #'   the posterior predictive distribution's mean
 #'   (see \code{\link{posterior_epred.brmsfit}}) while ignoring
 #'   arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
+#'   If you have specified a response transformation within the formula,
+#'   you need to set \code{epred} to \code{TRUE} for \pkg{emmeans} to
+#'   detect this transformation.
 #' @param data,trms,xlev,grid,vcov. Arguments required by \pkg{emmeans}.
 #' @param ... Additional arguments passed to \pkg{emmeans}.
-#' 
-#' @details 
+#'
+#' @details
 #' In order to ensure compatibility of most \pkg{brms} models with
 #' \pkg{emmeans}, predictions are not generated 'manually' via a design matrix
-#' and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}. 
+#' and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}.
 #' This appears to generally work well, but note that it produces an `.@linfct`
 #' slot that contains the computed predictions as columns instead of the
 #' coefficients.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
-#' fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
+#' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #'             data = kidney, family = lognormal())
-#' summary(fit)           
+#' summary(fit1)
 #'
 #' # summarize via 'emmeans'
 #' library(emmeans)
-#' rg <- ref_grid(fit)
+#' rg <- ref_grid(fit1)
 #' em <- emmeans(rg, "disease")
 #' summary(em, point.est = mean)
-#' 
+#'
 #' # obtain estimates for the posterior predictive distribution's mean
-#' epred <- emmeans(fit, "disease", epred = TRUE)
+#' epred <- emmeans(fit1, "disease", epred = TRUE)
 #' summary(epred, point.est = mean)
+#'
+#'
+#' # model with transformed response variable
+#' fit2 <- brm(log(mpg) ~ factor(cyl), data = mtcars)
+#' summary(fit2)
+#'
+#' # results will be on the log scale by default
+#' emmeans(fit2, ~ cyl)
+#' # log transform is detected and can be adjusted automatically
+#' emmeans(fit2, ~ cyl, epred = TRUE, type = "response")
 #' }
 NULL
 
 # recover the variables used in the model predictions
 # @param data only added to prevent it from being passed further via ...
 #' @rdname emmeans-brms-helpers
-recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL, 
+recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL,
                                  nlpar = NULL, re_formula = NA,
                                  epred = FALSE, ...) {
   bterms <- .extract_par_terms(
-    object, resp = resp, dpar = dpar, nlpar = nlpar, 
+    object, resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
-  trms <- attr(model.frame(bterms$allvars, data = object$data), "terms")
-  # brms has no call component so the call is just a dummy
-  emmeans::recover_data(call("brms"), trms, "na.omit", data = object$data, ...)
+  data <- rm_attr(object$data, "terms")
+  # use of model.frame fixes issue #1531
+  mf <- model.frame(bterms$allvars, data = data)
+  trms <- attr(mf, "terms")
+  # brms has no call component so the call is just a dummy for the most part
+  cl <- call("brms")
+  if (epred) {
+    # fixes issue #1360 for in-formula response transformations
+    cl$formula <- bterms$respform
+  }
+  emmeans::recover_data(cl, trms, "na.omit", data = data, ...)
 }
 
 # Calculate the basis for making predictions. In some sense, this is
-# similar to the fitted() function with new data on the link scale. 
+# similar to the fitted() function with new data on the link scale.
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
-emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL, 
+emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
                               dpar = NULL, nlpar = NULL, re_formula = NA,
                               epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
@@ -74,7 +95,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   }
   epred <- as_one_logical(epred)
   bterms <- .extract_par_terms(
-    object, resp = resp, dpar = dpar, nlpar = nlpar, 
+    object, resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
   if (epred) {
@@ -85,9 +106,11 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   } else {
     req_vars <- all_vars(bterms$allvars)
     post.beta <- posterior_linpred(
-      object, newdata = grid, re_formula = re_formula, 
-      resp = resp, dpar = dpar, nlpar = nlpar, 
-      incl_autocor = FALSE, req_vars = req_vars, ...
+      object, newdata = grid, re_formula = re_formula,
+      resp = resp, dpar = dpar, nlpar = nlpar,
+      incl_autocor = FALSE, req_vars = req_vars,
+      # offsets are handled by emmeans (#1096)
+      transform = FALSE, offset = FALSE, ...
     )
   }
   if (anyNA(post.beta)) {
@@ -124,7 +147,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
 }
 
 #' @export
-.extract_par_terms.brmsfit <- function(x, resp = NULL, re_formula = NA, 
+.extract_par_terms.brmsfit <- function(x, resp = NULL, re_formula = NA,
                                        dpar = NULL, epred = FALSE, ...) {
   if (is_equal(dpar, "mean")) {
     # deprecation warning already provided in emm_basis.brmsfit
@@ -133,6 +156,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   }
   resp <- validate_resp(resp, x)
   new_formula <- update_re_terms(formula(x), re_formula)
+  # autocorrelation terms are always excluded for emmeans predictions (#1424)
+  new_formula <- exclude_terms(new_formula, incl_autocor = FALSE)
   bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is_ordinal(bterms)) {
     warning2("brms' emmeans support for ordinal models is experimental ",
@@ -157,7 +182,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     out$terms[[i]] <- .extract_par_terms(out$terms[[i]], epred = epred, ...)
   }
   out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
-  misc_list <- unique(lapply(out$terms, "[[", ".misc"))
+  misc_list <- unique(from_list(out$terms, ".misc"))
   if (length(misc_list) > 1L){
     stop2("brms' emmeans support for multivariate models is limited ",
           "to cases where all univariate models have the same family.")
@@ -204,6 +229,10 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
       stop2("emmeans is not yet supported for this brms model.")
     }
     out <- x$dpars[["mu"]]
+  }
+  if (!is.null(out$offset)) {
+    # ensure that offsets are detected by emmeans (#1096)
+    out$allvars <- allvars_formula(out$allvars, out$offset)
   }
   out$.misc <- emmeans::.std.link.labels(out$family, list())
   out

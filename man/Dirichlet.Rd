@@ -25,6 +25,6 @@ Density function and random number generation for the dirichlet
 distribution with shape parameter vector \code{alpha}.
 }
 \details{
-See \code{vignette("brms_families")} for details on the 
+See \code{vignette("brms_families")} for details on the
 parameterization.
 }

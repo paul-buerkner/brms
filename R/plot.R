@@ -1,5 +1,5 @@
 #' Trace and Density Plots for MCMC Draws
-#' 
+#'
 #' @param x An object of class \code{brmsfit}.
 #' @param pars Deprecated alias of \code{variable}.
 #'   Names of the parameters to plot, as given by a
@@ -7,55 +7,55 @@
 #' @param variable Names of the variables (parameters) to plot, as given by a
 #'   character vector or a regular expression (if \code{regex = TRUE}). By
 #'   default, a hopefully not too large selection of variables is plotted.
-#' @param combo A character vector with at least two elements. 
-#'   Each element of \code{combo} corresponds to a column in the resulting 
-#'   graphic and should be the name of one of the available 
-#'   \code{\link[bayesplot:MCMC-overview]{MCMC}} functions 
+#' @param combo A character vector with at least two elements.
+#'   Each element of \code{combo} corresponds to a column in the resulting
+#'   graphic and should be the name of one of the available
+#'   \code{\link[bayesplot:MCMC-overview]{MCMC}} functions
 #'   (omitting the \code{mcmc_} prefix).
 #' @param N The number of parameters plotted per page.
-#' @param theme A \code{\link[ggplot2:theme]{theme}} object 
-#'   modifying the appearance of the plots. 
+#' @param theme A \code{\link[ggplot2:theme]{theme}} object
+#'   modifying the appearance of the plots.
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 #'   and \code{\link[bayesplot:theme_default]{theme_default}}.
 #' @param regex Logical; Indicates whether \code{variable} should
 #'   be treated as regular expressions. Defaults to \code{FALSE}.
-#' @param fixed (Deprecated) Indicates whether parameter names 
+#' @param fixed (Deprecated) Indicates whether parameter names
 #'   should be matched exactly (\code{TRUE}) or treated as
 #'   regular expressions (\code{FALSE}). Default is \code{FALSE}
 #'   and only works with argument \code{pars}.
 #' @param plot Logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
-#' @param ask Logical; indicates if the user is prompted 
-#'   before a new page is plotted. 
+#' @param ask Logical; indicates if the user is prompted
+#'   before a new page is plotted.
 #'   Only used if \code{plot} is \code{TRUE}.
 #' @param newpage Logical; indicates if the first set of plots
-#'   should be plotted to a new page. 
+#'   should be plotted to a new page.
 #'   Only used if \code{plot} is \code{TRUE}.
-#' @param ... Further arguments passed to 
+#' @param ... Further arguments passed to
 #'   \code{\link[bayesplot:MCMC-combos]{mcmc_combo}}.
-#' 
-#' @return An invisible list of 
+#'
+#' @return An invisible list of
 #'   \code{\link[gtable:gtable]{gtable}} objects.
-#' 
+#'
 #' @examples
-#' \dontrun{ 
-#' fit <- brm(count ~ zAge + zBase * Trt 
-#'            + (1|patient) + (1|visit), 
+#' \dontrun{
+#' fit <- brm(count ~ zAge + zBase * Trt
+#'            + (1|patient) + (1|visit),
 #'            data = epilepsy, family = "poisson")
 #' plot(fit)
 #' ## plot population-level effects only
-#' plot(fit, variable = "^b_", regex = TRUE) 
+#' plot(fit, variable = "^b_", regex = TRUE)
 #' }
-#' 
+#'
 #' @method plot brmsfit
 #' @import ggplot2
 #' @importFrom graphics plot
 #' @importFrom grDevices devAskNewPage
 #' @export
-plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"), 
-                         N = 5, variable = NULL, regex = FALSE, fixed = FALSE, 
-                         theme = NULL, plot = TRUE, ask = TRUE, 
+plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
+                         N = 5, variable = NULL, regex = FALSE, fixed = FALSE,
+                         theme = NULL, plot = TRUE, ask = TRUE,
                          newpage = TRUE, ...) {
   contains_draws(x)
   if (!is_wholenumber(N) || N < 1) {
@@ -71,7 +71,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
   if (!length(variables)) {
     stop2("No valid variables selected.")
   }
-  
+
   if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
@@ -92,73 +92,73 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
       }
     }
   }
-  invisible(plots) 
+  invisible(plots)
 }
 
 # list all parameter classes to be included in plots by default
 default_plot_variables <- function(family) {
-  c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", valid_dpars(family), "$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", 
-    "^car", "^sdcar", "^sds_", "^sdgp_", "^lscale_")
+  c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_",
+    paste0("^", valid_dpars(family), "$"), "^delta$", "^theta",
+    "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", "^car", "^sdcar",
+    "^sdb_", "^sdbsp_", "^sdbs_", "^sds_", "^sdgp_", "^lscale_")
 }
 
-#' MCMC Plots Implemented in \pkg{bayesplot} 
-#' 
-#' Convenient way to call MCMC plotting functions 
+#' MCMC Plots Implemented in \pkg{bayesplot}
+#'
+#' Convenient way to call MCMC plotting functions
 #' implemented in the \pkg{bayesplot} package.
-#' 
-#' @aliases stanplot stanplot.brmsfit 
-#' 
+#'
+#' @aliases stanplot stanplot.brmsfit
+#'
 #' @inheritParams plot.brmsfit
 #' @param object An \R object typically of class \code{brmsfit}
-#' @param type The type of the plot. 
-#'   Supported types are (as names) \code{hist}, \code{dens}, 
-#'   \code{hist_by_chain}, \code{dens_overlay}, 
-#'   \code{violin}, \code{intervals}, \code{areas}, \code{acf}, 
+#' @param type The type of the plot.
+#'   Supported types are (as names) \code{hist}, \code{dens},
+#'   \code{hist_by_chain}, \code{dens_overlay},
+#'   \code{violin}, \code{intervals}, \code{areas}, \code{acf},
 #'   \code{acf_bar},\code{trace}, \code{trace_highlight}, \code{scatter},
 #'   \code{rhat}, \code{rhat_hist}, \code{neff}, \code{neff_hist}
 #'   \code{nuts_acceptance}, \code{nuts_divergence},
-#'   \code{nuts_stepsize}, \code{nuts_treedepth}, and \code{nuts_energy}. 
+#'   \code{nuts_stepsize}, \code{nuts_treedepth}, and \code{nuts_energy}.
 #'   For an overview on the various plot types see
 #'   \code{\link[bayesplot:MCMC-overview]{MCMC-overview}}.
 #' @param ... Additional arguments passed to the plotting functions.
 #'   See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for
 #'   more details.
-#' 
-#' @return A \code{\link[ggplot2:ggplot]{ggplot}} object 
+#'
+#' @return A \code{\link[ggplot2:ggplot]{ggplot}} object
 #'   that can be further customized using the \pkg{ggplot2} package.
-#' 
-#' @details 
-#'   Also consider using the \pkg{shinystan} package available via 
-#'   method \code{\link{launch_shinystan}} in \pkg{brms} for flexible 
-#'   and interactive visual analysis. 
-#' 
+#'
+#' @details
+#'   Also consider using the \pkg{shinystan} package available via
+#'   method \code{\link{launch_shinystan}} in \pkg{brms} for flexible
+#'   and interactive visual analysis.
+#'
 #' @examples
 #' \dontrun{
 #' model <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'              data = epilepsy, family = "poisson")
-#'              
+#'
 #' # plot posterior intervals
 #' mcmc_plot(model)
-#' 
+#'
 #' # only show population-level effects in the plots
 #' mcmc_plot(model, variable = "^b_", regex = TRUE)
-#' 
+#'
 #' # show histograms of the posterior distributions
 #' mcmc_plot(model, type = "hist")
-#' 
+#'
 #' # plot some diagnostics of the sampler
 #' mcmc_plot(model, type = "neff")
 #' mcmc_plot(model, type = "rhat")
-#' 
+#'
 #' # plot some diagnostics specific to the NUTS sampler
 #' mcmc_plot(model, type = "nuts_acceptance")
 #' mcmc_plot(model, type = "nuts_divergence")
 #' }
-#' 
+#'
 #' @export
-mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals", 
+mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals",
                               variable = NULL, regex = FALSE,
                               fixed = FALSE, ...) {
   contains_draws(object)
@@ -233,28 +233,28 @@ stanplot.brmsfit <- function(object, ...) {
 
 #' Create a matrix of output plots from a \code{brmsfit} object
 #'
-#' A \code{\link[graphics:pairs]{pairs}} 
+#' A \code{\link[graphics:pairs]{pairs}}
 #' method that is customized for MCMC output.
-#' 
+#'
 #' @param x An object of class \code{brmsfit}
 #' @inheritParams plot.brmsfit
-#' @param ... Further arguments to be passed to 
+#' @param ... Further arguments to be passed to
 #'   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
-#'  
-#' @details For a detailed description see  
+#'
+#' @details For a detailed description see
 #'   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
-#'  
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt 
-#'            + (1|patient) + (1|visit), 
-#'            data = epilepsy, family = "poisson")  
+#' fit <- brm(count ~ zAge + zBase * Trt
+#'            + (1|patient) + (1|visit),
+#'            data = epilepsy, family = "poisson")
 #' pairs(fit, variable = variables(fit)[1:3])
 #' pairs(fit, variable = "^sd_", regex = TRUE)
 #' }
 #'
 #' @export
-pairs.brmsfit <- function(x, pars = NA, variable = NULL, regex = FALSE, 
+pairs.brmsfit <- function(x, pars = NA, variable = NULL, regex = FALSE,
                           fixed = FALSE, ...) {
   variable <- use_variable_alias(variable, x, pars, fixed = fixed)
   if (is.null(variable)) {
@@ -266,18 +266,18 @@ pairs.brmsfit <- function(x, pars = NA, variable = NULL, regex = FALSE,
 }
 
 #' Default \pkg{bayesplot} Theme for \pkg{ggplot2} Graphics
-#' 
+#'
 #' This theme is imported from the \pkg{bayesplot} package.
 #' See \code{\link[bayesplot:theme_default]{theme_default}}
 #' for a complete documentation.
-#' 
+#'
 #' @name theme_default
-#' 
+#'
 #' @param base_size base font size
 #' @param base_family base font family
-#' 
+#'
 #' @return A \code{theme} object used in \pkg{ggplot2} graphics.
-#' 
+#'
 #' @importFrom bayesplot theme_default
 #' @export theme_default
 NULL

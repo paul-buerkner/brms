@@ -2,7 +2,7 @@
 title: "Define Custom Response Distributions with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
@@ -21,8 +21,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -43,7 +43,7 @@ will explain how to specify such *custom families* in **brms**. By doing that,
 users can benefit from the modeling flexibility and post-processing options of
 **brms** even when using self-defined response distributions.
 If you have built a custom family that you want to make available to other
-users, you can submit a pull request to this 
+users, you can submit a pull request to this
 [GitHub repository](https://github.com/paul-buerkner/custom-brms-families).
 
 ## A Case Study
@@ -83,7 +83,7 @@ Predicting `incidence` by `period` and a varying intercept of `herd` is straight
 forward in **brms**:
 
 ```{r fit1, results='hide'}
-fit1 <- brm(incidence | trials(size) ~ period + (1|herd), 
+fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
             data = cbpp, family = binomial())
 ```
 
@@ -137,20 +137,21 @@ overdispersion via the parameter $\phi$.
 
 ## Fitting Custom Family Models
 
-The beta-binomial distribution is not natively supported in **brms** and so we
-will have to define it ourselves using the `custom_family` function. This
-function requires the family's name, the names of its parameters (`mu` and `phi`
-in our case), corresponding link functions (only applied if parameters are
-predicted), their theoretical lower and upper bounds (only applied if parameters
-are not predicted), information on whether the distribution is discrete or
-continuous, and finally, whether additional non-parameter variables need to be
-passed to the distribution. For our beta-binomial example, this results in the
-following custom family:
+The beta-binomial distribution is natively supported in **brms** nowadays, but
+we will still use it as an example to define it ourselves via the
+`custom_family` function. This function requires the family's name, the names of
+its parameters (`mu` and `phi` in our case), corresponding link functions (only
+applied if parameters are predicted), their theoretical lower and upper bounds
+(only applied if parameters are not predicted), information on whether the
+distribution is discrete or continuous, and finally, whether additional
+non-parameter variables need to be passed to the distribution. For our
+beta-binomial example, this results in the following custom family:
 
 ```{r beta_binomial2}
 beta_binomial2 <- custom_family(
   "beta_binomial2", dpars = c("mu", "phi"),
-  links = c("logit", "log"), lb = c(NA, 0),
+  links = c("logit", "log"),
+  lb = c(0, 0), ub = c(1, NA),
   type = "int", vars = "vint1[n]"
 )
 ```
@@ -173,7 +174,7 @@ stan_funs <- "
 ```
 
 For the model fitting, we will only need `beta_binomial2_lpmf`, but
-`beta_binomial2_rng` will come in handy when it comes to post-processing. 
+`beta_binomial2_rng` will come in handy when it comes to post-processing.
 We define:
 
 ```{r stanvars}
@@ -192,7 +193,7 @@ We now have all components together to fit our custom beta-binomial model:
 
 ```{r fit2, results='hide'}
 fit2 <- brm(
-  incidence | vint(size) ~ period + (1|herd), data = cbpp, 
+  incidence | vint(size) ~ period + (1|herd), data = cbpp,
   family = beta_binomial2, stanvars = stanvars
 )
 ```

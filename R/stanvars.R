@@ -1,15 +1,15 @@
 #' User-defined variables passed to Stan
-#' 
-#' Prepare user-defined variables to be passed to one of Stan's 
-#' program blocks. This is primarily useful for defining more complex 
-#' priors, for refitting models without recompilation despite 
+#'
+#' Prepare user-defined variables to be passed to one of Stan's
+#' program blocks. This is primarily useful for defining more complex
+#' priors, for refitting models without recompilation despite
 #' changing priors, or for defining custom Stan functions.
-#' 
+#'
 #' @aliases stanvars
-#'  
+#'
 #' @param x An \R object containing data to be passed to Stan.
 #'   Only required if \code{block = 'data'} and ignored otherwise.
-#' @param name Optional character string providing the desired variable 
+#' @param name Optional character string providing the desired variable
 #'  name of the object in \code{x}. If \code{NULL} (the default)
 #'  the variable name is directly inferred from \code{x}.
 #' @param scode Line of Stan code to define the variable
@@ -28,43 +28,47 @@
 #'  of \code{partial_log_lik} functions. This ensures that the variables
 #'  specified in \code{scode} can be used in the likelihood even when
 #'  within-chain parallelization is activated via \code{\link{threading}}.
-#'  
+#'
 #' @return An object of class \code{stanvars}.
-#' 
-#' @examples 
+#'
+#' @details
+#' The \code{stanvar} function is not vectorized. Instead, multiple
+#' \code{stanvars} objects can be added together via \code{+} (see Examples).
+#'
+#' @examples
 #' bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
 #' stanvars <- stanvar(5, name = "mean_intercept")
-#' make_stancode(count ~ Trt, epilepsy, prior = bprior, 
+#' make_stancode(count ~ Trt, epilepsy, prior = bprior,
 #'               stanvars = stanvars)
-#'               
+#'
 #' # define a multi-normal prior with known covariance matrix
 #' bprior <- prior(multi_normal(M, V), class = "b")
 #' stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
-#'   stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
+#'   stanvar(diag(2), "V", scode = "  matrix[K, K] V;")
 #' make_stancode(count ~ Trt + zBase, epilepsy,
 #'               prior = bprior, stanvars = stanvars)
-#'               
+#'
 #' # define a hierachical prior on the regression coefficients
 #' bprior <- set_prior("normal(0, tau)", class = "b") +
 #'   set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
-#' stanvars <- stanvar(scode = "real<lower=0> tau;", 
+#' stanvars <- stanvar(scode = "real<lower=0> tau;",
 #'                     block = "parameters")
 #' make_stancode(count ~ Trt + zBase, epilepsy,
 #'               prior = bprior, stanvars = stanvars)
-#'               
+#'
 #' # ensure that 'tau' is passed to the likelihood of a threaded model
 #' # not necessary for this example but may be necessary in other cases
-#' stanvars <- stanvar(scode = "real<lower=0> tau;", 
+#' stanvars <- stanvar(scode = "real<lower=0> tau;",
 #'                     block = "parameters", pll_args = "real tau")
 #' make_stancode(count ~ Trt + zBase, epilepsy,
 #'               stanvars = stanvars, threads = threading(2))
-#' 
+#'
 #' @export
 stanvar <- function(x = NULL, name = NULL, scode = NULL,
                     block = "data", position = "start",
                     pll_args = NULL) {
   vblocks <- c(
-    "data", "tdata", "parameters", "tparameters", 
+    "data", "tdata", "parameters", "tparameters",
     "model", "genquant", "functions", "likelihood"
   )
   block <- match.arg(block, vblocks)
@@ -75,11 +79,11 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
       stop2("Argument 'x' is required if block = 'data'.")
     }
     if (is.null(name)) {
-      name <- deparse(substitute(x))
+      name <- deparse0(substitute(x))
     }
     name <- as_one_character(name)
     if (!is_equal(name, make.names(name)) || grepl("\\.", name)) {
-      stop2("'", limit_chars(name, 30), "' is not ", 
+      stop2("'", limit_chars(name, 30), "' is not ",
             "a valid variable name in Stan.")
     }
     if (is.null(scode)) {
@@ -119,7 +123,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
         if (length(x) == 1L) {
           pll_type <- paste0(pll_type, "int")
         } else {
-          pll_type <- paste0(pll_type, "int[]")
+          pll_type <- paste0(pll_type, "array[] int")
         }
       } else if (is.vector(x)) {
         if (length(x) == 1L) {
@@ -160,7 +164,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
   structure(setNames(list(out), name), class = "stanvars")
 }
 
-# take a subset of a stanvars object 
+# take a subset of a stanvars object
 # @param x a stanvars object
 # @param ... conditions defining the desired subset
 subset_stanvars <- function(x, ...) {
@@ -183,16 +187,16 @@ collapse_stanvars <- function(x, block = NULL, position = NULL) {
   if (!length(x)) {
     return("")
   }
-  collapse(wsp(nsp = 2), ulapply(x, "[[", "scode"), "\n")
+  collapse(wsp(nsp = 2), ufrom_list(x, "scode"), "\n")
 }
 
-# collapse partial lpg-lik code provided in a stanvars object
+# collapse partial log-lik code provided in a stanvars object
 collapse_stanvars_pll_args <- function(x) {
   x <- validate_stanvars(x)
   if (!length(x)) {
     return(character(0))
   }
-  out <- ulapply(x, "[[", "pll_args")
+  out <- ufrom_list(x, "pll_args")
   if (!length(out)) {
     return("")
   }
@@ -208,7 +212,7 @@ validate_stanvars <- function(x, stan_funs = NULL) {
     stop2("Argument 'stanvars' is invalid. See ?stanvar for help.")
   }
   if (length(stan_funs) > 0) {
-    warning2("Argument 'stan_funs' is deprecated. Please use argument ", 
+    warning2("Argument 'stan_funs' is deprecated. Please use argument ",
              "'stanvars' instead. See ?stanvar for more help.")
     stan_funs <- as_one_character(stan_funs)
     x <- x + stanvar(scode = stan_funs, block = "functions")

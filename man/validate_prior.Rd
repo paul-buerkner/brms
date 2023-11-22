@@ -12,6 +12,7 @@ validate_prior(
   sample_prior = "no",
   data2 = NULL,
   knots = NULL,
+  drop_unused_levels = TRUE,
   ...
 )
 }
@@ -54,13 +55,16 @@ allows among others to generate draws from the prior predictive
 distribution. In this case, all parameters must have proper priors.}
 
 \item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects 
+cannot be passed via argument \code{data}. Required for some objects
 used in autocorrelation structures to specify dependency structures
 as well as for within-group covariance matrices.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
 
 \item{...}{Other arguments for internal usage only.}
 }
@@ -72,7 +76,7 @@ Validate priors supplied by the user. Return a complete
 set of priors for the given model, including default priors.
 }
 \examples{
-prior1 <- prior(normal(0,10), class = b) + 
+prior1 <- prior(normal(0,10), class = b) +
   prior(cauchy(0,2), class = sd)
 validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
                data = epilepsy, family = poisson())

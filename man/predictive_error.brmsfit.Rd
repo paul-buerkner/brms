@@ -10,6 +10,7 @@
   newdata = NULL,
   re_formula = NULL,
   re.form = NULL,
+  method = "posterior_predict",
   resp = NULL,
   ndraws = NULL,
   draw_ids = NULL,
@@ -32,6 +33,11 @@ if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
 
+\item{method}{Method used to obtain predictions. Can be set to
+\code{"posterior_predict"} (the default), \code{"posterior_epred"},
+or \code{"posterior_linpred"}. For more details, see the respective
+function documentations.}
+
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
@@ -42,9 +48,9 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
@@ -62,7 +68,7 @@ predicted responses. Can be performed for the data used to fit the model
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject), 
+fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, cores = 2)
 
 ## extract predictive errors

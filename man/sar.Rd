@@ -8,18 +8,18 @@ sar(M, type = "lag")
 }
 \arguments{
 \item{M}{An object specifying the spatial weighting matrix.
-Can be either the spatial weight matrix itself or an 
+Can be either the spatial weight matrix itself or an
 object of class \code{listw} or \code{nb}, from which
 the spatial weighting matrix can be computed.}
 
-\item{type}{Type of the SAR structure. Either \code{"lag"} 
-(for SAR of the response values) or \code{"error"} 
+\item{type}{Type of the SAR structure. Either \code{"lag"}
+(for SAR of the response values) or \code{"error"}
 (for SAR of the residuals). More information is
 provided in the 'Details' section.}
 }
 \value{
-An object of class \code{'sar_term'}, which is a list 
-  of arguments to be interpreted by the formula 
+An object of class \code{'sar_term'}, which is a list
+  of arguments to be interpreted by the formula
   parsing functions of \pkg{brms}.
 }
 \description{
@@ -30,8 +30,8 @@ model with SAR terms.
 \details{
 The \code{lagsar} structure implements SAR of the response values:
   \deqn{y = \rho W y + \eta + e}
-  The \code{errorsar} structure implements SAR of the residuals: 
-  \deqn{y = \eta + u, u = \rho W u + e} 
+  The \code{errorsar} structure implements SAR of the residuals:
+  \deqn{y = \eta + u, u = \rho W u + e}
   In the above equations, \eqn{\eta} is the predictor term and \eqn{e} are
   independent normally or t-distributed residuals. Currently, only families
   \code{gaussian} and \code{student} support SAR structures.
@@ -39,13 +39,13 @@ The \code{lagsar} structure implements SAR of the response values:
 \examples{
 \dontrun{
 data(oldcol, package = "spdep")
-fit1 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "lag"), 
+fit1 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "lag"),
             data = COL.OLD, data2 = list(COL.nb = COL.nb),
             chains = 2, cores = 2)
 summary(fit1)
 plot(fit1)
 
-fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"), 
+fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
             data = COL.OLD, data2 = list(COL.nb = COL.nb),
             chains = 2, cores = 2)
 summary(fit2)

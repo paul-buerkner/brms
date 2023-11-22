@@ -14,8 +14,9 @@ make_standata(
   cov_ranef = NULL,
   sample_prior = "no",
   stanvars = NULL,
-  threads = NULL,
+  threads = getOption("brms.threads", NULL),
   knots = NULL,
+  drop_unused_levels = TRUE,
   ...
 )
 }
@@ -53,7 +54,7 @@ It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
 \item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects 
+cannot be passed via argument \code{data}. Required for some objects
 used in autocorrelation structures to specify dependency structures
 as well as for within-group covariance matrices.}
 
@@ -62,7 +63,7 @@ as well as for within-group covariance matrices.}
 matrices should correspond to columns in \code{data} that are used as
 grouping factors. All levels of the grouping factor should appear as
 rownames of the corresponding matrix. This argument can be used, among
-others to model pedigrees and phylogenetic effects. 
+others to model pedigrees and phylogenetic effects.
 It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
@@ -90,30 +91,35 @@ more control over the threading process, \code{threads} may also be a
 \code{brmsthreads} object created by \code{\link{threading}}. Within-chain
 parallelization is experimental! We recommend its use only if you are
 experienced with Stan's \code{reduce_sum} function and have a slow running
-model that cannot be sped up by any other means.}
+model that cannot be sped up by any other means. Can be set globally for
+the current \R session via the \code{"brms.threads"} option (see
+\code{\link{options}}).}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
 
+\item{drop_unused_levels}{Should unused factors levels in the data be
+dropped? Defaults to \code{TRUE}.}
+
 \item{...}{Other arguments for internal use.}
 }
 \value{
-A named list of objects containing the required data 
+A named list of objects containing the required data
   to fit a \pkg{brms} model with \pkg{Stan}.
 }
 \description{
 Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 }
 \examples{
-sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
+sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject),
                         data = inhaler, family = "cumulative")
 str(sdata1)
 
 sdata2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
                         data = epilepsy, family = "poisson")
 str(sdata2)
-         
+
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

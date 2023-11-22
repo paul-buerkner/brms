@@ -2,6 +2,19 @@
 % Please edit documentation in R/formula-ad.R
 \name{addition-terms}
 \alias{addition-terms}
+\alias{se}
+\alias{weights}
+\alias{trials}
+\alias{thres}
+\alias{cat}
+\alias{dec}
+\alias{cens}
+\alias{trunc}
+\alias{index}
+\alias{rate}
+\alias{subset}
+\alias{vreal}
+\alias{vint}
 \alias{resp_se}
 \alias{resp_weights}
 \alias{resp_trials}
@@ -47,17 +60,18 @@ resp_vreal(...)
 resp_vint(...)
 }
 \arguments{
-\item{x}{A vector; usually a variable defined in the data. Allowed values
-depend on the function: \code{resp_se} and \code{resp_weights} require
-positive numeric values. \code{resp_trials}, \code{resp_thres}, and
-\code{resp_cat} require positive integers. \code{resp_dec} requires
-\code{0} and \code{1}, or alternatively \code{'lower'} and \code{'upper'}.
-\code{resp_subset} requires \code{0} and \code{1}, or alternatively
-\code{FALSE} and \code{TRUE}. \code{resp_cens} requires \code{'left'},
-\code{'none'}, \code{'right'}, and \code{'interval'} (or equivalently
-\code{-1}, \code{0}, \code{1}, and \code{2}) to indicate left, no, right,
-or interval censoring. \code{resp_index} does not make any requirements
-other than the value being unique for each observation.}
+\item{x}{A vector; Ideally a single variable defined in the data (see
+Details). Allowed values depend on the function: \code{resp_se} and
+\code{resp_weights} require positive numeric values. \code{resp_trials},
+\code{resp_thres}, and \code{resp_cat} require positive integers.
+\code{resp_dec} requires \code{0} and \code{1}, or alternatively
+\code{'lower'} and \code{'upper'}. \code{resp_subset} requires \code{0} and
+\code{1}, or alternatively \code{FALSE} and \code{TRUE}. \code{resp_cens}
+requires \code{'left'}, \code{'none'}, \code{'right'}, and
+\code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
+\code{2}) to indicate left, no, right, or interval censoring.
+\code{resp_index} does not make any requirements other than the value being
+unique for each observation.}
 
 \item{sigma}{Logical; Indicates whether the residual standard deviation
 parameter \code{sigma} should be included in addition to the known
@@ -70,14 +84,14 @@ so that the average weight equals one. Defaults to \code{FALSE}.}
 \item{gr}{A vector of grouping indicators.}
 
 \item{y2}{A vector specifying the upper bounds in interval censoring.
-Will be ignored for non-interval censored observations. However, it 
+Will be ignored for non-interval censored observations. However, it
 should NOT be \code{NA} even for non-interval censored observations to
 avoid accidental exclusion of these observations.}
 
-\item{lb}{A numeric vector or single numeric value specifying 
+\item{lb}{A numeric vector or single numeric value specifying
 the lower truncation bound.}
 
-\item{ub}{A numeric vector or single numeric value specifying 
+\item{ub}{A numeric vector or single numeric value specifying
 the upper truncation bound.}
 
 \item{sdy}{Optional known measurement error of the response
@@ -88,7 +102,7 @@ at the same time using the plausible-values-technique.}
 \item{denom}{A vector of positive numeric values specifying
 the denominator values from which the response rates are computed.}
 
-\item{...}{For \code{resp_vreal}, vectors of real values. 
+\item{...}{For \code{resp_vreal}, vectors of real values.
 For \code{resp_vint}, vectors of integer values. In Stan,
 these variables will be named \code{vreal1}, \code{vreal2}, ...,
 and \code{vint1}, \code{vint2}, ..., respectively.}
@@ -98,16 +112,22 @@ A list of additional response information to be processed further
   by \pkg{brms}.
 }
 \description{
-Provide additional information on the response variable 
+Provide additional information on the response variable
 in \pkg{brms} models, such as censoring, truncation, or
-known measurement error.
+known measurement error. Detailed documentation on the use
+of each of these functions can be found in the Details section
+of \code{\link{brmsformula}} (under "Additional response information").
 }
 \details{
 These functions are almost solely useful when
   called in formulas passed to the \pkg{brms} package.
   Within formulas, the \code{resp_} prefix may be omitted.
   More information is given in the 'Details' section
-  of \code{\link{brmsformula}}.
+  of \code{\link{brmsformula}} (under "Additional response information").
+
+  It is highly recommended to use a single data variable as input
+  for \code{x} (instead of a more complicated expression) to make sure all
+  post-processing functions work as expected.
 }
 \examples{
 \dontrun{
@@ -130,20 +150,20 @@ fit2 <- brm(success | trials(n) ~ x, data = data2,
             family = binomial("probit"))
 summary(fit2)
 
-## Survival regression modeling the time between the first 
+## Survival regression modeling the time between the first
 ## and second recurrence of an infection in kidney patients.
-fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal())
 summary(fit3)
 
-## Poisson model with truncated counts  
-fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt, 
+## Poisson model with truncated counts
+fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt,
             data = epilepsy, family = poisson())
 summary(fit4)
 }
-  
+
 }
 \seealso{
-\code{\link{brm}}, 
+\code{\link{brm}},
   \code{\link{brmsformula}}
 }

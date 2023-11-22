@@ -31,7 +31,7 @@ the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
 \item{newdata2}{A named \code{list} of objects containing new data, which
-cannot be passed via argument \code{newdata}. Required for some objects 
+cannot be passed via argument \code{newdata}. Required for some objects
 used in autocorrelation structures, or \code{\link{stanvars}}.}
 
 \item{new_objects}{Deprecated alias of \code{newdata2}.}

@@ -1,35 +1,35 @@
 #' Extract Diagnostic Quantities of \pkg{brms} Models
-#' 
+#'
 #' Extract quantities that can be used to diagnose sampling behavior
 #' of the algorithms applied by \pkg{Stan} at the back-end of \pkg{brms}.
-#' 
+#'
 #' @name diagnostic-quantities
 #' @aliases log_posterior nuts_params rhat neff_ratio
-#'     
-#' @param object A \code{brmsfit} object.
-#' @param pars An optional character vector of parameter names. 
-#'   For \code{nuts_params} these will be NUTS sampler parameter 
-#'   names rather than model parameters. If pars is omitted 
+#'
+#' @param object,x A \code{brmsfit} object.
+#' @param pars An optional character vector of parameter names.
+#'   For \code{nuts_params} these will be NUTS sampler parameter
+#'   names rather than model parameters. If pars is omitted
 #'   all parameters are included.
 #' @param ... Arguments passed to individual methods.
-#' 
+#'
 #' @return The exact form of the output depends on the method.
-#' 
-#' @details For more details see 
+#'
+#' @details For more details see
 #'   \code{\link[bayesplot:bayesplot-extractors]{bayesplot-extractors}}.
-#'   
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit <- brm(time ~ age * sex, data = kidney)
-#' 
+#'
 #' lp <- log_posterior(fit)
 #' head(lp)
-#' 
+#'
 #' np <- nuts_params(fit)
 #' str(np)
 #' # extract the number of divergence transitions
 #' sum(subset(np, Parameter == "divergent__")$Value)
-#' 
+#'
 #' head(rhat(fit))
 #' head(neff_ratio(fit))
 #' }
@@ -54,12 +54,18 @@ nuts_params.brmsfit <- function(object, pars = NULL, ...) {
 }
 
 #' @rdname diagnostic-quantities
-#' @importFrom bayesplot rhat
+#' @importFrom posterior rhat
 #' @export rhat
 #' @export
-rhat.brmsfit <- function(object, pars = NULL, ...) {
-  contains_draws(object)
-  bayesplot::rhat(object$fit, pars = pars, ...)
+rhat.brmsfit <- function(x, pars = NULL, ...) {
+  contains_draws(x)
+  # bayesplot uses outdated rhat code from rstan
+  # bayesplot::rhat(object$fit, pars = pars, ...)
+  draws <- as_draws_array(x, variable = pars, ...)
+  tmp <- posterior::summarise_draws(draws, rhat = posterior::rhat)
+  rhat <- tmp$rhat
+  names(rhat) <- tmp$variable
+  rhat
 }
 
 #' @rdname diagnostic-quantities
@@ -68,22 +74,31 @@ rhat.brmsfit <- function(object, pars = NULL, ...) {
 #' @export
 neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
   contains_draws(object)
-  bayesplot::neff_ratio(object$fit, pars = pars, ...)
+  # bayesplot uses outdated ess code from rstan
+  # bayesplot::neff_ratio(object$fit, pars = pars, ...)
+  draws <- as_draws_array(object, variable = pars, ...)
+  tmp <- posterior::summarise_draws(
+    draws, ess_bulk = posterior::ess_bulk, ess_tail = posterior::ess_tail
+  )
+  # min of ess_bulk and ess_tail mimics definition of posterior::rhat.default
+  ess <- matrixStats::rowMins(cbind(tmp$ess_bulk, tmp$ess_tail))
+  names(ess) <- tmp$variable
+  ess / ndraws(draws)
 }
 
 #' Extract Control Parameters of the NUTS Sampler
-#' 
-#' Extract control parameters of the NUTS sampler such as 
+#'
+#' Extract control parameters of the NUTS sampler such as
 #' \code{adapt_delta} or \code{max_treedepth}.
-#' 
+#'
 #' @param x An \R object
 #' @param pars Optional names of the control parameters to be returned.
 #'  If \code{NULL} (the default) all control parameters are returned.
 #'  See \code{\link[rstan:stan]{stan}} for more details.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @return A named \code{list} with control parameter values.
-#' 
+#'
 #' @export
 control_params <- function(x, ...) {
   UseMethod("control_params")
@@ -93,7 +108,11 @@ control_params <- function(x, ...) {
 #' @export
 control_params.brmsfit <- function(x, pars = NULL, ...) {
   contains_draws(x)
-  out <- attr(x$fit@sim$samples[[1]], "args")$control
+  if (is_equal(x$backend, "cmdstanr")) {
+    out <- attr(x$fit, "metadata")$metadata
+  } else {
+    out <- attr(x$fit@sim$samples[[1]], "args")$control
+  }
   if (!is.null(pars)) {
     out <- out[pars]
   }

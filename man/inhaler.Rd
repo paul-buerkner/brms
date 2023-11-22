@@ -5,48 +5,48 @@
 \alias{inhaler}
 \title{Clarity of inhaler instructions}
 \format{
-A data frame of 572 observations containing 
-  information on the following 5 variables. 
+A data frame of 572 observations containing
+  information on the following 5 variables.
 \describe{
  \item{subject}{The subject number}
- \item{rating}{The rating of the inhaler instructions 
+ \item{rating}{The rating of the inhaler instructions
    on a scale ranging from 1 to 4}
- \item{treat}{A contrast to indicate which of 
-   the two inhaler devices was used} 
+ \item{treat}{A contrast to indicate which of
+   the two inhaler devices was used}
  \item{period}{A contrast to indicate the time of administration}
  \item{carry}{A contrast to indicate possible carry over effects}
 }
 }
 \source{
-Ezzet, F., & Whitehead, J. (1991). 
-  A random effects model for ordinal responses from a crossover trial. 
+Ezzet, F., & Whitehead, J. (1991).
+  A random effects model for ordinal responses from a crossover trial.
   \emph{Statistics in Medicine}, 10(6), 901-907.
 }
 \usage{
 inhaler
 }
 \description{
-Ezzet and Whitehead (1991) analyze data from a two-treatment, 
-  two-period crossover trial to compare 2 inhalation devices for 
-  delivering the drug salbutamol in 286 asthma patients. 
-  Patients were asked to rate the clarity of leaflet instructions 
+Ezzet and Whitehead (1991) analyze data from a two-treatment,
+  two-period crossover trial to compare 2 inhalation devices for
+  delivering the drug salbutamol in 286 asthma patients.
+  Patients were asked to rate the clarity of leaflet instructions
   accompanying each device, using a 4-point ordinal scale.
 }
 \examples{
 \dontrun{
 ## ordinal regression with family "sratio"
-fit1 <- brm(rating ~ treat + period + carry, 
-            data = inhaler, family = sratio(), 
+fit1 <- brm(rating ~ treat + period + carry,
+            data = inhaler, family = sratio(),
             prior = set_prior("normal(0,5)"))
-summary(fit1) 
+summary(fit1)
 plot(fit1)
-       
-## ordinal regression with family "cumulative" 
-## and random intercept over subjects             
-fit2 <- brm(rating ~ treat + period + carry + (1|subject), 
-              data = inhaler, family = cumulative(), 
+
+## ordinal regression with family "cumulative"
+## and random intercept over subjects
+fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+              data = inhaler, family = cumulative(),
               prior = set_prior("normal(0,5)"))
-summary(fit2) 
+summary(fit2)
 plot(fit2)
 }
 

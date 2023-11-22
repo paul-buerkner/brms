@@ -16,18 +16,18 @@
 
 \method{nuts_params}{brmsfit}(object, pars = NULL, ...)
 
-\method{rhat}{brmsfit}(object, pars = NULL, ...)
+\method{rhat}{brmsfit}(x, pars = NULL, ...)
 
 \method{neff_ratio}{brmsfit}(object, pars = NULL, ...)
 }
 \arguments{
-\item{object}{A \code{brmsfit} object.}
+\item{object, x}{A \code{brmsfit} object.}
 
 \item{...}{Arguments passed to individual methods.}
 
-\item{pars}{An optional character vector of parameter names. 
-For \code{nuts_params} these will be NUTS sampler parameter 
-names rather than model parameters. If pars is omitted 
+\item{pars}{An optional character vector of parameter names.
+For \code{nuts_params} these will be NUTS sampler parameter
+names rather than model parameters. If pars is omitted
 all parameters are included.}
 }
 \value{
@@ -38,7 +38,7 @@ Extract quantities that can be used to diagnose sampling behavior
 of the algorithms applied by \pkg{Stan} at the back-end of \pkg{brms}.
 }
 \details{
-For more details see 
+For more details see
   \code{\link[bayesplot:bayesplot-extractors]{bayesplot-extractors}}.
 }
 \examples{

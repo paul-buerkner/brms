@@ -9,8 +9,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -73,11 +73,11 @@ model_poisson <- brm(
 ## ---- benchmark, include=FALSE----------------------------------------------------------
 # Benchmarks given model with cross-product of tuning parameters CPU
 # cores, grainsize and iterations. Models are run with either static
-# or non-static scheduler and inits is set by default to 0 on the
+# or non-static scheduler and initial values are set by default to 0 on the
 # unconstrained scale. Function returns a data-frame with the
 # cross-product of the tuning parameters and as result column the
 # respective runtime.
-benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100, 
+benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100,
                                 static = FALSE) {
 
     winfo <- extract_warmup_info(model)
@@ -85,15 +85,15 @@ benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100,
     init <- list(extract_draw(sims, 1))
 
     scaling_model <- update(
-        model, refresh = 0, 
-        threads = threading(1, grainsize = grainsize[1], static = static), 
+        model, refresh = 0,
+        threads = threading(1, grainsize = grainsize[1], static = static),
         chains = 1, iter = 2, backend = "cmdstanr"
     )
 
     run_benchmark <- function(cores, size, iter) {
         bench_fit <- update(
             scaling_model, warmup=0, iter = iter,
-            chains = 1, seed = 1234, inits = init, refresh = 0, save_warmup=TRUE,
+            chains = 1, seed = 1234, init = init, refresh = 0, save_warmup=TRUE,
             threads = threading(cores, grainsize = size, static = static),
             inv_metric=winfo$inv_metric[[1]],
             step_size=winfo$step_size[[1]],
@@ -110,13 +110,13 @@ benchmark_threading <- function(model, cores = 1, grainsize = 1, iter = 100,
     cbind(cases, as.data.frame(t(res)))
 }
 
-benchmark_reference <- function(model, iter=100, inits=0) {
+benchmark_reference <- function(model, iter=100, init=0) {
     winfo <- extract_warmup_info(model)
     sims  <- rstan::extract(model$fit)
     init <- list(extract_draw(sims, 1))
 
     ref_model <- update(
-        model, refresh = 0, 
+        model, refresh = 0,
         threads = NULL,
         chains = 1, iter = 2, backend = "cmdstanr"
     )
@@ -124,7 +124,7 @@ benchmark_reference <- function(model, iter=100, inits=0) {
     run_benchmark_ref <- function(iter_bench) {
         bench_fit <- update(
             ref_model, warmup=0, iter = iter_bench,
-            chains = 1, seed = 1234, inits = init, refresh = 0,
+            chains = 1, seed = 1234, init = init, refresh = 0,
             inv_metric=winfo$inv_metric[[1]],
             step_size=winfo$step_size[[1]],
             adapt_engaged=FALSE
@@ -135,7 +135,7 @@ benchmark_reference <- function(model, iter=100, inits=0) {
 
         c(num_leapfrog=lf, runtime=elapsed)
     }
-    
+
     ref <- sapply(iter, run_benchmark_ref)
     ref <- cbind(as.data.frame(t(ref)), iter=iter)
     ref
@@ -189,9 +189,9 @@ chunking_bench <- transform(
 iter_test <- c(10, 20, 40)  # very short test runs
 scaling_chunking <- benchmark_threading(
   model_poisson,
-  cores = 1,                         
+  cores = 1,
   grainsize = chunking_bench$grainsize,  # test various grainsizes
-  iter = iter_test,  
+  iter = iter_test,
   static = TRUE  # with static partitioner
 )
 
@@ -206,7 +206,7 @@ scaling_chunking <- merge(scaling_chunking, chunking_bench, by = "grainsize")
 single_chunk  <- transform(
     subset(scaling_chunking, chunks == 1),
     num_leapfrog_single = num_leapfrog, num_leapfrog = NULL,
-    runtime_single = runtime, runtime = NULL, 
+    runtime_single = runtime, runtime = NULL,
     grainsize = NULL, chunks=NULL
 )
 
@@ -273,7 +273,7 @@ scaling_cores <- transform(
 ggplot(scaling_cores) +
     aes(cores, runtime, shape = grainsize, color = grainsize) +
     geom_vline(xintercept = num_cpu, linetype = 3) +
-    geom_line() + geom_point() + 
+    geom_line() + geom_point() +
     scale_x_log10(breaks = scaling_cores$cores) +
     scale_y_log10(breaks=seq(0.1, 1.4, by=0.1)) +
     theme(legend.position = c(0.85, 0.8)) +
@@ -348,7 +348,7 @@ kable(scaling_cores, digits = 2)
 ## ---- eval=FALSE------------------------------------------------------------------------
 #  # Benchmarks given model with cross-product of tuning parameters CPU
 #  # cores, grainsize and iterations. Models are run with either static
-#  # or non-static scheduler and inits is set by default to 0 on the
+#  # or non-static scheduler and initial values are set by default to 0 on the
 #  # unconstrained scale. Function returns a data-frame with the
 #  # cross-product of the tuning parameters and as result column the
 #  # respective runtime.
@@ -368,7 +368,7 @@ kable(scaling_cores, digits = 2)
 #      run_benchmark <- function(cores, size, iter) {
 #          bench_fit <- update(
 #              scaling_model, warmup=0, iter = iter,
-#              chains = 1, seed = 1234, inits = init, refresh = 0, save_warmup=TRUE,
+#              chains = 1, seed = 1234, init = init, refresh = 0, save_warmup=TRUE,
 #              threads = threading(cores, grainsize = size, static = static),
 #              inv_metric=winfo$inv_metric[[1]],
 #              step_size=winfo$step_size[[1]],
@@ -385,7 +385,7 @@ kable(scaling_cores, digits = 2)
 #      cbind(cases, as.data.frame(t(res)))
 #  }
 #  
-#  benchmark_reference <- function(model, iter=100, inits=0) {
+#  benchmark_reference <- function(model, iter=100, init=0) {
 #      winfo <- extract_warmup_info(model)
 #      sims  <- rstan::extract(model$fit)
 #      init <- list(extract_draw(sims, 1))
@@ -399,7 +399,7 @@ kable(scaling_cores, digits = 2)
 #      run_benchmark_ref <- function(iter_bench) {
 #          bench_fit <- update(
 #              ref_model, warmup=0, iter = iter_bench,
-#              chains = 1, seed = 1234, inits = init, refresh = 0,
+#              chains = 1, seed = 1234, init = init, refresh = 0,
 #              inv_metric=winfo$inv_metric[[1]],
 #              step_size=winfo$step_size[[1]],
 #              adapt_engaged=FALSE

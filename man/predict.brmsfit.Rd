@@ -35,14 +35,14 @@ predictions of the grand mean when using sum coding.}
 the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{transform}{(Deprecated) A function or a character string naming 
+\item{transform}{(Deprecated) A function or a character string naming
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{negative_rt}{Only relevant for Wiener diffusion models. 
+\item{negative_rt}{Only relevant for Wiener diffusion models.
 A flag indicating whether response times of responses
 on the lower boundary should be returned as negative values.
 This allows to distinguish responses on the upper and
@@ -55,13 +55,13 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
-\item{ntrys}{Parameter used in rejection sampling 
-for truncated discrete models only 
+\item{ntrys}{Parameter used in rejection sampling
+for truncated discrete models only
 (defaults to \code{5}). See Details for more information.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
@@ -70,13 +70,13 @@ this argument can be set globally via the \code{mc.cores} option.}
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{robust}{If \code{FALSE} (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If \code{TRUE}, the median and the 
+\item{robust}{If \code{FALSE} (the default) the mean is used as
+the measure of central tendency and the standard deviation as
+the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
+\item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
@@ -84,7 +84,7 @@ that control several aspects of data validation and prediction.}
 }
 \value{
 An \code{array} of predicted response values.
-  If \code{summary = FALSE} the output resembles those of 
+  If \code{summary = FALSE} the output resembles those of
   \code{\link{posterior_predict.brmsfit}}.
 
   If \code{summary = TRUE} the output depends on the family: For categorical
@@ -106,8 +106,8 @@ with additional arguments for obtaining summaries of the computed draws.
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient), 
-           data = kidney, family = "exponential", inits = "0")
+fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
+           data = kidney, family = "exponential", init = "0")
 
 ## predicted responses
 pp <- predict(fit)
@@ -125,7 +125,7 @@ newdata <- data.frame(
 )
 predict(fit, newdata = newdata)
 }
- 
+
 }
 \seealso{
 \code{\link{posterior_predict.brmsfit}}

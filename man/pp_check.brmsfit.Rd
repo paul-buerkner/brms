@@ -9,12 +9,13 @@
   object,
   type,
   ndraws = NULL,
-  nsamples = NULL,
+  prefix = c("ppc", "ppd"),
   group = NULL,
   x = NULL,
   newdata = NULL,
   resp = NULL,
   draw_ids = NULL,
+  nsamples = NULL,
   subset = NULL,
   ...
 )
@@ -25,7 +26,7 @@
 \item{type}{Type of the ppc plot as given by a character string.
 See \code{\link[bayesplot:PPC-overview]{PPC}} for an overview
 of currently supported types. You may also use an invalid
-type (e.g. \code{type = "xyz"}) to get a list of supported 
+type (e.g. \code{type = "xyz"}) to get a list of supported
 types in the resulting error message.}
 
 \item{ndraws}{Positive integer indicating how many
@@ -34,14 +35,17 @@ If \code{NULL} all draws are used. If not specified,
 the number of posterior draws is chosen automatically.
 Ignored if \code{draw_ids} is not \code{NULL}.}
 
-\item{nsamples}{Deprecated alias of \code{ndraws}.}
+\item{prefix}{The prefix of the \pkg{bayesplot} function to be applied. 
+Either `"ppc"` (posterior predictive check; the default)
+or `"ppd"` (posterior predictive distribution), the latter being the same
+as the former except that the observed data is not shown for `"ppd"`.}
 
 \item{group}{Optional name of a factor variable in the model
 by which to stratify the ppc plot. This argument is required for
 ppc \code{*_grouped} types and ignored otherwise.}
 
-\item{x}{Optional name of a variable in the model. 
-Only used for ppc types having an \code{x} argument 
+\item{x}{Optional name of a variable in the model.
+Only used for ppc types having an \code{x} argument
 and ignored otherwise.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
@@ -55,6 +59,8 @@ are performed only for the specified response variables.}
 
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
+
+\item{nsamples}{Deprecated alias of \code{ndraws}.}
 
 \item{subset}{Deprecated alias of \code{draw_ids}.}
 
@@ -70,9 +76,9 @@ Perform posterior predictive checks with the help
 of the \pkg{bayesplot} package.
 }
 \details{
-For a detailed explanation of each of the ppc functions, 
-see the \code{\link[bayesplot:PPC-overview]{PPC}} 
-documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} 
+For a detailed explanation of each of the ppc functions,
+see the \code{\link[bayesplot:PPC-overview]{PPC}}
+documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}}
 package.
 }
 \examples{
@@ -90,6 +96,9 @@ pp_check(fit, type = "loo_pit")
 
 ## get an overview of all valid types
 pp_check(fit, type = "xyz")
+
+## get a plot without the observed data
+pp_check(fit, prefix = "ppd")
 }
 
 }

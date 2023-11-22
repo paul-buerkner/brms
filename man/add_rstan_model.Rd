@@ -9,7 +9,7 @@ add_rstan_model(x, overwrite = FALSE)
 \arguments{
 \item{x}{A \code{brmsfit} object to be updated.}
 
-\item{overwrite}{Logical. If \code{TRUE}, overwrite any existing 
+\item{overwrite}{Logical. If \code{TRUE}, overwrite any existing
 \code{\link[rstan:stanmodel-class]{stanmodel}}. Defaults to \code{FALSE}.}
 }
 \value{

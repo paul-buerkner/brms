@@ -19,25 +19,25 @@ gp(
 \arguments{
 \item{...}{One or more predictors for the GP.}
 
-\item{by}{A numeric or factor variable of the same length as 
-each predictor. In the numeric vector case, the elements multiply 
-the values returned by the GP. In the factor variable 
+\item{by}{A numeric or factor variable of the same length as
+each predictor. In the numeric vector case, the elements multiply
+the values returned by the GP. In the factor variable
 case, a separate GP is fitted for each factor level.}
 
 \item{k}{Optional number of basis functions for computing approximate
 GPs. If \code{NA} (the default), exact GPs are computed.}
 
-\item{cov}{Name of the covariance kernel. By default, 
+\item{cov}{Name of the covariance kernel. By default,
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
 
-\item{iso}{A flag to indicate whether an isotropic (\code{TRUE}; the 
-default) of a non-isotropic GP should be used. 
+\item{iso}{A flag to indicate whether an isotropic (\code{TRUE}; the
+default) or a non-isotropic GP should be used.
 In the former case, the same amount of smoothing is applied to all
 predictors. In the latter case, predictors may have different smoothing.
-Ignored if only a single predictors is supplied.}
+Ignored if only a single predictor is supplied.}
 
-\item{gr}{Logical; Indicates if auto-grouping should be used (defaults 
-to \code{TRUE}). If enabled, observations sharing the same 
+\item{gr}{Logical; Indicates if auto-grouping should be used (defaults
+to \code{TRUE}). If enabled, observations sharing the same
 predictor values will be represented by the same latent variable
 in the GP. This will improve sampling efficiency
 drastically if the number of unique predictor combinations is small
@@ -55,14 +55,14 @@ Scaling also affects the estimated length-scale parameters
 in that they resemble those of scaled predictors (not of the original
 predictors) if \code{scale} is \code{TRUE}.}
 
-\item{c}{Numeric value only used in approximate GPs. Defines the 
+\item{c}{Numeric value only used in approximate GPs. Defines the
 multiplicative constant of the predictors' range over which
-predictions should be computed. A good default could be \code{c = 5/4} 
+predictions should be computed. A good default could be \code{c = 5/4}
 but we are still working on providing better recommendations.}
 }
 \value{
-An object of class \code{'gp_term'}, which is a list 
-  of arguments to be interpreted by the formula 
+An object of class \code{'gp_term'}, which is a list
+  of arguments to be interpreted by the formula
   parsing functions of \pkg{brms}.
 }
 \description{
@@ -72,34 +72,34 @@ GP terms.
 }
 \details{
 A GP is a stochastic process, which
- describes the relation between one or more predictors 
- \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
+ describes the relation between one or more predictors
+ \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where
  \eqn{d} is the number of predictors. A GP is the
  generalization of the multivariate normal distribution
  to an infinite number of dimensions. Thus, it can be
- interpreted as a prior over functions. Any finite sample 
- realized from this stochastic process is jointly multivariate 
+ interpreted as a prior over functions. The values of \eqn{f( )}
+ at any finite set of locations are jointly multivariate
  normal, with a covariance matrix defined by the covariance
- kernel \eqn{k_p(x)}, where \eqn{p} is the vector of parameters
+ kernel \eqn{k_p(x_i, x_j)}, where \eqn{p} is the vector of parameters
  of the GP:
- \deqn{f(x) ~ MVN(0, k_p(x))}
- The smoothness and general behavior of the function \eqn{f} 
- depends only on the choice of covariance kernel. 
+ \deqn{(f(x_1), \ldots f(x_n) \sim MVN(0, (k_p(x_i, x_j))_{i,j=1}^n) .}
+ The smoothness and general behavior of the function \eqn{f}
+ depends only on the choice of covariance kernel.
  For a more detailed introduction to Gaussian processes,
  see \url{https://en.wikipedia.org/wiki/Gaussian_process}.
- 
+
  Below, we describe the currently supported covariance kernels:
  \itemize{
    \item{"exp_quad": }{The exponentiated-quadratic kernel is defined as
-   \eqn{k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j ||^2 / (2 lscale^2))},
-   where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a 
-   standard deviation parameter, and \eqn{lscale} is characteristic 
-   length-scale parameter. The latter practically measures how close two 
-   points \eqn{x_i} and \eqn{x_j} have to be to influence each other 
+   \eqn{k(x_i, x_j) = sdgp^2 \exp(- || x_i - x_j ||^2 / (2 lscale^2))},
+   where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a
+   standard deviation parameter, and \eqn{lscale} is characteristic
+   length-scale parameter. The latter practically measures how close two
+   points \eqn{x_i} and \eqn{x_j} have to be to influence each other
    substantially.}
  }
 
- In the current implementation, \code{"exp_quad"} is the only supported 
+ In the current implementation, \code{"exp_quad"} is the only supported
  covariance kernel. More options will follow in the future.
 }
 \examples{

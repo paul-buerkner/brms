@@ -42,7 +42,7 @@ in quantile regression (hence the name).}
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
@@ -52,8 +52,8 @@ Else, return P(X > x) .}
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, quantile function and random generation 
-for the asymmetric Laplace distribution with location \code{mu}, 
+Density, distribution function, quantile function and random generation
+for the asymmetric Laplace distribution with location \code{mu},
 scale \code{sigma} and asymmetry parameter \code{quantile}.
 }
 \details{

@@ -1,13 +1,13 @@
 #' Index \code{brmsfit} objects
-#' 
+#'
 #' @aliases variables nvariables niterations nchains ndraws
-#' 
+#'
 #' Index variables, iterations, chains, and draws.
-#' 
+#'
 #' @param x A \code{brmsfit} object or another \R object for which
 #' the methods are defined.
 #' @param ... Arguments passed to individual methods (if applicable).
-#' 
+#'
 #' @name draws-index-brms
 NULL
 
@@ -80,19 +80,19 @@ nthin <- function(x) {
 }
 
 #' Transform \code{brmsfit} to \code{draws} objects
-#' 
-#' Transform a \code{brmsfit} object to a format supported by the 
+#'
+#' Transform a \code{brmsfit} object to a format supported by the
 #' \pkg{posterior} package.
-#' 
-#' @aliases as_draws as_draws_matrix as_draws_array as_draws_df 
+#'
+#' @aliases as_draws as_draws_matrix as_draws_array as_draws_df
 #' @aliases as_draws_rvars as_draws_list
-#' 
+#'
 #' @param x A \code{brmsfit} object or another \R object for which
 #' the methods are defined.
 #' @param variable A character vector providing the variables to extract.
 #'   By default, all variables are extracted.
-#' @param regex Logical; Should variable should be treated as a (vector of) 
-#'   regular expressions? Any variable in \code{x} matching at least one of the 
+#' @param regex Logical; Should variable should be treated as a (vector of)
+#'   regular expressions? Any variable in \code{x} matching at least one of the
 #'   regular expressions will be selected. Defaults to \code{FALSE}.
 #' @param inc_warmup Should warmup draws be included? Defaults to \code{FALSE}.
 #' @param ... Arguments passed to individual methods (if applicable).
@@ -100,27 +100,27 @@ nthin <- function(x) {
 #' @details To subset iterations, chains, or draws, use the
 #'   \code{\link[posterior:subset_draws]{subset_draws}} method after
 #'   transforming the \code{brmsfit} to a \code{draws} object.
-#' 
+#'
 #' @seealso \code{\link[posterior:draws]{draws}}
 #'   \code{\link[posterior:subset_draws]{subset_draws}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'            data = epilepsy, family = poisson())
-#'            
+#'
 #' # extract posterior draws in an array format
 #' (draws_fit <- as_draws_array(fit))
 #' posterior::summarize_draws(draws_fit)
-#' 
+#'
 #' # extract only certain variables
 #' as_draws_array(fit, variable = "r_patient")
 #' as_draws_array(fit, variable = "^b_", regex = TRUE)
-#' 
+#'
 #' # extract posterior draws in a random variables format
 #' as_draws_rvars(fit)
 #' }
-#' 
+#'
 #' @name draws-brms
 NULL
 
@@ -185,7 +185,7 @@ as_draws_df.brmsfit <- function(x, variable = NULL, regex = FALSE,
 as_draws_list.brmsfit <- function(x, variable = NULL, regex = FALSE,
                                   inc_warmup = FALSE, ...) {
   .as_draws_list(
-    x$fit, variable = variable, regex = regex, 
+    x$fit, variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   )
 }
@@ -230,31 +230,31 @@ as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
 }
 
 #' Extract Posterior Draws
-#' 
+#'
 #' Extract posterior draws in conventional formats
 #' as data.frames, matrices, or arrays.
-#' 
+#'
 #' @inheritParams as_draws.brmsfit
 #' @param pars Deprecated alias of \code{variable}. For reasons of backwards
 #'   compatibility, \code{pars} is interpreted as a vector of regular
 #'   expressions by default unless \code{fixed = TRUE} is specified.
 #' @param draw The draw indices to be select. Subsetting draw indices will lead
-#'   to an automatic merging of chains.   
+#'   to an automatic merging of chains.
 #' @param subset Deprecated alias of \code{draw}.
 #' @param row.names,optional Unused and only added for consistency with
 #'   the \code{\link[base:as.data.frame]{as.data.frame}} generic.
 #' @param ... Further arguments to be passed to the corresponding
 #'   \code{\link[brms:draws-brms]{as_draws_*}} methods as well as to
 #'   \code{\link[posterior:subset_draws]{subset_draws}}.
-#'   
+#'
 #' @return A data.frame, matrix, or array containing the posterior draws.
-#'   
+#'
 #' @seealso \code{\link[brms:draws-brms]{as_draws}},
 #'   \code{\link[posterior:subset_draws]{subset_draws}}
-#' 
+#'
 #' @export
-as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, 
-                                  pars = NA, variable = NULL, draw = NULL, 
+as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE,
+                                  pars = NA, variable = NULL, draw = NULL,
                                   subset = NULL, ...) {
   variable <- use_variable_alias(variable, x, pars = pars, ...)
   draw <- use_alias(draw, subset)
@@ -265,7 +265,7 @@ as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE,
 
 #' @rdname as.data.frame.brmsfit
 #' @export
-as.matrix.brmsfit <- function(x, pars = NA, variable = NULL, 
+as.matrix.brmsfit <- function(x, pars = NA, variable = NULL,
                               draw = NULL, subset = NULL, ...) {
   variable <- use_variable_alias(variable, x, pars = pars, ...)
   draw <- use_alias(draw, subset)
@@ -276,7 +276,7 @@ as.matrix.brmsfit <- function(x, pars = NA, variable = NULL,
 
 #' @rdname as.data.frame.brmsfit
 #' @export
-as.array.brmsfit <- function(x, pars = NA, variable = NULL, 
+as.array.brmsfit <- function(x, pars = NA, variable = NULL,
                              draw = NULL, subset = NULL, ...) {
   variable <- use_variable_alias(variable, x, pars = pars, ...)
   draw <- use_alias(draw, subset)

@@ -2,13 +2,13 @@
 title: "Parameterization of Response Distributions in brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
   %\VignetteIndexEntry{Parameterization of Response Distributions in brms}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}   
+  \usepackage[utf8]{inputenc}
 ---
 
 The purpose of this vignette is to discuss the parameterizations of the families
@@ -22,7 +22,7 @@ density function as $f$, and use $\mu$ to refer to the main model parameter,
 which is usually the mean of the response distribution or some closely related
 quantity. In a regression framework, $\mu$ is not estimated directly but
 computed as $\mu = g(\eta)$, where $\eta$ is a predictor term (see
-`help(brmsformula)` for details) and $g$ is the response function (i.e., 
+`help(brmsformula)` for details) and $g$ is the response function (i.e.,
 inverse of the link function).
 
 ## Location shift models
@@ -30,7 +30,7 @@ inverse of the link function).
 The density of the **gaussian** family is given by
 $$
 f(y) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y - \mu}{\sigma}\right)^2\right)
-$$ 
+$$
 
 where $\sigma$ is the residual standard deviation. The density of the
 **student** family is given by
@@ -42,8 +42,8 @@ $\Gamma$ denotes the gamma function and $\nu > 1$ are the degrees of freedom. As
 $\nu \rightarrow \infty$, the student distribution becomes the gaussian
 distribution. The density of the **skew_normal** family is given by
 $$
-f(y) = \frac{1}{\sqrt{2\pi}\sigma} 
- \exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right) 
+f(y) = \frac{1}{\sqrt{2\pi}\omega}
+ \exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2  \right)
 \left(1 + \text{erf} \left( \alpha \left(\frac{y - \xi}{\omega \sqrt{2}} \right) \right) \right)
 $$
 
@@ -87,7 +87,7 @@ the negative binomial distribution becomes the poisson distribution. The density
 of the **geometric** family arises if $\phi$ is set to $1$.
 
 <!--
-The density of the **discrete_weibull** family is 
+The density of the **discrete_weibull** family is
 $$
 f(y) = \mu^{y^\alpha} - \mu^{(y + 1)^\alpha}
 $$
@@ -101,21 +101,21 @@ reals only, that is $y \in \mathbb{R}^+$. The density of the **lognormal**
 family is given by
 $$
 f(y) = \frac{1}{\sqrt{2\pi}\sigma y} \exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
-$$ 
+$$
 where $\sigma$ is the residual standard deviation on the log-scale.
 The density of the **Gamma** family is given by
 $$
-f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1} 
+f(y) = \frac{(\alpha / \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1}
 \exp\left(-\frac{\alpha y}{\mu}\right)
 $$
 where $\alpha$ is a positive shape parameter. The density of the **weibull**
 family is given by
 $$
-f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1} 
+f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}
 \exp\left(-\left(\frac{y}{s}\right)^\alpha\right)
 $$
-where $\alpha$ is again a positive shape parameter and 
-$s = \mu / \Gamma(1 + 1 / \alpha)$ is the scale parameter to that $\mu$ 
+where $\alpha$ is again a positive shape parameter and
+$s = \mu / \Gamma(1 + 1 / \alpha)$ is the scale parameter to that $\mu$
 is the mean of the distribution. The **exponential** family arises if $\alpha$
 is set to $1$ for either the gamma or Weibull distribution. The density of the
 **inverse.gaussian** family is given by
@@ -139,14 +139,14 @@ distribution (see above) or the **frechet** distribution with density
 $$
 f(y) = \frac{\nu}{s} \left(\frac{y}{s}\right)^{-1-\nu} \exp\left(-\left(\frac{y}{s}\right)^{-\nu}\right)
 $$
-where $s = \mu / \Gamma(1 - 1 / \nu)$ is a positive scale parameter and 
-$\nu > 1$ is a shape parameter so that $\mu$ predicts the mean of the Frechet 
-distribution. A generalization of both distributions is the generalized extreme 
+where $s = \mu / \Gamma(1 - 1 / \nu)$ is a positive scale parameter and
+$\nu > 1$ is a shape parameter so that $\mu$ predicts the mean of the Frechet
+distribution. A generalization of both distributions is the generalized extreme
 value distribution (family **gen_extreme_value**) with density
 $$
-f(y) = \frac{1}{\sigma} t(y)^{-1 - 1 / \xi} \exp(-t(y))
+f(y) = \frac{1}{\sigma} t(y)^{\xi + 1} \exp(-t(y))
 $$
-where 
+where
 $$
 t(y) = \left(1 + \xi \left(\frac{y - \mu}{\sigma} \right)\right)^{-1 / \xi}
 $$
@@ -176,7 +176,7 @@ diffusion model explained below).
 A family concerned with the combined modeling of reaction times and
 corresponding binary responses is the **wiener** diffusion model. It has four
 model parameters each with a natural interpretation. The parameter $\alpha > 0$
-describes the separation between two boundaries of the diffusion process, 
+describes the separation between two boundaries of the diffusion process,
 $\tau > 0$ describes the non-decision time (e.g., due to image or motor processing),
 $\beta \in [0, 1]$ describes the initial bias in favor of the upper alternative,
 and $\delta \in \mathbb{R}$ describes the drift rate to the boundaries (a
@@ -222,15 +222,32 @@ where $B$ is the beta function and $\phi$ is a positive precision parameter.
 A multivariate generalization of the **Beta** family is the **dirichlet** family
 with density
 $$
-f(y) = \frac{1}{B((\mu_{1}, \ldots, \mu_{K}) \phi)} 
+f(y) = \frac{1}{B((\mu_{1}, \ldots, \mu_{K}) \phi)}
   \prod_{k=1}^K y_{k}^{\mu_{k} \phi - 1}.
 $$
-The **dirichlet** distribution is only implemented with the multivariate logit
+The **dirichlet** family is implemented with the multivariate logit
 link function so that
 $$
 \mu_{j} = \frac{\exp(\eta_{j})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
 $$
-For reasons of identifiability, $\eta_{1}$ is set to $0$.
+For reasons of identifiability, $\eta_{\rm ref}$ is set to $0$, where ${\rm ref}$
+is one of the response categories chosen as reference.
+
+An alternative to the **dirichlet** family is the **logistic_normal** family
+with density
+$$
+f(y) = \frac{1}{\prod_{k=1}^K y_k} \times
+  \text{multivariate_normal}(\tilde{y} \, | \, \mu, \sigma, \Omega)
+$$
+where $\tilde{y}$ is the multivariate logit transformed response
+$$
+\tilde{y} = (\log(y_1 / y_{\rm ref}), \ldots, \log(y_{\rm ref-1} / y_{\rm ref}),
+             \log(y_{\rm ref+1} / y_{\rm ref}), \ldots, \log(y_K / y_{\rm ref}))
+$$
+of dimension $K-1$ (excluding the reference category), which is modeled as
+multivariate normally distributed with latent mean and standard deviation
+vectors $\mu$ and $\sigma$, as well as correlation matrix $\Omega$.
+
 
 ## Circular models
 
@@ -251,14 +268,14 @@ distribution functions $\mathbb{R} \rightarrow [0,1]$. The density of the
 **cumulative** family (implementing the most basic ordinal model) is given by
 $$
 f(y) = g(\tau_{y + 1} - \eta) - g(\tau_{y} - \eta)
-$$ 
+$$
 
 The densities of the **sratio** (stopping ratio) and **cratio** (continuation
 ratio) families are given by
 $$
 f(y) =  g(\tau_{y + 1} - \eta) \prod_{k = 1}^{y} (1 - g(\tau_{k} - \eta))
 $$
-and 
+and
 $$
 f(y) = (1 - g(\eta - \tau_{y + 1})) \prod_{k = 1}^{y} g(\eta - \tau_{k})
 $$
@@ -293,7 +310,7 @@ identifiability, $\eta_{1}$ is set to $0$. A generalization of the
 **categorical** family to more than one trial is the **multinomial** family with
 density
 $$
-f(y) = {N \choose y_{1}, y_{2}, \ldots, y_{K}} 
+f(y) = {N \choose y_{1}, y_{2}, \ldots, y_{K}}
   \prod_{k=1}^K \mu_{k}^{y_{k}}
 $$
 where, for each category, $\mu_{k}$ is estimated via the multivariate logit link
@@ -310,7 +327,7 @@ f_z(y) = (1 - z) f(y) \quad \text{if } y > 0
 $$
 where $z$ denotes the zero-inflation probability. Currently implemented families
 are **zero_inflated_poisson**, **zero_inflated_binomial**,
-**zero_inflated_negbinomial**, and **zero_inflated_beta**. 
+**zero_inflated_negbinomial**, and **zero_inflated_beta**.
 
 The density of a **hurdle** family is given by
 $$
@@ -318,7 +335,7 @@ f_z(y) = z \quad \text{if } y = 0 \\
 f_z(y) = (1 - z) f(y) / (1 - f(0)) \quad \text{if } y > 0
 $$
 Currently implemented families are **hurdle_poisson**, **hurdle_negbinomial**,
-**hurdle_gamma**, and **hurdle_lognormal**. 
+**hurdle_gamma**, and **hurdle_lognormal**.
 
 The density of a **zero-one-inflated** family is given by
 $$

@@ -35,8 +35,8 @@ the methods are defined.}
 \item{variable}{A character vector providing the variables to extract.
 By default, all variables are extracted.}
 
-\item{regex}{Logical; Should variable should be treated as a (vector of) 
-regular expressions? Any variable in \code{x} matching at least one of the 
+\item{regex}{Logical; Should variable should be treated as a (vector of)
+regular expressions? Any variable in \code{x} matching at least one of the
 regular expressions will be selected. Defaults to \code{FALSE}.}
 
 \item{inc_warmup}{Should warmup draws be included? Defaults to \code{FALSE}.}
@@ -44,7 +44,7 @@ regular expressions will be selected. Defaults to \code{FALSE}.}
 \item{...}{Arguments passed to individual methods (if applicable).}
 }
 \description{
-Transform a \code{brmsfit} object to a format supported by the 
+Transform a \code{brmsfit} object to a format supported by the
 \pkg{posterior} package.
 }
 \details{
@@ -56,7 +56,7 @@ To subset iterations, chains, or draws, use the
 \dontrun{
 fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
            data = epilepsy, family = poisson())
-           
+
 # extract posterior draws in an array format
 (draws_fit <- as_draws_array(fit))
 posterior::summarize_draws(draws_fit)

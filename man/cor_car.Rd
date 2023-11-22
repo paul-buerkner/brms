@@ -10,13 +10,13 @@ cor_car(W, formula = ~1, type = "escar")
 cor_icar(W, formula = ~1)
 }
 \arguments{
-\item{W}{Adjacency matrix of locations. 
-All non-zero entries are treated as if the two locations 
+\item{W}{Adjacency matrix of locations.
+All non-zero entries are treated as if the two locations
 are adjacent. If \code{formula} contains a grouping factor,
 the row names of \code{W} have to match the levels
 of the grouping factor.}
 
-\item{formula}{An optional one-sided formula of the form 
+\item{formula}{An optional one-sided formula of the form
 \code{~ 1 | g}, where \code{g} is a grouping factor mapping
 observations to spatial locations. If not specified,
 each observation is treated as a separate location.
@@ -34,9 +34,9 @@ syntax. These functions are constructors for the \code{cor_car} class
 implementing spatial conditional autoregressive structures.
 }
 \details{
-The \code{escar} and \code{esicar} types are 
+The \code{escar} and \code{esicar} types are
   implemented based on the case study of Max Joseph
-  (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
+  (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and
   \code{bym2} type is implemented based on the case study of Mitzi Morris
   (\url{https://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 }
@@ -50,7 +50,7 @@ K <- nrow(Grid)
 # set up distance and neighbourhood matrices
 distance <- as.matrix(dist(Grid))
 W <- array(0, c(K, K))
-W[distance == 1] <- 1 	
+W[distance == 1] <- 1
 
 # generate the covariates and response data
 x1 <- rnorm(K)
@@ -66,8 +66,8 @@ y <- rbinom(n = K, size = size, prob = prob)
 dat <- data.frame(y, size, x1, x2)
 
 # fit a CAR model
-fit <- brm(y | trials(size) ~ x1 + x2, data = dat, 
-           family = binomial(), autocor = cor_car(W)) 
+fit <- brm(y | trials(size) ~ x1 + x2, data = dat,
+           family = binomial(), autocor = cor_car(W))
 summary(fit)
 }
 

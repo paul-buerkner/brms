@@ -9,16 +9,16 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{formula.}{Changes to the formula; for details see 
+\item{formula.}{Changes to the formula; for details see
 \code{\link{update.formula}} and \code{\link{brmsformula}}.}
 
 \item{newdata}{Optional \code{data.frame} to update the model with new data.
 Data-dependent default priors will not be updated automatically.}
 
-\item{recompile}{Logical, indicating whether the Stan model should 
+\item{recompile}{Logical, indicating whether the Stan model should
 be recompiled. If \code{NULL} (the default), \code{update} tries
-to figure out internally, if recompilation is necessary. 
-Setting it to \code{FALSE} will cause all Stan code changing 
+to figure out internally, if recompilation is necessary.
+Setting it to \code{FALSE} will cause all Stan code changing
 arguments to be ignored.}
 
 \item{...}{Other arguments passed to \code{\link{brm}}.}
@@ -26,9 +26,17 @@ arguments to be ignored.}
 \description{
 This method allows to update an existing \code{brmsfit} object.
 }
+\details{
+When updating a \code{brmsfit} created with the \pkg{cmdstanr}
+  backend in a different \R session, a recompilation will be triggered
+  because by default, \pkg{cmdstanr} writes the model executable to a
+  temporary directory. To avoid that, set option
+  \code{"cmdstanr_write_stan_file_dir"} to a nontemporary path of your choice
+  before creating the original \code{brmsfit} (see section 'Examples' below).
+}
 \examples{
 \dontrun{
-fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = gaussian("log"))
 summary(fit1)
 
@@ -38,14 +46,37 @@ summary(fit2)
 
 ## remove the group specific term of 'patient' and
 ## change the data (just take a subset in this example)
-fit3 <- update(fit1, formula. = ~ . - (1|patient), 
+fit3 <- update(fit1, formula. = ~ . - (1|patient),
                newdata = kidney[1:38, ])
 summary(fit3)
 
 ## use another family and add population-level priors
-fit4 <- update(fit1, family = weibull(), inits = "0",
+fit4 <- update(fit1, family = weibull(), init = "0",
                prior = set_prior("normal(0,5)"))
 summary(fit4)
+
+## to avoid a recompilation when updating a 'cmdstanr'-backend fit in a fresh
+## R session, set option 'cmdstanr_write_stan_file_dir' before creating the
+## initial 'brmsfit'
+## CAUTION: the following code creates some files in the current working
+## directory: two 'model_<hash>.stan' files, one 'model_<hash>(.exe)'
+## executable, and one 'fit_cmdstanr_<some_number>.rds' file
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+options(cmdstanr_write_stan_file_dir = getwd())
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+# now restart the R session and run the following (after attaching 'brms')
+set.seed(7)
+fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
+fit_cmdstanr <- brm(rate ~ conc + state,
+                    data = Puromycin,
+                    backend = "cmdstanr",
+                    file = fname)
+upd_cmdstanr <- update(fit_cmdstanr,
+                       formula. = rate ~ conc)
 }
 
 }

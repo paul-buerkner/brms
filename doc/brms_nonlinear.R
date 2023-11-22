@@ -9,8 +9,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -56,7 +56,7 @@ head(loss)
 ## ---- results='hide'--------------------------------------------------------------------
 fit_loss <- brm(
   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
      nl = TRUE),
   data = loss, family = gaussian(),
   prior = c(
@@ -76,7 +76,7 @@ conditional_effects(fit_loss)
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
 me_loss <- conditional_effects(
-  fit_loss, conditions = conditions, 
+  fit_loss, conditions = conditions,
   re_formula = NULL, method = "predict"
 )
 plot(me_loss, ncol = 5, points = TRUE)
@@ -99,7 +99,7 @@ plot(conditional_effects(fit_ir1), points = TRUE)
 fit_ir2 <- brm(
   bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
      eta ~ ability, nl = TRUE),
-  data = dat_ir, family = bernoulli("identity"), 
+  data = dat_ir, family = bernoulli("identity"),
   prior = prior(normal(0, 5), nlpar = "eta")
 )
 
@@ -112,9 +112,9 @@ loo(fit_ir1, fit_ir2)
 
 ## ---- results='hide'--------------------------------------------------------------------
 fit_ir3 <- brm(
-  bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
+  bf(answer ~ guess + (1 - guess) * inv_logit(eta),
     eta ~ 0 + ability, guess ~ 1, nl = TRUE),
-  data = dat_ir, family = bernoulli("identity"), 
+  data = dat_ir, family = bernoulli("identity"),
   prior = c(
     prior(normal(0, 5), nlpar = "eta"),
     prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)

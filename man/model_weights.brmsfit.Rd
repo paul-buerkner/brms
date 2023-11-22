@@ -29,8 +29,8 @@ likelihood values (make sure to specify reasonable priors in this case).
 For some methods, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
-\item{model_names}{If \code{NULL} (the default) will use model names 
-derived from deparsing the call. Otherwise will use the passed 
+\item{model_names}{If \code{NULL} (the default) will use model names
+derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{

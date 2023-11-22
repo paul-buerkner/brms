@@ -1,16 +1,16 @@
   /* student-t log-pdf for spatially lagged residuals
-   * Args: 
-   *   y: the response vector 
+   * Args:
+   *   y: the response vector
    *   nu: degrees of freedom parameter
    *   mu: mean parameter vector
    *   sigma: residual scale parameter
    *   rho: positive autoregressive parameter
    *   W: spatial weight matrix
    *   eigenW: precomputed eigenvalues of W
-   * Returns:  
-   *   a scalar to be added to the log posterior 
-   */ 
-  real student_t_errorsar_lpdf(vector y, real nu, vector mu, real sigma, 
+   * Returns:
+   *   a scalar to be added to the log posterior
+   */
+  real student_t_errorsar_lpdf(vector y, real nu, vector mu, real sigma,
                                real rho, data matrix W, data vector eigenW) {
     int N = rows(y);
     real K = rows(y);  // avoid integer division warning

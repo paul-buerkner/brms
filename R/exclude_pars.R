@@ -28,7 +28,7 @@ exclude_pars.brmsfit <- function(x, ...) {
     } else if (is.character(save_pars$latent)) {
       sub_K <- K[!meef$xname %in% save_pars$latent]
       if (length(sub_K)) {
-        c(out) <- paste0("Xme_", sub_K) 
+        c(out) <- paste0("Xme_", sub_K)
       }
     }
   }
@@ -45,7 +45,7 @@ exclude_pars.brmsfit <- function(x, ...) {
       sub_ranef <- ranef[!ranef$group %in% save_pars$group, ]
       if (has_rows(sub_ranef)) {
         sub_p <- usc(combine_prefix(sub_ranef))
-        c(out) <- paste0("r_", sub_ranef$id, sub_p, "_", sub_ranef$cn) 
+        c(out) <- paste0("r_", sub_ranef$id, sub_p, "_", sub_ranef$cn)
       }
     }
     tranef <- get_dist_groups(ranef, "student")
@@ -71,18 +71,23 @@ exclude_pars.mvbrmsterms <- function(x, save_pars, ...) {
 }
 
 #' @export
-exclude_pars.brmsterms <- function(x, save_pars, ...) {
-  out <- character(0)
+exclude_pars.brmsterms <- function(x, data, save_pars, ...) {
   resp <- usc(combine_prefix(x))
+  data <- subset_data(data, x)
+  par_classes <- c("Lncor", "Cortime")
+  out <- paste0(par_classes, resp)
   if (!save_pars$all) {
-    par_classes <- c("ordered_Intercept", "fixed_Intercept", "theta")
+    par_classes <- c(
+      "ordered_Intercept", "fixed_Intercept",
+      "theta", "Llncor", "Lcortime"
+    )
     c(out) <- paste0(par_classes, resp)
   }
   for (dp in names(x$dpars)) {
-    c(out) <- exclude_pars(x$dpars[[dp]], save_pars = save_pars, ...)
+    c(out) <- exclude_pars(x$dpars[[dp]], data = data, save_pars = save_pars, ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- exclude_pars(x$nlpars[[nlp]], save_pars = save_pars, ...)
+    c(out) <- exclude_pars(x$nlpars[[nlp]], data = data, save_pars = save_pars, ...)
   }
   if (is.formula(x$adforms$mi)) {
     if (!(isTRUE(save_pars$latent) || x$resp %in% save_pars$latent)) {
@@ -103,26 +108,26 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_pars$all) {
     par_classes <- c(
-      "bQ", "hs_global", "hs_local", "hs_slab", "zb", "hs_localsp", 
-      "R2D2_tau2", "zbsp", "Intercept", "first_Intercept", 
-      "merged_Intercept", "zcar", "nszcar", "zerr"
+      "bQ", "zb", "zbsp", "zbs", "zar", "zma", "hs_local", "R2D2_phi",
+      "scales", "Intercept", "first_Intercept", "merged_Intercept",
+      "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
     smef <- tidy_smef(x, data)
     for (i in seq_rows(smef)) {
       nb <- seq_len(smef$nbases[i])
       c(out) <- paste0("zs", p, "_", i, "_", nb)
-    } 
+    }
   }
   out
 }
 
 #' Control Saving of Parameter Draws
-#' 
+#'
 #' Control which (draws of) parameters should be saved in a \pkg{brms}
-#' model. The output of this function is ment for usage in the 
+#' model. The output of this function is meant for usage in the
 #' \code{save_pars} argument of \code{\link{brm}}.
-#' 
+#'
 #' @param group A flag to indicate if group-level coefficients for
 #'   each level of the grouping factors should be saved (default is
 #'   \code{TRUE}). Set to \code{FALSE} to save memory. Alternatively,
@@ -143,10 +148,10 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
 #'   saved. These names should match the variable names inside the Stan code
 #'   before renaming. This feature is meant for power users only and will rarely
 #'   be useful outside of very special cases.
-#'   
+#'
 #' @return A list of class \code{"save_pars"}.
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' # don't store group-level coefficients
 #' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
@@ -154,9 +159,9 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
 #'            save_pars = save_pars(group = FALSE))
 #' variables(fit)
 #' }
-#'   
+#'
 #' @export
-save_pars <- function(group = TRUE, latent = FALSE, all = FALSE, 
+save_pars <- function(group = TRUE, latent = FALSE, all = FALSE,
                       manual = NULL) {
   out <- list()
   if (is.logical(group)) {
@@ -191,21 +196,21 @@ validate_save_pars <- function(save_pars, save_ranef = NULL, save_mevars = NULL,
   }
   if (!is.null(save_ranef)) {
     warning2(
-      "Argument 'save_ranef' is deprecated. Please use argument ", 
+      "Argument 'save_ranef' is deprecated. Please use argument ",
       "'group' in function 'save_pars()' instead."
     )
     save_pars$group <- as_one_logical(save_ranef)
   }
   if (!is.null(save_mevars)) {
     warning2(
-      "Argument 'save_mevars' is deprecated. Please use argument ", 
+      "Argument 'save_mevars' is deprecated. Please use argument ",
       "'latent' in function 'save_pars()' instead."
     )
     save_pars$latent <- as_one_logical(save_mevars)
   }
   if (!is.null(save_all_pars)) {
     warning2(
-      "Argument 'save_all_pars' is deprecated. Please use argument ", 
+      "Argument 'save_all_pars' is deprecated. Please use argument ",
       "'all' in function 'save_pars()' instead."
     )
     save_pars$all <- as_one_logical(save_all_pars)

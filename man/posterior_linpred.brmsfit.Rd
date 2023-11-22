@@ -26,8 +26,8 @@
 
 \item{transform}{Logical; if \code{FALSE}
 (the default), draws of the linear predictor are returned.
-If \code{TRUE}, draws of transformed linear predictor,
-that is, after applying the link function are returned.}
+If \code{TRUE}, draws of the transformed linear predictor,
+that is, after applying the inverse link function are returned.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.
@@ -63,9 +63,9 @@ be used. If \code{NULL} (the default) all draws are used. Ignored if
 \item{draw_ids}{An integer vector specifying the posterior draws to be used.
 If \code{NULL} (the default), all draws are used.}
 
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
+\item{sort}{Logical. Only relevant for time series models.
+Indicating whether to return predicted values in the original
+order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
@@ -79,7 +79,7 @@ the data used to fit the model (posterior predictive checks) or for new data.
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject), 
+fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler)
 
 ## extract linear predictor values

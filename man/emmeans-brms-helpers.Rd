@@ -52,7 +52,10 @@ effects; if \code{NA} (default), include no group-level effects.}
 \item{epred}{Logical. If \code{TRUE} compute predictions of
 the posterior predictive distribution's mean
 (see \code{\link{posterior_epred.brmsfit}}) while ignoring
-arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.}
+arguments \code{dpar} and \code{nlpar}. Defaults to \code{FALSE}.
+If you have specified a response transformation within the formula,
+you need to set \code{epred} to \code{TRUE} for \pkg{emmeans} to
+detect this transformation.}
 
 \item{...}{Additional arguments passed to \pkg{emmeans}.}
 }
@@ -65,25 +68,35 @@ of the \pkg{emmeans} package.
 \details{
 In order to ensure compatibility of most \pkg{brms} models with
 \pkg{emmeans}, predictions are not generated 'manually' via a design matrix
-and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}. 
+and coefficient vector, but rather via \code{\link{posterior_linpred.brmsfit}}.
 This appears to generally work well, but note that it produces an `.@linfct`
 slot that contains the computed predictions as columns instead of the
 coefficients.
 }
 \examples{
 \dontrun{
-fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
+fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal())
-summary(fit)           
+summary(fit1)
 
 # summarize via 'emmeans'
 library(emmeans)
-rg <- ref_grid(fit)
+rg <- ref_grid(fit1)
 em <- emmeans(rg, "disease")
 summary(em, point.est = mean)
 
 # obtain estimates for the posterior predictive distribution's mean
-epred <- emmeans(fit, "disease", epred = TRUE)
+epred <- emmeans(fit1, "disease", epred = TRUE)
 summary(epred, point.est = mean)
+
+
+# model with transformed response variable
+fit2 <- brm(log(mpg) ~ factor(cyl), data = mtcars)
+summary(fit2)
+
+# results will be on the log scale by default
+emmeans(fit2, ~ cyl)
+# log transform is detected and can be adjusted automatically
+emmeans(fit2, ~ cyl, epred = TRUE, type = "response")
 }
 }

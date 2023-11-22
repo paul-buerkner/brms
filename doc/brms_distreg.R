@@ -9,8 +9,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -26,7 +26,7 @@ dat1 <- data.frame(group, symptom_post)
 head(dat1)
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit1 <- brm(bf(symptom_post ~ group, sigma ~ group), 
+fit1 <- brm(bf(symptom_post ~ group, sigma ~ group),
             data = dat1, family = gaussian())
 
 ## ---- results='hide'--------------------------------------------------------------------
@@ -49,7 +49,7 @@ zinb <- read.csv("https://paul-buerkner.github.io/data/fish.csv")
 head(zinb)
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit_zinb1 <- brm(count ~ persons + child + camper, 
+fit_zinb1 <- brm(count ~ persons + child + camper,
                  data = zinb, family = zero_inflated_poisson())
 
 ## ---------------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ summary(fit_zinb1)
 plot(conditional_effects(fit_zinb1), ask = FALSE)
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child), 
+fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
                  data = zinb, family = zero_inflated_poisson())
 
 ## ---------------------------------------------------------------------------------------

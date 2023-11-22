@@ -34,8 +34,8 @@ empty_prior()
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
 
-\item{class}{The parameter class. Defaults to \code{"b"} 
-(i.e. population-level effects). 
+\item{class}{The parameter class. Defaults to \code{"b"}
+(i.e. population-level effects).
 See 'Details' for other valid parameter classes.}
 
 \item{coef}{Name of the coefficient within the parameter class.}
@@ -48,7 +48,7 @@ Only used in multivariate models.}
 \item{dpar}{Name of a distributional parameter.
 Only used in distributional models.}
 
-\item{nlpar}{Name of a non-linear parameter. 
+\item{nlpar}{Name of a non-linear parameter.
 Only used in non-linear models.}
 
 \item{lb}{Lower bound for parameter restriction. Currently only allowed
@@ -72,279 +72,297 @@ An object of class \code{brmsprior} to be used in the \code{prior}
 Define priors for specific parameters or classes of parameters.
 }
 \details{
-\code{set_prior} is used to define prior distributions for parameters 
+\code{set_prior} is used to define prior distributions for parameters
   in \pkg{brms} models. The functions \code{prior}, \code{prior_}, and
   \code{prior_string} are aliases of \code{set_prior} each allowing
-  for a different kind of argument specification. 
+  for a different kind of argument specification.
   \code{prior} allows specifying arguments as expression without
-  quotation marks using non-standard evaluation. 
+  quotation marks using non-standard evaluation.
   \code{prior_} allows specifying arguments as one-sided formulas
   or wrapped in \code{quote}.
   \code{prior_string} allows specifying arguments as strings just
   as \code{set_prior} itself.
-  
-  Below, we explain its usage and list some common 
-  prior distributions for parameters. 
-  A complete overview on possible prior distributions is given 
+
+  Below, we explain its usage and list some common
+  prior distributions for parameters.
+  A complete overview on possible prior distributions is given
   in the Stan Reference Manual available at \url{https://mc-stan.org/}.
-  
-  To combine multiple priors, use \code{c(...)} or the \code{+} operator 
-  (see 'Examples'). \pkg{brms} does not check if the priors are written 
-  in correct \pkg{Stan} language. Instead, \pkg{Stan} will check their 
-  syntactical correctness when the model is parsed to \code{C++} and 
-  returns an error if they are not. 
-  This, however, does not imply that priors are always meaningful if they are 
-  accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems 
-  (e.g., setting bounded priors on unbounded parameters), there is no guarantee 
+
+  To combine multiple priors, use \code{c(...)} or the \code{+} operator
+  (see 'Examples'). \pkg{brms} does not check if the priors are written
+  in correct \pkg{Stan} language. Instead, \pkg{Stan} will check their
+  syntactical correctness when the model is parsed to \code{C++} and
+  returns an error if they are not.
+  This, however, does not imply that priors are always meaningful if they are
+  accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems
+  (e.g., setting bounded priors on unbounded parameters), there is no guarantee
   that the defined priors are reasonable for the model.
-  Below, we list the types of parameters in \pkg{brms} models, 
+  Below, we list the types of parameters in \pkg{brms} models,
   for which the user can specify prior distributions.
-  
+
+  Below, we provide details for the individual parameter classes that you can
+  set priors on. Often, it may not be immediately clear, which parameters are
+  present in the model. To get a full list of parameters and parameter
+  classes for which priors can be specified (depending on the model) use
+  function \code{\link{get_prior}}.
+
   1. Population-level ('fixed') effects
-  
-  Every Population-level effect has its own regression parameter 
-  represents the name of the corresponding population-level effect. 
-  Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
-  (i.e., \code{y ~ x1 + x2} in formula syntax). 
-  Then, \code{x1} and \code{x2} have regression parameters 
-  \code{b_x1} and \code{b_x2} respectively. 
-  The default prior for population-level effects (including monotonic and 
-  category specific effects) is an improper flat prior over the reals. 
-  Other common options are normal priors or student-t priors. 
-  If we want to have a normal prior with mean 0 and 
-  standard deviation 5 for \code{x1}, and a unit student-t prior with 10 
+
+  Every Population-level effect has its own regression parameter
+  represents the name of the corresponding population-level effect.
+  Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2}
+  (i.e., \code{y ~ x1 + x2} in formula syntax).
+  Then, \code{x1} and \code{x2} have regression parameters
+  \code{b_x1} and \code{b_x2} respectively.
+  The default prior for population-level effects (including monotonic and
+  category specific effects) is an improper flat prior over the reals.
+  Other common options are normal priors or student-t priors.
+  If we want to have a normal prior with mean 0 and
+  standard deviation 5 for \code{x1}, and a unit student-t prior with 10
   degrees of freedom for \code{x2}, we can specify this via
   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
   \code{set_prior("student_t(10, 0, 1)", class = "b", coef = "x2")}.
-  To put the same prior on all population-level effects at once, 
-  we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
-  This also leads to faster sampling, because priors can be vectorized in this case. 
-  Both ways of defining priors can be combined using for instance 
+  To put the same prior on all population-level effects at once,
+  we may write as a shortcut \code{set_prior("<prior>", class = "b")}.
+  This also leads to faster sampling, because priors can be vectorized in this case.
+  Both ways of defining priors can be combined using for instance
   \code{set_prior("normal(0, 2)", class = "b")} and \cr
   \code{set_prior("normal(0, 10)", class = "b", coef = "x1")}
-  at the same time. This will set a \code{normal(0, 10)} prior on 
-  the effect of \code{x1} and a \code{normal(0, 2)} prior 
-  on all other population-level effects. 
+  at the same time. This will set a \code{normal(0, 10)} prior on
+  the effect of \code{x1} and a \code{normal(0, 2)} prior
+  on all other population-level effects.
   However, this will break vectorization and
   may slow down the sampling procedure a bit.
-  
-  In case of the default intercept parameterization 
-  (discussed in the 'Details' section of \code{\link{brmsformula}}), 
-  general priors on class \code{"b"} will \emph{not} affect 
-  the intercept. Instead, the intercept has its own parameter class 
-  named \code{"Intercept"} and priors can thus be 
+
+  In case of the default intercept parameterization
+  (discussed in the 'Details' section of \code{\link{brmsformula}}),
+  general priors on class \code{"b"} will \emph{not} affect
+  the intercept. Instead, the intercept has its own parameter class
+  named \code{"Intercept"} and priors can thus be
   specified via \code{set_prior("<prior>", class = "Intercept")}.
   Setting a prior on the intercept will not break vectorization
   of the other population-level effects.
   Note that technically, this prior is set on an intercept that
-  results when internally centering all population-level predictors 
-  around zero to improve sampling efficiency. On this centered 
-  intercept, specifying a prior is actually much easier and 
-  intuitive than on the original intercept, since the former 
-  represents the expected response value when all predictors 
-  are at their means. To treat the intercept as an ordinary 
-  population-level effect and avoid the centering parameterization, 
+  results when internally centering all population-level predictors
+  around zero to improve sampling efficiency. On this centered
+  intercept, specifying a prior is actually much easier and
+  intuitive than on the original intercept, since the former
+  represents the expected response value when all predictors
+  are at their means. To treat the intercept as an ordinary
+  population-level effect and avoid the centering parameterization,
   use \code{0 + Intercept} on the right-hand side of the model formula.
-  
-  A special shrinkage prior to be applied on population-level effects is the
-  (regularized) horseshoe prior and related priors. See
-  \code{\link{horseshoe}} for details. Another shrinkage prior is the
-  so-called lasso prior. See \code{\link{lasso}} for details.
-  
-  In non-linear models, population-level effects are defined separately 
+
+  In non-linear models, population-level effects are defined separately
   for each non-linear parameter. Accordingly, it is necessary to specify
   the non-linear parameter in \code{set_prior} so that priors
-  we can be assigned correctly. 
+  we can be assigned correctly.
   If, for instance, \code{alpha} is the parameter and \code{x} the predictor
   for which we want to define the prior, we can write
-  \code{set_prior("<prior>", coef = "x", nlpar = "alpha")}. 
+  \code{set_prior("<prior>", coef = "x", nlpar = "alpha")}.
   As a shortcut we can use \code{set_prior("<prior>", nlpar = "alpha")}
   to set the same prior on all population-level effects of \code{alpha} at once.
-  
-  If desired, population-level effects can be restricted to fall only 
+
+  The same goes for specifying priors for specific distributional
+  parameters in the context of distributional regression, for example,
+  \code{set_prior("<prior>", coef = "x", dpar = "sigma")}.
+  For most other parameter classes (see below), you need to indicate
+  non-linear and distributional parameters in the same way as shown here.
+
+  If desired, population-level effects can be restricted to fall only
   within a certain interval using the \code{lb} and \code{ub} arguments
   of \code{set_prior}. This is often required when defining priors
   that are not defined everywhere on the real line, such as uniform
-  or gamma priors. When defining a \code{uniform(2,4)} prior, 
-  you should write \code{set_prior("uniform(2,4)", lb = 2, ub = 4)}. 
-  When using a prior that is defined on the positive reals only 
-  (such as a gamma prior) set \code{lb = 0}. 
+  or gamma priors. When defining a \code{uniform(2,4)} prior,
+  you should write \code{set_prior("uniform(2,4)", lb = 2, ub = 4)}.
+  When using a prior that is defined on the positive reals only
+  (such as a gamma prior) set \code{lb = 0}.
   In most situations, it is not useful to restrict population-level
-  parameters through bounded priors 
-  (non-linear models are an important exception), 
+  parameters through bounded priors
+  (non-linear models are an important exception),
   but if you really want to this is the way to go.
-  
-  2. Standard deviations of group-level ('random') effects
-  
+
+  2. Group-level ('random') effects
+
   Each group-level effect of each grouping factor has a standard deviation named
-  \code{sd_<group>_<coef>}. Consider, for instance, the formula 
+  \code{sd_<group>_<coef>}. Consider, for instance, the formula
   \code{y ~ x1 + x2 + (1 + x1 | g)}.
   We see that the intercept as well as \code{x1} are group-level effects
-  nested in the grouping factor \code{g}. 
-  The corresponding standard deviation parameters are named as 
-  \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
-  These parameters are restricted to be non-negative and, by default, 
-  have a half student-t prior with 3 degrees of freedom and a 
-  scale parameter that depends on the standard deviation of the response 
-  after applying the link function. Minimally, the scale parameter is 2.5. 
+  nested in the grouping factor \code{g}.
+  The corresponding standard deviation parameters are named as
+  \code{sd_g_Intercept} and \code{sd_g_x1} respectively.
+  These parameters are restricted to be non-negative and, by default,
+  have a half student-t prior with 3 degrees of freedom and a
+  scale parameter that depends on the standard deviation of the response
+  after applying the link function. Minimally, the scale parameter is 2.5.
   This prior is used (a) to be only weakly informative in order to influence
   results as few as possible, while (b) providing at least some regularization
   to considerably improve convergence and sampling efficiency.
-  To define a prior distribution only for standard deviations 
+  To define a prior distribution only for standard deviations
   of a specific grouping factor,
-  use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
-  To define a prior distribution only for a specific standard deviation 
+  use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}.
+  To define a prior distribution only for a specific standard deviation
   of a specific grouping factor, you may write \cr
-  \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}. 
-  Recommendations on useful prior distributions for 
-  standard deviations are given in Gelman (2006), but note that he
-  is no longer recommending uniform priors, anymore. \cr
-  
-  When defining priors on group-level parameters in non-linear models, 
-  please make sure to specify the corresponding non-linear parameter 
-  through the \code{nlpar} argument in the same way as 
-  for population-level effects.
-  
-  3. Correlations of group-level ('random') effects 
-  
-  If there is more than one group-level effect per grouping factor, 
-  the correlations between those effects have to be estimated. 
-  The prior \code{lkj_corr_cholesky(eta)} or in short 
-  \code{lkj(eta)} with \code{eta > 0} 
-  is essentially the only prior for (Cholesky factors) of correlation matrices. 
-  If \code{eta = 1} (the default) all correlations matrices 
-  are equally likely a priori. If \code{eta > 1}, extreme correlations 
-  become less likely, whereas \code{0 < eta < 1} results in 
-  higher probabilities for extreme correlations. 
-  Correlation matrix parameters in \code{brms} models are named as 
+  \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
+
+  If there is more than one group-level effect per grouping factor,
+  the correlations between those effects have to be estimated.
+  The prior \code{lkj_corr_cholesky(eta)} or in short
+  \code{lkj(eta)} with \code{eta > 0}
+  is essentially the only prior for (Cholesky factors) of correlation matrices.
+  If \code{eta = 1} (the default) all correlations matrices
+  are equally likely a priori. If \code{eta > 1}, extreme correlations
+  become less likely, whereas \code{0 < eta < 1} results in
+  higher probabilities for extreme correlations.
+  Correlation matrix parameters in \code{brms} models are named as
   \code{cor_<group>}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
-  To set the same prior on every correlation matrix, 
+  To set the same prior on every correlation matrix,
   use for instance \code{set_prior("lkj(2)", class = "cor")}.
   Internally, the priors are transformed to be put on the Cholesky factors
   of the correlation matrices to improve efficiency and numerical stability.
   The corresponding parameter class of the Cholesky factors is \code{L},
   but it is not recommended to specify priors for this parameter class directly.
-  
-  4. Splines
-  
-  Splines are implemented in \pkg{brms} using the 'random effects' 
-  formulation as explained in \code{\link[mgcv:gamm]{gamm}}). 
-  Thus, each spline has its corresponding standard deviations 
-  modeling the variability within this term. In \pkg{brms}, this 
-  parameter class is called \code{sds} and priors can
-  be specified via \code{set_prior("<prior>", class = "sds", 
-  coef = "<term label>")}. The default prior is the same as
-  for standard deviations of group-level effects.
-  
+
+  4. Smoothing Splines
+
+  Smoothing splines are implemented in \pkg{brms} using the 'random effects'
+  formulation as explained in \code{\link[mgcv:gamm]{gamm}}). Thus, each
+  spline has its corresponding standard deviations modeling the variability
+  within this term. In \pkg{brms}, this parameter class is called \code{sds}
+  and priors can be specified via
+  \code{set_prior("<prior>", class = "sds", coef = "<term label>")}.
+  The default prior is the same as for standard deviations of group-level effects.
+
   5. Gaussian processes
-  
-  Gaussian processes as currently implemented in \pkg{brms} have
-  two parameters, the standard deviation parameter \code{sdgp}, 
-  and characteristic length-scale parameter \code{lscale} 
-  (see \code{\link{gp}} for more details). The default prior 
-  of \code{sdgp} is the same as for standard deviations of 
-  group-level effects. The default prior of \code{lscale}
-  is an informative inverse-gamma prior specifically tuned 
-  to the covariates of the Gaussian process (for more details see
+
+  Gaussian processes as currently implemented in \pkg{brms} have two
+  parameters, the standard deviation parameter \code{sdgp}, and
+  characteristic length-scale parameter \code{lscale} (see \code{\link{gp}}
+  for more details). The default prior of \code{sdgp} is the same as for
+  standard deviations of group-level effects. The default prior of
+  \code{lscale} is an informative inverse-gamma prior specifically tuned to
+  the covariates of the Gaussian process (for more details see
   \url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html}).
-  This tuned prior may be overly informative in some cases, so please 
-  consider other priors as well to make sure inference is
-  robust to the prior specification. If tuning fails, a half-normal prior 
-  is used instead.
-  
+  This tuned prior may be overly informative in some cases, so please
+  consider other priors as well to make sure inference is robust to the prior
+  specification. If tuning fails, a half-normal prior is used instead.
+
   6. Autocorrelation parameters
-  
-  The autocorrelation parameters currently implemented are named 
-  \code{ar} (autoregression), \code{ma} (moving average),
-  \code{arr} (autoregression of the response), \code{car} 
-  (spatial conditional autoregression), as well as \code{lagsar} 
-  and \code{errorsar} (Spatial simultaneous autoregression).
-  
-  Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
-  for \code{ar} and similar for other autocorrelation parameters.
-  By default, \code{ar} and \code{ma} are bounded between \code{-1} 
-  and \code{1}, \code{car}, \code{lagsar}, and \code{errorsar} are 
-  bounded between \code{0}, and \code{1}, and \code{arr} is unbounded 
-  (you may change this by using the arguments \code{lb} and \code{ub}). 
-  The default prior is flat over the definition area.
-  
-  7. Distance parameters of monotonic effects
-  
+
+  The autocorrelation parameters currently implemented are named \code{ar}
+  (autoregression), \code{ma} (moving average), \code{sderr} (standard
+  deviation of latent residuals in latent ARMA models), \code{cosy} (compound
+  symmetry correlation), \code{car} (spatial conditional autoregression), as
+  well as \code{lagsar} and \code{errorsar} (spatial simultaneous
+  autoregression).
+
+  Priors can be defined by \code{set_prior("<prior>", class = "ar")} for
+  \code{ar} and similar for other autocorrelation parameters. By default,
+  \code{ar} and \code{ma} are bounded between \code{-1} and \code{1};
+  \code{cosy}, \code{car}, \code{lagsar}, and \code{errorsar} are bounded
+  between \code{0} and \code{1}. The default priors are flat over the
+  respective definition areas.
+
+  7. Parameters of measurement error terms
+
+  Latent variables induced via measurement error \code{\link{me}} terms
+  require both mean and standard deviation parameters, whose prior classes
+  are named \code{"meanme"} and \code{"sdme"}, respectively. If multiple
+  latent variables are induced this way, their correlation matrix will
+  be modeled as well and corresponding priors can be specified via the
+  \code{"corme"} class. All of the above parameters have flat priors over
+  their respective definition spaces by default.
+
+  8. Distance parameters of monotonic effects
+
   As explained in the details section of \code{\link{brm}},
   monotonic effects make use of a special parameter vector to
-  estimate the 'normalized distances' between consecutive predictor 
+  estimate the 'normalized distances' between consecutive predictor
   categories. This is realized in \pkg{Stan} using the \code{simplex}
-  parameter type. This class is named \code{"simo"} (short for 
-  simplex monotonic) in \pkg{brms}. 
+  parameter type. This class is named \code{"simo"} (short for
+  simplex monotonic) in \pkg{brms}.
   The only valid prior for simplex parameters is the
   dirichlet prior, which accepts a vector of length \code{K - 1}
   (K = number of predictor categories) as input defining the
-  'concentration' of the distribution. Explaining the dirichlet prior 
+  'concentration' of the distribution. Explaining the dirichlet prior
   is beyond the scope of this documentation, but we want to describe
   how to define this prior syntactically correct.
-  If a predictor \code{x} with \code{K} categories is modeled as monotonic, 
+  If a predictor \code{x} with \code{K} categories is modeled as monotonic,
   we can define a prior on its corresponding simplex via \cr
   \code{prior(dirichlet(<vector>), class = simo, coef = mox1)}.
   The \code{1} in the end of \code{coef} indicates that this is the first
   simplex in this term. If interactions between multiple monotonic
-  variables are modeled, multiple simplexes per term are required.  
+  variables are modeled, multiple simplexes per term are required.
   For \code{<vector>}, we can put in any \code{R} expression
-  defining a vector of length \code{K - 1}. The default is a uniform 
+  defining a vector of length \code{K - 1}. The default is a uniform
   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
-  of the respective dimension.   
-  
-  8. Parameters for specific families 
-  
-  Some families need additional parameters to be estimated. 
+  of the respective dimension.
+
+  9. Parameters for specific families
+
+  Some families need additional parameters to be estimated.
   Families \code{gaussian}, \code{student}, \code{skew_normal},
-  \code{lognormal}, and \code{gen_extreme_value} need the parameter 
+  \code{lognormal}, and \code{gen_extreme_value} need the parameter
   \code{sigma} to account for the residual standard deviation.
-  By default, \code{sigma} has a half student-t prior that scales 
+  By default, \code{sigma} has a half student-t prior that scales
   in the same way as the group-level standard deviations.
-  Further, family \code{student} needs the parameter 
-  \code{nu} representing the degrees of freedom of students-t distribution. 
+  Further, family \code{student} needs the parameter
+  \code{nu} representing the degrees of freedom of students-t distribution.
   By default, \code{nu} has prior \code{gamma(2, 0.1)}
   and a fixed lower bound of \code{1}.
   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
-  \code{negbinomial} need a \code{shape} parameter that has a 
-  \code{gamma(0.01, 0.01)} prior by default. 
-  For families \code{cumulative}, \code{cratio}, \code{sratio}, 
-  and \code{acat}, and only if \code{threshold = "equidistant"}, 
-  the parameter \code{delta} is used to model the distance between 
-  two adjacent thresholds. 
+  \code{negbinomial} need a \code{shape} parameter that has a
+  \code{gamma(0.01, 0.01)} prior by default.
+  For families \code{cumulative}, \code{cratio}, \code{sratio},
+  and \code{acat}, and only if \code{threshold = "equidistant"},
+  the parameter \code{delta} is used to model the distance between
+  two adjacent thresholds.
   By default, \code{delta} has an improper flat prior over the reals.
   The \code{von_mises} family needs the parameter \code{kappa}, representing
-  the concentration parameter. By default, \code{kappa} has prior 
-  \code{gamma(2, 0.01)}. \cr
+  the concentration parameter. By default, \code{kappa} has prior
+  \code{gamma(2, 0.01)}.
+
   Every family specific parameter has its own prior class, so that
   \code{set_prior("<prior>", class = "<parameter>")} is the right way to go.
   All of these priors are chosen to be weakly informative,
   having only minimal influence on the estimations,
   while improving convergence and sampling efficiency.
-  
+
+  10. Shrinkage priors
+
+  To reduce the danger of overfitting in models with many predictor terms fit
+  on comparably sparse data, brms supports special shrinkage priors, namely
+  the (regularized) \code{\link{horseshoe}} and the \code{\link{R2D2}} prior.
+  These priors can be applied on many parameter classes, either directly on
+  the coefficient classes (e.g., class \code{b}), if directly setting priors
+  on them is supported, or on the corresponding standard deviation
+  hyperparameters (e.g., class \code{sd}) otherwise. Currently, the following
+  classes support shrinkage priors: \code{b} (overall regression
+  coefficients), \code{sds} (SDs of smoothing splines), \code{sdgp} (SDs of
+  Gaussian processes), \code{ar} (autoregressive coefficients), \code{ma}
+  (moving average coefficients), \code{sderr} (SD of latent residuals),
+  \code{sdcar} (SD of spatial CAR structures), \code{sd} (SD of varying
+  coefficients).
+
+  11. Fixing parameters to constants
+
   Fixing parameters to constants is possible by using the \code{constant}
   function, for example, \code{constant(1)} to fix a parameter to 1.
   Broadcasting to vectors and matrices is done automatically.
-
-  Often, it may not be immediately clear, which parameters are present in the
-  model. To get a full list of parameters and parameter classes for which
-  priors can be specified (depending on the model) use function
-  \code{\link{get_prior}}.
 }
 \section{Functions}{
 \itemize{
-\item \code{prior}: Alias of \code{set_prior} allowing to 
+\item \code{prior()}: Alias of \code{set_prior} allowing to
 specify arguments as expressions without quotation marks.
 
-\item \code{prior_}: Alias of \code{set_prior} allowing to specify 
+\item \code{prior_()}: Alias of \code{set_prior} allowing to specify
 arguments as as one-sided formulas or wrapped in \code{quote}.
 
-\item \code{prior_string}: Alias of \code{set_prior} allowing to
+\item \code{prior_string()}: Alias of \code{set_prior} allowing to
 specify arguments as strings.
 
-\item \code{empty_prior}: Create an empty \code{brmsprior} object.
-}}
+\item \code{empty_prior()}: Create an empty \code{brmsprior} object.
 
+}}
 \examples{
 ## use alias functions
 (prior1 <- prior(cauchy(0, 1), class = sd))
@@ -356,23 +374,23 @@ identical(prior1, prior3)
 # check which parameters can have priors
 get_prior(rating ~ treat + period + carry + (1|subject),
           data = inhaler, family = cumulative())
-         
-# define some priors          
+
+# define some priors
 bprior <- c(prior_string("normal(0,10)", class = "b"),
             prior(normal(1,2), class = b, coef = treat),
-            prior_(~cauchy(0,2), class = ~sd, 
+            prior_(~cauchy(0,2), class = ~sd,
                    group = ~subject, coef = ~Intercept))
-              
+
 # verify that the priors indeed found their way into Stan's model code
 make_stancode(rating ~ treat + period + carry + (1|subject),
               data = inhaler, family = cumulative(),
               prior = bprior)
-              
+
 # use the horseshoe prior to model sparsity in regression coefficients
 make_stancode(count ~ zAge + zBase * Trt,
               data = epilepsy, family = poisson(),
               prior = set_prior("horseshoe(3)"))
-              
+
 # fix certain priors to constants
 bprior <- prior(constant(1), class = "b") +
   prior(constant(2), class = "b", coef = "zBase") +
@@ -384,10 +402,10 @@ make_stancode(count ~ zAge + zBase + (1 | patient),
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 
-}
-\references{
-Gelman A. (2006). Prior distributions for variance parameters in hierarchical models.
-   Bayesian analysis, 1(3), 515 -- 534.
+# define priors in a vectorized manner
+# useful in particular for categorical or multivariate models
+set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
+
 }
 \seealso{
 \code{\link{get_prior}}

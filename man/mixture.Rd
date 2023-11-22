@@ -7,17 +7,17 @@
 mixture(..., flist = NULL, nmix = 1, order = NULL)
 }
 \arguments{
-\item{...}{One or more objects providing a description of the 
-response distributions to be combined in the mixture model. 
-These can be family functions, calls to family functions or 
-character strings naming the families. For details of supported 
+\item{...}{One or more objects providing a description of the
+response distributions to be combined in the mixture model.
+These can be family functions, calls to family functions or
+character strings naming the families. For details of supported
 families see \code{\link{brmsfamily}}.}
 
-\item{flist}{Optional list of objects, which are treated in the 
+\item{flist}{Optional list of objects, which are treated in the
 same way as objects passed via the \code{...} argument.}
 
 \item{nmix}{Optional numeric vector specifying the number of times
-each family is repeated. If specified, it must have the same length 
+each family is repeated. If specified, it must have the same length
 as the number of families passed via \code{...} and \code{flist}.}
 
 \item{order}{Ordering constraint to identify mixture components.
@@ -50,7 +50,7 @@ model via selective inclusion of predictors.
 
 For most mixture models, you may want to specify priors on the
 population-level intercepts via \code{\link{set_prior}} to improve
-convergence. In addition, it is sometimes necessary to set \code{inits = 0}
+convergence. In addition, it is sometimes necessary to set \code{init = 0}
 in the call to \code{\link{brm}} to allow chains to initialize properly.
 
 For more details on the specification of mixture
@@ -61,7 +61,7 @@ models, see \code{\link{brmsformula}}.
 ## simulate some data
 set.seed(1234)
 dat <- data.frame(
-  y = c(rnorm(200), rnorm(100, 6)), 
+  y = c(rnorm(200), rnorm(100, 6)),
   x = rnorm(300),
   z = sample(0:1, 300, TRUE)
 )
@@ -73,31 +73,31 @@ prior <- c(
   prior(normal(5, 7), Intercept, dpar = mu2)
 )
 fit1 <- brm(bf(y ~ x + z), dat, family = mix,
-            prior = prior, chains = 2) 
+            prior = prior, chains = 2)
 summary(fit1)
 pp_check(fit1)
 
 ## use different predictors for the components
 fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
-            prior = prior, chains = 2) 
+            prior = prior, chains = 2)
 summary(fit2)
 
 ## fix the mixing proportions
-fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2), 
-            dat, family = mix, prior = prior, 
-            inits = 0, chains = 2)
+fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
+            dat, family = mix, prior = prior,
+            init = 0, chains = 2)
 summary(fit3)
-pp_check(fit3)    
+pp_check(fit3)
 
 ## predict the mixing proportions
-fit4 <- brm(bf(y ~ x + z, theta2 ~ x), 
-            dat, family = mix, prior = prior, 
-            inits = 0, chains = 2)
+fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
+            dat, family = mix, prior = prior,
+            init = 0, chains = 2)
 summary(fit4)
-pp_check(fit4)           
+pp_check(fit4)
 
 ## compare model fit
-LOO(fit1, fit2, fit3, fit4)  
+LOO(fit1, fit2, fit3, fit4)
 }
 
 }

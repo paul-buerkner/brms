@@ -4,6 +4,7 @@
 \alias{GenExtremeValue}
 \alias{dgen_extreme_value}
 \alias{pgen_extreme_value}
+\alias{qgen_extreme_value}
 \alias{rgen_extreme_value}
 \title{The Generalized Extreme Value Distribution}
 \usage{
@@ -11,6 +12,15 @@ dgen_extreme_value(x, mu = 0, sigma = 1, xi = 0, log = FALSE)
 
 pgen_extreme_value(
   q,
+  mu = 0,
+  sigma = 1,
+  xi = 0,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
+
+qgen_extreme_value(
+  p,
   mu = 0,
   sigma = 1,
   xi = 0,
@@ -31,16 +41,18 @@ rgen_extreme_value(n, mu = 0, sigma = 1, xi = 0)
 
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x).
 Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
+\item{p}{Vector of probabilities.}
+
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, and random generation 
-for the generalized extreme value distribution with 
+Density, distribution function, and random generation
+for the generalized extreme value distribution with
 location \code{mu}, scale \code{sigma} and shape \code{xi}.
 }
 \details{

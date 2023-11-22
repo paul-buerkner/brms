@@ -10,7 +10,7 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{all}{Logical; Show all parameters in the model which may have 
+\item{all}{Logical; Show all parameters in the model which may have
 priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?}
 
 \item{...}{Further arguments passed to or from other methods.}
@@ -23,12 +23,12 @@ Extract Priors of a Bayesian Model Fitted with \pkg{brms}
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt  
-             + (1|patient) + (1|obs), 
-           data = epilepsy, family = poisson(), 
+fit <- brm(count ~ zAge + zBase * Trt
+             + (1|patient) + (1|obs),
+           data = epilepsy, family = poisson(),
            prior = c(prior(student_t(5,0,10), class = b),
                      prior(cauchy(0,2), class = sd)))
-                   
+
 prior_summary(fit)
 prior_summary(fit, all = FALSE)
 print(prior_summary(fit, all = FALSE), show_df = FALSE)

@@ -6,8 +6,8 @@
 \alias{brmsfit}
 \title{Class \code{brmsfit} of models fitted with the \pkg{brms} package}
 \description{
-Models fitted with the \code{\link[brms:brms-package]{brms}} package are 
-represented as a \code{brmsfit} object, which contains the posterior 
+Models fitted with the \code{\link[brms:brms-package]{brms}} package are
+represented as a \code{brmsfit} object, which contains the posterior
 draws (samples), model formula, Stan code, relevant data, and other information.
 }
 \details{
@@ -38,13 +38,19 @@ information on the priors used in the model.}
 
 \item{\code{backend}}{The name of the backend used to fit the model.}
 
-\item{\code{threads}}{An object of class `brmsthreads` created by 
+\item{\code{threads}}{An object of class `brmsthreads` created by
 \code{\link{threading}}.}
 
 \item{\code{opencl}}{An object of class `brmsopencl` created by \code{\link{opencl}}.}
 
+\item{\code{stan_args}}{Named list of additional control arguments that were passed
+to the Stan backend directly.}
+
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 among others containing the posterior draws.}
+
+\item{\code{basis}}{An object that contains a small subset of the Stan data
+created at fitting time, which is needed to process new data correctly.}
 
 \item{\code{criteria}}{An empty \code{list} for adding model fit criteria
 after estimation of the model.}
@@ -52,15 +58,15 @@ after estimation of the model.}
 \item{\code{file}}{Optional name of a file in which the model object was stored in
 or loaded from.}
 
-\item{\code{version}}{The versions of \pkg{brms} and \pkg{rstan} with 
+\item{\code{version}}{The versions of \pkg{brms} and \pkg{rstan} with
 which the model was fitted.}
 
 \item{\code{family}}{(Deprecated) A \code{\link{brmsfamily}} object.}
 
-\item{\code{autocor}}{(Deprecated) An \code{\link{cor_brms}} object containing 
+\item{\code{autocor}}{(Deprecated) An \code{\link{cor_brms}} object containing
 the autocorrelation structure if specified.}
 
-\item{\code{cov_ranef}}{(Deprecated) A \code{list} of customized group-level 
+\item{\code{cov_ranef}}{(Deprecated) A \code{list} of customized group-level
 covariance matrices.}
 
 \item{\code{stan_funs}}{(Deprecated) A character string of length one or \code{NULL}.}
@@ -69,8 +75,8 @@ covariance matrices.}
 }}
 
 \seealso{
-\code{\link{brms}}, 
-  \code{\link{brm}}, 
-  \code{\link{brmsformula}}, 
+\code{\link{brms}},
+  \code{\link{brm}},
+  \code{\link{brmsformula}},
   \code{\link{brmsfamily}}
 }

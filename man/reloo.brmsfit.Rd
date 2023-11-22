@@ -13,6 +13,8 @@
   newdata = NULL,
   resp = NULL,
   check = TRUE,
+  recompile = NULL,
+  future_args = list(),
   ...
 )
 
@@ -26,8 +28,8 @@ on the method.}
 
 \item{loo}{An \R object of class \code{loo}.}
 
-\item{k_threshold}{The threshold at which Pareto \eqn{k} 
-estimates are treated as problematic. Defaults to \code{0.7}. 
+\item{k_threshold}{The threshold at which Pareto \eqn{k}
+estimates are treated as problematic. Defaults to \code{0.7}.
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 for more details.}
 
@@ -44,7 +46,15 @@ are performed only for the specified response variables.}
 check are performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
 
-\item{...}{Further arguments passed to 
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled. This may be necessary if you are running \code{reloo} on
+another machine than the one used to fit the model.}
+
+\item{future_args}{A list of further arguments passed to
+\code{\link[future:future]{future}} for additional control over parallel
+execution if activated.}
+
+\item{...}{Further arguments passed to
 \code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.}
 
 \item{fit}{An \R object of class \code{brmsfit}.}
@@ -61,11 +71,11 @@ Models for problematic observations can be run in parallel using the
 \details{
 Warnings about Pareto \eqn{k} estimates indicate observations
 for which the approximation to LOO is problematic (this is described in
-detail in Vehtari, Gelman, and Gabry (2017) and the 
+detail in Vehtari, Gelman, and Gabry (2017) and the
 \pkg{\link[loo:loo-package]{loo}} package documentation).
 If there are \eqn{J} observations with \eqn{k} estimates above
-\code{k_threshold}, then \code{reloo} will refit the original model 
-\eqn{J} times, each time leaving out one of the \eqn{J} 
+\code{k_threshold}, then \code{reloo} will refit the original model
+\eqn{J} times, each time leaving out one of the \eqn{J}
 problematic observations. The pointwise contributions of these observations
 to the total ELPD are then computed directly and substituted for the
 previous estimates from these \eqn{J} observations that are stored in the

@@ -2,7 +2,7 @@
 title: "Estimating Distributional Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette:
     toc: yes
 vignette: >
@@ -21,8 +21,8 @@ opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "png",
-  dpi = 150,
+  dev = "jpeg",
+  dpi = 100,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
@@ -91,7 +91,7 @@ The following model estimates the effect of `group` on both the mean and the
 residual standard deviation of the normal response distribution.
 
 ```{r, results='hide'}
-fit1 <- brm(bf(symptom_post ~ group, sigma ~ group), 
+fit1 <- brm(bf(symptom_post ~ group, sigma ~ group),
             data = dat1, family = gaussian())
 ```
 
@@ -161,7 +161,7 @@ zero-inflated Poisson model to the data. For now, we assume a constant
 zero-inflation probability across observations.
 
 ```{r, results='hide'}
-fit_zinb1 <- brm(count ~ persons + child + camper, 
+fit_zinb1 <- brm(count ~ persons + child + camper,
                  data = zinb, family = zero_inflated_poisson())
 ```
 
@@ -189,7 +189,7 @@ processes and predicting both parts of the model is natural and often very
 reasonable to make full use of the data.
 
 ```{r, results='hide'}
-fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child), 
+fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
                  data = zinb, family = zero_inflated_poisson())
 ```
 

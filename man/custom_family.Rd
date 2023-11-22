@@ -32,7 +32,7 @@ the family. One parameter must be named \code{"mu"} and
 the main formula of the model will correspond to that
 parameter.}
 
-\item{links}{Names of the link functions of the 
+\item{links}{Names of the link functions of the
 distributional parameters.}
 
 \item{type}{Indicates if the response distribution is
@@ -40,10 +40,10 @@ continuous (\code{"real"}) or discrete (\code{"int"}). This controls
 if the corresponding density function will be named with
 \code{<name>_lpdf} or \code{<name>_lpmf}.}
 
-\item{lb}{Vector of lower bounds of the distributional 
+\item{lb}{Vector of lower bounds of the distributional
 parameters. Defaults to \code{NA} that is no lower bound.}
 
-\item{ub}{Vector of upper bounds of the distributional 
+\item{ub}{Vector of upper bounds of the distributional
 parameters. Defaults to \code{NA} that is no upper bound.}
 
 \item{vars}{Names of variables that are part of the likelihood function
@@ -68,7 +68,7 @@ for this custom family. Currently for internal use only.}
 Ignored for non-ordinal families.}
 
 \item{log_lik}{Optional function to compute log-likelihood values of
-the model in \R. This is only relevant if one wants to ensure 
+the model in \R. This is only relevant if one wants to ensure
 compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.}
 
 \item{posterior_predict}{Optional function to compute posterior prediction of
@@ -84,14 +84,14 @@ if one wants to ensure compatibility with method
 
 \item{fitted}{Deprecated alias of `posterior_epred`.}
 
-\item{env}{An \code{\link{environment}} in which certain post-processing 
-functions related to the custom family can be found, if there were not 
+\item{env}{An \code{\link{environment}} in which certain post-processing
+functions related to the custom family can be found, if there were not
 directly passed to \code{custom_family}. This is only
 relevant if one wants to ensure compatibility with the methods
 \code{\link[brms:log_lik.brmsfit]{log_lik}},
 \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}, or
 \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
-By default, \code{env} is the environment from which 
+By default, \code{env} is the environment from which
 \code{custom_family} is called.}
 }
 \value{
@@ -99,20 +99,20 @@ An object of class \code{customfamily} inheriting
   from class \code{\link{brmsfamily}}.
 }
 \description{
-Define custom families (i.e. response distribution) for use in 
-\pkg{brms} models. It allows users to benefit from the modeling 
+Define custom families (i.e. response distribution) for use in
+\pkg{brms} models. It allows users to benefit from the modeling
 flexibility of \pkg{brms}, while applying their self-defined likelihood
-functions. All of the post-processing methods for \code{brmsfit} 
-objects can be made compatible with custom families. 
+functions. All of the post-processing methods for \code{brmsfit}
+objects can be made compatible with custom families.
 See \code{vignette("brms_customfamilies")} for more details.
 For a list of built-in families see \code{\link{brmsfamily}}.
 }
 \details{
-The corresponding probability density or mass \code{Stan} 
+The corresponding probability density or mass \code{Stan}
   functions need to have the same name as the custom family.
-  That is if a family is called \code{myfamily}, then the 
+  That is if a family is called \code{myfamily}, then the
   \pkg{Stan} functions should be called \code{myfamily_lpdf} or
-  \code{myfamily_lpmf} depending on whether it defines a 
+  \code{myfamily_lpmf} depending on whether it defines a
   continuous or discrete distribution.
 }
 \examples{
@@ -147,7 +147,7 @@ stan_density <- "
 stanvars <- stanvar(scode = stan_density, block = "functions")
 
 # fit the model
-fit <- brm(y | vint(ntrials) ~ z, data = dat, 
+fit <- brm(y | vint(ntrials) ~ z, data = dat,
            family = beta_binomial2, stanvars = stanvars)
 summary(fit)
 
@@ -162,15 +162,15 @@ beta_binomial2_vec <- custom_family(
 
 # define the corresponding Stan density function
 stan_density_vec <- "
-  real beta_binomial2_lpmf(int[] y, vector mu, real phi, int[] N) {
+  real beta_binomial2_lpmf(array[] int y, vector mu, real phi, array[] int N) {
     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
   }
 "
 stanvars_vec <- stanvar(scode = stan_density_vec, block = "functions")
 
 # fit the model
-fit_vec <- brm(y | vint(ntrials) ~ z, data = dat, 
-           family = beta_binomial2_vec, 
+fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
+           family = beta_binomial2_vec,
            stanvars = stanvars_vec)
 summary(fit_vec)
 }

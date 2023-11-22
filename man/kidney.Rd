@@ -5,53 +5,53 @@
 \alias{kidney}
 \title{Infections in kidney patients}
 \format{
-A data frame of 76 observations containing 
+A data frame of 76 observations containing
   information on the following 7 variables.
 \describe{
- \item{time}{The time to first or second recurrence of the infection, 
+ \item{time}{The time to first or second recurrence of the infection,
    or the time of censoring}
- \item{recur}{A factor of levels \code{1} or \code{2} 
-   indicating if the infection recurred for the first 
+ \item{recur}{A factor of levels \code{1} or \code{2}
+   indicating if the infection recurred for the first
    or second time for this patient}
- \item{censored}{Either \code{0} or \code{1}, where \code{0} indicates 
-   no censoring of recurrence time and \code{1} indicates right censoring} 
+ \item{censored}{Either \code{0} or \code{1}, where \code{0} indicates
+   no censoring of recurrence time and \code{1} indicates right censoring}
  \item{patient}{The patient number}
  \item{age}{The age of the patient}
  \item{sex}{The sex of the patient}
- \item{disease}{A factor of levels \code{other, GN, AN}, 
+ \item{disease}{A factor of levels \code{other, GN, AN},
    and \code{PKD} specifying the type of disease}
 }
 }
 \source{
-McGilchrist, C. A., & Aisbett, C. W. (1991). 
-  Regression with frailty in survival analysis. 
+McGilchrist, C. A., & Aisbett, C. W. (1991).
+  Regression with frailty in survival analysis.
   \emph{Biometrics}, 47(2), 461-466.
 }
 \usage{
 kidney
 }
 \description{
-This dataset, originally discussed in 
-  McGilchrist and Aisbett (1991), describes the first and second 
-  (possibly right censored) recurrence time of 
-  infection in kidney patients using portable dialysis equipment. 
-  In addition, information on the risk variables age, sex and disease 
+This dataset, originally discussed in
+  McGilchrist and Aisbett (1991), describes the first and second
+  (possibly right censored) recurrence time of
+  infection in kidney patients using portable dialysis equipment.
+  In addition, information on the risk variables age, sex and disease
   type is provided.
 }
 \examples{
 \dontrun{
 ## performing surivival analysis using the "weibull" family
-fit1 <- brm(time | cens(censored) ~ age + sex + disease, 
-            data = kidney, family = weibull, inits = "0")
-summary(fit1) 
+fit1 <- brm(time | cens(censored) ~ age + sex + disease,
+            data = kidney, family = weibull, init = "0")
+summary(fit1)
 plot(fit1)
 
 ## adding random intercepts over patients
-fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient), 
-            data = kidney, family = weibull(), inits = "0",
+fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
+            data = kidney, family = weibull(), init = "0",
             prior = set_prior("cauchy(0,2)", class = "sd"))
-summary(fit2) 
-plot(fit2)         
+summary(fit2)
+plot(fit2)
 }
 
 }
