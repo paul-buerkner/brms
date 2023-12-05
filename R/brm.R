@@ -76,7 +76,8 @@
 #'   variables defined in Stan's \code{parameters} block should be saved
 #'   (default is \code{FALSE}). Saving these draws is required in order to
 #'   apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
-#'   \code{post_prob}.
+#'   \code{post_prob}. Can be set globally for the current \R session via the
+#'   \code{"brms.save_pars"} option (see \code{\link{options}}).
 #' @param sample_prior Indicate if draws from priors should be drawn
 #'   additionally to the posterior draws. Options are \code{"no"} (the
 #'   default), \code{"yes"}, and \code{"only"}. Among others, these draws can
@@ -436,8 +437,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 autocor = NULL, data2 = NULL, cov_ranef = NULL,
                 sample_prior = "no", sparse = NULL, knots = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
-                fit = NA, save_pars = NULL, save_ranef = NULL,
-                save_mevars = NULL, save_all_pars = NULL,
+                fit = NA, save_pars = getOption("brms.save_pars", NULL),
+                save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
                 init = NULL, inits = NULL, chains = 4, iter = 2000,
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),

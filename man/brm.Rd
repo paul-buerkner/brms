@@ -19,7 +19,7 @@ brm(
   stanvars = NULL,
   stan_funs = NULL,
   fit = NA,
-  save_pars = NULL,
+  save_pars = getOption("brms.save_pars", NULL),
   save_ranef = NULL,
   save_mevars = NULL,
   save_all_pars = NULL,
@@ -160,7 +160,8 @@ very large \R objects even for models of moderate size and complexity.}
 variables defined in Stan's \code{parameters} block should be saved
 (default is \code{FALSE}). Saving these draws is required in order to
 apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
-\code{post_prob}.}
+\code{post_prob}. Can be set globally for the current \R session via the
+\code{"brms.save_pars"} option (see \code{\link{options}}).}
 
 \item{init}{Initial values for the sampler. If \code{NULL} (the default) or
 \code{"random"}, Stan will randomly generate initial values for parameters
