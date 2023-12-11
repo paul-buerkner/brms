@@ -389,13 +389,16 @@ loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
   loos <- named_list(names(models))
   for (i in seq_along(models)) {
     models[[i]] <- restructure(models[[i]])
-    loos[[i]] <- get_criterion(models[[i]], criterion)
-    if (is.null(loos[[i]])) {
+    loo_i <- get_criterion(models[[i]], criterion)
+    if (is.null(loo_i)) {
       stop2(
         "Model '", names(models)[i], "' does not contain a precomputed '",
         criterion, "' criterion. See ?loo_compare.brmsfit for help."
       )
     }
+    # only assign object to list after checking if non-null
+    # otherwise the index may be out of bounds in the error check
+    loos[[i]] <- loo_i
   }
   loo_compare(loos)
 }
