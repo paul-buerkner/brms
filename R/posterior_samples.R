@@ -188,7 +188,11 @@ check_deprecated_fixed <- function(fixed, exact_match) {
   fixed
 }
 
-#' Extract posterior samples for use with the \pkg{coda} package
+#' (Deprecated) Extract posterior samples for use with the \pkg{coda} package
+#'
+#' The \code{as.mcmc} method is deprecated. We recommend using the more
+#' modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+#' functions of the \pkg{posterior} package instead.
 #'
 #' @aliases as.mcmc
 #'
