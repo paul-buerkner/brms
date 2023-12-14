@@ -34,7 +34,7 @@ navbar:
    - icon: fa-twitter
      href: https://twitter.com/mcmc_stan
    - icon: fa-github
-     href: https://github.com/stan-dev/brms
+     href: https://github.com/paul-buerkner/brms
    - icon: fa-users
      href: http://discourse.mc-stan.org/
 
