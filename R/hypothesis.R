@@ -538,6 +538,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
 
   .plot_fun <- function(samples) {
+    samples <- na.omit(samples)
+    # if no prior draws are present, there is no need to plot a legend
+    ignore_prior <- ignore_prior || length(unique(samples$Type)) == 1L
     gg <- ggplot(samples, aes(x = .data[["values"]])) +
       facet_wrap("ind", ncol = 1, scales = "free") +
       xlab("") + ylab("") + theme +
