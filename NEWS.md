@@ -4,6 +4,7 @@
 
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
+* Improve parameter class names in the `summary` output.
 
 ### Bug Fixes
 
