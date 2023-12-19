@@ -742,7 +742,7 @@ test_that("predictive_error has reasonable outputs", {
 })
 
 test_that("print has reasonable outputs", {
-  expect_output(SW(print(fit1)), "Group-Level Effects:")
+  expect_output(SW(print(fit1)), "Multilevel Hyperparameters:")
 })
 
 test_that("prior_draws has reasonable outputs", {
@@ -854,7 +854,7 @@ test_that("summary has reasonable outputs", {
                  "u-95% CI", "Rhat", "Bulk_ESS", "Tail_ESS"))
   expect_equal(rownames(summary1$random$visit),
                c("sd(Intercept)", "sd(Trt1)", "cor(Intercept,Trt1)"))
-  expect_output(print(summary1), "Population-Level Effects:")
+  expect_output(print(summary1), "Regression Coefficients:")
   expect_output(print(summary1), "Priors:")
 
   summary5 <- SW(summary(fit5, robust = TRUE))
