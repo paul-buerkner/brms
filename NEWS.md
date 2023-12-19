@@ -10,6 +10,8 @@ if potentially results-changing arguments are provided to the criterion method.
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
 * Improve parameter class names in the `summary` output.
+* Show histograms rather than densities in the `plot` method by default.
+* Deprecate argument `N` in the `plot` method in favor of argument `nvariables`.
 
 ### Bug Fixes
 

@@ -320,17 +320,16 @@
 #' # Poisson regression for the number of seizures in epileptic patients
 #' # using normal priors for population-level effects
 #' # and half-cauchy priors for standard deviations of group-level effects
-#' prior1 <- prior(normal(0,10), class = b) +
-#'   prior(cauchy(0,2), class = sd)
-#'
-#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'             data = epilepsy, family = poisson(), prior = prior1)
+#' prior1 <- prior(normal(0, 10), class = b) +
+#'   prior(cauchy(0, 2), class = sd)
+#' fit1 <- brm(count ~ zBase * Trt + (1|patient), data = epilepsy,
+#'             family = poisson(), prior = prior1)
 #'
 #' # generate a summary of the results
 #' summary(fit1)
 #'
 #' # plot the MCMC chains as well as the posterior distributions
-#' plot(fit1, ask = FALSE)
+#' plot(fit1)
 #'
 #' # predict responses based on the fitted model
 #' head(predict(fit1))
