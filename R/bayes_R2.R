@@ -44,7 +44,12 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   summary <- as_one_logical(summary)
   # check for precomputed values
   R2 <- get_criterion(object, "bayes_R2")
-  if (is.matrix(R2)) {
+  has_stored <- is.matrix(R2)
+  use_stored <- as.logical(length(list(...)))
+  if (has_stored && !use_stored) {
+    message("Recomputing 'bayes_R2'")
+  }
+  if (has_stored && use_stored) {
     # assumes unsummarized 'R2' as ensured by 'add_criterion'
     take <- colnames(R2) %in% paste0("R2", resp)
     R2 <- R2[, take, drop = FALSE]

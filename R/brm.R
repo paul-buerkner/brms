@@ -322,6 +322,7 @@
 #' # and half-cauchy priors for standard deviations of group-level effects
 #' prior1 <- prior(normal(0,10), class = b) +
 #'   prior(cauchy(0,2), class = sd)
+#'
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'             data = epilepsy, family = poisson(), prior = prior1)
 #'

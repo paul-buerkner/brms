@@ -88,6 +88,14 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
                          moment_match_args = list(), reloo_args = list(),
                          model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
+  if (!"use_stored" %in% names(args)) {
+    further_arg_names <- c(
+      "resp", "moment_match", "reloo", "k_threshold",
+      "save_psis", "moment_match_args", "reloo_args"
+    )
+    args$use_stored <- all(names(args) %in% "models") &&
+      !any(further_arg_names %in% names(match.call()))
+  }
   c(args) <- nlist(
     criterion = "loo", pointwise, compare,
     resp, k_threshold, save_psis, moment_match,
@@ -165,6 +173,11 @@ LOO <- function(x, ...) {
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
+  if (!"use_stored" %in% names(args)) {
+    further_arg_names <- c("resp")
+    args$use_stored <- all(names(args) %in% "models") &&
+      !any(further_arg_names %in% names(match.call()))
+  }
   c(args) <- nlist(criterion = "waic", pointwise, compare, resp)
   do_call(compute_loolist, args)
 }
@@ -242,7 +255,10 @@ compute_loo <- function(x, criterion, newdata = NULL, resp = NULL,
   model_name <- as_one_character(model_name)
   use_stored <- as_one_logical(use_stored)
   out <- get_criterion(x, criterion)
-  if (!(use_stored && is.loo(out))) {
+  if (is.loo(out) && !use_stored) {
+    message("Recomputing '", criterion, "' for model '", model_name, "'")
+  }
+  if (!is.loo(out) || !use_stored) {
     args <- nlist(x, newdata, resp, model_name, ...)
     out <- do_call(paste0(".", criterion), args)
     attr(out, "yhash") <- hash_response(x, newdata = newdata, resp = resp)
