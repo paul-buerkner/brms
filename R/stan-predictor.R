@@ -270,10 +270,6 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
   fixef <- colnames(data_fe(bterms, data)$X)
   sparse <- is_sparse(bterms$fe)
   decomp <- get_decomp(bterms$fe)
-  if (length(fixef) < 2L) {
-    # decompositions require at least two predictors
-    decomp <- "none"
-  }
   center_X <- stan_center_X(bterms)
   ct <- str_if(center_X, "c")
   # remove the intercept from the design matrix?

@@ -16,7 +16,7 @@
   */
   real sparse_icar_lpdf(vector phi, real sdcar, int Nloc,
                         int Nedges, data vector Nneigh, data vector eigenW,
-                        int[] edges1, int[] edges2) {
+                        array[] int edges1, array[] int edges2) {
     real tau;  // precision parameter
     row_vector[Nloc] phit_D;  // phi' * D
     row_vector[Nloc] phit_W;  // phi' * W

@@ -181,8 +181,11 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     # only define the parameter here if type is non-empty
     type <- stan_adjust_par_type(type, base_prior)
     type <- stan_type_add_bounds(type, bound)
+    if (nzchar(dim)) {
+      type <- glue("array{dim} {type}")
+    }
     comment <- stan_comment(comment)
-    par_definition <- glue("  {type} {par}{dim};{comment}\n")
+    par_definition <- glue("  {type} {par};{comment}\n")
     if (has_constant_priors) {
       # parameter must be defined in the transformed parameters block
       str_add(out$tpar_def) <- par_definition

@@ -36,7 +36,7 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$data) <- glue(
         "  array[N{resp}, ncat{resp}] int Y{resp};  // response array\n"
       )
-      str_add(out$pll_args) <- glue(", data int[,] Y{resp}")
+      str_add(out$pll_args) <- glue(", data array[,] int Y{resp}")
     }
   } else {
     if (rtype == "real") {

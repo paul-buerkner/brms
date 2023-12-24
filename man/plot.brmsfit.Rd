@@ -7,11 +7,13 @@
 \method{plot}{brmsfit}(
   x,
   pars = NA,
-  combo = c("dens", "trace"),
-  N = 5,
+  combo = c("hist", "trace"),
+  nvariables = 5,
+  N = NULL,
   variable = NULL,
   regex = FALSE,
   fixed = FALSE,
+  bins = 30,
   theme = NULL,
   plot = TRUE,
   ask = TRUE,
@@ -32,7 +34,9 @@ graphic and should be the name of one of the available
 \code{\link[bayesplot:MCMC-overview]{MCMC}} functions
 (omitting the \code{mcmc_} prefix).}
 
-\item{N}{The number of parameters plotted per page.}
+\item{nvariables}{The number of variables (parameters) plotted per page.}
+
+\item{N}{Deprecated alias of \code{nvariables}.}
 
 \item{variable}{Names of the variables (parameters) to plot, as given by a
 character vector or a regular expression (if \code{regex = TRUE}). By
@@ -45,6 +49,8 @@ be treated as regular expressions. Defaults to \code{FALSE}.}
 should be matched exactly (\code{TRUE}) or treated as
 regular expressions (\code{FALSE}). Default is \code{FALSE}
 and only works with argument \code{pars}.}
+
+\item{bins}{Number of bins used for posterior histograms (defaults to 30).}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object
 modifying the appearance of the plots.

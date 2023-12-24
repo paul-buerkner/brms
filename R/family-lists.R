@@ -11,6 +11,7 @@
 #   normalized: suffixes of Stan lpdfs or lpmfs which only exist as normalized
 #     versions; can also be "" in which case the family is always normalized
 #   specials: character vector specialties of some families
+#     TODO: create an overview of all specials
 
 .family_gaussian <- function() {
   list(
@@ -474,7 +475,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_gamma.stan",
-    specials = "sbi_hu_logit",
+    specials = c("sbi_hu_logit", "cont_hurdle"),
     normalized = ""
   )
 }
@@ -486,7 +487,7 @@
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_lognormal.stan",
-    specials = c("logscale", "sbi_hu_logit"),
+    specials = c("logscale", "sbi_hu_logit", "cont_hurdle"),
     normalized = ""
   )
 }
@@ -598,7 +599,7 @@
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_beta.stan",
-    specials = "sbi_zi_logit",
+    specials = c("sbi_zi_logit", "cont_hurdle"),
     normalized = ""
   )
 }
@@ -613,7 +614,7 @@
     ybounds = c(0, 1), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "index"),
     include = "fun_zero_one_inflated_beta.stan",
-    specials = "sbi_zi_logit",
+    specials = c("sbi_zi_logit", "cont_hurdle"),
     normalized = ""
   )
 }

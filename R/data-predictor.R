@@ -997,7 +997,7 @@ get_model_matrix <- function(formula, data = environment(formula),
 
 # convenient wrapper around mgcv::PredictMat
 PredictMat <- function(object, data, ...) {
-  data <- rm_attr(data, "terms")
+  data <- sm_prepare_data(object, data)
   out <- mgcv::PredictMat(object, data = data, ...)
   if (length(dim(out)) < 2L) {
     # fixes issue #494
@@ -1008,6 +1008,13 @@ PredictMat <- function(object, data, ...) {
 
 # convenient wrapper around mgcv::smoothCon
 smoothCon <- function(object, data, ...) {
+  data <- sm_prepare_data(object, data)
+  mgcv::smoothCon(object, data = data, ...)
+}
+
+# mgcv doesn't handle a lot of special data types well
+# need to prepare these variables manually beforehand
+sm_prepare_data <- function(object, data) {
   data <- rm_attr(data, "terms")
   vars <- setdiff(c(object$term, object$by), "NA")
   for (v in vars) {
@@ -1019,7 +1026,7 @@ smoothCon <- function(object, data, ...) {
       data[[v]] <- as.numeric(data[[v]])
     }
   }
-  mgcv::smoothCon(object, data = data, ...)
+  data
 }
 
 # Aid prediction from smooths represented as 'type = 2'

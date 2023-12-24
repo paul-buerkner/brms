@@ -14,7 +14,7 @@
    *   sum of the log-PDF values of all observations
    */
   real normal_time_hom_se_lpdf(vector y, vector mu, real sigma, data vector se2,
-                               matrix chol_cor, int[] nobs, int[] begin, int[] end) {
+                               matrix chol_cor, array[] int nobs, array[] int begin, array[] int end) {
     int I = size(nobs);
     vector[I] lp;
     matrix[rows(chol_cor), cols(chol_cor)] Cov;
@@ -36,7 +36,7 @@
    *   sum of the log-PDF values of all observations
    */
   real normal_time_het_se_lpdf(vector y, vector mu, vector sigma, data vector se2,
-                               matrix chol_cor, int[] nobs, int[] begin, int[] end) {
+                               matrix chol_cor, array[] int nobs, array[] int begin, array[] int end) {
     int I = size(nobs);
     vector[I] lp;
     for (i in 1:I) {
@@ -59,8 +59,8 @@
    *   sum of the log-PDF values of all observations
    */
   real normal_time_hom_se_flex_lpdf(vector y, vector mu, real sigma, data vector se2,
-                                    matrix chol_cor, int[] nobs, int[] begin,
-                                    int[] end, int[,] Jtime) {
+                                    matrix chol_cor, array[] int nobs, array[] int begin,
+                                    array[] int end, array[,] int Jtime) {
     int I = size(nobs);
     vector[I] lp;
     matrix[rows(chol_cor), cols(chol_cor)] Cov;
@@ -84,8 +84,8 @@
    *   sum of the log-PDF values of all observations
    */
   real normal_time_het_se_flex_lpdf(vector y, vector mu, vector sigma, data vector se2,
-                                    matrix chol_cor, int[] nobs, int[] begin,
-                                    int[] end, int[,] Jtime) {
+                                    matrix chol_cor, array[] int nobs, array[] int begin,
+                                    array[] int end, array[,] int Jtime) {
     int I = size(nobs);
     vector[I] lp;
     matrix[rows(chol_cor), cols(chol_cor)] Cor;

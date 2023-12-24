@@ -1,8 +1,8 @@
   /* grouped data stored linearly in "data" as indexed by begin and end
    * is repacked to be stacked into an array of vectors.
    */
-  vector[] stack_vectors(vector long_data, int n, int[] stack,
-                         int[] begin, int[] end) {
+  vector[] stack_vectors(vector long_data, int n, array[] int stack,
+                         array[] int begin, array[] int end) {
     int S = sum(stack);
     int G = size(stack);
     array[S] vector[n] stacked;

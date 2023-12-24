@@ -1,9 +1,21 @@
 # brms 2.20.3+
 
+### New Features
+
+* Automatically recompute fit criteria previously stored in the model
+if potentially results-changing arguments are provided to the criterion method.
+
 ### Other Changes
 
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
+* Improve parameter class names in the `summary` output.
+* Show histograms rather than densities in the `plot` method by default.
+* Deprecate argument `N` in the `plot` method in favor of argument `nvariables`.
+
+### Bug Fixes
+
+* Remove some remaining uses of Stan's old array syntax.
 
 
 # brms 2.20.3

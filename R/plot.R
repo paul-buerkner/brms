@@ -12,7 +12,8 @@
 #'   graphic and should be the name of one of the available
 #'   \code{\link[bayesplot:MCMC-overview]{MCMC}} functions
 #'   (omitting the \code{mcmc_} prefix).
-#' @param N The number of parameters plotted per page.
+#' @param nvariables The number of variables (parameters) plotted per page.
+#' @param N Deprecated alias of \code{nvariables}.
 #' @param theme A \code{\link[ggplot2:theme]{theme}} object
 #'   modifying the appearance of the plots.
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
@@ -23,6 +24,7 @@
 #'   should be matched exactly (\code{TRUE}) or treated as
 #'   regular expressions (\code{FALSE}). Default is \code{FALSE}
 #'   and only works with argument \code{pars}.
+#' @param bins Number of bins used for posterior histograms (defaults to 30).
 #' @param plot Logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
@@ -53,13 +55,14 @@
 #' @importFrom graphics plot
 #' @importFrom grDevices devAskNewPage
 #' @export
-plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
-                         N = 5, variable = NULL, regex = FALSE, fixed = FALSE,
-                         theme = NULL, plot = TRUE, ask = TRUE,
-                         newpage = TRUE, ...) {
+plot.brmsfit <- function(x, pars = NA, combo = c("hist", "trace"),
+                         nvariables = 5, N = NULL, variable = NULL, regex = FALSE,
+                         fixed = FALSE, bins = 30, theme = NULL, plot = TRUE,
+                         ask = TRUE, newpage = TRUE,  ...) {
   contains_draws(x)
-  if (!is_wholenumber(N) || N < 1) {
-    stop2("Argument 'N' must be a positive integer.")
+  nvariables <- use_alias(nvariables, N)
+  if (!is_wholenumber(nvariables) || nvariables < 1) {
+    stop2("Argument 'nvariables' must be a positive integer.")
   }
   variable <- use_variable_alias(variable, x, pars, fixed = fixed)
   if (is.null(variable)) {
@@ -77,13 +80,15 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  n_plots <- ceiling(length(variables) / N)
+  n_plots <- ceiling(length(variables) / nvariables)
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
-    sub_vars <- variables[((i - 1) * N + 1):min(i * N, length(variables))]
+    sub <- ((i - 1) * nvariables + 1):min(i * nvariables, length(variables))
+    sub_vars <- variables[sub]
     sub_draws <- draws[, , sub_vars, drop = FALSE]
     plots[[i]] <- bayesplot::mcmc_combo(
-      sub_draws, combo = combo, gg_theme = theme, ...
+      sub_draws, combo = combo, bins = bins,
+      gg_theme = theme, ...
     )
     if (plot) {
       plot(plots[[i]], newpage = newpage || i > 1)

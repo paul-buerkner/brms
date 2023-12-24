@@ -520,11 +520,11 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
 #' @rdname brmshypothesis
 #' @method plot brmshypothesis
 #' @export
-plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
-                                chars = 40, colors = NULL,
-                                theme = NULL, ask = TRUE,
-                                plot = TRUE,  ...) {
+plot.brmshypothesis <- function(x, nvariables = 5, N = NULL,
+                                ignore_prior = FALSE, chars = 40, colors = NULL,
+                                theme = NULL, ask = TRUE, plot = TRUE,  ...) {
   dots <- list(...)
+  nvariables <- use_alias(nvariables, N)
   if (!is.data.frame(x$samples)) {
     stop2("No posterior draws found.")
   }
@@ -538,6 +538,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
 
   .plot_fun <- function(samples) {
+    samples <- na.omit(samples)
+    # if no prior draws are present, there is no need to plot a legend
+    ignore_prior <- ignore_prior || length(unique(samples$Type)) == 1L
     gg <- ggplot(samples, aes(x = .data[["values"]])) +
       facet_wrap("ind", ncol = 1, scales = "free") +
       xlab("") + ylab("") + theme +
@@ -569,12 +572,13 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     hyps <- paste0(x$hypothesis$Group, ":  ", hyps)
   }
   names(samples)[seq_along(hyps)] <- hyps
-  nplots <- ceiling(length(hyps) / N)
+  nplots <- ceiling(length(hyps) / nvariables)
   plots <- vector(mode = "list", length = nplots)
   for (i in seq_len(nplots)) {
-    rel_hyps <- hyps[((i - 1) * N + 1):min(i * N, length(hyps))]
+    sub <- ((i - 1) * nvariables + 1):min(i * nvariables, length(hyps))
+    sub_hyps <- hyps[sub]
     sub_samples <- cbind(
-      utils::stack(samples[, rel_hyps, drop = FALSE]),
+      utils::stack(samples[, sub_hyps, drop = FALSE]),
       samples[, "Type", drop = FALSE]
     )
     # make sure that parameters appear in the original order

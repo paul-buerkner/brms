@@ -9,8 +9,8 @@
   * Returns:
   *   matrix of scaled group-level effects
   */
-  matrix scale_r_cor_by_cov(matrix z, matrix SD, matrix[] L,
-                            int[] Jby, matrix Lcov) {
+  matrix scale_r_cor_by_cov(matrix z, matrix SD, array[] matrix L,
+                            array[] int Jby, matrix Lcov) {
     vector[num_elements(z)] z_flat = to_vector(z);
     vector[num_elements(z)] r = rep_vector(0, num_elements(z));
     array[size(L)] matrix[rows(L[1]), cols(L[1])] LC;

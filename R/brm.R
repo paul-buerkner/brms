@@ -76,7 +76,8 @@
 #'   variables defined in Stan's \code{parameters} block should be saved
 #'   (default is \code{FALSE}). Saving these draws is required in order to
 #'   apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
-#'   \code{post_prob}.
+#'   \code{post_prob}. Can be set globally for the current \R session via the
+#'   \code{"brms.save_pars"} option (see \code{\link{options}}).
 #' @param sample_prior Indicate if draws from priors should be drawn
 #'   additionally to the posterior draws. Options are \code{"no"} (the
 #'   default), \code{"yes"}, and \code{"only"}. Among others, these draws can
@@ -319,16 +320,16 @@
 #' # Poisson regression for the number of seizures in epileptic patients
 #' # using normal priors for population-level effects
 #' # and half-cauchy priors for standard deviations of group-level effects
-#' prior1 <- prior(normal(0,10), class = b) +
-#'   prior(cauchy(0,2), class = sd)
-#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'             data = epilepsy, family = poisson(), prior = prior1)
+#' prior1 <- prior(normal(0, 10), class = b) +
+#'   prior(cauchy(0, 2), class = sd)
+#' fit1 <- brm(count ~ zBase * Trt + (1|patient), data = epilepsy,
+#'             family = poisson(), prior = prior1)
 #'
 #' # generate a summary of the results
 #' summary(fit1)
 #'
 #' # plot the MCMC chains as well as the posterior distributions
-#' plot(fit1, ask = FALSE)
+#' plot(fit1)
 #'
 #' # predict responses based on the fitted model
 #' head(predict(fit1))
@@ -436,8 +437,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 autocor = NULL, data2 = NULL, cov_ranef = NULL,
                 sample_prior = "no", sparse = NULL, knots = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
-                fit = NA, save_pars = NULL, save_ranef = NULL,
-                save_mevars = NULL, save_all_pars = NULL,
+                fit = NA, save_pars = getOption("brms.save_pars", NULL),
+                save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
                 init = NULL, inits = NULL, chains = 4, iter = 2000,
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),

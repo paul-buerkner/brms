@@ -11,7 +11,7 @@
    *   vector of scaled and correlated residuals
    */
    vector scale_time_err(vector zerr, real sderr, matrix chol_cor,
-                         int[] nobs, int[] begin, int[] end) {
+                         array[] int nobs, array[] int begin, array[] int end) {
      vector[rows(zerr)] err;
      for (i in 1:size(nobs)) {
        matrix[nobs[i], nobs[i]] L_i;
@@ -28,7 +28,7 @@
    *   vector of scaled and correlated residuals
    */
    vector scale_time_err_flex(vector zerr, real sderr, matrix chol_cor,
-                              int[] nobs, int[] begin, int[] end, int[,] Jtime) {
+                              array[] int nobs, array[] int begin, array[] int end, array[,] int Jtime) {
      vector[rows(zerr)] err;
      int I = size(nobs);
      array[I] int has_err = rep_array(0, I);

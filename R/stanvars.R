@@ -123,7 +123,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
         if (length(x) == 1L) {
           pll_type <- paste0(pll_type, "int")
         } else {
-          pll_type <- paste0(pll_type, "int[]")
+          pll_type <- paste0(pll_type, "array[] int")
         }
       } else if (is.vector(x)) {
         if (length(x) == 1L) {
