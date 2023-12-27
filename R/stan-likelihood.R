@@ -310,7 +310,8 @@ stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "",
 # multiply 'dpar' by the 'rate' denominator within the Stan likelihood
 # @param log add the rate denominator on the log scale if sensible?
 stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "",
-                                             log = FALSE, transform = NULL) {
+                                             log = FALSE, transform = NULL,
+                                             threads = NULL) {
   dpar_transform <- dpar
   if (!is.null(transform)) {
     dpar_transform <- glue("{transform}({dpar})")
@@ -318,7 +319,7 @@ stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "",
   if (!is.formula(bterms$adforms$rate)) {
     return(dpar_transform)
   }
-  ndenom <- str_if(reqn, "[n]")
+  ndenom <- str_if(reqn, stan_nn(threads), stan_slice(threads))
   denom <- glue("denom{resp}{ndenom}")
   cens_or_trunc <- stan_log_lik_adj(bterms, c("cens", "trunc"))
   if (log && bterms$family$link == "log" && !cens_or_trunc) {
@@ -528,7 +529,9 @@ stan_log_lik_poisson <- function(bterms, resp = "", mix = "", threads = NULL,
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     lpdf <- stan_log_lik_simple_lpdf("poisson", "log", bterms)
-    p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
+    p$mu <- stan_log_lik_multiply_rate_denom(
+      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+    )
     out <- sdist(lpdf, p$mu)
   }
   out
@@ -543,8 +546,12 @@ stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = NULL
   } else {
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-    p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
-    p$shape <- stan_log_lik_multiply_rate_denom(p$shape, bterms, reqn, resp)
+    p$mu <- stan_log_lik_multiply_rate_denom(
+      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+    )
+    p$shape <- stan_log_lik_multiply_rate_denom(
+      p$shape, bterms, reqn, resp, threads = threads
+    )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
   }
@@ -561,9 +568,11 @@ stan_log_lik_negbinomial2 <- function(bterms, resp = "", mix = "", threads = NUL
   } else {
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-    p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
+    p$mu <- stan_log_lik_multiply_rate_denom(
+      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+    )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$sigma, bterms, reqn, resp, transform = "inv"
+      p$sigma, bterms, reqn, resp, transform = "inv", threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -581,8 +590,12 @@ stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = NULL,
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$shape <- "1"
-    p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
-    p$shape <- stan_log_lik_multiply_rate_denom(p$shape, bterms, reqn, resp)
+    p$mu <- stan_log_lik_multiply_rate_denom(
+      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+    )
+    p$shape <- stan_log_lik_multiply_rate_denom(
+      p$shape, bterms, reqn, resp, threads = threads
+    )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
   }

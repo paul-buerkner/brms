@@ -7,7 +7,7 @@
    * Returns:
    *   a vector to be added to the linear predictor
    */
-  vector gp(data vector[] x, real sdgp, vector lscale, vector zgp) {
+  vector gp(data array[] vector x, real sdgp, vector lscale, vector zgp) {
     int Dls = rows(lscale);
     int N = size(x);
     matrix[N, N] cov;

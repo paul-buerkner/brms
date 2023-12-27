@@ -3,7 +3,7 @@
 \name{as.mcmc.brmsfit}
 \alias{as.mcmc.brmsfit}
 \alias{as.mcmc}
-\title{Extract posterior samples for use with the \pkg{coda} package}
+\title{(Deprecated) Extract posterior samples for use with the \pkg{coda} package}
 \usage{
 \method{as.mcmc}{brmsfit}(
   x,
@@ -38,5 +38,7 @@ If \code{combine_chains = TRUE} an \code{mcmc} object is returned.
   If \code{combine_chains = FALSE} an \code{mcmc.list} object is returned.
 }
 \description{
-Extract posterior samples for use with the \pkg{coda} package
+The \code{as.mcmc} method is deprecated. We recommend using the more
+modern and consistent \code{\link[brms:draws-brms]{as_draws_*}} extractor
+functions of the \pkg{posterior} package instead.
 }

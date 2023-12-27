@@ -137,14 +137,20 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
                           resp = NULL, model_names = NULL, save_fits = FALSE,
                           recompile = NULL, future_args = list()) {
   args <- split_dots(x, ..., model_names = model_names)
-  use_stored <- ulapply(args$models, function(x) is_equal(x$kfold$K, K))
+  if (!"use_stored" %in% names(args)) {
+    further_arg_names <- c(
+      "K", "Ksub", "folds", "group", "exact_loo", "resp", "save_fits"
+    )
+    args$use_stored <- all(names(args) %in% "models") &&
+      !any(further_arg_names %in% names(match.call()))
+  }
   if (!is.null(exact_loo) && as_one_logical(exact_loo)) {
     warning2("'exact_loo' is deprecated. Please use folds = 'loo' instead.")
     folds <- "loo"
   }
   c(args) <- nlist(
     criterion = "kfold", K, Ksub, folds, group, compare,
-    resp, save_fits, recompile, future_args, use_stored
+    resp, save_fits, recompile, future_args
   )
   do_call(compute_loolist, args)
 }

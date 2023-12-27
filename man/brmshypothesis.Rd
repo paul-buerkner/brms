@@ -10,7 +10,8 @@
 
 \method{plot}{brmshypothesis}(
   x,
-  N = 5,
+  nvariables = 5,
+  N = NULL,
   ignore_prior = FALSE,
   chars = 40,
   colors = NULL,
@@ -32,7 +33,9 @@ Defaults to \code{20}.}
 
 \item{...}{Currently ignored.}
 
-\item{N}{The number of parameters plotted per page.}
+\item{nvariables}{The number of variables (parameters) plotted per page.}
+
+\item{N}{Deprecated alias of \code{nvariables}.}
 
 \item{ignore_prior}{A flag indicating if prior distributions
 should also be plotted. Only used if priors were specified on

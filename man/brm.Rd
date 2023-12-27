@@ -19,7 +19,7 @@ brm(
   stanvars = NULL,
   stan_funs = NULL,
   fit = NA,
-  save_pars = NULL,
+  save_pars = getOption("brms.save_pars", NULL),
   save_ranef = NULL,
   save_mevars = NULL,
   save_all_pars = NULL,
@@ -160,7 +160,8 @@ very large \R objects even for models of moderate size and complexity.}
 variables defined in Stan's \code{parameters} block should be saved
 (default is \code{FALSE}). Saving these draws is required in order to
 apply the methods \code{bridge_sampler}, \code{bayes_factor}, and
-\code{post_prob}.}
+\code{post_prob}. Can be set globally for the current \R session via the
+\code{"brms.save_pars"} option (see \code{\link{options}}).}
 
 \item{init}{Initial values for the sampler. If \code{NULL} (the default) or
 \code{"random"}, Stan will randomly generate initial values for parameters
@@ -399,16 +400,16 @@ Fit a generalized (non-)linear multivariate multilevel model via
 # Poisson regression for the number of seizures in epileptic patients
 # using normal priors for population-level effects
 # and half-cauchy priors for standard deviations of group-level effects
-prior1 <- prior(normal(0,10), class = b) +
-  prior(cauchy(0,2), class = sd)
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-            data = epilepsy, family = poisson(), prior = prior1)
+prior1 <- prior(normal(0, 10), class = b) +
+  prior(cauchy(0, 2), class = sd)
+fit1 <- brm(count ~ zBase * Trt + (1|patient), data = epilepsy,
+            family = poisson(), prior = prior1)
 
 # generate a summary of the results
 summary(fit1)
 
 # plot the MCMC chains as well as the posterior distributions
-plot(fit1, ask = FALSE)
+plot(fit1)
 
 # predict responses based on the fitted model
 head(predict(fit1))

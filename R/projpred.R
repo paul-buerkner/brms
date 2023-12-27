@@ -27,10 +27,14 @@
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
-#' @details Note that the \code{extract_model_data} function used internally by
-#'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}.
-#'   This is relevant for
-#'   \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
+#' @details The \code{extract_model_data} function used internally by
+#'   \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}
+#'   (a warning is thrown if these are non-\code{NULL}). For example, arguments
+#'   \code{weightsnew} and \code{offsetnew} of
+#'   \code{\link[projpred:proj_linpred]{proj_linpred}},
+#'   \code{\link[projpred:proj_predict]{proj_predict}}, and
+#'   \code{\link[projpred:predict.refmodel]{predict.refmodel}} are passed to
+#'   \code{wrhs} and \code{orhs}, respectively.
 #'
 #' @return A \code{refmodel} object to be used in conjunction with the
 #'   \pkg{projpred} package.
@@ -238,9 +242,14 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 # auxiliary data required in predictions via projpred
 # @return a named list with slots 'y', 'weights', and 'offset'
 .extract_model_data <- function(object, newdata = NULL, resp = NULL,
-                                extract_y = TRUE, ...) {
+                                extract_y = TRUE, wrhs = NULL, orhs = NULL,
+                                ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
+  if (utils::packageVersion("projpred") >= "2.8.0") {
+    if (!is.null(wrhs)) warn_wrhs_orhs("wrhs")
+    if (!is.null(orhs)) warn_wrhs_orhs("orhs")
+  }
 
   # extract the response variable manually instead of from make_standata
   # so that it passes input checks of validate_newdata later on (#1314)
@@ -299,6 +308,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     offset <- rep(0, N)
   }
   nlist(y, weights, offset)
+}
+
+# Helper function for throwing a warning if argument `wrhs` or `orhs` is
+# non-`NULL`.
+warn_wrhs_orhs <- function(arg_nm) {
+  warning2("Argument `", arg_nm, "` is currently ignored. See section ",
+           "'Details' of `?brms:::get_refmodel.brmsfit` for details.")
 }
 
 # Construct the inverse-link function required for the latent projection in case

@@ -63,10 +63,14 @@ automatically when performing variable selection via
 it manually yourself.
 }
 \details{
-Note that the \code{extract_model_data} function used internally by
-  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}.
-  This is relevant for
-  \code{\link[projpred:predict.refmodel]{predict.refmodel}}, for example.
+The \code{extract_model_data} function used internally by
+  \code{get_refmodel.brmsfit} ignores arguments \code{wrhs} and \code{orhs}
+  (a warning is thrown if these are non-\code{NULL}). For example, arguments
+  \code{weightsnew} and \code{offsetnew} of
+  \code{\link[projpred:proj_linpred]{proj_linpred}},
+  \code{\link[projpred:proj_predict]{proj_predict}}, and
+  \code{\link[projpred:predict.refmodel]{predict.refmodel}} are passed to
+  \code{wrhs} and \code{orhs}, respectively.
 }
 \examples{
 \dontrun{

@@ -254,18 +254,19 @@ print.brmssummary <- function(x, digits = 2, ...) {
     ))
   }
   cat("\n")
+  # TODO: change order of the displayed summaries?
   if (nrow(x$prior)) {
-    cat("Priors: \n")
+    cat("Priors:\n")
     print(x$prior, show_df = FALSE)
     cat("\n")
   }
   if (length(x$splines)) {
-    cat("Smooth Terms: \n")
+    cat("Smoothing Spline Hyperparameters:\n")
     print_format(x$splines, digits)
     cat("\n")
   }
   if (length(x$gp)) {
-    cat("Gaussian Process Terms: \n")
+    cat("Gaussian Process Hyperparameters:\n")
     print_format(x$gp, digits)
     cat("\n")
   }
@@ -276,7 +277,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat("\n")
   }
   if (length(x$random)) {
-    cat("Group-Level Effects: \n")
+    cat("Multilevel Hyperparameters:\n")
     for (i in seq_along(x$random)) {
       g <- names(x$random)[i]
       cat(paste0("~", g, " (Number of levels: ", x$ngrps[[g]], ") \n"))
@@ -285,17 +286,17 @@ print.brmssummary <- function(x, digits = 2, ...) {
     }
   }
   if (nrow(x$fixed)) {
-    cat("Population-Level Effects: \n")
+    cat("Regression Coefficients:\n")
     print_format(x$fixed, digits)
     cat("\n")
   }
   if (length(x$mo)) {
-    cat("Simplex Parameters: \n")
+    cat("Monotonic Simplex Parameters:\n")
     print_format(x$mo, digits)
     cat("\n")
   }
   if (nrow(x$spec_pars)) {
-    cat("Family Specific Parameters: \n")
+    cat("Further Distributional Parameters:\n")
     print_format(x$spec_pars, digits)
     cat("\n")
   }
