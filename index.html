@@ -161,7 +161,7 @@ Bayesian regression models using Stan
 <li>
 <a href="https://journal.r-project.org/archive/2018/RJ-2018-017/index.html" class="external-link">Advanced multilevel modeling with brms</a> (The R Journal)</li>
 <li>
-<a href="https://paul-buerkner.github.io/blog/brms-blogposts/" class="external-link">Blog posts</a> (List of blog posts about brms)</li>
+<a href="https://paul-buerkner.github.io/software/brms-blogposts.html" class="external-link">Blog posts</a> (List of blog posts about brms)</li>
 <li>
 <a href="http://discourse.mc-stan.org/" class="external-link">Ask a question</a> (Stan Forums on Discourse)</li>
 </ul>
@@ -174,11 +174,140 @@ Bayesian regression models using Stan
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"brms"</span><span class="op">)</span></span></code></pre></div>
 <p>Install the latest development version from <strong>GitHub</strong></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="va"><a href="https://devtools.r-lib.org/" class="external-link">devtools</a></span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"paul-buerkner/brms"</span>, build_vignettes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"paul-buerkner/brms"</span><span class="op">)</span></span></code></pre></div>
 <p>You can also set <code>build_vignettes=TRUE</code> but this will slow down the installation drastically (the vignettes can always be accessed online anytime at <a href="https://paul-buerkner.github.io/brms/articles/" class="external-link">paul-buerkner.github.io/brms/articles</a>).</p>
+</div>
+<div class="section level2">
+<h2 id="how-to-use-brms">How to use brms<a class="anchor" aria-label="anchor" href="#how-to-use-brms"></a>
+</h2>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/paul-buerkner/brms" class="external-link">brms</a></span><span class="op">)</span></span></code></pre></div>
+<p>As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable <code>Trt</code>) can reduce the seizure counts and whether the effect of the treatment varies with the (standardized) baseline number of seizures a person had before treatment (variable <code>zBase</code>). As we have multiple observations per person, a group-level intercept is incorporated to account for the resulting dependency in the data.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/brm.html">brm</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">*</span> <span class="va">Trt</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">patient</span><span class="op">)</span>,</span>
+<span>            data <span class="op">=</span> <span class="va">epilepsy</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The results (i.e., posterior draws) can be investigated using</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  Family: poisson </span></span>
+<span><span class="co">#&gt;   Links: mu = log </span></span>
+<span><span class="co">#&gt; Formula: count ~ zAge + zBase * Trt + (1 | patient) </span></span>
+<span><span class="co">#&gt;    Data: epilepsy (Number of observations: 236) </span></span>
+<span><span class="co">#&gt;   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;</span></span>
+<span><span class="co">#&gt;          total post-warmup draws = 4000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Group-Level Effects: </span></span>
+<span><span class="co">#&gt; ~patient (Number of levels: 59) </span></span>
+<span><span class="co">#&gt;               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span></span>
+<span><span class="co">#&gt; sd(Intercept)     0.58      0.07     0.46     0.73 1.01      768     1579</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Population-Level Effects: </span></span>
+<span><span class="co">#&gt;            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span></span>
+<span><span class="co">#&gt; Intercept      1.77      0.11     1.54     1.99 1.00      753     1511</span></span>
+<span><span class="co">#&gt; zAge           0.09      0.08    -0.07     0.26 1.00      830     1429</span></span>
+<span><span class="co">#&gt; zBase          0.70      0.12     0.47     0.95 1.00      678     1389</span></span>
+<span><span class="co">#&gt; Trt1          -0.26      0.16    -0.59     0.05 1.01      709     1356</span></span>
+<span><span class="co">#&gt; zBase:Trt1     0.05      0.17    -0.29     0.37 1.01      721     1404</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS</span></span>
+<span><span class="co">#&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential</span></span>
+<span><span class="co">#&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</span></span></code></pre></div>
+<p>On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains. Next, group-level effects are displayed separately for each grouping factor in terms of standard deviations and (in case of more than one group-level effect per grouping factor; not displayed here) correlations between group-level effects. On the bottom of the output, population-level effects (i.e. regression coefficients) are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation ‘sigma’ in normal models) are also given.</p>
+<p>In general, every parameter is summarized using the mean (‘Estimate’) and the standard deviation (‘Est.Error’) of the posterior distribution as well as two-sided 95% credible intervals (‘l-95% CI’ and ‘u-95% CI’) based on quantiles. We see that the coefficient of <code>Trt</code> is negative with a zero overlapping 95%-CI. This indicates that, on average, the treatment may reduce seizure counts by some amount but the evidence based on the data and applied model is not very strong and still insufficient by standard decision rules. Further, we find little evidence that the treatment effect varies with the baseline number of seizures.</p>
+<p>The last three values (‘ESS_bulk’, ‘ESS_tail’, and ‘Rhat’) provide information on how well the algorithm could estimate the posterior distribution of this parameter. If ‘Rhat’ is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.</p>
+<p>To visually investigate the chains as well as the posterior distributions, we can use the <code>plot</code> method. If we just want to see results of the regression coefficients of <code>Trt</code> and <code>zBase</code>, we go for</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit1</span>, variable <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b_Trt1"</span>, <span class="st">"b_zBase"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-plot-1.png" width="60%" style="display: block; margin: auto;"></p>
+<p>A more detailed investigation can be performed by running <code>launch_shinystan(fit1)</code>. To better understand the relationship of the predictors with the response, I recommend the <code>conditional_effects</code> method:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit1</span>, effects <span class="op">=</span> <span class="st">"zBase:Trt"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-conditional_effects-1.png" width="60%" style="display: block; margin: auto;"></p>
+<p>This method uses some prediction functionality behind the scenes, which can also be called directly. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (<code>Trt = 1</code>) and in the control group (<code>Trt = 0</code>) with average age and average number of previous seizures. Than we can use</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">newdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, zAge <span class="op">=</span> <span class="fl">0</span>, zBase <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit1</span>, newdata <span class="op">=</span> <span class="va">newdata</span>, re_formula <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      Estimate Est.Error Q2.5 Q97.5</span></span>
+<span><span class="co">#&gt; [1,]  5.90325  2.486249    2    11</span></span>
+<span><span class="co">#&gt; [2,]  4.59025  2.180262    1     9</span></span></code></pre></div>
+<p>We need to set <code>re_formula = NA</code> in order not to condition of the group-level effects. While the <code>predict</code> method returns predictions of the responses, the <code>fitted</code> method returns predictions of the regression line.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">fit1</span>, newdata <span class="op">=</span> <span class="va">newdata</span>, re_formula <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      Estimate Est.Error     Q2.5    Q97.5</span></span>
+<span><span class="co">#&gt; [1,] 5.918847 0.6762827 4.666180 7.308699</span></span>
+<span><span class="co">#&gt; [2,] 4.554778 0.5144053 3.630642 5.659664</span></span></code></pre></div>
+<p>Both methods return the same estimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the <code>newdata</code> argument empty.</p>
+<p>Suppose, we want to investigate whether there is overdispersion in the model, that is residual variation not accounted for by the response distribution. For this purpose, we include a second group-level intercept that captures possible overdispersion.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/brm.html">brm</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">*</span> <span class="va">Trt</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">patient</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">obs</span><span class="op">)</span>,</span>
+<span>            data <span class="op">=</span> <span class="va">epilepsy</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>We can then go ahead and compare both models via approximate leave-one-out (LOO) cross-validation.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Output of model 'fit1':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Computed from 4000 by 236 log-likelihood matrix</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;          Estimate   SE</span></span>
+<span><span class="co">#&gt; elpd_loo   -671.6 35.8</span></span>
+<span><span class="co">#&gt; p_loo        94.6 13.6</span></span>
+<span><span class="co">#&gt; looic      1343.3 71.6</span></span>
+<span><span class="co">#&gt; ------</span></span>
+<span><span class="co">#&gt; Monte Carlo SE of elpd_loo is NA.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Pareto k diagnostic values:</span></span>
+<span><span class="co">#&gt;                          Count Pct.    Min. n_eff</span></span>
+<span><span class="co">#&gt; (-Inf, 0.5]   (good)     209   88.6%   546       </span></span>
+<span><span class="co">#&gt;  (0.5, 0.7]   (ok)        18    7.6%   125       </span></span>
+<span><span class="co">#&gt;    (0.7, 1]   (bad)        7    3.0%   23        </span></span>
+<span><span class="co">#&gt;    (1, Inf)   (very bad)   2    0.8%   12        </span></span>
+<span><span class="co">#&gt; See help('pareto-k-diagnostic') for details.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Output of model 'fit2':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Computed from 4000 by 236 log-likelihood matrix</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;          Estimate   SE</span></span>
+<span><span class="co">#&gt; elpd_loo   -596.2 14.1</span></span>
+<span><span class="co">#&gt; p_loo       108.5  7.3</span></span>
+<span><span class="co">#&gt; looic      1192.3 28.3</span></span>
+<span><span class="co">#&gt; ------</span></span>
+<span><span class="co">#&gt; Monte Carlo SE of elpd_loo is NA.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Pareto k diagnostic values:</span></span>
+<span><span class="co">#&gt;                          Count Pct.    Min. n_eff</span></span>
+<span><span class="co">#&gt; (-Inf, 0.5]   (good)     84    35.6%   755       </span></span>
+<span><span class="co">#&gt;  (0.5, 0.7]   (ok)       96    40.7%   171       </span></span>
+<span><span class="co">#&gt;    (0.7, 1]   (bad)      50    21.2%   25        </span></span>
+<span><span class="co">#&gt;    (1, Inf)   (very bad)  6     2.5%   10        </span></span>
+<span><span class="co">#&gt; See help('pareto-k-diagnostic') for details.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Model comparisons:</span></span>
+<span><span class="co">#&gt;      elpd_diff se_diff</span></span>
+<span><span class="co">#&gt; fit2   0.0       0.0  </span></span>
+<span><span class="co">#&gt; fit1 -75.5      26.3</span></span></code></pre></div>
+<p>The <code>loo</code> output when comparing models is a little verbose. We first see the individual LOO summaries of the two models and then the comparison between them. Since higher <code>elpd</code> (i.e., expected log posterior density) values indicate better fit, we see that the model accounting for overdispersion (i.e., <code>fit2</code>) fits substantially better. However, we also see in the individual LOO outputs that there are several problematic observations for which the approximations may have not have been very accurate. To deal with this appropriately, we need to fall back to other methods such as <code>reloo</code> or <code>kfold</code> but this requires the model to be refit several times which takes too long for the purpose of a quick example. The post-processing methods we have shown above are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type <code>methods(class = "brmsfit")</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="citing-brms-and-related-software">Citing brms and related software<a class="anchor" aria-label="anchor" href="#citing-brms-and-related-software"></a>
+</h2>
+<p>Developing and maintaining open source software is an important yet often underappreciated contribution to scientific progress. Thus, whenever you are using open source software (or software in general), please make sure to cite it appropriately so that developers get credit for their work.</p>
+<p>When using brms, please cite one or more of the following publications:</p>
+<ul>
+<li>Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models using Stan. <em>Journal of Statistical Software</em>. 80(1), 1-28. doi.org/10.18637/jss.v080.i01</li>
+<li>Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R Package brms. <em>The R Journal</em>. 10(1), 395-411. doi.org/10.32614/RJ-2018-017</li>
+<li>Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms and Stan. <em>Journal of Statistical Software</em>, 100(5), 1-54. doi.org/10.18637/jss.v100.i05</li>
+</ul>
+<p>As brms is a high-level interface to Stan, please additionally cite Stan (see also <a href="https://mc-stan.org/users/citations/" class="external-link uri">https://mc-stan.org/users/citations/</a>):</p>
+<ul>
+<li>Stan Development Team. YEAR. Stan Modeling Language Users Guide and Reference Manual, VERSION. <a href="https://mc-stan.org" class="external-link uri">https://mc-stan.org</a>
+</li>
+<li>Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B., Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017). Stan: A probabilistic programming language. <em>Journal of Statistical Software</em>. 76(1). doi.org/10.18637/jss.v076.i01</li>
+</ul>
+<p>Further, brms relies on several other R packages and, of course, on R itself. To find out how to cite R and its packages, use the <code>citation</code> function. There are some features of brms which specifically rely on certain packages. The <strong>rstan</strong> package together with <strong>Rcpp</strong> makes Stan conveniently accessible in R. Visualizations and posterior-predictive checks are based on <strong>bayesplot</strong> and <strong>ggplot2</strong>. Approximate leave-one-out cross-validation using <code>loo</code> and related methods is done via the <strong>loo</strong> package. Marginal likelihood based methods such as <code>bayes_factor</code> are realized by means of the <strong>bridgesampling</strong> package. Splines specified via the <code>s</code> and <code>t2</code> functions rely on <strong>mgcv</strong>. If you use some of these features, please also consider citing the related packages.</p>
 </div>
 
   </div>
