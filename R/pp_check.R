@@ -122,11 +122,13 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
   if (!ndraws_given) {
     aps_types <- c(
       "error_scatter_avg", "error_scatter_avg_vs_x",
-      "intervals", "intervals_grouped", "loo_pit",
-      "loo_intervals", "loo_ribbon", "ribbon",
-      "ribbon_grouped", "rootogram", "scatter_avg",
-      "scatter_avg_grouped", "stat", "stat_2d",
-      "stat_freqpoly_grouped", "stat_grouped",
+      "intervals", "intervals_grouped",
+      "loo_intervals", "loo_pit", "loo_pit_overlay",
+      "loo_pit_qq", "loo_ribbon", 
+      'pit_ecdf', 'pit_ecdf_grouped',
+      "ribbon", "ribbon_grouped",
+      "rootogram", "scatter_avg", "scatter_avg_grouped",
+      "stat", "stat_2d", "stat_freqpoly_grouped", "stat_grouped",
       "violin_grouped"
     )
     if (!is.null(draw_ids)) {
