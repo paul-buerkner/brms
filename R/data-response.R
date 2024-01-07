@@ -478,14 +478,15 @@ data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
 # @return the design matrix of the baseline hazard function
 bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
                               basis = NULL) {
-  require_package("splines2")
+  # version check is required due to class name changes #1580
+  require_package("splines2", version = "0.5.0")
   if (!is.null(basis)) {
     # perform predictions based on an existing basis matrix
-    stopifnot(inherits(basis, "mSpline"))
+    stopifnot(inherits(basis, "MSpline"))
     if (integrate) {
-      # for predictions just the attibutes are required
+      # for predictions just the attributes are required
       # which are the same of M-Splines and I-Splines
-      class(basis) <- c("matrix", "iSpline")
+      class(basis) <- c("matrix", "ISpline")
     }
     return(predict(basis, y))
   }
