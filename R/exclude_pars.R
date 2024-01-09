@@ -107,10 +107,11 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
   p <- usc(combine_prefix(x))
   c(out) <- paste0("chol_cor", p)
   if (!save_pars$all) {
+    # removed the "Intercept" and "first_Intercept" parameters from this list
+    # to reduce the number of models that need refitting for moment matching
     par_classes <- c(
       "bQ", "zb", "zbsp", "zbs", "zar", "zma", "hs_local", "R2D2_phi",
-      "scales", "Intercept", "first_Intercept", "merged_Intercept",
-      "zcar", "nszcar", "zerr"
+      "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
     smef <- tidy_smef(x, data)
