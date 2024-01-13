@@ -16,6 +16,7 @@ as backend. (#1544)
 ### Bug Fixes
 
 * Remove some remaining uses of Stan's old array syntax.
+* Ensure compatibility with the latest `splines2` package version. (#1580)
 
 
 # brms 2.20.3
