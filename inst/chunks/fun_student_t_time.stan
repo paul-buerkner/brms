@@ -65,7 +65,7 @@
     matrix[rows(chol_cor), cols(chol_cor)] Cov;
     Cov = multiply_lower_tri_self_transpose(sigma * chol_cor);
     for (i in 1:I) {
-      int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
+      array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Cov_i = Cov[iobs, iobs];
       lp[i] = multi_student_t_lpdf(
         y[begin[i]:end[i]] | nu, mu[begin[i]:end[i]], Cov_i
@@ -90,7 +90,7 @@
     matrix[rows(chol_cor), cols(chol_cor)] Cor;
     Cor = multiply_lower_tri_self_transpose(chol_cor);
     for (i in 1:I) {
-      int iobs[nobs[i]] = Jtime[i, 1:nobs[i]];
+      array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Cov_i;
       Cov_i = quad_form_diag(Cor[iobs, iobs], sigma[begin[i]:end[i]]);
       lp[i] = multi_student_t_lpdf(
