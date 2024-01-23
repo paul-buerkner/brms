@@ -17,7 +17,7 @@ as backend. (#1544)
 
 * Remove some remaining uses of Stan's old array syntax.
 * Ensure compatibility with the latest `splines2` package version. (#1580)
-
+* Fix output of `rmulti_normal` thanks to Ven Popov. (#1588)
 
 # brms 2.20.3
 
