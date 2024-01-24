@@ -127,7 +127,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
     }
   }
   draws <- matrix(rnorm(n * p), nrow = n, ncol = p)
-  mu + draws %*% chol(Sigma)
+  sweep(draws %*% chol(Sigma), 2, mu, "+")
 }
 
 #' The Multivariate Student-t Distribution
