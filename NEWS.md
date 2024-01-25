@@ -4,6 +4,7 @@
 
 * Automatically recompute fit criteria previously stored in the model
 if potentially results-changing arguments are provided to the criterion method.
+* Allow to turn off automatic broadcasting of `constant` priors.
 
 ### Other Changes
 

@@ -326,23 +326,26 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
 # @return a character string defining the prior in Stan language
 stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
   stopifnot(grepl("^constant\\(", prior))
-  prior_args <- gsub("(^constant\\()|(\\)$)", "", prior)
-  if (broadcast == "vector") {
-    if (ncoef > 0) {
-      # broadcast the scalar prior on the whole parameter vector
-      prior_args <- glue("rep_vector({prior_args}, rows({par}))")
-    }
-    # no action required for individual coefficients of vectors
-  } else if (broadcast == "matrix") {
-    if (ncoef > 0) {
-      # broadcast the scalar prior on the whole parameter matrix
-      prior_args <- glue("rep_matrix({prior_args}, rows({par}), cols({par}))")
-    } else {
-      # single coefficient is a row in the parameter matrix
-      prior_args <- glue("rep_row_vector({prior_args}, cols({par}))")
+  args <- eval2(prior)
+  if (args$broadcast) {
+    # broadcast constant if desired and needed?
+    if (broadcast == "vector") {
+      if (ncoef > 0) {
+        # broadcast the scalar prior on the whole parameter vector
+        args$const <- glue("rep_vector({args$const}, rows({par}))")
+      }
+      # no action required for individual coefficients of vectors
+    } else if (broadcast == "matrix") {
+      if (ncoef > 0) {
+        # broadcast the scalar prior on the whole parameter matrix
+        args$const <- glue("rep_matrix({args$const}, rows({par}), cols({par}))")
+      } else {
+        # single coefficient is a row in the parameter matrix
+        args$const <- glue("rep_row_vector({args$const}, cols({par}))")
+      }
     }
   }
-  glue("  {par} = {prior_args}")
+  glue("  {par} = {args$const}")
 }
 
 # Stan code for global parameters of special shrinkage priors

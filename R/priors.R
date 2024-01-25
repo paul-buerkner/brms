@@ -2205,6 +2205,44 @@ has_special_prior <- function(prior, px = NULL, class = NULL) {
   out
 }
 
+#' Constant priors in \pkg{brms}
+#'
+#' Function used to set up constant priors in \pkg{brms}.
+#' The function does not evaluate its arguments -- it exists purely
+#' to help set up the model.
+#'
+#' @param const Numeric value, vector, matrix of values to which the parameters
+#'   should be fixed to. Can also be a valid Stan variable in the model.
+#' @param broadcast Should \code{const} be automatically broadcasted to the
+#'   correct size of the parameter? Defaults to \code{TRUE}. If you supply
+#'   vectors or matrices in \code{const} or vector/matrix valued Stan variables,
+#'   you need to set \code{broadcast} to \code{TRUE} (see Examples).
+#'
+#' @returns A named list with elements \code{const} and \code{broadcast}.
+#'
+#' @examples
+#' make_stancode(count ~ Base + Age, data = epilepsy,
+#'               prior = prior(constant(1), class = "b"))
+#'
+#' # will fail parsing because brms will try to broadcast a vector into a vector
+#' make_stancode(count ~ Base + Age, data = epilepsy,
+#'               prior = prior(constant(alpha), class = "b"),
+#'               stanvars = stanvar(c(1, 0), name = "alpha"))
+#'
+#' make_stancode(count ~ Base + Age, data = epilepsy,
+#'               prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
+#'               stanvars = stanvar(c(1, 0), name = "alpha"))
+#'
+#' @seealso \code{\link{set_prior}}
+#'
+#' @export
+constant <- function(const, broadcast = TRUE) {
+  const <- deparse0(substitute(const))
+  const <- rename(const, c("\"", "'"), c("", ""))
+  broadcast <- as_one_logical(broadcast)
+  nlist(const, broadcast)
+}
+
 # check if parameters should be sampled only from the prior
 is_prior_only <- function(prior) {
   is_equal(get_sample_prior(prior), "only")
