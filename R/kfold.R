@@ -242,6 +242,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     Ksub <- sort(Ksub)
   }
 
+  # ensure that the model can be run in the current R session
+  x <- recompile_model(x, recompile = recompile)
+
   # split dots for use in log_lik and update
   dots <- list(...)
   ll_arg_names <- arg_names("log_lik")
@@ -250,10 +253,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   ll_args$resp <- resp
   ll_args$combine <- TRUE
   up_args <- dots[setdiff(names(dots), ll_arg_names)]
+  up_args$object <- x
   up_args$refresh <- 0
 
   # function to be run inside future::future
   .kfold_k <- function(k) {
+    message("Fitting model ", k, " out of ", K)
     if (fold_type == "loo" && !is.null(group)) {
       omitted <- which(folds == folds[k])
       predicted <- k
@@ -261,62 +266,56 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       omitted <- predicted <- which(folds == k)
     }
     newdata_omitted <- newdata[-omitted, , drop = FALSE]
-    up_args$object <- x
     up_args$newdata <- newdata_omitted
     up_args$data2 <- subset_data2(newdata2, -omitted)
     fit <- SW(do_call(update, up_args))
-    # rm() trys to avoid memory leaks during parallel use
-    rm(up_args)
 
     ll_args$object <- fit
     ll_args$newdata <- newdata[predicted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(newdata2, predicted)
     lppds <- do_call(log_lik, ll_args)
-    rm(ll_args)
 
     out <- nlist(lppds, omitted, predicted)
     if (save_fits) {
       out$fit <- fit
     }
-    rm(fit)
     return(out)
   }
 
-  futures <- vector("list", length(Ksub))
-  lppds <- obs_order <- vector("list", length(Ksub))
+  # TODO: separate parallel and non-parallel code to enable better printing?
+  future_args$X <- Ksub
+  future_args$FUN <- .kfold_k
+  future_args$future.seed <- TRUE
+  out <- do_call("future_lapply", future_args, pkg = "future.apply")
+
+  lppds <- pred_obs <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(list(), dim = c(length(Ksub), 3))
     dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
   }
-
-  x <- recompile_model(x, recompile = recompile)
-  future_args$FUN <- .kfold_k
-  future_args$seed <- TRUE
-  for (k in Ksub) {
-    ks <- match(k, Ksub)
-    message("Fitting model ", k, " out of ", K)
-    future_args$args <- list(k)
-    futures[[ks]] <- do_call("futureCall", future_args, pkg = "future")
-  }
-  for (k in Ksub) {
-    ks <- match(k, Ksub)
-    tmp <- future::value(futures[[ks]])
+  for (i in seq_along(Ksub)) {
     if (save_fits) {
-      fits[ks, ] <- tmp[c("fit", "omitted", "predicted")]
+      fits[i, ] <- out[[i]][c("fit", "omitted", "predicted")]
     }
-    obs_order[[ks]] <- tmp$predicted
-    lppds[[ks]] <- tmp$lppds
+    pred_obs[[i]] <- out[[i]]$predicted
+    lppds[[i]] <- out[[i]]$lppds
   }
 
   lppds <- do_call(cbind, lppds)
   elpds <- apply(lppds, 2, log_mean_exp)
   # make sure elpds are put back in the right order
-  obs_order <- unlist(obs_order)
-  elpds <- elpds[order(obs_order)]
+  pred_obs <- unlist(pred_obs)
+  elpds <- elpds[order(pred_obs)]
   # compute effective number of parameters
   ll_args$object <- x
   ll_args$newdata <- newdata
   ll_args$newdata2 <- newdata2
+  if (length(Ksub) < K) {
+    # select the correct subset of predicted observations
+    pred_obs_sorted <- sort(pred_obs)
+    ll_args$newdata <- ll_args$newdata[pred_obs_sorted, , drop = FALSE]
+    ll_args$newdata2 <- subset_data2(ll_args$newdata2, pred_obs_sorted)
+  }
   ll_full <- do_call(log_lik, ll_args)
   lpds <- apply(ll_full, 2, log_mean_exp)
   ps <- lpds - elpds
