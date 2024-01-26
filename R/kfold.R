@@ -101,8 +101,9 @@
 #'
 #' # use the future package for parallelization
 #' library(future)
-#' plan(multiprocess)
+#' plan(multisession, workers = 4)
 #' kfold(fit1, chains = 1)
+#' plan(sequential)
 #'
 #' ## to avoid recompilations when running kfold() on a 'cmdstanr'-backend fit
 #' ## in a fresh R session, set option 'cmdstanr_write_stan_file_dir' before
@@ -260,17 +261,24 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       omitted <- predicted <- which(folds == k)
     }
     newdata_omitted <- newdata[-omitted, , drop = FALSE]
-    fit <- x
-    up_args$object <- fit
+    up_args$object <- x
     up_args$newdata <- newdata_omitted
     up_args$data2 <- subset_data2(newdata2, -omitted)
     fit <- SW(do_call(update, up_args))
+    # rm() trys to avoid memory leaks during parallel use
+    rm(up_args)
+
     ll_args$object <- fit
     ll_args$newdata <- newdata[predicted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(newdata2, predicted)
     lppds <- do_call(log_lik, ll_args)
+    rm(ll_args)
+
     out <- nlist(lppds, omitted, predicted)
-    if (save_fits) out$fit <- fit
+    if (save_fits) {
+      out$fit <- fit
+    }
+    rm(fit)
     return(out)
   }
 
