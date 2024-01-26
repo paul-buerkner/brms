@@ -286,7 +286,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   future_args$X <- Ksub
   future_args$FUN <- .kfold_k
   future_args$future.seed <- TRUE
-  out <- do_call("future_lapply", future_args, pkg = "future.apply")
+  res <- do_call("future_lapply", future_args, pkg = "future.apply")
 
   lppds <- pred_obs <- vector("list", length(Ksub))
   if (save_fits) {
@@ -295,11 +295,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   }
   for (i in seq_along(Ksub)) {
     if (save_fits) {
-      fits[i, ] <- out[[i]][c("fit", "omitted", "predicted")]
+      fits[i, ] <- res[[i]][c("fit", "omitted", "predicted")]
     }
-    pred_obs[[i]] <- out[[i]]$predicted
-    lppds[[i]] <- out[[i]]$lppds
+    pred_obs[[i]] <- res[[i]]$predicted
+    lppds[[i]] <- res[[i]]$lppds
   }
+  rm(res)
 
   lppds <- do_call(cbind, lppds)
   elpds <- apply(lppds, 2, log_mean_exp)
