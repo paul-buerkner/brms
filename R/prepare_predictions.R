@@ -1199,7 +1199,9 @@ is.bprepnl <- function(x) {
 #'   out-of-sample rather than in-sample predictions. Only required in models
 #'   that make use of response values to make predictions, that is, currently
 #'   only ARMA models.
-#' @param smooths_only Logical; If \code{TRUE} only predictions related to the
+#' @param smooths_only Logical; If \code{TRUE} only predictions related to
+#'   smoothing splines (i.e., \code{s} or \code{t2}) will be computed.
+#'   Defaults to \code{FALSE}.
 #' @param resp Optional names of response variables. If specified, predictions
 #'   are performed only for the specified response variables.
 #' @param ndraws Positive integer indicating how many posterior draws should
