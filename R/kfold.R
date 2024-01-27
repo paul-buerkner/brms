@@ -253,6 +253,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   ll_arg_names <- arg_names("log_lik")
   ll_args <- dots[intersect(names(dots), ll_arg_names)]
   ll_args$allow_new_levels <- TRUE
+  ll_args$sample_new_levels <-
+    first_not_null(ll_args$sample_new_levels, "gaussian")
   ll_args$resp <- resp
   ll_args$combine <- TRUE
   up_args <- dots[setdiff(names(dots), ll_arg_names)]
