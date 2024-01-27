@@ -320,9 +320,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   ll_args$object <- x
   ll_args$newdata <- newdata
   ll_args$newdata2 <- newdata2
+  pred_obs_sorted <- sort(pred_obs)
   if (length(Ksub) < K) {
     # select the correct subset of predicted observations in the original order
-    pred_obs_sorted <- sort(pred_obs)
     ll_args$newdata <- ll_args$newdata[pred_obs_sorted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(ll_args$newdata2, pred_obs_sorted)
   }
@@ -331,7 +331,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     # compute the joint log score over all observations within a fold
     ll_full_marg <- matrix(nrow = nrow(ll_full), ncol = length(Ksub))
     for (i in seq_along(Ksub)) {
-      ll_full_marg[, i] <- rowSums(ll_full[, pred_obs_list[[i]], drop = FALSE])
+      sel_obs <- match(pred_obs_list[[i]], pred_obs_sorted)
+      ll_full_marg[, i] <- rowSums(ll_full[, sel_obs, drop = FALSE])
     }
     ll_full <- ll_full_marg
   }
