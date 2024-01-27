@@ -148,7 +148,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 # use joint likelihoods per fold for ELPD evaluation
 kfold(fit1, chains = 1, joint = TRUE)
 
-# use the future package for parallelization
+# use the future package for parallelization of models
+# that is to fit models belonging to different folds in parallel
 library(future)
 plan(multisession, workers = 4)
 kfold(fit1, chains = 1)

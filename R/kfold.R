@@ -105,7 +105,8 @@
 #' # use joint likelihoods per fold for ELPD evaluation
 #' kfold(fit1, chains = 1, joint = TRUE)
 #'
-#' # use the future package for parallelization
+#' # use the future package for parallelization of models
+#' # that is to fit models belonging to different folds in parallel
 #' library(future)
 #' plan(multisession, workers = 4)
 #' kfold(fit1, chains = 1)
@@ -294,7 +295,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   future_args$future.seed <- TRUE
   res <- do_call("future_lapply", future_args, pkg = "future.apply")
 
-  lppds <- pred_obs <- vector("list", length(Ksub))
+  lppds <- pred_obs_list <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(list(), dim = c(length(Ksub), 3))
     dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
@@ -303,15 +304,15 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     if (save_fits) {
       fits[i, ] <- res[[i]][c("fit", "omitted", "predicted")]
     }
-    pred_obs[[i]] <- res[[i]]$predicted
+    pred_obs_list[[i]] <- res[[i]]$predicted
     lppds[[i]] <- res[[i]]$lppds
   }
 
   lppds <- do_call(cbind, lppds)
   elpds <- apply(lppds, 2, log_mean_exp)
+  pred_obs <- unlist(pred_obs_list)
   if (!joint) {
     # bring back elpds into the original observation order
-    pred_obs <- unlist(pred_obs)
     elpds <- elpds[order(pred_obs)]
   }
 
@@ -330,7 +331,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     # compute the joint log score over all observations within a fold
     ll_full_marg <- matrix(nrow = nrow(ll_full), ncol = length(Ksub))
     for (i in seq_along(Ksub)) {
-      ll_full_marg[, i] <- rowSums(ll_full[, res[[i]]$predicted, drop = FALSE])
+      ll_full_marg[, i] <- rowSums(ll_full[, pred_obs_list[[i]], drop = FALSE])
     }
     ll_full <- ll_full_marg
   }
