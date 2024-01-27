@@ -66,14 +66,19 @@ predictor.bprepnl <- function(prep, i = NULL, fprep = NULL, ...) {
         args[[i]] <- lapply(args[[i]], "dim<-", old_dim[-1])
       }
     }
-    .fun <- function(...) eval(prep$nlform, list(...))
+    .fun <- function(...) {
+      eval(prep$nlform, list(...), enclos = prep$env)
+    }
     eta <- try(
       t(do_call(mapply, c(list(FUN = .fun, SIMPLIFY = "array"), args))),
       silent = TRUE
     )
   } else {
     # assumes fully vectorized version of 'nlform'
-    eta <- try(eval(prep$nlform, args), silent = TRUE)
+    eta <- try(
+      eval(prep$nlform, args, enclos = prep$env),
+      silent = TRUE
+    )
   }
   if (is_try_error(eta)) {
     if (grepl("could not find function", eta)) {
