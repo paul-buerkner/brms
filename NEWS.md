@@ -5,6 +5,7 @@
 * Automatically recompute fit criteria previously stored in the model
 if potentially results-changing arguments are provided to the criterion method.
 * Allow to turn off automatic broadcasting of `constant` priors.
+* Allow for joint likelihood evaluation in `kfold` via argument `joint`.
 
 ### Other Changes
 
@@ -13,6 +14,7 @@ as backend. (#1544)
 * Improve parameter class names in the `summary` output.
 * Show histograms rather than densities in the `plot` method by default.
 * Deprecate argument `N` in the `plot` method in favor of argument `nvariables`.
+* Remove deprecated argument `exact_loo` in method `kfold`.
 
 ### Bug Fixes
 

@@ -30,7 +30,10 @@
 #' @param group Optional name of a grouping variable or factor in the model.
 #'   What exactly is done with this variable depends on argument \code{folds}.
 #'   More information is provided in the 'Details' section.
-#' @param exact_loo Deprecated! Please use \code{folds = "loo"} instead.
+#' @param joint Logical; If \code{TRUE}, the joint log likelihoods per
+#'   fold are used for ELPD computation instead of the pointwise
+#'   (per observations) likelihoods. The latter is the default
+#'   for comparability of \code{kfold} with \code{loo}.
 #' @param save_fits If \code{TRUE}, a component \code{fits} is added to
 #'   the returned object to store the cross-validated \code{brmsfit}
 #'   objects and the indices of the omitted observations for each fold.
@@ -99,6 +102,9 @@
 #' # perform 10-fold cross validation
 #' (kfold1 <- kfold(fit1, chains = 1))
 #'
+#' # use joint likelihoods per fold for ELPD evaluation
+#' kfold(fit1, chains = 1, joint = TRUE)
+#'
 #' # use the future package for parallelization
 #' library(future)
 #' plan(multisession, workers = 4)
@@ -114,10 +120,9 @@
 #' set.seed(7)
 #' fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 #' options(cmdstanr_write_stan_file_dir = getwd())
-#' fit_cmdstanr <- brm(rate ~ conc + state,
-#'                     data = Puromycin,
-#'                     backend = "cmdstanr",
-#'                     file = fname)
+#' fit_cmdstanr <- brm(rate ~ conc + state, data = Puromycin,
+#'                     backend = "cmdstanr", file = fname)
+#'
 #' # now restart the R session and run the following (after attaching 'brms')
 #' set.seed(7)
 #' fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
@@ -134,24 +139,20 @@
 #' @export kfold
 #' @export
 kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
-                          group = NULL, exact_loo = NULL, compare = TRUE,
+                          group = NULL, joint = FALSE, compare = TRUE,
                           resp = NULL, model_names = NULL, save_fits = FALSE,
                           recompile = NULL, future_args = list()) {
   args <- split_dots(x, ..., model_names = model_names)
   if (!"use_stored" %in% names(args)) {
     further_arg_names <- c(
-      "K", "Ksub", "folds", "group", "exact_loo", "resp", "save_fits"
+      "K", "Ksub", "folds", "group", "joint", "resp", "save_fits"
     )
     args$use_stored <- all(names(args) %in% "models") &&
       !any(further_arg_names %in% names(match.call()))
   }
-  if (!is.null(exact_loo) && as_one_logical(exact_loo)) {
-    warning2("'exact_loo' is deprecated. Please use folds = 'loo' instead.")
-    folds <- "loo"
-  }
   c(args) <- nlist(
-    criterion = "kfold", K, Ksub, folds, group, compare,
-    resp, save_fits, recompile, future_args
+    criterion = "kfold", K, Ksub, folds, group, joint,
+    compare, resp, save_fits, recompile, future_args
   )
   do_call(compute_loolist, args)
 }
@@ -159,7 +160,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 # helper function to perform k-fold cross-validation
 # @inheritParams kfold.brmsfit
 # @param model_name ignored but included to avoid being passed to '...'
-.kfold <- function(x, K, Ksub, folds, group, save_fits,
+.kfold <- function(x, K, Ksub, folds, group, joint, save_fits,
                    newdata, resp, model_name, recompile = NULL,
                    future_args = list(), newdata2 = NULL, ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
@@ -179,6 +180,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     newdata2 <- validate_data2(newdata2, bterms)
   }
   N <- nrow(newdata)
+  joint <- as_one_logical(joint)
   # validate argument 'group'
   if (!is.null(group)) {
     valid_groups <- get_cat_vars(x)
@@ -274,6 +276,10 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     ll_args$newdata <- newdata[predicted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(newdata2, predicted)
     lppds <- do_call(log_lik, ll_args)
+    if (joint) {
+      # compute the joint log score over all observations within a fold
+      lppds <- rowSums(lppds)
+    }
 
     out <- nlist(lppds, omitted, predicted)
     if (save_fits) {
@@ -300,26 +306,37 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     pred_obs[[i]] <- res[[i]]$predicted
     lppds[[i]] <- res[[i]]$lppds
   }
-  rm(res)
 
   lppds <- do_call(cbind, lppds)
   elpds <- apply(lppds, 2, log_mean_exp)
-  # make sure elpds are put back in the right order
-  pred_obs <- unlist(pred_obs)
-  elpds <- elpds[order(pred_obs)]
+  if (!joint) {
+    # bring back elpds into the original observation order
+    pred_obs <- unlist(pred_obs)
+    elpds <- elpds[order(pred_obs)]
+  }
+
   # compute effective number of parameters
   ll_args$object <- x
   ll_args$newdata <- newdata
   ll_args$newdata2 <- newdata2
   if (length(Ksub) < K) {
-    # select the correct subset of predicted observations
+    # select the correct subset of predicted observations in the original order
     pred_obs_sorted <- sort(pred_obs)
     ll_args$newdata <- ll_args$newdata[pred_obs_sorted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(ll_args$newdata2, pred_obs_sorted)
   }
   ll_full <- do_call(log_lik, ll_args)
+  if (joint) {
+    # compute the joint log score over all observations within a fold
+    ll_full_marg <- matrix(nrow = nrow(ll_full), ncol = length(Ksub))
+    for (i in seq_along(Ksub)) {
+      ll_full_marg[, i] <- rowSums(ll_full[, res[[i]]$predicted, drop = FALSE])
+    }
+    ll_full <- ll_full_marg
+  }
   lpds <- apply(ll_full, 2, log_mean_exp)
   ps <- lpds - elpds
+
   # put everything together in a loo object
   pointwise <- cbind(elpd_kfold = elpds, p_kfold = ps, kfoldic = -2 * elpds)
   est <- colSums(pointwise)
@@ -327,11 +344,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   estimates <- cbind(Estimate = est, SE = se_est)
   rownames(estimates) <- colnames(pointwise)
   out <- nlist(estimates, pointwise)
-  atts <- nlist(K, Ksub, group, folds, fold_type)
+  atts <- nlist(K, Ksub, group, folds, fold_type, joint)
   attributes(out)[names(atts)] <- atts
   if (save_fits) {
     out$fits <- fits
     out$data <- newdata
+    out$data2 <- newdata2
   }
   structure(out, class = c("kfold", "loo"))
 }
