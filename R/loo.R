@@ -476,6 +476,8 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #'   (the default) the name is taken from the call to \code{x}.
 #' @param overwrite Logical; Indicates if already stored fit
 #'   indices should be overwritten. Defaults to \code{FALSE}.
+#'   Setting it to \code{TRUE} is useful for example when changing
+#'   additional arguments of an already stored criterion.
 #' @param file Either \code{NULL} or a character string. In the latter case, the
 #'   fitted model object including the newly added criterion values is saved via
 #'   \code{\link{saveRDS}} in a file named after the string supplied in
@@ -488,7 +490,9 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #'   ignored otherwise. If \code{TRUE}, the fitted model object will be saved
 #'   regardless of whether new criteria were added via \code{add_criterion}.
 #' @param ... Further arguments passed to the underlying
-#'   functions computing the model fit criteria.
+#'   functions computing the model fit criteria. If you are recomputing
+#'   an already stored criterion with other \code{...} arguments, make
+#'   sure to set \code{overwrite = TRUE}.
 #'
 #' @return An object of the same class as \code{x}, but
 #'   with model fit criteria added for later usage.
