@@ -144,8 +144,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 
 # use the future package for parallelization
 library(future)
-plan(multiprocess)
+plan(multisession, workers = 4)
 kfold(fit1, chains = 1)
+plan(sequential)
 
 ## to avoid recompilations when running kfold() on a 'cmdstanr'-backend fit
 ## in a fresh R session, set option 'cmdstanr_write_stan_file_dir' before

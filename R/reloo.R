@@ -94,6 +94,9 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     return(loo)
   }
 
+  # ensure that the model can be run in the current R session
+  x <- recompile_model(x, recompile = recompile)
+
   # split dots for use in log_lik and update
   dots <- list(...)
   ll_arg_names <- arg_names("log_lik")
@@ -105,13 +108,16 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   # cores is used in both log_lik and update
   up_arg_names <- setdiff(names(dots), setdiff(ll_arg_names, "cores"))
   up_args <- dots[up_arg_names]
+  up_args$object <- x
   up_args$refresh <- 0
 
   .reloo <- function(j) {
+    message(
+      "\nFitting model ", j, " out of ", J,
+      " (leaving out observation ", obs[j], ")"
+    )
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- x
-    up_args$object <- fit_j
     up_args$newdata <- mf_omitted
     up_args$data2 <- subset_data2(x$data2, -omitted)
     fit_j <- SW(do_call(update, up_args))
@@ -121,25 +127,16 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     return(do_call(log_lik, ll_args))
   }
 
-  lls <- futures <- vector("list", J)
   message(
     J, " problematic observation(s) found.",
     "\nThe model will be refit ", J, " times."
   )
-  x <- recompile_model(x, recompile = recompile)
+  # TODO: separate parallel and non-parallel code to enable better printing?
+  future_args$X <- seq_len(J)
   future_args$FUN <- .reloo
-  future_args$seed <- TRUE
-  for (j in seq_len(J)) {
-    message(
-      "\nFitting model ", j, " out of ", J,
-      " (leaving out observation ", obs[j], ")"
-    )
-    future_args$args <- list(j)
-    futures[[j]] <- do_call("futureCall", future_args, pkg = "future")
-  }
-  for (j in seq_len(J)) {
-    lls[[j]] <- future::value(futures[[j]])
-  }
+  future_args$future.seed <- TRUE
+  lls <- do_call("future_lapply", future_args, pkg = "future.apply")
+
   # most of the following code is taken from rstanarm:::reloo
   # compute elpd_{loo,j} for each of the held out observations
   elpd_loo <- ulapply(lls, log_mean_exp)

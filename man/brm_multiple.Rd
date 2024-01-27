@@ -221,7 +221,7 @@ fit_imp2$rhats
 
 # use the future package for parallelization
 library(future)
-plan(multiprocess)
+plan(multisession, workers = 4)
 fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 summary(fit_imp3)
 }

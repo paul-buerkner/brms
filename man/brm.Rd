@@ -493,7 +493,7 @@ conditional_effects(fit7)
 
 # use the future package for more flexible parallelization
 library(future)
-plan(multiprocess)
+plan(multisession, workers = 4)
 fit7 <- update(fit7, future = TRUE)
 
 

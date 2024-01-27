@@ -282,7 +282,7 @@ test_that("priors can be fixed to constants", {
   expect_match2(scode, "bcs[2] = rep_row_vector(-1, cols(bcs[2]));")
 
   prior <- prior(constant(3), class = "sd", group = "g") +
-    prior("constant([[1, 0], [0, 1]])", class = "cor")
+    prior(constant("[[1, 0], [0, 1]]"), class = "cor")
   scode <- make_stancode(y ~ x1 + (x1 | gr(g, by = h)), dat, prior = prior)
   expect_match2(scode, "sd_1 = rep_matrix(3, rows(sd_1), cols(sd_1));")
   expect_match2(scode, "L_1[2] = [[1, 0], [0, 1]];")

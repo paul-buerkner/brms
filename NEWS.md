@@ -4,6 +4,7 @@
 
 * Automatically recompute fit criteria previously stored in the model
 if potentially results-changing arguments are provided to the criterion method.
+* Allow to turn off automatic broadcasting of `constant` priors.
 
 ### Other Changes
 
@@ -18,6 +19,7 @@ as backend. (#1544)
 * Remove some remaining uses of Stan's old array syntax.
 * Ensure compatibility with the latest `splines2` package version. (#1580)
 * Fix output of `rmulti_normal` thanks to Ven Popov. (#1588)
+* Prevent memory leaks when executing `kfold` or `reloo` in parallel.
 
 # brms 2.20.3
 

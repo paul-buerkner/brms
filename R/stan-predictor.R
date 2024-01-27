@@ -1144,7 +1144,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       Igp_sub <- Igp
       if (use_threading(threads)) {
         str_add(out$model_comp_basic) <- cglue(
-          "  int which_gp{pi}_{J}[size_range({Igp}, start, end)] =",
+          "  array[size_range({Igp}, start, end)] int which_gp{pi}_{J} =",
           " which_range({Igp}, start, end);\n"
         )
         slice2 <- glue("[which_gp{pi}_{J}]")
