@@ -197,7 +197,9 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
 #' @export
 prepare_predictions.btnl <- function(x, draws, sdata, ...) {
   out <- list(
-    family = x$family, nlform = x$formula[[2]],
+    family = x$family,
+    nlform = x$formula[[2]],
+    env = environment(x$formula),
     ndraws = nrow(draws),
     nobs = sdata[[paste0("N", usc(x$resp))]],
     used_nlpars = x$used_nlpars,
@@ -1199,7 +1201,9 @@ is.bprepnl <- function(x) {
 #'   out-of-sample rather than in-sample predictions. Only required in models
 #'   that make use of response values to make predictions, that is, currently
 #'   only ARMA models.
-#' @param smooths_only Logical; If \code{TRUE} only predictions related to the
+#' @param smooths_only Logical; If \code{TRUE} only predictions related to
+#'   smoothing splines (i.e., \code{s} or \code{t2}) will be computed.
+#'   Defaults to \code{FALSE}.
 #' @param resp Optional names of response variables. If specified, predictions
 #'   are performed only for the specified response variables.
 #' @param ndraws Positive integer indicating how many posterior draws should

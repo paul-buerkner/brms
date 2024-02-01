@@ -1682,20 +1682,20 @@ test_that("Stan code of addition term 'rate' is correct", {
 
 test_that("Stan code of GEV models is correct", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
-  scode <- make_stancode(y ~ x, data, gen_extreme_value())
+  SW(scode <- make_stancode(y ~ x, data, gen_extreme_value()))
   expect_match2(scode, "target += gen_extreme_value_lpdf(Y[n] | mu[n], sigma, xi)")
   expect_match2(scode, "xi = scale_xi(tmp_xi, Y, mu, sigma)")
 
-  scode <- make_stancode(bf(y ~ x, sigma ~ x), data, gen_extreme_value())
+  SW(scode <- make_stancode(bf(y ~ x, sigma ~ x), data, gen_extreme_value()))
   expect_match2(scode, "xi = scale_xi_vector(tmp_xi, Y, mu, sigma)")
 
-  scode <- make_stancode(bf(y ~ x, xi ~ x), data, gen_extreme_value())
+  SW(scode <- make_stancode(bf(y ~ x, xi ~ x), data, gen_extreme_value()))
   expect_match2(scode, "xi = expm1(xi)")
 
-  scode <- make_stancode(bf(y ~ x, xi = 0), data, gen_extreme_value())
+  SW(scode <- make_stancode(bf(y ~ x, xi = 0), data, gen_extreme_value()))
   expect_match2(scode, "real xi = 0;  // shape parameter")
 
-  scode <- make_stancode(y | cens(c) ~ x, data, gen_extreme_value())
+  SW(scode <- make_stancode(y | cens(c) ~ x, data, gen_extreme_value()))
   expect_match2(scode, "target += gen_extreme_value_lccdf(Y[n] | mu[n], sigma, xi)")
 })
 

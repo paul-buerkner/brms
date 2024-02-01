@@ -2166,6 +2166,9 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
     }
   }
   if (any(families %in% "gen_extreme_value")) {
+    # TODO: remove the gen_extreme_value family in brms 3.0
+    warning2("The 'gen_extreme_value' family is deprecated ",
+             "and will be removed in the future.")
     dp_names <- c(names(bterms$dpars), names(bterms$fdpars))
     for (i in which(families %in% "gen_extreme_value")) {
       id <- str_if(length(families) == 1L, "", i)

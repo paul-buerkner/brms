@@ -25,7 +25,9 @@ add_ic(x, ...) <- value
 (the default) the name is taken from the call to \code{x}.}
 
 \item{...}{Further arguments passed to the underlying
-functions computing the model fit criteria.}
+functions computing the model fit criteria. If you are recomputing
+an already stored criterion with other \code{...} arguments, make
+sure to set \code{overwrite = TRUE}.}
 
 \item{ic, value}{Names of model fit criteria
 to compute. Currently supported are \code{"loo"},
