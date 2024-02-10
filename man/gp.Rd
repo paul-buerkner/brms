@@ -13,7 +13,7 @@ gp(
   gr = TRUE,
   cmc = TRUE,
   scale = TRUE,
-  c = NULL
+  c = 5/4
 )
 }
 \arguments{

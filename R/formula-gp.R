@@ -114,7 +114,7 @@
 #' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
-               gr = TRUE, cmc = TRUE, scale = TRUE, c = NULL) {
+               gr = TRUE, cmc = TRUE, scale = TRUE, c = 5/4) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   call <- match.call()
   label <- deparse0(call)
@@ -136,13 +136,6 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     k <- as.integer(as_one_numeric(k))
     if (k < 1L) {
       stop2("'k' must be positive.")
-    }
-    if (is.null(c)) {
-      stop2(
-        "'c' must be specified for approximate GPs. ",
-        "A good default could be c = 5/4 but we are still ",
-        "working on providing better recommendations."
-      )
     }
     c <- as.numeric(c)
     if (length(c) == 1L) {
