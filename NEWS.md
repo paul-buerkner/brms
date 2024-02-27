@@ -19,6 +19,7 @@ as backend. (#1544)
 ### Bug Fixes
 
 * Remove some remaining uses of Stan's old array syntax.
+* Ensure compatibility of `combine_models` with moment matching. (#1603)
 * Ensure compatibility with the latest `splines2` package version. (#1580)
 * Fix output of `rmulti_normal` thanks to Ven Popov. (#1588)
 * Prevent memory leaks when executing `kfold` or `reloo` in parallel.

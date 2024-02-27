@@ -530,10 +530,20 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
 }
 
 # save original order of the parameters in the stanfit object
-save_old_par_order <- function(x) {
-  x$fit@sim$pars_oi_old <- x$fit@sim$pars_oi
-  x$fit@sim$dims_oi_old <- x$fit@sim$dims_oi
-  x$fit@sim$fnames_oi_old <- x$fit@sim$fnames_oi
+save_old_par_order <- function(x, x2 = NULL) {
+  stopifnot(is.brmsfit(x))
+  if (is.null(x2)) {
+    # used in rename_pars() to store the old order
+    x$fit@sim$pars_oi_old <- x$fit@sim$pars_oi
+    x$fit@sim$dims_oi_old <- x$fit@sim$dims_oi
+    x$fit@sim$fnames_oi_old <- x$fit@sim$fnames_oi
+  } else {
+    # used in combine_models() to take the old order from another model
+    stopifnot(is.brmsfit(x2))
+    x$fit@sim$pars_oi_old <- x2$fit@sim$pars_oi_old
+    x$fit@sim$dims_oi_old <- x2$fit@sim$dims_oi_old
+    x$fit@sim$fnames_oi_old <- x2$fit@sim$fnames_oi_old
+  }
   x
 }
 

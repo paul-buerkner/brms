@@ -227,6 +227,8 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
   sflist <- from_list(models, "fit")
   out <- models[[1]]
   out$fit <- rstan::sflist2stanfit(sflist)
+  # fixes issue #1603
+  out <- save_old_par_order(out, models[[1]])
   if (out$backend == "cmdstanr") {
     att <- attributes(models[[1]]$fit)
     attributes(out$fit)$CmdStanModel <- att$CmdStanModel
