@@ -40,7 +40,7 @@ brmsfit_example1 <- brm(
 )
 
 brmsfit_example2 <- brm(
-  bf(count | weights(AgeSD) ~ inv_logit(a) * exp(b * Trt),
+  bf(count | weights(AgeSD) ~ 1 / (1 + exp(-a)) * exp(b * Trt),
      a + b ~ Age + (1|ID1|patient), nl = TRUE),
   data = dat, family = Gamma("identity"),
   prior = set_prior("normal(2,2)", nlpar = "a") +
