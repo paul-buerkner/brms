@@ -1,3 +1,42 @@
+#' @title Data for a Bayesian multilevel model
+#'
+#' @description \code{make_standata} is a generic function that can be used to
+#'   generate the data to fit Bayesian multilevel models from various packages
+#'   with Stan. The function invokes particular methods which depend on the
+#'   class of the formula object.
+#'
+#'   You can view the available methods by typing \code{methods(make_standata)}.
+#'
+#'   See \code{\link[brms:make_standata.default]{make_standata}} for the default
+#'   method applied for \pkg{brms}
+#'
+#' @param formula A formula object whose class will determine which method will
+#'   be used. A symbolic description of the model to be fitted.
+#' @param data An object of class data.frame, or one that can be coerced to that
+#'   class) containing data of all variables used in the model.
+#' @param ... Further arguments passed to the specific method
+#'
+#' @return A named list of objects containing the required data to fit a
+#'   \pkg{brms} model with \pkg{Stan}.
+#'
+#' @examples
+#' sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject),
+#'                         data = inhaler, family = "cumulative")
+#' str(sdata1)
+#'
+#' ## for more examples, see ?make_standata.default for \pkg{brms} and for the other
+#' ## methods by first calling:
+#' methods(make_standata)
+#'
+#' ## and then ?make_standata.* where * is the method name
+#'
+#' @seealso \code{\link{make_standata.default}}
+#' @export
+make_standata <- function(formula, data, ...) {
+  UseMethod("make_standata")
+}
+
+
 #' Data for \pkg{brms} Models
 #'
 #' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
@@ -20,11 +59,11 @@
 #' str(sdata2)
 #'
 #' @export
-make_standata <- function(formula, data, family = gaussian(), prior = NULL,
-                          autocor = NULL, data2 = NULL, cov_ranef = NULL,
-                          sample_prior = "no", stanvars = NULL,
-                          threads = getOption("brms.threads", NULL),
-                          knots = NULL, drop_unused_levels = TRUE, ...) {
+make_standata.default <- function(formula, data, family = gaussian(), prior = NULL,
+                                  autocor = NULL, data2 = NULL, cov_ranef = NULL,
+                                  sample_prior = "no", stanvars = NULL,
+                                  threads = getOption("brms.threads", NULL),
+                                  knots = NULL, drop_unused_levels = TRUE, ...) {
 
   if (is.brmsfit(formula)) {
     stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
@@ -126,7 +165,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 #' @aliases standata.brmsfit
 #'
 #' @param object An object of class \code{brmsfit}.
-#' @param ... More arguments passed to \code{\link{make_standata}}
+#' @param ... More arguments passed to \code{\link[brms:make_standata.default]{make_standata}}
 #'   and \code{\link{validate_newdata}}.
 #' @inheritParams prepare_predictions
 #'

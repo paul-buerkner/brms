@@ -40,7 +40,7 @@ used in autocorrelation structures, or \code{\link{stanvars}}.}
 specified via \code{autocor} should be included in the predictions.
 Defaults to \code{TRUE}.}
 
-\item{...}{More arguments passed to \code{\link{make_standata}}
+\item{...}{More arguments passed to \code{\link[brms:make_standata.default]{make_standata}}
 and \code{\link{validate_newdata}}.}
 }
 \value{

@@ -22,14 +22,16 @@ A data.frame with columns \code{prior}, \code{class}, \code{coef},
   column is empty except for internal default priors.
 }
 \description{
-\code{get_prior} is a generic function that can be used to obtain the
-  default priors for a Bayesian multilevel model from various packages that
-  use the \pkg{brms} package for fitting the model. The function invokes
-  particular methods which depend on the class of the first argument.
+\code{get_prior} is a generic function that can be used to
+  obtain the default priors for a Bayesian multilevel model from various
+  packages that use the \pkg{brms} package for fitting the model. The
+  function invokes particular methods which depend on the class of the
+  formula object.
 
   You can view the available methods by typing \code{methods(get_prior)}.
 
-  See \code{\link[brms:get_prior.default]{get_prior}} for default method applied for \pkg{brms}
+  See \code{\link[brms:get_prior.default]{get_prior}} for the default method
+  applied for \pkg{brms}
 }
 \examples{
 ## get all parameters and parameters classes to define priors on

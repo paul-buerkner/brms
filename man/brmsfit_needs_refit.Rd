@@ -17,7 +17,7 @@ brmsfit_needs_refit(
 \arguments{
 \item{fit}{Old \code{brmsfit} object (e.g., loaded from file).}
 
-\item{sdata}{New Stan data (result of a call to \code{\link{make_standata}}).
+\item{sdata}{New Stan data (result of a call to \code{\link[brms:make_standata.default]{make_standata}}).
 Pass \code{NULL} to avoid this data check.}
 
 \item{scode}{New Stan code (result of a call to \code{\link{make_stancode}}).
