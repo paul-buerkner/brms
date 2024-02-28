@@ -438,11 +438,50 @@ prior_string <- function(prior, ...) {
   set_prior(prior, ...)
 }
 
+#' @title Get default priors for a Bayesian multilevel model
+#' @description \code{get_prior} is a generic function that can be used to obtain the
+#'   default priors for a Bayesian multilevel model from various packages that
+#'   use the \pkg{brms} package for fitting the model. The function invokes
+#'   particular methods which depend on the class of the first argument.
+#'
+#'   You can view the available methods by typing \code{methods(get_prior)}.
+#'
+#'   The default method applied to a \code{formula} is \code{\link{get_prior.brmsformula}}
+#'
+#' @param formula A formula object whose class will determine which method will
+#'   be used. A symbolic description of the model to be fitted.
+#' @param data An object of class data.frame, or one that can be coerced to that
+#'   class) containing data of all variables used in the model.
+#' @param ... Further arguments passed to the specific method
+#'
+#' @return A data.frame with columns \code{prior}, \code{class}, \code{coef},
+#'   and \code{group} and several rows, each providing information on a
+#'   parameter (or parameter class) on which priors can be specified. The prior
+#'   column is empty except for internal default priors.
+#'
+#' @examples
+#' ## get all parameters and parameters classes to define priors on
+#'  (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+#'                      data = epilepsy, family = poisson()))
+#'
+#' ## for more examples, see ?get_prior.brmsformula for \pkg{brms} and for the other
+#' ## methods by first calling:
+#' methods(get_prior)
+#'
+#' ## and then ?get_prior.* where * is the method name
+#'
+#' @seealso \code{\link{set_prior}}
+#' @export
+get_prior <- function(formula, data, ...) {
+  UseMethod('get_prior')
+}
+
 #' Overview on Priors for \pkg{brms} Models
 #'
 #' Get information on all parameters (and parameter classes) for which priors
 #' may be specified including default priors.
 #'
+#' @name get_prior.brmsformula
 #' @inheritParams brm
 #' @param ... Other arguments for internal usage only.
 #'
@@ -470,9 +509,9 @@ prior_string <- function(prior, ...) {
 #'               prior = prior)
 #'
 #' @export
-get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
-                      data2 = NULL, knots = NULL, drop_unused_levels = TRUE,
-                      sparse = NULL, ...) {
+get_prior.brmsformula <- function(formula, data, family = gaussian(), autocor = NULL,
+                                  data2 = NULL, knots = NULL, drop_unused_levels = TRUE,
+                                  sparse = NULL, ...) {
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
@@ -492,6 +531,12 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   )
   .get_prior(bterms, data, ...)
 }
+
+#' @export
+get_prior.formula <- get_prior.brmsformula
+
+#' @export
+get_prior.mvbrmsformula <- get_prior.brmsformula
 
 # internal work function of 'get_prior'
 # @param internal return priors for internal use?

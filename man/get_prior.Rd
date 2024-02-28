@@ -2,68 +2,18 @@
 % Please edit documentation in R/priors.R
 \name{get_prior}
 \alias{get_prior}
-\title{Overview on Priors for \pkg{brms} Models}
+\title{Get default priors for a Bayesian multilevel model}
 \usage{
-get_prior(
-  formula,
-  data,
-  family = gaussian(),
-  autocor = NULL,
-  data2 = NULL,
-  knots = NULL,
-  drop_unused_levels = TRUE,
-  sparse = NULL,
-  ...
-)
+get_prior(formula, data, ...)
 }
 \arguments{
-\item{formula}{An object of class \code{\link[stats:formula]{formula}},
-\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
-be coerced to that classes): A symbolic description of the model to be
-fitted. The details of model specification are explained in
-\code{\link{brmsformula}}.}
+\item{formula}{A formula object whose class will determine which method will
+be used. A symbolic description of the model to be fitted.}
 
-\item{data}{An object of class \code{data.frame} (or one that can be coerced
-to that class) containing data of all variables used in the model.}
+\item{data}{An object of class data.frame, or one that can be coerced to that
+class) containing data of all variables used in the model.}
 
-\item{family}{A description of the response distribution and link function to
-be used in the model. This can be a family function, a call to a family
-function or a character string naming the family. Every family function has
-a \code{link} argument allowing to specify the link function to be applied
-on the response variable. If not specified, default links are used. For
-details of supported families see \code{\link{brmsfamily}}. By default, a
-linear \code{gaussian} model is applied. In multivariate models,
-\code{family} might also be a list of families.}
-
-\item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
-describing the correlation structure within the response variable (i.e.,
-the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
-a description of the available correlation structures. Defaults to
-\code{NULL}, corresponding to no correlations. In multivariate models,
-\code{autocor} might also be a list of autocorrelation structures.
-It is now recommend to specify autocorrelation terms directly
-within \code{formula}. See \code{\link{brmsformula}} for more details.}
-
-\item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects
-used in autocorrelation structures to specify dependency structures
-as well as for within-group covariance matrices.}
-
-\item{knots}{Optional list containing user specified knot values to be used
-for basis construction of smoothing terms. See
-\code{\link[mgcv:gamm]{gamm}} for more details.}
-
-\item{drop_unused_levels}{Should unused factors levels in the data be
-dropped? Defaults to \code{TRUE}.}
-
-\item{sparse}{(Deprecated) Logical; indicates whether the population-level
-design matrices should be treated as sparse (defaults to \code{FALSE}). For
-design matrices with many zeros, this can considerably reduce required
-memory. Sampling speed is currently not improved or even slightly
-decreased. It is now recommended to use the \code{sparse} argument of
-\code{\link{brmsformula}} and related functions.}
-
-\item{...}{Other arguments for internal usage only.}
+\item{...}{Further arguments passed to the specific method}
 }
 \value{
 A data.frame with columns \code{prior}, \code{class}, \code{coef},
@@ -72,24 +22,25 @@ A data.frame with columns \code{prior}, \code{class}, \code{coef},
   column is empty except for internal default priors.
 }
 \description{
-Get information on all parameters (and parameter classes) for which priors
-may be specified including default priors.
+\code{get_prior} is a generic function that can be used to obtain the
+  default priors for a Bayesian multilevel model from various packages that
+  use the \pkg{brms} package for fitting the model. The function invokes
+  particular methods which depend on the class of the first argument.
+
+  You can view the available methods by typing \code{methods(get_prior)}.
+
+  The default method applied to a \code{formula} is \code{\link{get_prior.brmsformula}}
 }
 \examples{
 ## get all parameters and parameters classes to define priors on
-(prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-                    data = epilepsy, family = poisson()))
+ (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+                     data = epilepsy, family = poisson()))
 
-## define a prior on all population-level effects a once
-prior$prior[1] <- "normal(0,10)"
+## for more examples, see ?get_prior.brmsformula for \pkg{brms} and for the other
+## methods by first calling:
+methods(get_prior)
 
-## define a specific prior on the population-level effect of Trt
-prior$prior[5] <- "student_t(10, 0, 5)"
-
-## verify that the priors indeed found their way into Stan's model code
-make_stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-              data = epilepsy, family = poisson(),
-              prior = prior)
+## and then ?get_prior.* where * is the method name
 
 }
 \seealso{
