@@ -2,148 +2,45 @@
 % Please edit documentation in R/make_stancode.R
 \name{make_stancode}
 \alias{make_stancode}
-\title{Stan Code for \pkg{brms} Models}
+\title{Stan Code for a Bayesian multilevel model}
 \usage{
-make_stancode(
-  formula,
-  data,
-  family = gaussian(),
-  prior = NULL,
-  autocor = NULL,
-  data2 = NULL,
-  cov_ranef = NULL,
-  sparse = NULL,
-  sample_prior = "no",
-  stanvars = NULL,
-  stan_funs = NULL,
-  knots = NULL,
-  drop_unused_levels = TRUE,
-  threads = getOption("brms.threads", NULL),
-  normalize = getOption("brms.normalize", TRUE),
-  save_model = NULL,
-  ...
-)
+make_stancode(formula, data, ...)
 }
 \arguments{
-\item{formula}{An object of class \code{\link[stats:formula]{formula}},
-\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
-be coerced to that classes): A symbolic description of the model to be
-fitted. The details of model specification are explained in
-\code{\link{brmsformula}}.}
+\item{formula}{A formula object whose class will determine which method will
+be used. A symbolic description of the model to be fitted.}
 
-\item{data}{An object of class \code{data.frame} (or one that can be coerced
-to that class) containing data of all variables used in the model.}
+\item{data}{An object of class data.frame, or one that can be coerced to that
+class) containing data of all variables used in the model.}
 
-\item{family}{A description of the response distribution and link function to
-be used in the model. This can be a family function, a call to a family
-function or a character string naming the family. Every family function has
-a \code{link} argument allowing to specify the link function to be applied
-on the response variable. If not specified, default links are used. For
-details of supported families see \code{\link{brmsfamily}}. By default, a
-linear \code{gaussian} model is applied. In multivariate models,
-\code{family} might also be a list of families.}
-
-\item{prior}{One or more \code{brmsprior} objects created by
-\code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also \code{\link[brms:get_prior.default]{get_prior}}
-for more help.}
-
-\item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
-describing the correlation structure within the response variable (i.e.,
-the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
-a description of the available correlation structures. Defaults to
-\code{NULL}, corresponding to no correlations. In multivariate models,
-\code{autocor} might also be a list of autocorrelation structures.
-It is now recommend to specify autocorrelation terms directly
-within \code{formula}. See \code{\link{brmsformula}} for more details.}
-
-\item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects
-used in autocorrelation structures to specify dependency structures
-as well as for within-group covariance matrices.}
-
-\item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
-(within) covariance structure of the group-level effects. The names of the
-matrices should correspond to columns in \code{data} that are used as
-grouping factors. All levels of the grouping factor should appear as
-rownames of the corresponding matrix. This argument can be used, among
-others to model pedigrees and phylogenetic effects.
-It is now recommended to specify those matrices in the formula
-interface using the \code{\link{gr}} and related functions. See
-\code{vignette("brms_phylogenetics")} for more details.}
-
-\item{sparse}{(Deprecated) Logical; indicates whether the population-level
-design matrices should be treated as sparse (defaults to \code{FALSE}). For
-design matrices with many zeros, this can considerably reduce required
-memory. Sampling speed is currently not improved or even slightly
-decreased. It is now recommended to use the \code{sparse} argument of
-\code{\link{brmsformula}} and related functions.}
-
-\item{sample_prior}{Indicate if draws from priors should be drawn
-additionally to the posterior draws. Options are \code{"no"} (the
-default), \code{"yes"}, and \code{"only"}. Among others, these draws can
-be used to calculate Bayes factors for point hypotheses via
-\code{\link{hypothesis}}. Please note that improper priors are not sampled,
-including the default improper priors used by \code{brm}. See
-\code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior draws for the overall intercept are not obtained by default
-for technical reasons. See \code{\link{brmsformula}} how to obtain prior
-draws for the intercept. If \code{sample_prior} is set to \code{"only"},
-draws are drawn solely from the priors ignoring the likelihood, which
-allows among others to generate draws from the prior predictive
-distribution. In this case, all parameters must have proper priors.}
-
-\item{stanvars}{An optional \code{stanvars} object generated by function
-\code{\link{stanvar}} to define additional variables for use in
-\pkg{Stan}'s program blocks.}
-
-\item{stan_funs}{(Deprecated) An optional character string containing
-self-defined  \pkg{Stan} functions, which will be included in the functions
-block of the generated \pkg{Stan} code. It is now recommended to use the
-\code{stanvars} argument for this purpose instead.}
-
-\item{knots}{Optional list containing user specified knot values to be used
-for basis construction of smoothing terms. See
-\code{\link[mgcv:gamm]{gamm}} for more details.}
-
-\item{drop_unused_levels}{Should unused factors levels in the data be
-dropped? Defaults to \code{TRUE}.}
-
-\item{threads}{Number of threads to use in within-chain parallelization. For
-more control over the threading process, \code{threads} may also be a
-\code{brmsthreads} object created by \code{\link{threading}}. Within-chain
-parallelization is experimental! We recommend its use only if you are
-experienced with Stan's \code{reduce_sum} function and have a slow running
-model that cannot be sped up by any other means. Can be set globally for
-the current \R session via the \code{"brms.threads"} option (see
-\code{\link{options}}).}
-
-\item{normalize}{Logical. Indicates whether normalization constants should
-be included in the Stan code (defaults to \code{TRUE}). Setting it
-to \code{FALSE} requires Stan version >= 2.25 to work. If \code{FALSE},
-sampling efficiency may be increased but some post processing functions
-such as \code{\link{bridge_sampler}} will not be available. Can be
-controlled globally for the current \R session via the `brms.normalize`
-option.}
-
-\item{save_model}{Either \code{NULL} or a character string. In the latter
-case, the model's Stan code is saved via \code{\link{cat}} in a text file
-named after the string supplied in \code{save_model}.}
-
-\item{...}{Other arguments for internal usage only.}
+\item{...}{Further arguments passed to the specific method}
 }
 \value{
-A character string containing the fully commented \pkg{Stan} code
-  to fit a \pkg{brms} model.
+A named list of objects containing the required data to fit a
+  \pkg{brms} model with \pkg{Stan}.
 }
 \description{
-Generate Stan code for \pkg{brms} models
+\code{make_stancode} is a generic function that can be used to
+  generate the Stan code to fit Bayesian multilevel models from various packages
+  with Stan. The function invokes particular methods which depend on the
+  class of the formula object.
+
+  You can view the available methods by typing \code{methods(make_stancode)}.
+
+  See \code{\link[brms:make_stancode.default]{make_stancode}} for the default
+  method applied for \pkg{brms}
 }
 \examples{
 make_stancode(rating ~ treat + period + carry + (1|subject),
               data = inhaler, family = "cumulative")
 
-make_stancode(count ~ zAge + zBase * Trt + (1|patient),
-              data = epilepsy, family = "poisson")
+## for more examples, see ?make_stancode.default for \pkg{brms} and for the other
+## methods by first calling:
+methods(make_stancode)
 
+## and then ?make_stancode.* where * is the method name
+
+}
+\seealso{
+\code{\link{make_stancode.default}}
 }

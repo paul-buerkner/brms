@@ -873,7 +873,7 @@ validate_cores_post_processing <- function(cores) {
 #' @param fit Old \code{brmsfit} object (e.g., loaded from file).
 #' @param sdata New Stan data (result of a call to \code{\link[brms:make_standata.default]{make_standata}}).
 #'   Pass \code{NULL} to avoid this data check.
-#' @param scode New Stan code (result of a call to \code{\link{make_stancode}}).
+#' @param scode New Stan code (result of a call to \code{\link[brms:make_stancode.default]{make_stancode}}).
 #'   Pass \code{NULL} to avoid this code check.
 #' @param data New data to check consistency of factor level names.
 #'   Pass \code{NULL} to avoid this data check.

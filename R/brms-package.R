@@ -22,7 +22,7 @@
 #' formula syntax to specify a wide range of complex Bayesian models
 #' (see \code{\link{brmsformula}} for details). Based on the supplied
 #' formulas, data, and additional information, it writes the Stan code
-#' on the fly via \code{\link{make_stancode}}, prepares the data via
+#' on the fly via \code{\link[brms:make_stancode.default]{make_stancode}}, prepares the data via
 #' \code{\link[brms:make_standata.default]{make_standata}} and fits the model using
 #' \pkg{\link[rstan:rstan]{Stan}}.
 #'

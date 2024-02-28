@@ -59,7 +59,7 @@ Special attention is necessary when using \code{stanvars} to inject
 code into the \code{'likelihood'} block while having \code{\link{threading}}
 activated. In this case, your custom Stan code may need adjustments to ensure
 correct observation indexing. Please investigate the generated Stan code via
-\code{make_stancode} to see which adjustments are necessary in your case.
+\code{\link[brms:make_stancode.default]{make_stancode}} to see which adjustments are necessary in your case.
 }
 \examples{
 bprior <- prior(normal(mean_intercept, 10), class = "Intercept")

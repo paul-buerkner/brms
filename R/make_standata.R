@@ -96,7 +96,7 @@ make_standata.default <- function(formula, data, family = gaussian(), prior = NU
   )
 }
 
-# internal work function of 'make_stancode'
+# internal work function of 'make_standata'
 # @param check_response check validity of the response?
 # @param only_response extract data related to the response only?
 # @param internal prepare Stan data for use in post-processing methods?

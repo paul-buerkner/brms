@@ -1,3 +1,42 @@
+#' @title Stan Code for a Bayesian multilevel model
+#'
+#' @description \code{make_stancode} is a generic function that can be used to
+#'   generate the Stan code to fit Bayesian multilevel models from various packages
+#'   with Stan. The function invokes particular methods which depend on the
+#'   class of the formula object.
+#'
+#'   You can view the available methods by typing \code{methods(make_stancode)}.
+#'
+#'   See \code{\link[brms:make_stancode.default]{make_stancode}} for the default
+#'   method applied for \pkg{brms}
+#'
+#' @param formula A formula object whose class will determine which method will
+#'   be used. A symbolic description of the model to be fitted.
+#' @param data An object of class data.frame, or one that can be coerced to that
+#'   class) containing data of all variables used in the model.
+#' @param ... Further arguments passed to the specific method
+#'
+#' @return A named list of objects containing the required data to fit a
+#'   \pkg{brms} model with \pkg{Stan}.
+#'
+#' @examples
+#' make_stancode(rating ~ treat + period + carry + (1|subject),
+#'               data = inhaler, family = "cumulative")
+#'
+#' ## for more examples, see ?make_stancode.default for \pkg{brms} and for the other
+#' ## methods by first calling:
+#' methods(make_stancode)
+#'
+#' ## and then ?make_stancode.* where * is the method name
+#'
+#' @seealso \code{\link{make_stancode.default}}
+#' @export
+make_stancode <- function(formula, data, ...) {
+  UseMethod("make_stancode")
+}
+
+
+
 #' Stan Code for \pkg{brms} Models
 #'
 #' Generate Stan code for \pkg{brms} models
@@ -16,15 +55,15 @@
 #'               data = epilepsy, family = "poisson")
 #'
 #' @export
-make_stancode <- function(formula, data, family = gaussian(),
-                          prior = NULL, autocor = NULL, data2 = NULL,
-                          cov_ranef = NULL, sparse = NULL,
-                          sample_prior = "no", stanvars = NULL,
-                          stan_funs = NULL, knots = NULL,
-                          drop_unused_levels = TRUE,
-                          threads = getOption("brms.threads", NULL),
-                          normalize = getOption("brms.normalize", TRUE),
-                          save_model = NULL, ...) {
+make_stancode.default <- function(formula, data, family = gaussian(),
+                                  prior = NULL, autocor = NULL, data2 = NULL,
+                                  cov_ranef = NULL, sparse = NULL,
+                                  sample_prior = "no", stanvars = NULL,
+                                  stan_funs = NULL, knots = NULL,
+                                  drop_unused_levels = TRUE,
+                                  threads = getOption("brms.threads", NULL),
+                                  normalize = getOption("brms.normalize", TRUE),
+                                  save_model = NULL, ...) {
 
   if (is.brmsfit(formula)) {
     stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
@@ -336,18 +375,17 @@ print.brmsmodel <- function(x, ...) {
 #' @aliases stancode.brmsfit
 #'
 #' @param object An object of class \code{brmsfit}.
-#' @param version Logical; indicates if the first line containing
-#'   the \pkg{brms} version number should be included.
-#'   Defaults to \code{TRUE}.
-#' @param regenerate Logical; indicates if the Stan code should
-#'   be regenerated with the current \pkg{brms} version.
-#'   By default, \code{regenerate} will be \code{FALSE} unless required
-#'   to be \code{TRUE} by other arguments.
-#' @param threads Controls whether the Stan code should be threaded.
-#'   See \code{\link{threading}} for details.
+#' @param version Logical; indicates if the first line containing the \pkg{brms}
+#'   version number should be included. Defaults to \code{TRUE}.
+#' @param regenerate Logical; indicates if the Stan code should be regenerated
+#'   with the current \pkg{brms} version. By default, \code{regenerate} will be
+#'   \code{FALSE} unless required to be \code{TRUE} by other arguments.
+#' @param threads Controls whether the Stan code should be threaded. See
+#'   \code{\link{threading}} for details.
 #' @param backend Controls the Stan backend. See \code{\link{brm}} for details.
-#' @param ... Further arguments passed to \code{\link{make_stancode}} if the
-#'   Stan code is regenerated.
+#' @param ... Further arguments passed to
+#'   \code{\link[brms:make_stancode.default]{make_stancode}} if the Stan code is
+#'   regenerated.
 #'
 #' @return Stan model code for further processing.
 #'
