@@ -445,7 +445,9 @@ prior_string <- function(prior, ...) {
 #'   function invokes particular methods which depend on the class of the
 #'   formula object.
 #'
-#'   You can view the available methods by typing \code{methods(get_prior)}.
+#'   You can view the available methods by typing
+#'
+#'   \code{methods(get_prior)}
 #'
 #'   See \code{\link[brms:get_prior.default]{get_prior}} for the default method
 #'   applied for \pkg{brms}

@@ -5,7 +5,9 @@
 #'   with Stan. The function invokes particular methods which depend on the
 #'   class of the formula object.
 #'
-#'   You can view the available methods by typing \code{methods(make_standata)}.
+#'   You can view the available methods by typing:
+#'
+#'   \code{methods(make_standata)}
 #'
 #'   See \code{\link[brms:make_standata.default]{make_standata}} for the default
 #'   method applied for \pkg{brms}

@@ -25,7 +25,9 @@ A named list of objects containing the required data to fit a
   with Stan. The function invokes particular methods which depend on the
   class of the formula object.
 
-  You can view the available methods by typing \code{methods(make_stancode)}.
+  You can view the available methods by typing:
+
+  \code{methods(make_stancode)}
 
   See \code{\link[brms:make_stancode.default]{make_stancode}} for the default
   method applied for \pkg{brms}
