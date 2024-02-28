@@ -62,7 +62,7 @@
 #'   set priors on. Often, it may not be immediately clear, which parameters are
 #'   present in the model. To get a full list of parameters and parameter
 #'   classes for which priors can be specified (depending on the model) use
-#'   function \code{\link{get_prior}}.
+#'   function \code{\link[brms:get_prior.default]{get_prior}}.
 #'
 #'   1. Population-level ('fixed') effects
 #'
@@ -308,7 +308,7 @@
 #'   function, for example, \code{constant(1)} to fix a parameter to 1.
 #'   Broadcasting to vectors and matrices is done automatically.
 #'
-#' @seealso \code{\link{get_prior}}
+#' @seealso \code{\link[brms:get_prior.default]{get_prior}}
 #'
 #' @examples
 #' ## use alias functions
@@ -446,7 +446,8 @@ prior_string <- function(prior, ...) {
 #'
 #'   You can view the available methods by typing \code{methods(get_prior)}.
 #'
-#'   The default method applied to a \code{formula} is \code{\link{get_prior.brmsformula}}
+#'   See \code{\link[brms:get_prior.default]{get_prior}} for default method applied for \pkg{brms}
+#'
 #'
 #' @param formula A formula object whose class will determine which method will
 #'   be used. A symbolic description of the model to be fitted.
@@ -464,13 +465,13 @@ prior_string <- function(prior, ...) {
 #'  (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'                      data = epilepsy, family = poisson()))
 #'
-#' ## for more examples, see ?get_prior.brmsformula for \pkg{brms} and for the other
+#' ## for more examples, see ?get_prior.default for \pkg{brms} and for the other
 #' ## methods by first calling:
 #' methods(get_prior)
 #'
 #' ## and then ?get_prior.* where * is the method name
 #'
-#' @seealso \code{\link{set_prior}}
+#' @seealso \code{\link{set_prior}} \code{\link{get_prior.default}}
 #' @export
 get_prior <- function(formula, data, ...) {
   UseMethod('get_prior')
@@ -481,7 +482,6 @@ get_prior <- function(formula, data, ...) {
 #' Get information on all parameters (and parameter classes) for which priors
 #' may be specified including default priors.
 #'
-#' @name get_prior.brmsformula
 #' @inheritParams brm
 #' @param ... Other arguments for internal usage only.
 #'
@@ -509,9 +509,9 @@ get_prior <- function(formula, data, ...) {
 #'               prior = prior)
 #'
 #' @export
-get_prior.brmsformula <- function(formula, data, family = gaussian(), autocor = NULL,
-                                  data2 = NULL, knots = NULL, drop_unused_levels = TRUE,
-                                  sparse = NULL, ...) {
+get_prior.default <- function(formula, data, family = gaussian(), autocor = NULL,
+                              data2 = NULL, knots = NULL, drop_unused_levels = TRUE,
+                              sparse = NULL, ...) {
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
@@ -531,12 +531,6 @@ get_prior.brmsformula <- function(formula, data, family = gaussian(), autocor = 
   )
   .get_prior(bterms, data, ...)
 }
-
-#' @export
-get_prior.formula <- get_prior.brmsformula
-
-#' @export
-get_prior.mvbrmsformula <- get_prior.brmsformula
 
 # internal work function of 'get_prior'
 # @param internal return priors for internal use?
@@ -1191,12 +1185,12 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #' Validate priors supplied by the user. Return a complete
 #' set of priors for the given model, including default priors.
 #'
-#' @inheritParams get_prior
+#' @inheritParams get_prior.default
 #' @inheritParams brm
 #'
 #' @return An object of class \code{brmsprior}.
 #'
-#' @seealso \code{\link{get_prior}}, \code{\link{set_prior}}.
+#' @seealso \code{\link[brms:get_prior.default]{get_prior}}, \code{\link{set_prior}}.
 #'
 #' @examples
 #' prior1 <- prior(normal(0,10), class = b) +

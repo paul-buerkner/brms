@@ -19,7 +19,7 @@ validate_prior(
 \arguments{
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
+\code{c} method or the \code{+} operator. See also \code{\link[brms:get_prior.default]{get_prior}}
 for more help.}
 
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},
@@ -83,5 +83,5 @@ validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
 
 }
 \seealso{
-\code{\link{get_prior}}, \code{\link{set_prior}}.
+\code{\link[brms:get_prior.default]{get_prior}}, \code{\link{set_prior}}.
 }

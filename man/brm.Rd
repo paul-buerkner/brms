@@ -70,7 +70,7 @@ linear \code{gaussian} model is applied. In multivariate models,
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
+\code{c} method or the \code{+} operator. See also \code{\link[brms:get_prior.default]{get_prior}}
 for more help.}
 
 \item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
@@ -363,7 +363,7 @@ Fit a generalized (non-)linear multivariate multilevel model via
   \code{\link[brms:set_prior]{set_prior}} function. Its documentation
   contains detailed information on how to correctly specify priors. To find
   out on which parameters or parameter classes priors can be defined, use
-  \code{\link[brms:get_prior]{get_prior}}. Default priors are chosen to be
+  \code{\link[brms:get_prior.default]{get_prior}}. Default priors are chosen to be
   non or very weakly informative so that their influence on the results will
   be negligible and you usually don't have to worry about them. However,
   after getting more familiar with Bayesian statistics, I recommend you to

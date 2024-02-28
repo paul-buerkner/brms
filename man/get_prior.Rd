@@ -29,14 +29,14 @@ A data.frame with columns \code{prior}, \code{class}, \code{coef},
 
   You can view the available methods by typing \code{methods(get_prior)}.
 
-  The default method applied to a \code{formula} is \code{\link{get_prior.brmsformula}}
+  See \code{\link[brms:get_prior.default]{get_prior}} for default method applied for \pkg{brms}
 }
 \examples{
 ## get all parameters and parameters classes to define priors on
  (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
                      data = epilepsy, family = poisson()))
 
-## for more examples, see ?get_prior.brmsformula for \pkg{brms} and for the other
+## for more examples, see ?get_prior.default for \pkg{brms} and for the other
 ## methods by first calling:
 methods(get_prior)
 
@@ -44,5 +44,5 @@ methods(get_prior)
 
 }
 \seealso{
-\code{\link{set_prior}}
+\code{\link{set_prior}} \code{\link{get_prior.default}}
 }
