@@ -2,8 +2,7 @@
 % Please edit documentation in R/make_stancode.R
 \name{stancode.brmsfit}
 \alias{stancode.brmsfit}
-\alias{stancode}
-\title{Extract Stan model code}
+\title{Extract Stan code from \code{brmsfit} objects}
 \usage{
 \method{stancode}{brmsfit}(
   object,
@@ -13,8 +12,6 @@
   backend = NULL,
   ...
 )
-
-stancode(object, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -32,12 +29,12 @@ with the current \pkg{brms} version. By default, \code{regenerate} will be
 \item{backend}{Controls the Stan backend. See \code{\link{brm}} for details.}
 
 \item{...}{Further arguments passed to
-\code{\link[brms:make_stancode.default]{make_stancode}} if the Stan code is
+\code{\link[brms:stancode.default]{stancode}} if the Stan code is
 regenerated.}
 }
 \value{
-Stan model code for further processing.
+Stan code for further processing.
 }
 \description{
-Extract Stan code that was used to specify the model.
+Extract Stan code from a fitted \pkg{brms} model.
 }

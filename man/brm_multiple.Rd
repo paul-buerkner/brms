@@ -51,7 +51,7 @@ linear \code{gaussian} model is applied. In multivariate models,
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also \code{\link[brms:get_prior.default]{get_prior}}
+\code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
 for more help.}
 
 \item{data2}{A \emph{list} of named lists each of which will be used to fit a

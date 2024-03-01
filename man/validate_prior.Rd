@@ -19,7 +19,7 @@ validate_prior(
 \arguments{
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also \code{\link[brms:get_prior.default]{get_prior}}
+\code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
 for more help.}
 
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},
@@ -66,7 +66,11 @@ for basis construction of smoothing terms. See
 \item{drop_unused_levels}{Should unused factors levels in the data be
 dropped? Defaults to \code{TRUE}.}
 
-\item{...}{Other arguments for internal usage only.}
+\item{...}{Further arguments passed to Stan.
+For \code{backend = "rstan"} the arguments are passed to
+\code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
+For \code{backend = "cmdstanr"} the arguments are passed to the
+\code{cmdstanr::sample} or \code{cmdstanr::variational} method.}
 }
 \value{
 An object of class \code{brmsprior}.
@@ -83,5 +87,5 @@ validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
 
 }
 \seealso{
-\code{\link[brms:get_prior.default]{get_prior}}, \code{\link{set_prior}}.
+\code{\link[brms:default_prior.default]{default_prior}}, \code{\link{set_prior}}.
 }

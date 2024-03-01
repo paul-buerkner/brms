@@ -104,7 +104,7 @@ Define priors for specific parameters or classes of parameters.
   set priors on. Often, it may not be immediately clear, which parameters are
   present in the model. To get a full list of parameters and parameter
   classes for which priors can be specified (depending on the model) use
-  function \code{\link[brms:get_prior.default]{get_prior}}.
+  function \code{\link[brms:default_prior.default]{default_prior}}.
 
   1. Population-level ('fixed') effects
 
@@ -408,5 +408,5 @@ set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 
 }
 \seealso{
-\code{\link[brms:get_prior.default]{get_prior}}
+\code{\link[brms:default_prior.default]{default_prior}}
 }

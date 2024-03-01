@@ -31,7 +31,7 @@
 #'   \code{family} might also be a list of families.
 #' @param prior One or more \code{brmsprior} objects created by
 #'   \code{\link{set_prior}} or related functions and combined using the
-#'   \code{c} method or the \code{+} operator. See also \code{\link[brms:get_prior.default]{get_prior}}
+#'   \code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
 #'   for more help.
 #' @param data2 A named \code{list} of objects containing data, which
 #'   cannot be passed via argument \code{data}. Required for some objects
@@ -271,7 +271,7 @@
 #'   \code{\link[brms:set_prior]{set_prior}} function. Its documentation
 #'   contains detailed information on how to correctly specify priors. To find
 #'   out on which parameters or parameter classes priors can be defined, use
-#'   \code{\link[brms:get_prior.default]{get_prior}}. Default priors are chosen to be
+#'   \code{\link[brms:default_prior.default]{default_prior}}. Default priors are chosen to be
 #'   non or very weakly informative so that their influence on the results will
 #'   be negligible and you usually don't have to worry about them. However,
 #'   after getting more familiar with Bayesian statistics, I recommend you to
@@ -318,12 +318,12 @@
 #' @examples
 #' \dontrun{
 #' # Poisson regression for the number of seizures in epileptic patients
-#' # using normal priors for population-level effects
-#' # and half-cauchy priors for standard deviations of group-level effects
-#' prior1 <- prior(normal(0, 10), class = b) +
-#'   prior(cauchy(0, 2), class = sd)
-#' fit1 <- brm(count ~ zBase * Trt + (1|patient), data = epilepsy,
-#'             family = poisson(), prior = prior1)
+#' fit1 <- brm(
+#'   count ~ zBase * Trt + (1|patient),
+#'   data = epilepsy, family = poisson(),
+#'   prior = prior(normal(0, 10), class = b) +
+#'     prior(cauchy(0, 2), class = sd)
+#' )
 #'
 #' # generate a summary of the results
 #' summary(fit1)
@@ -537,7 +537,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     ranef <- tidy_ranef(bterms, data = data)
     # generate Stan code
-    model <- .make_stancode(
+    model <- .stancode(
       bterms, data = data, prior = prior,
       stanvars = stanvars, save_model = save_model,
       backend = backend, threads = threads, opencl = opencl,
@@ -556,7 +556,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     exclude <- exclude_pars(x)
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
-    sdata <- .make_standata(
+    sdata <- .standata(
       bterms, data = data, prior = prior, data2 = data2,
       stanvars = stanvars, threads = threads
     )

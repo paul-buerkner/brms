@@ -1,84 +1,85 @@
-#' @title Data for a Bayesian multilevel model
+#' @title Stan data for Bayesian models
 #'
-#' @description \code{make_standata} is a generic function that can be used to
-#'   generate the data to fit Bayesian multilevel models from various packages
-#'   with Stan. The function invokes particular methods which depend on the
-#'   class of the formula object.
+#' @description \code{standata} is a generic function that can be used to
+#'   generate data for Bayesian models to be passed to Stan. It's original use is
+#'   within the \pkg{brms} package, but new methods for use
+#'   with objects from other packages can be registered to the same generic.
 #'
-#'   You can view the available methods by typing:
-#'
-#'   \code{methods(make_standata)}
-#'
-#'   See \code{\link[brms:make_standata.default]{make_standata}} for the default
-#'   method applied for \pkg{brms}
-#'
-#' @param formula A formula object whose class will determine which method will
+#' @param object A formula object whose class will determine which method will
 #'   be used. A symbolic description of the model to be fitted.
-#' @param data An object of class data.frame, or one that can be coerced to that
-#'   class) containing data of all variables used in the model.
-#' @param ... Further arguments passed to the specific method
+#' @param formula Synonym of \code{object} for use in \code{make_standata}.
+#' @param ... Further arguments passed to the specific method.
 #'
 #' @return A named list of objects containing the required data to fit a
-#'   \pkg{brms} model with \pkg{Stan}.
+#'   Bayesian model with \pkg{Stan}.
+#'
+#' @details
+#' See \code{\link{standata.default}} for the default method applied for
+#' \pkg{brms} models. You can view the available methods by typing
+#' \code{methods(standata)}. The \code{make_standata} function is an alias
+#' of \code{standata}.
 #'
 #' @examples
-#' sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject),
-#'                         data = inhaler, family = "cumulative")
+#' sdata1 <- standata(rating ~ treat + period + carry + (1|subject),
+#'                    data = inhaler, family = "cumulative")
 #' str(sdata1)
 #'
-#' ## for more examples, see ?make_standata.default for \pkg{brms} and for the other
-#' ## methods by first calling:
-#' methods(make_standata)
+#' @seealso
+#'   \code{\link{standata.default}}, \code{\link{standata.brmsfit}}
 #'
-#' ## and then ?make_standata.* where * is the method name
-#'
-#' @seealso \code{\link{make_standata.default}}
 #' @export
-make_standata <- function(formula, data, ...) {
-  UseMethod("make_standata")
+standata <- function(object, ...) {
+  UseMethod("standata")
 }
 
+#' @rdname standata
+#' @export
+make_standata <- function(formula, ...) {
+  # became an alias of standata in 2.20.14.
+  standata(formula, ...)
+}
 
 #' Data for \pkg{brms} Models
 #'
-#' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
+#' Generate data for \pkg{brms} models to be passed to \pkg{Stan}.
 #'
 #' @inheritParams brm
+#' @param object An object of class \code{\link[stats:formula]{formula}},
+#'   \code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
+#'   be coerced to that classes): A symbolic description of the model to be
+#'   fitted. The details of model specification are explained in
+#'   \code{\link{brmsformula}}.
 #' @param ... Other arguments for internal use.
 #'
 #' @return A named list of objects containing the required data
 #'   to fit a \pkg{brms} model with \pkg{Stan}.
-#'
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#'   The \code{get_prior} function is an alias of \code{default_prior}.
 #'
 #' @examples
-#' sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject),
-#'                         data = inhaler, family = "cumulative")
+#' sdata1 <- standata(rating ~ treat + period + carry + (1|subject),
+#'                    data = inhaler, family = "cumulative")
 #' str(sdata1)
 #'
-#' sdata2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
-#'                         data = epilepsy, family = "poisson")
+#' sdata2 <- standata(count ~ zAge + zBase * Trt + (1|patient),
+#'                    data = epilepsy, family = "poisson")
 #' str(sdata2)
 #'
 #' @export
-make_standata.default <- function(formula, data, family = gaussian(), prior = NULL,
-                                  autocor = NULL, data2 = NULL, cov_ranef = NULL,
-                                  sample_prior = "no", stanvars = NULL,
-                                  threads = getOption("brms.threads", NULL),
-                                  knots = NULL, drop_unused_levels = TRUE, ...) {
+standata.default <- function(object, data, family = gaussian(), prior = NULL,
+                             autocor = NULL, data2 = NULL, cov_ranef = NULL,
+                             sample_prior = "no", stanvars = NULL,
+                             threads = getOption("brms.threads", NULL),
+                             knots = NULL, drop_unused_levels = TRUE, ...) {
 
-  if (is.brmsfit(formula)) {
-    stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
-  }
-  formula <- validate_formula(
-    formula, data = data, family = family,
+  object <- validate_formula(
+    object, data = data, family = family,
     autocor = autocor, cov_ranef = cov_ranef
   )
-  bterms <- brmsterms(formula)
+  bterms <- brmsterms(object)
   data2 <- validate_data2(
     data2, bterms = bterms,
-    get_data2_autocor(formula),
-    get_data2_cov_ranef(formula)
+    get_data2_autocor(object),
+    get_data2_cov_ranef(object)
   )
   data <- validate_data(
     data, bterms = bterms,
@@ -91,21 +92,21 @@ make_standata.default <- function(formula, data, family = gaussian(), prior = NU
   )
   stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)
-  .make_standata(
+  .standata(
     bterms, data = data, prior = prior,
     data2 = data2, stanvars = stanvars,
     threads = threads, ...
   )
 }
 
-# internal work function of 'make_standata'
+# internal work function of 'standata'
 # @param check_response check validity of the response?
 # @param only_response extract data related to the response only?
 # @param internal prepare Stan data for use in post-processing methods?
 # @param basis original Stan data as prepared by 'standata_basis'
 # @param ... currently ignored
 # @return names list of data passed to Stan
-.make_standata <- function(bterms, data, prior, stanvars, data2,
+.standata <- function(bterms, data, prior, stanvars, data2,
                            threads = threading(), check_response = TRUE,
                            only_response = FALSE, internal = FALSE,
                            basis = NULL, ...) {
@@ -160,25 +161,23 @@ make_standata.default <- function(formula, data, family = gaussian(), prior = NU
   structure(out, class = c("standata", "list"))
 }
 
-#' Extract data passed to Stan
+#' Extract data passed to Stan from \code{brmsfit} objects
 #'
-#' Extract all data that was used by Stan to fit the model.
-#'
-#' @aliases standata.brmsfit
+#' Extract all data that was used by Stan to fit a \pkg{brms} model.
 #'
 #' @param object An object of class \code{brmsfit}.
-#' @param ... More arguments passed to \code{\link[brms:make_standata.default]{make_standata}}
+#' @param ... More arguments passed to
+#'   \code{\link[brms:standata.default]{standata.default}}.
 #'   and \code{\link{validate_newdata}}.
 #' @inheritParams prepare_predictions
 #'
-#' @return A named list containing the data originally passed to Stan.
+#' @return A named list containing the data passed to Stan.
 #'
 #' @export
 standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              newdata2 = NULL, new_objects = NULL,
                              incl_autocor = TRUE, ...) {
 
-  object <- restructure(object)
   # allows functions to fall back to old default behavior
   # which was used when originally fitting the model
   options(.brmsfit_version = object$version$brms)
@@ -204,17 +203,11 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # of splines on new machines (#1465)
     basis <- standata_basis(bterms, data = object$data)
   }
-  .make_standata(
+  .standata(
     bterms, data = data, prior = object$prior,
     data2 = data2, stanvars = stanvars,
     threads = object$threads, basis = basis, ...
   )
-}
-
-#' @rdname standata.brmsfit
-#' @export
-standata <- function(object, ...) {
-  UseMethod("standata")
 }
 
 # prepare basis data required for correct predictions from new data

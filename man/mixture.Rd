@@ -97,7 +97,7 @@ summary(fit4)
 pp_check(fit4)
 
 ## compare model fit
-LOO(fit1, fit2, fit3, fit4)
+loo(fit1, fit2, fit3, fit4)
 }
 
 }
