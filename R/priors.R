@@ -319,8 +319,8 @@
 #' identical(prior1, prior3)
 #'
 #' # check which parameters can have priors
-#' get_prior(rating ~ treat + period + carry + (1|subject),
-#'           data = inhaler, family = cumulative())
+#' default_prior(rating ~ treat + period + carry + (1|subject),
+#'              data = inhaler, family = cumulative())
 #'
 #' # define some priors
 #' bprior <- c(prior_string("normal(0,10)", class = "b"),
@@ -329,25 +329,25 @@
 #'                    group = ~subject, coef = ~Intercept))
 #'
 #' # verify that the priors indeed found their way into Stan's model code
-#' make_stancode(rating ~ treat + period + carry + (1|subject),
-#'               data = inhaler, family = cumulative(),
-#'               prior = bprior)
+#' stancode(rating ~ treat + period + carry + (1|subject),
+#'          data = inhaler, family = cumulative(),
+#'          prior = bprior)
 #'
 #' # use the horseshoe prior to model sparsity in regression coefficients
-#' make_stancode(count ~ zAge + zBase * Trt,
-#'               data = epilepsy, family = poisson(),
-#'               prior = set_prior("horseshoe(3)"))
+#' stancode(count ~ zAge + zBase * Trt,
+#'          data = epilepsy, family = poisson(),
+#'          prior = set_prior("horseshoe(3)"))
 #'
 #' # fix certain priors to constants
 #' bprior <- prior(constant(1), class = "b") +
 #'   prior(constant(2), class = "b", coef = "zBase") +
 #'   prior(constant(0.5), class = "sd")
-#' make_stancode(count ~ zAge + zBase + (1 | patient),
+#' stancode(count ~ zAge + zBase + (1 | patient),
 #'               data = epilepsy, prior = bprior)
 #'
 #' # pass priors to Stan without checking
 #' prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
-#' make_stancode(count ~ Trt, data = epilepsy, prior = prior)
+#' stancode(count ~ Trt, data = epilepsy, prior = prior)
 #'
 #' # define priors in a vectorized manner
 #' # useful in particular for categorical or multivariate models
@@ -474,6 +474,7 @@ default_prior <- function(object, ...) {
 #' @rdname default_prior
 #' @export
 get_prior <- function(formula, ...) {
+  # became an alias of default_prior in 2.20.14.
   default_prior(formula, ...)
 }
 
@@ -536,7 +537,7 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   .default_prior(bterms, data, ...)
 }
 
-# internal work function of 'get_prior'
+# internal work function of 'default_prior'
 # @param internal return priors for internal use?
 # @return a brmsprior object
 .default_prior <- function(bterms, data, internal = FALSE, ...) {
@@ -916,7 +917,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
 # @param ranef: a list returned by tidy_ranef
 # @param def_scale_prior a character string defining
 #   the default prior for SD parameters
-# @param internal: see 'get_prior'
+# @param internal: see 'default_prior'
 prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
   prior <- empty_prior()
   if (!nrow(ranef)) {
@@ -1189,7 +1190,7 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #' Validate priors supplied by the user. Return a complete
 #' set of priors for the given model, including default priors.
 #'
-#' @inheritParams get_prior.default
+#' @inheritParams default_prior.default
 #' @inheritParams brm
 #'
 #' @return An object of class \code{brmsprior}.
@@ -1256,7 +1257,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
         "The following priors do not correspond ",
         "to any model parameter: \n",
         collapse(.print_prior(prior[invalid, ]), "\n"),
-        "Function 'get_prior' might be helpful to you."
+        "Function 'default_prior' might be helpful to you."
       )
     }
     prior <- prior[!invalid, ]
@@ -1319,7 +1320,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
         "' will not be used in the model as all related coefficients have ",
         "individual priors already. If you did not set those ",
         "priors yourself, then maybe brms has assigned default priors. ",
-        "See ?set_prior and ?get_prior for more details."
+        "See ?set_prior and ?default_prior for more details."
       )
     }
   }
@@ -2311,17 +2312,17 @@ has_special_prior <- function(prior, px = NULL, class = NULL) {
 #' @returns A named list with elements \code{const} and \code{broadcast}.
 #'
 #' @examples
-#' make_stancode(count ~ Base + Age, data = epilepsy,
-#'               prior = prior(constant(1), class = "b"))
+#' stancode(count ~ Base + Age, data = epilepsy,
+#'          prior = prior(constant(1), class = "b"))
 #'
 #' # will fail parsing because brms will try to broadcast a vector into a vector
-#' make_stancode(count ~ Base + Age, data = epilepsy,
-#'               prior = prior(constant(alpha), class = "b"),
-#'               stanvars = stanvar(c(1, 0), name = "alpha"))
+#' stancode(count ~ Base + Age, data = epilepsy,
+#'          prior = prior(constant(alpha), class = "b"),
+#'          stanvars = stanvar(c(1, 0), name = "alpha"))
 #'
-#' make_stancode(count ~ Base + Age, data = epilepsy,
-#'               prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
-#'               stanvars = stanvar(c(1, 0), name = "alpha"))
+#' stancode(count ~ Base + Age, data = epilepsy,
+#'          prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
+#'          stanvars = stanvar(c(1, 0), name = "alpha"))
 #'
 #' @seealso \code{\link{set_prior}}
 #'

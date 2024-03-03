@@ -10,9 +10,11 @@ if potentially results-changing arguments are provided to the criterion method.
 ### Other Changes
 
 * Change `make_stancode` and `make_standata` to be aliases of `stancode` and 
-`standata`, respectively. This enable other packages to define new `stancode`
-and `standata` methods to generate Stan code and data for their own objects 
-building on brms. Thanks to Ven Popov for helping with this. (#1604)
+`standata`, respectively. Change `get_prior` to be an alias of a new generic 
+method `default_prior`. This enable other packages to define new `stancode`, 
+`standata` and `default_prior` methods to generate Stan code and data, and extract
+the default priors, for their own objects building on brms. Thanks to Ven Popov 
+for helping with this. (#1604)
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
 * Improve parameter class names in the `summary` output.

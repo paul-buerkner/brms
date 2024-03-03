@@ -53,7 +53,6 @@ make_standata <- function(formula, ...) {
 #'
 #' @return A named list of objects containing the required data
 #'   to fit a \pkg{brms} model with \pkg{Stan}.
-#'   The \code{get_prior} function is an alias of \code{default_prior}.
 #'
 #' @examples
 #' sdata1 <- standata(rating ~ treat + period + carry + (1|subject),

@@ -66,11 +66,7 @@ for basis construction of smoothing terms. See
 \item{drop_unused_levels}{Should unused factors levels in the data be
 dropped? Defaults to \code{TRUE}.}
 
-\item{...}{Further arguments passed to Stan.
-For \code{backend = "rstan"} the arguments are passed to
-\code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
-For \code{backend = "cmdstanr"} the arguments are passed to the
-\code{cmdstanr::sample} or \code{cmdstanr::variational} method.}
+\item{...}{Other arguments for internal usage only.}
 }
 \value{
 An object of class \code{brmsprior}.

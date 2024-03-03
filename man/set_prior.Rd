@@ -372,8 +372,8 @@ identical(prior1, prior2)
 identical(prior1, prior3)
 
 # check which parameters can have priors
-get_prior(rating ~ treat + period + carry + (1|subject),
-          data = inhaler, family = cumulative())
+default_prior(rating ~ treat + period + carry + (1|subject),
+             data = inhaler, family = cumulative())
 
 # define some priors
 bprior <- c(prior_string("normal(0,10)", class = "b"),
@@ -382,25 +382,25 @@ bprior <- c(prior_string("normal(0,10)", class = "b"),
                    group = ~subject, coef = ~Intercept))
 
 # verify that the priors indeed found their way into Stan's model code
-make_stancode(rating ~ treat + period + carry + (1|subject),
-              data = inhaler, family = cumulative(),
-              prior = bprior)
+stancode(rating ~ treat + period + carry + (1|subject),
+         data = inhaler, family = cumulative(),
+         prior = bprior)
 
 # use the horseshoe prior to model sparsity in regression coefficients
-make_stancode(count ~ zAge + zBase * Trt,
-              data = epilepsy, family = poisson(),
-              prior = set_prior("horseshoe(3)"))
+stancode(count ~ zAge + zBase * Trt,
+         data = epilepsy, family = poisson(),
+         prior = set_prior("horseshoe(3)"))
 
 # fix certain priors to constants
 bprior <- prior(constant(1), class = "b") +
   prior(constant(2), class = "b", coef = "zBase") +
   prior(constant(0.5), class = "sd")
-make_stancode(count ~ zAge + zBase + (1 | patient),
+stancode(count ~ zAge + zBase + (1 | patient),
               data = epilepsy, prior = bprior)
 
 # pass priors to Stan without checking
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
-make_stancode(count ~ Trt, data = epilepsy, prior = prior)
+stancode(count ~ Trt, data = epilepsy, prior = prior)
 
 # define priors in a vectorized manner
 # useful in particular for categorical or multivariate models

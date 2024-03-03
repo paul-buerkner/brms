@@ -498,8 +498,8 @@ fit7 <- update(fit7, future = TRUE)
 
 
 # fit a model manually via rstan
-scode <- make_stancode(count ~ Trt, data = epilepsy)
-sdata <- make_standata(count ~ Trt, data = epilepsy)
+scode <- stancode(count ~ Trt, data = epilepsy)
+sdata <- standata(count ~ Trt, data = epilepsy)
 stanfit <- rstan::stan(model_code = scode, data = sdata)
 # feed the Stan model back into brms
 fit8 <- brm(count ~ Trt, data = epilepsy, empty = TRUE)

@@ -107,7 +107,6 @@ dropped? Defaults to \code{TRUE}.}
 \value{
 A named list of objects containing the required data
   to fit a \pkg{brms} model with \pkg{Stan}.
-  The \code{get_prior} function is an alias of \code{default_prior}.
 }
 \description{
 Generate data for \pkg{brms} models to be passed to \pkg{Stan}.
