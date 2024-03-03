@@ -2,8 +2,7 @@
 % Please edit documentation in R/make_standata.R
 \name{standata.brmsfit}
 \alias{standata.brmsfit}
-\alias{standata}
-\title{Extract data passed to Stan}
+\title{Extract data passed to Stan from \code{brmsfit} objects}
 \usage{
 \method{standata}{brmsfit}(
   object,
@@ -14,8 +13,6 @@
   incl_autocor = TRUE,
   ...
 )
-
-standata(object, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -40,12 +37,13 @@ used in autocorrelation structures, or \code{\link{stanvars}}.}
 specified via \code{autocor} should be included in the predictions.
 Defaults to \code{TRUE}.}
 
-\item{...}{More arguments passed to \code{\link{make_standata}}
+\item{...}{More arguments passed to
+\code{\link[brms:standata.default]{standata.default}}.
 and \code{\link{validate_newdata}}.}
 }
 \value{
-A named list containing the data originally passed to Stan.
+A named list containing the data passed to Stan.
 }
 \description{
-Extract all data that was used by Stan to fit the model.
+Extract all data that was used by Stan to fit a \pkg{brms} model.
 }

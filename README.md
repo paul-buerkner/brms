@@ -41,7 +41,8 @@ with posterior predictive checks, cross-validation, and Bayes factors.
     (The R Journal)
 -   [Website](https://paul-buerkner.github.io/brms/) (Website of brms
     with documentation and vignettes)
--   [Blog posts](https://paul-buerkner.github.io/software/brms-blogposts.html)
+-   [Blog
+    posts](https://paul-buerkner.github.io/software/brms-blogposts.html)
     (List of blog posts about brms)
 -   [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
     Discourse)
@@ -79,18 +80,18 @@ summary(fit1)
 #>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup draws = 4000
 #> 
-#> Group-Level Effects: 
+#> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.58      0.07     0.46     0.73 1.01      768     1579
+#> sd(Intercept)     0.59      0.07     0.46     0.74 1.01      566     1356
 #> 
-#> Population-Level Effects: 
+#> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.77      0.11     1.54     1.99 1.00      753     1511
-#> zAge           0.09      0.08    -0.07     0.26 1.00      830     1429
-#> zBase          0.70      0.12     0.47     0.95 1.00      678     1389
-#> Trt1          -0.26      0.16    -0.59     0.05 1.01      709     1356
-#> zBase:Trt1     0.05      0.17    -0.29     0.37 1.01      721     1404
+#> Intercept      1.78      0.12     1.55     2.01 1.00      771     1595
+#> zAge           0.09      0.09    -0.08     0.27 1.00      590     1302
+#> zBase          0.71      0.12     0.47     0.96 1.00      848     1258
+#> Trt1          -0.27      0.16    -0.60     0.05 1.01      749     1172
+#> zBase:Trt1     0.05      0.17    -0.30     0.38 1.00      833     1335
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -155,8 +156,8 @@ previous seizures. Than we can use
 newdata <- data.frame(Trt = c(0, 1), zAge = 0, zBase = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error Q2.5 Q97.5
-#> [1,]  5.90325  2.486249    2    11
-#> [2,]  4.59025  2.180262    1     9
+#> [1,]  5.91200  2.494857    2    11
+#> [2,]  4.57325  2.166058    1     9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the
@@ -167,8 +168,8 @@ line.
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error     Q2.5    Q97.5
-#> [1,] 5.918847 0.6762827 4.666180 7.308699
-#> [2,] 4.554778 0.5144053 3.630642 5.659664
+#> [1,] 5.945276 0.7075160 4.696257 7.450011
+#> [2,] 4.540081 0.5343471 3.579757 5.665132
 ```
 
 Both methods return the same estimate (up to random error), while the
@@ -194,46 +195,46 @@ leave-one-out (LOO) cross-validation.
 loo(fit1, fit2)
 #> Output of model 'fit1':
 #> 
-#> Computed from 4000 by 236 log-likelihood matrix
+#> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -671.6 35.8
-#> p_loo        94.6 13.6
-#> looic      1343.3 71.6
+#> elpd_loo   -671.7 36.6
+#> p_loo        94.3 14.2
+#> looic      1343.4 73.2
 #> ------
-#> Monte Carlo SE of elpd_loo is NA.
+#> MCSE of elpd_loo is NA.
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.0]).
 #> 
 #> Pareto k diagnostic values:
-#>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     209   88.6%   546       
-#>  (0.5, 0.7]   (ok)        18    7.6%   125       
-#>    (0.7, 1]   (bad)        7    3.0%   23        
-#>    (1, Inf)   (very bad)   2    0.8%   12        
+#>                          Count Pct.    Min. ESS
+#> (-Inf, 0.7]   (good)     228   96.6%   157     
+#>    (0.7, 1]   (bad)        7    3.0%   <NA>    
+#>    (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Output of model 'fit2':
 #> 
-#> Computed from 4000 by 236 log-likelihood matrix
+#> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -596.2 14.1
-#> p_loo       108.5  7.3
-#> looic      1192.3 28.3
+#> elpd_loo   -596.8 14.0
+#> p_loo       109.7  7.2
+#> looic      1193.6 28.1
 #> ------
-#> Monte Carlo SE of elpd_loo is NA.
+#> MCSE of elpd_loo is NA.
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.7]).
 #> 
 #> Pareto k diagnostic values:
-#>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     84    35.6%   755       
-#>  (0.5, 0.7]   (ok)       96    40.7%   171       
-#>    (0.7, 1]   (bad)      50    21.2%   25        
-#>    (1, Inf)   (very bad)  6     2.5%   10        
+#>                          Count Pct.    Min. ESS
+#> (-Inf, 0.7]   (good)     172   72.9%   83      
+#>    (0.7, 1]   (bad)       56   23.7%   <NA>    
+#>    (1, Inf)   (very bad)   8    3.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Model comparisons:
 #>      elpd_diff se_diff
 #> fit2   0.0       0.0  
-#> fit1 -75.5      26.3
+#> fit1 -74.9      27.2
 ```
 
 The `loo` output when comparing models is a little verbose. We first see
@@ -335,9 +336,9 @@ feature or report a bug, please open an issue on
 
 ### How can I extract the generated Stan code?
 
-If you have already fitted a model, just apply the `stancode` method on
-the fitted model object. If you just want to generate the Stan code
-without any model fitting, use the `make_stancode` function.
+If you have already fitted a model, apply the `stancode` method on the
+fitted model object. If you just want to generate the Stan code without
+any model fitting, use the `stancode` method on your model formula.
 
 ### Can I avoid compiling models?
 

@@ -17,10 +17,10 @@ brmsfit_needs_refit(
 \arguments{
 \item{fit}{Old \code{brmsfit} object (e.g., loaded from file).}
 
-\item{sdata}{New Stan data (result of a call to \code{\link{make_standata}}).
+\item{sdata}{New Stan data (result of a call to \code{\link[brms:standata.default]{standata}}).
 Pass \code{NULL} to avoid this data check.}
 
-\item{scode}{New Stan code (result of a call to \code{\link{make_stancode}}).
+\item{scode}{New Stan code (result of a call to \code{\link[brms:stancode.default]{stancode}}).
 Pass \code{NULL} to avoid this code check.}
 
 \item{data}{New data to check consistency of factor level names.

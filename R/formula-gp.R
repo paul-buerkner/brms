@@ -100,7 +100,7 @@
 #' plot(me3, ask = FALSE, points = TRUE)
 #'
 #' # compare model fit
-#' LOO(fit1, fit2, fit3)
+#' loo(fit1, fit2, fit3)
 #'
 #' # simulate data with a factor covariate
 #' dat2 <- mgcv::gamSim(4, n = 90, scale = 2)
