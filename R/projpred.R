@@ -251,7 +251,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     if (!is.null(orhs)) warn_wrhs_orhs("orhs")
   }
 
-  # extract the response variable manually instead of from make_standata
+  # extract the response variable manually instead of from standata
   # so that it passes input checks of validate_newdata later on (#1314)
   formula <- formula(object)
   if (!is.null(resp)) {

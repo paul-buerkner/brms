@@ -1,4 +1,4 @@
-# most tests of prior related stuff can be found in tests.make_stancode.R
+# most tests of prior related stuff can be found in tests.stancode.R
 context("Tests for prior generating functions")
 
 test_that("get_prior finds all classes for which priors can be specified", {

@@ -24,17 +24,17 @@ The function does not evaluate its arguments -- it exists purely
 to help set up the model.
 }
 \examples{
-make_stancode(count ~ Base + Age, data = epilepsy,
-              prior = prior(constant(1), class = "b"))
+stancode(count ~ Base + Age, data = epilepsy,
+         prior = prior(constant(1), class = "b"))
 
 # will fail parsing because brms will try to broadcast a vector into a vector
-make_stancode(count ~ Base + Age, data = epilepsy,
-              prior = prior(constant(alpha), class = "b"),
-              stanvars = stanvar(c(1, 0), name = "alpha"))
+stancode(count ~ Base + Age, data = epilepsy,
+         prior = prior(constant(alpha), class = "b"),
+         stanvars = stanvar(c(1, 0), name = "alpha"))
 
-make_stancode(count ~ Base + Age, data = epilepsy,
-              prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
-              stanvars = stanvar(c(1, 0), name = "alpha"))
+stancode(count ~ Base + Age, data = epilepsy,
+         prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
+         stanvars = stanvar(c(1, 0), name = "alpha"))
 
 }
 \seealso{
