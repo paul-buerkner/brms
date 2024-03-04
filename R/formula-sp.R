@@ -413,7 +413,6 @@ tidy_spef <- function(x, data) {
     has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
     sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])
     out$joint_call[[i]] <- paste0(sp_calls, collapse = " * ")
-    out$Ic[i] <- any(!has_sp_calls)
   }
 
   # extract data frame to track all required index variables
@@ -439,8 +438,10 @@ tidy_spef <- function(x, data) {
   }
 
   # extract information on covariates
+  # only non-zero covariates are relevant to consider
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  out$Ic <- cumsum(out$Ic | not_one)
+  cumsum_not_one <- cumsum(not_one)
+  out$Ic <- ifelse(not_one, cumsum_not_one, 0)
   out
 }
 
