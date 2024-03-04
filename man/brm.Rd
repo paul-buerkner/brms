@@ -46,6 +46,7 @@ brm(
   file_refit = getOption("brms.file_refit", "never"),
   empty = FALSE,
   rename = TRUE,
+  keep_mu = getOption("brms.keep_mu", FALSE),
   ...
 )
 }
@@ -313,6 +314,11 @@ object will be empty. This is useful if you have estimated a brms-created
 Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{rename}{For internal use only.}
+
+\item{keep_mu}{Logical. If \code{TRUE}, the population-level effects
+parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+will be removed. Can be set globally for the current \R session via the
+\code{"brms.keep_mu"} option (see \code{\link{options}}).}
 
 \item{...}{Further arguments passed to Stan.
 For \code{backend = "rstan"} the arguments are passed to

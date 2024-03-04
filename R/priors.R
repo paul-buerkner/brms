@@ -382,10 +382,6 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
-  if (dpar == "mu") {
-    # distributional parameter 'mu' is currently implicit #1368
-    dpar <- ""
-  }
   if (!check) {
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- ""
@@ -1206,8 +1202,9 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #' @export
 validate_prior <- function(prior, formula, data, family = gaussian(),
                            sample_prior = "no", data2 = NULL, knots = NULL,
-                           drop_unused_levels = TRUE, ...) {
-  formula <- validate_formula(formula, data = data, family = family)
+                           drop_unused_levels = TRUE,
+                           keep_mu = getOption('brms.keep_mu', FALSE), ...) {
+  formula <- validate_formula(formula, data = data, family = family, keep_mu = keep_mu)
   bterms <- brmsterms(formula)
   data2 <- validate_data2(data2, bterms = bterms)
   data <- validate_data(
@@ -1229,6 +1226,9 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     prior <- all_priors
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
+  } else if ("mu" %in% prior$dpar && !stan_keep_mu(bterms$formula)) {
+    # for backward compatibility - remove 'mu' from the prior if keep_mu is FALSE
+    prior$dpar <- gsub("^mu$", "", prior$dpar)
   }
   # when updating existing priors, invalid priors should be allowed
   allow_invalid_prior <- isTRUE(attr(prior, "allow_invalid_prior"))

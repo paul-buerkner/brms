@@ -1260,12 +1260,13 @@ validate_formula.default <- function(formula, ...) {
 # @param autocor (deprecated) optional 'cor_brms' object
 # @param threshold (deprecated) threshold type for ordinal models
 # @param cov_ranef (deprecated) named list of group covariance matrices
+# @param keep_mu should the mu prefix be kept
 # @return a brmsformula object compatible with the current version of brms
 #' @export
 validate_formula.brmsformula <- function(
   formula, family = gaussian(), autocor = NULL,
   data = NULL, threshold = NULL, sparse = NULL,
-  cov_ranef = NULL, ...
+  cov_ranef = NULL, keep_mu = NULL, ...
 ) {
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
@@ -1273,6 +1274,12 @@ validate_formula.brmsformula <- function(
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula, data)
+  # store the keep_mu setting, only if explicitly specified
+  # (check necessary to avoid overwriting existing attribute)
+  if (!is.null(keep_mu)) {
+    attr(out$formula, "keep_mu") <- keep_mu
+  }
+
   for (i in seq_along(out$pforms)) {
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
   }

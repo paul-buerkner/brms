@@ -237,6 +237,10 @@
 #'   \code{\link[rstan:stan_model]{rstan::stan_model}} for \code{backend =
 #'   "rstan"} or to \code{cmdstanr::cmdstan_model} for \code{backend =
 #'   "cmdstanr"}, which allows to change how models are compiled.
+#' @param keep_mu Logical. If \code{TRUE}, the population-level effects
+#'   parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+#'   will be removed. Can be set globally for the current \R session via the
+#'   \code{"brms.keep_mu"} option (see \code{\link{options}}).
 #' @param ... Further arguments passed to Stan.
 #'   For \code{backend = "rstan"} the arguments are passed to
 #'   \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
@@ -452,7 +456,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                empty = FALSE, rename = TRUE, ...) {
+                empty = FALSE, rename = TRUE,
+                keep_mu = getOption("brms.keep_mu", FALSE), ...) {
 
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
@@ -482,6 +487,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
+  keep_mu <- as_one_logical(keep_mu)
 
   # initialize brmsfit object
   if (is.brmsfit(fit)) {
@@ -509,7 +515,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     formula <- validate_formula(
       formula, data = data, family = family,
       autocor = autocor, sparse = sparse,
-      cov_ranef = cov_ranef
+      cov_ranef = cov_ranef, keep_mu = keep_mu
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)

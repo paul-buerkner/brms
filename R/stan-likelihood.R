@@ -1034,11 +1034,17 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
   decomp <- get_decomp(bterms$fe)
   center_X <- stan_center_X(bterms)
   slice <- stan_slice(threads)
-  sfx_X <- sfx_b <- ""
+  sfx_X <- sfx_b <- sfx_alpha <- ""
   if (decomp == "QR") {
     sfx_X <- sfx_b <- "Q"
   } else if (center_X) {
     sfx_X <- "c"
+  }
+  px <- check_prefix(bterms)$dpar
+  if (nzchar(px)) {
+    sfx_X <- glue("{sfx_X}_{px}")
+    sfx_b <- glue("{sfx_b}_{px}")
+    sfx_alpha <- glue("{sfx_alpha}_{px}")
   }
   x <- glue("X{sfx_X}{resp}{slice}")
   beta <- glue("b{sfx_b}{resp}")
@@ -1047,7 +1053,7 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
     alpha <- glue("mu{resp}")
   } else {
     if (center_X) {
-      alpha <- glue("Intercept{resp}")
+      alpha <- glue("Intercept{sfx_alpha}{resp}")
     } else {
       alpha <- "0"
     }

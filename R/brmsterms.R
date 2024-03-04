@@ -645,7 +645,10 @@ vars_prefix <- function() {
 }
 
 # check and tidy parameter prefixes
-check_prefix <- function(x, keep_mu = FALSE) {
+check_prefix <- function(x, keep_mu) {
+  if (missing(keep_mu)) {
+    keep_mu <- stan_keep_mu(x)
+  }
   vpx <- vars_prefix()
   if (is.data.frame(x) && nrow(x) == 0) {
     # avoids a bug in data.frames with zero rows
@@ -667,6 +670,7 @@ check_prefix <- function(x, keep_mu = FALSE) {
       yes = "mu", no = x[[i]]
     )
   }
+  attr(x, "keep_mu") <- keep_mu
   x
 }
 
@@ -674,7 +678,10 @@ check_prefix <- function(x, keep_mu = FALSE) {
 # @param prefix object from which to extract prefixes
 # @param keep_mu keep the 'mu' prefix if available or remove it?
 # @param nlp include the 'nlp' prefix for non-linear parameters?
-combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
+combine_prefix <- function(prefix, keep_mu, nlp = FALSE) {
+  if (missing(keep_mu)) {
+    keep_mu <- stan_keep_mu(prefix)
+  }
   prefix <- check_prefix(prefix, keep_mu = keep_mu)
   if (is_nlpar(prefix) && nlp) {
     prefix$dpar <- "nlp"

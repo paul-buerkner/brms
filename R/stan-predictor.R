@@ -2068,6 +2068,12 @@ stan_center_X <- function(x) {
     !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
 }
 
+# indicate if the prefix for mu should be kept when using check_prefix or
+# combine_prefix
+stan_keep_mu <- function(x) {
+  (is.btl(x) && isTRUE(attr(x$formula, "keep_mu")) | isTRUE(attr(x, "keep_mu")))
+}
+
 stan_dpar_comments <- function(dpar, family) {
   dpar_class <- dpar_class(dpar, family)
   out <- switch(dpar_class, "",
