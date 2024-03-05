@@ -381,7 +381,8 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   if (flex) {
     c(v) <- "Jtime_tg"
   }
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
