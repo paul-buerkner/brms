@@ -177,3 +177,18 @@ test_that("validate_prior removes mu if keep_mu is FALSE, but keeps it otherwise
     expect_true("mu" %in% prior$dpar)
   })
 })
+
+test_that("default_prior works with keep_mu=TRUE", {
+  dat <- data.frame(y = rep(0, 10), x = 1:10)
+
+  prior <- default_prior(y ~ x, data = dat, keep_mu = TRUE)
+  expect_equal(prior$dpar, c("","mu","mu","mu"))
+
+  prior <- default_prior(y ~ x, data = dat, keep_mu = FALSE)
+  expect_equal(prior$dpar, c(rep("", 4)))
+
+  # keep_mu doesn't affect the prior when a non-linear model is specified
+  prior <- default_prior(bf(y ~ a, a ~ x, nl = T), data = dat, keep_mu = TRUE)
+  expect_equal(prior$dpar, c(rep("", 4)))
+  expect_equal(prior$nlpar, c("", rep("a", 3)))
+})

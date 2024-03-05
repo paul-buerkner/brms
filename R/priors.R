@@ -514,11 +514,11 @@ get_prior <- function(formula, ...) {
 #' @export
 default_prior.default <- function(object, data, family = gaussian(), autocor = NULL,
                                   data2 = NULL, knots = NULL, drop_unused_levels = TRUE,
-                                  sparse = NULL, ...) {
+                                  sparse = NULL, keep_mu = getOption("brms.keep_mu", FALSE), ...) {
 
   object <- validate_formula(
     object, data = data, family = family,
-    autocor = autocor, sparse = sparse
+    autocor = autocor, sparse = sparse, keep_mu = keep_mu
   )
   bterms <- brmsterms(object)
   data2 <- validate_data2(
