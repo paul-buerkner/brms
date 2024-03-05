@@ -1276,7 +1276,7 @@ validate_formula.brmsformula <- function(
   out$formula <- expand_dot_formula(out$formula, data)
   # store the keep_mu setting, only if explicitly specified
   # (check necessary to avoid overwriting existing attribute)
-  if (!is.null(keep_mu)) {
+  if (!is.null(keep_mu) && !isTRUE(attr(out$formula, "nl"))) {
     attr(out$formula, "keep_mu") <- keep_mu
   }
 
