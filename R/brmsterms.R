@@ -656,20 +656,20 @@ check_prefix <- function(x, keep_mu) {
   }
   x[setdiff(vpx, names(x))] <- ""
   x <- x[vpx]
+
   for (i in seq_along(x)) {
     x[[i]] <- as.character(x[[i]])
     if (!length(x[[i]])) {
       x[[i]] <- ""
     }
-    x[[i]] <- ifelse(
-      !keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "mu",
-      yes = "", no = x[[i]]
-    )
-    x[[i]] <- ifelse(
-      keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "",
-      yes = "mu", no = x[[i]]
-    )
   }
+
+  if (keep_mu) {
+    x$dpar <- ifelse(x$dpar %in% "" & x$nlpar %in% "", "mu", x$dpar)
+  } else {
+    x$dpar <- ifelse(x$dpar %in% "mu", "", x$dpar)
+  }
+
   attr(x, "keep_mu") <- keep_mu
   x
 }
