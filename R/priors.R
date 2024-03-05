@@ -1226,7 +1226,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     prior <- all_priors
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
-  } else if ("mu" %in% prior$dpar && !stan_keep_mu(bterms$formula)) {
+  } else if ("mu" %in% prior$dpar && !stan_keep_mu(bterms$formula) && !stan_keep_mu(bterms$terms[[1]]$formula)) {
     # for backward compatibility - remove 'mu' from the prior if keep_mu is FALSE
     prior$dpar <- gsub("^mu$", "", prior$dpar)
   }

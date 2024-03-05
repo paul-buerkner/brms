@@ -701,7 +701,8 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
   # ordering after IDs matches the order of the posterior draws
   # if multiple IDs are used for the same grouping factor (#835)
   ranef <- ranef[order(ranef$id), , drop = FALSE]
-  structure(ranef, class = c("ranef_frame", "data.frame"), keep_mu = stan_keep_mu(bterms$formula))
+  keep_mu = stan_keep_mu(bterms$formula) | stan_keep_mu(bterms$terms[[1]]$formula)
+  structure(ranef, class = c("ranef_frame", "data.frame"), keep_mu = keep_mu)
 }
 
 empty_ranef <- function() {
