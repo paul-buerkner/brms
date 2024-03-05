@@ -1326,7 +1326,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
           "  vector[N{resp}] err{p};  // actual residuals\n"
         )
         Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
-        comp_err <- glue("    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n")
+        comp_err <- glue("    err{p}[n] = {Y}{resp}[n] - mu{resp}[n];\n")
       } else {
         if (acef_arma$q > 0) {
           # AR and MA structures cannot be distinguished when
@@ -1341,10 +1341,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         comp_err <- ""
       }
       add_ar <- str_if(acef_arma$p > 0,
-        glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
+        glue("    mu{resp}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
       )
       add_ma <- str_if(acef_arma$q > 0,
-        glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
+        glue("    mu{resp}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
       )
       str_add(out$model_comp_arma) <- glue(
         "  // include ARMA terms\n",
