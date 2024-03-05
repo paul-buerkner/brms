@@ -152,10 +152,28 @@ test_that("validate_prior removes mu if keep_mu is FALSE, but keeps it otherwise
     expect_true(!("mu" %in% prior$dpar))
     })
 
+  withr::with_options(list(brms.keep_mu = FALSE), {
+    prior1 <- prior(normal(0, 1), class = "b", resp = y, dpar = "mu") +
+      prior(normal(0, 1), class = "b", resp = y1, dpar = "mu")
+    prior <- validate_prior(prior1, bf(mvbind(y,y1) ~ x) + set_rescor(FALSE),
+                            data = data.frame(y = rep(0, 10), y1 = rep(0,10), x = 1:10),
+                            family = gaussian())
+    expect_true(!("mu" %in% prior$dpar))
+  })
+
   withr::with_options(list(brms.keep_mu = TRUE), {
     prior1 <- prior(normal(0, 1), class = "b", dpar = "mu")
     prior <- validate_prior(prior1, "y ~ x", data = data.frame(y = rep(0, 10), x = 1:10),
                           family = gaussian())
+    expect_true("mu" %in% prior$dpar)
+  })
+
+  withr::with_options(list(brms.keep_mu = TRUE), {
+    prior1 <- prior(normal(0, 1), class = "b", resp = y, dpar = "mu") +
+      prior(normal(0, 1), class = "b", resp = y1, dpar = "mu")
+    prior <- validate_prior(prior1, bf(mvbind(y,y1) ~ x) + set_rescor(FALSE),
+                            data = data.frame(y = rep(0, 10), y1 = rep(0,10), x = 1:10),
+                            family = gaussian())
     expect_true("mu" %in% prior$dpar)
   })
 })

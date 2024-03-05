@@ -374,15 +374,15 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   has_se <- is.formula(bterms$adforms$se)
   flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
-  if (has_se) {
-    c(v) <- "se2"
-  }
   if (flex) {
     c(v) <- "Jtime_tg"
   }
-  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
   p[v] <- as.list(paste0(v, resp, v_sfx))
+  if (has_se) {
+    p["se2"] <- paste0("se2", resp)
+  }
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
@@ -398,7 +398,8 @@ stan_log_lik_gaussian_fcor <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$Lfcor <- paste0("Lfcor", resp)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p$Lfcor <- paste0("Lfcor", resp, v_sfx)
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$Lfcor)
 }
@@ -446,15 +447,15 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   has_se <- is.formula(bterms$adforms$se)
   flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
-  if (has_se) {
-    c(v) <- "se2"
-  }
   if (flex) {
     c(v) <- "Jtime_tg"
   }
-  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
   p[v] <- as.list(paste0(v, resp, v_sfx))
+  if (has_se) {
+    p['se2'] <- paste0("se2", resp)
+  }
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
@@ -810,8 +811,7 @@ stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "identity")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, type = "multi")
-  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
-  p$Llncor <- glue("Llncor{v_sfx}{mix}{resp}")
+  p$Llncor <- glue("Llncor{mix}{resp}")
   p$refcat <- get_refcat(bterms$family, int = TRUE)
   sdist("logistic_normal_cholesky_cor", p$mu, p$sigma, p$Llncor, p$refcat)
 }
