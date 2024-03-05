@@ -408,7 +408,8 @@ stan_log_lik_gaussian_lagsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$Msar, p$eigenMsar)
 }
 
@@ -417,7 +418,8 @@ stan_log_lik_gaussian_errorsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$Msar, p$eigenMsar)
 }
 
@@ -468,7 +470,8 @@ stan_log_lik_student_fcor <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$Lfcor <- paste0("Lfcor", resp)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p$Lfcor <- paste0("Lfcor", resp, v_sfx)
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$Lfcor)
 }
@@ -478,7 +481,8 @@ stan_log_lik_student_lagsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("student_t_lagsar", p$nu, p$mu, p$sigma,
         p$lagsar, p$Msar, p$eigenMsar)
 }
@@ -488,7 +492,8 @@ stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("student_t_errorsar", p$nu, p$mu, p$sigma,
         p$errorsar, p$Msar, p$eigenMsar)
 }
@@ -805,7 +810,8 @@ stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "identity")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, type = "multi")
-  p$Llncor <- glue("Llncor{mix}{resp}")
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p$Llncor <- glue("Llncor{v_sfx}{mix}{resp}")
   p$refcat <- get_refcat(bterms$family, int = TRUE)
   sdist("logistic_normal_cholesky_cor", p$mu, p$sigma, p$Llncor, p$refcat)
 }
