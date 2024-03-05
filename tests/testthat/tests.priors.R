@@ -164,16 +164,14 @@ test_that("validate_prior removes mu if keep_mu is FALSE, but keeps it otherwise
     prior <- validate_prior(prior1, "y ~ x", data = data.frame(y = rep(0, 10), x = 1:10),
                           family = gaussian(), keep_mu = TRUE)
     expect_true("mu" %in% prior$dpar)
-  })
 
-  withr::with_options(list(brms.keep_mu = TRUE), {
+    # keep_mu = TRUE, multivariate
     prior1 <- prior(normal(0, 1), class = "b", resp = y, dpar = "mu") +
       prior(normal(0, 1), class = "b", resp = y1, dpar = "mu")
     prior <- validate_prior(prior1, bf(mvbind(y,y1) ~ x) + set_rescor(FALSE),
                             data = data.frame(y = rep(0, 10), y1 = rep(0,10), x = 1:10),
-                            family = gaussian())
+                            family = gaussian(), keep_mu = TRUE)
     expect_true("mu" %in% prior$dpar)
-  })
 })
 
 test_that("default_prior works with keep_mu=TRUE", {
