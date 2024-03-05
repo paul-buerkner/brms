@@ -1003,7 +1003,7 @@ prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
     return(prior)
   }
   px <- check_prefix(bterms)
-  p <- combine_prefix(px)
+  p <- usc(combine_prefix(px))
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
   if (has_ac_class(acef, "arma")) {
     acef_arma <- subset2(acef, class = "arma")
