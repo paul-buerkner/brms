@@ -2115,6 +2115,16 @@ test_that("Stan code for missing value terms works correctly", {
     "target += beta_lpdf(Yl_x[n] | mu_x[n] * phi_x, (1 - mu_x[n]) * phi_x);"
   )
 
+  # tests #1608
+  bform <- bf(y ~ g + mi(x):g + mi(x):mi(z) + mi(z):g) +
+    bf(x | mi() ~ 1) +
+    bf(z | mi() ~ 1) +
+    set_rescor(FALSE)
+  scode <- stancode(bform, dat)
+  expect_match2(scode,
+    "mu_y[n] += (bsp_y[1]) * Yl_x[n] * Csp_y_1[n] + (bsp_y[2]) * Yl_x[n] * Yl_z[n] + (bsp_y[3]) * Yl_z[n] * Csp_y_2[n];"
+  )
+
   bform <- bf(y | mi() ~ mi(x), shape ~ mi(x), family=weibull()) +
     bf(x| mi() ~ z, family=gaussian()) + set_rescor(FALSE)
   scode <- stancode(bform, data = dat)
