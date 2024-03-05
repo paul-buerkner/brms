@@ -1603,8 +1603,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       )
       str_add(out$tpar_comp) <- glue(
         "  // sum-to-zero constraint\n",
-        "  rcar[1:(Nloc{p} - 1)] = zcar{p};\n",
-        "  rcar[Nloc{p}] = - sum(zcar{p});\n"
+        "  rcar{p}[1:(Nloc{p} - 1)] = zcar{p};\n",
+        "  rcar{p}[Nloc{p}] = - sum(zcar{p});\n"
       )
       car_args <- c(
         "sdcar", "Nloc", "Nedges", "Nneigh",
