@@ -21,6 +21,7 @@
   threads = getOption("brms.threads", NULL),
   normalize = getOption("brms.normalize", TRUE),
   save_model = NULL,
+  keep_mu = getOption("brms.keep_mu", FALSE),
   ...
 )
 }
@@ -129,6 +130,11 @@ option.}
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file
 named after the string supplied in \code{save_model}.}
+
+\item{keep_mu}{Logical. If \code{TRUE}, the population-level effects
+parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+will be removed. Can be set globally for the current \R session via the
+\code{"brms.keep_mu"} option (see \code{\link{options}}).}
 
 \item{...}{Other arguments for internal usage only.}
 }

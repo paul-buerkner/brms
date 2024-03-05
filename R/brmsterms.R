@@ -801,6 +801,7 @@ combine_formulas <- function(formula1, formula2, lhs = "", update = FALSE) {
   } else {
     rhs <- str_rhs(formula2)
     att <- attributes(formula2)
+    att$keep_mu <- attr(formula1, "keep_mu")
   }
   out <- eval2(paste0(lhs, " ~ ", rhs))
   attributes(out)[names(att)] <- att

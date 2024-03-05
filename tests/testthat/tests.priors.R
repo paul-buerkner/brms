@@ -145,26 +145,24 @@ test_that("test that prior no longer removes 'mu' from dpar", {
 })
 
 test_that("validate_prior removes mu if keep_mu is FALSE, but keeps it otherwise", {
-  withr::with_options(list(brms.keep_mu = FALSE), {
+    # keep_mu = FALSE
     prior1 <- prior(normal(0, 1), class = "b", dpar = "mu")
     prior <- validate_prior(prior1, "y ~ x", data = data.frame(y = rep(0, 10), x = 1:10),
-                          family = gaussian())
+                          family = gaussian(), keep_mu = FALSE)
     expect_true(!("mu" %in% prior$dpar))
-    })
 
-  withr::with_options(list(brms.keep_mu = FALSE), {
+    # keep_mu = FALSE, multivariate
     prior1 <- prior(normal(0, 1), class = "b", resp = y, dpar = "mu") +
       prior(normal(0, 1), class = "b", resp = y1, dpar = "mu")
     prior <- validate_prior(prior1, bf(mvbind(y,y1) ~ x) + set_rescor(FALSE),
                             data = data.frame(y = rep(0, 10), y1 = rep(0,10), x = 1:10),
                             family = gaussian())
     expect_true(!("mu" %in% prior$dpar))
-  })
 
-  withr::with_options(list(brms.keep_mu = TRUE), {
+    # keep_mu = TRUE
     prior1 <- prior(normal(0, 1), class = "b", dpar = "mu")
     prior <- validate_prior(prior1, "y ~ x", data = data.frame(y = rep(0, 10), x = 1:10),
-                          family = gaussian())
+                          family = gaussian(), keep_mu = TRUE)
     expect_true("mu" %in% prior$dpar)
   })
 
@@ -191,4 +189,27 @@ test_that("default_prior works with keep_mu=TRUE", {
   prior <- default_prior(bf(y ~ a, a ~ x, nl = T), data = dat, keep_mu = TRUE)
   expect_equal(prior$dpar, c(rep("", 4)))
   expect_equal(prior$nlpar, c("", rep("a", 3)))
+})
+
+
+test_that("repair_prior works", {
+  skip_on_cran()
+
+  # negative control - repairing a previously valid prior by adding mu when
+  # using keep_mu = TRUE
+  old_model <- rename_pars(brmsfit_example3)
+  old_model <- restructure(old_model)
+  old_prior <- prior_summary(old_model)
+  new_default_prior <- default_prior(old_model$formula, old_model$data, internal = T, keep_mu = T)
+  repaired_prior <- repair_prior(old_prior, new_default_prior)
+  expect_false(any(repaired_prior$invalid))
+
+  # positive control - repairing a previously invalid prior still results in invalid
+  old_prior2 <- old_prior + prior(normal(0, 1), coef = "missing", dpar = "mu")
+  repaired_prior2 <- repair_prior(old_prior2, new_default_prior)
+  expect_true(any(repaired_prior2$invalid))
+
+  # check it works when all priors are valid
+  repaired_prior3 <- repair_prior(repaired_prior$prior, new_default_prior)
+  expect_equal(repaired_prior3$prior, repaired_prior$prior)
 })

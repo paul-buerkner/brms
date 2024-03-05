@@ -1250,17 +1250,16 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   # it is good to let the user know beforehand that some of their priors
   # were invalid in the model to avoid unnecessary refits
   if (nrow(prior)) {
-    valid_ids <- which(duplicated(rbind(all_priors, prior)))
-    invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
-    if (any(invalid) && !allow_invalid_prior) {
+    rprior <- repair_prior(prior, all_priors)
+    if (any(rprior$invalid) && !allow_invalid_prior) {
       stop2(
         "The following priors do not correspond ",
         "to any model parameter: \n",
-        collapse(.print_prior(prior[invalid, ]), "\n"),
+        collapse(.print_prior(rprior$prior[rprior$invalid, ]), "\n"),
         "Function 'default_prior' might be helpful to you."
       )
     }
-    prior <- prior[!invalid, ]
+    prior <- rprior$prior[!rprior$invalid, ]
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
 
@@ -1338,6 +1337,30 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   prior
 }
+
+# attempts to repair priors that are missing mu in dpar
+# @param prior - user supplied prior
+# @param all_priors - all priors calculated by .default_prior
+# @return a list with the repaired prior and a logical vector indicating which
+# priors were invalid even after repair
+repair_prior <- function(prior, all_priors) {
+  valid_ids <- which(duplicated(rbind(all_priors, prior)))
+  invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
+  prior2 <- prior
+  if (!sum(invalid)) {
+    return(nlist(prior, invalid))
+  }
+  prior2[invalid,]$dpar <- "mu"
+
+  valid_ids2 <- which(duplicated(rbind(all_priors, prior2)))
+  invalid2 <- !seq_rows(prior2) %in% (valid_ids2 - nrow(all_priors))
+  to_replace <- !invalid2 & invalid
+  if (sum(to_replace)) {
+    prior[to_replace,]$dpar <- "mu"
+  }
+  nlist(prior, invalid=invalid2)
+}
+
 
 # try to check if prior distributions are reasonable
 # @param prior A brmsprior object

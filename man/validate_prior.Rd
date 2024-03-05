@@ -13,6 +13,7 @@ validate_prior(
   data2 = NULL,
   knots = NULL,
   drop_unused_levels = TRUE,
+  keep_mu = getOption("brms.keep_mu", FALSE),
   ...
 )
 }
@@ -65,6 +66,11 @@ for basis construction of smoothing terms. See
 
 \item{drop_unused_levels}{Should unused factors levels in the data be
 dropped? Defaults to \code{TRUE}.}
+
+\item{keep_mu}{Logical. If \code{TRUE}, the population-level effects
+parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+will be removed. Can be set globally for the current \R session via the
+\code{"brms.keep_mu"} option (see \code{\link{options}}).}
 
 \item{...}{Other arguments for internal usage only.}
 }

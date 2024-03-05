@@ -10,6 +10,7 @@
   regenerate = NULL,
   threads = NULL,
   backend = NULL,
+  keep_mu = NULL,
   ...
 )
 }
@@ -27,6 +28,11 @@ with the current \pkg{brms} version. By default, \code{regenerate} will be
 \code{\link{threading}} for details.}
 
 \item{backend}{Controls the Stan backend. See \code{\link{brm}} for details.}
+
+\item{keep_mu}{Logical; if NULL, the value from the model is used. If not NULL,
+it will regenerate the Stan code. If \code{TRUE}, the population-level effects
+ parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+ will be removed}
 
 \item{...}{Further arguments passed to
 \code{\link[brms:stancode.default]{stancode}} if the Stan code is

@@ -13,6 +13,7 @@
   knots = NULL,
   drop_unused_levels = TRUE,
   sparse = NULL,
+  keep_mu = getOption("brms.keep_mu", FALSE),
   ...
 )
 }
@@ -62,6 +63,11 @@ design matrices with many zeros, this can considerably reduce required
 memory. Sampling speed is currently not improved or even slightly
 decreased. It is now recommended to use the \code{sparse} argument of
 \code{\link{brmsformula}} and related functions.}
+
+\item{keep_mu}{Logical. If \code{TRUE}, the population-level effects
+parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+will be removed. Can be set globally for the current \R session via the
+\code{"brms.keep_mu"} option (see \code{\link{options}}).}
 
 \item{...}{Other arguments for internal usage only.}
 }
