@@ -810,7 +810,8 @@ stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
 
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
                                  threads = NULL, ...) {
-  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
+  keep_mu <- stan_keep_mu(bterms$formula)
+  prefix <- paste0(str_if(nzchar(mix) | keep_mu, paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
     # TODO: support 'ordered_probit' as well
@@ -872,7 +873,7 @@ stan_log_lik_hurdle_lognormal <- function(bterms, resp = "", mix = "", ...) {
 
 stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
                                            threads = NULL, ...) {
-  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
+  prefix <- paste0(str_if(nzchar(mix) | keep_mu, paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
     # TODO: support 'ordered_probit' as well
@@ -972,7 +973,7 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
-    prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
+    prefix <- paste0(str_if(nzchar(mix) | keep_mu, paste0("_mu", mix)), resp)
     p$thres <- paste0("Intercept", prefix)
   }
   # insert the response name into the 'vars' strings
