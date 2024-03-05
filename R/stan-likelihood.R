@@ -982,7 +982,7 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
-    prefix <- paste0(str_if(nzchar(mix) | keep_mu, paste0("_mu", mix)), resp)
+    prefix <- paste0(str_if(nzchar(mix) | stan_keep_mu(bterms), paste0("_mu", mix)), resp)
     p$thres <- paste0("Intercept", prefix)
   }
   # insert the response name into the 'vars' strings
