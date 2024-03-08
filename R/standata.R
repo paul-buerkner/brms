@@ -68,11 +68,13 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
                              autocor = NULL, data2 = NULL, cov_ranef = NULL,
                              sample_prior = "no", stanvars = NULL,
                              threads = getOption("brms.threads", NULL),
-                             knots = NULL, drop_unused_levels = TRUE, ...) {
+                             knots = NULL, drop_unused_levels = TRUE,
+                             keep_mu = getOption("brms.keep_mu", FALSE), ...) {
 
   object <- validate_formula(
     object, data = data, family = family,
-    autocor = autocor, cov_ranef = cov_ranef
+    autocor = autocor, cov_ranef = cov_ranef,
+    keep_mu = keep_mu
   )
   bterms <- brmsterms(object)
   data2 <- validate_data2(
@@ -165,6 +167,10 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
 #' Extract all data that was used by Stan to fit a \pkg{brms} model.
 #'
 #' @param object An object of class \code{brmsfit}.
+#' @param keep_mu Logical; if NULL, the value from the model is used. If not NULL,
+#'  it will regenerate the Stan data. If \code{TRUE}, the population-level effects
+#'   parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+#'   will be removed
 #' @param ... More arguments passed to
 #'   \code{\link[brms:standata.default]{standata.default}}.
 #'   and \code{\link{validate_newdata}}.
@@ -175,7 +181,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
 #' @export
 standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              newdata2 = NULL, new_objects = NULL,
-                             incl_autocor = TRUE, ...) {
+                             incl_autocor = TRUE, keep_mu = NULL, ...) {
 
   # allows functions to fall back to old default behavior
   # which was used when originally fitting the model
@@ -184,6 +190,9 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
   object <- exclude_terms(object, incl_autocor = incl_autocor)
   formula <- update_re_terms(object$formula, re_formula)
+  if (!is.null(keep_mu)) {
+    attr(formula$formula, "keep_mu") <- keep_mu
+  }
   bterms <- brmsterms(formula)
 
   newdata2 <- use_alias(newdata2, new_objects)

@@ -72,12 +72,14 @@ stancode.default <- function(object, data, family = gaussian(),
                              drop_unused_levels = TRUE,
                              threads = getOption("brms.threads", NULL),
                              normalize = getOption("brms.normalize", TRUE),
-                             save_model = NULL, ...) {
+                             save_model = NULL,
+                             keep_mu = getOption("brms.keep_mu", FALSE),
+                             ...) {
 
   object <- validate_formula(
     object, data = data, family = family,
     autocor = autocor, sparse = sparse,
-    cov_ranef = cov_ranef
+    cov_ranef = cov_ranef, keep_mu = keep_mu
   )
   bterms <- brmsterms(object)
   data2 <- validate_data2(
@@ -388,6 +390,10 @@ print.brmsmodel <- function(x, ...) {
 #' @param threads Controls whether the Stan code should be threaded. See
 #'   \code{\link{threading}} for details.
 #' @param backend Controls the Stan backend. See \code{\link{brm}} for details.
+#' @param keep_mu Logical; if NULL, the value from the model is used. If not NULL,
+#'  it will regenerate the Stan code. If \code{TRUE}, the population-level effects
+#'   parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+#'   will be removed
 #' @param ... Further arguments passed to
 #'   \code{\link[brms:stancode.default]{stancode}} if the Stan code is
 #'   regenerated.
@@ -396,7 +402,7 @@ print.brmsmodel <- function(x, ...) {
 #'
 #' @export
 stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
-                             threads = NULL, backend = NULL, ...) {
+                             threads = NULL, backend = NULL, keep_mu = NULL, ...) {
 
   if (is.null(regenerate)) {
     # determine whether regenerating the Stan code is required
@@ -419,6 +425,12 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
       }
       object$backend <- backend
     }
+    keep_mu_stored <- isTRUE(attr(object$formula$formula, "keep_mu"))
+    if (!is.null(keep_mu) && (keep_mu != keep_mu_stored)) {
+      regenerate <- TRUE
+    } else {
+      keep_mu <- keep_mu_stored
+    }
   }
   regenerate <- as_one_logical(regenerate)
   if (regenerate) {
@@ -432,6 +444,7 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
       sample_prior = get_sample_prior(object$prior),
       threads = object$threads,
       backend = object$backend,
+      keep_mu = keep_mu,
       ...
     )
   } else {

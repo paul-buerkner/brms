@@ -1326,7 +1326,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
           "  vector[N{resp}] err{p};  // actual residuals\n"
         )
         Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
-        comp_err <- glue("    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n")
+        comp_err <- glue("    err{p}[n] = {Y}{resp}[n] - mu{resp}[n];\n")
       } else {
         if (acef_arma$q > 0) {
           # AR and MA structures cannot be distinguished when
@@ -1341,10 +1341,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         comp_err <- ""
       }
       add_ar <- str_if(acef_arma$p > 0,
-        glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
+        glue("    mu{resp}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
       )
       add_ma <- str_if(acef_arma$q > 0,
-        glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
+        glue("    mu{resp}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
       )
       str_add(out$model_comp_arma) <- glue(
         "  // include ARMA terms\n",
@@ -1603,8 +1603,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       )
       str_add(out$tpar_comp) <- glue(
         "  // sum-to-zero constraint\n",
-        "  rcar[1:(Nloc{p} - 1)] = zcar{p};\n",
-        "  rcar[Nloc{p}] = - sum(zcar{p});\n"
+        "  rcar{p}[1:(Nloc{p} - 1)] = zcar{p};\n",
+        "  rcar{p}[Nloc{p}] = - sum(zcar{p});\n"
       )
       car_args <- c(
         "sdcar", "Nloc", "Nedges", "Nneigh",
@@ -2066,6 +2066,12 @@ stan_eta_transform <- function(family, bterms) {
 stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) &&
     !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
+}
+
+# indicate if the prefix for mu should be kept when using check_prefix or
+# combine_prefix
+stan_keep_mu <- function(x) {
+  (is.btl(x) && isTRUE(attr(x$formula, "keep_mu")) | isTRUE(attr(x, "keep_mu")))
 }
 
 stan_dpar_comments <- function(dpar, family) {

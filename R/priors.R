@@ -382,10 +382,6 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
-  if (dpar == "mu") {
-    # distributional parameter 'mu' is currently implicit #1368
-    dpar <- ""
-  }
   if (!check) {
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- ""
@@ -518,11 +514,11 @@ get_prior <- function(formula, ...) {
 #' @export
 default_prior.default <- function(object, data, family = gaussian(), autocor = NULL,
                                   data2 = NULL, knots = NULL, drop_unused_levels = TRUE,
-                                  sparse = NULL, ...) {
+                                  sparse = NULL, keep_mu = getOption("brms.keep_mu", FALSE), ...) {
 
   object <- validate_formula(
     object, data = data, family = family,
-    autocor = autocor, sparse = sparse
+    autocor = autocor, sparse = sparse, keep_mu = keep_mu
   )
   bterms <- brmsterms(object)
   data2 <- validate_data2(
@@ -1007,7 +1003,7 @@ prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
     return(prior)
   }
   px <- check_prefix(bterms)
-  p <- combine_prefix(px)
+  p <- usc(combine_prefix(px))
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
   if (has_ac_class(acef, "arma")) {
     acef_arma <- subset2(acef, class = "arma")
@@ -1206,8 +1202,9 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
 #' @export
 validate_prior <- function(prior, formula, data, family = gaussian(),
                            sample_prior = "no", data2 = NULL, knots = NULL,
-                           drop_unused_levels = TRUE, ...) {
-  formula <- validate_formula(formula, data = data, family = family)
+                           drop_unused_levels = TRUE,
+                           keep_mu = getOption('brms.keep_mu', FALSE), ...) {
+  formula <- validate_formula(formula, data = data, family = family, keep_mu = keep_mu)
   bterms <- brmsterms(formula)
   data2 <- validate_data2(data2, bterms = bterms)
   data <- validate_data(
@@ -1229,6 +1226,9 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     prior <- all_priors
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
+  } else if ("mu" %in% prior$dpar && !stan_keep_mu(bterms$formula) && !stan_keep_mu(bterms$terms[[1]]$formula)) {
+    # for backward compatibility - remove 'mu' from the prior if keep_mu is FALSE
+    prior$dpar <- gsub("^mu$", "", prior$dpar)
   }
   # when updating existing priors, invalid priors should be allowed
   allow_invalid_prior <- isTRUE(attr(prior, "allow_invalid_prior"))
@@ -1250,17 +1250,16 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   # it is good to let the user know beforehand that some of their priors
   # were invalid in the model to avoid unnecessary refits
   if (nrow(prior)) {
-    valid_ids <- which(duplicated(rbind(all_priors, prior)))
-    invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
-    if (any(invalid) && !allow_invalid_prior) {
+    rprior <- repair_prior(prior, all_priors)
+    if (any(rprior$invalid) && !allow_invalid_prior) {
       stop2(
         "The following priors do not correspond ",
         "to any model parameter: \n",
-        collapse(.print_prior(prior[invalid, ]), "\n"),
+        collapse(.print_prior(rprior$prior[rprior$invalid, ]), "\n"),
         "Function 'default_prior' might be helpful to you."
       )
     }
-    prior <- prior[!invalid, ]
+    prior <- rprior$prior[!rprior$invalid, ]
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
 
@@ -1338,6 +1337,30 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   }
   prior
 }
+
+# attempts to repair priors that are missing mu in dpar
+# @param prior - user supplied prior
+# @param all_priors - all priors calculated by .default_prior
+# @return a list with the repaired prior and a logical vector indicating which
+# priors were invalid even after repair
+repair_prior <- function(prior, all_priors) {
+  valid_ids <- which(duplicated(rbind(all_priors, prior)))
+  invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
+  prior2 <- prior
+  if (!sum(invalid)) {
+    return(nlist(prior, invalid))
+  }
+  prior2[invalid,]$dpar <- "mu"
+
+  valid_ids2 <- which(duplicated(rbind(all_priors, prior2)))
+  invalid2 <- !seq_rows(prior2) %in% (valid_ids2 - nrow(all_priors))
+  to_replace <- !invalid2 & invalid
+  if (sum(to_replace)) {
+    prior[to_replace,]$dpar <- "mu"
+  }
+  nlist(prior, invalid=invalid2)
+}
+
 
 # try to check if prior distributions are reasonable
 # @param prior A brmsprior object

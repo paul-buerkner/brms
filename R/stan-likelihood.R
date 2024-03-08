@@ -374,14 +374,15 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   has_se <- is.formula(bterms$adforms$se)
   flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
-  if (has_se) {
-    c(v) <- "se2"
-  }
   if (flex) {
     c(v) <- "Jtime_tg"
   }
-  p[v] <- as.list(paste0(v, resp))
+  p[v] <- as.list(paste0(v, resp, v_sfx))
+  if (has_se) {
+    p["se2"] <- paste0("se2", resp)
+  }
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
@@ -397,7 +398,8 @@ stan_log_lik_gaussian_fcor <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$Lfcor <- paste0("Lfcor", resp)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p$Lfcor <- paste0("Lfcor", resp, v_sfx)
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$Lfcor)
 }
@@ -407,7 +409,8 @@ stan_log_lik_gaussian_lagsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$Msar, p$eigenMsar)
 }
 
@@ -416,7 +419,8 @@ stan_log_lik_gaussian_errorsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$Msar, p$eigenMsar)
 }
 
@@ -443,14 +447,15 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   has_se <- is.formula(bterms$adforms$se)
   flex <- has_ac_class(tidy_acef(bterms), "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
-  if (has_se) {
-    c(v) <- "se2"
-  }
   if (flex) {
     c(v) <- "Jtime_tg"
   }
-  p[v] <- as.list(paste0(v, resp))
+  p[v] <- as.list(paste0(v, resp, v_sfx))
+  if (has_se) {
+    p['se2'] <- paste0("se2", resp)
+  }
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
@@ -466,7 +471,8 @@ stan_log_lik_student_fcor <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
-  p$Lfcor <- paste0("Lfcor", resp)
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p$Lfcor <- paste0("Lfcor", resp, v_sfx)
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$Lfcor)
 }
@@ -476,7 +482,8 @@ stan_log_lik_student_lagsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("student_t_lagsar", p$nu, p$mu, p$sigma,
         p$lagsar, p$Msar, p$eigenMsar)
 }
@@ -486,7 +493,8 @@ stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
-  p[v] <- as.list(paste0(v, resp))
+  v_sfx <- ifelse(stan_keep_mu(bterms$formula), "_mu", "")
+  p[v] <- as.list(paste0(v, resp, v_sfx))
   sdist("student_t_errorsar", p$nu, p$mu, p$sigma,
         p$errorsar, p$Msar, p$eigenMsar)
 }
@@ -810,7 +818,8 @@ stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
 
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
                                  threads = NULL, ...) {
-  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
+  keep_mu <- stan_keep_mu(bterms$formula)
+  prefix <- paste0(str_if(nzchar(mix) | keep_mu, paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
     # TODO: support 'ordered_probit' as well
@@ -872,7 +881,8 @@ stan_log_lik_hurdle_lognormal <- function(bterms, resp = "", mix = "", ...) {
 
 stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
                                            threads = NULL, ...) {
-  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
+  keep_mu <- stan_keep_mu(bterms$formula)
+  prefix <- paste0(str_if(nzchar(mix) | keep_mu, paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
     # TODO: support 'ordered_probit' as well
@@ -972,7 +982,7 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
-    prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
+    prefix <- paste0(str_if(nzchar(mix) | stan_keep_mu(bterms), paste0("_mu", mix)), resp)
     p$thres <- paste0("Intercept", prefix)
   }
   # insert the response name into the 'vars' strings
@@ -1034,11 +1044,17 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
   decomp <- get_decomp(bterms$fe)
   center_X <- stan_center_X(bterms)
   slice <- stan_slice(threads)
-  sfx_X <- sfx_b <- ""
+  sfx_X <- sfx_b <- sfx_alpha <- ""
   if (decomp == "QR") {
     sfx_X <- sfx_b <- "Q"
   } else if (center_X) {
     sfx_X <- "c"
+  }
+  px <- check_prefix(bterms)$dpar
+  if (nzchar(px)) {
+    sfx_X <- glue("{sfx_X}_{px}")
+    sfx_b <- glue("{sfx_b}_{px}")
+    sfx_alpha <- glue("{sfx_alpha}_{px}")
   }
   x <- glue("X{sfx_X}{resp}{slice}")
   beta <- glue("b{sfx_b}{resp}")
@@ -1047,7 +1063,7 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
     alpha <- glue("mu{resp}")
   } else {
     if (center_X) {
-      alpha <- glue("Intercept{resp}")
+      alpha <- glue("Intercept{sfx_alpha}{resp}")
     } else {
       alpha <- "0"
     }

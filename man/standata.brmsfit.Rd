@@ -11,6 +11,7 @@
   newdata2 = NULL,
   new_objects = NULL,
   incl_autocor = TRUE,
+  keep_mu = NULL,
   ...
 )
 }
@@ -36,6 +37,11 @@ used in autocorrelation structures, or \code{\link{stanvars}}.}
 \item{incl_autocor}{A flag indicating if correlation structures originally
 specified via \code{autocor} should be included in the predictions.
 Defaults to \code{TRUE}.}
+
+\item{keep_mu}{Logical; if NULL, the value from the model is used. If not NULL,
+it will regenerate the Stan data. If \code{TRUE}, the population-level effects
+ parameter names will have a \code{mu_} prefix. If \code{FALSE}, the prefix
+ will be removed}
 
 \item{...}{More arguments passed to
 \code{\link[brms:standata.default]{standata.default}}.

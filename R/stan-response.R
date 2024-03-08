@@ -277,7 +277,7 @@ stan_thres <- function(bterms, data, prior, normalize, ...) {
           comment = "first threshold", normalize = normalize
         )
         str_add_list(out) <- stan_prior(
-          prior, class = "delta", group = groups[i], px = px, suffix = gr[i],
+          prior, class = "delta", group = groups[i], px = px, suffix = glue("{p}{gr[i]}"),
           comment = "distance between thresholds", normalize = normalize
         )
       }
