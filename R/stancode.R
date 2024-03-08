@@ -1,7 +1,7 @@
 #' @title Stan Code for Bayesian models
 #'
 #' @description \code{stancode} is a generic function that can be used to
-#'   generate Stan code for Bayesian models. It's original use is
+#'   generate Stan code for Bayesian models. Its original use is
 #'   within the \pkg{brms} package, but new methods for use
 #'   with objects from other packages can be registered to the same generic.
 #'

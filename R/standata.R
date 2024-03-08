@@ -1,7 +1,7 @@
 #' @title Stan data for Bayesian models
 #'
 #' @description \code{standata} is a generic function that can be used to
-#'   generate data for Bayesian models to be passed to Stan. It's original use is
+#'   generate data for Bayesian models to be passed to Stan. Its original use is
 #'   within the \pkg{brms} package, but new methods for use
 #'   with objects from other packages can be registered to the same generic.
 #'
