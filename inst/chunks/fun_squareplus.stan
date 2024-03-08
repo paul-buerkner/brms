@@ -13,7 +13,7 @@
    * Returns:
    *   a positive vector
    */
-   vector squareplus_vector(vector x) {
+   vector squareplus(vector x) {
      return (x + sqrt(square(x) + 4)) / 2;
    }
   /* squareplus link function (inverse squareplus)
@@ -31,6 +31,6 @@
    * Returns:
    *   a vector in (-Inf, Inf)
    */
-   vector inv_squareplus_vector(vector x) {
+   vector inv_squareplus(vector x) {
      return (square(x) - 1) ./ x;
    }

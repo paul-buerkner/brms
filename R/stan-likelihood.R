@@ -702,9 +702,8 @@ stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     glue("shape{mix}") %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- str_if(reqn, "[n]")
-  sdist(lpdf, p$mu, p$shape)
+  sdist("inv_gaussian", p$mu, p$shape)
 }
 
 stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
@@ -729,8 +728,7 @@ stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     "kappa" %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  lpdf <- paste0("von_mises_", str_if(reqn, "real", "vector"))
-  sdist(lpdf, p$mu, p$kappa)
+  sdist("von_mises2", p$mu, p$kappa)
 }
 
 stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,

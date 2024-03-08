@@ -19,7 +19,7 @@
    * Returns:
    *   a scalar to be added to the log posterior
    */
-   real inv_gaussian_vector_lpdf(vector y, vector mu, real shape) {
+   real inv_gaussian_lpdf(vector y, vector mu, real shape) {
      return 0.5 * rows(y) * log(shape / (2 * pi())) -
             1.5 * sum(log(y)) -
             0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt(y)));

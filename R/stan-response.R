@@ -493,7 +493,7 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
 # @return a character string
 stan_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
-  inv_link <- stan_inv_link(link, vectorize = FALSE)
+  inv_link <- stan_inv_link(link)
   th <- function(k) {
     # helper function generating stan code inside inv_link(.)
     if (family %in% c("cumulative", "sratio")) {
@@ -525,11 +525,7 @@ stan_ordinal_lpmf <- function(family, link) {
         "     }} else if (y == nthres + 1) {{\n",
         "       return log1m_inv_logit({th('nthres')});\n",
         "     }} else {{\n",
-        # TODO: replace with log_inv_logit_diff once rstan >= 2.25
-        "       return log_diff_exp(\n",
-        "         log_inv_logit({th('y')}), \n",
-        "         log_inv_logit({th('y - 1')})\n",
-        "       );\n",
+        "       return log_inv_logit_diff({th('y')}, {th('y - 1')});\n",
         "     }}\n",
         "   }}\n"
       )
@@ -564,11 +560,10 @@ stan_ordinal_lpmf <- function(family, link) {
         "log_inv_logit({th('k')})"
       )
     } else if (inv_link == "Phi") {
-      # TODO: replace with more stable std_normal_lcdf once rstan >= 2.25
       qk <- str_if(
         family == "sratio",
-        "normal_lccdf({th('k')}|0,1)",
-        "normal_lcdf({th('k')}|0,1)"
+        "std_normal_lccdf({th('k')})",
+        "std_normal_lcdf({th('k')})"
       )
     } else if (inv_link == "Phi_approx") {
       qk <- str_if(
@@ -670,7 +665,7 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
   # TODO: generalize to non-cumulative families?
   stopifnot(family == "hurdle_cumulative")
-  inv_link <- stan_inv_link(link, vectorize = FALSE)
+  inv_link <- stan_inv_link(link)
   th <- function(k) {
     out <- glue("thres[{k}] - mu")
     glue("disc * ({out})")
@@ -702,11 +697,8 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
       "       return log1m_inv_logit({th('nthres')}) +\n",
       "                bernoulli_lpmf(0 | hu);\n",
       "     }} else {{\n",
-      # TODO: replace with log_inv_logit_diff once rstan >= 2.25
-      "       return log_diff_exp(\n",
-      "         log_inv_logit({th('y')}), \n",
-      "         log_inv_logit({th('y - 1')})\n",
-      "       ) + bernoulli_lpmf(0 | hu) ;\n",
+      "       return log_inv_logit_diff({th('y')}, {th('y - 1')}) +\n",
+      "                bernoulli_lpmf(0 | hu) ;\n",
       "     }}\n",
       "   }}\n"
     )

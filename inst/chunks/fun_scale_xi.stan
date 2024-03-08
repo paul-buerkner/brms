@@ -25,7 +25,7 @@
    * Returns:
    *   scaled shape parameter xi
    */
-  real scale_xi_vector(real xi, vector y, vector mu, vector sigma) {
+  real scale_xi(real xi, vector y, vector mu, vector sigma) {
     vector[rows(y)] x = (y - mu) ./ sigma;
     vector[2] bounds = [-inv(min(x)), -inv(max(x))]';
     real lb = min(bounds);

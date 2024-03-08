@@ -317,7 +317,7 @@ test_that("link functions appear in the Stan code", {
                               family = skew_normal("log")),
                "mu_y = exp(mu_y);")
   expect_match2(stancode(y ~ x, dat, family = von_mises(tan_half)),
-               "mu = inv_tan_half_vector(mu);")
+               "mu = inv_tan_half(mu);")
   expect_match2(stancode(y ~ x, dat, family = weibull()),
                 "mu = exp(mu);")
   expect_match2(stancode(y ~ x, dat, family = poisson("sqrt")),
@@ -330,7 +330,7 @@ test_that("link functions appear in the Stan code", {
   scode <- stancode(y ~ x, dat, family = beta_binomial('cloglog'))
   expect_match2(scode, "mu = inv_cloglog(mu);")
   scode <- stancode(y ~ x, dat, family = beta_binomial('cauchit'))
-  expect_match2(scode, "mu = inv_cauchit_vector(mu);")
+  expect_match2(scode, "mu = inv_cauchit(mu);")
 
   scode <- stancode(y ~ x, dat, family = cumulative('cauchit'))
   expect_match2(scode, "p = inv_cauchit(disc * (thres[1] - mu));")
@@ -455,7 +455,7 @@ test_that("self-defined functions appear in the Stan code", {
   # softplus link
   scode <- stancode(rating ~ treat, data = inhaler,
                          family = brmsfamily("poisson", "softplus"))
-  expect_match2(scode, "vector log_expm1_vector(vector x)")
+  expect_match2(scode, "vector log_expm1(vector x)")
 
   # squareplus link
   scode <- stancode(rating ~ treat, data = inhaler,
@@ -465,7 +465,7 @@ test_that("self-defined functions appear in the Stan code", {
   # tan_half link
   expect_match2(stancode(rating ~ treat, data = inhaler,
                               family = von_mises("tan_half")),
-               "vector inv_tan_half_vector(vector y)")
+               "vector inv_tan_half(vector y)")
 
   # logm1 link
   expect_match2(stancode(rating ~ treat, data = inhaler,
@@ -478,12 +478,12 @@ test_that("self-defined functions appear in the Stan code", {
   expect_match2(scode, "real inv_gaussian_lpdf(real y")
   expect_match2(scode, "real inv_gaussian_lcdf(real y")
   expect_match2(scode, "real inv_gaussian_lccdf(real y")
-  expect_match2(scode, "real inv_gaussian_vector_lpdf(vector y")
+  expect_match2(scode, "real inv_gaussian_lpdf(vector y")
 
   # von Mises models
   scode <- stancode(time ~ age, data = kidney, family = von_mises)
-  expect_match2(scode, "real von_mises_real_lpdf(real y")
-  expect_match2(scode, "real von_mises_vector_lpdf(vector y")
+  expect_match2(scode, "real von_mises2_lpdf(real y")
+  expect_match2(scode, "real von_mises2_lpdf(vector y")
 
   # zero-inflated and hurdle models
   expect_match2(stancode(count ~ Trt, data = epilepsy,
@@ -892,7 +892,7 @@ test_that("Stan code of ordinal models is correct", {
 
   scode <- stancode(y ~ x1, dat, family = cratio("probit"))
   expect_match2(scode, "real cratio_probit_lpmf(int y")
-  expect_match2(scode, "q[k] = normal_lcdf(disc * (mu - thres[k])|0,1);")
+  expect_match2(scode, "q[k] = std_normal_lcdf(disc * (mu - thres[k]));")
 
   scode <- stancode(y ~ x1 + cs(x2) + cs(g), dat, family = sratio())
   expect_match2(scode, "real sratio_logit_lpmf(int y")
@@ -1687,7 +1687,7 @@ test_that("Stan code of GEV models is correct", {
   expect_match2(scode, "xi = scale_xi(tmp_xi, Y, mu, sigma)")
 
   SW(scode <- stancode(bf(y ~ x, sigma ~ x), data, gen_extreme_value()))
-  expect_match2(scode, "xi = scale_xi_vector(tmp_xi, Y, mu, sigma)")
+  expect_match2(scode, "xi = scale_xi(tmp_xi, Y, mu, sigma)")
 
   SW(scode <- stancode(bf(y ~ x, xi ~ x), data, gen_extreme_value()))
   expect_match2(scode, "xi = expm1(xi)")

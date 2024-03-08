@@ -1782,10 +1782,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
     "  vector[N{resp}] {par};\n"
   )
   if (bterms$loop) {
-    inv_link <- stan_inv_link(
-      bterms$family$link, vectorize = FALSE,
-      transform = bterms$transform
-    )
+    inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
     str_add(out$model_comp_dpar_link) <- glue(
       "  for (n in 1:N{resp}) {{\n",
       stan_nn_def(threads),
@@ -1794,10 +1791,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
       "  }}\n"
     )
   } else {
-    inv_link <- stan_inv_link(
-      bterms$family$link, vectorize = TRUE,
-      transform = bterms$transform
-    )
+    inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
     str_add(out$model_comp_dpar_link) <- glue(
       "  // compute non-linear predictor values\n",
       "  {par} = {inv_link}({eta});\n"
@@ -1957,10 +1951,7 @@ stan_eta_combine <- function(bterms, out, ranef, threads, primitive, ...) {
   }
   out$loopeta <- NULL
   # possibly transform eta before it is passed to the likelihood
-  inv_link <- stan_inv_link(
-    bterms$family$link, vectorize = TRUE,
-    transform = bterms$transform
-  )
+  inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
   if (nzchar(inv_link)) {
     str_add(out$model_comp_dpar_link) <- glue(
       "  {eta} = {inv_link}({eta});\n"
@@ -2176,14 +2167,12 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
         str_add(out$model_def) <- glue(
           "  real {xi}{p};  // scaled shape parameter\n"
         )
-        sigma <- glue("sigma{id}")
-        sfx <- str_if(sigma %in% names(bterms$dpars), "_vector")
         args <- sargs(
           glue("tmp_{xi}{p}"), glue("Y{p}"),
-          glue("mu{id}{p}"), glue("{sigma}{p}")
+          glue("mu{id}{p}"), glue("sigma{id}{p}")
         )
         str_add(out$model_comp_dpar_trans) <- glue(
-          "  {xi}{p} = scale_xi{sfx}({args});\n"
+          "  {xi}{p} = scale_xi({args});\n"
         )
       }
     }

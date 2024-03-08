@@ -13,6 +13,6 @@
    * Returns:
    *   a vector in (-Inf, Inf)
    */
-   vector cloglog_vector(vector p) {
+   vector cloglog(vector p) {
      return log(-log1m(p));
    }

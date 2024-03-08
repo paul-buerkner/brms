@@ -13,7 +13,7 @@
    * Returns:
    *   a vector in (-Inf, Inf)
    */
-   vector softit_vector(vector p) {
+   vector softit(vector p) {
      return log(expm1(-p / (p - 1)));
    }
   /* compute the inverse of the sofit link
@@ -31,6 +31,6 @@
    * Returns:
    *   a vector in (0, 1)
    */
-   vector inv_softit_vector(vector y) {
+   vector inv_softit(vector y) {
      return log1p_exp(y) / (1 + log1p_exp(y));
    }
