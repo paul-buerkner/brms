@@ -366,9 +366,11 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #' @param x Object of class \code{'kfold'} computed by \code{\link{kfold}}.
 #'   For \code{kfold_predict} to work, the fitted model objects need to have
 #'   been stored via argument \code{save_fits} of \code{\link{kfold}}.
-#' @param method The method used to make predictions. Either \code{"predict"}
-#'   or \code{"fitted"}. See \code{\link{predict.brmsfit}} for details.
-#' @inheritParams predict.brmsfit
+#' @param method Method used to obtain predictions. Can be set to
+#'   \code{"posterior_predict"} (the default), \code{"posterior_epred"},
+#'   or \code{"posterior_linpred"}. For more details, see the respective
+#'   function documentations.
+#' @inheritParams posterior_predict.brmsfit
 #'
 #' @return A \code{list} with two slots named \code{'y'} and \code{'yrep'}.
 #'   Slot \code{y} contains the vector of observed responses.
@@ -397,7 +399,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #' }
 #'
 #' @export
-kfold_predict <- function(x, method = c("predict", "fitted"),
+kfold_predict <- function(x, method = "posterior_predict",
                           resp = NULL, ...) {
   if (!inherits(x, "kfold")) {
     stop2("'x' must be a 'kfold' object.")
@@ -408,7 +410,7 @@ kfold_predict <- function(x, method = c("predict", "fitted"),
       "Please run kfold with 'save_fits = TRUE'."
     )
   }
-  method <- get(match.arg(method), mode = "function")
+  method <- validate_pp_method(method)
   resp <- validate_resp(resp, x$fits[[1, "fit"]], multiple = FALSE)
   all_predicted <- as.character(sort(unlist(x$fits[, "predicted"])))
   npredicted <- length(all_predicted)
