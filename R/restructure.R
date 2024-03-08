@@ -1,3 +1,30 @@
+#' Restructure Old R Objects
+#'
+#' \code{restructure} is a generic function used to restructure old R objects to
+#' work with newer versions of the package that generated them. Its original
+#' use is within the \pkg{brms} package, but new methods for use with objects
+#' from other packages can be registered to the same generic.
+#'
+#' @param x An object to be restructured. The object's class will determine
+#'   which method to apply
+#' @param ... Additional arguments to pass to the specific methods
+#'
+#' @details Usually the version of the package that generated the object will be
+#'   stored somewhere in the object and this information will be used by the
+#'   specific method to determine what transformations to apply. See
+#'   \code{\link[brms:restructure.brmsfit]{restructure.brmsfit}} for the default
+#'   method applied for \pkg{brms} models. You can view the available methods by
+#'   typing: \code{methods(restructure)}
+#'
+#' @return An object of the same class as \code{x} compatible with the latest
+#'  version of the package that generated it.
+#'
+#' @seealso \code{\link{restructure.brmsfit}}
+#' @export
+restructure <- function(x, ...) {
+  UseMethod("restructure")
+}
+
 #' Restructure Old \code{brmsfit} Objects
 #'
 #' Restructure old \code{brmsfit} objects to work with
@@ -20,8 +47,7 @@
 #'   of \pkg{brms}.
 #'
 #' @export
-restructure <- function(x, ...) {
-  stopifnot(is.brmsfit(x))
+restructure.brmsfit <- function(x, ...) {
   if (is.null(x$version)) {
     # this is the latest version without saving the version number
     x$version <- list(brms = package_version("0.9.1"))

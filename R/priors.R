@@ -441,7 +441,7 @@ prior_string <- function(prior, ...) {
 #' Default priors for Bayesian models
 #'
 #' @description \code{default_prior} is a generic function that can be used to
-#'   get default priors for Bayesian models. It's original use is
+#'   get default priors for Bayesian models. Its original use is
 #'   within the \pkg{brms} package, but new methods for use
 #'   with objects from other packages can be registered to the same generic.
 #'
