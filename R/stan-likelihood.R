@@ -748,9 +748,10 @@ stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
   if (use_glm_primitive(bterms, allow_special_terms = FALSE)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
     out <- sdist("ordered_logistic_glm", p$x, p$beta, p$alpha)
-    return(out)
+  } else {
+    out <- stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
   }
-  stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
+  out
 }
 
 stan_log_lik_sratio <- function(bterms, resp = "", mix = "",
@@ -768,9 +769,13 @@ stan_log_lik_acat <- function(bterms, resp = "", mix = "",
   stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
-stan_log_lik_categorical <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_categorical <- function(bterms, resp = "", mix = "",
+                                     threads = NULL, ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  # if (use_glm_primitive_categorical(bterms)) {
+  #   # TODO: support categorical_logit_glm
+  # }
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
   sdist("categorical_logit", p$mu)
 }
@@ -995,34 +1000,57 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
 
 # use Stan GLM primitive functions?
 # @param bterms a brmsterms object
+# @param allow_special_terms still use glm primitives if
+#   random effects, splines, etc. are present?
 # @return TRUE or FALSE
 use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   stopifnot(is.brmsterms(bterms))
   # the model can only have a single predicted parameter
   # and no additional residual or autocorrelation structure
-  non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   mu <- bterms$dpars[["mu"]]
+  non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
       isTRUE(bterms$rescor) || is.formula(mu$ac) ||
       any(names(bterms$adforms) %in% non_glm_adterms)) {
     return(FALSE)
   }
+  # some primitives do not support special terms in the way
+  # required by brms' Stan code generation
+  if (!allow_special_terms && has_special_terms(mu)) {
+    return(FALSE)
+  }
   # supported families and link functions
-  # TODO: support categorical_logit primitive
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
     poisson = "log", negbinomial = "log", negbinomial2 = "log",
-    cumulative = "logit"
+    cumulative = "logit", categorical = "logit"
   )
   if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
     return(FALSE)
   }
-  if (!allow_special_terms && has_special_terms(mu)) {
-    # some primitives do not support special terms in the way
-    # required by brms' Stan code generation
-    return(FALSE)
-  }
   length(all_terms(mu$fe)) > 0 && !is_sparse(mu$fe)
+}
+
+# use Stan categorical GLM primitive function?
+# @param bterms a brmsterms object
+# @param ... passed to use_glm_primitive
+# @return TRUE or FALSE
+use_glm_primitive_categorical <- function(bterms, ...) {
+  # NOTE: this function is not yet in use; see stan_log_lik_categorical
+  stopifnot(is.brmsterms(bterms))
+  stopifnot(is_categorical(bterms))
+  bterms_tmp <- bterms
+  bterms_tmp$dpars <- list()
+  # we know that all dpars in categorical models are mu parameters
+  out <- rep(FALSE, length(bterms$dpars))
+  for (i in seq_along(bterms$dpars)) {
+    bterms_tmp$dpars$mu <- bterms$dpars[[i]]
+    bterms_tmp$dpars$mu$family <- bterms$family
+    out[i] <- use_glm_primitive(bterms_tmp, ...) &&
+      # the design matrix of all mu parameters must match
+      all.equal(bterms_tmp$dpars$mu$fe, bterms$dpars[[1]]$fe)
+  }
+  all(out)
 }
 
 # standard arguments for primitive Stan GLM functions
