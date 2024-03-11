@@ -586,6 +586,15 @@ log_lik_gen_extreme_value <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_loglogistic <- function(i, prep) {
+  shape <- get_dpar(prep, "shape", i = i)
+  mu <- get_dpar(prep, "mu", i)
+  args <- list(shape = shape, scale = mu)
+  out <- log_lik_censor(dist = "llogis", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(out, cdf = pllogis, args = args, i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_inverse.gaussian <- function(i, prep) {
   args <- list(mu = get_dpar(prep, "mu", i),
                shape = get_dpar(prep, "shape", i = i))
@@ -739,6 +748,44 @@ log_lik_hurdle_cumulative <- function(i, prep) {
       log_cdf(eta[, y - 1L], prep$family$link)
     ) + dbinom(0, size = 1, prob = hu, log = TRUE)
   }
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_mixcure_lognormal <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  inc <- get_dpar(prep, "inc", i)
+  args <- nlist(mu = mu, sigma = sigma, inc = inc)
+  out <- log_lik_censor("mixcure_lognormal", args, i, prep)
+  out <- log_lik_truncate(out, pmixcure_lognormal, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_mixcure_weibull <- function(i, prep) {
+  shape <- get_dpar(prep, "shape", i = i)
+  scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
+  inc <- get_dpar(prep, "inc", i)
+  args <- list(shape = shape, scale = scale, inc = inc)
+  out <- log_lik_censor(
+    dist = "mixcure_weibull", args = args, i = i, prep = prep
+  )
+  out <- log_lik_truncate(
+    out, cdf = pmixcure_weibull, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_mixcure_loglogistic <- function(i, prep) {
+  shape <- get_dpar(prep, "shape", i = i)
+  mu <- get_dpar(prep, "mu", i)
+  inc <- get_dpar(prep, "inc", i)
+  args <- list(shape = shape, scale = mu, inc = inc)
+  out <- log_lik_censor(
+    dist = "mixcure_loglogistic", args = args, i = i, prep = prep
+  )
+  out <- log_lik_truncate(
+    out, cdf = pmixcure_loglogistic, args = args, i = i, prep = prep
+  )
   log_lik_weight(out, i = i, prep = prep)
 }
 

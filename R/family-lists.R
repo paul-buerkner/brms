@@ -330,6 +330,17 @@
   )
 }
 
+.family_loglogistic <- function() {
+  list(
+    links = c("log", "identity"),
+    dpars = c("mu", "shape"), type = "real",
+    ybounds = c(0, Inf), closed = c(FALSE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
+    include = "fun_loglogistic.stan",
+    specials = "logscale"
+  )
+}
+
 .family_von_mises <- function() {
   list(
     links = c("tan_half", "identity"),
@@ -494,6 +505,30 @@
       "ordinal", "ordered_thres", "thres_minus_eta",
       "joint_link", "ocs", "sbi_logit", "extra_cat"
     ),
+    normalized = ""
+  )
+}
+
+.family_mixcure_lognormal <- function() {
+  list(
+    links = c("identity", "inverse"),
+    dpars = c("mu", "sigma", "inc"), type = "real",
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
+    include = "fun_mixcure_lognormal.stan",
+    specials = c("logscale", "sbi_inc_logit", "sbi_inc_logit_cdf"),
+    normalized = ""
+  )
+}
+
+.family_mixcure_weibull <- function() {
+  list(
+    links = c("log", "identity", "inverse", "softplus", "squareplus"),
+    dpars = c("mu", "shape", "inc"), type = "real",
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
+    include = "fun_mixcure_weibull.stan",
+    specials = c("logscale", "sbi_inc_logit", "sbi_inc_logit_cdf"),
     normalized = ""
   )
 }
