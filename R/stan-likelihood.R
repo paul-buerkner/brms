@@ -810,9 +810,11 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
                                  threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  if (use_ordered_logistic(bterms)) {
-    # TODO: support 'ordered_probit' as well
+  if (use_ordered_builtin(bterms, "logit")) {
     lpdf <- "ordered_logistic"
+    p[grepl("^disc", names(p))] <- NULL
+  } else if (use_ordered_builtin(bterms, "probit")) {
+    lpdf <- "ordered_probit"
     p[grepl("^disc", names(p))] <- NULL
   } else {
     lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
@@ -872,9 +874,10 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
                                            threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  if (use_ordered_logistic(bterms)) {
-    # TODO: support 'ordered_probit' as well
+  if (use_ordered_builtin(bterms, "logit")) {
     lpdf <- "hurdle_cumulative_ordered_logistic"
+  } else if (use_ordered_builtin(bterms, "probit")) {
+    lpdf <- "hurdle_cumulative_ordered_probit"
   } else {
     lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
   }
@@ -1054,10 +1057,10 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
 }
 
 # use the ordered_logistic built-in functions
-use_ordered_logistic <- function(bterms) {
+use_ordered_builtin <- function(bterms, link) {
   stopifnot(is.brmsterms(bterms))
   isTRUE(bterms$family$family %in% c("cumulative", "hurdle_cumulative")) &&
-    isTRUE(bterms$family$link == "logit") &&
+    isTRUE(bterms$family$link == link) &&
     isTRUE(bterms$fdpars$disc$value == 1) &&
     !has_cs(bterms)
 }

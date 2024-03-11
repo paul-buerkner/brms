@@ -870,12 +870,10 @@ test_that("Stan code of ordinal models is correct", {
                     x2 = rnorm(10), g = factor(rep(1:2, 5)))
 
   scode <- stancode(
-    y ~ x1, dat, family = cumulative(),
+    y ~ x1, dat, family = cumulative("logit"),
     prior = prior(normal(0, 2), Intercept, coef = 2)
   )
-  expect_match2(scode,
-    "target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);"
-  )
+  expect_match2(scode, "target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);")
   expect_match2(scode, "lprior += student_t_lpdf(Intercept[1] | 3, 0, 2.5);")
   expect_match2(scode, "lprior += normal_lpdf(Intercept[2] | 0, 2);")
 
@@ -889,6 +887,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = Intercept + dot_product(means_X, b);")
   expect_match2(scode, "lprior += normal_lpdf(first_Intercept | 0, 2);")
+  expect_match2(scode, "target += ordered_probit_lpmf(Y[n] | mu[n], Intercept);")
 
   scode <- stancode(y ~ x1, dat, family = cratio("probit"))
   expect_match2(scode, "real cratio_probit_lpmf(int y")
@@ -918,11 +917,11 @@ test_that("Stan code of ordinal models is correct", {
 
   # sum-to-zero thresholds
   scode <- stancode(
-    y ~ x1, dat, cumulative("probit", threshold = "sum_to_zero"),
+    y ~ x1, dat, cumulative("cloglog", threshold = "sum_to_zero"),
     prior = prior(normal(0, 2), Intercept)
   )
   expect_match2(scode, "Intercept_stz = Intercept - mean(Intercept);")
-  expect_match2(scode, "cumulative_probit_lpmf(Y[n] | mu[n], disc, Intercept_stz);")
+  expect_match2(scode, "cumulative_cloglog_lpmf(Y[n] | mu[n], disc, Intercept_stz);")
   expect_match2(scode, "vector[nthres] b_Intercept = Intercept_stz;")
 
   # non-linear ordinal models
@@ -1026,7 +1025,7 @@ test_that("Stan code of hurdle cumulative model is correct", {
                     g = factor(rep(1:2, 5)))
 
   scode <- stancode(
-    y ~ x1, dat, family = hurdle_cumulative(),
+    y ~ x1, dat, family = hurdle_cumulative("logit"),
     prior = prior(normal(0, 2), Intercept, coef = 2)
   )
   expect_match2(scode,
@@ -1039,10 +1038,9 @@ test_that("Stan code of hurdle cumulative model is correct", {
     prior = prior(normal(0, 2), Intercept)
   )
 
-  expect_match2(scode, "real hurdle_cumulative_probit_lpmf(int y")
+  expect_match2(scode, "real hurdle_cumulative_ordered_probit_lpmf(int y")
   expect_match2(scode, "p = Phi(disc * (thres[1] - mu)) * (1 - hu);")
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
-
 
   # sum-to-zero thresholds
   scode <- stancode(
