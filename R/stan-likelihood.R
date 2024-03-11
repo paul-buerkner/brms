@@ -1011,9 +1011,8 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   # TODO: support categorical_logit primitive
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
-    poisson = "log", negbinomial = "log", negbinomial2 = "log"
-    # rstan does not yet support 'ordered_logistic_glm'
-    # cumulative = "logit"
+    poisson = "log", negbinomial = "log", negbinomial2 = "log",
+    cumulative = "logit"
   )
   if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
     return(FALSE)

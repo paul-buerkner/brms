@@ -873,7 +873,7 @@ test_that("Stan code of ordinal models is correct", {
     y ~ x1, dat, family = cumulative("logit"),
     prior = prior(normal(0, 2), Intercept, coef = 2)
   )
-  expect_match2(scode, "target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);")
+  expect_match2(scode, "target += ordered_logistic_glm_lpmf(Y | Xc, b, Intercept);")
   expect_match2(scode, "lprior += student_t_lpdf(Intercept[1] | 3, 0, 2.5);")
   expect_match2(scode, "lprior += normal_lpdf(Intercept[2] | 0, 2);")
 
