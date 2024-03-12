@@ -291,7 +291,11 @@ fit_model <- function(model, backend, ...) {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
 
-  out <- read_csv_as_brms_stanfit(out$output_files(), model, exclude)
+  variables <- out$metadata()$variables
+  out <- read_csv_as_stanfit(out$output_files(),
+                             variables = variables,
+                             model = model,
+                             exclude = exclude)
 
   if (empty_model) {
     # allow correct updating of an 'empty' model
@@ -635,14 +639,51 @@ file_refit_options <- function() {
 #   paste0(out, collapse = "\n")
 # }
 
-# read in stan CSVs via cmdstanr and repackage into a stanfit object
-# efficient replacement of rstan::read_stan_csv
-# @param files character vector of CSV files names where draws are stored
-# @param variables character vectors of variables to extract draws for
-# @param sampler_diagnostics character vectors of diagnostics to extract
-# @return a stanfit object
-read_csv_as_stanfit <- function(files, variables = NULL,
-                                sampler_diagnostics = NULL) {
+#' Read CmdStan CSV files as a brms-formatted stanfit object
+#'
+#' `read_csv_as_stanfit()` is used internally to read CmdStan CSV files into a
+#' `stanfit` object that is consistent with the structure of the fit slot of a
+#' brmsfit object.
+#'
+#' @param files character vector of CSV files names where draws are stored
+#' @param variables character vector of variables to extract from the CSV files
+#' @param sampler_diagnostics character vector of sampler diagnostics to extract
+#' @param model a compiled cmdstanr model object (optional). Provide this argument
+#'  if you want to allow updating the model without recompilation.
+#' @param exclude character vector of variables to exclude from the stanfit. Only
+#'  used when `variables` is also specified
+#'
+#' @return a stanfit object consistent with the structure of the fit slot of
+#'  a brmsfit object
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # fit a model manually via cmdstanr
+#' scode <- stancode(count ~ Trt, data = epilepsy)
+#' sdata <- standata(count ~ Trt, data = epilepsy)
+#' mod <- cmdstanr::cmdstan_model(cmdstanr::write_stan_file(scode))
+#' stanfit <- mod$sample(data = sdata)
+#'
+#' # feed the Stan model back into brms
+#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = 'cmdstanr')
+#' fit$fit <- read_csv_as_stanfit(stanfit$output_files(), model = mod)
+#' fit <- rename_pars(fit)
+#' summary(fit)
+#' }
+#' @importFrom rlang `%||%`
+read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = NULL,
+                                model = NULL, exclude = "") {
+  require_package("cmdstanr")
+
+  if (!is.null(variables)) {
+    # ensure that only relevant variables are read from CSV
+    variables <- repair_variable_names(variables)
+    variables <- unique(sub("\\[.+", "", variables))
+    variables <- setdiff(variables, exclude)
+    # temp fix for cmdstanr not recognizing the variable names it produces  #1473
+    variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
+  }
 
   csfit <- cmdstanr::read_cmdstan_csv(
     files = files, variables = variables,
@@ -654,11 +695,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   model_name = gsub(".csv", "", basename(files[[1]]))
 
   # @model_pars
-  svars <- csfit$metadata$stan_variables
-  if (!is.null(variables)) {
-    variables_main <- unique(gsub("\\[.*\\]", "", variables))
-    svars <- intersect(variables_main, svars)
-  }
+  svars <- variables %||% csfit$metadata$stan_variables
   if ("lp__" %in% svars) {
     svars <- c(setdiff(svars, "lp__"), "lp__")
   }
@@ -753,10 +790,6 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   }
 
   fnames_oi <- colnames(samples)
-
-  colnames(samples) <- gsub("\\[", ".", colnames(samples))
-  colnames(samples) <- gsub("\\]", "", colnames(samples))
-  colnames(samples) <- gsub("\\,", ".", colnames(samples))
 
   # split samples into chains
   samples <- split(samples, chain_ids)
@@ -930,7 +963,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   sdate <- do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
   sdate <- format(sdate, "%a %b %d %X %Y")
 
-  new(
+  out <- new(
     "stanfit",
     model_name = model_name,
     model_pars = svars,
@@ -943,57 +976,12 @@ read_csv_as_stanfit <- function(files, variables = NULL,
     date = sdate,  # not the time of sampling
     .MISC = new.env(parent = emptyenv())
   )
-}
 
-
-#' Read CmdStan CSV files as a brms-formatted stanfit object
-#'
-#' `read_csv_as_brms_stanfit()` is used internally to read CmdStan CSV files into a
-#' `stanfit` object that is consistent with the structure of the fit slot of a
-#' brmsfit object.
-#'
-#' @param files character vector of CSV files names where draws are stored
-#' @param model a compiled cmdstanr model object (optional). Provide this argument
-#'  if you want to allow updating the model without recompilation.
-#' @param exclude character vector of variables to exclude from the stanfit
-#'
-#' @return a stanfit object consistent with the structure of the fit slot of
-#'  a brmsfit object
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' # fit a model manually via cmdstanr
-#' scode <- stancode(count ~ Trt, data = epilepsy)
-#' sdata <- standata(count ~ Trt, data = epilepsy)
-#' mod <- cmdstanr::cmdstan_model(cmdstanr::write_stan_file(scode))
-#' stanfit <- mod$sample(data = sdata)
-#'
-#' # feed the Stan model back into brms
-#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = 'cmdstanr')
-#' fit$fit <- read_csv_as_brms_stanfit(stanfit$output_files(), model = mod)
-#' fit <- rename_pars(fit)
-#' summary(fit)
-#' }
-read_csv_as_brms_stanfit <- function(files, model, exclude = "") {
-  # not all metadata is stored by read_csv_as_stanfit
-  require_package("cmdstanr")
-  metadata <- cmdstanr::read_cmdstan_csv(
-    files, variables = "", sampler_diagnostics = ""
-  )
-  # ensure that only relevant variables are read from CSV
-  variables <- repair_variable_names(metadata$metadata$variables)
-  variables <- unique(sub("\\[.+", "", variables))
-  variables <- setdiff(variables, exclude)
-  # temp fix for cmdstanr not recognizing the variable names it produces  #1473
-  variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
-  # transform into stanfit object for consistent output structure
-  out <- read_csv_as_stanfit(files, variables = variables)
-  out <- repair_stanfit(out)
-  # allow updating the model without recompilation
-  if (!missing(model)) {
-    attributes(out)$CmdStanModel <- model
-  }
-  attributes(out)$metadata <- metadata
+  attributes(out)$metadata <- csfit
+  attributes(out)$CmdStanModel <- model
   out
 }
+
+
+
+
