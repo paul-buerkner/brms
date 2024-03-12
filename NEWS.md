@@ -19,6 +19,7 @@ the default priors, for their own objects building on brms. Thanks to Ven Popov
 for helping with this. (#1604)
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
+* Export `read_csv_as_stanfit` thanks to Ven Popov. (#1619)
 * Improve parameter class names in the `summary` output.
 * Show histograms rather than densities in the `plot` method by default.
 * Deprecate argument `N` in the `plot` method in favor of argument `nvariables`.
