@@ -44,7 +44,7 @@ stanfit <- mod$sample(data = sdata)
 
 # feed the Stan model back into brms
 fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = 'cmdstanr')
-fit$fit <- read_csv_as_brms_stanfit(stanfit$output_files(), model = mod)
+fit$fit <- read_csv_as_stanfit(stanfit$output_files(), model = mod)
 fit <- rename_pars(fit)
 summary(fit)
 }
