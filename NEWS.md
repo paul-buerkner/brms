@@ -6,6 +6,8 @@
 if potentially results-changing arguments are provided to the criterion method.
 * Allow to turn off automatic broadcasting of `constant` priors.
 * Allow for joint likelihood evaluation in `kfold` via argument `joint`.
+* Use several Stan built-in functions implemented since version 2.26
+to improve the efficiency of multiple model classes. (#1077)
 
 ### Other Changes
 

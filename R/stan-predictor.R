@@ -46,7 +46,7 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
   str_add_list(out) <- stan_response(x, data = data, normalize = normalize)
   valid_dpars <- valid_dpars(x)
   args <- nlist(data, prior, normalize, nlpars = names(x$nlpars), ...)
-  args$primitive <- use_glm_primitive(x)
+  args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]])
     str_add_list(out) <- do_call(stan_predictor, c(nlp_args, args))
@@ -2095,25 +2095,53 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
   resp <- usc(bterms$resp)
   if (any(conv_cats_dpars(families))) {
     stopifnot(length(families) == 1L)
-    is_logistic_normal <- any(is_logistic_normal(families))
-    len_mu <- glue("ncat{p}{str_if(is_logistic_normal, '-1')}")
-    str_add(out$model_def) <- glue(
-      "  // linear predictor matrix\n",
-      "  array[N{resp}] vector[{len_mu}] mu{p};\n"
-    )
-    mu_dpars <- make_stan_names(glue("mu{bterms$family$cats}"))
-    mu_dpars <- glue("{mu_dpars}{p}[n]")
     iref <- get_refcat(bterms$family, int = TRUE)
-    if (is_logistic_normal) {
-      mu_dpars <- mu_dpars[-iref]
+    mus <- make_stan_names(glue("mu{bterms$family$cats}"))
+    mus <- glue("{mus}{p}")
+    if (use_glm_primitive_categorical(bterms)) {
+      bterms1 <- bterms$dpars[[1]]
+      center_X <- stan_center_X(bterms1)
+      ct <- str_if(center_X, "c")
+      K <- glue("K{ct}_{bterms1$dpar}{p}")
+      str_add(out$model_def) <- glue(
+        "  // joint regression coefficients over categories\n",
+        "  matrix[{K}, ncat{p}] b{p};\n"
+      )
+      bnames <- glue("b_{mus}")
+      bnames[iref] <- glue("rep_vector(0, {K})")
+      str_add(out$model_comp_catjoin) <- cglue(
+        "  b{p}[, {seq_along(bnames)}] = {bnames};\n"
+      )
+      if (center_X) {
+        Inames <- glue("Intercept_{mus}")
+        Inames[iref] <- "0"
+        str_add(out$model_def) <- glue(
+          "  // joint intercepts over categories\n",
+          "  vector[ncat{p}] Intercept{p};\n"
+        )
+        str_add(out$model_comp_catjoin) <- glue(
+          "  Intercept{p} = {stan_vector(Inames)};\n"
+        )
+      }
     } else {
-      mu_dpars[iref] <- "0"
+      is_logistic_normal <- any(is_logistic_normal(families))
+      len_mu <- glue("ncat{p}{str_if(is_logistic_normal, '-1')}")
+      str_add(out$model_def) <- glue(
+        "  // linear predictor matrix\n",
+        "  array[N{resp}] vector[{len_mu}] mu{p};\n"
+      )
+      mus <- glue("{mus}[n]")
+      if (is_logistic_normal) {
+        mus <- mus[-iref]
+      } else {
+        mus[iref] <- "0"
+      }
+      str_add(out$model_comp_catjoin) <- glue(
+        "  for (n in 1:N{resp}) {{\n",
+        "    mu{p}[n] = {stan_vector(mus)};\n",
+        "  }}\n"
+      )
     }
-    str_add(out$model_comp_catjoin) <- glue(
-      "  for (n in 1:N{resp}) {{\n",
-      "    mu{p}[n] = {stan_vector(mu_dpars)};\n",
-      "  }}\n"
-    )
   }
   if (any(families %in% "skew_normal")) {
     # as suggested by Stephen Martin use sigma and mu of CP

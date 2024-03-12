@@ -745,7 +745,7 @@ stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
 
 stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
                                     threads = NULL, ...) {
-  if (use_glm_primitive(bterms, allow_special_terms = FALSE)) {
+  if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
     out <- sdist("ordered_logistic_glm", p$x, p$beta, p$alpha)
   } else {
@@ -773,11 +773,16 @@ stan_log_lik_categorical <- function(bterms, resp = "", mix = "",
                                      threads = NULL, ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  # if (use_glm_primitive_categorical(bterms)) {
-  #   # TODO: support categorical_logit_glm
-  # }
-  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
-  sdist("categorical_logit", p$mu)
+  if (use_glm_primitive_categorical(bterms)) {
+    bterms1 <- bterms$dpars[[1]]
+    bterms1$family <- bterms$family
+    p <- args_glm_primitive(bterms1, resp = resp, threads = threads)
+    out <- sdist("categorical_logit_glm", p$x, p$alpha, p$beta)
+  } else {
+    p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
+    out <- sdist("categorical_logit", p$mu)
+  }
+  out
 }
 
 stan_log_lik_multinomial <- function(bterms, resp = "", mix = "", ...) {
@@ -1000,10 +1005,8 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
 
 # use Stan GLM primitive functions?
 # @param bterms a brmsterms object
-# @param allow_special_terms still use glm primitives if
-#   random effects, splines, etc. are present?
 # @return TRUE or FALSE
-use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
+use_glm_primitive <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   # the model can only have a single predicted parameter
   # and no additional residual or autocorrelation structure
@@ -1016,6 +1019,7 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   }
   # some primitives do not support special terms in the way
   # required by brms' Stan code generation
+  allow_special_terms <- !mu$family$family %in% c("cumulative", "categorical")
   if (!allow_special_terms && has_special_terms(mu)) {
     return(FALSE)
   }
@@ -1033,22 +1037,22 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
 
 # use Stan categorical GLM primitive function?
 # @param bterms a brmsterms object
-# @param ... passed to use_glm_primitive
 # @return TRUE or FALSE
-use_glm_primitive_categorical <- function(bterms, ...) {
-  # NOTE: this function is not yet in use; see stan_log_lik_categorical
+use_glm_primitive_categorical <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
-  stopifnot(is_categorical(bterms))
-  bterms_tmp <- bterms
-  bterms_tmp$dpars <- list()
+  if (!is_categorical(bterms)) {
+    return(FALSE)
+  }
+  tmp <- bterms
+  tmp$dpars <- list()
   # we know that all dpars in categorical models are mu parameters
   out <- rep(FALSE, length(bterms$dpars))
   for (i in seq_along(bterms$dpars)) {
-    bterms_tmp$dpars$mu <- bterms$dpars[[i]]
-    bterms_tmp$dpars$mu$family <- bterms$family
-    out[i] <- use_glm_primitive(bterms_tmp, ...) &&
+    tmp$dpars$mu <- bterms$dpars[[i]]
+    tmp$dpars$mu$family <- bterms$family
+    out[i] <- use_glm_primitive(tmp) &&
       # the design matrix of all mu parameters must match
-      all.equal(bterms_tmp$dpars$mu$fe, bterms$dpars[[1]]$fe)
+      all.equal(tmp$dpars$mu$fe, bterms$dpars[[1]]$fe)
   }
   all(out)
 }
@@ -1068,6 +1072,10 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
   } else if (center_X) {
     sfx_X <- "c"
   }
+  is_categorical <- is_categorical(bterms)
+  if (is_categorical) {
+    sfx_X <- glue("{sfx_X}_{bterms$dpar}")
+  }
   x <- glue("X{sfx_X}{resp}{slice}")
   beta <- glue("b{sfx_b}{resp}")
   if (has_special_terms(bterms)) {
@@ -1077,7 +1085,11 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
     if (center_X) {
       alpha <- glue("Intercept{resp}")
     } else {
-      alpha <- "0"
+      if (is_categorical) {
+        alpha <- glue("rep_vector(0, ncat{resp})")
+      } else {
+        alpha <- "0"
+      }
     }
   }
   nlist(x, alpha, beta)

@@ -774,4 +774,3 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
   }
   out
 }
-

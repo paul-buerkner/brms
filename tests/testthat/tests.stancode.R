@@ -646,6 +646,16 @@ test_that("Stan code for categorical models is correct", {
   scode <- stancode(y ~ x + (1 |ID| .g), data = dat,
                          family = categorical(refcat = NA))
   expect_match2(scode, "mu[n] = transpose([mu1[n], mu2[n], mu3[n], muab[n]]);")
+
+  # test use of glm primitive
+  scode <- stancode(y ~ x, data = dat, family = categorical())
+  expect_match2(scode, "b[, 1] = rep_vector(0, Kc_mu2);")
+  expect_match2(scode, "b[, 3] = b_mu3;")
+  expect_match2(scode, "Intercept = transpose([0, Intercept_mu2, Intercept_mu3, Intercept_muab]);")
+  expect_match2(scode, "target += categorical_logit_glm_lpmf(Y | Xc_mu2, Intercept, b);")
+
+  scode <- stancode(bf(y ~ x, center = FALSE), data = dat, family = categorical())
+  expect_match2(scode, "target += categorical_logit_glm_lpmf(Y | X_mu2, rep_vector(0, ncat), b);")
 })
 
 test_that("Stan code for multinomial models is correct", {
