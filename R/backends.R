@@ -291,11 +291,10 @@ fit_model <- function(model, backend, ...) {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
 
-  variables <- out$metadata()$variables
-  out <- read_csv_as_stanfit(out$output_files(),
-                             variables = variables,
-                             model = model,
-                             exclude = exclude)
+  out <- read_csv_as_stanfit(
+    out$output_files(), variables = out$metadata()$variables,
+    model = model, exclude = exclude
+  )
 
   if (empty_model) {
     # allow correct updating of an 'empty' model
@@ -641,21 +640,20 @@ file_refit_options <- function() {
 
 #' Read CmdStan CSV files as a brms-formatted stanfit object
 #'
-#' `read_csv_as_stanfit()` is used internally to read CmdStan CSV files into a
-#' `stanfit` object that is consistent with the structure of the fit slot of a
+#' \code{read_csv_as_stanfit} is used internally to read CmdStan CSV files into a
+#' \code{stanfit} object that is consistent with the structure of the fit slot of a
 #' brmsfit object.
 #'
-#' @param files character vector of CSV files names where draws are stored
-#' @param variables character vector of variables to extract from the CSV files
-#' @param sampler_diagnostics character vector of sampler diagnostics to extract
-#' @param model a compiled cmdstanr model object (optional). Provide this argument
+#' @param files Character vector of CSV files names where draws are stored.
+#' @param variables Character vector of variables to extract from the CSV files.
+#' @param sampler_diagnostics Character vector of sampler diagnostics to extract.
+#' @param model A compiled cmdstanr model object (optional). Provide this argument
 #'  if you want to allow updating the model without recompilation.
-#' @param exclude character vector of variables to exclude from the stanfit. Only
-#'  used when `variables` is also specified
+#' @param exclude Character vector of variables to exclude from the stanfit. Only
+#'  used when \code{variables} is also specified.
 #'
-#' @return a stanfit object consistent with the structure of the fit slot of
-#'  a brmsfit object
-#' @export
+#' @return A stanfit object consistent with the structure of the \code{fit}
+#'  slot of a brmsfit object.
 #'
 #' @examples
 #' \dontrun{
@@ -671,7 +669,8 @@ file_refit_options <- function() {
 #' fit <- rename_pars(fit)
 #' summary(fit)
 #' }
-#' @importFrom rlang `%||%`
+#'
+#' @export
 read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = NULL,
                                 model = NULL, exclude = "") {
   require_package("cmdstanr")
@@ -981,7 +980,3 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   attributes(out)$CmdStanModel <- model
   out
 }
-
-
-
-

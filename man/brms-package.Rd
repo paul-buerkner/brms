@@ -82,3 +82,22 @@ version 2.21.2. \url{https://mc-stan.org/}
 \code{\link{brmsfamily}},
 \code{\link{brmsfit}}
 }
+\author{
+\strong{Maintainer}: Paul-Christian Bürkner \email{paul.buerkner@gmail.com}
+
+Other contributors:
+\itemize{
+  \item Jonah Gabry [contributor]
+  \item Sebastian Weber [contributor]
+  \item Andrew Johnson [contributor]
+  \item Martin Modrak [contributor]
+  \item Hamada S. Badr [contributor]
+  \item Frank Weber [contributor]
+  \item Mattan S. Ben-Shachar [contributor]
+  \item Hayden Rabel [contributor]
+  \item Simon C. Mills [contributor]
+  \item Stephen Wild [contributor]
+  \item Ven Popov [contributor]
+}
+
+}

@@ -13,25 +13,25 @@ read_csv_as_stanfit(
 )
 }
 \arguments{
-\item{files}{character vector of CSV files names where draws are stored}
+\item{files}{Character vector of CSV files names where draws are stored.}
 
-\item{variables}{character vector of variables to extract from the CSV files}
+\item{variables}{Character vector of variables to extract from the CSV files.}
 
-\item{sampler_diagnostics}{character vector of sampler diagnostics to extract}
+\item{sampler_diagnostics}{Character vector of sampler diagnostics to extract.}
 
-\item{model}{a compiled cmdstanr model object (optional). Provide this argument
+\item{model}{A compiled cmdstanr model object (optional). Provide this argument
 if you want to allow updating the model without recompilation.}
 
-\item{exclude}{character vector of variables to exclude from the stanfit. Only
-used when `variables` is also specified}
+\item{exclude}{Character vector of variables to exclude from the stanfit. Only
+used when \code{variables} is also specified.}
 }
 \value{
-a stanfit object consistent with the structure of the fit slot of
- a brmsfit object
+A stanfit object consistent with the structure of the \code{fit}
+ slot of a brmsfit object.
 }
 \description{
-`read_csv_as_stanfit()` is used internally to read CmdStan CSV files into a
-`stanfit` object that is consistent with the structure of the fit slot of a
+\code{read_csv_as_stanfit} is used internally to read CmdStan CSV files into a
+\code{stanfit} object that is consistent with the structure of the fit slot of a
 brmsfit object.
 }
 \examples{
@@ -48,4 +48,5 @@ fit$fit <- read_csv_as_stanfit(stanfit$output_files(), model = mod)
 fit <- rename_pars(fit)
 summary(fit)
 }
+
 }
