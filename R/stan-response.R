@@ -489,7 +489,7 @@ stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
   out
 }
 
-# ordinal log-probability densitiy functions in Stan language
+# ordinal log-probability density functions in Stan language
 # @return a character string
 stan_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
@@ -638,10 +638,11 @@ stan_ordinal_lpmf <- function(family, link) {
     "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
-  if (family == "cumulative" && link == "logit") {
-    # use the more efficient 'ordered_logistic' built-in function
+  if (family == "cumulative" && link %in% c("logit", "probit")) {
+    # use the more efficient ordered_link functions when disc == 1
+    sfx <- str_if(link == "logit", "logistic", link)
     str_add(out) <- glue(
-      "  /* ordered-logistic log-PDF for a single response and merged thresholds\n",
+      "  /* ordered-{sfx} log-PDF for a single response and merged thresholds\n",
       "   * Args:\n",
       "   *   y: response category\n",
       "   *   mu: latent mean parameter\n",
@@ -650,9 +651,9 @@ stan_ordinal_lpmf <- function(family, link) {
       "   * Returns:\n",
       "   *   a scalar to be added to the log posterior\n",
       "   */\n",
-      "   real ordered_logistic_merged_lpmf(",
+      "   real ordered_{sfx}_merged_lpmf(",
       "int y, real mu, vector thres, array[] int j) {{\n",
-      "     return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);\n",
+      "     return ordered_{sfx}_lpmf(y | mu, thres[j[1]:j[2]]);\n",
       "   }}\n"
     )
   }
