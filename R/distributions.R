@@ -463,7 +463,6 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
 #'
-#'
 #' @export
 dvon_mises <- function(x, mu, kappa, log = FALSE) {
   if (isTRUE(any(kappa < 0))) {

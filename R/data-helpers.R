@@ -50,11 +50,14 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   attributes(all_vars_terms)[names(attr_terms)] <- attr_terms
   # 'terms' prevents correct validation in 'model.frame'
   attr(data, "terms") <- NULL
+  # ensures that na_action can be passed to model.frame
+  na_action_bterms <- function(object, ...) {
+    na_action(object, bterms = bterms, ...)
+  }
   data <- model.frame(
-    all_vars_terms, data, na.action = na.pass,
+    all_vars_terms, data, na.action = na_action_bterms,
     drop.unused.levels = drop_unused_levels
   )
-  data <- na_action(data, bterms = bterms)
   if (any(grepl("__|_$", colnames(data)))) {
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
