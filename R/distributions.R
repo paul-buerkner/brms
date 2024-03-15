@@ -456,12 +456,13 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 #' @name VonMises
 #'
 #' @inheritParams StudentT
-#' @param x,q Vector of quantiles.
+#' @param x,q Vector of quantiles between \code{-pi} and \code{pi}.
 #' @param kappa Vector of precision values.
 #' @param acc Accuracy of numerical approximations.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
+#'
 #'
 #' @export
 dvon_mises <- function(x, mu, kappa, log = FALSE) {

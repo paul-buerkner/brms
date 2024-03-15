@@ -14,7 +14,7 @@ pvon_mises(q, mu, kappa, lower.tail = TRUE, log.p = FALSE, acc = 1e-20)
 rvon_mises(n, mu, kappa)
 }
 \arguments{
-\item{x, q}{Vector of quantiles.}
+\item{x, q}{Vector of quantiles between \code{-pi} and \code{pi}.}
 
 \item{mu}{Vector of location values.}
 
