@@ -23,10 +23,7 @@
 #'
 #' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
 #'
-#' @method launch_shinystan brmsfit
-#' @importFrom shinystan launch_shinystan
-#' @export launch_shinystan
-#' @export
+#' @exportS3Method shinystan::launch_shinystan brmsfit
 launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {

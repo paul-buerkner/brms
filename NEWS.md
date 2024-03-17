@@ -20,6 +20,8 @@ for helping with this. (#1604)
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
 * Export `read_csv_as_stanfit` thanks to Ven Popov. (#1619)
+* Make installation of `shinystan` optional. This means that the package has to 
+be loaded, via `library(shinystan)`, before `launch_shinystan` can be used. (#1595)
 * Improve parameter class names in the `summary` output.
 * Show histograms rather than densities in the `plot` method by default.
 * Deprecate argument `N` in the `plot` method in favor of argument `nvariables`.
