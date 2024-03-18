@@ -693,8 +693,8 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     variables <- setdiff(variables, exclude)
     # cmdstanr deals with special variables inconsistently
     # below is an attempt to deal with this somehow (part 1)
+    # temp fix for cmdstanr not recognizing the variable names it produces #1473
     if (algorithm %in% c("meanfield", "fullrank")) {
-      # temp fix for cmdstanr not recognizing the variable names it produces  #1473
       variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
     } else if (algorithm %in% "pathfinder") {
       variables <- setdiff(variables, "lp_approx__")
@@ -717,8 +717,9 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   # cmdstanr deals with special variables inconsistently
   # below is an attempt to deal with this somehow (part 2)
   special_vars <- c("lp__", "lp_approx__", "log_g__")
+  special_vars <- intersect(special_vars, svars)
   vars_in_draws <- variables(csfit$draws)
-  for (v in intersect(special_vars, svars)) {
+  for (v in special_vars) {
     if (v %in% vars_in_draws) {
       # put special vars at the end
       svars <- c(setdiff(svars, v), v)
