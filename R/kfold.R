@@ -30,10 +30,13 @@
 #' @param group Optional name of a grouping variable or factor in the model.
 #'   What exactly is done with this variable depends on argument \code{folds}.
 #'   More information is provided in the 'Details' section.
-#' @param joint Logical; If \code{TRUE}, the joint log likelihoods per
-#'   fold are used for ELPD computation instead of the pointwise
-#'   (per observations) likelihoods. The latter is the default
-#'   for comparability of \code{kfold} with \code{loo}.
+#' @param joint Indicates which observations' log likelihoods shall be
+#'   considered jointly in the ELPD computation. If \code{"obs"} or \code{FALSE}
+#'   (the default), each observation is considered separately. This enables
+#'   comparability of \code{kfold} with \code{loo}. If \code{"fold"}, the joint
+#'   log likelihoods per fold are used. If \code{"group"}, the joint log
+#'   likelihoods per group within folds are used (only available if argument
+#'   \code{group} is specified).
 #' @param save_fits If \code{TRUE}, a component \code{fits} is added to
 #'   the returned object to store the cross-validated \code{brmsfit}
 #'   objects and the indices of the omitted observations for each fold.
@@ -103,7 +106,7 @@
 #' (kfold1 <- kfold(fit1, chains = 1))
 #'
 #' # use joint likelihoods per fold for ELPD evaluation
-#' kfold(fit1, chains = 1, joint = TRUE)
+#' kfold(fit1, chains = 1, joint = "fold")
 #'
 #' # use the future package for parallelization of models
 #' # that is to fit models belonging to different folds in parallel
@@ -181,8 +184,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     newdata2 <- validate_data2(newdata2, bterms)
   }
   N <- nrow(newdata)
-  joint <- as_one_logical(joint)
+  joint <- validate_joint(joint)
   # validate argument 'group'
+  gvar <- NULL
   if (!is.null(group)) {
     valid_groups <- get_cat_vars(x)
     if (length(group) != 1L || !group %in% valid_groups) {
@@ -279,12 +283,29 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     ll_args$newdata <- newdata[predicted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(newdata2, predicted)
     lppds <- do_call(log_lik, ll_args)
-    if (joint) {
+
+    if (joint == "fold") {
       # compute the joint log score over all observations within a fold
       lppds <- rowSums(lppds)
+      joint_obs <- 1
+    } else if (joint == "group") {
+      gvar_k <- gvar[predicted]
+      unique_gvar_k <- unique(gvar_k)
+      ngroups <- length(unique_gvar_k)
+      lppds_marg <- matrix(nrow = nrow(lppds), ncol = ngroups)
+      joint_obs <- rep(NA, length(predicted))
+      for (j in seq_len(ngroups)) {
+        sel_obs <- gvar_k == unique_gvar_k[j]
+        lppds_marg[, j] <- rowSums(lppds[, sel_obs, drop = FALSE])
+        # tells which observations' elpds were considered jointly
+        joint_obs[sel_obs] <- j
+      }
+      lppds <- lppds_marg
+    } else {
+      joint_obs <- seq_along(predicted)
     }
 
-    out <- nlist(lppds, omitted, predicted)
+    out <- nlist(lppds, omitted, predicted, joint_obs)
     if (save_fits) {
       out$fit <- fit
     }
@@ -313,7 +334,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   lppds <- do_call(cbind, lppds)
   elpds <- apply(lppds, 2, log_mean_exp)
   pred_obs <- unlist(pred_obs_list)
-  if (!joint) {
+  if (joint == "obs") {
     # bring back elpds into the original observation order
     elpds <- elpds[order(pred_obs)]
   }
@@ -328,8 +349,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     ll_args$newdata <- ll_args$newdata[pred_obs_sorted, , drop = FALSE]
     ll_args$newdata2 <- subset_data2(ll_args$newdata2, pred_obs_sorted)
   }
+
   ll_full <- do_call(log_lik, ll_args)
-  if (joint) {
+  if (joint == "fold") {
     # compute the joint log score over all observations within a fold
     ll_full_marg <- matrix(nrow = nrow(ll_full), ncol = length(Ksub))
     for (i in seq_along(Ksub)) {
@@ -337,6 +359,21 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       ll_full_marg[, i] <- rowSums(ll_full[, sel_obs, drop = FALSE])
     }
     ll_full <- ll_full_marg
+  } else if (joint == "group") {
+    # compute the joint log score over all observations per group within a fold
+    ll_full_marg <- vector("list", length(Ksub))
+    for (i in seq_along(Ksub)) {
+      sel_obs <- match(pred_obs_list[[i]], pred_obs_sorted)
+      joint_obs <- res[[i]]$joint_obs
+      unique_joint_obs <- unique(joint_obs)
+      njoint <- length(unique_joint_obs)
+      ll_full_marg[[i]] <- matrix(nrow = nrow(ll_full), ncol = njoint)
+      for (j in seq_len(njoint)) {
+        sel_obs_j <- sel_obs[joint_obs == unique_joint_obs[j]]
+        ll_full_marg[[i]][, j] <- rowSums(ll_full[, sel_obs_j, drop = FALSE])
+      }
+    }
+    ll_full <- do_call(cbind, ll_full_marg)
   }
   lpds <- apply(ll_full, 2, log_mean_exp)
   ps <- lpds - elpds
@@ -399,8 +436,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #' }
 #'
 #' @export
-kfold_predict <- function(x, method = "posterior_predict",
-                          resp = NULL, ...) {
+kfold_predict <- function(x, method = "posterior_predict", resp = NULL, ...) {
   if (!inherits(x, "kfold")) {
     stop2("'x' must be a 'kfold' object.")
   }
@@ -430,4 +466,19 @@ kfold_predict <- function(x, method = "posterior_predict",
     )
   }
   nlist(y, yrep)
+}
+
+# validate argument 'joint' in kfold
+validate_joint <- function(joint) {
+  if (length(joint) != 1L) {
+    stop2("Argument 'joint' must be of length 1.")
+  }
+  if (is.logical(joint)) {
+    # for backwards compatibility with brms < 2.20.18
+    joint <- as_one_logical(joint)
+    joint <- str_if(joint, "fold", "obs")
+  }
+  joint <- as_one_character(joint)
+  options <- c("obs", "fold", "group")
+  match.arg(joint, options)
 }
