@@ -311,7 +311,7 @@ standata_basis_sp <- function(x, data, ...) {
     # do it like data_sp()
     spef <- tidy_spef(x, data)
     Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
-    out$Jmo <- as.array(ulapply(Xmo, max))
+    out$Jmo <- as.array(ulapply(Xmo, attr, "max"))
   }
   out
 }
