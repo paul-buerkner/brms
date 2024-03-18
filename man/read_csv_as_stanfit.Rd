@@ -9,7 +9,8 @@ read_csv_as_stanfit(
   variables = NULL,
   sampler_diagnostics = NULL,
   model = NULL,
-  exclude = ""
+  exclude = "",
+  algorithm = "sampling"
 )
 }
 \arguments{
@@ -24,6 +25,9 @@ if you want to allow updating the model without recompilation.}
 
 \item{exclude}{Character vector of variables to exclude from the stanfit. Only
 used when \code{variables} is also specified.}
+
+\item{algorithm}{The algorithm with which the model was fitted.
+See \code{\link{brm}} for details.}
 }
 \value{
 A stanfit object consistent with the structure of the \code{fit}

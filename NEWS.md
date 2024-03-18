@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Add experimental support for the `pathfinder` and `laplace` algorithms
+in the `cmdstanr` backend. (#1591)
 * Automatically recompute fit criteria previously stored in the model
 if potentially results-changing arguments are provided to the criterion method.
 * Allow to turn off automatic broadcasting of `constant` priors.

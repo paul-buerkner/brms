@@ -167,6 +167,29 @@ test_that("projpred methods can be run", {
   # expect_is(vs, "vsel")
 })
 
+test_that("alternative algorithms can be used", {
+  fit <- brm(
+    count ~ zBase * Trt, data = epilepsy,
+    backend = "cmdstanr", algorithm = "meanfield"
+  )
+  summary(fit)
+  expect_is(fit, "brmsfit")
+
+  fit <- brm(
+    count ~ zBase * Trt, data = epilepsy,
+    backend = "cmdstanr", algorithm = "pathfinder"
+  )
+  summary(fit)
+  expect_is(fit, "brmsfit")
+
+  fit <- brm(
+    count ~ zBase * Trt, data = epilepsy,
+    backend = "cmdstanr", algorithm = "laplace"
+  )
+  summary(fit)
+  expect_is(fit, "brmsfit")
+})
+
 test_that(paste(
   "Families sratio() and cratio() are equivalent for symmetric distribution",
   "functions (here only testing the logit link)"
