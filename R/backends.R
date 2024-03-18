@@ -833,21 +833,25 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     rownames(attr(samples[[i]], "sampler_params")) <- seq_rows(diagnostics[[i]])
 
     # reformat back to text
-    if (is_equal(sampler_t, "NUTS(dense_e)")) {
-      mmatrix_txt <- "\n# Elements of inverse mass matrix:\n# "
-      mmat <- paste0(apply(csfit$inv_metric[[i]], 1, paste0, collapse = ", "),
-                     collapse = "\n# ")
+    if (length(csfit$inv_metric)) {
+      if (is_equal(sampler_t, "NUTS(dense_e)")) {
+        mmatrix_txt <- "\n# Elements of inverse mass matrix:\n# "
+        mmat <- paste0(apply(csfit$inv_metric[[i]], 1, paste0, collapse = ", "),
+                       collapse = "\n# ")
+      } else {
+        mmatrix_txt <- "\n# Diagonal elements of inverse mass matrix:\n# "
+        mmat <- paste0(csfit$inv_metric[[i]], collapse = ", ")
+      }
+
+      adapt_info[[i]] <- paste0("# Step size = ",
+                                csfit$step_size[[i]],
+                                mmatrix_txt,
+                                mmat, "\n# ")
+      attr(samples[[i]], "adaptation_info") <- adapt_info[[i]]
     } else {
-      mmatrix_txt <- "\n# Diagonal elements of inverse mass matrix:\n# "
-      mmat <- paste0(csfit$inv_metric[[i]], collapse = ", ")
+      attr(samples[[i]], "adaptation_info") <- character(0)
     }
 
-    adapt_info[[i]] <- paste0("# Step size = ",
-                              csfit$step_size[[i]],
-                              mmatrix_txt,
-                              mmat, "\n# ")
-
-    attr(samples[[i]], "adaptation_info") <- adapt_info[[i]]
 
     attr(samples[[i]], "args") <- list(sampler_t = sampler_t, chain_id = i)
 
