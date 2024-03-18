@@ -670,7 +670,7 @@ validate_models <- function(models, model_names, sub_names) {
 
 # recommend options if approximate loo fails for some observations
 # @param moment_match has moment matching already been performed?
-recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE,
+recommend_loo_options <- function(loo, k_threshold = 0.7, moment_match = FALSE,
                                   model_name = "") {
   if (isTRUE(nzchar(model_name))) {
     model_name <- paste0(" in model '", model_name, "'")
@@ -678,17 +678,25 @@ recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE,
     model_name <- ""
   }
   n <- length(loo::pareto_k_ids(loo, threshold = k_threshold))
-  if (!moment_match && n > 0) {
+  ndraws <- dim(loo)[1] %||% Inf
+  if (n > 0 && ndraws < 2200) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". It is recommended to set 'moment_match = TRUE' in order ",
+      model_name, ". We recommend to run more iterations to get at least ",
+      "about 2200 posterior draws for more reliable pareteo_k estimation."
+    )
+    out <- "loo_more_draws"
+  } else if (n > 0 && !moment_match) {
+    warning2(
+      "Found ", n, " observations with a pareto_k > ", k_threshold,
+      model_name, ". We recommend to set 'moment_match = TRUE' in order ",
       "to perform moment matching for problematic observations. "
     )
     out <- "loo_moment_match"
   } else if (n > 0 && n <= 10) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". It is recommended to set 'reloo = TRUE' in order to ",
+      model_name, ". We recommend to set 'reloo = TRUE' in order to ",
       "calculate the ELPD without the assumption that these observations " ,
       "are negligible. This will refit the model ", n, " times to compute ",
       "the ELPDs for the problematic observations directly."
