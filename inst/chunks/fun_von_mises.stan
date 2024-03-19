@@ -8,7 +8,7 @@
    * Returns:
    *   a scalar to be added to the log posterior
    */
-   real von_mises_real_lpdf(real y, real mu, real kappa) {
+   real von_mises2_lpdf(real y, real mu, real kappa) {
      if (kappa < 100) {
        return von_mises_lpdf(y | mu, kappa);
      } else {
@@ -25,7 +25,7 @@
    * Returns:
    *   a scalar to be added to the log posterior
    */
-   real von_mises_vector_lpdf(vector y, vector mu, real kappa) {
+   real von_mises2_lpdf(vector y, vector mu, real kappa) {
      if (kappa < 100) {
        return von_mises_lpdf(y | mu, kappa);
      } else {

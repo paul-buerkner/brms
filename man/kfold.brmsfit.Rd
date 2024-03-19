@@ -12,7 +12,7 @@
   Ksub = NULL,
   folds = NULL,
   group = NULL,
-  exact_loo = NULL,
+  joint = FALSE,
   compare = TRUE,
   resp = NULL,
   model_names = NULL,
@@ -53,7 +53,13 @@ section.}
 What exactly is done with this variable depends on argument \code{folds}.
 More information is provided in the 'Details' section.}
 
-\item{exact_loo}{Deprecated! Please use \code{folds = "loo"} instead.}
+\item{joint}{Indicates which observations' log likelihoods shall be
+considered jointly in the ELPD computation. If \code{"obs"} or \code{FALSE}
+(the default), each observation is considered separately. This enables
+comparability of \code{kfold} with \code{loo}. If \code{"fold"}, the joint
+log likelihoods per fold are used. If \code{"group"}, the joint log
+likelihoods per group within folds are used (only available if argument
+\code{group} is specified).}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
@@ -142,10 +148,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 # perform 10-fold cross validation
 (kfold1 <- kfold(fit1, chains = 1))
 
-# use the future package for parallelization
+# use joint likelihoods per fold for ELPD evaluation
+kfold(fit1, chains = 1, joint = "fold")
+
+# use the future package for parallelization of models
+# that is to fit models belonging to different folds in parallel
 library(future)
-plan(multiprocess)
+plan(multisession, workers = 4)
 kfold(fit1, chains = 1)
+plan(sequential)
 
 ## to avoid recompilations when running kfold() on a 'cmdstanr'-backend fit
 ## in a fresh R session, set option 'cmdstanr_write_stan_file_dir' before
@@ -156,10 +167,9 @@ kfold(fit1, chains = 1)
 set.seed(7)
 fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 options(cmdstanr_write_stan_file_dir = getwd())
-fit_cmdstanr <- brm(rate ~ conc + state,
-                    data = Puromycin,
-                    backend = "cmdstanr",
-                    file = fname)
+fit_cmdstanr <- brm(rate ~ conc + state, data = Puromycin,
+                    backend = "cmdstanr", file = fname)
+
 # now restart the R session and run the following (after attaching 'brms')
 set.seed(7)
 fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))

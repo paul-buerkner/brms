@@ -24,8 +24,8 @@ Function \code{rename_pars} is a deprecated alias of \code{rename_pars}.
 \examples{
 \dontrun{
 # fit a model manually via rstan
-scode <- make_stancode(count ~ Trt, data = epilepsy)
-sdata <- make_standata(count ~ Trt, data = epilepsy)
+scode <- stancode(count ~ Trt, data = epilepsy)
+sdata <- standata(count ~ Trt, data = epilepsy)
 stanfit <- rstan::stan(model_code = scode, data = sdata)
 
 # feed the Stan model back into brms

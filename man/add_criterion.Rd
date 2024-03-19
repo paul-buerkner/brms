@@ -21,7 +21,9 @@ add_criterion(x, ...)
 \item{x}{An \R object typically of class \code{brmsfit}.}
 
 \item{...}{Further arguments passed to the underlying
-functions computing the model fit criteria.}
+functions computing the model fit criteria. If you are recomputing
+an already stored criterion with other \code{...} arguments, make
+sure to set \code{overwrite = TRUE}.}
 
 \item{criterion}{Names of model fit criteria
 to compute. Currently supported are \code{"loo"},
@@ -34,7 +36,9 @@ to compute. Currently supported are \code{"loo"},
 (the default) the name is taken from the call to \code{x}.}
 
 \item{overwrite}{Logical; Indicates if already stored fit
-indices should be overwritten. Defaults to \code{FALSE}.}
+indices should be overwritten. Defaults to \code{FALSE}.
+Setting it to \code{TRUE} is useful for example when changing
+additional arguments of an already stored criterion.}
 
 \item{file}{Either \code{NULL} or a character string. In the latter case, the
 fitted model object including the newly added criterion values is saved via

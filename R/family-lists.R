@@ -182,7 +182,14 @@
     dpars = c("mu", "shape"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "rate", "index"),
-    specials = "sbi_log"
+    specials = "sbi_log",
+    # experimental use of default priors stored in families #1614
+    prior = function(dpar, link = "identity", ...) {
+      if (dpar == "shape" && link == "identity") {
+        return("inv_gamma(0.4, 0.3)")
+      }
+      NULL
+    }
   )
 }
 
@@ -193,7 +200,13 @@
     dpars = c("mu", "sigma"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc", "rate", "index"),
-    specials = "sbi_log"
+    specials = "sbi_log",
+    prior = function(dpar, link = "identity", ...) {
+      if (dpar == "sigma" && link == "identity") {
+        return("gamma(0.4, 0.3)")
+      }
+      NULL
+    }
   )
 }
 

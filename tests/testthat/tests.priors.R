@@ -1,10 +1,10 @@
-# most tests of prior related stuff can be found in tests.make_stancode.R
+# most tests of prior related stuff can be found in tests.stancode.R
 context("Tests for prior generating functions")
 
-test_that("get_prior finds all classes for which priors can be specified", {
+test_that("default_prior finds all classes for which priors can be specified", {
   expect_equal(
     sort(
-      get_prior(
+      default_prior(
         count ~ zBase * Trt + (1|patient) + (1+Trt|visit),
         data = epilepsy, family = "poisson"
       )$class
@@ -13,7 +13,7 @@ test_that("get_prior finds all classes for which priors can be specified", {
   )
   expect_equal(
     sort(
-      get_prior(
+      default_prior(
         rating ~ treat + period + cse(carry), data = inhaler,
         family = sratio(threshold = "equidistant")
       )$class
@@ -40,30 +40,29 @@ test_that("print for class brmsprior works correctly", {
                 "target += normal_lpdf(x | 0,1))", fixed = TRUE)
 })
 
-test_that("get_prior returns correct nlpar names for random effects pars", {
+test_that("default_prior returns correct nlpar names for random effects pars", {
   # reported in issue #47
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
-  gp <- get_prior(bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE),
-                  data = data)
+  gp <- default_prior(bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE), data = data)
   expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
-test_that("get_prior returns correct fixed effect names for GAMMs", {
+test_that("default_prior returns correct fixed effect names for GAMMs", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10),
                     z = rnorm(10), g = rep(1:2, 5))
-  prior <- get_prior(y ~ z + s(x) + (1|g), data = dat)
+  prior <- default_prior(y ~ z + s(x) + (1|g), data = dat)
   expect_equal(prior[prior$class == "b", ]$coef,
                c("", "sx_1", "z"))
-  prior <- get_prior(bf(y ~ lp, lp ~ z + s(x) + (1|g), nl = TRUE),
+  prior <- default_prior(bf(y ~ lp, lp ~ z + s(x) + (1|g), nl = TRUE),
                      data = dat)
   expect_equal(prior[prior$class == "b", ]$coef,
                c("", "Intercept", "sx_1", "z"))
 })
 
-test_that("get_prior returns correct prior names for auxiliary parameters", {
+test_that("default_prior returns correct prior names for auxiliary parameters", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10),
                     z = rnorm(10), g = rep(1:2, 5))
-  prior <- get_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
+  prior <- default_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
   prior <- prior[prior$dpar == "phi", ]
   pdata <- data.frame(class = c("b", "b", "Intercept", rep("sd", 3)),
                       coef = c("", "z", "", "", "", "Intercept"),
@@ -73,30 +72,30 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
   expect_equivalent(prior[, c("class", "coef", "group")], pdata)
 })
 
-test_that("get_prior returns correct priors for multivariate models", {
+test_that("default_prior returns correct priors for multivariate models", {
   dat <- data.frame(y1 = rnorm(10), y2 = c(1, rep(1:3, 3)),
                     x = rnorm(10), g = rep(1:2, 5))
   bform <- bf(mvbind(y1, y2) ~ x + (x|ID1|g)) + set_rescor(TRUE)
 
   # check global priors
-  prior <- get_prior(bform, dat, family = gaussian())
+  prior <- default_prior(bform, dat, family = gaussian())
   expect_equal(prior[prior$resp == "y1" & prior$class == "b", "coef"], c("", "x"))
   expect_equal(prior[prior$class == "rescor", "prior"], "lkj(1)")
 
   # check family and autocor specific priors
   family <- list(gaussian, Beta())
   bform <- bf(y1 ~ x + (x|ID1|g) + ar()) + bf(y2 ~ 1)
-  prior <- get_prior(bform, dat, family = family)
+  prior <- default_prior(bform, dat, family = family)
   expect_true(any(with(prior, class == "sigma" & resp == "y1")))
   expect_true(any(with(prior, class == "ar" & resp == "y1")))
   expect_true(any(with(prior, class == "phi" & resp == "y2")))
   expect_true(!any(with(prior, class == "ar" & resp == "y2")))
 })
 
-test_that("get_prior returns correct priors for categorical models", {
+test_that("default_prior returns correct priors for categorical models", {
   # check global priors
   dat <- data.frame(y2 = c(1, rep(1:3, 3)), x = rnorm(10), g = rep(1:2, 5))
-  prior <- get_prior(y2 ~ x + (x|ID1|g), data = dat, family = categorical())
+  prior <- default_prior(y2 ~ x + (x|ID1|g), data = dat, family = categorical())
   expect_equal(prior[prior$dpar == "mu2" & prior$class == "b", "coef"], c("", "x"))
 })
 
@@ -124,7 +123,7 @@ test_that("external interface of validate_prior works correctly", {
 
 test_that("overall intercept priors are adjusted for the intercept", {
   dat <- data.frame(y = rep(c(1, 3), each = 5), off = 10)
-  prior1 <- get_prior(y ~ 1 + offset(off), dat)
+  prior1 <- default_prior(y ~ 1 + offset(off), dat)
   int_prior <- prior1$prior[prior1$class == "Intercept"]
   expect_equal(int_prior, "student_t(3, -8, 2.5)")
 })

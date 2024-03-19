@@ -170,6 +170,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$Y <- as.array(out$Y)
   }
+
   # data for addition arguments of the response
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
@@ -318,6 +319,13 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         "and refer to 'right' and 'none' respectively."
       )
     }
+    if (length(cens) == 1L) {
+      cens <- rep(cens, N)
+    }
+    if (length(cens) != N) {
+      stop2("Censoring information needs to have length ",
+            "equal to the number of data rows.")
+    }
     out$cens <- as.array(cens)
     icens <- cens %in% 2
     y2_expr <- get_ad_expr(x, "cens", "y2")
@@ -327,6 +335,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       y2 <- unname(get_ad_values(x, "cens", "y2", data))
       if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")
+      }
+      if (length(y2) != N) {
+        stop2("Argument 'y2' needs to have length equal to the number of data rows.")
       }
       if (anyNA(y2[icens])) {
         stop2("'y2' should not be NA for interval censored observations.")
@@ -478,14 +489,15 @@ data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
 # @return the design matrix of the baseline hazard function
 bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
                               basis = NULL) {
-  require_package("splines2")
+  # version check is required due to class name changes #1580
+  require_package("splines2", version = "0.5.0")
   if (!is.null(basis)) {
     # perform predictions based on an existing basis matrix
-    stopifnot(inherits(basis, "mSpline"))
+    stopifnot(inherits(basis, "MSpline"))
     if (integrate) {
-      # for predictions just the attibutes are required
+      # for predictions just the attributes are required
       # which are the same of M-Splines and I-Splines
-      class(basis) <- c("matrix", "iSpline")
+      class(basis) <- c("matrix", "ISpline")
     }
     return(predict(basis, y))
   }

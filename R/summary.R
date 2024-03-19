@@ -43,20 +43,43 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     algorithm = algorithm(object)
   )
   class(out) <- "brmssummary"
-  if (!length(object$fit@sim)) {
-    # the model does not contain posterior draws
+
+  # check if the model contains any posterior draws
+  model_is_empty <- !length(object$fit@sim) ||
+    isTRUE(object$fit@sim$iter <= object$fit@sim$warmup)
+  if (model_is_empty) {
     return(out)
   }
-  out$chains <- nchains(object)
-  # iterations before thinning
-  out$iter <- object$fit@sim$iter
-  out$warmup <- object$fit@sim$warmup
-  out$thin <- nthin(object)
+
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
   }
+
+  variables <- variables(object)
+  incl_classes <- c(
+    "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm",
+    valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", "sderr",
+    "cosy", "cortime", "lagsar", "errorsar", "car", "sdcar", "rhocar",
+    "sd", "cor", "df", "sds", "sdgp", "lscale", "simo"
+  )
+  incl_regex <- paste0("^", regex_or(incl_classes), "(_|$|\\[)")
+  variables <- variables[grepl(incl_regex, variables)]
+  draws <- as_draws_array(object, variable = variables)
+
+  out$total_ndraws <- ndraws(draws)
+  out$chains <- nchains(object)
+  if (length(object$fit@sim$iter)) {
+    # MCMC algorithms
+    out$iter <- object$fit@sim$iter
+    out$warmup <- object$fit@sim$warmup
+  } else {
+    # non-MCMC algorithms
+    out$iter <- out$total_ndraws
+    out$warmup <- 0
+  }
+  out$thin <- nthin(object)
 
   # compute a summary for given set of parameters
   # TODO: align names with summary outputs of other methods and packages
@@ -96,16 +119,6 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     return(out)
   }
 
-  variables <- variables(object)
-  incl_classes <- c(
-    "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm",
-    valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", "sderr",
-    "cosy", "cortime", "lagsar", "errorsar", "car", "sdcar", "rhocar",
-    "sd", "cor", "df", "sds", "sdgp", "lscale", "simo"
-  )
-  incl_regex <- paste0("^", regex_or(incl_classes), "(_|$|\\[)")
-  variables <- variables[grepl(incl_regex, variables)]
-  draws <- as_draws_array(object, variable = variables)
   full_summary <- .summary(draws, variables, probs, robust)
   if (algorithm(object) == "sampling") {
     Rhats <- full_summary[, "Rhat"]
@@ -246,11 +259,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
   # TODO: make this option a user-facing argument?
   short <- as_one_logical(getOption("brms.short_summary", FALSE))
   if (!short) {
-    total_ndraws <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
     cat(paste0(
       "  Draws: ", x$chains, " chains, each with iter = ", x$iter,
       "; warmup = ", x$warmup, "; thin = ", x$thin, ";\n",
-      "         total post-warmup draws = ", total_ndraws, "\n"
+      "         total post-warmup draws = ", x$total_ndraws, "\n"
     ))
   }
   cat("\n")
@@ -568,41 +580,4 @@ posterior_interval.brmsfit <- function(
 ) {
   ps <- as.matrix(object, pars = pars, variable = variable, ...)
   rstantools::posterior_interval(ps, prob = prob)
-}
-
-#' Extract Priors of a Bayesian Model Fitted with \pkg{brms}
-#'
-#' @aliases prior_summary
-#'
-#' @param object An object of class \code{brmsfit}.
-#' @param all Logical; Show all parameters in the model which may have
-#'   priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?
-#' @param ... Further arguments passed to or from other methods.
-#'
-#' @return For \code{brmsfit} objects, an object of class \code{brmsprior}.
-#'
-#' @examples
-#' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt
-#'              + (1|patient) + (1|obs),
-#'            data = epilepsy, family = poisson(),
-#'            prior = c(prior(student_t(5,0,10), class = b),
-#'                      prior(cauchy(0,2), class = sd)))
-#'
-#' prior_summary(fit)
-#' prior_summary(fit, all = FALSE)
-#' print(prior_summary(fit, all = FALSE), show_df = FALSE)
-#' }
-#'
-#' @method prior_summary brmsfit
-#' @export
-#' @export prior_summary
-#' @importFrom rstantools prior_summary
-prior_summary.brmsfit <- function(object, all = TRUE, ...) {
-  object <- restructure(object)
-  prior <- object$prior
-  if (!all) {
-    prior <- prior[nzchar(prior$prior), ]
-  }
-  prior
 }

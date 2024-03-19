@@ -568,15 +568,14 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
 
 # expose stan functions via rstan
 .expose_functions_rstan <- function(stanmodel, vectorize, env, ...) {
-  if (vectorize) {
-    fun_env <- new.env()
-    funs <- rstan::expose_stan_functions(stanmodel, env = fun_env, ...)
-    for (i in seq_along(funs)) {
-      FUN <- Vectorize(get(funs[i], pos = fun_env))
-      assign(funs[i], FUN, pos = env)
+  fun_env <- new.env()
+  funs <- rstan::expose_stan_functions(stanmodel, env = fun_env, ...)
+  for (i in seq_along(funs)) {
+    FUN <- get(funs[i], pos = fun_env)
+    if (vectorize) {
+      FUN <- Vectorize(FUN)
     }
-  } else {
-    funs <- rstan::expose_stan_functions(stanmodel, env = env, ...)
+    assign(funs[i], FUN, pos = env)
   }
   funs
 }

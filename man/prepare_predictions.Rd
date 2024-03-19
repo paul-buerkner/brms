@@ -93,7 +93,9 @@ positive definite. Adding a very small number to the matrix's diagonal
 often solves this problem. If \code{NULL} (the default), \code{nug} is
 chosen internally.}
 
-\item{smooths_only}{Logical; If \code{TRUE} only predictions related to the}
+\item{smooths_only}{Logical; If \code{TRUE} only predictions related to
+smoothing splines (i.e., \code{s} or \code{t2}) will be computed.
+Defaults to \code{FALSE}.}
 
 \item{offset}{Logical; Indicates if offsets should be included in the
 predictions. Defaults to \code{TRUE}.}

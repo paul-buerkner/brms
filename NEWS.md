@@ -1,22 +1,45 @@
-# brms 2.20.3+
+# brms 2.21.0
 
 ### New Features
 
+* Add experimental support for the `pathfinder` and `laplace` algorithms
+in the `cmdstanr` backend. (#1591)
 * Automatically recompute fit criteria previously stored in the model
 if potentially results-changing arguments are provided to the criterion method.
+* Allow to turn off automatic broadcasting of `constant` priors.
+* Allow for joint likelihood evaluation in `kfold` via argument `joint`.
+* Use several Stan built-in functions implemented since version 2.26
+to improve the efficiency of multiple model classes. (#1077)
 
 ### Other Changes
 
+* Change `make_stancode` and `make_standata` to be aliases of `stancode` and 
+`standata`, respectively. Change `get_prior` to be an alias of a new generic 
+method `default_prior`. This enable other packages to define new `stancode`, 
+`standata` and `default_prior` methods to generate Stan code and data, and extract
+the default priors, for their own objects building on brms. Thanks to Ven Popov 
+for helping with this. (#1604)
+* Change the default prior of the `shape` parameter of `negbinomial` models
+to `inv_gamma(0.4, 0.3)` thanks to Aki Vehtari. (#1614)
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
+* Export `read_csv_as_stanfit` thanks to Ven Popov. (#1619)
+* Make installation of `shinystan` optional. This means that the package has to 
+be loaded, via `library(shinystan)`, before `launch_shinystan` can be used. (#1595)
 * Improve parameter class names in the `summary` output.
 * Show histograms rather than densities in the `plot` method by default.
 * Deprecate argument `N` in the `plot` method in favor of argument `nvariables`.
+* Remove deprecated argument `exact_loo` in method `kfold`.
 
 ### Bug Fixes
 
 * Remove some remaining uses of Stan's old array syntax.
-
+* Fix a bug in formula parsing of missing values terms with interactions
+thank to Guido Biele. (#1608)
+* Ensure compatibility of `combine_models` with moment matching. (#1603)
+* Ensure compatibility with the latest `splines2` package version. (#1580)
+* Fix output of `rmulti_normal` thanks to Ven Popov. (#1588)
+* Prevent memory leaks when executing `kfold` or `reloo` in parallel.
 
 # brms 2.20.3
 

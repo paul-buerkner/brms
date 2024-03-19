@@ -1,44 +1,89 @@
+#' @title Stan Code for Bayesian models
+#'
+#' @description \code{stancode} is a generic function that can be used to
+#'   generate Stan code for Bayesian models. Its original use is
+#'   within the \pkg{brms} package, but new methods for use
+#'   with objects from other packages can be registered to the same generic.
+#'
+#' @param object An object whose class will determine which method to apply.
+#'   Usually, it will be some kind of symbolic description of the model
+#'   form which Stan code should be generated.
+#' @param formula Synonym of \code{object} for use in \code{make_stancode}.
+#' @param ... Further arguments passed to the specific method.
+#'
+#' @return Usually, a character string containing the generated Stan code.
+#'   For pretty printing, we recommend the returned object to be of class
+#'   \code{c("character", "brmsmodel")}.
+#'
+#' @details
+#'   See \code{\link[brms:stancode.default]{stancode.default}} for the default
+#'   method applied for \pkg{brms} models.
+#'   You can view the available methods by typing: \code{methods(stancode)}
+#'   The \code{make_stancode} function is an alias of \code{stancode}.
+#'
+#' @seealso
+#'   \code{\link{stancode.default}}, \code{\link{stancode.brmsfit}}
+#'
+#' @examples
+#' stancode(rating ~ treat + period + carry + (1|subject),
+#'          data = inhaler, family = "cumulative")
+#'
+#' @export
+stancode <- function(object, ...) {
+  UseMethod("stancode")
+}
+
+#' @rdname stancode
+#' @export
+make_stancode <- function(formula, ...) {
+  # became an alias of 'stancode' in 2.20.14
+  stancode(formula, ...)
+}
+
 #' Stan Code for \pkg{brms} Models
 #'
 #' Generate Stan code for \pkg{brms} models
 #'
 #' @inheritParams brm
+#' @param object An object of class \code{\link[stats:formula]{formula}},
+#'   \code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
+#'   be coerced to that classes): A symbolic description of the model to be
+#'   fitted. The details of model specification are explained in
+#'   \code{\link{brmsformula}}.
 #' @param ... Other arguments for internal usage only.
 #'
 #' @return A character string containing the fully commented \pkg{Stan} code
-#'   to fit a \pkg{brms} model.
+#'   to fit a \pkg{brms} model. It is of class \code{c("character", "brmsmodel")}
+#'   to facilitate pretty printing.
 #'
 #' @examples
-#' make_stancode(rating ~ treat + period + carry + (1|subject),
-#'               data = inhaler, family = "cumulative")
+#' stancode(rating ~ treat + period + carry + (1|subject),
+#'          data = inhaler, family = "cumulative")
 #'
-#' make_stancode(count ~ zAge + zBase * Trt + (1|patient),
-#'               data = epilepsy, family = "poisson")
+#' stancode(count ~ zAge + zBase * Trt + (1|patient),
+#'          data = epilepsy, family = "poisson")
 #'
 #' @export
-make_stancode <- function(formula, data, family = gaussian(),
-                          prior = NULL, autocor = NULL, data2 = NULL,
-                          cov_ranef = NULL, sparse = NULL,
-                          sample_prior = "no", stanvars = NULL,
-                          stan_funs = NULL, knots = NULL,
-                          drop_unused_levels = TRUE,
-                          threads = getOption("brms.threads", NULL),
-                          normalize = getOption("brms.normalize", TRUE),
-                          save_model = NULL, ...) {
+stancode.default <- function(object, data, family = gaussian(),
+                             prior = NULL, autocor = NULL, data2 = NULL,
+                             cov_ranef = NULL, sparse = NULL,
+                             sample_prior = "no", stanvars = NULL,
+                             stan_funs = NULL, knots = NULL,
+                             drop_unused_levels = TRUE,
+                             threads = getOption("brms.threads", NULL),
+                             normalize = getOption("brms.normalize", TRUE),
+                             save_model = NULL, ...) {
 
-  if (is.brmsfit(formula)) {
-    stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
-  }
-  formula <- validate_formula(
-    formula, data = data, family = family,
+  object <- validate_formula(
+    object, data = data, family = family,
     autocor = autocor, sparse = sparse,
     cov_ranef = cov_ranef
   )
-  bterms <- brmsterms(formula)
+  bterms <- brmsterms(object)
   data2 <- validate_data2(
     data2, bterms = bterms,
-    get_data2_autocor(formula),
-    get_data2_cov_ranef(formula)
+    get_data2_autocor(object),
+    get_data2_cov_ranef(object)
   )
   data <- validate_data(
     data, bterms = bterms,
@@ -52,7 +97,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   threads <- validate_threads(threads)
 
- .make_stancode(
+ .stancode(
    bterms, data = data, prior = prior,
    stanvars = stanvars, threads = threads,
    normalize = normalize, save_model = save_model,
@@ -60,16 +105,17 @@ make_stancode <- function(formula, data, family = gaussian(),
  )
 }
 
-# internal work function of 'make_stancode'
+# internal work function of 'stancode.default'
 # @param parse parse the Stan model for automatic syntax checking
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
-.make_stancode <- function(bterms, data, prior, stanvars,
+.stancode <- function(bterms, data, prior, stanvars,
                            threads = threading(),
                            normalize = getOption("brms.normalize", TRUE),
                            parse = getOption("brms.parse_stancode", FALSE),
                            backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {
+
   normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
@@ -329,31 +375,29 @@ print.brmsmodel <- function(x, ...) {
   invisible(x)
 }
 
-#' Extract Stan model code
+#' Extract Stan code from \code{brmsfit} objects
 #'
-#' Extract Stan code that was used to specify the model.
-#'
-#' @aliases stancode.brmsfit
+#' Extract Stan code from a fitted \pkg{brms} model.
 #'
 #' @param object An object of class \code{brmsfit}.
-#' @param version Logical; indicates if the first line containing
-#'   the \pkg{brms} version number should be included.
-#'   Defaults to \code{TRUE}.
-#' @param regenerate Logical; indicates if the Stan code should
-#'   be regenerated with the current \pkg{brms} version.
-#'   By default, \code{regenerate} will be \code{FALSE} unless required
-#'   to be \code{TRUE} by other arguments.
-#' @param threads Controls whether the Stan code should be threaded.
-#'   See \code{\link{threading}} for details.
+#' @param version Logical; indicates if the first line containing the \pkg{brms}
+#'   version number should be included. Defaults to \code{TRUE}.
+#' @param regenerate Logical; indicates if the Stan code should be regenerated
+#'   with the current \pkg{brms} version. By default, \code{regenerate} will be
+#'   \code{FALSE} unless required to be \code{TRUE} by other arguments.
+#' @param threads Controls whether the Stan code should be threaded. See
+#'   \code{\link{threading}} for details.
 #' @param backend Controls the Stan backend. See \code{\link{brm}} for details.
-#' @param ... Further arguments passed to \code{\link{make_stancode}} if the
-#'   Stan code is regenerated.
+#' @param ... Further arguments passed to
+#'   \code{\link[brms:stancode.default]{stancode}} if the Stan code is
+#'   regenerated.
 #'
-#' @return Stan model code for further processing.
+#' @return Stan code for further processing.
 #'
 #' @export
 stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
                              threads = NULL, backend = NULL, ...) {
+
   if (is.null(regenerate)) {
     # determine whether regenerating the Stan code is required
     regenerate <- FALSE
@@ -398,12 +442,6 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
     out <- sub("^[^\n]+[[:digit:]]\\.[^\n]+\n", "", out)
   }
   out
-}
-
-#' @rdname stancode.brmsfit
-#' @export
-stancode <- function(object, ...) {
-  UseMethod("stancode")
 }
 
 # expand '#include' statements

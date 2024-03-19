@@ -13,7 +13,7 @@ gp(
   gr = TRUE,
   cmc = TRUE,
   scale = TRUE,
-  c = NULL
+  c = 5/4
 )
 }
 \arguments{
@@ -126,7 +126,7 @@ me3 <- conditional_effects(fit3, ndraws = 200, spaghetti = TRUE)
 plot(me3, ask = FALSE, points = TRUE)
 
 # compare model fit
-LOO(fit1, fit2, fit3)
+loo(fit1, fit2, fit3)
 
 # simulate data with a factor covariate
 dat2 <- mgcv::gamSim(4, n = 90, scale = 2)

@@ -104,7 +104,7 @@ Define priors for specific parameters or classes of parameters.
   set priors on. Often, it may not be immediately clear, which parameters are
   present in the model. To get a full list of parameters and parameter
   classes for which priors can be specified (depending on the model) use
-  function \code{\link{get_prior}}.
+  function \code{\link[brms:default_prior.default]{default_prior}}.
 
   1. Population-level ('fixed') effects
 
@@ -306,12 +306,16 @@ Define priors for specific parameters or classes of parameters.
   By default, \code{sigma} has a half student-t prior that scales
   in the same way as the group-level standard deviations.
   Further, family \code{student} needs the parameter
-  \code{nu} representing the degrees of freedom of students-t distribution.
-  By default, \code{nu} has prior \code{gamma(2, 0.1)}
+  \code{nu} representing the degrees of freedom of Student-t distribution.
+  By default, \code{nu} has prior \code{gamma(2, 0.1)}, which is
+  close to a penalized complexity prior (see Stan prior choice Wiki),
   and a fixed lower bound of \code{1}.
-  Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
-  \code{negbinomial} need a \code{shape} parameter that has a
-  \code{gamma(0.01, 0.01)} prior by default.
+  Family \code{negbinomial} needs a \code{shape} parameter that has by
+  default \code{inv_gamma(0.4, 0.3)} prior which is close to a
+  penalized complexity prior (see Stan prior choice Wiki).
+  Families \code{gamma}, \code{weibull}, and \code{inverse.gaussian},
+  need a \code{shape} parameter that has a \code{gamma(0.01, 0.01)}
+  prior by default.
   For families \code{cumulative}, \code{cratio}, \code{sratio},
   and \code{acat}, and only if \code{threshold = "equidistant"},
   the parameter \code{delta} is used to model the distance between
@@ -372,8 +376,8 @@ identical(prior1, prior2)
 identical(prior1, prior3)
 
 # check which parameters can have priors
-get_prior(rating ~ treat + period + carry + (1|subject),
-          data = inhaler, family = cumulative())
+default_prior(rating ~ treat + period + carry + (1|subject),
+             data = inhaler, family = cumulative())
 
 # define some priors
 bprior <- c(prior_string("normal(0,10)", class = "b"),
@@ -382,25 +386,25 @@ bprior <- c(prior_string("normal(0,10)", class = "b"),
                    group = ~subject, coef = ~Intercept))
 
 # verify that the priors indeed found their way into Stan's model code
-make_stancode(rating ~ treat + period + carry + (1|subject),
-              data = inhaler, family = cumulative(),
-              prior = bprior)
+stancode(rating ~ treat + period + carry + (1|subject),
+         data = inhaler, family = cumulative(),
+         prior = bprior)
 
 # use the horseshoe prior to model sparsity in regression coefficients
-make_stancode(count ~ zAge + zBase * Trt,
-              data = epilepsy, family = poisson(),
-              prior = set_prior("horseshoe(3)"))
+stancode(count ~ zAge + zBase * Trt,
+         data = epilepsy, family = poisson(),
+         prior = set_prior("horseshoe(3)"))
 
 # fix certain priors to constants
 bprior <- prior(constant(1), class = "b") +
   prior(constant(2), class = "b", coef = "zBase") +
   prior(constant(0.5), class = "sd")
-make_stancode(count ~ zAge + zBase + (1 | patient),
+stancode(count ~ zAge + zBase + (1 | patient),
               data = epilepsy, prior = bprior)
 
 # pass priors to Stan without checking
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
-make_stancode(count ~ Trt, data = epilepsy, prior = prior)
+stancode(count ~ Trt, data = epilepsy, prior = prior)
 
 # define priors in a vectorized manner
 # useful in particular for categorical or multivariate models
@@ -408,5 +412,5 @@ set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 
 }
 \seealso{
-\code{\link{get_prior}}
+\code{\link[brms:default_prior.default]{default_prior}}
 }

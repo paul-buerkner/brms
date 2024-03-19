@@ -14,8 +14,8 @@
 #' @examples
 #' \dontrun{
 #' # fit a model manually via rstan
-#' scode <- make_stancode(count ~ Trt, data = epilepsy)
-#' sdata <- make_standata(count ~ Trt, data = epilepsy)
+#' scode <- stancode(count ~ Trt, data = epilepsy)
+#' sdata <- standata(count ~ Trt, data = epilepsy)
 #' stanfit <- rstan::stan(model_code = scode, data = sdata)
 #'
 #' # feed the Stan model back into brms
@@ -530,10 +530,20 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
 }
 
 # save original order of the parameters in the stanfit object
-save_old_par_order <- function(x) {
-  x$fit@sim$pars_oi_old <- x$fit@sim$pars_oi
-  x$fit@sim$dims_oi_old <- x$fit@sim$dims_oi
-  x$fit@sim$fnames_oi_old <- x$fit@sim$fnames_oi
+save_old_par_order <- function(x, x2 = NULL) {
+  stopifnot(is.brmsfit(x))
+  if (is.null(x2)) {
+    # used in rename_pars() to store the old order
+    x$fit@sim$pars_oi_old <- x$fit@sim$pars_oi
+    x$fit@sim$dims_oi_old <- x$fit@sim$dims_oi
+    x$fit@sim$fnames_oi_old <- x$fit@sim$fnames_oi
+  } else {
+    # used in combine_models() to take the old order from another model
+    stopifnot(is.brmsfit(x2))
+    x$fit@sim$pars_oi_old <- x2$fit@sim$pars_oi_old
+    x$fit@sim$dims_oi_old <- x2$fit@sim$dims_oi_old
+    x$fit@sim$fnames_oi_old <- x2$fit@sim$fnames_oi_old
+  }
   x
 }
 
@@ -556,10 +566,6 @@ do_renaming <- function(x, y) {
     return(x)
   }
   chains <- length(x$fit@sim$samples)
-  # temporary fix for issue #387 until fixed in rstan
-  for (i in seq_len(chains)) {
-    x$fit@sim$samples[[i]]$lp__.1 <- NULL
-  }
   for (i in seq_along(y)) {
     x <- .do_renaming(x, y[[i]])
   }
@@ -627,13 +633,13 @@ compute_xi.brmsfit <- function(x, ...) {
   if (!any(grepl("^tmp_xi(_|$)", variables(x)))) {
     return(x)
   }
-  draws <- try(extract_draws(x))
-  if (is_try_error(draws)) {
+  prep <- try(prepare_predictions(x))
+  if (is_try_error(prep)) {
     warning2("Trying to compute 'xi' was unsuccessful. ",
              "Some S3 methods may not work as expected.")
     return(x)
   }
-  compute_xi(draws, fit = x, ...)
+  compute_xi(prep, fit = x, ...)
 }
 
 #' @export
@@ -658,7 +664,7 @@ compute_xi.brmsprep <- function(x, fit, ...) {
   y <- matrix(x$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
   bs <- -1 / matrixStats::rowRanges((y - mu) / sigma)
   bs <- matrixStats::rowRanges(bs)
-  tmp_xi <- as.vector(as.matrix(fit, pars = tmp_xi_name))
+  tmp_xi <- as.vector(as.matrix(fit, variable = tmp_xi_name))
   xi <- inv_logit(tmp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
   # write xi into stanfit object
   xi_name <- paste0("xi", resp)

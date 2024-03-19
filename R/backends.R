@@ -215,6 +215,7 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
+  # TODO: add support for pathfinder and laplace
   out <- repair_stanfit(out)
   out
 }
@@ -242,13 +243,6 @@ fit_model <- function(model, backend, ...) {
     stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
   }
   args <- nlist(data = sdata, seed, init)
-  if (use_threading(threads)) {
-    if (algorithm %in% c("sampling", "fixed_param")) {
-      args$threads_per_chain <- threads$threads
-    } else if (algorithm %in% c("fullrank", "meanfield")) {
-      args$threads <- threads$threads
-    }
-  }
   if (use_opencl(opencl)) {
     args$opencl_ids <- opencl$ids
   }
@@ -282,30 +276,35 @@ fit_model <- function(model, backend, ...) {
       show_exceptions = silent == 0,
       fixed_param = algorithm == "fixed_param"
     )
+    if (use_threading(threads)) {
+      args$threads_per_chain <- threads$threads
+    }
     out <- do_call(model$sample, args)
   } else if (algorithm %in% c("fullrank", "meanfield")) {
-    # vb does not support parallel execution
     c(args) <- nlist(iter, algorithm)
+    if (use_threading(threads)) {
+      args$threads <- threads$threads
+    }
     out <- do_call(model$variational, args)
+  } else if (algorithm %in% c("pathfinder")) {
+    if (use_threading(threads)) {
+      args$num_threads <- threads$threads
+    }
+    out <- do_call(model$pathfinder, args)
+  } else if (algorithm %in% c("laplace")) {
+    if (use_threading(threads)) {
+      args$threads <- threads$threads
+    }
+    out <- do_call(model$laplace, args)
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
-  # not all metadata is not stored by read_csv_as_stanfit
-  metadata <- cmdstanr::read_cmdstan_csv(
-    out$output_files(), variables = "", sampler_diagnostics = ""
+
+  out <- read_csv_as_stanfit(
+    out$output_files(), variables = out$metadata()$stan_variables,
+    model = model, exclude = exclude, algorithm = algorithm
   )
-  # ensure that only relevant variables are read from CSV
-  variables <- repair_variable_names(metadata$metadata$variables)
-  variables <- unique(sub("\\[.+", "", variables))
-  variables <- setdiff(variables, exclude)
-  # temp fix for cmdstanr not recognizing the variable names it produces  #1473
-  variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
-  # transform into stanfit object for consistent output structure
-  out <- read_csv_as_stanfit(out$output_files(), variables = variables)
-  out <- repair_stanfit(out)
-  # allow updating the model without recompilation
-  attributes(out)$CmdStanModel <- model
-  attributes(out)$metadata <- metadata
+
   if (empty_model) {
     # allow correct updating of an 'empty' model
     out@sim <- list()
@@ -426,7 +425,7 @@ backend_choices <- function() {
 
 # supported Stan algorithms
 algorithm_choices <- function() {
-  c("sampling", "meanfield", "fullrank", "fixed_param")
+  c("sampling", "meanfield", "fullrank", "pathfinder", "laplace", "fixed_param")
 }
 
 # check if the model was fit the the required backend
@@ -648,14 +647,59 @@ file_refit_options <- function() {
 #   paste0(out, collapse = "\n")
 # }
 
-# read in stan CSVs via cmdstanr and repackage into a stanfit object
-# efficient replacement of rstan::read_stan_csv
-# @param files character vector of CSV files names where draws are stored
-# @param variables character vectors of variables to extract draws for
-# @param sampler_diagnostics character vectors of diagnostics to extract
-# @return a stanfit object
-read_csv_as_stanfit <- function(files, variables = NULL,
-                                sampler_diagnostics = NULL) {
+#' Read CmdStan CSV files as a brms-formatted stanfit object
+#'
+#' \code{read_csv_as_stanfit} is used internally to read CmdStan CSV files into a
+#' \code{stanfit} object that is consistent with the structure of the fit slot of a
+#' brmsfit object.
+#'
+#' @param files Character vector of CSV files names where draws are stored.
+#' @param variables Character vector of variables to extract from the CSV files.
+#' @param sampler_diagnostics Character vector of sampler diagnostics to extract.
+#' @param model A compiled cmdstanr model object (optional). Provide this argument
+#'  if you want to allow updating the model without recompilation.
+#' @param exclude Character vector of variables to exclude from the stanfit. Only
+#'  used when \code{variables} is also specified.
+#' @param algorithm The algorithm with which the model was fitted.
+#'   See \code{\link{brm}} for details.
+#'
+#' @return A stanfit object consistent with the structure of the \code{fit}
+#'  slot of a brmsfit object.
+#'
+#' @examples
+#' \dontrun{
+#' # fit a model manually via cmdstanr
+#' scode <- stancode(count ~ Trt, data = epilepsy)
+#' sdata <- standata(count ~ Trt, data = epilepsy)
+#' mod <- cmdstanr::cmdstan_model(cmdstanr::write_stan_file(scode))
+#' stanfit <- mod$sample(data = sdata)
+#'
+#' # feed the Stan model back into brms
+#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = 'cmdstanr')
+#' fit$fit <- read_csv_as_stanfit(stanfit$output_files(), model = mod)
+#' fit <- rename_pars(fit)
+#' summary(fit)
+#' }
+#'
+#' @export
+read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = NULL,
+                                model = NULL, exclude = "", algorithm = "sampling") {
+  require_package("cmdstanr")
+
+  if (!is.null(variables)) {
+    # ensure that only relevant variables are read from CSV
+    variables <- repair_variable_names(variables)
+    variables <- unique(sub("\\[.+", "", variables))
+    variables <- setdiff(variables, exclude)
+    # temp fix for cmdstanr not recognizing the variable names it produces #1473
+    if (algorithm %in% c("meanfield", "fullrank")) {
+      variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
+    } else if (algorithm %in% "pathfinder") {
+      variables <- setdiff(variables, "lp_approx__")
+    } else if (algorithm %in% "laplace") {
+      variables <- setdiff(variables, c("lp__", "lp_approx__"))
+    }
+  }
 
   csfit <- cmdstanr::read_cmdstan_csv(
     files = files, variables = variables,
@@ -667,28 +711,23 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   model_name = gsub(".csv", "", basename(files[[1]]))
 
   # @model_pars
-  svars <- csfit$metadata$stan_variables
+  model_pars <- csfit$metadata$stan_variables
   if (!is.null(variables)) {
-    variables_main <- unique(gsub("\\[.*\\]", "", variables))
-    svars <- intersect(variables_main, svars)
+    model_pars <- intersect(model_pars, variables)
   }
-  if ("lp__" %in% svars) {
-    svars <- c(setdiff(svars, "lp__"), "lp__")
-  }
-  pars_oi <- svars
-  par_names <- csfit$metadata$model_params
+  # special variables will be added back later on
+  special_vars <- c("lp__", "lp_approx__")
+  model_pars <- setdiff(model_pars, special_vars)
 
   # @par_dims
-  par_dims <- vector("list", length(svars))
-
-  names(par_dims) <- svars
-  par_dims <- lapply(par_dims, function(x) x <- integer(0))
-
-  pdims_num <- ulapply(
-    svars, function(x) sum(grepl(paste0("^", x, "\\[.*\\]$"), par_names))
+  par_dims <- vector("list", length(model_pars))
+  names(par_dims) <- model_pars
+  par_dims <- lapply(par_dims, function(x) integer(0))
+  pdims_num <- ulapply(model_pars, function(x)
+    sum(grepl(paste0("^", x, "\\[.*\\]$"), csfit$metadata$model_params))
   )
   par_dims[pdims_num != 0] <-
-    csfit$metadata$stan_variable_sizes[svars][pdims_num != 0]
+    csfit$metadata$stan_variable_sizes[model_pars][pdims_num != 0]
 
   # @mode
   mode <- 0L
@@ -728,8 +767,11 @@ read_csv_as_stanfit <- function(files, variables = NULL,
     csfit$post_warmup_draws <- NULL
 
     # prepare sampler diagnostics
-    diagnostics <- rbind(csfit$warmup_sampler_diagnostics,
-                         csfit$post_warmup_sampler_diagnostics)
+    diagnostics <- rbind(
+      csfit$warmup_sampler_diagnostics,
+      csfit$post_warmup_sampler_diagnostics
+    )
+
     # manage memory
     csfit$warmup_sampler_diagnostics <- NULL
     csfit$post_warmup_sampler_diagnostics <- NULL
@@ -761,15 +803,17 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   samples <- as.data.frame(samples)
   chain_ids <- samples$.chain
   samples[res_vars] <- NULL
-  if ("lp__" %in% colnames(samples)) {
-    samples <- move2end(samples, "lp__")
+
+  # only add special variables to dims if there are present in samples
+  # this ensures that dims_oi, pars_oi, and fnames_oi match with samples
+  for (p in special_vars) {
+    if (p %in% colnames(samples)) {
+      samples <- move2end(samples, p)
+      par_dims[[p]] <- integer(0)
+    }
   }
-
+  model_pars <- names(par_dims)
   fnames_oi <- colnames(samples)
-
-  colnames(samples) <- gsub("\\[", ".", colnames(samples))
-  colnames(samples) <- gsub("\\]", "", colnames(samples))
-  colnames(samples) <- gsub("\\,", ".", colnames(samples))
 
   # split samples into chains
   samples <- split(samples, chain_ids)
@@ -808,27 +852,31 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   idx_samples <- (n_iter_warmup + 1):(n_iter_warmup + n_iter_sample)
 
   for (i in seq_along(samples)) {
-    m <- colMeans(samples[[i]][idx_samples, , drop=FALSE])
+    m <- colMeans(samples[[i]][idx_samples, , drop = FALSE])
     rownames(samples[[i]]) <- seq_rows(samples[[i]])
     attr(samples[[i]], "sampler_params") <- diagnostics[[i]][rstan_diagn_order]
     rownames(attr(samples[[i]], "sampler_params")) <- seq_rows(diagnostics[[i]])
 
     # reformat back to text
-    if (is_equal(sampler_t, "NUTS(dense_e)")) {
-      mmatrix_txt <- "\n# Elements of inverse mass matrix:\n# "
-      mmat <- paste0(apply(csfit$inv_metric[[i]], 1, paste0, collapse=", "),
-                     collapse="\n# ")
+    if (length(csfit$inv_metric)) {
+      if (is_equal(sampler_t, "NUTS(dense_e)")) {
+        mmatrix_txt <- "\n# Elements of inverse mass matrix:\n# "
+        mmat <- paste0(apply(csfit$inv_metric[[i]], 1, paste0, collapse = ", "),
+                       collapse = "\n# ")
+      } else {
+        mmatrix_txt <- "\n# Diagonal elements of inverse mass matrix:\n# "
+        mmat <- paste0(csfit$inv_metric[[i]], collapse = ", ")
+      }
+
+      adapt_info[[i]] <- paste0("# Step size = ",
+                                csfit$step_size[[i]],
+                                mmatrix_txt,
+                                mmat, "\n# ")
+      attr(samples[[i]], "adaptation_info") <- adapt_info[[i]]
     } else {
-      mmatrix_txt <- "\n# Diagonal elements of inverse mass matrix:\n# "
-      mmat <- paste0(csfit$inv_metric[[i]], collapse = ", ")
+      attr(samples[[i]], "adaptation_info") <- character(0)
     }
 
-    adapt_info[[i]] <- paste0("# Step size = ",
-                              csfit$step_size[[i]],
-                              mmatrix_txt,
-                              mmat, "\n# ")
-
-    attr(samples[[i]], "adaptation_info") <- adapt_info[[i]]
 
     attr(samples[[i]], "args") <- list(sampler_t = sampler_t, chain_id = i)
 
@@ -854,7 +902,7 @@ read_csv_as_stanfit <- function(files, variables = NULL,
     n_save = rep(n_iter_sample + n_iter_warmup, n_chains),
     warmup2 = rep(n_iter_warmup, n_chains),
     permutation = perm_lst,
-    pars_oi = pars_oi,
+    pars_oi = model_pars,
     dims_oi = par_dims,
     fnames_oi = fnames_oi,
     n_flatnames = length(fnames_oi)
@@ -943,10 +991,10 @@ read_csv_as_stanfit <- function(files, variables = NULL,
   sdate <- do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
   sdate <- format(sdate, "%a %b %d %X %Y")
 
-  new(
+  out <- new(
     "stanfit",
     model_name = model_name,
-    model_pars = svars,
+    model_pars = model_pars,
     par_dims = par_dims,
     mode = mode,
     sim = sim,
@@ -956,4 +1004,8 @@ read_csv_as_stanfit <- function(files, variables = NULL,
     date = sdate,  # not the time of sampling
     .MISC = new.env(parent = emptyenv())
   )
+
+  attributes(out)$metadata <- csfit
+  attributes(out)$CmdStanModel <- model
+  out
 }

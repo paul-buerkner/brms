@@ -27,9 +27,10 @@
 #'  details.
 #' @param reloo Logical; Indicate whether \code{\link{reloo}}
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
-#' @param k_threshold The threshold at which pareto \eqn{k}
-#'   estimates are treated as problematic. Defaults to \code{0.7}.
-#'   Only used if argument \code{reloo} is \code{TRUE}.
+#' @param k_threshold The Pareto \eqn{k} threshold for which observations
+#'   \code{\link{loo_moment_match}} or \code{\link{reloo}} is applied if
+#'   argument \code{moment_match} or \code{reloo} is \code{TRUE}.
+#'   Defaults to \code{0.7}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
 #' @param save_psis Should the \code{"psis"} object created internally be saved
 #'   in the returned object? For more details see \code{\link[loo:loo]{loo}}.
@@ -476,6 +477,8 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #'   (the default) the name is taken from the call to \code{x}.
 #' @param overwrite Logical; Indicates if already stored fit
 #'   indices should be overwritten. Defaults to \code{FALSE}.
+#'   Setting it to \code{TRUE} is useful for example when changing
+#'   additional arguments of an already stored criterion.
 #' @param file Either \code{NULL} or a character string. In the latter case, the
 #'   fitted model object including the newly added criterion values is saved via
 #'   \code{\link{saveRDS}} in a file named after the string supplied in
@@ -488,7 +491,9 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #'   ignored otherwise. If \code{TRUE}, the fitted model object will be saved
 #'   regardless of whether new criteria were added via \code{add_criterion}.
 #' @param ... Further arguments passed to the underlying
-#'   functions computing the model fit criteria.
+#'   functions computing the model fit criteria. If you are recomputing
+#'   an already stored criterion with other \code{...} arguments, make
+#'   sure to set \code{overwrite = TRUE}.
 #'
 #' @return An object of the same class as \code{x}, but
 #'   with model fit criteria added for later usage.
@@ -666,25 +671,38 @@ validate_models <- function(models, model_names, sub_names) {
 
 # recommend options if approximate loo fails for some observations
 # @param moment_match has moment matching already been performed?
-recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE,
+recommend_loo_options <- function(loo, k_threshold = 0.7, moment_match = FALSE,
                                   model_name = "") {
   if (isTRUE(nzchar(model_name))) {
     model_name <- paste0(" in model '", model_name, "'")
   } else {
     model_name <- ""
   }
-  n <- length(loo::pareto_k_ids(loo, threshold = k_threshold))
-  if (!moment_match && n > 0) {
+  ndraws <- dim(loo)[1] %||% Inf
+  n <- n2 <- length(loo::pareto_k_ids(loo, threshold = k_threshold))
+  # for small number of draws the threshold may be smaller than 0.7
+  k_threshold2 <- ps_khat_threshold(ndraws)
+  if (k_threshold2 < k_threshold) {
+    n2 <- length(loo::pareto_k_ids(loo, threshold = k_threshold2))
+  }
+  if (n2 > n && k_threshold2 <= 0.7) {
+    warning2(
+      "Found ", n2, " observations with a pareto_k > ", round(k_threshold2, 2),
+      model_name, ". We recommend to run more iterations to get at least ",
+      "about 2200 posterior draws to improve LOO-CV approximation accuracy."
+    )
+    out <- "loo_more_draws"
+  } else if (n > 0 && !moment_match) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". It is recommended to set 'moment_match = TRUE' in order ",
+      model_name, ". We recommend to set 'moment_match = TRUE' in order ",
       "to perform moment matching for problematic observations. "
     )
     out <- "loo_moment_match"
   } else if (n > 0 && n <= 10) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
-      model_name, ". It is recommended to set 'reloo = TRUE' in order to ",
+      model_name, ". We recommend to set 'reloo = TRUE' in order to ",
       "calculate the ELPD without the assumption that these observations " ,
       "are negligible. This will refit the model ", n, " times to compute ",
       "the ELPDs for the problematic observations directly."
@@ -978,4 +996,10 @@ print.iclist <- function(x, digits = 2, ...) {
   }
   print(round(mat, digits = digits), na.print = "")
   invisible(x)
+}
+
+# Pareto-smoothing k-hat threshold
+# not yet exported by loo so copied over here for now
+ps_khat_threshold <- function(S, ...) {
+  1 - 1 / log10(S)
 }

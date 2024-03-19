@@ -51,7 +51,7 @@ linear \code{gaussian} model is applied. In multivariate models,
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
+\code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
 for more help.}
 
 \item{data2}{A \emph{list} of named lists each of which will be used to fit a
@@ -221,7 +221,7 @@ fit_imp2$rhats
 
 # use the future package for parallelization
 library(future)
-plan(multiprocess)
+plan(multisession, workers = 4)
 fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 summary(fit_imp3)
 }

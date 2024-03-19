@@ -4,15 +4,17 @@
 \alias{kfold_predict}
 \title{Predictions from K-Fold Cross-Validation}
 \usage{
-kfold_predict(x, method = c("predict", "fitted"), resp = NULL, ...)
+kfold_predict(x, method = "posterior_predict", resp = NULL, ...)
 }
 \arguments{
 \item{x}{Object of class \code{'kfold'} computed by \code{\link{kfold}}.
 For \code{kfold_predict} to work, the fitted model objects need to have
 been stored via argument \code{save_fits} of \code{\link{kfold}}.}
 
-\item{method}{The method used to make predictions. Either \code{"predict"}
-or \code{"fitted"}. See \code{\link{predict.brmsfit}} for details.}
+\item{method}{Method used to obtain predictions. Can be set to
+\code{"posterior_predict"} (the default), \code{"posterior_epred"},
+or \code{"posterior_linpred"}. For more details, see the respective
+function documentations.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}

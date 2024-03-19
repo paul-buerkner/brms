@@ -2,30 +2,34 @@
 % Please edit documentation in R/restructure.R
 \name{restructure}
 \alias{restructure}
-\title{Restructure Old \code{brmsfit} Objects}
+\title{Restructure Old R Objects}
 \usage{
 restructure(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{brmsfit}.}
+\item{x}{An object to be restructured. The object's class will determine
+which method to apply}
 
-\item{...}{Currently ignored.}
+\item{...}{Additional arguments to pass to the specific methods}
 }
 \value{
-A \code{brmsfit} object compatible with the latest version
-  of \pkg{brms}.
+An object of the same class as \code{x} compatible with the latest
+ version of the package that generated it.
 }
 \description{
-Restructure old \code{brmsfit} objects to work with
-the latest \pkg{brms} version. This function is called
-internally when applying post-processing methods.
-However, in order to avoid unnecessary run time caused
-by the restructuring, I recommend explicitly calling
-\code{restructure} once per model after updating \pkg{brms}.
+\code{restructure} is a generic function used to restructure old R objects to
+work with newer versions of the package that generated them. Its original
+use is within the \pkg{brms} package, but new methods for use with objects
+from other packages can be registered to the same generic.
 }
 \details{
-If you are restructuring an old spline model (fitted with brms < 2.19.3) to
-avoid prediction inconsistencies between machines (see GitHub issue #1465),
-please make sure to \code{restructure} your model on the machine on which it
-was originally fitted.
+Usually the version of the package that generated the object will be
+  stored somewhere in the object and this information will be used by the
+  specific method to determine what transformations to apply. See
+  \code{\link[brms:restructure.brmsfit]{restructure.brmsfit}} for the default
+  method applied for \pkg{brms} models. You can view the available methods by
+  typing: \code{methods(restructure)}
+}
+\seealso{
+\code{\link{restructure.brmsfit}}
 }

@@ -13,7 +13,7 @@
    * Returns:
    *   a vector in (-Inf, Inf)
    */
-   vector logm1_vector(vector y) {
+   vector logm1(vector y) {
      return log(y - 1.0);
    }
   /* compute the inverse of the logm1 link
@@ -31,6 +31,6 @@
    * Returns:
    *   a positive vector
    */
-   vector expp1_vector(vector y) {
+   vector expp1(vector y) {
      return exp(y) + 1.0;
    }

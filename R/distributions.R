@@ -127,7 +127,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
     }
   }
   draws <- matrix(rnorm(n * p), nrow = n, ncol = p)
-  mu + draws %*% chol(Sigma)
+  sweep(draws %*% chol(Sigma), 2, mu, "+")
 }
 
 #' The Multivariate Student-t Distribution
@@ -456,7 +456,7 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 #' @name VonMises
 #'
 #' @inheritParams StudentT
-#' @param x,q Vector of quantiles.
+#' @param x,q Vector of quantiles between \code{-pi} and \code{pi}.
 #' @param kappa Vector of precision values.
 #' @param acc Accuracy of numerical approximations.
 #'

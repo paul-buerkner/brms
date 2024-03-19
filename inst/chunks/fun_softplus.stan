@@ -13,6 +13,6 @@
    * Returns:
    *   a vector in (-Inf, Inf)
    */
-   vector log_expm1_vector(vector x) {
+   vector log_expm1(vector x) {
      return log(expm1(x));
    }

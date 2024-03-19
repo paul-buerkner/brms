@@ -62,7 +62,7 @@
 #'
 #' # use the future package for parallelization
 #' library(future)
-#' plan(multiprocess)
+#' plan(multisession, workers = 4)
 #' fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 #' summary(fit_imp3)
 #' }
@@ -139,27 +139,29 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     return(fit)
   }
 
-  fits <- futures <- rhats <- vector("list", length(data))
-  for (i in seq_along(data)) {
-    futures[[i]] <- future::future(
-      update(fit, newdata = data[[i]], data2 = data2[[i]],
-             recompile = recompile, silent = silent, ...),
-      packages = "brms", seed = TRUE
-    )
-  }
-  for (i in seq_along(data)) {
+  .brm <- function(i, ...) {
     if (silent < 2) {
       message("Fitting imputed model ", i)
     }
-    fits[[i]] <- future::value(futures[[i]])
+    update(fit, newdata = data[[i]], data2 = data2[[i]],
+           recompile = recompile, silent = silent, ...)
+  }
+
+  fits <- future.apply::future_lapply(
+    seq_along(data), .brm, ..., future.seed = TRUE
+  )
+  rhats <- vector("list", length(data))
+  for (i in seq_along(data)) {
     if (algorithm == "sampling") {
       # TODO: replace by rhat of the posterior package
       rhats[[i]] <- data.frame(as.list(rhat(fits[[i]])))
-      if (any(rhats[[i]] > 1.1, na.rm = TRUE)) {
-        warning2("Imputed model ", i, " did not converge.")
+      if (any(rhats[[i]] > 1.05, na.rm = TRUE)) {
+        warning2("Imputed model ", i, " did not converge. ",
+                 "See brmsfit$rhats for details.")
       }
     }
   }
+
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
     attr(fits$data, "data_name") <- data_name
@@ -225,6 +227,8 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
   sflist <- from_list(models, "fit")
   out <- models[[1]]
   out$fit <- rstan::sflist2stanfit(sflist)
+  # fixes issue #1603
+  out <- save_old_par_order(out, models[[1]])
   if (out$backend == "cmdstanr") {
     att <- attributes(models[[1]]$fit)
     attributes(out$fit)$CmdStanModel <- att$CmdStanModel

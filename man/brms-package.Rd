@@ -23,8 +23,8 @@ The main function of \pkg{brms} is \code{\link{brm}}, which uses
 formula syntax to specify a wide range of complex Bayesian models
 (see \code{\link{brmsformula}} for details). Based on the supplied
 formulas, data, and additional information, it writes the Stan code
-on the fly via \code{\link{make_stancode}}, prepares the data via
-\code{\link{make_standata}}, and fits the model using
+on the fly via \code{\link[brms:stancode.default]{stancode}}, prepares the data via
+\code{\link[brms:standata.default]{standata}} and fits the model using
 \pkg{\link[rstan:rstan]{Stan}}.
 
 Subsequently, a large number of post-processing methods can be applied:
@@ -81,4 +81,24 @@ version 2.21.2. \url{https://mc-stan.org/}
 \code{\link{brmsformula}},
 \code{\link{brmsfamily}},
 \code{\link{brmsfit}}
+}
+\author{
+\strong{Maintainer}: Paul-Christian Bürkner \email{paul.buerkner@gmail.com}
+
+Other contributors:
+\itemize{
+  \item Jonah Gabry [contributor]
+  \item Sebastian Weber [contributor]
+  \item Andrew Johnson [contributor]
+  \item Martin Modrak [contributor]
+  \item Hamada S. Badr [contributor]
+  \item Frank Weber [contributor]
+  \item Aki Vehtari [contributor]
+  \item Mattan S. Ben-Shachar [contributor]
+  \item Hayden Rabel [contributor]
+  \item Simon C. Mills [contributor]
+  \item Stephen Wild [contributor]
+  \item Ven Popov [contributor]
+}
+
 }

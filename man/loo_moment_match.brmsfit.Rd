@@ -21,8 +21,8 @@
 
 \item{loo}{An object of class \code{loo} originally created from \code{x}.}
 
-\item{k_threshold}{The threshold at which Pareto \eqn{k}
-estimates are treated as problematic. Defaults to \code{0.7}.
+\item{k_threshold}{The Pareto \eqn{k} threshold for which observations
+moment matching is applied. Defaults to \code{0.7}.
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 for more details.}
 

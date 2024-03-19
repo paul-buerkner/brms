@@ -702,9 +702,8 @@ stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     glue("shape{mix}") %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- str_if(reqn, "[n]")
-  sdist(lpdf, p$mu, p$shape)
+  sdist("inv_gaussian", p$mu, p$shape)
 }
 
 stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
@@ -729,8 +728,7 @@ stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     "kappa" %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  lpdf <- paste0("von_mises_", str_if(reqn, "real", "vector"))
-  sdist(lpdf, p$mu, p$kappa)
+  sdist("von_mises2", p$mu, p$kappa)
 }
 
 stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
@@ -747,12 +745,13 @@ stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
 
 stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
                                     threads = NULL, ...) {
-  if (use_glm_primitive(bterms, allow_special_terms = FALSE)) {
+  if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
     out <- sdist("ordered_logistic_glm", p$x, p$beta, p$alpha)
-    return(out)
+  } else {
+    out <- stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
   }
-  stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
+  out
 }
 
 stan_log_lik_sratio <- function(bterms, resp = "", mix = "",
@@ -770,11 +769,20 @@ stan_log_lik_acat <- function(bterms, resp = "", mix = "",
   stan_log_lik_ordinal(bterms, resp, mix, threads, ...)
 }
 
-stan_log_lik_categorical <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_categorical <- function(bterms, resp = "", mix = "",
+                                     threads = NULL, ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
-  p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
-  sdist("categorical_logit", p$mu)
+  if (use_glm_primitive_categorical(bterms)) {
+    bterms1 <- bterms$dpars[[1]]
+    bterms1$family <- bterms$family
+    p <- args_glm_primitive(bterms1, resp = resp, threads = threads)
+    out <- sdist("categorical_logit_glm", p$x, p$alpha, p$beta)
+  } else {
+    p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
+    out <- sdist("categorical_logit", p$mu)
+  }
+  out
 }
 
 stan_log_lik_multinomial <- function(bterms, resp = "", mix = "", ...) {
@@ -812,9 +820,11 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
                                  threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  if (use_ordered_logistic(bterms)) {
-    # TODO: support 'ordered_probit' as well
+  if (use_ordered_builtin(bterms, "logit")) {
     lpdf <- "ordered_logistic"
+    p[grepl("^disc", names(p))] <- NULL
+  } else if (use_ordered_builtin(bterms, "probit")) {
+    lpdf <- "ordered_probit"
     p[grepl("^disc", names(p))] <- NULL
   } else {
     lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
@@ -874,9 +884,10 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
                                            threads = NULL, ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  if (use_ordered_logistic(bterms)) {
-    # TODO: support 'ordered_probit' as well
+  if (use_ordered_builtin(bterms, "logit")) {
     lpdf <- "hurdle_cumulative_ordered_logistic"
+  } else if (use_ordered_builtin(bterms, "probit")) {
+    lpdf <- "hurdle_cumulative_ordered_probit"
   } else {
     lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
   }
@@ -995,34 +1006,55 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
 # use Stan GLM primitive functions?
 # @param bterms a brmsterms object
 # @return TRUE or FALSE
-use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
+use_glm_primitive <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   # the model can only have a single predicted parameter
   # and no additional residual or autocorrelation structure
-  non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   mu <- bterms$dpars[["mu"]]
+  non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
       isTRUE(bterms$rescor) || is.formula(mu$ac) ||
       any(names(bterms$adforms) %in% non_glm_adterms)) {
     return(FALSE)
   }
+  # some primitives do not support special terms in the way
+  # required by brms' Stan code generation
+  allow_special_terms <- !mu$family$family %in% c("cumulative", "categorical")
+  if (!allow_special_terms && has_special_terms(mu)) {
+    return(FALSE)
+  }
   # supported families and link functions
-  # TODO: support categorical_logit primitive
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
-    poisson = "log", negbinomial = "log", negbinomial2 = "log"
-    # rstan does not yet support 'ordered_logistic_glm'
-    # cumulative = "logit"
+    poisson = "log", negbinomial = "log", negbinomial2 = "log",
+    cumulative = "logit", categorical = "logit"
   )
   if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
     return(FALSE)
   }
-  if (!allow_special_terms && has_special_terms(mu)) {
-    # some primitives do not support special terms in the way
-    # required by brms' Stan code generation
+  length(all_terms(mu$fe)) > 0 && !is_sparse(mu$fe)
+}
+
+# use Stan categorical GLM primitive function?
+# @param bterms a brmsterms object
+# @return TRUE or FALSE
+use_glm_primitive_categorical <- function(bterms) {
+  stopifnot(is.brmsterms(bterms))
+  if (!is_categorical(bterms)) {
     return(FALSE)
   }
-  length(all_terms(mu$fe)) > 0 && !is_sparse(mu$fe)
+  tmp <- bterms
+  tmp$dpars <- list()
+  # we know that all dpars in categorical models are mu parameters
+  out <- rep(FALSE, length(bterms$dpars))
+  for (i in seq_along(bterms$dpars)) {
+    tmp$dpars$mu <- bterms$dpars[[i]]
+    tmp$dpars$mu$family <- bterms$family
+    out[i] <- use_glm_primitive(tmp) &&
+      # the design matrix of all mu parameters must match
+      all.equal(tmp$dpars$mu$fe, bterms$dpars[[1]]$fe)
+  }
+  all(out)
 }
 
 # standard arguments for primitive Stan GLM functions
@@ -1040,6 +1072,10 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
   } else if (center_X) {
     sfx_X <- "c"
   }
+  is_categorical <- is_categorical(bterms)
+  if (is_categorical) {
+    sfx_X <- glue("{sfx_X}_{bterms$dpar}")
+  }
   x <- glue("X{sfx_X}{resp}{slice}")
   beta <- glue("b{sfx_b}{resp}")
   if (has_special_terms(bterms)) {
@@ -1049,17 +1085,21 @@ args_glm_primitive <- function(bterms, resp = "", threads = NULL) {
     if (center_X) {
       alpha <- glue("Intercept{resp}")
     } else {
-      alpha <- "0"
+      if (is_categorical) {
+        alpha <- glue("rep_vector(0, ncat{resp})")
+      } else {
+        alpha <- "0"
+      }
     }
   }
   nlist(x, alpha, beta)
 }
 
 # use the ordered_logistic built-in functions
-use_ordered_logistic <- function(bterms) {
+use_ordered_builtin <- function(bterms, link) {
   stopifnot(is.brmsterms(bterms))
   isTRUE(bterms$family$family %in% c("cumulative", "hurdle_cumulative")) &&
-    isTRUE(bterms$family$link == "logit") &&
+    isTRUE(bterms$family$link == link) &&
     isTRUE(bterms$fdpars$disc$value == 1) &&
     !has_cs(bterms)
 }
