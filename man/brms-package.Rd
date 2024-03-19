@@ -93,6 +93,7 @@ Other contributors:
   \item Martin Modrak [contributor]
   \item Hamada S. Badr [contributor]
   \item Frank Weber [contributor]
+  \item Aki Vehtari [contributor]
   \item Mattan S. Ben-Shachar [contributor]
   \item Hayden Rabel [contributor]
   \item Simon C. Mills [contributor]

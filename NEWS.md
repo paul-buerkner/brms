@@ -19,6 +19,8 @@ method `default_prior`. This enable other packages to define new `stancode`,
 `standata` and `default_prior` methods to generate Stan code and data, and extract
 the default priors, for their own objects building on brms. Thanks to Ven Popov 
 for helping with this. (#1604)
+* Change the default prior of the `shape` parameter of `negbinomial` models
+to `inv_gamma(0.4, 0.3)` thanks to Aki Vehtari. (#1614)
 * No longer automatically canonicalize the Stan code if cmdstanr is used
 as backend. (#1544)
 * Export `read_csv_as_stanfit` thanks to Ven Popov. (#1619)

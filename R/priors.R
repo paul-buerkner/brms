@@ -265,12 +265,16 @@
 #'   By default, \code{sigma} has a half student-t prior that scales
 #'   in the same way as the group-level standard deviations.
 #'   Further, family \code{student} needs the parameter
-#'   \code{nu} representing the degrees of freedom of students-t distribution.
-#'   By default, \code{nu} has prior \code{gamma(2, 0.1)}
+#'   \code{nu} representing the degrees of freedom of Student-t distribution.
+#'   By default, \code{nu} has prior \code{gamma(2, 0.1)}, which is
+#'   close to a penalized complexity prior (see Stan prior choice Wiki),
 #'   and a fixed lower bound of \code{1}.
-#'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
-#'   \code{negbinomial} need a \code{shape} parameter that has a
-#'   \code{gamma(0.01, 0.01)} prior by default.
+#'   Family \code{negbinomial} needs a \code{shape} parameter that has by
+#'   default \code{inv_gamma(0.4, 0.3)} prior which is close to a
+#'   penalized complexity prior (see Stan prior choice Wiki).
+#'   Families \code{gamma}, \code{weibull}, and \code{inverse.gaussian},
+#'   need a \code{shape} parameter that has a \code{gamma(0.01, 0.01)}
+#'   prior by default.
 #'   For families \code{cumulative}, \code{cratio}, \code{sratio},
 #'   and \code{acat}, and only if \code{threshold = "equidistant"},
 #'   the parameter \code{delta} is used to model the distance between
@@ -1078,9 +1082,14 @@ def_dpar_prior <- function(x, dpar, data = NULL) {
   dpar <- as_one_character(dpar)
   resp <- usc(x$resp)
   dpar_class <- dpar_class(dpar, family = x)
-  link <- x$dpars[[dpar]]$family$link
-  if (is.null(link)) {
-    link <- "identity"
+  link <- x$dpars[[dpar]]$family$link %||% "identity"
+  if (is.function(x$family$prior)) {
+    # experimental use of default priors stored in families #1614
+    # TODO: use this feature more generally?
+    out <- x$family$prior(dpar_class, link = link)
+    if (!is.null(out)) {
+      return(out)
+    }
   }
   # ensures reasonable scaling in def_scale_prior
   x$family$link <- link

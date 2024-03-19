@@ -306,12 +306,16 @@ Define priors for specific parameters or classes of parameters.
   By default, \code{sigma} has a half student-t prior that scales
   in the same way as the group-level standard deviations.
   Further, family \code{student} needs the parameter
-  \code{nu} representing the degrees of freedom of students-t distribution.
-  By default, \code{nu} has prior \code{gamma(2, 0.1)}
+  \code{nu} representing the degrees of freedom of Student-t distribution.
+  By default, \code{nu} has prior \code{gamma(2, 0.1)}, which is
+  close to a penalized complexity prior (see Stan prior choice Wiki),
   and a fixed lower bound of \code{1}.
-  Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
-  \code{negbinomial} need a \code{shape} parameter that has a
-  \code{gamma(0.01, 0.01)} prior by default.
+  Family \code{negbinomial} needs a \code{shape} parameter that has by
+  default \code{inv_gamma(0.4, 0.3)} prior which is close to a
+  penalized complexity prior (see Stan prior choice Wiki).
+  Families \code{gamma}, \code{weibull}, and \code{inverse.gaussian},
+  need a \code{shape} parameter that has a \code{gamma(0.01, 0.01)}
+  prior by default.
   For families \code{cumulative}, \code{cratio}, \code{sratio},
   and \code{acat}, and only if \code{threshold = "equidistant"},
   the parameter \code{delta} is used to model the distance between

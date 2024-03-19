@@ -13,6 +13,7 @@ Authors@R:
       person("Martin", "Modrak", role = c("ctb")),
       person("Hamada S.", "Badr", role = c("ctb")),
       person("Frank", "Weber", role = c("ctb")),
+      person("Aki", "Vehtari", role = c("ctb")),
       person("Mattan S.", "Ben-Shachar", role = c("ctb")),
       person("Hayden", "Rabel", role = c("ctb")),
       person("Simon C.", "Mills", role = c("ctb")),

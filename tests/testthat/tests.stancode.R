@@ -110,7 +110,10 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1)")
   expect_true(!grepl("sigma \\|", scode))
 
-  # commented out until fixes implemented in 'check_prior_content'
+  # tests use of default priors stored in families #1614
+  scode <- stancode(y ~ x1, dat, family = negbinomial())
+  expect_match2(scode, "lprior += inv_gamma_lpdf(shape | 0.4, 0.3);")
+
   prior <- prior(gamma(0, 1), coef = x1)
   expect_warning(stancode(y ~ x1, dat, prior = prior),
                  "no natural lower bound")
