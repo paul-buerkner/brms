@@ -385,6 +385,7 @@ family_info.default <- function(x, y, ...) {
   out
 }
 
+#' @export
 family_info.NULL <- function(x, y, ...) {
   NULL
 }

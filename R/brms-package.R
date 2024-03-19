@@ -1,6 +1,5 @@
 #' Bayesian Regression Models using 'Stan'
 #'
-#' @docType package
 #' @name brms-package
 #' @aliases brms
 #'
@@ -81,4 +80,4 @@
 #' \code{\link{brmsfamily}},
 #' \code{\link{brmsfit}}
 #'
-NULL
+"_PACKAGE"

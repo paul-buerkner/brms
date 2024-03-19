@@ -582,6 +582,7 @@ prior_predictor.default <- function(x, ...) {
   empty_prior()
 }
 
+#' @export
 prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior <- empty_prior()
   for (i in seq_along(x$terms)) {
@@ -608,6 +609,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior
 }
 
+#' @export
 prior_predictor.brmsterms <- function(x, data, internal = FALSE, ...) {
   data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
