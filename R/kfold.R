@@ -446,7 +446,7 @@ kfold_predict <- function(x, method = "posterior_predict", resp = NULL, ...) {
       "Please run kfold with 'save_fits = TRUE'."
     )
   }
-  method <- validate_pp_method(method)
+  method <- get(validate_pp_method(method), mode = "function")
   resp <- validate_resp(resp, x$fits[[1, "fit"]], multiple = FALSE)
   all_predicted <- as.character(sort(unlist(x$fits[, "predicted"])))
   npredicted <- length(all_predicted)
