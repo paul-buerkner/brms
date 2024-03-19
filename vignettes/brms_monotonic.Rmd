@@ -231,4 +231,4 @@ we assumed `income` to have the same effect across cities.
 ## References
 
 Bürkner P. C. & Charpentier, E. (in review). [Monotonic Effects: A Principled
-Approach for Including Ordinal Predictors in Regression Models](https://psyarxiv.com/9qkhj/). *PsyArXiv preprint*.
+Approach for Including Ordinal Predictors in Regression Models](https://osf.io/preprints/psyarxiv/9qkhj/). *PsyArXiv preprint*.
