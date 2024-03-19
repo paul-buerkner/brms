@@ -169,21 +169,21 @@ test_that("projpred methods can be run", {
 
 test_that("alternative algorithms can be used", {
   fit <- brm(
-    count ~ zBase * Trt, data = epilepsy,
+    count ~ zBase, data = epilepsy,
     backend = "cmdstanr", algorithm = "meanfield"
   )
   summary(fit)
   expect_is(fit, "brmsfit")
 
   fit <- brm(
-    count ~ zBase * Trt, data = epilepsy,
+    count ~ zBase, data = epilepsy,
     backend = "cmdstanr", algorithm = "pathfinder"
   )
   summary(fit)
   expect_is(fit, "brmsfit")
 
   fit <- brm(
-    count ~ zBase * Trt, data = epilepsy,
+    count ~ zBase, data = epilepsy,
     backend = "cmdstanr", algorithm = "laplace"
   )
   summary(fit)

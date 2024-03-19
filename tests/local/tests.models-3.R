@@ -68,7 +68,7 @@ test_that("generalized extreme value models work correctly", {
     bf(SeaLevel ~ cYear + SOI,
        sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI),
     data = fremantle, family = gen_extreme_value(),
-    knots = knots, inits = 0.5, chains = 4,
+    knots = knots, init = 0.5, chains = 4,
     control = list(adapt_delta = 0.95), refresh = 0
   )
   print(fit_gev)
@@ -182,22 +182,22 @@ test_that("Mixture models work correctly", {
   fit1 <- brm(
     bform1, data = dat, family = mixfam,
     prior = c(prior, prior(dirichlet(1, 1, 1), theta)),
-    chains = 2, inits = 0, refresh = 0
+    chains = 2, init = 0, refresh = 0, seed = 1234
   )
   print(fit1)
   expect_ggplot(pp_check(fit1))
-  loo1 <- LOO(fit1)
+  loo1 <- loo(fit1)
   expect_equal(dim(pp_mixture(fit1)), c(nobs(fit1), 4, 3))
 
   bform2 <- bf(bform1, theta1 = 1, theta2 = 1, theta3 = 1)
   fit2 <- brm(
     bform2, data = dat, family = mixfam,
     prior = prior, chains = 2,
-    inits = 0, refresh = 0
+    init = 0, refresh = 0
   )
   print(fit2)
   expect_ggplot(pp_check(fit2))
-  loo2 <- LOO(fit2)
+  loo2 <- loo(fit2)
   expect_gt(loo2$estimates[3, 1], loo1$estimates[3, 1])
   expect_equal(dim(pp_mixture(fit2)), c(nobs(fit2), 4, 3))
 
