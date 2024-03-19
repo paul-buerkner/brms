@@ -43,10 +43,14 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     algorithm = algorithm(object)
   )
   class(out) <- "brmssummary"
-  if (!length(object$fit@sim)) {
-    # the model does not contain posterior draws
+
+  # check if the model contains any posterior draws
+  model_is_empty <- !length(object$fit@sim) ||
+    isTRUE(object$fit@sim$iter <= object$fit@sim$warmup)
+  if (model_is_empty) {
     return(out)
   }
+
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
   if (priors) {
