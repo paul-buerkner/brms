@@ -718,7 +718,13 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   # below is an attempt to deal with this somehow (part 2)
   special_vars <- c("lp__", "lp_approx__", "log_g__")
   special_vars <- intersect(special_vars, svars)
-  vars_in_draws <- variables(csfit$draws)
+  # by default just assume all special vars are present in draws
+  vars_in_draws <- svars
+  if ("post_warmup_draws" %in% names(csfit)) {
+    vars_in_draws <- variables(csfit$post_warmup_draws)
+  } else if ("draws" %in% names(csfit)) {
+    vars_in_draws <- variables(csfit$draws)
+  }
   for (v in special_vars) {
     if (v %in% vars_in_draws) {
       # put special vars at the end
