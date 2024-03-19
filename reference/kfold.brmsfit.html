@@ -19,7 +19,7 @@ Folds can be run in parallel using the future package."><meta property="og:image
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -111,7 +111,7 @@ Folds can be run in parallel using the <span class="pkg">future</span> package.<
 <span>  Ksub <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  folds <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  exact_loo <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  joint <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  compare <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  resp <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  model_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -166,8 +166,14 @@ What exactly is done with this variable depends on argument <code>folds</code>.
 More information is provided in the 'Details' section.</p></dd>
 
 
-<dt>exact_loo</dt>
-<dd><p>Deprecated! Please use <code>folds = "loo"</code> instead.</p></dd>
+<dt>joint</dt>
+<dd><p>Indicates which observations' log likelihoods shall be
+considered jointly in the ELPD computation. If <code>"obs"</code> or <code>FALSE</code>
+(the default), each observation is considered separately. This enables
+comparability of <code>kfold</code> with <code>loo</code>. If <code>"fold"</code>, the joint
+log likelihoods per fold are used. If <code>"group"</code>, the joint log
+likelihoods per group within folds are used (only available if argument
+<code>group</code> is specified).</p></dd>
 
 
 <dt>compare</dt>
@@ -269,10 +275,15 @@ execution if activated.</p></dd>
 <span class="r-in"><span><span class="co"># perform 10-fold cross validation</span></span></span>
 <span class="r-in"><span><span class="op">(</span><span class="va">kfold1</span> <span class="op">&lt;-</span> <span class="fu">kfold</span><span class="op">(</span><span class="va">fit1</span>, chains <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># use the future package for parallelization</span></span></span>
+<span class="r-in"><span><span class="co"># use joint likelihoods per fold for ELPD evaluation</span></span></span>
+<span class="r-in"><span><span class="fu">kfold</span><span class="op">(</span><span class="va">fit1</span>, chains <span class="op">=</span> <span class="fl">1</span>, joint <span class="op">=</span> <span class="st">"fold"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># use the future package for parallelization of models</span></span></span>
+<span class="r-in"><span><span class="co"># that is to fit models belonging to different folds in parallel</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multiprocess</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span>, workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">kfold</span><span class="op">(</span><span class="va">fit1</span>, chains <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">sequential</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## to avoid recompilations when running kfold() on a 'cmdstanr'-backend fit</span></span></span>
 <span class="r-in"><span><span class="co">## in a fresh R session, set option 'cmdstanr_write_stan_file_dir' before</span></span></span>
@@ -283,10 +294,9 @@ execution if activated.</p></dd>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fname</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"fit_cmdstanr_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>cmdstanr_write_stan_file_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">fit_cmdstanr</span> <span class="op">&lt;-</span> <span class="fu"><a href="brm.html">brm</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="va">conc</span> <span class="op">+</span> <span class="va">state</span>,</span></span>
-<span class="r-in"><span>                    data <span class="op">=</span> <span class="va">Puromycin</span>,</span></span>
-<span class="r-in"><span>                    backend <span class="op">=</span> <span class="st">"cmdstanr"</span>,</span></span>
-<span class="r-in"><span>                    file <span class="op">=</span> <span class="va">fname</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit_cmdstanr</span> <span class="op">&lt;-</span> <span class="fu"><a href="brm.html">brm</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="va">conc</span> <span class="op">+</span> <span class="va">state</span>, data <span class="op">=</span> <span class="va">Puromycin</span>,</span></span>
+<span class="r-in"><span>                    backend <span class="op">=</span> <span class="st">"cmdstanr"</span>, file <span class="op">=</span> <span class="va">fname</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># now restart the R session and run the following (after attaching 'brms')</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fname</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"fit_cmdstanr_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>

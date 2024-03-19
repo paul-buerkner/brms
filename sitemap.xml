@@ -196,6 +196,9 @@
     <loc>/reference/conditional_smooths.brmsfit.html</loc>
   </url>
   <url>
+    <loc>/reference/constant.html</loc>
+  </url>
+  <url>
     <loc>/reference/control_params.html</loc>
   </url>
   <url>
@@ -244,6 +247,12 @@
     <loc>/reference/data_response.html</loc>
   </url>
   <url>
+    <loc>/reference/default_prior.default.html</loc>
+  </url>
+  <url>
+    <loc>/reference/default_prior.html</loc>
+  </url>
+  <url>
     <loc>/reference/density_ratio.html</loc>
   </url>
   <url>
@@ -284,9 +293,6 @@
   </url>
   <url>
     <loc>/reference/get_dpar.html</loc>
-  </url>
-  <url>
-    <loc>/reference/get_prior.html</loc>
   </url>
   <url>
     <loc>/reference/get_refmodel.brmsfit.html</loc>
@@ -392,12 +398,6 @@
   </url>
   <url>
     <loc>/reference/make_conditions.html</loc>
-  </url>
-  <url>
-    <loc>/reference/make_stancode.html</loc>
-  </url>
-  <url>
-    <loc>/reference/make_standata.html</loc>
   </url>
   <url>
     <loc>/reference/mcmc_plot.brmsfit.html</loc>
@@ -517,6 +517,9 @@
     <loc>/reference/ranef.brmsfit.html</loc>
   </url>
   <url>
+    <loc>/reference/read_csv_as_stanfit.html</loc>
+  </url>
+  <url>
     <loc>/reference/recompile_model.html</loc>
   </url>
   <url>
@@ -527,6 +530,9 @@
   </url>
   <url>
     <loc>/reference/residuals.brmsfit.html</loc>
+  </url>
+  <url>
+    <loc>/reference/restructure.brmsfit.html</loc>
   </url>
   <url>
     <loc>/reference/restructure.html</loc>
@@ -550,7 +556,19 @@
     <loc>/reference/stancode.brmsfit.html</loc>
   </url>
   <url>
+    <loc>/reference/stancode.default.html</loc>
+  </url>
+  <url>
+    <loc>/reference/stancode.html</loc>
+  </url>
+  <url>
     <loc>/reference/standata.brmsfit.html</loc>
+  </url>
+  <url>
+    <loc>/reference/standata.default.html</loc>
+  </url>
+  <url>
+    <loc>/reference/standata.html</loc>
   </url>
   <url>
     <loc>/reference/stanvar.html</loc>

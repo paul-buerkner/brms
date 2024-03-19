@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -126,7 +126,7 @@ brms</h1>
                         <h4 data-toc-skip class="author">Paul
 Bürkner</h4>
             
-            <h4 data-toc-skip class="date">2023-11-23</h4>
+            <h4 data-toc-skip class="date">2024-03-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_customfamilies.Rmd" class="external-link"><code>vignettes/brms_customfamilies.Rmd</code></a></small>
       <div class="hidden name"><code>brms_customfamilies.Rmd</code></div>
@@ -211,17 +211,17 @@ Formula: incidence | trials(size) ~ period + (1 | herd)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
+Multilevel Hyperparameters:
 ~herd (Number of levels: 15) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.76      0.22     0.41     1.29 1.00     1408     1825
+sd(Intercept)     0.75      0.22     0.40     1.25 1.00     1493     2129
 
-Population-Level Effects: 
+Regression Coefficients:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.40      0.26    -1.94    -0.92 1.00     2116     2780
-period2      -1.00      0.31    -1.63    -0.41 1.00     4500     2980
-period3      -1.14      0.33    -1.82    -0.52 1.00     4577     2816
-period4      -1.62      0.45    -2.56    -0.81 1.00     4520     3151
+Intercept    -1.41      0.26    -1.92    -0.92 1.00     2055     2495
+period2      -1.00      0.32    -1.66    -0.40 1.00     4961     2983
+period3      -1.14      0.34    -1.80    -0.48 1.00     4771     3155
+period4      -1.61      0.43    -2.52    -0.81 1.00     4546     3143
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -333,21 +333,21 @@ Formula: incidence | vint(size) ~ period + (1 | herd)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Group-Level Effects: 
+Multilevel Hyperparameters:
 ~herd (Number of levels: 15) 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)     0.39      0.25     0.02     0.94 1.00     1137     2035
+sd(Intercept)     0.39      0.26     0.02     0.98 1.01      920     1648
 
-Population-Level Effects: 
+Regression Coefficients:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.35      0.25    -1.86    -0.87 1.00     3055     2525
-period2      -1.00      0.41    -1.83    -0.20 1.00     3490     2597
-period3      -1.25      0.45    -2.19    -0.44 1.00     3361     2489
-period4      -1.54      0.52    -2.61    -0.60 1.00     3231     2622
+Intercept    -1.35      0.27    -1.92    -0.86 1.00     1981     1064
+period2      -1.00      0.41    -1.82    -0.22 1.00     4224     2867
+period3      -1.26      0.46    -2.20    -0.39 1.00     3553     2429
+period4      -1.54      0.54    -2.73    -0.55 1.00     3375     1526
 
-Family Specific Parameters: 
+Further Distributional Parameters:
     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-phi    17.84     15.94     5.49    61.13 1.00     1714     1393
+phi    17.81     15.93     5.31    62.70 1.00     1303      898
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -388,30 +388,9 @@ the purpose of the present vignette, we will go with the latter
 approach.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/expose_functions.brmsfit.html">expose_functions</a></span><span class="op">(</span><span class="va">fit2</span>, vectorize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-clang -arch arm64 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/opt/R/arm64/include   -fPIC  -falign-functions=64 -Wall -g -O2  -c foo.c -o foo.o
-In file included from &lt;built-in&gt;:1:
-In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Dense:1:
-In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Core:88:
-/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-namespace Eigen {
-^
-/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-namespace Eigen {
-               ^
-               ;
-In file included from &lt;built-in&gt;:1:
-In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-In file included from /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Dense:1:
-/Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-#include &lt;complex&gt;
-         ^~~~~~~~~
-3 errors generated.
-make: *** [foo.o] Error 1</code></pre>
 <p>and define the required <code>log_lik</code> functions with a few
 lines of code.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log_lik_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">i</span>, <span class="va">prep</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
 <span>  <span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"phi"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
@@ -426,57 +405,57 @@ same for the whole fit.</p>
 <p>With that being done, all of the post-processing methods requiring
 <code>log_lik</code> will work as well. For instance, model comparison
 can simply be performed via</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Output of model 'fit1':
 
-Computed from 4000 by 56 log-likelihood matrix
+Computed from 4000 by 56 log-likelihood matrix.
 
          Estimate   SE
-elpd_loo    -99.9 10.2
-p_loo        22.1  4.3
-looic       199.8 20.4
+elpd_loo   -100.2 10.2
+p_loo        22.4  4.4
+looic       200.4 20.4
 ------
-Monte Carlo SE of elpd_loo is NA.
+MCSE of elpd_loo is NA.
+MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.6]).
 
 Pareto k diagnostic values:
-                         Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     40    71.4%   683       
- (0.5, 0.7]   (ok)       11    19.6%   382       
-   (0.7, 1]   (bad)       5     8.9%   64        
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+                         Count Pct.    Min. ESS
+(-Inf, 0.7]   (good)     52    92.9%   290     
+   (0.7, 1]   (bad)       4     7.1%   &lt;NA&gt;    
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;    
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
 
-Computed from 4000 by 56 log-likelihood matrix
+Computed from 4000 by 56 log-likelihood matrix.
 
          Estimate   SE
-elpd_loo    -94.7  8.3
-p_loo        10.7  2.0
-looic       189.5 16.5
+elpd_loo    -94.8  8.2
+p_loo        10.7  1.9
+looic       189.5 16.4
 ------
-Monte Carlo SE of elpd_loo is NA.
+MCSE of elpd_loo is NA.
+MCSE and ESS estimates assume MCMC draws (r_eff in [0.3, 1.2]).
 
 Pareto k diagnostic values:
-                         Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     50    89.3%   1009      
- (0.5, 0.7]   (ok)        4     7.1%   680       
-   (0.7, 1]   (bad)       2     3.6%   102       
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+                         Count Pct.    Min. ESS
+(-Inf, 0.7]   (good)     55    98.2%   221     
+   (0.7, 1]   (bad)       1     1.8%   &lt;NA&gt;    
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;    
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit2  0.0       0.0   
-fit1 -5.2       4.3   </code></pre>
+fit1 -5.4       4.4   </code></pre>
 <p>Since larger <code>ELPD</code> values indicate better fit, we see
 that the beta-binomial model fits somewhat better, although the
 corresponding standard error reveals that the difference is not that
 substantial.</p>
 <p>Next, we will define the function necessary for the
 <code>posterior_predict</code> method:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">posterior_predict_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">i</span>, <span class="va">prep</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
 <span>  <span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"phi"</span>, i <span class="op">=</span> <span class="va">i</span><span class="op">)</span></span>
@@ -492,7 +471,7 @@ convenience. Make sure to add a <code>...</code> argument to your
 since some families require additional arguments. With
 <code>posterior_predict</code> to be working, we can engage for instance
 in posterior-predictive checking:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_customfamilies_files/figure-html/pp_check-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>When defining the <code>posterior_epred</code> function, you have to
@@ -502,7 +481,7 @@ mean of the beta-binomial distribution is <span class="math inline">\(\text{E}(y
 corresponding <code>posterior_epred</code> function is not too
 complicated, but we need to get the dimension of parameters and data in
 line.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">posterior_epred_beta_binomial2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">prep</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="../reference/get_dpar.html">get_dpar</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"mu"</span><span class="op">)</span></span>
 <span>  <span class="va">trials</span> <span class="op">&lt;-</span> <span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">vint1</span></span>
@@ -512,7 +491,7 @@ line.</p>
 <p>A post-processing method relying directly on
 <code>posterior_epred</code> is <code>conditional_effects</code>, which
 allows to visualize effects of predictors.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span><span class="op">(</span><span class="va">fit2</span>, conditions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="brms_customfamilies_files/figure-html/conditional_effects-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>For ease of interpretation we have set <code>size</code> to 1 so that

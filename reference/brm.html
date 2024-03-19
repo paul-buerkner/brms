@@ -29,7 +29,7 @@ posterior predictive checks and leave-one-out cross-validation."><meta property=
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -138,7 +138,7 @@ posterior predictive checks and leave-one-out cross-validation.</p>
 <span>  stanvars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  stan_funs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fit <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  save_pars <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  save_pars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"brms.save_pars"</span>, <span class="cn">NULL</span><span class="op">)</span>,</span>
 <span>  save_ranef <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save_mevars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save_all_pars <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -198,7 +198,7 @@ linear <code>gaussian</code> model is applied. In multivariate models,
 <dt>prior</dt>
 <dd><p>One or more <code>brmsprior</code> objects created by
 <code><a href="set_prior.html">set_prior</a></code> or related functions and combined using the
-<code>c</code> method or the <code>+</code> operator. See also  <code><a href="get_prior.html">get_prior</a></code>
+<code>c</code> method or the <code>+</code> operator. See also <code><a href="default_prior.default.html">default_prior</a></code>
 for more help.</p></dd>
 
 
@@ -316,7 +316,8 @@ very large <span style="R">R</span> objects even for models of moderate size and
 variables defined in Stan's <code>parameters</code> block should be saved
 (default is <code>FALSE</code>). Saving these draws is required in order to
 apply the methods <code>bridge_sampler</code>, <code>bayes_factor</code>, and
-<code>post_prob</code>.</p></dd>
+<code>post_prob</code>. Can be set globally for the current <span style="R">R</span> session via the
+<code>"brms.save_pars"</code> option (see <code><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></code>).</p></dd>
 
 
 <dt>init</dt>
@@ -551,7 +552,7 @@ For <code>backend = "cmdstanr"</code> the arguments are passed to the
   <code><a href="set_prior.html">set_prior</a></code> function. Its documentation
   contains detailed information on how to correctly specify priors. To find
   out on which parameters or parameter classes priors can be defined, use
-  <code><a href="get_prior.html">get_prior</a></code>. Default priors are chosen to be
+  <code><a href="default_prior.default.html">default_prior</a></code>. Default priors are chosen to be
   non or very weakly informative so that their influence on the results will
   be negligible and you usually don't have to worry about them. However,
   after getting more familiar with Bayesian statistics, I recommend you to
@@ -603,18 +604,18 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span><span class="co"># Poisson regression for the number of seizures in epileptic patients</span></span></span>
-<span class="r-in"><span><span class="co"># using normal priors for population-level effects</span></span></span>
-<span class="r-in"><span><span class="co"># and half-cauchy priors for standard deviations of group-level effects</span></span></span>
-<span class="r-in"><span><span class="va">prior1</span> <span class="op">&lt;-</span> <span class="fu"><a href="set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">10</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">b</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="set_prior.html">prior</a></span><span class="op">(</span><span class="fu">cauchy</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">2</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">sd</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">brm</span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">*</span> <span class="va">Trt</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">patient</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>            data <span class="op">=</span> <span class="va">epilepsy</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span>, prior <span class="op">=</span> <span class="va">prior1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">brm</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">count</span> <span class="op">~</span> <span class="va">zBase</span> <span class="op">*</span> <span class="va">Trt</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">patient</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  data <span class="op">=</span> <span class="va">epilepsy</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  prior <span class="op">=</span> <span class="fu"><a href="set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">b</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="set_prior.html">prior</a></span><span class="op">(</span><span class="fu">cauchy</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">sd</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># generate a summary of the results</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># plot the MCMC chains as well as the posterior distributions</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit1</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># predict responses based on the fitted model</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -698,13 +699,13 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># use the future package for more flexible parallelization</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multiprocess</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span>, workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit7</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">fit7</span>, future <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># fit a model manually via rstan</span></span></span>
-<span class="r-in"><span><span class="va">scode</span> <span class="op">&lt;-</span> <span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="make_standata.html">make_standata</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">scode</span> <span class="op">&lt;-</span> <span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">sdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="standata.html">standata</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stanfit</span> <span class="op">&lt;-</span> <span class="fu">rstan</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstan/reference/stan.html" class="external-link">stan</a></span><span class="op">(</span>model_code <span class="op">=</span> <span class="va">scode</span>, data <span class="op">=</span> <span class="va">sdata</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># feed the Stan model back into brms</span></span></span>
 <span class="r-in"><span><span class="va">fit8</span> <span class="op">&lt;-</span> <span class="fu">brm</span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span>, empty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>

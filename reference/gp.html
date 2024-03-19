@@ -19,7 +19,7 @@ GP terms."><meta property="og:image" content="/logo.png"><!-- mathjax --><script
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -112,7 +112,7 @@ GP terms.</p>
 <span>  gr <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cmc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  scale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  c <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  c <span class="op">=</span> <span class="fl">5</span><span class="op">/</span><span class="fl">4</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -245,7 +245,7 @@ but we are still working on providing better recommendations.</p></dd>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">me3</span>, ask <span class="op">=</span> <span class="cn">FALSE</span>, points <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># compare model fit</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="loo.brmsfit.html">LOO</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span>, <span class="va">fit3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="loo.brmsfit.html">loo</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">fit2</span>, <span class="va">fit3</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># simulate data with a factor covariate</span></span></span>
 <span class="r-in"><span><span class="va">dat2</span> <span class="op">&lt;-</span> <span class="fu">mgcv</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/gamSim.html" class="external-link">gamSim</a></span><span class="op">(</span><span class="fl">4</span>, n <span class="op">=</span> <span class="fl">90</span>, scale <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>

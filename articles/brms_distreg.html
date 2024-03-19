@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
                         <h4 data-toc-skip class="author">Paul
 Bürkner</h4>
             
-            <h4 data-toc-skip class="date">2023-11-23</h4>
+            <h4 data-toc-skip class="date">2024-03-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_distreg.Rmd" class="external-link"><code>vignettes/brms_distreg.Rmd</code></a></small>
       <div class="hidden name"><code>brms_distreg.Rmd</code></div>
@@ -195,12 +195,12 @@ assume that we only investigate the post-treatment values.</p>
 <span><span class="va">dat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">group</span>, <span class="va">symptom_post</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dat1</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  group symptom_post
-1 treat     2.194539
-2 treat     0.987512
-3 treat     3.737652
-4 treat    -1.065380
-5 treat    -1.701475
-6 treat     2.391118</code></pre>
+1 treat     2.266440
+2 treat    -1.329250
+3 treat    -1.683670
+4 treat     0.598750
+5 treat     5.968684
+6 treat     1.786206</code></pre>
 <p>The following model estimates the effect of <code>group</code> on
 both the mean and the residual standard deviation of the normal response
 distribution.</p>
@@ -228,8 +228,8 @@ scale using the <code>hypothesis</code> method.</p>
 <span><span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">hyp</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class b:
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (exp(sigma_Interc... = 0     1.07      0.15     0.83     1.41         NA        NA    *
-2 (exp(sigma_Interc... = 0     2.17      0.30     1.68     2.86         NA        NA    *
+1 (exp(sigma_Interc... = 0     0.82      0.11     0.63     1.08         NA        NA    *
+2 (exp(sigma_Interc... = 0     2.18      0.31     1.69     2.85         NA        NA    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -242,7 +242,7 @@ of their difference.</p>
 <span><span class="op">(</span><span class="va">hyp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/hypothesis.brmsfit.html">hypothesis</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="va">hyp</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Hypothesis Tests for class b:
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (exp(sigma_Interc... &gt; 0     1.11      0.33     0.61     1.68        Inf         1    *
+1 (exp(sigma_Interc... &gt; 0     1.36      0.32     0.89     1.92        Inf         1    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -304,16 +304,16 @@ Formula: count ~ persons + child + camper
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Regression Coefficients:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    -1.01      0.18    -1.37    -0.68 1.00     2439     2727
-persons       0.87      0.05     0.79     0.96 1.00     2529     2871
-child        -1.37      0.09    -1.55    -1.18 1.00     2261     2432
-camper        0.80      0.10     0.62     0.99 1.00     3093     2349
+Intercept    -1.01      0.17    -1.35    -0.69 1.00     2828     2922
+persons       0.87      0.04     0.79     0.96 1.00     2954     2799
+child        -1.37      0.09    -1.56    -1.19 1.00     2821     2649
+camper        0.80      0.09     0.62     0.98 1.00     2819     2383
 
-Family Specific Parameters: 
+Further Distributional Parameters:
    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-zi     0.41      0.04     0.32     0.49 1.00     2269     2122
+zi     0.41      0.04     0.32     0.49 1.00     3125     2807
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -351,14 +351,14 @@ Formula: count ~ persons + child + camper
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Regression Coefficients:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       -1.08      0.18    -1.45    -0.72 1.00     2993     2565
-zi_Intercept    -0.95      0.26    -1.47    -0.47 1.00     3773     2809
-persons          0.89      0.05     0.80     0.99 1.00     3134     2832
-child           -1.18      0.10    -1.37    -0.99 1.00     3196     2663
-camper           0.78      0.09     0.59     0.96 1.00     3402     2416
-zi_child         1.21      0.27     0.69     1.75 1.00     3604     2964
+Intercept       -1.08      0.18    -1.44    -0.74 1.00     3245     2516
+zi_Intercept    -0.96      0.26    -1.50    -0.48 1.00     3470     2514
+persons          0.89      0.05     0.80     0.98 1.00     3452     2548
+child           -1.18      0.10    -1.37    -0.98 1.00     2492     2606
+camper           0.78      0.09     0.60     0.96 1.00     3488     3090
+zi_child         1.22      0.28     0.69     1.76 1.00     3840     2636
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -398,13 +398,13 @@ also used in <strong>brms</strong> to prepare smooth terms.</p>
 <pre><code>Gu &amp; Wahba 4 term additive model</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dat_smooth</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<pre><code>          y        x0         x1         x2         x3        f
-1  8.150939 0.6903092 0.04804987 0.94618692 0.02080101  5.75658
-2 14.109712 0.1798620 0.25672053 0.70941441 0.01699261 11.51515
-3 18.363342 0.5003717 0.70256600 0.86150502 0.76198548 15.34990
-4 25.898951 0.6707133 0.59502683 0.15013151 0.61529975 23.65822
-5  9.629659 0.2669276 0.68993387 0.08383681 0.10526496 10.91666
-6 12.015831 0.2215343 0.77371085 0.75898767 0.06962474 13.87182</code></pre>
+<pre><code>          y         x0        x1        x2        x3         f
+1  8.876274 0.95388073 0.1305904 0.6363171 0.3396751  7.896139
+2 17.845885 0.57065861 0.4501929 0.3344980 0.4947668 16.891245
+3 15.174503 0.13920093 0.6472949 0.6887895 0.3615700 16.532563
+4 18.607397 0.56059125 0.6524060 0.8301433 0.8761949 18.270725
+5 12.278317 0.19291956 0.3566475 0.3978883 0.5116487 10.502169
+6 10.725329 0.02283135 0.2558044 0.8198015 0.1249545  8.581222</code></pre>
 <p>The data contains the predictors <code>x0</code> to <code>x3</code>
 as well as the grouping factor <code>fac</code> indicating the nested
 structure of the data. We predict the response variable <code>y</code>
@@ -428,25 +428,25 @@ Formula: y ~ s(x1) + s(x2) + (1 | fac)
   Draws: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 2000
 
-Smooth Terms: 
+Smoothing Spline Hyperparameters:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sds(sx1_1)           1.89      1.57     0.06     5.72 1.00      679      525
-sds(sx2_1)          20.89      5.74    12.79    35.10 1.00      662      894
-sds(sigma_sx0_1)     0.70      0.69     0.02     2.56 1.00      774     1111
+sds(sx1_1)           3.87      2.02     1.24     9.11 1.00      904     1218
+sds(sx2_1)          27.89      7.97    16.27    47.45 1.00      698      808
+sds(sigma_sx0_1)     0.75      0.82     0.02     3.02 1.00      608      824
 
-Group-Level Effects: 
+Multilevel Hyperparameters:
 ~fac (Number of levels: 4) 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)           4.76      2.03     2.29    10.12 1.00     1016     1118
-sd(sigma_Intercept)     0.14      0.18     0.00     0.55 1.00      644      826
+sd(Intercept)           4.68      2.14     2.14    10.52 1.00     1329     1465
+sd(sigma_Intercept)     0.17      0.23     0.00     0.74 1.00      661      881
 
-Population-Level Effects: 
+Regression Coefficients:
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept          15.02      2.09    10.60    19.10 1.00      891      911
-sigma_Intercept     0.73      0.12     0.46     0.97 1.00     1150      850
-sx1_1              11.00      4.67     2.07    21.60 1.00     1101      921
-sx2_1              68.77     15.32    38.71    98.40 1.00     1585     1167
-sigma_sx0_1        -0.58      1.80    -5.34     2.22 1.01      699      648
+Intercept          15.52      2.11    11.07    19.78 1.00     1215     1325
+sigma_Intercept     0.69      0.12     0.40     0.94 1.00     1118      800
+sx1_1              19.84      7.02     8.16    36.37 1.00     1220     1196
+sx2_1              30.55     18.03    -5.25    65.60 1.00     1739     1448
+sigma_sx0_1        -0.22      1.78    -4.21     3.72 1.00     1019      631
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

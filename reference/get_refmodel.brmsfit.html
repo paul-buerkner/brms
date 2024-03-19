@@ -23,7 +23,7 @@ it manually yourself."><meta property="og:image" content="/logo.png"><!-- mathja
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -184,10 +184,14 @@ If <code>NULL</code>, then <code><a href="https://rdrr.io/r/base/Random.html" cl
     </div>
     <div id="details">
     <h2>Details</h2>
-    <p>Note that the <code>extract_model_data</code> function used internally by
-  <code>get_refmodel.brmsfit</code> ignores arguments <code>wrhs</code> and <code>orhs</code>.
-  This is relevant for
-  <code><a href="https://mc-stan.org/projpred/reference/predict.refmodel.html" class="external-link">predict.refmodel</a></code>, for example.</p>
+    <p>The <code>extract_model_data</code> function used internally by
+  <code>get_refmodel.brmsfit</code> ignores arguments <code>wrhs</code> and <code>orhs</code>
+  (a warning is thrown if these are non-<code>NULL</code>). For example, arguments
+  <code>weightsnew</code> and <code>offsetnew</code> of
+  <code><a href="https://mc-stan.org/projpred/reference/pred-projection.html" class="external-link">proj_linpred</a></code>,
+  <code><a href="https://mc-stan.org/projpred/reference/pred-projection.html" class="external-link">proj_predict</a></code>, and
+  <code><a href="https://mc-stan.org/projpred/reference/predict.refmodel.html" class="external-link">predict.refmodel</a></code> are passed to
+  <code>wrhs</code> and <code>orhs</code>, respectively.</p>
     </div>
 
     <div id="ref-examples">

@@ -18,7 +18,7 @@ cross-validation via kfold."><meta property="og:image" content="/logo.png"><!-- 
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -101,7 +101,7 @@ cross-validation via <code><a href="kfold.brmsfit.html">kfold</a></code>.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">kfold_predict</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"predict"</span>, <span class="st">"fitted"</span><span class="op">)</span>, resp <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">kfold_predict</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"posterior_predict"</span>, resp <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -113,8 +113,10 @@ been stored via argument <code>save_fits</code> of <code><a href="kfold.brmsfit.
 
 
 <dt>method</dt>
-<dd><p>The method used to make predictions. Either <code>"predict"</code>
-or <code>"fitted"</code>. See <code><a href="predict.brmsfit.html">predict.brmsfit</a></code> for details.</p></dd>
+<dd><p>Method used to obtain predictions. Can be set to
+<code>"posterior_predict"</code> (the default), <code>"posterior_epred"</code>,
+or <code>"posterior_linpred"</code>. For more details, see the respective
+function documentations.</p></dd>
 
 
 <dt>resp</dt>

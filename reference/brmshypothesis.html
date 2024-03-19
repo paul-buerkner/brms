@@ -19,7 +19,7 @@ returned by hypothesis."><meta property="og:image" content="/logo.png"><!-- math
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -109,7 +109,8 @@ returned by <code><a href="hypothesis.brmsfit.html">hypothesis</a></code>.</p>
 <span><span class="co"># S3 method for brmshypothesis</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  N <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  nvariables <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  N <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ignore_prior <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  chars <span class="op">=</span> <span class="fl">40</span>,</span>
 <span>  colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -141,8 +142,12 @@ Defaults to <code>20</code>.</p></dd>
 <dd><p>Currently ignored.</p></dd>
 
 
+<dt>nvariables</dt>
+<dd><p>The number of variables (parameters) plotted per page.</p></dd>
+
+
 <dt>N</dt>
-<dd><p>The number of parameters plotted per page.</p></dd>
+<dd><p>Deprecated alias of <code>nvariables</code>.</p></dd>
 
 
 <dt>ignore_prior</dt>

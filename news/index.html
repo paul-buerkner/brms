@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -94,20 +94,41 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="2.20.3" id="brms-2203">brms 2.20.3+<small>2023-09-15</small><a class="anchor" aria-label="anchor" href="#brms-2203"></a></h2>
+<h2 class="page-header" data-toc-text="2.21.0" id="brms-2210">brms 2.21.0<a class="anchor" aria-label="anchor" href="#brms-2210"></a></h2>
 <div class="section level4">
-<h4 id="other-changes-2-20-3">Other Changes<a class="anchor" aria-label="anchor" href="#other-changes-2-20-3"></a></h4>
-<ul><li>No longer automatically canonicalize the Stan code if cmdstanr is used as backend. (<a href="https://github.com/paul-buerkner/brms/issues/1544" class="external-link">#1544</a>)</li>
+<h4 id="new-features-2-21-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-2-21-0"></a></h4>
+<ul><li>Add experimental support for the <code>pathfinder</code> and <code>laplace</code> algorithms in the <code>cmdstanr</code> backend. (<a href="https://github.com/paul-buerkner/brms/issues/1591" class="external-link">#1591</a>)</li>
+<li>Automatically recompute fit criteria previously stored in the model if potentially results-changing arguments are provided to the criterion method.</li>
+<li>Allow to turn off automatic broadcasting of <code>constant</code> priors.</li>
+<li>Allow for joint likelihood evaluation in <code>kfold</code> via argument <code>joint</code>.</li>
+<li>Use several Stan built-in functions implemented since version 2.26 to improve the efficiency of multiple model classes. (<a href="https://github.com/paul-buerkner/brms/issues/1077" class="external-link">#1077</a>)</li>
 </ul></div>
 <div class="section level4">
-<h4 id="bug-fixes-2-20-3">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-20-3"></a></h4>
+<h4 id="other-changes-2-21-0">Other Changes<a class="anchor" aria-label="anchor" href="#other-changes-2-21-0"></a></h4>
+<ul><li>Change <code>make_stancode</code> and <code>make_standata</code> to be aliases of <code>stancode</code> and <code>standata</code>, respectively. Change <code>get_prior</code> to be an alias of a new generic method <code>default_prior</code>. This enable other packages to define new <code>stancode</code>, <code>standata</code> and <code>default_prior</code> methods to generate Stan code and data, and extract the default priors, for their own objects building on brms. Thanks to Ven Popov for helping with this. (<a href="https://github.com/paul-buerkner/brms/issues/1604" class="external-link">#1604</a>)</li>
+<li>Change the default prior of the <code>shape</code> parameter of <code>negbinomial</code> models to <code>inv_gamma(0.4, 0.3)</code> thanks to Aki Vehtari. (<a href="https://github.com/paul-buerkner/brms/issues/1614" class="external-link">#1614</a>)</li>
+<li>No longer automatically canonicalize the Stan code if cmdstanr is used as backend. (<a href="https://github.com/paul-buerkner/brms/issues/1544" class="external-link">#1544</a>)</li>
+<li>Export <code>read_csv_as_stanfit</code> thanks to Ven Popov. (<a href="https://github.com/paul-buerkner/brms/issues/1619" class="external-link">#1619</a>)</li>
+<li>Make installation of <code>shinystan</code> optional. This means that the package has to be loaded, via <code><a href="https://mc-stan.org/shinystan/" class="external-link">library(shinystan)</a></code>, before <code>launch_shinystan</code> can be used. (<a href="https://github.com/paul-buerkner/brms/issues/1595" class="external-link">#1595</a>)</li>
+<li>Improve parameter class names in the <code>summary</code> output.</li>
+<li>Show histograms rather than densities in the <code>plot</code> method by default.</li>
+<li>Deprecate argument <code>N</code> in the <code>plot</code> method in favor of argument <code>nvariables</code>.</li>
+<li>Remove deprecated argument <code>exact_loo</code> in method <code>kfold</code>.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="bug-fixes-2-21-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-21-0"></a></h4>
 <ul><li>Remove some remaining uses of Stan’s old array syntax.</li>
+<li>Fix a bug in formula parsing of missing values terms with interactions thank to Guido Biele. (<a href="https://github.com/paul-buerkner/brms/issues/1608" class="external-link">#1608</a>)</li>
+<li>Ensure compatibility of <code>combine_models</code> with moment matching. (<a href="https://github.com/paul-buerkner/brms/issues/1603" class="external-link">#1603</a>)</li>
+<li>Ensure compatibility with the latest <code>splines2</code> package version. (<a href="https://github.com/paul-buerkner/brms/issues/1580" class="external-link">#1580</a>)</li>
+<li>Fix output of <code>rmulti_normal</code> thanks to Ven Popov. (<a href="https://github.com/paul-buerkner/brms/issues/1588" class="external-link">#1588</a>)</li>
+<li>Prevent memory leaks when executing <code>kfold</code> or <code>reloo</code> in parallel.</li>
 </ul></div>
 </div>
     <div class="section level2">
-<h2 class="page-header" data-toc-text="2.20.3" id="brms-2203-1">brms 2.20.3<small>2023-09-15</small><a class="anchor" aria-label="anchor" href="#brms-2203-1"></a></h2>
+<h2 class="page-header" data-toc-text="2.20.3" id="brms-2203">brms 2.20.3<small>2023-09-15</small><a class="anchor" aria-label="anchor" href="#brms-2203"></a></h2>
 <div class="section level4">
-<h4 id="other-changes-2-20-3-1">Other Changes<a class="anchor" aria-label="anchor" href="#other-changes-2-20-3-1"></a></h4>
+<h4 id="other-changes-2-20-3">Other Changes<a class="anchor" aria-label="anchor" href="#other-changes-2-20-3"></a></h4>
 <ul><li>Switch to the new array syntax of Stan. This increases the version requirements of Stan to &gt;= 2.26.</li>
 </ul></div>
 </div>

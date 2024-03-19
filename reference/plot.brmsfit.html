@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -103,11 +103,13 @@
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
 <span>  pars <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  combo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dens"</span>, <span class="st">"trace"</span><span class="op">)</span>,</span>
-<span>  N <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  combo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hist"</span>, <span class="st">"trace"</span><span class="op">)</span>,</span>
+<span>  nvariables <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  N <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  variable <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  regex <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  fixed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  bins <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  theme <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plot <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ask <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -136,8 +138,12 @@ graphic and should be the name of one of the available
 (omitting the <code>mcmc_</code> prefix).</p></dd>
 
 
+<dt>nvariables</dt>
+<dd><p>The number of variables (parameters) plotted per page.</p></dd>
+
+
 <dt>N</dt>
-<dd><p>The number of parameters plotted per page.</p></dd>
+<dd><p>Deprecated alias of <code>nvariables</code>.</p></dd>
 
 
 <dt>variable</dt>
@@ -156,6 +162,10 @@ be treated as regular expressions. Defaults to <code>FALSE</code>.</p></dd>
 should be matched exactly (<code>TRUE</code>) or treated as
 regular expressions (<code>FALSE</code>). Default is <code>FALSE</code>
 and only works with argument <code>pars</code>.</p></dd>
+
+
+<dt>bins</dt>
+<dd><p>Number of bins used for posterior histograms (defaults to 30).</p></dd>
 
 
 <dt>theme</dt>

@@ -23,7 +23,7 @@ ways of specifying autocorrelation terms, see cor_brms."><meta property="og:imag
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -131,7 +131,7 @@ terms.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># specify autocor terms within the formula</span></span></span>
 <span class="r-in"><span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="fu"><a href="arma.html">arma</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">1</span>, q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="car.html">car</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y ~ x + arma(p = 1, q = 1) + car(M)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x163fd5dd0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x1645ca1e8&gt;</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># specify autocor terms in the 'autocor' argument</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="brmsformula.html">bf</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, autocor <span class="op">=</span> <span class="op">~</span> <span class="fu"><a href="arma.html">arma</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">1</span>, q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="car.html">car</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span><span class="op">)</span></span></span>

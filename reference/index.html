@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -207,7 +207,7 @@
       </tr><tr><td>
           <p><code><a href="as.mcmc.brmsfit.html">as.mcmc(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Extract posterior samples for use with the <span class="pkg">coda</span> package</p></td>
+        <td><p>(Deprecated) Extract posterior samples for use with the <span class="pkg">coda</span> package</p></td>
       </tr><tr><td>
           <p><code><a href="autocor-terms.html">autocor-terms</a></code> </p>
         </td>
@@ -289,6 +289,10 @@
         </td>
         <td><p>Display Smooth Terms</p></td>
       </tr><tr><td>
+          <p><code><a href="constant.html">constant()</a></code> </p>
+        </td>
+        <td><p>Constant priors in <span class="pkg">brms</span></p></td>
+      </tr><tr><td>
           <p><code><a href="control_params.html">control_params()</a></code> </p>
         </td>
         <td><p>Extract Control Parameters of the NUTS Sampler</p></td>
@@ -336,6 +340,14 @@
           <p><code><a href="custom_family.html">custom_family()</a></code> </p>
         </td>
         <td><p>Custom Families in <span class="pkg">brms</span> Models</p></td>
+      </tr><tr><td>
+          <p><code><a href="default_prior.html">default_prior()</a></code> <code><a href="default_prior.html">get_prior()</a></code> </p>
+        </td>
+        <td><p>Default priors for Bayesian models</p></td>
+      </tr><tr><td>
+          <p><code><a href="default_prior.default.html">default_prior(<i>&lt;default&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Default Priors for <span class="pkg">brms</span> Models</p></td>
       </tr><tr><td>
           <p><code><a href="density_ratio.html">density_ratio()</a></code> </p>
         </td>
@@ -388,10 +400,6 @@
           <p><code><a href="get_dpar.html">get_dpar()</a></code> </p>
         </td>
         <td><p>Draws of a Distributional Parameter</p></td>
-      </tr><tr><td>
-          <p><code><a href="get_prior.html">get_prior()</a></code> </p>
-        </td>
-        <td><p>Overview on Priors for <span class="pkg">brms</span> Models</p></td>
       </tr><tr><td>
           <p><code><a href="get_refmodel.brmsfit.html">get_refmodel.brmsfit()</a></code> </p>
         </td>
@@ -469,7 +477,7 @@
         </td>
         <td><p>(Defunct) Set up a lasso prior in <span class="pkg">brms</span></p></td>
       </tr><tr><td>
-          <p><code><a href="launch_shinystan.brmsfit.html">launch_shinystan(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+          <p><code><a href="launch_shinystan.brmsfit.html">launch_shinystan.brmsfit()</a></code> </p>
         </td>
         <td><p>Interface to <span class="pkg">shinystan</span></p></td>
       </tr><tr><td>
@@ -524,14 +532,6 @@
           <p><code><a href="make_conditions.html">make_conditions()</a></code> </p>
         </td>
         <td><p>Prepare Fully Crossed Conditions</p></td>
-      </tr><tr><td>
-          <p><code><a href="make_stancode.html">make_stancode()</a></code> </p>
-        </td>
-        <td><p>Stan Code for <span class="pkg">brms</span> Models</p></td>
-      </tr><tr><td>
-          <p><code><a href="make_standata.html">make_standata()</a></code> </p>
-        </td>
-        <td><p>Data for <span class="pkg">brms</span> Models</p></td>
       </tr><tr><td>
           <p><code><a href="mcmc_plot.brmsfit.html">mcmc_plot()</a></code> </p>
         </td>
@@ -679,7 +679,7 @@
       </tr><tr><td>
           <p><code><a href="prior_summary.brmsfit.html">prior_summary(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Extract Priors of a Bayesian Model Fitted with <span class="pkg">brms</span></p></td>
+        <td><p>Priors of <code>brms</code> models</p></td>
       </tr><tr><td>
           <p><code><a href="psis.brmsfit.html">psis(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
@@ -688,6 +688,10 @@
           <p><code><a href="ranef.brmsfit.html">ranef(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Extract Group-Level Estimates</p></td>
+      </tr><tr><td>
+          <p><code><a href="read_csv_as_stanfit.html">read_csv_as_stanfit()</a></code> </p>
+        </td>
+        <td><p>Read CmdStan CSV files as a brms-formatted stanfit object</p></td>
       </tr><tr><td>
           <p><code><a href="recompile_model.html">recompile_model()</a></code> </p>
         </td>
@@ -706,6 +710,10 @@
         <td><p>Posterior Draws of Residuals/Predictive Errors</p></td>
       </tr><tr><td>
           <p><code><a href="restructure.html">restructure()</a></code> </p>
+        </td>
+        <td><p>Restructure Old R Objects</p></td>
+      </tr><tr><td>
+          <p><code><a href="restructure.brmsfit.html">restructure(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Restructure Old <code>brmsfit</code> Objects</p></td>
       </tr><tr><td>
@@ -729,13 +737,29 @@
         </td>
         <td><p>Prior Definitions for <span class="pkg">brms</span> Models</p></td>
       </tr><tr><td>
-          <p><code><a href="stancode.brmsfit.html">stancode()</a></code> </p>
+          <p><code><a href="stancode.html">stancode()</a></code> <code><a href="stancode.html">make_stancode()</a></code> </p>
         </td>
-        <td><p>Extract Stan model code</p></td>
+        <td><p>Stan Code for Bayesian models</p></td>
       </tr><tr><td>
-          <p><code><a href="standata.brmsfit.html">standata()</a></code> </p>
+          <p><code><a href="stancode.brmsfit.html">stancode(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Extract data passed to Stan</p></td>
+        <td><p>Extract Stan code from <code>brmsfit</code> objects</p></td>
+      </tr><tr><td>
+          <p><code><a href="stancode.default.html">stancode(<i>&lt;default&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Stan Code for <span class="pkg">brms</span> Models</p></td>
+      </tr><tr><td>
+          <p><code><a href="standata.html">standata()</a></code> <code><a href="standata.html">make_standata()</a></code> </p>
+        </td>
+        <td><p>Stan data for Bayesian models</p></td>
+      </tr><tr><td>
+          <p><code><a href="standata.brmsfit.html">standata(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Extract data passed to Stan from <code>brmsfit</code> objects</p></td>
+      </tr><tr><td>
+          <p><code><a href="standata.default.html">standata(<i>&lt;default&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Data for <span class="pkg">brms</span> Models</p></td>
       </tr><tr><td>
           <p><code><a href="stanvar.html">stanvar()</a></code> </p>
         </td>

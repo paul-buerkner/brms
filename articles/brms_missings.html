@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
                         <h4 data-toc-skip class="author">Paul
 Bürkner</h4>
             
-            <h4 data-toc-skip class="date">2023-11-23</h4>
+            <h4 data-toc-skip class="date">2024-03-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_missings.Rmd" class="external-link"><code>vignettes/brms_missings.Rmd</code></a></small>
       <div class="hidden name"><code>brms_missings.Rmd</code></div>
@@ -216,16 +216,16 @@ Formula: bmi ~ age * chl
   Draws: 10 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 10000
 
-Population-Level Effects: 
+Regression Coefficients:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    15.70      8.08    -0.21    31.42 1.15       45      262
-age           0.74      4.64    -8.24     9.93 1.07      105     1028
-chl           0.09      0.04     0.00     0.17 1.13       51      489
-age:chl      -0.02      0.02    -0.07     0.02 1.05      141     2750
+Intercept    16.02      9.14    -2.11    33.67 1.13       51      384
+age           2.22      5.09    -7.84    12.18 1.05      132     1350
+chl           0.08      0.05    -0.02     0.17 1.19       37      446
+age:chl      -0.02      0.03    -0.07     0.03 1.08       84     2018
 
-Family Specific Parameters: 
+Further Distributional Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     3.15      0.55     2.26     4.38 1.11       58      328
+sigma     3.65      0.60     2.66     4.99 1.08       86      222
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -246,12 +246,12 @@ to investigate the convergence of the submodels separately, which we can
 do by looking at</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_imp1</span><span class="op">$</span><span class="va">rhats</span>, <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<pre><code>  b_Intercept b_age b_chl b_age.chl sigma lprior lp__
-1        1.00  1.00  1.00      1.00     1      1    1
-2        1.00  1.00  1.00      1.00     1      1    1
-3        1.01  1.01  1.01      1.01     1      1    1
-4        1.00  1.00  1.00      1.00     1      1    1
-5        1.00  1.00  1.00      1.01     1      1    1</code></pre>
+<pre><code>  b_Intercept b_age b_chl b_age.chl sigma Intercept lprior lp__
+1        1.00  1.00     1      1.00     1         1      1 1.00
+2        1.01  1.00     1      1.00     1         1      1 1.01
+3        1.00  1.00     1      1.00     1         1      1 1.00
+4        1.00  1.01     1      1.01     1         1      1 1.00
+5        1.00  1.00     1      1.00     1         1      1 1.00</code></pre>
 <p>The convergence of each of the submodels looks good. Accordingly, we
 can proceed with further post-processing and interpretation of the
 results. For instance, we could investigate the combined effect of
@@ -325,19 +325,19 @@ Formula: bmi | mi() ~ age * mi(chl)
   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup draws = 4000
 
-Population-Level Effects: 
+Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-bmi_Intercept    13.95      8.69    -3.02    31.45 1.00     1547     1800
-chl_Intercept   141.77     25.27    92.52   193.54 1.00     2444     2272
-bmi_age           2.60      5.50    -8.10    14.10 1.00     1320     1553
-chl_age          28.64     13.31     1.86    54.00 1.00     2405     2781
-bmi_michl         0.10      0.05     0.00     0.18 1.00     1640     1680
-bmi_michl:age    -0.03      0.02    -0.08     0.02 1.00     1369     1538
+bmi_Intercept    14.05      8.89    -3.72    31.73 1.00     1072     1490
+chl_Intercept   141.88     24.49    93.05   189.16 1.00     2395     2447
+bmi_age           2.54      5.52    -8.13    13.97 1.00      962     1097
+chl_age          28.59     13.14     2.70    54.52 1.00     2145     2611
+bmi_michl         0.10      0.05     0.00     0.19 1.00     1099     1504
+bmi_michl:age    -0.03      0.02    -0.08     0.02 1.00      958     1183
 
-Family Specific Parameters: 
+Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma_bmi     3.37      0.78     2.21     5.17 1.00     1361     2077
-sigma_chl    40.37      7.64    28.37    58.13 1.00     2133     2586
+sigma_bmi     3.33      0.76     2.20     5.20 1.00     1474     1764
+sigma_chl    40.21      7.64    28.39    57.97 1.00     2203     2484
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

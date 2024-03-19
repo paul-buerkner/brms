@@ -19,7 +19,7 @@ For more details see loo."><meta property="og:image" content="/logo.png"><!-- ma
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -167,9 +167,10 @@ should be applied on problematic observations. Defaults to <code>FALSE</code>.</
 
 
 <dt>k_threshold</dt>
-<dd><p>The threshold at which pareto \(k\)
-estimates are treated as problematic. Defaults to <code>0.7</code>.
-Only used if argument <code>reloo</code> is <code>TRUE</code>.
+<dd><p>The Pareto \(k\) threshold for which observations
+<code><a href="loo_moment_match.brmsfit.html">loo_moment_match</a></code> or <code><a href="reloo.brmsfit.html">reloo</a></code> is applied if
+argument <code>moment_match</code> or <code>reloo</code> is <code>TRUE</code>.
+Defaults to <code>0.7</code>.
 See <code><a href="https://mc-stan.org/loo/reference/pareto-k-diagnostic.html" class="external-link">pareto_k_ids</a></code> for more details.</p></dd>
 
 

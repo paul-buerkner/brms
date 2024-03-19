@@ -20,7 +20,7 @@ changing priors, or for defining custom Stan functions."><meta property="og:imag
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -166,15 +166,20 @@ within-chain parallelization is activated via <code><a href="threading.html">thr
     <h2>Details</h2>
     <p>The <code>stanvar</code> function is not vectorized. Instead, multiple
 <code>stanvars</code> objects can be added together via <code>+</code> (see Examples).</p>
+<p>Special attention is necessary when using <code>stanvars</code> to inject
+code into the <code>'likelihood'</code> block while having <code><a href="threading.html">threading</a></code>
+activated. In this case, your custom Stan code may need adjustments to ensure
+correct observation indexing. Please investigate the generated Stan code via
+<code><a href="stancode.default.html">stancode</a></code> to see which adjustments are necessary in your case.</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">bprior</span> <span class="op">&lt;-</span> <span class="fu"><a href="set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="va">mean_intercept</span>, <span class="fl">10</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"Intercept"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu">stanvar</span><span class="op">(</span><span class="fl">5</span>, name <span class="op">=</span> <span class="st">"mean_intercept"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, <span class="va">epilepsy</span>, prior <span class="op">=</span> <span class="va">bprior</span>,</span></span>
-<span class="r-in"><span>              stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, <span class="va">epilepsy</span>, prior <span class="op">=</span> <span class="va">bprior</span>,</span></span>
+<span class="r-in"><span>         stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -222,9 +227,9 @@ within-chain parallelization is activated via <code><a href="threading.html">thr
 <span class="r-in"><span><span class="va">bprior</span> <span class="op">&lt;-</span> <span class="fu"><a href="set_prior.html">prior</a></span><span class="op">(</span><span class="fu">multi_normal</span><span class="op">(</span><span class="va">M</span>, <span class="va">V</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu">stanvar</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"M"</span>, scode <span class="op">=</span> <span class="st">"  vector[K] M;"</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">stanvar</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, <span class="st">"V"</span>, scode <span class="op">=</span> <span class="st">"  matrix[K, K] V;"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
-<span class="r-in"><span>              prior <span class="op">=</span> <span class="va">bprior</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
+<span class="r-in"><span>         prior <span class="op">=</span> <span class="va">bprior</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -275,9 +280,9 @@ within-chain parallelization is activated via <code><a href="threading.html">thr
 <span class="r-in"><span>  <span class="fu"><a href="set_prior.html">set_prior</a></span><span class="op">(</span><span class="st">"target += normal_lpdf(tau | 0, 10)"</span>, check <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu">stanvar</span><span class="op">(</span>scode <span class="op">=</span> <span class="st">"real&lt;lower=0&gt; tau;"</span>,</span></span>
 <span class="r-in"><span>                    block <span class="op">=</span> <span class="st">"parameters"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
-<span class="r-in"><span>              prior <span class="op">=</span> <span class="va">bprior</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
+<span class="r-in"><span>         prior <span class="op">=</span> <span class="va">bprior</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -327,9 +332,9 @@ within-chain parallelization is activated via <code><a href="threading.html">thr
 <span class="r-in"><span><span class="co"># not necessary for this example but may be necessary in other cases</span></span></span>
 <span class="r-in"><span><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu">stanvar</span><span class="op">(</span>scode <span class="op">=</span> <span class="st">"real&lt;lower=0&gt; tau;"</span>,</span></span>
 <span class="r-in"><span>                    block <span class="op">=</span> <span class="st">"parameters"</span>, pll_args <span class="op">=</span> <span class="st">"real tau"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
-<span class="r-in"><span>              stanvars <span class="op">=</span> <span class="va">stanvars</span>, threads <span class="op">=</span> <span class="fu"><a href="threading.html">threading</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
+<span class="r-in"><span>         stanvars <span class="op">=</span> <span class="va">stanvars</span>, threads <span class="op">=</span> <span class="fu"><a href="threading.html">threading</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   /* integer sequence of values</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    * Args:</span>

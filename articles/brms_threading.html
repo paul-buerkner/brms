@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -126,7 +126,7 @@ parallelization</h1>
                         <h4 data-toc-skip class="author">Sebastian Weber
 &amp; Paul Bürkner</h4>
             
-            <h4 data-toc-skip class="date">2023-11-23</h4>
+            <h4 data-toc-skip class="date">2024-03-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/HEAD/vignettes/brms_threading.Rmd" class="external-link"><code>vignettes/brms_threading.Rmd</code></a></small>
       <div class="hidden name"><code>brms_threading.Rmd</code></div>
@@ -400,7 +400,7 @@ first <span class="math inline">\(10\)</span> rows are:</p>
 <span>  iter <span class="op">=</span> <span class="fl">500</span>, <span class="co"># short sampling to speedup example</span></span>
 <span>  chains <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  prior <span class="op">=</span> <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">b</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">constant</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">sd</span>, group <span class="op">=</span> <span class="va">g</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu"><a href="../reference/constant.html">constant</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">sd</span>, group <span class="op">=</span> <span class="va">g</span><span class="op">)</span>,</span>
 <span>  backend <span class="op">=</span> <span class="st">"cmdstanr"</span>,</span>
 <span>  threads <span class="op">=</span> <span class="fu"><a href="../reference/threading.html">threading</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>,</span>
 <span>  save_pars <span class="op">=</span> <span class="fu"><a href="../reference/save_pars.html">save_pars</a></span><span class="op">(</span>all <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -634,8 +634,8 @@ balance the increase in walltime needed.</p>
 <td align="right">20</td>
 <td align="right">1</td>
 <td align="right">620</td>
-<td align="right">0.64</td>
-<td align="right">0.64</td>
+<td align="right">0.53</td>
+<td align="right">0.53</td>
 <td align="right">1.00</td>
 </tr>
 <tr class="even">
@@ -643,44 +643,44 @@ balance the increase in walltime needed.</p>
 <td align="right">20</td>
 <td align="right">2</td>
 <td align="right">620</td>
-<td align="right">0.35</td>
-<td align="right">0.64</td>
-<td align="right">1.82</td>
+<td align="right">0.33</td>
+<td align="right">0.53</td>
+<td align="right">1.61</td>
 </tr>
 <tr class="odd">
 <td align="left">125</td>
 <td align="right">20</td>
 <td align="right">4</td>
 <td align="right">620</td>
-<td align="right">0.22</td>
-<td align="right">0.64</td>
+<td align="right">0.26</td>
+<td align="right">0.53</td>
+<td align="right">2.05</td>
+</tr>
+<tr class="even">
+<td align="left">125</td>
+<td align="right">20</td>
+<td align="right">8</td>
+<td align="right">620</td>
+<td align="right">0.18</td>
+<td align="right">0.53</td>
 <td align="right">2.88</td>
 </tr>
-<tr class="even">
-<td align="left">125</td>
-<td align="right">20</td>
-<td align="right">8</td>
-<td align="right">620</td>
-<td align="right">0.18</td>
-<td align="right">0.64</td>
-<td align="right">3.61</td>
-</tr>
 <tr class="odd">
 <td align="left">125</td>
 <td align="right">20</td>
 <td align="right">10</td>
 <td align="right">620</td>
-<td align="right">0.18</td>
-<td align="right">0.64</td>
-<td align="right">3.45</td>
+<td align="right">0.19</td>
+<td align="right">0.53</td>
+<td align="right">2.79</td>
 </tr>
 <tr class="even">
 <td align="left">250</td>
 <td align="right">20</td>
 <td align="right">1</td>
 <td align="right">620</td>
-<td align="right">0.54</td>
-<td align="right">0.54</td>
+<td align="right">0.45</td>
+<td align="right">0.45</td>
 <td align="right">1.00</td>
 </tr>
 <tr class="odd">
@@ -688,18 +688,18 @@ balance the increase in walltime needed.</p>
 <td align="right">20</td>
 <td align="right">2</td>
 <td align="right">620</td>
-<td align="right">0.30</td>
-<td align="right">0.54</td>
-<td align="right">1.79</td>
+<td align="right">0.29</td>
+<td align="right">0.45</td>
+<td align="right">1.57</td>
 </tr>
 <tr class="even">
 <td align="left">250</td>
 <td align="right">20</td>
 <td align="right">4</td>
 <td align="right">620</td>
-<td align="right">0.20</td>
-<td align="right">0.54</td>
-<td align="right">2.75</td>
+<td align="right">0.19</td>
+<td align="right">0.45</td>
+<td align="right">2.40</td>
 </tr>
 <tr class="odd">
 <td align="left">250</td>
@@ -707,25 +707,25 @@ balance the increase in walltime needed.</p>
 <td align="right">8</td>
 <td align="right">620</td>
 <td align="right">0.16</td>
-<td align="right">0.54</td>
-<td align="right">3.37</td>
+<td align="right">0.45</td>
+<td align="right">2.74</td>
 </tr>
 <tr class="even">
 <td align="left">250</td>
 <td align="right">20</td>
 <td align="right">10</td>
 <td align="right">620</td>
-<td align="right">0.16</td>
-<td align="right">0.54</td>
-<td align="right">3.25</td>
+<td align="right">0.18</td>
+<td align="right">0.45</td>
+<td align="right">2.46</td>
 </tr>
 <tr class="odd">
 <td align="left">500</td>
 <td align="right">20</td>
 <td align="right">1</td>
 <td align="right">620</td>
-<td align="right">0.48</td>
-<td align="right">0.48</td>
+<td align="right">0.41</td>
+<td align="right">0.41</td>
 <td align="right">1.00</td>
 </tr>
 <tr class="even">
@@ -733,18 +733,18 @@ balance the increase in walltime needed.</p>
 <td align="right">20</td>
 <td align="right">2</td>
 <td align="right">620</td>
-<td align="right">0.27</td>
-<td align="right">0.48</td>
-<td align="right">1.77</td>
+<td align="right">0.26</td>
+<td align="right">0.41</td>
+<td align="right">1.56</td>
 </tr>
 <tr class="odd">
 <td align="left">500</td>
 <td align="right">20</td>
 <td align="right">4</td>
 <td align="right">620</td>
-<td align="right">0.18</td>
-<td align="right">0.48</td>
-<td align="right">2.66</td>
+<td align="right">0.17</td>
+<td align="right">0.41</td>
+<td align="right">2.46</td>
 </tr>
 <tr class="even">
 <td align="left">500</td>
@@ -752,8 +752,8 @@ balance the increase in walltime needed.</p>
 <td align="right">8</td>
 <td align="right">620</td>
 <td align="right">0.15</td>
-<td align="right">0.48</td>
-<td align="right">3.23</td>
+<td align="right">0.41</td>
+<td align="right">2.70</td>
 </tr>
 <tr class="odd">
 <td align="left">500</td>
@@ -761,8 +761,8 @@ balance the increase in walltime needed.</p>
 <td align="right">10</td>
 <td align="right">620</td>
 <td align="right">0.16</td>
-<td align="right">0.48</td>
-<td align="right">3.05</td>
+<td align="right">0.41</td>
+<td align="right">2.52</td>
 </tr>
 </tbody>
 </table>
@@ -829,7 +829,7 @@ can be given to the still running chains.</p>
 <span>  iter <span class="op">=</span> <span class="fl">500</span>, <span class="co"># short sampling to speedup example</span></span>
 <span>  chains <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  prior <span class="op">=</span> <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">normal</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">b</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu">constant</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">sd</span>, group <span class="op">=</span> <span class="va">g</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/set_prior.html">prior</a></span><span class="op">(</span><span class="fu"><a href="../reference/constant.html">constant</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="va">sd</span>, group <span class="op">=</span> <span class="va">g</span><span class="op">)</span>,</span>
 <span>  backend <span class="op">=</span> <span class="st">"cmdstanr"</span>,</span>
 <span>  threads <span class="op">=</span> <span class="fu"><a href="../reference/threading.html">threading</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>,</span>
 <span>  save_pars <span class="op">=</span> <span class="fu"><a href="../reference/save_pars.html">save_pars</a></span><span class="op">(</span>all <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>

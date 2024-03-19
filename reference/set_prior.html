@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -217,7 +217,7 @@ to the Stan code as is, and all other arguments are ignored.</p></dd>
   set priors on. Often, it may not be immediately clear, which parameters are
   present in the model. To get a full list of parameters and parameter
   classes for which priors can be specified (depending on the model) use
-  function <code><a href="get_prior.html">get_prior</a></code>.</p>
+  function <code><a href="default_prior.default.html">default_prior</a></code>.</p>
 <p>1. Population-level ('fixed') effects</p>
 <p>Every Population-level effect has its own regression parameter
   represents the name of the corresponding population-level effect.
@@ -393,12 +393,16 @@ to the Stan code as is, and all other arguments are ignored.</p></dd>
   By default, <code>sigma</code> has a half student-t prior that scales
   in the same way as the group-level standard deviations.
   Further, family <code>student</code> needs the parameter
-  <code>nu</code> representing the degrees of freedom of students-t distribution.
-  By default, <code>nu</code> has prior <code>gamma(2, 0.1)</code>
+  <code>nu</code> representing the degrees of freedom of Student-t distribution.
+  By default, <code>nu</code> has prior <code>gamma(2, 0.1)</code>, which is
+  close to a penalized complexity prior (see Stan prior choice Wiki),
   and a fixed lower bound of <code>1</code>.
-  Families <code>gamma</code>, <code>weibull</code>, <code>inverse.gaussian</code>, and
-  <code>negbinomial</code> need a <code>shape</code> parameter that has a
-  <code>gamma(0.01, 0.01)</code> prior by default.
+  Family <code>negbinomial</code> needs a <code>shape</code> parameter that has by
+  default <code>inv_gamma(0.4, 0.3)</code> prior which is close to a
+  penalized complexity prior (see Stan prior choice Wiki).
+  Families <code>gamma</code>, <code>weibull</code>, and <code>inverse.gaussian</code>,
+  need a <code>shape</code> parameter that has a <code>gamma(0.01, 0.01)</code>
+  prior by default.
   For families <code>cumulative</code>, <code>cratio</code>, <code>sratio</code>,
   and <code>acat</code>, and only if <code>threshold = "equidistant"</code>,
   the parameter <code>delta</code> is used to model the distance between
@@ -444,7 +448,7 @@ specify arguments as strings.</p></li>
 </ul></div>
     <div id="see-also">
     <h2>See also</h2>
-    <div class="dont-index"><p><code><a href="get_prior.html">get_prior</a></code></p></div>
+    <div class="dont-index"><p><code><a href="default_prior.default.html">default_prior</a></code></p></div>
     </div>
 
     <div id="ref-examples">
@@ -462,8 +466,8 @@ specify arguments as strings.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># check which parameters can have priors</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="get_prior.html">get_prior</a></span><span class="op">(</span><span class="va">rating</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">period</span> <span class="op">+</span> <span class="va">carry</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">subject</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>          data <span class="op">=</span> <span class="va">inhaler</span>, family <span class="op">=</span> <span class="fu"><a href="brmsfamily.html">cumulative</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="default_prior.html">default_prior</a></span><span class="op">(</span><span class="va">rating</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">period</span> <span class="op">+</span> <span class="va">carry</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">subject</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>             data <span class="op">=</span> <span class="va">inhaler</span>, family <span class="op">=</span> <span class="fu"><a href="brmsfamily.html">cumulative</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                 prior     class      coef   group resp dpar nlpar lb ub</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  student_t(3, 0, 2.5) Intercept                                        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  student_t(3, 0, 2.5) Intercept         1                              </span>
@@ -496,10 +500,10 @@ specify arguments as strings.</p></li>
 <span class="r-in"><span>                   group <span class="op">=</span> <span class="op">~</span><span class="va">subject</span>, coef <span class="op">=</span> <span class="op">~</span><span class="va">Intercept</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># verify that the priors indeed found their way into Stan's model code</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">rating</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">period</span> <span class="op">+</span> <span class="va">carry</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">subject</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>              data <span class="op">=</span> <span class="va">inhaler</span>, family <span class="op">=</span> <span class="fu"><a href="brmsfamily.html">cumulative</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>              prior <span class="op">=</span> <span class="va">bprior</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">rating</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">period</span> <span class="op">+</span> <span class="va">carry</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">subject</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         data <span class="op">=</span> <span class="va">inhaler</span>, family <span class="op">=</span> <span class="fu"><a href="brmsfamily.html">cumulative</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         prior <span class="op">=</span> <span class="va">bprior</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   /* cumulative-logit log-PDF for a single response</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    * Args:</span>
@@ -517,10 +521,7 @@ specify arguments as strings.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      } else if (y == nthres + 1) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        return log1m_inv_logit(disc * (thres[nthres] - mu));</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      } else {</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        return log_diff_exp(</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          log_inv_logit(disc * (thres[y] - mu)), </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          log_inv_logit(disc * (thres[y - 1] - mu))</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        );</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        return log_inv_logit_diff(disc * (thres[y] - mu), disc * (thres[y - 1] - mu));</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   /* cumulative-logit log-PDF for a single response and merged thresholds</span>
@@ -614,10 +615,10 @@ specify arguments as strings.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># use the horseshoe prior to model sparsity in regression coefficients</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">*</span> <span class="va">Trt</span>,</span></span>
-<span class="r-in"><span>              data <span class="op">=</span> <span class="va">epilepsy</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>              prior <span class="op">=</span> <span class="fu">set_prior</span><span class="op">(</span><span class="st">"horseshoe(3)"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">*</span> <span class="va">Trt</span>,</span></span>
+<span class="r-in"><span>         data <span class="op">=</span> <span class="va">epilepsy</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         prior <span class="op">=</span> <span class="fu">set_prior</span><span class="op">(</span><span class="st">"horseshoe(3)"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   /* Efficient computation of the horseshoe scale parameters</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    * see Appendix C.1 in https://projecteuclid.org/euclid.ejs/1513306866</span>
@@ -708,12 +709,12 @@ specify arguments as strings.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># fix certain priors to constants</span></span></span>
-<span class="r-in"><span><span class="va">bprior</span> <span class="op">&lt;-</span> <span class="fu">prior</span><span class="op">(</span><span class="fu">constant</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu">prior</span><span class="op">(</span><span class="fu">constant</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"b"</span>, coef <span class="op">=</span> <span class="st">"zBase"</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu">prior</span><span class="op">(</span><span class="fu">constant</span><span class="op">(</span><span class="fl">0.5</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"sd"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">patient</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span><span class="va">bprior</span> <span class="op">&lt;-</span> <span class="fu">prior</span><span class="op">(</span><span class="fu"><a href="constant.html">constant</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu">prior</span><span class="op">(</span><span class="fu"><a href="constant.html">constant</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"b"</span>, coef <span class="op">=</span> <span class="st">"zBase"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu">prior</span><span class="op">(</span><span class="fu"><a href="constant.html">constant</a></span><span class="op">(</span><span class="fl">0.5</span><span class="op">)</span>, class <span class="op">=</span> <span class="st">"sd"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">zAge</span> <span class="op">+</span> <span class="va">zBase</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">patient</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>              data <span class="op">=</span> <span class="va">epilepsy</span>, prior <span class="op">=</span> <span class="va">bprior</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -779,8 +780,8 @@ specify arguments as strings.</p></li>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># pass priors to Stan without checking</span></span></span>
 <span class="r-in"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu">prior_string</span><span class="op">(</span><span class="st">"target += normal_lpdf(b[1] | 0, 1)"</span>, check <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span>, prior <span class="op">=</span> <span class="va">prior</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.20.6</span>
+<span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span>, prior <span class="op">=</span> <span class="va">prior</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>

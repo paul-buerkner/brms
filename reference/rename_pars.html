@@ -20,7 +20,7 @@ required to call it themselves."><meta property="og:image" content="/logo.png"><
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.20.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
       </span>
     </div>
 
@@ -129,8 +129,8 @@ required to call it themselves.</p>
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span><span class="co"># fit a model manually via rstan</span></span></span>
-<span class="r-in"><span><span class="va">scode</span> <span class="op">&lt;-</span> <span class="fu"><a href="make_stancode.html">make_stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="make_standata.html">make_standata</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">scode</span> <span class="op">&lt;-</span> <span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">sdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="standata.html">standata</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, data <span class="op">=</span> <span class="va">epilepsy</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stanfit</span> <span class="op">&lt;-</span> <span class="fu">rstan</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstan/reference/stan.html" class="external-link">stan</a></span><span class="op">(</span>model_code <span class="op">=</span> <span class="va">scode</span>, data <span class="op">=</span> <span class="va">sdata</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># feed the Stan model back into brms</span></span></span>
