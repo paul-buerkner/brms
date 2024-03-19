@@ -679,18 +679,17 @@ recommend_loo_options <- function(loo, k_threshold = 0.7, moment_match = FALSE,
     model_name <- ""
   }
   ndraws <- dim(loo)[1] %||% Inf
-  n <- length(loo::pareto_k_ids(loo, threshold = k_threshold))
+  n <- n2 <- length(loo::pareto_k_ids(loo, threshold = k_threshold))
+  # for small number of draws the threshold may be smaller than 0.7
   k_threshold2 <- ps_khat_threshold(ndraws)
   if (k_threshold2 < k_threshold) {
     n2 <- length(loo::pareto_k_ids(loo, threshold = k_threshold2))
-  } else {
-    n2 <- n
   }
-  if (n2 > n && k_threshold2<=0.7) {
+  if (n2 > n && k_threshold2 <= 0.7) {
     warning2(
-      "Found ", n2, " observations with a pareto_k > ", round(k_threshold2,2),
+      "Found ", n2, " observations with a pareto_k > ", round(k_threshold2, 2),
       model_name, ". We recommend to run more iterations to get at least ",
-      "about 2200 posterior draws to improve the LOO accuracy."
+      "about 2200 posterior draws to improve LOO-CV approximation accuracy."
     )
     out <- "loo_more_draws"
   } else if (n > 0 && !moment_match) {
@@ -999,15 +998,8 @@ print.iclist <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
-#' Pareto-smoothing k-hat threshold
-#'
-#' Given sample size S computes khat threshold for reliable Pareto
-#' smoothed estimate (to have small probability of large error). See
-#' section 3.2.4, equation (13).
-#' @param S sample size
-#' @param ... unused
-#' @return threshold
-#' @noRd
+# Pareto-smoothing k-hat threshold
+# not yet exported by loo so copied over here for now
 ps_khat_threshold <- function(S, ...) {
   1 - 1 / log10(S)
 }
