@@ -16,6 +16,7 @@
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
+  z_mix = FALSE,
   ...
 )
 
@@ -58,6 +59,14 @@ Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{z_mix}{Logical. If TRUE, returns the mixture component
+memberships for the hurdle/zero-inflation state in hurdle
+and zero-inflated models. For an explicit mixture model 
+including a zero-inflated model in the mixture, probabilities
+are returned for each mixture component, treating the 
+zero-inflation state and the non-zero-inflation state as
+separate mixture components.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
