@@ -113,6 +113,8 @@ test_that("specified priors appear in the Stan code", {
   # tests use of default priors stored in families #1614
   scode <- stancode(y ~ x1, dat, family = negbinomial())
   expect_match2(scode, "lprior += inv_gamma_lpdf(shape | 0.4, 0.3);")
+  scode <- stancode(y ~ x2, dat, family = von_mises())
+  expect_match2(scode, "lprior += student_t_lpdf(Intercept | 1, 0, 1);")
 
   prior <- prior(gamma(0, 1), coef = x1)
   expect_warning(stancode(y ~ x1, dat, prior = prior),
