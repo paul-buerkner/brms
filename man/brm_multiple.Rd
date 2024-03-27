@@ -199,14 +199,15 @@ package.
 The combined model may issue false positive convergence warnings, as
   the MCMC chains corresponding to different datasets may not necessarily
   overlap, even if each of the original models did converge. To find out
-  whether each of the original models converged, investigate
-  \code{fit$rhats}, where \code{fit} denotes the output of
-  \code{brm_multiple}.
+  whether each of the original models converged, subset the draws belonging
+  to the individual models and then run convergence diagnostics.
+  See Examples below for details.
 }
 \examples{
 \dontrun{
 library(mice)
-imp <- mice(nhanes2)
+m <- 5
+imp <- mice(nhanes2, m = m)
 
 # fit the model using mice and lm
 fit_imp1 <- with(lm(bmi ~ age + hyp + chl), data = imp)
@@ -216,8 +217,13 @@ summary(pool(fit_imp1))
 fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 summary(fit_imp2)
 plot(fit_imp2, pars = "^b_")
+
 # investigate convergence of the original models
-fit_imp2$rhats
+library(posterior)
+draws <- as_draws_array(fit_imp2)
+# every dataset has just one chain here
+draws_per_dat <- lapply(1:m, \(i) subset_draws(draws, chain = i))
+lapply(draws_per_dat, summarise_draws, default_convergence_measures())
 
 # use the future package for parallelization
 library(future)
@@ -226,7 +232,4 @@ fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 summary(fit_imp3)
 }
 
-}
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
