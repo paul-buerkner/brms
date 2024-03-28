@@ -8,7 +8,7 @@
 \usage{
 \method{reloo}{brmsfit}(
   x,
-  loo,
+  loo = NULL,
   k_threshold = 0.7,
   newdata = NULL,
   resp = NULL,
@@ -26,7 +26,9 @@ reloo(x, ...)
 \item{x}{An \R object of class \code{brmsfit} or \code{loo} depending
 on the method.}
 
-\item{loo}{An \R object of class \code{loo}.}
+\item{loo}{An \R object of class \code{loo}. If \code{NULL},
+brms will try to extract a precomputed \code{loo} object
+from the fitted model, added there via \code{\link{add_criterion}}.}
 
 \item{k_threshold}{The threshold at which Pareto \eqn{k}
 estimates are treated as problematic. Defaults to \code{0.7}.

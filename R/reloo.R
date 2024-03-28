@@ -8,7 +8,9 @@
 #' @inheritParams predict.brmsfit
 #' @param x An \R object of class \code{brmsfit} or \code{loo} depending
 #'   on the method.
-#' @param loo An \R object of class \code{loo}.
+#' @param loo An \R object of class \code{loo}. If \code{NULL},
+#'   brms will try to extract a precomputed \code{loo} object
+#'   from the fitted model, added there via \code{\link{add_criterion}}.
 #' @param fit An \R object of class \code{brmsfit}.
 #' @param k_threshold The threshold at which Pareto \eqn{k}
 #'   estimates are treated as problematic. Defaults to \code{0.7}.
@@ -53,13 +55,19 @@
 #' }
 #'
 #' @export
-reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
+reloo.brmsfit <- function(x, loo = NULL, k_threshold = 0.7, newdata = NULL,
                           resp = NULL, check = TRUE, recompile = NULL,
                           future_args = list(), ...) {
-  stopifnot(is.loo(loo), is.brmsfit(x), is.list(future_args))
+  stopifnot(is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"
+  }
+  loo <- loo %||% x$criteria[["loo"]]
+  if (is.null(loo)) {
+    stop2("No 'loo' object was provided and none is stored within the model.")
+  } else if (!is.loo(loo)) {
+    stop2("Inputs to the 'loo' argument must be of class 'loo'.")
   }
   if (is.null(newdata)) {
     mf <- model.frame(x)
