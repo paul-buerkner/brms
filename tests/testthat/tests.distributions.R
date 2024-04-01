@@ -133,6 +133,8 @@ test_that("gen_extreme_value distribution functions run without errors", {
   mu <- rnorm(n)
   res <- pgen_extreme_value(x, mu = mu, sigma = 1:n, xi = 3)
   expect_true(length(res) == n)
+  q <- qgen_extreme_value(res, mu = mu, sigma = 1:n, xi = 3)
+  expect_equal(x, q)
   res <- rgen_extreme_value(n, mu = mu, sigma = 10, xi = 1:10)
   expect_true(length(res) == n)
 })
