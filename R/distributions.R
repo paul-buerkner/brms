@@ -1027,7 +1027,7 @@ qgen_extreme_value <- function(p, mu = 0, sigma = 1, xi = 0,
   out <- with(args, ifelse(
     xi == 0,
     mu - sigma * log(-log(p)),
-    mu + (sigma * (1 - (-log(p))^xi)) / xi
+    mu - sigma * (1 - (-log(p)) ^ (-xi)) / xi
   ))
   out
 }
