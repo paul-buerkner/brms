@@ -419,6 +419,9 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     }
   }
   if (decomp == "QR") {
+    if (!length(fixef)) {
+      stop2("QR decomposition requires non-intercept predictors.")
+    }
     str_add(out$tdata_def) <- glue(
       "  // matrices for QR decomposition\n",
       "  matrix[N{resp}, K{ct}{p}] XQ{p};\n",
