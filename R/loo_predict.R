@@ -3,7 +3,7 @@
 #' These functions are wrappers around the \code{\link[loo]{E_loo}}
 #' function of the \pkg{loo} package.
 #'
-#' @aliases loo_predict loo_linpred loo_predictive_interval
+#' @aliases loo_predict loo_epred loo_linpred loo_predictive_interval
 #'
 #' @param object An object of class \code{brmsfit}.
 #' @param type The statistic to be computed on the results.
@@ -19,7 +19,8 @@
 #'   internally, which may be time consuming for models fit to very large datasets.
 #' @param ... Optional arguments passed to the underlying methods that is
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
-#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or
+#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}},
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} or
 #'   \code{\link[brms:posterior_linpred.brmsfit]{posterior_linpred}}.
 #' @inheritParams posterior_predict.brmsfit
 #'
@@ -29,6 +30,9 @@
 #'   element of \code{probs} is computed and they are returned in a matrix with
 #'   \code{length(probs)} rows and one column per observation.
 #'
+#'   \code{loo_epred} return a vector with one element per observation
+#'   or a matrix with one column per observation for multioutput models.
+#' 
 #'   \code{loo_predictive_interval} returns a matrix with one row per
 #'   observation and two columns.
 #'   \code{loo_predictive_interval(..., prob = p)} is equivalent to
@@ -69,6 +73,29 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   }
   preds <- posterior_predict(object, resp = resp, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value
+}
+
+#' @rdname loo_predict.brmsfit
+#' @method loo_epred brmsfit
+### #' @importFrom rstantools loo_epred
+#' @export loo_epred
+#' @export
+loo_epred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
+                              probs = 0.5, psis_object = NULL, resp = NULL,
+                              ...) {
+  type <- match.arg(type)
+  stopifnot_resp(object, resp)
+  if (is.null(psis_object)) {
+    message("Running PSIS to compute weights")
+    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
+  }
+  epreds <- posterior_epred(object, resp = resp, ...)
+  if (length(dim(epreds)) == 3) {
+    apply(epreds, 3, \(x) {loo::E_loo(x, psis_object,
+                                      type = type, probs = probs)$value})
+  } else {
+    loo::E_loo(epreds, psis_object, type = type, probs = probs)$value
+  }
 }
 
 #' @rdname loo_predict.brmsfit
@@ -204,7 +231,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
   err_loo <- ypredloo - y
 
-  # simulated dirichlet weights
+  # simulated Dirichlet weights
   S <- nrow(ypred)
   N <- ncol(ypred)
   exp_draws <- matrix(rexp(S * N, rate = 1), nrow = S, ncol = N)
