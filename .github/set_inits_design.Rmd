@@ -1,0 +1,34 @@
+---
+title: Design notes for set_inits (# 1645)
+---
+
+
+## Building blocks
+
+- `set_inits()` function with syntax similar to `set_prior()`
+   - input:
+     - distribution: a distribution name like 'normal()', 'uniform()' or a constant value 
+     - class: in addition to standard things in `set_prior()`, also `z` for the standardized random effects
+     - coef
+     - group
+     - dpar
+     - nlpar
+   - output: 
+     - a data.frame of class `brmsinit`
+     
+- `construct_inits_fun()` takes `set_inits()` output and returns a function that constructs a list of initial values
+
+   - input: `set_inits()` output (a data.frame)
+   - output: a function that constructs a list of initial values for each parameter in the model
+   - depends on:
+   
+      - `get_parnames()` returns a vector of Stan parameter names for each dpar/npar listed in `set_inits()` 
+      - `get_pardims()` returns a list of dimensions for each parameter in `get_parnames()`
+      - the two functions above abstract code away currently used to construct standata and stancode. 
+      - a function that parses the 'uniform()', 'normal()' etc to 'runif()', 'rnorm()' etc. If constant value, it should be recycled to the correct length
+      - a function that constructs the list entry for each parameter given the parameter, names, dimensions and random generation function
+   
+- `default_inits()` similar to `default_prior()` it shows the structure that needs to be followed for `set_inits()`
+
+- `validate_inits()` checks if the inits are valid for the model
+- c and + methods
