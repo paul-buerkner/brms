@@ -1,3 +1,4 @@
+# TODO: main function, documentation
 set_inits <- function(distribution, class = "b", coef = "", group = "",
                       dpar = "", nlpar = "") {
   input <- nlist(distribution, class, coef, group, dpar, nlpar)
@@ -66,4 +67,38 @@ c.brmsinits <- function(x, ..., replace = FALSE) {
 
 is.brmsinits <- function(x) {
   inherits(x, "brmsinits")
+}
+
+
+# takes a character vector like 'normal(0, 1)' and returns a list with the
+# r* function and its arguments
+# to do - more careful checks of the passed format?
+parse_dist <- function(x) {
+  x <- as_one_character(x)
+  x <- parse(text = x)[[1]]
+  dist <- as.character(x[[1]])
+  args <- as.list(x[-1])
+  args <- lapply(args, function(x) {
+    tmp <- as.character(x)
+    as.numeric(collapse(tmp))
+  })
+  fun <- to_rfun(dist)
+  nlist(fun, args)
+}
+
+# takes a character string and returns the correcponding r random generation
+# function
+# TODO: specify packages in the search env
+to_rfun <- function(x) {
+  x <- as_one_character(x)
+  # TODO expandlist
+  dists <- c(normal = 'norm', poisson = 'pois', binomial = 'binom',
+             inv_gamma = 'invgamma', lognormal = 'lnorm', exponential = 'exp',
+             uniform = 'unif')
+  out <- dists[x]
+  if (is.null(out) || is.na(out)) {
+    out <- x
+  }
+  out <- paste0("r", out)
+  get(out, mode = "function")
 }

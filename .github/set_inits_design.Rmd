@@ -31,4 +31,4 @@ title: Design notes for set_inits (# 1645)
 - `default_inits()` similar to `default_prior()` it shows the structure that needs to be followed for `set_inits()`
 
 - `validate_inits()` checks if the inits are valid for the model
-- c and + methods
+- c and + methods [DONE]
