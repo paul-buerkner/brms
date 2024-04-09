@@ -55,7 +55,7 @@
 #' # fit the model using brms
 #' fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #' summary(fit_imp2)
-#' plot(fit_imp2, pars = "^b_")
+#' plot(fit_imp2, variable = "^b_", regex = TRUE)
 #'
 #' # investigate convergence of the original models
 #' library(posterior)
@@ -67,7 +67,7 @@
 #' # use the future package for parallelization
 #' library(future)
 #' plan(multisession, workers = 4)
-#' fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+#' fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #' summary(fit_imp3)
 #' }
 #'
