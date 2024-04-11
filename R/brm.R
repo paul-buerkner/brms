@@ -544,6 +544,22 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       normalize = normalize
     )
 
+    # generate Stan data before compiling the model to avoid
+    # unnecessary compilations in case of invalid data
+    sdata <- .standata(
+      bterms, data = data, prior = prior, data2 = data2,
+      stanvars = stanvars, threads = threads
+    )
+
+    # generate inits
+    if (is.brmsinits(init)) {
+      init <- replicate(
+        chains,
+        .inits_fun(init, bterms = bterms, data = data, sdata = sdata),
+        simplify = FALSE
+      )
+    }
+
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior,
@@ -554,12 +570,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       stan_args = nlist(init, silent, control, stan_model_args, ...)
     )
     exclude <- exclude_pars(x)
-    # generate Stan data before compiling the model to avoid
-    # unnecessary compilations in case of invalid data
-    sdata <- .standata(
-      bterms, data = data, prior = prior, data2 = data2,
-      stanvars = stanvars, threads = threads
-    )
 
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot

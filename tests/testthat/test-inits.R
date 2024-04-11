@@ -25,9 +25,30 @@ test_that('set_inits produces the correct format', {
 test_that('parse_dist works', {
   d <- 'normal(0, 1)'
   res <- parse_dist(d)
-  expect_equal(res, list(fun = rnorm, args = list(0, 1)))
+  expect_equal(res, list(fun = "rnorm", args = list(0, 1)))
 
   d <- 'uniform(-1, 1.5)'
   res <- parse_dist(d)
-  expect_equal(res, list(fun = runif, args = list(-1, 1.5)))
+  expect_equal(res, list(fun = "runif", args = list(-1, 1.5)))
+})
+
+
+test_that('.inits_fun works', {
+  data <- epilepsy
+  data$cat <- factor(sample(1:5, nrow(data), replace = TRUE))
+  formula <- formula <- bf(count ~ cat + Age,
+                           sigma ~ cat + Age)
+  bterms <- brmsterms(formula)
+  sdata <- standata(formula, data = data)
+
+  inits <- set_inits('normal(0, 1)', class = "Intercept", dpar = "mu") +
+    set_inits('uniform(-1, 1)', class = "b", dpar = "sigma")
+
+  out <- .inits_fun(inits, bterms = bterms, data = data, sdata = sdata)
+  expect_type(out, "list")
+  expect_equal(names(out), c("Intercept", "b_sigma"))
+  expect_length(out$Intercept, 1)
+  expect_equal(class(out$Intercept), "numeric")
+  expect_length(out$b_sigma, 5)
+  expect_equal(class(out$b_sigma), "array")
 })
