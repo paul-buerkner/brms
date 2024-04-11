@@ -3,6 +3,7 @@
 #' Define how initial values for specific parameters are generated.
 #'
 #' @inheritParams set_prior
+#' @param distribution A character string specifying the distribution of the initial values
 #'
 #' @return An object of class `brmsinits` to be used in the `init` argument of [brm]
 #' @export

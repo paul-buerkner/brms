@@ -14,6 +14,8 @@ set_inits(
 )
 }
 \arguments{
+\item{distribution}{A character string specifying the distribution of the initial values}
+
 \item{class}{The parameter class. Defaults to \code{"b"}
 (i.e. population-level effects).
 See 'Details' for other valid parameter classes.}
