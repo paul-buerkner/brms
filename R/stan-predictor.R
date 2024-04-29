@@ -1937,7 +1937,7 @@ stan_eta_combine <- function(bterms, out, ranef, threads, primitive, ...) {
     "  vector[N{resp}] {eta} = rep_vector(0.0, N{resp});\n"
   )
   if (nzchar(out$eta)) {
-    str_add(out$model_comp_eta) <- glue("  {eta} +={out$eta};\n")
+    str_add(out$model_comp_eta_basic) <- glue("  {eta} +={out$eta};\n")
   }
   out$eta <- NULL
   str_add(out$loopeta) <- stan_eta_re(ranef, threads = threads, px = px)

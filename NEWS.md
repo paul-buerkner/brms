@@ -1,3 +1,10 @@
+# brms 2.21.0++
+
+### Bug Fixes
+
+* Fix a bug that led to partially duplicated Stan code in multilevel terms
+thanks to Henrik Singmann. (#1651)
+
 # brms 2.21.0
 
 ### New Features
