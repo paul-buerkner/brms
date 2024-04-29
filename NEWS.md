@@ -5,6 +5,10 @@
 * Fix a bug that led to partially duplicated Stan code in multilevel terms
 thanks to Henrik Singmann. (#1651)
 
+### Other Changes
+
+* Make argument `loo` optional in `loo_moment_match`.
+
 # brms 2.21.0
 
 ### New Features

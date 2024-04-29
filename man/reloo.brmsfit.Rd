@@ -87,8 +87,11 @@ original \code{loo} object.
 \dontrun{
 fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
+
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
+
+# no more warnings after reloo
 (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
 }
 
