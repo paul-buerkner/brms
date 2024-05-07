@@ -546,8 +546,6 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
 # @param internal return priors for internal use?
 # @return a brmsprior object
 .default_prior <- function(bterms, internal = FALSE, ...) {
-  # ranef <- tidy_ranef(bterms, data)
-  # meef <- tidy_meef(bterms, data)
   # initialize output
   prior <- empty_prior()
   # priors for distributional parameters
@@ -555,7 +553,7 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   # priors of group-level parameters
   prior <- prior + prior_re(bterms, internal = internal)
   # priors for noise-free variables
-  prior <- prior + prior_me(bterms, internal = internal)
+  prior <- prior + prior_Xme(bterms, internal = internal)
   # explicitly label default priors as such
   prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
@@ -606,7 +604,6 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
 
 #' @export
 prior_predictor.brmsterms <- function(x, internal = FALSE, ...) {
-  # data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x)
   valid_dpars <- valid_dpars(x)
   prior <- empty_prior()
@@ -771,7 +768,6 @@ prior_bhaz <- function(bterms, ...) {
 prior_sp <- function(bterms, ...) {
   prior <- empty_prior()
   spef <- bterms$frame$sp
-  #spef <- tidy_spef(bterms, data)
   if (nrow(spef)) {
     px <- check_prefix(bterms)
     prior <- prior + brmsprior(
@@ -791,8 +787,7 @@ prior_sp <- function(bterms, ...) {
 # priors for category spcific effects parameters
 prior_cs <- function(bterms, ...) {
   prior <- empty_prior()
-  # csef <- colnames(get_model_matrix(bterms$cs, data = data))
-  csef <- bterms$frame$cs
+  csef <- bterms$frame$cs$vars
   if (length(csef)) {
     px <- check_prefix(bterms)
     prior <- prior +
@@ -802,7 +797,7 @@ prior_cs <- function(bterms, ...) {
 }
 
 # default priors for hyper-parameters of noise-free variables
-prior_me <- function(bterms, internal = FALSE, ...) {
+prior_Xme <- function(bterms, internal = FALSE, ...) {
   meef <- bterms$frame$me
   prior <- empty_prior()
   if (!NROW(meef)) {

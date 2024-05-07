@@ -819,7 +819,7 @@ stan_sm <- function(bterms, prior, threads, normalize, ...) {
 # @note not implemented for non-linear models
 stan_cs <- function(bterms, prior, threads, normalize, ...) {
   out <- list()
-  csef <- bterms$frame$cs
+  csef <- bterms$frame$cs$vars
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(bterms$resp)
@@ -1805,7 +1805,7 @@ stan_nl <- function(bterms, nlpars, threads, ...) {
 }
 
 # global Stan definitions for noise-free variables
-stan_me <- function(bterms, prior, threads, normalize) {
+stan_Xme <- function(bterms, prior, threads, normalize) {
   meef <- bterms$frame$me
   stopifnot(is.meef_frame(meef))
   if (!nrow(meef)) {

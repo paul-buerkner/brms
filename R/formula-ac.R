@@ -475,7 +475,7 @@ tidy_acef.brmsterms <- function(x, ...) {
 }
 
 #' @export
-tidy_acef.btl <- function(x, ...) {
+tidy_acef.btl <- function(x, data = NULL, ...) {
   form <- x[["ac"]]
   if (!is.formula(form)) {
     return(empty_acef())
@@ -557,6 +557,12 @@ tidy_acef.btl <- function(x, ...) {
     if (any(!out$dpar %in% c("", "mu") | nzchar(out$nlpar))) {
       stop2("Explicit covariance terms can only be specified on 'mu'.")
     }
+  }
+  if (!is.null(data)) {
+    # optional such that this function can be applied
+    # without data before brmsframe is being created
+    time <- get_ac_vars(out, "time", dim = "time")
+    attr(out, "times") <- extract_levels(get(time, data))
   }
   out
 }

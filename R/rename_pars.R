@@ -30,14 +30,13 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x)
   }
-  bterms <- brmsterms(x$formula)
-  meef <- tidy_meef(bterms, data = x$data)
+  bframe <- brmsframe(x$formula, x$data)
   pars <- variables(x)
   # find positions of parameters and define new names
   to_rename <- c(
-    rename_predictor(bterms, data = x$data, pars = pars, prior = x$prior),
-    rename_re(x$ranef, pars = pars),
-    rename_Xme(meef, pars = pars)
+    rename_predictor(bframe, pars = pars, prior = x$prior),
+    rename_re(bframe, pars = pars),
+    rename_Xme(bframe, pars = pars)
   )
   # perform the actual renaming in x$fit@sim
   x <- save_old_par_order(x)
@@ -60,10 +59,10 @@ rename_predictor.default <- function(x, ...) {
 }
 
 #' @export
-rename_predictor.mvbrmsterms <- function(x, data, pars, ...) {
+rename_predictor.mvbrmsterms <- function(x, pars, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    c(out) <- rename_predictor(x$terms[[i]], data = data, pars = pars, ...)
+    c(out) <- rename_predictor(x$terms[[i]], pars = pars, ...)
   }
   if (x$rescor) {
     rescor_names <- get_cornames(
@@ -75,20 +74,19 @@ rename_predictor.mvbrmsterms <- function(x, data, pars, ...) {
 }
 
 #' @export
-rename_predictor.brmsterms <- function(x, data, ...) {
-  data <- subset_data(data, x)
+rename_predictor.brmsterms <- function(x, ...) {
   out <- list()
   for (dp in names(x$dpars)) {
-    c(out) <- rename_predictor(x$dpars[[dp]], data = data, ...)
+    c(out) <- rename_predictor(x$dpars[[dp]], ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- rename_predictor(x$nlpars[[nlp]], data = data, ...)
+    c(out) <- rename_predictor(x$nlpars[[nlp]], ...)
   }
   if (is.formula(x$adforms$mi)) {
-    c(out) <- rename_Ymi(x, data = data, ...)
+    c(out) <- rename_Ymi(x, ...)
   }
-  c(out) <- rename_thres(x, data = data, ...)
-  c(out) <- rename_family_cor_pars(x, data = data, ...)
+  c(out) <- rename_thres(x, ...)
+  c(out) <- rename_family_cor_pars(x, ...)
   out
 }
 
@@ -105,12 +103,9 @@ rename_predictor.btl <- function(x, ...) {
 }
 
 # helps in renaming fixed effects parameters
-rename_fe <- function(bterms, data, pars, prior, ...) {
+rename_fe <- function(bterms, pars, prior, ...) {
   out <- list()
-  fixef <- colnames(data_fe(bterms, data)$X)
-  if (stan_center_X(bterms)) {
-    fixef <- setdiff(fixef, "Intercept")
-  }
+  fixef <- bterms$frame$fe$vars_stan
   if (!length(fixef)) {
     return(out)
   }
@@ -131,9 +126,9 @@ rename_fe <- function(bterms, data, pars, prior, ...) {
 }
 
 # helps in renaming special effects parameters
-rename_sp <- function(bterms, data, pars, prior, ...) {
+rename_sp <- function(bterms, pars, prior, ...) {
   out <- list()
-  spef <- tidy_spef(bterms, data)
+  spef <- bterms$frame$sp
   if (!nrow(spef)) {
     return(out)
   }
@@ -164,9 +159,9 @@ rename_sp <- function(bterms, data, pars, prior, ...) {
 }
 
 # helps in renaming category specific effects parameters
-rename_cs <- function(bterms, data, pars, ...) {
+rename_cs <- function(bterms, pars, ...) {
   out <- list()
-  csef <- colnames(data_cs(bterms, data)$Xcs)
+  csef <- bterms$frame$cs$vars
   if (length(csef)) {
     p <- usc(combine_prefix(bterms))
     bcsp <- paste0("bcs", p)
@@ -205,8 +200,8 @@ rename_thres <- function(bterms, pars, ...) {
 
 # helps in renaming global noise free variables
 # @param meef data.frame returned by 'tidy_meef'
-rename_Xme <- function(meef, pars, ...) {
-  stopifnot(is.meef_frame(meef))
+rename_Xme <- function(bterms, pars, ...) {
+  meef <- bterms$frame$me
   out <- list()
   levels <- attr(meef, "levels")
   groups <- unique(meef$grname)
@@ -252,16 +247,15 @@ rename_Xme <- function(meef, pars, ...) {
 }
 
 # helps in renaming estimated missing values
-rename_Ymi <- function(bterms, data, pars, ...) {
+rename_Ymi <- function(bterms, pars, ...) {
   stopifnot(is.brmsterms(bterms))
   out <- list()
   if (is.formula(bterms$adforms$mi)) {
     resp <- usc(combine_prefix(bterms))
-    resp_data <- data_response(bterms, data, check_response = FALSE)
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
-      Jmi <- resp_data$Jmi
+      Jmi <- bterms$sdata$resp$Jmi
       fnames <- paste0(Ymi, "[", Jmi, "]")
       lc(out) <- rlist(pos, fnames)
     }
@@ -270,10 +264,10 @@ rename_Ymi <- function(bterms, data, pars, ...) {
 }
 
 # helps in renaming parameters of gaussian processes
-rename_gp <- function(bterms, data, pars, ...) {
+rename_gp <- function(bterms, pars, ...) {
   out <- list()
   p <- usc(combine_prefix(bterms), "prefix")
-  gpef <- tidy_gpef(bterms, data)
+  gpef <- bterms$frame$gp
   for (i in seq_rows(gpef)) {
     # rename GP hyperparameters
     sfx1 <- gpef$sfx1[[i]]
@@ -318,9 +312,9 @@ rename_gp <- function(bterms, data, pars, ...) {
 }
 
 # helps in renaming smoothing term parameters
-rename_sm <- function(bterms, data, pars, prior, ...) {
+rename_sm <- function(bterms, pars, prior, ...) {
   out <- list()
-  smef <- tidy_smef(bterms, data)
+  smef <- bterms$frame$sm
   if (NROW(smef)) {
     p <- usc(combine_prefix(bterms))
     Xs_names <- attr(smef, "Xs_names")
@@ -360,13 +354,14 @@ rename_sm <- function(bterms, data, pars, prior, ...) {
 }
 
 # helps in renaming autocorrelation parameters
-rename_ac <- function(bterms, data, pars, ...) {
+rename_ac <- function(bterms, pars, ...) {
   out <- list()
-  acef <- tidy_acef(bterms)
+  acef <- bterms$frame$ac
   resp <- usc(bterms$resp)
   if (has_ac_class(acef, "unstr")) {
-    time <- get_ac_vars(acef, "time", dim = "time")
-    times <- extract_levels(get(time, data))
+    #time <- get_ac_vars(acef, "time", dim = "time")
+    #times <- extract_levels(get(time, data))
+    times <- attr(acef, "times")
     corname <- paste0("cortime", resp)
     regex <- paste0("^", corname, "\\[")
     cortime_names <- get_cornames(times, type = corname, brackets = FALSE)
@@ -377,8 +372,9 @@ rename_ac <- function(bterms, data, pars, ...) {
 
 # helps in renaming group-level parameters
 # @param ranef: data.frame returned by 'tidy_ranef'
-rename_re <- function(ranef, pars, ...) {
+rename_re <- function(bterms, pars, ...) {
   out <- list()
+  ranef <- bterms$frame$re
   if (has_rows(ranef)) {
     for (id in unique(ranef$id)) {
       r <- subset2(ranef, id = id)
@@ -414,7 +410,7 @@ rename_re <- function(ranef, pars, ...) {
       }
     }
     if (any(grepl("^r_", pars))) {
-      c(out) <- rename_re_levels(ranef, pars = pars)
+      c(out) <- rename_re_levels(bterms, pars = pars)
     }
     tranef <- get_dist_groups(ranef, "student")
     for (i in seq_rows(tranef)) {
@@ -428,8 +424,9 @@ rename_re <- function(ranef, pars, ...) {
 
 # helps in renaming varying effects parameters per level
 # @param ranef: data.frame returned by 'tidy_ranef'
-rename_re_levels <- function(ranef, pars, ...)  {
+rename_re_levels <- function(bterms, pars, ...)  {
   out <- list()
+  ranef <- bterms$frame$re
   for (i in seq_rows(ranef)) {
     r <- ranef[i, ]
     p <- usc(combine_prefix(r))

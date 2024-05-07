@@ -23,6 +23,9 @@ brmsframe.mvbrmsterms <- function(x, data, old_levels = NULL, ...) {
 #' @export
 brmsframe.brmsterms <- function(x, data, frame = NULL,
                                 old_levels = NULL, ...) {
+  x$sdata <- list(
+    resp = data_response(x, data, check_response = FALSE)
+  )
   if (is.null(frame)) {
     # this is a univariate model so brmsterms is at the top level
     x$frame <- list(
@@ -53,6 +56,7 @@ brmsframe.btl <- function(x, data, frame = NULL, ...) {
   x$sdata <- list(
     fe = data_fe(x, data),
     sm = data_sm(x, data),
+    cs = data_cs(x, data),
     gp = data_gp(x, data, internal = TRUE),
     offset = data_offset(x, data)
   )
@@ -60,12 +64,12 @@ brmsframe.btl <- function(x, data, frame = NULL, ...) {
   x$frame <- list(
     fe = frame_fe(x),
     re = subset2(frame$re, ls = px),
-    sp = tidy_spef(x, data),
+    sp = tidy_spef(x, data = data),
     me = frame$me,
-    cs = colnames(get_model_matrix(x$cs, data = data)),
-    gp = tidy_gpef(x, data),
+    cs = frame_cs(x),
+    gp = tidy_gpef(x, data = data),
     sm = tidy_smef(x),
-    ac = tidy_acef(x)
+    ac = tidy_acef(x, data = data)
   )
   class(x) <- c("bfrl", class(x))
   x
@@ -91,6 +95,7 @@ brmsframe.default <- function(x, ...) {
 
 frame_resp <- function(x, data, ....) {
   stopifnot(is.brmsterms(x))
+  # TODO use sdata$resp info
   out <- list(
     values = model.response(model.frame(x$respform, data, na.action = na.pass)),
     bounds = trunc_bounds(x, data),
@@ -111,6 +116,12 @@ frame_fe <- function(x) {
   if (out$center) {
     out$vars_stan <- setdiff(out$vars_stan, "Intercept")
   }
+  out
+}
+
+frame_cs <- function(x) {
+  stopifnot(is.btl(x), !is.null(x$sdata))
+  out <- list(vars = colnames(x$sdata$cs$Xcs))
   out
 }
 

@@ -125,7 +125,7 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_ranef <- stan_re(
     bterms, prior = prior, threads = threads, normalize = normalize
   )
-  scode_Xme <- stan_me(
+  scode_Xme <- stan_Xme(
     bterms, prior = prior, threads = threads, normalize = normalize
   )
   scode_global_defs <- stan_global_defs(
