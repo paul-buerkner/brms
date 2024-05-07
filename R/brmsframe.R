@@ -51,15 +51,16 @@ brmsframe.brmsterms <- function(x, data, frame = NULL,
 #' @export
 brmsframe.btl <- function(x, data, frame = NULL, ...) {
   # TODO: rename the tidy_ functions to frame_ functions?
-  # TODO: do not store any data_ function outputs
+  px <- check_prefix(x)
+  # TODO: add more comments on the relation of data_* and frame_* functions
+  # the outputs of these data_* functions are required in the corresponding
+  # frame_* functions (but not vice versa) and are thus evaluated first
   x$sdata <- list(
     fe = data_fe(x, data),
-    sm = data_sm(x, data),
     cs = data_cs(x, data),
-    gp = data_gp(x, data, internal = TRUE),
+    sm = data_sm(x, data),
     offset = data_offset(x, data)
   )
-  px <- check_prefix(x)
   x$frame <- list(
     fe = frame_fe(x),
     re = subset2(frame$re, ls = px),
@@ -69,6 +70,11 @@ brmsframe.btl <- function(x, data, frame = NULL, ...) {
     gp = tidy_gpef(x, data = data),
     sm = tidy_smef(x),
     ac = tidy_acef(x, data = data)
+  )
+  # these data_* functions require the outputs of the corresponding
+  # frame_* functions (but not vice versa) and are thus evaluated last
+  c(x$sdata) <- list(
+    gp = data_gp(x, data, internal = TRUE)
   )
   class(x) <- c("bfrl", class(x))
   x
@@ -106,7 +112,7 @@ frame_resp <- function(x, data, ....) {
 }
 
 frame_fe <- function(x) {
-  stopifnot(is.btl(x), !is.null(x$sdata))
+  stopifnot(is.btl(x), !is.null(x$sdata$fe))
   out <- list(
     vars = colnames(x$sdata$fe$X),
     center = stan_center_X(x),
@@ -121,7 +127,7 @@ frame_fe <- function(x) {
 }
 
 frame_cs <- function(x) {
-  stopifnot(is.btl(x), !is.null(x$sdata))
+  stopifnot(is.btl(x), !is.null(x$sdata$cs))
   out <- list(vars = colnames(x$sdata$cs$Xcs))
   out
 }

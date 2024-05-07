@@ -59,7 +59,8 @@ t2 <- function(...) {
 
 # extract information about smooth terms
 # @param x either a formula or a list containing an element "sm"
-# @param data data.frame containing the covariates
+# @param data optional data.frame containing the covariates
+#   only required if tidy_smef is called from outside of brmsframe
 tidy_smef <- function(x, data = NULL) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
@@ -82,10 +83,9 @@ tidy_smef <- function(x, data = NULL) {
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
   # prepare information inferred from the data
-  # TODO: remove dependency on any standata
   sdata <- x$sdata$sm
   if (is.null(sdata)) {
-    # for compatibility with posterior_smooths
+    # for compatibility with spline-specific post-processing methods
     sdata <- data_sm(x, data)
   }
   bylevels <- attr(sdata$Xs, "bylevels")

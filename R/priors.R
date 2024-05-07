@@ -886,7 +886,6 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
     cons <- gpef$cons[[i]]
     if (length(cons) > 0L) {
       for (j in seq_along(cons)) {
-        # TODO: compute manually instead of from data_gp
         Xgp <- data_gp[[paste0("Xgp_prior", pi, "_", j)]]
         if (iso) {
           c(out[[i]]) <- .def_lscale_prior(Xgp)
@@ -976,7 +975,6 @@ prior_re <- function(bterms, internal = FALSE, ...) {
 # priors for smooth terms
 prior_sm <- function(bterms, def_scale_prior, ...) {
   prior <- empty_prior()
-  # smef <- tidy_smef(bterms, data)
   smef <- bterms$frame$sm
   if (NROW(smef)) {
     px <- check_prefix(bterms)
