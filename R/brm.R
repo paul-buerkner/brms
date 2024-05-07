@@ -536,13 +536,13 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
+    # TODO: remove ranef here
     ranef <- tidy_ranef(bterms, data = data)
     # generate Stan code
     model <- .stancode(
-      bterms, data = data, prior = prior,
-      stanvars = stanvars, save_model = save_model,
-      backend = backend, threads = threads, opencl = opencl,
-      normalize = normalize
+      bframe, prior = prior, stanvars = stanvars,
+      save_model = save_model, backend = backend, threads = threads,
+      opencl = opencl, normalize = normalize
     )
 
     # initialize S3 object

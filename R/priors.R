@@ -551,17 +551,11 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   # initialize output
   prior <- empty_prior()
   # priors for distributional parameters
-  prior <- prior + prior_predictor(
-    bterms, internal = internal
-  )
+  prior <- prior + prior_predictor(bterms, internal = internal)
   # priors of group-level parameters
-  def_scale_prior <- def_scale_prior(bterms)
-  prior <- prior + prior_re(
-    bterms$ranef, def_scale_prior = def_scale_prior,
-    internal = internal
-  )
+  prior <- prior + prior_re(bterms, internal = internal)
   # priors for noise-free variables
-  prior <- prior + prior_Xme(bterms$meef, internal = internal)
+  prior <- prior + prior_me(bterms, internal = internal)
   # explicitly label default priors as such
   prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
@@ -702,14 +696,12 @@ prior_predictor.btnl <- function(x, ...) {
 # priors for population-level parameters
 prior_fe <- function(bterms, def_dpar_prior = "", ...) {
   prior <- empty_prior()
-  # fixef <- colnames(data_fe(bterms, data)$X)
-  fixef <- bterms$effects$fe
+  fixef <- bterms$frame$fe$vars_stan
   px <- check_prefix(bterms)
-  center_X <- stan_center_X(bterms)
-  if (center_X && !is_ordinal(bterms)) {
+  center <- stan_center_X(bterms)
+  if (center && !is_ordinal(bterms)) {
     # priors for ordinal thresholds are provided in 'prior_thres'
     prior <- prior + brmsprior(def_dpar_prior, class = "Intercept", ls = px)
-    fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
     prior <- prior + brmsprior(class = "b", coef = c("", fixef), ls = px)
@@ -778,7 +770,7 @@ prior_bhaz <- function(bterms, ...) {
 # priors for special effects parameters
 prior_sp <- function(bterms, ...) {
   prior <- empty_prior()
-  spef <- bterms$effects$sp
+  spef <- bterms$frame$sp
   #spef <- tidy_spef(bterms, data)
   if (nrow(spef)) {
     px <- check_prefix(bterms)
@@ -800,7 +792,7 @@ prior_sp <- function(bterms, ...) {
 prior_cs <- function(bterms, ...) {
   prior <- empty_prior()
   # csef <- colnames(get_model_matrix(bterms$cs, data = data))
-  csef <- bterms$effects$cs
+  csef <- bterms$frame$cs
   if (length(csef)) {
     px <- check_prefix(bterms)
     prior <- prior +
@@ -810,31 +802,32 @@ prior_cs <- function(bterms, ...) {
 }
 
 # default priors for hyper-parameters of noise-free variables
-prior_Xme <- function(meef, internal = FALSE, ...) {
-  stopifnot(is.meef_frame(meef))
+prior_me <- function(bterms, internal = FALSE, ...) {
+  meef <- bterms$frame$me
   prior <- empty_prior()
-  if (nrow(meef)) {
-    prior <- prior +
-      brmsprior(class = "meanme") +
-      brmsprior(class = "meanme", coef = meef$coef) +
-      brmsprior(class = "sdme", lb = "0") +
-      brmsprior(class = "sdme", coef = meef$coef)
-    # priors for correlation parameters
-    groups <- unique(meef$grname)
-    for (i in seq_along(groups)) {
-      g <- groups[i]
-      K <- which(meef$grname %in% g)
-      if (meef$cor[K[1]] && length(K) > 1L) {
-        if (internal) {
-          prior <- prior + brmsprior("lkj_corr_cholesky(1)", class = "Lme")
-          if (nzchar(g)) {
-            prior <- prior + brmsprior(class = "Lme", group = g)
-          }
-        } else {
-          prior <- prior + brmsprior("lkj(1)", class = "corme")
-          if (nzchar(g)) {
-            prior <- prior + brmsprior(class = "corme", group = g)
-          }
+  if (!NROW(meef)) {
+    return(prior)
+  }
+  prior <- prior +
+    brmsprior(class = "meanme") +
+    brmsprior(class = "meanme", coef = meef$coef) +
+    brmsprior(class = "sdme", lb = "0") +
+    brmsprior(class = "sdme", coef = meef$coef)
+  # priors for correlation parameters
+  groups <- unique(meef$grname)
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    K <- which(meef$grname %in% g)
+    if (meef$cor[K[1]] && length(K) > 1L) {
+      if (internal) {
+        prior <- prior + brmsprior("lkj_corr_cholesky(1)", class = "Lme")
+        if (nzchar(g)) {
+          prior <- prior + brmsprior(class = "Lme", group = g)
+        }
+      } else {
+        prior <- prior + brmsprior("lkj(1)", class = "corme")
+        if (nzchar(g)) {
+          prior <- prior + brmsprior(class = "corme", group = g)
         }
       }
     }
@@ -848,7 +841,7 @@ prior_Xme <- function(meef, internal = FALSE, ...) {
 prior_gp <- function(bterms, def_scale_prior, ...) {
   prior <- empty_prior()
   # gpef <- tidy_gpef(bterms, data)
-  gpef <- bterms$effects$gp
+  gpef <- bterms$frame$gp
   if (nrow(gpef)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms)
@@ -895,7 +888,7 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
   p <- usc(combine_prefix(bterms))
   # gpef <- tidy_gpef(bterms, data)
   # data_gp <- data_gp(bterms, bterms$data, internal = TRUE)
-  gpef <- bterms$effects$gp
+  gpef <- bterms$frame$gp
   data_gp <- bterms$sdata$gp
   out <- vector("list", NROW(gpef))
   for (i in seq_along(out)) {
@@ -930,12 +923,14 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
 # @param def_scale_prior a character string defining
 #   the default prior for SD parameters
 # @param internal: see 'default_prior'
-prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
+prior_re <- function(bterms, internal = FALSE, ...) {
   prior <- empty_prior()
-  if (!nrow(ranef)) {
+  ranef <- bterms$frame$re
+  if (!NROW(ranef)) {
     return(prior)
   }
   # global sd class
+  def_scale_prior <- def_scale_prior(bterms)
   px <- check_prefix(ranef)
   upx <- unique(px)
   if (length(def_scale_prior) > 1L) {
@@ -992,7 +987,7 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
 prior_sm <- function(bterms, def_scale_prior, ...) {
   prior <- empty_prior()
   # smef <- tidy_smef(bterms, data)
-  smef <- bterms$effects$sm
+  smef <- bterms$frame$sm
   if (NROW(smef)) {
     px <- check_prefix(bterms)
     # prior for the FE coefficients
@@ -1015,7 +1010,7 @@ prior_sm <- function(bterms, def_scale_prior, ...) {
 # priors for autocor parameters
 prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
   prior <- empty_prior()
-  acef <- bterms$effects$ac
+  acef <- bterms$frame$ac
   if (!NROW(acef)) {
     return(prior)
   }
@@ -1168,7 +1163,7 @@ def_scale_prior.mvbrmsframe <- function(x, ...) {
 def_scale_prior.brmsterms <- function(x, center = TRUE, df = 3,
                                       location = 0, scale = 2.5,
                                       dpar = NULL, ...) {
-  y <- unname(x$resp_values)
+  y <- unname(x$frame$resp$values)
   link <- x$family$link
   if (has_logscale(x$family)) {
     link <- "log"

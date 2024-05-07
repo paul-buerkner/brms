@@ -5,7 +5,7 @@
 # TODO: refactor to not require extraction of information from all model parts
 #   'expand_include_statements' removes duplicates which opens the door
 #   for adding Stan functions at better places rather than globally here
-stan_global_defs <- function(bterms, prior, ranef, threads) {
+stan_global_defs <- function(bterms, prior, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -28,6 +28,7 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
     str_add(out$fun) <- "  #include 'fun_r2d2.stan'\n"
   }
+  ranef <- bterms$frame$re
   if (nrow(ranef)) {
     r_funs <- NULL
     ids <- unique(ranef$id)

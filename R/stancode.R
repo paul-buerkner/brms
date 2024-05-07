@@ -99,10 +99,8 @@ stancode.default <- function(object, data, family = gaussian(),
   threads <- validate_threads(threads)
 
  .stancode(
-   bterms, data = data, prior = prior,
-   stanvars = stanvars, threads = threads,
-   normalize = normalize, save_model = save_model,
-   ...
+   bframe, prior = prior, stanvars = stanvars, threads = threads,
+   normalize = normalize, save_model = save_model, ...
  )
 }
 
@@ -110,8 +108,7 @@ stancode.default <- function(object, data, family = gaussian(),
 # @param parse parse the Stan model for automatic syntax checking
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
-.stancode <- function(bterms, data, prior, stanvars,
-                      threads = threading(),
+.stancode <- function(bterms, prior, stanvars, threads = threading(),
                       normalize = getOption("brms.normalize", TRUE),
                       parse = getOption("brms.parse_stancode", FALSE),
                       backend = getOption("brms.backend", "rstan"),
@@ -121,21 +118,18 @@ stancode.default <- function(object, data, family = gaussian(),
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
-  ranef <- tidy_ranef(bterms, data = data)
-  meef <- tidy_meef(bterms, data = data)
   scode_predictor <- stan_predictor(
-    bterms, data = data, prior = prior,
-    normalize = normalize, ranef = ranef, meef = meef,
+    bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
   )
   scode_ranef <- stan_re(
-    ranef, prior = prior, threads = threads, normalize = normalize
+    bterms, prior = prior, threads = threads, normalize = normalize
   )
-  scode_Xme <- stan_Xme(
-    meef, prior = prior, threads = threads, normalize = normalize
+  scode_Xme <- stan_me(
+    bterms, prior = prior, threads = threads, normalize = normalize
   )
   scode_global_defs <- stan_global_defs(
-    bterms, prior = prior, ranef = ranef, threads = threads
+    bterms, prior = prior, threads = threads
   )
 
   # extend Stan's likelihood part

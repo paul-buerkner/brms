@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bterms, data, normalize) {
+stan_response <- function(bterms, normalize) {
   stopifnot(is.brmsterms(bterms))
   lpdf <- stan_lpdf_name(normalize)
   family <- bterms$family
@@ -155,7 +155,7 @@ stan_response <- function(bterms, data, normalize) {
       str_add(out$data) <- "  // right censor points for interval censoring\n"
     }
   }
-  bounds <- trunc_bounds(bterms, data = data)
+  bounds <- bterms$frame$resp$bounds
   if (any(bounds$lb > -Inf)) {
     str_add(out$data) <- glue(
       "  array[N{resp}] {rtype} lb{resp};  // lower truncation bounds;\n"
@@ -170,9 +170,11 @@ stan_response <- function(bterms, data, normalize) {
   }
   if (is.formula(bterms$adforms$mi)) {
     # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
-    Ybounds <- trunc_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
-    sdy <- get_sdy(bterms, data)
-    if (is.null(sdy)) {
+    Ybounds <- bterms$frame$resp$Ybounds
+    # Ybounds <- trunc_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
+    # sdy <- get_sdy(bterms, data)
+    mi <- eval_rhs(bterms$adforms$mi)
+    if (mi$vars$sdy == "NA") {
       # response is modeled without measurement error
       str_add(out$data) <- glue(
         "  int<lower=0> Nmi{resp};  // number of missings\n",
@@ -190,6 +192,7 @@ stan_response <- function(bterms, data, normalize) {
       )
       str_add(out$pll_args) <- glue(", vector Yl{resp}")
     } else {
+      # measurement error present
       str_add(out$data) <- glue(
         "  // data for measurement-error in the response\n",
         "  vector<lower=0>[N{resp}] noise{resp};\n",
@@ -234,7 +237,7 @@ stan_response <- function(bterms, data, normalize) {
 # intercepts in ordinal models require special treatment
 # and must be present even when using non-linear predictors
 # thus the relevant Stan code cannot be part of 'stan_fe'
-stan_thres <- function(bterms, data, prior, normalize, ...) {
+stan_thres <- function(bterms, prior, normalize, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   if (!is_ordinal(bterms)) {
@@ -390,7 +393,7 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
 }
 
 # Stan code specific to mixture families
-stan_mixture <- function(bterms, data, prior, threads, normalize, ...) {
+stan_mixture <- function(bterms, prior, threads, normalize, ...) {
   out <- list()
   if (!is.mixfamily(bterms$family)) {
     return(out)
