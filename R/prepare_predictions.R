@@ -31,27 +31,27 @@ prepare_predictions.brmsfit <- function(
   draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
   draws <- point_draws(draws, point_estimate, ndraws_point_estimate)
 
-  new_formula <- update_re_terms(x$formula, re_formula)
-  bterms <- brmsterms(new_formula)
-  ranef <- tidy_ranef(bterms, x$data)
-  meef <- tidy_meef(bterms, x$data)
-  new <- !is.null(newdata)
   sdata <- standata(
     x, newdata = newdata, re_formula = re_formula,
     newdata2 = newdata2, resp = resp,
     allow_new_levels = allow_new_levels,
     internal = TRUE, ...
   )
+
+  new_formula <- update_re_terms(x$formula, re_formula)
+  bframe <- brmsframe(new_formula, data = x$data)
+  # TODO: move prep_ranef into prepare_predictions?
   prep_ranef <- prepare_predictions_ranef(
-    ranef = ranef, draws = draws, sdata = sdata,
+    bterms = bframe, draws = draws, sdata = sdata,
     resp = resp, old_ranef = x$ranef,
     sample_new_levels = sample_new_levels,
   )
   prepare_predictions(
-    bterms, draws = draws, sdata = sdata, data = x$data,
-    prep_ranef = prep_ranef, meef = meef, resp = resp,
+    bframe, draws = draws, sdata = sdata,
+    prep_ranef = prep_ranef, resp = resp,
     sample_new_levels = sample_new_levels, nug = nug,
-    new = new, oos = oos, stanvars = x$stanvars
+    new = !is.null(newdata), oos = oos,
+    stanvars = x$stanvars
   )
 }
 
@@ -95,8 +95,7 @@ prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
 }
 
 #' @export
-prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
-  data <- subset_data(data, x)
+prepare_predictions.brmsterms <- function(x, draws, sdata, ...) {
   ndraws <- nrow(draws)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   resp <- usc(combine_prefix(x))
@@ -107,7 +106,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   if (has_subset(x) && !is.null(out$old_order)) {
     # old_order has length equal to the full number of observations
     # which is inappropriate for subsetted responses (#1483)
-    out$old_order <- as.numeric(factor(out$old_order[attr(data, "subset")]))
+    out$old_order <- as.numeric(factor(out$old_order[x$frame$resp$subset]))
   }
 
   valid_dpars <- valid_dpars(x)
@@ -116,8 +115,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
     dp_regex <- paste0("^", dp, resp, "$")
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       out$dpars[[dp]] <- prepare_predictions(
-        x$dpars[[dp]], draws = draws,
-        sdata = sdata, data = data, ...
+        x$dpars[[dp]], draws = draws, sdata = sdata, ...
       )
     } else if (any(grepl(dp_regex, colnames(draws)))) {
       out$dpars[[dp]] <-
@@ -131,8 +129,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   out$nlpars <- named_list(names(x$nlpars))
   for (nlp in names(x$nlpars)) {
     out$nlpars[[nlp]] <- prepare_predictions(
-      x$nlpars[[nlp]], draws = draws,
-      sdata = sdata, data = data, ...
+      x$nlpars[[nlp]], draws = draws, sdata = sdata, ...
     )
   }
   if (is.mixfamily(x$family)) {
@@ -190,7 +187,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, data, ...) {
   # only include those autocor draws on the top-level
   # of the output which imply covariance matrices on natural residuals
   out$ac <- prepare_predictions_ac(x$dpars$mu, draws, sdata, nat_cov = TRUE, ...)
-  out$data <- prepare_predictions_data(x, sdata = sdata, data = data, ...)
+  out$data <- prepare_predictions_data(x, sdata = sdata, ...)
   structure(out, class = "brmsprep")
 }
 
@@ -254,11 +251,11 @@ prepare_predictions_fe <- function(bterms, draws, sdata, ...) {
 }
 
 # prepare predictions of special effects terms
-prepare_predictions_sp <- function(bterms, draws, sdata, data,
-                                   meef = empty_meef(), new = FALSE, ...) {
+prepare_predictions_sp <- function(bterms, draws, sdata, new = FALSE, ...) {
   out <- list()
-  spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) {
+  spef <- bterms$frame$sp
+  meef <- bterms$frame$me
+  if (!NROW(spef)) {
     return(out)
   }
   p <- usc(combine_prefix(bterms))
@@ -409,14 +406,14 @@ prepare_predictions_sp <- function(bterms, draws, sdata, data,
 }
 
 # prepare predictions of category specific effects
-prepare_predictions_cs <- function(bterms, draws, sdata, data, ...) {
+prepare_predictions_cs <- function(bterms, draws, sdata, ...) {
   out <- list()
   if (!is_ordinal(bterms$family)) {
     return(out)
   }
   resp <- usc(bterms$resp)
   out$nthres <- sdata[[paste0("nthres", resp)]]
-  csef <- colnames(get_model_matrix(bterms$cs, data))
+  csef <- bterms$frame$cs$vars
   if (length(csef)) {
     p <- usc(combine_prefix(bterms))
     cs_pars <- paste0("^bcs", p, "_", escape_all(csef), "\\[")
@@ -427,9 +424,9 @@ prepare_predictions_cs <- function(bterms, draws, sdata, data, ...) {
 }
 
 # prepare predictions of smooth terms
-prepare_predictions_sm <- function(bterms, draws, sdata, data, ...) {
+prepare_predictions_sm <- function(bterms, draws, sdata, ...) {
   out <- list()
-  smef <- tidy_smef(bterms, data)
+  smef <- bterms$frame$sm
   if (!NROW(smef)) {
     return(out)
   }
@@ -457,10 +454,10 @@ prepare_predictions_sm <- function(bterms, draws, sdata, data, ...) {
 # prepare predictions for Gaussian processes
 # @param new is new data used?
 # @param nug small numeric value to avoid numerical problems in GPs
-prepare_predictions_gp <- function(bterms, draws, sdata, data,
-                                   new = FALSE, nug = NULL, ...) {
-  gpef <- tidy_gpef(bterms, data)
-  if (!nrow(gpef)) {
+prepare_predictions_gp <- function(bterms, draws, sdata, new = FALSE,
+                                   nug = NULL, ...) {
+  gpef <- bterms$frame$gp
+  if (!NROW(gpef)) {
     return(list())
   }
   p <- usc(combine_prefix(bterms))
@@ -552,9 +549,10 @@ prepare_predictions_gp <- function(bterms, draws, sdata, data,
 # @param old_ranef same as 'ranef' but based on the original formula
 # @return a named list with one element per group containing posterior draws
 #   of levels used in the data as well as additional meta-data
-prepare_predictions_ranef <- function(ranef, draws, sdata, old_ranef, resp = NULL,
+prepare_predictions_ranef <- function(bterms, draws, sdata, old_ranef, resp = NULL,
                                       sample_new_levels = "uncertainty", ...) {
-  if (!nrow(ranef)) {
+  ranef <- bterms$frame$re
+  if (!NROW(ranef)) {
     return(list())
   }
   # ensures subsetting 'ranef' by 'resp' works correctly
@@ -846,7 +844,7 @@ prepare_predictions_bhaz <- function(bterms, draws, sdata, ...) {
 }
 
 # extract data mainly related to the response variable
-prepare_predictions_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
+prepare_predictions_data <- function(bterms, sdata, stanvars = NULL, ...) {
   resp <- usc(combine_prefix(bterms))
   vars <- c(
     "Y", "trials", "ncat", "nthres", "se", "weights",

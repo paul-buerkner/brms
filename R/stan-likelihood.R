@@ -371,7 +371,7 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   has_se <- is.formula(bterms$adforms$se)
-  flex <- has_ac_class(tidy_acef(bterms), "unstr")
+  flex <- has_ac_class(bterms$frame$ac, "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
   if (has_se) {
@@ -440,7 +440,7 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   has_se <- is.formula(bterms$adforms$se)
-  flex <- has_ac_class(tidy_acef(bterms), "unstr")
+  flex <- has_ac_class(bterms$frame$ac, "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
   if (has_se) {

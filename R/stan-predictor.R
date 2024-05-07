@@ -1296,7 +1296,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     str_add(out$eta) <- glue(" + err{p}{slice}")
   }
 
-  # validity of the autocor terms has already been checked in 'tidy_acef'
+  # validity of the autocor terms has already been checked before
   acef_arma <- subset2(acef, class = "arma")
   if (NROW(acef_arma)) {
     if (use_threading(threads) && (!acef_arma$cov || has_natural_residuals)) {

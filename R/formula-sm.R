@@ -82,9 +82,10 @@ tidy_smef <- function(x, data = NULL) {
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
   # prepare information inferred from the data
+  # TODO: remove dependency on any standata
   sdata <- x$sdata$sm
   if (is.null(sdata)) {
-    # TODO: remove once refactor is complete
+    # for compatibility with posterior_smooths
     sdata <- data_sm(x, data)
   }
   bylevels <- attr(sdata$Xs, "bylevels")

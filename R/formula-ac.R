@@ -562,7 +562,9 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
     # optional such that this function can be applied
     # without data before brmsframe is being created
     time <- get_ac_vars(out, "time", dim = "time")
-    attr(out, "times") <- extract_levels(get(time, data))
+    if (length(time)) {
+      attr(out, "times") <- extract_levels(get(time, data))
+    }
   }
   out
 }

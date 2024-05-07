@@ -255,7 +255,7 @@ rename_Ymi <- function(bterms, pars, ...) {
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
-      Jmi <- bterms$sdata$resp$Jmi
+      Jmi <- bterms$frame$resp$Jmi
       fnames <- paste0(Ymi, "[", Jmi, "]")
       lc(out) <- rlist(pos, fnames)
     }

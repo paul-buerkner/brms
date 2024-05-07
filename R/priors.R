@@ -629,10 +629,8 @@ prior_predictor.brmsterms <- function(x, internal = FALSE, ...) {
     if (!is.null(x$dpars[[dp]])) {
       # parameter is predicted
       dp_prior <- prior_predictor(
-        x$dpars[[dp]], data = data,
-        def_scale_prior = def_scale_prior,
-        def_dpar_prior = def_dpar_prior,
-        internal = internal
+        x$dpars[[dp]], def_scale_prior = def_scale_prior,
+        def_dpar_prior = def_dpar_prior, internal = internal
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
@@ -650,8 +648,7 @@ prior_predictor.brmsterms <- function(x, internal = FALSE, ...) {
   # priors for non-linear parameters
   for (nlp in names(x$nlpars)) {
     nlp_prior <- prior_predictor(
-      x$nlpars[[nlp]], data = data,
-      def_scale_prior = def_scale_prior,
+      x$nlpars[[nlp]], def_scale_prior = def_scale_prior,
       internal = internal
     )
     prior <- prior + nlp_prior
@@ -835,7 +832,6 @@ prior_Xme <- function(bterms, internal = FALSE, ...) {
 #   the default prior SD parameters
 prior_gp <- function(bterms, def_scale_prior, ...) {
   prior <- empty_prior()
-  # gpef <- tidy_gpef(bterms, data)
   gpef <- bterms$frame$gp
   if (nrow(gpef)) {
     px <- check_prefix(bterms)
@@ -881,8 +877,6 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
     return(prior)
   }
   p <- usc(combine_prefix(bterms))
-  # gpef <- tidy_gpef(bterms, data)
-  # data_gp <- data_gp(bterms, bterms$data, internal = TRUE)
   gpef <- bterms$frame$gp
   data_gp <- bterms$sdata$gp
   out <- vector("list", NROW(gpef))
@@ -892,6 +886,7 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
     cons <- gpef$cons[[i]]
     if (length(cons) > 0L) {
       for (j in seq_along(cons)) {
+        # TODO: compute manually instead of from data_gp
         Xgp <- data_gp[[paste0("Xgp_prior", pi, "_", j)]]
         if (iso) {
           c(out[[i]]) <- .def_lscale_prior(Xgp)

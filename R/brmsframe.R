@@ -23,9 +23,6 @@ brmsframe.mvbrmsterms <- function(x, data, old_levels = NULL, ...) {
 #' @export
 brmsframe.brmsterms <- function(x, data, frame = NULL,
                                 old_levels = NULL, ...) {
-  x$sdata <- list(
-    resp = data_response(x, data, check_response = FALSE)
-  )
   if (is.null(frame)) {
     # this is a univariate model so brmsterms is at the top level
     x$frame <- list(
@@ -33,11 +30,14 @@ brmsframe.brmsterms <- function(x, data, frame = NULL,
       me = tidy_meef(x, data = data, old_levels = old_levels)
     )
   } else {
+    # this must be a multivariate model
+    stopifnot(is.list(frame))
     x$frame <- frame
     x$frame$re <- subset(x$frame$re, resp = x$resp)
   }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data)
+  x$frame$ac <- tidy_acef(x, data)
   for (dp in names(x$dpars)) {
     x$dpars[[dp]] <- brmsframe(x$dpars[[dp]], data, frame = x$frame, ...)
   }
@@ -50,9 +50,8 @@ brmsframe.brmsterms <- function(x, data, frame = NULL,
 
 #' @export
 brmsframe.btl <- function(x, data, frame = NULL, ...) {
-  # TODO: rename the tidy_ functions to frame_ functions and move them here?
-  # TODO: create a proper fixef data.frame as for the other terms?
-  # TODO: store more the data_ functions?
+  # TODO: rename the tidy_ functions to frame_ functions?
+  # TODO: do not store any data_ function outputs
   x$sdata <- list(
     fe = data_fe(x, data),
     sm = data_sm(x, data),
@@ -95,11 +94,13 @@ brmsframe.default <- function(x, ...) {
 
 frame_resp <- function(x, data, ....) {
   stopifnot(is.brmsterms(x))
-  # TODO use sdata$resp info
+  y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(
-    values = model.response(model.frame(x$respform, data, na.action = na.pass)),
+    values = y,
     bounds = trunc_bounds(x, data),
-    Ybounds = trunc_bounds(x, data, incl_family = TRUE, stan = TRUE)
+    Ybounds = trunc_bounds(x, data, incl_family = TRUE, stan = TRUE),
+    Jmi = as.array(which(is.na(y))),
+    subset = attr(data, "subset")
   )
   out
 }
