@@ -60,7 +60,7 @@ t2 <- function(...) {
 # extract information about smooth terms
 # @param x either a formula or a list containing an element "sm"
 # @param data data.frame containing the covariates
-tidy_smef <- function(x, data) {
+tidy_smef <- function(x, data = NULL) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -82,7 +82,11 @@ tidy_smef <- function(x, data) {
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
   # prepare information inferred from the data
-  sdata <- data_sm(x, data)
+  sdata <- x$sdata$sm
+  if (is.null(sdata)) {
+    # TODO: remove once refactor is complete
+    sdata <- data_sm(x, data)
+  }
   bylevels <- attr(sdata$Xs, "bylevels")
   nby <- lengths(bylevels)
   tmp <- vector("list", nterms)

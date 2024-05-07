@@ -248,8 +248,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$data, bterms = bterms, data2 = object$data2,
       knots = dots$knots, drop_unused_levels = dots$drop_unused_levels
     )
+    bframe <- brmsframe(bterms, data = object$data)
     object$prior <- .validate_prior(
-      dots$prior, bterms = bterms, data = object$data,
+      dots$prior, bterms = bframe,
       sample_prior = dots$sample_prior
     )
     object$family <- get_element(object$formula, "family")

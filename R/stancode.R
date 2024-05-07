@@ -90,8 +90,9 @@ stancode.default <- function(object, data, family = gaussian(),
     data2 = data2, knots = knots,
     drop_unused_levels = drop_unused_levels
   )
+  bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    prior, bterms = bterms, data = data,
+    prior, bterms = bframe,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
@@ -110,11 +111,11 @@ stancode.default <- function(object, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .stancode <- function(bterms, data, prior, stanvars,
-                           threads = threading(),
-                           normalize = getOption("brms.normalize", TRUE),
-                           parse = getOption("brms.parse_stancode", FALSE),
-                           backend = getOption("brms.backend", "rstan"),
-                           silent = TRUE, save_model = NULL, ...) {
+                      threads = threading(),
+                      normalize = getOption("brms.normalize", TRUE),
+                      parse = getOption("brms.parse_stancode", FALSE),
+                      backend = getOption("brms.backend", "rstan"),
+                      silent = TRUE, save_model = NULL, ...) {
 
   normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)

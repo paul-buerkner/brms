@@ -358,6 +358,7 @@ tidy_spef <- function(x, data) {
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
+  # TODO: move to brmsframe?
   mm <- sp_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)

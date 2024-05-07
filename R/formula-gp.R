@@ -186,6 +186,7 @@ tidy_gpef <- function(x, data) {
     if (gp$by != "NA") {
       out$byvars[[i]] <- gp$by
       str_add(out$label[i]) <- rename(gp$by)
+      # TODO: move to brmsframe?
       byval <- get(gp$by, data)
       if (is_like_factor(byval)) {
         byval <- unique(as.factor(byval))

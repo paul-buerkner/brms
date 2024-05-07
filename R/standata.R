@@ -85,8 +85,9 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     knots = knots, data2 = data2,
     drop_unused_levels = drop_unused_levels
   )
+  bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    prior, bterms = bterms, data = data,
+    prior, bterms = bframe,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars)

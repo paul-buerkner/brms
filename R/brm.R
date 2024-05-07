@@ -525,8 +525,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       drop_unused_levels = drop_unused_levels
     )
     attr(data, "data_name") <- data_name
+    bframe <- brmsframe(bterms, data)
     prior <- .validate_prior(
-      prior, bterms = bterms, data = data,
+      prior, bterms = bframe,
       sample_prior = sample_prior
     )
     stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
