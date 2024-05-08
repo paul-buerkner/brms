@@ -15,24 +15,22 @@ data_predictor <- function(x, ...) {
 }
 
 #' @export
-data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, basis = NULL, ...) {
+data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, ...) {
   out <- list(N = nrow(data))
   for (r in names(x$terms)) {
-    bs <- basis$resps[[r]]
-    c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, basis = bs, ...)
+    c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, ...)
   }
   out
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
-                                     sdata = NULL, basis = NULL, ...) {
+data_predictor.brmsterms <- function(x, data, data2, prior, sdata = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, data2, ranef, prior, sdata, ...)
+  args_eff <- nlist(data, data2, prior, sdata, ...)
   for (dp in names(x$dpars)) {
-    args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
+    args_eff_spec <- list(x = x$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
@@ -41,57 +39,54 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
     }
   }
   for (nlp in names(x$nlpars)) {
-    args_eff_spec <- list(x = x$nlpars[[nlp]], basis = basis$nlpars[[nlp]])
+    args_eff_spec <- list(x = x$nlpars[[nlp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
-  c(out) <- data_gr_local(x, data = data, ranef = ranef)
+  c(out) <- data_gr_local(x, data = data)
   c(out) <- data_mixture(x, data2 = data2, prior = prior)
   out
 }
 
 # prepare data for all types of effects for use in Stan
 # @param data the data passed by the user
-# @param ranef object retuend by 'tidy_ranef'
 # @param prior an object of class brmsprior
-# @param basis information from original Stan data used to correctly
-#   predict from new data. See 'standata_basis' for details.
 # @param ... currently ignored
 # @return a named list of data to be passed to Stan
 #' @export
-data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
-                               prior = brmsprior(), sdata = NULL,
-                               index = NULL, basis = NULL, ...) {
+data_predictor.btl <- function(x, data, data2 = list(), prior = brmsprior(),
+                               sdata = NULL, ...) {
   out <- c(
     data_fe(x, data),
-    data_sp(x, data, data2 = data2, prior = prior, index = index, basis = basis$sp),
-    data_re(x, data, ranef = ranef),
+    data_sp(x, data, data2 = data2, prior = prior),
+    data_re(x, data),
     data_cs(x, data),
-    data_sm(x, data, basis = basis$sm),
-    data_gp(x, data, basis = basis$gp),
-    data_ac(x, data, data2 = data2, basis = basis$ac),
+    data_sm(x, data),
+    data_gp(x, data),
+    data_ac(x, data, data2 = data2),
     data_offset(x, data),
-    data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
+    data_bhaz(x, data, data2 = data2, prior = prior)
   )
-  c(out) <- data_special_prior(
-    x, data, prior = prior, ranef = ranef,
-    sdata = c(sdata, out)
-  )
+  c(out) <- data_special_prior(x, data, prior = prior, sdata = c(sdata, out))
   out
 }
 
 # prepare data for non-linear parameters for use in Stan
 #' @export
 data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
-                                basis = NULL, ...) {
+                                ...) {
   out <- list()
   c(out) <- data_cnl(x, data)
-  c(out) <- data_ac(x, data, data2 = data2, basis = basis$ac)
-  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
+  c(out) <- data_ac(x, data, data2 = data2)
+  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior)
   out
 }
 
 # prepare data of fixed effects
 data_fe <- function(bterms, data) {
+  if (!is.null(bterms$sdata$fe)) {
+    # standata was already precomputed
+    return(bterms$sdata$fe)
+  }
   out <- list()
   p <- usc(combine_prefix(bterms))
   # the intercept is removed inside the Stan code for non-ordinal models
@@ -109,13 +104,19 @@ data_fe <- function(bterms, data) {
 }
 
 # data preparation for splines
-data_sm <- function(bterms, data, basis = NULL) {
+data_sm <- function(bterms, data) {
+  if (!is.null(bterms$sdata$sm)) {
+    # standata was already precomputed
+    return(bterms$sdata$sm)
+  }
   out <- list()
   smterms <- all_terms(bterms[["sm"]])
   if (!length(smterms)) {
     return(out)
   }
   p <- usc(combine_prefix(bterms))
+  # basis contains information on the smooths from the original data
+  basis <- bterms$basis$sm
   new <- length(basis) > 0L
   knots <- get_knots(data)
   diagonal.penalty <- !require_old_default("2.8.7")
@@ -172,11 +173,10 @@ data_sm <- function(bterms, data, basis = NULL) {
 }
 
 # prepare data for group-level effects for use in Stan
-data_re <- function(bterms, data, ranef) {
+data_re <- function(bterms, data) {
   out <- list()
   px <- check_prefix(bterms)
-  take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
-  ranef <- ranef[take, ]
+  ranef <- subset2(bterms$frame$re, type = "sp", fun = "%notin%")
   if (!nrow(ranef)) {
     return(out)
   }
@@ -233,10 +233,10 @@ data_re <- function(bterms, data, ranef) {
 }
 
 # compute data for each group-level-ID per univariate model
-data_gr_local <- function(bterms, data, ranef) {
+data_gr_local <- function(bterms, data) {
   stopifnot(is.brmsterms(bterms))
   out <- list()
-  ranef <- subset2(ranef, resp = bterms$resp)
+  ranef <- subset2(bterms$frame$re, resp = bterms$resp)
   resp <- usc(bterms$resp)
   for (id in unique(ranef$id)) {
     id_ranef <- subset2(ranef, id = id)
@@ -298,8 +298,9 @@ data_gr_local <- function(bterms, data, ranef) {
 }
 
 # prepare global data for each group-level-ID
-data_gr_global <- function(ranef, data2) {
+data_gr_global <- function(bterms, data2) {
   out <- list()
+  ranef <- bterms$frame$re
   for (id in unique(ranef$id)) {
     tmp <- list()
     id_ranef <- subset2(ranef, id = id)
@@ -338,10 +339,17 @@ data_gr_global <- function(ranef, data2) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
+data_sp <- function(bterms, data, data2, prior) {
+  if (!is.null(bterms$sdata$sp)) {
+    # standata was already precomputed
+    return(bterms$sdata$sp)
+  }
   out <- list()
-  spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) return(out)
+  spef <- bterms$frame$sp
+  if (!nrow(spef)) {
+    return(out)
+  }
+  basis <- bterms$basis$sp
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   # prepare general data
@@ -385,6 +393,7 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
     }
   }
   uni_mi <- attr(spef, "uni_mi")
+  index <- bterms$frame$index
   for (j in seq_rows(uni_mi)) {
     if (!is.na(uni_mi$idx[j])) {
       idxl <- get(uni_mi$idx[j], data)
@@ -410,6 +419,10 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
 
 # prepare data for category specific effects
 data_cs <- function(bterms, data) {
+  if (!is.null(bterms$sdata$cs)) {
+    # standata was already precomputed
+    return(bterms$sdata$cs)
+  }
   out <- list()
   if (length(all_terms(bterms[["cs"]]))) {
     p <- usc(combine_prefix(bterms))
@@ -422,7 +435,8 @@ data_cs <- function(bterms, data) {
 }
 
 # prepare global data for noise free variables
-data_Xme <- function(meef, data) {
+data_Xme <- function(bterms, data) {
+  meef <- bterms$frame$me
   stopifnot(is.meef_frame(meef))
   out <- list()
   groups <- unique(meef$grname)
@@ -477,12 +491,17 @@ data_Xme <- function(meef, data) {
 # prepare data for Gaussian process terms
 # @param internal store some intermediate data for internal post-processing?
 # @param ... passed to '.data_gp'
-data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
+data_gp <- function(bterms, data, internal = FALSE, ...) {
+  if (!is.null(bterms$sdata$gp)) {
+    # standata was already precomputed
+    return(bterms$sdata$gp)
+  }
   out <- list()
   internal <- as_one_logical(internal)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  gpef <- tidy_gpef(bterms, data)
+  basis <- bterms$basis$gp
+  gpef <- bterms$frame$gp
   for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     Xgp <- lapply(gpef$covars[[i]], eval2, data)
@@ -637,10 +656,15 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 }
 
 # data for autocorrelation variables
-data_ac <- function(bterms, data, data2, basis = NULL, ...) {
+data_ac <- function(bterms, data, data2, ...) {
+  if (!is.null(bterms$sdata$ac)) {
+    # standata was already precomputed
+    return(bterms$sdata$ac)
+  }
   out <- list()
   N <- nrow(data)
-  acef <- tidy_acef(bterms)
+  basis <- bterms$basis$ac
+  acef <- bterms$frame$ac
   if (has_ac_subset(bterms, dim = "time")) {
     gr <- get_ac_vars(acef, "gr", dim = "time")
     if (isTRUE(nzchar(gr))) {
@@ -813,6 +837,10 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
 
 # prepare data of offsets for use in Stan
 data_offset <- function(bterms, data) {
+  if (!is.null(bterms$sdata$offset)) {
+    # standata was already precomputed
+    return(bterms$sdata$offset)
+  }
   out <- list()
   px <- check_prefix(bterms)
   if (is.formula(bterms$offset)) {
@@ -833,6 +861,10 @@ data_offset <- function(bterms, data) {
 # @param x a btnl object
 # @return a named list of data passed to Stan
 data_cnl <- function(bterms, data) {
+  if (!is.null(bterms$sdata$cnl)) {
+    # standata was already precomputed
+    return(bterms$sdata$cnl)
+  }
   stopifnot(is.btnl(bterms))
   out <- list()
   covars <- all.vars(bterms$covars)
@@ -931,7 +963,7 @@ data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
     Kscales <- Kscales + 1
   }
   if (has_special_prior(prior, px, class = "sd")) {
-    ids <- unique(subset2(ranef, ls = px)$id)
+    ids <- unique(bterms$frame$re$id)
     Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
   }
   out[[paste0("Kscales", p)]] <- Kscales

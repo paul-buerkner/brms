@@ -62,11 +62,10 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, basis = NULL, ...) {
+data_response.mvbrmsterms <- function(x, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    bs <- basis$resps[[x$responses[i]]]
-    c(out) <- data_response(x$terms[[i]], basis = bs, ...)
+    c(out) <- data_response(x$terms[[i]], ...)
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -77,14 +76,14 @@ data_response.mvbrmsterms <- function(x, basis = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    internal = FALSE, basis = NULL, ...) {
+                                    internal = FALSE, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
   # TODO: rename 'Y' to 'y'
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family)) {
-    bin_levels <- basis$resp_levels
+    bin_levels <- x$basis$resp_levels
     if (is.null(bin_levels)) {
       bin_levels <- levels(as.factor(out$Y))
     }
@@ -101,7 +100,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$Y <- as.integer(as_factor(out$Y, levels = bin_levels)) - 1
   }
   if (is_categorical(x$family)) {
-    out$Y <- as.integer(as_factor(out$Y, levels = basis$resp_levels))
+    out$Y <- as.integer(as_factor(out$Y, levels = x$basis$resp_levels))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
     diff <- ifelse(has_extra_cat(x$family), 1L, 0L)
@@ -464,14 +463,14 @@ data_mixture <- function(bterms, data2, prior) {
 }
 
 # data for the baseline functions of Cox models
-data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
+data_bhaz <- function(bterms, data, data2, prior) {
   out <- list()
   if (!is_cox(bterms$family)) {
     return(out)
   }
-  y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
+  y <- bterms$frame$resp$values
   args <- bterms$family$bhaz
-  bs <- basis$basis_matrix
+  bs <- bterms$basis$bhaz$basis_matrix
   out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)

@@ -69,6 +69,13 @@ tidy_smef <- function(x, data = NULL) {
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
+  # prepare information inferred from the data
+  sdata <- x$sdata$sm
+  if (is.null(sdata)) {
+    # for compatibility with spline-specific post-processing methods
+    sdata <- data_sm(x, data)
+  }
+
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
   out$sfun <- get_matches("^[^\\(]+", out$term)
@@ -82,12 +89,6 @@ tidy_smef <- function(x, data = NULL) {
     out$vars[[i]] <- c(out$covars[[i]], out$byvars[[i]])
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
-  # prepare information inferred from the data
-  sdata <- x$sdata$sm
-  if (is.null(sdata)) {
-    # for compatibility with spline-specific post-processing methods
-    sdata <- data_sm(x, data)
-  }
   bylevels <- attr(sdata$Xs, "bylevels")
   nby <- lengths(bylevels)
   tmp <- vector("list", nterms)

@@ -93,7 +93,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
   stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)
   .standata(
-    bterms, data = data, prior = prior,
+    bframe, data = data, prior = prior,
     data2 = data2, stanvars = stanvars,
     threads = threads, ...
   )
@@ -107,9 +107,8 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
 # @param ... currently ignored
 # @return names list of data passed to Stan
 .standata <- function(bterms, data, prior, stanvars, data2,
-                           threads = threading(), check_response = TRUE,
-                           only_response = FALSE, internal = FALSE,
-                           basis = NULL, ...) {
+                      threads = threading(), check_response = TRUE,
+                      only_response = FALSE, internal = FALSE, ...) {
 
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
@@ -118,20 +117,18 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
   data <- order_data(data, bterms = bterms)
   out <- data_response(
     bterms, data, check_response = check_response,
-    internal = internal, basis = basis
+    internal = internal
   )
   if (!only_response) {
-    ranef <- tidy_ranef(bterms, data, old_levels = basis$levels)
-    meef <- tidy_meef(bterms, data, old_levels = basis$levels)
-    index <- tidy_index(bterms, data)
+    # TODO: compute sdata_gr_global in brmsframe?
     # pass as sdata so that data_special_prior knows about data_gr_global
-    sdata_gr_global <- data_gr_global(ranef, data2 = data2)
+    sdata_gr_global <- data_gr_global(bterms, data2 = data2)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, data2 = data2, ranef = ranef,
-      sdata = sdata_gr_global, index = index, basis = basis
+      bterms, data = data, prior = prior, data2 = data2,
+      sdata = sdata_gr_global
     )
     c(out) <- sdata_gr_global
-    c(out) <- data_Xme(meef, data = data)
+    c(out) <- data_Xme(bterms, data = data)
   }
   out$prior_only <- as.integer(is_prior_only(prior))
   if (use_threading(threads)) {
@@ -154,6 +151,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     # allows to recover the original order of the data
     attr(out, "old_order") <- attr(data, "old_order")
     # ensures current grouping levels are known in post-processing
+    # TODO: refactor somehow?
     ranef_new <- tidy_ranef(bterms, data)
     meef_new <- tidy_meef(bterms, data)
     attr(out, "levels") <- get_levels(ranef_new, meef_new)
@@ -203,10 +201,11 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # of splines on new machines (#1465)
     basis <- standata_basis(bterms, data = object$data)
   }
+  bframe <- brmsframe(bterms, data = data, basis = basis)
   .standata(
-    bterms, data = data, prior = object$prior,
+    bframe, data = data, prior = object$prior,
     data2 = data2, stanvars = stanvars,
-    threads = object$threads, basis = basis, ...
+    threads = object$threads, ...
   )
 }
 

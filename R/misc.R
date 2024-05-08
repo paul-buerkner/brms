@@ -167,6 +167,9 @@ subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
+# not-in operator
+"%notin%" <- Negate("%in%")
+
 # convert array to list of elements with reduced dimension
 # @param x an arrary of dimension d
 # @return a list of arrays of dimension d-1

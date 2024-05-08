@@ -518,13 +518,12 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
-    data_name <- substitute_name(data)
     data <- validate_data(
       data, bterms = bterms,
       data2 = data2, knots = knots,
-      drop_unused_levels = drop_unused_levels
+      drop_unused_levels = drop_unused_levels,
+      data_name = substitute_name(data)
     )
-    attr(data, "data_name") <- data_name
     bframe <- brmsframe(bterms, data)
     prior <- .validate_prior(
       prior, bterms = bframe,
@@ -536,21 +535,19 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
-    # TODO: remove ranef here
-    ranef <- tidy_ranef(bterms, data = data)
+
     # generate Stan code
     model <- .stancode(
       bframe, prior = prior, stanvars = stanvars,
       save_model = save_model, backend = backend, threads = threads,
       opencl = opencl, normalize = normalize
     )
-
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior,
       stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
-      save_pars = save_pars, ranef = ranef, family = family,
+      save_pars = save_pars, ranef = bframe$frame$re, family = family,
       basis = standata_basis(bterms, data = data),
       stan_args = nlist(init, silent, control, stan_model_args, ...)
     )
@@ -558,7 +555,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
-      bterms, data = data, prior = prior, data2 = data2,
+      bframe, data = data, prior = prior, data2 = data2,
       stanvars = stanvars, threads = threads
     )
 

@@ -9,10 +9,11 @@
 #   and (2) that the number of variables matches the number
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
+# @param data_name: optional name of the data frame as passed by the user
 # @return model.frame for use in brms functions
 validate_data <- function(data, bterms, data2 = list(), knots = NULL,
                           na_action = na_omit, drop_unused_levels = TRUE,
-                          attr_terms = NULL) {
+                          attr_terms = NULL, data_name = "") {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
   }
@@ -71,6 +72,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
   attr(data, "drop_unused_levels") <- drop_unused_levels
+  attr(data, "data_name") <- data_name
   data
 }
 
