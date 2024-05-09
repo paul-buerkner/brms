@@ -551,7 +551,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       basis = standata_basis(bframe, data = data),
       stan_args = nlist(init, silent, control, stan_model_args, ...)
     )
-    exclude <- exclude_pars(x)
+    exclude <- exclude_pars(x, bframe = bframe)
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
