@@ -489,6 +489,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "M")
   out[cnames] <- list(NA)
   out$cov <- out$nat_cov <- FALSE
+  out$nat_res <- has_natural_residuals(x)
   out[names(px)] <- px
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
@@ -538,7 +539,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   # covariance matrices of natural residuals will be handled
   # directly in the likelihood function while latent residuals will
   # be added to the linear predictor of the main parameter 'mu'
-  out$nat_cov <- out$cov & has_natural_residuals(x)
+  out$nat_cov <- out$cov & out$nat_res
   class(out) <- acef_class()
   # validate specified autocor terms
   if (any(duplicated(out$class))) {
@@ -592,6 +593,10 @@ acef_class <- function() {
   c("acef", "data.frame")
 }
 
+is.acef <- function(x) {
+  inherits(x, "acef")
+}
+
 # get names of certain autocor variables
 get_ac_vars <- function(x, var, ...) {
   var <- match.arg(var, c("time", "gr", "M"))
@@ -625,10 +630,16 @@ use_ac_cov_time <- function(x) {
   has_ac_subset(x, cov = TRUE, dim = "time")
 }
 
+# check if the family has natural residuals
+has_ac_natural_residuals <- function(x) {
+  has_ac_subset(x, nat_res = TRUE)
+}
+
 # does the model need latent residuals for autocor structures?
-has_ac_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) &&
-    (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
+has_ac_latent_residuals <- function(x) {
+  x <- tidy_acef(x)
+  !has_ac_natural_residuals(x) &&
+    (use_ac_cov(x) || has_ac_class(x, "arma"))
 }
 
 # validate SAR matrices

@@ -110,6 +110,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
                       threads = threading(), check_response = TRUE,
                       only_response = FALSE, internal = FALSE, ...) {
 
+  stopifnot(is.anybrmsframe(bterms))
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   internal <- as_one_logical(internal)
@@ -199,7 +200,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # the 'empty' feature. But computing it here will be fine
     # for almost all models, only causing potential problems for processing
     # of splines on new machines (#1465)
-    basis <- standata_basis(bterms, data = object$data)
+    bframe_old <- brmsframe(bterms, data = object$data)
+    basis <- standata_basis(bframe_old, data = object$data)
   }
   bframe <- brmsframe(bterms, data = data, basis = basis)
   .standata(

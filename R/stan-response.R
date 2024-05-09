@@ -3,7 +3,7 @@
 
 # Stan code for the response variables
 stan_response <- function(bterms, normalize) {
-  stopifnot(is.brmsterms(bterms))
+  stopifnot(is.brmsframe(bterms))
   lpdf <- stan_lpdf_name(normalize)
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")

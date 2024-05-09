@@ -71,7 +71,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   ndraws <- use_alias(ndraws, nsamples)
   draw_ids <- use_alias(draw_ids, subset)
   object$frame$sm <- tidy_smef(object, fit$data)
-  class(object) <- c("bfrl", class(object))
+  class(object) <- c("bframel", class(object))
   smef <- object$frame$sm
   smef$term <- rm_wsp(smef$term)
   smterms <- unique(smef$term)

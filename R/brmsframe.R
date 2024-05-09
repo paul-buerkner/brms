@@ -79,13 +79,12 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   x$frame$gp <- tidy_gpef(x, data = data)
   x$frame$ac <- tidy_acef(x, data = data)
   # only store the ranefs of this specific linear formula
-  px <- check_prefix(x)
-  x$frame$re <- subset2(frame$re, ls = px)
+  x$frame$re <- subset2(frame$re, ls = check_prefix(x))
+  class(x) <- c("bframel", class(x))
   # these data_* functions require the outputs of the corresponding
   # frame_* functions (but not vice versa) and are thus evaluated last
   x$sdata$gp <- data_gp(x, data, internal = TRUE)
   x$sdata$offset <- data_offset(x, data)
-  class(x) <- c("bfrl", class(x))
   x
 }
 
@@ -99,7 +98,7 @@ brmsframe.btnl <- function(x, data, frame = list(), basis = NULL, ...) {
   )
   x$frame$cnl <- frame_cnl(x)
   x$frame$ac <- tidy_acef(x)
-  class(x) <- c("bfrnl", class(x))
+  class(x) <- c("bframenl", class(x))
   x
 }
 
@@ -177,10 +176,23 @@ frame_cnl <- function(x, data, ...) {
   out
 }
 
-is.bfrl <- function(x) {
-  inherits(x, "bfrl")
+is.brmsframe <- function(x) {
+  inherits(x, "brmsframe")
 }
 
-is.bfrnl <- function(x) {
-  inherits(x, "bfrnl")
+is.mvbrmsframe <- function(x) {
+  inherits(x, "mvbrmsframe")
+}
+
+# useful for functions that require either of the two objects
+is.anybrmsframe <- function(x) {
+  is.brmsframe(x) || is.mvbrmsframe(x)
+}
+
+is.bframel <- function(x) {
+  inherits(x, "bframel")
+}
+
+is.bframenl <- function(x) {
+  inherits(x, "bframenl")
 }

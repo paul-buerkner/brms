@@ -265,8 +265,8 @@ restructure_v2 <- function(x) {
     # a slot was added to store parts of the Stan data computed at fitting time.
     # storing this is strictly required only for spline models but there it is
     # critical due to the machine-specific output of SVD (#1465)
-    bterms <- brmsterms(x$formula)
-    x$basis <- standata_basis(bterms, data = x$data)
+    bframe <- brmsframe(x$formula, data = x$data)
+    x$basis <- standata_basis(bframe, data = x$data)
   }
   x
 }

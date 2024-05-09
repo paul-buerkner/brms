@@ -548,7 +548,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
       save_pars = save_pars, ranef = bframe$frame$re, family = family,
-      basis = standata_basis(bterms, data = data),
+      basis = standata_basis(bframe, data = data),
       stan_args = nlist(init, silent, control, stan_model_args, ...)
     )
     exclude <- exclude_pars(x)

@@ -579,6 +579,11 @@ is.mvbrmsterms <- function(x) {
   inherits(x, "mvbrmsterms")
 }
 
+# useful for functions that require either of the two objects
+is.anybrmsterms <- function(x) {
+  is.brmsterms(x) || is.mvbrmsterms(x)
+}
+
 is.btl <- function(x) {
   inherits(x, "btl")
 }

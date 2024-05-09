@@ -546,6 +546,7 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
 # @param internal return priors for internal use?
 # @return a brmsprior object
 .default_prior <- function(bterms, internal = FALSE, ...) {
+  stopifnot(is.anybrmsframe(bterms))
   # initialize output
   prior <- empty_prior()
   # priors for distributional parameters
@@ -576,7 +577,7 @@ prior_predictor.default <- function(x, ...) {
 }
 
 #' @export
-prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
+prior_predictor.mvbrmsframe <- function(x, internal = FALSE, ...) {
   prior <- empty_prior()
   for (i in seq_along(x$terms)) {
     prior <- prior + prior_predictor(x$terms[[i]], internal = internal, ...)
@@ -603,7 +604,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
 }
 
 #' @export
-prior_predictor.brmsterms <- function(x, internal = FALSE, ...) {
+prior_predictor.brmsframe <- function(x, internal = FALSE, ...) {
   def_scale_prior <- def_scale_prior(x)
   valid_dpars <- valid_dpars(x)
   prior <- empty_prior()
@@ -667,7 +668,7 @@ prior_predictor.brmsterms <- function(x, internal = FALSE, ...) {
 
 # prior for linear predictor termss
 #' @export
-prior_predictor.btl <- function(x, ...) {
+prior_predictor.bframel <- function(x, ...) {
   prior_fe(x, ...) +
     prior_thres(x, ...) +
     prior_sp(x, ...) +
@@ -680,7 +681,7 @@ prior_predictor.btl <- function(x, ...) {
 
 # priors for non-linear predictor terms
 #' @export
-prior_predictor.btnl <- function(x, ...) {
+prior_predictor.bframenl <- function(x, ...) {
   # thresholds are required even in non-linear ordinal models
   prior_thres(x, ...) +
     prior_ac(x, ...) +
@@ -689,6 +690,7 @@ prior_predictor.btnl <- function(x, ...) {
 
 # priors for population-level parameters
 prior_fe <- function(bterms, def_dpar_prior = "", ...) {
+  stopifnot(is.bframel(bterms))
   prior <- empty_prior()
   fixef <- bterms$frame$fe$vars_stan
   px <- check_prefix(bterms)
@@ -763,6 +765,7 @@ prior_bhaz <- function(bterms, ...) {
 
 # priors for special effects parameters
 prior_sp <- function(bterms, ...) {
+  stopifnot(is.bframel(bterms))
   prior <- empty_prior()
   spef <- bterms$frame$sp
   if (nrow(spef)) {
@@ -783,6 +786,7 @@ prior_sp <- function(bterms, ...) {
 
 # priors for category spcific effects parameters
 prior_cs <- function(bterms, ...) {
+  stopifnot(is.bframel(bterms))
   prior <- empty_prior()
   csef <- bterms$frame$cs$vars
   if (length(csef)) {
@@ -796,6 +800,7 @@ prior_cs <- function(bterms, ...) {
 # default priors for hyper-parameters of noise-free variables
 prior_Xme <- function(bterms, internal = FALSE, ...) {
   meef <- bterms$frame$me
+  stopifnot(is.meef_frame(meef))
   prior <- empty_prior()
   if (!NROW(meef)) {
     return(prior)
@@ -831,6 +836,7 @@ prior_Xme <- function(bterms, internal = FALSE, ...) {
 # @param def_scale_prior: a character string defining
 #   the default prior SD parameters
 prior_gp <- function(bterms, def_scale_prior, ...) {
+  stopifnot(is.bframel(bterms))
   prior <- empty_prior()
   gpef <- bterms$frame$gp
   if (nrow(gpef)) {
@@ -915,9 +921,10 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
 prior_re <- function(bterms, internal = FALSE, ...) {
   prior <- empty_prior()
   ranef <- bterms$frame$re
-  if (!NROW(ranef)) {
+  if (!has_rows(ranef)) {
     return(prior)
   }
+  stopifnot(is.ranef_frame(ranef))
   # global sd class
   def_scale_prior <- def_scale_prior(bterms)
   px <- check_prefix(ranef)
@@ -974,6 +981,7 @@ prior_re <- function(bterms, internal = FALSE, ...) {
 
 # priors for smooth terms
 prior_sm <- function(bterms, def_scale_prior, ...) {
+  stopifnot(is.bframel(bterms))
   prior <- empty_prior()
   smef <- bterms$frame$sm
   if (NROW(smef)) {
@@ -999,6 +1007,7 @@ prior_sm <- function(bterms, def_scale_prior, ...) {
 prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
   prior <- empty_prior()
   acef <- bterms$frame$ac
+  stopifnot(is.acef(acef))
   if (!NROW(acef)) {
     return(prior)
   }
@@ -1225,6 +1234,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 
 # internal work function of 'validate_prior'
 .validate_prior <- function(prior, bterms, sample_prior, ...) {
+  stopifnot(is.anybrmsframe(bterms))
   sample_prior <- validate_sample_prior(sample_prior)
   all_priors <- .default_prior(bterms, internal = TRUE)
   if (is.null(prior)) {

@@ -268,7 +268,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
-    object$basis <- standata_basis(bterms, data = object$data)
+    object$basis <- standata_basis(bframe, data = object$data)
     algorithm <- match.arg(dots$algorithm, algorithm_choices())
     dots$algorithm <- object$algorithm <- algorithm
     # can only avoid recompilation when using the old backend

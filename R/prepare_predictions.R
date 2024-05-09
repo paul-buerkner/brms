@@ -56,7 +56,7 @@ prepare_predictions.brmsfit <- function(
 }
 
 #' @export
-prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
+prepare_predictions.mvbrmsframe <- function(x, draws, sdata, resp = NULL, ...) {
   resp <- validate_resp(resp, x$responses)
   if (length(resp) > 1) {
     if (has_subset(x)) {
@@ -95,7 +95,7 @@ prepare_predictions.mvbrmsterms <- function(x, draws, sdata, resp = NULL, ...) {
 }
 
 #' @export
-prepare_predictions.brmsterms <- function(x, draws, sdata, ...) {
+prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
   ndraws <- nrow(draws)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   resp <- usc(combine_prefix(x))
@@ -192,7 +192,7 @@ prepare_predictions.brmsterms <- function(x, draws, sdata, ...) {
 }
 
 #' @export
-prepare_predictions.btnl <- function(x, draws, sdata, ...) {
+prepare_predictions.bframenl <- function(x, draws, sdata, ...) {
   out <- list(
     family = x$family,
     nlform = x$formula[[2]],
@@ -217,7 +217,7 @@ prepare_predictions.btnl <- function(x, draws, sdata, ...) {
 }
 
 #' @export
-prepare_predictions.btl <- function(x, draws, sdata, ...) {
+prepare_predictions.bframel <- function(x, draws, sdata, ...) {
   ndraws <- nrow(draws)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   out <- nlist(family = x$family, ndraws, nobs)
@@ -235,13 +235,14 @@ prepare_predictions.btl <- function(x, draws, sdata, ...) {
 
 # prepare predictions of ordinary population-level effects
 prepare_predictions_fe <- function(bterms, draws, sdata, ...) {
+  stopifnot(is.bframel(bterms))
   out <- list()
   if (is.null(bterms[["fe"]])) {
     return(out)
   }
   p <- usc(combine_prefix(bterms))
   X <- sdata[[paste0("X", p)]]
-  fixef <- colnames(X)
+  fixef <- bterms$frame$fe$vars
   if (length(fixef)) {
     out$X <- X
     b_pars <- paste0("b", p, "_", fixef)
@@ -252,6 +253,7 @@ prepare_predictions_fe <- function(bterms, draws, sdata, ...) {
 
 # prepare predictions of special effects terms
 prepare_predictions_sp <- function(bterms, draws, sdata, new = FALSE, ...) {
+  stopifnot(is.bframel(bterms))
   out <- list()
   spef <- bterms$frame$sp
   meef <- bterms$frame$me
@@ -407,6 +409,7 @@ prepare_predictions_sp <- function(bterms, draws, sdata, new = FALSE, ...) {
 
 # prepare predictions of category specific effects
 prepare_predictions_cs <- function(bterms, draws, sdata, ...) {
+  stopifnot(is.bframel(bterms))
   out <- list()
   if (!is_ordinal(bterms$family)) {
     return(out)
@@ -425,6 +428,7 @@ prepare_predictions_cs <- function(bterms, draws, sdata, ...) {
 
 # prepare predictions of smooth terms
 prepare_predictions_sm <- function(bterms, draws, sdata, ...) {
+  stopifnot(is.bframel(bterms))
   out <- list()
   smef <- bterms$frame$sm
   if (!NROW(smef)) {
@@ -456,8 +460,9 @@ prepare_predictions_sm <- function(bterms, draws, sdata, ...) {
 # @param nug small numeric value to avoid numerical problems in GPs
 prepare_predictions_gp <- function(bterms, draws, sdata, new = FALSE,
                                    nug = NULL, ...) {
+  stopifnot(is.bframel(bterms))
   gpef <- bterms$frame$gp
-  if (!NROW(gpef)) {
+  if (!has_rows(gpef)) {
     return(list())
   }
   p <- usc(combine_prefix(bterms))
@@ -552,9 +557,10 @@ prepare_predictions_gp <- function(bterms, draws, sdata, new = FALSE,
 prepare_predictions_ranef <- function(bterms, draws, sdata, old_ranef, resp = NULL,
                                       sample_new_levels = "uncertainty", ...) {
   ranef <- bterms$frame$re
-  if (!NROW(ranef)) {
+  if (!has_rows(ranef)) {
     return(list())
   }
+  stopifnot(is.ranef_frame(ranef))
   # ensures subsetting 'ranef' by 'resp' works correctly
   resp <- resp %||% ""
   groups <- unique(ranef$group)
@@ -715,11 +721,11 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
                                    nat_cov = FALSE, new = FALSE, ...) {
   out <- list()
   nat_cov <- as_one_logical(nat_cov)
-  acef <- tidy_acef(bterms)
-  acef <- subset2(acef, nat_cov = nat_cov)
-  if (!NROW(acef)) {
+  acef <- subset2(bterms$frame$ac, nat_cov = nat_cov)
+  if (!has_rows(acef)) {
     return(out)
   }
+  stopifnot(is.acef(acef))
   out$acef <- acef
   p <- usc(combine_prefix(bterms))
   out$N_tg <- sdata[[paste0("N_tg", p)]]

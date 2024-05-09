@@ -83,6 +83,7 @@ data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
 
 # prepare data of fixed effects
 data_fe <- function(bterms, data) {
+  stopifnot(is.btl(bterms))
   if (!is.null(bterms$sdata$fe)) {
     # standata was already precomputed
     return(bterms$sdata$fe)
@@ -105,6 +106,7 @@ data_fe <- function(bterms, data) {
 
 # data preparation for splines
 data_sm <- function(bterms, data) {
+  stopifnot(is.btl(bterms))
   if (!is.null(bterms$sdata$sm)) {
     # standata was already precomputed
     return(bterms$sdata$sm)
@@ -174,6 +176,7 @@ data_sm <- function(bterms, data) {
 
 # prepare data for group-level effects for use in Stan
 data_re <- function(bterms, data) {
+  stopifnot(is.bframel(bterms))
   out <- list()
   px <- check_prefix(bterms)
   ranef <- subset2(bterms$frame$re, type = "sp", fun = "%notin%")
@@ -234,7 +237,7 @@ data_re <- function(bterms, data) {
 
 # compute data for each group-level-ID per univariate model
 data_gr_local <- function(bterms, data) {
-  stopifnot(is.brmsterms(bterms))
+  stopifnot(is.brmsframe(bterms))
   out <- list()
   ranef <- subset2(bterms$frame$re, resp = bterms$resp)
   resp <- usc(bterms$resp)
@@ -299,6 +302,7 @@ data_gr_local <- function(bterms, data) {
 
 # prepare global data for each group-level-ID
 data_gr_global <- function(bterms, data2) {
+  stopifnot(is.anybrmsframe(bterms))
   out <- list()
   ranef <- bterms$frame$re
   for (id in unique(ranef$id)) {
@@ -340,6 +344,7 @@ data_gr_global <- function(bterms, data2) {
 
 # prepare data for special effects for use in Stan
 data_sp <- function(bterms, data, data2, prior) {
+  stopifnot(is.bframel(bterms))
   if (!is.null(bterms$sdata$sp)) {
     # standata was already precomputed
     return(bterms$sdata$sp)
@@ -419,6 +424,7 @@ data_sp <- function(bterms, data, data2, prior) {
 
 # prepare data for category specific effects
 data_cs <- function(bterms, data) {
+  stopifnot(is.btl(bterms))
   if (!is.null(bterms$sdata$cs)) {
     # standata was already precomputed
     return(bterms$sdata$cs)
@@ -436,6 +442,7 @@ data_cs <- function(bterms, data) {
 
 # prepare global data for noise free variables
 data_Xme <- function(bterms, data) {
+  stopifnot(is.anybrmsframe(bterms))
   meef <- bterms$frame$me
   stopifnot(is.meef_frame(meef))
   out <- list()
@@ -492,6 +499,7 @@ data_Xme <- function(bterms, data) {
 # @param internal store some intermediate data for internal post-processing?
 # @param ... passed to '.data_gp'
 data_gp <- function(bterms, data, internal = FALSE, ...) {
+  stopifnot(is.bframel(bterms))
   if (!is.null(bterms$sdata$gp)) {
     # standata was already precomputed
     return(bterms$sdata$gp)
@@ -665,6 +673,7 @@ data_ac <- function(bterms, data, data2, ...) {
   N <- nrow(data)
   basis <- bterms$basis$ac
   acef <- bterms$frame$ac
+  stopifnot(is.acef(acef))
   if (has_ac_subset(bterms, dim = "time")) {
     gr <- get_ac_vars(acef, "gr", dim = "time")
     if (isTRUE(nzchar(gr))) {
@@ -837,6 +846,7 @@ data_ac <- function(bterms, data, data2, ...) {
 
 # prepare data of offsets for use in Stan
 data_offset <- function(bterms, data) {
+  stopifnot(is.btl(bterms))
   if (!is.null(bterms$sdata$offset)) {
     # standata was already precomputed
     return(bterms$sdata$offset)
@@ -861,11 +871,11 @@ data_offset <- function(bterms, data) {
 # @param x a btnl object
 # @return a named list of data passed to Stan
 data_cnl <- function(bterms, data) {
+  stopifnot(is.btnl(bterms))
   if (!is.null(bterms$sdata$cnl)) {
     # standata was already precomputed
     return(bterms$sdata$cnl)
   }
-  stopifnot(is.btnl(bterms))
   out <- list()
   covars <- all.vars(bterms$covars)
   if (!length(covars)) {
