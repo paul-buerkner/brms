@@ -767,13 +767,13 @@ prior_bhaz <- function(bterms, ...) {
 prior_sp <- function(bterms, ...) {
   stopifnot(is.bframel(bterms))
   prior <- empty_prior()
-  spef <- bterms$frame$sp
-  if (nrow(spef)) {
+  spframe <- bterms$frame$sp
+  if (has_rows(spframe)) {
     px <- check_prefix(bterms)
     prior <- prior + brmsprior(
-      class = "b", coef = c("", spef$coef), ls = px
+      class = "b", coef = c("", spframe$coef), ls = px
     )
-    simo_coef <- get_simo_labels(spef, use_id = TRUE)
+    simo_coef <- get_simo_labels(spframe, use_id = TRUE)
     if (length(simo_coef)) {
       prior <- prior + brmsprior(
         prior  = "dirichlet(1)", class = "simo",
@@ -799,23 +799,23 @@ prior_cs <- function(bterms, ...) {
 
 # default priors for hyper-parameters of noise-free variables
 prior_Xme <- function(bterms, internal = FALSE, ...) {
-  meef <- bterms$frame$me
-  stopifnot(is.meef_frame(meef))
+  meframe <- bterms$frame$me
+  stopifnot(is.meframe(meframe))
   prior <- empty_prior()
-  if (!NROW(meef)) {
+  if (!has_rows(meframe)) {
     return(prior)
   }
   prior <- prior +
     brmsprior(class = "meanme") +
-    brmsprior(class = "meanme", coef = meef$coef) +
+    brmsprior(class = "meanme", coef = meframe$coef) +
     brmsprior(class = "sdme", lb = "0") +
-    brmsprior(class = "sdme", coef = meef$coef)
+    brmsprior(class = "sdme", coef = meframe$coef)
   # priors for correlation parameters
-  groups <- unique(meef$grname)
+  groups <- unique(meframe$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
-    K <- which(meef$grname %in% g)
-    if (meef$cor[K[1]] && length(K) > 1L) {
+    K <- which(meframe$grname %in% g)
+    if (meframe$cor[K[1]] && length(K) > 1L) {
       if (internal) {
         prior <- prior + brmsprior("lkj_corr_cholesky(1)", class = "Lme")
         if (nzchar(g)) {
@@ -838,13 +838,13 @@ prior_Xme <- function(bterms, internal = FALSE, ...) {
 prior_gp <- function(bterms, def_scale_prior, ...) {
   stopifnot(is.bframel(bterms))
   prior <- empty_prior()
-  gpef <- bterms$frame$gp
-  if (nrow(gpef)) {
+  gpframe <- bterms$frame$gp
+  if (nrow(gpframe)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px, lb = "0") +
-      brmsprior(class = "sdgp", coef = unlist(gpef$sfx1), ls = px) +
+      brmsprior(class = "sdgp", coef = unlist(gpframe$sfx1), ls = px) +
       brmsprior(class = "lscale", ls = px, lb = "0") +
       brmsprior(class = "lscale", prior = lscale_prior,
                 coef = names(lscale_prior), ls = px)
@@ -883,13 +883,13 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
     return(prior)
   }
   p <- usc(combine_prefix(bterms))
-  gpef <- bterms$frame$gp
+  gpframe <- bterms$frame$gp
   data_gp <- bterms$sdata$gp
-  out <- vector("list", NROW(gpef))
+  out <- vector("list", NROW(gpframe))
   for (i in seq_along(out)) {
     pi <- paste0(p, "_", i)
-    iso <- gpef$iso[i]
-    cons <- gpef$cons[[i]]
+    iso <- gpframe$iso[i]
+    cons <- gpframe$cons[[i]]
     if (length(cons) > 0L) {
       for (j in seq_along(cons)) {
         Xgp <- data_gp[[paste0("Xgp_prior", pi, "_", j)]]
@@ -908,26 +908,23 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
       }
     }
     # transpose so that by-levels vary last
-    names(out[[i]]) <- as.vector(t(gpef$sfx2[[i]]))
+    names(out[[i]]) <- as.vector(t(gpframe$sfx2[[i]]))
   }
   unlist(out)
 }
 
 # priors for varying effects parameters
-# @param ranef: a list returned by tidy_ranef
-# @param def_scale_prior a character string defining
-#   the default prior for SD parameters
 # @param internal: see 'default_prior'
 prior_re <- function(bterms, internal = FALSE, ...) {
   prior <- empty_prior()
-  ranef <- bterms$frame$re
-  if (!has_rows(ranef)) {
+  reframe <- bterms$frame$re
+  if (!has_rows(reframe)) {
     return(prior)
   }
-  stopifnot(is.ranef_frame(ranef))
+  stopifnot(is.reframe(reframe))
   # global sd class
   def_scale_prior <- def_scale_prior(bterms)
-  px <- check_prefix(ranef)
+  px <- check_prefix(reframe)
   upx <- unique(px)
   if (length(def_scale_prior) > 1L) {
     def_scale_prior <- def_scale_prior[px$resp]
@@ -937,8 +934,8 @@ prior_re <- function(bterms, internal = FALSE, ...) {
     lb = "0", ls = px
   )
   prior <- prior + global_sd_prior
-  for (id in unique(ranef$id)) {
-    r <- subset2(ranef, id = id)
+  for (id in unique(reframe$id)) {
+    r <- subset2(reframe, id = id)
     group <- r$group[1]
     rpx <- check_prefix(r)
     urpx <- unique(rpx)
@@ -970,11 +967,10 @@ prior_re <- function(bterms, internal = FALSE, ...) {
       }
     }
   }
-  tranef <- get_dist_groups(ranef, "student")
-  if (isTRUE(nrow(tranef) > 0L)) {
+  reframe_t <- get_dist_groups(reframe, "student")
+  if (isTRUE(nrow(reframe_t) > 0L)) {
     prior <- prior +
-      brmsprior("gamma(2, 0.1)", class = "df", group = tranef$group,
-                lb = "1")
+      brmsprior("gamma(2, 0.1)", class = "df", group = reframe_t$group, lb = "1")
   }
   prior
 }
@@ -983,60 +979,61 @@ prior_re <- function(bterms, internal = FALSE, ...) {
 prior_sm <- function(bterms, def_scale_prior, ...) {
   stopifnot(is.bframel(bterms))
   prior <- empty_prior()
-  smef <- bterms$frame$sm
-  if (NROW(smef)) {
-    px <- check_prefix(bterms)
-    # prior for the FE coefficients
-    Xs_names <- attr(smef, "Xs_names")
-    if (length(Xs_names)) {
-      prior <- prior + brmsprior(
-        class = "b", coef = c("", Xs_names), ls = px
-      )
-    }
-    # prior for SD parameters of the RE coefficients
-    smterms <- unique(smef$term)
-    prior <- prior +
-      brmsprior(prior = def_scale_prior, class = "sds",
-                lb = "0", ls = px) +
-      brmsprior(class = "sds", coef = smterms, ls = px)
+  smframe <- bterms$frame$sm
+  if (!has_rows(smframe)) {
+    return(prior)
   }
+  px <- check_prefix(bterms)
+  # prior for the FE coefficients
+  Xs_names <- attr(smframe, "Xs_names")
+  if (length(Xs_names)) {
+    prior <- prior + brmsprior(
+      class = "b", coef = c("", Xs_names), ls = px
+    )
+  }
+  # prior for SD parameters of the RE coefficients
+  smterms <- unique(smframe$term)
+  prior <- prior +
+    brmsprior(prior = def_scale_prior, class = "sds",
+              lb = "0", ls = px) +
+    brmsprior(class = "sds", coef = smterms, ls = px)
   prior
 }
 
 # priors for autocor parameters
 prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
   prior <- empty_prior()
-  acef <- bterms$frame$ac
-  stopifnot(is.acef(acef))
-  if (!NROW(acef)) {
+  acframe <- bterms$frame$ac
+  stopifnot(is.acframe(acframe))
+  if (!NROW(acframe)) {
     return(prior)
   }
   px <- check_prefix(bterms)
   p <- combine_prefix(px)
   has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
-  if (has_ac_class(acef, "arma")) {
-    acef_arma <- subset2(acef, class = "arma")
+  if (has_ac_class(acframe, "arma")) {
+    acframe_arma <- subset2(acframe, class = "arma")
     # no boundaries are required in the conditional formulation
     # when natural residuals automatically define the scale
-    need_arma_bound <- acef_arma$cov || has_ac_latent_residuals
+    need_arma_bound <- acframe_arma$cov || has_ac_latent_residuals
     arma_lb <- str_if(need_arma_bound, "-1")
     arma_ub <- str_if(need_arma_bound, "1")
-    if (acef_arma$p > 0) {
+    if (acframe_arma$p > 0) {
       prior <- prior +
         brmsprior(class = "ar", ls = px, lb = arma_lb, ub = arma_ub)
     }
-    if (acef_arma$q > 0) {
+    if (acframe_arma$q > 0) {
       prior <- prior +
         brmsprior(class = "ma", ls = px, lb = arma_lb, ub = arma_ub)
     }
   }
-  if (has_ac_class(acef, "cosy")) {
+  if (has_ac_class(acframe, "cosy")) {
     # cosy correlations may be negative in theory but
     # this causes problems with divergent transitions (#878)
     prior <- prior +
       brmsprior(class = "cosy", ls = px, lb = "0", ub = "1")
   }
-  if (has_ac_class(acef, "unstr")) {
+  if (has_ac_class(acframe, "unstr")) {
     if (internal) {
       prior <- prior +
         brmsprior("lkj_corr_cholesky(1)", class = "Lcortime", ls = px)
@@ -1049,27 +1046,27 @@ prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
     prior <- prior +
       brmsprior(def_scale_prior, class = "sderr", ls = px, lb = "0")
   }
-  if (has_ac_class(acef, "sar")) {
-    acef_sar <- subset2(acef, class = "sar")
+  if (has_ac_class(acframe, "sar")) {
+    acframe_sar <- subset2(acframe, class = "sar")
     sar_lb <- glue("min_eigenMsar{p}")
     sar_ub <- glue("max_eigenMsar{p}")
-    if (acef_sar$type == "lag") {
+    if (acframe_sar$type == "lag") {
       prior <- prior +
         brmsprior(class = "lagsar", lb = sar_lb, ub = sar_ub, ls = px)
     }
-    if (acef_sar$type == "error") {
+    if (acframe_sar$type == "error") {
       prior <- prior +
         brmsprior(class = "errorsar", lb = sar_lb, ub = sar_ub, ls = px)
     }
   }
-  if (has_ac_class(acef, "car")) {
-    acef_car <- subset2(acef, class = "car")
+  if (has_ac_class(acframe, "car")) {
+    acframe_car <- subset2(acframe, class = "car")
     prior <- prior +
       brmsprior(def_scale_prior, class = "sdcar", lb = "0", ls = px)
-    if (acef_car$type %in% "escar") {
+    if (acframe_car$type %in% "escar") {
       prior <- prior +
         brmsprior(class = "car", lb = "0", ub = "1", ls = px)
-    } else if (acef_car$type %in% "bym2") {
+    } else if (acframe_car$type %in% "bym2") {
       prior <- prior +
         brmsprior("beta(1, 1)", class = "rhocar", lb = "0", ub = "1", ls = px)
     }

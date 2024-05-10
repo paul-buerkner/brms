@@ -151,11 +151,12 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
   if (internal) {
     # allows to recover the original order of the data
     attr(out, "old_order") <- attr(data, "old_order")
-    # ensures current grouping levels are known in post-processing
-    # TODO: refactor somehow?
-    ranef_new <- tidy_ranef(bterms, data)
-    meef_new <- tidy_meef(bterms, data)
-    attr(out, "levels") <- get_levels(ranef_new, meef_new)
+    # ensures currently used grouping levels are known in post-processing
+    # TODO: extract info from brmsframe; see initialize_frame
+    set_levels(out) <- get_levels(
+      frame_re(bterms, data),
+      frame_me(bterms, data)
+    )
   }
   structure(out, class = c("standata", "list"))
 }
@@ -229,7 +230,7 @@ standata_basis.mvbrmsterms <- function(x, data, ...) {
   for (r in names(x$terms)) {
     out$resps[[r]] <- standata_basis(x$terms[[r]], data, ...)
   }
-  out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
+  out$levels <- get_levels(frame_me(x, data), frame_re(x, data))
   out
 }
 
@@ -244,7 +245,7 @@ standata_basis.brmsterms <- function(x, data, ...) {
     out$nlpars[[nlp]] <- standata_basis(x$nlpars[[nlp]], data, ...)
   }
   # old levels are required to select the right indices for new levels
-  out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
+  out$levels <- get_levels(frame_me(x, data), frame_re(x, data))
   if (is_binary(x$family) || is_categorical(x$family)) {
     y <- model.response(model.frame(x$respform, data, na.action = na.pass))
     out$resp_levels <- levels(as.factor(y))
@@ -311,8 +312,8 @@ standata_basis_sp <- function(x, data, ...) {
   out <- list()
   if (length(attr(x$sp, "uni_mo"))) {
     # do it like data_sp()
-    spef <- tidy_spef(x, data)
-    Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
+    spframe <- frame_sp(x, data)
+    Xmo <- lapply(unlist(spframe$calls_mo), get_mo_values, data = data)
     out$Jmo <- as.array(ulapply(Xmo, attr, "max"))
   }
   out

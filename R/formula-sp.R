@@ -284,10 +284,11 @@ get_uni_me <- function(x) {
 }
 
 # save all me-terms within a tidy data.frame
-tidy_meef <- function(bterms, data, old_levels = NULL) {
+# TODO: reduce the number of places frame_me needs to be called
+frame_me <- function(bterms, data, old_levels = NULL) {
   uni_me <- get_uni_me(bterms)
   if (!length(uni_me)) {
-    return(empty_meef())
+    return(empty_meframe())
   }
   if (has_subset(bterms)) {
     # 'Xme' variables need to be the same across univariate models
@@ -318,20 +319,26 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
     levels <- levels[!duplicated(names(levels))]
     attr(out, "levels") <- levels
   }
-  structure(out, class = c("meef_frame", "data.frame"))
+  class(out) <- meframe_class()
+  out
 }
 
-empty_meef <- function() {
+empty_meframe <- function() {
   out <- data.frame(
     term = character(0), xname = character(0),
     grname = character(0), cor = logical(0),
     stringsAsFactors = FALSE
   )
-  structure(out, class = c("meef_frame", "data.frame"))
+  class(out) <- meframe_class()
+  out
 }
 
-is.meef_frame <- function(x) {
-  inherits(x, "meef_frame")
+meframe_class <- function() {
+  c("meframe", "data.frame")
+}
+
+is.meframe <- function(x) {
+  inherits(x, "meframe")
 }
 
 # handle default of correlations between 'me' terms
@@ -350,7 +357,8 @@ get_sp_vars <- function(x, type) {
 # @param data data frame containing the monotonic variables
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
-tidy_spef <- function(x, data) {
+# TODO: call fram
+frame_sp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -358,7 +366,6 @@ tidy_spef <- function(x, data) {
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
-  # TODO: move to brmsframe?
   mm <- sp_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
@@ -443,21 +450,30 @@ tidy_spef <- function(x, data) {
   not_one <- apply(mm, 2, function(x) any(x != 1))
   cumsum_not_one <- cumsum(not_one)
   out$Ic <- ifelse(not_one, cumsum_not_one, 0)
+  class(out) <- spframe_class()
   out
 }
 
+spframe_class <- function() {
+  c("spframe", "data.frame")
+}
+
+is.spframe <- function(x) {
+  inherits(x, "spframe")
+}
+
 # extract names of monotonic simplex parameters
-# @param spef output of tidy_spef
+# @param spframe output of frame_sp
 # @param use_id use the 'id' argument to construct simo labels?
-# @return a character vector of length nrow(spef)
-get_simo_labels <- function(spef, use_id = FALSE) {
-  out <- named_list(spef$term)
-  I <- which(lengths(spef$Imo) > 0)
+# @return a character vector of length nrow(spframe)
+get_simo_labels <- function(spframe, use_id = FALSE) {
+  out <- named_list(spframe$term)
+  I <- which(lengths(spframe$Imo) > 0)
   for (i in I) {
     # use the ID as label if specified
     out[[i]] <- ifelse(
-      use_id & !is.na(spef$ids_mo[[i]]), spef$ids_mo[[i]],
-      paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+      use_id & !is.na(spframe$ids_mo[[i]]), spframe$ids_mo[[i]],
+      paste0(spframe$coef[i], seq_along(spframe$Imo[[i]]))
     )
   }
   unlist(out)

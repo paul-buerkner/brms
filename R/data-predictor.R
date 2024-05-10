@@ -179,13 +179,13 @@ data_re <- function(bterms, data) {
   stopifnot(is.bframel(bterms))
   out <- list()
   px <- check_prefix(bterms)
-  ranef <- subset2(bterms$frame$re, type = "sp", fun = "%notin%")
-  if (!nrow(ranef)) {
+  reframe <- subset2(bterms$frame$re, type = "sp", fun = "%notin%")
+  if (!has_rows(reframe)) {
     return(out)
   }
-  gn <- unique(ranef$gn)
+  gn <- unique(reframe$gn)
   for (i in seq_along(gn)) {
-    r <- subset2(ranef, gn = gn[i])
+    r <- subset2(reframe, gn = gn[i])
     Z <- get_model_matrix(r$form[[1]], data = data, rename = FALSE)
     idp <- paste0(r$id[1], usc(combine_prefix(px)))
     Znames <- paste0("Z_", idp, "_", r$cn)
@@ -239,19 +239,19 @@ data_re <- function(bterms, data) {
 data_gr_local <- function(bterms, data) {
   stopifnot(is.brmsframe(bterms))
   out <- list()
-  ranef <- subset2(bterms$frame$re, resp = bterms$resp)
+  reframe <- subset2(bterms$frame$re, resp = bterms$resp)
   resp <- usc(bterms$resp)
-  for (id in unique(ranef$id)) {
-    id_ranef <- subset2(ranef, id = id)
+  for (id in unique(reframe$id)) {
+    id_reframe <- subset2(reframe, id = id)
     idresp <- paste0(id, resp)
-    nranef <- nrow(id_ranef)
-    group <- id_ranef$group[1]
-    levels <- attr(ranef, "levels")[[group]]
-    if (id_ranef$gtype[1] == "mm") {
+    nranef <- nrow(id_reframe)
+    group <- id_reframe$group[1]
+    levels <- attr(reframe, "levels")[[group]]
+    if (id_reframe$gtype[1] == "mm") {
       # multi-membership grouping term
-      gs <- id_ranef$gcall[[1]]$groups
+      gs <- id_reframe$gcall[[1]]$groups
       ngs <- length(gs)
-      weights <- id_ranef$gcall[[1]]$weights
+      weights <- id_reframe$gcall[[1]]$weights
       if (is.formula(weights)) {
         scale <- isTRUE(attr(weights, "scale"))
         weights <- as.matrix(eval_rhs(weights, data))
@@ -285,7 +285,7 @@ data_gr_local <- function(bterms, data) {
       }
     } else {
       # ordinary grouping term
-      g <- id_ranef$gcall[[1]]$groups
+      g <- id_reframe$gcall[[1]]$groups
       gdata <- get(g, data)
       J <- match(gdata, levels)
       if (anyNA(J)) {
@@ -304,26 +304,26 @@ data_gr_local <- function(bterms, data) {
 data_gr_global <- function(bterms, data2) {
   stopifnot(is.anybrmsframe(bterms))
   out <- list()
-  ranef <- bterms$frame$re
-  for (id in unique(ranef$id)) {
+  reframe <- bterms$frame$re
+  for (id in unique(reframe$id)) {
     tmp <- list()
-    id_ranef <- subset2(ranef, id = id)
-    nranef <- nrow(id_ranef)
-    group <- id_ranef$group[1]
-    levels <- attr(ranef, "levels")[[group]]
+    id_reframe <- subset2(reframe, id = id)
+    nranef <- nrow(id_reframe)
+    group <- id_reframe$group[1]
+    levels <- attr(reframe, "levels")[[group]]
     tmp$N <- length(levels)
     tmp$M <- nranef
     tmp$NC <- as.integer(nranef * (nranef - 1) / 2)
     # prepare number of levels of an optional 'by' variable
-    if (nzchar(id_ranef$by[1])) {
-      stopifnot(!nzchar(id_ranef$type[1]))
-      bylevels <- id_ranef$bylevels[[1]]
+    if (nzchar(id_reframe$by[1])) {
+      stopifnot(!nzchar(id_reframe$type[1]))
+      bylevels <- id_reframe$bylevels[[1]]
       Jby <- match(attr(levels, "by"), bylevels)
       tmp$Nby <- length(bylevels)
       tmp$Jby <- as.array(Jby)
     }
     # prepare within-group covariance matrices
-    cov <- id_ranef$cov[1]
+    cov <- id_reframe$cov[1]
     if (nzchar(cov)) {
       # validation is only necessary here for compatibility with 'cov_ranef'
       cov_mat <- validate_recov_matrix(data2[[cov]])
@@ -350,27 +350,27 @@ data_sp <- function(bterms, data, data2, prior) {
     return(bterms$sdata$sp)
   }
   out <- list()
-  spef <- bterms$frame$sp
-  if (!nrow(spef)) {
+  spframe <- bterms$frame$sp
+  if (!has_rows(spframe)) {
     return(out)
   }
   basis <- bterms$basis$sp
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   # prepare general data
-  out[[paste0("Ksp", p)]] <- nrow(spef)
+  out[[paste0("Ksp", p)]] <- nrow(spframe)
   Csp <- sp_model_matrix(bterms$sp, data)
   avoid_dpars(colnames(Csp), bterms = bterms)
-  Csp <- Csp[, spef$Ic > 0, drop = FALSE]
+  Csp <- Csp[, spframe$Ic > 0, drop = FALSE]
   Csp <- lapply(seq_cols(Csp), function(i) as.array(Csp[, i]))
   if (length(Csp)) {
     Csp_names <- paste0("Csp", p, "_", seq_along(Csp))
     out <- c(out, setNames(Csp, Csp_names))
   }
-  if (any(lengths(spef$Imo) > 0)) {
+  if (any(lengths(spframe$Imo) > 0)) {
     # prepare data specific to monotonic effects
-    out[[paste0("Imo", p)]] <- max(unlist(spef$Imo))
-    Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
+    out[[paste0("Imo", p)]] <- max(unlist(spframe$Imo))
+    Xmo <- lapply(unlist(spframe$calls_mo), get_mo_values, data = data)
     Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
     c(out) <- setNames(Xmo, Xmo_names)
     if (!is.null(basis$Jmo)) {
@@ -381,8 +381,8 @@ data_sp <- function(bterms, data, data2, prior) {
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters
-    simo_coef <- get_simo_labels(spef, use_id = TRUE)
-    ids <- unlist(spef$ids_mo)
+    simo_coef <- get_simo_labels(spframe, use_id = TRUE)
+    ids <- unlist(spframe$ids_mo)
     for (j in seq_along(simo_coef)) {
       # index of first ID appearance
       j_id <- match(ids[j], ids)
@@ -397,7 +397,7 @@ data_sp <- function(bterms, data, data2, prior) {
       }
     }
   }
-  uni_mi <- attr(spef, "uni_mi")
+  uni_mi <- attr(spframe, "uni_mi")
   index <- bterms$frame$index
   for (j in seq_rows(uni_mi)) {
     if (!is.na(uni_mi$idx[j])) {
@@ -443,19 +443,19 @@ data_cs <- function(bterms, data) {
 # prepare global data for noise free variables
 data_Xme <- function(bterms, data) {
   stopifnot(is.anybrmsframe(bterms))
-  meef <- bterms$frame$me
-  stopifnot(is.meef_frame(meef))
+  meframe <- bterms$frame$me
+  stopifnot(is.meframe(meframe))
   out <- list()
-  groups <- unique(meef$grname)
+  groups <- unique(meframe$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
-    K <- which(meef$grname %in% g)
+    K <- which(meframe$grname %in% g)
     Mme <- length(K)
     out[[paste0("Mme_", i)]] <- Mme
     out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
     if (nzchar(g)) {
-      levels <- get_levels(meef)[[g]]
-      gr <- get_me_group(meef$term[K[1]], data)
+      levels <- get_levels(meframe)[[g]]
+      gr <- get_me_group(meframe$term[K[1]], data)
       Jme <- match(gr, levels)
       if (anyNA(Jme)) {
         # occurs for new levels only
@@ -470,8 +470,8 @@ data_Xme <- function(bterms, data) {
       out[[paste0("Jme_", i)]] <- Jme
     }
     for (k in K) {
-      Xn <- get_me_values(meef$term[k], data)
-      noise <- get_me_noise(meef$term[k], data)
+      Xn <- get_me_values(meframe$term[k], data)
+      noise <- get_me_noise(meframe$term[k], data)
       if (nzchar(g)) {
         for (l in ilevels) {
           # validate values of the same level
@@ -509,10 +509,10 @@ data_gp <- function(bterms, data, internal = FALSE, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   basis <- bterms$basis$gp
-  gpef <- bterms$frame$gp
-  for (i in seq_rows(gpef)) {
+  gpframe <- bterms$frame$gp
+  for (i in seq_rows(gpframe)) {
     pi <- paste0(p, "_", i)
-    Xgp <- lapply(gpef$covars[[i]], eval2, data)
+    Xgp <- lapply(gpframe$covars[[i]], eval2, data)
     D <- length(Xgp)
     out[[paste0("Dgp", pi)]] <- D
     invalid <- ulapply(Xgp, function(x)
@@ -522,17 +522,17 @@ data_gp <- function(bterms, data, internal = FALSE, ...) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
     Xgp <- do_call(cbind, Xgp)
-    cmc <- gpef$cmc[i]
-    scale <- gpef$scale[i]
-    gr <- gpef$gr[i]
-    k <- gpef$k[i]
-    c <- gpef$c[[i]]
+    cmc <- gpframe$cmc[i]
+    scale <- gpframe$scale[i]
+    gr <- gpframe$gr[i]
+    k <- gpframe$k[i]
+    c <- gpframe$c[[i]]
     if (!isNA(k)) {
       out[[paste0("NBgp", pi)]] <- k ^ D
       Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     }
-    byvar <- gpef$byvars[[i]]
-    byfac <- length(gpef$cons[[i]]) > 0L
+    byvar <- gpframe$byvars[[i]]
+    byfac <- length(gpframe$cons[[i]]) > 0L
     bynum <- !is.null(byvar) && !byfac
     if (byfac) {
       # for categorical 'by' variables prepare one GP per level
@@ -585,7 +585,7 @@ data_gp <- function(bterms, data, internal = FALSE, ...) {
 # helper function to preparae GP related data
 # @inheritParams data_gp
 # @param Xgp matrix of covariate values
-# @param k, gr, c see 'tidy_gpef'
+# @param k, gr, c see 'frame_gp'
 # @param sfx suffix to put at the end of data names
 # @param Cgp optional vector of values belonging to
 #   a certain contrast of a factor 'by' variable
@@ -672,22 +672,22 @@ data_ac <- function(bterms, data, data2, ...) {
   out <- list()
   N <- nrow(data)
   basis <- bterms$basis$ac
-  acef <- bterms$frame$ac
-  stopifnot(is.acef(acef))
+  acframe <- bterms$frame$ac
+  stopifnot(is.acframe(acframe))
   if (has_ac_subset(bterms, dim = "time")) {
-    gr <- get_ac_vars(acef, "gr", dim = "time")
+    gr <- get_ac_vars(acframe, "gr", dim = "time")
     if (isTRUE(nzchar(gr))) {
       tgroup <- as.numeric(factor(data[[gr]]))
     } else {
       tgroup <- rep(1, N)
     }
   }
-  if (has_ac_class(acef, "arma")) {
+  if (has_ac_class(acframe, "arma")) {
     # ARMA correlations
-    acef_arma <- subset2(acef, class = "arma")
-    out$Kar <- acef_arma$p
-    out$Kma <- acef_arma$q
-    if (!use_ac_cov_time(acef_arma)) {
+    acframe_arma <- subset2(acframe, class = "arma")
+    out$Kar <- acframe_arma$p
+    out$Kma <- acframe_arma$q
+    if (!use_ac_cov_time(acframe_arma)) {
       # data for the 'predictor' version of ARMA
       max_lag <- max(out$Kar, out$Kma)
       out$J_lag <- as.array(rep(0, N))
@@ -698,7 +698,7 @@ data_ac <- function(bterms, data, data2, ...) {
       }
     }
   }
-  if (use_ac_cov_time(acef)) {
+  if (use_ac_cov_time(acframe)) {
     # data for the 'covariance' versions of time-series structures
     # TODO: change begin[i]:end[i] notation to slice[i]:(slice[i+1] - 1)
     #   see comment on PR #1435
@@ -708,7 +708,7 @@ data_ac <- function(bterms, data, data2, ...) {
       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-    if (has_ac_class(acef, "unstr")) {
+    if (has_ac_class(acframe, "unstr")) {
       time <- get_ac_vars(bterms, "time", dim = "time")
       time_data <- get(time, data)
       new_times <- extract_levels(time_data)
@@ -732,9 +732,9 @@ data_ac <- function(bterms, data, data2, ...) {
       }
     }
   }
-  if (has_ac_class(acef, "sar")) {
-    acef_sar <- subset2(acef, class = "sar")
-    M <- data2[[acef_sar$M]]
+  if (has_ac_class(acframe, "sar")) {
+    acframe_sar <- subset2(acframe, class = "sar")
+    M <- data2[[acframe_sar$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
       class(rmd_rows) <- NULL
@@ -749,15 +749,15 @@ data_ac <- function(bterms, data, data2, ...) {
     # simplifies code of choose_N
     out$N_tg <- 1
   }
-  if (has_ac_class(acef, "car")) {
-    acef_car <- subset2(acef, class = "car")
+  if (has_ac_class(acframe, "car")) {
+    acframe_car <- subset2(acframe, class = "car")
     locations <- NULL
     if (length(basis)) {
       locations <- basis$locations
     }
-    M <- data2[[acef_car$M]]
-    if (acef_car$gr != "NA") {
-      loc_data <- get(acef_car$gr, data)
+    M <- data2[[acframe_car$M]]
+    if (acframe_car$gr != "NA") {
+      loc_data <- get(acframe_car$gr, data)
       new_locations <- extract_levels(loc_data)
       if (is.null(locations)) {
         locations <- new_locations
@@ -804,7 +804,7 @@ data_ac <- function(bterms, data, data2, ...) {
       edges1 = as.array(edges_rows),
       edges2 = as.array(edges_cols)
     )
-    if (acef_car$type %in% c("escar", "esicar")) {
+    if (acframe_car$type %in% c("escar", "esicar")) {
       Nneigh <- Matrix::colSums(M)
       if (any(Nneigh == 0) && !length(basis)) {
         stop2(
@@ -817,13 +817,13 @@ data_ac <- function(bterms, data, data2, ...) {
       eigenMcar <- t(inv_sqrt_D) %*% M %*% inv_sqrt_D
       eigenMcar <- eigen(eigenMcar, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenMcar)
-    } else if (acef_car$type %in% "bym2") {
+    } else if (acframe_car$type %in% "bym2") {
       c(out) <- list(car_scale = .car_scale(edges, Nloc))
     }
   }
-  if (has_ac_class(acef, "fcor")) {
-    acef_fcor <- subset2(acef, class = "fcor")
-    M <- data2[[acef_fcor$M]]
+  if (has_ac_class(acframe, "fcor")) {
+    acframe_fcor <- subset2(acframe, class = "fcor")
+    M <- data2[[acframe_fcor$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
       class(rmd_rows) <- NULL
@@ -932,7 +932,7 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and R2D2
-data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
+data_special_prior <- function(bterms, data, prior, sdata = NULL) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))

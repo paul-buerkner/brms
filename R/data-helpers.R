@@ -102,19 +102,19 @@ validate_data2 <- function(data2, bterms, ...) {
     }
   }
   # validate autocorrelation matrices
-  acef <- tidy_acef(bterms)
-  sar_M_names <- get_ac_vars(acef, "M", class = "sar")
+  acframe <- frame_ac(bterms)
+  sar_M_names <- get_ac_vars(acframe, "M", class = "sar")
   for (M in sar_M_names) {
     data2[[M]] <- validate_sar_matrix(get_from_data2(M, data2))
     attr(data2[[M]], "obs_based_matrix") <- TRUE
   }
-  car_M_names <- get_ac_vars(acef, "M", class = "car")
+  car_M_names <- get_ac_vars(acframe, "M", class = "car")
   for (M in car_M_names) {
     data2[[M]] <- validate_car_matrix(get_from_data2(M, data2))
     # observation based CAR matrices are deprecated and
     # there is no need to label them as observation based
   }
-  fcor_M_names <- get_ac_vars(acef, "M", class = "fcor")
+  fcor_M_names <- get_ac_vars(acframe, "M", class = "fcor")
   for (M in fcor_M_names) {
     data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
     attr(data2[[M]], "obs_based_matrix") <- TRUE
@@ -553,13 +553,15 @@ validate_newdata <- function(
   unused_vars <- setdiff(all_vars, used_vars)
   newdata <- fill_newdata(newdata, unused_vars)
   # validate grouping factors
-  new_ranef <- tidy_ranef(bterms, data = mf)
-  new_meef <- tidy_meef(bterms, data = mf)
-  old_levels <- get_levels(new_ranef, new_meef)
+  # TODO: extract info from brmsframe; see initialize_frame
+  old_levels <- get_levels(
+    frame_re(bterms, data = mf),
+    frame_me(bterms, data = mf)
+  )
   if (!allow_new_levels) {
     new_levels <- get_levels(
-      tidy_ranef(bterms, data = newdata),
-      tidy_meef(bterms, data = newdata)
+      frame_re(bterms, data = newdata),
+      frame_me(bterms, data = newdata)
     )
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])

@@ -60,8 +60,8 @@ t2 <- function(...) {
 # extract information about smooth terms
 # @param x either a formula or a list containing an element "sm"
 # @param data optional data.frame containing the covariates
-#   only required if tidy_smef is called from outside of brmsframe
-tidy_smef <- function(x, data = NULL) {
+#   only required if frame_sm is called from outside of brmsframe
+frame_sm <- function(x, data = NULL) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -110,7 +110,16 @@ tidy_smef <- function(x, data = NULL) {
   out$nbases <- lengths(out$knots)
   attr(out, "Xs_names") <- colnames(sdata$Xs)
   rownames(out) <- NULL
+  class(out) <- smframe_class()
   out
+}
+
+smframe_class <- function() {
+  c("smframe", "data.frame")
+}
+
+is.smframe <- function(x) {
+  inherits(x, "smframe")
 }
 
 # check if smooths are present in the model

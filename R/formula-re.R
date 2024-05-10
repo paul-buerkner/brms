@@ -533,10 +533,10 @@ get_re.btl <- function(x, ...) {
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
 #   form: formula used to compute the effects
-tidy_ranef <- function(bterms, data, old_levels = NULL) {
+frame_re <- function(bterms, data, old_levels = NULL) {
   data <- combine_groups(data, get_group_vars(bterms))
   re <- get_re(bterms)
-  ranef <- vector("list", nrow(re))
+  out <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
   id_groups <- list()
   j <- 1
@@ -544,7 +544,8 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     if (!nzchar(re$type[i])) {
       coef <- colnames(get_model_matrix(re$form[[i]], data))
     } else if (re$type[i] == "sp") {
-      coef <- tidy_spef(re$form[[i]], data)$coef
+      # TODO: try to avoid having to call frame_sp here
+      coef <- frame_sp(re$form[[i]], data)$coef
     } else if (re$type[i] == "mmc") {
       coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
@@ -609,33 +610,33 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
         j <- j + 1
       }
     }
-    ranef[[i]] <- rdat
+    out[[i]] <- rdat
   }
-  ranef <- do_call(rbind, c(list(empty_ranef()), ranef))
+  out <- do_call(rbind, c(list(empty_reframe()), out))
   # check for overlap between different group types
-  rsv_groups <- ranef[nzchar(ranef$gtype), "group"]
-  other_groups <- ranef[!nzchar(ranef$gtype), "group"]
+  rsv_groups <- out[nzchar(out$gtype), "group"]
+  other_groups <- out[!nzchar(out$gtype), "group"]
   inv_groups <- intersect(rsv_groups, other_groups)
   if (length(inv_groups)) {
     inv_groups <- paste0("'", inv_groups, "'", collapse = ", ")
     stop2("Grouping factor names ", inv_groups, " are resevered.")
   }
   # check for duplicated and thus not identified effects
-  dup <- duplicated(ranef[, c("group", "coef", vars_prefix())])
+  dup <- duplicated(out[, c("group", "coef", vars_prefix())])
   if (any(dup)) {
-    dr <- ranef[which(dup)[1], ]
+    dr <- out[which(dup)[1], ]
     stop2(
       "Duplicated group-level effects are not allowed.\n",
       "Occured for effect '", dr$coef, "' of group '", dr$group, "'."
     )
   }
-  if (nrow(ranef)) {
-    for (id in unique(ranef$id)) {
-      ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
+  if (nrow(out)) {
+    for (id in unique(out$id)) {
+      out$cn[out$id == id] <- seq_len(sum(out$id == id))
     }
-    ranef$ggn <- match(ranef$group, unique(ranef$group))
+    out$ggn <- match(out$group, unique(out$group))
     if (is.null(old_levels)) {
-      rsub <- ranef[!duplicated(ranef$group), ]
+      rsub <- out[!duplicated(out$group), ]
       levels <- named_list(rsub$group)
       for (i in seq_along(levels)) {
         # combine levels of all grouping factors within one grouping term
@@ -644,15 +645,15 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
           function(g) extract_levels(get(g, data))
         ))
         # fixes issue #1353
-        bysel <- ranef$group == names(levels)[i] &
-          nzchar(ranef$by) & !duplicated(ranef$by)
+        bysel <- out$group == names(levels)[i] &
+          nzchar(out$by) & !duplicated(out$by)
         bysel <- which(bysel)
         if (length(bysel) > 1L) {
           stop2("Each grouping factor can only be associated with one 'by' variable.")
         }
         # ensure that a non-NULL by-variable is found if present
         if (length(bysel) == 1L) {
-          rsub[i, ] <- ranef[bysel, ]
+          rsub[i, ] <- out[bysel, ]
         }
         # store information of corresponding by-levels
         if (nzchar(rsub$by[i])) {
@@ -690,31 +691,31 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
           attr(levels[[i]], "by") <- by_per_level
         }
       }
-      attr(ranef, "levels") <- levels
+      set_levels(out) <- levels
     } else {
       # for newdata numeration has to depend on the original levels
-      attr(ranef, "levels") <- old_levels
+      set_levels(out) <- old_levels
     }
     # incorporate deprecated 'cov_ranef' argument
-    ranef <- update_ranef_cov(ranef, bterms)
+    out <- update_ranef_cov(out, bterms)
   }
   # ordering after IDs matches the order of the posterior draws
   # if multiple IDs are used for the same grouping factor (#835)
-  ranef <- ranef[order(ranef$id), , drop = FALSE]
-  structure(ranef, class = c("ranef_frame", "data.frame"))
+  out <- out[order(out$id), , drop = FALSE]
+  class(out) <- reframe_class()
+  out
 }
 
-empty_ranef <- function() {
-  structure(
-    data.frame(
-      id = numeric(0), group = character(0), gn = numeric(0),
-      coef = character(0), cn = numeric(0), resp = character(0),
-      dpar = character(0), nlpar = character(0), ggn = numeric(0),
-      cor = logical(0), type = character(0), form = character(0),
-      stringsAsFactors = FALSE
-    ),
-    class = c("ranef_frame", "data.frame")
+empty_reframe <- function() {
+  out <- data.frame(
+    id = numeric(0), group = character(0), gn = numeric(0),
+    coef = character(0), cn = numeric(0), resp = character(0),
+    dpar = character(0), nlpar = character(0), ggn = numeric(0),
+    cor = logical(0), type = character(0), form = character(0),
+    stringsAsFactors = FALSE
   )
+  class(out) <- reframe_class()
+  out
 }
 
 empty_re <- function() {
@@ -725,8 +726,12 @@ empty_re <- function() {
   )
 }
 
-is.ranef_frame <- function(x) {
-  inherits(x, "ranef_frame")
+reframe_class <- function() {
+  c("reframe", "data.frame")
+}
+
+is.reframe <- function(x) {
+  inherits(x, "reframe")
 }
 
 # extract names of all grouping variables
@@ -770,24 +775,30 @@ get_re_groups <- function(x, ...) {
 }
 
 # extract information about groups with a certain distribution
-get_dist_groups <- function(ranef, dist) {
-  out <- subset2(ranef, dist = dist)
+get_dist_groups <- function(reframe, dist) {
+  out <- subset2(reframe, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
+}
+
+# assignment function to store levels as an attribute
+'set_levels<-' <- function(x, value) {
+  attr(x, "levels") <- value
+  x
 }
 
 # extract list of levels with one element per grouping factor
 # @param ... objects with a level attribute
-get_levels <- function(...) {
-  dots <- list(...)
-  out <- vector("list", length(dots))
+get_levels <- function(..., ls = list()) {
+  ls <- c(ls, list(...))
+  out <- vector("list", length(ls))
   for (i in seq_along(out)) {
-    levels <- attr(dots[[i]], "levels", exact = TRUE)
+    levels <- attr(ls[[i]], "levels", exact = TRUE)
     if (is.list(levels)) {
       stopifnot(!is.null(names(levels)))
       out[[i]] <- as.list(levels)
     } else if (!is.null(levels)) {
-      stopifnot(isTRUE(nzchar(names(dots)[i])))
-      out[[i]] <- setNames(list(levels), names(dots)[[i]])
+      stopifnot(isTRUE(nzchar(names(ls)[i])))
+      out[[i]] <- setNames(list(levels), names(ls)[[i]])
     }
   }
   out <- unlist(out, recursive = FALSE)
@@ -803,27 +814,27 @@ extract_levels <- function(x) {
 }
 
 # extract names of group-level effects
-# @param ranef output of tidy_ranef()
+# @param reframe output of frame_re()
 # @param group optional name of a grouping factor for
 #   which to extract effect names
 # @param bylevels optional names of 'by' levels for
 #    which to extract effect names
 # @return a vector of character strings
-get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
-  stopifnot(is.data.frame(ranef))
+get_rnames <- function(reframe, group = NULL, bylevels = NULL) {
+  stopifnot(is.data.frame(reframe))
   if (!is.null(group)) {
     group <- as_one_character(group)
-    ranef <- subset2(ranef, group = group)
+    reframe <- subset2(reframe, group = group)
   }
-  stopifnot(length(unique(ranef$group)) == 1L)
-  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
-  if (isTRUE(nzchar(ranef$by[1]))) {
+  stopifnot(length(unique(reframe$group)) == 1L)
+  out <- paste0(usc(combine_prefix(reframe), "suffix"), reframe$coef)
+  if (isTRUE(nzchar(reframe$by[1]))) {
     if (!is.null(bylevels)) {
-      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
+      stopifnot(all(bylevels %in% reframe$bylevels[[1]]))
     } else {
-      bylevels <- ranef$bylevels[[1]]
+      bylevels <- reframe$bylevels[[1]]
     }
-    bylabels <- paste0(ranef$by[1], bylevels)
+    bylabels <- paste0(reframe$by[1], bylevels)
     out <- outer(out, bylabels, paste, sep = ":")
   }
   out
@@ -872,21 +883,21 @@ validate_cov_ranef <- function(cov_ranef) {
   cov_ranef
 }
 
-# update 'ranef' according to information in 'cov_ranef'
+# update 'reframe' according to information in 'cov_ranef'
 # argument 'cov_ranef' is deprecated as of version 2.12.5
-update_ranef_cov <- function(ranef, bterms) {
+update_ranef_cov <- function(reframe, bterms) {
   cr_names <- names(bterms$cov_ranef)
   if (!length(cr_names)) {
-    return(ranef)
+    return(reframe)
   }
-  unused_names <- setdiff(cr_names, ranef$group)
+  unused_names <- setdiff(cr_names, reframe$group)
   if (length(unused_names)) {
     stop2("The following elements of 'cov_ranef' are unused: ",
           collapse_comma(unused_names))
   }
-  has_cov <- ranef$group %in% cr_names
-  ranef$cov[has_cov] <- ranef$group[has_cov]
-  ranef
+  has_cov <- reframe$group %in% cr_names
+  reframe$cov[has_cov] <- reframe$group[has_cov]
+  reframe
 }
 
 # extract 'cov_ranef' for storage in 'data2'

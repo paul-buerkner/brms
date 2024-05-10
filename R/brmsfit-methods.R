@@ -132,7 +132,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                           groups = NULL, ...) {
   contains_draws(object)
   object <- restructure(object)
-  if (!nrow(object$ranef)) {
+  if (!has_rows(object$ranef)) {
     stop2("The model does not contain group-level effects.")
   }
   all_pars <- variables(object)
@@ -211,7 +211,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                          probs = c(0.025, 0.975), ...) {
   contains_draws(object)
   object <- restructure(object)
-  if (!nrow(object$ranef)) {
+  if (!has_rows(object$ranef)) {
     stop2("No group-level effects detected. Call method ",
           "'fixef' to access population-level effects.")
   }

@@ -80,9 +80,9 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
       "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
-    smef <- x$frame$sm
-    for (i in seq_rows(smef)) {
-      nb <- seq_len(smef$nbases[i])
+    smframe <- x$frame$sm
+    for (i in seq_rows(smframe)) {
+      nb <- seq_len(smframe$nbases[i])
       c(out) <- paste0("zs", p, "_", i, "_", nb)
     }
   }
@@ -91,43 +91,43 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
 
 # exclude variables related to random effects
 exclude_pars_re <- function(bterms, save_pars, ...) {
-  ranef <- bterms$frame$re
-  stopifnot(is.ranef_frame(ranef))
+  reframe <- bterms$frame$re
+  stopifnot(is.reframe(reframe))
   out <- list()
-  if (!has_rows(ranef)) {
+  if (!has_rows(reframe)) {
     return(out)
   }
   rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
-  for (id in unique(ranef$id)) {
+  for (id in unique(reframe$id)) {
     c(out) <- paste0(rm_re_pars, "_", id)
   }
   if (isFALSE(save_pars$group)) {
-    p <- usc(combine_prefix(ranef))
-    c(out) <- paste0("r_", ranef$id, p, "_", ranef$cn)
+    p <- usc(combine_prefix(reframe))
+    c(out) <- paste0("r_", reframe$id, p, "_", reframe$cn)
   } else if (is.character(save_pars$group)) {
-    sub_ranef <- ranef[!ranef$group %in% save_pars$group, ]
-    if (has_rows(sub_ranef)) {
-      sub_p <- usc(combine_prefix(sub_ranef))
-      c(out) <- paste0("r_", sub_ranef$id, sub_p, "_", sub_ranef$cn)
+    sub_reframe <- reframe[!reframe$group %in% save_pars$group, ]
+    if (has_rows(sub_reframe)) {
+      sub_p <- usc(combine_prefix(sub_reframe))
+      c(out) <- paste0("r_", sub_reframe$id, sub_p, "_", sub_reframe$cn)
     }
   }
-  tranef <- get_dist_groups(ranef, "student")
-  if (!save_pars$all && has_rows(tranef)) {
-    c(out) <- paste0(c("udf_", "dfm_"), tranef$ggn)
+  reframe_t <- get_dist_groups(reframe, "student")
+  if (!save_pars$all && has_rows(reframe_t)) {
+    c(out) <- paste0(c("udf_", "dfm_"), reframe_t$ggn)
   }
   out
 }
 
 # exclude variables related to noise-free variables
 exclude_pars_me <- function(bterms, save_pars, ...) {
-  meef <- bterms$frame$me
-  stopifnot(is.meef_frame(meef))
+  meframe <- bterms$frame$me
+  stopifnot(is.meframe(meframe))
   out <- list()
-  if (!has_rows(meef)) {
+  if (!has_rows(meframe)) {
     return(out)
   }
-  I <- seq_along(unique(meef$grname))
-  K <- seq_rows(meef)
+  I <- seq_along(unique(meframe$grname))
+  K <- seq_rows(meframe)
   c(out) <- paste0(c("Corme_"), I)
   if (!save_pars$all) {
     c(out) <- c(paste0("zme_", K), paste0("Lme_", I))
@@ -135,7 +135,7 @@ exclude_pars_me <- function(bterms, save_pars, ...) {
   if (isFALSE(save_pars$latent)) {
     c(out) <- paste0("Xme_", K)
   } else if (is.character(save_pars$latent)) {
-    sub_K <- K[!meef$xname %in% save_pars$latent]
+    sub_K <- K[!meframe$xname %in% save_pars$latent]
     if (length(sub_K)) {
       c(out) <- paste0("Xme_", sub_K)
     }

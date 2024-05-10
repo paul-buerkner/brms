@@ -28,12 +28,12 @@ stan_global_defs <- function(bterms, prior, threads) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
     str_add(out$fun) <- "  #include 'fun_r2d2.stan'\n"
   }
-  ranef <- bterms$frame$re
-  if (nrow(ranef)) {
+  reframe <- bterms$frame$re
+  if (has_rows(reframe)) {
     r_funs <- NULL
-    ids <- unique(ranef$id)
+    ids <- unique(reframe$id)
     for (id in ids) {
-      r <- ranef[ranef$id == id, ]
+      r <- reframe[reframe$id == id, ]
       if (nrow(r) > 1L && r$cor[1]) {
         if (nzchar(r$by[1])) {
           if (nzchar(r$cov[1])) {
@@ -79,8 +79,8 @@ stan_global_defs <- function(bterms, prior, threads) {
     str_add(out$fun) <- "  #include 'fun_which_range.stan'\n"
   }
   acterms <- get_effect(bterms, "ac")
-  acefs <- lapply(acterms, tidy_acef)
-  if (any(ulapply(acefs, has_ac_subset, dim = "time", cov = TRUE))) {
+  acframes <- lapply(acterms, frame_ac)
+  if (any(ulapply(acframes, has_ac_subset, dim = "time", cov = TRUE))) {
     str_add(out$fun) <- glue(
       "  #include 'fun_sequence.stan'\n",
       "  #include 'fun_is_equal.stan'\n",
@@ -102,20 +102,20 @@ stan_global_defs <- function(bterms, prior, threads) {
     str_add(out$fun) <- glue(
       "  #include 'fun_scale_time_err.stan'\n"
     )
-    if (any(ulapply(acefs, has_ac_class, "arma"))) {
+    if (any(ulapply(acframes, has_ac_class, "arma"))) {
       str_add(out$fun) <- glue(
         "  #include 'fun_cholesky_cor_ar1.stan'\n",
         "  #include 'fun_cholesky_cor_ma1.stan'\n",
         "  #include 'fun_cholesky_cor_arma1.stan'\n"
       )
     }
-    if (any(ulapply(acefs, has_ac_class, "cosy"))) {
+    if (any(ulapply(acframes, has_ac_class, "cosy"))) {
       str_add(out$fun) <- glue(
         "  #include 'fun_cholesky_cor_cosy.stan'\n"
       )
     }
   }
-  if (any(ulapply(acefs, has_ac_class, "sar"))) {
+  if (any(ulapply(acframes, has_ac_class, "sar"))) {
     if ("gaussian" %in% families) {
       str_add(out$fun) <- glue(
         "  #include 'fun_normal_lagsar.stan'\n",
@@ -129,13 +129,13 @@ stan_global_defs <- function(bterms, prior, threads) {
       )
     }
   }
-  if (any(ulapply(acefs, has_ac_class, "car"))) {
+  if (any(ulapply(acframes, has_ac_class, "car"))) {
     str_add(out$fun) <- glue(
       "  #include 'fun_sparse_car_lpdf.stan'\n",
       "  #include 'fun_sparse_icar_lpdf.stan'\n"
     )
   }
-  if (any(ulapply(acefs, has_ac_class, "fcor"))) {
+  if (any(ulapply(acframes, has_ac_class, "fcor"))) {
     str_add(out$fun) <- glue(
       "  #include 'fun_normal_fcor.stan'\n",
       "  #include 'fun_student_t_fcor.stan'\n"

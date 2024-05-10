@@ -461,21 +461,21 @@ stan_fe <- function(bterms, prior, stanvars, threads, primitive,
 # Stan code for group-level effects
 stan_re <- function(bterms, prior, normalize, ...) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
-  ranef <- bterms$frame$re
-  stopifnot(is.ranef_frame(ranef))
-  IDs <- unique(ranef$id)
+  reframe <- bterms$frame$re
+  stopifnot(is.reframe(reframe))
+  IDs <- unique(reframe$id)
   out <- list()
   # special handling of student-t group effects as their 'df' parameters
   # are defined on a per-group basis instead of a per-ID basis
-  tranef <- get_dist_groups(ranef, "student")
-  if (has_rows(tranef)) {
+  reframe_t <- get_dist_groups(reframe, "student")
+  if (has_rows(reframe_t)) {
     str_add(out$par) <-
       "  // parameters for student-t distributed group-level effects\n"
-    for (i in seq_rows(tranef)) {
-      g <- usc(tranef$ggn[i])
-      id <- tranef$id[i]
+    for (i in seq_rows(reframe_t)) {
+      g <- usc(reframe_t$ggn[i])
+      id <- reframe_t$id[i]
       str_add_list(out) <- stan_prior(
-        prior, class = "df", group = tranef$group[i],
+        prior, class = "df", group = reframe_t$group[i],
         suffix = g, normalize = normalize
       )
       str_add(out$par) <- glue(
@@ -505,7 +505,7 @@ stan_re <- function(bterms, prior, normalize, ...) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
   r <- subset2(bterms$frame$re, id = id)
-  stopifnot(is.ranef_frame(r))
+  stopifnot(is.reframe(r))
   has_cov <- nzchar(r$cov[1])
   has_by <- nzchar(r$by[[1]])
   Nby <- seq_along(r$bylevels[[1]])
@@ -746,15 +746,15 @@ stan_sm <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.bframel(bterms))
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
-  smef <- bterms$frame$sm
-  if (!NROW(smef)) {
+  smframe <- bterms$frame$sm
+  if (!has_rows(smframe)) {
     return(out)
   }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   slice <- stan_slice(threads)
-  Xs_names <- attr(smef, "Xs_names")
+  Xs_names <- attr(smframe, "Xs_names")
   if (length(Xs_names)) {
     str_add(out$data) <- glue(
       "  // data for splines\n",
@@ -778,12 +778,12 @@ stan_sm <- function(bterms, prior, threads, normalize, ...) {
     }
     str_add(out$eta) <- glue(" + Xs{p}{slice} * bs{p}")
   }
-  for (i in seq_rows(smef)) {
-    if (smef$nbases[[i]] == 0) {
+  for (i in seq_rows(smframe)) {
+    if (smframe$nbases[[i]] == 0) {
       next  # no penalized spline components present
     }
     pi <- glue("{p}_{i}")
-    nb <- seq_len(smef$nbases[[i]])
+    nb <- seq_len(smframe$nbases[[i]])
     str_add(out$data) <- glue(
       "  // data for spline {i}\n",
       "  int nb{pi};  // number of bases\n",
@@ -810,7 +810,7 @@ stan_sm <- function(bterms, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" nb{pi}")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sds", coef = smef$term[i], suffix = pi, px = px,
+        prior, class = "sds", coef = smframe$term[i], suffix = pi, px = px,
         type = glue("vector[nb{pi}]"), coef_type = glue("vector[nb{pi}]"),
         comment = "SDs of penalized spline coefficients",
         normalize = normalize
@@ -846,7 +846,7 @@ stan_cs <- function(bterms, prior, threads, normalize, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(bterms$resp)
   slice <- stan_slice(threads)
-  ranef <- subset2(bterms$frame$re, type = "cs")
+  reframe <- subset2(bterms$frame$re, type = "cs")
   if (length(csef)) {
     str_add(out$data) <- glue(
       "  int<lower=1> Kcs{p};  // number of category specific effects\n",
@@ -866,7 +866,7 @@ stan_cs <- function(bterms, prior, threads, normalize, ...) {
       "  matrix[N{resp}, nthres{resp}] mucs{p} = Xcs{p}{slice} * bcs{p};\n"
     )
   }
-  if (NROW(ranef)) {
+  if (has_rows(reframe)) {
     if (!length(csef)) {
       # only group-level category specific effects present
       str_add(out$model_def) <- glue(
@@ -877,11 +877,11 @@ stan_cs <- function(bterms, prior, threads, normalize, ...) {
     }
     n <- stan_nn(threads)
     thres_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
-    thres <- get_matches(thres_regex, ranef$coef, perl = TRUE)
+    thres <- get_matches(thres_regex, reframe$coef, perl = TRUE)
     nthres <- max(as.numeric(thres))
     mucs_loop <- ""
     for (i in seq_len(nthres)) {
-      r_cat <- ranef[grepl(glue("\\[{i}\\]$"), ranef$coef), ]
+      r_cat <- reframe[grepl(glue("\\[{i}\\]$"), reframe$coef), ]
       str_add(mucs_loop) <- glue(
         "    mucs{p}[n, {i}] = mucs{p}[n, {i}]"
       )
@@ -909,10 +909,10 @@ stan_cs <- function(bterms, prior, threads, normalize, ...) {
 stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
   stopifnot(is.bframel(bterms))
   out <- list()
-  spef <- bterms$frame$sp
-  ranef <- bterms$frame$re
-  meef <- bterms$frame$me
-  if (!nrow(spef)) {
+  spframe <- bterms$frame$sp
+  reframe <- bterms$frame$re
+  meframe <- bterms$frame$me
+  if (!has_rows(spframe)) {
     return(out)
   }
   px <- check_prefix(bterms)
@@ -920,9 +920,9 @@ stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
   resp <- usc(px$resp)
   lpdf <- stan_lpdf_name(normalize)
   n <- stan_nn(threads)
-  ranef <- subset2(ranef, type = "sp")
-  spef_coef <- rename(spef$term)
-  invalid_coef <- setdiff(ranef$coef, spef_coef)
+  reframe <- subset2(reframe, type = "sp")
+  spframe_coef <- rename(spframe$term)
+  invalid_coef <- setdiff(reframe$coef, spframe_coef)
   if (length(invalid_coef)) {
     stop2(
       "Special group-level terms require corresponding ",
@@ -931,37 +931,37 @@ stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
     )
   }
   # prepare Stan code of the linear predictor component
-  for (i in seq_rows(spef)) {
-    eta <- spef$joint_call[[i]]
-    if (!is.null(spef$calls_mo[[i]])) {
-      new_mo <- glue("mo(simo{p}_{spef$Imo[[i]]}, Xmo{p}_{spef$Imo[[i]]}{n})")
-      eta <- rename(eta, spef$calls_mo[[i]], new_mo)
+  for (i in seq_rows(spframe)) {
+    eta <- spframe$joint_call[[i]]
+    if (!is.null(spframe$calls_mo[[i]])) {
+      new_mo <- glue("mo(simo{p}_{spframe$Imo[[i]]}, Xmo{p}_{spframe$Imo[[i]]}{n})")
+      eta <- rename(eta, spframe$calls_mo[[i]], new_mo)
     }
-    if (!is.null(spef$calls_me[[i]])) {
-      Kme <- seq_along(meef$term)
-      Ime <- match(meef$grname, unique(meef$grname))
-      nme <- ifelse(nzchar(meef$grname), glue("[Jme_{Ime}{n}]"), n)
+    if (!is.null(spframe$calls_me[[i]])) {
+      Kme <- seq_along(meframe$term)
+      Ime <- match(meframe$grname, unique(meframe$grname))
+      nme <- ifelse(nzchar(meframe$grname), glue("[Jme_{Ime}{n}]"), n)
       new_me <- glue("Xme_{Kme}{nme}")
-      eta <- rename(eta, meef$term, new_me)
+      eta <- rename(eta, meframe$term, new_me)
     }
-    if (!is.null(spef$calls_mi[[i]])) {
-      is_na_idx <- is.na(spef$idx2_mi[[i]])
-      idx_mi <- glue("[idxl{p}_{spef$vars_mi[[i]]}_{spef$idx2_mi[[i]]}{n}]")
+    if (!is.null(spframe$calls_mi[[i]])) {
+      is_na_idx <- is.na(spframe$idx2_mi[[i]])
+      idx_mi <- glue("[idxl{p}_{spframe$vars_mi[[i]]}_{spframe$idx2_mi[[i]]}{n}]")
       idx_mi <- ifelse(is_na_idx, n, idx_mi)
-      new_mi <- glue("Yl_{spef$vars_mi[[i]]}{idx_mi}")
-      eta <- rename(eta, spef$calls_mi[[i]], new_mi)
-      str_add(out$pll_args) <- glue(", vector Yl_{spef$vars_mi[[i]]}")
+      new_mi <- glue("Yl_{spframe$vars_mi[[i]]}{idx_mi}")
+      eta <- rename(eta, spframe$calls_mi[[i]], new_mi)
+      str_add(out$pll_args) <- glue(", vector Yl_{spframe$vars_mi[[i]]}")
     }
-    if (spef$Ic[i] > 0) {
-      str_add(eta) <- glue(" * Csp{p}_{spef$Ic[i]}{n}")
+    if (spframe$Ic[i] > 0) {
+      str_add(eta) <- glue(" * Csp{p}_{spframe$Ic[i]}{n}")
     }
-    r <- subset2(ranef, coef = spef_coef[i])
+    r <- subset2(reframe, coef = spframe_coef[i])
     rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r)}"))
     str_add(out$loopeta) <- glue(" + (bsp{p}[{i}]{rpars}) * {eta}")
   }
 
   # prepare general Stan code
-  ncovars <- max(spef$Ic)
+  ncovars <- max(spframe$Ic)
   str_add(out$data) <- glue(
     "  int<lower=1> Ksp{p};  // number of special effects terms\n"
   )
@@ -974,18 +974,18 @@ stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
   }
 
   # include special Stan code for monotonic effects
-  which_Imo <- which(lengths(spef$Imo) > 0)
+  which_Imo <- which(lengths(spframe$Imo) > 0)
   if (any(which_Imo)) {
     str_add(out$data) <- glue(
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
       "  array[Imo{p}] int<lower=1> Jmo{p};  // length of simplexes\n"
     )
-    ids <- unlist(spef$ids_mo)
+    ids <- unlist(spframe$ids_mo)
     lpdf <- stan_lpdf_name(normalize)
     for (i in which_Imo) {
-      for (k in seq_along(spef$Imo[[i]])) {
-        j <- spef$Imo[[i]][[k]]
-        id <- spef$ids_mo[[i]][[k]]
+      for (k in seq_along(spframe$Imo[[i]])) {
+        j <- spframe$Imo[[i]][[k]]
+        id <- spframe$ids_mo[[i]][[k]]
         # index of first ID appearance
         j_id <- match(id, ids)
         str_add(out$data) <- glue(
@@ -1017,7 +1017,7 @@ stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
   }
 
   # include special Stan code for missing value terms
-  uni_mi <- na.omit(attr(spef, "uni_mi"))
+  uni_mi <- na.omit(attr(spframe, "uni_mi"))
   for (j in seq_rows(uni_mi)) {
     idxl <- glue("idxl{p}_{uni_mi$var[j]}_{uni_mi$idx2[j]}")
     str_add(out$data) <- glue(
@@ -1034,7 +1034,7 @@ stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
     )
   } else {
     str_add_list(out) <- stan_prior(
-      prior, class = "b", coef = spef$coef,
+      prior, class = "b", coef = spframe$coef,
       type = glue("vector[Ksp{p}]"), px = px,
       suffix = glue("sp{p}"), header_type = "vector",
       comment = "special effects coefficients",
@@ -1053,20 +1053,20 @@ stan_gp <- function(bterms, prior, threads, normalize, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   slice <- stan_slice(threads)
-  gpef <- bterms$frame$gp
+  gpframe <- bterms$frame$gp
   # kernel methods cannot simply be split up into partial sums
-  for (i in seq_rows(gpef)) {
+  for (i in seq_rows(gpframe)) {
     pi <- glue("{p}_{i}")
-    byvar <- gpef$byvars[[i]]
-    cons <- gpef$cons[[i]]
+    byvar <- gpframe$byvars[[i]]
+    cons <- gpframe$cons[[i]]
     byfac <- length(cons) > 0L
     bynum <- !is.null(byvar) && !byfac
-    k <- gpef$k[i]
+    k <- gpframe$k[i]
     is_approx <- !isNA(k)
-    iso <- gpef$iso[i]
-    gr <- gpef$gr[i]
-    sfx1 <- gpef$sfx1[[i]]
-    sfx2 <- gpef$sfx2[[i]]
+    iso <- gpframe$iso[i]
+    gr <- gpframe$gr[i]
+    sfx1 <- gpframe$sfx1[[i]]
+    sfx2 <- gpframe$sfx2[[i]]
     str_add(out$data) <- glue(
       "  // data related to GPs\n",
       "  int<lower=1> Kgp{pi};",
@@ -1093,7 +1093,7 @@ stan_gp <- function(bterms, prior, threads, normalize, ...) {
         normalize = normalize
       )
     }
-    if (gpef$iso[i]) {
+    if (gpframe$iso[i]) {
       lscale_type <- "vector[1]"
       lscale_dim <- glue("[Kgp{pi}]")
       lscale_comment <- "GP length-scale parameters"
@@ -1284,10 +1284,10 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
   resp <- usc(px$resp)
   n <- stan_nn(threads)
   slice <- stan_slice(threads)
-  acef <- bterms$frame$ac
-  stopifnot(is.acef(acef))
-  has_natural_residuals <- has_ac_natural_residuals(acef)
-  has_latent_residuals <- has_ac_latent_residuals(acef)
+  acframe <- bterms$frame$ac
+  stopifnot(is.acframe(acframe))
+  has_natural_residuals <- has_ac_natural_residuals(acframe)
+  has_latent_residuals <- has_ac_latent_residuals(acframe)
 
   if (has_latent_residuals) {
     # families that do not have natural residuals require latent
@@ -1322,9 +1322,9 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
   }
 
   # validity of the autocor terms has already been checked before
-  acef_arma <- subset2(acef, class = "arma")
-  if (NROW(acef_arma)) {
-    if (use_threading(threads) && (!acef_arma$cov || has_natural_residuals)) {
+  acframe_arma <- subset2(acframe, class = "arma")
+  if (has_rows(acframe_arma)) {
+    if (use_threading(threads) && (!acframe_arma$cov || has_natural_residuals)) {
       stop2("Threading is not supported for this ARMA model.")
     }
     str_add(out$data) <- glue(
@@ -1335,7 +1335,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     str_add(out$tdata_def) <- glue(
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    if (!acef_arma$cov) {
+    if (!acframe_arma$cov) {
       err_msg <- "Please set cov = TRUE in ARMA structures"
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when including known standard errors.")
@@ -1356,7 +1356,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
         comp_err <- glue("    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n")
       } else {
-        if (acef_arma$q > 0) {
+        if (acframe_arma$q > 0) {
           # AR and MA structures cannot be distinguished when
           # using a single vector of latent residuals
           stop2("Please set cov = TRUE when modeling MA structures ",
@@ -1368,10 +1368,10 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         )
         comp_err <- ""
       }
-      add_ar <- str_if(acef_arma$p > 0,
+      add_ar <- str_if(acframe_arma$p > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
       )
-      add_ma <- str_if(acef_arma$q > 0,
+      add_ma <- str_if(acframe_arma$q > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
       )
       str_add(out$model_comp_arma) <- glue(
@@ -1386,9 +1386,9 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         "  }}\n"
       )
     }
-    if (acef_arma$p > 0) {
+    if (acframe_arma$p > 0) {
       if (has_special_prior(prior, px, class = "ar")) {
-        if (acef_arma$cov) {
+        if (acframe_arma$cov) {
           stop2("Cannot use shrinkage priors on 'ar' if cov = TRUE.")
         }
         str_add_list(out) <- stan_prior_non_centered(
@@ -1397,7 +1397,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "ar", px = px, suffix = p,
-          coef = seq_along(acef_arma$p),
+          coef = seq_along(acframe_arma$p),
           type = glue("vector[Kar{p}]"),
           header_type = "vector",
           comment = "autoregressive coefficients",
@@ -1405,9 +1405,9 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         )
       }
     }
-    if (acef_arma$q > 0) {
+    if (acframe_arma$q > 0) {
       if (has_special_prior(prior, px, class = "ma")) {
-        if (acef_arma$cov) {
+        if (acframe_arma$cov) {
           stop2("Cannot use shrinkage priors on 'ma' if cov = TRUE.")
         }
         str_add_list(out) <- stan_prior_non_centered(
@@ -1416,7 +1416,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "ma", px = px, suffix = p,
-          coef = seq_along(acef_arma$q),
+          coef = seq_along(acframe_arma$q),
           type = glue("vector[Kma{p}]"),
           header_type = "vector",
           comment = "moving-average coefficients",
@@ -1426,8 +1426,8 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     }
   }
 
-  acef_cosy <- subset2(acef, class = "cosy")
-  if (NROW(acef_cosy)) {
+  acframe_cosy <- subset2(acframe, class = "cosy")
+  if (has_rows(acframe_cosy)) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
     str_add_list(out) <- stan_prior(
@@ -1437,8 +1437,8 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     )
   }
 
-  acef_unstr <- subset2(acef, class = "unstr")
-  if (NROW(acef_unstr)) {
+  acframe_unstr <- subset2(acframe, class = "unstr")
+  if (has_rows(acframe_unstr)) {
     # unstructured correlation matrix
     # most code is shared with ARMA covariance models
     # define prior on the Cholesky scale to consistency across
@@ -1452,12 +1452,12 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     )
   }
 
-  acef_time_cov <- subset2(acef, dim = "time", cov = TRUE)
-  if (NROW(acef_time_cov)) {
+  acframe_time_cov <- subset2(acframe, dim = "time", cov = TRUE)
+  if (has_rows(acframe_time_cov)) {
     # use correlation structures in covariance matrix parameterization
     # optional for ARMA models and obligatory for COSY and UNSTR models
     # can only model one covariance structure at a time
-    stopifnot(NROW(acef_time_cov) == 1)
+    stopifnot(nrow(acframe_time_cov) == 1)
     if (use_threading(threads)) {
       stop2("Threading is not supported for covariance-based autocorrelation models.")
     }
@@ -1475,7 +1475,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       "  int max_nobs_tg{p} = max(nobs_tg{p});",
       "  // maximum dimension of the autocorrelation matrix\n"
     )
-    if (acef_time_cov$class == "unstr") {
+    if (acframe_time_cov$class == "unstr") {
       # unstructured time-covariances require additional data and cannot
       # be represented directly via Cholesky factors due to potentially
       # different time subsets
@@ -1504,18 +1504,18 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     } else {
       # all other time-covariance structures can be represented directly
       # through Cholesky factors of the correlation matrix
-      if (acef_time_cov$class == "arma") {
-        if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
+      if (acframe_time_cov$class == "arma") {
+        if (acframe_time_cov$p > 0 && acframe_time_cov$q == 0) {
           cor_fun <- "ar1"
           cor_args <- glue("ar{p}[1]")
-        } else if (acef_time_cov$p == 0 && acef_time_cov$q > 0) {
+        } else if (acframe_time_cov$p == 0 && acframe_time_cov$q > 0) {
           cor_fun <- "ma1"
           cor_args <- glue("ma{p}[1]")
         } else {
           cor_fun <- "arma1"
           cor_args <- glue("ar{p}[1], ma{p}[1]")
         }
-      } else if (acef_time_cov$class == "cosy") {
+      } else if (acframe_time_cov$class == "cosy") {
         cor_fun <- "cosy"
         cor_args <- glue("cosy{p}")
       }
@@ -1539,8 +1539,8 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
 
   }
 
-  acef_sar <- subset2(acef, class = "sar")
-  if (NROW(acef_sar)) {
+  acframe_sar <- subset2(acframe, class = "sar")
+  if (has_rows(acframe_sar)) {
     if (!has_natural_residuals) {
       stop2("SAR terms are not implemented for this family.")
     }
@@ -1556,13 +1556,13 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       "  real min_eigenMsar{p} = min(eigenMsar{p});\n",
       "  real max_eigenMsar{p} = max(eigenMsar{p});\n"
     )
-    if (acef_sar$type == "lag") {
+    if (acframe_sar$type == "lag") {
       str_add_list(out) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p,
         comment = "lag-SAR correlation parameter",
         normalize = normalize
       )
-    } else if (acef_sar$type == "error") {
+    } else if (acframe_sar$type == "error") {
       str_add_list(out) <- stan_prior(
         prior, class = "errorsar", px = px, suffix = p,
         comment = "error-SAR correlation parameter",
@@ -1571,8 +1571,8 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     }
   }
 
-  acef_car <- subset2(acef, class = "car")
-  if (NROW(acef_car)) {
+  acframe_car <- subset2(acframe, class = "car")
+  if (has_rows(acframe_car)) {
     if (is.btnl(bterms)) {
       stop2("CAR terms are not implemented for non-linear models.")
     }
@@ -1598,13 +1598,13 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     }
     str_add(out$pll_args) <- glue(", vector rcar{p}, data array[] int Jloc{p}")
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}{n}]")
-    if (acef_car$type %in% c("escar", "esicar")) {
+    if (acframe_car$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
         "  vector[Nloc{p}] Nneigh{p};\n",
         "  vector[Nloc{p}] eigenMcar{p};\n"
       )
     }
-    if (acef_car$type == "escar") {
+    if (acframe_car$type == "escar") {
       str_add(out$par) <- glue(
         "  vector[Nloc{p}] rcar{p};\n"
       )
@@ -1622,7 +1622,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         "    rcar{p} | {car_args}\n",
         "  );\n"
       )
-    } else if (acef_car$type == "esicar") {
+    } else if (acframe_car$type == "esicar") {
       str_add(out$par) <- glue(
         "  vector[Nloc{p} - 1] zcar{p};\n"
       )
@@ -1644,7 +1644,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         "    rcar{p} | {car_args}\n",
         "  );\n"
       )
-    } else if (acef_car$type %in% "icar") {
+    } else if (acframe_car$type %in% "icar") {
       # intrinsic car based on the case study of Mitzi Morris
       # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
       str_add(out$par) <- glue(
@@ -1666,7 +1666,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         "  // soft sum-to-zero constraint\n",
         "  target += normal_{lpdf}(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n"
       )
-    } else if (acef_car$type == "bym2") {
+    } else if (acframe_car$type == "bym2") {
       # BYM2 car based on the case study of Mitzi Morris
       # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
       str_add(out$data) <- glue(
@@ -1704,8 +1704,8 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     }
   }
 
-  acef_fcor <- subset2(acef, class = "fcor")
-  if (NROW(acef_fcor)) {
+  acframe_fcor <- subset2(acframe, class = "fcor")
+  if (has_rows(acframe_fcor)) {
     if (!has_natural_residuals) {
       stop2("FCOR terms are not implemented for this family.")
     }
@@ -1829,21 +1829,21 @@ stan_nl <- function(bterms, nlpars, threads, ...) {
 
 # global Stan definitions for noise-free variables
 stan_Xme <- function(bterms, prior, threads, normalize) {
-  meef <- bterms$frame$me
-  stopifnot(is.meef_frame(meef))
-  if (!NROW(meef)) {
+  meframe <- bterms$frame$me
+  stopifnot(is.meframe(meframe))
+  if (!has_rows(meframe)) {
     return(list())
   }
   lpdf <- stan_lpdf_name(normalize)
   out <- list()
-  coefs <- rename(paste0("me", meef$xname))
+  coefs <- rename(paste0("me", meframe$xname))
   str_add(out$data) <- "  // data for noise-free variables\n"
   str_add(out$par) <- "  // parameters for noise free variables\n"
-  groups <- unique(meef$grname)
+  groups <- unique(meframe$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
     # K are the global and J the local (within group) indices
-    K <- which(meef$grname %in% g)
+    K <- which(meframe$grname %in% g)
     J <- seq_along(K)
     if (nzchar(g)) {
       Nme <- glue("Nme_{i}")
@@ -1875,7 +1875,7 @@ stan_Xme <- function(bterms, prior, threads, normalize) {
     str_add(out$model_prior) <- cglue(
       "  target += normal_{lpdf}(Xn_{K} | Xme_{K}, noise_{K});\n"
     )
-    if (meef$cor[K[1]] && length(K) > 1L) {
+    if (meframe$cor[K[1]] && length(K) > 1L) {
       str_add(out$data) <- glue(
         "  int<lower=1> NCme_{i};  // number of latent correlations\n"
       )
@@ -1941,7 +1941,6 @@ stan_Xme <- function(bterms, prior, threads, normalize) {
 # initialize and compute a linear predictor term in Stan language
 # @param out list of character strings containing Stan code
 # @param bterms btl object
-# @param ranef output of tidy_ranef
 # @param primitive use Stan's GLM likelihood primitives?
 # @param ... currently unused
 # @return list of character strings containing Stan code
@@ -1992,9 +1991,9 @@ stan_eta_combine <- function(bterms, out, threads, primitive, ...) {
 stan_eta_re <- function(bterms, threads) {
   eta_re <- ""
   n <- stan_nn(threads)
-  ranef <- subset2(bterms$frame$re, type = c("", "mmc"))
-  for (id in unique(ranef$id)) {
-    r <- subset2(ranef, id = id)
+  reframe <- subset2(bterms$frame$re, type = c("", "mmc"))
+  for (id in unique(reframe$id)) {
+    r <- subset2(reframe, id = id)
     rpx <- check_prefix(r)
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
     idresp <- paste0(r$id, usc(rpx$resp))
@@ -2017,10 +2016,10 @@ stan_eta_re <- function(bterms, threads) {
 }
 
 # Stan code for group-level parameters in special predictor terms
-# @param r data.frame created by tidy_ranef
+# @param r data.frame created by frame_re
 # @return a character vector: one element per row of 'r'
 stan_eta_rsp <- function(r) {
-  stopifnot(is.ranef_frame(r))
+  stopifnot(is.reframe(r))
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
   rpx <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(rpx)))

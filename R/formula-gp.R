@@ -160,7 +160,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
 # @param x either a formula or a list containing an element "gp"
 # @param data data frame containing the covariates
 # @return a data.frame with one row per GP term
-tidy_gpef <- function(x, data) {
+frame_gp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -202,7 +202,16 @@ tidy_gpef <- function(x, data) {
       out$sfx2[[i]] <- outer(out$sfx1[[i]], out$covars[[i]], paste0)
     }
   }
+  class(out) <- gpframe_class()
   out
+}
+
+gpframe_class <- function() {
+  c("gpframe", "data.frame")
+}
+
+is.gpframe <- function(x) {
+  inherits(x, "gpframe")
 }
 
 # exponential-quadratic covariance matrix

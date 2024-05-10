@@ -5,12 +5,7 @@ brmsframe <- function(x, ...) {
 
 #' @export
 brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
-  # this is a univariate model so brmsterms is at the top level
-  x$frame <- list(
-    re = tidy_ranef(x, data = data, old_levels = basis$levels),
-    me = tidy_meef(x, data = data, old_levels = basis$levels),
-    index = tidy_index(x, data = data)
-  )
+  x$frame <- initialize_frame(x, data = data, basis = basis, ...)
   for (r in names(x$terms)) {
     x$terms[[r]] <- brmsframe(
       x$terms[[r]], data = data, frame = x$frame,
@@ -27,11 +22,7 @@ brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
 brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   if (is.null(frame)) {
     # this is a univariate model so brmsterms is at the top level
-    x$frame <- list(
-      re = tidy_ranef(x, data = data, old_levels = basis$levels),
-      me = tidy_meef(x, data = data, old_levels = basis$levels),
-      index = tidy_index(x, data = data)
-    )
+    x$frame <- initialize_frame(x, data = data, basis = basis, ...)
   } else {
     # this must be a multivariate model
     stopifnot(is.list(frame))
@@ -39,8 +30,8 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     x$frame$re <- subset(x$frame$re, resp = x$resp)
   }
   data <- subset_data(data, x)
-  x$frame$resp <- frame_resp(x, data)
-  x$frame$ac <- tidy_acef(x, data)
+  x$frame$resp <- frame_resp(x, data = data)
+  x$frame$ac <- frame_ac(x, data = data)
   for (dp in names(x$dpars)) {
     x$dpars[[dp]] <- brmsframe(
       x$dpars[[dp]], data, frame = x$frame,
@@ -59,7 +50,6 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
 
 #' @export
 brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
-  # TODO: rename the tidy_ functions to frame_ functions?
   stopifnot(is.list(frame))
   # TODO: add more comments on the relation of data_* and frame_* functions
   # the outputs of these data_* functions are required in the corresponding
@@ -74,10 +64,10 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # this enables overwriting of frames if necessary
   x$frame$fe <- frame_fe(x)
   x$frame$cs <- frame_cs(x)
-  x$frame$sm <- tidy_smef(x)
-  x$frame$sp <- tidy_spef(x, data = data)
-  x$frame$gp <- tidy_gpef(x, data = data)
-  x$frame$ac <- tidy_acef(x, data = data)
+  x$frame$sm <- frame_sm(x)
+  x$frame$sp <- frame_sp(x, data = data)
+  x$frame$gp <- frame_gp(x, data = data)
+  x$frame$ac <- frame_ac(x, data = data)
   # only store the ranefs of this specific linear formula
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
@@ -97,7 +87,7 @@ brmsframe.btnl <- function(x, data, frame = list(), basis = NULL, ...) {
     cnl = data_cnl(x, data)
   )
   x$frame$cnl <- frame_cnl(x)
-  x$frame$ac <- tidy_acef(x)
+  x$frame$ac <- frame_ac(x, data = data)
   class(x) <- c("bframenl", class(x))
   x
 }
@@ -105,6 +95,20 @@ brmsframe.btnl <- function(x, data, frame = list(), basis = NULL, ...) {
 #' @export
 brmsframe.default <- function(x, ...) {
   brmsframe(brmsterms(x), ...)
+}
+
+# initialize the frame list with general information
+initialize_frame <- function(x, data, basis = NULL, ...) {
+  out <- list(
+    re = frame_re(x, data = data, old_levels = basis$levels),
+    me = frame_me(x, data = data, old_levels = basis$levels),
+    index = frame_index(x, data = data)
+  )
+  set_levels(out) <- get_levels(ls = out)
+  # TODO: store both old and current (new) levels if basis$levels is provided?
+  # this will enable to avoid repeated calls of frame_re and frame_me
+  # in different places just to get the right levels
+  out
 }
 
 frame_resp <- function(x, data, ....) {

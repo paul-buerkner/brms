@@ -255,7 +255,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     )
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
-    object$ranef <- tidy_ranef(bterms, data = object$data)
+    object$ranef <- frame_re(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
     object$threads <- validate_threads(dots$threads)
     if ("sample_prior" %in% names(dots)) {

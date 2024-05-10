@@ -122,7 +122,7 @@ stancode.default <- function(object, data, family = gaussian(),
     bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
   )
-  scode_ranef <- stan_re(
+  scode_re <- stan_re(
     bterms, prior = prior, threads = threads, normalize = normalize
   )
   scode_Xme <- stan_Xme(
@@ -139,7 +139,7 @@ stancode.default <- function(object, data, family = gaussian(),
       resp <- usc(names(scode_predictor)[i])
       pll_args <- stan_clean_pll_args(
         scode_predictor[[i]][["pll_args"]],
-        scode_ranef[["pll_args"]],
+        scode_re[["pll_args"]],
         scode_Xme[["pll_args"]],
         collapse_stanvars_pll_args(stanvars)
       )
@@ -218,7 +218,7 @@ stancode.default <- function(object, data, family = gaussian(),
   # get all priors added to 'lprior'
   scode_tpar_prior <- paste0(
     scode_predictor[["tpar_prior"]],
-    scode_ranef[["tpar_prior"]],
+    scode_re[["tpar_prior"]],
     scode_Xme[["tpar_prior"]]
   )
 
@@ -237,7 +237,7 @@ stancode.default <- function(object, data, family = gaussian(),
     "data {\n",
     "  int<lower=1> N;  // total number of observations\n",
     scode_predictor[["data"]],
-    scode_ranef[["data"]],
+    scode_re[["data"]],
     scode_Xme[["data"]],
     "  int prior_only;  // should the likelihood be ignored?\n",
     collapse_stanvars(stanvars, "data"),
@@ -258,7 +258,7 @@ stancode.default <- function(object, data, family = gaussian(),
   # generate parameters block
   scode_parameters <- paste0(
     scode_predictor[["par"]],
-    scode_ranef[["par"]],
+    scode_re[["par"]],
     scode_Xme[["par"]]
   )
   # prepare additional sampling from priors
@@ -282,16 +282,16 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
       scode_predictor[["tpar_def"]],
-      scode_ranef[["tpar_def"]],
+      scode_re[["tpar_def"]],
       scode_Xme[["tpar_def"]],
       str_if(normalize, scode_lprior_def),
       collapse_stanvars(stanvars, "tparameters", "start"),
       scode_predictor[["tpar_prior_const"]],
-      scode_ranef[["tpar_prior_const"]],
+      scode_re[["tpar_prior_const"]],
       scode_Xme[["tpar_prior_const"]],
       scode_predictor[["tpar_comp"]],
       scode_predictor[["tpar_special_prior"]],
-      scode_ranef[["tpar_comp"]],
+      scode_re[["tpar_comp"]],
       scode_Xme[["tpar_comp"]],
       # lprior cannot contain _lupdf functions in transformed parameters
       # as discussed on github.com/stan-dev/stan/issues/3094
@@ -314,7 +314,7 @@ stancode.default <- function(object, data, family = gaussian(),
       str_if(!normalize, scode_tpar_prior),
       "  target += lprior;\n",
       scode_predictor[["model_prior"]],
-      scode_ranef[["model_prior"]],
+      scode_re[["model_prior"]],
       scode_Xme[["model_prior"]],
       stan_unchecked_prior(prior),
       collapse_stanvars(stanvars, "model", "end"),
@@ -324,12 +324,12 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_generated_quantities <- paste0(
     "generated quantities {\n",
       scode_predictor[["gen_def"]],
-      scode_ranef[["gen_def"]],
+      scode_re[["gen_def"]],
       scode_Xme[["gen_def"]],
       scode_rngprior[["gen_def"]],
       collapse_stanvars(stanvars, "genquant", "start"),
       scode_predictor[["gen_comp"]],
-      scode_ranef[["gen_comp"]],
+      scode_re[["gen_comp"]],
       scode_rngprior[["gen_comp"]],
       scode_Xme[["gen_comp"]],
       collapse_stanvars(stanvars, "genquant", "end"),

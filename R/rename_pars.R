@@ -130,17 +130,17 @@ rename_fe <- function(bterms, pars, prior, ...) {
 rename_sp <- function(bterms, pars, prior, ...) {
   stopifnot(is.bframel(bterms))
   out <- list()
-  spef <- bterms$frame$sp
-  if (!nrow(spef)) {
+  spframe <- bterms$frame$sp
+  if (!nrow(spframe)) {
     return(out)
   }
   p <- usc(combine_prefix(bterms))
   bsp <- paste0("bsp", p)
   pos <- grepl(paste0("^", bsp, "\\["), pars)
-  newnames <- paste0("bsp", p, "_", spef$coef)
+  newnames <- paste0("bsp", p, "_", spframe$coef)
   lc(out) <- rlist(pos, newnames)
-  c(out) <- rename_prior(bsp, pars, names = spef$coef)
-  simo_coef <- get_simo_labels(spef)
+  c(out) <- rename_prior(bsp, pars, names = spframe$coef)
+  simo_coef <- get_simo_labels(spframe)
   for (i in seq_along(simo_coef)) {
     simo_old <- paste0("simo", p, "_", i)
     simo_new <- paste0("simo", p, "_", simo_coef[i])
@@ -154,7 +154,7 @@ rename_sp <- function(bterms, pars, prior, ...) {
   if (has_special_prior(prior, bterms, class = "b")) {
     sdbsp <- paste0("sdbsp", p)
     pos <- grepl(paste0("^", sdbsp, "\\["), pars)
-    sdbsp_names <- paste0(sdbsp, "_", spef$coef)
+    sdbsp_names <- paste0(sdbsp, "_", spframe$coef)
     lc(out) <- rlist(pos, sdbsp_names)
   }
   out
@@ -202,21 +202,21 @@ rename_thres <- function(bterms, pars, ...) {
 }
 
 # helps in renaming global noise free variables
-# @param meef data.frame returned by 'tidy_meef'
+# @param meframe data.frame returned by 'frame_me'
 rename_Xme <- function(bterms, pars, ...) {
-  meef <- bterms$frame$me
-  stopifnot(is.meef_frame(meef))
+  meframe <- bterms$frame$me
+  stopifnot(is.meframe(meframe))
   out <- list()
-  levels <- attr(meef, "levels")
-  groups <- unique(meef$grname)
+  levels <- attr(meframe, "levels")
+  groups <- unique(meframe$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
-    K <- which(meef$grname %in% g)
+    K <- which(meframe$grname %in% g)
     # rename mean and sd parameters
     for (par in c("meanme", "sdme")) {
       hpar <- paste0(par, "_", i)
       pos <- grepl(paste0("^", hpar, "\\["), pars)
-      hpar_new <- paste0(par, "_", meef$coef[K])
+      hpar_new <- paste0(par, "_", meframe$coef[K])
       lc(out) <- rlist(pos, hpar_new)
       c(out) <- rename_prior(hpar, pars, names = hpar_new)
     }
@@ -225,7 +225,7 @@ rename_Xme <- function(bterms, pars, ...) {
       if (any(grepl("^Xme_", pars))) {
         Xme <- paste0("Xme_", k)
         pos <- grepl(paste0("^", Xme, "\\["), pars)
-        Xme_new <- paste0("Xme_", meef$coef[k])
+        Xme_new <- paste0("Xme_", meframe$coef[k])
         if (nzchar(g)) {
           indices <- gsub("[ \t\r\n]", ".", levels[[g]])
         } else {
@@ -236,9 +236,9 @@ rename_Xme <- function(bterms, pars, ...) {
       }
     }
     # rename correlation parameters
-    if (meef$cor[K[1]] && length(K) > 1L) {
+    if (meframe$cor[K[1]] && length(K) > 1L) {
       cor_type <- paste0("corme", usc(g))
-      cor_names <- get_cornames(meef$coef[K], cor_type, brackets = FALSE)
+      cor_names <- get_cornames(meframe$coef[K], cor_type, brackets = FALSE)
       cor_regex <- paste0("^corme_", i, "(\\[|$)")
       cor_pos <- grepl(cor_regex, pars)
       lc(out) <- rlist(cor_pos, cor_names)
@@ -272,11 +272,11 @@ rename_gp <- function(bterms, pars, ...) {
   stopifnot(is.bframel(bterms))
   out <- list()
   p <- usc(combine_prefix(bterms), "prefix")
-  gpef <- bterms$frame$gp
-  for (i in seq_rows(gpef)) {
+  gpframe <- bterms$frame$gp
+  for (i in seq_rows(gpframe)) {
     # rename GP hyperparameters
-    sfx1 <- gpef$sfx1[[i]]
-    sfx2 <- as.vector(gpef$sfx2[[i]])
+    sfx1 <- gpframe$sfx1[[i]]
+    sfx2 <- as.vector(gpframe$sfx2[[i]])
     sdgp <- paste0("sdgp", p)
     sdgp_old <- paste0(sdgp, "_", i)
     sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
@@ -320,40 +320,41 @@ rename_gp <- function(bterms, pars, ...) {
 rename_sm <- function(bterms, pars, prior, ...) {
   stopifnot(is.bframel(bterms))
   out <- list()
-  smef <- bterms$frame$sm
-  if (has_rows(smef)) {
-    p <- usc(combine_prefix(bterms))
-    Xs_names <- attr(smef, "Xs_names")
-    if (length(Xs_names)) {
-      bs <- paste0("bs", p)
-      pos <- grepl(paste0("^", bs, "\\["), pars)
-      bsnames <- paste0(bs, "_", Xs_names)
-      lc(out) <- rlist(pos, bsnames)
-      c(out) <- rename_prior(bs, pars, names = Xs_names)
-    }
-    if (has_special_prior(prior, bterms, class = "b")) {
-      sdbs <- paste0("sdbs", p)
-      pos <- grepl(paste0("^", sdbs, "\\["), pars)
-      sdbs_names <- paste0(sdbs, "_", Xs_names)
-      lc(out) <- rlist(pos, sdbs_names)
-    }
+  smframe <- bterms$frame$sm
+  if (!has_rows(smframe)) {
+    return(out)
+  }
+  p <- usc(combine_prefix(bterms))
+  Xs_names <- attr(smframe, "Xs_names")
+  if (length(Xs_names)) {
+    bs <- paste0("bs", p)
+    pos <- grepl(paste0("^", bs, "\\["), pars)
+    bsnames <- paste0(bs, "_", Xs_names)
+    lc(out) <- rlist(pos, bsnames)
+    c(out) <- rename_prior(bs, pars, names = Xs_names)
+  }
+  if (has_special_prior(prior, bterms, class = "b")) {
+    sdbs <- paste0("sdbs", p)
+    pos <- grepl(paste0("^", sdbs, "\\["), pars)
+    sdbs_names <- paste0(sdbs, "_", Xs_names)
+    lc(out) <- rlist(pos, sdbs_names)
+  }
 
-    sds <- paste0("sds", p)
-    sds_names <- paste0(sds, "_", smef$label)
-    s <- paste0("s", p)
-    snames <- paste0(s, "_", smef$label)
-    for (i in seq_rows(smef)) {
-      nbases <- smef$nbases[i]
-      sds_pos <- grepl(paste0("^", sds, "_", i), pars)
-      sds_names_nb <- paste0(sds_names[i], "_", seq_len(nbases))
-      lc(out) <- rlist(sds_pos, sds_names_nb)
-      new_class <- paste0(sds, "_", smef$label[i])
-      c(out) <- rename_prior(paste0(sds, "_", i), pars, new_class = new_class)
-      for (j in seq_len(nbases)) {
-        spos <- grepl(paste0("^", s, "_", i, "_", j), pars)
-        sfnames <- paste0(snames[i], "_", j, "[", seq_len(sum(spos)), "]")
-        lc(out) <- rlist(spos, sfnames)
-      }
+  sds <- paste0("sds", p)
+  sds_names <- paste0(sds, "_", smframe$label)
+  s <- paste0("s", p)
+  snames <- paste0(s, "_", smframe$label)
+  for (i in seq_rows(smframe)) {
+    nbases <- smframe$nbases[i]
+    sds_pos <- grepl(paste0("^", sds, "_", i), pars)
+    sds_names_nb <- paste0(sds_names[i], "_", seq_len(nbases))
+    lc(out) <- rlist(sds_pos, sds_names_nb)
+    new_class <- paste0(sds, "_", smframe$label[i])
+    c(out) <- rename_prior(paste0(sds, "_", i), pars, new_class = new_class)
+    for (j in seq_len(nbases)) {
+      spos <- grepl(paste0("^", s, "_", i, "_", j), pars)
+      sfnames <- paste0(snames[i], "_", j, "[", seq_len(sum(spos)), "]")
+      lc(out) <- rlist(spos, sfnames)
     }
   }
   out
@@ -362,11 +363,11 @@ rename_sm <- function(bterms, pars, prior, ...) {
 # helps in renaming autocorrelation parameters
 rename_ac <- function(bterms, pars, ...) {
   out <- list()
-  acef <- bterms$frame$ac
-  stopifnot(is.acef(acef))
+  acframe <- bterms$frame$ac
+  stopifnot(is.acframe(acframe))
   resp <- usc(bterms$resp)
-  if (has_ac_class(acef, "unstr")) {
-    times <- attr(acef, "times")
+  if (has_ac_class(acframe, "unstr")) {
+    times <- attr(acframe, "times")
     corname <- paste0("cortime", resp)
     regex <- paste0("^", corname, "\\[")
     cortime_names <- get_cornames(times, type = corname, brackets = FALSE)
@@ -376,16 +377,15 @@ rename_ac <- function(bterms, pars, ...) {
 }
 
 # helps in renaming group-level parameters
-# @param ranef: data.frame returned by 'tidy_ranef'
 rename_re <- function(bterms, pars, ...) {
   out <- list()
-  ranef <- bterms$frame$re
-  if (!has_rows(ranef)) {
+  reframe <- bterms$frame$re
+  if (!has_rows(reframe)) {
     return(out)
   }
-  stopifnot(is.ranef_frame(ranef))
-  for (id in unique(ranef$id)) {
-    r <- subset2(ranef, id = id)
+  stopifnot(is.reframe(reframe))
+  for (id in unique(reframe$id)) {
+    r <- subset2(reframe, id = id)
     g <- r$group[1]
     rnames <- get_rnames(r)
     sd_names <- paste0("sd_", g, "__", as.vector(rnames))
@@ -420,29 +420,28 @@ rename_re <- function(bterms, pars, ...) {
   if (any(grepl("^r_", pars))) {
     c(out) <- rename_re_levels(bterms, pars = pars)
   }
-  tranef <- get_dist_groups(ranef, "student")
-  for (i in seq_rows(tranef)) {
-    df_pos <- grepl(paste0("^df_", tranef$ggn[i], "$"), pars)
-    df_name <- paste0("df_", tranef$group[i])
+  reframe_t <- get_dist_groups(reframe, "student")
+  for (i in seq_rows(reframe_t)) {
+    df_pos <- grepl(paste0("^df_", reframe_t$ggn[i], "$"), pars)
+    df_name <- paste0("df_", reframe_t$group[i])
     lc(out) <- rlist(df_pos, df_name)
   }
   out
 }
 
 # helps in renaming varying effects parameters per level
-# @param ranef: data.frame returned by 'tidy_ranef'
 rename_re_levels <- function(bterms, pars, ...)  {
   out <- list()
-  ranef <- bterms$frame$re
-  stopifnot(is.ranef_frame(ranef))
-  for (i in seq_rows(ranef)) {
-    r <- ranef[i, ]
+  reframe <- bterms$frame$re
+  stopifnot(is.reframe(reframe))
+  for (i in seq_rows(reframe)) {
+    r <- reframe[i, ]
     p <- usc(combine_prefix(r))
     r_parnames <- paste0("r_", r$id, p, "_", r$cn)
     r_regex <- paste0("^", r_parnames, "(\\[|$)")
     r_new_parname <- paste0("r_", r$group, usc(p))
     # rstan doesn't like whitespaces in parameter names
-    levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[r$group]])
+    levels <- gsub("[ \t\r\n]", ".", attr(reframe, "levels")[[r$group]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
     fnames <- paste0(r_new_parname, index_names)
     lc(out) <- rlist(grepl(r_regex, pars), fnames)

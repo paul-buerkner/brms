@@ -57,7 +57,7 @@ NULL
 # brmsfit class
 brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
                     data2 = list(), stanvars = NULL, model = "",
-                    ranef = empty_ranef(), save_pars = NULL,
+                    ranef = empty_reframe(), save_pars = NULL,
                     algorithm = "sampling", backend = "rstan",
                     threads = threading(), opencl = opencl(),
                     stan_args = list(), fit = NULL, basis = NULL,
