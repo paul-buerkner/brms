@@ -364,6 +364,7 @@ stan_special_prior <- function(bterms, out, prior, normalize, ...) {
     "  int<lower=1> Kscales{p};  // number of local scale parameters\n"
   )
   if (special$name == "horseshoe") {
+    str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
     str_add(out$data) <- glue(
       "  // data for the horseshoe prior\n",
       "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
@@ -399,6 +400,7 @@ stan_special_prior <- function(bterms, out, prior, normalize, ...) {
       str_if(normalize, "\n    - rows(hs_local{p}) * log(0.5)"), ";\n"
     )
   } else if (special$name == "R2D2") {
+    str_add(out$fun) <- "  #include 'fun_r2d2.stan'\n"
     str_add(out$data) <- glue(
       "  // data for the R2D2 prior\n",
       "  real<lower=0> R2D2_mean_R2{p};  // mean of the R2 prior\n",

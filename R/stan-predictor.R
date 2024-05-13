@@ -44,6 +44,10 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   out <- list()
   str_add_list(out) <- stan_response(x, normalize = normalize)
   valid_dpars <- valid_dpars(x)
+  family_files <- family_info(x, "include")
+  if (length(family_files)) {
+    str_add(out$fun) <- cglue("  #include '{family_files}'\n")
+  }
   args <- nlist(prior, normalize, nlpars = names(x$nlpars), ...)
   args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
   for (nlp in names(x$nlpars)) {
@@ -642,10 +646,12 @@ stan_re <- function(bterms, prior, normalize, ...) {
         "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
       if (has_cov) {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor_by_cov.stan'\n"
         rdef <- glue(
           "scale_r_cor_by_cov(z_{id}, sd_{id}, L_{id}, Jby_{id}, Lcov_{id})"
         )
       } else {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
         rdef  <- glue("scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id})")
       }
       str_add(out$tpar_comp) <- glue(
@@ -669,8 +675,10 @@ stan_re <- function(bterms, prior, normalize, ...) {
         normalize = normalize
       )
       if (has_cov) {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor_cov.stan'\n"
         rdef <- glue("scale_r_cor_cov(z_{id}, sd_{id}, L_{id}, Lcov_{id})")
       } else {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor.stan'\n"
         rdef <- glue("scale_r_cor(z_{id}, sd_{id}, L_{id})")
       }
       # separate definition from computation to support fixed parameters
@@ -976,6 +984,7 @@ stan_sp <- function(bterms, prior, stanvars, threads, normalize, ...) {
   # include special Stan code for monotonic effects
   which_Imo <- which(lengths(spframe$Imo) > 0)
   if (any(which_Imo)) {
+    str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"
     str_add(out$data) <- glue(
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
       "  array[Imo{p}] int<lower=1> Jmo{p};  // length of simplexes\n"
@@ -1074,10 +1083,13 @@ stan_gp <- function(bterms, prior, threads, normalize, ...) {
       "  int<lower=1> Dgp{pi};  // GP dimension\n"
     )
     if (is_approx) {
+      str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
       str_add(out$data) <- glue(
         "  // number of basis functions of an approximate GP\n",
         "  int<lower=1> NBgp{pi};\n"
       )
+    } else {
+      str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
     }
     if (has_special_prior(prior, px, class = "sdgp")) {
       str_add(out$tpar_def) <- glue(
@@ -1170,6 +1182,7 @@ stan_gp <- function(bterms, prior, threads, normalize, ...) {
       slice2 <- ""
       Igp_sub <- Igp
       if (use_threading(threads)) {
+        str_add(out$fun) <- "  #include 'fun_which_range.stan'\n"
         str_add(out$model_comp_basic) <- cglue(
           "  array[size_range({Igp}, start, end)] int which_gp{pi}_{J} =",
           " which_range({Igp}, start, end);\n"
@@ -1288,6 +1301,9 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
   stopifnot(is.acframe(acframe))
   has_natural_residuals <- has_ac_natural_residuals(acframe)
   has_latent_residuals <- has_ac_latent_residuals(acframe)
+  families <- family_names(bterms)
+  # TODO: include family-specific functions inside the corresponding
+  # stan_log_lik functions once they return lists of character vectors
 
   if (has_latent_residuals) {
     # families that do not have natural residuals require latent
@@ -1461,6 +1477,23 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     if (use_threading(threads)) {
       stop2("Threading is not supported for covariance-based autocorrelation models.")
     }
+    str_add(out$fun) <- glue(
+      "  #include 'fun_sequence.stan'\n",
+      "  #include 'fun_is_equal.stan'\n",
+      "  #include 'fun_stack_vectors.stan'\n"
+    )
+    if ("gaussian" %in% families) {
+      str_add(out$fun) <- glue(
+        "  #include 'fun_normal_time.stan'\n",
+        "  #include 'fun_normal_time_se.stan'\n"
+      )
+    }
+    if ("student" %in% families) {
+      str_add(out$fun) <- glue(
+        "  #include 'fun_student_t_time.stan'\n",
+        "  #include 'fun_student_t_time_se.stan'\n"
+      )
+    }
     str_add(out$data) <- glue(
       "  // see the functions block for details\n",
       "  int<lower=1> N_tg{p};\n",
@@ -1486,6 +1519,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       )
       str_add(out$pll_args) <- glue(", array[,] int Jtime_tg{p}")
       if (has_latent_residuals) {
+        str_add(out$fun) <- "  #include 'fun_scale_time_err_flex.stan'\n"
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err_flex(",
@@ -1519,6 +1553,9 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         cor_fun <- "cosy"
         cor_args <- glue("cosy{p}")
       }
+      str_add(out$fun) <- glue(
+        "  #include 'fun_cholesky_cor_{cor_fun}.stan'\n"
+      )
       str_add(out$tpar_def) <- glue(
         "  // cholesky factor of the autocorrelation matrix\n",
         "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] Lcortime{p};\n"
@@ -1529,6 +1566,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         "  Lcortime{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
       )
       if (has_latent_residuals) {
+        str_add(out$fun) <- "  #include 'fun_scale_time_err.stan'\n"
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err(",
@@ -1557,12 +1595,24 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       "  real max_eigenMsar{p} = max(eigenMsar{p});\n"
     )
     if (acframe_sar$type == "lag") {
+      if ("gaussian" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_normal_lagsar.stan'\n"
+      }
+      if ("student" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_student_t_lagsar.stan'\n"
+      }
       str_add_list(out) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p,
         comment = "lag-SAR correlation parameter",
         normalize = normalize
       )
     } else if (acframe_sar$type == "error") {
+      if ("gaussian" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_normal_errorsar.stan'\n"
+      }
+      if ("student" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_student_t_errorsar.stan'\n"
+      }
       str_add_list(out) <- stan_prior(
         prior, class = "errorsar", px = px, suffix = p,
         comment = "error-SAR correlation parameter",
@@ -1605,6 +1655,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
       )
     }
     if (acframe_car$type == "escar") {
+      str_add(out$fun) <- "  #include 'fun_sparse_car_lpdf.stan'\n"
       str_add(out$par) <- glue(
         "  vector[Nloc{p}] rcar{p};\n"
       )
@@ -1623,6 +1674,7 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
         "  );\n"
       )
     } else if (acframe_car$type == "esicar") {
+      str_add(out$fun) <- "  #include 'fun_sparse_icar_lpdf.stan'\n"
       str_add(out$par) <- glue(
         "  vector[Nloc{p} - 1] zcar{p};\n"
       )
@@ -1711,6 +1763,12 @@ stan_ac <- function(bterms, prior, threads, normalize, ...) {
     }
     if (use_threading(threads)) {
       stop2("Threading is not supported for FCOR models.")
+    }
+    if ("gaussian" %in% families) {
+      str_add(out$fun) <- "  #include 'fun_normal_fcor.stan'\n"
+    }
+    if ("student" %in% families) {
+      str_add(out$fun) <- "  #include 'fun_student_t_fcor.stan'\n"
     }
     str_add(out$data) <- glue(
       "  matrix[N{resp}, N{resp}] Mfcor{p};  // known residual covariance matrix\n"
@@ -1976,6 +2034,13 @@ stan_eta_combine <- function(bterms, out, threads, primitive, ...) {
     )
   }
   out$loopeta <- NULL
+  # some links need custom Stan functions
+  link <- bterms$family$link
+  link_names <- c("cauchit", "cloglog", "softplus", "squareplus", "softit")
+  needs_link_fun <- isTRUE(link %in% link_names)
+  if (needs_link_fun) {
+    str_add(out$fun) <- glue("  #include 'fun_{link}.stan'\n")
+  }
   # possibly transform eta before it is passed to the likelihood
   inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
   if (nzchar(inv_link)) {

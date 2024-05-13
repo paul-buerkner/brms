@@ -255,6 +255,11 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     gr <- usc(seq_along(groups))
     grb <- paste0("[", seq_along(groups), "]")
   }
+  # if (has_extra_cat(bterms)) {
+  #   str_add(out$fun) <- stan_hurdle_ordinal_lpmf(bterms$family)
+  # } else {
+  #   str_add(out$fun) <- stan_ordinal_lpmf(bterms$family)
+  # }
   if (fix_intercepts(bterms)) {
     # identify ordinal mixtures by fixing their thresholds to the same values
     if (has_equidistant_thres(bterms)) {
@@ -495,7 +500,15 @@ stan_mixture <- function(bterms, prior, threads, normalize, ...) {
 # ordinal log-probability density functions in Stan language
 # @return a character string
 stan_ordinal_lpmf <- function(family, link) {
-  stopifnot(is.character(family), is.character(link))
+  # code needed once we start passing a brmsfamily directly
+  # stopifnot(is.brmsfamily(family))
+  # if (!is_ordinal(family)) {
+  #   return("")
+  # }
+  # link <- family$link
+  # family <- family$family
+  family <- as_one_character(family)
+  link <- as_one_character(link)
   inv_link <- stan_inv_link(link)
   th <- function(k) {
     # helper function generating stan code inside inv_link(.)
@@ -666,7 +679,15 @@ stan_ordinal_lpmf <- function(family, link) {
 # log probability density for hurdle ordinal models
 # @return a character string
 stan_hurdle_ordinal_lpmf <- function(family, link) {
-  stopifnot(is.character(family), is.character(link))
+  # code needed once we start passing a brmsfamily directly
+  # stopifnot(is.brmsfamily(family))
+  # if (!is_ordinal(family)) {
+  #   return("")
+  # }
+  # link <- family$link
+  # family <- family$family
+  family <- as_one_character(family)
+  link <- as_one_character(link)
   # TODO: generalize to non-cumulative families?
   stopifnot(family == "hurdle_cumulative")
   inv_link <- stan_inv_link(link)

@@ -128,9 +128,7 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_Xme <- stan_Xme(
     bterms, prior = prior, threads = threads, normalize = normalize
   )
-  scode_global_defs <- stan_global_defs(
-    bterms, prior = prior, threads = threads
-  )
+  scode_global_defs <- stan_global_defs(bterms)
 
   # extend Stan's likelihood part
   if (use_threading(threads)) {
@@ -188,6 +186,8 @@ stancode.default <- function(object, data, family = gaussian(),
       scode_predictor[["model_no_pll_comp_mvjoin"]],
       scode_predictor[["model_lik"]]
     )
+    str_add(scode_predictor[["fun"]]) <-
+      "  #include 'fun_sequence.stan'\n"
     str_add(scode_predictor[["data"]]) <-
       "  int grainsize;  // grainsize for threading\n"
   } else {
@@ -227,6 +227,8 @@ stancode.default <- function(object, data, family = gaussian(),
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
       scode_global_defs[["fun"]],
+      scode_predictor[["fun"]],
+      scode_re[["fun"]],
       collapse_stanvars(stanvars, "functions"),
       scode_predictor[["partial_log_lik"]],
     "}\n"
@@ -247,7 +249,6 @@ stancode.default <- function(object, data, family = gaussian(),
   # generate transformed parameters block
   scode_transformed_data <- paste0(
     "transformed data {\n",
-       scode_global_defs[["tdata_def"]],
        scode_predictor[["tdata_def"]],
        collapse_stanvars(stanvars, "tdata", "start"),
        scode_predictor[["tdata_comp"]],
@@ -455,6 +456,8 @@ expand_include_statements <- function(model) {
     code <- paste0(code, collapse = "\n")
     pattern <- paste0(" *", escape_all(includes[i]))
     model <- sub(pattern, code, model)
+    # remove all duplicated include statements
+    model <- gsub(pattern, "", model)
   }
   model
 }
