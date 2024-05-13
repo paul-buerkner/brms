@@ -1,3 +1,11 @@
+# The brmsframe methods are combining formula with data information in
+# such a way that it can be used across the full range of primary brms
+# functions, including brm, stancode, standata, prepare_predictions etc.
+# Before brmsframe was introduced, a lot of of the frame_ functions had to
+# be run many times at different places of the pre- and post-processing functions,
+# which was uncessarily wasteful. To avoid this, brmsframe also computes
+# some parts of the Stan data already (see brmsframe.btl), which is automatically
+# reused in standata to avoid redundant function evaluations.
 brmsframe <- function(x, ...) {
   UseMethod("brmsframe")
 }
@@ -47,12 +55,16 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   x
 }
 
+# This methods handles the intricate relationship of frame_ and data_ functions.
+# In some cases, frame_ functions are computed from their data_ function's
+# output, but in some other cases, it is the other way around. This is slightly
+# inconsistent but avoids code duplication as much as possible, reflecting
+# the different ways formula terms are evaluated in brms
 #' @export
 brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   stopifnot(is.list(frame))
-  # TODO: add more comments on the relation of data_* and frame_* functions
-  # the outputs of these data_* functions are required in the corresponding
-  # frame_* functions (but not vice versa) and are thus evaluated first
+  # the outputs of these data_ functions are required in the corresponding
+  # frame_ functions (but not vice versa) and are thus evaluated first
   x$frame <- frame
   x$basis <- basis
   x$sdata <- list(
@@ -70,8 +82,8 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # only store the ranefs of this specific linear formula
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
-  # these data_* functions require the outputs of the corresponding
-  # frame_* functions (but not vice versa) and are thus evaluated last
+  # these data_ functions may require the outputs of the corresponding
+  # frame_ functions (but not vice versa) and are thus evaluated last
   x$sdata$gp <- data_gp(x, data, internal = TRUE)
   x$sdata$offset <- data_offset(x, data)
   x

@@ -40,7 +40,7 @@ prepare_predictions.brmsfit <- function(
 
   new_formula <- update_re_terms(x$formula, re_formula)
   bframe <- brmsframe(new_formula, data = x$data)
-  # TODO: move prep_re into prepare_predictions?
+  # TODO: move prep_re into prepare_predictions in brms 3.0
   prep_re <- prepare_predictions_re_global(
     bframe = bframe, draws = draws, sdata = sdata,
     resp = resp, old_reframe = x$ranef,

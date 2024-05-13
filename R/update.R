@@ -105,7 +105,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- bf(dots$formula, autocor = dots$autocor)
     }
   } else {
-    # TODO: restructure updating of the model formula
+    # TODO: generalize updating of the model formula
     if (is.mvbrmsformula(formula.) || is.mvbrmsformula(object$formula)) {
       stop2("Updating formulas of multivariate models is not yet possible.")
     }

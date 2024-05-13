@@ -284,7 +284,6 @@ get_uni_me <- function(x) {
 }
 
 # save all me-terms within a tidy data.frame
-# TODO: reduce the number of places frame_me needs to be called
 frame_me <- function(bterms, data, old_levels = NULL) {
   uni_me <- get_uni_me(bterms)
   if (!length(uni_me)) {
@@ -357,7 +356,6 @@ get_sp_vars <- function(x, type) {
 # @param data data frame containing the monotonic variables
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
-# TODO: call fram
 frame_sp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
