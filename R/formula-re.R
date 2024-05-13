@@ -630,71 +630,73 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       "Occured for effect '", dr$coef, "' of group '", dr$group, "'."
     )
   }
-  if (nrow(out)) {
+  if (has_rows(out)) {
     for (id in unique(out$id)) {
       out$cn[out$id == id] <- seq_len(sum(out$id == id))
     }
     out$ggn <- match(out$group, unique(out$group))
-    if (is.null(old_levels)) {
-      rsub <- out[!duplicated(out$group), ]
-      levels <- named_list(rsub$group)
-      for (i in seq_along(levels)) {
-        # combine levels of all grouping factors within one grouping term
-        levels[[i]] <- unique(ulapply(
-          rsub$gcall[[i]]$groups,
-          function(g) extract_levels(get(g, data))
-        ))
-        # fixes issue #1353
-        bysel <- out$group == names(levels)[i] &
-          nzchar(out$by) & !duplicated(out$by)
-        bysel <- which(bysel)
-        if (length(bysel) > 1L) {
-          stop2("Each grouping factor can only be associated with one 'by' variable.")
-        }
-        # ensure that a non-NULL by-variable is found if present
-        if (length(bysel) == 1L) {
-          rsub[i, ] <- out[bysel, ]
-        }
-        # store information of corresponding by-levels
-        if (nzchar(rsub$by[i])) {
-          stopifnot(rsub$type[i] %in% c("", "mmc"))
-          by <- rsub$by[i]
-          bylevels <- rsub$bylevels[[i]]
-          byvar <- rm_wsp(eval2(by, data))
-          groups <- rsub$gcall[[i]]$groups
-          if (rsub$gtype[i] == "mm") {
-            byvar <- as.matrix(byvar)
-            if (!identical(dim(byvar), c(nrow(data), length(groups)))) {
-              stop2(
-                "Grouping structure 'mm' expects 'by' to be ",
-                "a matrix with as many columns as grouping factors."
-              )
-            }
-            df <- J <- named_list(groups)
-            for (k in seq_along(groups)) {
-              J[[k]] <- match(get(groups[k], data), levels[[i]])
-              df[[k]] <- data.frame(J = J[[k]], by = byvar[, k])
-            }
-            J <- unlist(J)
-            df <- do_call(rbind, df)
-          } else {
-            J <- match(get(groups, data), levels[[i]])
-            df <- data.frame(J = J, by = byvar)
-          }
-          df <- unique(df)
-          if (nrow(df) > length(unique(J))) {
-            stop2("Some levels of ", collapse_comma(groups),
-                  " correspond to multiple levels of '", by, "'.")
-          }
-          df <- df[order(df$J), ]
-          by_per_level <- bylevels[match(df$by, bylevels)]
-          attr(levels[[i]], "by") <- by_per_level
-        }
+    # compute random effects levels
+    rsub <- out[!duplicated(out$group), ]
+    levels <- named_list(rsub$group)
+    for (i in seq_along(levels)) {
+      # combine levels of all grouping factors within one grouping term
+      levels[[i]] <- unique(ulapply(
+        rsub$gcall[[i]]$groups,
+        function(g) extract_levels(get(g, data))
+      ))
+      # fixes issue #1353
+      bysel <- out$group == names(levels)[i] &
+        nzchar(out$by) & !duplicated(out$by)
+      bysel <- which(bysel)
+      if (length(bysel) > 1L) {
+        stop2("Each grouping factor can only be associated with one 'by' variable.")
       }
-      set_levels(out) <- levels
-    } else {
+      # ensure that a non-NULL by-variable is found if present
+      if (length(bysel) == 1L) {
+        rsub[i, ] <- out[bysel, ]
+      }
+      # store information of corresponding by-levels
+      if (nzchar(rsub$by[i])) {
+        stopifnot(rsub$type[i] %in% c("", "mmc"))
+        by <- rsub$by[i]
+        bylevels <- rsub$bylevels[[i]]
+        byvar <- rm_wsp(eval2(by, data))
+        groups <- rsub$gcall[[i]]$groups
+        if (rsub$gtype[i] == "mm") {
+          byvar <- as.matrix(byvar)
+          if (!identical(dim(byvar), c(nrow(data), length(groups)))) {
+            stop2(
+              "Grouping structure 'mm' expects 'by' to be ",
+              "a matrix with as many columns as grouping factors."
+            )
+          }
+          df <- J <- named_list(groups)
+          for (k in seq_along(groups)) {
+            J[[k]] <- match(get(groups[k], data), levels[[i]])
+            df[[k]] <- data.frame(J = J[[k]], by = byvar[, k])
+          }
+          J <- unlist(J)
+          df <- do_call(rbind, df)
+        } else {
+          J <- match(get(groups, data), levels[[i]])
+          df <- data.frame(J = J, by = byvar)
+        }
+        df <- unique(df)
+        if (nrow(df) > length(unique(J))) {
+          stop2("Some levels of ", collapse_comma(groups),
+                " correspond to multiple levels of '", by, "'.")
+        }
+        df <- df[order(df$J), ]
+        by_per_level <- bylevels[match(df$by, bylevels)]
+        attr(levels[[i]], "by") <- by_per_level
+      }
+    }
+    if (!is.null(old_levels)) {
       # for newdata numeration has to depend on the original levels
       set_levels(out) <- old_levels
+      set_levels(out, "used") <- levels
+    } else {
+      set_levels(out) <- levels
     }
     # incorporate deprecated 'cov_ranef' argument
     out <- update_ranef_cov(out, bterms)
@@ -778,39 +780,6 @@ get_re_groups <- function(x, ...) {
 get_dist_groups <- function(reframe, dist) {
   out <- subset2(reframe, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
-}
-
-# assignment function to store levels as an attribute
-'set_levels<-' <- function(x, value) {
-  attr(x, "levels") <- value
-  x
-}
-
-# extract list of levels with one element per grouping factor
-# @param ... objects with a level attribute
-get_levels <- function(..., ls = list()) {
-  ls <- c(ls, list(...))
-  out <- vector("list", length(ls))
-  for (i in seq_along(out)) {
-    levels <- attr(ls[[i]], "levels", exact = TRUE)
-    if (is.list(levels)) {
-      stopifnot(!is.null(names(levels)))
-      out[[i]] <- as.list(levels)
-    } else if (!is.null(levels)) {
-      stopifnot(isTRUE(nzchar(names(ls)[i])))
-      out[[i]] <- setNames(list(levels), names(ls)[[i]])
-    }
-  }
-  out <- unlist(out, recursive = FALSE)
-  out[!duplicated(names(out))]
-}
-
-extract_levels <- function(x) {
-  # do not check for NAs according to #1355
-  if (!is.factor(x)) {
-    x <- factor(x)
-  }
-  levels(x)
 }
 
 # extract names of group-level effects

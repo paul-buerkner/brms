@@ -19,7 +19,6 @@
 #'   information on the priors used in the model.
 #' @slot stanvars A \code{\link{stanvars}} object.
 #' @slot model The model code in \pkg{Stan} language.
-#' @slot ranef A \code{data.frame} containing the group-level structure.
 #' @slot exclude The names of the parameters for which draws are not saved.
 #' @slot algorithm The name of the algorithm used to fit the model.
 #' @slot backend The name of the backend used to fit the model.
@@ -41,6 +40,7 @@
 #' @slot family (Deprecated) A \code{\link{brmsfamily}} object.
 #' @slot autocor (Deprecated) An \code{\link{cor_brms}} object containing
 #'   the autocorrelation structure if specified.
+#' @slot ranef (Deprecated) A \code{data.frame} containing the group-level structure.
 #' @slot cov_ranef (Deprecated) A \code{list} of customized group-level
 #'   covariance matrices.
 #' @slot stan_funs (Deprecated) A character string of length one or \code{NULL}.
@@ -57,13 +57,12 @@ NULL
 # brmsfit class
 brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
                     data2 = list(), stanvars = NULL, model = "",
-                    ranef = empty_reframe(), save_pars = NULL,
-                    algorithm = "sampling", backend = "rstan",
+                    save_pars = NULL, algorithm = "sampling", backend = "rstan",
                     threads = threading(), opencl = opencl(),
                     stan_args = list(), fit = NULL, basis = NULL,
                     criteria = list(), file = NULL, family = NULL,
-                    autocor = NULL, cov_ranef = NULL, stan_funs = NULL,
-                    data.name = "") {
+                    autocor = NULL, ranef = empty_reframe(), cov_ranef = NULL,
+                    stan_funs = NULL, data.name = "") {
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan"),
@@ -75,9 +74,9 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
     version$cmdstan <- as.package_version(cmdstanr::cmdstan_version())
   }
   x <- nlist(
-    formula, data, prior, data2, stanvars, model, ranef,
-    save_pars, algorithm, backend, threads, opencl, stan_args, fit, basis,
-    criteria, file, version, family, autocor, cov_ranef, stan_funs, data.name
+    formula, data, prior, data2, stanvars, model, save_pars, algorithm,
+    backend, threads, opencl, stan_args, fit, basis, criteria, file,
+    version, family, autocor, ranef, cov_ranef, stan_funs, data.name
   )
   class(x) <- "brmsfit"
   x

@@ -298,26 +298,26 @@ frame_me <- function(bterms, data, old_levels = NULL) {
     term = uni_me, xname = "", grname = "",
     stringsAsFactors = FALSE
   )
-  levels <- vector("list", nrow(out))
+  unique_grnames <- unique(out$grname)
+  levels <- named_list(unique_grnames)
   for (i in seq_rows(out)) {
     tmp <- eval2(out$term[i])
     out$xname[i] <- tmp$term
     if (isTRUE(nzchar(tmp$gr))) {
       out$grname[i] <- tmp$gr
-      if (length(old_levels)) {
-        levels[[i]] <- old_levels[[tmp$gr]]
-      } else {
-        levels[[i]] <- extract_levels(get(tmp$gr, data))
+      if (is.null(levels[[tmp$gr]])) {
+        levels[[tmp$gr]] <- extract_levels(get(tmp$gr, data))
       }
     }
   }
   out$coef <- rename(paste0("me", out$xname))
   out$cor <- isTRUE(bterms$mecor)
-  names(levels) <- out$grname
-  levels <- levels[lengths(levels) > 0L]
-  if (length(levels)) {
-    levels <- levels[!duplicated(names(levels))]
-    attr(out, "levels") <- levels
+  if (!is.null(old_levels)) {
+    # for newdata numeration has to depend on the original levels
+    set_levels(out) <- old_levels[[unique_grnames]]
+    set_levels(out, "used") <- levels
+  } else {
+    set_levels(out) <- levels
   }
   class(out) <- meframe_class()
   out

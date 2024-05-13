@@ -256,6 +256,15 @@ is_equal <- function(x, y, check.attributes = FALSE, ...) {
   isTRUE(all.equal(x, y, check.attributes = check.attributes, ...))
 }
 
+# extract factor levels from an arbitrary variable
+extract_levels <- function(x) {
+  # do not check for NAs according to #1355
+  if (!is.factor(x)) {
+    x <- factor(x)
+  }
+  levels(x)
+}
+
 # check if 'x' will behave like a factor in design matrices
 is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)

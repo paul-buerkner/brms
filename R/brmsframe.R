@@ -1,8 +1,9 @@
 brmsframe <- function(x, ...) {
-  # TODO: store output of standata_basis in brmsframe?
   UseMethod("brmsframe")
 }
 
+# @param basis information from original Stan data used to correctly
+#   predict from newdata. See 'frame_basis' for details.
 #' @export
 brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
   x$frame <- initialize_frame(x, data = data, basis = basis, ...)
@@ -16,8 +17,6 @@ brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
   x
 }
 
-# @param basis information from original Stan data used to correctly
-#   predict from new data. See 'standata_basis' for details.
 #' @export
 brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   if (is.null(frame)) {
@@ -97,17 +96,22 @@ brmsframe.default <- function(x, ...) {
   brmsframe(brmsterms(x), ...)
 }
 
-# initialize the frame list with general information
+# initialize the $frame list with general information
 initialize_frame <- function(x, data, basis = NULL, ...) {
+  old_levels <- basis$group_levels
   out <- list(
-    re = frame_re(x, data = data, old_levels = basis$levels),
-    me = frame_me(x, data = data, old_levels = basis$levels),
+    re = frame_re(x, data = data, old_levels = old_levels),
+    me = frame_me(x, data = data, old_levels = old_levels),
     index = frame_index(x, data = data)
   )
-  set_levels(out) <- get_levels(ls = out)
-  # TODO: store both old and current (new) levels if basis$levels is provided?
-  # this will enable to avoid repeated calls of frame_re and frame_me
-  # in different places just to get the right levels
+  if (!is.null(old_levels)) {
+    # this can only happen in post-processing potentially with newdata
+    # knowing both new and old indices in important in prepare_predictions
+    set_levels(out) <- old_levels
+    set_levels(out, "used") <- get_levels(out, prefix = "used")
+  } else {
+    set_levels(out) <- get_levels(out)
+  }
   out
 }
 
@@ -200,3 +204,210 @@ is.bframel <- function(x) {
 is.bframenl <- function(x) {
   inherits(x, "bframenl")
 }
+
+# assignment function to store levels as an attribute
+'set_levels<-' <- function(x, prefix = "", value) {
+  prefix_ <- usc(prefix, "suffix")
+  attr_name <- paste0(prefix_, "levels")
+  attr(x, attr_name) <- value
+  x
+}
+
+# extract list of levels with one element per grouping factor
+# assumes that levels have been stored as a 'levels' attribute
+get_levels <- function(x, ...) {
+  UseMethod("get_levels")
+}
+
+#' @export
+get_levels.default <- function(x, prefix = "", ...) {
+  prefix_ <- usc(prefix, "suffix")
+  attr_name <- paste0(prefix_, "levels")
+  attr(x, attr_name, exact = TRUE)
+}
+
+#' @export
+get_levels.list <- function(x, ...) {
+  out <- get_levels.default(x, ...)
+  if (!is.null(out)) {
+    return(out)
+  }
+  out <- vector("list", length(x))
+  for (i in seq_along(out)) {
+    levels <- get_levels(x[[i]], ...)
+    if (is.list(levels)) {
+      stopifnot(!is.null(names(levels)))
+      out[[i]] <- as.list(levels)
+    } else if (!is.null(levels)) {
+      stopifnot(isTRUE(nzchar(names(x)[i])))
+      out[[i]] <- setNames(list(levels), names(x)[[i]])
+    }
+  }
+  out <- unlist(out, recursive = FALSE)
+  out[!duplicated(names(out))]
+}
+
+#' @export
+get_levels.brmsterms <- function(x, data = NULL, ...) {
+  # if available, precomputed levels are stored in x$frame
+  out <- get_levels(x$frame, ...)
+  if (!is.null(out)) {
+    return(out)
+  }
+  if (!is.null(data)) {
+    ls <- list(frame_re(x, data), frame_me(x, data))
+    out <- get_levels(ls)
+  }
+  out
+}
+
+#' @export
+get_levels.mvbrmsterms <- function(x, data = NULL, ...) {
+  get_levels.brmsterms(x, data = data, ...)
+}
+
+# prepare basis data required for correct predictions from new data
+# TODO: eventually export this function if we want to ensure full compatibility
+#   with the 'empty' feature. see ?rename_pars for an example
+frame_basis <- function(x, data, ...) {
+  UseMethod("frame_basis")
+}
+
+#' @export
+frame_basis.default <- function(x, data, ...) {
+  list()
+}
+
+#' @export
+frame_basis.mvbrmsterms <- function(x, data, ...) {
+  out <- list()
+  # old levels are required to select the right indices for new levels
+  levels <- get_levels(x, data = data)
+  for (r in names(x$terms)) {
+    out$resps[[r]] <- frame_basis(x$terms[[r]], data, levels = levels, ...)
+  }
+  # store levels as list element rather than as attribute (via set_levels)
+  # to differentiate more easily whether or not old levels were provided
+  out$group_levels <- levels
+  out
+}
+
+#' @export
+frame_basis.brmsterms <- function(x, data, levels = NULL, ...) {
+  out <- list()
+  data <- subset_data(data, x)
+  for (dp in names(x$dpars)) {
+    out$dpars[[dp]] <- frame_basis(x$dpars[[dp]], data, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    out$nlpars[[nlp]] <- frame_basis(x$nlpars[[nlp]], data, ...)
+  }
+  # old levels are required to select the right indices for new levels
+  if (is.null(levels)) {
+    levels <- get_levels(x, data = data)
+  }
+  # store levels as list element rather than as attribute (via set_levels)
+  # to differentiate more easily whether or not old levels were provided
+  out$group_levels <- levels
+  if (is_binary(x$family) || is_categorical(x$family)) {
+    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$resp_levels <- levels(as.factor(y))
+  }
+  out
+}
+
+#' @export
+frame_basis.btnl <- function(x, data, ...) {
+  list()
+}
+
+#' @export
+frame_basis.btl <- function(x, data, ...) {
+  out <- list()
+  out$sm <- frame_basis_sm(x, data, ...)
+  out$gp <- frame_basis_gp(x, data, ...)
+  out$sp <- frame_basis_sp(x, data, ...)
+  out$ac <- frame_basis_ac(x, data, ...)
+  out$bhaz <- frame_basis_bhaz(x, data, ...)
+  out
+}
+
+# prepare basis data related to smooth terms
+frame_basis_sm <- function(x, data, ...) {
+  stopifnot(is.btl(x))
+  smterms <- all_terms(x[["sm"]])
+  out <- named_list(smterms)
+  if (length(smterms)) {
+    knots <- get_knots(data)
+    data <- rm_attr(data, "terms")
+    # the spline penalty has changed in 2.8.7 (#646)
+    diagonal.penalty <- !require_old_default("2.8.7")
+    gam_args <- list(
+      data = data, knots = knots,
+      absorb.cons = TRUE, modCon = 3,
+      diagonal.penalty = diagonal.penalty
+    )
+    for (i in seq_along(smterms)) {
+      sc_args <- c(list(eval2(smterms[i])), gam_args)
+      sm <- do_call(smoothCon, sc_args)
+      re <- vector("list", length(sm))
+      for (j in seq_along(sm)) {
+        re[[j]] <- mgcv::smooth2random(sm[[j]], names(data), type = 2)
+      }
+      out[[i]]$sm <- sm
+      out[[i]]$re <- re
+    }
+  }
+  out
+}
+
+# prepare basis data related to gaussian processes
+frame_basis_gp <- function(x, data, ...) {
+  stopifnot(is.btl(x))
+  out <- data_gp(x, data, internal = TRUE)
+  out <- out[grepl("^((Xgp)|(dmax)|(cmeans))", names(out))]
+  out
+}
+
+# prepare basis data related to special terms
+frame_basis_sp <- function(x, data, ...) {
+  stopifnot(is.btl(x))
+  out <- list()
+  if (length(attr(x$sp, "uni_mo"))) {
+    # do it like data_sp()
+    spframe <- frame_sp(x, data)
+    Xmo <- lapply(unlist(spframe$calls_mo), get_mo_values, data = data)
+    out$Jmo <- as.array(ulapply(Xmo, attr, "max"))
+  }
+  out
+}
+
+# prepare basis data related to autocorrelation structures
+frame_basis_ac <- function(x, data, ...) {
+  out <- list()
+  if (has_ac_class(x, "car")) {
+    gr <- get_ac_vars(x, "gr", class = "car")
+    if (isTRUE(nzchar(gr))) {
+      out$locations <- extract_levels(get(gr, data))
+    } else {
+      out$locations <- NA
+    }
+  }
+  if (has_ac_class(x, "unstr")) {
+    time <- get_ac_vars(x, "time", dim = "time")
+    out$times <- extract_levels(get(time, data))
+  }
+  out
+}
+
+# prepare basis data for baseline hazards of the cox model
+frame_basis_bhaz <- function(x, data, ...) {
+  out <- list()
+  if (is_cox(x$family)) {
+    # compute basis matrix of the baseline hazard for the Cox model
+    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$basis_matrix <- bhaz_basis_matrix(y, args = x$family$bhaz)
+  }
+  out
+}
+

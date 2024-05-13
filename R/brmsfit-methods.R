@@ -132,22 +132,23 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
                           groups = NULL, ...) {
   contains_draws(object)
   object <- restructure(object)
-  if (!has_rows(object$ranef)) {
+  reframe <- object$ranef
+  if (!has_rows(reframe)) {
     stop2("The model does not contain group-level effects.")
   }
   all_pars <- variables(object)
   if (!is.null(pars)) {
     pars <- as.character(pars)
   }
-  ranef <- object$ranef
-  all_groups <- unique(ranef$group)
+  all_groups <- unique(reframe$group)
   if (!is.null(groups)) {
     groups <- as.character(groups)
     all_groups <- intersect(all_groups, groups)
   }
+  group_levels <- get_levels(reframe)
   out <- named_list(all_groups)
   for (g in all_groups) {
-    r <- subset2(ranef, group = g)
+    r <- subset2(reframe, group = g)
     coefs <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
     rpars <- all_pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), all_pars)]
     if (!is.null(pars)) {
@@ -159,7 +160,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       regex <- paste0(",", regex, "\\]$")
       rpars <- rpars[grepl(regex, rpars)]
     }
-    levels <- attr(ranef, "levels")[[g]]
+    levels <- group_levels[[g]]
     if (length(rpars)) {
       # draws of varying coefficients were saved
       out[[g]] <- as.matrix(object, variable = rpars)
@@ -317,7 +318,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_draws(x)
   x <- restructure(x)
-  if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", variables(x))))) {
+  reframe <- x$ranef
+  if (!(has_rows(reframe) || any(grepl("^sigma($|_)", variables(x))))) {
     stop2("The model does not contain covariance matrices.")
   }
   .VarCorr <- function(y) {
@@ -355,21 +357,20 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     return(out)
   }
 
-  if (nrow(x$ranef)) {
+  tmp <- list()
+  if (has_rows(reframe)) {
     get_names <- function(group) {
       # get names of group-level parameters
-      r <- subset2(x$ranef, group = group)
+      r <- subset2(reframe, group = group)
       rnames <- as.vector(get_rnames(r))
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
       cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
       nlist(rnames, sd_pars, cor_pars)
     }
-    group <- unique(x$ranef$group)
+    group <- unique(reframe$group)
     tmp <- lapply(group, get_names)
     names(tmp) <- group
-  } else {
-    tmp <- list()
   }
   # include residual variances in the output as well
   bterms <- brmsterms(x$formula)
@@ -471,12 +472,11 @@ nobs.brmsfit <- function(object, resp = NULL, ...) {
 #' @export
 ngrps.brmsfit <- function(object, ...) {
   object <- restructure(object)
-  if (nrow(object$ranef)) {
-    out <- lapply(attr(object$ranef, "levels"), length)
-  } else {
-    out <- NULL
+  reframe <- object$ranef
+  if (!has_rows(reframe)) {
+    return(NULL)
   }
-  out
+  as.list(lengths(get_levels(reframe)))
 }
 
 #' @rdname ngrps.brmsfit

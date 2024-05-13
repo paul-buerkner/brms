@@ -246,7 +246,7 @@ data_gr_local <- function(bterms, data) {
     idresp <- paste0(id, resp)
     nranef <- nrow(id_reframe)
     group <- id_reframe$group[1]
-    levels <- attr(reframe, "levels")[[group]]
+    levels <- get_levels(reframe)[[group]]
     if (id_reframe$gtype[1] == "mm") {
       # multi-membership grouping term
       gs <- id_reframe$gcall[[1]]$groups

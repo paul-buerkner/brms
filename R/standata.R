@@ -103,33 +103,33 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
 # @param check_response check validity of the response?
 # @param only_response extract data related to the response only?
 # @param internal prepare Stan data for use in post-processing methods?
-# @param basis original Stan data as prepared by 'standata_basis'
+# @param basis original Stan data as prepared by 'frame_basis'
 # @param ... currently ignored
 # @return names list of data passed to Stan
-.standata <- function(bterms, data, prior, stanvars, data2,
+.standata <- function(bframe, data, prior, stanvars, data2,
                       threads = threading(), check_response = TRUE,
                       only_response = FALSE, internal = FALSE, ...) {
 
-  stopifnot(is.anybrmsframe(bterms))
+  stopifnot(is.anybrmsframe(bframe))
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   internal <- as_one_logical(internal)
   # order data for use in autocorrelation models
-  data <- order_data(data, bterms = bterms)
+  data <- order_data(data, bterms = bframe)
   out <- data_response(
-    bterms, data, check_response = check_response,
+    bframe, data, check_response = check_response,
     internal = internal
   )
   if (!only_response) {
-    # TODO: compute sdata_gr_global in brmsframe?
     # pass as sdata so that data_special_prior knows about data_gr_global
-    sdata_gr_global <- data_gr_global(bterms, data2 = data2)
+    # TODO: compute sdata_gr_global in brmsframe?
+    sdata_gr_global <- data_gr_global(bframe, data2 = data2)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, data2 = data2,
+      bframe, data = data, prior = prior, data2 = data2,
       sdata = sdata_gr_global
     )
     c(out) <- sdata_gr_global
-    c(out) <- data_Xme(bterms, data = data)
+    c(out) <- data_Xme(bframe, data = data)
   }
   out$prior_only <- as.integer(is_prior_only(prior))
   if (use_threading(threads)) {
@@ -152,11 +152,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     # allows to recover the original order of the data
     attr(out, "old_order") <- attr(data, "old_order")
     # ensures currently used grouping levels are known in post-processing
-    # TODO: extract info from brmsframe; see initialize_frame
-    set_levels(out) <- get_levels(
-      frame_re(bterms, data),
-      frame_me(bterms, data)
-    )
+    set_levels(out, "used") <- get_levels(bframe, prefix = "used")
   }
   structure(out, class = c("standata", "list"))
 }
@@ -201,8 +197,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # the 'empty' feature. But computing it here will be fine
     # for almost all models, only causing potential problems for processing
     # of splines on new machines (#1465)
-    bframe_old <- brmsframe(bterms, data = object$data)
-    basis <- standata_basis(bframe_old, data = object$data)
+    basis <- frame_basis(bterms, data = object$data)
   }
   bframe <- brmsframe(bterms, data = data, basis = basis)
   .standata(
@@ -210,140 +205,4 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     data2 = data2, stanvars = stanvars,
     threads = object$threads, ...
   )
-}
-
-# prepare basis data required for correct predictions from new data
-# TODO: eventually export this function if we want to ensure full compatibility
-#   with the 'empty' feature. see ?rename_pars for an example
-standata_basis <- function(x, data, ...) {
-  UseMethod("standata_basis")
-}
-
-#' @export
-standata_basis.default <- function(x, data, ...) {
-  list()
-}
-
-#' @export
-standata_basis.mvbrmsterms <- function(x, data, ...) {
-  out <- list()
-  for (r in names(x$terms)) {
-    out$resps[[r]] <- standata_basis(x$terms[[r]], data, ...)
-  }
-  out$levels <- get_levels(frame_me(x, data), frame_re(x, data))
-  out
-}
-
-#' @export
-standata_basis.brmsterms <- function(x, data, ...) {
-  out <- list()
-  data <- subset_data(data, x)
-  for (dp in names(x$dpars)) {
-    out$dpars[[dp]] <- standata_basis(x$dpars[[dp]], data, ...)
-  }
-  for (nlp in names(x$nlpars)) {
-    out$nlpars[[nlp]] <- standata_basis(x$nlpars[[nlp]], data, ...)
-  }
-  # old levels are required to select the right indices for new levels
-  out$levels <- get_levels(frame_me(x, data), frame_re(x, data))
-  if (is_binary(x$family) || is_categorical(x$family)) {
-    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-    out$resp_levels <- levels(as.factor(y))
-  }
-  out
-}
-
-#' @export
-standata_basis.btnl <- function(x, data, ...) {
-  list()
-}
-
-#' @export
-standata_basis.btl <- function(x, data, ...) {
-  out <- list()
-  out$sm <- standata_basis_sm(x, data, ...)
-  out$gp <- standata_basis_gp(x, data, ...)
-  out$sp <- standata_basis_sp(x, data, ...)
-  out$ac <- standata_basis_ac(x, data, ...)
-  out$bhaz <- standata_basis_bhaz(x, data, ...)
-  out
-}
-
-# prepare basis data related to smooth terms
-standata_basis_sm <- function(x, data, ...) {
-  stopifnot(is.btl(x))
-  smterms <- all_terms(x[["sm"]])
-  out <- named_list(smterms)
-  if (length(smterms)) {
-    knots <- get_knots(data)
-    data <- rm_attr(data, "terms")
-    # the spline penalty has changed in 2.8.7 (#646)
-    diagonal.penalty <- !require_old_default("2.8.7")
-    gam_args <- list(
-      data = data, knots = knots,
-      absorb.cons = TRUE, modCon = 3,
-      diagonal.penalty = diagonal.penalty
-    )
-    for (i in seq_along(smterms)) {
-      sc_args <- c(list(eval2(smterms[i])), gam_args)
-      sm <- do_call(smoothCon, sc_args)
-      re <- vector("list", length(sm))
-      for (j in seq_along(sm)) {
-        re[[j]] <- mgcv::smooth2random(sm[[j]], names(data), type = 2)
-      }
-      out[[i]]$sm <- sm
-      out[[i]]$re <- re
-    }
-  }
-  out
-}
-
-# prepare basis data related to gaussian processes
-standata_basis_gp <- function(x, data, ...) {
-  stopifnot(is.btl(x))
-  out <- data_gp(x, data, internal = TRUE)
-  out <- out[grepl("^((Xgp)|(dmax)|(cmeans))", names(out))]
-  out
-}
-
-# prepare basis data related to special terms
-standata_basis_sp <- function(x, data, ...) {
-  stopifnot(is.btl(x))
-  out <- list()
-  if (length(attr(x$sp, "uni_mo"))) {
-    # do it like data_sp()
-    spframe <- frame_sp(x, data)
-    Xmo <- lapply(unlist(spframe$calls_mo), get_mo_values, data = data)
-    out$Jmo <- as.array(ulapply(Xmo, attr, "max"))
-  }
-  out
-}
-
-# prepare basis data related to autocorrelation structures
-standata_basis_ac <- function(x, data, ...) {
-  out <- list()
-  if (has_ac_class(x, "car")) {
-    gr <- get_ac_vars(x, "gr", class = "car")
-    if (isTRUE(nzchar(gr))) {
-      out$locations <- extract_levels(get(gr, data))
-    } else {
-      out$locations <- NA
-    }
-  }
-  if (has_ac_class(x, "unstr")) {
-    time <- get_ac_vars(x, "time", dim = "time")
-    out$times <- extract_levels(get(time, data))
-  }
-  out
-}
-
-# prepare basis data for baseline hazards of the cox model
-standata_basis_bhaz <- function(x, data, ...) {
-  out <- list()
-  if (is_cox(x$family)) {
-    # compute basis matrix of the baseline hazard for the Cox model
-    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-    out$basis_matrix <- bhaz_basis_matrix(y, args = x$family$bhaz)
-  }
-  out
 }

@@ -42,7 +42,7 @@ prepare_predictions.brmsfit <- function(
   bframe <- brmsframe(new_formula, data = x$data)
   # TODO: move prep_re into prepare_predictions?
   prep_re <- prepare_predictions_re_global(
-    bterms = bframe, draws = draws, sdata = sdata,
+    bframe = bframe, draws = draws, sdata = sdata,
     resp = resp, old_reframe = x$ranef,
     sample_new_levels = sample_new_levels,
   )
@@ -234,15 +234,15 @@ prepare_predictions.bframel <- function(x, draws, sdata, ...) {
 }
 
 # prepare predictions of ordinary population-level effects
-prepare_predictions_fe <- function(bterms, draws, sdata, ...) {
-  stopifnot(is.bframel(bterms))
+prepare_predictions_fe <- function(bframe, draws, sdata, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  if (is.null(bterms[["fe"]])) {
+  if (is.null(bframe[["fe"]])) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   X <- sdata[[paste0("X", p)]]
-  fixef <- bterms$frame$fe$vars
+  fixef <- bframe$frame$fe$vars
   if (length(fixef)) {
     out$X <- X
     b_pars <- paste0("b", p, "_", fixef)
@@ -252,16 +252,16 @@ prepare_predictions_fe <- function(bterms, draws, sdata, ...) {
 }
 
 # prepare predictions of special effects terms
-prepare_predictions_sp <- function(bterms, draws, sdata, new = FALSE, ...) {
-  stopifnot(is.bframel(bterms))
+prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  spframe <- bterms$frame$sp
-  meframe <- bterms$frame$me
+  spframe <- bframe$frame$sp
+  meframe <- bframe$frame$me
   if (!has_rows(spframe)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
-  resp <- usc(bterms$resp)
+  p <- usc(combine_prefix(bframe))
+  resp <- usc(bframe$resp)
   # prepare calls evaluated in sp_predictor
   out$calls <- vector("list", nrow(spframe))
   for (i in seq_along(out$calls)) {
@@ -408,17 +408,17 @@ prepare_predictions_sp <- function(bterms, draws, sdata, new = FALSE, ...) {
 }
 
 # prepare predictions of category specific effects
-prepare_predictions_cs <- function(bterms, draws, sdata, ...) {
-  stopifnot(is.bframel(bterms))
+prepare_predictions_cs <- function(bframe, draws, sdata, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  if (!is_ordinal(bterms$family)) {
+  if (!is_ordinal(bframe$family)) {
     return(out)
   }
-  resp <- usc(bterms$resp)
+  resp <- usc(bframe$resp)
   out$nthres <- sdata[[paste0("nthres", resp)]]
-  csef <- bterms$frame$cs$vars
+  csef <- bframe$frame$cs$vars
   if (length(csef)) {
-    p <- usc(combine_prefix(bterms))
+    p <- usc(combine_prefix(bframe))
     cs_pars <- paste0("^bcs", p, "_", escape_all(csef), "\\[")
     out$bcs <- prepare_draws(draws, cs_pars, regex = TRUE)
     out$Xcs <- sdata[[paste0("Xcs", p)]]
@@ -427,14 +427,14 @@ prepare_predictions_cs <- function(bterms, draws, sdata, ...) {
 }
 
 # prepare predictions of smooth terms
-prepare_predictions_sm <- function(bterms, draws, sdata, ...) {
-  stopifnot(is.bframel(bterms))
+prepare_predictions_sm <- function(bframe, draws, sdata, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  smframe <- bterms$frame$sm
+  smframe <- bframe$frame$sm
   if (!has_rows(smframe)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   Xs_names <- attr(smframe, "Xs_names")
   if (length(Xs_names)) {
     out$fe$Xs <- sdata[[paste0("Xs", p)]]
@@ -458,14 +458,14 @@ prepare_predictions_sm <- function(bterms, draws, sdata, ...) {
 # prepare predictions for Gaussian processes
 # @param new is new data used?
 # @param nug small numeric value to avoid numerical problems in GPs
-prepare_predictions_gp <- function(bterms, draws, sdata, new = FALSE,
+prepare_predictions_gp <- function(bframe, draws, sdata, new = FALSE,
                                    nug = NULL, ...) {
-  stopifnot(is.bframel(bterms))
-  gpframe <- bterms$frame$gp
+  stopifnot(is.bframel(bframe))
+  gpframe <- bframe$frame$gp
   if (!has_rows(gpframe)) {
     return(list())
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   if (is.null(nug)) {
     # nug for old data must be the same as in the Stan code as even tiny
     # differences (e.g., 1e-12 vs. 1e-11) will matter for larger lscales
@@ -553,9 +553,9 @@ prepare_predictions_gp <- function(bterms, draws, sdata, new = FALSE,
 # @param old_reframe output of frame_re based on the original formula and data
 # @return a named list with one element per group containing posterior draws
 #   of levels used in the data as well as additional meta-data
-prepare_predictions_re_global <- function(bterms, draws, sdata, old_reframe, resp = NULL,
+prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, resp = NULL,
                                           sample_new_levels = "uncertainty", ...) {
-  reframe <- bterms$frame$re
+  reframe <- bframe$frame$re
   if (!has_rows(reframe)) {
     return(list())
   }
@@ -563,14 +563,21 @@ prepare_predictions_re_global <- function(bterms, draws, sdata, old_reframe, res
   # ensures subsetting 'reframe' by 'resp' works correctly
   resp <- resp %||% ""
   groups <- unique(reframe$group)
+  old_levels <- get_levels(old_reframe)
+  used_levels <- get_levels(sdata, prefix = "used")
+  # used (new) levels are currently not available within the bframe argument
+  # since it has been computed with the old data (but new formula) the likely
+  # reason for this choice was to avoid running validate_newdata twice (in
+  # prepare_predictions and standata). Perhaps this choice can can be
+  # reconsidered in the future while avoiding multiple validate_newdata runs
   out <- named_list(groups, list())
   for (g in groups) {
     # prepare general variables related to group g
     reframe_g <- subset2(reframe, group = g)
     old_reframe_g <- subset2(old_reframe, group = g)
-    used_levels <- get_levels(sdata)[[g]]
-    old_levels <- get_levels(old_reframe)[[g]]
-    nlevels <- length(old_levels)
+    used_levels_g <- used_levels[[g]]
+    old_levels_g <- old_levels[[g]]
+    nlevels <- length(old_levels_g)
     nranef <- nrow(reframe_g)
     # prepare draws of group-level effects
     rpars <- paste0("^r_", g, "(__.+)?\\[")
@@ -604,8 +611,8 @@ prepare_predictions_re_global <- function(bterms, draws, sdata, old_reframe, res
     }
     # generate draws for new levels
     args_new_rdraws <- nlist(
-      reframe = reframe_g, gf, used_levels, old_levels,
-      rdraws = rdraws, draws, sample_new_levels
+      reframe = reframe_g, gf, used_levels = used_levels_g,
+      old_levels = old_levels_g, rdraws = rdraws, draws, sample_new_levels
     )
     new_rdraws <- do_call(get_new_rdraws, args_new_rdraws)
     max_level <- attr(new_rdraws, "max_level")
@@ -629,13 +636,13 @@ prepare_predictions_re_global <- function(bterms, draws, sdata, old_reframe, res
 # prepare predictions of group-level effects
 # @param prep_re a named list with one element per group containing
 #   posterior draws of levels as well as additional meta-data
-prepare_predictions_re <- function(bterms, sdata, prep_re = list(),
+prepare_predictions_re <- function(bframe, sdata, prep_re = list(),
                                    sample_new_levels = "uncertainty", ...) {
   out <- list()
   if (!length(prep_re)) {
     return(out)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   reframe_px <- from_list(prep_re, "reframe")
   reframe_px <- do_call(rbind, reframe_px)
@@ -716,17 +723,17 @@ prepare_predictions_re <- function(bterms, sdata, prep_re = list(),
 
 # prepare predictions of autocorrelation parameters
 # @param nat_cov extract terms for covariance matrices of natural residuals?
-prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
+prepare_predictions_ac <- function(bframe, draws, sdata, oos = NULL,
                                    nat_cov = FALSE, new = FALSE, ...) {
   out <- list()
   nat_cov <- as_one_logical(nat_cov)
-  acframe <- subset2(bterms$frame$ac, nat_cov = nat_cov)
+  acframe <- subset2(bframe$frame$ac, nat_cov = nat_cov)
   if (!has_rows(acframe)) {
     return(out)
   }
   stopifnot(is.acframe(acframe))
   out$acframe <- acframe
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   out$N_tg <- sdata[[paste0("N_tg", p)]]
   if (has_ac_class(acframe, "arma")) {
     acframe_arma <- subset2(acframe, class = "arma")
@@ -762,7 +769,7 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
     out$begin_tg <- sdata[[paste0("begin_tg", p)]]
     out$end_tg <- sdata[[paste0("end_tg", p)]]
   }
-  if (has_ac_latent_residuals(bterms)) {
+  if (has_ac_latent_residuals(bframe)) {
     err_regex <- paste0("^err", p, "\\[")
     has_err <- any(grepl(err_regex, colnames(draws)))
     if (has_err && !new) {
@@ -812,33 +819,33 @@ prepare_predictions_ac <- function(bterms, draws, sdata, oos = NULL,
   out
 }
 
-prepare_predictions_offset <- function(bterms, sdata, ...) {
-  p <- usc(combine_prefix(bterms))
+prepare_predictions_offset <- function(bframe, sdata, ...) {
+  p <- usc(combine_prefix(bframe))
   sdata[[paste0("offsets", p)]]
 }
 
 # prepare predictions of ordinal thresholds
-prepare_predictions_thres <- function(bterms, draws, sdata, ...) {
+prepare_predictions_thres <- function(bframe, draws, sdata, ...) {
   out <- list()
-  if (!is_ordinal(bterms$family)) {
+  if (!is_ordinal(bframe$family)) {
     return(out)
   }
-  resp <- usc(bterms$resp)
+  resp <- usc(bframe$resp)
   out$nthres <- sdata[[paste0("nthres", resp)]]
   out$Jthres <- sdata[[paste0("Jthres", resp)]]
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   thres_regex <- paste0("^b", p, "_Intercept\\[")
   out$thres <- prepare_draws(draws, thres_regex, regex = TRUE)
   out
 }
 
 # prepare predictions of baseline functions for the cox model
-prepare_predictions_bhaz <- function(bterms, draws, sdata, ...) {
-  if (!is_cox(bterms$family)) {
+prepare_predictions_bhaz <- function(bframe, draws, sdata, ...) {
+  if (!is_cox(bframe$family)) {
     return(NULL)
   }
   out <- list()
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   sbhaz_regex <- paste0("^sbhaz", p)
   sbhaz <- prepare_draws(draws, sbhaz_regex, regex = TRUE)
   Zbhaz <- sdata[[paste0("Zbhaz", p)]]
@@ -849,8 +856,8 @@ prepare_predictions_bhaz <- function(bterms, draws, sdata, ...) {
 }
 
 # extract data mainly related to the response variable
-prepare_predictions_data <- function(bterms, sdata, stanvars = NULL, ...) {
-  resp <- usc(combine_prefix(bterms))
+prepare_predictions_data <- function(bframe, sdata, stanvars = NULL, ...) {
+  resp <- usc(combine_prefix(bframe))
   vars <- c(
     "Y", "trials", "ncat", "nthres", "se", "weights",
     "denom", "dec", "cens", "rcens", "lb", "ub"

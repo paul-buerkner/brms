@@ -266,7 +266,7 @@ restructure_v2 <- function(x) {
     # storing this is strictly required only for spline models but there it is
     # critical due to the machine-specific output of SVD (#1465)
     bframe <- brmsframe(x$formula, data = x$data)
-    x$basis <- standata_basis(bframe, data = x$data)
+    x$basis <- frame_basis(bframe, data = x$data)
   }
   if (version < "2.21.3") {
     # the class of random effects data.frames was changed

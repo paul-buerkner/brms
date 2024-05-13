@@ -553,16 +553,9 @@ validate_newdata <- function(
   unused_vars <- setdiff(all_vars, used_vars)
   newdata <- fill_newdata(newdata, unused_vars)
   # validate grouping factors
-  # TODO: extract info from brmsframe; see initialize_frame
-  old_levels <- get_levels(
-    frame_re(bterms, data = mf),
-    frame_me(bterms, data = mf)
-  )
+  old_levels <- get_levels(bterms, data = mf)
   if (!allow_new_levels) {
-    new_levels <- get_levels(
-      frame_re(bterms, data = newdata),
-      frame_me(bterms, data = newdata)
-    )
+    new_levels <- get_levels(bterms, data = newdata)
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
       if (length(unknown_levels)) {
