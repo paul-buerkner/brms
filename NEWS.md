@@ -7,6 +7,8 @@ thanks to Henrik Singmann. (#1651)
 
 ### Other Changes
 
+* Refactor some of the internal code base to avoid evaluating
+many data-dependent quantities several times. (#1653)
 * Make argument `loo` optional in `loo_moment_match`.
 
 # brms 2.21.0
