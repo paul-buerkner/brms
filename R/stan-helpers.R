@@ -1,33 +1,6 @@
 # unless otherwise specified, functions return a named list
 # of Stan code snippets to be pasted together later on
 
-# define custom Stan functions
-# TODO: Figure out how to *uniquely* include Stan functions that are not stored
-# in inst/chunks but rather defined programatically on the fly (e.g., in
-# stan_ordinal_lpmf). Once this is done, stan_global_defs can be removed.
-stan_global_defs <- function(bterms) {
-  stopifnot(is.anybrmsterms(bterms))
-  families <- family_names(bterms)
-  links <- family_info(bterms, "link")
-  unique_combs <- !duplicated(paste0(families, ":", links))
-  families <- families[unique_combs]
-  links <- links[unique_combs]
-  out <- list()
-  is_ordinal <- ulapply(families, is_ordinal)
-  if (any(is_ordinal)) {
-    ord_fams <- families[is_ordinal]
-    ord_links <- links[is_ordinal]
-    for (i in seq_along(ord_fams)) {
-      if (has_extra_cat(ord_fams[i])) {
-        str_add(out$fun) <- stan_hurdle_ordinal_lpmf(ord_fams[i], ord_links[i])
-      } else {
-        str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
-      }
-    }
-  }
-  out
-}
-
 # link function in Stan language
 # @param link name of the link function
 # @param transform actually apply the link function?

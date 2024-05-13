@@ -128,7 +128,6 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_Xme <- stan_Xme(
     bterms, prior = prior, threads = threads, normalize = normalize
   )
-  scode_global_defs <- stan_global_defs(bterms)
 
   # extend Stan's likelihood part
   if (use_threading(threads)) {
@@ -226,7 +225,6 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_functions <- paste0(
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
-      scode_global_defs[["fun"]],
       scode_predictor[["fun"]],
       scode_re[["fun"]],
       collapse_stanvars(stanvars, "functions"),
@@ -440,20 +438,29 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
   out
 }
 
-# expand '#include' statements
-# This could also be done automatically by Stan at compilation time
+# expand '#include' and '#includeR' statements
+# For '#include' this could also be done automatically by Stan at compilation time
 # but would result in Stan code that is not self-contained until compilation
-# @param model Stan code potentially including '#include' statements
-# @return Stan code with '#include' statements expanded
+# @param model Stan code that may contain '#include' and '#includeR' statements
+# @return Stan code with '#include' and '#includeR' statements expanded
 expand_include_statements <- function(model) {
+  # '#include' statements will be replaced by the content of a file
   path <- system.file("chunks", package = "brms")
-  includes <- get_matches("#include '[^']+'", model)
-  # removal of duplicates could make code generation easier in the future
-  includes <- unique(includes)
+  includes <- unique(get_matches("#include '[^']+'", model))
   files <- gsub("(#include )|(')", "", includes)
   for (i in seq_along(includes)) {
     code <- readLines(paste0(path, "/", files[i]))
     code <- paste0(code, collapse = "\n")
+    pattern <- paste0(" *", escape_all(includes[i]))
+    model <- sub(pattern, code, model)
+    # remove all duplicated include statements
+    model <- gsub(pattern, "", model)
+  }
+  # '#includeR' statements will be replaced by the call to an R function
+  includes <- unique(get_matches("#includeR `[^`]+`", model))
+  calls <- gsub("(#includeR )|(`)", "", includes)
+  for (i in seq_along(includes)) {
+    code <- eval2(calls[i])
     pattern <- paste0(" *", escape_all(includes[i]))
     model <- sub(pattern, code, model)
     # remove all duplicated include statements
