@@ -103,21 +103,21 @@ rename_predictor.bframel <- function(x, ...) {
 }
 
 # helps in renaming fixed effects parameters
-rename_fe <- function(bterms, pars, prior, ...) {
-  stopifnot(is.bframel(bterms))
+rename_fe <- function(bframe, pars, prior, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  fixef <- bterms$frame$fe$vars_stan
+  fixef <- bframe$frame$fe$vars_stan
   if (!length(fixef)) {
     return(out)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   b <- paste0("b", p)
   pos <- grepl(paste0("^", b, "\\["), pars)
   bnames <- paste0(b, "_", fixef)
   lc(out) <- rlist(pos, bnames)
   c(out) <- rename_prior(b, pars, names = fixef)
-  if (has_special_prior(prior, bterms, class = "b")) {
+  if (has_special_prior(prior, bframe, class = "b")) {
     sdb <- paste0("sdb", p)
     pos <- grepl(paste0("^", sdb, "\\["), pars)
     sdb_names <- paste0(sdb, "_", fixef)
@@ -127,14 +127,14 @@ rename_fe <- function(bterms, pars, prior, ...) {
 }
 
 # helps in renaming special effects parameters
-rename_sp <- function(bterms, pars, prior, ...) {
-  stopifnot(is.bframel(bterms))
+rename_sp <- function(bframe, pars, prior, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  spframe <- bterms$frame$sp
+  spframe <- bframe$frame$sp
   if (!nrow(spframe)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   bsp <- paste0("bsp", p)
   pos <- grepl(paste0("^", bsp, "\\["), pars)
   newnames <- paste0("bsp", p, "_", spframe$coef)
@@ -151,7 +151,7 @@ rename_sp <- function(bterms, pars, prior, ...) {
       simo_old, pars, new_class = simo_new, is_vector = TRUE
     )
   }
-  if (has_special_prior(prior, bterms, class = "b")) {
+  if (has_special_prior(prior, bframe, class = "b")) {
     sdbsp <- paste0("sdbsp", p)
     pos <- grepl(paste0("^", sdbsp, "\\["), pars)
     sdbsp_names <- paste0(sdbsp, "_", spframe$coef)
@@ -161,12 +161,12 @@ rename_sp <- function(bterms, pars, prior, ...) {
 }
 
 # helps in renaming category specific effects parameters
-rename_cs <- function(bterms, pars, ...) {
-  stopifnot(is.bframel(bterms))
+rename_cs <- function(bframe, pars, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  csef <- bterms$frame$cs$vars
+  csef <- bframe$frame$cs$vars
   if (length(csef)) {
-    p <- usc(combine_prefix(bterms))
+    p <- usc(combine_prefix(bframe))
     bcsp <- paste0("bcs", p)
     ncs <- length(csef)
     thres <- sum(grepl(paste0("^b", p, "_Intercept\\["), pars))
@@ -182,18 +182,18 @@ rename_cs <- function(bterms, pars, ...) {
 }
 
 # rename threshold parameters in ordinal models
-rename_thres <- function(bterms, pars, ...) {
+rename_thres <- function(bframe, pars, ...) {
   out <- list()
   # renaming is only required if multiple threshold were estimated
-  if (!has_thres_groups(bterms)) {
+  if (!has_thres_groups(bframe)) {
     return(out)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   int <- paste0("b", p, "_Intercept")
-  groups <- get_thres_groups(bterms)
+  groups <- get_thres_groups(bframe)
   for (i in seq_along(groups)) {
-    thres <- get_thres(bterms, groups[i])
+    thres <- get_thres(bframe, groups[i])
     pos <- grepl(glue("^{int}_{i}\\["), pars)
     int_names <- glue("{int}[{groups[i]},{thres}]")
     lc(out) <- rlist(pos, int_names)
@@ -203,8 +203,8 @@ rename_thres <- function(bterms, pars, ...) {
 
 # helps in renaming global noise free variables
 # @param meframe data.frame returned by 'frame_me'
-rename_Xme <- function(bterms, pars, ...) {
-  meframe <- bterms$frame$me
+rename_Xme <- function(bframe, pars, ...) {
+  meframe <- bframe$frame$me
   stopifnot(is.meframe(meframe))
   out <- list()
   levels <- attr(meframe, "levels")
@@ -251,15 +251,15 @@ rename_Xme <- function(bterms, pars, ...) {
 }
 
 # helps in renaming estimated missing values
-rename_Ymi <- function(bterms, pars, ...) {
-  stopifnot(is.brmsframe(bterms))
+rename_Ymi <- function(bframe, pars, ...) {
+  stopifnot(is.brmsframe(bframe))
   out <- list()
-  if (is.formula(bterms$adforms$mi)) {
-    resp <- usc(combine_prefix(bterms))
+  if (is.formula(bframe$adforms$mi)) {
+    resp <- usc(combine_prefix(bframe))
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
-      Jmi <- bterms$frame$resp$Jmi
+      Jmi <- bframe$frame$resp$Jmi
       fnames <- paste0(Ymi, "[", Jmi, "]")
       lc(out) <- rlist(pos, fnames)
     }
@@ -268,11 +268,11 @@ rename_Ymi <- function(bterms, pars, ...) {
 }
 
 # helps in renaming parameters of gaussian processes
-rename_gp <- function(bterms, pars, ...) {
-  stopifnot(is.bframel(bterms))
+rename_gp <- function(bframe, pars, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  p <- usc(combine_prefix(bterms), "prefix")
-  gpframe <- bterms$frame$gp
+  p <- usc(combine_prefix(bframe), "prefix")
+  gpframe <- bframe$frame$gp
   for (i in seq_rows(gpframe)) {
     # rename GP hyperparameters
     sfx1 <- gpframe$sfx1[[i]]
@@ -317,14 +317,14 @@ rename_gp <- function(bterms, pars, ...) {
 }
 
 # helps in renaming smoothing term parameters
-rename_sm <- function(bterms, pars, prior, ...) {
-  stopifnot(is.bframel(bterms))
+rename_sm <- function(bframe, pars, prior, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  smframe <- bterms$frame$sm
+  smframe <- bframe$frame$sm
   if (!has_rows(smframe)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   Xs_names <- attr(smframe, "Xs_names")
   if (length(Xs_names)) {
     bs <- paste0("bs", p)
@@ -333,7 +333,7 @@ rename_sm <- function(bterms, pars, prior, ...) {
     lc(out) <- rlist(pos, bsnames)
     c(out) <- rename_prior(bs, pars, names = Xs_names)
   }
-  if (has_special_prior(prior, bterms, class = "b")) {
+  if (has_special_prior(prior, bframe, class = "b")) {
     sdbs <- paste0("sdbs", p)
     pos <- grepl(paste0("^", sdbs, "\\["), pars)
     sdbs_names <- paste0(sdbs, "_", Xs_names)
@@ -361,11 +361,11 @@ rename_sm <- function(bterms, pars, prior, ...) {
 }
 
 # helps in renaming autocorrelation parameters
-rename_ac <- function(bterms, pars, ...) {
+rename_ac <- function(bframe, pars, ...) {
   out <- list()
-  acframe <- bterms$frame$ac
+  acframe <- bframe$frame$ac
   stopifnot(is.acframe(acframe))
-  resp <- usc(bterms$resp)
+  resp <- usc(bframe$resp)
   if (has_ac_class(acframe, "unstr")) {
     times <- attr(acframe, "times")
     corname <- paste0("cortime", resp)
@@ -377,9 +377,9 @@ rename_ac <- function(bterms, pars, ...) {
 }
 
 # helps in renaming group-level parameters
-rename_re <- function(bterms, pars, ...) {
+rename_re <- function(bframe, pars, ...) {
   out <- list()
-  reframe <- bterms$frame$re
+  reframe <- bframe$frame$re
   if (!has_rows(reframe)) {
     return(out)
   }
@@ -418,7 +418,7 @@ rename_re <- function(bterms, pars, ...) {
     }
   }
   if (any(grepl("^r_", pars))) {
-    c(out) <- rename_re_levels(bterms, pars = pars)
+    c(out) <- rename_re_levels(bframe, pars = pars)
   }
   reframe_t <- get_dist_groups(reframe, "student")
   for (i in seq_rows(reframe_t)) {
@@ -430,9 +430,9 @@ rename_re <- function(bterms, pars, ...) {
 }
 
 # helps in renaming varying effects parameters per level
-rename_re_levels <- function(bterms, pars, ...)  {
+rename_re_levels <- function(bframe, pars, ...)  {
   out <- list()
-  reframe <- bterms$frame$re
+  reframe <- bframe$frame$re
   stopifnot(is.reframe(reframe))
   for (i in seq_rows(reframe)) {
     r <- reframe[i, ]

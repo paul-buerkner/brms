@@ -250,7 +250,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     )
     bframe <- brmsframe(bterms, data = object$data)
     object$prior <- .validate_prior(
-      dots$prior, bterms = bframe,
+      dots$prior, bframe = bframe,
       sample_prior = dots$sample_prior
     )
     object$family <- get_element(object$formula, "family")

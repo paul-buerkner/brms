@@ -2,13 +2,13 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bterms, normalize) {
-  stopifnot(is.brmsframe(bterms))
+stan_response <- function(bframe, normalize) {
+  stopifnot(is.brmsframe(bframe))
   lpdf <- stan_lpdf_name(normalize)
-  family <- bterms$family
+  family <- bframe$family
   rtype <- str_if(use_int(family), "int", "real")
   multicol <- has_multicol(family)
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   resp <- usc(combine_prefix(px))
   out <- list(resp_type = rtype)
   if (nzchar(resp)) {
@@ -57,13 +57,13 @@ stan_response <- function(bterms, normalize) {
       "  real min_Y{resp} = min(Y{resp});\n"
     )
   }
-  if (has_trials(family) || is.formula(bterms$adforms$trials)) {
+  if (has_trials(family) || is.formula(bframe$adforms$trials)) {
     str_add(out$data) <- glue(
       "  array[N{resp}] int trials{resp};  // number of trials\n"
     )
     str_add(out$pll_args) <- glue(", data array[] int trials{resp}")
   }
-  if (is.formula(bterms$adforms$weights)) {
+  if (is.formula(bframe$adforms$weights)) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] weights{resp};  // model weights\n"
     )
@@ -103,7 +103,7 @@ stan_response <- function(bterms, normalize) {
       str_add(out$pll_args) <- glue(", data int nthres{resp}")
     }
   }
-  if (is.formula(bterms$adforms$se)) {
+  if (is.formula(bframe$adforms$se)) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] se{resp};  // known sampling error\n"
     )
@@ -114,13 +114,13 @@ stan_response <- function(bterms, normalize) {
       ", data vector se{resp}, data vector se2{resp}"
     )
   }
-  if (is.formula(bterms$adforms$dec)) {
+  if (is.formula(bframe$adforms$dec)) {
     str_add(out$data) <- glue(
       "  array[N{resp}] int<lower=0,upper=1> dec{resp};  // decisions\n"
     )
     str_add(out$pll_args) <- glue(", data array[] int dec{resp}")
   }
-  if (is.formula(bterms$adforms$rate)) {
+  if (is.formula(bframe$adforms$rate)) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] denom{resp};",
       "  // response denominator\n"
@@ -133,12 +133,12 @@ stan_response <- function(bterms, normalize) {
       ", data vector denom{resp}, data vector log_denom{resp}"
     )
   }
-  if (is.formula(bterms$adforms$cens)) {
+  if (is.formula(bframe$adforms$cens)) {
     str_add(out$data) <- glue(
       "  array[N{resp}] int<lower=-1,upper=2> cens{resp};  // indicates censoring\n"
     )
     str_add(out$pll_args) <- glue(", data array[] int cens{resp}")
-    y2_expr <- get_ad_expr(bterms, "cens", "y2")
+    y2_expr <- get_ad_expr(bframe, "cens", "y2")
     if (!is.null(y2_expr)) {
       # interval censoring is required
       if (rtype == "int") {
@@ -155,7 +155,7 @@ stan_response <- function(bterms, normalize) {
       str_add(out$data) <- "  // right censor points for interval censoring\n"
     }
   }
-  bounds <- bterms$frame$resp$bounds
+  bounds <- bframe$frame$resp$bounds
   if (any(bounds$lb > -Inf)) {
     str_add(out$data) <- glue(
       "  array[N{resp}] {rtype} lb{resp};  // lower truncation bounds;\n"
@@ -168,12 +168,10 @@ stan_response <- function(bterms, normalize) {
     )
     str_add(out$pll_args) <- glue(", data array[] {rtype} ub{resp}")
   }
-  if (is.formula(bterms$adforms$mi)) {
+  if (is.formula(bframe$adforms$mi)) {
     # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
-    Ybounds <- bterms$frame$resp$Ybounds
-    # Ybounds <- trunc_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
-    # sdy <- get_sdy(bterms, data)
-    mi <- eval_rhs(bterms$adforms$mi)
+    Ybounds <- bframe$frame$resp$Ybounds
+    mi <- eval_rhs(bframe$adforms$mi)
     if (mi$vars$sdy == "NA") {
       # response is modeled without measurement error
       str_add(out$data) <- glue(
@@ -210,9 +208,9 @@ stan_response <- function(bterms, normalize) {
       str_add(out$pll_args) <- glue(", vector Yl{resp}")
     }
   }
-  if (is.formula(bterms$adforms$vreal)) {
+  if (is.formula(bframe$adforms$vreal)) {
     # vectors of real values for use in custom families
-    vreal <- eval_rhs(bterms$adforms$vreal)
+    vreal <- eval_rhs(bframe$adforms$vreal)
     k <- length(vreal$vars)
     str_add(out$data) <- cglue(
       "  // data for custom real vectors\n",
@@ -220,9 +218,9 @@ stan_response <- function(bterms, normalize) {
     )
     str_add(out$pll_args) <- cglue(", data array[] real vreal{seq_len(k)}{resp}")
   }
-  if (is.formula(bterms$adforms$vint)) {
+  if (is.formula(bframe$adforms$vint)) {
     # vectors of integer values for use in custom families
-    vint <- eval_rhs(bterms$adforms$vint)
+    vint <- eval_rhs(bframe$adforms$vint)
     k <- length(vint$vars)
     str_add(out$data) <- cglue(
       "  // data for custom integer vectors\n",

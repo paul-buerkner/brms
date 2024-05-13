@@ -62,7 +62,7 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, ...) {
+data_response.mvbrmsframe <- function(x, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
     c(out) <- data_response(x$terms[[i]], ...)
@@ -75,7 +75,7 @@ data_response.mvbrmsterms <- function(x, ...) {
 }
 
 #' @export
-data_response.brmsterms <- function(x, data, check_response = TRUE,
+data_response.brmsframe <- function(x, data, check_response = TRUE,
                                     internal = FALSE, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
@@ -443,19 +443,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
 }
 
 # data specific for mixture models
-data_mixture <- function(bterms, data2, prior) {
-  stopifnot(is.brmsterms(bterms))
+data_mixture <- function(bframe, data2, prior) {
+  stopifnot(is.brmsterms(bframe))
   out <- list()
-  if (is.mixfamily(bterms$family)) {
-    families <- family_names(bterms$family)
-    dp_classes <- dpar_class(names(c(bterms$dpars, bterms$fdpars)))
+  if (is.mixfamily(bframe$family)) {
+    families <- family_names(bframe$family)
+    dp_classes <- dpar_class(names(c(bframe$dpars, bframe$fdpars)))
     if (!any(dp_classes %in% "theta")) {
       # estimate mixture probabilities directly
-      take <- find_rows(prior, class = "theta", resp = bterms$resp)
+      take <- find_rows(prior, class = "theta", resp = bframe$resp)
       theta_prior <- prior$prior[take]
       con_theta <- eval_dirichlet(theta_prior, length(families), data2)
       out$con_theta <- as.array(con_theta)
-      p <- usc(combine_prefix(bterms))
+      p <- usc(combine_prefix(bframe))
       names(out) <- paste0(names(out), p)
     }
   }
@@ -463,18 +463,18 @@ data_mixture <- function(bterms, data2, prior) {
 }
 
 # data for the baseline functions of Cox models
-data_bhaz <- function(bterms, data, data2, prior) {
+data_bhaz <- function(bframe, data, data2, prior) {
   out <- list()
-  if (!is_cox(bterms$family)) {
+  if (!is_cox(bframe$family)) {
     return(out)
   }
-  y <- bterms$frame$resp$values
-  args <- bterms$family$bhaz
-  bs <- bterms$basis$bhaz$basis_matrix
+  y <- bframe$frame$resp$values
+  args <- bframe$family$bhaz
+  bs <- bframe$basis$bhaz$basis_matrix
   out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
-  sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bterms$resp)
+  sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bframe$resp)
   con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
   out$con_sbhaz <- as.array(con_sbhaz)
   out

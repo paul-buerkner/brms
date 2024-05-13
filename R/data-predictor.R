@@ -82,21 +82,21 @@ data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
 }
 
 # prepare data of fixed effects
-data_fe <- function(bterms, data) {
-  stopifnot(is.btl(bterms))
-  if (!is.null(bterms$sdata$fe)) {
+data_fe <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$fe)) {
     # standata was already precomputed
-    return(bterms$sdata$fe)
+    return(bframe$sdata$fe)
   }
   out <- list()
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   # the intercept is removed inside the Stan code for non-ordinal models
-  is_ord <- is_ordinal(bterms)
+  is_ord <- is_ordinal(bframe)
   cols2remove <- if (is_ord) "(Intercept)"
-  X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
-  avoid_dpars(colnames(X), bterms = bterms)
+  X <- get_model_matrix(rhs(bframe$fe), data, cols2remove = cols2remove)
+  avoid_dpars(colnames(X), bframe)
   out[[paste0("K", p)]] <- ncol(X)
-  if (stan_center_X(bterms)) {
+  if (stan_center_X(bframe)) {
     # relevant if the intercept is treated separately to enable centering
     out[[paste0("Kc", p)]] <- ncol(X) - ifelse(is_ord, 0, 1)
   }
@@ -105,20 +105,20 @@ data_fe <- function(bterms, data) {
 }
 
 # data preparation for splines
-data_sm <- function(bterms, data) {
-  stopifnot(is.btl(bterms))
-  if (!is.null(bterms$sdata$sm)) {
+data_sm <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$sm)) {
     # standata was already precomputed
-    return(bterms$sdata$sm)
+    return(bframe$sdata$sm)
   }
   out <- list()
-  smterms <- all_terms(bterms[["sm"]])
+  smterms <- all_terms(bframe[["sm"]])
   if (!length(smterms)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   # basis contains information on the smooths from the original data
-  basis <- bterms$basis$sm
+  basis <- bframe$basis$sm
   new <- length(basis) > 0L
   knots <- get_knots(data)
   diagonal.penalty <- !require_old_default("2.8.7")
@@ -165,7 +165,7 @@ data_sm <- function(bterms, data) {
     }
   }
   Xs <- do_call(cbind, lXs)
-  avoid_dpars(colnames(Xs), bterms = bterms)
+  avoid_dpars(colnames(Xs), bframe)
   smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
   Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
   colnames(Xs) <- rename(colnames(Xs))
@@ -175,11 +175,11 @@ data_sm <- function(bterms, data) {
 }
 
 # prepare data for group-level effects for use in Stan
-data_re <- function(bterms, data) {
-  stopifnot(is.bframel(bterms))
+data_re <- function(bframe, data) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  px <- check_prefix(bterms)
-  reframe <- subset2(bterms$frame$re, type = "sp", fun = "%notin%")
+  px <- check_prefix(bframe)
+  reframe <- subset2(bframe$frame$re, type = "sp", fun = "%notin%")
   if (!has_rows(reframe)) {
     return(out)
   }
@@ -236,11 +236,11 @@ data_re <- function(bterms, data) {
 }
 
 # compute data for each group-level-ID per univariate model
-data_gr_local <- function(bterms, data) {
-  stopifnot(is.brmsframe(bterms))
+data_gr_local <- function(bframe, data) {
+  stopifnot(is.brmsframe(bframe))
   out <- list()
-  reframe <- subset2(bterms$frame$re, resp = bterms$resp)
-  resp <- usc(bterms$resp)
+  reframe <- subset2(bframe$frame$re, resp = bframe$resp)
+  resp <- usc(bframe$resp)
   for (id in unique(reframe$id)) {
     id_reframe <- subset2(reframe, id = id)
     idresp <- paste0(id, resp)
@@ -301,10 +301,10 @@ data_gr_local <- function(bterms, data) {
 }
 
 # prepare global data for each group-level-ID
-data_gr_global <- function(bterms, data2) {
-  stopifnot(is.anybrmsframe(bterms))
+data_gr_global <- function(bframe, data2) {
+  stopifnot(is.anybrmsframe(bframe))
   out <- list()
-  reframe <- bterms$frame$re
+  reframe <- bframe$frame$re
   for (id in unique(reframe$id)) {
     tmp <- list()
     id_reframe <- subset2(reframe, id = id)
@@ -343,24 +343,24 @@ data_gr_global <- function(bterms, data2) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, data2, prior) {
-  stopifnot(is.bframel(bterms))
-  if (!is.null(bterms$sdata$sp)) {
+data_sp <- function(bframe, data, data2, prior) {
+  stopifnot(is.bframel(bframe))
+  if (!is.null(bframe$sdata$sp)) {
     # standata was already precomputed
-    return(bterms$sdata$sp)
+    return(bframe$sdata$sp)
   }
   out <- list()
-  spframe <- bterms$frame$sp
+  spframe <- bframe$frame$sp
   if (!has_rows(spframe)) {
     return(out)
   }
-  basis <- bterms$basis$sp
-  px <- check_prefix(bterms)
+  basis <- bframe$basis$sp
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   # prepare general data
   out[[paste0("Ksp", p)]] <- nrow(spframe)
-  Csp <- sp_model_matrix(bterms$sp, data)
-  avoid_dpars(colnames(Csp), bterms = bterms)
+  Csp <- sp_model_matrix(bframe$sp, data)
+  avoid_dpars(colnames(Csp), bframe)
   Csp <- Csp[, spframe$Ic > 0, drop = FALSE]
   Csp <- lapply(seq_cols(Csp), function(i) as.array(Csp[, i]))
   if (length(Csp)) {
@@ -398,7 +398,7 @@ data_sp <- function(bterms, data, data2, prior) {
     }
   }
   uni_mi <- attr(spframe, "uni_mi")
-  index <- bterms$frame$index
+  index <- bframe$frame$index
   for (j in seq_rows(uni_mi)) {
     if (!is.na(uni_mi$idx[j])) {
       idxl <- get(uni_mi$idx[j], data)
@@ -423,17 +423,17 @@ data_sp <- function(bterms, data, data2, prior) {
 }
 
 # prepare data for category specific effects
-data_cs <- function(bterms, data) {
-  stopifnot(is.btl(bterms))
-  if (!is.null(bterms$sdata$cs)) {
+data_cs <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$cs)) {
     # standata was already precomputed
-    return(bterms$sdata$cs)
+    return(bframe$sdata$cs)
   }
   out <- list()
-  if (length(all_terms(bterms[["cs"]]))) {
-    p <- usc(combine_prefix(bterms))
-    Xcs <- get_model_matrix(bterms$cs, data)
-    avoid_dpars(colnames(Xcs), bterms = bterms)
+  if (length(all_terms(bframe[["cs"]]))) {
+    p <- usc(combine_prefix(bframe))
+    Xcs <- get_model_matrix(bframe$cs, data)
+    avoid_dpars(colnames(Xcs), bframe)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
     out <- setNames(out, paste0(names(out), p))
   }
@@ -441,9 +441,9 @@ data_cs <- function(bterms, data) {
 }
 
 # prepare global data for noise free variables
-data_Xme <- function(bterms, data) {
-  stopifnot(is.anybrmsframe(bterms))
-  meframe <- bterms$frame$me
+data_Xme <- function(bframe, data) {
+  stopifnot(is.anybrmsframe(bframe))
+  meframe <- bframe$frame$me
   stopifnot(is.meframe(meframe))
   out <- list()
   groups <- unique(meframe$grname)
@@ -498,18 +498,18 @@ data_Xme <- function(bterms, data) {
 # prepare data for Gaussian process terms
 # @param internal store some intermediate data for internal post-processing?
 # @param ... passed to '.data_gp'
-data_gp <- function(bterms, data, internal = FALSE, ...) {
-  stopifnot(is.bframel(bterms))
-  if (!is.null(bterms$sdata$gp)) {
+data_gp <- function(bframe, data, internal = FALSE, ...) {
+  stopifnot(is.bframel(bframe))
+  if (!is.null(bframe$sdata$gp)) {
     # standata was already precomputed
-    return(bterms$sdata$gp)
+    return(bframe$sdata$gp)
   }
   out <- list()
   internal <- as_one_logical(internal)
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
-  basis <- bterms$basis$gp
-  gpframe <- bterms$frame$gp
+  basis <- bframe$basis$gp
+  gpframe <- bframe$frame$gp
   for (i in seq_rows(gpframe)) {
     pi <- paste0(p, "_", i)
     Xgp <- lapply(gpframe$covars[[i]], eval2, data)
@@ -664,17 +664,17 @@ data_gp <- function(bterms, data, internal = FALSE, ...) {
 }
 
 # data for autocorrelation variables
-data_ac <- function(bterms, data, data2, ...) {
-  if (!is.null(bterms$sdata$ac)) {
+data_ac <- function(bframe, data, data2, ...) {
+  if (!is.null(bframe$sdata$ac)) {
     # standata was already precomputed
-    return(bterms$sdata$ac)
+    return(bframe$sdata$ac)
   }
   out <- list()
   N <- nrow(data)
-  basis <- bterms$basis$ac
-  acframe <- bterms$frame$ac
+  basis <- bframe$basis$ac
+  acframe <- bframe$frame$ac
   stopifnot(is.acframe(acframe))
-  if (has_ac_subset(bterms, dim = "time")) {
+  if (has_ac_subset(bframe, dim = "time")) {
     gr <- get_ac_vars(acframe, "gr", dim = "time")
     if (isTRUE(nzchar(gr))) {
       tgroup <- as.numeric(factor(data[[gr]]))
@@ -709,7 +709,7 @@ data_ac <- function(bterms, data, data2, ...) {
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
     if (has_ac_class(acframe, "unstr")) {
-      time <- get_ac_vars(bterms, "time", dim = "time")
+      time <- get_ac_vars(bframe, "time", dim = "time")
       time_data <- get(time, data)
       new_times <- extract_levels(time_data)
       if (length(basis)) {
@@ -838,25 +838,25 @@ data_ac <- function(bterms, data, data2, ...) {
     out$N_tg <- 1
   }
   if (length(out)) {
-    resp <- usc(combine_prefix(bterms))
+    resp <- usc(combine_prefix(bframe))
     out <- setNames(out, paste0(names(out), resp))
   }
   out
 }
 
 # prepare data of offsets for use in Stan
-data_offset <- function(bterms, data) {
-  stopifnot(is.btl(bterms))
-  if (!is.null(bterms$sdata$offset)) {
+data_offset <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$offset)) {
     # standata was already precomputed
-    return(bterms$sdata$offset)
+    return(bframe$sdata$offset)
   }
   out <- list()
-  px <- check_prefix(bterms)
-  if (is.formula(bterms$offset)) {
+  px <- check_prefix(bframe)
+  if (is.formula(bframe$offset)) {
     p <- usc(combine_prefix(px))
     mf <- rm_attr(data, "terms")
-    mf <- model.frame(bterms$offset, mf, na.action = na.pass)
+    mf <- model.frame(bframe$offset, mf, na.action = na.pass)
     offset <- model.offset(mf)
     if (length(offset) == 1L) {
       offset <- rep(offset, nrow(data))
@@ -870,18 +870,18 @@ data_offset <- function(bterms, data) {
 # data for covariates in non-linear models
 # @param x a btnl object
 # @return a named list of data passed to Stan
-data_cnl <- function(bterms, data) {
-  stopifnot(is.btnl(bterms))
-  if (!is.null(bterms$sdata$cnl)) {
+data_cnl <- function(bframe, data) {
+  stopifnot(is.btnl(bframe))
+  if (!is.null(bframe$sdata$cnl)) {
     # standata was already precomputed
-    return(bterms$sdata$cnl)
+    return(bframe$sdata$cnl)
   }
   out <- list()
-  covars <- all.vars(bterms$covars)
+  covars <- all.vars(bframe$covars)
   if (!length(covars)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   for (i in seq_along(covars)) {
     cvalues <- get(covars[i], data)
     if (is_like_factor(cvalues)) {
@@ -932,9 +932,9 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and R2D2
-data_special_prior <- function(bterms, data, prior, sdata = NULL) {
+data_special_prior <- function(bframe, data, prior, sdata = NULL) {
   out <- list()
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   if (!has_special_prior(prior, px)) {
     return(out)
@@ -973,7 +973,7 @@ data_special_prior <- function(bterms, data, prior, sdata = NULL) {
     Kscales <- Kscales + 1
   }
   if (has_special_prior(prior, px, class = "sd")) {
-    ids <- unique(bterms$frame$re$id)
+    ids <- unique(bframe$frame$re$id)
     Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
   }
   out[[paste0("Kscales", p)]] <- Kscales

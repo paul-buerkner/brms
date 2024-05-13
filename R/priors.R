@@ -545,16 +545,16 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
 # internal work function of 'default_prior'
 # @param internal return priors for internal use?
 # @return a brmsprior object
-.default_prior <- function(bterms, internal = FALSE, ...) {
-  stopifnot(is.anybrmsframe(bterms))
+.default_prior <- function(bframe, internal = FALSE, ...) {
+  stopifnot(is.anybrmsframe(bframe))
   # initialize output
   prior <- empty_prior()
   # priors for distributional parameters
-  prior <- prior + prior_predictor(bterms, internal = internal)
+  prior <- prior + prior_predictor(bframe, internal = internal)
   # priors of group-level parameters
-  prior <- prior + prior_re(bterms, internal = internal)
+  prior <- prior + prior_re(bframe, internal = internal)
   # priors for noise-free variables
-  prior <- prior + prior_Xme(bterms, internal = internal)
+  prior <- prior + prior_Xme(bframe, internal = internal)
   # explicitly label default priors as such
   prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
@@ -689,13 +689,13 @@ prior_predictor.bframenl <- function(x, ...) {
 }
 
 # priors for population-level parameters
-prior_fe <- function(bterms, def_dpar_prior = "", ...) {
-  stopifnot(is.bframel(bterms))
+prior_fe <- function(bframe, def_dpar_prior = "", ...) {
+  stopifnot(is.bframel(bframe))
   prior <- empty_prior()
-  fixef <- bterms$frame$fe$vars_stan
-  px <- check_prefix(bterms)
-  center <- stan_center_X(bterms)
-  if (center && !is_ordinal(bterms)) {
+  fixef <- bframe$frame$fe$vars_stan
+  px <- check_prefix(bframe)
+  center <- stan_center_X(bframe)
+  if (center && !is_ordinal(bframe)) {
     # priors for ordinal thresholds are provided in 'prior_thres'
     prior <- prior + brmsprior(def_dpar_prior, class = "Intercept", ls = px)
   }
@@ -706,13 +706,13 @@ prior_fe <- function(bterms, def_dpar_prior = "", ...) {
 }
 
 # priors for thresholds of ordinal models
-prior_thres <- function(bterms, def_scale_prior = "", ...) {
+prior_thres <- function(bframe, def_scale_prior = "", ...) {
   prior <- empty_prior()
-  if (!is_ordinal(bterms)) {
+  if (!is_ordinal(bframe)) {
     # thresholds only exist in ordinal models
     return(prior)
   }
-  if (fix_intercepts(bterms) && !is.mixfamily(bterms$family)) {
+  if (fix_intercepts(bframe) && !is.mixfamily(bframe$family)) {
     # fixed thresholds cannot have separate priors
     return(prior)
   }
@@ -720,10 +720,10 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
   # create priors for threshold per group
   .prior_thres <- function(thres, thres_prior = "", group = "") {
     prior <- empty_prior()
-    if (has_equidistant_thres(bterms)) {
+    if (has_equidistant_thres(bframe)) {
       # prior for the delta parameter for equidistant thresholds
       thres <- character(0)
-      lb <- str_if(has_ordered_thres(bterms), "0")
+      lb <- str_if(has_ordered_thres(bframe), "0")
       prior <- prior + brmsprior(
         class = "delta", group = group, lb = lb, ls = px
       )
@@ -735,28 +735,28 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
     )
   }
 
-  px <- check_prefix(bterms)
-  groups <- get_thres_groups(bterms)
+  px <- check_prefix(bframe)
+  groups <- get_thres_groups(bframe)
   if (any(nzchar(groups))) {
     # for models with multiple threshold vectors
     prior <- prior + .prior_thres(character(0), def_scale_prior)
     for (g in groups) {
-      prior <- prior + .prior_thres(get_thres(bterms, group = g), group = g)
+      prior <- prior + .prior_thres(get_thres(bframe, group = g), group = g)
     }
   } else {
     # for models with a single threshold vector
-    prior <- prior + .prior_thres(get_thres(bterms), def_scale_prior)
+    prior <- prior + .prior_thres(get_thres(bframe), def_scale_prior)
   }
   prior
 }
 
 # priors for coefficients of baseline hazards in the Cox model
-prior_bhaz <- function(bterms, ...) {
+prior_bhaz <- function(bframe, ...) {
   prior <- empty_prior()
-  if (!is_cox(bterms$family)) {
+  if (!is_cox(bframe$family)) {
     return(prior)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   # the scale of sbhaz is not identified when an intercept is part of mu
   # thus a sum-to-one constraint ensures identification
   prior <- prior + brmsprior("dirichlet(1)", class = "sbhaz", ls = px)
@@ -764,12 +764,12 @@ prior_bhaz <- function(bterms, ...) {
 }
 
 # priors for special effects parameters
-prior_sp <- function(bterms, ...) {
-  stopifnot(is.bframel(bterms))
+prior_sp <- function(bframe, ...) {
+  stopifnot(is.bframel(bframe))
   prior <- empty_prior()
-  spframe <- bterms$frame$sp
+  spframe <- bframe$frame$sp
   if (has_rows(spframe)) {
-    px <- check_prefix(bterms)
+    px <- check_prefix(bframe)
     prior <- prior + brmsprior(
       class = "b", coef = c("", spframe$coef), ls = px
     )
@@ -785,12 +785,12 @@ prior_sp <- function(bterms, ...) {
 }
 
 # priors for category spcific effects parameters
-prior_cs <- function(bterms, ...) {
-  stopifnot(is.bframel(bterms))
+prior_cs <- function(bframe, ...) {
+  stopifnot(is.bframel(bframe))
   prior <- empty_prior()
-  csef <- bterms$frame$cs$vars
+  csef <- bframe$frame$cs$vars
   if (length(csef)) {
-    px <- check_prefix(bterms)
+    px <- check_prefix(bframe)
     prior <- prior +
       brmsprior(class = "b", coef = c("", csef), ls = px)
   }
@@ -798,8 +798,8 @@ prior_cs <- function(bterms, ...) {
 }
 
 # default priors for hyper-parameters of noise-free variables
-prior_Xme <- function(bterms, internal = FALSE, ...) {
-  meframe <- bterms$frame$me
+prior_Xme <- function(bframe, internal = FALSE, ...) {
+  meframe <- bframe$frame$me
   stopifnot(is.meframe(meframe))
   prior <- empty_prior()
   if (!has_rows(meframe)) {
@@ -835,13 +835,13 @@ prior_Xme <- function(bterms, internal = FALSE, ...) {
 # default priors of gaussian processes
 # @param def_scale_prior: a character string defining
 #   the default prior SD parameters
-prior_gp <- function(bterms, def_scale_prior, ...) {
-  stopifnot(is.bframel(bterms))
+prior_gp <- function(bframe, def_scale_prior, ...) {
+  stopifnot(is.bframel(bframe))
   prior <- empty_prior()
-  gpframe <- bterms$frame$gp
+  gpframe <- bframe$frame$gp
   if (nrow(gpframe)) {
-    px <- check_prefix(bterms)
-    lscale_prior <- def_lscale_prior(bterms)
+    px <- check_prefix(bframe)
+    lscale_prior <- def_lscale_prior(bframe)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px, lb = "0") +
       brmsprior(class = "sdgp", coef = unlist(gpframe$sfx1), ls = px) +
@@ -856,7 +856,7 @@ prior_gp <- function(bterms, def_scale_prior, ...) {
 # see https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html
 # @param plb prior probability of being lower than minimum length-scale
 # @param pub prior probability of being higher than maximum length-scale
-def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
+def_lscale_prior <- function(bframe, plb = 0.01, pub = 0.01) {
   .opt_fun <- function(x, lb, ub) {
     # optimize parameters on the log-scale to make them positive only
     x <- exp(x)
@@ -882,9 +882,9 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
     }
     return(prior)
   }
-  p <- usc(combine_prefix(bterms))
-  gpframe <- bterms$frame$gp
-  data_gp <- bterms$sdata$gp
+  p <- usc(combine_prefix(bframe))
+  gpframe <- bframe$frame$gp
+  data_gp <- bframe$sdata$gp
   out <- vector("list", NROW(gpframe))
   for (i in seq_along(out)) {
     pi <- paste0(p, "_", i)
@@ -915,15 +915,15 @@ def_lscale_prior <- function(bterms, plb = 0.01, pub = 0.01) {
 
 # priors for varying effects parameters
 # @param internal: see 'default_prior'
-prior_re <- function(bterms, internal = FALSE, ...) {
+prior_re <- function(bframe, internal = FALSE, ...) {
   prior <- empty_prior()
-  reframe <- bterms$frame$re
+  reframe <- bframe$frame$re
   if (!has_rows(reframe)) {
     return(prior)
   }
   stopifnot(is.reframe(reframe))
   # global sd class
-  def_scale_prior <- def_scale_prior(bterms)
+  def_scale_prior <- def_scale_prior(bframe)
   px <- check_prefix(reframe)
   upx <- unique(px)
   if (length(def_scale_prior) > 1L) {
@@ -976,14 +976,14 @@ prior_re <- function(bterms, internal = FALSE, ...) {
 }
 
 # priors for smooth terms
-prior_sm <- function(bterms, def_scale_prior, ...) {
-  stopifnot(is.bframel(bterms))
+prior_sm <- function(bframe, def_scale_prior, ...) {
+  stopifnot(is.bframel(bframe))
   prior <- empty_prior()
-  smframe <- bterms$frame$sm
+  smframe <- bframe$frame$sm
   if (!has_rows(smframe)) {
     return(prior)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   # prior for the FE coefficients
   Xs_names <- attr(smframe, "Xs_names")
   if (length(Xs_names)) {
@@ -1001,16 +1001,16 @@ prior_sm <- function(bterms, def_scale_prior, ...) {
 }
 
 # priors for autocor parameters
-prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
+prior_ac <- function(bframe, def_scale_prior, internal = FALSE, ...) {
   prior <- empty_prior()
-  acframe <- bterms$frame$ac
+  acframe <- bframe$frame$ac
   stopifnot(is.acframe(acframe))
   if (!NROW(acframe)) {
     return(prior)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- combine_prefix(px)
-  has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
+  has_ac_latent_residuals <- has_ac_latent_residuals(bframe)
   if (has_ac_class(acframe, "arma")) {
     acframe_arma <- subset2(acframe, class = "arma")
     # no boundaries are required in the conditional formulation
@@ -1042,7 +1042,7 @@ prior_ac <- function(bterms, def_scale_prior, internal = FALSE, ...) {
         brmsprior("lkj(1)", class = "cortime", ls = px)
     }
   }
-  if (has_ac_latent_residuals(bterms)) {
+  if (has_ac_latent_residuals(bframe)) {
     prior <- prior +
       brmsprior(def_scale_prior, class = "sderr", ls = px, lb = "0")
   }
@@ -1224,16 +1224,16 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   )
   bframe <- brmsframe(bterms, data)
   .validate_prior(
-    prior, bterms = bframe,
+    prior, bframe = bframe,
     sample_prior = sample_prior, ...
   )
 }
 
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bterms, sample_prior, ...) {
-  stopifnot(is.anybrmsframe(bterms))
+.validate_prior <- function(prior, bframe, sample_prior, ...) {
+  stopifnot(is.anybrmsframe(bframe))
   sample_prior <- validate_sample_prior(sample_prior)
-  all_priors <- .default_prior(bterms, internal = TRUE)
+  all_priors <- .default_prior(bframe, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors
   } else if (!is.brmsprior(prior)) {
@@ -1315,7 +1315,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- c(all_priors, prior, replace = TRUE)
   check_prior_content(prior)
 
-  prior <- validate_special_prior(prior, bterms = bterms, ...)
+  prior <- validate_special_prior(prior, bframe = bframe, ...)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
@@ -1435,7 +1435,7 @@ validate_special_prior.default <- function(x, prior = empty_prior(), ...) {
 }
 
 #' @export
-validate_special_prior.brmsprior <- function(x, bterms, ...) {
+validate_special_prior.brmsprior <- function(x, bframe, ...) {
   if (!NROW(x)) {
     return(x)
   }
@@ -1443,7 +1443,7 @@ validate_special_prior.brmsprior <- function(x, bterms, ...) {
     x$new <- TRUE
   }
   x$remove <- FALSE
-  x <- validate_special_prior(bterms, prior = x, ...)
+  x <- validate_special_prior(bframe, prior = x, ...)
   x <- x[!x$remove, ]
   x$new <- x$remove <- NULL
   x

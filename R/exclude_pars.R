@@ -90,8 +90,8 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
 }
 
 # exclude variables related to random effects
-exclude_pars_re <- function(bterms, save_pars, ...) {
-  reframe <- bterms$frame$re
+exclude_pars_re <- function(bframe, save_pars, ...) {
+  reframe <- bframe$frame$re
   stopifnot(is.reframe(reframe))
   out <- list()
   if (!has_rows(reframe)) {
@@ -119,8 +119,8 @@ exclude_pars_re <- function(bterms, save_pars, ...) {
 }
 
 # exclude variables related to noise-free variables
-exclude_pars_me <- function(bterms, save_pars, ...) {
-  meframe <- bterms$frame$me
+exclude_pars_me <- function(bframe, save_pars, ...) {
+  meframe <- bframe$frame$me
   stopifnot(is.meframe(meframe))
   out <- list()
   if (!has_rows(meframe)) {

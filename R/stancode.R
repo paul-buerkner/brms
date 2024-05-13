@@ -92,7 +92,7 @@ stancode.default <- function(object, data, family = gaussian(),
   )
   bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    prior, bterms = bframe,
+    prior, bframe = bframe,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)

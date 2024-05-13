@@ -561,7 +561,7 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
       coef <- as.vector(t(outer(coef, indices, paste0)))
     }
-    avoid_dpars(coef, bterms = bterms)
+    avoid_dpars(coef, bterms)
     rdat <- data.frame(
       id = re$id[[i]],
       group = re$group[[i]],

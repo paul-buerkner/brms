@@ -284,12 +284,12 @@ get_uni_me <- function(x) {
 }
 
 # save all me-terms within a tidy data.frame
-frame_me <- function(bterms, data, old_levels = NULL) {
-  uni_me <- get_uni_me(bterms)
+frame_me <- function(x, data, old_levels = NULL) {
+  uni_me <- get_uni_me(x)
   if (!length(uni_me)) {
     return(empty_meframe())
   }
-  if (has_subset(bterms)) {
+  if (has_subset(x)) {
     # 'Xme' variables need to be the same across univariate models
     stop2("Argument 'subset' is not supported when using 'me' terms.")
   }
@@ -310,7 +310,7 @@ frame_me <- function(bterms, data, old_levels = NULL) {
     }
   }
   out$coef <- rename(paste0("me", out$xname))
-  out$cor <- isTRUE(bterms$mecor)
+  out$cor <- isTRUE(x$mecor)
   if (!is.null(old_levels)) {
     # for newdata numeration has to depend on the original levels
     set_levels(out) <- old_levels[[unique_grnames]]
