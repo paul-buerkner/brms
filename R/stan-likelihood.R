@@ -7,11 +7,10 @@ stan_log_lik <- function(x, ...) {
 
 # Stan code for the model likelihood
 # @param bterms object of class brmsterms
-# @param data data passed by the user
 # @param mix optional mixture component ID
 # @param ptheta are mixing proportions predicted?
 #' @export
-stan_log_lik.family <- function(x, bterms, data, threads, normalize,
+stan_log_lik.family <- function(x, bterms, threads, normalize,
                                 mix = "", ptheta = FALSE, ...) {
   stopifnot(is.brmsterms(bterms))
   stopifnot(length(mix) == 1L)
@@ -22,7 +21,7 @@ stan_log_lik.family <- function(x, bterms, data, threads, normalize,
   log_lik_fun <- paste0("stan_log_lik_", prepare_family(bterms)$fun)
   ll <- do_call(log_lik_fun, log_lik_args)
   # incorporate other parts into the likelihood
-  args <- nlist(ll, bterms, data, resp, threads, normalize, mix, ptheta)
+  args <- nlist(ll, bterms, resp, threads, normalize, mix, ptheta)
   if (nzchar(mix)) {
     out <- do_call(stan_log_lik_mix, args)
   } else if (is.formula(bterms$adforms$cens)) {
@@ -94,18 +93,18 @@ stan_log_lik.mvbrmsterms <- function(x, ...) {
 }
 
 # default likelihood in Stan language
-stan_log_lik_general <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
+stan_log_lik_general <- function(ll, bterms, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   require_n <- grepl(stan_nn_regex(), ll$args)
   n <- str_if(require_n, stan_nn(threads), stan_slice(threads))
   lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
-  tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
+  tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
   glue("{tp()}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n")
 }
 
 # censored likelihood in Stan language
-stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
+stan_log_lik_cens <- function(ll, bterms, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
@@ -114,7 +113,7 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", .
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   w <- str_if(has_weights, glue("weights{resp}{n} * "))
-  tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
+  tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
   tp <- tp()
   out <- glue(
     "// special treatment of censored data\n",
@@ -140,9 +139,9 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, normalize, resp = "", .
 }
 
 # weighted likelihood in Stan language
-stan_log_lik_weights <- function(ll, bterms, data, threads, normalize, resp = "", ...) {
+stan_log_lik_weights <- function(ll, bterms, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
-  tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
+  tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
   lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
@@ -153,14 +152,14 @@ stan_log_lik_weights <- function(ll, bterms, data, threads, normalize, resp = ""
 }
 
 # likelihood of a single mixture component
-stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
+stan_log_lik_mix <- function(ll, bterms, mix, ptheta, threads,
                              normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
   theta <- str_if(ptheta,
     glue("theta{mix}{resp}[n]"),
     glue("log(theta{mix}{resp})")
   )
-  tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
+  tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
   lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
@@ -202,10 +201,10 @@ stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
 
 # truncated part of the likelihood
 # @param short use the T[, ] syntax?
-stan_log_lik_trunc <- function(ll, bterms, data, threads, resp = "",
+stan_log_lik_trunc <- function(ll, bterms, threads, resp = "",
                                short = FALSE) {
   stopifnot(is.sdist(ll))
-  bounds <- trunc_bounds(bterms, data = data)
+  bounds <- bterms$frame$resp$bounds
   if (!any(bounds$lb > -Inf | bounds$ub < Inf)) {
     return("")
   }
@@ -372,7 +371,7 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   has_se <- is.formula(bterms$adforms$se)
-  flex <- has_ac_class(tidy_acef(bterms), "unstr")
+  flex <- has_ac_class(bterms$frame$ac, "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
   if (has_se) {
@@ -441,7 +440,7 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
     stop2("Invalid addition arguments for this model.")
   }
   has_se <- is.formula(bterms$adforms$se)
-  flex <- has_ac_class(tidy_acef(bterms), "unstr")
+  flex <- has_ac_class(bterms$frame$ac, "unstr")
   p <- stan_log_lik_dpars(bterms, FALSE, resp, mix)
   v <- c("Lcortime", "nobs_tg", "begin_tg", "end_tg")
   if (has_se) {
@@ -1001,6 +1000,295 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   var_resps <- ifelse(is_var_adterms, resp, "")
   vars <- paste0(var_names, var_resps, var_indices)
   sdist(family$name, p[dpars], p$thres, vars)
+}
+
+# ordinal log-probability density functions in Stan language
+# @return a character string
+stan_ordinal_lpmf <- function(family, link) {
+  family <- as_one_character(family)
+  link <- as_one_character(link)
+  inv_link <- stan_inv_link(link)
+  th <- function(k) {
+    # helper function generating stan code inside inv_link(.)
+    if (family %in% c("cumulative", "sratio")) {
+      out <- glue("thres[{k}] - mu")
+    } else if (family %in% c("cratio", "acat")) {
+      out <- glue("mu - thres[{k}]")
+    }
+    glue("disc * ({out})")
+  }
+  out <- glue(
+    "  /* {family}-{link} log-PDF for a single response\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: latent mean parameter\n",
+    "   *   disc: discrimination parameter\n",
+    "   *   thres: ordinal thresholds\n",
+    "   * Returns:\n",
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
+    "   real {family}_{link}_lpmf(int y, real mu, real disc, vector thres) {{\n"
+  )
+  # define the function body
+  if (family == "cumulative") {
+    if (inv_link == "inv_logit") {
+      str_add(out) <- glue(
+        "     int nthres = num_elements(thres);\n",
+        "     if (y == 1) {{\n",
+        "       return log_inv_logit({th(1)});\n",
+        "     }} else if (y == nthres + 1) {{\n",
+        "       return log1m_inv_logit({th('nthres')});\n",
+        "     }} else {{\n",
+        "       return log_inv_logit_diff({th('y')}, {th('y - 1')});\n",
+        "     }}\n",
+        "   }}\n"
+      )
+    } else {
+      str_add(out) <- glue(
+        "     int nthres = num_elements(thres);\n",
+        "     real p;\n",
+        "     if (y == 1) {{\n",
+        "       p = {inv_link}({th(1)});\n",
+        "     }} else if (y == nthres + 1) {{\n",
+        "       p = 1 - {inv_link}({th('nthres')});\n",
+        "     }} else {{\n",
+        "       p = {inv_link}({th('y')}) -\n",
+        "           {inv_link}({th('y - 1')});\n",
+        "     }}\n",
+        "     return log(p);\n",
+        "   }}\n"
+      )
+    }
+  } else if (family %in% c("sratio", "cratio")) {
+    # TODO: support 'softit' link as well
+    if (inv_link == "inv_cloglog") {
+      qk <- str_if(
+        family == "sratio",
+        "-exp({th('k')})",
+        "log1m_exp(-exp({th('k')}))"
+      )
+    } else if (inv_link == "inv_logit") {
+      qk <- str_if(
+        family == "sratio",
+        "log1m_inv_logit({th('k')})",
+        "log_inv_logit({th('k')})"
+      )
+    } else if (inv_link == "Phi") {
+      qk <- str_if(
+        family == "sratio",
+        "std_normal_lccdf({th('k')})",
+        "std_normal_lcdf({th('k')})"
+      )
+    } else if (inv_link == "Phi_approx") {
+      qk <- str_if(
+        family == "sratio",
+        "log1m_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})",
+        "log_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})"
+      )
+    } else if (inv_link == "inv_cauchit") {
+      qk <- str_if(
+        family == "sratio",
+        "cauchy_lccdf({th('k')}|0,1)",
+        "cauchy_lcdf({th('k')}|0,1)"
+      )
+    }
+    qk <- glue(qk)
+    str_add(out) <- glue(
+      "     int nthres = num_elements(thres);\n",
+      "     vector[nthres + 1] p;\n",
+      "     vector[nthres] q;\n",
+      "     int k = 1;\n",
+      "     while (k <= min(y, nthres)) {{\n",
+      "       q[k] = {qk};\n",
+      "       p[k] = log1m_exp(q[k]);\n",
+      "       for (kk in 1:(k - 1)) p[k] = p[k] + q[kk];\n",
+      "       k += 1;\n",
+      "     }}\n",
+      "     if (y == nthres + 1) {{\n",
+      "       p[nthres + 1] = sum(q);\n",
+      "     }}\n",
+      "     return p[y];\n",
+      "   }}\n"
+    )
+  } else if (family == "acat") {
+    if (inv_link == "inv_logit") {
+      str_add(out) <- glue(
+        "     int nthres = num_elements(thres);\n",
+        "     vector[nthres + 1] p = append_row(0, cumulative_sum(disc * (mu - thres)));\n",
+        "     return p[y] - log_sum_exp(p);\n",
+        "   }}\n"
+      )
+    } else {
+      str_add(out) <- glue(
+        "     int nthres = num_elements(thres);\n",
+        "     vector[nthres + 1] p;\n",
+        "     vector[nthres] q;\n",
+        "     for (k in 1:(nthres))\n",
+        "       q[k] = {inv_link}({th('k')});\n",
+        "     for (k in 1:(nthres + 1)) {{\n",
+        "       p[k] = 1.0;\n",
+        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
+        "       for (kk in k:(nthres)) p[k] = p[k] * (1 - q[kk]);\n",
+        "     }}\n",
+        "     return log(p[y]) - log(sum(p));\n",
+        "   }}\n"
+      )
+    }
+  }
+  # lpmf function for multiple merged thresholds
+  str_add(out) <- glue(
+    "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: latent mean parameter\n",
+    "   *   disc: discrimination parameter\n",
+    "   *   thres: vector of merged ordinal thresholds\n",
+    "   *   j: start and end index for the applid threshold within 'thres'\n",
+    "   * Returns:\n",
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
+    "   real {family}_{link}_merged_lpmf(",
+    "int y, real mu, real disc, vector thres, array[] int j) {{\n",
+    "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
+    "   }}\n"
+  )
+  if (family == "cumulative" && link %in% c("logit", "probit")) {
+    # use the more efficient ordered_link functions when disc == 1
+    sfx <- str_if(link == "logit", "logistic", link)
+    str_add(out) <- glue(
+      "  /* ordered-{sfx} log-PDF for a single response and merged thresholds\n",
+      "   * Args:\n",
+      "   *   y: response category\n",
+      "   *   mu: latent mean parameter\n",
+      "   *   thres: vector of merged ordinal thresholds\n",
+      "   *   j: start and end index for the applid threshold within 'thres'\n",
+      "   * Returns:\n",
+      "   *   a scalar to be added to the log posterior\n",
+      "   */\n",
+      "   real ordered_{sfx}_merged_lpmf(",
+      "int y, real mu, vector thres, array[] int j) {{\n",
+      "     return ordered_{sfx}_lpmf(y | mu, thres[j[1]:j[2]]);\n",
+      "   }}\n"
+    )
+  }
+  out
+}
+
+# log probability density for hurdle ordinal models
+# @return a character string
+stan_hurdle_ordinal_lpmf <- function(family, link) {
+  family <- as_one_character(family)
+  link <- as_one_character(link)
+  # TODO: generalize to non-cumulative families?
+  stopifnot(family == "hurdle_cumulative")
+  inv_link <- stan_inv_link(link)
+  th <- function(k) {
+    out <- glue("thres[{k}] - mu")
+    glue("disc * ({out})")
+  }
+  out <- glue(
+    "  /* {family}-{link} log-PDF for a single response\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: latent mean parameter\n",
+    "   *   hu: hurdle probability\n",
+    "   *   disc: discrimination parameter\n",
+    "   *   thres: ordinal thresholds\n",
+    "   * Returns:\n",
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
+    "   real {family}_{link}_lpmf(int y, real mu, real hu, real disc, vector thres) {{\n",
+    "\n"
+  )
+  # define the function body
+  if (inv_link == "inv_logit") {
+    str_add(out) <- glue(
+      "     int nthres = num_elements(thres);\n",
+      "     if (y == 0) {{\n",
+      "       return bernoulli_lpmf(1 | hu);\n",
+      "     }} else if (y == 1) {{\n",
+      "       return log_inv_logit({th(1)}) +\n",
+      "                bernoulli_lpmf(0 | hu);\n",
+      "     }} else if (y == nthres + 2) {{\n",
+      "       return log1m_inv_logit({th('nthres')}) +\n",
+      "                bernoulli_lpmf(0 | hu);\n",
+      "     }} else {{\n",
+      "       return log_inv_logit_diff({th('y')}, {th('y - 1')}) +\n",
+      "                bernoulli_lpmf(0 | hu) ;\n",
+      "     }}\n",
+      "   }}\n"
+    )
+  } else {
+    str_add(out) <- glue(
+      "     int nthres = num_elements(thres);\n",
+      "     real p;\n",
+      "     if (y == 0){{\n",
+      "       p = hu;\n",
+      "     }} else if (y == 1) {{\n",
+      "       p = {inv_link}({th(1)}) * (1 - hu);\n",
+      "     }} else if (y == nthres + 1) {{\n",
+      "       p = (1 - {inv_link}({th('nthres')})) * (1 - hu);\n",
+      "     }} else {{\n",
+      "       p = ({inv_link}({th('y')}) -\n",
+      "           {inv_link}({th('y - 1')})) * (1 - hu);\n",
+      "     }}\n",
+      "     return log(p);\n",
+      "   }}\n"
+    )
+  }
+
+  # lpmf function for multiple merged thresholds
+  str_add(out) <- glue(
+    "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: latent mean parameter\n",
+    "   *   hu: hurdle probability\n",
+    "   *   disc: discrimination parameter\n",
+    "   *   thres: vector of merged ordinal thresholds\n",
+    "   *   j: start and end index for the applid threshold within 'thres'\n",
+    "   * Returns:\n",
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
+    "   real {family}_{link}_merged_lpmf(",
+    "int y, real mu, real hu, real disc, vector thres, array[] int j) {{\n",
+    "     return {family}_{link}_lpmf(y | mu, hu, disc, thres[j[1]:j[2]]);\n",
+    "   }}\n"
+  )
+
+  if (link %in% c("logit", "probit")) {
+    # use the more efficient ordered_link functions when disc == 1
+    sfx <- str_if(link == "logit", "logistic", link)
+    str_add(out) <- glue(
+      "\n",
+      "   // Use more efficient ordered_{sfx} function with disc == 1\n",
+      "   real hurdle_cumulative_ordered_{sfx}_lpmf(int y, real mu, real hu, real disc, vector thres) {{\n",
+      "     if (y == 0) {{\n",
+      "       return bernoulli_lpmf(1 | hu);\n",
+      "     }} else {{\n",
+      "       return ordered_{sfx}_lpmf(y | mu, thres) +\n",
+      "                bernoulli_lpmf(0 | hu);\n",
+      "     }}\n",
+      "   }}\n"
+    )
+    str_add(out) <- glue(
+      "  /* use ordered-{sfx} log-PDF for a single response and merged thresholds\n",
+      "   * Args:\n",
+      "   *   y: response category\n",
+      "   *   mu: latent mean parameter\n",
+      "   *   hu: hurdle probability\n",
+      "   *   thres: vector of merged ordinal thresholds\n",
+      "   *   j: start and end index for the applid threshold within 'thres'\n",
+      "   * Returns:\n",
+      "   *   a scalar to be added to the log posterior\n",
+      "   */\n",
+      "   real hurdle_cumulative_ordered_{sfx}_merged_lpmf(",
+      "int y, real mu, real hu, real disc, vector thres, array[] int j) {{\n",
+      "     return hurdle_cumulative_ordered_{sfx}_lpmf(y | mu, hu, disc, thres[j[1]:j[2]]);\n",
+      "   }}\n"
+    )
+  }
+  out
 }
 
 # use Stan GLM primitive functions?

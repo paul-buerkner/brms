@@ -56,7 +56,7 @@ test_that("rename_old_re and rename_old_re2 return expected lists", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
   bterms <- brmsterms(bf(y ~ a, a ~ x + (1+x|g),
                         family = gaussian(), nl = TRUE))
-  ranef <- brms:::tidy_ranef(bterms, data = data)
+  ranef <- brms:::frame_re(bterms, data = data)
   target <- list(
     list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),
          oldname = "sd_a_g_Intercept", pnames = "sd_g_a_Intercept",

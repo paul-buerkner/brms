@@ -121,13 +121,22 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
 
   full_summary <- .summary(draws, variables, probs, robust)
   if (algorithm(object) == "sampling") {
-    Rhats <- full_summary[, "Rhat"]
-    if (any(Rhats > 1.05, na.rm = TRUE)) {
+    if (is.brmsfit_multiple(object)) {
+      # TODO: replace with a viable post-processing solution
       warning2(
-        "Parts of the model have not converged (some Rhats are > 1.05). ",
-        "Be careful when analysing the results! We recommend running ",
-        "more iterations and/or setting stronger priors."
+        "The displayed Rhat and ESS estimates should not be trusted for ",
+        "brm_multiple models. Please see ?brm_multiple for how ",
+        "to assess convergence of such models."
       )
+    } else {
+      Rhats <- full_summary[, "Rhat"]
+      if (any(Rhats > 1.05, na.rm = TRUE)) {
+        warning2(
+          "Parts of the model have not converged (some Rhats are > 1.05). ",
+          "Be careful when analysing the results! We recommend running ",
+          "more iterations and/or setting stronger priors."
+        )
+      }
     }
     div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
     adapt_delta <- control_params(object)$adapt_delta

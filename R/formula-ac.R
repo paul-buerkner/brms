@@ -435,31 +435,31 @@ validate_autocor <- function(autocor) {
 
 # gather information on autocor terms
 # @return a data.frame with one row per autocor term
-tidy_acef <- function(x, ...) {
-  UseMethod("tidy_acef")
+frame_ac <- function(x, ...) {
+  UseMethod("frame_ac")
 }
 
 #' @export
-tidy_acef.default <- function(x, ...) {
+frame_ac.default <- function(x, ...) {
   x <- brmsterms(x, check_response = FALSE)
-  tidy_acef(x, ...)
+  frame_ac(x, ...)
 }
 
 #' @export
-tidy_acef.mvbrmsterms <- function(x, ...) {
-  out <- lapply(x$terms, tidy_acef, ...)
+frame_ac.mvbrmsterms <- function(x, ...) {
+  out <- lapply(x$terms, frame_ac, ...)
   out <- do_call(rbind, out)
-  structure(out, class = acef_class())
+  structure(out, class = acframe_class())
 }
 
 #' @export
-tidy_acef.brmsterms <- function(x, ...) {
-  out <- lapply(x$dpars, tidy_acef, ...)
+frame_ac.brmsterms <- function(x, ...) {
+  out <- lapply(x$dpars, frame_ac, ...)
   out <- do_call(rbind, out)
   if (!NROW(out)) {
-    return(empty_acef())
+    return(empty_acframe())
   }
-  out <- structure(out, class = acef_class())
+  out <- structure(out, class = acframe_class())
   if (has_ac_class(out, "sar")) {
     if (any(c("sigma", "nu") %in% names(x$dpars))) {
       stop2("SAR models are not implemented when predicting 'sigma' or 'nu'.")
@@ -475,10 +475,10 @@ tidy_acef.brmsterms <- function(x, ...) {
 }
 
 #' @export
-tidy_acef.btl <- function(x, ...) {
+frame_ac.btl <- function(x, data = NULL, ...) {
   form <- x[["ac"]]
   if (!is.formula(form)) {
-    return(empty_acef())
+    return(empty_acframe())
   }
   if (is.mixfamily(x$family)) {
     stop2("Autocorrelation terms cannot be applied in mixture models.")
@@ -489,6 +489,7 @@ tidy_acef.btl <- function(x, ...) {
   cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "M")
   out[cnames] <- list(NA)
   out$cov <- out$nat_cov <- FALSE
+  out$nat_res <- has_natural_residuals(x)
   out[names(px)] <- px
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
@@ -538,8 +539,8 @@ tidy_acef.btl <- function(x, ...) {
   # covariance matrices of natural residuals will be handled
   # directly in the likelihood function while latent residuals will
   # be added to the linear predictor of the main parameter 'mu'
-  out$nat_cov <- out$cov & has_natural_residuals(x)
-  class(out) <- acef_class()
+  out$nat_cov <- out$cov & out$nat_res
+  class(out) <- acframe_class()
   # validate specified autocor terms
   if (any(duplicated(out$class))) {
     stop2("Can only model one term per autocorrelation class.")
@@ -558,37 +559,49 @@ tidy_acef.btl <- function(x, ...) {
       stop2("Explicit covariance terms can only be specified on 'mu'.")
     }
   }
+  if (!is.null(data)) {
+    # optional such that this function can be applied
+    # without data before brmsframe is being created
+    time <- get_ac_vars(out, "time", dim = "time")
+    if (length(time)) {
+      attr(out, "times") <- extract_levels(get(time, data))
+    }
+  }
   out
 }
 
 #' @export
-tidy_acef.btnl <- function(x, ... ) {
-  tidy_acef.btl(x, ...)
+frame_ac.btnl <- function(x, ... ) {
+  frame_ac.btl(x, ...)
 }
 
 #' @export
-tidy_acef.acef <- function(x, ...) {
+frame_ac.acframe <- function(x, ...) {
   x
 }
 
 #' @export
-tidy_acef.NULL <- function(x, ...) {
-  empty_acef()
+frame_ac.NULL <- function(x, ...) {
+  empty_acframe()
 }
 
-empty_acef <- function() {
-  structure(empty_data_frame(), class = acef_class())
+empty_acframe <- function() {
+  structure(empty_data_frame(), class = acframe_class())
 }
 
-acef_class <- function() {
-  c("acef", "data.frame")
+acframe_class <- function() {
+  c("acframe", "data.frame")
+}
+
+is.acframe <- function(x) {
+  inherits(x, "acframe")
 }
 
 # get names of certain autocor variables
 get_ac_vars <- function(x, var, ...) {
   var <- match.arg(var, c("time", "gr", "M"))
-  acef <- subset2(tidy_acef(x), ...)
-  out <- unique(acef[[var]])
+  acframe <- subset2(frame_ac(x), ...)
+  out <- unique(acframe[[var]])
   setdiff(na.omit(out), "NA")
 }
 
@@ -599,7 +612,7 @@ get_ac_groups <- function(x, ...) {
 
 # is certain subset of autocor terms is present?
 has_ac_subset <- function(x, ...) {
-  NROW(subset2(tidy_acef(x), ...)) > 0L
+  NROW(subset2(frame_ac(x), ...)) > 0L
 }
 
 # is a certain autocorrelation class present?
@@ -617,10 +630,16 @@ use_ac_cov_time <- function(x) {
   has_ac_subset(x, cov = TRUE, dim = "time")
 }
 
+# check if the family has natural residuals
+has_ac_natural_residuals <- function(x) {
+  has_ac_subset(x, nat_res = TRUE)
+}
+
 # does the model need latent residuals for autocor structures?
-has_ac_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) &&
-    (use_ac_cov(bterms) || has_ac_class(bterms, "arma"))
+has_ac_latent_residuals <- function(x) {
+  x <- frame_ac(x)
+  !has_ac_natural_residuals(x) &&
+    (use_ac_cov(x) || has_ac_class(x, "arma"))
 }
 
 # validate SAR matrices

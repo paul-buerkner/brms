@@ -10,56 +10,23 @@ exclude_pars.default <- function(x, ...) {
 }
 
 #' @export
-exclude_pars.brmsfit <- function(x, ...) {
+exclude_pars.brmsfit <- function(x, bframe = NULL, ...) {
   out <- character(0)
-  save_pars <- x$save_pars
-  bterms <- brmsterms(x$formula)
-  c(out) <- exclude_pars(bterms, data = x$data, save_pars = save_pars, ...)
-  meef <- tidy_meef(bterms, x$data)
-  if (has_rows(meef)) {
-    I <- seq_along(unique(meef$grname))
-    K <- seq_rows(meef)
-    c(out) <- paste0(c("Corme_"), I)
-    if (!save_pars$all) {
-      c(out) <- c(paste0("zme_", K), paste0("Lme_", I))
-    }
-    if (isFALSE(save_pars$latent)) {
-      c(out) <- paste0("Xme_", K)
-    } else if (is.character(save_pars$latent)) {
-      sub_K <- K[!meef$xname %in% save_pars$latent]
-      if (length(sub_K)) {
-        c(out) <- paste0("Xme_", sub_K)
-      }
-    }
+  if (is.null(bframe)) {
+    # needed for the moment until brmsframe is stored in brmsfit
+    bframe <- brmsframe(x$formula, data = x$data)
   }
-  ranef <- x$ranef
-  if (has_rows(ranef)) {
-    rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
-    for (id in unique(ranef$id)) {
-      c(out) <- paste0(rm_re_pars, "_", id)
-    }
-    if (isFALSE(save_pars$group)) {
-      p <- usc(combine_prefix(ranef))
-      c(out) <- paste0("r_", ranef$id, p, "_", ranef$cn)
-    } else if (is.character(save_pars$group)) {
-      sub_ranef <- ranef[!ranef$group %in% save_pars$group, ]
-      if (has_rows(sub_ranef)) {
-        sub_p <- usc(combine_prefix(sub_ranef))
-        c(out) <- paste0("r_", sub_ranef$id, sub_p, "_", sub_ranef$cn)
-      }
-    }
-    tranef <- get_dist_groups(ranef, "student")
-    if (!save_pars$all && has_rows(tranef)) {
-      c(out) <- paste0(c("udf_", "dfm_"), tranef$ggn)
-    }
-  }
+  stopifnot(is.anybrmsframe(bframe))
+  c(out) <- exclude_pars(bframe, save_pars = x$save_pars, ...)
+  c(out) <- exclude_pars_re(bframe, save_pars = x$save_pars, ...)
+  c(out) <- exclude_pars_me(bframe, save_pars = x$save_pars, ...)
   out <- unique(out)
-  out <- setdiff(out, save_pars$manual)
+  out <- setdiff(out, x$save_pars$manual)
   out
 }
 
 #' @export
-exclude_pars.mvbrmsterms <- function(x, save_pars, ...) {
+exclude_pars.mvbrmsframe <- function(x, save_pars, ...) {
   out <- c("Rescor", "Sigma")
   if (!save_pars$all) {
     c(out) <- c("Lrescor", "LSigma")
@@ -71,9 +38,8 @@ exclude_pars.mvbrmsterms <- function(x, save_pars, ...) {
 }
 
 #' @export
-exclude_pars.brmsterms <- function(x, data, save_pars, ...) {
+exclude_pars.brmsframe <- function(x, save_pars, ...) {
   resp <- usc(combine_prefix(x))
-  data <- subset_data(data, x)
   par_classes <- c("Lncor", "Cortime")
   out <- paste0(par_classes, resp)
   if (!save_pars$all) {
@@ -84,10 +50,10 @@ exclude_pars.brmsterms <- function(x, data, save_pars, ...) {
     c(out) <- paste0(par_classes, resp)
   }
   for (dp in names(x$dpars)) {
-    c(out) <- exclude_pars(x$dpars[[dp]], data = data, save_pars = save_pars, ...)
+    c(out) <- exclude_pars(x$dpars[[dp]], save_pars = save_pars, ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- exclude_pars(x$nlpars[[nlp]], data = data, save_pars = save_pars, ...)
+    c(out) <- exclude_pars(x$nlpars[[nlp]], save_pars = save_pars, ...)
   }
   if (is.formula(x$adforms$mi)) {
     if (!(isTRUE(save_pars$latent) || x$resp %in% save_pars$latent)) {
@@ -102,7 +68,7 @@ exclude_pars.brmsterms <- function(x, data, save_pars, ...) {
 }
 
 #' @export
-exclude_pars.btl <- function(x, data, save_pars, ...) {
+exclude_pars.bframel <- function(x, save_pars, ...) {
   out <- character(0)
   p <- usc(combine_prefix(x))
   c(out) <- paste0("chol_cor", p)
@@ -114,10 +80,64 @@ exclude_pars.btl <- function(x, data, save_pars, ...) {
       "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
-    smef <- tidy_smef(x, data)
-    for (i in seq_rows(smef)) {
-      nb <- seq_len(smef$nbases[i])
+    smframe <- x$frame$sm
+    for (i in seq_rows(smframe)) {
+      nb <- seq_len(smframe$nbases[i])
       c(out) <- paste0("zs", p, "_", i, "_", nb)
+    }
+  }
+  out
+}
+
+# exclude variables related to random effects
+exclude_pars_re <- function(bframe, save_pars, ...) {
+  reframe <- bframe$frame$re
+  stopifnot(is.reframe(reframe))
+  out <- list()
+  if (!has_rows(reframe)) {
+    return(out)
+  }
+  rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
+  for (id in unique(reframe$id)) {
+    c(out) <- paste0(rm_re_pars, "_", id)
+  }
+  if (isFALSE(save_pars$group)) {
+    p <- usc(combine_prefix(reframe))
+    c(out) <- paste0("r_", reframe$id, p, "_", reframe$cn)
+  } else if (is.character(save_pars$group)) {
+    sub_reframe <- reframe[!reframe$group %in% save_pars$group, ]
+    if (has_rows(sub_reframe)) {
+      sub_p <- usc(combine_prefix(sub_reframe))
+      c(out) <- paste0("r_", sub_reframe$id, sub_p, "_", sub_reframe$cn)
+    }
+  }
+  reframe_t <- get_dist_groups(reframe, "student")
+  if (!save_pars$all && has_rows(reframe_t)) {
+    c(out) <- paste0(c("udf_", "dfm_"), reframe_t$ggn)
+  }
+  out
+}
+
+# exclude variables related to noise-free variables
+exclude_pars_me <- function(bframe, save_pars, ...) {
+  meframe <- bframe$frame$me
+  stopifnot(is.meframe(meframe))
+  out <- list()
+  if (!has_rows(meframe)) {
+    return(out)
+  }
+  I <- seq_along(unique(meframe$grname))
+  K <- seq_rows(meframe)
+  c(out) <- paste0(c("Corme_"), I)
+  if (!save_pars$all) {
+    c(out) <- c(paste0("zme_", K), paste0("Lme_", I))
+  }
+  if (isFALSE(save_pars$latent)) {
+    c(out) <- paste0("Xme_", K)
+  } else if (is.character(save_pars$latent)) {
+    sub_K <- K[!meframe$xname %in% save_pars$latent]
+    if (length(sub_K)) {
+      c(out) <- paste0("Xme_", sub_K)
     }
   }
   out

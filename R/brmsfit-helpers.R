@@ -223,9 +223,9 @@ get_cov_matrix_ac <- function(prep, obs = NULL, Jtime = NULL, latent = FALSE) {
   }
   nobs <- length(obs)
   ndraws <- prep$ndraws
-  acef <- prep$ac$acef
+  acframe <- prep$ac$acframe
   # prepare correlations
-  if (has_ac_class(acef, "arma")) {
+  if (has_ac_class(acframe, "arma")) {
     ar <- as.numeric(prep$ac$ar)
     ma <- as.numeric(prep$ac$ma)
     if (length(ar) && !length(ma)) {
@@ -237,13 +237,13 @@ get_cov_matrix_ac <- function(prep, obs = NULL, Jtime = NULL, latent = FALSE) {
     } else {
       stop2("Neither 'ar' nor 'ma' were supplied. Please report a bug.")
     }
-  } else if (has_ac_class(acef, "cosy")) {
+  } else if (has_ac_class(acframe, "cosy")) {
     cosy <- as.numeric(prep$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
-  } else if (has_ac_class(acef, "unstr")) {
+  } else if (has_ac_class(acframe, "unstr")) {
     cortime <- prep$ac$cortime
     cor <- get_cor_matrix_unstr(cortime, Jtime)
-  } else if (has_ac_class(acef, "fcor")) {
+  } else if (has_ac_class(acframe, "fcor")) {
     cor <- get_cor_matrix_fcor(prep$ac$Mfcor, ndraws)
   } else {
     cor <- get_cor_matrix_ident(ndraws, nobs)

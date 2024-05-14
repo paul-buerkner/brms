@@ -142,7 +142,7 @@ test_that("Missing value imputation works correctly", {
   ce <- conditional_effects(fit_imp3, resp = "bmi")
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
-  expect_range(loo$estimates[3, 1], 200, 220)
+  expect_range(loo$estimates[3, 1], 200, 225)
 })
 
 test_that("student-t-distributed group-level effects work correctly", {

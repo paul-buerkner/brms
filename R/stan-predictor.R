@@ -9,7 +9,7 @@ stan_predictor <- function(x, ...) {
 # combine effects for the predictors of a single (non-linear) parameter
 # @param ... arguments passed to the underlying effect-specific functions
 #' @export
-stan_predictor.btl <- function(x, ...) {
+stan_predictor.bframel <- function(x, ...) {
   out <- collapse_lists(
     stan_fe(x, ...),
     stan_thres(x, ...),
@@ -28,7 +28,7 @@ stan_predictor.btl <- function(x, ...) {
 
 # prepare Stan code for non-linear terms
 #' @export
-stan_predictor.btnl <- function(x, ...) {
+stan_predictor.bframenl <- function(x, ...) {
   collapse_lists(
     stan_nl(x, ...),
     stan_thres(x, ...),
@@ -38,14 +38,17 @@ stan_predictor.btnl <- function(x, ...) {
 }
 
 #' @export
-stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
+stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
-  data <- subset_data(data, x)
   out <- list()
-  str_add_list(out) <- stan_response(x, data = data, normalize = normalize)
+  str_add_list(out) <- stan_response(x, normalize = normalize)
   valid_dpars <- valid_dpars(x)
-  args <- nlist(data, prior, normalize, nlpars = names(x$nlpars), ...)
+  family_files <- family_info(x, "include")
+  if (length(family_files)) {
+    str_add(out$fun) <- cglue("  #include '{family_files}'\n")
+  }
+  args <- nlist(prior, normalize, nlpars = names(x$nlpars), ...)
   args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]])
@@ -109,14 +112,16 @@ stan_predictor.brmsterms <- function(x, data, prior, normalize, ...) {
     x, prior = prior, normalize = normalize, ...
   )
   str_add_list(out) <- stan_mixture(
-    x, data = data, prior = prior, normalize = normalize, ...
+    x, prior = prior, normalize = normalize, ...
   )
-  out$model_log_lik <- stan_log_lik(x, data = data, normalize = normalize, ...)
+  out$model_log_lik <- stan_log_lik(
+    x, normalize = normalize, ...
+  )
   list(out)
 }
 
 #' @export
-stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
+stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
   out <- lapply(x$terms, stan_predictor, prior = prior, threads = threads,
                 normalize = normalize, ...)
   out <- unlist(out, recursive = FALSE)
@@ -263,20 +268,17 @@ stan_predictor.mvbrmsterms <- function(x, prior, threads, normalize, ...) {
 }
 
 # Stan code for population-level effects
-stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
+stan_fe <- function(bframe, prior, stanvars, threads, primitive,
                     normalize, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  family <- bterms$family
-  fixef <- colnames(data_fe(bterms, data)$X)
-  sparse <- is_sparse(bterms$fe)
-  decomp <- get_decomp(bterms$fe)
-  center_X <- stan_center_X(bterms)
-  ct <- str_if(center_X, "c")
-  # remove the intercept from the design matrix?
-  if (center_X) {
-    fixef <- setdiff(fixef, "Intercept")
-  }
-  px <- check_prefix(bterms)
+  family <- bframe$family
+  fixef <- bframe$frame$fe$vars_stan
+  sparse <- bframe$frame$fe$sparse
+  decomp <- bframe$frame$fe$decomp
+  center <- bframe$frame$fe$center
+  ct <- str_if(center, "c")
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   lpdf <- stan_lpdf_name(normalize)
@@ -310,7 +312,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     }
     # prepare population-level coefficients
     b_type <- glue("vector[K{ct}{p}]")
-    has_special_prior <- has_special_prior(prior, bterms, class = "b")
+    has_special_prior <- has_special_prior(prior, bframe, class = "b")
     if (decomp == "none") {
       if (has_special_prior) {
         str_add_list(out) <- stan_prior_non_centered(
@@ -346,15 +348,15 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     }
   }
 
-  order_intercepts <- order_intercepts(bterms)
-  if (order_intercepts && !center_X) {
+  order_intercepts <- order_intercepts(bframe)
+  if (order_intercepts && !center) {
     stop2(
       "Identifying mixture components via ordering requires ",
       "population-level intercepts to be present.\n",
       "Try setting order = 'none' in function 'mixture'."
     )
   }
-  if (center_X) {
+  if (center) {
     # centering the design matrix improves convergence
     sub_X_means <- ""
     if (length(fixef)) {
@@ -436,26 +438,48 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, primitive,
     )
     str_add(out$pll_args) <- glue(", data matrix XQ{p}")
   }
-  str_add(out$eta) <- stan_eta_fe(fixef, bterms, threads, primitive)
+  if (length(fixef) && !primitive) {
+    # added in the end such that the intercept comes first in out$eta
+    if (sparse) {
+      stopifnot(!center && decomp == "none")
+      csr_args <- sargs(
+        paste0(c("rows", "cols"), "(X", p, ")"),
+        paste0(c("wX", "vX", "uX", "b"), p)
+      )
+      eta_fe <- glue(" + csr_matrix_times_vector({csr_args})")
+    } else {
+      sfx_X <- sfx_b <- ""
+      if (decomp == "QR") {
+        sfx_X <- sfx_b <- "Q"
+      } else if (center) {
+        sfx_X <- "c"
+      }
+      slice <- stan_slice(threads)
+      eta_fe <- glue(" + X{sfx_X}{p}{slice} * b{sfx_b}{p}")
+    }
+    str_add(out$eta) <- eta_fe
+  }
   out
 }
 
 # Stan code for group-level effects
-stan_re <- function(ranef, prior, normalize, ...) {
+stan_re <- function(bframe, prior, normalize, ...) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
-  IDs <- unique(ranef$id)
+  reframe <- bframe$frame$re
+  stopifnot(is.reframe(reframe))
+  IDs <- unique(reframe$id)
   out <- list()
   # special handling of student-t group effects as their 'df' parameters
   # are defined on a per-group basis instead of a per-ID basis
-  tranef <- get_dist_groups(ranef, "student")
-  if (has_rows(tranef)) {
+  reframe_t <- get_dist_groups(reframe, "student")
+  if (has_rows(reframe_t)) {
     str_add(out$par) <-
       "  // parameters for student-t distributed group-level effects\n"
-    for (i in seq_rows(tranef)) {
-      g <- usc(tranef$ggn[i])
-      id <- tranef$id[i]
+    for (i in seq_rows(reframe_t)) {
+      g <- usc(reframe_t$ggn[i])
+      id <- reframe_t$id[i]
       str_add_list(out) <- stan_prior(
-        prior, class = "df", group = tranef$group[i],
+        prior, class = "df", group = reframe_t$group[i],
         suffix = g, normalize = normalize
       )
       str_add(out$par) <- glue(
@@ -474,19 +498,21 @@ stan_re <- function(ranef, prior, normalize, ...) {
     }
   }
   # the ID syntax requires group-level effects to be evaluated separately
-  tmp <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, normalize = normalize, ...)
+  tmp <- lapply(
+    IDs, .stan_re, bframe = bframe, prior = prior,
+    normalize = normalize, ...
+  )
   out <- collapse_lists(ls = c(list(out), tmp))
   out
 }
 
 # Stan code for group-level effects per ID
 # @param id the ID of the grouping factor
-# @param ranef output of tidy_ranef
-# @param prior object of class brmsprior
-.stan_re <- function(id, ranef, prior, threads, normalize, ...) {
+.stan_re <- function(id, bframe, prior, threads, normalize, ...) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
-  r <- subset2(ranef, id = id)
+  r <- subset2(bframe$frame$re, id = id)
+  stopifnot(is.reframe(r))
   has_cov <- nzchar(r$cov[1])
   has_by <- nzchar(r$by[[1]])
   Nby <- seq_along(r$bylevels[[1]])
@@ -623,10 +649,12 @@ stan_re <- function(ranef, prior, normalize, ...) {
         "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
       if (has_cov) {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor_by_cov.stan'\n"
         rdef <- glue(
           "scale_r_cor_by_cov(z_{id}, sd_{id}, L_{id}, Jby_{id}, Lcov_{id})"
         )
       } else {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
         rdef  <- glue("scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id})")
       }
       str_add(out$tpar_comp) <- glue(
@@ -650,8 +678,10 @@ stan_re <- function(ranef, prior, normalize, ...) {
         normalize = normalize
       )
       if (has_cov) {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor_cov.stan'\n"
         rdef <- glue("scale_r_cor_cov(z_{id}, sd_{id}, L_{id}, Lcov_{id})")
       } else {
+        str_add(out$fun) <- "  #include 'fun_scale_r_cor.stan'\n"
         rdef <- glue("scale_r_cor(z_{id}, sd_{id}, L_{id})")
       }
       # separate definition from computation to support fixed parameters
@@ -723,18 +753,19 @@ stan_re <- function(ranef, prior, normalize, ...) {
 }
 
 # Stan code of smooth terms
-stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
+stan_sm <- function(bframe, prior, threads, normalize, ...) {
+  stopifnot(is.bframel(bframe))
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
-  smef <- tidy_smef(bterms, data)
-  if (!NROW(smef)) {
+  smframe <- bframe$frame$sm
+  if (!has_rows(smframe)) {
     return(out)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   slice <- stan_slice(threads)
-  Xs_names <- attr(smef, "Xs_names")
+  Xs_names <- attr(smframe, "Xs_names")
   if (length(Xs_names)) {
     str_add(out$data) <- glue(
       "  // data for splines\n",
@@ -758,12 +789,12 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
     }
     str_add(out$eta) <- glue(" + Xs{p}{slice} * bs{p}")
   }
-  for (i in seq_rows(smef)) {
-    if (smef$nbases[[i]] == 0) {
+  for (i in seq_rows(smframe)) {
+    if (smframe$nbases[[i]] == 0) {
       next  # no penalized spline components present
     }
     pi <- glue("{p}_{i}")
-    nb <- seq_len(smef$nbases[[i]])
+    nb <- seq_len(smframe$nbases[[i]])
     str_add(out$data) <- glue(
       "  // data for spline {i}\n",
       "  int nb{pi};  // number of bases\n",
@@ -790,7 +821,7 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" nb{pi}")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sds", coef = smef$term[i], suffix = pi, px = px,
+        prior, class = "sds", coef = smframe$term[i], suffix = pi, px = px,
         type = glue("vector[nb{pi}]"), coef_type = glue("vector[nb{pi}]"),
         comment = "SDs of penalized spline coefficients",
         normalize = normalize
@@ -818,14 +849,15 @@ stan_sm <- function(bterms, data, prior, threads, normalize, ...) {
 
 # Stan code for category specific effects
 # @note not implemented for non-linear models
-stan_cs <- function(bterms, data, prior, ranef, threads, normalize, ...) {
+stan_cs <- function(bframe, prior, threads, normalize, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  csef <- colnames(get_model_matrix(bterms$cs, data))
-  px <- check_prefix(bterms)
+  csef <- bframe$frame$cs$vars
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
-  resp <- usc(bterms$resp)
+  resp <- usc(bframe$resp)
   slice <- stan_slice(threads)
-  ranef <- subset2(ranef, type = "cs", ls = px)
+  reframe <- subset2(bframe$frame$re, type = "cs")
   if (length(csef)) {
     str_add(out$data) <- glue(
       "  int<lower=1> Kcs{p};  // number of category specific effects\n",
@@ -845,7 +877,7 @@ stan_cs <- function(bterms, data, prior, ranef, threads, normalize, ...) {
       "  matrix[N{resp}, nthres{resp}] mucs{p} = Xcs{p}{slice} * bcs{p};\n"
     )
   }
-  if (nrow(ranef)) {
+  if (has_rows(reframe)) {
     if (!length(csef)) {
       # only group-level category specific effects present
       str_add(out$model_def) <- glue(
@@ -856,11 +888,11 @@ stan_cs <- function(bterms, data, prior, ranef, threads, normalize, ...) {
     }
     n <- stan_nn(threads)
     thres_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
-    thres <- get_matches(thres_regex, ranef$coef, perl = TRUE)
+    thres <- get_matches(thres_regex, reframe$coef, perl = TRUE)
     nthres <- max(as.numeric(thres))
     mucs_loop <- ""
     for (i in seq_len(nthres)) {
-      r_cat <- ranef[grepl(glue("\\[{i}\\]$"), ranef$coef), ]
+      r_cat <- reframe[grepl(glue("\\[{i}\\]$"), reframe$coef), ]
       str_add(mucs_loop) <- glue(
         "    mucs{p}[n, {i}] = mucs{p}[n, {i}]"
       )
@@ -885,21 +917,23 @@ stan_cs <- function(bterms, data, prior, ranef, threads, normalize, ...) {
 }
 
 # Stan code for special effects
-stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
-                    normalize, ...) {
+stan_sp <- function(bframe, prior, stanvars, threads, normalize, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) {
+  spframe <- bframe$frame$sp
+  reframe <- bframe$frame$re
+  meframe <- bframe$frame$me
+  if (!has_rows(spframe)) {
     return(out)
   }
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   lpdf <- stan_lpdf_name(normalize)
   n <- stan_nn(threads)
-  ranef <- subset2(ranef, type = "sp", ls = px)
-  spef_coef <- rename(spef$term)
-  invalid_coef <- setdiff(ranef$coef, spef_coef)
+  reframe <- subset2(reframe, type = "sp")
+  spframe_coef <- rename(spframe$term)
+  invalid_coef <- setdiff(reframe$coef, spframe_coef)
   if (length(invalid_coef)) {
     stop2(
       "Special group-level terms require corresponding ",
@@ -908,37 +942,37 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
     )
   }
   # prepare Stan code of the linear predictor component
-  for (i in seq_rows(spef)) {
-    eta <- spef$joint_call[[i]]
-    if (!is.null(spef$calls_mo[[i]])) {
-      new_mo <- glue("mo(simo{p}_{spef$Imo[[i]]}, Xmo{p}_{spef$Imo[[i]]}{n})")
-      eta <- rename(eta, spef$calls_mo[[i]], new_mo)
+  for (i in seq_rows(spframe)) {
+    eta <- spframe$joint_call[[i]]
+    if (!is.null(spframe$calls_mo[[i]])) {
+      new_mo <- glue("mo(simo{p}_{spframe$Imo[[i]]}, Xmo{p}_{spframe$Imo[[i]]}{n})")
+      eta <- rename(eta, spframe$calls_mo[[i]], new_mo)
     }
-    if (!is.null(spef$calls_me[[i]])) {
-      Kme <- seq_along(meef$term)
-      Ime <- match(meef$grname, unique(meef$grname))
-      nme <- ifelse(nzchar(meef$grname), glue("[Jme_{Ime}{n}]"), n)
+    if (!is.null(spframe$calls_me[[i]])) {
+      Kme <- seq_along(meframe$term)
+      Ime <- match(meframe$grname, unique(meframe$grname))
+      nme <- ifelse(nzchar(meframe$grname), glue("[Jme_{Ime}{n}]"), n)
       new_me <- glue("Xme_{Kme}{nme}")
-      eta <- rename(eta, meef$term, new_me)
+      eta <- rename(eta, meframe$term, new_me)
     }
-    if (!is.null(spef$calls_mi[[i]])) {
-      is_na_idx <- is.na(spef$idx2_mi[[i]])
-      idx_mi <- glue("[idxl{p}_{spef$vars_mi[[i]]}_{spef$idx2_mi[[i]]}{n}]")
+    if (!is.null(spframe$calls_mi[[i]])) {
+      is_na_idx <- is.na(spframe$idx2_mi[[i]])
+      idx_mi <- glue("[idxl{p}_{spframe$vars_mi[[i]]}_{spframe$idx2_mi[[i]]}{n}]")
       idx_mi <- ifelse(is_na_idx, n, idx_mi)
-      new_mi <- glue("Yl_{spef$vars_mi[[i]]}{idx_mi}")
-      eta <- rename(eta, spef$calls_mi[[i]], new_mi)
-      str_add(out$pll_args) <- glue(", vector Yl_{spef$vars_mi[[i]]}")
+      new_mi <- glue("Yl_{spframe$vars_mi[[i]]}{idx_mi}")
+      eta <- rename(eta, spframe$calls_mi[[i]], new_mi)
+      str_add(out$pll_args) <- glue(", vector Yl_{spframe$vars_mi[[i]]}")
     }
-    if (spef$Ic[i] > 0) {
-      str_add(eta) <- glue(" * Csp{p}_{spef$Ic[i]}{n}")
+    if (spframe$Ic[i] > 0) {
+      str_add(eta) <- glue(" * Csp{p}_{spframe$Ic[i]}{n}")
     }
-    r <- subset2(ranef, coef = spef_coef[i])
+    r <- subset2(reframe, coef = spframe_coef[i])
     rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r)}"))
     str_add(out$loopeta) <- glue(" + (bsp{p}[{i}]{rpars}) * {eta}")
   }
 
   # prepare general Stan code
-  ncovars <- max(spef$Ic)
+  ncovars <- max(spframe$Ic)
   str_add(out$data) <- glue(
     "  int<lower=1> Ksp{p};  // number of special effects terms\n"
   )
@@ -951,18 +985,19 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   }
 
   # include special Stan code for monotonic effects
-  which_Imo <- which(lengths(spef$Imo) > 0)
+  which_Imo <- which(lengths(spframe$Imo) > 0)
   if (any(which_Imo)) {
+    str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"
     str_add(out$data) <- glue(
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
       "  array[Imo{p}] int<lower=1> Jmo{p};  // length of simplexes\n"
     )
-    ids <- unlist(spef$ids_mo)
+    ids <- unlist(spframe$ids_mo)
     lpdf <- stan_lpdf_name(normalize)
     for (i in which_Imo) {
-      for (k in seq_along(spef$Imo[[i]])) {
-        j <- spef$Imo[[i]][[k]]
-        id <- spef$ids_mo[[i]][[k]]
+      for (k in seq_along(spframe$Imo[[i]])) {
+        j <- spframe$Imo[[i]][[k]]
+        id <- spframe$ids_mo[[i]][[k]]
         # index of first ID appearance
         j_id <- match(id, ids)
         str_add(out$data) <- glue(
@@ -994,7 +1029,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   }
 
   # include special Stan code for missing value terms
-  uni_mi <- na.omit(attr(spef, "uni_mi"))
+  uni_mi <- na.omit(attr(spframe, "uni_mi"))
   for (j in seq_rows(uni_mi)) {
     idxl <- glue("idxl{p}_{uni_mi$var[j]}_{uni_mi$idx2[j]}")
     str_add(out$data) <- glue(
@@ -1004,14 +1039,14 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
   }
 
   # prepare special effects coefficients
-  if (has_special_prior(prior, bterms, class = "b")) {
+  if (has_special_prior(prior, bframe, class = "b")) {
     stopif_prior_bound(prior, class = "b", ls = px)
     str_add_list(out) <- stan_prior_non_centered(
       suffix = glue("sp{p}"), normalize = normalize
     )
   } else {
     str_add_list(out) <- stan_prior(
-      prior, class = "b", coef = spef$coef,
+      prior, class = "b", coef = spframe$coef,
       type = glue("vector[Ksp{p}]"), px = px,
       suffix = glue("sp{p}"), header_type = "vector",
       comment = "special effects coefficients",
@@ -1022,27 +1057,28 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, threads,
 }
 
 # Stan code for latent gaussian processes
-stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
+stan_gp <- function(bframe, prior, threads, normalize, ...) {
+  stopifnot(is.bframel(bframe))
   lpdf <- stan_lpdf_name(normalize)
   out <- list()
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   slice <- stan_slice(threads)
-  gpef <- tidy_gpef(bterms, data)
+  gpframe <- bframe$frame$gp
   # kernel methods cannot simply be split up into partial sums
-  for (i in seq_rows(gpef)) {
+  for (i in seq_rows(gpframe)) {
     pi <- glue("{p}_{i}")
-    byvar <- gpef$byvars[[i]]
-    cons <- gpef$cons[[i]]
+    byvar <- gpframe$byvars[[i]]
+    cons <- gpframe$cons[[i]]
     byfac <- length(cons) > 0L
     bynum <- !is.null(byvar) && !byfac
-    k <- gpef$k[i]
+    k <- gpframe$k[i]
     is_approx <- !isNA(k)
-    iso <- gpef$iso[i]
-    gr <- gpef$gr[i]
-    sfx1 <- gpef$sfx1[[i]]
-    sfx2 <- gpef$sfx2[[i]]
+    iso <- gpframe$iso[i]
+    gr <- gpframe$gr[i]
+    sfx1 <- gpframe$sfx1[[i]]
+    sfx2 <- gpframe$sfx2[[i]]
     str_add(out$data) <- glue(
       "  // data related to GPs\n",
       "  int<lower=1> Kgp{pi};",
@@ -1050,10 +1086,13 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       "  int<lower=1> Dgp{pi};  // GP dimension\n"
     )
     if (is_approx) {
+      str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
       str_add(out$data) <- glue(
         "  // number of basis functions of an approximate GP\n",
         "  int<lower=1> NBgp{pi};\n"
       )
+    } else {
+      str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
     }
     if (has_special_prior(prior, px, class = "sdgp")) {
       str_add(out$tpar_def) <- glue(
@@ -1069,7 +1108,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
         normalize = normalize
       )
     }
-    if (gpef$iso[i]) {
+    if (gpframe$iso[i]) {
       lscale_type <- "vector[1]"
       lscale_dim <- glue("[Kgp{pi}]")
       lscale_comment <- "GP length-scale parameters"
@@ -1146,6 +1185,7 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
       slice2 <- ""
       Igp_sub <- Igp
       if (use_threading(threads)) {
+        str_add(out$fun) <- "  #include 'fun_which_range.stan'\n"
         str_add(out$model_comp_basic) <- cglue(
           "  array[size_range({Igp}, start, end)] int which_gp{pi}_{J} =",
           " which_range({Igp}, start, end);\n"
@@ -1252,23 +1292,27 @@ stan_gp <- function(bterms, data, prior, threads, normalize, ...) {
 }
 
 # Stan code for the linear predictor of autocorrelation terms
-stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
+stan_ac <- function(bframe, prior, threads, normalize, ...) {
   lpdf <- stan_lpdf_name(normalize)
   out <- list()
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   n <- stan_nn(threads)
   slice <- stan_slice(threads)
-  has_natural_residuals <- has_natural_residuals(bterms)
-  has_ac_latent_residuals <- has_ac_latent_residuals(bterms)
-  acef <- tidy_acef(bterms)
+  acframe <- bframe$frame$ac
+  stopifnot(is.acframe(acframe))
+  has_natural_residuals <- has_ac_natural_residuals(acframe)
+  has_latent_residuals <- has_ac_latent_residuals(acframe)
+  families <- family_names(bframe)
+  # TODO: include family-specific functions inside the corresponding
+  # stan_log_lik functions once they return lists of character vectors
 
-  if (has_ac_latent_residuals) {
+  if (has_latent_residuals) {
     # families that do not have natural residuals require latent
     # residuals for residual-based autocor structures
     err_msg <- "Latent residuals are not implemented"
-    if (is.btnl(bterms)) {
+    if (is.btnl(bframe)) {
       stop2(err_msg, " for non-linear models.")
     }
     str_add(out$par) <- glue(
@@ -1296,10 +1340,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     str_add(out$eta) <- glue(" + err{p}{slice}")
   }
 
-  # validity of the autocor terms has already been checked in 'tidy_acef'
-  acef_arma <- subset2(acef, class = "arma")
-  if (NROW(acef_arma)) {
-    if (use_threading(threads) && (!acef_arma$cov || has_natural_residuals)) {
+  # validity of the autocor terms has already been checked before
+  acframe_arma <- subset2(acframe, class = "arma")
+  if (has_rows(acframe_arma)) {
+    if (use_threading(threads) && (!acframe_arma$cov || has_natural_residuals)) {
       stop2("Threading is not supported for this ARMA model.")
     }
     str_add(out$data) <- glue(
@@ -1310,9 +1354,9 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     str_add(out$tdata_def) <- glue(
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    if (!acef_arma$cov) {
+    if (!acframe_arma$cov) {
       err_msg <- "Please set cov = TRUE in ARMA structures"
-      if (is.formula(bterms$adforms$se)) {
+      if (is.formula(bframe$adforms$se)) {
         stop2(err_msg, " when including known standard errors.")
       }
       str_add(out$data) <- glue(
@@ -1328,10 +1372,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         str_add(out$model_def) <- glue(
           "  vector[N{resp}] err{p};  // actual residuals\n"
         )
-        Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
+        Y <- str_if(is.formula(bframe$adforms$mi), "Yl", "Y")
         comp_err <- glue("    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n")
       } else {
-        if (acef_arma$q > 0) {
+        if (acframe_arma$q > 0) {
           # AR and MA structures cannot be distinguished when
           # using a single vector of latent residuals
           stop2("Please set cov = TRUE when modeling MA structures ",
@@ -1343,10 +1387,10 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         )
         comp_err <- ""
       }
-      add_ar <- str_if(acef_arma$p > 0,
+      add_ar <- str_if(acframe_arma$p > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
       )
-      add_ma <- str_if(acef_arma$q > 0,
+      add_ma <- str_if(acframe_arma$q > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
       )
       str_add(out$model_comp_arma) <- glue(
@@ -1361,9 +1405,9 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  }}\n"
       )
     }
-    if (acef_arma$p > 0) {
+    if (acframe_arma$p > 0) {
       if (has_special_prior(prior, px, class = "ar")) {
-        if (acef_arma$cov) {
+        if (acframe_arma$cov) {
           stop2("Cannot use shrinkage priors on 'ar' if cov = TRUE.")
         }
         str_add_list(out) <- stan_prior_non_centered(
@@ -1372,7 +1416,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "ar", px = px, suffix = p,
-          coef = seq_along(acef_arma$p),
+          coef = seq_along(acframe_arma$p),
           type = glue("vector[Kar{p}]"),
           header_type = "vector",
           comment = "autoregressive coefficients",
@@ -1380,9 +1424,9 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         )
       }
     }
-    if (acef_arma$q > 0) {
+    if (acframe_arma$q > 0) {
       if (has_special_prior(prior, px, class = "ma")) {
-        if (acef_arma$cov) {
+        if (acframe_arma$cov) {
           stop2("Cannot use shrinkage priors on 'ma' if cov = TRUE.")
         }
         str_add_list(out) <- stan_prior_non_centered(
@@ -1391,7 +1435,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       } else {
         str_add_list(out) <- stan_prior(
           prior, class = "ma", px = px, suffix = p,
-          coef = seq_along(acef_arma$q),
+          coef = seq_along(acframe_arma$q),
           type = glue("vector[Kma{p}]"),
           header_type = "vector",
           comment = "moving-average coefficients",
@@ -1401,8 +1445,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     }
   }
 
-  acef_cosy <- subset2(acef, class = "cosy")
-  if (NROW(acef_cosy)) {
+  acframe_cosy <- subset2(acframe, class = "cosy")
+  if (has_rows(acframe_cosy)) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
     str_add_list(out) <- stan_prior(
@@ -1412,8 +1456,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     )
   }
 
-  acef_unstr <- subset2(acef, class = "unstr")
-  if (NROW(acef_unstr)) {
+  acframe_unstr <- subset2(acframe, class = "unstr")
+  if (has_rows(acframe_unstr)) {
     # unstructured correlation matrix
     # most code is shared with ARMA covariance models
     # define prior on the Cholesky scale to consistency across
@@ -1427,14 +1471,31 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     )
   }
 
-  acef_time_cov <- subset2(acef, dim = "time", cov = TRUE)
-  if (NROW(acef_time_cov)) {
+  acframe_time_cov <- subset2(acframe, dim = "time", cov = TRUE)
+  if (has_rows(acframe_time_cov)) {
     # use correlation structures in covariance matrix parameterization
     # optional for ARMA models and obligatory for COSY and UNSTR models
     # can only model one covariance structure at a time
-    stopifnot(NROW(acef_time_cov) == 1)
+    stopifnot(nrow(acframe_time_cov) == 1)
     if (use_threading(threads)) {
       stop2("Threading is not supported for covariance-based autocorrelation models.")
+    }
+    str_add(out$fun) <- glue(
+      "  #include 'fun_sequence.stan'\n",
+      "  #include 'fun_is_equal.stan'\n",
+      "  #include 'fun_stack_vectors.stan'\n"
+    )
+    if ("gaussian" %in% families) {
+      str_add(out$fun) <- glue(
+        "  #include 'fun_normal_time.stan'\n",
+        "  #include 'fun_normal_time_se.stan'\n"
+      )
+    }
+    if ("student" %in% families) {
+      str_add(out$fun) <- glue(
+        "  #include 'fun_student_t_time.stan'\n",
+        "  #include 'fun_student_t_time_se.stan'\n"
+      )
     }
     str_add(out$data) <- glue(
       "  // see the functions block for details\n",
@@ -1450,7 +1511,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  int max_nobs_tg{p} = max(nobs_tg{p});",
       "  // maximum dimension of the autocorrelation matrix\n"
     )
-    if (acef_time_cov$class == "unstr") {
+    if (acframe_time_cov$class == "unstr") {
       # unstructured time-covariances require additional data and cannot
       # be represented directly via Cholesky factors due to potentially
       # different time subsets
@@ -1460,7 +1521,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  int n_unique_cortime{p};  // number of unique correlations\n"
       )
       str_add(out$pll_args) <- glue(", array[,] int Jtime_tg{p}")
-      if (has_ac_latent_residuals) {
+      if (has_latent_residuals) {
+        str_add(out$fun) <- "  #include 'fun_scale_time_err_flex.stan'\n"
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err_flex(",
@@ -1479,21 +1541,24 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     } else {
       # all other time-covariance structures can be represented directly
       # through Cholesky factors of the correlation matrix
-      if (acef_time_cov$class == "arma") {
-        if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
+      if (acframe_time_cov$class == "arma") {
+        if (acframe_time_cov$p > 0 && acframe_time_cov$q == 0) {
           cor_fun <- "ar1"
           cor_args <- glue("ar{p}[1]")
-        } else if (acef_time_cov$p == 0 && acef_time_cov$q > 0) {
+        } else if (acframe_time_cov$p == 0 && acframe_time_cov$q > 0) {
           cor_fun <- "ma1"
           cor_args <- glue("ma{p}[1]")
         } else {
           cor_fun <- "arma1"
           cor_args <- glue("ar{p}[1], ma{p}[1]")
         }
-      } else if (acef_time_cov$class == "cosy") {
+      } else if (acframe_time_cov$class == "cosy") {
         cor_fun <- "cosy"
         cor_args <- glue("cosy{p}")
       }
+      str_add(out$fun) <- glue(
+        "  #include 'fun_cholesky_cor_{cor_fun}.stan'\n"
+      )
       str_add(out$tpar_def) <- glue(
         "  // cholesky factor of the autocorrelation matrix\n",
         "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] Lcortime{p};\n"
@@ -1503,7 +1568,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  // compute residual covariance matrix\n",
         "  Lcortime{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
       )
-      if (has_ac_latent_residuals) {
+      if (has_latent_residuals) {
+        str_add(out$fun) <- "  #include 'fun_scale_time_err.stan'\n"
         str_add(out$tpar_comp) <- glue(
           "  // compute correlated time-series residuals\n",
           "  err{p} = scale_time_err(",
@@ -1514,8 +1580,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
 
   }
 
-  acef_sar <- subset2(acef, class = "sar")
-  if (NROW(acef_sar)) {
+  acframe_sar <- subset2(acframe, class = "sar")
+  if (has_rows(acframe_sar)) {
     if (!has_natural_residuals) {
       stop2("SAR terms are not implemented for this family.")
     }
@@ -1531,13 +1597,25 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
       "  real min_eigenMsar{p} = min(eigenMsar{p});\n",
       "  real max_eigenMsar{p} = max(eigenMsar{p});\n"
     )
-    if (acef_sar$type == "lag") {
+    if (acframe_sar$type == "lag") {
+      if ("gaussian" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_normal_lagsar.stan'\n"
+      }
+      if ("student" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_student_t_lagsar.stan'\n"
+      }
       str_add_list(out) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p,
         comment = "lag-SAR correlation parameter",
         normalize = normalize
       )
-    } else if (acef_sar$type == "error") {
+    } else if (acframe_sar$type == "error") {
+      if ("gaussian" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_normal_errorsar.stan'\n"
+      }
+      if ("student" %in% families) {
+        str_add(out$fun) <- "  #include 'fun_student_t_errorsar.stan'\n"
+      }
       str_add_list(out) <- stan_prior(
         prior, class = "errorsar", px = px, suffix = p,
         comment = "error-SAR correlation parameter",
@@ -1546,9 +1624,9 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     }
   }
 
-  acef_car <- subset2(acef, class = "car")
-  if (NROW(acef_car)) {
-    if (is.btnl(bterms)) {
+  acframe_car <- subset2(acframe, class = "car")
+  if (has_rows(acframe_car)) {
+    if (is.btnl(bframe)) {
       stop2("CAR terms are not implemented for non-linear models.")
     }
     str_add(out$data) <- glue(
@@ -1573,13 +1651,14 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     }
     str_add(out$pll_args) <- glue(", vector rcar{p}, data array[] int Jloc{p}")
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}{n}]")
-    if (acef_car$type %in% c("escar", "esicar")) {
+    if (acframe_car$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
         "  vector[Nloc{p}] Nneigh{p};\n",
         "  vector[Nloc{p}] eigenMcar{p};\n"
       )
     }
-    if (acef_car$type == "escar") {
+    if (acframe_car$type == "escar") {
+      str_add(out$fun) <- "  #include 'fun_sparse_car_lpdf.stan'\n"
       str_add(out$par) <- glue(
         "  vector[Nloc{p}] rcar{p};\n"
       )
@@ -1597,7 +1676,8 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "    rcar{p} | {car_args}\n",
         "  );\n"
       )
-    } else if (acef_car$type == "esicar") {
+    } else if (acframe_car$type == "esicar") {
+      str_add(out$fun) <- "  #include 'fun_sparse_icar_lpdf.stan'\n"
       str_add(out$par) <- glue(
         "  vector[Nloc{p} - 1] zcar{p};\n"
       )
@@ -1619,7 +1699,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "    rcar{p} | {car_args}\n",
         "  );\n"
       )
-    } else if (acef_car$type %in% "icar") {
+    } else if (acframe_car$type %in% "icar") {
       # intrinsic car based on the case study of Mitzi Morris
       # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
       str_add(out$par) <- glue(
@@ -1641,7 +1721,7 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
         "  // soft sum-to-zero constraint\n",
         "  target += normal_{lpdf}(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n"
       )
-    } else if (acef_car$type == "bym2") {
+    } else if (acframe_car$type == "bym2") {
       # BYM2 car based on the case study of Mitzi Morris
       # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
       str_add(out$data) <- glue(
@@ -1679,13 +1759,19 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
     }
   }
 
-  acef_fcor <- subset2(acef, class = "fcor")
-  if (NROW(acef_fcor)) {
+  acframe_fcor <- subset2(acframe, class = "fcor")
+  if (has_rows(acframe_fcor)) {
     if (!has_natural_residuals) {
       stop2("FCOR terms are not implemented for this family.")
     }
     if (use_threading(threads)) {
       stop2("Threading is not supported for FCOR models.")
+    }
+    if ("gaussian" %in% families) {
+      str_add(out$fun) <- "  #include 'fun_normal_fcor.stan'\n"
+    }
+    if ("student" %in% families) {
+      str_add(out$fun) <- "  #include 'fun_student_t_fcor.stan'\n"
     }
     str_add(out$data) <- glue(
       "  matrix[N{resp}, N{resp}] Mfcor{p};  // known residual covariance matrix\n"
@@ -1698,13 +1784,14 @@ stan_ac <- function(bterms, data, prior, threads, normalize, ...) {
 }
 
 # stan code for offsets
-stan_offset <- function(bterms, threads, ...) {
+stan_offset <- function(bframe, threads, ...) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  if (is.formula(bterms$offset)) {
-    p <- usc(combine_prefix(bterms))
-    resp <- usc(bterms$resp)
+  if (is.formula(bframe$offset)) {
+    p <- usc(combine_prefix(bframe))
+    resp <- usc(bframe$resp)
     slice <- stan_slice(threads)
-    # use 'offsets' as 'offset' will be reserved in stanc3
+    # use 'offsets' as 'offset' is reserved in stanc3
     str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
     str_add(out$pll_args) <- glue(", data vector offsets{p}")
     str_add(out$eta) <- glue(" + offsets{p}{slice}")
@@ -1714,21 +1801,23 @@ stan_offset <- function(bterms, threads, ...) {
 
 # Stan code for non-linear predictor terms
 # @param nlpars names of the non-linear parameters
-stan_nl <- function(bterms, data, nlpars, threads, ...) {
+stan_nl <- function(bframe, nlpars, threads, ...) {
+  stopifnot(is.bframenl(bframe))
   out <- list()
-  resp <- usc(bterms$resp)
-  par <- combine_prefix(bterms, keep_mu = TRUE, nlp = TRUE)
+  resp <- usc(bframe$resp)
+  par <- combine_prefix(bframe, keep_mu = TRUE, nlp = TRUE)
   # prepare non-linear model
-  n <- paste0(str_if(bterms$loop, "[n]"), " ")
+  n <- paste0(str_if(bframe$loop, "[n]"), " ")
   new_nlpars <- glue(" nlp{resp}_{nlpars}{n}")
   # covariates in the non-linear model
-  covars <- all.vars(bterms$covars)
+  covars <- all.vars(bframe$covars)
   new_covars <- NULL
   if (length(covars)) {
-    p <- usc(combine_prefix(bterms))
+    p <- usc(combine_prefix(bframe))
     new_covars <- rep(NA, length(covars))
-    data_cnl <- data_cnl(bterms, data)
-    if (bterms$loop) {
+    frame <- bframe$frame$cnl
+    # data_cnl <- data_cnl(bframe, data)
+    if (bframe$loop) {
       slice <- stan_nn(threads)
     } else {
       slice <- stan_slice(threads)
@@ -1736,14 +1825,10 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
     slice <- paste0(slice, " ")
     str_add(out$data) <- "  // covariates for non-linear functions\n"
     for (i in seq_along(covars)) {
-      cname <- glue("C{p}_{i}")
-      is_integer <- is.integer(data_cnl[[cname]])
-      is_matrix <- is.matrix(data_cnl[[cname]])
-      dim2 <- dim(data_cnl[[cname]])[2]
-      if (is_integer) {
-        if (is_matrix) {
+      if (frame$integer[i]) {
+        if (frame$matrix[i]) {
           str_add(out$data) <- glue(
-            "  array[N{resp}, {dim2}] int C{p}_{i};\n"
+            "  array[N{resp}, {frame$dim2[i]}] int C{p}_{i};\n"
           )
           str_add(out$pll_args) <- glue(", data array[,] int C{p}_{i}")
         } else {
@@ -1753,9 +1838,9 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
           str_add(out$pll_args) <- glue(", data array[] int C{p}_{i}")
         }
       } else {
-        if (is_matrix) {
+        if (frame$matrix[i]) {
           str_add(out$data) <- glue(
-            "  matrix[N{resp}, {dim2}] C{p}_{i};\n"
+            "  matrix[N{resp}, {frame$dim2[i]}] C{p}_{i};\n"
           )
           str_add(out$pll_args) <- glue(", data matrix C{p}_{i}")
         } else {
@@ -1774,7 +1859,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
     ",", "==", "!=", "<=", ">=", "<", ">", "!", "&&", "||"
   )
   regex <- glue("(?<!\\.){escape_all(syms)}(?!=)")
-  eta <- rm_wsp(deparse0(bterms$formula[[2]]))
+  eta <- rm_wsp(deparse0(bframe$formula[[2]]))
   eta <- wsp(rename(eta, regex, wsp(syms), fixed = FALSE, perl = TRUE))
   vars <- c(wsp(nlpars), wsp(covars), " ( ", " ) ")
   new_vars <- c(new_nlpars, new_covars, "(", ")")
@@ -1784,8 +1869,8 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
     "  // initialize non-linear predictor term\n",
     "  vector[N{resp}] {par};\n"
   )
-  if (bterms$loop) {
-    inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
+  if (bframe$loop) {
+    inv_link <- stan_inv_link(bframe$family$link, transform = bframe$transform)
     str_add(out$model_comp_dpar_link) <- glue(
       "  for (n in 1:N{resp}) {{\n",
       stan_nn_def(threads),
@@ -1794,7 +1879,7 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
       "  }}\n"
     )
   } else {
-    inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
+    inv_link <- stan_inv_link(bframe$family$link, transform = bframe$transform)
     str_add(out$model_comp_dpar_link) <- glue(
       "  // compute non-linear predictor values\n",
       "  {par} = {inv_link}({eta});\n"
@@ -1804,22 +1889,22 @@ stan_nl <- function(bterms, data, nlpars, threads, ...) {
 }
 
 # global Stan definitions for noise-free variables
-# @param meef output of tidy_meef
-stan_Xme <- function(meef, prior, threads, normalize) {
-  stopifnot(is.meef_frame(meef))
-  if (!nrow(meef)) {
+stan_Xme <- function(bframe, prior, threads, normalize) {
+  meframe <- bframe$frame$me
+  stopifnot(is.meframe(meframe))
+  if (!has_rows(meframe)) {
     return(list())
   }
   lpdf <- stan_lpdf_name(normalize)
   out <- list()
-  coefs <- rename(paste0("me", meef$xname))
+  coefs <- rename(paste0("me", meframe$xname))
   str_add(out$data) <- "  // data for noise-free variables\n"
   str_add(out$par) <- "  // parameters for noise free variables\n"
-  groups <- unique(meef$grname)
+  groups <- unique(meframe$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
     # K are the global and J the local (within group) indices
-    K <- which(meef$grname %in% g)
+    K <- which(meframe$grname %in% g)
     J <- seq_along(K)
     if (nzchar(g)) {
       Nme <- glue("Nme_{i}")
@@ -1851,7 +1936,7 @@ stan_Xme <- function(meef, prior, threads, normalize) {
     str_add(out$model_prior) <- cglue(
       "  target += normal_{lpdf}(Xn_{K} | Xme_{K}, noise_{K});\n"
     )
-    if (meef$cor[K[1]] && length(K) > 1L) {
+    if (meframe$cor[K[1]] && length(K) > 1L) {
       str_add(out$data) <- glue(
         "  int<lower=1> NCme_{i};  // number of latent correlations\n"
       )
@@ -1916,32 +2001,31 @@ stan_Xme <- function(meef, prior, threads, normalize) {
 
 # initialize and compute a linear predictor term in Stan language
 # @param out list of character strings containing Stan code
-# @param bterms btl object
-# @param ranef output of tidy_ranef
+# @param bframe btl object
 # @param primitive use Stan's GLM likelihood primitives?
 # @param ... currently unused
 # @return list of character strings containing Stan code
-stan_eta_combine <- function(bterms, out, ranef, threads, primitive, ...) {
-  stopifnot(is.btl(bterms), is.list(out))
-  if (primitive && !has_special_terms(bterms)) {
+stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
+  stopifnot(is.btl(bframe), is.list(out))
+  if (primitive && !has_special_terms(bframe)) {
     # only overall effects and perhaps an intercept are present
     # which will be evaluated directly in the GLM primitive likelihood
     return(out)
   }
-  px <- check_prefix(bterms)
-  resp <- usc(bterms$resp)
+  px <- check_prefix(bframe)
+  resp <- usc(bframe$resp)
   eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
   out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
   str_add(out$model_def) <- glue(
     "  // initialize linear predictor term\n",
     "  vector[N{resp}] {eta} = rep_vector(0.0, N{resp});\n"
   )
-  if (nzchar(out$eta)) {
+  if (isTRUE(nzchar(out$eta))) {
     str_add(out$model_comp_eta_basic) <- glue("  {eta} +={out$eta};\n")
   }
   out$eta <- NULL
-  str_add(out$loopeta) <- stan_eta_re(ranef, threads = threads, px = px)
-  if (nzchar(out$loopeta)) {
+  str_add(out$loopeta) <- stan_eta_re(bframe, threads = threads)
+  if (isTRUE(nzchar(out$loopeta))) {
     # parts of eta are computed in a loop over observations
     out$loopeta <- sub("^[ \t\r\n]+\\+", "", out$loopeta, perl = TRUE)
     str_add(out$model_comp_eta_loop) <- glue(
@@ -1953,8 +2037,15 @@ stan_eta_combine <- function(bterms, out, ranef, threads, primitive, ...) {
     )
   }
   out$loopeta <- NULL
+  # some links need custom Stan functions
+  link <- bframe$family$link
+  link_names <- c("cauchit", "cloglog", "softplus", "squareplus", "softit")
+  needs_link_fun <- isTRUE(link %in% link_names)
+  if (needs_link_fun) {
+    str_add(out$fun) <- glue("  #include 'fun_{link}.stan'\n")
+  }
   # possibly transform eta before it is passed to the likelihood
-  inv_link <- stan_inv_link(bterms$family$link, transform = bterms$transform)
+  inv_link <- stan_inv_link(bframe$family$link, transform = bframe$transform)
   if (nzchar(inv_link)) {
     str_add(out$model_comp_dpar_link) <- glue(
       "  {eta} = {inv_link}({eta});\n"
@@ -1963,47 +2054,14 @@ stan_eta_combine <- function(bterms, out, ranef, threads, primitive, ...) {
   out
 }
 
-# define Stan code to compute the fixef part of eta
-# @param fixef names of the population-level effects
-# @param bterms object of class 'btl'
-# @param primitive use Stan's GLM likelihood primitives?
-# @return a single character string
-stan_eta_fe <- function(fixef, bterms, threads, primitive) {
-  if (!length(fixef) || primitive) {
-    return("")
-  }
-  p <- usc(combine_prefix(bterms))
-  center_X <- stan_center_X(bterms)
-  decomp <- get_decomp(bterms$fe)
-  sparse <- is_sparse(bterms$fe)
-  if (sparse) {
-    stopifnot(!center_X && decomp == "none")
-    csr_args <- sargs(
-      paste0(c("rows", "cols"), "(X", p, ")"),
-      paste0(c("wX", "vX", "uX", "b"), p)
-    )
-    eta_fe <- glue(" + csr_matrix_times_vector({csr_args})")
-  } else {
-    sfx_X <- sfx_b <- ""
-    if (decomp == "QR") {
-      sfx_X <- sfx_b <- "Q"
-    } else if (center_X) {
-      sfx_X <- "c"
-    }
-    slice <- stan_slice(threads)
-    eta_fe <- glue(" + X{sfx_X}{p}{slice} * b{sfx_b}{p}")
-  }
-  eta_fe
-}
-
 # write the group-level part of the linear predictor
 # @return a single character string
-stan_eta_re <- function(ranef, threads, px = list()) {
+stan_eta_re <- function(bframe, threads) {
   eta_re <- ""
   n <- stan_nn(threads)
-  ranef <- subset2(ranef, type = c("", "mmc"), ls = px)
-  for (id in unique(ranef$id)) {
-    r <- subset2(ranef, id = id)
+  reframe <- subset2(bframe$frame$re, type = c("", "mmc"))
+  for (id in unique(reframe$id)) {
+    r <- subset2(reframe, id = id)
     rpx <- check_prefix(r)
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
     idresp <- paste0(r$id, usc(rpx$resp))
@@ -2026,9 +2084,10 @@ stan_eta_re <- function(ranef, threads, px = list()) {
 }
 
 # Stan code for group-level parameters in special predictor terms
-# @param r data.frame created by tidy_ranef
+# @param r data.frame created by frame_re
 # @return a character vector: one element per row of 'r'
 stan_eta_rsp <- function(r) {
+  stopifnot(is.reframe(r))
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
   rpx <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(rpx)))
@@ -2049,10 +2108,10 @@ stan_eta_rsp <- function(r) {
 }
 
 # does eta need to be transformed manually using the inv_link function
-stan_eta_transform <- function(family, bterms) {
+stan_eta_transform <- function(family, bframe) {
   no_transform <- family$link == "identity" ||
     has_joint_link(family) && !is.customfamily(family)
-  !no_transform && !stan_has_built_in_fun(family, bterms)
+  !no_transform && !stan_has_built_in_fun(family, bframe)
 }
 
 # indicate if the population-level design matrix should be centered
@@ -2089,22 +2148,22 @@ stan_dpar_comments <- function(dpar, family) {
 # Stan code for transformations of distributional parameters
 # TODO: refactor into family-specific functions
 # TODO: add gamma and related families here to compute rate = shape / mean
-stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
-  stopifnot(is.brmsterms(bterms))
+stan_dpar_transform <- function(bframe, prior, threads, normalize, ...) {
+  stopifnot(is.brmsterms(bframe))
   out <- list()
-  families <- family_names(bterms)
-  px <- check_prefix(bterms)
+  families <- family_names(bframe)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
-  resp <- usc(bterms$resp)
+  resp <- usc(bframe$resp)
   if (any(conv_cats_dpars(families))) {
     stopifnot(length(families) == 1L)
-    iref <- get_refcat(bterms$family, int = TRUE)
-    mus <- make_stan_names(glue("mu{bterms$family$cats}"))
+    iref <- get_refcat(bframe$family, int = TRUE)
+    mus <- make_stan_names(glue("mu{bframe$family$cats}"))
     mus <- glue("{mus}{p}")
-    if (use_glm_primitive_categorical(bterms)) {
-      bterms1 <- bterms$dpars[[1]]
-      center_X <- stan_center_X(bterms1)
-      ct <- str_if(center_X, "c")
+    if (use_glm_primitive_categorical(bframe)) {
+      bterms1 <- bframe$dpars[[1]]
+      center <- stan_center_X(bterms1)
+      ct <- str_if(center, "c")
       K <- glue("K{ct}_{bterms1$dpar}{p}")
       str_add(out$model_def) <- glue(
         "  // joint regression coefficients over categories\n",
@@ -2115,7 +2174,7 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
       str_add(out$model_comp_catjoin) <- cglue(
         "  b{p}[, {seq_along(bnames)}] = {bnames};\n"
       )
-      if (center_X) {
+      if (center) {
         Inames <- glue("Intercept_{mus}")
         Inames[iref] <- "0"
         str_add(out$model_def) <- glue(
@@ -2149,10 +2208,10 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
   if (any(families %in% "skew_normal")) {
     # as suggested by Stephen Martin use sigma and mu of CP
     # but the skewness parameter alpha of DP
-    dp_names <- names(bterms$dpars)
+    dp_names <- names(bframe$dpars)
     for (i in which(families %in% "skew_normal")) {
       id <- str_if(length(families) == 1L, "", i)
-      sigma <- stan_sigma_transform(bterms, id = id, threads = threads)
+      sigma <- stan_sigma_transform(bframe, id = id, threads = threads)
       ns <- str_if(grepl(stan_nn_regex(), sigma), "[n]")
       na <- str_if(glue("alpha{id}") %in% dp_names, "[n]")
       type_delta <- str_if(nzchar(na), glue("vector[N{resp}]"), "real")
@@ -2190,7 +2249,7 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
     # TODO: remove the gen_extreme_value family in brms 3.0
     warning2("The 'gen_extreme_value' family is deprecated ",
              "and will be removed in the future.")
-    dp_names <- c(names(bterms$dpars), names(bterms$fdpars))
+    dp_names <- c(names(bframe$dpars), names(bframe$fdpars))
     for (i in which(families %in% "gen_extreme_value")) {
       id <- str_if(length(families) == 1L, "", i)
       xi <- glue("xi{id}")
@@ -2210,9 +2269,9 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
   }
   if (any(families %in% "logistic_normal")) {
     stopifnot(length(families) == 1L)
-    predcats <- make_stan_names(get_predcats(bterms$family))
+    predcats <- make_stan_names(get_predcats(bframe$family))
     sigma_dpars <- glue("sigma{predcats}")
-    reqn <- sigma_dpars %in% names(bterms$dpars)
+    reqn <- sigma_dpars %in% names(bframe$dpars)
     n <- ifelse(reqn, "[n]", "")
     sigma_dpars <- glue("{sigma_dpars}{p}{n}")
     ncatm1 <- glue("ncat{p}-1")
@@ -2258,19 +2317,19 @@ stan_dpar_transform <- function(bterms, prior, threads, normalize, ...) {
 }
 
 # Stan code for sigma to incorporate addition argument 'se'
-stan_sigma_transform <- function(bterms, id = "", threads = NULL) {
+stan_sigma_transform <- function(bframe, id = "", threads = NULL) {
   if (nzchar(id)) {
     # find the right family in mixture models
-    family <- family_names(bterms)[as.integer(id)]
+    family <- family_names(bframe)[as.integer(id)]
   } else {
-    family <- bterms$family$family
+    family <- bframe$family$family
     stopifnot(!isTRUE(family == "mixture"))
   }
-  p <- usc(combine_prefix(bterms))
-  ns <- str_if(glue("sigma{id}") %in% names(bterms$dpars), "[n]")
-  has_sigma <- has_sigma(family) && !no_sigma(bterms)
+  p <- usc(combine_prefix(bframe))
+  ns <- str_if(glue("sigma{id}") %in% names(bframe$dpars), "[n]")
+  has_sigma <- has_sigma(family) && !no_sigma(bframe)
   sigma <- str_if(has_sigma, glue("sigma{id}{p}{ns}"))
-  if (is.formula(bterms$adforms$se)) {
+  if (is.formula(bframe$adforms$se)) {
     nse <- stan_nn(threads)
     sigma <- str_if(nzchar(sigma),
       glue("sqrt(square({sigma}) + se2{p}{nse})"),

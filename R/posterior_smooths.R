@@ -70,17 +70,19 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   smooth <- rm_wsp(as_one_character(smooth))
   ndraws <- use_alias(ndraws, nsamples)
   draw_ids <- use_alias(draw_ids, subset)
-  smef <- tidy_smef(object, fit$data)
-  smef$term <- rm_wsp(smef$term)
-  smterms <- unique(smef$term)
+  object$frame$sm <- frame_sm(object, fit$data)
+  class(object) <- c("bframel", class(object))
+  smframe <- object$frame$sm
+  smframe$term <- rm_wsp(smframe$term)
+  smterms <- unique(smframe$term)
   if (!smooth %in% smterms) {
     stop2("Term '", smooth, "' cannot be found. Available ",
           "smooth terms are: ", collapse_comma(smterms))
   }
   # find relevant variables
-  sub_smef <- subset2(smef, term = smooth)
-  covars <- all_vars(sub_smef$covars[[1]])
-  byvars <- all_vars(sub_smef$byvars[[1]])
+  sub_smframe <- subset2(smframe, term = smooth)
+  covars <- all_vars(sub_smframe$covars[[1]])
+  byvars <- all_vars(sub_smframe$byvars[[1]])
   req_vars <- c(covars, byvars)
   # prepare predictions for splines
   sdata <- standata(
@@ -94,7 +96,7 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   prep <- do_call(prepare_predictions, prep_args)
   # select subset of smooth parameters and design matrices
   i <- which(smterms %in% smooth)[1]
-  J <- which(smef$termnum == i)
+  J <- which(smframe$termnum == i)
   scs <- unlist(attr(prep$sm$fe$Xs, "smcols")[J])
   prep$sm$fe$Xs <- prep$sm$fe$Xs[, scs, drop = FALSE]
   prep$sm$fe$bs <- prep$sm$fe$bs[, scs, drop = FALSE]

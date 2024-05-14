@@ -9,10 +9,11 @@
 #   and (2) that the number of variables matches the number
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
+# @param data_name: optional name of the data frame as passed by the user
 # @return model.frame for use in brms functions
 validate_data <- function(data, bterms, data2 = list(), knots = NULL,
                           na_action = na_omit, drop_unused_levels = TRUE,
-                          attr_terms = NULL) {
+                          attr_terms = NULL, data_name = "") {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
   }
@@ -71,6 +72,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
   attr(data, "drop_unused_levels") <- drop_unused_levels
+  attr(data, "data_name") <- data_name
   data
 }
 
@@ -100,19 +102,19 @@ validate_data2 <- function(data2, bterms, ...) {
     }
   }
   # validate autocorrelation matrices
-  acef <- tidy_acef(bterms)
-  sar_M_names <- get_ac_vars(acef, "M", class = "sar")
+  acframe <- frame_ac(bterms)
+  sar_M_names <- get_ac_vars(acframe, "M", class = "sar")
   for (M in sar_M_names) {
     data2[[M]] <- validate_sar_matrix(get_from_data2(M, data2))
     attr(data2[[M]], "obs_based_matrix") <- TRUE
   }
-  car_M_names <- get_ac_vars(acef, "M", class = "car")
+  car_M_names <- get_ac_vars(acframe, "M", class = "car")
   for (M in car_M_names) {
     data2[[M]] <- validate_car_matrix(get_from_data2(M, data2))
     # observation based CAR matrices are deprecated and
     # there is no need to label them as observation based
   }
-  fcor_M_names <- get_ac_vars(acef, "M", class = "fcor")
+  fcor_M_names <- get_ac_vars(acframe, "M", class = "fcor")
   for (M in fcor_M_names) {
     data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
     attr(data2[[M]], "obs_based_matrix") <- TRUE
@@ -551,14 +553,9 @@ validate_newdata <- function(
   unused_vars <- setdiff(all_vars, used_vars)
   newdata <- fill_newdata(newdata, unused_vars)
   # validate grouping factors
-  new_ranef <- tidy_ranef(bterms, data = mf)
-  new_meef <- tidy_meef(bterms, data = mf)
-  old_levels <- get_levels(new_ranef, new_meef)
+  old_levels <- get_levels(bterms, data = mf)
   if (!allow_new_levels) {
-    new_levels <- get_levels(
-      tidy_ranef(bterms, data = newdata),
-      tidy_meef(bterms, data = newdata)
-    )
+    new_levels <- get_levels(bterms, data = newdata)
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
       if (length(unknown_levels)) {

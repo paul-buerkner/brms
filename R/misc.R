@@ -167,6 +167,9 @@ subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
+# not-in operator
+"%notin%" <- Negate("%in%")
+
 # convert array to list of elements with reduced dimension
 # @param x an arrary of dimension d
 # @return a list of arrays of dimension d-1
@@ -251,6 +254,15 @@ isNA <- function(x) {
 
 is_equal <- function(x, y, check.attributes = FALSE, ...) {
   isTRUE(all.equal(x, y, check.attributes = check.attributes, ...))
+}
+
+# extract factor levels from an arbitrary variable
+extract_levels <- function(x) {
+  # do not check for NAs according to #1355
+  if (!is.factor(x)) {
+    x <- factor(x)
+  }
+  levels(x)
 }
 
 # check if 'x' will behave like a factor in design matrices

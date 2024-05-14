@@ -90,18 +90,17 @@ stancode.default <- function(object, data, family = gaussian(),
     data2 = data2, knots = knots,
     drop_unused_levels = drop_unused_levels
   )
+  bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    prior, bterms = bterms, data = data,
+    prior, bframe = bframe,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   threads <- validate_threads(threads)
 
  .stancode(
-   bterms, data = data, prior = prior,
-   stanvars = stanvars, threads = threads,
-   normalize = normalize, save_model = save_model,
-   ...
+   bframe, prior = prior, stanvars = stanvars, threads = threads,
+   normalize = normalize, save_model = save_model, ...
  )
 }
 
@@ -109,32 +108,25 @@ stancode.default <- function(object, data, family = gaussian(),
 # @param parse parse the Stan model for automatic syntax checking
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
-.stancode <- function(bterms, data, prior, stanvars,
-                           threads = threading(),
-                           normalize = getOption("brms.normalize", TRUE),
-                           parse = getOption("brms.parse_stancode", FALSE),
-                           backend = getOption("brms.backend", "rstan"),
-                           silent = TRUE, save_model = NULL, ...) {
+.stancode <- function(bterms, prior, stanvars, threads = threading(),
+                      normalize = getOption("brms.normalize", TRUE),
+                      parse = getOption("brms.parse_stancode", FALSE),
+                      backend = getOption("brms.backend", "rstan"),
+                      silent = TRUE, save_model = NULL, ...) {
 
   normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
-  ranef <- tidy_ranef(bterms, data = data)
-  meef <- tidy_meef(bterms, data = data)
   scode_predictor <- stan_predictor(
-    bterms, data = data, prior = prior,
-    normalize = normalize, ranef = ranef, meef = meef,
+    bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
   )
-  scode_ranef <- stan_re(
-    ranef, prior = prior, threads = threads, normalize = normalize
+  scode_re <- stan_re(
+    bterms, prior = prior, threads = threads, normalize = normalize
   )
   scode_Xme <- stan_Xme(
-    meef, prior = prior, threads = threads, normalize = normalize
-  )
-  scode_global_defs <- stan_global_defs(
-    bterms, prior = prior, ranef = ranef, threads = threads
+    bterms, prior = prior, threads = threads, normalize = normalize
   )
 
   # extend Stan's likelihood part
@@ -144,7 +136,7 @@ stancode.default <- function(object, data, family = gaussian(),
       resp <- usc(names(scode_predictor)[i])
       pll_args <- stan_clean_pll_args(
         scode_predictor[[i]][["pll_args"]],
-        scode_ranef[["pll_args"]],
+        scode_re[["pll_args"]],
         scode_Xme[["pll_args"]],
         collapse_stanvars_pll_args(stanvars)
       )
@@ -193,6 +185,8 @@ stancode.default <- function(object, data, family = gaussian(),
       scode_predictor[["model_no_pll_comp_mvjoin"]],
       scode_predictor[["model_lik"]]
     )
+    str_add(scode_predictor[["fun"]]) <-
+      "  #include 'fun_sequence.stan'\n"
     str_add(scode_predictor[["data"]]) <-
       "  int grainsize;  // grainsize for threading\n"
   } else {
@@ -223,7 +217,7 @@ stancode.default <- function(object, data, family = gaussian(),
   # get all priors added to 'lprior'
   scode_tpar_prior <- paste0(
     scode_predictor[["tpar_prior"]],
-    scode_ranef[["tpar_prior"]],
+    scode_re[["tpar_prior"]],
     scode_Xme[["tpar_prior"]]
   )
 
@@ -231,7 +225,8 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_functions <- paste0(
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
-      scode_global_defs[["fun"]],
+      scode_predictor[["fun"]],
+      scode_re[["fun"]],
       collapse_stanvars(stanvars, "functions"),
       scode_predictor[["partial_log_lik"]],
     "}\n"
@@ -242,7 +237,7 @@ stancode.default <- function(object, data, family = gaussian(),
     "data {\n",
     "  int<lower=1> N;  // total number of observations\n",
     scode_predictor[["data"]],
-    scode_ranef[["data"]],
+    scode_re[["data"]],
     scode_Xme[["data"]],
     "  int prior_only;  // should the likelihood be ignored?\n",
     collapse_stanvars(stanvars, "data"),
@@ -252,7 +247,6 @@ stancode.default <- function(object, data, family = gaussian(),
   # generate transformed parameters block
   scode_transformed_data <- paste0(
     "transformed data {\n",
-       scode_global_defs[["tdata_def"]],
        scode_predictor[["tdata_def"]],
        collapse_stanvars(stanvars, "tdata", "start"),
        scode_predictor[["tdata_comp"]],
@@ -263,7 +257,7 @@ stancode.default <- function(object, data, family = gaussian(),
   # generate parameters block
   scode_parameters <- paste0(
     scode_predictor[["par"]],
-    scode_ranef[["par"]],
+    scode_re[["par"]],
     scode_Xme[["par"]]
   )
   # prepare additional sampling from priors
@@ -287,16 +281,16 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
       scode_predictor[["tpar_def"]],
-      scode_ranef[["tpar_def"]],
+      scode_re[["tpar_def"]],
       scode_Xme[["tpar_def"]],
       str_if(normalize, scode_lprior_def),
       collapse_stanvars(stanvars, "tparameters", "start"),
       scode_predictor[["tpar_prior_const"]],
-      scode_ranef[["tpar_prior_const"]],
+      scode_re[["tpar_prior_const"]],
       scode_Xme[["tpar_prior_const"]],
       scode_predictor[["tpar_comp"]],
       scode_predictor[["tpar_special_prior"]],
-      scode_ranef[["tpar_comp"]],
+      scode_re[["tpar_comp"]],
       scode_Xme[["tpar_comp"]],
       # lprior cannot contain _lupdf functions in transformed parameters
       # as discussed on github.com/stan-dev/stan/issues/3094
@@ -319,7 +313,7 @@ stancode.default <- function(object, data, family = gaussian(),
       str_if(!normalize, scode_tpar_prior),
       "  target += lprior;\n",
       scode_predictor[["model_prior"]],
-      scode_ranef[["model_prior"]],
+      scode_re[["model_prior"]],
       scode_Xme[["model_prior"]],
       stan_unchecked_prior(prior),
       collapse_stanvars(stanvars, "model", "end"),
@@ -329,12 +323,12 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_generated_quantities <- paste0(
     "generated quantities {\n",
       scode_predictor[["gen_def"]],
-      scode_ranef[["gen_def"]],
+      scode_re[["gen_def"]],
       scode_Xme[["gen_def"]],
       scode_rngprior[["gen_def"]],
       collapse_stanvars(stanvars, "genquant", "start"),
       scode_predictor[["gen_comp"]],
-      scode_ranef[["gen_comp"]],
+      scode_re[["gen_comp"]],
       scode_rngprior[["gen_comp"]],
       scode_Xme[["gen_comp"]],
       collapse_stanvars(stanvars, "genquant", "end"),
@@ -444,22 +438,33 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
   out
 }
 
-# expand '#include' statements
-# This could also be done automatically by Stan at compilation time
+# expand '#include' and '#includeR' statements
+# For '#include' this could also be done automatically by Stan at compilation time
 # but would result in Stan code that is not self-contained until compilation
-# @param model Stan code potentially including '#include' statements
-# @return Stan code with '#include' statements expanded
+# @param model Stan code that may contain '#include' and '#includeR' statements
+# @return Stan code with '#include' and '#includeR' statements expanded
 expand_include_statements <- function(model) {
+  # '#include' statements will be replaced by the content of a file
   path <- system.file("chunks", package = "brms")
-  includes <- get_matches("#include '[^']+'", model)
-  # removal of duplicates could make code generation easier in the future
-  includes <- unique(includes)
+  includes <- unique(get_matches("#include '[^']+'", model))
   files <- gsub("(#include )|(')", "", includes)
   for (i in seq_along(includes)) {
     code <- readLines(paste0(path, "/", files[i]))
     code <- paste0(code, collapse = "\n")
     pattern <- paste0(" *", escape_all(includes[i]))
     model <- sub(pattern, code, model)
+    # remove all duplicated include statements
+    model <- gsub(pattern, "", model)
+  }
+  # '#includeR' statements will be replaced by the call to an R function
+  includes <- unique(get_matches("#includeR `[^`]+`", model))
+  calls <- gsub("(#includeR )|(`)", "", includes)
+  for (i in seq_along(includes)) {
+    code <- eval2(calls[i])
+    pattern <- paste0(" *", escape_all(includes[i]))
+    model <- sub(pattern, code, model)
+    # remove all duplicated include statements
+    model <- gsub(pattern, "", model)
   }
   model
 }
