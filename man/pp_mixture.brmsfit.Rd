@@ -76,15 +76,15 @@ estimates.
 }
 \details{
 The returned probabilities can be written as
-\eqn{P(Kn = k | Yn)}, that is the posterior probability
+\eqn{P(K_n = k | Y_n)}, that is the posterior probability
 that observation n originates from component k.
 They are computed using Bayes' Theorem
-\deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
-where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood
-of observation n for component k, \eqn{P(Kn = k)} is
+\deqn{P(K_n = k | Y_n) = P(Y_n | K_n = k) P(K_n = k) / P(Y_n),}
+where \eqn{P(Y_n | K_n = k)} is the (posterior) likelihood
+of observation n for component k, \eqn{P(K_n = k)} is
 the (posterior) mixing probability of component k
 (i.e. parameter \code{theta<k>}), and
-\deqn{P(Yn) = \sum (k=1,...,K) P(Yn | Kn = k) P(Kn = k)}
+\deqn{P(Y_n) = \sum_{k=1,...,K} P(Y_n | K_n = k) P(K_n = k)}
 is a normalizing constant.
 }
 \examples{
