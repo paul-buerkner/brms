@@ -21,7 +21,6 @@
 #' MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221
 #'
 #' @method summary brmsfit
-#' @importMethodsFrom rstan summary
 #' @importFrom posterior subset_draws summarize_draws
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
