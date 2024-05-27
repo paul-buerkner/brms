@@ -479,21 +479,47 @@ test_that("loo_R2 has reasonable outputs", {
   expect_equal(dim(R2), c(ndraws(fit1), 1))
 })
 
+test_that("loo_epred has reasonable outputs", {
+  skip_on_cran()
+
+  llp <- SW(loo_epred(fit1))
+  expect_equal(nrow(llp), nobs(fit1))
+
+  newdata <- data.frame(
+    Age = 0, visit = c("a", "b"), Trt = 0,
+    count = 20, patient = 1, Exp = 2, volume = 0
+  )
+  llp <- SW(loo_epred(
+    fit1, newdata = newdata,
+    type = "quantile", probs = c(0.25, 0.75),
+    allow_new_levels = TRUE
+  ))
+  expect_equal(dim(llp), c(nrow(newdata), 2))
+
+  llp <- SW(loo_epred(fit4))
+  expect_equal(nrow(llp), nobs(fit4))
+  expect_equal(dim(llp)[3], 4)
+})
+
 test_that("loo_linpred has reasonable outputs", {
   skip_on_cran()
 
   llp <- SW(loo_linpred(fit1))
-  expect_equal(length(llp), nobs(fit1))
-  expect_error(loo_linpred(fit4), "Method 'loo_linpred'")
+  expect_equal(nrow(llp), nobs(fit1))
+
+  llp <- SW(loo_linpred(fit4))
+  expect_equal(nrow(llp), nobs(fit4))
+  expect_equal(dim(llp)[3], 3)
+
   llp <- SW(loo_linpred(fit2, scale = "response", type = "var"))
-  expect_equal(length(llp), nobs(fit2))
+  expect_equal(nrow(llp), nobs(fit2))
 })
 
 test_that("loo_predict has reasonable outputs", {
   skip_on_cran()
 
   llp <- SW(loo_predict(fit1))
-  expect_equal(length(llp), nobs(fit1))
+  expect_equal(nrow(llp), nobs(fit1))
 
   newdata <- data.frame(
     Age = 0, visit = c("a", "b"), Trt = 0,
@@ -504,9 +530,11 @@ test_that("loo_predict has reasonable outputs", {
     type = "quantile", probs = c(0.25, 0.75),
     allow_new_levels = TRUE
   ))
-  expect_equal(dim(llp), c(2, nrow(newdata)))
+  expect_equal(dim(llp), c(nrow(newdata), 2))
+
   llp <- SW(loo_predict(fit4))
-  expect_equal(length(llp), nobs(fit4))
+  expect_equal(nrow(llp), nobs(fit4))
+  expect_equal(length(dim(llp)), 2)
 })
 
 test_that("loo_predictive_interval has reasonable outputs", {
