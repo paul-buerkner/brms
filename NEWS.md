@@ -8,6 +8,9 @@
 
 * Fix a bug that led to partially duplicated Stan code in multilevel terms
 thanks to Henrik Singmann. (#1651)
+* Fix problems with parallel executions of post-processing functions 
+sometimes leaving unused R instances behind. Thanks to Andrew Johnson,
+Aki Vehtari, and Noa Kallioinen. (#1658)
 
 ### Other Changes
 

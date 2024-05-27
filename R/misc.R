@@ -425,13 +425,16 @@ plapply <- function(X, FUN, cores = 1, ...) {
   if (cores == 1) {
     out <- lapply(X, FUN, ...)
   } else {
-    if (!os_is_windows()) {
-      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = cores, ...)
-    } else {
-      cl <- parallel::makePSOCKcluster(cores)
-      on.exit(parallel::stopCluster(cl))
-      out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
-    }
+    cl_type <- ifelse(os_is_windows(), "PSOCK", "FORK")
+    cl <- parallel::makeCluster(cores, type = cl_type)
+    # Register a cleanup for the cluster in case the function fails
+    # Need to wrap in a tryCatch to avoid error if cluster is already stopped
+    on.exit(tryCatch(
+      { parallel::stopCluster(cl) },
+      error = function(e) invisible(NULL)
+    ))
+    out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
+    parallel::stopCluster(cl)
   }
   out
 }
