@@ -620,8 +620,18 @@ get_data2_autocor.brmsformula <- function(x, ...) {
 }
 
 #' @export
+get_data2_autocor.brmsterms <- function(x, ...) {
+  attr(attr(x$formula, "autocor"), "data2")
+}
+
+#' @export
 get_data2_autocor.mvbrmsformula <- function(x, ...) {
   ulapply(x$forms, get_data2_autocor, recursive = FALSE)
+}
+
+#' @export
+get_data2_autocor.mvbrmsterms <- function(x, ...) {
+  ulapply(x$terms, get_data2_autocor, recursive = FALSE)
 }
 
 #' @export

@@ -73,8 +73,7 @@ test_that("specified priors appear in the Stan code", {
              prior(cauchy(0, 5), sigma, resp = y),
              prior(cauchy(0, 1), sigma, resp = x1))
   form <- bf(mvbind(y, x1) ~ x2) + set_rescor(TRUE)
-  scode <- stancode(form, dat, prior = prior,
-                         sample_prior = TRUE)
+  scode <- stancode(form, dat, prior = prior, sample_prior = TRUE)
   expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(Lrescor | 2)")
   expect_match2(scode, "prior_sigma_y = cauchy_rng(0,5)")
   expect_match2(scode, "prior_rescor = lkj_corr_rng(nresp,2)[1, 2]")

@@ -380,8 +380,8 @@ has_subset <- function(bterms) {
 }
 
 # construct a list of indices for cross-formula referencing
-tidy_index <- function(x, data) {
-  out <- .tidy_index(x, data)
+frame_index <- function(x, data) {
+  out <- .frame_index(x, data)
   if (is.brmsterms(x)) {
     # ensure consistent format for both uni- and multivariate models
     out <- list(out)
@@ -390,13 +390,13 @@ tidy_index <- function(x, data) {
   out
 }
 
-# internal version of tidy_index
-.tidy_index <- function(x, ...) {
-  UseMethod(".tidy_index")
+# internal version of frame_index
+.frame_index <- function(x, ...) {
+  UseMethod(".frame_index")
 }
 
 #' @export
-.tidy_index.brmsterms <- function(x, data, ...) {
+.frame_index.brmsterms <- function(x, data, ...) {
   out <- get_ad_values(x, "index", "index", data)
   if (is.null(out)) {
     return(NULL)
@@ -416,8 +416,8 @@ tidy_index <- function(x, data) {
 }
 
 #' @export
-.tidy_index.mvbrmsterms <- function(x, data, ...) {
-  lapply(x$terms, .tidy_index, data = data, ...)
+.frame_index.mvbrmsterms <- function(x, data, ...) {
+  lapply(x$terms, .frame_index, data = data, ...)
 }
 
 # check if cross-formula referencing is possible in subsetted models

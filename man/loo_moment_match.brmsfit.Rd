@@ -3,11 +3,12 @@
 \name{loo_moment_match.brmsfit}
 \alias{loo_moment_match.brmsfit}
 \alias{loo_moment_match}
+\alias{loo_moment_match.loo}
 \title{Moment matching for efficient approximate leave-one-out cross-validation}
 \usage{
 \method{loo_moment_match}{brmsfit}(
   x,
-  loo,
+  loo = NULL,
   k_threshold = 0.7,
   newdata = NULL,
   resp = NULL,
@@ -15,11 +16,16 @@
   recompile = FALSE,
   ...
 )
+
+\method{loo_moment_match}{loo}(x, fit, ...)
 }
 \arguments{
-\item{x}{An object of class \code{brmsfit}.}
+\item{x}{An \R object of class \code{brmsfit} or \code{loo} depending
+on the method.}
 
-\item{loo}{An object of class \code{loo} originally created from \code{x}.}
+\item{loo}{An \R object of class \code{loo}. If \code{NULL},
+brms will try to extract a precomputed \code{loo} object
+from the fitted model, added there via \code{\link{add_criterion}}.}
 
 \item{k_threshold}{The Pareto \eqn{k} threshold for which observations
 moment matching is applied. Defaults to \code{0.7}.
@@ -49,6 +55,8 @@ Additional arguments initially passed to \code{\link{loo}},
 for example, \code{newdata} or \code{resp} need to be passed
 again to \code{loo_moment_match} in order for the latter
 to work correctly.}
+
+\item{fit}{An \R object of class \code{brmsfit}.}
 }
 \value{
 An updated object of class \code{loo}.
@@ -73,6 +81,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
+
+# no more warnings after moment matching
 (mmloo1 <- loo_moment_match(fit1, loo = loo1))
 }
 

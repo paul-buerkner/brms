@@ -1808,17 +1808,17 @@ always_normalized <- function(family) {
 prepare_family <- function(x) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
-  acef <- tidy_acef(x)
-  if (use_ac_cov_time(acef) && has_natural_residuals(x)) {
+  acframe <- frame_ac(x)
+  if (use_ac_cov_time(acframe) && has_natural_residuals(x)) {
     family$fun <- paste0(family$family, "_time")
-  } else if (has_ac_class(acef, "sar")) {
-    acef_sar <- subset2(acef, class = "sar")
-    if (has_ac_subset(acef_sar, type = "lag")) {
+  } else if (has_ac_class(acframe, "sar")) {
+    acframe_sar <- subset2(acframe, class = "sar")
+    if (has_ac_subset(acframe_sar, type = "lag")) {
       family$fun <- paste0(family$family, "_lagsar")
-    } else if (has_ac_subset(acef_sar, type = "error")) {
+    } else if (has_ac_subset(acframe_sar, type = "error")) {
       family$fun <- paste0(family$family, "_errorsar")
     }
-  } else if (has_ac_class(acef, "fcor")) {
+  } else if (has_ac_class(acframe, "fcor")) {
     family$fun <- paste0(family$family, "_fcor")
   } else {
     family$fun <- family$family

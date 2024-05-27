@@ -454,7 +454,7 @@ predictor_ac <- function(eta, prep, i, fprep = NULL) {
   if (!is.null(prep$ac[["err"]])) {
     # auto-correlations via latent residuals
     eta <- eta + p(prep$ac$err, i, row = FALSE)
-  } else if (has_ac_class(prep$ac$acef, "arma")) {
+  } else if (has_ac_class(prep$ac$acframe, "arma")) {
     # ARMA correlations via explicit natural residuals
     if (!is.null(i)) {
       stop2("Pointwise evaluation is not possible for ARMA models.")
@@ -465,7 +465,7 @@ predictor_ac <- function(eta, prep, i, fprep = NULL) {
       fprep = fprep
     )
   }
-  if (has_ac_class(prep$ac$acef, "car")) {
+  if (has_ac_class(prep$ac$acframe, "car")) {
     eta <- eta + .predictor_re(Z = p(prep$ac$Zcar, i), r = prep$ac$rcar)
   }
   eta

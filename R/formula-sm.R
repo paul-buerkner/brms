@@ -59,8 +59,9 @@ t2 <- function(...) {
 
 # extract information about smooth terms
 # @param x either a formula or a list containing an element "sm"
-# @param data data.frame containing the covariates
-tidy_smef <- function(x, data) {
+# @param data optional data.frame containing the covariates
+#   only required if frame_sm is called from outside of brmsframe
+frame_sm <- function(x, data = NULL) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -68,6 +69,13 @@ tidy_smef <- function(x, data) {
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
+  # prepare information inferred from the data
+  sdata <- x$sdata$sm
+  if (is.null(sdata)) {
+    # for compatibility with spline-specific post-processing methods
+    sdata <- data_sm(x, data)
+  }
+
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
   out$sfun <- get_matches("^[^\\(]+", out$term)
@@ -81,8 +89,6 @@ tidy_smef <- function(x, data) {
     out$vars[[i]] <- c(out$covars[[i]], out$byvars[[i]])
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
-  # prepare information inferred from the data
-  sdata <- data_sm(x, data)
   bylevels <- attr(sdata$Xs, "bylevels")
   nby <- lengths(bylevels)
   tmp <- vector("list", nterms)
@@ -104,7 +110,16 @@ tidy_smef <- function(x, data) {
   out$nbases <- lengths(out$knots)
   attr(out, "Xs_names") <- colnames(sdata$Xs)
   rownames(out) <- NULL
+  class(out) <- smframe_class()
   out
+}
+
+smframe_class <- function() {
+  c("smframe", "data.frame")
+}
+
+is.smframe <- function(x) {
+  inherits(x, "smframe")
 }
 
 # check if smooths are present in the model

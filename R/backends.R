@@ -799,6 +799,9 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     diagnostics <- as.data.frame(matrix(nrow = nrow(samples), ncol = 0))
   }
 
+  # some diagnostics may be missing in the output depending on the algorithm
+  rstan_diagn_order <- intersect(rstan_diagn_order, names(diagnostics))
+
   # convert to regular data.frame
   samples <- as.data.frame(samples)
   chain_ids <- samples$.chain

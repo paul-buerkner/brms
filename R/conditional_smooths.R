@@ -122,10 +122,10 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
   stopifnot(is.brmsfit(fit))
   out <- list()
   mf <- model.frame(fit)
-  smef <- tidy_smef(x, mf)
+  smframe <- frame_sm(x, mf)
   # fixes issue #1265
-  smef$term <- rm_wsp(smef$term)
-  smterms <- unique(smef$term)
+  smframe$term <- rm_wsp(smframe$term)
+  smterms <- unique(smframe$term)
   if (!length(smooths)) {
     I <- seq_along(smterms)
   } else {
@@ -134,10 +134,10 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
   for (i in I) {
     # loop over smooth terms and compute their predictions
     smooth <- smterms[i]
-    sub_smef <- subset2(smef, term = smooth)
+    sub_smframe <- subset2(smframe, term = smooth)
     # extract raw variable names before transformations
-    covars <- all_vars(sub_smef$covars[[1]])
-    byvars <- all_vars(sub_smef$byvars[[1]])
+    covars <- all_vars(sub_smframe$covars[[1]])
+    byvars <- all_vars(sub_smframe$byvars[[1]])
     ncovars <- length(covars)
     if (ncovars > 2L) {
       byvars <- c(covars[3:ncovars], byvars)
@@ -194,7 +194,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     other_vars <- setdiff(names(conditions), vars)
     newdata <- fill_newdata(newdata, other_vars, conditions)
     eta <- posterior_smooths(x, fit, smooth, newdata, ...)
-    effects <- na.omit(sub_smef$covars[[1]][1:2])
+    effects <- na.omit(sub_smframe$covars[[1]][1:2])
     cond_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     if (length(byvars)) {
       # byvars will be plotted as facets

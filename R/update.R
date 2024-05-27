@@ -105,7 +105,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- bf(dots$formula, autocor = dots$autocor)
     }
   } else {
-    # TODO: restructure updating of the model formula
+    # TODO: generalize updating of the model formula
     if (is.mvbrmsformula(formula.) || is.mvbrmsformula(object$formula)) {
       stop2("Updating formulas of multivariate models is not yet possible.")
     }
@@ -248,13 +248,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$data, bterms = bterms, data2 = object$data2,
       knots = dots$knots, drop_unused_levels = dots$drop_unused_levels
     )
+    bframe <- brmsframe(bterms, data = object$data)
     object$prior <- .validate_prior(
-      dots$prior, bterms = bterms, data = object$data,
+      dots$prior, bframe = bframe,
       sample_prior = dots$sample_prior
     )
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
-    object$ranef <- tidy_ranef(bterms, data = object$data)
+    object$ranef <- frame_re(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
     object$threads <- validate_threads(dots$threads)
     if ("sample_prior" %in% names(dots)) {
@@ -267,7 +268,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
-    object$basis <- standata_basis(bterms, data = object$data)
+    object$basis <- frame_basis(bframe, data = object$data)
     algorithm <- match.arg(dots$algorithm, algorithm_choices())
     dots$algorithm <- object$algorithm <- algorithm
     # can only avoid recompilation when using the old backend
