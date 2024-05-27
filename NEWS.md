@@ -1,5 +1,9 @@
 # brms 2.21.0++
 
+### New Features
+
+* Add method `loo_epred` thanks to Aki Vehtari. (#1641)
+
 ### Bug Fixes
 
 * Fix a bug that led to partially duplicated Stan code in multilevel terms
@@ -10,6 +14,8 @@ thanks to Henrik Singmann. (#1651)
 * Refactor some of the internal code base to avoid evaluating
 many data-dependent quantities several times. (#1653)
 * Make argument `loo` optional in `loo_moment_match`.
+* Change the output format of `loo_predict` and `loo_linpred` to be
+more consistent with other post-processing functions.
 
 # brms 2.21.0
 
