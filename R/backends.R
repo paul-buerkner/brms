@@ -979,8 +979,10 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   }
 
   # @stanmodel
+  cxxdso_class <- "cxxdso"
+  attr(cxxdso_class, "package") <- "rstan"
   null_dso <- new(
-    "cxxdso", sig = list(character(0)), dso_saved = FALSE,
+    cxxdso_class, sig = list(character(0)), dso_saved = FALSE,
     dso_filename = character(0), modulename = character(0),
     system = R.version$system, cxxflags = character(0),
     .CXXDSOMISC = new.env(parent = emptyenv())
