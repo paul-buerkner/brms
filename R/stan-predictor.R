@@ -2165,6 +2165,7 @@ stan_dpar_transform <- function(bframe, prior, threads, normalize, ...) {
       center <- stan_center_X(bterms1)
       ct <- str_if(center, "c")
       K <- glue("K{ct}_{bterms1$dpar}{p}")
+      str_add(out$pll_args) <- glue(", int {K}")
       str_add(out$model_def) <- glue(
         "  // joint regression coefficients over categories\n",
         "  matrix[{K}, ncat{p}] b{p};\n"
