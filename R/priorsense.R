@@ -36,7 +36,7 @@
 #'
 #' @exportS3Method priorsense::create_priorsense_data brmsfit
 create_priorsense_data.brmsfit <- function(x, ...) {
-  priorsense::create_priorsense_data.default(
+  priorsense::create_priorsense_data(
     x = get_draws_ps(x),
     fit = x,
     log_prior = log_prior_ps(x),
@@ -51,7 +51,8 @@ create_priorsense_data.brmsfit <- function(x, ...) {
 log_lik_ps <- function(x) {
   log_lik <- log_lik(x)
   log_lik <- posterior::as_draws_array(log_lik)
-  posterior::variables(log_lik) <- paste0("log_lik[", 1:nvariables(log_lik), "]")
+  nvars <- nvariables(log_lik)
+  posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nvars), "]")
   log_lik
 }
 
