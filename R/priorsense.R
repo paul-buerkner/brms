@@ -15,23 +15,23 @@
 #'
 #' @examples
 #' \dontrun{
-#' # fit a simple model with non-uniform priors
-#' fit <- brm(count ~ zAge + zBase * Trt,
-#'            data = epilepsy, family = poisson(),
-#'            prior = prior(normal(0, 1), class = "b"))
+#' # fit a model with non-uniform priors
+#' fit <- brm(rating ~ treat + period + carry,
+#'            data = inhaler, family = sratio(),
+#'            prior = set_prior("normal(0, 0.5)"))
 #' summary(fit)
 #'
 #' # The following code requires the 'priorsense' package to be installed:
 #' library(priorsense)
 #'
-#' # perform powerscaling of the prior
+#' # perform power-scaling of the prior
 #' powerscale(fit, alpha = 1.5, component = "prior")
 #'
-#' # perform powerscaling sensitivity checks
+#' # perform power-scaling sensitivity checks
 #' powerscale_sensitivity(fit)
 #'
-#' # create powerscaling sensitivity plots
-#' powerscale_plot_dens(fit)
+#' # create power-scaling sensitivity plots (for one variable)
+#' powerscale_plot_dens(fit, variable = "b_treat")
 #' }
 #'
 #' @exportS3Method priorsense::create_priorsense_data brmsfit
@@ -39,16 +39,17 @@ create_priorsense_data.brmsfit <- function(x, ...) {
   priorsense::create_priorsense_data(
     x = get_draws_ps(x),
     fit = x,
-    log_prior = log_prior_ps(x),
-    log_lik = log_lik_ps(x),
-    log_prior_fn = log_prior_ps,
-    log_lik_fn = log_lik_ps,
+    log_prior = log_prior_draws.brmsfit(x),
+    log_lik = log_lik_draws.brmsfit(x),
+    log_prior_fn = log_prior_draws.brmsfit,
+    log_lik_fn = log_lik_draws.brmsfit,
     log_ratio_fn = powerscale_log_ratio,
     ...
   )
 }
 
-log_lik_ps <- function(x) {
+#' @exportS3Method
+log_lik_draws.brmsfit <- function(x) {
   log_lik <- log_lik(x)
   log_lik <- posterior::as_draws_array(log_lik)
   nvars <- nvariables(log_lik)
@@ -56,7 +57,8 @@ log_lik_ps <- function(x) {
   log_lik
 }
 
-log_prior_ps <- function(x, log_prior_name = "lprior") {
+#' @exportS3Method
+log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior") {
   posterior::subset_draws(
     posterior::as_draws_array(x),
     variable = log_prior_name

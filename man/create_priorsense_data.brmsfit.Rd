@@ -4,7 +4,7 @@
 \alias{create_priorsense_data.brmsfit}
 \title{Prior sensitivity: Create priorsense data}
 \usage{
-create_priorsense_data.brmsfit(x, ...)
+\method{create_priorsense_data}{brmsfit}(x, ...)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}
@@ -25,23 +25,23 @@ functions, so you will rarely need to call it manually yourself.
 }
 \examples{
 \dontrun{
-# fit a simple model with non-uniform priors
-fit <- brm(count ~ zAge + zBase * Trt,
-           data = epilepsy, family = poisson(),
-           prior = prior(normal(0, 1), class = "b"))
+# fit a model with non-uniform priors
+fit <- brm(rating ~ treat + period + carry,
+           data = inhaler, family = sratio(),
+           prior = set_prior("normal(0, 0.5)"))
 summary(fit)
 
 # The following code requires the 'priorsense' package to be installed:
 library(priorsense)
 
-# perform powerscaling of the prior
+# perform power-scaling of the prior
 powerscale(fit, alpha = 1.5, component = "prior")
 
-# perform powerscaling sensitivity checks
+# perform power-scaling sensitivity checks
 powerscale_sensitivity(fit)
 
-# create powerscaling sensitivity plots
-powerscale_plot_dens(fit)
+# create power-scaling sensitivity plots (for one variable)
+powerscale_plot_dens(fit, variable = "b_treat")
 }
 
 }
