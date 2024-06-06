@@ -48,7 +48,7 @@ create_priorsense_data.brmsfit <- function(x, ...) {
   )
 }
 
-#' @exportS3Method
+#' @exportS3Method priorsense::log_lik_draws
 log_lik_draws.brmsfit <- function(x) {
   log_lik <- log_lik(x)
   log_lik <- posterior::as_draws_array(log_lik)
@@ -57,7 +57,7 @@ log_lik_draws.brmsfit <- function(x) {
   log_lik
 }
 
-#' @exportS3Method
+#' @exportS3Method priorsense::log_prior_draws
 log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior") {
   posterior::subset_draws(
     posterior::as_draws_array(x),
