@@ -4,12 +4,12 @@
 \alias{create_priorsense_data.brmsfit}
 \title{Prior sensitivity: Create priorsense data}
 \usage{
-\method{create_priorsense_data}{brmsfit}(x, ...)
+create_priorsense_data.brmsfit(x, ...)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}
 
-\item{...}{Unused.}
+\item{...}{Currently unused.}
 }
 \value{
 A \code{priorsense_data} object to be used in conjunction
@@ -34,10 +34,14 @@ summary(fit)
 # The following code requires the 'priorsense' package to be installed:
 library(priorsense)
 
+# perform powerscaling of the prior
+powerscale(fit, alpha = 1.5, component = "prior")
+
 # perform powerscaling sensitivity checks
 powerscale_sensitivity(fit)
 
 # create powerscaling sensitivity plots
 powerscale_plot_dens(fit)
 }
+
 }
