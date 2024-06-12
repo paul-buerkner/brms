@@ -37,7 +37,7 @@ Defaults to all overlapping variables.}
 
 \item{weights}{Name of the criterion to compute weights from. Should be one
 of \code{"loo"}, \code{"waic"}, \code{"kfold"}, \code{"stacking"} (current
-default), or \code{"bma"}, \code{"pseudobma"}, For the former three
+default), \code{"bma"}, or \code{"pseudobma"}. For the former three
 options, Akaike weights will be computed based on the information criterion
 values returned by the respective methods. For \code{"stacking"} and
 \code{"pseudobma"}, method \code{\link{loo_model_weights}} will be used to
