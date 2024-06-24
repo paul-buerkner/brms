@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.21.5
-Date: 2024-05-27
+Version: 2.21.6
+Date: 2024-06-06
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -52,6 +52,7 @@ Suggests:
     emmeans (>= 1.4.2),
     cmdstanr (>= 0.5.0),
     projpred (>= 2.0.0),
+    priorsense (>= 1.0.0),
     shinystan (>= 2.4.0),
     splines2 (>= 0.5.0),
     RWiener,

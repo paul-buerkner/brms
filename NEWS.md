@@ -3,6 +3,7 @@
 ### New Features
 
 * Add method `loo_epred` thanks to Aki Vehtari. (#1641)
+* Add priorsense support via `create_priorsense_data.brmsfit` thanks to Noa Kallioinen. (#1354)
 
 ### Bug Fixes
 
