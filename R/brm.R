@@ -163,7 +163,8 @@
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions,
 #'   \code{"fullrank"} for variational inference with a multivariate normal
-#'   distribution, or \code{"fixed_param"} for sampling from fixed parameter
+#'   distribution, \code{"pathfinder"} for the pathfinder algorithm,
+#'   or \code{"fixed_param"} for sampling from fixed parameter
 #'   values. Can be set globally for the current \R session via the
 #'   \code{"brms.algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
