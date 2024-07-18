@@ -79,8 +79,8 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   x$frame$sp <- frame_sp(x, data = data)
   x$frame$gp <- frame_gp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
-  # only store the ranefs of this specific linear formula
-  x$frame$re <- subset2(frame$re, ls = check_prefix(x))
+  # only keep the ranefs of this specific linear formula
+  x$frame$re <- subset2(x$frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
   # these data_ functions may require the outputs of the corresponding
   # frame_ functions (but not vice versa) and are thus evaluated last

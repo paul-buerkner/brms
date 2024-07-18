@@ -211,6 +211,20 @@ mo <- function(x, id = NA) {
   out
 }
 
+#' TODO: add doc
+#' @export
+re <- function(gr, coef = "Intercept", resp = "", dpar = "", nlpar = "") {
+  term <- as_one_character(deparse_no_string(substitute(gr)))
+  coef <- as_one_character(coef)
+  resp <- as_one_character(resp)
+  dpar <- as_one_character(dpar)
+  nlpar <- as_one_character(nlpar)
+  label <- deparse0(match.call())
+  out <- nlist(term, coef, resp, dpar, nlpar, label)
+  class(out) <- c("re_term", "sp_term")
+  out
+}
+
 # find variable names for which to keep NAs
 vars_keep_na <- function(x, ...) {
   UseMethod("vars_keep_na")
@@ -353,7 +367,6 @@ get_sp_vars <- function(x, type) {
 
 # gather information of special effects terms
 # @param x either a formula or a list containing an element "sp"
-# @param data data frame containing the monotonic variables
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
 frame_sp <- function(x, data) {
@@ -368,7 +381,7 @@ frame_sp <- function(x, data) {
   out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
   calls_cols <- c(paste0("calls_", all_sp_types()), "joint_call")
-  list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo")
+  list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo", "reframe")
   for (col in c(calls_cols, list_cols)) {
     out[[col]] <- vector("list", nrow(out))
   }
@@ -377,7 +390,7 @@ frame_sp <- function(x, data) {
   for (i in seq_rows(out)) {
     # prepare mo terms
     take_mo <- grepl_expr(regex_sp("mo"), terms_split[[i]])
-    if (sum(take_mo)) {
+    if (any(take_mo)) {
       out$calls_mo[[i]] <- terms_split[[i]][take_mo]
       nmo <- length(out$calls_mo[[i]])
       out$Imo[[i]] <- (kmo + 1):(kmo + nmo)
@@ -394,7 +407,7 @@ frame_sp <- function(x, data) {
     }
     # prepare me terms
     take_me <- grepl_expr(regex_sp("me"), terms_split[[i]])
-    if (sum(take_me)) {
+    if (any(take_me)) {
       out$calls_me[[i]] <- terms_split[[i]][take_me]
       # remove 'I' (identity) function calls that
       # were used solely to separate formula terms
@@ -402,7 +415,7 @@ frame_sp <- function(x, data) {
     }
     # prepare mi terms
     take_mi <- grepl_expr(regex_sp("mi"), terms_split[[i]])
-    if (sum(take_mi)) {
+    if (any(take_mi)) {
       mi_parts <- terms_split[[i]][take_mi]
       out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
       out$vars_mi[[i]] <- out$idx_mi[[i]] <- rep(NA, length(out$calls_mi[[i]]))
@@ -415,6 +428,33 @@ frame_sp <- function(x, data) {
       }
       # do it like terms_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
+    }
+    take_re <- grepl_expr(regex_sp("re"), terms_split[[i]])
+    if (any(take_re)) {
+      re_parts <- terms_split[[i]][take_re]
+      out$calls_re[[i]] <- get_matches_expr(regex_sp("re"), re_parts)
+      out$reframe[[i]] <- vector("list", length(out$calls_re[[i]]))
+      for (j in seq_along(out$calls_re[[i]])) {
+        re_call <- out$calls_re[[i]][[j]]
+        re_term <- eval2(re_call)
+        if (NROW(x$frame$re)) {
+           rf <- subset2(
+            x$frame$re, group = re_term$term, coef = re_term$coef,
+            resp = re_term$resp, dpar = re_term$dpar, nlpar = re_term$nlpar
+          )
+          if (!NROW(rf)) {
+            stop2("Cannot find varying coefficients belonging to ", re_call, ".")
+          }
+          # there should theoretically never be more than one matching row
+          stopifnot(NROW(rf) == 1L)
+          if (rf$gtype == "mm") {
+            stop2("Multimembership terms are not yet supported by 're'.")
+          }
+          out$reframe[[i]][[j]] <- rf
+        }
+      }
+      out$reframe[[i]] <- Reduce(rbind, out$reframe[[i]])
+      class(out$reframe[[i]]) <- reframe_class()
     }
     has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
     sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])
@@ -540,17 +580,6 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   out
 }
 
-# formula of variables used in special effects terms
-sp_fake_formula <- function(...) {
-  dots <- c(...)
-  out <- vector("list", length(dots))
-  for (i in seq_along(dots)) {
-    tmp <- eval2(dots[[i]])
-    out[[i]] <- all_vars(c(tmp$term, tmp$sdx, tmp$gr))
-  }
-  str2formula(unique(unlist(out)))
-}
-
 # extract an me variable
 get_me_values <- function(term, data) {
   term <- get_sp_term(term)
@@ -625,7 +654,7 @@ get_sp_term <- function(term) {
 
 # all effects which fall under the 'sp' category of brms
 all_sp_types <- function() {
-  c("mo", "me", "mi")
+  c("mo", "me", "mi", "re")
 }
 
 # classes used to set up special effects terms
@@ -643,4 +672,8 @@ is.me_term <- function(x) {
 
 is.mi_term <- function(x) {
   inherits(x, "mi_term")
+}
+
+is.re_term <- function(x) {
+  inherits(x, "re_term")
 }

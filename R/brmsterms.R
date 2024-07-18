@@ -431,23 +431,22 @@ terms_cs <- function(formula) {
 
 # extract special effects terms
 terms_sp <- function(formula) {
-  types <- c("mo", "me", "mi")
-  out <- find_terms(formula, types, complete = FALSE)
+  out <- find_terms(formula, all_sp_types(), complete = FALSE)
   if (!length(out)) {
     return(NULL)
   }
   uni_mo <- get_matches_expr(regex_sp("mo"), out)
   uni_me <- get_matches_expr(regex_sp("me"), out)
   uni_mi <- get_matches_expr(regex_sp("mi"), out)
+  uni_re <- get_matches_expr(regex_sp("re"), out)
   # remove the intercept as it is handled separately
   out <- str2formula(c("0", out))
   attr(out, "int") <- FALSE
   attr(out, "uni_mo") <- uni_mo
   attr(out, "uni_me") <- uni_me
   attr(out, "uni_mi") <- uni_mi
+  attr(out, "uni_re") <- uni_re
   attr(out, "allvars") <- str2formula(all_vars(out))
-  # TODO: do we need sp_fake_formula at all?
-  # attr(out, "allvars") <- sp_fake_formula(uni_mo, uni_me, uni_mi)
   out
 }
 
