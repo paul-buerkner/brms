@@ -2,10 +2,60 @@
 % Please edit documentation in R/formula-sp.R
 \name{re}
 \alias{re}
-\title{TODO: add doc}
+\title{Group-level effects as predictors in \pkg{brms} Models}
 \usage{
 re(gr, coef = "Intercept", resp = "", dpar = "", nlpar = "")
 }
+\arguments{
+\item{gr}{Name of the grouping factor of the group-level effect
+to be used as predictor.}
+
+\item{coef}{Optional name of the coefficient of the group-level effect. 
+Defaults to \code{"Intercept"}.}
+
+\item{resp}{Optional name of the response variable of the group-level effect.}
+
+\item{dpar}{Optional name of the distributional parameter of the group-level effect.}
+
+\item{nlpar}{Optional name of the non-linear parameter of the group-level effect.}
+}
 \description{
-TODO: add doc
+Specify a group-level predictor term in \pkg{brms}. That is,
+use group-level effects defined somewhere in the model as
+predictors in another part of the model. The function does not
+evaluate its arguments -- it exists purely to help set up a model.
+}
+\examples{
+\dontrun{
+# use the group-level intercept of 'AY' for parameter 'ult'
+# as predictor for the residual standard deviation 'sigma'
+bform <- bf(
+  cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+  ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
+  sigma ~ re(AY, nlpar = "ult"),
+  nl = TRUE
+)
+bprior <- c(
+  prior(normal(5000, 1000), nlpar = "ult"),
+  prior(normal(1, 2), nlpar = "omega"),
+  prior(normal(45, 10), nlpar = "theta"),
+  prior(normal(0, 0.05), dpar = "sigma")
+)
+
+fit <- brm(
+  bform, data = loss, 
+  family = gaussian(), 
+  prior = bprior,
+  control = list(adapt_delta = 0.9),
+  chains = 2
+)
+summary(fit)
+
+# shows how sigma varies as a function of the AY levels
+conditional_effects(fit, "AY", dpar = "sigma", re_formula = NULL)
+}
+
+}
+\seealso{
+\code{\link{brmsformula}}
 }
