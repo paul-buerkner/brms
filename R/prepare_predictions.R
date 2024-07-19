@@ -286,6 +286,10 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
     if (!is.null(spframe$calls_re[[i]])) {
       # the ordering is in reference to the unique re terms in the formula
       ks <- which_rows_reframe(spframe$reframe[[i]], reframe)
+      if (length(ks) < length(spframe$calls_re[[i]])) {
+        stop2("Some group-level effects required for 're' terms are missing. ",
+              "Did you perhaps exclude them via argument 're_formula'?")
+      }
       new_re <- paste0("r_", ks, "[, Jr_", ks, ", drop = FALSE]")
       call <- rename(call, spframe$calls_re[[i]], new_re)
     }

@@ -451,7 +451,11 @@ frame_sp <- function(x, data) {
           out$reframe[[i]][[j]] <- rf
         }
       }
-      out$reframe[[i]] <- Reduce(rbind, out$reframe[[i]])
+      if (NROW(x$frame$re)) {
+        out$reframe[[i]] <- Reduce(rbind, out$reframe[[i]])
+      } else {
+        out$reframe[[i]] <- empty_reframe()
+      }
     }
     has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
     sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])
