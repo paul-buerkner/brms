@@ -190,6 +190,34 @@ test_that("alternative algorithms can be used", {
   expect_is(fit, "brmsfit")
 })
 
+test_that("Models with re-predictor terms yield sensible outputs", {
+  fit <- brm(
+    bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
+      sigma ~ re(AY, nlpar = "ult"),
+      nl = TRUE
+    ),
+    data = loss, family = gaussian(),
+    prior = c(
+      prior(normal(5000, 1000), nlpar = "ult"),
+      prior(normal(1, 2), nlpar = "omega"),
+      prior(normal(45, 10), nlpar = "theta"),
+      prior(normal(0, 0.05), dpar = "sigma")
+    ),
+    control = list(adapt_delta = 0.9),
+    chains = 2
+  )
+
+  summary(fit)
+  expect_range(loo(fit)$estimates[3, 1], 700, 730)
+  ce <- conditional_effects(fit, dpar = "sigma", re_formula = NULL)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
+  expect_error(
+    conditional_effects(fit, dpar = "sigma"),
+    "Some group-level effects required for re-terms are missing"
+  )
+})
+
 test_that(paste(
   "Families sratio() and cratio() are equivalent for symmetric distribution",
   "functions (here only testing the logit link)"

@@ -1132,6 +1132,42 @@ test_that("monotonic effects appear in the Stan code", {
   )
 })
 
+test_that("Stan code for re prectiro terms is correct", {
+  dat <- data.frame(
+    y = rnorm(100, mean = rep(1:10, each = 10)),
+    x = rnorm(100), gr = rep(1:10, each = 10)
+  )
+
+  bform <- bf(y ~ x + (1 + x|gr), sigma ~ re(gr, coef = "x"))
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "sigma[n] += (bsp_sigma[1]) * r_1_2[J_1[n]];")
+
+  bform <- bf(y ~ (1|gr)) +
+    bf(x ~ (1|gr) + re(gr, resp = "y")) +
+    set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, 
+    "mu_x[n] += (bsp_x[1]) * r_1_y_1[J_1_y[n]] + r_2_x_1[J_2_x[n]] * Z_2_x_1[n];"
+  )
+
+  bform <- bf(
+    y ~ a + b,
+    a ~ x + (1 + x |id| gr) + re(gr, coef = "Intercept", dpar = "sigma"),
+    b ~ (1 + x |id| gr) + re(gr, coef = "x", nlpar = "a"),
+    sigma ~ (1 |id| gr),
+    nl = TRUE
+  )
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "nlp_a[n] += (bsp_a[1]) * r_1_sigma_1[J_1[n]] +")
+  expect_match2(scode, "nlp_b[n] += (bsp_b[1]) * r_1_a_3[J_1[n]] +")
+
+  bform <- bf(y ~ x + (1 + x|gr), sigma ~ re(gr, coef = "z"))
+  expect_error(
+    make_stancode(bform, dat), 
+    "Cannot find varying coefficients belonging to re"
+  )
+})
+
 test_that("Stan code for non-linear models is correct", {
   flist <- list(a ~ x, b ~ z + (1|g))
   data <- data.frame(
