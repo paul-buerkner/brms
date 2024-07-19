@@ -438,10 +438,8 @@ frame_sp <- function(x, data) {
         re_call <- out$calls_re[[i]][[j]]
         re_term <- eval2(re_call)
         if (NROW(x$frame$re)) {
-           rf <- subset2(
-            x$frame$re, group = re_term$term, coef = re_term$coef,
-            resp = re_term$resp, dpar = re_term$dpar, nlpar = re_term$nlpar
-          )
+          cols <- c("coef", "resp", "dpar", "nlpar")
+          rf <- subset2(x$frame$re, group = re_term$term, ls = re_term[cols])
           if (!NROW(rf)) {
             stop2("Cannot find varying coefficients belonging to ", re_call, ".")
           }
@@ -454,7 +452,6 @@ frame_sp <- function(x, data) {
         }
       }
       out$reframe[[i]] <- Reduce(rbind, out$reframe[[i]])
-      class(out$reframe[[i]]) <- reframe_class()
     }
     has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
     sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])

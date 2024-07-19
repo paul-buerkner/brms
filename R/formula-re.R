@@ -523,6 +523,7 @@ get_re.btl <- function(x, ...) {
 #   id: ID of the group-level effect
 #   group: name of the grouping factor
 #   gn: number of the grouping term within the respective formula
+#   gtype: type of the grouping term: 'gr' or 'mm'
 #   coef: name of the group-level effect
 #   cn: number of the effect within the ID
 #   resp: name of the response variable
@@ -734,6 +735,17 @@ reframe_class <- function() {
 
 is.reframe <- function(x) {
   inherits(x, "reframe")
+}
+
+# helper function to find matching rows in reframes
+# @param x the reframe to be matched
+# @param y the reference reframe to be matched against
+# @return an integer vector of matching rows
+which_rows_reframe <- function(x, y) {
+  stopifnot(is.reframe(x), is.reframe(y))
+  # these columns define a row uniquely in reframes
+  cols <- c("group", "coef", "resp", "dpar", "nlpar")
+  which_rows(x, ls = y[cols])
 }
 
 # extract names of all grouping variables

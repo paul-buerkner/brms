@@ -1497,7 +1497,7 @@ validate_special_prior.btl <- function(x, prior, allow_autoscale = TRUE, ...) {
   # it is still the same as the order in the Stan code
   special_classes <- c("b", "sds", "sdgp", "ar", "ma", "sderr", "sdcar", "sd")
   for (sc in special_classes) {
-    index <- which(find_rows(prior, class = sc, coef = "", group = "", ls = px))
+    index <- which_rows(prior, class = sc, coef = "", group = "", ls = px)
     if (!length(index)) {
       next
     }
