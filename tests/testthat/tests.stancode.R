@@ -1164,7 +1164,7 @@ test_that("Stan code for re prectiro terms is correct", {
   bform <- bf(y ~ x + (1 + x|gr), sigma ~ re(gr, coef = "z"))
   expect_error(
     make_stancode(bform, dat), 
-    "Cannot find varying coefficients belonging to re"
+    "Cannot find all varying coefficients"
   )
 })
 

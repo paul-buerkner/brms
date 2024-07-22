@@ -200,22 +200,28 @@ test_that("Models with re-predictor terms yield sensible outputs", {
     data = loss, family = gaussian(),
     prior = c(
       prior(normal(5000, 1000), nlpar = "ult"),
+      prior(normal(1000, 300), class = "sd", nlpar = "ult"),
       prior(normal(1, 2), nlpar = "omega"),
       prior(normal(45, 10), nlpar = "theta"),
       prior(normal(0, 0.05), dpar = "sigma")
     ),
     control = list(adapt_delta = 0.9),
-    chains = 2
+    chains = 1, seed = 125314
   )
 
   summary(fit)
   expect_range(loo(fit)$estimates[3, 1], 700, 730)
+
   ce <- conditional_effects(fit, dpar = "sigma", re_formula = NULL)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_error(
     conditional_effects(fit, dpar = "sigma"),
-    "Some group-level effects required for re-terms are missing"
+    "Some of the varying coefficients required"
   )
+  # check if predictions without re terms can be performed
+  # while random effects are excluded
+  ce <- conditional_effects(fit, "dev", dpar = "mu", re_formula = NA)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
 test_that(paste(

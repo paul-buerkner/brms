@@ -711,7 +711,7 @@ frame_re <- function(bterms, data, old_levels = NULL) {
 
 empty_reframe <- function() {
   out <- data.frame(
-    id = numeric(0), group = character(0), gn = numeric(0),
+    id = numeric(0), group = character(0), gn = numeric(0), gtype = character(0),
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
     cor = logical(0), type = character(0), form = character(0),

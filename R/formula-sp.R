@@ -412,7 +412,7 @@ get_sp_vars <- function(x, type) {
 }
 
 # gather information of special effects terms
-# @param x either a formula or a list containing an element "sp"
+# @param x a formula, brmsterms, or brmsframe object
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
 frame_sp <- function(x, data) {
@@ -483,21 +483,27 @@ frame_sp <- function(x, data) {
       for (j in seq_along(out$calls_re[[i]])) {
         re_call <- out$calls_re[[i]][[j]]
         re_term <- eval2(re_call)
-        if (NROW(x$frame$re)) {
+        if (!is.null(x$frame$re)) {
+          stopifnot(is.reframe(x$frame$re))
           cols <- c("coef", "resp", "dpar", "nlpar")
           rf <- subset2(x$frame$re, group = re_term$term, ls = re_term[cols])
-          if (!NROW(rf)) {
-            stop2("Cannot find varying coefficients belonging to ", re_call, ".")
-          }
+          # Ideally we should check here if the required re term can be found.
+          # However this will lead to errors in post-processing even if the 
+          # re terms are not actually evaluated. See prepare_predictions_sp
+          # for more details. The necessary pre-processing validity check
+          # is instead done in stan_sp.
+          # if (!NROW(rf)) {
+          #   stop2("Cannot find varying coefficients belonging to ", re_call, ".")
+          # }
           # there should theoretically never be more than one matching row
-          stopifnot(NROW(rf) == 1L)
-          if (rf$gtype == "mm") {
+          stopifnot(NROW(rf) <= 1L)
+          if (isTRUE(rf$gtype == "mm")) {
             stop2("Multimembership terms are not yet supported by 're'.")
           }
           out$reframe[[i]][[j]] <- rf
         }
       }
-      if (NROW(x$frame$re)) {
+      if (!isNULL(out$reframe[[i]])) {
         out$reframe[[i]] <- Reduce(rbind, out$reframe[[i]])
       } else {
         out$reframe[[i]] <- empty_reframe()

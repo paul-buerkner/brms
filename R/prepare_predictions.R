@@ -284,17 +284,21 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
       call <- rename(call, spframe$calls_mi[[i]], new_mi)
     }
     if (!is.null(spframe$calls_re[[i]])) {
-      # the ordering is in reference to the unique re terms in the formula
-      ks <- which_rows_reframe(spframe$reframe[[i]], reframe)
-      if (length(ks) < length(spframe$calls_re[[i]])) {
+      if (NROW(spframe$reframe[[i]]) < length(spframe$calls_re[[i]])) {
         # this will lead to an error upon evaluation only which is important
         # as parts of prepare_predictions may not actually be evaluated in the end
         new_re <- paste0(
-          "stop2('Some group-level effects required for re-terms are missing. ",
-          "Did you perhaps exclude them via argument re_formula?')"
+          "stop2('Cannot find all varying coefficients required in ", spframe$joint_call[[i]], 
+          ". Did you exclude them via argument re_formula?')"
         )
       } else {
-        new_re <- paste0("r_", ks, "[, Jr_", ks, ", drop = FALSE]")
+        new_re <- rep(NA, length(spframe$calls_re[[i]]))
+        # the ordering is in reference to the unique re terms in the formula
+        for (j in seq_along(spframe$calls_re[[i]])) {
+          k <- which_rows_reframe(spframe$reframe[[i]][j, ], reframe)
+          stopifnot(length(k) == 1L)
+          new_re[j] <- paste0("r_", k, "[, Jr_", k, ", drop = FALSE]")
+        }
       }
       call <- rename(call, spframe$calls_re[[i]], new_re)
     }
