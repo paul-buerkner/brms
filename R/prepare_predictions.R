@@ -28,7 +28,7 @@ prepare_predictions.brmsfit <- function(
   resp <- validate_resp(resp, x)
   draw_ids <- validate_draw_ids(x, draw_ids, ndraws)
   draws <- as_draws_matrix(x)
-  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
+  draws <- suppressMessages(subset_draws(draws, draw = draw_ids, unique = FALSE))
   draws <- point_draws(draws, point_estimate, ndraws_point_estimate)
 
   sdata <- standata(
@@ -252,7 +252,7 @@ prepare_predictions_fe <- function(bframe, draws, sdata, ...) {
 }
 
 # prepare predictions of special effects terms
-prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(), 
+prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
                                    new = FALSE, ...) {
   stopifnot(is.bframel(bframe))
   out <- list()
@@ -288,7 +288,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
         # this will lead to an error upon evaluation only which is important
         # as parts of prepare_predictions may not actually be evaluated in the end
         new_re <- paste0(
-          "stop2('Cannot find all varying coefficients required in ", 
+          "stop2('Cannot find all varying coefficients required in ",
           spframe$joint_call[[i]], ". ",
           "Did you exclude them via argument re_formula?')"
         )
@@ -953,7 +953,7 @@ pseudo_prep_for_mixture <- function(prep, comp, draw_ids = NULL) {
 # subset the columns of a matrix of group-level terms
 # if only a subset of levels is provided (for newdata)
 # @param x a matrix typically draws of r or Z design matrices
-#   draws need to be stored in row major order that is 
+#   draws need to be stored in row major order that is
 #   all effects of the same level in consequitive columns
 # @param levels grouping factor levels to keep
 # @param nranef total number of group-level effects
@@ -968,7 +968,7 @@ subset_matrix_levels <- function(x, levels, nranef) {
 # subset the columns of a matrix of group-level terms
 # if only a subset of ranefs is required
 # @param x a matrix typically draws of r or Z design matrices
-#   draws need to be stored in row major order that is 
+#   draws need to be stored in row major order that is
 #   all effects of the same level in consequitive columns
 # @param ranef group-level effects to keep
 # @param nlevels total number of grouping factor levels
