@@ -35,6 +35,7 @@
 \alias{zero_inflated_beta_binomial}
 \alias{categorical}
 \alias{multinomial}
+\alias{dirichlet_multinomial}
 \alias{cumulative}
 \alias{sratio}
 \alias{cratio}
@@ -150,6 +151,8 @@ zero_inflated_beta_binomial(
 categorical(link = "logit", refcat = NULL)
 
 multinomial(link = "logit", refcat = NULL)
+
+dirichlet_multinomial(link = "logit", link_phi = "log", refcat = NULL)
 
 cumulative(link = "logit", link_disc = "log", threshold = "flexible")
 

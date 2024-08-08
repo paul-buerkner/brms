@@ -31,8 +31,9 @@
 #' @examples
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler)
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #'
 #' ## compute expected predictions
 #' ppe <- posterior_epred(fit)
@@ -55,11 +56,13 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_epred(
-    prep,  dpar = dpar, nlpar = nlpar, sort = sort,
+    prep,
+    dpar = dpar, nlpar = nlpar, sort = sort,
     scale = "response", summary = FALSE
   )
 }
@@ -83,8 +86,10 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
     # predict a distributional parameter
     dpar <- as_one_character(dpar)
     if (!dpar %in% dpars) {
-      stop2("Invalid argument 'dpar'. Valid distributional ",
-            "parameters are: ", collapse_comma(dpars))
+      stop2(
+        "Invalid argument 'dpar'. Valid distributional ",
+        "parameters are: ", collapse_comma(dpars)
+      )
     }
     if (length(nlpar)) {
       stop2("Cannot use 'dpar' and 'nlpar' at the same time.")
@@ -117,8 +122,10 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
     # predict a non-linear parameter
     nlpar <- as_one_character(nlpar)
     if (!nlpar %in% nlpars) {
-      stop2("Invalid argument 'nlpar'. Valid non-linear ",
-            "parameters are: ", collapse_comma(nlpars))
+      stop2(
+        "Invalid argument 'nlpar'. Valid non-linear ",
+        "parameters are: ", collapse_comma(nlpars)
+      )
     }
     out <- get_nlpar(object, nlpar = nlpar)
   } else {
@@ -170,7 +177,7 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
   colnames(out) <- NULL
   out <- reorder_obs(out, object$old_order, sort = sort)
   if (scale == "response" && is_polytomous(object$family) &&
-      length(dim(out)) == 3L && dim(out)[3] == length(object$cats)) {
+    length(dim(out)) == 3L && dim(out)[3] == length(object$cats)) {
     # for ordinal models with varying thresholds, dim[3] may not match cats
     dimnames(out)[[3]] <- object$cats
   }
@@ -235,8 +242,9 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
 #' @examples
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler)
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #'
 #' ## compute expected predictions
 #' fitted_values <- fitted(fit)
@@ -244,7 +252,8 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
 #'
 #' ## plot expected predictions against actual response
 #' dat <- as.data.frame(cbind(Y = standata(fit)$Y, fitted_values))
-#' ggplot(dat) + geom_point(aes(x = Estimate, y = Y))
+#' ggplot(dat) +
+#'   geom_point(aes(x = Estimate, y = Y))
 #' }
 #'
 #' @export
@@ -259,11 +268,13 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, dpar = dpar, nlpar = nlpar, sort = sort, scale = scale,
+    prep,
+    dpar = dpar, nlpar = nlpar, sort = sort, scale = scale,
     summary = summary, robust = robust, probs = probs
   )
 }
@@ -293,8 +304,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @examples
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler)
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #'
 #' ## extract linear predictor values
 #' pl <- posterior_linpred(fit)
@@ -307,10 +319,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 #' @export posterior_linpred
 posterior_linpred.brmsfit <- function(
-  object, transform = FALSE, newdata = NULL, re_formula = NULL,
-  re.form = NULL, resp = NULL, dpar = NULL, nlpar = NULL,
-  incl_thres = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...
-) {
+    object, transform = FALSE, newdata = NULL, re_formula = NULL,
+    re.form = NULL, resp = NULL, dpar = NULL, nlpar = NULL,
+    incl_thres = NULL, ndraws = NULL, draw_ids = NULL, sort = FALSE, ...) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
@@ -329,11 +340,13 @@ posterior_linpred.brmsfit <- function(
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_epred(
-    prep, dpar = dpar, nlpar = nlpar, sort = sort,
+    prep,
+    dpar = dpar, nlpar = nlpar, sort = sort,
     scale = scale, incl_thres = incl_thres, summary = FALSE
   )
 }
@@ -440,9 +453,10 @@ posterior_epred_exgaussian <- function(prep) {
 posterior_epred_wiener <- function(prep) {
   # obtained from https://doi.org/10.1016/j.jmp.2009.01.006
   # mu is the drift rate
-  with(prep$dpars,
-   ndt - bias / mu + bs / mu *
-     (exp(-2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
+  with(
+    prep$dpars,
+    ndt - bias / mu + bs / mu *
+      (exp(-2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
   )
 }
 
@@ -455,7 +469,8 @@ posterior_epred_von_mises <- function(prep) {
 }
 
 posterior_epred_asym_laplace <- function(prep) {
-  with(prep$dpars,
+  with(
+    prep$dpars,
     mu + sigma * (1 - 2 * quantile) / (quantile * (1 - quantile))
   )
 }
@@ -465,8 +480,10 @@ posterior_epred_zero_inflated_asym_laplace <- function(prep) {
 }
 
 posterior_epred_cox <- function(prep) {
-  stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'cox'.")
+  stop2(
+    "Cannot compute expected values of the posterior predictive ",
+    "distribution for family 'cox'."
+  )
 }
 
 posterior_epred_hurdle_poisson <- function(prep) {
@@ -595,9 +612,25 @@ posterior_epred_dirichlet2 <- function(prep) {
   mu
 }
 
+posterior_epred_dirichlet_multinomial <- function(prep) {
+  get_counts <- function(i) {
+    eta <- insert_refcat(slice_col(eta, i), refcat = prep$refcat)
+    dcategorical(cats, eta = eta) * trials[i]
+  }
+  eta <- get_Mu(prep)
+  cats <- seq_len(prep$data$ncat)
+  trials <- prep$data$trials
+  out <- abind(lapply(seq_cols(eta), get_counts), along = 3)
+  out <- aperm(out, perm = c(1, 3, 2))
+  dimnames(out)[[3]] <- prep$cats
+  out
+}
+
 posterior_epred_logistic_normal <- function(prep) {
-  stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'logistic_normal'.")
+  stop2(
+    "Cannot compute expected values of the posterior predictive ",
+    "distribution for family 'logistic_normal'."
+  )
 }
 
 posterior_epred_cumulative <- function(prep) {
@@ -647,8 +680,9 @@ posterior_epred_ordinal <- function(prep) {
   ncat_max <- max(prep$data$nthres) + adjust
   nact_min <- min(prep$data$nthres) + adjust
   init_mat <- matrix(ifelse(prep$family$link == "identity", NA, 0),
-                     nrow = prep$ndraws,
-                     ncol = ncat_max - nact_min)
+    nrow = prep$ndraws,
+    ncol = ncat_max - nact_min
+  )
   args <- list(link = prep$family$link)
   out <- vector("list", prep$nobs)
   for (i in seq_along(out)) {
@@ -724,8 +758,10 @@ posterior_epred_trunc <- function(prep) {
     silent = TRUE
   )
   if (is_try_error(posterior_epred_trunc_fun)) {
-    stop2("posterior_epred values on the respone scale not yet implemented ",
-          "for truncated '", prep$family$family, "' models.")
+    stop2(
+      "posterior_epred values on the respone scale not yet implemented ",
+      "for truncated '", prep$family$family, "' models."
+    )
   }
   trunc_args <- nlist(prep, lb, ub)
   do_call(posterior_epred_trunc_fun, trunc_args)
@@ -751,23 +787,25 @@ posterior_epred_trunc_student <- function(prep, lb, ub) {
   # see Kim 2008: Moments of truncated Student-t distribution
   G1 <- gamma((nu - 1) / 2) * nu^(nu / 2) /
     (2 * (pt(zub, df = nu) - pt(zlb, df = nu))
-     * gamma(nu / 2) * gamma(0.5))
-  A <- (nu + zlb^2) ^ (-(nu - 1) / 2)
-  B <- (nu + zub^2) ^ (-(nu - 1) / 2)
+      * gamma(nu / 2) * gamma(0.5))
+  A <- (nu + zlb^2)^(-(nu - 1) / 2)
+  B <- (nu + zub^2)^(-(nu - 1) / 2)
   trunc_zmean <- G1 * (A - B)
   prep$dpars$mu + trunc_zmean * prep$dpars$sigma
 }
 
 posterior_epred_trunc_lognormal <- function(prep, lb, ub) {
   lb <- ifelse(lb < 0, 0, lb)
-  m1 <- with(prep$dpars,
+  m1 <- with(
+    prep$dpars,
     exp(mu + sigma^2 / 2) *
       (pnorm((log(ub) - mu) / sigma - sigma) -
-       pnorm((log(lb) - mu) / sigma - sigma))
+        pnorm((log(lb) - mu) / sigma - sigma))
   )
-  with(prep$dpars,
+  with(
+    prep$dpars,
     m1 / (plnorm(ub, meanlog = mu, sdlog = sigma) -
-          plnorm(lb, meanlog = mu, sdlog = sigma))
+      plnorm(lb, meanlog = mu, sdlog = sigma))
   )
 }
 
@@ -775,14 +813,16 @@ posterior_epred_trunc_gamma <- function(prep, lb, ub) {
   lb <- ifelse(lb < 0, 0, lb)
   prep$dpars$scale <- prep$dpars$mu / prep$dpars$shape
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  m1 <- with(prep$dpars,
+  m1 <- with(
+    prep$dpars,
     scale / gamma(shape) *
       (incgamma(1 + shape, ub / scale) -
-       incgamma(1 + shape, lb / scale))
+        incgamma(1 + shape, lb / scale))
   )
-  with(prep$dpars,
+  with(
+    prep$dpars,
     m1 / (pgamma(ub, shape, scale = scale) -
-          pgamma(lb, shape, scale = scale))
+      pgamma(lb, shape, scale = scale))
   )
 }
 
@@ -799,13 +839,15 @@ posterior_epred_trunc_weibull <- function(prep, lb, ub) {
   prep$dpars$a <- 1 + 1 / prep$dpars$shape
   prep$dpars$scale <- with(prep$dpars, mu / gamma(a))
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  m1 <- with(prep$dpars,
+  m1 <- with(
+    prep$dpars,
     scale * (incgamma(a, (ub / scale)^shape) -
-             incgamma(a, (lb / scale)^shape))
+      incgamma(a, (lb / scale)^shape))
   )
-  with(prep$dpars,
+  with(
+    prep$dpars,
     m1 / (pweibull(ub, shape, scale = scale) -
-          pweibull(lb, shape, scale = scale))
+      pweibull(lb, shape, scale = scale))
   )
 }
 
@@ -896,7 +938,9 @@ posterior_epred_trunc_discrete <- function(dist, args, lb, ub) {
 
 #' @export
 pp_expect <- function(object, ...) {
-  warning2("Method 'pp_expect' is deprecated. ",
-           "Please use 'posterior_epred' instead.")
+  warning2(
+    "Method 'pp_expect' is deprecated. ",
+    "Please use 'posterior_epred' instead."
+  )
   UseMethod("posterior_epred")
 }

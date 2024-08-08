@@ -806,6 +806,13 @@ multinomial <- function(link = "logit", refcat = NULL) {
 
 #' @rdname brmsfamily
 #' @export
+dirichlet_multinomial <- function(link = "logit", link_phi = "log", refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet_multinomial", link = link,link_phi = link_phi, slink = slink, refcat = refcat)
+}
+
+#' @rdname brmsfamily
+#' @export
 cumulative <- function(link = "logit", link_disc = "log",
                        threshold = "flexible") {
   slink <- substitute(link)

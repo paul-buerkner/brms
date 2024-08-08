@@ -54,7 +54,8 @@
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-#'            data = kidney, family = "exponential", init = "0")
+#'   data = kidney, family = "exponential", init = "0"
+#' )
 #'
 #' ## predicted responses
 #' pp <- posterior_predict(fit)
@@ -80,11 +81,10 @@
 #' @export
 #' @export posterior_predict
 posterior_predict.brmsfit <- function(
-  object, newdata = NULL, re_formula = NULL, re.form = NULL,
-  transform = NULL, resp = NULL, negative_rt = FALSE,
-  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
-  cores = NULL, ...
-) {
+    object, newdata = NULL, re_formula = NULL, re.form = NULL,
+    transform = NULL, resp = NULL, negative_rt = FALSE,
+    ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
+    cores = NULL, ...) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
@@ -92,11 +92,13 @@ posterior_predict.brmsfit <- function(
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_predict(
-    prep, transform = transform, sort = sort, ntrys = ntrys,
+    prep,
+    transform = transform, sort = sort, ntrys = ntrys,
     negative_rt = negative_rt, cores = cores, summary = FALSE
   )
 }
@@ -151,15 +153,18 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   colnames(out) <- rownames(out) <- NULL
   if (use_int(object$family)) {
     out <- check_discrete_trunc_bounds(
-      out, lb = object$data$lb, ub = object$data$ub
+      out,
+      lb = object$data$lb, ub = object$data$ub
     )
   }
   out <- reorder_obs(out, object$old_order, sort = sort)
   # transform predicted response draws before summarizing them
   if (!is.null(transform)) {
     # deprecated as of brms 2.12.3
-    warning2("Argument 'transform' is deprecated ",
-             "and will be removed in the future.")
+    warning2(
+      "Argument 'transform' is deprecated ",
+      "and will be removed in the future."
+    )
     out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- object$cats
@@ -216,7 +221,8 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-#'            data = kidney, family = "exponential", init = "0")
+#'   data = kidney, family = "exponential", init = "0"
+#' )
 #'
 #' ## predicted responses
 #' pp <- predict(fit)
@@ -244,11 +250,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_predict(
-    prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt,
+    prep,
+    transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
     probs = probs
   )
@@ -721,8 +729,10 @@ posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
 }
 
 posterior_predict_cox <- function(i, prep, ...) {
-  stop2("Cannot sample from the posterior predictive ",
-        "distribution for family 'cox'.")
+  stop2(
+    "Cannot sample from the posterior predictive ",
+    "distribution for family 'cox'."
+  )
 }
 
 posterior_predict_hurdle_poisson <- function(i, prep, ...) {
@@ -734,7 +744,7 @@ posterior_predict_hurdle_poisson <- function(i, prep, ...) {
   tmp <- runif(ndraws, 0, 1)
   # sample from a truncated poisson distribution
   # by adjusting lambda and adding 1
-  t = -log(1 - runif(ndraws) * (1 - exp(-lambda)))
+  t <- -log(1 - runif(ndraws) * (1 - exp(-lambda)))
   ifelse(tmp < hu, 0, rpois(ndraws, lambda = lambda - t) + 1)
 }
 
@@ -745,7 +755,7 @@ posterior_predict_hurdle_negbinomial <- function(i, prep, ...) {
   tmp <- runif(ndraws, 0, 1)
   # sample from an approximate(!) truncated negbinomial distribution
   # by adjusting mu and adding 1
-  t = -log(1 - runif(ndraws) * (1 - exp(-mu)))
+  t <- -log(1 - runif(ndraws) * (1 - exp(-mu)))
   shape <- get_dpar(prep, "shape", i = i)
   ifelse(tmp < hu, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
 }
@@ -883,12 +893,23 @@ posterior_predict_dirichlet2 <- function(i, prep, ...) {
   rdirichlet(prep$ndraws, alpha = mu)
 }
 
+posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
+  phi <- get_dpar(prep, "phi", i = i)
+  p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
+  size <- prep$data$trials[i]
+  rblapply(seq_rows(p), function(s) t(rmultinom(1, size, prob = rdirichlet(1, phi * p[s, ]))))
+}
+
 posterior_predict_logistic_normal <- function(i, prep, ...) {
   mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   .predict <- function(s) {
-    rlogistic_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ],
-                     refcat = prep$refcat)
+    rlogistic_normal(1,
+      mu = mu[s, ], Sigma = Sigma[s, , ],
+      refcat = prep$refcat
+    )
   }
   rblapply(seq_len(prep$ndraws), .predict)
 }
@@ -1015,9 +1036,9 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 sample_mixture_ids <- function(theta) {
   stopifnot(is.matrix(theta))
   mix_comp <- seq_cols(theta)
-  ulapply(seq_rows(theta), function(s)
+  ulapply(seq_rows(theta), function(s) {
     sample(mix_comp, 1, prob = theta[s, ])
-  )
+  })
 }
 
 # extract the first valid predicted value per Stan sample per observation

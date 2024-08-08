@@ -107,7 +107,8 @@ with additional arguments for obtaining summaries of the computed draws.
 \dontrun{
 ## fit a model
 fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-           data = kidney, family = "exponential", init = "0")
+  data = kidney, family = "exponential", init = "0"
+)
 
 ## predicted responses
 pp <- predict(fit)

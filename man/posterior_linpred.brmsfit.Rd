@@ -79,8 +79,9 @@ the data used to fit the model (posterior predictive checks) or for new data.
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler)
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler
+)
 
 ## extract linear predictor values
 pl <- posterior_linpred(fit)
