@@ -484,11 +484,6 @@ test_that("self-defined functions appear in the Stan code", {
   expect_match2(scode, "real inv_gaussian_lccdf(real y")
   expect_match2(scode, "real inv_gaussian_lpdf(vector y")
 
-  # von Mises models
-  scode <- stancode(time ~ age, data = kidney, family = von_mises)
-  expect_match2(scode, "real von_mises2_lpdf(real y")
-  expect_match2(scode, "real von_mises2_lpdf(vector y")
-
   # zero-inflated and hurdle models
   expect_match2(stancode(count ~ Trt, data = epilepsy,
                               family = "zero_inflated_poisson"),

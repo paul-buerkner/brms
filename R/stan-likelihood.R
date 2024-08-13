@@ -714,6 +714,8 @@ stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
 }
 
 stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
+  # TODO: check if we still require n when phi is predicted 
+  # and check the same for other families too
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     paste0("phi", mix) %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
@@ -724,10 +726,9 @@ stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
-    "kappa" %in% names(bterms$dpars)
+  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) 
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  sdist("von_mises2", p$mu, p$kappa)
+  sdist("von_mises", p$mu, p$kappa)
 }
 
 stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
