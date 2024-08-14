@@ -349,7 +349,7 @@
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    include = c("fun_tan_half.stan", "fun_von_mises.stan"),
+    include = c("fun_tan_half.stan"),
     normalized = "",
     # experimental use of default priors stored in families #1614
     prior = function(dpar, link = "identity", ...) {
