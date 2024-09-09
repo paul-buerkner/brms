@@ -34,7 +34,7 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     # this must be a multivariate model
     stopifnot(is.list(frame))
     x$frame <- frame
-    x$frame$re <- subset(x$frame$re, resp = x$resp)
+    x$frame$re <- subset2(x$frame$re, resp = x$resp)
   }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
