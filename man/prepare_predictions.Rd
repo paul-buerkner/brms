@@ -35,10 +35,11 @@ prepare_predictions(x, ...)
 \item{x}{An \R object typically of class \code{'brmsfit'}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.
-\code{NA} values within factors are interpreted as if all dummy
-variables of this factor are zero. This allows, for instance, to make
-predictions of the grand mean when using sum coding.}
+\code{NULL} (default), the original data of the model is used. \code{NA}
+values within factors (excluding grouping variables) are interpreted as if
+all dummy variables of this factor are zero. This allows, for instance, to
+make predictions of the grand mean when using sum coding. \code{NA} values
+within grouping variables are treated as a new level.}
 
 \item{re_formula}{formula containing group-level effects to be considered in
 the prediction. If \code{NULL} (default), include all group-level effects;
