@@ -62,11 +62,12 @@ See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.}
 \item{save_psis}{Should the \code{"psis"} object created internally be saved
 in the returned object? For more details see \code{\link[loo:loo]{loo}}.}
 
-\item{moment_match_args}{Optional \code{list} of additional arguments passed to
-\code{\link{loo_moment_match}}.}
+\item{moment_match_args}{Optional named \code{list} of additional arguments
+passed to \code{\link{loo_moment_match}}.}
 
-\item{reloo_args}{Optional \code{list} of additional arguments passed to
-\code{\link{reloo}}.}
+\item{reloo_args}{Optional named \code{list} of additional arguments passed to
+\code{\link{reloo}}. This can be useful, among others, to control
+how many chains, iterations, etc. to use for the fitted sub-models.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names
 derived from deparsing the call. Otherwise will use the passed
