@@ -216,3 +216,26 @@ log1m_inv_softit <- function(x) {
   y <- log1p_exp(x)
   -log1p(y)
 }
+
+# names of built-in stan functons reimplemented in R within brms
+names_stan_functions <- function() {
+  c("logit", "inv_logit", "cloglog", "inv_cloglog", "Phi", "incgamma",
+    "square", "cbrt", "exp2", "pow", "inv", "inv_sqrt", "inv_square",
+    "hypot", "log1m", "step", "logm1", "expp1", "logit_scaled",
+    "inv_logit_scaled", "multiply_log", "log1p_exp", "log1m_exp",
+    "log_diff_exp", "log_sum_exp", "log_mean_exp", "log_expm1",
+    "log_inv_logit", "log1m_inv_logit", "scale_unit", "fabs", "log_softmax",
+    "softmax", "inv_odds", "softit", "inv_softit", "log_inv_softit",
+    "log1m_inv_softit")
+}
+
+# create an environement with all the reimplemented stan functions in it
+# see issue #1635 for discussion of this approach
+env_stan_functions <- function(...) {
+  env <- new.env(...)
+  brms_env <- asNamespace("brms")
+  for (f in names_stan_functions()) {
+    env[[f]] <- get(f, brms_env)
+  }
+  env
+}

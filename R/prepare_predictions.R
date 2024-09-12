@@ -196,7 +196,7 @@ prepare_predictions.bframenl <- function(x, draws, sdata, ...) {
   out <- list(
     family = x$family,
     nlform = x$formula[[2]],
-    env = environment(x$formula),
+    env = env_stan_functions(parent = environment(x$formula)),
     ndraws = nrow(draws),
     nobs = sdata[[paste0("N", usc(x$resp))]],
     used_nlpars = x$used_nlpars,
