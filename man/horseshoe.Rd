@@ -103,6 +103,10 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
 
+  The prior does not account for scale differences of the terms it is
+  applied on. Accordingly, please make sure that all these terms have a
+  comparable scale to ensure that shrinkage is applied properly.
+
   Currently, the following classes support the horseshoe prior: \code{b}
   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive

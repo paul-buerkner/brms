@@ -31,7 +31,11 @@ Function used to set up R2D2(M2) priors in \pkg{brms}. The function does
 not evaluate its arguments -- it exists purely to help set up the model.
 }
 \details{
-Currently, the following classes support the R2D2(M2) prior: \code{b}
+The prior does not account for scale differences of the terms it is
+  applied on. Accordingly, please make sure that all these terms have a
+  comparable scale to ensure that shrinkage is applied properly.
+
+  Currently, the following classes support the R2D2(M2) prior: \code{b}
   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
   coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
