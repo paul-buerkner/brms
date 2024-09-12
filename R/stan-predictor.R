@@ -2039,7 +2039,7 @@ stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
   out$loopeta <- NULL
   # some links need custom Stan functions
   link <- bframe$family$link
-  link_names <- c("cauchit", "cloglog", "softplus", "squareplus", "softit")
+  link_names <- c("cauchit", "cloglog", "softplus", "squareplus", "softit", "tan_half")
   needs_link_fun <- isTRUE(link %in% link_names)
   if (needs_link_fun) {
     str_add(out$fun) <- glue("  #include 'fun_{link}.stan'\n")
