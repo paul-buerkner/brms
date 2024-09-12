@@ -61,10 +61,9 @@ A character string obtained by \code{match.call()} with
   additional arguments.
 }
 \description{
-Function used to set up regularized horseshoe priors and related
-hierarchical shrinkage priors for population-level effects in \pkg{brms}. The
-function does not evaluate its arguments -- it exists purely to help set up
-the model.
+Function used to set up regularized horseshoe priors and related hierarchical
+shrinkage priors in \pkg{brms}. The function does not evaluate its arguments
+-- it exists purely to help set up the model.
 }
 \details{
 The horseshoe prior is a special shrinkage prior initially proposed by

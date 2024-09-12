@@ -27,19 +27,22 @@ Arguments given in other instances of the prior will be ignored.
 See the Examples section below.}
 }
 \description{
-Function used to set up R2D2 priors for population-level effects in
-\pkg{brms}. The function does not evaluate its arguments -- it exists purely
-to help set up the model.
+Function used to set up R2D2(M2) priors in \pkg{brms}. The function does
+not evaluate its arguments -- it exists purely to help set up the model.
 }
 \details{
-Currently, the following classes support the R2D2 prior: \code{b}
+Currently, the following classes support the R2D2(M2) prior: \code{b}
   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
   coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
   latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
   (SD of varying coefficients).
 
-  Even when the R2D2 prior is applied to multiple parameter classes at once,
+  When the prior is only applied to parameter class \code{b}, it is equivalent
+  to the original R2D2 prior (with Gaussian kernel). When the prior is also
+  applied to other parameter classes, it is equivalent to the R2D2M2 prior.
+
+  Even when the R2D2(M2) prior is applied to multiple parameter classes at once,
   the concentration vector (argument \code{cons_D2}) has to be provided
   jointly in the the one instance of the prior where \code{main = TRUE}. The
   order in which the elements of concentration vector correspond to the
