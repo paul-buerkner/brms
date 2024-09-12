@@ -42,7 +42,7 @@ predictions of the grand mean when using sum coding.}
 
 \item{re_formula}{formula containing group-level effects to be considered in
 the prediction. If \code{NULL} (default), include all group-level effects;
-if \code{NA}, include no group-level effects.}
+if \code{NA} or \code{~0}, include no group-level effects.}
 
 \item{allow_new_levels}{A flag indicating if new levels of group-level
 effects are allowed (defaults to \code{FALSE}). Only relevant if

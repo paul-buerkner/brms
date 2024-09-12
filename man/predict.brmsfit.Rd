@@ -33,7 +33,7 @@ predictions of the grand mean when using sum coding.}
 
 \item{re_formula}{formula containing group-level effects to be considered in
 the prediction. If \code{NULL} (default), include all group-level effects;
-if \code{NA}, include no group-level effects.}
+if \code{NA} or \code{~0}, include no group-level effects.}
 
 \item{transform}{(Deprecated) A function or a character string naming
 a function to be applied on the predicted responses

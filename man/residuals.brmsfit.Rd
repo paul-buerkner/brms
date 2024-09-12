@@ -31,7 +31,7 @@ predictions of the grand mean when using sum coding.}
 
 \item{re_formula}{formula containing group-level effects to be considered in
 the prediction. If \code{NULL} (default), include all group-level effects;
-if \code{NA}, include no group-level effects.}
+if \code{NA} or \code{~0}, include no group-level effects.}
 
 \item{method}{Method used to obtain predictions. Can be set to
 \code{"posterior_predict"} (the default), \code{"posterior_epred"},
