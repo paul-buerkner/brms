@@ -35,7 +35,7 @@ If \code{NULL} all draws are used. If not specified,
 the number of posterior draws is chosen automatically.
 Ignored if \code{draw_ids} is not \code{NULL}.}
 
-\item{prefix}{The prefix of the \pkg{bayesplot} function to be applied. 
+\item{prefix}{The prefix of the \pkg{bayesplot} function to be applied.
 Either `"ppc"` (posterior predictive check; the default)
 or `"ppd"` (posterior predictive distribution), the latter being the same
 as the former except that the observed data is not shown for `"ppd"`.}
