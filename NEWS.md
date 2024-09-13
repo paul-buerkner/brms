@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Support futures for parallelization in the `cmdstanr` backend. (#1684)
 * Add method `loo_epred` thanks to Aki Vehtari. (#1641)
 * Add priorsense support via `create_priorsense_data.brmsfit` thanks to Noa Kallioinen. (#1354)
 
