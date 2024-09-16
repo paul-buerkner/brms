@@ -469,14 +469,34 @@ data_bhaz <- function(bframe, data, data2, prior) {
     return(out)
   }
   y <- bframe$frame$resp$values
-  args <- bframe$family$bhaz
+  bhaz <- family_info(bframe, "bhaz")
   bs <- bframe$basis$bhaz$basis_matrix
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs)
-  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
+  out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
+  out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
-  sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bframe$resp)
-  con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
-  out$con_sbhaz <- as.array(con_sbhaz)
+  groups <- bhaz$groups
+  if (!is.null(groups)) {
+    out$ngrbhaz <- length(groups)
+    gr <- get_ad_values(bframe, "bhaz", "gr", data)
+    gr <- factor(rename(gr), levels = groups)
+    out$Jgrbhaz <- match(gr, groups)
+    out$con_sbhaz <- matrix(nrow = out$ngrbhaz, ncol = out$Kbhaz)
+    sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bframe$resp)
+    sbhaz_prior_global <- subset2(sbhaz_prior, group = "")
+    con_sbhaz_global <- eval_dirichlet(sbhaz_prior_global$prior, out$Kbhaz, data2)
+    for (k in seq_along(groups)) {
+      sbhaz_prior_group <- subset2(sbhaz_prior, group = groups[k])
+      if (nzchar(sbhaz_prior_group$prior)) {
+        out$con_sbhaz[k, ] <- eval_dirichlet(sbhaz_prior_group$prior, out$Kbhaz, data2)
+      } else {
+        out$con_sbhaz[k, ] <- con_sbhaz_global
+      }
+    }
+  } else {
+    sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bframe$resp)
+    con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
+    out$con_sbhaz <- as.array(con_sbhaz)
+  }
   out
 }
 
@@ -502,9 +522,6 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
   }
   stopifnot(is.list(args))
   args$x <- y
-  if (!is.null(args$intercept)) {
-    args$intercept <- as_one_logical(args$intercept)
-  }
   if (is.null(args$Boundary.knots)) {
     # avoid 'knots' outside 'Boundary.knots' error (#1143)
     # we also need a smaller lower boundary knot to avoid lp = -Inf
@@ -520,6 +537,29 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
     out <- do_call(splines2::iSpline, args)
   } else {
     out <- do_call(splines2::mSpline, args)
+  }
+  out
+}
+
+# extract baseline hazard information from data for storage in the model family
+# @return a named list with elements:
+#  args: arguments that can be passed to bhaz_basis_matrix
+#  groups: optional names of the groups for which to stratify
+extract_bhaz <- function(x, data) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x), is_cox(x))
+  if (is.null(x$adforms)) {
+    x$adforms <- terms_ad(x$formula, x$family)
+  }
+  out <- list()
+  if (is.null(x$adforms$bhaz)) {
+    # bhaz is an optional addition term so defaults need to be listed here too
+    out$args <- list(df = 5, intercept = TRUE)
+  } else {
+    out$args <- eval_rhs(x$adforms$bhaz)$flags
+    gr <- get_ad_values(x, "bhaz", "gr", data)
+    if (!is.null(gr)) {
+      out$groups <- rename(levels(factor(gr)))
+    }
   }
   out
 }
@@ -550,7 +590,6 @@ extract_cat_names <- function(x, data) {
 # @return a data.frame with columns 'thres' and 'group'
 extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
-
   if (is.null(x$adforms)) {
     x$adforms <- terms_ad(x$formula, x$family)
   }
@@ -609,7 +648,7 @@ extract_thres_names <- function(x, data) {
   data.frame(thres, group, stringsAsFactors = FALSE)
 }
 
-# extract threshold names from the response values
+# extract number of thresholds from the response values
 # @param formula with the response on the LHS
 # @param data a data.frame from which to extract responses
 # @param extra_cat is the first category an extra (hurdle) category?

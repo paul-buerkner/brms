@@ -387,7 +387,7 @@
     links = c("log", "identity", "softplus", "squareplus"),
     dpars = c("mu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "index"),
+    ad = c("weights", "subset", "cens", "trunc", "index", "bhaz"),
     include = "fun_cox.stan",
     specials = c("cox", "sbi_log", "sbi_log_cdf"),
     normalized = ""

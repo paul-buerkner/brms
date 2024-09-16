@@ -760,6 +760,10 @@ prior_bhaz <- function(bframe, ...) {
   # the scale of sbhaz is not identified when an intercept is part of mu
   # thus a sum-to-one constraint ensures identification
   prior <- prior + brmsprior("dirichlet(1)", class = "sbhaz", ls = px)
+  if (has_bhaz_groups(bframe)) {
+    groups <- get_bhaz_groups(bframe)
+    prior <- prior + brmsprior("", class = "sbhaz", ls = px, group = groups)
+  }
   prior
 }
 

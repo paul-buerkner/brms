@@ -62,8 +62,7 @@ brmsfamily(
   link_alpha = "identity",
   link_quantile = "logit",
   threshold = "flexible",
-  refcat = NULL,
-  bhaz = NULL
+  refcat = NULL
 )
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
@@ -109,7 +108,7 @@ von_mises(link = "tan_half", link_kappa = "log")
 
 asym_laplace(link = "identity", link_sigma = "log", link_quantile = "logit")
 
-cox(link = "log", bhaz = NULL)
+cox(link = "log")
 
 hurdle_poisson(link = "log", link_hu = "logit")
 
@@ -227,8 +226,6 @@ consecutive thresholds to the same value, and
 category is used as the reference. If \code{NA}, all categories will be
 predicted, which requires strong priors or carefully specified predictor
 terms in order to lead to an identified model.}
-
-\item{bhaz}{Currently for experimental purposes only.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models

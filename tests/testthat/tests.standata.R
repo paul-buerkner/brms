@@ -1006,7 +1006,9 @@ test_that("data for multinomial and dirichlet models is correct", {
 })
 
 test_that("standata handles cox models correctly", {
-  data <- data.frame(y = rexp(100), x = rnorm(100))
+  data <- data.frame(y = rexp(100), x = rnorm(100),
+                     g = sample(1:3, 100, TRUE))
+
   bform <- bf(y ~ x)
   bprior <- prior(dirichlet(3), sbhaz)
   sdata <- standata(bform, data, brmsfamily("cox"), prior = bprior)
@@ -1014,9 +1016,19 @@ test_that("standata handles cox models correctly", {
   expect_equal(dim(sdata$Zcbhaz), c(100, 5))
   expect_equal(sdata$con_sbhaz, as.array(rep(3, 5)))
 
-  sdata <- standata(bform, data, brmsfamily("cox", bhaz = list(df = 6)))
+  bform <- bf(y | bhaz(df = 6) ~ x)
+  sdata <- standata(bform, data, brmsfamily("cox"))
   expect_equal(dim(sdata$Zbhaz), c(100, 6))
   expect_equal(dim(sdata$Zcbhaz), c(100, 6))
+
+  bform <- bf(y | bhaz(gr = g) ~ x)
+  bprior <- prior(dirichlet(3), "sbhaz", group = 2)
+  sdata <- standata(bform, data, family = brmsfamily("cox"),
+                    prior = bprior)
+  expect_equal(sdata$ngrbhaz, 3)
+  expect_equivalent(sdata$Jgrbhaz, data$g)
+  con_mat <- rbind(rep(1, 5), rep(3, 5), rep(1, 5))
+  expect_equivalent(sdata$con_sbhaz, con_mat)
 })
 
 test_that("standata handles addition term 'rate' is correctly", {

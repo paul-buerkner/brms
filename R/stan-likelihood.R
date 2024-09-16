@@ -116,7 +116,7 @@ stan_log_lik_cens <- function(ll, bterms, threads, normalize, resp = "", ...) {
   tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
   tp <- tp()
   out <- glue(
-    "// special treatment of censored data\n",
+    "  // special treatment of censored data\n",
     s, "if (cens{resp}{n} == 0) {{\n",
     s, "{tp}{w}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
     s, "}} else if (cens{resp}{n} == 1) {{\n",
@@ -168,7 +168,7 @@ stan_log_lik_mix <- function(ll, bterms, mix, ptheta, threads,
     cens <- eval_rhs(bterms$adforms$cens)
     s <- wsp(nsp = 4)
     out <- glue(
-      "// special treatment of censored data\n",
+      "  // special treatment of censored data\n",
       s, "if (cens{resp}{n} == 0) {{\n",
       s, "  ps[{mix}] = {theta} + ",
       "{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
@@ -714,7 +714,7 @@ stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
 }
 
 stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
-  # TODO: check if we still require n when phi is predicted 
+  # TODO: check if we still require n when phi is predicted
   # and check the same for other families too
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     paste0("phi", mix) %in% names(bterms$dpars)
@@ -726,13 +726,12 @@ stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) 
+  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   sdist("von_mises", p$mu, p$kappa)
 }
 
-stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL,
-                             ...) {
+stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   p$bhaz <- paste0("bhaz", resp, "[n]")
   p$cbhaz <- paste0("cbhaz", resp, "[n]")

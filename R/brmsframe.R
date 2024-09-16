@@ -418,8 +418,8 @@ frame_basis_bhaz <- function(x, data, ...) {
   if (is_cox(x$family)) {
     # compute basis matrix of the baseline hazard for the Cox model
     y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-    out$basis_matrix <- bhaz_basis_matrix(y, args = x$family$bhaz)
+    args <- family_info(x, "bhaz")$args
+    out$basis_matrix <- bhaz_basis_matrix(y, args = args)
   }
   out
 }
-

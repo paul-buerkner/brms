@@ -86,6 +86,7 @@ rename_predictor.brmsterms <- function(x, ...) {
     c(out) <- rename_Ymi(x, ...)
   }
   c(out) <- rename_thres(x, ...)
+  c(out) <- rename_bhaz(x, ...)
   c(out) <- rename_family_cor_pars(x, ...)
   out
 }
@@ -197,6 +198,25 @@ rename_thres <- function(bframe, pars, ...) {
     pos <- grepl(glue("^{int}_{i}\\["), pars)
     int_names <- glue("{int}[{groups[i]},{thres}]")
     lc(out) <- rlist(pos, int_names)
+  }
+  out
+}
+
+# rename baseline hazard parameters in cox models
+rename_bhaz <- function(bframe, pars, ...) {
+  out <- list()
+  # renaming is only required if multiple threshold were estimated
+  if (!has_bhaz_groups(bframe)) {
+    return(out)
+  }
+  px <- check_prefix(bframe)
+  p <- usc(combine_prefix(px))
+  groups <- get_bhaz_groups(bframe)
+  for (k in seq_along(groups)) {
+    pos <- grepl(glue("^sbhaz{p}\\[{k},"), pars)
+    funs <- seq_len(sum(pos))
+    bhaz_names <- glue("sbhaz{p}[{groups[k]},{funs}]")
+    lc(out) <- rlist(pos, bhaz_names)
   }
   out
 }

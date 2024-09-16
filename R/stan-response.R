@@ -372,6 +372,7 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
+  n <- stan_nn(threads)
   slice <- stan_slice(threads)
   str_add(out$data) <- glue(
     "  // data for flexible baseline functions\n",
@@ -379,25 +380,64 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
     "  // design matrix of the baseline function\n",
     "  matrix[N{resp}, Kbhaz{resp}] Zbhaz{resp};\n",
     "  // design matrix of the cumulative baseline function\n",
-    "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n",
-    "  // a-priori concentration vector of baseline coefficients\n",
-    "  vector<lower=0>[Kbhaz{resp}] con_sbhaz{resp};\n"
-  )
-  str_add(out$par) <- glue(
-    "  simplex[Kbhaz{resp}] sbhaz{resp};  // baseline coefficients\n"
-  )
-  str_add(out$tpar_prior) <- glue(
-    "  lprior += dirichlet_{lpdf}(sbhaz{resp} | con_sbhaz{resp});\n"
-  )
-  str_add(out$model_def) <- glue(
-    "  // compute values of baseline function\n",
-    "  vector[N{resp}] bhaz{resp} = Zbhaz{resp}{slice} * sbhaz{resp};\n",
-    "  // compute values of cumulative baseline function\n",
-    "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp}{slice} * sbhaz{resp};\n"
+    "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n"
   )
   str_add(out$pll_args) <- glue(
-    ", data matrix Zbhaz{resp}, data matrix Zcbhaz{resp}, vector sbhaz{resp}"
+    ", data matrix Zbhaz{resp}, data matrix Zcbhaz{resp}"
   )
+  if (has_bhaz_groups(bterms)) {
+    # stratified baseline hazards with separate functions per group
+    str_add(out$data) <- glue(
+      "  // data for stratification of baseline hazards\n",
+      "  int ngrbhaz{resp};  // number of groups\n",
+      "  array[N{resp}] int Jgrbhaz{resp};  // group indices per observation\n",
+      "  // a-priori concentration vector of baseline coefficients\n",
+      "  array[ngrbhaz{resp}] vector<lower=0>[Kbhaz{resp}] con_sbhaz{resp};\n"
+    )
+    str_add(out$par) <- glue(
+      "  // stratified baseline hazard coefficients\n",
+      "  array[ngrbhaz{resp}] simplex[Kbhaz{resp}] sbhaz{resp};\n"
+    )
+    str_add(out$tpar_prior) <- glue(
+      "  for (k in 1:ngrbhaz{resp}) {{\n",
+      "    lprior += dirichlet_{lpdf}(sbhaz{resp}[k] | con_sbhaz{resp}[k]);\n",
+      "  }}\n"
+    )
+    str_add(out$model_def) <- glue(
+      "  // stratified baseline hazard functions\n",
+      "  vector[N{resp}] bhaz{resp};\n",
+      "  vector[N{resp}] cbhaz{resp};\n"
+    )
+    str_add(out$model_comp_basic) <- glue(
+      "  // compute values of stratified baseline hazard functions\n",
+      "  for (n in 1:N{resp}) {{\n",
+      stan_nn_def(threads),
+      "    bhaz{resp}{n} = Zbhaz{resp}{n} * sbhaz{resp}[Jgrbhaz{resp}{n}];\n",
+      "    cbhaz{resp}{n} = Zcbhaz{resp}{n} * sbhaz{resp}[Jgrbhaz{resp}{n}];\n",
+      "  }}\n"
+    )
+    str_add(out$pll_args) <- glue(", array[] sbhaz{resp}")
+  } else {
+    # a single baseline hazard function
+    str_add(out$data) <- glue(
+      "  // a-priori concentration vector of baseline coefficients\n",
+      "  vector<lower=0>[Kbhaz{resp}] con_sbhaz{resp};\n"
+    )
+    str_add(out$par) <- glue(
+      "  // baseline hazard coefficients\n",
+      "  simplex[Kbhaz{resp}] sbhaz{resp};\n"
+    )
+    str_add(out$tpar_prior) <- glue(
+      "  lprior += dirichlet_{lpdf}(sbhaz{resp} | con_sbhaz{resp});\n"
+    )
+    str_add(out$model_def) <- glue(
+      "  // compute values of baseline function\n",
+      "  vector[N{resp}] bhaz{resp} = Zbhaz{resp}{slice} * sbhaz{resp};\n",
+      "  // compute values of cumulative baseline function\n",
+      "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp}{slice} * sbhaz{resp};\n"
+    )
+    str_add(out$pll_args) <- glue(", vector sbhaz{resp}")
+  }
   out
 }
 
