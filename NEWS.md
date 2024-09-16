@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Use group-level coefficients as predictors in other formulas via `re` terms.
 * Support stratified `cox` models via the new addition term `bhaz`. (#1489)
 * Support futures for parallelization in the `cmdstanr` backend. (#1684)
 * Add method `loo_epred` thanks to Aki Vehtari. (#1641)
