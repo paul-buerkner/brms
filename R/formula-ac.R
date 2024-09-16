@@ -333,6 +333,7 @@ sar <- function(M, type = "lag") {
 #' distance <- as.matrix(dist(Grid))
 #' W <- array(0, c(K, K))
 #' W[distance == 1] <- 1
+#' rownames(W) <- 1:nrow(W)
 #'
 #' # generate the covariates and response data
 #' x1 <- rnorm(K)
@@ -345,10 +346,11 @@ sar <- function(M, type = "lag") {
 #' prob <- exp(eta) / (1 + exp(eta))
 #' size <- rep(50, K)
 #' y <- rbinom(n = K, size = size, prob = prob)
-#' dat <- data.frame(y, size, x1, x2)
+#' g <- 1:length(y)
+#' dat <- data.frame(y, size, x1, x2, g)
 #'
 #' # fit a CAR model
-#' fit <- brm(y | trials(size) ~ x1 + x2 + car(W),
+#' fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
 #'            data = dat, data2 = list(W = W),
 #'            family = binomial())
 #' summary(fit)

@@ -164,6 +164,7 @@
 #'   variational inference with independent normal distributions,
 #'   \code{"fullrank"} for variational inference with a multivariate normal
 #'   distribution, \code{"pathfinder"} for the pathfinder algorithm,
+#'   \code{"laplace"} for the laplace approximation,
 #'   or \code{"fixed_param"} for sampling from fixed parameter
 #'   values. Can be set globally for the current \R session via the
 #'   \code{"brms.algorithm"} option (see \code{\link{options}}).

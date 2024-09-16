@@ -25,14 +25,15 @@ pp_mixture(x, ...)
 \item{x}{An \R object usually of class \code{brmsfit}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.
-\code{NA} values within factors are interpreted as if all dummy
-variables of this factor are zero. This allows, for instance, to make
-predictions of the grand mean when using sum coding.}
+\code{NULL} (default), the original data of the model is used. \code{NA}
+values within factors (excluding grouping variables) are interpreted as if
+all dummy variables of this factor are zero. This allows, for instance, to
+make predictions of the grand mean when using sum coding. \code{NA} values
+within grouping variables are treated as a new level.}
 
 \item{re_formula}{formula containing group-level effects to be considered in
 the prediction. If \code{NULL} (default), include all group-level effects;
-if \code{NA}, include no group-level effects.}
+if \code{NA} or \code{~0}, include no group-level effects.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}

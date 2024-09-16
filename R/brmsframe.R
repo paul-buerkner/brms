@@ -34,7 +34,7 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     # this must be a multivariate model
     stopifnot(is.list(frame))
     x$frame <- frame
-    x$frame$re <- subset(x$frame$re, resp = x$resp)
+    x$frame$re <- subset2(x$frame$re, resp = x$resp)
   }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
@@ -418,8 +418,8 @@ frame_basis_bhaz <- function(x, data, ...) {
   if (is_cox(x$family)) {
     # compute basis matrix of the baseline hazard for the Cox model
     y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-    out$basis_matrix <- bhaz_basis_matrix(y, args = x$family$bhaz)
+    args <- family_info(x, "bhaz")$args
+    out$basis_matrix <- bhaz_basis_matrix(y, args = args)
   }
   out
 }
-

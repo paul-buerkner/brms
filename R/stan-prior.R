@@ -518,7 +518,7 @@ stan_unchecked_prior <- function(prior) {
 # @param sample_prior take draws from priors?
 stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
                           special_prior, sample_prior = "yes") {
-  if (!is_equal(sample_prior, "yes")) {
+  if (!is_equal(sample_prior, "yes") || !length(tpar_prior)) {
     return(list())
   }
   tpar_prior <- strsplit(gsub(" |\\n", "", tpar_prior), ";")[[1]]

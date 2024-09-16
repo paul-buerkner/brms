@@ -166,6 +166,7 @@ fit_model <- function(model, backend, ...) {
   } else if (is.character(init) && !init %in% c("random", "0")) {
     init <- get(init, mode = "function", envir = parent.frame())
   }
+  future <- future && algorithm %in% "sampling"
   args <- nlist(
     object = model, data = sdata, iter, seed,
     init = init, pars = exclude, include = FALSE
@@ -187,7 +188,7 @@ fit_model <- function(model, backend, ...) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
-      futures <- fits <- vector("list", chains)
+      out <- futures <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_id <- i
         if (is.list(init)) {
@@ -200,10 +201,10 @@ fit_model <- function(model, backend, ...) {
         )
       }
       for (i in seq_len(chains)) {
-        fits[[i]] <- future::value(futures[[i]])
+        out[[i]] <- future::value(futures[[i]])
       }
-      out <- rstan::sflist2stanfit(fits)
-      rm(futures, fits)
+      out <- rstan::sflist2stanfit(out)
+      rm(futures)
     } else {
       c(args) <- nlist(chains, cores)
       out <- do_call(rstan::sampling, args)
@@ -239,9 +240,7 @@ fit_model <- function(model, backend, ...) {
   } else if (is_equal(init, "0")) {
     init <- 0
   }
-  if (future) {
-    stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
-  }
+  future <- future && algorithm %in% "sampling"
   args <- nlist(data = sdata, seed, init)
   if (use_opencl(opencl)) {
     args$opencl_ids <- opencl$ids
@@ -279,7 +278,30 @@ fit_model <- function(model, backend, ...) {
     if (use_threading(threads)) {
       args$threads_per_chain <- threads$threads
     }
-    out <- do_call(model$sample, args)
+    if (future) {
+      if (cores > 1L) {
+        warning2("Argument 'cores' is ignored when using 'future'.")
+      }
+      args$chains <- 1L
+      out <- futures <- vector("list", chains)
+      for (i in seq_len(chains)) {
+        args$chain_ids <- i
+        if (is.list(init)) {
+          args$init <- init[i]
+        }
+        futures[[i]] <- future::future(
+          brms::do_call(model$sample, args),
+          packages = "cmdstanr",
+          seed = TRUE
+        )
+      }
+      for (i in seq_len(chains)) {
+        out[[i]] <- future::value(futures[[i]])
+      }
+      rm(futures)
+    } else {
+      out <- do_call(model$sample, args)
+    }
   } else if (algorithm %in% c("fullrank", "meanfield")) {
     c(args) <- nlist(iter, algorithm)
     if (use_threading(threads)) {
@@ -300,8 +322,18 @@ fit_model <- function(model, backend, ...) {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
 
+  if (future) {
+    # 'out' is a list of fitted models
+    output_files <- ulapply(out, function(x) x$output_files())
+    stan_variables <- out[[1]]$metadata()$stan_variables
+  } else {
+    # 'out' is a single fitted model
+    output_files <- out$output_files()
+    stan_variables <- out$metadata()$stan_variables
+  }
+
   out <- read_csv_as_stanfit(
-    out$output_files(), variables = out$metadata()$stan_variables,
+    output_files, variables = stan_variables,
     model = model, exclude = exclude, algorithm = algorithm
   )
 

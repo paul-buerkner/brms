@@ -760,6 +760,10 @@ prior_bhaz <- function(bframe, ...) {
   # the scale of sbhaz is not identified when an intercept is part of mu
   # thus a sum-to-one constraint ensures identification
   prior <- prior + brmsprior("dirichlet(1)", class = "sbhaz", ls = px)
+  if (has_bhaz_groups(bframe)) {
+    groups <- get_bhaz_groups(bframe)
+    prior <- prior + brmsprior("", class = "sbhaz", ls = px, group = groups)
+  }
   prior
 }
 
@@ -1973,10 +1977,9 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 
 #' Regularized horseshoe priors in \pkg{brms}
 #'
-#' Function used to set up regularized horseshoe priors and related
-#' hierarchical shrinkage priors for population-level effects in \pkg{brms}. The
-#' function does not evaluate its arguments -- it exists purely to help set up
-#' the model.
+#' Function used to set up regularized horseshoe priors and related hierarchical
+#' shrinkage priors in \pkg{brms}. The function does not evaluate its arguments
+#' -- it exists purely to help set up the model.
 #'
 #' @param df Degrees of freedom of student-t prior of the
 #'   local shrinkage parameters. Defaults to \code{1}.
@@ -2051,6 +2054,10 @@ eval_dirichlet <- function(prior, len = NULL, env = NULL) {
 #'   from \code{0.8} to values closer to \code{1} will often be necessary.
 #'   See the documentation of \code{\link{brm}} for instructions
 #'   on how to increase \code{adapt_delta}.
+#'
+#'   The prior does not account for scale differences of the terms it is
+#'   applied on. Accordingly, please make sure that all these terms have a
+#'   comparable scale to ensure that shrinkage is applied properly.
 #'
 #'   Currently, the following classes support the horseshoe prior: \code{b}
 #'   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
@@ -2130,9 +2137,8 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 
 #' R2D2 Priors in \pkg{brms}
 #'
-#' Function used to set up R2D2 priors for population-level effects in
-#' \pkg{brms}. The function does not evaluate its arguments -- it exists purely
-#' to help set up the model.
+#' Function used to set up R2D2(M2) priors in \pkg{brms}. The function does
+#' not evaluate its arguments -- it exists purely to help set up the model.
 #'
 #' @param mean_R2 Mean of the Beta prior on the coefficient of determination R^2.
 #' @param prec_R2 Precision of the Beta prior on the coefficient of determination R^2.
@@ -2150,14 +2156,22 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #'   See the Examples section below.
 #'
 #' @details
-#'   Currently, the following classes support the R2D2 prior: \code{b}
+#'   The prior does not account for scale differences of the terms it is
+#'   applied on. Accordingly, please make sure that all these terms have a
+#'   comparable scale to ensure that shrinkage is applied properly.
+#'
+#'   Currently, the following classes support the R2D2(M2) prior: \code{b}
 #'   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
 #'   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
 #'   coefficients), \code{ma} (moving average coefficients), \code{sderr} (SD of
 #'   latent residuals), \code{sdcar} (SD of spatial CAR structures), \code{sd}
 #'   (SD of varying coefficients).
 #'
-#'   Even when the R2D2 prior is applied to multiple parameter classes at once,
+#'   When the prior is only applied to parameter class \code{b}, it is equivalent
+#'   to the original R2D2 prior (with Gaussian kernel). When the prior is also
+#'   applied to other parameter classes, it is equivalent to the R2D2M2 prior.
+#'
+#'   Even when the R2D2(M2) prior is applied to multiple parameter classes at once,
 #'   the concentration vector (argument \code{cons_D2}) has to be provided
 #'   jointly in the the one instance of the prior where \code{main = TRUE}. The
 #'   order in which the elements of concentration vector correspond to the

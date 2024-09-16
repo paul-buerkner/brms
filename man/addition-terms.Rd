@@ -21,6 +21,7 @@
 \alias{resp_thres}
 \alias{resp_cat}
 \alias{resp_dec}
+\alias{resp_bhaz}
 \alias{resp_cens}
 \alias{resp_trunc}
 \alias{resp_mi}
@@ -42,6 +43,8 @@ resp_thres(x, gr = NA)
 resp_cat(x)
 
 resp_dec(x)
+
+resp_bhaz(gr = NA, df = 5, ...)
 
 resp_cens(x, y2 = NA)
 
@@ -83,6 +86,13 @@ so that the average weight equals one. Defaults to \code{FALSE}.}
 
 \item{gr}{A vector of grouping indicators.}
 
+\item{df}{Degrees of freedom of baseline hazard splines for Cox models.}
+
+\item{...}{For \code{resp_vreal}, vectors of real values.
+For \code{resp_vint}, vectors of integer values. In Stan,
+these variables will be named \code{vreal1}, \code{vreal2}, ...,
+and \code{vint1}, \code{vint2}, ..., respectively.}
+
 \item{y2}{A vector specifying the upper bounds in interval censoring.
 Will be ignored for non-interval censored observations. However, it
 should NOT be \code{NA} even for non-interval censored observations to
@@ -101,11 +111,6 @@ at the same time using the plausible-values-technique.}
 
 \item{denom}{A vector of positive numeric values specifying
 the denominator values from which the response rates are computed.}
-
-\item{...}{For \code{resp_vreal}, vectors of real values.
-For \code{resp_vint}, vectors of integer values. In Stan,
-these variables will be named \code{vreal1}, \code{vreal2}, ...,
-and \code{vint1}, \code{vint2}, ..., respectively.}
 }
 \value{
 A list of additional response information to be processed further

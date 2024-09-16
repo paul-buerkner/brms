@@ -87,12 +87,19 @@ test_that("Cox models work correctly", {
   d1 <- simsurv::simsurv(lambdas = 0.1, gammas  = 1.5, betas = c(trt = -0.5),
                          x = covs, maxt  = 5)
   d1 <- merge(d1, covs)
+  d1$g <- sample(c("a", "b"), nrow(d1), TRUE)
 
   fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt,
               data = d1, family = brmsfamily("cox"), refresh = 0)
   print(summary(fit1))
   expect_range(posterior_summary(fit1)["b_trt", "Estimate"], -0.70, -0.30)
   expect_range(waic(fit1)$estimates[3, 1], 620, 670)
+
+  fit2 <- brm(eventtime | cens(1 - status) + bhaz(gr = g) ~ 1 + trt,
+              data = d1, family = brmsfamily("cox"), refresh = 0)
+  print(summary(fit2))
+  expect_true("sbhaz[a,2]" %in% variables(fit2))
+  expect_range(waic(fit2)$estimates[3, 1], 620, 670)
 })
 
 test_that("ordinal model with grouped thresholds works correctly", {

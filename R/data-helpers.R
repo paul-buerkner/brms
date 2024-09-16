@@ -558,6 +558,10 @@ validate_newdata <- function(
     new_levels <- get_levels(bterms, data = newdata)
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
+      # NA is not found by get_levels but still behaves like a new level (#1652)
+      if (anyNA(newdata[[g]])) {
+        c(unknown_levels) <- NA
+      }
       if (length(unknown_levels)) {
         unknown_levels <- collapse_comma(unknown_levels)
         stop2(

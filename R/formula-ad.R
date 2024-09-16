@@ -43,6 +43,7 @@
 #' @param denom A vector of positive numeric values specifying
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
+#' @param df Degrees of freedom of baseline hazard splines for Cox models.
 #' @param ... For \code{resp_vreal}, vectors of real values.
 #'   For \code{resp_vint}, vectors of integer values. In Stan,
 #'   these variables will be named \code{vreal1}, \code{vreal2}, ...,
@@ -158,6 +159,17 @@ resp_cat <- function(x) {
 resp_dec <- function(x) {
   dec <- deparse0(substitute(x))
   class_resp_special("dec", call = match.call(), vars = nlist(dec))
+}
+
+#' @rdname addition-terms
+#' @export
+resp_bhaz <- function(gr = NA, df = 5, ...) {
+  gr <- deparse0(substitute(gr))
+  df <- as_one_integer(df)
+  args <- nlist(df, ...)
+  # non-power users shouldn't know they can change 'intercept'
+  args$intercept <- args$intercept %||% TRUE
+  class_resp_special("bhaz", call = match.call(), vars = nlist(gr), flags = args)
 }
 
 #' @rdname addition-terms

@@ -64,7 +64,9 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   type <- match.arg(type)
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
+    # run loo instead of psis to allow for moment matching
+    loo_object <- loo(object, resp = resp, save_psis = TRUE, ...)
+    psis_object <- loo_object$psis_object
   }
   preds <- posterior_predict(object, resp = resp, ...)
   E_loo_value(preds, psis_object, type = type, probs = probs)
@@ -79,10 +81,11 @@ loo_epred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
                               probs = 0.5, psis_object = NULL, resp = NULL,
                               ...) {
   type <- match.arg(type)
-  # stopifnot_resp(object, resp)
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
+    # run loo instead of psis to allow for moment matching
+    loo_object <- loo(object, resp = resp, save_psis = TRUE, ...)
+    psis_object <- loo_object$psis_object
   }
   preds <- posterior_epred(object, resp = resp, ...)
   E_loo_value(preds, psis_object, type = type, probs = probs)
@@ -106,7 +109,9 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   type <- match.arg(type)
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
+    # run loo instead of psis to allow for moment matching
+    loo_object <- loo(object, resp = resp, save_psis = TRUE, ...)
+    psis_object <- loo_object$psis_object
   }
   preds <- posterior_linpred(object, resp = resp, ...)
   E_loo_value(preds, psis_object, type = type, probs = probs)

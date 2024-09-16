@@ -196,7 +196,7 @@ prepare_predictions.bframenl <- function(x, draws, sdata, ...) {
   out <- list(
     family = x$family,
     nlform = x$formula[[2]],
-    env = environment(x$formula),
+    env = env_stan_functions(parent = environment(x$formula)),
     ndraws = nrow(draws),
     nobs = sdata[[paste0("N", usc(x$resp))]],
     used_nlpars = x$used_nlpars,
@@ -877,12 +877,25 @@ prepare_predictions_bhaz <- function(bframe, draws, sdata, ...) {
   }
   out <- list()
   p <- usc(combine_prefix(bframe))
-  sbhaz_regex <- paste0("^sbhaz", p)
-  sbhaz <- prepare_draws(draws, sbhaz_regex, regex = TRUE)
   Zbhaz <- sdata[[paste0("Zbhaz", p)]]
-  out$bhaz <- tcrossprod(sbhaz, Zbhaz)
   Zcbhaz <- sdata[[paste0("Zcbhaz", p)]]
-  out$cbhaz <- tcrossprod(sbhaz, Zcbhaz)
+  if (has_bhaz_groups(bframe)) {
+    groups <- get_bhaz_groups(bframe)
+    Jgrbhaz <- sdata[[paste0("Jgrbhaz", p)]]
+    out$bhaz <- out$cbhaz <- matrix(nrow = nrow(draws), ncol = nrow(Zbhaz))
+    for (k in seq_along(groups)) {
+      sbhaz_regex <- paste0("^sbhaz", p, "\\[", groups[k], ",")
+      sbhaz <- prepare_draws(draws, sbhaz_regex, regex = TRUE)
+      take <- Jgrbhaz == k
+      out$bhaz[, take] <- tcrossprod(sbhaz, Zbhaz[take, ])
+      out$cbhaz[, take] <- tcrossprod(sbhaz, Zcbhaz[take, ])
+    }
+  } else {
+    sbhaz_regex <- paste0("^sbhaz", p)
+    sbhaz <- prepare_draws(draws, sbhaz_regex, regex = TRUE)
+    out$bhaz <- tcrossprod(sbhaz, Zbhaz)
+    out$cbhaz <- tcrossprod(sbhaz, Zcbhaz)
+  }
   out
 }
 
@@ -1222,13 +1235,14 @@ is.bprepnl <- function(x) {
 #'
 #' @param x An \R object typically of class \code{'brmsfit'}.
 #' @param newdata An optional data.frame for which to evaluate predictions. If
-#'   \code{NULL} (default), the original data of the model is used.
-#'   \code{NA} values within factors are interpreted as if all dummy
-#'   variables of this factor are zero. This allows, for instance, to make
-#'   predictions of the grand mean when using sum coding.
+#'   \code{NULL} (default), the original data of the model is used. \code{NA}
+#'   values within factors (excluding grouping variables) are interpreted as if
+#'   all dummy variables of this factor are zero. This allows, for instance, to
+#'   make predictions of the grand mean when using sum coding. \code{NA} values
+#'   within grouping variables are treated as a new level.
 #' @param re_formula formula containing group-level effects to be considered in
 #'   the prediction. If \code{NULL} (default), include all group-level effects;
-#'   if \code{NA}, include no group-level effects.
+#'   if \code{NA} or \code{~0}, include no group-level effects.
 #' @param allow_new_levels A flag indicating if new levels of group-level
 #'   effects are allowed (defaults to \code{FALSE}). Only relevant if
 #'   \code{newdata} is provided.

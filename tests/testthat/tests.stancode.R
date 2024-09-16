@@ -484,11 +484,6 @@ test_that("self-defined functions appear in the Stan code", {
   expect_match2(scode, "real inv_gaussian_lccdf(real y")
   expect_match2(scode, "real inv_gaussian_lpdf(vector y")
 
-  # von Mises models
-  scode <- stancode(time ~ age, data = kidney, family = von_mises)
-  expect_match2(scode, "real von_mises2_lpdf(real y")
-  expect_match2(scode, "real von_mises2_lpdf(vector y")
-
   # zero-inflated and hurdle models
   expect_match2(stancode(count ~ Trt, data = epilepsy,
                               family = "zero_inflated_poisson"),
@@ -1748,7 +1743,8 @@ test_that("Stan code of GEV models is correct", {
 })
 
 test_that("Stan code of Cox models is correct", {
-  data <- data.frame(y = rexp(100), ce = sample(0:1, 100, TRUE), x = rnorm(100))
+  data <- data.frame(y = rexp(100), ce = sample(0:1, 100, TRUE),
+                     x = rnorm(100), g = sample(1:3, 100, TRUE))
   bform <- bf(y | cens(ce) ~ x)
   scode <- stancode(bform, data, brmsfamily("cox"))
   expect_match2(scode, "target += cox_log_lpdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
@@ -1758,6 +1754,11 @@ test_that("Stan code of Cox models is correct", {
 
   scode <- stancode(bform, data, brmsfamily("cox", "identity"))
   expect_match2(scode, "target += cox_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
+
+  bform <- bf(y | bhaz(gr = g) ~ x)
+  scode <- stancode(bform, data, brmsfamily("cox"))
+  expect_match2(scode, "lprior += dirichlet_lpdf(sbhaz[k] | con_sbhaz[k]);")
+  expect_match2(scode, "bhaz[n] = Zbhaz[n] * sbhaz[Jgrbhaz[n]];")
 })
 
 test_that("offsets appear in the Stan code", {

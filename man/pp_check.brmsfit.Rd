@@ -35,7 +35,7 @@ If \code{NULL} all draws are used. If not specified,
 the number of posterior draws is chosen automatically.
 Ignored if \code{draw_ids} is not \code{NULL}.}
 
-\item{prefix}{The prefix of the \pkg{bayesplot} function to be applied. 
+\item{prefix}{The prefix of the \pkg{bayesplot} function to be applied.
 Either `"ppc"` (posterior predictive check; the default)
 or `"ppd"` (posterior predictive distribution), the latter being the same
 as the former except that the observed data is not shown for `"ppd"`.}
@@ -49,10 +49,11 @@ Only used for ppc types having an \code{x} argument
 and ignored otherwise.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.
-\code{NA} values within factors are interpreted as if all dummy
-variables of this factor are zero. This allows, for instance, to make
-predictions of the grand mean when using sum coding.}
+\code{NULL} (default), the original data of the model is used. \code{NA}
+values within factors (excluding grouping variables) are interpreted as if
+all dummy variables of this factor are zero. This allows, for instance, to
+make predictions of the grand mean when using sum coding. \code{NA} values
+within grouping variables are treated as a new level.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
