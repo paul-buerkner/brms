@@ -217,43 +217,44 @@ mo <- function(x, id = NA) {
 #' use group-level effects defined somewhere in the model as
 #' predictors in another part of the model. The function does not
 #' evaluate its arguments -- it exists purely to help set up a model.
-#' 
+#'
 #' @param gr Name of the grouping factor of the group-level effect
-#'   to be used as predictor. 
-#' @param coef Optional name of the coefficient of the group-level effect. 
+#'   to be used as predictor.
+#' @param coef Optional name of the coefficient of the group-level effect.
 #'   Defaults to \code{"Intercept"}.
-#' @param resp Optional name of the response variable of the group-level effect. 
-#' @param dpar Optional name of the distributional parameter of the group-level effect. 
-#' @param nlpar Optional name of the non-linear parameter of the group-level effect. 
-#' 
-#' @seealso \code{\link{brmsformula}} 
-#' 
+#' @param resp Optional name of the response variable of the group-level effect.
+#' @param dpar Optional name of the distributional parameter of the group-level effect.
+#' @param nlpar Optional name of the non-linear parameter of the group-level effect.
+#'
+#' @seealso \code{\link{brmsformula}}
+#'
 #' @examples
 #' \dontrun{
 #' # use the group-level intercept of 'AY' for parameter 'ult'
 #' # as predictor for the residual standard deviation 'sigma'
+#' # multiplying by 1000 reduces the scale of 'ult' to roughly unity
 #' bform <- bf(
-#'   cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+#'   cum ~ 1000 * ult * (1 - exp(-(dev/theta)^omega)),
 #'   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
 #'   sigma ~ re(AY, nlpar = "ult"),
 #'   nl = TRUE
 #' )
 #' bprior <- c(
-#'   prior(normal(5000, 1000), nlpar = "ult"),
+#'   prior(normal(5, 1), nlpar = "ult"),
 #'   prior(normal(1, 2), nlpar = "omega"),
 #'   prior(normal(45, 10), nlpar = "theta"),
-#'   prior(normal(0, 0.05), dpar = "sigma")
+#'   prior(normal(0, 0.5), dpar = "sigma")
 #' )
-#' 
+#'
 #' fit <- brm(
-#'   bform, data = loss, 
-#'   family = gaussian(), 
+#'   bform, data = loss,
+#'   family = gaussian(),
 #'   prior = bprior,
 #'   control = list(adapt_delta = 0.9),
 #'   chains = 2
 #' )
 #' summary(fit)
-#' 
+#'
 #' # shows how sigma varies as a function of the AY levels
 #' conditional_effects(fit, "AY", dpar = "sigma", re_formula = NULL)
 #' }
@@ -488,7 +489,7 @@ frame_sp <- function(x, data) {
           cols <- c("coef", "resp", "dpar", "nlpar")
           rf <- subset2(x$frame$re, group = re_term$term, ls = re_term[cols])
           # Ideally we should check here if the required re term can be found.
-          # However this will lead to errors in post-processing even if the 
+          # However this will lead to errors in post-processing even if the
           # re terms are not actually evaluated. See prepare_predictions_sp
           # for more details. The necessary pre-processing validity check
           # is instead done in stan_sp.

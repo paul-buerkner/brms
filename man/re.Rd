@@ -10,7 +10,7 @@ re(gr, coef = "Intercept", resp = "", dpar = "", nlpar = "")
 \item{gr}{Name of the grouping factor of the group-level effect
 to be used as predictor.}
 
-\item{coef}{Optional name of the coefficient of the group-level effect. 
+\item{coef}{Optional name of the coefficient of the group-level effect.
 Defaults to \code{"Intercept"}.}
 
 \item{resp}{Optional name of the response variable of the group-level effect.}
@@ -29,22 +29,23 @@ evaluate its arguments -- it exists purely to help set up a model.
 \dontrun{
 # use the group-level intercept of 'AY' for parameter 'ult'
 # as predictor for the residual standard deviation 'sigma'
+# multiplying by 1000 reduces the scale of 'ult' to roughly unity
 bform <- bf(
-  cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+  cum ~ 1000 * ult * (1 - exp(-(dev/theta)^omega)),
   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
   sigma ~ re(AY, nlpar = "ult"),
   nl = TRUE
 )
 bprior <- c(
-  prior(normal(5000, 1000), nlpar = "ult"),
+  prior(normal(5, 1), nlpar = "ult"),
   prior(normal(1, 2), nlpar = "omega"),
   prior(normal(45, 10), nlpar = "theta"),
-  prior(normal(0, 0.05), dpar = "sigma")
+  prior(normal(0, 0.5), dpar = "sigma")
 )
 
 fit <- brm(
-  bform, data = loss, 
-  family = gaussian(), 
+  bform, data = loss,
+  family = gaussian(),
   prior = bprior,
   control = list(adapt_delta = 0.9),
   chains = 2
