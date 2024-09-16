@@ -198,7 +198,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # the 'empty' feature. But computing it here will be fine
     # for almost all models, only causing potential problems for processing
     # of splines on new machines (#1465)
-    basis <- frame_basis(bterms, data = object$data)
+    bframe_old <- brmsframe(object$formula, data = object$data)
+    basis <- frame_basis(bframe_old, data = object$data)
   }
   bframe <- brmsframe(bterms, data = data, basis = basis)
   .standata(
