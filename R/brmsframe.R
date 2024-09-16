@@ -34,7 +34,6 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     # this must be a multivariate model
     stopifnot(is.list(frame))
     x$frame <- frame
-    x$frame$re <- subset2(x$frame$re, resp = x$resp)
   }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
@@ -51,6 +50,10 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
       basis = basis$nlpars[[nlp]], ...
     )
   }
+  # If this is a multivariate model, retain only the subset of random effects
+  # belonging to the current response variable. Subsetting is performed here
+  # rather than earlier to allow for correct validation of 're' terms in stan_sp.
+  x$frame$re <- subset2(x$frame$re, resp = x$resp)
   class(x) <- c("brmsframe", class(x))
   x
 }
