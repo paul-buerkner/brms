@@ -134,7 +134,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     iso <- TRUE
   }
   if (!isNA(k)) {
-    supported_hsgp_covs <- c("exp_quad")
+    supported_hsgp_covs <- c("exp_quad", "matern52", "matern32")
     if (!cov %in% supported_hsgp_covs) {
       stop2("HSGPs with covariance kernel '", cov, "' are not yet supported.")
     }
@@ -230,45 +230,45 @@ cov_gp <- function(x, x_new = NULL, sdgp = 1, lscale = 1, cov = "exp_quad") {
   lscale <- as.numeric(lscale)
   Dls <- length(lscale)
   cov <- as_one_character(cov)
-  kernel <- paste0("kernel_", cov)
-  kernel <- get(kernel, asNamespace("brms"))
+  cov_fun <- paste0("cov_gp_", cov)
+  cov_fun <- get(cov_fun, asNamespace("brms"))
   if (Dls == 1L) {
     # one dimensional or isotropic GP
     diff_quad <- diff_quad(x = x, x_new = x_new)
-    out <- kernel(diff_quad, sdgp = sdgp, lscale = lscale)
+    out <- cov_fun(diff_quad, sdgp = sdgp, lscale = lscale)
   } else {
     # multi-dimensional non-isotropic GP
     diff_quad <- diff_quad(x = x[, 1], x_new = x_new[, 1])
-    out <- kernel(diff_abs, sdgp = sdgp, lscale = lscale[1])
+    out <- cov_fun(diff_abs, sdgp = sdgp, lscale = lscale[1])
     for (d in seq_len(Dls)[-1]) {
       diff_quad <- diff_quad(x = x[, d], x_new = x_new[, d])
-      out <- out * kernel(diff_abs, sdgp = sdgp, lscale = lscale[d])
+      out <- out * cov_fun(diff_abs, sdgp = sdgp, lscale = lscale[d])
     }
   }
   out
 }
 
-# Squared exponential kernel
+# Squared exponential covariance kernel
 # @param diff_quad squared difference matrix
-kernel_exp_quad <- function(diff_quad, sdgp, lscale) {
+cov_gp_exp_quad <- function(diff_quad, sdgp, lscale) {
   sdgp^2 * exp(-diff_quad / (2 * lscale^2))
 }
 
-# Exponential kernel
-kernel_exponential <- function(diff_quad, sdgp, lscale) {
+# Exponential covariance kernel
+cov_gp_exponential <- function(diff_quad, sdgp, lscale) {
   diff_abs <- sqrt(diff_quad)
   sdgp^2 * exp(-diff_abs / lscale)
 }
 
-# Matern 3/2 kernel
-kernel_matern32 <- function(diff_quad, sdgp, lscale) {
+# Matern 3/2 covariance kernel
+cov_gp_matern32 <- function(diff_quad, sdgp, lscale) {
   diff_abs <- sqrt(diff_quad)
   sdgp^2 * (1 + sqrt(3) * diff_abs / lscale) *
     exp(- sqrt(3) * diff_abs / lscale)
 }
 
-# Matern 5/2 kernel
-kernel_matern52 <- function(diff_quad, sdgp, lscale) {
+# Matern 5/2 covariance kernel
+cov_gp_matern52 <- function(diff_quad, sdgp, lscale) {
   diff_abs <- sqrt(diff_quad)
   sdgp^2 * (1 + sqrt(5) * diff_abs / lscale + 5 * diff_quad / (3 * lscale^2)) *
     exp(- sqrt(5) * diff_abs / lscale)
@@ -294,23 +294,32 @@ diff_quad <- function(x, x_new = NULL) {
   out
 }
 
-# spectral density function
+# spectral density function for approximate Gaussian processes
 # vectorized over parameter values
-spd_exp_quad <- function(x, sdgp = 1, lscale = 1) {
+spd_gp <- function(x, sdgp = 1, lscale = 1, cov = "exp_quad") {
+  spd_fun <- paste0("spd_gp_", cov)
+  spd_fun <- get(spd_fun, asNamespace("brms"))
+  spd_fun(x, sdgp = sdgp, lscale = lscale)
+}
+
+# spectral density function of the squared exponential kernel
+# vectorized over parameter values
+spd_gp_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   NB <- NROW(x)
   D <- NCOL(x)
   Dls <- NCOL(lscale)
+  constant <- sdgp^2 * sqrt(2 * pi)^D
   out <- matrix(nrow = length(sdgp), ncol = NB)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
-    constant <- sdgp^2 * (sqrt(2 * pi) * lscale)^D
+    constant <- constant * lscale^D
     neg_half_lscale2 <- -0.5 * lscale^2
     for (m in seq_len(NB)) {
       out[, m] <- constant * exp(neg_half_lscale2 * sum(x[m, ]^2))
     }
   } else {
     # multi-dimensional non-isotropic GP
-    constant <- sdgp^2 * sqrt(2 * pi)^D * matrixStats::rowProds(lscale)
+    constant <- constant * matrixStats::rowProds(lscale)
     neg_half_lscale2 = -0.5 * lscale^2
     for (m in seq_len(NB)) {
       x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
@@ -320,13 +329,69 @@ spd_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   out
 }
 
+# spectral density function of the Matern 3/2 kernel
+# vectorized over parameter values
+spd_gp_matern32 <- function(x, sdgp = 1, lscale = 1) {
+  NB <- NROW(x)
+  D <- NCOL(x)
+  Dls <- NCOL(lscale)
+  constant = square(sdgp) *
+    (2^D * pi^(D / 2) * gamma((D + 3) / 2) * 3^(3 / 2)) / (0.5 * sqrt(pi))
+  expo = -(D + 3) / 2
+  lscale2 <- lscale^2
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- constant * lscale^D
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * (3 + lscale2 * sum(x[m, ]^2))^expo;
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- constant * matrixStats::rowProds(lscale)
+    for (m in seq_len(NB)) {
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * (3 + rowSums(lscale2 * x2))^expo
+    }
+  }
+  out
+}
+
+# spectral density function of the Matern 5/2 kernel
+# vectorized over parameter values
+spd_gp_matern52 <- function(x, sdgp = 1, lscale = 1) {
+  NB <- NROW(x)
+  D <- NCOL(x)
+  Dls <- NCOL(lscale)
+  constant = square(sdgp) *
+    (2^D * pi^(D / 2) * gamma((D + 5) / 2) * 5^(5 / 2)) / (0.75 * sqrt(pi))
+  expo = -(D + 5) / 2
+  lscale2 <- lscale^2
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- constant * lscale^D
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * (5 + lscale2 * sum(x[m, ]^2))^expo;
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- constant * matrixStats::rowProds(lscale)
+    for (m in seq_len(NB)) {
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * (5 + rowSums(lscale2 * x2))^expo
+    }
+  }
+  out
+}
+
 # compute the mth eigen value of an approximate GP
-eigen_val_exp_quad <- function(m, L) {
+eigen_val_laplacian <- function(m, L) {
   ((m * pi) / (2 * L))^2
 }
 
 # compute the mth eigen function of an approximate GP
-eigen_fun_exp_quad <- function(x, m, L) {
+eigen_fun_laplacian <- function(x, m, L) {
   x <- as.matrix(x)
   D <- ncol(x)
   stopifnot(length(m) == D, length(L) == D)

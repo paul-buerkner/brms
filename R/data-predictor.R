@@ -652,8 +652,8 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)
     for (m in seq_rows(Ks)) {
-      XgpL[, m] <- eigen_fun_exp_quad(Xgp, m = Ks[m, ], L = L)
-      slambda[m, ] <- sqrt(eigen_val_exp_quad(m = Ks[m, ], L = L))
+      XgpL[, m] <- eigen_fun_laplacian(Xgp, m = Ks[m, ], L = L)
+      slambda[m, ] <- sqrt(eigen_val_laplacian(m = Ks[m, ], L = L))
     }
     out[[paste0("Xgp", sfx)]] <- XgpL
     out[[paste0("slambda", sfx)]] <- slambda

@@ -369,9 +369,8 @@ predictor_gp <- function(prep, i) {
 # @param zgp draws of parameter vector zgp
 # @param slambda vector of eigenvalues of the cov matrix
 # @note no need to differentiate between old and new data points
-.predictor_gpa <- function(x, sdgp, lscale, zgp, slambda, cov = "exp_quad") {
-  stopifnot(cov == "exp_quad")
-  spd <- sqrt(spd_cov_exp_quad(slambda, sdgp, lscale))
+.predictor_gpa <- function(x, sdgp, lscale, zgp, slambda, cov) {
+  spd <- sqrt(spd_gp(slambda, sdgp = sdgp, lscale = lscale, cov = cov))
   (spd * zgp) %*% t(x)
 }
 

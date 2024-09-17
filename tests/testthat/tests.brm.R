@@ -12,10 +12,11 @@ test_that("brm works fully with mock backend", {
                "Test error")
 
   # Positive control - bad Stan code from stanvars gets an error
-  expect_error(suppressMessages(
-     brm(y ~ x + (1|g), dat, backend = "mock",
-         stanvars = stanvar(scode = "invalid;", block = "model"))
-  ))
+  # test passes but prints output that is somehow impossible to suppress
+  # expect_error(suppressMessages(
+  #    brm(y ~ x + (1|g), dat, backend = "mock",
+  #        stanvars = stanvar(scode = "invalid;", block = "model"))
+  # ))
 
   # Testing some models
   mock_fit <- brm(y ~ x + (1|g), dat, mock_fit = 1, backend = "mock", rename = FALSE)
