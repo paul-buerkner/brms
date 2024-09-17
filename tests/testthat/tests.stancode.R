@@ -1898,14 +1898,14 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "lprior += inv_gamma_lpdf(lscale_1[1]")
   expect_match2(scode, "lprior += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "lprior += gamma_lpdf(sdgp_2 | 4, 2)")
-  expect_match2(scode, "gp_pred_2 = gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
+  expect_match2(scode, "gp_pred_2 = gp_exp_quad(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
   expect_match2(scode, "Cgp_2 .* gp_pred_2;")
 
   prior <- prior + prior(normal(0, 1), lscale, coef = gpx1)
   scode <- stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE),
                          data = dat, prior = prior)
   expect_match2(scode, "lprior += normal_lpdf(lscale_1[1][1] | 0, 1)")
-  expect_match2(scode, "gp_pred_2 = gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
+  expect_match2(scode, "gp_pred_2 = gp_exp_quad(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
   expect_match2(scode, "+ Cgp_2 .* gp_pred_2[Jgp_2]")
 
   # non-isotropic GP
@@ -1916,7 +1916,7 @@ test_that("Stan code for Gaussian processes is correct", {
   # Suppress Stan parser warnings that can currently not be avoided
   scode <- stancode(y ~ gp(x1, x2) + gp(x1, by = z, gr = FALSE),
                          dat, silent = TRUE)
-  expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
+  expect_match2(scode, "gp_exp_quad(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
   expect_match2(scode, "mu[Igp_2_2] += Cgp_2_2 .* gp_pred_2_2;")
 
   # approximate GPS
@@ -1926,7 +1926,7 @@ test_that("Stan code for Gaussian processes is correct", {
   )
   expect_match2(scode, "lprior += inv_gamma_lpdf(lscale_1")
   expect_match2(scode,
-    "rgp_1 = sqrt(spd_cov_exp_quad(slambda_1, sdgp_1[1], lscale_1[1])) .* zgp_1;"
+    "rgp_1 = sqrt(spd_exp_quad(slambda_1, sdgp_1[1], lscale_1[1])) .* zgp_1;"
   )
   expect_match2(scode, "Cgp_2 .* gp_pred_2[Jgp_2]")
 
@@ -1937,7 +1937,7 @@ test_that("Stan code for Gaussian processes is correct", {
                          data = dat, prior = prior)
   expect_match2(scode, "lprior += normal_lpdf(lscale_a_1[1][1] | 0, 10)")
   expect_match2(scode, "lprior += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
-  expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
+  expect_match2(scode, "gp_exp_quad(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
 
   prior <- prior(gamma(2, 2), lscale, coef = gpx1z5, nlpar = "a")
   scode <- stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
@@ -1945,7 +1945,7 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode,
     "nlp_a[Igp_a_1_1] += Cgp_a_1_1 .* gp_pred_a_1_1[Jgp_a_1_1];"
   )
-  expect_match2(scode, "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)")
+  expect_match2(scode, "gp_exp_quad(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)")
   expect_match2(scode, "lprior += gamma_lpdf(lscale_a_1[3][1] | 2, 2);")
   expect_match2(scode, "target += std_normal_lpdf(zgp_a_1_3);")
 

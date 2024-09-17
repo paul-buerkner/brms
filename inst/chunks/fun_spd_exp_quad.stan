@@ -7,7 +7,7 @@
    * Returns:
    *   numeric values of the function evaluated at 'x'
    */
-  vector spd_cov_exp_quad(data array[] vector x, real sdgp, vector lscale) {
+  vector spd_exp_quad(data array[] vector x, real sdgp, vector lscale) {
     int NB = dims(x)[1];
     int D = dims(x)[2];
     int Dls = rows(lscale);

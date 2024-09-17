@@ -497,7 +497,7 @@ prepare_predictions_gp <- function(bframe, draws, sdata, new = FALSE,
 # prepare predictions for Gaussian processes
 # @param gpframe output of frame_gp
 # @param p prefix created by combine_prefix()
-# @param i indiex of the Gaussian process
+# @param i index of the Gaussian process
 # @param byj index for the contrast of a categorical 'by' variable
 # @return a list to be evaluated by .predictor_gp()
 .prepare_predictions_gp <- function(gpframe, draws, sdata, nug,
@@ -514,6 +514,7 @@ prepare_predictions_gp <- function(bframe, draws, sdata, new = FALSE,
   j <- usc(byj)
   pi <- paste0(p, "_", i)
   gp <- list()
+  gp$cov <- gpframe$cov[i]
   sdgp <- paste0("^sdgp", p, "_", sfx1, "$")
   gp$sdgp <- as.vector(prepare_draws(draws, sdgp, regex = TRUE))
   lscale <- paste0("^lscale", p, "_", sfx2, "$")

@@ -1077,6 +1077,8 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
     is_approx <- !isNA(k)
     iso <- gpframe$iso[i]
     gr <- gpframe$gr[i]
+    cov <- gpframe$cov[i]
+    gp <- glue("gp_{cov}")
     sfx1 <- gpframe$sfx1[[i]]
     sfx2 <- gpframe$sfx2[[i]]
     str_add(out$data) <- glue(
@@ -1086,13 +1088,13 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
       "  int<lower=1> Dgp{pi};  // GP dimension\n"
     )
     if (is_approx) {
-      str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
+      str_add(out$fun) <- glue("  #include 'fun_spd_{cov}.stan'\n")
       str_add(out$data) <- glue(
         "  // number of basis functions of an approximate GP\n",
         "  int<lower=1> NBgp{pi};\n"
       )
     } else {
-      str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
+      str_add(out$fun) <- glue("  #include 'fun_gp_{cov}.stan'\n")
     }
     if (has_special_prior(prior, px, class = "sdgp")) {
       str_add(out$tpar_def) <- glue(
@@ -1164,7 +1166,7 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
         )
         str_add(out$model_no_pll_def) <- "  // scale latent variables of the GP\n"
         str_add(out$model_no_pll_def) <- cglue(
-          "  vector[NBgp{pi}] rgp{pi}_{J} = sqrt(spd_cov_exp_quad(",
+          "  vector[NBgp{pi}] rgp{pi}_{J} = sqrt(spd_{cov}(",
           "slambda{pi}_{J}, sdgp{pi}[{J}], lscale{pi}[{J}])) .* zgp{pi}_{J};\n"
         )
         gp_call <- glue("Xgp{pi}_{J} * rgp{pi}_{J}")
@@ -1179,7 +1181,7 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
           "  vector[{Nsubgp}[{J}]] zgp{pi}_{J};\n"
         )
         gp_call <- glue(
-          "gp(Xgp{pi}_{J}, sdgp{pi}[{J}], lscale{pi}[{J}], zgp{pi}_{J})"
+          "gp_{cov}(Xgp{pi}_{J}, sdgp{pi}[{J}], lscale{pi}[{J}], zgp{pi}_{J})"
         )
       }
       slice2 <- ""
@@ -1247,7 +1249,7 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
         )
         str_add(out$model_no_pll_def) <- glue(
           "  // scale latent variables of the GP\n",
-          "  vector[NBgp{pi}] rgp{pi} = sqrt(spd_cov_exp_quad(",
+          "  vector[NBgp{pi}] rgp{pi} = sqrt(spd_{cov}(",
           "slambda{pi}, sdgp{pi}[1], lscale{pi}[1])) .* zgp{pi};\n"
         )
         if (gr) {
@@ -1273,7 +1275,7 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
         str_add(out$par) <- glue(
           "  vector[{Nsubgp}] zgp{pi};  // latent variables of the GP\n"
         )
-        gp_call <- glue("gp(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi})")
+        gp_call <- glue("gp_{cov}(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi})")
         # exact GPs are kernel based methods which
         # need to be computed outside of reduce_sum
         str_add(out$model_no_pll_def) <- glue(
