@@ -231,10 +231,10 @@ cov_gp <- function(x, x_new = NULL, sdgp = 1, lscale = 1, cov = "exp_quad") {
   } else {
     # multi-dimensional non-isotropic GP
     diff_quad <- diff_quad(x = x[, 1], x_new = x_new[, 1])
-    out <- cov_fun(diff_abs, sdgp = sdgp, lscale = lscale[1])
+    out <- cov_fun(diff_quad, sdgp = sdgp, lscale = lscale[1])
     for (d in seq_len(Dls)[-1]) {
       diff_quad <- diff_quad(x = x[, d], x_new = x_new[, d])
-      out <- out * cov_fun(diff_abs, sdgp = sdgp, lscale = lscale[d])
+      out <- out * cov_fun(diff_quad, sdgp = sdgp, lscale = lscale[d])
     }
   }
   out

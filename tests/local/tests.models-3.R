@@ -234,7 +234,7 @@ test_that("Gaussian processes work correctly", {
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
   # multivariate GPs
-  fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, refresh = 0)
+  fit2 <- brm(y ~ gp(x1, x2, iso = FALSE), dat, chains = 2, refresh = 0)
   print(fit2)
   expect_ggplot(pp_check(fit2))
   ce <- conditional_effects(
