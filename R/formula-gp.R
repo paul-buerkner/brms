@@ -234,7 +234,8 @@ cov_gp <- function(x, x_new = NULL, sdgp = 1, lscale = 1, cov = "exp_quad") {
     out <- cov_fun(diff_quad, sdgp = sdgp, lscale = lscale[1])
     for (d in seq_len(Dls)[-1]) {
       diff_quad <- diff_quad(x = x[, d], x_new = x_new[, d])
-      out <- out * cov_fun(diff_quad, sdgp = sdgp, lscale = lscale[d])
+      # sdgp = 1 as to not multiply the cov matrix with sdgp more than once
+      out <- out * cov_fun(diff_quad, sdgp = 1, lscale = lscale[d])
     }
   }
   out
