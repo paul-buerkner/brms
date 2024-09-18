@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Support different Gaussian process kernels in `gp` terms. (#234)
 * Support stratified `cox` models via the new addition term `bhaz`. (#1489)
 * Support futures for parallelization in the `cmdstanr` backend. (#1684)
 * Add method `loo_epred` thanks to Aki Vehtari. (#1641)

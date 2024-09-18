@@ -225,7 +225,7 @@ test_that("Gaussian processes work correctly", {
   ## Basic GPs
   set.seed(1112)
   dat <- mgcv::gamSim(1, n = 30, scale = 2)
-  fit1 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat,
+  fit1 <- brm(y ~ gp(x0) + x1 + gp(x2, cov = "matern32") + x3, dat,
               chains = 2, refresh = 0)
   print(fit1)
   expect_ggplot(pp_check(fit1))
@@ -233,7 +233,7 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
-  # multivariate GPs
+  # multivariate isotropic GPs
   fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, refresh = 0)
   print(fit2)
   expect_ggplot(pp_check(fit2))
@@ -244,22 +244,36 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit2)$estimates[3, 1], 100, 200)
 
-  # GP with continuous 'by' variable
-  fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2, refresh = 0)
+  # multivariate non-isotropic GPs
+  fit3 <- brm(y ~ gp(x1, x2, iso = FALSE, cov = "matern32"),
+              data = dat, chains = 2, refresh = 0)
   print(fit3)
   expect_ggplot(pp_check(fit3))
-  ce <- conditional_effects(fit3, ndraws = 200, nug = 1e-07)
+  ce <- conditional_effects(
+    fit3, ndraws = 200, nug = 1e-07,
+    surface = TRUE, resolution = 10
+  )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
+  expect_range(WAIC(fit3)$estimates[3, 1], 70, 130)
 
-  # GP with factor 'by' variable
-  dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
-  fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, refresh = 0)
+  # GP with continuous 'by' variable
+  fit4 <- brm(y ~ gp(x1, by = x2, cov = "matern52"), dat,
+              chains = 2, refresh = 0)
   print(fit4)
   expect_ggplot(pp_check(fit4))
   ce <- conditional_effects(fit4, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
+  expect_range(WAIC(fit4)$estimates[3, 1], 100, 200)
+
+  # GP with factor 'by' variable
+  dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
+  fit5 <- brm(y ~ gp(x2, by = fac, cov = "exponential"), dat2,
+              chains = 2, refresh = 0)
+  print(fit5)
+  expect_ggplot(pp_check(fit5))
+  ce <- conditional_effects(fit5, ndraws = 200, nug = 1e-07)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
+  expect_range(WAIC(fit5)$estimates[3, 1], 400, 600)
 })
 
 test_that("Approximate Gaussian processes work correctly", {
@@ -268,7 +282,7 @@ test_that("Approximate Gaussian processes work correctly", {
 
   # isotropic approximate GP
   fit1 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4),
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, cov = "matern32"),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
@@ -281,9 +295,10 @@ test_that("Approximate Gaussian processes work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit1)$estimates[3, 1], 900, 1000)
 
-  # non isotropic approximate GP
+  # non-isotropic approximate GP
   fit2 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE),
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE,
+           cov = "matern52"),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
