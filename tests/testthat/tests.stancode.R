@@ -2406,7 +2406,7 @@ test_that("likelihood of distributional beta models is correct", {
   scode <- stancode(
     bf(prop ~ 1, phi ~ 1), data = dat, family = Beta()
   )
-  expect_match2(scode, "beta_lpdf(Y[n] | mu[n] * phi[n], (1 - mu[n]) * phi[n])")
+  expect_match2(scode, "target += beta_lpdf(Y | mu .* phi, (1 - mu) .* phi);")
 })
 
 test_that("student-t group-level effects work without errors", {
