@@ -257,7 +257,7 @@ predictor_sm <- function(prep, i) {
   eta
 }
 
-# compute eta for gaussian processes
+# compute eta for Gaussian processes
 predictor_gp <- function(prep, i) {
   if (!length(prep[["gp"]])) {
     return(0)
@@ -295,14 +295,15 @@ predictor_gp <- function(prep, i) {
       for (i in seq_along(eta)) {
         eta[[i]] <- with(gp, .predictor_gp_new(
           x_new = x_new, yL = yL[i, ], x = x,
-          sdgp = sdgp[i], lscale = lscale[i, ], nug = nug
+          sdgp = sdgp[i], lscale = lscale[i, ],
+          cov = cov, nug = nug
         ))
       }
     } else {
       for (i in seq_along(eta)) {
         eta[[i]] <- with(gp, .predictor_gp_old(
           x = x, sdgp = sdgp[i], lscale = lscale[i, ],
-          zgp = zgp[i, ], nug = nug
+          zgp = zgp[i, ], cov = cov, nug = nug
         ))
       }
     }
@@ -311,7 +312,7 @@ predictor_gp <- function(prep, i) {
     # predictions for approximate GPs
     eta <- with(gp, .predictor_gpa(
       x = x, sdgp = sdgp, lscale = lscale,
-      zgp = zgp, slambda = slambda
+      zgp = zgp, slambda = slambda, cov = cov
     ))
   }
   if (!is.null(gp[["Jgp"]])) {
@@ -330,8 +331,8 @@ predictor_gp <- function(prep, i) {
 # @param lscale sample of parameter lscale
 # @param zgp draws of parameter vector zgp
 # @param nug very small positive value to ensure numerical stability
-.predictor_gp_old <- function(x, sdgp, lscale, zgp, nug) {
-  Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+.predictor_gp_old <- function(x, sdgp, lscale, zgp, cov, nug) {
+  Sigma <- cov_gp(x, sdgp = sdgp, lscale = lscale, cov = cov)
   lx <- nrow(x)
   Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
   L_Sigma <- try_nug(t(chol(Sigma)), nug = nug)
@@ -346,8 +347,8 @@ predictor_gp <- function(prep, i) {
 # @param sdgp sample of parameter sdgp
 # @param lscale sample of parameter lscale
 # @param nug very small positive value to ensure numerical stability
-.predictor_gp_new <- function(x_new, yL, x, sdgp, lscale, nug) {
-  Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+.predictor_gp_new <- function(x_new, yL, x, sdgp, lscale, cov, nug) {
+  Sigma <- cov_gp(x, sdgp = sdgp, lscale = lscale, cov = cov)
   lx <- nrow(x)
   lx_new <- nrow(x_new)
   Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
@@ -355,10 +356,10 @@ predictor_gp <- function(prep, i) {
   L_Sigma_inverse <- solve(L_Sigma)
   K_div_yL <- L_Sigma_inverse %*% yL
   K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
-  k_x_x_new <- cov_exp_quad(x, x_new, sdgp = sdgp, lscale = lscale)
+  k_x_x_new <- cov_gp(x, x_new, sdgp = sdgp, lscale = lscale, cov = cov)
   mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
   v_new <- L_Sigma_inverse %*% k_x_x_new
-  cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
+  cov_yL_new <- cov_gp(x_new, sdgp = sdgp, lscale = lscale, cov = cov) -
     t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
   yL_new <- try_nug(
     rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new),
@@ -375,8 +376,8 @@ predictor_gp <- function(prep, i) {
 # @param zgp draws of parameter vector zgp
 # @param slambda vector of eigenvalues of the cov matrix
 # @note no need to differentiate between old and new data points
-.predictor_gpa <- function(x, sdgp, lscale, zgp, slambda) {
-  spd <- sqrt(spd_cov_exp_quad(slambda, sdgp, lscale))
+.predictor_gpa <- function(x, sdgp, lscale, zgp, slambda, cov) {
+  spd <- sqrt(spd_gp(slambda, sdgp = sdgp, lscale = lscale, cov = cov))
   (spd * zgp) %*% t(x)
 }
 

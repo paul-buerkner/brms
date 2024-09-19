@@ -171,6 +171,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
   }
 
   # data for addition arguments of the response
+  # TODO: replace is.formula(x$adforms$term) pattern with has_ad_terms()
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
       stop2("Specifying 'trials' is required for this model.")

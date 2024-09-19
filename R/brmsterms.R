@@ -64,13 +64,12 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   y$cov_ranef <- x$cov_ranef
   class(y) <- "brmsterms"
 
+  y$resp <- ""
   if (check_response) {
     # extract response variables
     y$respform <- validate_resp_formula(formula, empty_ok = FALSE)
     if (mv) {
       y$resp <- terms_resp(y$respform)
-    } else {
-      y$resp <- ""
     }
   }
 
@@ -97,6 +96,11 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       x$pforms[[dp]] <- combine_formulas(formula, x$pforms[[dp]], dp)
     }
     x$pforms <- move2start(x$pforms, mu_dpars)
+    for (i in seq_along(family$mix)) {
+      # store the respective mixture index in each mixture component
+      # this enables them to be easily passed along, e.g. in stan_log_lik
+      y$family$mix[[i]]$mix <- i
+    }
   } else if (conv_cats_dpars(x$family)) {
     mu_dpars <- str_subset(x$family$dpars, "^mu")
     for (dp in mu_dpars) {
@@ -109,7 +113,6 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   }
 
   # predicted distributional parameters
-  resp <- ifelse(mv && !is.null(y$resp), y$resp, "")
   dpars <- intersect(names(x$pforms), valid_dpars(family))
   dpar_forms <- x$pforms[dpars]
   nlpars <- setdiff(names(x$pforms), dpars)
@@ -117,13 +120,13 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   y$dpars <- named_list(dpars)
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
-      y$dpars[[dp]] <- terms_nlf(dpar_forms[[dp]], nlpars, resp)
+      y$dpars[[dp]] <- terms_nlf(dpar_forms[[dp]], nlpars, y$resp)
     } else {
       y$dpars[[dp]] <- terms_lf(dpar_forms[[dp]])
     }
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
-    y$dpars[[dp]]$resp <- resp
+    y$dpars[[dp]]$resp <- y$resp
     if (dpar_class(dp) == "mu") {
       y$dpars[[dp]]$respform <- y$respform
       y$dpars[[dp]]$adforms <- y$adforms
@@ -142,12 +145,12 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
         attr(nlpar_forms[[nlp]], "center") <- FALSE
       }
       if (get_nl(nlpar_forms[[nlp]])) {
-        y$nlpars[[nlp]] <- terms_nlf(nlpar_forms[[nlp]], nlpars, resp)
+        y$nlpars[[nlp]] <- terms_nlf(nlpar_forms[[nlp]], nlpars, y$resp)
       } else {
         y$nlpars[[nlp]] <- terms_lf(nlpar_forms[[nlp]])
       }
       y$nlpars[[nlp]]$nlpar <- nlp
-      y$nlpars[[nlp]]$resp <- resp
+      y$nlpars[[nlp]]$resp <- y$resp
       check_cs(y$nlpars[[nlp]])
     }
     used_nlpars <- ufrom_list(c(y$dpars, y$nlpars), "used_nlpars")
@@ -591,6 +594,16 @@ is.btnl <- function(x) {
   inherits(x, "btnl")
 }
 
+# figure out if a certain distributional parameter is predicted
+is_pred_dpar <- function(bterms, dpar) {
+  stopifnot(is.brmsterms(bterms))
+  if (!length(dpar)) {
+    return(FALSE)
+  }
+  mix <- get_mix_id(bterms)
+  any(paste0(dpar, mix) %in% names(bterms$dpars))
+}
+
 # transform mvbrmsterms objects for use in stan_llh.brmsterms
 as.brmsterms <- function(x) {
   stopifnot(is.mvbrmsterms(x), x$rescor)
@@ -598,13 +611,14 @@ as.brmsterms <- function(x) {
   stopifnot(all(families == families[1]))
   out <- structure(list(), class = "brmsterms")
   out$family <- structure(
-    list(family = paste0(families[1], "_mv"), link = "identity"),
+    list(family = families[1], link = "identity"),
     class = c("brmsfamily", "family")
   )
+  out$family$fun <- paste0(out$family$family, "_mv")
   info <- get(paste0(".family_", families[1]))()
   out$family[names(info)] <- info
   out$sigma_pred <- any(ulapply(x$terms,
-    function(x) "sigma" %in% names(x$dpar) || is.formula(x$adforms$se)
+    function(x) is_pred_dpar(x, "sigma") || has_ad_terms(x, "se")
   ))
   weight_forms <- rmNULL(lapply(x$terms, function(x) x$adforms$weights))
   if (length(weight_forms)) {

@@ -2,11 +2,13 @@
 
 ### New Features
 
-* Use group-level coefficients as predictors in other formulas via `re` terms.
+* Support different Gaussian process kernels in `gp` terms. (#234)
 * Support stratified `cox` models via the new addition term `bhaz`. (#1489)
 * Support futures for parallelization in the `cmdstanr` backend. (#1684)
 * Add method `loo_epred` thanks to Aki Vehtari. (#1641)
-* Add priorsense support via `create_priorsense_data.brmsfit` thanks to Noa Kallioinen. (#1354)
+* Add priorsense support via `create_priorsense_data.brmsfit` 
+thanks to Noa Kallioinen. (#1354)
+* Vectorize censored log likelihoods in the Stan code when possible. (#1657)
 
 ### Bug Fixes
 

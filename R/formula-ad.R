@@ -376,19 +376,23 @@ trunc_bounds <- function(bterms, data = NULL, incl_family = FALSE,
   out
 }
 
-# check if addition argument 'subset' ist used in the model
+# check if addition argument 'subset' is used in the model
+# works for both univariate and multivariate models
 has_subset <- function(bterms) {
-  .has_subset <- function(x) {
-    is.formula(x$adforms$subset)
-  }
   if (is.brmsterms(bterms)) {
-    out <- .has_subset(bterms)
+    out <- has_ad_terms(bterms, "subset")
   } else if (is.mvbrmsterms(bterms)) {
-    out <- any(ulapply(bterms$terms, .has_subset))
+    out <- any(ulapply(bterms$terms, has_ad_terms, "subset"))
   } else {
     out <- FALSE
   }
   out
+}
+
+# check if a model has certain addition terms
+has_ad_terms <- function(bterms, terms) {
+  stopifnot(is.brmsterms(bterms), is.character(terms))
+  any(ulapply(bterms$adforms[terms], is.formula))
 }
 
 # construct a list of indices for cross-formula referencing

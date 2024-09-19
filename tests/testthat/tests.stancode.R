@@ -605,7 +605,7 @@ test_that("Stan code for multivariate models is correct", {
   scode <- stancode(bform, dat, prior = bprior)
   expect_match2(scode, "r_1_y2_3 = r_1[, 3]")
   expect_match2(scode, "err_y1[n] = Y_y1[n] - mu_y1[n]")
-  expect_match2(scode, "target += normal_lccdf(Y_y1[n] | mu_y1[n], sigma_y1)")
+  expect_match2(scode, "target += normal_lccdf(Y_y1[Jrcens_y1[1:Nrcens_y1]] | mu_y1[Jrcens_y1[1:Nrcens_y1]], sigma_y1)")
   expect_match2(scode, "target += skew_normal_lpdf(Y_y2 | mu_y2, omega_y2, alpha_y2)")
   expect_match2(scode, "ps[1] = log(theta1_x) + poisson_log_lpmf(Y_x[n] | mu1_x[n])")
   expect_match2(scode, "lprior += normal_lpdf(b_y1 | 0, 5)")
@@ -1374,13 +1374,17 @@ test_that("Stan code of response times models is correct", {
 
   scode <- stancode(count | cens(cens) ~ Trt + (1|patient),
                       data = dat, family = exgaussian("inverse"))
-  expect_match2(scode, "exp_mod_normal_lccdf(Y[n] | mu[n] - beta, sigma, inv(beta))")
+  expect_match2(scode,
+    "target += exp_mod_normal_lccdf(Y[Jrcens[1:Nrcens]] | mu[Jrcens[1:Nrcens]] - beta, sigma, inv(beta));"
+  )
 
   scode <- stancode(count ~ Trt, dat, family = shifted_lognormal())
   expect_match2(scode, "target += lognormal_lpdf(Y - ndt | mu, sigma)")
 
   scode <- stancode(count | cens(cens) ~ Trt, dat, family = shifted_lognormal())
-  expect_match2(scode, "target += lognormal_lcdf(Y[n] - ndt | mu[n], sigma)")
+  expect_match2(scode,
+    "target += lognormal_lcdf(Y[Jlcens[1:Nlcens]] - ndt | mu[Jlcens[1:Nlcens]], sigma);"
+  )
 
   # test issue #837
   scode <- stancode(mvbind(count, zBase) ~ Trt, data = dat,
@@ -1437,18 +1441,18 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
     "target += weights[n] * (binomial_logit_lpmf(Y[n] | trials[n], mu[n]));"
   )
 
-  scode <- stancode(y | cens(x, y2) ~ 1, dat, poisson())
-  expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]);")
+  scode <- stancode(y | cens(x, y2) ~ 1, dat, family = poisson())
+  expect_match2(scode, "target += poisson_lpmf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]]);")
+  expect_match2(scode, "poisson_lcdf(rcens[Jicens[1:Nicens]] | mu[Jicens[1:Nicens]])")
 
-  scode <- stancode(y | cens(x) ~ 1, dat, exponential())
-  expect_match2(scode, "target += exponential_lccdf(Y[n] | inv(mu[n]));")
+  scode <- stancode(y | cens(x) ~ 1, dat, family = cox())
+  expect_match2(scode, "target += cox_log_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
 
   dat$x[1] <- 2
-  scode <- stancode(y | cens(x, y2) ~ 1, dat, gaussian())
-  expect_match2(scode, paste0(
-    "target += log_diff_exp(\n",
-    "          normal_lcdf(rcens[n] | mu[n], sigma),"
-  ))
+  scode <- stancode(y | cens(x, y2) ~ 1, dat, family = asym_laplace())
+  expect_match2(scode, "target += log_diff_exp(\n")
+  expect_match2(scode, "asym_laplace_lcdf(rcens[n] | mu[n], sigma, quantile),")
+
   dat$x <- 1
   expect_match2(stancode(y | cens(x) + weights(x) ~ 1, dat, exponential()),
    "target += weights[n] * exponential_lccdf(Y[n] | inv(mu[n]));")
@@ -1720,7 +1724,9 @@ test_that("Stan code of addition term 'rate' is correct", {
   expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, inv(sigma) * denom);")
 
   scode <- stancode(y | rate(time) + cens(1) ~ x, data, geometric())
-  expect_match2(scode, "target += neg_binomial_2_lpmf(Y[n] | mu[n] * denom[n], 1 * denom[n]);")
+  expect_match2(scode,
+    "target += neg_binomial_2_lpmf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]] .* denom[Jevent[1:Nevent]], 1 * denom[Jevent[1:Nevent]]);"
+  )
 })
 
 test_that("Stan code of GEV models is correct", {
@@ -1929,19 +1935,21 @@ test_that("Stan code for Gaussian processes is correct", {
 
   prior <- prior(gamma(0.1, 0.1), sdgp) +
     prior(gamma(4, 2), sdgp, coef = gpx2x1)
-  scode <- stancode(y ~ gp(x1) + gp(x2, by = x1, gr = FALSE),
+  scode <- stancode(y ~ gp(x1, cov = "matern32") + gp(x2, by = x1, gr = FALSE),
                          dat, prior = prior)
   expect_match2(scode, "lprior += inv_gamma_lpdf(lscale_1[1]")
   expect_match2(scode, "lprior += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "lprior += gamma_lpdf(sdgp_2 | 4, 2)")
-  expect_match2(scode, "gp_pred_2 = gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
+  expect_match2(scode, "gp_pred_1 = gp_matern32(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1);")
+  expect_match2(scode, "gp_pred_2 = gp_exp_quad(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
   expect_match2(scode, "Cgp_2 .* gp_pred_2;")
 
   prior <- prior + prior(normal(0, 1), lscale, coef = gpx1)
-  scode <- stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE),
+  scode <- stancode(y ~ gp(x1, cov = "matern52") + gp(x2, by = x1, cov = "exponential"),
                          data = dat, prior = prior)
   expect_match2(scode, "lprior += normal_lpdf(lscale_1[1][1] | 0, 1)")
-  expect_match2(scode, "gp_pred_2 = gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
+  expect_match2(scode, "gp_pred_1 = gp_matern52(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
+  expect_match2(scode, "gp_pred_2 = gp_exponential(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2);")
   expect_match2(scode, "+ Cgp_2 .* gp_pred_2[Jgp_2]")
 
   # non-isotropic GP
@@ -1949,20 +1957,22 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "lprior += inv_gamma_lpdf(lscale_1[1][2]")
   expect_match2(scode, "lprior += inv_gamma_lpdf(lscale_1[4][2]")
 
-  # Suppress Stan parser warnings that can currently not be avoided
-  scode <- stancode(y ~ gp(x1, x2) + gp(x1, by = z, gr = FALSE),
-                         dat, silent = TRUE)
-  expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
+  scode <- stancode(y ~ gp(x1, x2) + gp(x1, by = z, gr = FALSE), data = dat)
+  expect_match2(scode, "gp_exp_quad(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
   expect_match2(scode, "mu[Igp_2_2] += Cgp_2_2 .* gp_pred_2_2;")
 
   # approximate GPS
   scode <- stancode(
-    y ~ gp(x1, k = 10, c = 5/4) + gp(x2, by = x1, k = 10, c = 5/4),
+    y ~ gp(x1, k = 10, c = 5/4) +
+      gp(x2, by = x1, k = 10, c = 5/4, cov = "matern32"),
     data = dat
   )
   expect_match2(scode, "lprior += inv_gamma_lpdf(lscale_1")
   expect_match2(scode,
-    "rgp_1 = sqrt(spd_cov_exp_quad(slambda_1, sdgp_1[1], lscale_1[1])) .* zgp_1;"
+    "rgp_1 = sqrt(spd_gp_exp_quad(slambda_1, sdgp_1[1], lscale_1[1])) .* zgp_1;"
+  )
+  expect_match2(scode,
+    "rgp_2 = sqrt(spd_gp_matern32(slambda_2, sdgp_2[1], lscale_2[1])) .* zgp_2;"
   )
   expect_match2(scode, "Cgp_2 .* gp_pred_2[Jgp_2]")
 
@@ -1973,7 +1983,7 @@ test_that("Stan code for Gaussian processes is correct", {
                          data = dat, prior = prior)
   expect_match2(scode, "lprior += normal_lpdf(lscale_a_1[1][1] | 0, 10)")
   expect_match2(scode, "lprior += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
-  expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
+  expect_match2(scode, "gp_exp_quad(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
 
   prior <- prior(gamma(2, 2), lscale, coef = gpx1z5, nlpar = "a")
   scode <- stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
@@ -1981,17 +1991,18 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode,
     "nlp_a[Igp_a_1_1] += Cgp_a_1_1 .* gp_pred_a_1_1[Jgp_a_1_1];"
   )
-  expect_match2(scode, "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)")
+  expect_match2(scode, "gp_exp_quad(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)")
   expect_match2(scode, "lprior += gamma_lpdf(lscale_a_1[3][1] | 2, 2);")
   expect_match2(scode, "target += std_normal_lpdf(zgp_a_1_3);")
 
-  # test warnings
+  # test warnings and errors
   prior <- prior(normal(0, 1), lscale)
   expect_warning(
     stancode(y ~ gp(x1), data = dat, prior = prior),
     "The global prior 'normal(0, 1)' of class 'lscale' will not be used",
     fixed = TRUE
   )
+  expect_error(stancode(y ~ gp(x1, cov = "periodic"), data = dat))
 })
 
 test_that("Stan code for SAR models is correct", {
@@ -2161,7 +2172,7 @@ test_that("Stan code for missing value terms works correctly", {
   scode <- stancode(bform, dat)
   expect_match2(scode, "vector<lower=0,upper=1>[Nmi_x] Ymi_x;")
   expect_match2(scode,
-    "target += beta_lpdf(Yl_x[n] | mu_x[n] * phi_x, (1 - mu_x[n]) * phi_x);"
+    "target += beta_lpdf(Y_x[Jevent_x[1:Nevent_x]] | mu_x[Jevent_x[1:Nevent_x]] * phi_x, (1 - mu_x[Jevent_x[1:Nevent_x]]) * phi_x);"
   )
 
   # tests #1608
@@ -2431,7 +2442,7 @@ test_that("likelihood of distributional beta models is correct", {
   scode <- stancode(
     bf(prop ~ 1, phi ~ 1), data = dat, family = Beta()
   )
-  expect_match2(scode, "beta_lpdf(Y[n] | mu[n] * phi[n], (1 - mu[n]) * phi[n])")
+  expect_match2(scode, "target += beta_lpdf(Y | mu .* phi, (1 - mu) .* phi);")
 })
 
 test_that("student-t group-level effects work without errors", {
@@ -2505,6 +2516,7 @@ test_that("threaded Stan code is correct", {
 
   # only run if cmdstan >= 2.29 can be found on the system
   # otherwise the canonicalized code will cause test failures
+  # TODO: switch to testing with rstan?
   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
   found_cmdstan <- !brms:::is_try_error(cmdstan_version)
   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
@@ -2573,6 +2585,17 @@ test_that("threaded Stan code is correct", {
   expect_match2(scode, "ps[1] = log(theta1) + poisson_log_lpmf(Y[nn] | mu1[n]);")
   expect_match2(scode, "ptarget += log_sum_exp(ps);")
   expect_match2(scode, "target += reduce_sum_static(partial_log_lik_lpmf,")
+
+  # test that code related to censoring is correct
+  scode <- stancode(
+    count | cens(Trt) ~ Age, dat, family = lognormal(),
+    threads = threading(4)
+  )
+  expect_match2(scode, "else if (cens[nn] == 1) {")
+  expect_match2(scode, "Jrcens[Nrcens] = n;")
+  expect_match2(scode,
+    "ptarget += lognormal_lcdf(Y[add_int(Jlcens[1:Nlcens], start - 1)] | mu[Jlcens[1:Nlcens]], sigma);"
+  )
 })
 
 test_that("Un-normalized Stan code is correct", {
@@ -2646,7 +2669,7 @@ test_that("Un-normalized Stan code is correct", {
   scode <- stancode(
       y | vint(size) + vreal(size) ~ x, data = dat, family = beta_binomial2,
       prior = prior(gamma(0.1, 0.1), class = "tau"),
-      stanvars = stanvars, normalize = FALSE, backend = "cmdstanr"
+      stanvars = stanvars, normalize = FALSE,
   )
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
