@@ -9,6 +9,8 @@
 * Add priorsense support via `create_priorsense_data.brmsfit` 
 thanks to Noa Kallioinen. (#1354)
 * Vectorize censored log likelihoods in the Stan code when possible. (#1657)
+* Force Stan to activate threading without altering the Stan code
+via argument `force` of function `threading`. (#1549)
 
 ### Bug Fixes
 
