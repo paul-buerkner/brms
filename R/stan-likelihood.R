@@ -12,6 +12,7 @@ stan_log_lik <- function(x, ...) {
 #' @export
 stan_log_lik.family <- function(x, bterms, threads, normalize,
                                 mix = "", ptheta = FALSE, ...) {
+  # TODO: find a better way to pass resp and mix through stan_log_lik_* functions
   stopifnot(is.brmsterms(bterms))
   stopifnot(length(mix) == 1L)
   bterms$family <- x
@@ -106,35 +107,68 @@ stan_log_lik_general <- function(ll, bterms, threads, normalize, resp = "", ...)
 # censored likelihood in Stan language
 stan_log_lik_cens <- function(ll, bterms, threads, normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
-  s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
   lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
-  has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_log_lik_Y_name(bterms)
-  n <- stan_nn(threads)
-  w <- str_if(has_weights, glue("weights{resp}{n} * "))
-  tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
   tp <- tp()
-  out <- glue(
-    "  // special treatment of censored data\n",
-    s, "if (cens{resp}{n} == 0) {{\n",
-    s, "{tp}{w}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
-    s, "}} else if (cens{resp}{n} == 1) {{\n",
-    s, "{tp}{w}{ll$dist}_lccdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
-    s, "}} else if (cens{resp}{n} == -1) {{\n",
-    s, "{tp}{w}{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
-  )
-  if (cens$vars$y2 != "NA") {
-    # interval censoring is required
-    str_add(out) <- glue(
-      s, "}} else if (cens{resp}{n} == 2) {{\n",
-      s, "{tp}{w}log_diff_exp(\n",
-      s, "    {ll$dist}_lcdf(rcens{resp}{n}{ll$shift} | {ll$args}),\n",
-      s, "    {ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args})\n",
-      s, "  ){tr};\n"
+  has_weights <- is.formula(bterms$adforms$weights)
+  has_trunc <- is.formula(bterms$adforms$trunc)
+  has_interval_cens <- cens$vars$y2 != "NA"
+  if (ll$vec && !(has_weights || has_trunc)) {
+    # vectorized log-likelihood contributions
+    types <- c("event", "rcens", "lcens", "icens")
+    J <- args <- named_list(types)
+    for (t in types) {
+      Jt <- glue("J{t}{resp}[1:N{t}{resp}]")
+      J[[t]] <- glue("[{Jt}]")
+      if (use_threading(threads)) {
+        Jtms <- glue("[add_int({Jt}, start - 1)]")
+        args[[t]] <- rename(ll$args, c("[n]", "[nn]"), c(J[[t]], Jtms))
+        J[[t]] <- Jtms
+      } else {
+        args[[t]] <- rename(ll$args, "[n]", J[[t]])
+      }
+    }
+    out <- glue(
+      "  // vectorized log-likelihood contributions of censored data\n",
+      "{tp}{ll$dist}_{lpdf}(Y{resp}{J$event}{ll$shift} | {args$event});\n",
+      "{tp}{ll$dist}_lccdf(Y{resp}{J$rcens}{ll$shift} | {args$rcens});\n",
+      "{tp}{ll$dist}_lcdf(Y{resp}{J$lcens}{ll$shift} | {args$lcens});\n"
     )
+    if (has_interval_cens) {
+      rcens <- glue("rcens{resp}")
+      str_add(out) <- glue(
+        "{tp}log_diff_exp(\n",
+        "    {ll$dist}_lcdf(rcens{resp}{J$icens}{ll$shift} | {args$icens}),\n",
+        "    {ll$dist}_lcdf(Y{resp}{J$icens}{ll$shift} | {args$icens})\n",
+        "  );\n"
+      )
+    }
+  } else {
+    # non-vectorized likelihood contributions
+    n <- stan_nn(threads)
+    w <- str_if(has_weights, glue("weights{resp}{n} * "))
+    tr <- stan_log_lik_trunc(ll, bterms, resp = resp, threads = threads)
+    out <- glue(
+      "  // special treatment of censored data\n",
+      "    if (cens{resp}{n} == 0) {{\n",
+      "    {tp}{w}{ll$dist}_{lpdf}(Y{resp}{n}{ll$shift} | {ll$args}){tr};\n",
+      "    }} else if (cens{resp}{n} == 1) {{\n",
+      "    {tp}{w}{ll$dist}_lccdf(Y{resp}{n}{ll$shift} | {ll$args}){tr};\n",
+      "    }} else if (cens{resp}{n} == -1) {{\n",
+      "    {tp}{w}{ll$dist}_lcdf(Y{resp}{n}{ll$shift} | {ll$args}){tr};\n"
+    )
+    if (has_interval_cens) {
+      str_add(out) <- glue(
+        "    }} else if (cens{resp}{n} == 2) {{\n",
+        "    {tp}{w}log_diff_exp(\n",
+        "        {ll$dist}_lcdf(rcens{resp}{n}{ll$shift} | {ll$args}),\n",
+        "        {ll$dist}_lcdf(Y{resp}{n}{ll$shift} | {ll$args})\n",
+        "      ){tr};\n"
+      )
+    }
+    str_add(out) <- glue("    }}\n")
   }
-  str_add(out) <- glue(s, "}}\n")
   out
 }
 
@@ -165,31 +199,31 @@ stan_log_lik_mix <- function(ll, bterms, mix, ptheta, threads,
   n <- stan_nn(threads)
   if (is.formula(bterms$adforms$cens)) {
     # mostly copied over from stan_log_lik_cens
+    # no vectorized version available for mixture models
     cens <- eval_rhs(bterms$adforms$cens)
-    s <- wsp(nsp = 4)
     out <- glue(
       "  // special treatment of censored data\n",
-      s, "if (cens{resp}{n} == 0) {{\n",
-      s, "  ps[{mix}] = {theta} + ",
+      "    if (cens{resp}{n} == 0) {{\n",
+      "      ps[{mix}] = {theta} + ",
       "{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
-      s, "}} else if (cens{resp}{n} == 1) {{\n",
-      s, "  ps[{mix}] = {theta} + ",
+      "    }} else if (cens{resp}{n} == 1) {{\n",
+      "      ps[{mix}] = {theta} + ",
       "{ll$dist}_lccdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
-      s, "}} else if (cens{resp}{n} == -1) {{\n",
-      s, "  ps[{mix}] = {theta} + ",
+      "    }} else if (cens{resp}{n} == -1) {{\n",
+      "      ps[{mix}] = {theta} + ",
       "{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
     )
-    if (cens$vars$y2 != "NA") {
-      # interval censoring is required
+    has_interval_cens <- cens$vars$y2 != "NA"
+    if (has_interval_cens) {
       str_add(out) <- glue(
-        s, "}} else if (cens{resp}{n} == 2) {{\n",
-        s, "  ps[{mix}] = {theta} + log_diff_exp(\n",
-        s, "    {ll$dist}_lcdf(rcens{resp}{n}{ll$shift} | {ll$args}),\n",
-        s, "    {ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args})\n",
-        s, "  ){tr};\n"
+        "    }} else if (cens{resp}{n} == 2) {{\n",
+        "      ps[{mix}] = {theta} + log_diff_exp(\n",
+        "        {ll$dist}_lcdf(rcens{resp}{n}{ll$shift} | {ll$args}),\n",
+        "        {ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args})\n",
+        "      ){tr};\n"
       )
     }
-    str_add(out) <- glue(s, "}}\n")
+    str_add(out) <- glue("    }}\n")
   } else {
     out <- glue(
       "ps[{mix}] = {theta} + ",
@@ -256,8 +290,9 @@ stan_log_lik_Y_name <- function(bterms) {
 # @param reqn will the likelihood be wrapped in a loop over n?
 # @param dpars optional names of distributional parameters to be prepared
 #   if not specified will prepare all distributional parameters
-stan_log_lik_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL,
-                               type = NULL) {
+stan_log_lik_dpars <- function(bterms, reqn = NULL, resp = "", mix = "",
+                               dpars = NULL, type = NULL) {
+  reqn <- reqn %||% stan_log_lik_adj(bterms, mix = mix)
   if (is.null(dpars)) {
     dpars <- paste0(valid_dpars(bterms, type = type), mix)
   }
@@ -292,11 +327,12 @@ stan_log_lik_dpar_usc_logit <- function(dpar, bterms) {
 }
 
 # add 'se' to 'sigma' within the Stan likelihood
-stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "",
+stan_log_lik_add_se <- function(sigma, bterms, reqn = NULL, resp = "",
                                 threads = NULL) {
   if (!is.formula(bterms$adforms$se)) {
     return(sigma)
   }
+  reqn <- reqn %||% stan_log_lik_adj(bterms)
   nse <- str_if(reqn, stan_nn(threads), stan_slice(threads))
   if (no_sigma(bterms)) {
     sigma <- glue("se{resp}{nse}")
@@ -308,9 +344,15 @@ stan_log_lik_add_se <- function(sigma, bterms, reqn, resp = "",
 
 # multiply 'dpar' by the 'rate' denominator within the Stan likelihood
 # @param log add the rate denominator on the log scale if sensible?
+# @param reqn2 like reqn indicates if a loop over observations is needed
+#  which makes all the computations scalar (non-vectorized). However,
+#  censoring may turn non-vectorized into vectorized statements later on
+#  (see stan_log_lik_cens) which then makes the * operator invalid and
+#  requires .* instead. Accordingly, reqn2 should be FALSE if [n] is required
+#  only because of censoring.
 stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "",
                                              log = FALSE, transform = NULL,
-                                             threads = NULL) {
+                                             threads = NULL, reqn2 = reqn) {
   dpar_transform <- dpar
   if (!is.null(transform)) {
     dpar_transform <- glue("{transform}({dpar})")
@@ -328,19 +370,25 @@ stan_log_lik_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "",
     # dpar without resp name or index
     dpar_clean <- sub("(_|\\[).*", "", dpar)
     is_pred <- dpar_clean %in% c("mu", names(bterms$dpars))
-    operator <- str_if(reqn || !is_pred, "*", ".*")
+    operator <- str_if(reqn2 || !is_pred, "*", ".*")
   }
   glue("{dpar_transform} {operator} {denom}")
 }
 
-# check if the log-liklihood needs to be adjused
+# check if the log-likelihood needs to be adjusted to a non-vectorized form
+# either because of addition terms or mixture modeling
 # @param x named list of formulas or brmsterms object
 # @param adds vector of addition argument names
+# @param mix optional mixture component index
 # @return a single logical value
-stan_log_lik_adj <- function(x, adds = c("weights", "cens", "trunc")) {
-  stopifnot(all(adds %in% c("weights", "cens", "trunc")))
-  if (is.brmsterms(x)) x <- x$adforms
-  any(ulapply(x[adds], is.formula))
+stan_log_lik_adj <- function(x, adds = c("weights", "cens", "trunc"),
+                             mix = "") {
+  adds <- match.arg(adds, several.ok = TRUE)
+  mix <- as_one_character(mix)
+  if (is.brmsterms(x)) {
+    x <- x$adforms
+  }
+  any(ulapply(x[adds], is.formula)) || nzchar(mix)
 }
 
 # one function per family
@@ -351,7 +399,7 @@ stan_log_lik_gaussian <- function(bterms, resp = "", mix = "", threads = NULL,
     p$sigma <- paste0("sigma", resp)
     out <- sdist("normal_id_glm", p$x, p$alpha, p$beta, p$sigma)
   } else {
-    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    reqn <- stan_log_lik_adj(bterms, mix = mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp, threads)
     out <- sdist("normal", p$mu, p$sigma)
@@ -360,7 +408,7 @@ stan_log_lik_gaussian <- function(bterms, resp = "", mix = "", threads = NULL,
 }
 
 stan_log_lik_gaussian_mv <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) || bterms$sigma_pred
+  reqn <- stan_log_lik_adj(bterms, mix = mix) || bterms$sigma_pred
   p <- list(Mu = paste0("Mu", if (reqn) "[n]"))
   p$LSigma <- paste0("LSigma", if (bterms$sigma_pred) "[n]")
   sdist("multi_normal_cholesky", p$Mu, p$LSigma)
@@ -421,14 +469,14 @@ stan_log_lik_gaussian_errorsar <- function(bterms, resp = "", mix = "",
 
 stan_log_lik_student <- function(bterms, resp = "", mix = "",
                                  threads = NULL, ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp, threads)
   sdist("student_t", p$nu, p$mu, p$sigma)
 }
 
 stan_log_lik_student_mv <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) || bterms$sigma_pred
+  reqn <- stan_log_lik_adj(bterms, mix = mix) || bterms$sigma_pred
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix, dpars = "nu")
   p$Mu <- paste0("Mu", if (reqn) "[n]")
   p$Sigma <- paste0("Sigma", if (bterms$sigma_pred) "[n]")
@@ -491,25 +539,25 @@ stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "",
 }
 
 stan_log_lik_lognormal <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   sdist("lognormal", p$mu, p$sigma)
 }
 
 stan_log_lik_shifted_lognormal <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   sdist("lognormal", p$mu, p$sigma, shift = paste0(" - ", p$ndt))
 }
 
 stan_log_lik_asym_laplace <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  sdist("asym_laplace", p$mu, p$sigma, p$quantile)
+  sdist("asym_laplace", p$mu, p$sigma, p$quantile, vec = FALSE)
 }
 
 stan_log_lik_skew_normal <- function(bterms, resp = "", mix = "",
                                      threads = NULL, ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn, resp, threads)
   # required because of CP parameterization of mu and sigma
@@ -525,12 +573,14 @@ stan_log_lik_poisson <- function(bterms, resp = "", mix = "", threads = NULL,
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
     out <- sdist("poisson_log_glm", p$x, p$alpha, p$beta)
   } else {
-    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    reqn <- stan_log_lik_adj(bterms, mix = mix)
+    reqn2 <- stan_log_lik_adj(bterms, c("trunc", "weights"), mix = mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-    lpdf <- stan_log_lik_simple_lpdf("poisson", "log", bterms)
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp, log = TRUE,
+      reqn2 = reqn2, threads = threads
     )
+    lpdf <- stan_log_lik_simple_lpdf("poisson", "log", bterms)
     out <- sdist(lpdf, p$mu)
   }
   out
@@ -543,13 +593,16 @@ stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = NULL
     p$shape <- paste0("shape", resp)
     out <- sdist("neg_binomial_2_log_glm", p$x, p$alpha, p$beta, p$shape)
   } else {
-    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    reqn <- stan_log_lik_adj(bterms, mix = mix)
+    reqn2 <- stan_log_lik_adj(bterms, c("trunc", "weights"), mix = mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp, log = TRUE,
+      reqn2 = reqn2, threads = threads
     )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$shape, bterms, reqn, resp, threads = threads
+      p$shape, bterms, reqn, resp,
+      reqn2 = reqn2, threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -565,13 +618,16 @@ stan_log_lik_negbinomial2 <- function(bterms, resp = "", mix = "", threads = NUL
     p$shape <- paste0("inv(", p$sigma, ")")
     out <- sdist("neg_binomial_2_log_glm", p$x, p$alpha, p$beta, p$shape)
   } else {
-    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    reqn <- stan_log_lik_adj(bterms, mix = mix)
+    reqn2 <- stan_log_lik_adj(bterms, c("trunc", "weights"), mix = mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp, log = TRUE,
+      reqn2 = reqn2, threads = threads
     )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$sigma, bterms, reqn, resp, transform = "inv", threads = threads
+      p$sigma, bterms, reqn, resp, transform = "inv",
+      reqn2 = reqn2, threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -586,14 +642,17 @@ stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = NULL,
     p$shape <- "1"
     out <- sdist("neg_binomial_2_log_glm", p$x, p$alpha, p$beta, p$shape)
   } else {
-    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    reqn <- stan_log_lik_adj(bterms, mix = mix)
+    reqn2 <- stan_log_lik_adj(bterms, c("trunc", "weights"), mix = mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$shape <- "1"
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp, log = TRUE,
+      reqn2 = reqn2, threads = threads
     )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$shape, bterms, reqn, resp, threads = threads
+      p$shape, bterms, reqn, resp,
+      reqn2 = reqn2, threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -602,7 +661,7 @@ stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = NULL,
 
 stan_log_lik_binomial <- function(bterms, resp = "", mix = "", threads = NULL,
                                   ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   slice <- str_if(reqn, stan_nn(threads), stan_slice(threads))
   p$trials <- paste0("trials", resp, slice)
@@ -618,7 +677,8 @@ stan_log_lik_beta_binomial <- function(bterms, resp = "", mix = "",
     "beta_binomial",
     paste0("trials", resp, n),
     paste0(p$mu, " * ", p$phi),
-    paste0("(1 - ", p$mu, ") * ", p$phi)
+    paste0("(1 - ", p$mu, ") * ", p$phi),
+    vec = FALSE
   )
 }
 
@@ -628,7 +688,7 @@ stan_log_lik_bernoulli <- function(bterms, resp = "", mix = "", threads = NULL,
     p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
     out <- sdist("bernoulli_logit_glm", p$x, p$alpha, p$beta)
   } else {
-    reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+    reqn <- stan_log_lik_adj(bterms, mix = mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     lpdf <- stan_log_lik_simple_lpdf("bernoulli", "logit", bterms)
     out <- sdist(lpdf, p$mu)
@@ -638,17 +698,17 @@ stan_log_lik_bernoulli <- function(bterms, resp = "", mix = "", threads = NULL,
 
 stan_log_lik_discrete_weibull <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  sdist("discrete_weibull", p$mu, p$shape)
+  sdist("discrete_weibull", p$mu, p$shape, vec = FALSE)
 }
 
 stan_log_lik_com_poisson <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   lpdf <- stan_log_lik_simple_lpdf("com_poisson", "log", bterms)
-  sdist(lpdf, p$mu, p$shape)
+  sdist(lpdf, p$mu, p$shape, vec = FALSE)
 }
 
 stan_log_lik_gamma <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
+  reqn <- stan_log_lik_adj(bterms, mix = mix) ||
     paste0("shape", mix) %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   # Stan uses shape-rate parameterization with rate = shape / mean
@@ -657,14 +717,14 @@ stan_log_lik_gamma <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_exponential <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   # Stan uses rate parameterization with rate = 1 / mean
   sdist("exponential", paste0("inv(", p$mu, ")"))
 }
 
 stan_log_lik_weibull <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   # Stan uses shape-scale parameterization for weibull
   need_dot_div <- !reqn && paste0("shape", mix) %in% names(bterms$dpars)
@@ -674,7 +734,7 @@ stan_log_lik_weibull <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_frechet <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   # Stan uses shape-scale parameterization for frechet
   need_dot_div <- !reqn && paste0("nu", mix) %in% names(bterms$dpars)
@@ -685,11 +745,11 @@ stan_log_lik_frechet <- function(bterms, resp = "", mix = "", ...) {
 
 stan_log_lik_gen_extreme_value <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  sdist("gen_extreme_value", p$mu, p$sigma, p$xi)
+  sdist("gen_extreme_value", p$mu, p$sigma, p$xi, vec = FALSE)
 }
 
 stan_log_lik_exgaussian <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   sdist(
     "exp_mod_normal", paste0(p$mu, " - ", p$beta),
@@ -698,11 +758,11 @@ stan_log_lik_exgaussian <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_inverse.gaussian <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
+  reqn <- stan_log_lik_adj(bterms, mix = mix) ||
     glue("shape{mix}") %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   n <- str_if(reqn, "[n]")
-  sdist("inv_gaussian", p$mu, p$shape)
+  sdist("inv_gaussian", p$mu, p$shape, vec = FALSE)
 }
 
 stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
@@ -710,13 +770,13 @@ stan_log_lik_wiener <- function(bterms, resp = "", mix = "", threads = NULL,
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   n <- stan_nn(threads)
   p$dec <- paste0("dec", resp, n)
-  sdist("wiener_diffusion", p$dec, p$bs, p$ndt, p$bias, p$mu)
+  sdist("wiener_diffusion", p$dec, p$bs, p$ndt, p$bias, p$mu, vec = FALSE)
 }
 
 stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
   # TODO: check if we still require n when phi is predicted
   # and check the same for other families too
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
+  reqn <- stan_log_lik_adj(bterms, mix = mix) ||
     paste0("phi", mix) %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   sdist("beta",
@@ -726,7 +786,7 @@ stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_von_mises <- function(bterms, resp = "", mix = "", ...) {
-  reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
+  reqn <- stan_log_lik_adj(bterms, mix = mix)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
   sdist("von_mises", p$mu, p$kappa)
 }
@@ -739,7 +799,7 @@ stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
   if (bterms$family$link == "log") {
     str_add(lpdf) <- "_log"
   }
-  sdist(lpdf, p$mu, p$bhaz, p$cbhaz)
+  sdist(lpdf, p$mu, p$bhaz, p$cbhaz, vec = FALSE)
 }
 
 stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
@@ -779,7 +839,7 @@ stan_log_lik_categorical <- function(bterms, resp = "", mix = "",
     out <- sdist("categorical_logit_glm", p$x, p$alpha, p$beta)
   } else {
     p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
-    out <- sdist("categorical_logit", p$mu)
+    out <- sdist("categorical_logit", p$mu, vec = FALSE)
   }
   out
 }
@@ -788,7 +848,7 @@ stan_log_lik_multinomial <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
-  sdist("multinomial_logit2", p$mu)
+  sdist("multinomial_logit2", p$mu, vec = FALSE)
 }
 
 stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
@@ -797,13 +857,13 @@ stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
   mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")$mu
   reqn <- glue("phi{mix}") %in% names(bterms$dpars)
   phi <- stan_log_lik_dpars(bterms, reqn, resp, mix, dpars = "phi")$phi
-  sdist("dirichlet_logit", mu, phi)
+  sdist("dirichlet_logit", mu, phi, vec = FALSE)
 }
 
 stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")$mu
-  sdist("dirichlet", mu)
+  sdist("dirichlet", mu, vec = FALSE)
 }
 
 stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
@@ -812,7 +872,11 @@ stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, type = "multi")
   p$Llncor <- glue("Llncor{mix}{resp}")
   p$refcat <- get_refcat(bterms$family, int = TRUE)
-  sdist("logistic_normal_cholesky_cor", p$mu, p$sigma, p$Llncor, p$refcat)
+  sdist(
+    "logistic_normal_cholesky_cor",
+    p$mu, p$sigma, p$Llncor, p$refcat,
+    vec = FALSE
+  )
 }
 
 stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
@@ -847,21 +911,21 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
     }
     str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
-  sdist(lpdf, p$mu, p$disc, p$thres, p$Jthres)
+  sdist(lpdf, p$mu, p$disc, p$thres, p$Jthres, vec = FALSE)
 }
 
 stan_log_lik_hurdle_poisson <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   lpdf <- stan_log_lik_simple_lpdf("hurdle_poisson", "log", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("hu", bterms))
-  sdist(lpdf, p$mu, p$hu)
+  sdist(lpdf, p$mu, p$hu, vec = FALSE)
 }
 
 stan_log_lik_hurdle_negbinomial <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   lpdf <- stan_log_lik_simple_lpdf("hurdle_neg_binomial", "log", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("hu", bterms))
-  sdist(lpdf, p$mu, p$shape, p$hu)
+  sdist(lpdf, p$mu, p$shape, p$hu, vec = FALSE)
 }
 
 stan_log_lik_hurdle_gamma <- function(bterms, resp = "", mix = "", ...) {
@@ -869,14 +933,14 @@ stan_log_lik_hurdle_gamma <- function(bterms, resp = "", mix = "", ...) {
   usc_logit <- stan_log_lik_dpar_usc_logit("hu", bterms)
   lpdf <- paste0("hurdle_gamma", usc_logit)
   # Stan uses shape-rate parameterization for gamma with rate = shape / mean
-  sdist(lpdf, p$shape, paste0(p$shape, " / ", p$mu), p$hu)
+  sdist(lpdf, p$shape, paste0(p$shape, " / ", p$mu), p$hu, vec = FALSE)
 }
 
 stan_log_lik_hurdle_lognormal <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   usc_logit <- stan_log_lik_dpar_usc_logit("hu", bterms)
   lpdf <- paste0("hurdle_lognormal", usc_logit)
-  sdist(lpdf, p$mu, p$sigma, p$hu)
+  sdist(lpdf, p$mu, p$sigma, p$hu, vec = FALSE)
 }
 
 stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
@@ -909,7 +973,7 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
     }
     str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
-  sdist(lpdf, p$mu, p$hu, p$disc, p$thres, p$Jthres)
+  sdist(lpdf, p$mu, p$hu, p$disc, p$thres, p$Jthres, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_poisson <- function(bterms, resp = "", mix = "",
@@ -917,7 +981,7 @@ stan_log_lik_zero_inflated_poisson <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   lpdf <- stan_log_lik_simple_lpdf("zero_inflated_poisson", "log", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("zi", bterms))
-  sdist(lpdf, p$mu, p$zi)
+  sdist(lpdf, p$mu, p$zi, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_negbinomial <- function(bterms, resp = "", mix = "",
@@ -925,7 +989,7 @@ stan_log_lik_zero_inflated_negbinomial <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   lpdf <- stan_log_lik_simple_lpdf("zero_inflated_neg_binomial", "log", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("zi", bterms))
-  sdist(lpdf, p$mu, p$shape, p$zi)
+  sdist(lpdf, p$mu, p$shape, p$zi, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_binomial <- function(bterms, resp = "", mix = "",
@@ -936,7 +1000,7 @@ stan_log_lik_zero_inflated_binomial <- function(bterms, resp = "", mix = "",
   lpdf <- "zero_inflated_binomial"
   lpdf <- stan_log_lik_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("zi", bterms))
-  sdist(lpdf, p$trials, p$mu, p$zi)
+  sdist(lpdf, p$trials, p$mu, p$zi, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_beta_binomial <- function(bterms, resp = "",
@@ -947,20 +1011,20 @@ stan_log_lik_zero_inflated_beta_binomial <- function(bterms, resp = "",
   p$trials <- paste0("trials", resp, n)
   lpdf <- "zero_inflated_beta_binomial"
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit("zi", bterms))
-  sdist(lpdf, p$trials, p$mu, p$phi, p$zi)
+  sdist(lpdf, p$trials, p$mu, p$phi, p$zi, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_beta <- function(bterms, resp = "", mix = "", ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   usc_logit <- stan_log_lik_dpar_usc_logit("zi", bterms)
   lpdf <- paste0("zero_inflated_beta", usc_logit)
-  sdist(lpdf, p$mu, p$phi, p$zi)
+  sdist(lpdf, p$mu, p$phi, p$zi, vec = FALSE)
 }
 
 stan_log_lik_zero_one_inflated_beta <- function(bterms, resp = "", mix = "",
                                                 ...) {
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
-  sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi)
+  sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "",
@@ -968,13 +1032,13 @@ stan_log_lik_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "",
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   usc_logit <- stan_log_lik_dpar_usc_logit("zi", bterms)
   lpdf <- paste0("zero_inflated_asym_laplace", usc_logit)
-  sdist(lpdf, p$mu, p$sigma, p$quantile, p$zi)
+  sdist(lpdf, p$mu, p$sigma, p$quantile, p$zi, vec = FALSE)
 }
 
 stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...) {
   family <- bterms$family
   no_loop <- isFALSE(family$loop)
-  if (no_loop && (stan_log_lik_adj(bterms) || nzchar(mix))) {
+  if (no_loop && (stan_log_lik_adj(bterms, mix = mix))) {
     stop2("This model requires evaluating the custom ",
           "likelihood as a loop over observations.")
   }
@@ -999,7 +1063,7 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
   vars <- paste0(var_names, var_resps, var_indices)
-  sdist(family$name, p[dpars], p$thres, vars)
+  sdist(family$name, p[dpars], p$thres, vars, vec = no_loop)
 }
 
 # ordinal log-probability density functions in Stan language
@@ -1393,9 +1457,12 @@ use_ordered_builtin <- function(bterms, link) {
 }
 
 # prepare distribution and arguments for use in Stan
-sdist <- function(dist, ..., shift = "") {
+# @param dist name of the distribution in Stan language
+# @param vec does the distribution have a vectorized version?
+# @param shift Stan code for shifting the likelihood in shifted_* families
+sdist <- function(dist, ..., vec = TRUE, shift = "") {
   args <- sargs(...)
-  structure(nlist(dist, args, shift), class = "sdist")
+  structure(nlist(dist, args, vec, shift), class = "sdist")
 }
 
 # prepare arguments for Stan likelihood statements

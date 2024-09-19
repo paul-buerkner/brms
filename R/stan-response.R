@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # Stan code for the response variables
-stan_response <- function(bframe, normalize) {
+stan_response <- function(bframe, threads, normalize, ...) {
   stopifnot(is.brmsframe(bframe))
   lpdf <- stan_lpdf_name(normalize)
   family <- bframe$family
@@ -135,24 +135,68 @@ stan_response <- function(bframe, normalize) {
   }
   if (is.formula(bframe$adforms$cens)) {
     str_add(out$data) <- glue(
-      "  array[N{resp}] int<lower=-1,upper=2> cens{resp};  // indicates censoring\n"
+      "  // censoring indicator: 0 = event, 1 = right, -1 = left, 2 = interval censored\n",
+      "  array[N{resp}] int<lower=-1,upper=2> cens{resp};\n"
     )
     str_add(out$pll_args) <- glue(", data array[] int cens{resp}")
     y2_expr <- get_ad_expr(bframe, "cens", "y2")
-    if (!is.null(y2_expr)) {
-      # interval censoring is required
+    is_interval_censored <- !is.null(y2_expr)
+    if (is_interval_censored) {
+      # some observations are interval censored
+      str_add(out$data) <- "  // right censor points for interval censoring\n"
       if (rtype == "int") {
         str_add(out$data) <- glue(
-          "  array[N{resp}] int rcens{resp};"
+          "  array[N{resp}] int rcens{resp};\n"
         )
         str_add(out$pll_args) <- glue(", data array[] int rcens{resp}")
       } else {
         str_add(out$data) <- glue(
-          "  vector[N{resp}] rcens{resp};"
+          "  vector[N{resp}] rcens{resp};\n"
         )
         str_add(out$pll_args) <- glue(", data vector rcens{resp}")
       }
-      str_add(out$data) <- "  // right censor points for interval censoring\n"
+    }
+    n <- stan_nn(threads)
+    cens_indicators_def <- glue(
+      "  // indices of censored data\n",
+      "  int Nevent{resp} = 0;\n",
+      "  int Nrcens{resp} = 0;\n",
+      "  int Nlcens{resp} = 0;\n",
+      "  int Nicens{resp} = 0;\n",
+      "  array[N{resp}] int Jevent{resp};\n",
+      "  array[N{resp}] int Jrcens{resp};\n",
+      "  array[N{resp}] int Jlcens{resp};\n",
+      "  array[N{resp}] int Jicens{resp};\n"
+    )
+    cens_indicators_comp <- glue(
+      "  // collect indices of censored data\n",
+      "  for (n in 1:N{resp}) {{\n",
+      stan_nn_def(threads),
+      "    if (cens{resp}{n} == 0) {{\n",
+      "      Nevent{resp} += 1;\n",
+      "      Jevent{resp}[Nevent{resp}] = n;\n",
+      "    }} else if (cens{resp}{n} == 1) {{\n",
+      "      Nrcens{resp} += 1;\n",
+      "      Jrcens{resp}[Nrcens{resp}] = n;\n",
+      "    }} else if (cens{resp}{n} == -1) {{\n",
+      "      Nlcens{resp} += 1;\n",
+      "      Jlcens{resp}[Nlcens{resp}] = n;\n",
+      "    }} else if (cens{resp}{n} == 2) {{\n",
+      "      Nicens{resp} += 1;\n",
+      "      Jicens{resp}[Nicens{resp}] = n;\n",
+      "    }}\n",
+      "  }}\n"
+    )
+    if (use_threading(threads)) {
+      # in threaded Stan code, gathering the indices has to be done on the fly
+      # inside the reduce_sum call since the indices are dependent on the slice
+      # of observations whose log likelihood is being evaluated
+      str_add(out$fun) <- "  #include 'fun_add_int.stan'\n"
+      str_add(out$pll_def) <- cens_indicators_def
+      str_add(out$model_comp_basic) <- cens_indicators_comp
+    } else {
+      str_add(out$tdata_def) <- cens_indicators_def
+      str_add(out$tdata_comp) <- cens_indicators_comp
     }
   }
   bounds <- bframe$frame$resp$bounds

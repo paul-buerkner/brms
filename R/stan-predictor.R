@@ -42,7 +42,7 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   out <- list()
-  str_add_list(out) <- stan_response(x, normalize = normalize)
+  str_add_list(out) <- stan_response(x, normalize = normalize, ...)
   valid_dpars <- valid_dpars(x)
   family_files <- family_info(x, "include")
   if (length(family_files)) {
