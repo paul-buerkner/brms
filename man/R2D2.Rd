@@ -65,11 +65,11 @@ set_prior(R2D2(mean_R2 = 0.8, prec_R2 = 10, main = TRUE), class = "b") +
 Zhang, Y. D., Naughton, B. P., Bondell, H. D., & Reich, B. J. (2020).
 Bayesian regression using a prior on the model fit: The R2-D2 shrinkage
 prior. Journal of the American Statistical Association.
-\url{https://arxiv.org/pdf/1609.00046.pdf}
+\url{https://arxiv.org/pdf/1609.00046}
 
 Aguilar J. E. & Bürkner P. C. (2022). Intuitive Joint Priors for Bayesian
 Linear Multilevel Models: The R2D2M2 prior. ArXiv preprint.
-\url{https://arxiv.org/pdf/2208.07132.pdf}
+\url{https://arxiv.org/pdf/2208.07132}
 }
 \seealso{
 \code{\link{set_prior}}
