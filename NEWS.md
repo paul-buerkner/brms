@@ -1,4 +1,4 @@
-# brms 2.21.0++
+# brms 2.22.0
 
 ### New Features
 
@@ -11,6 +11,7 @@ thanks to Noa Kallioinen. (#1354)
 * Vectorize censored log likelihoods in the Stan code when possible. (#1657)
 * Force Stan to activate threading without altering the Stan code
 via argument `force` of function `threading`. (#1549)
+* Support moment matching `loo` prediction methods. (#1674)
 
 ### Bug Fixes
 
@@ -19,11 +20,14 @@ thanks to Henrik Singmann. (#1651)
 * Fix problems with parallel executions of post-processing functions 
 sometimes leaving unused R instances behind. Thanks to Andrew Johnson,
 Aki Vehtari, and Noa Kallioinen. (#1658)
+* Fix several minor bugs. (#1648, #1644, #1672, #1642, #1634, #1666, #1664)
 
 ### Other Changes
 
 * Refactor some of the internal code base to avoid evaluating
 many data-dependent quantities several times. (#1653)
+* Smartly access internal functions when evaluating non-linear formulas. (#1635)
+* Improve the documentation in several places.
 * Make argument `loo` optional in `loo_moment_match`.
 * Change the output format of `loo_predict` and `loo_linpred` to be
 more consistent with other post-processing functions.
