@@ -717,9 +717,10 @@ stan_log_lik_exgaussian <- function(bterms, ...) {
 }
 
 stan_log_lik_inverse.gaussian <- function(bterms, ...) {
-  reqn <- stan_log_lik_adj(bterms) || is_pred_dpar(bterms, "shape")
+  is_pred_shape <- is_pred_dpar(bterms, "shape")
+  reqn <- stan_log_lik_adj(bterms) || is_pred_shape
   p <- stan_log_lik_dpars(bterms, reqn = reqn)
-  sdist("inv_gaussian", p$mu, p$shape, vec = FALSE)
+  sdist("inv_gaussian", p$mu, p$shape, vec = !is_pred_shape)
 }
 
 stan_log_lik_wiener <- function(bterms, ...) {
