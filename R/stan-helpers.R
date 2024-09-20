@@ -87,23 +87,19 @@ stan_cor_gen_comp <- function(cor, ncol) {
 
 # indicates if a family-link combination has a built in
 # function in Stan (such as binomial_logit)
+# @param bterms brmsterms object of the univariate model
 # @param family a list with elements 'family' and 'link'
 #   ideally a (brms)family object
-# @param bterms brmsterms object of the univariate model
-stan_has_built_in_fun <- function(family, bterms) {
-  stopifnot(all(c("family", "link") %in% names(family)))
+stan_has_built_in_fun <- function(bterms, family = NULL) {
   stopifnot(is.brmsterms(bterms))
+  family <- family %||% bterms$family
+  stopifnot(all(c("family", "link") %in% names(family)))
   link <- family[["link"]]
   dpar <- family[["dpar"]]
-  if (has_ad_terms(bterms, c("cens", "trunc"))) {
-    # only few families have special lcdf and lccdf functions
-    out <- has_built_in_fun(family, link, cdf = TRUE) ||
-      has_built_in_fun(bterms, link, dpar = dpar, cdf = TRUE)
-  } else {
-    out <- has_built_in_fun(family, link) ||
-      has_built_in_fun(bterms, link, dpar = dpar)
-  }
-  out
+  # only few families have special lcdf and lccdf functions
+  cdf <- has_ad_terms(bterms, c("cens", "trunc"))
+  has_built_in_fun(family, link, cdf = cdf) ||
+    has_built_in_fun(bterms, link, dpar = dpar, cdf = cdf)
 }
 
 # get all variable names accepted in Stan
