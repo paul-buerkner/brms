@@ -215,8 +215,7 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
     if (!is.null(ppc_args$lw)) {
       ppc_args$lw <- ppc_args$lw[, take]
     } else if (!is.null(ppc_args$psis_object)) {
-      # we only need the log weights so the rest can remain unchanged
-      ppc_args$psis_object$log_weights <- ppc_args$psis_object$log_weights[, take]
+      ppc_args$psis_object <- subset(ppc_args$psis_object, take)
     }
   }
 
