@@ -339,6 +339,11 @@ get_cens <- function(bterms, data, resp = NULL) {
   out
 }
 
+# indicates if the model may have interval censored observations
+has_interval_cens <- function(bterms) {
+  !is.null(get_ad_expr(bterms, "cens", "y2"))
+}
+
 # extract truncation boundaries
 # @param bterms a brmsterms object
 # @param data data.frame containing the truncation variables

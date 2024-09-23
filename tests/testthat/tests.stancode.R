@@ -1406,8 +1406,8 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   )
 
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = poisson())
-  expect_match2(scode, "target += poisson_lpmf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]]);")
-  expect_match2(scode, "poisson_lcdf(rcens[Jicens[1:Nicens]] | mu[Jicens[1:Nicens]])")
+  expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]);")
+  expect_match2(scode, "poisson_lcdf(rcens[n] | mu[n])")
 
   scode <- stancode(y | cens(x) ~ 1, dat, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile);")

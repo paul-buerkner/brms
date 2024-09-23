@@ -115,10 +115,12 @@ stan_log_lik_cens <- function(ll, bterms, threads, normalize, ...) {
   tp <- tp()
   has_weights <- has_ad_terms(bterms, "weights")
   has_trunc <- has_ad_terms(bterms, "trunc")
-  has_interval_cens <- cens$vars$y2 != "NA"
-  if (ll$vec && !(has_weights || has_trunc)) {
+  has_interval_cens <- has_interval_cens(bterms)
+  if (ll$vec && !(has_interval_cens || has_weights || has_trunc)) {
     # vectorized log-likelihood contributions
-    types <- c("event", "rcens", "lcens", "icens")
+    # cannot vectorize over interval censored observations as
+    # vectorized lpdf functions return scalars not vectors (#1657)
+    types <- c("event", "rcens", "lcens")
     J <- args <- named_list(types)
     for (t in types) {
       Jt <- glue("J{t}{resp}[1:N{t}{resp}]")
@@ -137,15 +139,6 @@ stan_log_lik_cens <- function(ll, bterms, threads, normalize, ...) {
       "{tp}{ll$dist}_lccdf(Y{resp}{J$rcens}{ll$shift} | {args$rcens});\n",
       "{tp}{ll$dist}_lcdf(Y{resp}{J$lcens}{ll$shift} | {args$lcens});\n"
     )
-    if (has_interval_cens) {
-      rcens <- glue("rcens{resp}")
-      str_add(out) <- glue(
-        "{tp}log_diff_exp(\n",
-        "    {ll$dist}_lcdf(rcens{resp}{J$icens}{ll$shift} | {args$icens}),\n",
-        "    {ll$dist}_lcdf(Y{resp}{J$icens}{ll$shift} | {args$icens})\n",
-        "  );\n"
-      )
-    }
   } else {
     # non-vectorized likelihood contributions
     n <- stan_nn(threads)
@@ -219,8 +212,7 @@ stan_log_lik_mix <- function(ll, bterms, pred_mix_prob, threads,
       "      ps[{mix}] = {theta} + ",
       "{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
     )
-    has_interval_cens <- cens$vars$y2 != "NA"
-    if (has_interval_cens) {
+    if (has_interval_cens(bterms)) {
       str_add(out) <- glue(
         "    }} else if (cens{resp}{n} == 2) {{\n",
         "      ps[{mix}] = {theta} + log_diff_exp(\n",
