@@ -30,8 +30,6 @@ information on the priors used in the model.}
 
 \item{\code{model}}{The model code in \pkg{Stan} language.}
 
-\item{\code{ranef}}{A \code{data.frame} containing the group-level structure.}
-
 \item{\code{exclude}}{The names of the parameters for which draws are not saved.}
 
 \item{\code{algorithm}}{The name of the algorithm used to fit the model.}
@@ -65,6 +63,8 @@ which the model was fitted.}
 
 \item{\code{autocor}}{(Deprecated) An \code{\link{cor_brms}} object containing
 the autocorrelation structure if specified.}
+
+\item{\code{ranef}}{(Deprecated) A \code{data.frame} containing the group-level structure.}
 
 \item{\code{cov_ranef}}{(Deprecated) A \code{list} of customized group-level
 covariance matrices.}

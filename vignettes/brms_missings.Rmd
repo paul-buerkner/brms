@@ -7,8 +7,8 @@ output:
     toc: yes
 vignette: >
   %\VignetteIndexEntry{Handle Missing Values with brms}
-  %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
+  %\VignetteEngine{knitr::rmarkdown}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
@@ -70,7 +70,8 @@ the variables' characteristics.
 
 ```{r}
 library(mice)
-imp <- mice(nhanes, m = 5, print = FALSE)
+m <- 5
+imp <- mice(nhanes, m = m, print = FALSE)
 ```
 
 Now, we have `m = 5` imputed data sets stored within the `imp` object. In
@@ -113,10 +114,17 @@ plot(fit_imp1, variable = "^b", regex = TRUE)
 
 Such non-overlaying chains imply high `Rhat` values without there actually being
 any convergence issue. Accordingly, we have to investigate the convergence of
-the submodels separately, which we can do by looking at
+the submodels separately, which we can do for example via:
 
 ```{r}
-round(fit_imp1$rhats, 2)
+library(posterior)
+draws <- as_draws_array(fit_imp1)
+# every dataset has nc = 2 chains in this example
+nc <- nchains(fit_imp1) / m
+draws_per_dat <- lapply(1:m, 
+  \(i) subset_draws(draws, chain = ((i-1)*nc+1):(i*nc))
+)
+lapply(draws_per_dat, summarise_draws, default_convergence_measures())
 ```
 
 The convergence of each of the submodels looks good. Accordingly, we can proceed

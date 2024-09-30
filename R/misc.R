@@ -167,6 +167,9 @@ subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
+# not-in operator
+"%notin%" <- Negate("%in%")
+
 # convert array to list of elements with reduced dimension
 # @param x an arrary of dimension d
 # @return a list of arrays of dimension d-1
@@ -251,6 +254,15 @@ isNA <- function(x) {
 
 is_equal <- function(x, y, check.attributes = FALSE, ...) {
   isTRUE(all.equal(x, y, check.attributes = check.attributes, ...))
+}
+
+# extract factor levels from an arbitrary variable
+extract_levels <- function(x) {
+  # do not check for NAs according to #1355
+  if (!is.factor(x)) {
+    x <- factor(x)
+  }
+  levels(x)
 }
 
 # check if 'x' will behave like a factor in design matrices
@@ -420,6 +432,19 @@ plapply <- function(X, FUN, cores = 1, ...) {
       on.exit(parallel::stopCluster(cl))
       out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
     }
+    # The version below hopefully prevents the spawning of zombies
+    # but it does not always succeed in that. It also seems to cause
+    # other issues as discussed in #1658, so commented out for now.
+    # cl_type <- ifelse(os_is_windows(), "PSOCK", "FORK")
+    # cl <- parallel::makeCluster(cores, type = cl_type)
+    # # Register a cleanup for the cluster in case the function fails
+    # # Need to wrap in a tryCatch to avoid error if cluster is already stopped
+    # on.exit(tryCatch(
+    #   { parallel::stopCluster(cl) },
+    #   error = function(e) invisible(NULL)
+    # ))
+    # out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
+    # parallel::stopCluster(cl)
   }
   out
 }
@@ -590,7 +615,8 @@ rename <- function(x, pattern = NULL, replacement = NULL,
   dup <- duplicated(out)
   if (check_dup && any(dup)) {
     dup <- x[out %in% out[dup]]
-    stop2("Internal renaming led to duplicated names. \n",
+    stop2("Internal renaming led to duplicated names. ",
+          "Consider renaming your variables to have different suffixes.\n",
           "Occured for: ", collapse_comma(dup))
   }
   out

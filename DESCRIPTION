@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.21.0
-Date: 2024-03-18
+Version: 2.22.1
+Date: 2024-09-24
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -26,8 +26,8 @@ Depends:
 Imports:
     rstan (>= 2.29.0),
     ggplot2 (>= 2.0.0),
-    loo (>= 2.3.1),
-    posterior (>= 1.0.0),
+    loo (>= 2.8.0),
+    posterior (>= 1.6.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
     rstantools (>= 2.1.1),
@@ -52,6 +52,7 @@ Suggests:
     emmeans (>= 1.4.2),
     cmdstanr (>= 0.5.0),
     projpred (>= 2.0.0),
+    priorsense (>= 1.0.0),
     shinystan (>= 2.4.0),
     splines2 (>= 0.5.0),
     RWiener,
@@ -93,11 +94,11 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
 LazyData: true
 NeedsCompilation: no
 License: GPL-2
-URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, https://paul-buerkner.github.io/brms/
+URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, https://paulbuerkner.com/brms/
 BugReports: https://github.com/paul-buerkner/brms/issues
 Additional_repositories:
-    https://mc-stan.org/r-packages/
+    https://stan-dev.r-universe.dev/
 VignetteBuilder:
     knitr,
     R.rsp
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

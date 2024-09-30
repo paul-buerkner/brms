@@ -284,12 +284,12 @@ get_uni_me <- function(x) {
 }
 
 # save all me-terms within a tidy data.frame
-tidy_meef <- function(bterms, data, old_levels = NULL) {
-  uni_me <- get_uni_me(bterms)
+frame_me <- function(x, data, old_levels = NULL) {
+  uni_me <- get_uni_me(x)
   if (!length(uni_me)) {
-    return(empty_meef())
+    return(empty_meframe())
   }
-  if (has_subset(bterms)) {
+  if (has_subset(x)) {
     # 'Xme' variables need to be the same across univariate models
     stop2("Argument 'subset' is not supported when using 'me' terms.")
   }
@@ -297,41 +297,47 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
     term = uni_me, xname = "", grname = "",
     stringsAsFactors = FALSE
   )
-  levels <- vector("list", nrow(out))
+  unique_grnames <- unique(out$grname)
+  levels <- named_list(unique_grnames)
   for (i in seq_rows(out)) {
     tmp <- eval2(out$term[i])
     out$xname[i] <- tmp$term
     if (isTRUE(nzchar(tmp$gr))) {
       out$grname[i] <- tmp$gr
-      if (length(old_levels)) {
-        levels[[i]] <- old_levels[[tmp$gr]]
-      } else {
-        levels[[i]] <- extract_levels(get(tmp$gr, data))
+      if (is.null(levels[[tmp$gr]])) {
+        levels[[tmp$gr]] <- extract_levels(get(tmp$gr, data))
       }
     }
   }
   out$coef <- rename(paste0("me", out$xname))
-  out$cor <- isTRUE(bterms$mecor)
-  names(levels) <- out$grname
-  levels <- levels[lengths(levels) > 0L]
-  if (length(levels)) {
-    levels <- levels[!duplicated(names(levels))]
-    attr(out, "levels") <- levels
+  out$cor <- isTRUE(x$mecor)
+  if (!is.null(old_levels)) {
+    # for newdata numeration has to depend on the original levels
+    set_levels(out) <- old_levels[[unique_grnames]]
+    set_levels(out, "used") <- levels
+  } else {
+    set_levels(out) <- levels
   }
-  structure(out, class = c("meef_frame", "data.frame"))
+  class(out) <- meframe_class()
+  out
 }
 
-empty_meef <- function() {
+empty_meframe <- function() {
   out <- data.frame(
     term = character(0), xname = character(0),
     grname = character(0), cor = logical(0),
     stringsAsFactors = FALSE
   )
-  structure(out, class = c("meef_frame", "data.frame"))
+  class(out) <- meframe_class()
+  out
 }
 
-is.meef_frame <- function(x) {
-  inherits(x, "meef_frame")
+meframe_class <- function() {
+  c("meframe", "data.frame")
+}
+
+is.meframe <- function(x) {
+  inherits(x, "meframe")
 }
 
 # handle default of correlations between 'me' terms
@@ -350,7 +356,7 @@ get_sp_vars <- function(x, type) {
 # @param data data frame containing the monotonic variables
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
-tidy_spef <- function(x, data) {
+frame_sp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -442,21 +448,30 @@ tidy_spef <- function(x, data) {
   not_one <- apply(mm, 2, function(x) any(x != 1))
   cumsum_not_one <- cumsum(not_one)
   out$Ic <- ifelse(not_one, cumsum_not_one, 0)
+  class(out) <- spframe_class()
   out
 }
 
+spframe_class <- function() {
+  c("spframe", "data.frame")
+}
+
+is.spframe <- function(x) {
+  inherits(x, "spframe")
+}
+
 # extract names of monotonic simplex parameters
-# @param spef output of tidy_spef
+# @param spframe output of frame_sp
 # @param use_id use the 'id' argument to construct simo labels?
-# @return a character vector of length nrow(spef)
-get_simo_labels <- function(spef, use_id = FALSE) {
-  out <- named_list(spef$term)
-  I <- which(lengths(spef$Imo) > 0)
+# @return a character vector of length nrow(spframe)
+get_simo_labels <- function(spframe, use_id = FALSE) {
+  out <- named_list(spframe$term)
+  I <- which(lengths(spframe$Imo) > 0)
   for (i in I) {
     # use the ID as label if specified
     out[[i]] <- ifelse(
-      use_id & !is.na(spef$ids_mo[[i]]), spef$ids_mo[[i]],
-      paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+      use_id & !is.na(spframe$ids_mo[[i]]), spframe$ids_mo[[i]],
+      paste0(spframe$coef[i], seq_along(spframe$Imo[[i]]))
     )
   }
   unlist(out)

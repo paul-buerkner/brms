@@ -70,7 +70,7 @@ compile_model <- function(model, backend, ...) {
   if (silent < 2) {
     message("Compiling Stan program...")
   }
-  if (use_threading(threads)) {
+  if (use_threading(threads, force = TRUE)) {
     if (utils::packageVersion("rstan") >= "2.26") {
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
@@ -100,7 +100,7 @@ compile_model <- function(model, backend, ...) {
   # if (cmdstanr::cmdstan_version() >= "2.29.0") {
   #   .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
   # }
-  if (use_threading(threads)) {
+  if (use_threading(threads, force = TRUE)) {
     args$cpp_options$stan_threads <- TRUE
   }
   if (use_opencl(opencl)) {
@@ -147,7 +147,7 @@ fit_model <- function(model, backend, ...) {
                              seed, control, silent, future, ...) {
 
   # some input checks and housekeeping
-  if (use_threading(threads)) {
+  if (use_threading(threads, force = TRUE)) {
     if (utils::packageVersion("rstan") >= "2.26") {
       threads_per_chain_def <- rstan::rstan_options("threads_per_chain")
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
@@ -166,6 +166,7 @@ fit_model <- function(model, backend, ...) {
   } else if (is.character(init) && !init %in% c("random", "0")) {
     init <- get(init, mode = "function", envir = parent.frame())
   }
+  future <- future && algorithm %in% "sampling"
   args <- nlist(
     object = model, data = sdata, iter, seed,
     init = init, pars = exclude, include = FALSE
@@ -187,7 +188,7 @@ fit_model <- function(model, backend, ...) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
-      futures <- fits <- vector("list", chains)
+      out <- futures <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_id <- i
         if (is.list(init)) {
@@ -200,10 +201,10 @@ fit_model <- function(model, backend, ...) {
         )
       }
       for (i in seq_len(chains)) {
-        fits[[i]] <- future::value(futures[[i]])
+        out[[i]] <- future::value(futures[[i]])
       }
-      out <- rstan::sflist2stanfit(fits)
-      rm(futures, fits)
+      out <- rstan::sflist2stanfit(out)
+      rm(futures)
     } else {
       c(args) <- nlist(chains, cores)
       out <- do_call(rstan::sampling, args)
@@ -239,9 +240,7 @@ fit_model <- function(model, backend, ...) {
   } else if (is_equal(init, "0")) {
     init <- 0
   }
-  if (future) {
-    stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
-  }
+  future <- future && algorithm %in% "sampling"
   args <- nlist(data = sdata, seed, init)
   if (use_opencl(opencl)) {
     args$opencl_ids <- opencl$ids
@@ -266,6 +265,7 @@ fit_model <- function(model, backend, ...) {
   if (silent < 2) {
     message("Start sampling")
   }
+  use_threading <- use_threading(threads, force = TRUE)
   if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(
       iter_sampling = iter - warmup,
@@ -276,23 +276,46 @@ fit_model <- function(model, backend, ...) {
       show_exceptions = silent == 0,
       fixed_param = algorithm == "fixed_param"
     )
-    if (use_threading(threads)) {
+    if (use_threading) {
       args$threads_per_chain <- threads$threads
     }
-    out <- do_call(model$sample, args)
+    if (future) {
+      if (cores > 1L) {
+        warning2("Argument 'cores' is ignored when using 'future'.")
+      }
+      args$chains <- 1L
+      out <- futures <- vector("list", chains)
+      for (i in seq_len(chains)) {
+        args$chain_ids <- i
+        if (is.list(init)) {
+          args$init <- init[i]
+        }
+        futures[[i]] <- future::future(
+          brms::do_call(model$sample, args),
+          packages = "cmdstanr",
+          seed = TRUE
+        )
+      }
+      for (i in seq_len(chains)) {
+        out[[i]] <- future::value(futures[[i]])
+      }
+      rm(futures)
+    } else {
+      out <- do_call(model$sample, args)
+    }
   } else if (algorithm %in% c("fullrank", "meanfield")) {
     c(args) <- nlist(iter, algorithm)
-    if (use_threading(threads)) {
+    if (use_threading) {
       args$threads <- threads$threads
     }
     out <- do_call(model$variational, args)
   } else if (algorithm %in% c("pathfinder")) {
-    if (use_threading(threads)) {
+    if (use_threading) {
       args$num_threads <- threads$threads
     }
     out <- do_call(model$pathfinder, args)
   } else if (algorithm %in% c("laplace")) {
-    if (use_threading(threads)) {
+    if (use_threading) {
       args$threads <- threads$threads
     }
     out <- do_call(model$laplace, args)
@@ -300,8 +323,18 @@ fit_model <- function(model, backend, ...) {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
 
+  if (future) {
+    # 'out' is a list of fitted models
+    output_files <- ulapply(out, function(x) x$output_files())
+    stan_variables <- out[[1]]$metadata()$stan_variables
+  } else {
+    # 'out' is a single fitted model
+    output_files <- out$output_files()
+    stan_variables <- out$metadata()$stan_variables
+  }
+
   out <- read_csv_as_stanfit(
-    out$output_files(), variables = out$metadata()$stan_variables,
+    output_files, variables = stan_variables,
     model = model, exclude = exclude, algorithm = algorithm
   )
 
@@ -455,6 +488,10 @@ require_backend <- function(backend, x) {
 #'   \code{reduce_sum}? Defaults to \code{FALSE}. Setting it to \code{TRUE}
 #'   is required to achieve exact reproducibility of the model results
 #'   (if the random seed is set as well).
+#' @param force Logical. Defaults to \code{FALSE}. If \code{TRUE}, this will
+#'   force the Stan model to compile with threading enabled without altering the
+#'   Stan code generated by brms. This can be useful if your own custom Stan
+#'   functions use threading internally.
 #'
 #' @return A \code{brmsthreads} object which can be passed to the
 #'   \code{threads} argument of \code{brm} and related functions.
@@ -483,7 +520,8 @@ require_backend <- function(backend, x) {
 #' }
 #'
 #' @export
-threading <- function(threads = NULL, grainsize = NULL, static = FALSE) {
+threading <- function(threads = NULL, grainsize = NULL, static = FALSE,
+                      force = FALSE) {
   out <- list(threads = NULL, grainsize = NULL)
   class(out) <- "brmsthreads"
   if (!is.null(threads)) {
@@ -501,6 +539,7 @@ threading <- function(threads = NULL, grainsize = NULL, static = FALSE) {
     out$grainsize <- grainsize
   }
   out$static <- as_one_logical(static)
+  out$force <- as_one_logical(force)
   out
 }
 
@@ -523,8 +562,14 @@ validate_threads <- function(threads) {
 }
 
 # is threading activated?
-use_threading <- function(threads) {
-  isTRUE(validate_threads(threads)$threads > 0)
+use_threading <- function(threads, force = FALSE) {
+  threads <- validate_threads(threads)
+  out <- isTRUE(threads$threads > 0)
+  if (!force) {
+    # Stan code will only be altered in non-forced mode
+    out <- out && !isTRUE(threads$force)
+  }
+  out
 }
 
 #' GPU support in Stan via OpenCL
@@ -799,6 +844,9 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     diagnostics <- as.data.frame(matrix(nrow = nrow(samples), ncol = 0))
   }
 
+  # some diagnostics may be missing in the output depending on the algorithm
+  rstan_diagn_order <- intersect(rstan_diagn_order, names(diagnostics))
+
   # convert to regular data.frame
   samples <- as.data.frame(samples)
   chain_ids <- samples$.chain
@@ -976,8 +1024,10 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   }
 
   # @stanmodel
+  cxxdso_class <- "cxxdso"
+  attr(cxxdso_class, "package") <- "rstan"
   null_dso <- new(
-    "cxxdso", sig = list(character(0)), dso_saved = FALSE,
+    cxxdso_class, sig = list(character(0)), dso_saved = FALSE,
     dso_filename = character(0), modulename = character(0),
     system = R.version$system, cxxflags = character(0),
     .CXXDSOMISC = new.env(parent = emptyenv())

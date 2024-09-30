@@ -62,11 +62,10 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, basis = NULL, ...) {
+data_response.mvbrmsframe <- function(x, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    bs <- basis$resps[[x$responses[i]]]
-    c(out) <- data_response(x$terms[[i]], basis = bs, ...)
+    c(out) <- data_response(x$terms[[i]], ...)
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -76,15 +75,15 @@ data_response.mvbrmsterms <- function(x, basis = NULL, ...) {
 }
 
 #' @export
-data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    internal = FALSE, basis = NULL, ...) {
+data_response.brmsframe <- function(x, data, check_response = TRUE,
+                                    internal = FALSE, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
   # TODO: rename 'Y' to 'y'
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family)) {
-    bin_levels <- basis$resp_levels
+    bin_levels <- x$basis$resp_levels
     if (is.null(bin_levels)) {
       bin_levels <- levels(as.factor(out$Y))
     }
@@ -101,7 +100,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$Y <- as.integer(as_factor(out$Y, levels = bin_levels)) - 1
   }
   if (is_categorical(x$family)) {
-    out$Y <- as.integer(as_factor(out$Y, levels = basis$resp_levels))
+    out$Y <- as.integer(as_factor(out$Y, levels = x$basis$resp_levels))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
     diff <- ifelse(has_extra_cat(x$family), 1L, 0L)
@@ -172,6 +171,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   }
 
   # data for addition arguments of the response
+  # TODO: replace is.formula(x$adforms$term) pattern with has_ad_terms()
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
       stop2("Specifying 'trials' is required for this model.")
@@ -328,10 +328,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$cens <- as.array(cens)
     icens <- cens %in% 2
-    y2_expr <- get_ad_expr(x, "cens", "y2")
-    if (any(icens) || !is.null(y2_expr)) {
+    if (any(icens) || has_interval_cens(x)) {
       # interval censoring is required
-      # check for 'y2' above as well to prevent issue #1367
       y2 <- unname(get_ad_values(x, "cens", "y2", data))
       if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")
@@ -444,19 +442,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
 }
 
 # data specific for mixture models
-data_mixture <- function(bterms, data2, prior) {
-  stopifnot(is.brmsterms(bterms))
+data_mixture <- function(bframe, data2, prior) {
+  stopifnot(is.brmsterms(bframe))
   out <- list()
-  if (is.mixfamily(bterms$family)) {
-    families <- family_names(bterms$family)
-    dp_classes <- dpar_class(names(c(bterms$dpars, bterms$fdpars)))
+  if (is.mixfamily(bframe$family)) {
+    families <- family_names(bframe$family)
+    dp_classes <- dpar_class(names(c(bframe$dpars, bframe$fdpars)))
     if (!any(dp_classes %in% "theta")) {
       # estimate mixture probabilities directly
-      take <- find_rows(prior, class = "theta", resp = bterms$resp)
+      take <- find_rows(prior, class = "theta", resp = bframe$resp)
       theta_prior <- prior$prior[take]
       con_theta <- eval_dirichlet(theta_prior, length(families), data2)
       out$con_theta <- as.array(con_theta)
-      p <- usc(combine_prefix(bterms))
+      p <- usc(combine_prefix(bframe))
       names(out) <- paste0(names(out), p)
     }
   }
@@ -464,20 +462,40 @@ data_mixture <- function(bterms, data2, prior) {
 }
 
 # data for the baseline functions of Cox models
-data_bhaz <- function(bterms, data, data2, prior, basis = NULL) {
+data_bhaz <- function(bframe, data, data2, prior) {
   out <- list()
-  if (!is_cox(bterms$family)) {
+  if (!is_cox(bframe$family)) {
     return(out)
   }
-  y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
-  args <- bterms$family$bhaz
-  bs <- basis$basis_matrix
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs)
-  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
+  y <- bframe$frame$resp$values
+  bhaz <- family_info(bframe, "bhaz")
+  bs <- bframe$basis$bhaz$basis_matrix
+  out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
+  out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
-  sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bterms$resp)
-  con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
-  out$con_sbhaz <- as.array(con_sbhaz)
+  groups <- bhaz$groups
+  if (!is.null(groups)) {
+    out$ngrbhaz <- length(groups)
+    gr <- get_ad_values(bframe, "bhaz", "gr", data)
+    gr <- factor(rename(gr), levels = groups)
+    out$Jgrbhaz <- match(gr, groups)
+    out$con_sbhaz <- matrix(nrow = out$ngrbhaz, ncol = out$Kbhaz)
+    sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bframe$resp)
+    sbhaz_prior_global <- subset2(sbhaz_prior, group = "")
+    con_sbhaz_global <- eval_dirichlet(sbhaz_prior_global$prior, out$Kbhaz, data2)
+    for (k in seq_along(groups)) {
+      sbhaz_prior_group <- subset2(sbhaz_prior, group = groups[k])
+      if (nzchar(sbhaz_prior_group$prior)) {
+        out$con_sbhaz[k, ] <- eval_dirichlet(sbhaz_prior_group$prior, out$Kbhaz, data2)
+      } else {
+        out$con_sbhaz[k, ] <- con_sbhaz_global
+      }
+    }
+  } else {
+    sbhaz_prior <- subset2(prior, class = "sbhaz", resp = bframe$resp)
+    con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
+    out$con_sbhaz <- as.array(con_sbhaz)
+  }
   out
 }
 
@@ -503,9 +521,6 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
   }
   stopifnot(is.list(args))
   args$x <- y
-  if (!is.null(args$intercept)) {
-    args$intercept <- as_one_logical(args$intercept)
-  }
   if (is.null(args$Boundary.knots)) {
     # avoid 'knots' outside 'Boundary.knots' error (#1143)
     # we also need a smaller lower boundary knot to avoid lp = -Inf
@@ -521,6 +536,29 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
     out <- do_call(splines2::iSpline, args)
   } else {
     out <- do_call(splines2::mSpline, args)
+  }
+  out
+}
+
+# extract baseline hazard information from data for storage in the model family
+# @return a named list with elements:
+#  args: arguments that can be passed to bhaz_basis_matrix
+#  groups: optional names of the groups for which to stratify
+extract_bhaz <- function(x, data) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x), is_cox(x))
+  if (is.null(x$adforms)) {
+    x$adforms <- terms_ad(x$formula, x$family)
+  }
+  out <- list()
+  if (is.null(x$adforms$bhaz)) {
+    # bhaz is an optional addition term so defaults need to be listed here too
+    out$args <- list(df = 5, intercept = TRUE)
+  } else {
+    out$args <- eval_rhs(x$adforms$bhaz)$flags
+    gr <- get_ad_values(x, "bhaz", "gr", data)
+    if (!is.null(gr)) {
+      out$groups <- rename(levels(factor(gr)))
+    }
   }
   out
 }
@@ -551,7 +589,6 @@ extract_cat_names <- function(x, data) {
 # @return a data.frame with columns 'thres' and 'group'
 extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
-
   if (is.null(x$adforms)) {
     x$adforms <- terms_ad(x$formula, x$family)
   }
@@ -610,7 +647,7 @@ extract_thres_names <- function(x, data) {
   data.frame(thres, group, stringsAsFactors = FALSE)
 }
 
-# extract threshold names from the response values
+# extract number of thresholds from the response values
 # @param formula with the response on the LHS
 # @param data a data.frame from which to extract responses
 # @param extra_cat is the first category an extra (hurdle) category?

@@ -1,6 +1,6 @@
 source("setup_tests_local.R")
 
-test_that("Multivariate GAMMs work correctly", {
+test_that("Multivariate GAMMs work correctly", suppressWarnings({
   set.seed(4312)
   n <- 200
   sig <- 2
@@ -28,9 +28,9 @@ test_that("Multivariate GAMMs work correctly", {
                      x2 = (0:30)/30, x3 = (0:30)/30)
   prfi <- cbind(predict(fit_gam, newd), fitted(fit_gam, newdata = newd))
   expect_range(prfi[, 1], prfi[, 5] - 0.25, prfi[, 5] + 0.25)
-})
+}))
 
-test_that("GAMMs with factor variable in 'by' work correctly", {
+test_that("GAMMs with factor variable in 'by' work correctly", suppressWarnings({
   set.seed(7)
   dat <- mgcv::gamSim(4, n = 200, dist = "normal")
   fit_gam2 <- brm(y ~ fac + s(x2, by = fac, k = 4), dat,
@@ -51,9 +51,9 @@ test_that("GAMMs with factor variable in 'by' work correctly", {
   cs <- conditional_smooths(fit_gam3, too_far = 0.1)
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
   expect_ggplot(plot(cs, rug = TRUE, stype = "raster", ask = FALSE)[[1]])
-})
+}))
 
-test_that("generalized extreme value models work correctly", {
+test_that("generalized extreme value models work correctly", suppressWarnings({
   data(fremantle, package = "ismev")
   fremantle <- transform(fremantle, cYear = Year - median(Year))
   knots <- with(
@@ -78,10 +78,9 @@ test_that("generalized extreme value models work correctly", {
   # expect_range(loo(fit_gev)$estimates[3, 1], -115, -95)
   ce <- conditional_effects(fit_gev, "cYear")
   expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
-})
+}))
 
-
-test_that("Wiener diffusion models work correctly", {
+test_that("Wiener diffusion models work correctly", suppressWarnings({
   set.seed(312)
   x <- rnorm(100, mean = 1)
   dat <- rwiener(n = 1, alpha = 2, tau = .3, beta = .5, delta = .5 + x)
@@ -105,9 +104,9 @@ test_that("Wiener diffusion models work correctly", {
 
   waic_d <- WAIC(fit_d1, fit_d2)
   expect_equal(dim(waic_d$ic_diffs__), c(1, 2))
-})
+}))
 
-test_that("disc parameter in ordinal models is handled correctly", {
+test_that("disc parameter in ordinal models is handled correctly", suppressWarnings({
   fit <- brm(
     bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
     data = inhaler, family = cumulative(),
@@ -122,9 +121,10 @@ test_that("disc parameter in ordinal models is handled correctly", {
     conditional_effects(fit), ask = FALSE,
     points = TRUE, point_args = list(width = 0.3)
   )[[3]])
-})
+}))
 
-test_that("Argument `incl_thres` works correctly for non-grouped thresholds", {
+test_that("Argument `incl_thres` works correctly for non-grouped thresholds",
+          suppressWarnings({
   fit <- brm(
     bf(rating ~ period + carry + treat + (1|subject)),
     data = inhaler, family = cumulative(),
@@ -140,9 +140,9 @@ test_that("Argument `incl_thres` works correctly for non-grouped thresholds", {
     thres_minus_eta_ch, dim = c(nrow(thres), ncol(eta), ncol(thres))
   )
   expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
-})
+}))
 
-test_that("hurdle_cumulative family works correctly", {
+test_that("hurdle_cumulative family works correctly", suppressWarnings({
   inhaler2 <- inhaler
   inhaler2$rating[1:10] <- 0
   fit <- brm(
@@ -159,9 +159,9 @@ test_that("hurdle_cumulative family works correctly", {
     SW(conditional_effects(fit)), ask = FALSE,
     points = TRUE, point_args = list(width = 0.3)
   )[[3]])
-})
+}))
 
-test_that("Mixture models work correctly", {
+test_that("Mixture models work correctly", suppressWarnings({
   set.seed(12346)
   dat <- data.frame(
     y = c(rnorm(300), rnorm(100, 6), rnorm(200, 12)),
@@ -219,13 +219,13 @@ test_that("Mixture models work correctly", {
   #   loo1$estimates[3, 1] - 20, loo1$estimates[3, 1] + 20
   # )
   # expect_equal(dim(pp_mixture(fit3)), c(nobs(fit3), 4, 3))
-})
+}))
 
-test_that("Gaussian processes work correctly", {
+test_that("Gaussian processes work correctly", suppressWarnings({
   ## Basic GPs
   set.seed(1112)
   dat <- mgcv::gamSim(1, n = 30, scale = 2)
-  fit1 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat,
+  fit1 <- brm(y ~ gp(x0) + x1 + gp(x2, cov = "matern32") + x3, dat,
               chains = 2, refresh = 0)
   print(fit1)
   expect_ggplot(pp_check(fit1))
@@ -233,7 +233,7 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
-  # multivariate GPs
+  # multivariate isotropic GPs
   fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, refresh = 0)
   print(fit2)
   expect_ggplot(pp_check(fit2))
@@ -244,31 +244,45 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit2)$estimates[3, 1], 100, 200)
 
-  # GP with continuous 'by' variable
-  fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2, refresh = 0)
+  # multivariate non-isotropic GPs
+  fit3 <- brm(y ~ gp(x1, x2, iso = FALSE, cov = "matern32"),
+              data = dat, chains = 2, refresh = 0)
   print(fit3)
   expect_ggplot(pp_check(fit3))
-  ce <- conditional_effects(fit3, ndraws = 200, nug = 1e-07)
+  ce <- conditional_effects(
+    fit3, ndraws = 200, nug = 1e-07,
+    surface = TRUE, resolution = 10
+  )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
+  expect_range(WAIC(fit3)$estimates[3, 1], 70, 130)
 
-  # GP with factor 'by' variable
-  dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
-  fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, refresh = 0)
+  # GP with continuous 'by' variable
+  fit4 <- brm(y ~ gp(x1, by = x2, cov = "matern52"), dat,
+              chains = 2, refresh = 0)
   print(fit4)
   expect_ggplot(pp_check(fit4))
   ce <- conditional_effects(fit4, ndraws = 200, nug = 1e-07)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
-})
+  expect_range(WAIC(fit4)$estimates[3, 1], 100, 200)
 
-test_that("Approximate Gaussian processes work correctly", {
+  # GP with factor 'by' variable
+  dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
+  fit5 <- brm(y ~ gp(x2, by = fac, cov = "exponential"), dat2,
+              chains = 2, refresh = 0)
+  print(fit5)
+  expect_ggplot(pp_check(fit5))
+  ce <- conditional_effects(fit5, ndraws = 200, nug = 1e-07)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
+  expect_range(WAIC(fit5)$estimates[3, 1], 400, 600)
+}))
+
+test_that("Approximate Gaussian processes work correctly", suppressWarnings({
   set.seed(1245)
   dat <- mgcv::gamSim(4, n = 200, scale = 2)
 
   # isotropic approximate GP
   fit1 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4),
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, cov = "matern32"),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
@@ -281,9 +295,10 @@ test_that("Approximate Gaussian processes work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit1)$estimates[3, 1], 900, 1000)
 
-  # non isotropic approximate GP
+  # non-isotropic approximate GP
   fit2 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE),
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE,
+           cov = "matern52"),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
@@ -295,4 +310,4 @@ test_that("Approximate Gaussian processes work correctly", {
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit2)$estimates[3, 1], 870, 970)
-})
+}))

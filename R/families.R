@@ -56,7 +56,6 @@
 #'   category is used as the reference. If \code{NA}, all categories will be
 #'   predicted, which requires strong priors or carefully specified predictor
 #'   terms in order to lead to an identified model.
-#' @param bhaz Currently for experimental purposes only.
 #'
 #' @details
 #'   Below, we list common use cases for the different families.
@@ -199,7 +198,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_alpha = "identity",
                        link_quantile = "logit",
                        threshold = "flexible",
-                       refcat = NULL, bhaz = NULL) {
+                       refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily(
     family, link = link, slink = slink,
@@ -212,8 +211,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
-    threshold = threshold, refcat = refcat,
-    bhaz = bhaz
+    threshold = threshold, refcat = refcat
   )
 }
 
@@ -227,7 +225,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
 # @return an object of 'brmsfamily' which inherits from 'family'
 .brmsfamily <- function(family, link = NULL, slink = link,
                         threshold = "flexible",
-                        refcat = NULL, bhaz = NULL, ...) {
+                        refcat = NULL, ...) {
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
   pattern <- c("^normal$", "^zi_", "^hu_")
@@ -298,23 +296,6 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     } else if (!is.null(refcat)) {
       allow_na_ref <- !is_logistic_normal(out$family)
       out$refcat <- as_one_character(refcat, allow_na = allow_na_ref)
-    }
-  }
-  if (is_cox(out$family)) {
-    if (!is.null(bhaz)) {
-      if (!is.list(bhaz)) {
-        stop2("'bhaz' should be a list.")
-      }
-      out$bhaz <- bhaz
-    } else {
-      out$bhaz <- list()
-    }
-    # set default arguments
-    if (is.null(out$bhaz$df)) {
-      out$bhaz$df <- 5L
-    }
-    if (is.null(out$bhaz$intercept)) {
-      out$bhaz$intercept <- TRUE
     }
   }
   out
@@ -460,7 +441,7 @@ combine_family_info <- function(x, y, ...) {
   y <- as_one_character(y)
   unite <- c(
     "dpars", "type", "specials", "include",
-    "const", "cats", "ad", "normalized"
+    "const", "cats", "ad", "normalized", "mix"
   )
   if (y %in% c("family", "link")) {
     x <- unlist(x)
@@ -475,8 +456,8 @@ combine_family_info <- function(x, y, ...) {
     clb <- !any(ulapply(x[, 1], isFALSE))
     cub <- !any(ulapply(x[, 2], isFALSE))
     x <- c(clb, cub)
-  } else if (y == "thres") {
-    # thresholds are the same across mixture components
+  } else if (y %in% c("thres", "bhaz")) {
+    # same across mixture components
     x <- x[[1]]
   }
   x
@@ -687,9 +668,9 @@ zero_inflated_asym_laplace <- function(link = "identity", link_sigma = "log",
 
 #' @rdname brmsfamily
 #' @export
-cox <- function(link = "log", bhaz = NULL) {
+cox <- function(link = "log") {
   slink <- substitute(link)
-  .brmsfamily("cox", link = link, bhaz = bhaz)
+  .brmsfamily("cox", link = link)
 }
 
 #' @rdname brmsfamily
@@ -1750,6 +1731,18 @@ has_thres_groups <- function(family) {
   any(nzchar(groups))
 }
 
+# get group names of baseline hazard groups
+get_bhaz_groups <- function(family) {
+  bhaz <- family_info(family, "bhaz")
+  unique(bhaz$groups)
+}
+
+# has the model group specific baseline hazards?
+has_bhaz_groups <- function(family) {
+  groups <- get_bhaz_groups(family)
+  any(nzchar(groups))
+}
+
 has_ndt <- function(family) {
   "ndt" %in% dpar_class(family_info(family, "dpars"))
 }
@@ -1792,6 +1785,11 @@ no_nu <- function(bterms) {
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
 }
 
+# get mixture index if specified
+get_mix_id <- function(family) {
+  family_info(family, "mix") %||% ""
+}
+
 # does the family-link combination have a built-in Stan function?
 has_built_in_fun <- function(family, link = NULL, dpar = NULL, cdf = FALSE) {
   link <- link %||% family$link
@@ -1808,20 +1806,19 @@ always_normalized <- function(family) {
 prepare_family <- function(x) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
-  acef <- tidy_acef(x)
-  if (use_ac_cov_time(acef) && has_natural_residuals(x)) {
-    family$fun <- paste0(family$family, "_time")
-  } else if (has_ac_class(acef, "sar")) {
-    acef_sar <- subset2(acef, class = "sar")
-    if (has_ac_subset(acef_sar, type = "lag")) {
-      family$fun <- paste0(family$family, "_lagsar")
-    } else if (has_ac_subset(acef_sar, type = "error")) {
-      family$fun <- paste0(family$family, "_errorsar")
+  acframe <- frame_ac(x)
+  family$fun <- family[["fun"]] %||% family$family
+  if (use_ac_cov_time(acframe) && has_natural_residuals(x)) {
+    family$fun <- paste0(family$fun, "_time")
+  } else if (has_ac_class(acframe, "sar")) {
+    acframe_sar <- subset2(acframe, class = "sar")
+    if (has_ac_subset(acframe_sar, type = "lag")) {
+      family$fun <- paste0(family$fun, "_lagsar")
+    } else if (has_ac_subset(acframe_sar, type = "error")) {
+      family$fun <- paste0(family$fun, "_errorsar")
     }
-  } else if (has_ac_class(acef, "fcor")) {
-    family$fun <- paste0(family$family, "_fcor")
-  } else {
-    family$fun <- family$family
+  } else if (has_ac_class(acframe, "fcor")) {
+    family$fun <- paste0(family$fun, "_fcor")
   }
   family
 }

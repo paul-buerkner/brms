@@ -43,6 +43,7 @@
 #' @param denom A vector of positive numeric values specifying
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
+#' @param df Degrees of freedom of baseline hazard splines for Cox models.
 #' @param ... For \code{resp_vreal}, vectors of real values.
 #'   For \code{resp_vint}, vectors of integer values. In Stan,
 #'   these variables will be named \code{vreal1}, \code{vreal2}, ...,
@@ -158,6 +159,17 @@ resp_cat <- function(x) {
 resp_dec <- function(x) {
   dec <- deparse0(substitute(x))
   class_resp_special("dec", call = match.call(), vars = nlist(dec))
+}
+
+#' @rdname addition-terms
+#' @export
+resp_bhaz <- function(gr = NA, df = 5, ...) {
+  gr <- deparse0(substitute(gr))
+  df <- as_one_integer(df)
+  args <- nlist(df, ...)
+  # non-power users shouldn't know they can change 'intercept'
+  args$intercept <- args$intercept %||% TRUE
+  class_resp_special("bhaz", call = match.call(), vars = nlist(gr), flags = args)
 }
 
 #' @rdname addition-terms
@@ -327,6 +339,11 @@ get_cens <- function(bterms, data, resp = NULL) {
   out
 }
 
+# indicates if the model may have interval censored observations
+has_interval_cens <- function(bterms) {
+  !is.null(get_ad_expr(bterms, "cens", "y2"))
+}
+
 # extract truncation boundaries
 # @param bterms a brmsterms object
 # @param data data.frame containing the truncation variables
@@ -364,24 +381,28 @@ trunc_bounds <- function(bterms, data = NULL, incl_family = FALSE,
   out
 }
 
-# check if addition argument 'subset' ist used in the model
+# check if addition argument 'subset' is used in the model
+# works for both univariate and multivariate models
 has_subset <- function(bterms) {
-  .has_subset <- function(x) {
-    is.formula(x$adforms$subset)
-  }
   if (is.brmsterms(bterms)) {
-    out <- .has_subset(bterms)
+    out <- has_ad_terms(bterms, "subset")
   } else if (is.mvbrmsterms(bterms)) {
-    out <- any(ulapply(bterms$terms, .has_subset))
+    out <- any(ulapply(bterms$terms, has_ad_terms, "subset"))
   } else {
     out <- FALSE
   }
   out
 }
 
+# check if a model has certain addition terms
+has_ad_terms <- function(bterms, terms) {
+  stopifnot(is.brmsterms(bterms), is.character(terms))
+  any(ulapply(bterms$adforms[terms], is.formula))
+}
+
 # construct a list of indices for cross-formula referencing
-tidy_index <- function(x, data) {
-  out <- .tidy_index(x, data)
+frame_index <- function(x, data) {
+  out <- .frame_index(x, data)
   if (is.brmsterms(x)) {
     # ensure consistent format for both uni- and multivariate models
     out <- list(out)
@@ -390,13 +411,13 @@ tidy_index <- function(x, data) {
   out
 }
 
-# internal version of tidy_index
-.tidy_index <- function(x, ...) {
-  UseMethod(".tidy_index")
+# internal version of frame_index
+.frame_index <- function(x, ...) {
+  UseMethod(".frame_index")
 }
 
 #' @export
-.tidy_index.brmsterms <- function(x, data, ...) {
+.frame_index.brmsterms <- function(x, data, ...) {
   out <- get_ad_values(x, "index", "index", data)
   if (is.null(out)) {
     return(NULL)
@@ -416,8 +437,8 @@ tidy_index <- function(x, data) {
 }
 
 #' @export
-.tidy_index.mvbrmsterms <- function(x, data, ...) {
-  lapply(x$terms, .tidy_index, data = data, ...)
+.frame_index.mvbrmsterms <- function(x, data, ...) {
+  lapply(x$terms, .frame_index, data = data, ...)
 }
 
 # check if cross-formula referencing is possible in subsetted models

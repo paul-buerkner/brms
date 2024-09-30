@@ -75,8 +75,8 @@ summary(fit1)
 
 The summary output of multivariate models closely resembles those of univariate
 models, except that the parameters now have the corresponding response variable
-as prefix. Within dams, tarsus length and back color seem to be negatively
-correlated, while within fosternests the opposite is true. This indicates
+as prefix. Across dams, tarsus length and back color seem to be negatively
+correlated, while across fosternests the opposite is true. This indicates
 differential effects of genetic and environmental factors on these two
 characteristics. Further, the small residual correlation `rescor(tarsus, back)`
 on the bottom of the output indicates that there is little unmodeled dependency

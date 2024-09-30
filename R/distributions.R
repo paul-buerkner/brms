@@ -52,8 +52,7 @@ qstudent_t <-  function(p, df, mu = 0, sigma = 1,
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
-  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
-  mu + sigma * qt(p, df = df)
+  mu + sigma * qt(p, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
 #' @rdname StudentT
@@ -301,7 +300,13 @@ pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0,
     delta[is_alpha_inf] <- sign(alpha[is_alpha_inf])
     out <- numeric(nz)
     for (k in seq_len(nz)) {
-      if (is_alpha_inf[k]) {
+      if (is.infinite(z[k])) {
+        if (z[k] > 0) {
+          out[k] <- 1
+        } else {
+          out[k] <- 0
+        }
+      } else if (is_alpha_inf[k]) {
         if (alpha[k] > 0) {
           out[k] <- 2 * (pnorm(pmax(z[k], 0)) - 0.5)
         } else {
@@ -1022,7 +1027,7 @@ qgen_extreme_value <- function(p, mu = 0, sigma = 1, xi = 0,
   out <- with(args, ifelse(
     xi == 0,
     mu - sigma * log(-log(p)),
-    mu + (sigma * (1 - (-log(p))^xi)) / xi
+    mu - sigma * (1 - (-log(p)) ^ (-xi)) / xi
   ))
   out
 }
@@ -2546,8 +2551,9 @@ validate_p_dist <- function(p, lower.tail = TRUE, log.p = FALSE) {
   if (!lower.tail) {
     p <- 1 - p
   }
-  if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
-    stop2("'p' must contain probabilities in (0,1)")
+  if (isTRUE(any(p < 0)) || isTRUE(any(p > 1))) {
+    p[p < 0 | p > 1] <- NaN
+    warning2("NaNs produced")
   }
   p
 }

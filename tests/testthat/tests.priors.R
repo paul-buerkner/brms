@@ -42,8 +42,9 @@ test_that("print for class brmsprior works correctly", {
 
 test_that("default_prior returns correct nlpar names for random effects pars", {
   # reported in issue #47
-  data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
-  gp <- default_prior(bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE), data = data)
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
+  bform <- bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE)
+  gp <- default_prior(bform, data = dat)
   expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
@@ -62,7 +63,8 @@ test_that("default_prior returns correct fixed effect names for GAMMs", {
 test_that("default_prior returns correct prior names for auxiliary parameters", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10),
                     z = rnorm(10), g = rep(1:2, 5))
-  prior <- default_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
+  bform <- bf(y ~ 1, phi ~ z + (1|g), family = Beta())
+  prior <- default_prior(bform, data = dat)
   prior <- prior[prior$dpar == "phi", ]
   pdata <- data.frame(class = c("b", "b", "Intercept", rep("sd", 3)),
                       coef = c("", "z", "", "", "", "Intercept"),

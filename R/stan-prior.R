@@ -349,7 +349,7 @@ stan_constant_prior <- function(prior, par, ncoef = 0, broadcast = "vector") {
 }
 
 # Stan code for global parameters of special shrinkage priors
-stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) {
+stan_special_prior <- function(bterms, out, prior, normalize, ...) {
   stopifnot(is.list(out))
   tp <- tp()
   lpp <- lpp()
@@ -364,6 +364,7 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
     "  int<lower=1> Kscales{p};  // number of local scale parameters\n"
   )
   if (special$name == "horseshoe") {
+    str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
     str_add(out$data) <- glue(
       "  // data for the horseshoe prior\n",
       "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
@@ -399,6 +400,7 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
       str_if(normalize, "\n    - rows(hs_local{p}) * log(0.5)"), ";\n"
     )
   } else if (special$name == "R2D2") {
+    str_add(out$fun) <- "  #include 'fun_r2d2.stan'\n"
     str_add(out$data) <- glue(
       "  // data for the R2D2 prior\n",
       "  real<lower=0> R2D2_mean_R2{p};  // mean of the R2 prior\n",
@@ -436,7 +438,7 @@ stan_special_prior <- function(bterms, out, data, prior, ranef, normalize, ...) 
   if (has_special_prior(prior, px, class = "sd")) {
     # this has to be done here rather than in stan_re()
     # because the latter is not local to a linear predictor
-    ids <- unique(subset2(ranef, ls = px)$id)
+    ids <- unique(subset2(bterms$frame$re)$id)
     str_add(out$prior_global_scales) <- cglue(" sd_{ids}")
     str_add(out$prior_global_lengths) <- cglue(" M_{ids}")
   }
@@ -516,7 +518,7 @@ stan_unchecked_prior <- function(prior) {
 # @param sample_prior take draws from priors?
 stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
                           special_prior, sample_prior = "yes") {
-  if (!is_equal(sample_prior, "yes")) {
+  if (!is_equal(sample_prior, "yes") || !length(tpar_prior)) {
     return(list())
   }
   tpar_prior <- strsplit(gsub(" |\\n", "", tpar_prior), ";")[[1]]

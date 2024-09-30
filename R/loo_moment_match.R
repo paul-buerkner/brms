@@ -7,8 +7,12 @@
 #' @aliases loo_moment_match
 #'
 #' @inheritParams predict.brmsfit
-#' @param x An object of class \code{brmsfit}.
-#' @param loo An object of class \code{loo} originally created from \code{x}.
+#' @param x An \R object of class \code{brmsfit} or \code{loo} depending
+#'   on the method.
+#' @param loo An \R object of class \code{loo}. If \code{NULL},
+#'   brms will try to extract a precomputed \code{loo} object
+#'   from the fitted model, added there via \code{\link{add_criterion}}.
+#' @param fit An \R object of class \code{brmsfit}.
 #' @param k_threshold The Pareto \eqn{k} threshold for which observations
 #'   moment matching is applied. Defaults to \code{0.7}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
@@ -45,16 +49,24 @@
 #'
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
+#'
+#' # no more warnings after moment matching
 #' (mmloo1 <- loo_moment_match(fit1, loo = loo1))
 #' }
 #'
 #' @importFrom loo loo_moment_match
 #' @export loo_moment_match
 #' @export
-loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
-                                     resp = NULL, check = TRUE,
+loo_moment_match.brmsfit <- function(x, loo = NULL, k_threshold = 0.7,
+                                     newdata = NULL, resp = NULL, check = TRUE,
                                      recompile = FALSE, ...) {
-  stopifnot(is.loo(loo), is.brmsfit(x))
+  stopifnot(is.brmsfit(x))
+  loo <- loo %||% x$criteria[["loo"]]
+  if (is.null(loo)) {
+    stop2("No 'loo' object was provided and none is stored within the model.")
+  } else if (!is.loo(loo)) {
+    stop2("Inputs to the 'loo' argument must be of class 'loo'.")
+  }
   if (is.null(newdata)) {
     newdata <- model.frame(x)
   } else {
@@ -93,6 +105,12 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     )
   }
   out
+}
+
+#' @rdname loo_moment_match.brmsfit
+#' @export
+loo_moment_match.loo <- function(x, fit, ...) {
+  loo_moment_match(fit, loo = x, ...)
 }
 
 # compute a vector of log-likelihood values for the ith observation

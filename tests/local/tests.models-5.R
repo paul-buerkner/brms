@@ -1,6 +1,6 @@
 source("setup_tests_local.R")
 
-test_that("global shrinkage priors work correctly", {
+test_that("global shrinkage priors work correctly", suppressWarnings({
   set.seed(2563)
   dat <- epilepsy
   dat$x1 <- sample(1:4, nrow(dat), TRUE)
@@ -23,9 +23,9 @@ test_that("global shrinkage priors work correctly", {
     expect_true(any(grepl(paste0("^", cl), variables(fit))))
   }
   expect_range(SW(waic(fit))$estimates[3, 1], 1580, 1660)
-})
+}))
 
-test_that("Non-linear matrix covariates work correctly", {
+test_that("Non-linear matrix covariates work correctly", suppressWarnings({
   set.seed(2134)
   N <- 100
   dat <- data.frame(y=rnorm(N))
@@ -56,9 +56,9 @@ test_that("Non-linear matrix covariates work correctly", {
 
   lcomp <- loo(fit, fit2)$diffs
   expect_range(lcomp[2, 1], -1, 1)
-})
+}))
 
-test_that("Addition argument 'subset' works correctly", {
+test_that("Addition argument 'subset' works correctly", suppressWarnings({
   set.seed(12454)
   data("BTdata", package = "MCMCglmm")
   BTdata$sub1 <- sample(0:1, nrow(BTdata), replace = TRUE)
@@ -79,23 +79,31 @@ test_that("Addition argument 'subset' works correctly", {
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_equal(nobs(fit, resp = "tarsus"), sum(BTdata$sub1))
-})
+}))
 
-test_that("Cox models work correctly", {
+test_that("Cox models work correctly", suppressWarnings({
   set.seed(12345)
   covs <- data.frame(id  = 1:200, trt = stats::rbinom(200, 1L, 0.5))
   d1 <- simsurv::simsurv(lambdas = 0.1, gammas  = 1.5, betas = c(trt = -0.5),
                          x = covs, maxt  = 5)
   d1 <- merge(d1, covs)
+  d1$g <- sample(c("a", "b"), nrow(d1), TRUE)
 
   fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt,
               data = d1, family = brmsfamily("cox"), refresh = 0)
   print(summary(fit1))
   expect_range(posterior_summary(fit1)["b_trt", "Estimate"], -0.70, -0.30)
   expect_range(waic(fit1)$estimates[3, 1], 620, 670)
-})
 
-test_that("ordinal model with grouped thresholds works correctly", {
+  fit2 <- brm(eventtime | cens(1 - status) + bhaz(gr = g) ~ 1 + trt,
+              data = d1, family = brmsfamily("cox"), refresh = 0)
+  print(summary(fit2))
+  expect_true("sbhaz[a,2]" %in% variables(fit2))
+  expect_range(waic(fit2)$estimates[3, 1], 620, 670)
+}))
+
+test_that("ordinal model with grouped thresholds works correctly",
+          suppressWarnings({
   set.seed(1234)
   dat <- data.frame(
     y = sample(1:6, 100, TRUE),
@@ -148,9 +156,9 @@ test_that("ordinal model with grouped thresholds works correctly", {
   thres_minus_eta_ch <- abind::abind(thres_minus_eta_ch, along = 2)
   dimnames(thres_minus_eta_ch) <- new_arrnms
   expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
-})
+}))
 
-test_that("projpred methods can be run", {
+test_that("projpred methods can be run", suppressWarnings({
   fit <- brm(count ~ zAge + zBase + Trt,
              data = epilepsy, family = poisson())
   summary(fit)
@@ -165,9 +173,9 @@ test_that("projpred methods can be run", {
   # takes very long and hence commented out
   # cv_vs <- cv_varsel(fit)
   # expect_is(vs, "vsel")
-})
+}))
 
-test_that("alternative algorithms can be used", {
+test_that("alternative algorithms can be used", suppressWarnings({
   fit <- brm(
     count ~ zBase, data = epilepsy,
     backend = "cmdstanr", algorithm = "meanfield"
@@ -188,12 +196,12 @@ test_that("alternative algorithms can be used", {
   )
   summary(fit)
   expect_is(fit, "brmsfit")
-})
+}))
 
 test_that(paste(
   "Families sratio() and cratio() are equivalent for symmetric distribution",
   "functions (here only testing the logit link)"
-), {
+), suppressWarnings({
   set.seed(1234)
   dat2 <- data.frame(
     rating = sample(1:4, 50, TRUE),
@@ -223,4 +231,4 @@ test_that(paste(
   draws_cratio <- as.matrix(fit_cratio)
 
   expect_equal(draws_sratio, draws_cratio)
-})
+}))

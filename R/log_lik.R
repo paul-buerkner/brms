@@ -149,7 +149,7 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 }
 
 # All log_lik_<family> functions have the same arguments structure
-# @param i index of the observatio for which to compute log-lik values
+# @param i index of the observation for which to compute log-lik values
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @return a vector of length prep$ndraws containing the pointwise

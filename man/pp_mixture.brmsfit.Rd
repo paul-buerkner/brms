@@ -25,14 +25,15 @@ pp_mixture(x, ...)
 \item{x}{An \R object usually of class \code{brmsfit}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.
-\code{NA} values within factors are interpreted as if all dummy
-variables of this factor are zero. This allows, for instance, to make
-predictions of the grand mean when using sum coding.}
+\code{NULL} (default), the original data of the model is used. \code{NA}
+values within factors (excluding grouping variables) are interpreted as if
+all dummy variables of this factor are zero. This allows, for instance, to
+make predictions of the grand mean when using sum coding. \code{NA} values
+within grouping variables are treated as a new level.}
 
 \item{re_formula}{formula containing group-level effects to be considered in
 the prediction. If \code{NULL} (default), include all group-level effects;
-if \code{NA}, include no group-level effects.}
+if \code{NA} or \code{~0}, include no group-level effects.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
@@ -76,15 +77,15 @@ estimates.
 }
 \details{
 The returned probabilities can be written as
-\eqn{P(Kn = k | Yn)}, that is the posterior probability
+\eqn{P(K_n = k | Y_n)}, that is the posterior probability
 that observation n originates from component k.
 They are computed using Bayes' Theorem
-\deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
-where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood
-of observation n for component k, \eqn{P(Kn = k)} is
+\deqn{P(K_n = k | Y_n) = P(Y_n | K_n = k) P(K_n = k) / P(Y_n),}
+where \eqn{P(Y_n | K_n = k)} is the (posterior) likelihood
+of observation n for component k, \eqn{P(K_n = k)} is
 the (posterior) mixing probability of component k
 (i.e. parameter \code{theta<k>}), and
-\deqn{P(Yn) = \sum (k=1,...,K) P(Yn | Kn = k) P(Kn = k)}
+\deqn{P(Y_n) = \sum_{k=1,...,K} P(Y_n | K_n = k) P(K_n = k)}
 is a normalizing constant.
 }
 \examples{

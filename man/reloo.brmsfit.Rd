@@ -8,7 +8,7 @@
 \usage{
 \method{reloo}{brmsfit}(
   x,
-  loo,
+  loo = NULL,
   k_threshold = 0.7,
   newdata = NULL,
   resp = NULL,
@@ -26,7 +26,9 @@ reloo(x, ...)
 \item{x}{An \R object of class \code{brmsfit} or \code{loo} depending
 on the method.}
 
-\item{loo}{An \R object of class \code{loo}.}
+\item{loo}{An \R object of class \code{loo}. If \code{NULL},
+brms will try to extract a precomputed \code{loo} object
+from the fitted model, added there via \code{\link{add_criterion}}.}
 
 \item{k_threshold}{The threshold at which Pareto \eqn{k}
 estimates are treated as problematic. Defaults to \code{0.7}.
@@ -34,10 +36,11 @@ See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 for more details.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.
-\code{NA} values within factors are interpreted as if all dummy
-variables of this factor are zero. This allows, for instance, to make
-predictions of the grand mean when using sum coding.}
+\code{NULL} (default), the original data of the model is used. \code{NA}
+values within factors (excluding grouping variables) are interpreted as if
+all dummy variables of this factor are zero. This allows, for instance, to
+make predictions of the grand mean when using sum coding. \code{NA} values
+within grouping variables are treated as a new level.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
@@ -85,8 +88,11 @@ original \code{loo} object.
 \dontrun{
 fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
+
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
+
+# no more warnings after reloo
 (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
 }
 

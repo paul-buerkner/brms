@@ -1,6 +1,6 @@
 source("setup_tests_local.R")
 
-test_that("ARMA models work correctly", {
+test_that("ARMA models work correctly", suppressWarnings({
   set.seed(1234)
   N <- 100
   y <- arima.sim(list(ar = c(0.7, -0.5, 0.04, 0.2, -0.4)), N)
@@ -43,9 +43,9 @@ test_that("ARMA models work correctly", {
   expect_range(waic(fit_arma_pois)$estimates[3, 1], 1100, 1200)
   expect_equal(dim(predict(fit_arma_pois)), c(nobs(fit_arma_pois), 4))
   expect_ggplot(plot(conditional_effects(fit_arma_pois), plot = FALSE)[[1]])
-})
+}))
 
-test_that("categorical models work correctly", {
+test_that("categorical models work correctly", suppressWarnings({
   fit2 <- brm(rating ~ period + carry + treat + (1|test|subject),
               data = inhaler, family = categorical, iter = 500,
               prior = c(set_prior("normal(0,5)", "b", dpar = c("mu2", "mu3", "mu4")),
@@ -66,9 +66,9 @@ test_that("categorical models work correctly", {
 
   ce <- conditional_effects(fit2, categorical = TRUE)
   expect_ggplot(plot(ce, plot = FALSE)[[1]])
-})
+}))
 
-test_that("multivariate normal models work correctly", {
+test_that("multivariate normal models work correctly", suppressWarnings({
   set.seed(1234)
   N <- 300
   y1 <- rnorm(N)
@@ -103,9 +103,9 @@ test_that("multivariate normal models work correctly", {
   print(fit_mv2)
   waic_mv <- WAIC(fit_mv1, fit_mv2, ndraws = 100)
   expect_true(waic_mv$ic_diffs__[1, "WAIC"] > 0)
-})
+}))
 
-test_that("emmeans can be run for multivariate models", {
+test_that("emmeans can be run for multivariate models", suppressWarnings({
   library(emmeans)
   df <- data.frame(
     y1 = rnorm(100), y2 = rnorm(100),
@@ -122,9 +122,9 @@ test_that("emmeans can be run for multivariate models", {
   # Ask for MV with rep.meas
   em <- summary(emmeans(fit, c("x1", "rep.meas"), at = list(x1 = c(-1, 1))))
   expect_equal(nrow(em), 4)
-})
+}))
 
-test_that("generalized multivariate models work correctly", {
+test_that("generalized multivariate models work correctly", suppressWarnings({
   data("BTdata", package = "MCMCglmm")
   bform <- (bf(tarsus ~ sex + (1|p|fosternest)) + skew_normal()) +
     (bf(back ~ s(tarsus, by = sex) + (1|p|fosternest)) + gaussian())
@@ -136,9 +136,9 @@ test_that("generalized multivariate models work correctly", {
   expect_ggplot(plot(conditional_effects(fit_mv), ask = FALSE)[[1]])
   expect_ggplot(plot(conditional_smooths(fit_mv))[[1]])
   expect_equal(dim(coef(fit_mv)$fosternest), c(104, 4, 7))
-})
+}))
 
-test_that("ZI and HU models work correctly", {
+test_that("ZI and HU models work correctly", suppressWarnings({
   fit_hu <- brm(
     bf(count ~ zAge + zBase * Trt + (1|id1|patient),
        hu ~ zAge + zBase * Trt + (1|id1|patient)),
@@ -179,9 +179,9 @@ test_that("ZI and HU models work correctly", {
   expect_equal(dim(predict(fit_zibeta)), c(nobs(fit_zibeta), 4))
   expect_ggplot(plot(conditional_effects(fit_zibeta), ask = FALSE)[[1]])
   expect_range(WAIC(fit_zibeta)$estimates[3, 1], -100, -70)
-})
+}))
 
-test_that("Non-linear models work correctly", {
+test_that("Non-linear models work correctly", suppressWarnings({
   fit_loss <- brm(
     bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
        ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
@@ -196,9 +196,10 @@ test_that("Non-linear models work correctly", {
   print(fit_loss)
   expect_ggplot(plot(conditional_effects(fit_loss))[[1]])
   expect_range(LOO(fit_loss)$estimates[3, 1], 700, 720)
-})
+}))
 
-test_that("Non-linear models of distributional parameters work correctly", {
+test_that("Non-linear models of distributional parameters work correctly",
+          suppressWarnings({
   set.seed(1234)
   x <- rnorm(100)
   y <- rnorm(100, 1, exp(x))
@@ -214,9 +215,9 @@ test_that("Non-linear models of distributional parameters work correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
   expect_range(LOO(fit)$estimates[3, 1], 240, 350)
-})
+}))
 
-test_that("Nested non-linear models work correctly", {
+test_that("Nested non-linear models work correctly", suppressWarnings({
   set.seed(2345)
   dat <- data.frame(x = rnorm(300))
   dat$y <- 0.3 + 0.7 * brms:::inv_logit(2 * dat$x)
@@ -233,9 +234,10 @@ test_that("Nested non-linear models work correctly", {
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(bayes_R2(fit)[, 1], 0.2, 0.55)
-})
+}))
 
-test_that("Non-linear non-looped model predictions work correctly in blocked order", {
+test_that("Non-linear non-looped model predictions work correctly in blocked order",
+          suppressWarnings({
   loss_alt <- transform(loss, row=as.integer(1:nrow(loss)), nr=nrow(loss), test=as.integer(0))
   scode_growth <- "
     vector growth_test(vector ult, array[] int dev, vector theta, vector omega, array[] int row, array[] int test) {
@@ -294,5 +296,4 @@ test_that("Non-linear non-looped model predictions work correctly in blocked ord
   pr2b <- posterior_epred(fit_loss, newdata=transform(loss_alt, test=2)[-N,], ndraws=10)
   expect_true(all(dim(pr2b) == c(10,N-1)))
   expect_true(all(pr2b == N-1))
-})
-
+}))

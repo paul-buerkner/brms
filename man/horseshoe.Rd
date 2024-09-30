@@ -61,10 +61,9 @@ A character string obtained by \code{match.call()} with
   additional arguments.
 }
 \description{
-Function used to set up regularized horseshoe priors and related
-hierarchical shrinkage priors for population-level effects in \pkg{brms}. The
-function does not evaluate its arguments -- it exists purely to help set up
-the model.
+Function used to set up regularized horseshoe priors and related hierarchical
+shrinkage priors in \pkg{brms}. The function does not evaluate its arguments
+-- it exists purely to help set up the model.
 }
 \details{
 The horseshoe prior is a special shrinkage prior initially proposed by
@@ -104,6 +103,10 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
 
+  The prior does not account for scale differences of the terms it is
+  applied on. Accordingly, please make sure that all these terms have a
+  comparable scale to ensure that shrinkage is applied properly.
+
   Currently, the following classes support the horseshoe prior: \code{b}
   (overall regression coefficients), \code{sds} (SDs of smoothing splines),
   \code{sdgp} (SDs of Gaussian processes), \code{ar} (autoregressive
@@ -126,7 +129,7 @@ the horseshoe. Artificial Intelligence and Statistics.
 
 Piironen J. & Vehtari A. (2017). On the Hyperprior Choice for the Global
 Shrinkage Parameter in the Horseshoe Prior. Artificial Intelligence and
-Statistics. \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+Statistics. \url{https://arxiv.org/pdf/1610.05559v1}
 
 Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
 in the horseshoe and other shrinkage priors. Electronic Journal of

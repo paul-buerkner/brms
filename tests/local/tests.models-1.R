@@ -1,6 +1,6 @@
 source("setup_tests_local.R")
 
-test_that("Poisson model from brm doc works correctly", {
+test_that("Poisson model from brm doc works correctly", suppressWarnings({
   ## Poisson regression for the number of seizures in epileptic patients
   ## using student_t priors for population-level effects
   ## and half cauchy priors for standard deviations of group-level effects
@@ -45,9 +45,9 @@ test_that("Poisson model from brm doc works correctly", {
   loo1 <- loo(fit1)
   mmloo1 <- loo_moment_match(fit1, loo1, k_threshold = 1, cores = 1)
   expect_is(mmloo1, "loo")
-})
+}))
 
-test_that("Ordinal model from brm doc works correctly", {
+test_that("Ordinal model from brm doc works correctly", suppressWarnings({
   ## Ordinal regression modeling patient's rating of inhaler instructions
   ## category specific effects are estimated for variable 'treat'
   fit2 <- brm(
@@ -58,12 +58,12 @@ test_that("Ordinal model from brm doc works correctly", {
   )
   print(fit2)
   expect_range(WAIC(fit2)$estimates[3, 1], 900, 950)
-  expect_warning(ce <- conditional_effects(fit2, effect = "treat"),
+  suppressWarnings(ce <- conditional_effects(fit2, effect = "treat"),
                  "Predictions are treated as continuous variables")
   expect_ggplot(plot(ce)[[1]])
-})
+}))
 
-test_that("Survival model from brm doc works correctly", {
+test_that("Survival model from brm doc works correctly", suppressWarnings({
   ## Survival regression modeling the time between the first
   ## and second recurrence of an infection in kidney patients.
   fit3 <- brm(
@@ -99,9 +99,9 @@ test_that("Survival model from brm doc works correctly", {
     fit3, type = 'km_overlay', ndraws = 10,
     status_y = 1 - kidney$censored
   )))
-})
+}))
 
-test_that("Binomial model from brm doc works correctly", {
+test_that("Binomial model from brm doc works correctly", suppressWarnings({
   ## Probit regression using the binomial family
   n <- sample(1:10, 100, TRUE)  # number of trials
   success <- rbinom(100, size = n, prob = 0.4)
@@ -114,9 +114,9 @@ test_that("Binomial model from brm doc works correctly", {
   print(fit4)
   ce <- conditional_effects(fit4)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-})
+}))
 
-test_that("Non-linear model from brm doc works correctly", {
+test_that("Non-linear model from brm doc works correctly", suppressWarnings({
   x <- abs(rnorm(100))
   y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
   data5 <- data.frame(x, y)
@@ -128,9 +128,9 @@ test_that("Non-linear model from brm doc works correctly", {
   print(fit5)
   ce <- conditional_effects(fit5)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-})
+}))
 
-test_that("Models from hypothesis doc work correctly", {
+test_that("Models from hypothesis doc work correctly", suppressWarnings({
   prior <- c(set_prior("normal(0,2)", class = "b"),
              set_prior("student_t(10,0,1)", class = "sigma"),
              set_prior("student_t(10,0,1)", class = "sd"))
@@ -157,9 +157,9 @@ test_that("Models from hypothesis doc work correctly", {
   hyp3 <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
   hyp3 <- hypothesis(fit, hyp3)
   expect_equal(dim(hyp3$hypothesis), c(2, 8))
-})
+}))
 
-test_that("bridgesampling methods work correctly", {
+test_that("bridgesampling methods work correctly", suppressWarnings({
   # model with the treatment effect
   fit1 <- brm(
     count ~ zAge + zBase + Trt,
@@ -187,9 +187,9 @@ test_that("bridgesampling methods work correctly", {
   # specify prior model probabilities
   pp2 <- post_prob(fit2, fit1, prior_prob = c(0.8, 0.2))
   expect_gt(pp2[1], pp1[1])
-})
+}))
 
-test_that("varying slopes without overall effects work", {
+test_that("varying slopes without overall effects work", suppressWarnings({
   epilepsy$visit_num <- as.numeric(epilepsy$visit)
   fit1 <- brm(count ~ zAge + zBase * Trt + (visit_num | patient),
               data = epilepsy, family = gaussian(),
@@ -215,9 +215,9 @@ test_that("varying slopes without overall effects work", {
 
   expect_range(WAIC(fit1)$estimates[3, 1], 1500, 1600)
   expect_equal(dim(predict(fit1)), c(nobs(fit1), 4))
-})
+}))
 
-test_that("update works correctly for some special cases", {
+test_that("update works correctly for some special cases", suppressWarnings({
   # models are recompiled when changing number of FEs from 0 to 1
   fit1 <- brm(count ~ 1, data = epilepsy, refresh = 0)
   fit2 <- update(fit1, ~ . + Trt, newdata = epilepsy, refresh = 0)
@@ -232,9 +232,9 @@ test_that("update works correctly for some special cases", {
   fit5 <- update(fit1, bf(~., family = student()), refresh = 0)
   expect_equal(family(fit5)$family, "student")
   expect_equal(formula(fit5)$family$family, "student")
-})
+}))
 
-test_that("Fixing parameters to constants works correctly", {
+test_that("Fixing parameters to constants works correctly", suppressWarnings({
   bprior <- prior(normal(0, 1), class = "b") +
     prior(constant(2), class = "b", coef = "zBase") +
     prior(constant(0.5), class = "sd")
@@ -245,4 +245,4 @@ test_that("Fixing parameters to constants works correctly", {
   expect_range(waic(fit)$estimates[3, 1], 1790, 1840)
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-})
+}))
