@@ -335,8 +335,8 @@ print.brmssummary <- function(x, digits = 2, ...) {
         ))
       } else {
         cat(paste0(
-          "Standard Rhat and ESS estimates\n",
-          "should not be trusted for brm_multiple models and are hence not displayed.\n",
+          "Overall Rhat and ESS estimates\n",
+          "are not informative for brm_multiple models and are hence not displayed.\n",
           "Please see ?brm_multiple for how to assess convergence of such models."
         ))
       }
