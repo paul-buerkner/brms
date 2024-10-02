@@ -9,6 +9,10 @@
 #' @param smooths Optional character vector of smooth terms
 #'   to display. If \code{NULL} (the default) all smooth terms
 #'   are shown.
+#' @param surface Logical. Indicates if interactions or
+#'   two-dimensional smooths should be visualized as a surface.
+#'   Defaults to \code{TRUE}. The surface type can be controlled
+#'   via argument \code{stype} of the related plotting method.
 #' @param ndraws Positive integer indicating how many
 #'   posterior draws should be used.
 #'   If \code{NULL} (the default) all draws are used.
@@ -49,12 +53,14 @@
 conditional_smooths.brmsfit <- function(x, smooths = NULL,
                                         int_conditions = NULL,
                                         prob = 0.95, spaghetti = FALSE,
+                                        surface = TRUE,
                                         resolution = 100, too_far = 0,
                                         ndraws = NULL, draw_ids = NULL,
                                         nsamples = NULL, subset = NULL,
                                         probs = NULL, ...) {
   probs <- validate_ci_bounds(prob, probs = probs)
   spaghetti <- as_one_logical(spaghetti)
+  surface <- as_one_logical(surface)
   draw_ids <- use_alias(draw_ids, subset)
   ndraws <- use_alias(ndraws, nsamples)
   contains_draws(x)
@@ -68,7 +74,7 @@ conditional_smooths.brmsfit <- function(x, smooths = NULL,
     bterms, fit = x, smooths = smooths,
     conditions = conditions, int_conditions = int_conditions,
     too_far = too_far, resolution = resolution, probs = probs,
-    spaghetti = spaghetti, draw_ids = draw_ids
+    spaghetti = spaghetti, surface = surface, draw_ids = draw_ids
   )
   if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
@@ -118,7 +124,7 @@ conditional_smooths.brmsterms <- function(x, ...) {
 #' @export
 conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
                                     probs, resolution, too_far, spaghetti,
-                                    ...) {
+                                    surface, ...) {
   stopifnot(is.brmsfit(fit))
   out <- list()
   mf <- model.frame(fit)
@@ -139,7 +145,11 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     covars <- all_vars(sub_smframe$covars[[1]])
     byvars <- all_vars(sub_smframe$byvars[[1]])
     ncovars <- length(covars)
-    if (ncovars > 2L) {
+    if (!surface && ncovars > 1L) {
+      byvars <- c(covars[2:ncovars], byvars)
+      covars <- covars[1]
+      ncovars <- 1L
+    } else if (ncovars > 2L) {
       byvars <- c(covars[3:ncovars], byvars)
       covars <- covars[1:2]
       ncovars <- 2L
