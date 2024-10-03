@@ -145,11 +145,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     covars <- all_vars(sub_smframe$covars[[1]])
     byvars <- all_vars(sub_smframe$byvars[[1]])
     ncovars <- length(covars)
-    if (!surface && ncovars > 1L) {
-      byvars <- c(covars[2:ncovars], byvars)
-      covars <- covars[1]
-      ncovars <- 1L
-    } else if (ncovars > 2L) {
+    if (ncovars > 2L) {
       byvars <- c(covars[3:ncovars], byvars)
       covars <- covars[1:2]
       ncovars <- 2L
@@ -159,6 +155,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     is_numeric <- setNames(rep(FALSE, ncovars), covars)
     for (cv in covars) {
       is_numeric[cv] <- is.numeric(mf[[cv]])
+      is_second_covar <- isTRUE(cv == covars[2])
       if (cv %in% names(int_conditions)) {
         int_cond <- int_conditions[[cv]]
         if (is.function(int_cond)) {
@@ -166,10 +163,16 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
         }
         values[[cv]] <- int_cond
       } else if (is_numeric[cv]) {
-        values[[cv]] <- seq(
-          min(mf[[cv]]), max(mf[[cv]]),
-          length.out = resolution
-        )
+        if (!surface && is_second_covar) {
+          mean2 <- mean(mf[[cv]], na.rm = TRUE)
+          sd2 <- sd(mf[[cv]], na.rm = TRUE)
+          values[[cv]] <- (-1:1) * sd2 + mean2
+        } else {
+          values[[cv]] <- seq(
+            min(mf[[cv]]), max(mf[[cv]]),
+            length.out = resolution
+          )
+        }
       } else {
         values[[cv]] <- levels(factor(mf[[cv]]))
       }
@@ -190,7 +193,8 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
       }
     }
     newdata <- expand.grid(values)
-    if (ncovars == 2L && too_far > 0) {
+    need_surface <- surface && ncovars == 2L && all(is_numeric)
+    if (need_surface && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
         g1 = newdata[[covars[1]]],
@@ -206,6 +210,18 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     eta <- posterior_smooths(x, fit, smooth, newdata, ...)
     effects <- na.omit(sub_smframe$covars[[1]][1:2])
     cond_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
+    second_numeric <- isTRUE(is_numeric[2])
+    if (second_numeric && !surface) {
+      # only convert 'effect2__' to factor so that the original
+      # second effect variable remains unchanged in the data
+      mde2 <- round(cond_data[[effects[2]]], 2)
+      levels2 <- sort(unique(mde2), TRUE)
+      cond_data$effect2__ <- factor(mde2, levels = levels2)
+      labels2 <- names(int_conditions[[effects[2]]])
+      if (length(labels2) == length(levels2)) {
+        levels(cond_data$effect2__) <- labels2
+      }
+    }
     if (length(byvars)) {
       # byvars will be plotted as facets
       cond_data$cond__ <- rows2labels(cond_data[, byvars, drop = FALSE])
@@ -228,7 +244,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     points <- add_effects__(points, covars)
     attr(eta, "response") <- response
     attr(eta, "effects") <- effects
-    attr(eta, "surface") <- all(is_numeric) && ncovars == 2L
+    attr(eta, "surface") <- need_surface
     attr(eta, "spaghetti") <- spa_data
     attr(eta, "points") <- points
     out[[response]] <- eta
