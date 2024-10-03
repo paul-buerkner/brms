@@ -582,12 +582,6 @@ prior_predictor.mvbrmsframe <- function(x, internal = FALSE, ...) {
   for (i in seq_along(x$terms)) {
     prior <- prior + prior_predictor(x$terms[[i]], internal = internal, ...)
   }
-  for (cl in c("b", "Intercept")) {
-    # deprecated; see warning in 'validate_special_prior'
-    if (any(with(prior, class == cl & coef == ""))) {
-      prior <- prior + brmsprior(class = cl)
-    }
-  }
   if (x$rescor) {
     if (internal) {
       prior <- prior +
