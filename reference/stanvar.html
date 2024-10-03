@@ -20,7 +20,7 @@ changing priors, or for defining custom Stan functions."><meta property="og:imag
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.21.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.22.0</span>
       </span>
     </div>
 
@@ -179,7 +179,7 @@ correct observation indexing. Please investigate the generated Stan code via
 <span class="r-in"><span><span class="va">stanvars</span> <span class="op">&lt;-</span> <span class="fu">stanvar</span><span class="op">(</span><span class="fl">5</span>, name <span class="op">=</span> <span class="st">"mean_intercept"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span>, <span class="va">epilepsy</span>, prior <span class="op">=</span> <span class="va">bprior</span>,</span></span>
 <span class="r-in"><span>         stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.22.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -229,7 +229,7 @@ correct observation indexing. Please investigate the generated Stan code via
 <span class="r-in"><span>  <span class="fu">stanvar</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, <span class="st">"V"</span>, scode <span class="op">=</span> <span class="st">"  matrix[K, K] V;"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
 <span class="r-in"><span>         prior <span class="op">=</span> <span class="va">bprior</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.22.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -282,7 +282,7 @@ correct observation indexing. Please investigate the generated Stan code via
 <span class="r-in"><span>                    block <span class="op">=</span> <span class="st">"parameters"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
 <span class="r-in"><span>         prior <span class="op">=</span> <span class="va">bprior</span>, stanvars <span class="op">=</span> <span class="va">stanvars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.22.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> data {</span>
@@ -334,7 +334,7 @@ correct observation indexing. Please investigate the generated Stan code via
 <span class="r-in"><span>                    block <span class="op">=</span> <span class="st">"parameters"</span>, pll_args <span class="op">=</span> <span class="st">"real tau"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="stancode.html">stancode</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">Trt</span> <span class="op">+</span> <span class="va">zBase</span>, <span class="va">epilepsy</span>,</span></span>
 <span class="r-in"><span>         stanvars <span class="op">=</span> <span class="va">stanvars</span>, threads <span class="op">=</span> <span class="fu"><a href="threading.html">threading</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.21.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.22.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   /* integer sequence of values</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    * Args:</span>
