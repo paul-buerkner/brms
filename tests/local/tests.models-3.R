@@ -20,6 +20,8 @@ test_that("Multivariate GAMMs work correctly", suppressWarnings({
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
   cs <- conditional_smooths(fit_gam, resolution = 100, too_far = 0.05)
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
+  cs <- conditional_smooths(fit_gam, surface = FALSE)
+  expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
 
   expect_range(loo(fit_gam)$estimates[3, 1], 830, 870)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
