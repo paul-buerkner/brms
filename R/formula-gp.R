@@ -16,7 +16,7 @@
 #' @param cov Name of the covariance kernel. Currently supported are
 #'   \code{"exp_quad"} (exponentiated-quadratic kernel; default),
 #'   \code{"matern32"} (Matern 3/2 kernel), \code{"matern52"} (Matern 5/2 kernel),
-#'   and \code{"exponential"} (exponential kernel).
+#'   and \code{"exponential"} (exponential kernel; alias: \code{"matern12"}).
 #' @param iso A flag to indicate whether an isotropic (\code{TRUE}; the
 #'   default) or a non-isotropic GP should be used.
 #'   In the former case, the same amount of smoothing is applied to all
@@ -107,11 +107,10 @@
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
                gr = TRUE, cmc = TRUE, scale = TRUE, c = 5/4) {
-  cov_choices <- c("exp_quad", "matern52", "matern32", "exponential")
-  cov <- match.arg(cov, choices = cov_choices)
   call <- match.call()
   label <- deparse0(call)
   vars <- as.list(substitute(list(...)))[-1]
+  cov <- validate_gp_cov(cov, k = k)
   by <- deparse0(substitute(by))
   cmc <- as_one_logical(cmc)
   if (is.null(call[["gr"]]) && require_old_default("2.12.8")) {
@@ -126,10 +125,6 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     iso <- TRUE
   }
   if (!isNA(k)) {
-    supported_hsgp_covs <- c("exp_quad", "matern52", "matern32")
-    if (!cov %in% supported_hsgp_covs) {
-      stop2("HSGPs with covariance kernel '", cov, "' are not yet supported.")
-    }
     k <- as.integer(as_one_numeric(k))
     if (k < 1L) {
       stop2("'k' must be positive.")
@@ -322,6 +317,34 @@ spd_gp_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   out
 }
 
+# spectral density function of the exponential kernel
+# vectorized over parameter values
+spd_gp_exponential <- function(x, sdgp = 1, lscale = 1) {
+  NB <- NROW(x)
+  D <- NCOL(x)
+  Dls <- NCOL(lscale)
+  constant = square(sdgp) *
+    (2^D * pi^(D / 2) * gamma((D + 1) / 2)) / sqrt(pi)
+  expo = -(D + 1) / 2
+  lscale2 <- lscale^2
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- constant * lscale^D
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * (1 + lscale2 * sum(x[m, ]^2))^expo;
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- constant * matrixStats::rowProds(lscale)
+    for (m in seq_len(NB)) {
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * (1 + rowSums(lscale2 * x2))^expo
+    }
+  }
+  out
+}
+
 # spectral density function of the Matern 3/2 kernel
 # vectorized over parameter values
 spd_gp_matern32 <- function(x, sdgp = 1, lscale = 1) {
@@ -404,6 +427,28 @@ choose_L <- function(x, c) {
     range <- max(1, max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
   }
   c * range
+}
+
+# validate the 'cov' argument of 'gp' terms
+validate_gp_cov <- function(cov, k = NA) {
+  cov <- as_one_character(cov)
+  if (cov == "matern12") {
+    # matern12 and exponential refer to the same kernel
+    cov <- "exponential"
+  }
+  cov_choices <- c("exp_quad", "matern52", "matern32", "exponential")
+  if (!cov %in% cov_choices) {
+    stop2("'", cov, "' is not a valid GP covariance kernel. Valid kernels are: ",
+          collapse_comma(cov_choices))
+  }
+  if (!isNA(k)) {
+    # currently all kernels support HSGPs but this may change in the future
+    hs_cov_choices <- c("exp_quad", "matern52", "matern32", "exponential")
+    if (!cov %in% hs_cov_choices) {
+      stop2("HSGPs with covariance kernel '", cov, "' are not yet supported.")
+    }
+  }
+  cov
 }
 
 # try to evaluate a GP term and

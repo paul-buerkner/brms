@@ -115,10 +115,12 @@ stan_log_lik_cens <- function(ll, bterms, threads, normalize, ...) {
   tp <- tp()
   has_weights <- has_ad_terms(bterms, "weights")
   has_trunc <- has_ad_terms(bterms, "trunc")
-  has_interval_cens <- cens$vars$y2 != "NA"
-  if (ll$vec && !(has_weights || has_trunc)) {
+  has_interval_cens <- has_interval_cens(bterms)
+  if (ll$vec && !(has_interval_cens || has_weights || has_trunc)) {
     # vectorized log-likelihood contributions
-    types <- c("event", "rcens", "lcens", "icens")
+    # cannot vectorize over interval censored observations as
+    # vectorized lpdf functions return scalars not vectors (#1657)
+    types <- c("event", "rcens", "lcens")
     J <- args <- named_list(types)
     for (t in types) {
       Jt <- glue("J{t}{resp}[1:N{t}{resp}]")
@@ -137,15 +139,6 @@ stan_log_lik_cens <- function(ll, bterms, threads, normalize, ...) {
       "{tp}{ll$dist}_lccdf(Y{resp}{J$rcens}{ll$shift} | {args$rcens});\n",
       "{tp}{ll$dist}_lcdf(Y{resp}{J$lcens}{ll$shift} | {args$lcens});\n"
     )
-    if (has_interval_cens) {
-      rcens <- glue("rcens{resp}")
-      str_add(out) <- glue(
-        "{tp}log_diff_exp(\n",
-        "    {ll$dist}_lcdf(rcens{resp}{J$icens}{ll$shift} | {args$icens}),\n",
-        "    {ll$dist}_lcdf(Y{resp}{J$icens}{ll$shift} | {args$icens})\n",
-        "  );\n"
-      )
-    }
   } else {
     # non-vectorized likelihood contributions
     n <- stan_nn(threads)
@@ -219,8 +212,7 @@ stan_log_lik_mix <- function(ll, bterms, pred_mix_prob, threads,
       "      ps[{mix}] = {theta} + ",
       "{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
     )
-    has_interval_cens <- cens$vars$y2 != "NA"
-    if (has_interval_cens) {
+    if (has_interval_cens(bterms)) {
       str_add(out) <- glue(
         "    }} else if (cens{resp}{n} == 2) {{\n",
         "      ps[{mix}] = {theta} + log_diff_exp(\n",
@@ -326,11 +318,10 @@ stan_log_lik_advars <- function(bterms, advars,
 
 # adjust lpdf name if a more efficient version is available
 # for a specific link. For instance 'poisson_log'
-stan_log_lik_simple_lpdf <- function(lpdf, link, bterms, sep = "_") {
+stan_log_lik_simple_lpdf <- function(lpdf, bterms, sep = "_") {
   stopifnot(is.brmsterms(bterms))
-  has_cens_or_trunc <- has_ad_terms(bterms, c("cens", "trunc"))
-  if (bterms$family$link == link && !has_cens_or_trunc) {
-    lpdf <- paste0(lpdf, sep, link)
+  if (stan_has_built_in_fun(bterms)) {
+    lpdf <- paste0(lpdf, sep, bterms$family$link)
   }
   lpdf
 }
@@ -576,7 +567,7 @@ stan_log_lik_poisson <- function(bterms, ...) {
   } else {
     p <- stan_log_lik_dpars(bterms)
     p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, log = TRUE, ...)
-    lpdf <- stan_log_lik_simple_lpdf("poisson", "log", bterms)
+    lpdf <- stan_log_lik_simple_lpdf("poisson", bterms)
     out <- sdist(lpdf, p$mu)
   }
   out
@@ -591,7 +582,7 @@ stan_log_lik_negbinomial <- function(bterms, ...) {
     p <- stan_log_lik_dpars(bterms)
     p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, log = TRUE, ...)
     p$shape <- stan_log_lik_multiply_rate_denom(p$shape, bterms, ...)
-    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
+    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
   }
   out
@@ -609,7 +600,7 @@ stan_log_lik_negbinomial2 <- function(bterms, ...) {
     p$shape <- stan_log_lik_multiply_rate_denom(
       p$sigma, bterms, transform = "inv", ...
     )
-    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
+    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
   }
   out
@@ -625,7 +616,7 @@ stan_log_lik_geometric <- function(bterms, ...) {
     p$shape <- "1"
     p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, log = TRUE, ...)
     p$shape <- stan_log_lik_multiply_rate_denom(p$shape, bterms, ...)
-    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
+    lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
   }
 }
@@ -633,7 +624,7 @@ stan_log_lik_geometric <- function(bterms, ...) {
 stan_log_lik_binomial <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   p$trials <- stan_log_lik_advars(bterms, "trials", ...)$trials
-  lpdf <- stan_log_lik_simple_lpdf("binomial", "logit", bterms)
+  lpdf <- stan_log_lik_simple_lpdf("binomial", bterms)
   sdist(lpdf, p$trials, p$mu)
 }
 
@@ -655,7 +646,7 @@ stan_log_lik_bernoulli <- function(bterms, ...) {
     out <- sdist("bernoulli_logit_glm", p$x, p$alpha, p$beta)
   } else {
     p <- stan_log_lik_dpars(bterms)
-    lpdf <- stan_log_lik_simple_lpdf("bernoulli", "logit", bterms)
+    lpdf <- stan_log_lik_simple_lpdf("bernoulli", bterms)
     out <- sdist(lpdf, p$mu)
   }
   out
@@ -668,7 +659,7 @@ stan_log_lik_discrete_weibull <- function(bterms, ...) {
 
 stan_log_lik_com_poisson <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  lpdf <- stan_log_lik_simple_lpdf("com_poisson", "log", bterms)
+  lpdf <- stan_log_lik_simple_lpdf("com_poisson", bterms)
   sdist(lpdf, p$mu, p$shape, vec = FALSE)
 }
 
@@ -718,7 +709,8 @@ stan_log_lik_exgaussian <- function(bterms, ...) {
 }
 
 stan_log_lik_inverse.gaussian <- function(bterms, ...) {
-  reqn <- stan_log_lik_adj(bterms) || is_pred_dpar(bterms, "shape")
+  is_pred_shape <- is_pred_dpar(bterms, "shape")
+  reqn <- stan_log_lik_adj(bterms) || is_pred_shape
   p <- stan_log_lik_dpars(bterms, reqn = reqn)
   sdist("inv_gaussian", p$mu, p$shape, vec = FALSE)
 }
@@ -745,15 +737,10 @@ stan_log_lik_von_mises <- function(bterms, ...) {
 }
 
 stan_log_lik_cox <- function(bterms, ...) {
-  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  resp <- usc(bterms$resp)
-  p$bhaz <- paste0("bhaz", resp, "[n]")
-  p$cbhaz <- paste0("cbhaz", resp, "[n]")
-  lpdf <- "cox"
-  if (bterms$family$link == "log") {
-    str_add(lpdf) <- "_log"
-  }
-  sdist(lpdf, p$mu, p$bhaz, p$cbhaz, vec = FALSE)
+  p <- stan_log_lik_dpars(bterms)
+  c(p) <- stan_log_lik_advars(bterms, c("bhaz", "cbhaz"))
+  lpdf <- stan_log_lik_simple_lpdf("cox", bterms)
+  sdist(lpdf, p$mu, p$bhaz, p$cbhaz, vec = TRUE)
 }
 
 stan_log_lik_cumulative <- function(bterms, ...) {
@@ -862,14 +849,14 @@ stan_log_lik_ordinal <- function(bterms, ...) {
 
 stan_log_lik_hurdle_poisson <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  lpdf <- stan_log_lik_simple_lpdf("hurdle_poisson", "log", bterms)
+  lpdf <- stan_log_lik_simple_lpdf("hurdle_poisson", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit(bterms, "hu"))
   sdist(lpdf, p$mu, p$hu, vec = FALSE)
 }
 
 stan_log_lik_hurdle_negbinomial <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  lpdf <- stan_log_lik_simple_lpdf("hurdle_neg_binomial", "log", bterms)
+  lpdf <- stan_log_lik_simple_lpdf("hurdle_neg_binomial", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit(bterms, "hu"))
   sdist(lpdf, p$mu, p$shape, p$hu, vec = FALSE)
 }
@@ -924,14 +911,14 @@ stan_log_lik_hurdle_cumulative <- function(bterms, ...) {
 
 stan_log_lik_zero_inflated_poisson <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  lpdf <- stan_log_lik_simple_lpdf("zero_inflated_poisson", "log", bterms)
+  lpdf <- stan_log_lik_simple_lpdf("zero_inflated_poisson", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit(bterms, "zi"))
   sdist(lpdf, p$mu, p$zi, vec = FALSE)
 }
 
 stan_log_lik_zero_inflated_negbinomial <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  lpdf <- stan_log_lik_simple_lpdf("zero_inflated_neg_binomial", "log", bterms)
+  lpdf <- stan_log_lik_simple_lpdf("zero_inflated_neg_binomial", bterms)
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit(bterms, "zi"))
   sdist(lpdf, p$mu, p$shape, p$zi, vec = FALSE)
 }
@@ -940,7 +927,7 @@ stan_log_lik_zero_inflated_binomial <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
   p$trials <- stan_log_lik_advars(bterms, "trials", reqn = TRUE, ...)$trials
   lpdf <- "zero_inflated_binomial"
-  lpdf <- stan_log_lik_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
+  lpdf <- stan_log_lik_simple_lpdf(lpdf, bterms, sep = "_b")
   lpdf <- paste0(lpdf, stan_log_lik_dpar_usc_logit(bterms, "zi"))
   sdist(lpdf, p$trials, p$mu, p$zi, vec = FALSE)
 }

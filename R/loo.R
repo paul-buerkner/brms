@@ -723,6 +723,24 @@ recommend_loo_options <- function(loo, k_threshold = 0.7, moment_match = FALSE,
   invisible(out)
 }
 
+# subset observations in a psis object
+# this is a bit cumbersome because of how psis stores information
+# @param subset vector with which to subset
+#' @export
+subset.psis <- function(x, subset, ...) {
+  stopifnot(is.vector(subset))
+  x$log_weights <- x$log_weights[, subset, drop = FALSE]
+  for (d in names(x$diagnostics)) {
+    x$diagnostics[[d]] <- x$diagnostics[[d]][subset]
+  }
+  attr_names <- c("norm_const_log", "tail_len", "r_eff")
+  for (a in attr_names) {
+    attr(x, a) <- attr(x, a)[subset]
+  }
+  attr(x, "dims") <- dim(x$log_weights)
+  x
+}
+
 # helper function to compute relative efficiences
 # @param x matrix of posterior draws
 # @param fit a brmsfit object to extract metadata from

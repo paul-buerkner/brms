@@ -129,7 +129,7 @@ the horseshoe. Artificial Intelligence and Statistics.
 
 Piironen J. & Vehtari A. (2017). On the Hyperprior Choice for the Global
 Shrinkage Parameter in the Horseshoe Prior. Artificial Intelligence and
-Statistics. \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+Statistics. \url{https://arxiv.org/pdf/1610.05559v1}
 
 Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
 in the horseshoe and other shrinkage priors. Electronic Journal of

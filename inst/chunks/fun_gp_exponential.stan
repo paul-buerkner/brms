@@ -1,4 +1,5 @@
   /* compute a latent Gaussian process with exponential kernel
+   * also known as the Matern 1/2 kernel
    * Args:
    *   x: array of continuous predictor values
    *   sdgp: marginal SD parameter

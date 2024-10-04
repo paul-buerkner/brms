@@ -13,6 +13,7 @@
   int_conditions = NULL,
   prob = 0.95,
   spaghetti = FALSE,
+  surface = TRUE,
   resolution = 100,
   too_far = 0,
   ndraws = NULL,
@@ -52,6 +53,11 @@ be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended
 to set argument \code{ndraws} to a relatively small value
 (e.g., \code{100}) in order to reduce computation time.}
+
+\item{surface}{Logical. Indicates if interactions or
+two-dimensional smooths should be visualized as a surface.
+Defaults to \code{TRUE}. The surface type can be controlled
+via argument \code{stype} of the related plotting method.}
 
 \item{resolution}{Number of support points used to generate
 the plots. Higher resolution leads to smoother plots.

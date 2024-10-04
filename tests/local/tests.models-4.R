@@ -1,6 +1,6 @@
 source("setup_tests_local.R")
 
-test_that("UNSTR models work correctly", {
+test_that("UNSTR models work correctly", suppressWarnings({
   epilepsy2 <- epilepsy
   epilepsy2$visit <- as.numeric(epilepsy2$visit)
   fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy2)
@@ -22,9 +22,9 @@ test_that("UNSTR models work correctly", {
     waic(fit, newdata = newdat),
     "Cannot handle new time points in UNSTR models"
   )
-})
+}))
 
-test_that("SAR models work correctly", {
+test_that("SAR models work correctly", suppressWarnings({
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb),
                     data = COL.OLD, data2 = list(COL.nb = COL.nb),
@@ -43,9 +43,9 @@ test_that("SAR models work correctly", {
   ce <- conditional_effects(fit_errorsar, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_errorsar)$estimates[3, 1], 350, 380)
-})
+}))
 
-test_that("CAR models work correctly", {
+test_that("CAR models work correctly", suppressWarnings({
   # generate some spatial data
   set.seed(4331)
   east <- north <- 1:10
@@ -97,19 +97,19 @@ test_that("CAR models work correctly", {
   newdata2 <- list(W = new_W)
   expect_error(predict(fit_car, newdata = newdata, newdata2 = newdata2),
                "Cannot handle new locations in CAR models")
-})
+}))
 
-test_that("Missing value imputation works correctly", {
+test_that("Missing value imputation works correctly", suppressWarnings({
   library(mice)
   data("nhanes", package = "mice")
 
   # missing value imputation via multiple imputation
-  imp <- mice(nhanes)
+  imp <- mice(nhanes, m = 5)
   fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1,
+                           iter = 2000, warmup = 1000,
                            backend = "rstan", refresh = 0)
   print(fit_imp1)
   expect_equal(ndraws(fit_imp1), 5000)
-  expect_equal(dim(fit_imp1$rhats), c(5, length(variables(fit_imp1))))
 
   fit_imp1 <- update(fit_imp1, . ~ chl, newdata = imp)
   print(fit_imp1)
@@ -143,9 +143,10 @@ test_that("Missing value imputation works correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
   expect_range(loo$estimates[3, 1], 200, 225)
-})
+}))
 
-test_that("student-t-distributed group-level effects work correctly", {
+test_that("student-t-distributed group-level effects work correctly",
+          suppressWarnings({
   fit <- brm(
     count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
     data = epilepsy, family = poisson(),
@@ -156,9 +157,9 @@ test_that("student-t-distributed group-level effects work correctly", {
   expect_true(!"udf_1" %in% variables(fit))
   waic <- suppressWarnings(waic(fit))
   expect_range(waic$estimates[3, 1], 1300, 1400)
-})
+}))
 
-test_that("multinomial models work correctly", {
+test_that("multinomial models work correctly", suppressWarnings({
   set.seed(1245)
   N <- 100
   dat <- data.frame(
@@ -178,9 +179,9 @@ test_that("multinomial models work correctly", {
   expect_range(waic$estimates[3, 1], 550, 600)
   ce <- conditional_effects(fit, categorical = TRUE)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-})
+}))
 
-test_that("dirichlet models work correctly", {
+test_that("dirichlet models work correctly", suppressWarnings({
   set.seed(1246)
   N <- 100
   dat <- as.data.frame(rdirichlet(N, c(10, 5, 1)))
@@ -198,9 +199,9 @@ test_that("dirichlet models work correctly", {
   expect_range(waic$estimates[3, 1], -530, -500)
   ce <- conditional_effects(fit, categorical = TRUE)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-})
+}))
 
-test_that("logistic_normal models work correctly", {
+test_that("logistic_normal models work correctly", suppressWarnings({
   set.seed(1246)
   N <- 100
   dat <- as.data.frame(rdirichlet(N, c(10, 5, 1)))
@@ -216,4 +217,4 @@ test_that("logistic_normal models work correctly", {
   expect_equal(dimnames(pred)[[3]], c("y1", "y2", "y3"))
   waic <- waic(fit, ndraws = 250)
   expect_range(waic$estimates[3, 1], -530, -460)
-})
+}))

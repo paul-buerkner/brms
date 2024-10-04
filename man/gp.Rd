@@ -30,7 +30,7 @@ approximate GPs. If \code{NA} (the default), exact GPs are computed.}
 \item{cov}{Name of the covariance kernel. Currently supported are
 \code{"exp_quad"} (exponentiated-quadratic kernel; default),
 \code{"matern32"} (Matern 3/2 kernel), \code{"matern52"} (Matern 5/2 kernel),
-and \code{"exponential"} (exponential kernel).}
+and \code{"exponential"} (exponential kernel; alias: \code{"matern12"}).}
 
 \item{iso}{A flag to indicate whether an isotropic (\code{TRUE}; the
 default) or a non-isotropic GP should be used.

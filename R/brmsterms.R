@@ -131,7 +131,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$dpars[[dp]]$respform <- y$respform
       y$dpars[[dp]]$adforms <- y$adforms
     }
-    y$dpars[[dp]]$transform <- stan_eta_transform(y$dpars[[dp]]$family, y)
+    y$dpars[[dp]]$transform <- stan_eta_transform(y, y$dpars[[dp]]$family)
     check_cs(y$dpars[[dp]])
   }
 

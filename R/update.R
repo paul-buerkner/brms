@@ -346,7 +346,8 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   }
   if (is.null(args$chains)) {
     # chains were combined across all submodels
-    args$chains <- object$fit@sim$chains / max(NROW(object$rhats), 1)
+    nimp <- max(attr(object, "nimp"), 1)
+    args$chains <- object$fit@sim$chains / nimp
   }
   args$iter <- first_not_null(args$iter, object$fit@sim$iter)
   args$thin <- first_not_null(args$thin, object$fit@sim$thin)

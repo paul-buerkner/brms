@@ -1442,11 +1442,11 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   )
 
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = poisson())
-  expect_match2(scode, "target += poisson_lpmf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]]);")
-  expect_match2(scode, "poisson_lcdf(rcens[Jicens[1:Nicens]] | mu[Jicens[1:Nicens]])")
+  expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]);")
+  expect_match2(scode, "poisson_lcdf(rcens[n] | mu[n])")
 
-  scode <- stancode(y | cens(x) ~ 1, dat, family = cox())
-  expect_match2(scode, "target += cox_log_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
+  scode <- stancode(y | cens(x) ~ 1, dat, family = asym_laplace())
+  expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile);")
 
   dat$x[1] <- 2
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = asym_laplace())
@@ -1753,13 +1753,16 @@ test_that("Stan code of Cox models is correct", {
                      x = rnorm(100), g = sample(1:3, 100, TRUE))
   bform <- bf(y | cens(ce) ~ x)
   scode <- stancode(bform, data, brmsfamily("cox"))
-  expect_match2(scode, "target += cox_log_lpdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
+  expect_match2(scode,
+    "target += cox_log_lpdf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]], bhaz[Jevent[1:Nevent]], cbhaz[Jevent[1:Nevent]]);"
+  )
   expect_match2(scode, "vector[N] cbhaz = Zcbhaz * sbhaz;")
   expect_match2(scode, "lprior += dirichlet_lpdf(sbhaz | con_sbhaz);")
   expect_match2(scode, "simplex[Kbhaz] sbhaz;")
 
+  bform <- bf(y ~ x)
   scode <- stancode(bform, data, brmsfamily("cox", "identity"))
-  expect_match2(scode, "target += cox_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
+  expect_match2(scode, "target += cox_lpdf(Y | mu, bhaz, cbhaz);")
 
   bform <- bf(y | bhaz(gr = g) ~ x)
   scode <- stancode(bform, data, brmsfamily("cox"))

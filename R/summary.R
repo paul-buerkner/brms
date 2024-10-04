@@ -105,12 +105,15 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
       }
       measures$Est.Error <- sd
     }
-    c(measures) <- list(
-      quantiles = .quantile,
-      Rhat = posterior::rhat,
-      Bulk_ESS = posterior::ess_bulk,
-      Tail_ESS = posterior::ess_tail
-    )
+    c(measures) <- list(quantiles = .quantile)
+    if (!is.brmsfit_multiple(object)) {
+      # TODO: add a viable post-processing solution for brm_multiple models
+      c(measures) <- list(
+        Rhat = posterior::rhat,
+        Bulk_ESS = posterior::ess_bulk,
+        Tail_ESS = posterior::ess_tail
+      )
+    }
     out <- do.call(summarize_draws, c(list(draws), measures))
     out <- as.data.frame(out)
     rownames(out) <- out$variable
@@ -119,15 +122,9 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
 
   full_summary <- .summary(draws, variables, probs, robust)
+  out$has_rhat <- "Rhat" %in% colnames(full_summary)
   if (algorithm(object) == "sampling") {
-    if (is.brmsfit_multiple(object)) {
-      # TODO: replace with a viable post-processing solution
-      warning2(
-        "The displayed Rhat and ESS estimates should not be trusted for ",
-        "brm_multiple models. Please see ?brm_multiple for how ",
-        "to assess convergence of such models."
-      )
-    } else {
+    if (out$has_rhat) {
       Rhats <- full_summary[, "Rhat"]
       if (any(Rhats > 1.05, na.rm = TRUE)) {
         warning2(
@@ -328,13 +325,21 @@ print.brmssummary <- function(x, digits = 2, ...) {
   if (!short) {
     cat(paste0("Draws were sampled using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
-      cat(paste0(
-        "For each parameter, Bulk_ESS\n",
-        "and Tail_ESS are effective sample size measures, ",
-        "and Rhat is the potential\n",
-        "scale reduction factor on split chains ",
-        "(at convergence, Rhat = 1)."
-      ))
+      if (isTRUE(x$has_rhat)) {
+        cat(paste0(
+          "For each parameter, Bulk_ESS\n",
+          "and Tail_ESS are effective sample size measures, ",
+          "and Rhat is the potential\n",
+          "scale reduction factor on split chains ",
+          "(at convergence, Rhat = 1)."
+        ))
+      } else {
+        cat(paste0(
+          "Overall Rhat and ESS estimates\n",
+          "are not informative for brm_multiple models and are hence not displayed.\n",
+          "Please see ?brm_multiple for how to assess convergence of such models."
+        ))
+      }
     }
     cat("\n")
   }

@@ -39,10 +39,10 @@ with posterior predictive checks, cross-validation, and Bayes factors.
 -   [Advanced multilevel modeling with
     brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html)
     (The R Journal)
--   [Website](https://paul-buerkner.github.io/brms/) (Website of brms
+-   [Website](https://paulbuerkner.com/brms/) (Website of brms
     with documentation and vignettes)
 -   [Blog
-    posts](https://paul-buerkner.github.io/software/brms-blogposts.html)
+    posts](http://paulbuerkner.com/software/brms-blogposts.html)
     (List of blog posts about brms)
 -   [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
     Discourse)

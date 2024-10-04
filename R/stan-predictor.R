@@ -2121,10 +2121,10 @@ stan_eta_rsp <- function(r) {
 }
 
 # does eta need to be transformed manually using the inv_link function
-stan_eta_transform <- function(family, bframe) {
+stan_eta_transform <- function(bframe, family) {
   no_transform <- family$link == "identity" ||
     has_joint_link(family) && !is.customfamily(family)
-  !no_transform && !stan_has_built_in_fun(family, bframe)
+  !no_transform && !stan_has_built_in_fun(bframe, family)
 }
 
 # indicate if the population-level design matrix should be centered

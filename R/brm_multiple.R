@@ -158,6 +158,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
     attr(fits$data, "data_name") <- data_name
+    # attribute to remember how many imputed datasets where used
+    attr(fits, "nimp") <- length(data)
     class(fits) <- c("brmsfit_multiple", class(fits))
   }
   if (!is.null(file)) {
