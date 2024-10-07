@@ -181,6 +181,13 @@ predictor_sp <- function(prep, i) {
   for (j in seq_along(sp[["idxl"]])) {
     eval_list[[names(sp[["idxl"]])[j]]] <- p(sp[["idxl"]][[j]], i, row = FALSE)
   }
+  for (j in seq_along(sp[["r"]])) {
+    # r is not subsetted here since subsetting is handled via Jr
+    # the advantages of this approach is a reduced memory requirement
+    # as only the draws per level instead of per observation need to be stored
+    eval_list[[paste0("r_", j)]] <- sp[["r"]][[j]]
+    eval_list[[paste0("Jr_", j)]] <- p(sp[["Jr"]][[j]], i)
+  }
   for (j in seq_along(sp[["Csp"]])) {
     eval_list[[paste0("Csp_", j)]] <- p(sp[["Csp"]][[j]], i, row = FALSE)
   }
