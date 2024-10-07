@@ -144,15 +144,18 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     # extract raw variable names before transformations
     covars <- all_vars(sub_smframe$covars[[1]])
     byvars <- all_vars(sub_smframe$byvars[[1]])
-    ncovars <- length(covars)
-    if (ncovars > 2L) {
-      byvars <- c(covars[3:ncovars], byvars)
+    if (length(covars) > 2L) {
+      # show additional covariates via facetting
+      byvars <- c(covars[-(1:2)], byvars)
       covars <- covars[1:2]
-      ncovars <- 2L
+    } else if (length(covars) == 1L && length(byvars)) {
+      # move first byvar to covars to reduce facetting
+      covars <- c(covars, byvars[1])
+      byvars <- byvars[-1]
     }
     vars <- c(covars, byvars)
     values <- named_list(vars)
-    is_numeric <- setNames(rep(FALSE, ncovars), covars)
+    is_numeric <- setNames(rep(FALSE, length(covars)), covars)
     for (cv in covars) {
       is_numeric[cv] <- is.numeric(mf[[cv]])
       is_second_covar <- isTRUE(cv == covars[2])
@@ -193,8 +196,9 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
       }
     }
     newdata <- expand.grid(values)
-    need_surface <- surface && ncovars == 2L && all(is_numeric)
-    if (need_surface && too_far > 0) {
+    # indicates whether a surface will actually be plotted
+    show_surface <- surface && length(covars) == 2L && all(is_numeric)
+    if (show_surface && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
         g1 = newdata[[covars[1]]],
@@ -208,7 +212,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     other_vars <- setdiff(names(conditions), vars)
     newdata <- fill_newdata(newdata, other_vars, conditions)
     eta <- posterior_smooths(x, fit, smooth, newdata, ...)
-    effects <- na.omit(sub_smframe$covars[[1]][1:2])
+    effects <- na.omit(covars[1:2])
     cond_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     second_numeric <- isTRUE(is_numeric[2])
     if (second_numeric && !surface) {
@@ -229,8 +233,12 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
       cond_data$cond__ <- factor(1)
     }
     spa_data <- NULL
-    if (spaghetti && ncovars == 1L && is_numeric[1]) {
+    if (spaghetti && !show_surface && is_numeric[1]) {
       sample <- rep(seq_rows(eta), each = ncol(eta))
+      if (length(covars) == 2L) {
+        # draws should be unique across plotting groups
+        sample <- paste0(sample, "_", cond_data[[effects[2]]])
+      }
       spa_data <- data.frame(as.numeric(t(eta)), factor(sample))
       colnames(spa_data) <- c("estimate__", "sample__")
       spa_data <- cbind(cond_data, spa_data)
@@ -244,7 +252,7 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     points <- add_effects__(points, covars)
     attr(eta, "response") <- response
     attr(eta, "effects") <- effects
-    attr(eta, "surface") <- need_surface
+    attr(eta, "surface") <- show_surface
     attr(eta, "spaghetti") <- spa_data
     attr(eta, "points") <- points
     out[[response]] <- eta
