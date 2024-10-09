@@ -1178,7 +1178,7 @@ is.bprepnl <- function(x) {
 
 #' Prepare Predictions
 #'
-#' This method helps in preparing \pkg{brms} models for certin post-processing
+#' This method helps in preparing \pkg{brms} models for certain post-processing
 #' tasks most notably various forms of predictions. Unless you are a package
 #' developer, you will rarely need to call \code{prepare_predictions} directly.
 #'
