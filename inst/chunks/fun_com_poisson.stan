@@ -5,7 +5,8 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
   real log_common = log(nu) + log_mu/nu;
   real resids[4];
   real ans;
-  real lcte = (nu * exp(log_mu/nu)) - ( (nu-1)/(2*nu)* log_mu + (nu-1)/2*log(2*pi()) + 0.5 *log(nu));
+  real lcte = (nu * exp(log_mu/nu)) - 
+    ( (nu-1)/(2*nu)* log_mu + (nu-1)/2*log(2*pi()) + 0.5 *log(nu));
   real c_1 = (nu2-1)/24;
   real c_2 = (nu2-1)/1152*(nu2 + 23);
   real c_3 = (nu2-1)/414720* (5*square(nu2) - 298*nu2 + 11237);
@@ -16,18 +17,31 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
   ans = lcte + log(sum(resids));
   return ans;
 }
+
+// log of kth term of the normalizing series of the COM Poisson distribution
+real log_k_term(real log_mu, real nu, k) {
+  return (k - 1) * log_mu - nu * lgamma(k);
+}
+
+// bound for the remainder of the normalizing series of the COM Poisson
+// distribution given the last two terms in log-scale
+real bound_remainder(real k_current_term, real k_previous_term) {
+  return k_current_term - log(- expm1(k_current_term - k_previous_term));
+}
+
 // log normalizing constant of the COM Poisson distribution
 // implementation inspired by code of Ben Goodrich
 // improved following suggestions of Sebastian Weber (#892)
 // Args:
 //   log_mu: log location parameter
 //   shape: positive shape parameter
-real log_Z_com_poisson(real log_mu, real nu, real eps) {
+real log_Z_com_poisson(real log_mu, real nu) {
   real log_Z;
   int k = 2;
   int M = 10000;
-  real leps = log(eps);
+  real leps = -52 * log2();
   vector[M] log_Z_terms;
+
   if (nu == 1) {
     return exp(log_mu);
   }
@@ -42,18 +56,24 @@ real log_Z_com_poisson(real log_mu, real nu, real eps) {
     return log_Z_com_poisson_approx(log_mu, nu);
   }
   // direct computation of the truncated series
-  // check if the Mth term of the series is small enough
-  if (M * log_mu - nu*lgamma(M + 1) > -36.0) {
+  // check if the Mth term of the series pass in the stopping criteria
+  if (bound_remainder(log_k_term(log_mu, nu, M),
+                      log_k_term(log_mu, nu, M-1)) >= leps) {
     reject("nu is too close to zero.");
   }
+  
   // first 2 terms of the series
-  log_Z_terms[1] = 0;
-  log_Z_terms[2] = log_mu;
-  while (log_Z_terms[k] >= leps && k < M) {
+  log_Z_terms[1] = log_k_term(log_mu, nu, 1);
+  log_Z_terms[2] = log_k_term(log_mu, nu, 2);
+
+  while ((log_Z_terms[k] >= log_Z_terms[k-1]) || 
+    (bound_remainder(log_Z_terms[k], log_Z_terms[k-1]) >= leps) &&
+    k < M) {
     k += 1;
-    log_Z_terms[k] = (k - 1) * log_mu - nu * lgamma(k);
+    log_Z_terms[k] = log_k_term(log_mu, nu, k);
   }
   log_Z = log_sum_exp(log_Z_terms[1:k]);
+
   return log_Z;
 }
 // COM Poisson log-PMF for a single response (log parameterization)
