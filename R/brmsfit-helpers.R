@@ -13,8 +13,10 @@ is_mv <- function(x) {
 stopifnot_resp <- function(x, resp = NULL) {
   # TODO: merge into validate_resp?
   if (is_mv(x) && length(resp) != 1L) {
-    stop2("Argument 'resp' must be a single variable name ",
-          "when applying this method to a multivariate model.")
+    stop2(
+      "Argument 'resp' must be a single variable name ",
+      "when applying this method to a multivariate model."
+    )
   }
   invisible(NULL)
 }
@@ -105,8 +107,10 @@ validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
   if (is.null(draw_ids) && !is.null(ndraws)) {
     ndraws <- as_one_integer(ndraws)
     if (ndraws < 1 || ndraws > ndraws_total) {
-      stop2("Argument 'ndraws' should be between 1 and ",
-            "the maximum number of draws (", ndraws_total, ").")
+      stop2(
+        "Argument 'ndraws' should be between 1 and ",
+        "the maximum number of draws (", ndraws_total, ")."
+      )
     }
     draw_ids <- sample(seq_len(ndraws_total), ndraws)
   }
@@ -132,7 +136,7 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
     for (i in seq_along(names)[-1]) {
       for (j in seq_len(i - 1)) {
         if (brackets) {
-          c(cornames) <- paste0(type, "(", names[j], "," , names[i], ")")
+          c(cornames) <- paste0(type, "(", names[j], ",", names[i], ")")
         } else {
           c(cornames) <- paste0(type, sep, names[j], sep, names[i])
         }
@@ -174,7 +178,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
     k <- 0
     for (i in seq_len(size)[-1]) {
       for (j in seq_len(i - 1)) {
-        k = k + 1
+        k <- k + 1
         out[, j, i] <- out[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
     }
@@ -204,7 +208,7 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
     k <- 0
     for (i in seq_len(size)[-1]) {
       for (j in seq_len(i - 1)) {
-        k = k + 1
+        k <- k + 1
         out[, j, i] <- out[, i, j] <- cor[, k]
       }
     }
@@ -531,6 +535,38 @@ get_Mu <- function(prep, i = NULL) {
   Mu
 }
 
+# get posterior draws of multivariate mean vectors
+# only used in multivariate models with 'rescor'
+# and in univariate models with multiple 'Zi' pars such as zero_inflated_multinomial
+get_Zi <- function(prep, i = NULL) {
+  is_mv <- is.mvbrmsprep(prep)
+  if (is_mv) {
+    Zi <- prep$mvpars$Zi
+  } else {
+    stopifnot(is.brmsprep(prep))
+    Zi <- prep$dpars$Zi
+  }
+  if (!is.null(Zi)) {
+    stopifnot(!is.null(i))
+    Zi <- slice_col(Zi, i)
+    return(Zi)
+  }
+  if (is_mv) {
+    Zi <- lapply(prep$resps, get_dpar, "zi", i = i)
+  } else {
+    zi_dpars <- str_subset(names(prep$dpars), "^zi")
+    Zi <- lapply(zi_dpars, get_dpar, prep = prep, i = i)
+  }
+  if (length(i) == 1L) {
+    Zi <- do_call(cbind, Zi)
+  } else {
+    # keep correct dimension even if data has only 1 row
+    Zi <- lapply(Zi, as.matrix)
+    Zi <- abind::abind(Zi, along = 3)
+  }
+  Zi
+}
+
 # get posterior draws of residual covariance matrices
 # only used in multivariate models with 'rescor'
 # and in univariate models with multiple 'mu' pars such as logistic_normal
@@ -705,8 +741,10 @@ validate_resp <- function(resp, x, multiple = TRUE) {
   if (length(resp)) {
     resp <- as.character(resp)
     if (!all(resp %in% x)) {
-      stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(x))
+      stop2(
+        "Invalid argument 'resp'. Valid response ",
+        "variables are: ", collapse_comma(x)
+      )
     }
     if (!multiple) {
       resp <- as_one_character(resp)
@@ -971,8 +1009,10 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   if (!is.null(algorithm)) {
     if (algorithm != fit$algorithm) {
       if (!silent) {
-        message("Algorithm has changed from '", fit$algorithm,
-                "' to '", algorithm, "'.\n")
+        message(
+          "Algorithm has changed from '", fit$algorithm,
+          "' to '", algorithm, "'.\n"
+        )
       }
       refit <- TRUE
     }

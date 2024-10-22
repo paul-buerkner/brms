@@ -55,7 +55,8 @@ stan_log_lik.mixfamily <- function(x, bterms, threads, ...) {
     sbterms$dpars <- sbterms$dpars[dp_ids == i]
     sbterms$fdpars <- sbterms$fdpars[fdp_ids == i]
     ll[i] <- stan_log_lik(
-      x$mix[[i]], sbterms, mix = i, ptheta = ptheta,
+      x$mix[[i]], sbterms,
+      mix = i, ptheta = ptheta,
       threads = threads, ...
     )
   }
@@ -155,7 +156,8 @@ stan_log_lik_weights <- function(ll, bterms, threads, normalize, resp = "", ...)
 stan_log_lik_mix <- function(ll, bterms, mix, ptheta, threads,
                              normalize, resp = "", ...) {
   stopifnot(is.sdist(ll))
-  theta <- str_if(ptheta,
+  theta <- str_if(
+    ptheta,
     glue("theta{mix}{resp}[n]"),
     glue("log(theta{mix}{resp})")
   )
@@ -384,7 +386,8 @@ stan_log_lik_gaussian_time <- function(bterms, resp = "", mix = "", ...) {
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
-  sdist(glue("normal_time_{sfx}"),
+  sdist(
+    glue("normal_time_{sfx}"),
     p$mu, p$sigma, p$se2, p$Lcortime,
     p$nobs_tg, p$begin_tg, p$end_tg, p$Jtime_tg
   )
@@ -453,7 +456,8 @@ stan_log_lik_student_time <- function(bterms, resp = "", mix = "", ...) {
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
-  sdist(glue("student_t_time_{sfx}"),
+  sdist(
+    glue("student_t_time_{sfx}"),
     p$nu, p$mu, p$sigma, p$se2, p$Lcortime,
     p$nobs_tg, p$begin_tg, p$end_tg, p$Jtime_tg
   )
@@ -476,8 +480,10 @@ stan_log_lik_student_lagsar <- function(bterms, resp = "", mix = "",
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("lagsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_lagsar", p$nu, p$mu, p$sigma,
-        p$lagsar, p$Msar, p$eigenMsar)
+  sdist(
+    "student_t_lagsar", p$nu, p$mu, p$sigma,
+    p$lagsar, p$Msar, p$eigenMsar
+  )
 }
 
 stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "",
@@ -486,8 +492,10 @@ stan_log_lik_student_errorsar <- function(bterms, resp = "", mix = "",
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, FALSE, resp, threads)
   v <- c("errorsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_errorsar", p$nu, p$mu, p$sigma,
-        p$errorsar, p$Msar, p$eigenMsar)
+  sdist(
+    "student_t_errorsar", p$nu, p$mu, p$sigma,
+    p$errorsar, p$Msar, p$eigenMsar
+  )
 }
 
 stan_log_lik_lognormal <- function(bterms, resp = "", mix = "", ...) {
@@ -529,7 +537,8 @@ stan_log_lik_poisson <- function(bterms, resp = "", mix = "", threads = NULL,
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     lpdf <- stan_log_lik_simple_lpdf("poisson", "log", bterms)
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp,
+      log = TRUE, threads = threads
     )
     out <- sdist(lpdf, p$mu)
   }
@@ -546,10 +555,12 @@ stan_log_lik_negbinomial <- function(bterms, resp = "", mix = "", threads = NULL
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp,
+      log = TRUE, threads = threads
     )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$shape, bterms, reqn, resp, threads = threads
+      p$shape, bterms, reqn, resp,
+      threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -568,10 +579,12 @@ stan_log_lik_negbinomial2 <- function(bterms, resp = "", mix = "", threads = NUL
     reqn <- stan_log_lik_adj(bterms) || nzchar(mix)
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp,
+      log = TRUE, threads = threads
     )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$sigma, bterms, reqn, resp, transform = "inv", threads = threads
+      p$sigma, bterms, reqn, resp,
+      transform = "inv", threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -590,10 +603,12 @@ stan_log_lik_geometric <- function(bterms, resp = "", mix = "", threads = NULL,
     p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
     p$shape <- "1"
     p$mu <- stan_log_lik_multiply_rate_denom(
-      p$mu, bterms, reqn, resp, log = TRUE, threads = threads
+      p$mu, bterms, reqn, resp,
+      log = TRUE, threads = threads
     )
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$shape, bterms, reqn, resp, threads = threads
+      p$shape, bterms, reqn, resp,
+      threads = threads
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -717,7 +732,8 @@ stan_log_lik_beta <- function(bterms, resp = "", mix = "", ...) {
   reqn <- stan_log_lik_adj(bterms) || nzchar(mix) ||
     paste0("phi", mix) %in% names(bterms$dpars)
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
-  sdist("beta",
+  sdist(
+    "beta",
     paste0(p$mu, " * ", p$phi),
     paste0("(1 - ", p$mu, ") * ", p$phi)
   )
@@ -771,7 +787,7 @@ stan_log_lik_acat <- function(bterms, resp = "", mix = "",
 stan_log_lik_categorical <- function(bterms, resp = "", mix = "",
                                      threads = NULL, ...) {
   stopifnot(bterms$family$link == "logit")
-  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  stopifnot(!isTRUE(nzchar(mix))) # mixture models are not allowed
   if (use_glm_primitive_categorical(bterms)) {
     bterms1 <- bterms$dpars[[1]]
     bterms1$family <- bterms$family
@@ -786,14 +802,14 @@ stan_log_lik_categorical <- function(bterms, resp = "", mix = "",
 
 stan_log_lik_multinomial <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
-  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  stopifnot(!isTRUE(nzchar(mix))) # mixture models are not allowed
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")
   sdist("multinomial_logit2", p$mu)
 }
 
 stan_log_lik_dirichlet_multinomial <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
-  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  stopifnot(!isTRUE(nzchar(mix))) # mixture models are not allowed
   mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")$mu
   reqn <- glue("phi{mix}") %in% names(bterms$dpars)
   phi <- stan_log_lik_dpars(bterms, reqn, resp, mix, dpars = "phi")$phi
@@ -802,7 +818,7 @@ stan_log_lik_dirichlet_multinomial <- function(bterms, resp = "", mix = "", ...)
 
 stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "logit")
-  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  stopifnot(!isTRUE(nzchar(mix))) # mixture models are not allowed
   mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")$mu
   reqn <- glue("phi{mix}") %in% names(bterms$dpars)
   phi <- stan_log_lik_dpars(bterms, reqn, resp, mix, dpars = "phi")$phi
@@ -810,14 +826,14 @@ stan_log_lik_dirichlet <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_log_lik_dirichlet2 <- function(bterms, resp = "", mix = "", ...) {
-  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  stopifnot(!isTRUE(nzchar(mix))) # mixture models are not allowed
   mu <- stan_log_lik_dpars(bterms, TRUE, resp, mix, dpars = "mu", type = "multi")$mu
   sdist("dirichlet", mu)
 }
 
 stan_log_lik_logistic_normal <- function(bterms, resp = "", mix = "", ...) {
   stopifnot(bterms$family$link == "identity")
-  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  stopifnot(!isTRUE(nzchar(mix))) # mixture models are not allowed
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix, type = "multi")
   p$Llncor <- glue("Llncor{mix}{resp}")
   p$refcat <- get_refcat(bterms$family, int = TRUE)
@@ -851,8 +867,10 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "",
   }
   if (has_cs(bterms)) {
     if (has_thres_groups(bterms)) {
-      stop2("Cannot use category specific effects ",
-            "in models with multiple thresholds.")
+      stop2(
+        "Cannot use category specific effects ",
+        "in models with multiple thresholds."
+      )
     }
     str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
@@ -913,8 +931,10 @@ stan_log_lik_hurdle_cumulative <- function(bterms, resp = "", mix = "",
   }
   if (has_cs(bterms)) {
     if (has_thres_groups(bterms)) {
-      stop2("Cannot use category specific effects ",
-            "in models with multiple thresholds.")
+      stop2(
+        "Cannot use category specific effects ",
+        "in models with multiple thresholds."
+      )
     }
     str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
@@ -984,8 +1004,10 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", threads = NULL, ...
   family <- bterms$family
   no_loop <- isFALSE(family$loop)
   if (no_loop && (stan_log_lik_adj(bterms) || nzchar(mix))) {
-    stop2("This model requires evaluating the custom ",
-          "likelihood as a loop over observations.")
+    stop2(
+      "This model requires evaluating the custom ",
+      "likelihood as a loop over observations."
+    )
   }
   reqn <- !no_loop
   p <- stan_log_lik_dpars(bterms, reqn, resp, mix)
@@ -1310,8 +1332,8 @@ use_glm_primitive <- function(bterms) {
   mu <- bterms$dpars[["mu"]]
   non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
-      isTRUE(bterms$rescor) || is.formula(mu$ac) ||
-      any(names(bterms$adforms) %in% non_glm_adterms)) {
+    isTRUE(bterms$rescor) || is.formula(mu$ac) ||
+    any(names(bterms$adforms) %in% non_glm_adterms)) {
     return(FALSE)
   }
   # some primitives do not support special terms in the way

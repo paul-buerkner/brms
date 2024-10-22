@@ -133,7 +133,8 @@ dat <- data.frame(y, z, ntrials)
 
 # define a custom family
 beta_binomial2 <- custom_family(
-  "beta_binomial2", dpars = c("mu", "phi"),
+  "beta_binomial2",
+  dpars = c("mu", "phi"),
   links = c("logit", "log"), lb = c(NA, 0),
   type = "int", vars = "vint1[n]"
 )
@@ -147,15 +148,18 @@ stan_density <- "
 stanvars <- stanvar(scode = stan_density, block = "functions")
 
 # fit the model
-fit <- brm(y | vint(ntrials) ~ z, data = dat,
-           family = beta_binomial2, stanvars = stanvars)
+fit <- brm(y | vint(ntrials) ~ z,
+  data = dat,
+  family = beta_binomial2, stanvars = stanvars
+)
 summary(fit)
 
 
 # define a *vectorized* custom family (no loop over observations)
 # notice also that 'vint' no longer has an observation index
 beta_binomial2_vec <- custom_family(
-  "beta_binomial2", dpars = c("mu", "phi"),
+  "beta_binomial2",
+  dpars = c("mu", "phi"),
   links = c("logit", "log"), lb = c(NA, 0),
   type = "int", vars = "vint1", loop = FALSE
 )
@@ -169,9 +173,11 @@ stan_density_vec <- "
 stanvars_vec <- stanvar(scode = stan_density_vec, block = "functions")
 
 # fit the model
-fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
-           family = beta_binomial2_vec,
-           stanvars = stanvars_vec)
+fit_vec <- brm(y | vint(ntrials) ~ z,
+  data = dat,
+  family = beta_binomial2_vec,
+  stanvars = stanvars_vec
+)
 summary(fit_vec)
 }
 

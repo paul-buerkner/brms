@@ -880,10 +880,14 @@ log_lik_dirichlet2 <- function(i, prep) {
 log_lik_dirichlet_multinomial <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
   eta <- get_Mu(prep, i = i)
-  mu <- insert_refcat(eta, refcat = prep$refcat)
-  sum_mu <- sum(mu)
-  out <- lgamma(sum_mu) + lgamma(sum(prep$data$Y[i, ]) + sum_mu) +
-    sum(lgamma(prep$data$Y[i, ] + mu)) - sum(lgamma(mu))
+  eta <- insert_refcat(eta, refcat = prep$refcat)
+  phi <- get_dpar(prep, "phi", i = i)
+  mu <- exp(eta) / rowSums(exp(eta))
+  sum_mu <- rowSums(mu * phi)
+  out <- do.call(c, lapply(1:dim(mu)[1], function(j) {
+    log(lgamma(sum_mu[j]) + lgamma(sum(prep$data$Y[i, ]) + sum_mu[j]) +
+      sum(lgamma(prep$data$Y[i, ] + mu[j] * phi[j])) - sum(lgamma(mu[j] * phi[j])))
+  }))
   log_lik_weight(out, i = i, prep = prep)
 }
 

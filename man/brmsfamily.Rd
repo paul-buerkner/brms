@@ -361,12 +361,12 @@ Below, we list common use cases for the different families.
   function.
 }
 \examples{
- # create a family object
- (fam1 <- student("log"))
- # alternatively use the brmsfamily function
- (fam2 <- brmsfamily("student", "log"))
- # both leads to the same object
- identical(fam1, fam2)
+# create a family object
+(fam1 <- student("log"))
+# alternatively use the brmsfamily function
+(fam2 <- brmsfamily("student", "log"))
+# both leads to the same object
+identical(fam1, fam2)
 
 }
 \seealso{
