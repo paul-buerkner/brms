@@ -1,11 +1,12 @@
+// log approximate normalizing constant of the COM poisson distribuion
+// based on equations (4) and (31) of doi:10.1007/s10463-017-0629-6
+// Args: see log_Z_com_poisson()
 real log_Z_com_poisson_approx(real log_mu, real nu) {
-  // Asymptotic expansion of Z(mu, nu) with four terms.
-  // Based on equations (4) and (31) of doi:10.1007/s10463-017-0629-6
   real nu2 = nu^2;
   real log_common = log(nu) + log_mu/nu;
   real resids[4];
   real ans;
-  real lcte = (nu * exp(log_mu/nu)) - 
+  real lcte = (nu * exp(log_mu/nu)) -
     ( (nu-1)/(2*nu)* log_mu + (nu-1)/2*log(2*pi()) + 0.5 *log(nu));
   real c_1 = (nu2-1)/24;
   real c_2 = (nu2-1)/1152*(nu2 + 23);
@@ -19,12 +20,19 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
 }
 
 // log of kth term of the normalizing series of the COM Poisson distribution
+// Args:
+//   log_mu: log location parameter
+//   shape: positive shape parameter
+//   k: k-th term
 real log_k_term(real log_mu, real nu, k) {
   return (k - 1) * log_mu - nu * lgamma(k);
 }
 
 // bound for the remainder of the normalizing series of the COM Poisson
 // distribution given the last two terms in log-scale
+// Args:
+//   k_current_term: the log of a_k term
+//   k_previous_term: the log of a_(k-1) term
 real bound_remainder(real k_current_term, real k_previous_term) {
   return k_current_term - log(- expm1(k_current_term - k_previous_term));
 }
@@ -61,12 +69,12 @@ real log_Z_com_poisson(real log_mu, real nu) {
                       log_k_term(log_mu, nu, M-1)) >= leps) {
     reject("nu is too close to zero.");
   }
-  
+
   // first 2 terms of the series
   log_Z_terms[1] = log_k_term(log_mu, nu, 1);
   log_Z_terms[2] = log_k_term(log_mu, nu, 2);
 
-  while ((log_Z_terms[k] >= log_Z_terms[k-1]) || 
+  while ((log_Z_terms[k] >= log_Z_terms[k-1]) ||
     (bound_remainder(log_Z_terms[k], log_Z_terms[k-1]) >= leps) &&
     k < M) {
     k += 1;
@@ -77,8 +85,8 @@ real log_Z_com_poisson(real log_mu, real nu) {
   return log_Z;
 }
 // COM Poisson log-PMF for a single response (log parameterization)
-// Args: 
-//   y: the response value 
+// Args:
+//   y: the response value
 //   log_mu: log location parameter
 //   shape: positive shape parameter
 real com_poisson_log_lpmf(int y, real log_mu, real nu) {
@@ -115,7 +123,7 @@ real com_poisson_lcdf(int y, real mu, real nu) {
   }
   log_Z = log_Z_com_poisson(log_mu, nu);
   if (y == 0) {
-    return -log_Z; 
+    return -log_Z;
   }
   // first 2 terms of the series
   log_num_terms[1] = log1p_exp(nu * log_mu);
@@ -127,5 +135,5 @@ real com_poisson_lcdf(int y, real mu, real nu) {
 }
 // COM Poisson log-CCDF for a single response
 real com_poisson_lccdf(int y, real mu, real nu) {
-  return log1m_exp(com_poisson_lcdf(y | mu, nu));   
+  return log1m_exp(com_poisson_lcdf(y | mu, nu));
 }
