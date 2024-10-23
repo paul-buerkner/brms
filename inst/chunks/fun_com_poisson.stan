@@ -24,7 +24,7 @@ real log_Z_com_poisson_approx(real log_mu, real nu) {
 //   log_mu: log location parameter
 //   shape: positive shape parameter
 //   k: k-th term
-real log_k_term(real log_mu, real nu, k) {
+real log_k_term(real log_mu, real nu, int k) {
   return (k - 1) * log_mu - nu * lgamma(k);
 }
 
