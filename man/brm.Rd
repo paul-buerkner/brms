@@ -494,11 +494,9 @@ conditional_effects(fit7)
 
 # Fit an extended-support beta mixture model (Kosmidis & Zeileis,
 # 2024; doi: 10.48550/arXiv.2409.07233)
-if (requireNamespace("betareg", quietly = TRUE) &
-    requireNamespace("distributions3", quietly = TRUE)) {
+if (require("betareg", quietly = TRUE) &
+    require("distributions3", quietly = TRUE)) {
 
-   library("betareg")
-   library("distributions3")
    data("LossAversion", package = "betareg")
 
    # The maximum likelihood XBX fit shown in Table 2 in Kosmidis & Zeileis (2024)
