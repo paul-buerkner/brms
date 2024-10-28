@@ -217,6 +217,8 @@ information on link functions supported by each family.}
 
 \item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
 
+\item{link_u}{Link of auxiliary parameter \code{u} if being predicted.}
+
 \item{threshold}{A character string indicating the type
 of thresholds (i.e. intercepts) used in an ordinal model.
 \code{"flexible"} provides the standard unstructured thresholds,

@@ -655,12 +655,6 @@ log_lik_asym_laplace <- function(i, prep, ...) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_xbetax <- function(i, prep) {
-    distributions3::pdf(get_xbetax(i, prep),
-                        prep$data$Y[i],
-                        log = TRUE)
-}
-
 log_lik_zero_inflated_asym_laplace <- function(i, prep, ...) {
   args <- list(
     mu = get_dpar(prep, "mu", i),
@@ -1082,4 +1076,10 @@ sub_inverse_symmetric <- function(Cinv, i) {
   csub <- Cinv[i, -i]
   D <- outer(csub, csub)
   Cinv[-i, -i] - D / Cinv[i, i]
+}
+
+log_lik_xbetax <- function(i, prep) {
+    distributions3::pdf(get_xbetax(i, prep),
+                        prep$data$Y[i],
+                        log = TRUE)
 }

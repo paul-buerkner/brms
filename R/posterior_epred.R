@@ -460,10 +460,6 @@ posterior_epred_asym_laplace <- function(prep) {
   )
 }
 
-posterior_epred_xbetax <- function(prep) {
-    matrix(mean(get_xbetax(NULL, prep)), nrow = prep$ndraws, ncol = prep$nobs)
-}
-
 posterior_epred_zero_inflated_asym_laplace <- function(prep) {
   posterior_epred_asym_laplace(prep) * (1 - prep$dpars$zi)
 }
@@ -903,4 +899,8 @@ pp_expect <- function(object, ...) {
   warning2("Method 'pp_expect' is deprecated. ",
            "Please use 'posterior_epred' instead.")
   UseMethod("posterior_epred")
+}
+
+posterior_epred_xbetax <- function(prep) {
+    matrix(mean(get_xbetax(NULL, prep)), nrow = prep$ndraws, ncol = prep$nobs)
 }

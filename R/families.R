@@ -44,6 +44,7 @@
 #' @param link_alpha Link of auxiliary parameter \code{alpha} if being predicted.
 #' @param link_quantile Link of auxiliary parameter \code{quantile} if being predicted.
 #' @param link_xi Link of auxiliary parameter \code{xi} if being predicted.
+#' @param link_u Link of auxiliary parameter \code{u} if being predicted.
 #' @param threshold A character string indicating the type
 #'   of thresholds (i.e. intercepts) used in an ordinal model.
 #'   \code{"flexible"} provides the standard unstructured thresholds,
@@ -821,15 +822,6 @@ acat <- function(link = "logit", link_disc = "log",
   slink <- substitute(link)
   .brmsfamily("acat", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
-}
-
-#' @rdname brmsfamily
-#' @export
-xbetax <- function(link = "logit", link_phi = "log",
-                   link_u = "log") {
-  slink <- substitute(link)
-  .brmsfamily("xbetax", link = link, slink = slink,
-              link_phi = link_phi, link_u = link_u)
 }
 
 #' Finite Mixture Families in \pkg{brms}
@@ -1887,7 +1879,7 @@ family_bounds.brmsterms <- function(x, ...) {
     "hurdle_lognormal", "zero_inflated_poisson",
     "zero_inflated_negbinomial"
   )
-  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
+  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta", "xbetax")
   ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
   if (family %in% pos_families) {
     out <- list(lb = 0, ub = Inf)
@@ -1908,4 +1900,14 @@ family_bounds.brmsterms <- function(x, ...) {
     out <- list(lb = -Inf, ub = Inf)
   }
   out
+}
+
+
+#' @rdname brmsfamily
+#' @export
+xbetax <- function(link = "logit", link_phi = "log",
+                   link_u = "log") {
+  slink <- substitute(link)
+  .brmsfamily("xbetax", link = link, slink = slink,
+              link_phi = link_phi, link_u = link_u)
 }

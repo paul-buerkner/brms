@@ -716,10 +716,6 @@ get_xbetax <- function(i, prep) {
     XBeta(c(mu), c(phi), c(u))
 }
 
-posterior_predict_xbetax <- function(i, prep, ...) {
-    distributions3::random(get_xbetax(i, prep))
-}
-
 posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
                                                          ...) {
   zi <- get_dpar(prep, "zi", i = i)
@@ -1078,4 +1074,8 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
     )
   }
   round(x)
+}
+
+posterior_predict_xbetax <- function(i, prep, ...) {
+    distributions3::random(get_xbetax(i, prep))
 }
