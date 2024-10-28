@@ -460,6 +460,10 @@ posterior_epred_asym_laplace <- function(prep) {
   )
 }
 
+posterior_epred_xbetax <- function(prep) {
+    matrix(mean(get_xbetax(NULL, prep)), nrow = prep$ndraws, ncol = prep$nobs)
+}
+
 posterior_epred_zero_inflated_asym_laplace <- function(prep) {
   posterior_epred_asym_laplace(prep) * (1 - prep$dpars$zi)
 }

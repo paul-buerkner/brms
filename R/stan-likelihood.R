@@ -1280,6 +1280,12 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
   out
 }
 
+stan_log_lik_xbetax <- function(bterms, ...) {
+  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  sdist("xbetax", p$mu, p$phi, p$u, vec = FALSE)
+}
+
+
 # use a Stan GLM primitive function?
 use_glm_primitive <- function(bterms) {
   stopifnot(is.brmsterms(bterms))

@@ -197,6 +197,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity",
                        link_quantile = "logit",
+                       link_u = "log",
                        threshold = "flexible",
                        refcat = NULL) {
   slink <- substitute(link)
@@ -211,6 +212,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
+    link_u = link_u,
     threshold = threshold, refcat = refcat
   )
 }
@@ -821,6 +823,15 @@ acat <- function(link = "logit", link_disc = "log",
               link_disc = link_disc, threshold = threshold)
 }
 
+#' @rdname brmsfamily
+#' @export
+xbetax <- function(link = "logit", link_phi = "log",
+                   link_u = "log") {
+  slink <- substitute(link)
+  .brmsfamily("xbetax", link = link, slink = slink,
+              link_phi = link_phi, link_u = link_u)
+}
+
 #' Finite Mixture Families in \pkg{brms}
 #'
 #' Set up a finite mixture family for use in \pkg{brms}.
@@ -1325,7 +1336,8 @@ links_dpars <- function(dpar) {
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
     alpha = c("identity", "log", "softplus", "squareplus"),
-    theta = c("identity")
+    theta = c("identity"),
+    u = c("log")
   )
 }
 

@@ -703,6 +703,23 @@ posterior_predict_asym_laplace <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+get_xbetax <- function(i, prep) {
+    if (is.numeric(i)) {
+        mu <- brms::get_dpar(prep, "mu", i = i)
+        phi <- brms::get_dpar(prep, "phi", i = i)
+        u <- brms::get_dpar(prep, "u", i = i)
+    } else {
+        mu <- brms::get_dpar(prep, "mu")
+        phi <- brms::get_dpar(prep, "phi")
+        u <- brms::get_dpar(prep, "u", i = i)
+    }
+    XBeta(c(mu), c(phi), c(u))
+}
+
+posterior_predict_xbetax <- function(i, prep, ...) {
+    distributions3::random(get_xbetax(i, prep))
+}
+
 posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
                                                          ...) {
   zi <- get_dpar(prep, "zi", i = i)

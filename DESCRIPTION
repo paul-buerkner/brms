@@ -69,6 +69,8 @@ Suggests:
     statmod,
     digest,
     diffobj,
+    betareg,
+    distributions3,
     R.rsp,
     gtable,
     shiny,

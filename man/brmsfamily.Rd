@@ -39,6 +39,7 @@
 \alias{sratio}
 \alias{cratio}
 \alias{acat}
+\alias{xbetax}
 \title{Special Family Functions for \pkg{brms} Models}
 \usage{
 brmsfamily(
@@ -61,6 +62,7 @@ brmsfamily(
   link_xi = "log1p",
   link_alpha = "identity",
   link_quantile = "logit",
+  link_u = "log",
   threshold = "flexible",
   refcat = NULL
 )
@@ -157,6 +159,8 @@ sratio(link = "logit", link_disc = "log", threshold = "flexible")
 cratio(link = "logit", link_disc = "log", threshold = "flexible")
 
 acat(link = "logit", link_disc = "log", threshold = "flexible")
+
+xbetax(link = "logit", link_phi = "log", link_u = "log")
 }
 \arguments{
 \item{family}{A character string naming the distribution family of the response

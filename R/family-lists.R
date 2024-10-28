@@ -611,3 +611,20 @@
     ybounds = c(-Inf, Inf), closed = c(NA, NA)
   )
 }
+
+.family_xbetax <- function() {
+  list(
+    links = c(
+      "logit", "probit", "probit_approx", "cloglog",
+      "cauchit", "softit", "identity", "log"
+    ),
+    dpars = c("mu", "phi", "u"),
+    type = "real",
+    ybounds = c(0, 1),
+    closed = c(TRUE, TRUE),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
+    include = "fun_xbetax.stan",
+    normalized = ""
+  )
+}
+
