@@ -177,7 +177,7 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-\code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.}
+\code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbetax}.}
 
 \item{link}{A specification for the model link function. This can be a
 name/expression or character string. See the 'Details' section for more
@@ -301,6 +301,18 @@ Below, we list common use cases for the different families.
   that cannot be explained by the primary distribution of the response.}
   }
 
+  \item{Family \code{xbetax} allows to estimate extended-support
+  beta regression models (and mixtures of those by allowing varying
+  exceedance (\code{u}) per observation) as defined in Kosmidis &
+  Zeileis (2024). These models can be very helpufl when there are
+  zero and / or one response values in the data, when there is
+  merit in assuming that there is a single process generating each
+  response in $[0, 1]$, or, equivalently, that there is no merit in
+  assuming that the $0$ and / or $1$ values arise from different
+  processes than response values in $(0, 1)$ (which is covered by
+  the families \code{zero_inflated_beta},
+  \code{zero_one_inflated_beta}.}
+
   Below, we list all possible links for each family.
   The first link mentioned for each family is the default.
   \itemize{
@@ -314,11 +326,13 @@ Below, we list common use cases for the different families.
   \code{hurdle_poisson}, and \code{hurdle_negbinomial} support
   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 
-  \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
-  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
-  \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
-  support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
-  \code{cauchit}, \code{identity}, and \code{log}.}
+  \item{Families \code{binomial}, \code{bernoulli},
+  \code{beta_binomial}, \code{zero_inflated_binomial},
+  \code{zero_inflated_beta_binomial}, \code{Beta},
+  \code{zero_inflated_beta}, \code{zero_one_inflated_beta}, and
+  \code{xbetax} support \code{logit}, \code{probit},
+  \code{probit_approx}, \code{cloglog}, \code{cauchit},
+  \code{identity}, and \code{log}.}
 
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
   \code{acat}, and \code{hurdle_cumulative} support \code{logit},
@@ -368,6 +382,12 @@ Below, we list common use cases for the different families.
  # both leads to the same object
  identical(fam1, fam2)
 
+}
+\references{
+Kosmidis I, Zeileis A (2024).
+ Extended-Support Beta Regression for [0, 1] Responses.
+ 2409.07233, \emph{arXiv.org E-Print Archive}.
+ \doi{10.48550/arXiv.2409.07233}
 }
 \seealso{
 \code{\link[brms:brm]{brm}},

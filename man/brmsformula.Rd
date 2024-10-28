@@ -467,7 +467,7 @@ models for all parameters of the assumed response distribution.
   \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
   / hurdle families); \code{nu} (degrees of freedom parameter of the
   \code{student} and \code{frechet} families); \code{phi} (precision
-  parameter of the \code{beta} and \code{zero_inflated_beta} families);
+  parameter of the \code{beta}, \code{zero_inflated_beta}, and \code{xbetax} families);
   \code{kappa} (precision parameter of the \code{von_mises} family);
   \code{beta} (mean parameter of the exponential component of the
   \code{exgaussian} family); \code{quantile} (quantile parameter of the
@@ -476,7 +476,8 @@ models for all parameters of the assumed response distribution.
   probability); \code{coi} (conditional one-inflation probability);
   \code{disc} (discrimination) for ordinal models; \code{bs}, \code{ndt}, and
   \code{bias} (boundary separation, non-decision time, and initial bias of
-  the \code{wiener} diffusion model). By default, distributional parameters
+  the \code{wiener} diffusion model); \code{u} (exceedance parameter of the \code{xbetax} model).
+  By default, distributional parameters
   are modeled on the log scale if they can be positive only or on the logit
   scale if the can only be within the unit interval.
 
