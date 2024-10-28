@@ -711,7 +711,7 @@ get_xbetax <- function(i, prep) {
     } else {
         mu <- brms::get_dpar(prep, "mu")
         phi <- brms::get_dpar(prep, "phi")
-        u <- brms::get_dpar(prep, "u", i = i)
+        u <- brms::get_dpar(prep, "u")
     }
     XBeta(c(mu), c(phi), c(u))
 }
