@@ -535,6 +535,7 @@ if (require("betareg", quietly = TRUE) &
         col = hcl.colors(1, alpha = 0.3))
    abline(0, 1, lty = 2)
    abline(lm(hmc_fits ~ ml_fits), col = "darkgrey")
+
    loo(hmc_xbx)
    pp_check(hmc_xbx, ndraws = 100)
    pp_check(hmc_xbx, type = "ecdf_overlay", ndraws = 100)
