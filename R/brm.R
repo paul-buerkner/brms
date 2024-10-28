@@ -414,7 +414,11 @@
 #'
 #' # Fit an extended-support beta mixture model (Kosmidis & Zeileis,
 #' # 2024; doi: 10.48550/arXiv.2409.07233)
-#' if (requireNamespace("betareg", quietly = TRUE)) {
+#' if (requireNamespace("betareg", quietly = TRUE) &
+#'     requireNamespace("distributions3", quietly = TRUE)) {
+#'
+#'    library("betareg")
+#'    library("distributions3")
 #'    data("LossAversion", package = "betareg")
 #'
 #'    # The maximum likelihood XBX fit shown in Table 2 in Kosmidis & Zeileis (2024)
@@ -443,7 +447,7 @@
 #'
 #'    # Fitted values are almost identical with just a hint of
 #'    # shrinkage for HMC
-# '   hmc_fits <- fitted(hmc_xbx)[, "Estimate"]
+#'    hmc_fits <- fitted(hmc_xbx)[, "Estimate"]
 #'    ml_fits <- fitted(ml_xbx)
 #'
 #'    plot(ml_fits, hmc_fits,

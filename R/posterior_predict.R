@@ -1063,7 +1063,6 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   round(x)
 }
 
-
 get_xbetax <- function(i, prep) {
     if (is.numeric(i)) {
         mu <- brms::get_dpar(prep, "mu", i = i)
