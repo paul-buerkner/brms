@@ -1110,7 +1110,8 @@ def_dpar_prior <- function(x, dpar) {
       xi = "normal(0, 2.5)",
       alpha = "normal(0, 4)",
       disc = "lognormal(0, 1)",
-      theta = "logistic(0, 1)"
+      theta = "logistic(0, 1)",
+      u = "gamma(0.01, 0.01)"
     )
   } else {
     # except for 'mu' all parameters only support one link other than identity
@@ -1119,7 +1120,7 @@ def_dpar_prior <- function(x, dpar) {
       sigma = def_scale_prior(x),
       shape = "student_t(3, 0, 2.5)",
       nu = "normal(2.7, 0.8)",
-      phi = "student_t(3, 0, 2.5)",
+      phi =  "student_t(3, 0, 2.5)",
       kappa = "normal(5.0, 0.8)",
       beta = "normal(1.7, 1.3)",
       zi = "logistic(0, 1)",
@@ -1131,7 +1132,8 @@ def_dpar_prior <- function(x, dpar) {
       quantile = "logistic(0, 1)",
       xi = "normal(0, 4)",
       alpha = "normal(0, 4)",
-      disc = "normal(0, 1)"
+      disc = "normal(0, 1)",
+      u = "student_t(3, 0, 2.5)"
     )
   }
   out
@@ -1669,7 +1671,8 @@ dpar_bounds <- function(dpar, suffix = "", family = NULL) {
     disc = list(lb = "0", ub = ""),
     quantile = list(lb = "0", ub = "1"),
     xi = list(lb = "", ub = ""),
-    alpha = list(lb = "", ub = "")
+    alpha = list(lb = "", ub = ""),
+    u = list(lb = "0", ub = "")
   )
   out
 }
