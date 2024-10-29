@@ -494,8 +494,7 @@ conditional_effects(fit7)
 
 # Fit an extended-support beta mixture model (Kosmidis & Zeileis,
 # 2024; doi: 10.48550/arXiv.2409.07233)
-if (require("betareg", quietly = TRUE) &
-    require("distributions3", quietly = TRUE)) {
+if (require("betareg", quietly = TRUE)) {
 
    data("LossAversion", package = "betareg")
 

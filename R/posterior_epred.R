@@ -901,6 +901,20 @@ pp_expect <- function(object, ...) {
   UseMethod("posterior_epred")
 }
 
+## From betareg
+mean_xbeta <- function(mu, phi, nu, ...) {
+    a <- mu * phi
+    b <- (1 - mu) * phi
+    d <- (1 + 2 * nu)
+    q0 <- nu / d
+    q1 <- (1 + nu) / d
+    t3 <- pbeta(q1, a, b)
+    t1 <- d * mu * (pbeta(q1, a + 1, b) - pbeta(q0, a + 1, b))
+    t2 <- nu * (t3 - pbeta(q0, a, b))
+    1 + t1 - t2 - t3
+}
+
 posterior_epred_xbetax <- function(prep) {
-    matrix(mean(get_xbetax(NULL, prep)), nrow = prep$ndraws, ncol = prep$nobs)
+    di <- get_xbetax(NULL, prep)
+    matrix(mean_xbeta(mu = di$mu, phi = di$phi, nu = di$u), nrow = prep$ndraws, ncol = prep$nobs)
 }

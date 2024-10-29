@@ -1073,9 +1073,10 @@ get_xbetax <- function(i, prep) {
         phi <- brms::get_dpar(prep, "phi")
         u <- brms::get_dpar(prep, "u")
     }
-    XBeta(c(mu), c(phi), c(u))
+    list(mu = c(mu), phi = c(phi), u = c(u))
 }
 
 posterior_predict_xbetax <- function(i, prep, ...) {
-    distributions3::random(get_xbetax(i, prep))
+    di <- get_xbetax(i, prep)
+    rxbeta(n = length(di$mu), mu = di$mu, phi = di$phi, nu = di$u)
 }

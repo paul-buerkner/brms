@@ -1079,7 +1079,8 @@ sub_inverse_symmetric <- function(Cinv, i) {
 }
 
 log_lik_xbetax <- function(i, prep) {
-    distributions3::pdf(get_xbetax(i, prep),
-                        prep$data$Y[i],
-                        log = TRUE)
+    di <- get_xbetax(i, prep)
+    dxbeta(prep$data$Y[i],
+           mu = di$mu, phi = di$phi, nu = di$u,
+           log = TRUE)
 }
