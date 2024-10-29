@@ -1403,7 +1403,7 @@ tp <- function(wsp = 2) {
 }
 
 stan_log_lik_xbetax <- function(bterms, ...) {
-    p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-    sdist("xbetax", p$mu, p$phi, p$kappa, vec = FALSE)
+    p <- stan_log_lik_dpars(bterms, reqn = FALSE)
+    sdist("xbetax", p$mu, p$phi, p$kappa, vec = TRUE)
 }
 
