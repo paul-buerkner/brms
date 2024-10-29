@@ -117,24 +117,56 @@
 #'
 #'
 #'   \item{Family \code{xbetax} allows to estimate extended-support
-#'   beta regression models (and mixtures of those by allowing varying
-#'   exceedance (\code{u}) per observation) as defined in Kosmidis &
-#'   Zeileis (2024). These models can be very helpufl when there are
-#'   zero and / or one response values in the data, when there is
-#'   merit in assuming that there is a single process generating each
-#'   response in $[0, 1]$, or, equivalently, that there is no merit in
-#'   assuming that the $0$ and / or $1$ values arise from different
-#'   processes than response values in $(0, 1)$ (which is covered by
-#'   the families \code{zero_inflated_beta},
-#'   \code{zero_one_inflated_beta}).}
-#'   }
-#'   Below, we list all possible links for each family.
-#'   The first link mentioned for each family is the default.
-#'   \itemize{
-#'   \item{Families \code{gaussian}, \code{student}, \code{skew_normal},
-#'   \code{exgaussian}, \code{asym_laplace}, and \code{gen_extreme_value}
-#'   support the links (as names) \code{identity}, \code{log}, \code{inverse},
-#'   and \code{softplus}.}
+#'   beta regression models (and continuous mixtures of those) as
+#'   defined in Kosmidis & Zeileis (2024). The model is defined as a
+#'   symmetric four-parameter beta distribution with shape parameters
+#'   \code{mu * phi} and \code{mu * (1 - phi)}, and exceedance
+#'   parameter \code{kappa} (to obtain support \code{[-kappa, 1 +
+#'   kappa]}), that is subsequently censored to \code{[0, 1]} in order
+#'   to obtain point masses at the boundary values 0 and 1.
+#'
+#'   These models have nice properties (e.g. we get beta regression as
+#'   supported by the \code{beta} family for \code{kappa =
+#'   0}, and heteroscedastic normal regression with censoring at both
+#'   0 and 1 as \code{kappa -> Inf}), and can be
+#'   very helpful when there are zero and / or one response values in
+#'   the data, and there is merit in assuming that there is a single
+#'   process generating each response in \code{[0, 1]}. If there is
+#'   merit in assuming that the 0 and / or 1 values arise from
+#'   different processes than response values in \code{(0, 1)} then it
+#'   is best to use the families \code{zero_inflated_beta},
+#'   \code{zero_one_inflated_beta}.
+#'
+#'   Continuous mixtures are formed by assuming a varying effect per
+#'   observation on \code{kappa} along with the effect
+#'   specifications on the mean \code{mu} and precision
+#'   \code{phi} of the underlying beta distributions in
+#'   \code{\link{brmsformula}}, and using default priors.
+#'
+#'   In more detail, the recommendation is to define a formula
+#'   of the form \code{bf(mu ~ ..., kappa ~ (1 || obs_id))}
+#'   (or \code{bf(mu ~ ..., phi ~ ..., kappa ~ (1 || obs_id))} if
+#'   precision effects are to be included), where \code{obs_id} is
+#'   unique identifier per observation (e.g. \code{data$obs_id <-
+#'   1:nrow(data)}). Other specifications for \code{kappa} are allowed
+#'   (e.g. population-level effects, varying-effects per covariate,
+#'   smooth terms, etc.), however these can lead to the model not
+#'   being formally identifiable, especially when there are precision
+#'   (\code{phi}) effects, as both the exceedance
+#'   (\code{kappa}) and the precision determine the variance of
+#'   the uncensored responses.}
+#'
+#'
+#' }
+#'
+#'
+#'   Below, we list all possible links for each family.  The first
+#'   link mentioned for each family is the default.  \itemize{
+#'   \item{Families \code{gaussian}, \code{student},
+#'   \code{skew_normal}, \code{exgaussian}, \code{asym_laplace}, and
+#'   \code{gen_extreme_value} support the links (as names)
+#'   \code{identity}, \code{log}, \code{inverse}, and
+#'   \code{softplus}.}
 #'
 #'   \item{Families \code{poisson}, \code{negbinomial}, \code{geometric},
 #'   \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
