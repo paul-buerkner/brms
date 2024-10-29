@@ -901,7 +901,13 @@ pp_expect <- function(object, ...) {
   UseMethod("posterior_epred")
 }
 
-## From betareg
+## Compute the expected value of a random variable Y following the
+## extended Beta distribution of Kosmidis & Zeileis (2024,
+## https://arxiv.org/abs/2409.07233), which is defined as
+##
+## Z ~ Beta(mu * phi, (1 - mu) * phi)
+## W = (1 + 2 * nu) * Z - nu
+## Y = max(min(Y, 1), 0)
 mean_xbeta <- function(mu, phi, nu, ...) {
     a <- mu * phi
     b <- (1 - mu) * phi
