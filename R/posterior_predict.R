@@ -1070,7 +1070,14 @@ get_xbetax <- function(i, prep) {
     list(mu = mu, phi = phi, kappa = kappa)
 }
 
-posterior_predict_xbetax <- function(i, prep, ...) {
+posterior_predict_xbetax <- function(i, prep, ntrys = 5, ...) {
     di <- get_xbetax(i, prep)
-    rxbeta(n = length(di$mu), mu = di$mu, phi = di$phi, nu = di$kappa)
+    rcontinuous(
+        n = prep$ndraws,
+        dist = "xbeta",
+        mu = di$mu, phi = di$phi, nu = di$kappa,
+        lb = prep$data$lb[i], ub = prep$data$ub[i],
+        ntrys = ntrys
+    )
 }
+
