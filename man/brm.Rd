@@ -492,56 +492,6 @@ fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
 summary(fit7)
 conditional_effects(fit7)
 
-# Fit an extended-support beta mixture model (Kosmidis & Zeileis,
-# 2024; doi: 10.48550/arXiv.2409.07233)
-if (require("betareg", quietly = TRUE)) {
-
-   data("LossAversion", package = "betareg")
-
-   # The maximum likelihood XBX fit shown in Table 2 in Kosmidis & Zeileis (2024)
-   # with u_i ~ind Exponential
-   ml_xbx <- betareg(invest ~ grade * (arrangement + age) + male | arrangement + male + grade,
-                     data = LossAversion, dist = "xbetax")
-
-   # The same model estimated using HMC with u_i ~ind Lognormal.
-   # Best to use more than one cores through the `cores` argument
-   LossAversion$id <- 1:nrow(LossAversion)
-   hmc_xbx <- brm(
-       bf(invest ~ grade * (arrangement + age) + male,
-          phi ~ arrangement + male + grade,
-          u ~ 1 || id),
-       data = LossAversion,
-       family = "xbetax")
-
-   # we get close agreement of fixed-effects estimates between
-   # `ml_xbx` and `hmc_xbx`, despite using maximum likelihood with
-   # u_i ~ind Exponential for `ml_xbx`.
-   hmc_coef <- fixef(hmc_xbx)
-   hmc_names <- row.names(hmc_coef)
-   mean(abs(hmc_coef[grepl("phi", hmc_names), "Estimate"] - coef(ml_xbx, model = "precision")))
-   mean(abs(hmc_coef[!grepl("phi|u_", hmc_names), "Estimate"] - coef(ml_xbx, model = "mean")))
-
-   # Fitted values are almost identical with just a hint of
-   # shrinkage for HMC
-   hmc_fits <- fitted(hmc_xbx)[, "Estimate"]
-   ml_fits <- fitted(ml_xbx)
-
-   plot(ml_fits, hmc_fits,
-        ylab = "HMC with u_i ~ind LogNormal(mu, sigma^2)",
-        xlab = "ML with u_i ~ind Exponential(nu)",
-        pch = 21,
-        bg = hcl.colors(1, alpha = 0.05),
-        col = hcl.colors(1, alpha = 0.3))
-   abline(0, 1, lty = 2)
-   abline(lm(hmc_fits ~ ml_fits), col = "darkgrey")
-
-   loo(hmc_xbx)
-   pp_check(hmc_xbx, ndraws = 100)
-   pp_check(hmc_xbx, type = "ecdf_overlay", ndraws = 100)
-   conditional_effects(hmc_xbx)
-
-}
-
 # use the future package for more flexible parallelization
 library(future)
 plan(multisession, workers = 4)
