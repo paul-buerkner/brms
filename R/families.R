@@ -114,7 +114,7 @@
 #'   zero-inflated and hurdle models. These models can be very helpful when there
 #'   are many zeros in the data (or ones in case of one-inflated models)
 #'   that cannot be explained by the primary distribution of the response.}
-#'   }
+#'
 #'
 #'   \item{Family \code{xbetax} allows to estimate extended-support
 #'   beta regression models (and mixtures of those by allowing varying
@@ -126,8 +126,8 @@
 #'   assuming that the $0$ and / or $1$ values arise from different
 #'   processes than response values in $(0, 1)$ (which is covered by
 #'   the families \code{zero_inflated_beta},
-#'   \code{zero_one_inflated_beta}.}
-#'
+#'   \code{zero_one_inflated_beta}).}
+#'   }
 #'   Below, we list all possible links for each family.
 #'   The first link mentioned for each family is the default.
 #'   \itemize{
