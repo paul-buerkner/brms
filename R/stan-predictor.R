@@ -2142,8 +2142,7 @@ stan_dpar_comments <- function(dpar, family) {
     disc = "discrimination parameters",
     quantile = "quantile parameter",
     xi = "shape parameter",
-    alpha = "skewness parameter",
-    u = "exceedance parameter"
+    alpha = "skewness parameter"
   )
   out
 }

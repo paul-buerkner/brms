@@ -916,5 +916,5 @@ mean_xbeta <- function(mu, phi, nu, ...) {
 
 posterior_epred_xbetax <- function(prep) {
     di <- get_xbetax(NULL, prep)
-    matrix(mean_xbeta(mu = di$mu, phi = di$phi, nu = di$u), nrow = prep$ndraws, ncol = prep$nobs)
+    mean_xbeta(mu = di$mu, phi = di$phi, nu = di$kappa)
 }

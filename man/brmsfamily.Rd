@@ -62,7 +62,6 @@ brmsfamily(
   link_xi = "log1p",
   link_alpha = "identity",
   link_quantile = "logit",
-  link_u = "log",
   threshold = "flexible",
   refcat = NULL
 )
@@ -160,7 +159,7 @@ cratio(link = "logit", link_disc = "log", threshold = "flexible")
 
 acat(link = "logit", link_disc = "log", threshold = "flexible")
 
-xbetax(link = "logit", link_phi = "log", link_u = "log")
+xbetax(link = "logit", link_phi = "log", link_kappa = "log")
 }
 \arguments{
 \item{family}{A character string naming the distribution family of the response
@@ -216,8 +215,6 @@ information on link functions supported by each family.}
 \item{link_alpha}{Link of auxiliary parameter \code{alpha} if being predicted.}
 
 \item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
-
-\item{link_u}{Link of auxiliary parameter \code{u} if being predicted.}
 
 \item{threshold}{A character string indicating the type
 of thresholds (i.e. intercepts) used in an ordinal model.

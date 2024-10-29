@@ -1081,6 +1081,6 @@ sub_inverse_symmetric <- function(Cinv, i) {
 log_lik_xbetax <- function(i, prep) {
     di <- get_xbetax(i, prep)
     dxbeta(prep$data$Y[i],
-           mu = di$mu, phi = di$phi, nu = di$u,
+           mu = di$mu, phi = di$phi, nu = di$kappa,
            log = TRUE)
 }

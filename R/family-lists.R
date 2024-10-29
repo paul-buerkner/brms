@@ -613,18 +613,29 @@
 }
 
 .family_xbetax <- function() {
-  list(
-    links = c(
-      "logit", "probit", "probit_approx", "cloglog",
-      "cauchit", "softit", "identity", "log"
-    ),
-    dpars = c("mu", "phi", "u"),
-    type = "real",
-    ybounds = c(0, 1),
-    closed = c(TRUE, TRUE),
-    ad = c("weights", "subset", "cens", "trunc", "index"),
-    include = "fun_xbetax.stan",
+    list(
+        links = c(
+            "logit", "probit", "probit_approx", "cloglog",
+            "cauchit", "softit", "identity", "log"
+        ),
+        dpars = c("mu", "phi", "kappa"),
+        type = "real",
+        ybounds = c(0, 1),
+        closed = c(TRUE, TRUE),
+        ad = c("weights", "subset", "index"),
+        include = "fun_xbetax.stan",
+        prior = function(dpar, link = "identity", ...) {
+        if (dpar == "kappa") {
+            if (link == "identity") {
+                return("gamma(0.01, 0.01)")
+            }
+            else {
+                return("student_t(3, 0, 2.5)")
+            }
+        }
+        NULL
+    },
     normalized = ""
-  )
+    )
 }
 

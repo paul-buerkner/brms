@@ -1064,19 +1064,13 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
 }
 
 get_xbetax <- function(i, prep) {
-    if (is.numeric(i)) {
-        mu <- brms::get_dpar(prep, "mu", i = i)
-        phi <- brms::get_dpar(prep, "phi", i = i)
-        u <- brms::get_dpar(prep, "u", i = i)
-    } else {
-        mu <- brms::get_dpar(prep, "mu")
-        phi <- brms::get_dpar(prep, "phi")
-        u <- brms::get_dpar(prep, "u")
-    }
-    list(mu = c(mu), phi = c(phi), u = c(u))
+    mu <- brms::get_dpar(prep, "mu", i = i)
+    phi <- brms::get_dpar(prep, "phi", i = i)
+    kappa <- brms::get_dpar(prep, "kappa", i = i)
+    list(mu = mu, phi = phi, kappa = kappa)
 }
 
 posterior_predict_xbetax <- function(i, prep, ...) {
     di <- get_xbetax(i, prep)
-    rxbeta(n = length(di$mu), mu = di$mu, phi = di$phi, nu = di$u)
+    rxbeta(n = length(di$mu), mu = di$mu, phi = di$phi, nu = di$kappa)
 }
