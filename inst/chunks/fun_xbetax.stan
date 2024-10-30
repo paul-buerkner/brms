@@ -72,6 +72,28 @@
       return xbetax_lpdf(y | mu, phi, kappav);
    }
 
+   real xbetax_lpdf(vector y, real mu, vector phi, vector kappa) {
+      vector[1] muv;
+      kappav[1] = mu;      
+      return xbetax_lpdf(y | muv, phi, kappa);
+   }
+
+   real xbetax_lpdf(vector y, real mu, real phi, vector kappa) {
+      vector[1] muv;
+      muv[1] = mu;
+      vector[1] phiv;
+      phiv[1] = phi;      
+      return xbetax_lpdf(y | mu, phiv, kappa);
+   }
+
+   real xbetax_lpdf(vector y, real mu, vector phi, real kappa) {
+      vector[1] muv;
+      muv[1] = mu;
+      vector[1] kappav;
+      kappav[1] = kappa;      
+      return xbetax_lpdf(y | mu, phi, kappav);
+   }
+
    real xbetax_lpdf(vector y, vector mu, real phi, real kappa) {
       vector[1] phiv;
       vector[1] kappav;
