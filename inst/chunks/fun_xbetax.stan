@@ -74,7 +74,7 @@
 
    real xbetax_lpdf(vector y, real mu, vector phi, vector kappa) {
       vector[1] muv;
-      kappav[1] = mu;      
+      muv[1] = mu;      
       return xbetax_lpdf(y | muv, phi, kappa);
    }
 
