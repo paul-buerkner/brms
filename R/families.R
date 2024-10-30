@@ -136,24 +136,24 @@
 #'   is best to use the families \code{zero_inflated_beta},
 #'   \code{zero_one_inflated_beta}.
 #'
-#'   Continuous mixtures are formed by assuming a varying effect per
-#'   observation on \code{kappa} along with the effect
-#'   specifications on the mean \code{mu} and precision
-#'   \code{phi} of the underlying beta distributions in
-#'   \code{\link{brmsformula}}, and using default priors.
+#'   Continuous mixtures are formed by assuming varying effects on
+#'   \code{kappa} along with effect specifications on the mean
+#'   \code{mu} and precision \code{phi} of the underlying beta
+#'   distributions in \code{\link{brmsformula}}, and using default
+#'   priors.
 #'
-#'   In more detail, the recommendation is to define a formula
-#'   of the form \code{bf(mu ~ ..., kappa ~ (1 || obs_id))}
-#'   (or \code{bf(mu ~ ..., phi ~ ..., kappa ~ (1 || obs_id))} if
-#'   precision effects are to be included), where \code{obs_id} is
-#'   unique identifier per observation (e.g. \code{data$obs_id <-
-#'   1:nrow(data)}). Other specifications for \code{kappa} are allowed
-#'   (e.g. population-level effects, varying-effects per covariate,
-#'   smooth terms, etc.), however these can lead to the model not
-#'   being formally identifiable, especially when there are precision
-#'   (\code{phi}) effects, as both the exceedance
-#'   (\code{kappa}) and the precision determine the variance of
-#'   the uncensored responses.}
+#'   In more detail, the recommendation is to define a formula of the
+#'   form \code{bf(mu ~ ..., kappa ~ (1 || obs_id))} (or \code{bf(mu ~
+#'   ..., phi ~ ..., kappa ~ (1 || obs_id))} if precision effects are
+#'   to be included), where \code{obs_id} is are observation
+#'   identifies (e.g. \code{data$obs_id <- 1:nrow(data)} for
+#'   observation-specific effects). Other specifications for
+#'   \code{kappa} are allowed (e.g. population-level effects,
+#'   varying-effects per covariate, smooth terms, etc.), however these
+#'   can lead to the model not being formally identifiable, especially
+#'   when there are precision (\code{phi}) effects, as both the
+#'   exceedance (\code{kappa}) and the precision determine the
+#'   variance of the uncensored responses.}
 #'
 #'
 #' }
