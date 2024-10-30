@@ -20,7 +20,6 @@
 
    real xbetax_lpdf(vector y, vector mu, vector phi, vector kappa) {
      int N = size(y);
-
      int N_zer = 0;
      int N_one = 0;
      int N_oth = 0;
@@ -61,21 +60,26 @@
      return ll;	
    }
 
+   real xbetax_lpdf(vector y, vector mu, real phi, vector kappa) {
+      vector[1] phiv;
+      phiv[1] = phi;      
+      return xbetax_lpdf(y | mu, phiv, kappa);
+   }
 
-   // real xbetax_lpdf(vector y, vector mu, vector phi, vector kappa) {
-   //   int N = size(y);
-   //   vector[N] lls;
-   //   for (i in 1:N) {
-   //     if (y[i] <= 0) 
-   //       lls[i] = beta_proportion_lcdf(kappa[i] / (1 + 2 * kappa[i]) | mu[i], phi[i]);
-   //     else if (y[i] >= 1)
-   //       lls[i] = beta_proportion_lccdf((1 + kappa[i]) / (1 + 2 * kappa[i]) | mu[i], phi[i]);
-   //     else 
-   // 	 lls[i] = beta_proportion_lpdf((y[i] + kappa[i]) / (1 + 2 * kappa[i]) | mu[i], phi[i]) - log(1 + 2 * kappa[i]);
-   //   }
-   //   real ll = sum(lls);
-   //   return ll;	
-   // }
+   real xbetax_lpdf(vector y, vector mu, vector phi, real kappa) {
+      vector[1] kappav;
+      kappav[1] = kappa;      
+      return xbetax_lpdf(y | mu, phi, kappav);
+   }
+
+   real xbetax_lpdf(vector y, vector mu, real phi, real kappa) {
+      vector[1] phiv;
+      vector[1] kappav;
+      phiv[1] = phi; 
+      kappav[1] = kappa;      
+      return xbetax_lpdf(y | mu, phiv, kappav);
+   }
+
 
    real xbetax_rng(real mu, real phi, real kappa) {
      real z;

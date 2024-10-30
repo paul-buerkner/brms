@@ -1402,8 +1402,10 @@ tp <- function(wsp = 2) {
   paste0(wsp, "target += ")
 }
 
+## FIXME; what should the default values of reqn and vec be in order
+## to be benefitting from vectorization when relevant?
 stan_log_lik_xbetax <- function(bterms, ...) {
-    p <- stan_log_lik_dpars(bterms, reqn = FALSE)
-    sdist("xbetax", p$mu, p$phi, p$kappa, vec = TRUE)
+    p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+    sdist("xbetax", p$mu, p$phi, p$kappa, vec = FALSE)
 }
 
