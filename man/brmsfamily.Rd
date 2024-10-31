@@ -305,7 +305,9 @@ Below, we list common use cases for the different families.
   \code{mu * phi} and \code{mu * (1 - phi)}, and exceedance
   parameter \code{kappa} (to obtain support \code{[-kappa, 1 +
   kappa]}), that is subsequently censored to \code{[0, 1]} in order
-  to obtain point masses at the boundary values 0 and 1.
+  to obtain point masses at the boundary values 0 and 1. The
+  exceedance parameter `kappa` is denoted as `u` in Kosmidis &
+  Zeileis (2024).
 
   These models have nice properties (e.g. we get beta regression as
   supported by the \code{beta} family for \code{kappa =

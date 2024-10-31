@@ -628,8 +628,7 @@
         if (dpar == "kappa") {
             if (link == "identity") {
                 return("gamma(0.01, 0.01)")
-            }
-            else {
+            } else {
                 return("student_t(3, 0, 2.5)")
             }
         }
