@@ -77,7 +77,7 @@
      }
      real ll_zer = beta_proportion_lcdf(kappa / (1 + 2 * kappa) | mu[zer], phi[zer]);
      real ll_one = beta_proportion_lccdf((1 + kappa) / (1 + 2 * kappa) | mu[one], phi[one]);
-     real ll_oth = beta_proportion_lpdf((y[oth] + kappa) ./ (1 + 2 * kappa) | mu[oth], phi[oth]) - N_oth * log(1 + 2 * kappa);
+     real ll_oth = beta_proportion_lpdf((y[oth] + kappa) / (1 + 2 * kappa) | mu[oth], phi[oth]) - N_oth * log(1 + 2 * kappa);
      real ll = ll_zer + ll_one + ll_oth;
      return ll;	
    }
