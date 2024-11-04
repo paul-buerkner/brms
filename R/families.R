@@ -23,7 +23,7 @@
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 #'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbetax}.
+#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbeta}.
 #' @param link A specification for the model link function. This can be a
 #'   name/expression or character string. See the 'Details' section for more
 #'   information on link functions supported by each family.
@@ -115,7 +115,7 @@
 #'   that cannot be explained by the primary distribution of the response.}
 #'
 #'
-#'   \item{Family \code{xbetax} allows to estimate extended-support
+#'   \item{Family \code{xbeta} allows to estimate extended-support
 #'   beta regression models (and continuous mixtures of those) as
 #'   defined in Kosmidis & Zeileis (2024). The model is defined as a
 #'   symmetric four-parameter beta distribution with shape parameters
@@ -178,7 +178,7 @@
 #'   \code{beta_binomial}, \code{zero_inflated_binomial},
 #'   \code{zero_inflated_beta_binomial}, \code{Beta},
 #'   \code{zero_inflated_beta}, \code{zero_one_inflated_beta}, and
-#'   \code{xbetax} support \code{logit}, \code{probit},
+#'   \code{xbeta} support \code{logit}, \code{probit},
 #'   \code{probit_approx}, \code{cloglog}, \code{cauchit},
 #'   \code{identity}, and \code{log}.}
 #'
@@ -1930,7 +1930,7 @@ family_bounds.brmsterms <- function(x, ...) {
     "hurdle_lognormal", "zero_inflated_poisson",
     "zero_inflated_negbinomial"
   )
-  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta", "xbetax")
+  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta", "xbeta")
   ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
   if (family %in% pos_families) {
     out <- list(lb = 0, ub = Inf)
@@ -1956,9 +1956,9 @@ family_bounds.brmsterms <- function(x, ...) {
 
 #' @rdname brmsfamily
 #' @export
-xbetax <- function(link = "logit", link_phi = "log",
+xbeta <- function(link = "logit", link_phi = "log",
                    link_kappa = "log") {
     slink <- substitute(link)
-    .brmsfamily("xbetax", link = link, slink = slink,
+    .brmsfamily("xbeta", link = link, slink = slink,
                 link_phi = link_phi, link_kappa = link_kappa)
 }

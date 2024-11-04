@@ -612,7 +612,7 @@
   )
 }
 
-.family_xbetax <- function() {
+.family_xbeta <- function() {
     list(
         links = c(
             "logit", "probit", "probit_approx", "cloglog",
@@ -623,7 +623,7 @@
         ybounds = c(0, 1),
         closed = c(TRUE, TRUE),
         ad = c("weights", "subset", "index"),
-        include = "fun_xbetax.stan",
+        include = "fun_xbeta.stan",
         prior = function(dpar, link = "identity", ...) {
         if (dpar == "kappa") {
             if (link == "identity") {

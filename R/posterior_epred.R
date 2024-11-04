@@ -920,7 +920,7 @@ mean_xbeta <- function(mu, phi, nu, ...) {
     1 + t1 - t2 - t3
 }
 
-posterior_epred_xbetax <- function(prep) {
-    di <- get_xbetax(NULL, prep)
+posterior_epred_xbeta <- function(prep) {
+    di <- get_xbeta(NULL, prep)
     mean_xbeta(mu = di$mu, phi = di$phi, nu = di$kappa)
 }

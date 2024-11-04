@@ -1063,15 +1063,15 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   round(x)
 }
 
-get_xbetax <- function(i, prep) {
+get_xbeta <- function(i, prep) {
     mu <- brms::get_dpar(prep, "mu", i = i)
     phi <- brms::get_dpar(prep, "phi", i = i)
     kappa <- brms::get_dpar(prep, "kappa", i = i)
     list(mu = mu, phi = phi, kappa = kappa)
 }
 
-posterior_predict_xbetax <- function(i, prep, ntrys = 5, ...) {
-    di <- get_xbetax(i, prep)
+posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+    di <- get_xbeta(i, prep)
     rcontinuous(
         n = prep$ndraws,
         dist = "xbeta",

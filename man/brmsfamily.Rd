@@ -39,7 +39,7 @@
 \alias{sratio}
 \alias{cratio}
 \alias{acat}
-\alias{xbetax}
+\alias{xbeta}
 \title{Special Family Functions for \pkg{brms} Models}
 \usage{
 brmsfamily(
@@ -159,7 +159,7 @@ cratio(link = "logit", link_disc = "log", threshold = "flexible")
 
 acat(link = "logit", link_disc = "log", threshold = "flexible")
 
-xbetax(link = "logit", link_phi = "log", link_kappa = "log")
+xbeta(link = "logit", link_phi = "log", link_kappa = "log")
 }
 \arguments{
 \item{family}{A character string naming the distribution family of the response
@@ -176,7 +176,7 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-\code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbetax}.}
+\code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbeta}.}
 
 \item{link}{A specification for the model link function. This can be a
 name/expression or character string. See the 'Details' section for more
@@ -298,7 +298,7 @@ Below, we list common use cases for the different families.
   that cannot be explained by the primary distribution of the response.}
 
 
-  \item{Family \code{xbetax} allows to estimate extended-support
+  \item{Family \code{xbeta} allows to estimate extended-support
   beta regression models (and continuous mixtures of those) as
   defined in Kosmidis & Zeileis (2024). The model is defined as a
   symmetric four-parameter beta distribution with shape parameters
@@ -361,7 +361,7 @@ Below, we list common use cases for the different families.
   \code{beta_binomial}, \code{zero_inflated_binomial},
   \code{zero_inflated_beta_binomial}, \code{Beta},
   \code{zero_inflated_beta}, \code{zero_one_inflated_beta}, and
-  \code{xbetax} support \code{logit}, \code{probit},
+  \code{xbeta} support \code{logit}, \code{probit},
   \code{probit_approx}, \code{cloglog}, \code{cauchit},
   \code{identity}, and \code{log}.}
 
