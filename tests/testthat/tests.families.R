@@ -65,11 +65,20 @@ test_that("family functions returns expected results", {
   expect_error(hurdle_cumulative(link = "log")$link)
   expect_error(hurdle_cumulative(link_hu = "probit")$link_hu)
   expect_error(hurdle_cumulative(link_disc = "logit")$link_disc)
-
+  expect_equal(xbeta()$link, "logit")
+  expect_equal(xbeta("probit")$link, "probit")
+  expect_equal(xbeta("cloglog")$link, "cloglog")
+  expect_error(xbeta("1/mu"), "xbeta")
+  expect_equal(xbeta(link_phi = "log")$link_phi, "log")
+  expect_equal(xbeta(link_phi = "softplus")$link_phi, "softplus")
+  expect_error(xbeta(link_phi = "sqrt")$link_phi, "sqrt")
+  expect_equal(xbeta(link_kappa = "identity")$link_kappa, "identity")
+  expect_equal(xbeta(link_kappa = "log")$link_kappa, "log")
 })
 
 test_that("print brmsfamily works correctly", {
-  expect_output(print(weibull()), "Family: weibull \nLink function: log")
+    expect_output(print(weibull()), "Family: weibull \nLink function: log")
+    expect_output(print(xbeta()), "Family: xbeta \nLink function: logit")
 })
 
 test_that("mixture returns expected results and errors", {
@@ -92,4 +101,23 @@ test_that("mixture returns expected results and errors", {
                "Expecting at least 2 mixture components")
   expect_error(mixture(poisson, binomial, order = "x"),
                "Argument 'order' is invalid")
+})
+
+testthat("response interval is defined correctly", {
+    expect_equal(xbeta()$closed, rep(TRUE, 2))
+    expect_equal(xbeta()$ybounds, c(0, 1))
+    expect_equal(xbeta()$type, "real")
+})
+
+test_that("distributional parameters are as expected", {
+    expect_identical(xbeta()$dpars, c("mu", "phi", "kappa"))
+})
+
+test_that("default priors are as expected", {
+    expect_output(print(xbeta()$prior), "gamma\\(0.01, 0.01\\)")
+    expect_output(print(xbeta()$prior), "student\\_t\\(3, 0, 2.5\\)")
+})
+
+test_that("correct STAN code is used", {
+    expect_equal(xbeta()$include, "fun_xbeta.stan")
 })

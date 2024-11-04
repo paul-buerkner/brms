@@ -500,6 +500,27 @@ test_that("log_lik for the wiener diffusion model runs without errors", {
   expect_equal(length(brms:::log_lik_wiener(i, prep)), ns)
 })
 
+test_that("log_lik for the xbeta model runs without errors", {
+    ns <- 50
+    nobs <- 8
+    prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+    prep$dpars <- list(
+        mu = matrix(rbeta(ns * nobs, 1.2, 2.3), ncol = nobs),
+        phi = rexp(ns, 0.01),
+        kappa = rexp(ns, 2)
+    )
+    prep$data <- list(Y = rbeta(nobs, 2, 3))
+    ll <- brms:::log_lik_xbeta(3, prep = prep)
+    expect_equal(length(ll), ns)
+    expect_equal(ll,
+                 betareg::dxbeta(x = prep$data$Y[3],
+                                 mu = prep$dpars$mu[, 3],
+                                 phi = prep$dpars$phi,
+                                 nu = prep$dpars$kappa, log = TRUE)
+                 )
+})
+
+
 test_that("log_lik_custom runs without errors", {
   ns <- 15
   nobs <- 10

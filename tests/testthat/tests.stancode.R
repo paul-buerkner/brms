@@ -127,6 +127,12 @@ test_that("specified priors appear in the Stan code", {
     stancode(y ~ x1 + (x1|g), dat, prior = prior),
     "prior for correlation matrices is the 'lkj' prior"
   )
+
+  scode <- stancode(y ~ x2, dat, family = xbeta())
+  expect_match2(scode, "lprior += student_t_lpdf(Intercept | 3, 0, 2.5);")
+  expect_match2(scode, "lprior += gamma_lpdf(phi | 0.01, 0.01);")
+  expect_match2(scode, "lprior += gamma_lpdf(kappa | 0.01, 0.01);")
+
 })
 
 test_that("special shrinkage priors appear in the Stan code", {
