@@ -103,7 +103,7 @@ test_that("mixture returns expected results and errors", {
                "Argument 'order' is invalid")
 })
 
-testthat("response interval is defined correctly", {
+test_that("response interval is defined correctly", {
     expect_equal(xbeta()$closed, rep(TRUE, 2))
     expect_equal(xbeta()$ybounds, c(0, 1))
     expect_equal(xbeta()$type, "real")
