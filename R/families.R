@@ -94,7 +94,7 @@
 #'   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal}
 #'   can be used to model responses representing rates or probabilities.}
 #'
-#'   \item{Family \code{xbeta} extends the beta family to support exact 0 and
+#'   \item{Family \code{xbeta} extends the \code{beta} family to support exact 0 and
 #'   1 responses in a single continuous process.
 #'   For details see Kosmidis & Zeileis (2024).}
 #'
@@ -117,6 +117,7 @@
 #'   zero-inflated and hurdle models. These models can be very helpful when there
 #'   are many zeros in the data (or ones in case of one-inflated models)
 #'   that cannot be explained by the primary distribution of the response.}
+#'   }
 #'
 #'   Below, we list all possible links for each family.  The first
 #'   link mentioned for each family is the default.  \itemize{

@@ -241,7 +241,127 @@ You can also specify custom families for use in \pkg{brms} with
 the \code{\link{custom_family}} function.
 }
 \details{
+Below, we list common use cases for the different families.
+  This list is not ment to be exhaustive.
+  \itemize{
+  \item{Family \code{gaussian} can be used for linear regression.}
 
+  \item{Family \code{student} can be used for robust linear regression
+  that is less influenced by outliers.}
+
+  \item{Family \code{skew_normal} can handle skewed responses in linear
+  regression.}
+
+  \item{Families \code{poisson}, \code{negbinomial}, and \code{geometric}
+  can be used for regression of unbounded count data.}
+
+  \item{Families \code{bernoulli}, \code{binomial}, and \code{beta_binomial}
+  can be used for binary regression (i.e., most commonly logistic
+  regression).}
+
+  \item{Families \code{categorical} and \code{multinomial} can be used for
+  multi-logistic regression when there are more than two possible outcomes.}
+
+  \item{Families \code{cumulative}, \code{cratio} ('continuation ratio'),
+  \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category')
+  leads to ordinal regression.}
+
+  \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
+  \code{lognormal}, \code{frechet}, \code{inverse.gaussian}, and \code{cox}
+  (Cox proportional hazards model) can be used (among others) for
+  time-to-event regression also known as survival regression.}
+
+  \item{Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
+  ('generalized extreme value') allow for modeling extremes.}
+
+  \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal}
+  can be used to model responses representing rates or probabilities.}
+
+  \item{Family \code{xbeta} extends the \code{beta} family to support exact 0 and
+  1 responses in a single continuous process.
+  For details see Kosmidis & Zeileis (2024).}
+
+  \item{Family \code{asym_laplace} allows for quantile regression when fixing
+  the auxiliary \code{quantile} parameter to the quantile of interest.}
+
+  \item{Family \code{exgaussian} ('exponentially modified Gaussian') and
+  \code{shifted_lognormal} are especially suited to model reaction times.}
+
+  \item{Family \code{wiener} provides an implementation of the Wiener
+  diffusion model. For this family, the main formula predicts the drift
+  parameter 'delta' and all other parameters are modeled as auxiliary parameters
+  (see \code{\link{brmsformula}} for details).}
+
+  \item{Families \code{hurdle_poisson}, \code{hurdle_negbinomial},
+  \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
+  \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
+  \code{zero_inflated_beta_binomial}, \code{zero_inflated_beta},
+  \code{zero_one_inflated_beta}, and \code{hurdle_cumulative} allow to estimate
+  zero-inflated and hurdle models. These models can be very helpful when there
+  are many zeros in the data (or ones in case of one-inflated models)
+  that cannot be explained by the primary distribution of the response.}
+  }
+
+  Below, we list all possible links for each family.  The first
+  link mentioned for each family is the default.  \itemize{
+  \item{Families \code{gaussian}, \code{student},
+  \code{skew_normal}, \code{exgaussian}, \code{asym_laplace}, and
+  \code{gen_extreme_value} support the links (as names)
+  \code{identity}, \code{log}, \code{inverse}, and
+  \code{softplus}.}
+
+  \item{Families \code{poisson}, \code{negbinomial}, \code{geometric},
+  \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
+  \code{hurdle_poisson}, and \code{hurdle_negbinomial} support
+  \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
+
+  \item{Families \code{binomial}, \code{bernoulli},
+  \code{beta_binomial}, \code{zero_inflated_binomial},
+  \code{zero_inflated_beta_binomial}, \code{Beta},
+  \code{zero_inflated_beta}, \code{zero_one_inflated_beta}, and
+  \code{xbeta} support \code{logit}, \code{probit},
+  \code{probit_approx}, \code{cloglog}, \code{cauchit},
+  \code{identity}, and \code{log}.}
+
+  \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
+  \code{acat}, and \code{hurdle_cumulative} support \code{logit},
+  \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
+
+  \item{Families \code{categorical}, \code{multinomial}, and \code{dirichlet}
+  support \code{logit}.}
+
+  \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
+  \code{frechet}, and \code{hurdle_gamma} support
+  \code{log}, \code{identity}, \code{inverse}, and \code{softplus}.}
+
+  \item{Families \code{lognormal} and \code{hurdle_lognormal}
+  support \code{identity} and \code{inverse}.}
+
+  \item{Family \code{logistic_normal} supports \code{identity}.}
+
+  \item{Family \code{inverse.gaussian} supports \code{1/mu^2},
+  \code{inverse}, \code{identity}, \code{log}, and \code{softplus}.}
+
+  \item{Family \code{von_mises} supports \code{tan_half} and
+  \code{identity}.}
+
+  \item{Family \code{cox} supports \code{log}, \code{identity},
+  and \code{softplus} for the proportional hazards parameter.}
+
+  \item{Family \code{wiener} supports \code{identity}, \code{log},
+  and \code{softplus} for the main parameter which represents the
+  drift rate.}
+  }
+
+  Please note that when calling the \code{\link[stats:family]{Gamma}} family
+  function of the \pkg{stats} package, the default link will be
+  \code{inverse} instead of \code{log} although the latter is the default in
+  \pkg{brms}. Also, when using the family functions \code{gaussian},
+  \code{binomial}, \code{poisson}, and \code{Gamma} of the \pkg{stats}
+  package (see \code{\link[stats:family]{family}}), special link functions
+  such as \code{softplus} or \code{cauchit} won't work. In this case, you
+  have to use \code{brmsfamily} to specify the family with corresponding link
+  function.
 }
 \examples{
  # create a family object
