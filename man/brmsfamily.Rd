@@ -277,9 +277,15 @@ Below, we list common use cases for the different families.
   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal}
   can be used to model responses representing rates or probabilities.}
 
-  \item{Family \code{xbeta} extends the \code{beta} family to support exact 0 and
-  1 responses in a single continuous process.
-  For details see Kosmidis & Zeileis (2024).}
+  \item{Family \code{xbeta} extends the \code{beta} family to
+  support \code{[0, 1]} responses with exact \code{0}s and / or
+  \code{1}s, when each response takes values \code{0}, \code{1},
+  and \code{(0, 1)} according to a single process. If there is
+  merit in assuming that 0 and 1 values arise from different
+  processes than \code{(0, 1)} values, then the
+  \code{zero_inflated_beta}, \code{zero_one_inflated_beta} families
+  provide more flexibility.  For details see Kosmidis & Zeileis
+  (2024).}
 
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}
