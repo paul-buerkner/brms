@@ -731,6 +731,12 @@ stan_log_lik_beta <- function(bterms, ...) {
   )
 }
 
+stan_log_lik_xbeta <- function(bterms, ...) {
+  reqn <- stan_log_lik_adj(bterms)
+  p <- stan_log_lik_dpars(bterms, reqn = reqn)
+  sdist("xbeta", p$mu, p$phi, p$kappa, vec = TRUE)
+}
+
 stan_log_lik_von_mises <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   sdist("von_mises", p$mu, p$kappa)
@@ -1401,11 +1407,3 @@ tp <- function(wsp = 2) {
   wsp <- collapse(rep(" ", wsp))
   paste0(wsp, "target += ")
 }
-
-## FIXME: IK, 30 Oct 2024: what should the default values of reqn and
-## vec be in order to be benefitting from vectorization when possible?
-stan_log_lik_xbeta <- function(bterms, ...) {
-    p <- stan_log_lik_dpars(bterms, reqn = FALSE)
-    sdist("xbeta", p$mu, p$phi, p$kappa, vec = TRUE)
-}
-

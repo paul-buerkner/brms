@@ -450,6 +450,22 @@ posterior_epred_beta <- function(prep) {
   prep$dpars$mu
 }
 
+posterior_epred_xbeta <- function(prep) {
+  # see https://arxiv.org/abs/2409.07233 for details
+  mu <- get_dpar(prep, "mu")
+  phi <- get_dpar(prep, "phi")
+  nu <- get_dpar(prep, "kappa")
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  d <- (1 + 2 * nu)
+  q0 <- nu / d
+  q1 <- (1 + nu) / d
+  t3 <- pbeta(q1, a, b)
+  t1 <- d * mu * (pbeta(q1, a + 1, b) - pbeta(q0, a + 1, b))
+  t2 <- nu * (t3 - pbeta(q0, a, b))
+  1 + t1 - t2 - t3
+}
+
 posterior_epred_von_mises <- function(prep) {
   prep$dpars$mu
 }
@@ -899,28 +915,4 @@ pp_expect <- function(object, ...) {
   warning2("Method 'pp_expect' is deprecated. ",
            "Please use 'posterior_epred' instead.")
   UseMethod("posterior_epred")
-}
-
-## Compute the expected value of a random variable Y following the
-## extended Beta distribution of Kosmidis & Zeileis (2024,
-## https://arxiv.org/abs/2409.07233), which is defined as
-##
-## Z ~ Beta(mu * phi, (1 - mu) * phi)
-## W = (1 + 2 * nu) * Z - nu
-## Y = max(min(Y, 1), 0)
-mean_xbeta <- function(mu, phi, nu, ...) {
-    a <- mu * phi
-    b <- (1 - mu) * phi
-    d <- (1 + 2 * nu)
-    q0 <- nu / d
-    q1 <- (1 + nu) / d
-    t3 <- pbeta(q1, a, b)
-    t1 <- d * mu * (pbeta(q1, a + 1, b) - pbeta(q0, a + 1, b))
-    t2 <- nu * (t3 - pbeta(q0, a, b))
-    1 + t1 - t2 - t3
-}
-
-posterior_epred_xbeta <- function(prep) {
-    di <- get_xbeta(NULL, prep)
-    mean_xbeta(mu = di$mu, phi = di$phi, nu = di$kappa)
 }

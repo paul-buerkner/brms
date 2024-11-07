@@ -476,8 +476,7 @@ models for all parameters of the assumed response distribution.
   probability); \code{coi} (conditional one-inflation probability);
   \code{disc} (discrimination) for ordinal models; \code{bs}, \code{ndt}, and
   \code{bias} (boundary separation, non-decision time, and initial bias of
-  the \code{wiener} diffusion model); \code{u} (exceedance parameter of the \code{xbeta} model).
-  By default, distributional parameters
+  the \code{wiener} diffusion model). By default, distributional parameters
   are modeled on the log scale if they can be positive only or on the logit
   scale if the can only be within the unit interval.
 

@@ -413,5 +413,3 @@ test_that("posterior_predict_custom runs without errors", {
   }
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
-
-

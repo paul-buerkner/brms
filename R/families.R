@@ -94,6 +94,10 @@
 #'   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal}
 #'   can be used to model responses representing rates or probabilities.}
 #'
+#'   \item{Family \code{xbeta} extends the beta family to support exact 0 and
+#'   1 responses in a single continuous process.
+#'   For details see Kosmidis & Zeileis (2024).}
+#'
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
 #'
@@ -113,53 +117,6 @@
 #'   zero-inflated and hurdle models. These models can be very helpful when there
 #'   are many zeros in the data (or ones in case of one-inflated models)
 #'   that cannot be explained by the primary distribution of the response.}
-#'
-#'
-#'   \item{Family \code{xbeta} allows to estimate extended-support
-#'   beta regression models (and continuous mixtures of those) as
-#'   defined in Kosmidis & Zeileis (2024). The model is defined as a
-#'   symmetric four-parameter beta distribution with shape parameters
-#'   \code{mu * phi} and \code{mu * (1 - phi)}, and exceedance
-#'   parameter \code{kappa} (to obtain support \code{[-kappa, 1 +
-#'   kappa]}), that is subsequently censored to \code{[0, 1]} in order
-#'   to obtain point masses at the boundary values 0 and 1. The
-#'   exceedance parameter `kappa` is denoted as `u` in Kosmidis &
-#'   Zeileis (2024).
-#'
-#'   These models have nice properties (e.g. we get beta regression as
-#'   supported by the \code{beta} family for \code{kappa =
-#'   0}, and heteroscedastic normal regression with censoring at both
-#'   0 and 1 as \code{kappa -> Inf}), and can be
-#'   very helpful when there are zero and / or one response values in
-#'   the data, and there is merit in assuming that there is a single
-#'   process generating each response in \code{[0, 1]}. If there is
-#'   merit in assuming that the 0 and / or 1 values arise from
-#'   different processes than response values in \code{(0, 1)} then it
-#'   is best to use the families \code{zero_inflated_beta},
-#'   \code{zero_one_inflated_beta}.
-#'
-#'   Continuous mixtures are formed by assuming varying effects on
-#'   \code{kappa} along with effect specifications on the mean
-#'   \code{mu} and precision \code{phi} of the underlying beta
-#'   distributions in \code{\link{brmsformula}}, and using default
-#'   priors.
-#'
-#'   In more detail, the recommendation is to define a formula of the
-#'   form \code{bf(mu ~ ..., kappa ~ (1 || obs_id))} (or \code{bf(mu ~
-#'   ..., phi ~ ..., kappa ~ (1 || obs_id))} if precision effects are
-#'   to be included), where \code{obs_id} is are observation
-#'   identifies (e.g. \code{data$obs_id <- 1:nrow(data)} for
-#'   observation-specific effects). Other specifications for
-#'   \code{kappa} are allowed (e.g. population-level effects,
-#'   varying-effects per covariate, smooth terms, etc.), however these
-#'   can lead to the model not being formally identifiable, especially
-#'   when there are precision (\code{phi}) effects, as both the
-#'   exceedance (\code{kappa}) and the precision determine the
-#'   variance of the uncensored responses.}
-#'
-#'
-#' }
-#'
 #'
 #'   Below, we list all possible links for each family.  The first
 #'   link mentioned for each family is the default.  \itemize{
@@ -224,12 +181,11 @@
 #'
 #' @references
 #'
-#' Kosmidis I, Zeileis A (2024).
-#'  Extended-Support Beta Regression for [0, 1] Responses.
-#'  2409.07233, \emph{arXiv.org E-Print Archive}.
-#'  \doi{10.48550/arXiv.2409.07233}
+#' Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for [0, 1] Responses.
+#' \emph{arXiv Preprint}. \doi{10.48550/arXiv.2409.07233}
 #'
-#' @seealso \code{\link[brms:brm]{brm}},
+#' @seealso
+#'   \code{\link[brms:brm]{brm}},
 #'   \code{\link[stats:family]{family}},
 #'   \code{\link{customfamily}}
 #'
@@ -665,6 +621,15 @@ Beta <- function(link = "logit", link_phi = "log") {
   slink <- substitute(link)
   .brmsfamily("beta", link = link, slink = slink,
               link_phi = link_phi)
+}
+
+#' @rdname brmsfamily
+#' @export
+xbeta <- function(link = "logit", link_phi = "log",
+                  link_kappa = "log") {
+  slink <- substitute(link)
+  .brmsfamily("xbeta", link = link, slink = slink,
+              link_phi = link_phi, link_kappa = link_kappa)
 }
 
 #' @rdname brmsfamily
@@ -1951,14 +1916,4 @@ family_bounds.brmsterms <- function(x, ...) {
     out <- list(lb = -Inf, ub = Inf)
   }
   out
-}
-
-
-#' @rdname brmsfamily
-#' @export
-xbeta <- function(link = "logit", link_phi = "log",
-                   link_kappa = "log") {
-    slink <- substitute(link)
-    .brmsfamily("xbeta", link = link, slink = slink,
-                link_phi = link_phi, link_kappa = link_kappa)
 }

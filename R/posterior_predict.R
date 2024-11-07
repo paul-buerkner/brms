@@ -682,6 +682,19 @@ posterior_predict_beta <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  rcontinuous(
+    n = prep$ndraws,
+    dist = "xbeta",
+    mu = mu, phi = phi, nu = kappa,
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "von_mises",
@@ -1062,22 +1075,3 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   }
   round(x)
 }
-
-get_xbeta <- function(i, prep) {
-    mu <- brms::get_dpar(prep, "mu", i = i)
-    phi <- brms::get_dpar(prep, "phi", i = i)
-    kappa <- brms::get_dpar(prep, "kappa", i = i)
-    list(mu = mu, phi = phi, kappa = kappa)
-}
-
-posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
-    di <- get_xbeta(i, prep)
-    rcontinuous(
-        n = prep$ndraws,
-        dist = "xbeta",
-        mu = di$mu, phi = di$phi, nu = di$kappa,
-        lb = prep$data$lb[i], ub = prep$data$ub[i],
-        ntrys = ntrys
-    )
-}
-

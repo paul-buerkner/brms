@@ -1,3 +1,10 @@
+# brms 2.23
+
+### New Features
+
+* Fit extended-support Beta models via family `xbeta` 
+thanks to Ioannis Kosmidis. (#1698)
+
 # brms 2.22.0
 
 ### New Features
