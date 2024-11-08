@@ -708,6 +708,25 @@ frame_re <- function(bterms, data, old_levels = NULL) {
   out
 }
 
+# like frame_re but only returns its levels attribute
+# this avoids issue #1221 and likely some other edge cases
+frame_re_levels_only <- function(bterms, data) {
+  out <- empty_reframe()
+  data <- combine_groups(data, get_group_vars(bterms))
+  re <- get_re(bterms)
+  re <- re[!duplicated(re$group), ]
+  levels <- named_list(re$group)
+  for (i in seq_along(levels)) {
+    # combine levels of all grouping factors within one grouping term
+    levels[[i]] <- unique(ulapply(
+      re$gcall[[i]]$groups,
+      function(g) extract_levels(get(g, data))
+    ))
+  }
+  set_levels(out) <- levels
+  out
+}
+
 empty_reframe <- function() {
   out <- data.frame(
     id = numeric(0), group = character(0), gn = numeric(0),

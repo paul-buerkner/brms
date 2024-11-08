@@ -297,8 +297,7 @@ frame_me <- function(x, data, old_levels = NULL) {
     term = uni_me, xname = "", grname = "",
     stringsAsFactors = FALSE
   )
-  unique_grnames <- unique(out$grname)
-  levels <- named_list(unique_grnames)
+  levels <- list()
   for (i in seq_rows(out)) {
     tmp <- eval2(out$term[i])
     out$xname[i] <- tmp$term
@@ -313,7 +312,7 @@ frame_me <- function(x, data, old_levels = NULL) {
   out$cor <- isTRUE(x$mecor)
   if (!is.null(old_levels)) {
     # for newdata numeration has to depend on the original levels
-    set_levels(out) <- old_levels[[unique_grnames]]
+    set_levels(out) <- old_levels
     set_levels(out, "used") <- levels
   } else {
     set_levels(out) <- levels
