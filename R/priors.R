@@ -1119,7 +1119,7 @@ def_dpar_prior <- function(x, dpar) {
       sigma = def_scale_prior(x),
       shape = "student_t(3, 0, 2.5)",
       nu = "normal(2.7, 0.8)",
-      phi = "student_t(3, 0, 2.5)",
+      phi =  "student_t(3, 0, 2.5)",
       kappa = "normal(5.0, 0.8)",
       beta = "normal(1.7, 1.3)",
       zi = "logistic(0, 1)",

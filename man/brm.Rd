@@ -332,7 +332,7 @@ Fit Bayesian generalized (non-)linear multivariate multilevel models
 using Stan for full Bayesian inference. A wide range of distributions
 and link functions are supported, allowing users to fit -- among others --
 linear, robust linear, count data, survival, response times, ordinal,
-zero-inflated, hurdle, and even self-defined mixture models all in a
+zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
 multilevel context. Further modeling options include non-linear and
 smooth terms, auto-correlation structures, censored data, meta-analytic
 standard errors, and quite a few more. In addition, all parameters of the
@@ -491,7 +491,6 @@ fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
             family = asym_laplace())
 summary(fit7)
 conditional_effects(fit7)
-
 
 # use the future package for more flexible parallelization
 library(future)

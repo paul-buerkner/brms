@@ -682,6 +682,19 @@ posterior_predict_beta <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  rcontinuous(
+    n = prep$ndraws,
+    dist = "xbeta",
+    mu = mu, phi = phi, nu = kappa,
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "von_mises",

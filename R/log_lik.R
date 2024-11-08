@@ -630,6 +630,19 @@ log_lik_beta <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_xbeta <- function(i, prep) {
+  args <- list(
+    mu = get_dpar(prep, "mu", i = i),
+    phi = get_dpar(prep, "phi", i = i),
+    nu = get_dpar(prep, "kappa", i = i)
+  )
+  out <- log_lik_censor(dist = "xbeta", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(
+    out, cdf = pxbeta, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_von_mises <- function(i, prep) {
   args <- list(
     mu = get_dpar(prep, "mu", i),

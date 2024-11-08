@@ -1721,6 +1721,27 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
   out
 }
 
+# ensures that posterior_predict and friends can safely find these functions
+dxbeta <- function(...) {
+  require_package("betareg")
+  betareg::dxbeta(...)
+}
+
+pxbeta <- function(...) {
+  require_package("betareg")
+  betareg::pxbeta(...)
+}
+
+qxbeta <- function(...) {
+  require_package("betareg")
+  betareg::qxbeta(...)
+}
+
+rxbeta <- function(...) {
+  require_package("betareg")
+  betareg::rxbeta(...)
+}
+
 #' Zero-Inflated Distributions
 #'
 #' Density and distribution functions for zero-inflated distributions.

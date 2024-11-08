@@ -952,6 +952,13 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "lprior += student_t_lpdf(fixed_Intercept | 3, 0, 2.5);")
 })
 
+test_that("Stan code for xbeta models is correct", {
+  dat <- data.frame(y = rbeta(10, 1, 1), x = rnorm(10))
+  scode <- stancode(y ~ x, dat, family = xbeta())
+  expect_match2(scode, "target += xbeta_lpdf(Y | mu, phi, kappa);")
+  expect_match2(scode, "lprior += gamma_lpdf(kappa | 0.01, 0.01);")
+})
+
 test_that("ordinal disc parameters appear in the Stan code", {
   scode <- stancode(
     bf(rating ~ period + carry + treat, disc ~ period),

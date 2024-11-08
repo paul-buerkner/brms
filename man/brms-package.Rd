@@ -99,6 +99,7 @@ Other contributors:
   \item Simon C. Mills [contributor]
   \item Stephen Wild [contributor]
   \item Ven Popov [contributor]
+  \item Ioannis Kosmidis [contributor]
 }
 
 }
