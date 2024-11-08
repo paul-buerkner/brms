@@ -111,7 +111,7 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
       c(out) <- paste0("r_", sub_reframe$id, sub_p, "_", sub_reframe$cn)
     }
   }
-  reframe_t <- get_dist_groups(reframe, "student")
+  reframe_t <- subset_reframe_dist(reframe, "student")
   if (!save_pars$all && has_rows(reframe_t)) {
     c(out) <- paste0(c("udf_", "dfm_"), reframe_t$ggn)
   }

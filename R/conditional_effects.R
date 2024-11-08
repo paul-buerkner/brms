@@ -934,7 +934,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     model.frame(bterms$respform, mf, na.action = na.pass)
   )
   req_vars <- names(mf)
-  groups <- get_re_groups(bterms)
+  groups <- get_re_group_vars(bterms)
   if (length(groups)) {
     c(req_vars) <- unlist(strsplit(groups, ":"))
   }

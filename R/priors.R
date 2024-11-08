@@ -965,7 +965,7 @@ prior_re <- function(bframe, internal = FALSE, ...) {
       }
     }
   }
-  reframe_t <- get_dist_groups(reframe, "student")
+  reframe_t <- subset_reframe_dist(reframe, "student")
   if (isTRUE(nrow(reframe_t) > 0L)) {
     prior <- prior +
       brmsprior("gamma(2, 0.1)", class = "df", group = reframe_t$group, lb = "1")

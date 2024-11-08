@@ -781,7 +781,7 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
 }
 
 .get_group_vars <- function(x, ...) {
-  out <- c(get_re_groups(x), get_me_groups(x), get_ac_groups(x))
+  out <- c(get_re_group_vars(x), get_me_group_vars(x), get_ac_group_vars(x))
   out <- out[nzchar(out)]
   if (length(out)) {
     c(out) <- unlist(strsplit(out, ":"))
@@ -790,13 +790,14 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
   out
 }
 
-# get names of grouping variables of re terms
-get_re_groups <- function(x, ...) {
+# get names of grouping variables from re terms
+get_re_group_vars <- function(x, ...) {
   ufrom_list(get_re(x)$gcall, "groups")
 }
 
-# extract information about groups with a certain distribution
-get_dist_groups <- function(reframe, dist) {
+# extract information about groups with a certain distribution from an reframe
+subset_reframe_dist <- function(reframe, dist) {
+  stopifnot(is.reframe(reframe))
   out <- subset2(reframe, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
 }

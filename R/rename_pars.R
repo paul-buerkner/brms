@@ -440,7 +440,7 @@ rename_re <- function(bframe, pars, ...) {
   if (any(grepl("^r_", pars))) {
     c(out) <- rename_re_levels(bframe, pars = pars)
   }
-  reframe_t <- get_dist_groups(reframe, "student")
+  reframe_t <- subset_reframe_dist(reframe, "student")
   for (i in seq_rows(reframe_t)) {
     df_pos <- grepl(paste0("^df_", reframe_t$ggn[i], "$"), pars)
     df_name <- paste0("df_", reframe_t$group[i])

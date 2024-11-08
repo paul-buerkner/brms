@@ -496,8 +496,8 @@ get_sdy <- function(x, data = NULL) {
   sdy
 }
 
-# names of grouping variables used in measurement error terms
-get_me_groups <- function(x) {
+# get names of grouping variables from me terms
+get_me_group_vars <- function(x) {
   uni_me <- get_uni_me(x)
   out <- lapply(uni_me, eval2)
   out <- ufrom_list(out, "gr")
