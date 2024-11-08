@@ -629,14 +629,15 @@ stan_log_lik_binomial <- function(bterms, ...) {
 }
 
 stan_log_lik_beta_binomial <- function(bterms, ...) {
-  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  p <- stan_log_lik_dpars(bterms)
   p$trials <- stan_log_lik_advars(bterms, "trials", ...)$trials
+  req_dot_multiply <- !stan_log_lik_adj(bterms) && is_pred_dpar(bterms, "phi")
+  multiply <- str_if(req_dot_multiply, " .* ", " * ")
   sdist(
     "beta_binomial",
     p$trials,
-    paste0(p$mu, " * ", p$phi),
-    paste0("(1 - ", p$mu, ") * ", p$phi),
-    vec = FALSE
+    paste0(p$mu, multiply, p$phi),
+    paste0("(1 - ", p$mu, ")", multiply, p$phi)
   )
 }
 
@@ -732,9 +733,8 @@ stan_log_lik_beta <- function(bterms, ...) {
 }
 
 stan_log_lik_xbeta <- function(bterms, ...) {
-  reqn <- stan_log_lik_adj(bterms)
-  p <- stan_log_lik_dpars(bterms, reqn = reqn)
-  sdist("xbeta", p$mu, p$phi, p$kappa, vec = TRUE)
+  p <- stan_log_lik_dpars(bterms)
+  sdist("xbeta", p$mu, p$phi, p$kappa)
 }
 
 stan_log_lik_von_mises <- function(bterms, ...) {
