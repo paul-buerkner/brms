@@ -124,27 +124,7 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   N <- choose_N(object)
-
-  # out <- plapply(seq_len(N), log_lik_fun, cores = cores, prep = object)
-  # copy over plapply here
-  if (cores == 1) {
-    out <- lapply(seq_len(N), log_lik_fun, prep = object)
-  } else {
-    if (!os_is_windows()) {
-      out <- parallel::mclapply(
-        X = seq_len(N), FUN = log_lik_fun,
-        mc.cores = cores, prep = object
-      )
-    } else {
-      cl <- parallel::makePSOCKcluster(cores)
-      on.exit(parallel::stopCluster(cl))
-      out <- parallel::parLapply(
-        cl = cl, X = seq_len(N), fun = log_lik_fun,
-        mc.cores = cores, prep = object
-      )
-    }
-  }
-
+  out <- plapply(seq_len(N), log_lik_fun, .cores = cores, prep = object)
   out <- do_call(cbind, out)
   colnames(out) <- NULL
   old_order <- object$old_order

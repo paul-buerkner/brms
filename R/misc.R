@@ -421,14 +421,17 @@ cblapply <- function(X, FUN, ...) {
 }
 
 # parallel lapply sensitive to the operating system
-plapply <- function(X, FUN, cores = 1, ...) {
-  if (cores == 1) {
+# args:
+#  .psock: use a PSOCK cluster? Default is TRUE until
+#.    the zombie worker issue #1658 has been fully resolved
+plapply <- function(X, FUN, .cores = 1, .psock = TRUE, ...) {
+  if (.cores == 1) {
     out <- lapply(X, FUN, ...)
   } else {
-    if (!os_is_windows()) {
-      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = cores, ...)
+    if (!os_is_windows() && !.psock) {
+      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = .cores, ...)
     } else {
-      cl <- parallel::makePSOCKcluster(cores)
+      cl <- parallel::makePSOCKcluster(.cores)
       on.exit(parallel::stopCluster(cl))
       out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
     }

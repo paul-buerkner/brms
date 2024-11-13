@@ -845,11 +845,13 @@ arg_names <- function(method) {
 }
 
 # validate 'cores' argument for use in post-processing functions
-validate_cores_post_processing <- function(cores) {
+validate_cores_post_processing <- function(cores, use_mc_cores = FALSE) {
   if (is.null(cores)) {
-    if (os_is_windows()) {
+    if (os_is_windows() || !use_mc_cores) {
       # multi cores often leads to a slowdown on windows
       # in post-processing functions as discussed in #1129
+      # multi cores may also lead to zombie workers
+      # on unix systems as discussed in #1658
       cores <- 1L
     } else {
       cores <- getOption("mc.cores", 1L)
