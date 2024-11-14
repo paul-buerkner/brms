@@ -124,7 +124,7 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   N <- choose_N(object)
-  out <- plapply(seq_len(N), log_lik_fun, cores = cores, prep = object)
+  out <- plapply(seq_len(N), log_lik_fun, .cores = cores, prep = object)
   out <- do_call(cbind, out)
   colnames(out) <- NULL
   old_order <- object$old_order
