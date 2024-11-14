@@ -435,11 +435,11 @@ plapply <- function(X, FUN, .cores = 1, .psock = TRUE, ...) {
       on.exit(parallel::stopCluster(cl))
       out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
     }
-    # The version below hopefully prevents the spawning of zombies
+    # The version below was suggested to prevent the spawning of zombies
     # but it does not always succeed in that. It also seems to cause
     # other issues as discussed in #1658, so commented out for now.
     # cl_type <- ifelse(os_is_windows(), "PSOCK", "FORK")
-    # cl <- parallel::makeCluster(cores, type = cl_type)
+    # cl <- parallel::makeCluster(.cores, type = cl_type)
     # # Register a cleanup for the cluster in case the function fails
     # # Need to wrap in a tryCatch to avoid error if cluster is already stopped
     # on.exit(tryCatch(
