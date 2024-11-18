@@ -26,7 +26,7 @@ brm(
   init = NULL,
   inits = NULL,
   chains = 4,
-  iter = 2000,
+  iter = getOption("brms.iter", 2000),
   warmup = floor(iter/2),
   thin = 1,
   cores = getOption("mc.cores", 1),
@@ -183,7 +183,8 @@ values you can consult the documentation of the selected \code{backend}.}
 \item{chains}{Number of Markov chains (defaults to 4).}
 
 \item{iter}{Number of total iterations per chain (including warmup; defaults
-to 2000).}
+to 2000). Can be set globally for the current \R session via the
+\code{"brms.iter"} option (see \code{\link{options}}).}
 
 \item{warmup}{A positive integer specifying number of warmup (aka burnin)
 iterations. This also specifies the number of iterations used for stepsize
