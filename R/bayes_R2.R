@@ -45,7 +45,9 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   # check for precomputed values
   R2 <- get_criterion(object, "bayes_R2")
   has_stored <- is.matrix(R2)
-  use_stored <- as.logical(length(list(...)))
+  further_arg_names <- c("resp")
+  use_stored <- !length(list(...)) &&
+    !any(further_arg_names %in% names(match.call()))
   if (has_stored && !use_stored) {
     message("Recomputing 'bayes_R2'")
   }
