@@ -265,7 +265,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
         rowSums(sweep(weights, 2, y, FUN = "*"))^2)
   var_err_loo <- (N / (N - 1)) *
     (rowSums(sweep(weights, 2, err_loo^2, FUN = "*")) -
-       rowSums(sweep(weights, 2, err_loo, FUN = "*")^2))
+       rowSums(sweep(weights, 2, err_loo, FUN = "*"))^2)
 
   out <- unname(1 - var_err_loo / var_y)
   out[out < -1] <- -1
