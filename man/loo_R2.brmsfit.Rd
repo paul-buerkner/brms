@@ -40,9 +40,21 @@ which are used in the computation of the R-squared values.}
 \value{
 If \code{summary = TRUE}, an M x C matrix is returned
  (M = number of response variables and c = \code{length(probs) + 2})
- containing summary statistics of the LOO-adjusted R-squared values.
- If \code{summary = FALSE}, the posterior draws of the LOO-adjusted
- R-squared values are returned in an S x M matrix (S is the number of draws).
+ containing Bayesian bootstrap based summary statistics of the
+ LOO-adjusted R-squared values. If \code{summary = FALSE}, the
+ Bayesian bootstrap draws of the LOO-adjusted R-squared values 
+ are returned in an S x M matrix (S is the number of draws).
+
+ @details LOO-R2 uses LOO residuals and is defined as
+\eqn{1-Var_{loo-res} / Var_y},
+with
+\deqn{
+Var_y = V_{n=1}^N y_n, and
+Var_{loo-res} = V_{n=1}^N \hat{e}_{loo,n},
+}
+where \eqn{\hat{e}_{loo,n}=y_n-\hat{y}_{loo,n}}.
+Bayesian bootstrap is used to draw from the approximated uncertainty
+distribution as described by Vehtari and Lampinen (2002).
 }
 \description{
 Compute a LOO-adjusted R-squared for regression models
@@ -58,4 +70,9 @@ nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
 loo_R2(fit, newdata = nd)
 }
 
+}
+\references{
+Vehtari and Lampinen (2002). Bayesian model assessment
+and comparison using cross-validation predictive densities. Neural
+Computation, 14(10):2439-2468.
 }
