@@ -13,12 +13,12 @@
 #'  If \code{summary = FALSE}, the posterior draws of the Bayesian
 #'  R-squared values are returned in an S x M matrix (S is the number of draws).
 #'
-#' @details For an introduction to the approach, see Gelman et al. (2018)
+#' @details For an introduction to the approach, see Gelman et al. (2019)
 #'  and \url{https://github.com/jgabry/bayes_R2/}.
 #'
-#' @references Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2018).
-#'   R-squared for Bayesian regression models, \emph{The American Statistician}.
-#'   \code{10.1080/00031305.2018.1549100} (Preprint available at
+#' @references Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2019).
+#'   R-squared for Bayesian regression models, \emph{The American Statistician},
+#'   73(3):307-309. \code{10.1080/00031305.2018.1549100} (Preprint available at
 #'   \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf})
 #'
 #' @examples
