@@ -354,13 +354,8 @@ stan_log_lik_add_se <- function(sigma, bterms, reqn = stan_log_lik_adj(bterms),
 
 # multiply 'dpar' by the 'rate' denominator within the Stan likelihood
 # @param log add the rate denominator on the log scale if sensible?
-# @param req_dot_multiply Censoring may turn non-vectorized into vectorized
-#   statements later on (see stan_log_lik_cens) which then makes the * operator
-#   invalid and requires .* instead. Accordingly, req_dot_multiply should be
-#   FALSE if [n] is required only because of censoring.
 stan_log_lik_multiply_rate_denom <- function(
     dpar, bterms, reqn = stan_log_lik_adj(bterms),
-    req_dot_multiply = stan_log_lik_adj(bterms, c("trunc", "weights")),
     log = FALSE, transform = NULL, threads = NULL, ...) {
 
   dpar_transform <- dpar
@@ -381,7 +376,7 @@ stan_log_lik_multiply_rate_denom <- function(
     # dpar without resp name or index
     dpar_clean <- sub("(_|\\[).*", "", dpar)
     is_pred <- dpar_clean %in% c("mu", names(bterms$dpars))
-    operator <- str_if(req_dot_multiply || !is_pred, "*", ".*")
+    operator <- ".*"
   }
   glue("{dpar_transform} {operator} {denom}")
 }
@@ -631,13 +626,11 @@ stan_log_lik_binomial <- function(bterms, ...) {
 stan_log_lik_beta_binomial <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   p$trials <- stan_log_lik_advars(bterms, "trials", ...)$trials
-  req_dot_multiply <- !stan_log_lik_adj(bterms) && is_pred_dpar(bterms, "phi")
-  multiply <- str_if(req_dot_multiply, " .* ", " * ")
   sdist(
     "beta_binomial",
     p$trials,
-    paste0(p$mu, multiply, p$phi),
-    paste0("(1 - ", p$mu, ")", multiply, p$phi)
+    paste0(p$mu, " .* ", p$phi),
+    paste0("(1 - ", p$mu, ") .* ", p$phi)
   )
 }
 
@@ -665,11 +658,10 @@ stan_log_lik_com_poisson <- function(bterms, ...) {
 }
 
 stan_log_lik_gamma <- function(bterms, ...) {
-  reqn <- stan_log_lik_adj(bterms) || is_pred_dpar(bterms, "shape")
+  reqn <- stan_log_lik_adj(bterms)
   p <- stan_log_lik_dpars(bterms, reqn = reqn)
   # Stan uses shape-rate parameterization with rate = shape / mean
-  div_op <- str_if(reqn, " / ", " ./ ")
-  sdist("gamma", p$shape, paste0(p$shape, div_op, p$mu))
+  sdist("gamma", p$shape, paste0(p$shape, " ./ ", p$mu))
 }
 
 stan_log_lik_exponential <- function(bterms, ...) {
@@ -681,18 +673,14 @@ stan_log_lik_exponential <- function(bterms, ...) {
 stan_log_lik_weibull <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   # Stan uses shape-scale parameterization for weibull
-  need_dot_div <- !stan_log_lik_adj(bterms) && is_pred_dpar(bterms, "shape")
-  div_op <- str_if(need_dot_div, " ./ ", " / ")
-  p$scale <- paste0(p$mu, div_op, "tgamma(1 + 1", div_op, p$shape, ")")
+  p$scale <- paste0(p$mu, " ./ tgamma(1 + 1 ./ ", p$shape, ")")
   sdist("weibull", p$shape, p$scale)
 }
 
 stan_log_lik_frechet <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   # Stan uses shape-scale parameterization for frechet
-  need_dot_div <- !stan_log_lik_adj(bterms) && is_pred_dpar(bterms, "nu")
-  div_op <- str_if(need_dot_div, " ./ ", " / ")
-  p$scale <- paste0(p$mu, div_op, "tgamma(1 - 1", div_op, p$nu, ")")
+  p$scale <- paste0(p$mu, " ./ tgamma(1 - 1 ./ ", p$nu, ")")
   sdist("frechet", p$nu, p$scale)
 }
 
@@ -724,11 +712,9 @@ stan_log_lik_wiener <- function(bterms, ...) {
 
 stan_log_lik_beta <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
-  req_dot_multiply <- !stan_log_lik_adj(bterms) && is_pred_dpar(bterms, "phi")
-  multiply <- str_if(req_dot_multiply, " .* ", " * ")
   sdist("beta",
-    paste0(p$mu, multiply, p$phi),
-    paste0("(1 - ", p$mu, ")", multiply, p$phi)
+    paste0(p$mu, " .* ", p$phi),
+    paste0("(1 - ", p$mu, ") .* ", p$phi)
   )
 }
 

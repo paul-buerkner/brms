@@ -410,8 +410,8 @@ test_that("customized covariances appear in the Stan code", {
 test_that("truncation appears in the Stan code", {
   scode <- stancode(time | trunc(0) ~ age + sex + disease,
                          data = kidney, family = "gamma")
-  expect_match2(scode, "target += gamma_lpdf(Y[n] | shape, shape / mu[n]) -")
-  expect_match2(scode, "gamma_lccdf(lb[n] | shape, shape / mu[n]);")
+  expect_match2(scode, "target += gamma_lpdf(Y[n] | shape, shape ./ mu[n]) -")
+  expect_match2(scode, "gamma_lccdf(lb[n] | shape, shape ./ mu[n]);")
 
   scode <- stancode(time | trunc(ub = 100) ~ age + sex + disease,
                          data = kidney, family = student("log"))
@@ -620,7 +620,7 @@ test_that("Stan code for multivariate models is correct", {
   # multivariate weibull models
   bform <- bform + weibull()
   scode <- stancode(bform, dat)
-  expect_match2(scode, "weibull_lpdf(Y_g | shape_g, mu_g / tgamma(1 + 1 / shape_g));")
+  expect_match2(scode, "weibull_lpdf(Y_g | shape_g, mu_g ./ tgamma(1 + 1 ./ shape_g));")
 })
 
 test_that("Stan code for categorical models is correct", {
@@ -1419,6 +1419,9 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   scode <- stancode(y | cens(x) ~ 1, dat, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile);")
 
+  scode <- stancode(bf(y | cens(x) ~ 1, shape ~ 1), dat, family = Gamma())
+  expect_match2(scode, "target += gamma_lpdf(Y[Jevent[1:Nevent]] | shape[Jevent[1:Nevent]], shape[Jevent[1:Nevent]] ./ mu[Jevent[1:Nevent]]);")
+
   dat$x[1] <- 2
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = asym_laplace())
   expect_match2(scode, "target += log_diff_exp(\n")
@@ -1442,15 +1445,15 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
 
   expect_match2(
     stancode(y | trials(y2) + weights(y2) ~ 1, dat, beta_binomial()),
-    "target += weights[n] * (beta_binomial_lpmf(Y[n] | trials[n], mu[n] * phi,"
+    "target += weights[n] * (beta_binomial_lpmf(Y[n] | trials[n], mu[n] .* phi,"
   )
   expect_match2(
     stancode(y | trials(y2) + trunc(0, 30) ~ 1, dat, beta_binomial()),
-    "log_diff_exp(beta_binomial_lcdf(ub[n] | trials[n], mu[n] * phi,"
+    "log_diff_exp(beta_binomial_lcdf(ub[n] | trials[n], mu[n] .* phi,"
   )
   expect_match2(
     stancode(y | trials(y2) + cens(x, y2) ~ 1, dat, beta_binomial()),
-    "beta_binomial_lcdf(rcens[n] | trials[n], mu[n] * phi,"
+    "beta_binomial_lcdf(rcens[n] | trials[n], mu[n] .* phi,"
   )
 })
 
@@ -1684,7 +1687,7 @@ test_that("Stan code of addition term 'rate' is correct", {
   expect_match2(scode, "target += poisson_lpmf(Y | mu .* denom);")
 
   scode <- stancode(y | rate(time) ~ x, data, negbinomial())
-  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape * denom);")
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape .* denom);")
 
   bform <- bf(y | rate(time) ~ mi(x), shape ~ mi(x), family = negbinomial()) +
     bf(x | mi() ~ 1, family = gaussian())
@@ -1692,11 +1695,11 @@ test_that("Stan code of addition term 'rate' is correct", {
   expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y_y | mu_y + log_denom_y, shape_y .* denom_y);")
 
   scode <- stancode(y | rate(time) ~ x, data, brmsfamily("negbinomial2"))
-  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, inv(sigma) * denom);")
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, inv(sigma) .* denom);")
 
   scode <- stancode(y | rate(time) + cens(1) ~ x, data, geometric())
   expect_match2(scode,
-    "target += neg_binomial_2_lpmf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]] .* denom[Jevent[1:Nevent]], 1 * denom[Jevent[1:Nevent]]);"
+    "target += neg_binomial_2_lpmf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]] .* denom[Jevent[1:Nevent]], 1 .* denom[Jevent[1:Nevent]]);"
   )
 })
 
@@ -1783,7 +1786,7 @@ test_that("Stan code of mixture model is correct", {
                          data = data, mixture(Gamma("log"), weibull))
   expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta1;")
   expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta2;")
-  expect_match2(scode, "ps[1] = log(theta1) + gamma_lpdf(Y[n] | shape1[n], shape1[n] / mu1[n]);")
+  expect_match2(scode, "ps[1] = log(theta1) + gamma_lpdf(Y[n] | shape1[n], shape1[n] ./ mu1[n]);")
   expect_match2(scode, "target += weights[n] * log_sum_exp(ps);")
 
   scode <- stancode(bf(abs(y) | se(c) ~ x), data = data,
@@ -2146,7 +2149,7 @@ test_that("Stan code for missing value terms works correctly", {
   scode <- stancode(bform, dat)
   expect_match2(scode, "vector<lower=0,upper=1>[Nmi_x] Ymi_x;")
   expect_match2(scode,
-    "target += beta_lpdf(Y_x[Jevent_x[1:Nevent_x]] | mu_x[Jevent_x[1:Nevent_x]] * phi_x, (1 - mu_x[Jevent_x[1:Nevent_x]]) * phi_x);"
+    "target += beta_lpdf(Y_x[Jevent_x[1:Nevent_x]] | mu_x[Jevent_x[1:Nevent_x]] .* phi_x, (1 - mu_x[Jevent_x[1:Nevent_x]]) .* phi_x);"
   )
 
   # tests #1608
