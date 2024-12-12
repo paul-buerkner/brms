@@ -11,6 +11,7 @@
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
+  brms_seed = NULL,
   ...
 )
 }

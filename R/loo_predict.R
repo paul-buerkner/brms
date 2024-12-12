@@ -213,7 +213,8 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #' @export loo_R2
 #' @export
 loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
-                           robust = FALSE, probs = c(0.025, 0.975), ...) {
+                           robust = FALSE, probs = c(0.025, 0.975),
+                           brms_seed = NULL, ...) {
   contains_draws(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
@@ -239,6 +240,16 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       "'loo_R2' which is likely invalid for ordinal families."
     )
   }
+
+  # set the random seed if required
+  if (!is.null(brms_seed)) {
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(brms_seed)
+  }
+
   args_y <- list(object, warn = TRUE, ...)
   args_ypred <- list(object, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
