@@ -4,8 +4,7 @@
 
 * Fit extended-support Beta models via family `xbeta` 
 thanks to Ioannis Kosmidis. (#1698)
-* Add the `brms_seed` argument to `loo_R2` thanks to
-Marco Colombo. (#1713)
+* Add a `seed` argument to `loo_R2` thanks to Marco Colombo. (#1713)
 
 ### Bug Fixes
 
