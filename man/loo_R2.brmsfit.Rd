@@ -11,6 +11,7 @@
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
+  seed = NULL,
   ...
 )
 }
@@ -31,6 +32,9 @@ Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{seed}{Optional integer used to initialize the random number
+generator.}
 
 \item{...}{Further arguments passed to
 \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
