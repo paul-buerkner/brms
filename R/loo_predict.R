@@ -170,6 +170,8 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #' @aliases loo_R2
 #'
 #' @inheritParams bayes_R2.brmsfit
+#' @param seed Optional integer used to initialize the random number
+#'   generator.
 #' @param ... Further arguments passed to
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
@@ -214,7 +216,7 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #' @export
 loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
                            robust = FALSE, probs = c(0.025, 0.975),
-                           brms_seed = NULL, ...) {
+                           seed = NULL, ...) {
   contains_draws(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
@@ -242,12 +244,12 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   }
 
   # set the random seed if required
-  if (!is.null(brms_seed)) {
+  if (!is.null(seed)) {
     if (exists(".Random.seed", envir = .GlobalEnv)) {
       rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
-    set.seed(brms_seed)
+    set.seed(seed)
   }
 
   args_y <- list(object, warn = TRUE, ...)
