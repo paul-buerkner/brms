@@ -211,6 +211,24 @@ test_that("posterior_predict for bernoulli and beta models works correctly", {
   expect_equal(length(pred), ns)
 })
 
+test_that("posterior_predict for xbeta models works correctly", {
+  ns <- 17
+  nobs <- 10
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = brms:::inv_logit(matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs)),
+    phi = rgamma(ns, 4),
+    kappa = rexp(ns, 5)
+  )
+  i <- sample(1:nobs, 1)
+
+  pred <- brms:::posterior_predict_xbeta(i, prep = prep)
+  expect_equal(length(pred), ns)
+
+  pred <- brms:::posterior_predict_xbeta(i, prep = prep)
+  expect_equal(length(pred), ns)
+})
+
 test_that("posterior_predict for circular models runs without errors", {
   ns <- 15
   nobs <- 10

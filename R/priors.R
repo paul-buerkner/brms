@@ -965,7 +965,7 @@ prior_re <- function(bframe, internal = FALSE, ...) {
       }
     }
   }
-  reframe_t <- get_dist_groups(reframe, "student")
+  reframe_t <- subset_reframe_dist(reframe, "student")
   if (isTRUE(nrow(reframe_t) > 0L)) {
     prior <- prior +
       brmsprior("gamma(2, 0.1)", class = "df", group = reframe_t$group, lb = "1")
@@ -1119,7 +1119,7 @@ def_dpar_prior <- function(x, dpar) {
       sigma = def_scale_prior(x),
       shape = "student_t(3, 0, 2.5)",
       nu = "normal(2.7, 0.8)",
-      phi = "student_t(3, 0, 2.5)",
+      phi =  "student_t(3, 0, 2.5)",
       kappa = "normal(5.0, 0.8)",
       beta = "normal(1.7, 1.3)",
       zi = "logistic(0, 1)",

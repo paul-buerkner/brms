@@ -1,3 +1,25 @@
+# brms 2.23
+
+### New Features
+
+* Fit extended-support Beta models via family `xbeta` 
+thanks to Ioannis Kosmidis. (#1698)
+* Add a `seed` argument to `loo_R2` thanks to Marco Colombo. (#1713)
+
+### Bug Fixes
+
+* Avoid the creation of zombie workers when executing `log_lik`
+in parallel thanks to Aki Vehtari and Noa Kallioinen. 
+For now, `log_lik` will use PSOCK clusters if run
+in parallel even on Unix systems. To avoid potential speed loss for small
+models, `log_lik` will not use `option(mc.cores)` anymore.
+These changes may be reverted once the underlying causes of this
+issue have been fixed. (#1658)
+
+### Other Changes
+
+* Improve sampling efficiency of `beta_binomial` models. (#1703)
+
 # brms 2.22.0
 
 ### New Features

@@ -23,7 +23,7 @@
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 #'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-#'   \code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.
+#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbeta}.
 #' @param link A specification for the model link function. This can be a
 #'   name/expression or character string. See the 'Details' section for more
 #'   information on link functions supported by each family.
@@ -94,6 +94,16 @@
 #'   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal}
 #'   can be used to model responses representing rates or probabilities.}
 #'
+#'   \item{Family \code{xbeta} extends the \code{beta} family to
+#'   support \code{[0, 1]} responses with exact \code{0}s and / or
+#'   \code{1}s, when each response takes values \code{0}, \code{1},
+#'   and \code{(0, 1)} according to a single process. If there is
+#'   merit in assuming that 0 and 1 values arise from different
+#'   processes than \code{(0, 1)} values, then the
+#'   \code{zero_inflated_beta}, \code{zero_one_inflated_beta} families
+#'   provide more flexibility.  For details see Kosmidis & Zeileis
+#'   (2024).}
+#'
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
 #'
@@ -115,24 +125,26 @@
 #'   that cannot be explained by the primary distribution of the response.}
 #'   }
 #'
-#'   Below, we list all possible links for each family.
-#'   The first link mentioned for each family is the default.
-#'   \itemize{
-#'   \item{Families \code{gaussian}, \code{student}, \code{skew_normal},
-#'   \code{exgaussian}, \code{asym_laplace}, and \code{gen_extreme_value}
-#'   support the links (as names) \code{identity}, \code{log}, \code{inverse},
-#'   and \code{softplus}.}
+#'   Below, we list all possible links for each family.  The first
+#'   link mentioned for each family is the default.  \itemize{
+#'   \item{Families \code{gaussian}, \code{student},
+#'   \code{skew_normal}, \code{exgaussian}, \code{asym_laplace}, and
+#'   \code{gen_extreme_value} support the links (as names)
+#'   \code{identity}, \code{log}, \code{inverse}, and
+#'   \code{softplus}.}
 #'
 #'   \item{Families \code{poisson}, \code{negbinomial}, \code{geometric},
 #'   \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
 #'   \code{hurdle_poisson}, and \code{hurdle_negbinomial} support
 #'   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 #'
-#'   \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
-#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
-#'   \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
-#'   support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
-#'   \code{cauchit}, \code{identity}, and \code{log}.}
+#'   \item{Families \code{binomial}, \code{bernoulli},
+#'   \code{beta_binomial}, \code{zero_inflated_binomial},
+#'   \code{zero_inflated_beta_binomial}, \code{Beta},
+#'   \code{zero_inflated_beta}, \code{zero_one_inflated_beta}, and
+#'   \code{xbeta} support \code{logit}, \code{probit},
+#'   \code{probit_approx}, \code{cloglog}, \code{cauchit},
+#'   \code{identity}, and \code{log}.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
 #'   \code{acat}, and \code{hurdle_cumulative} support \code{logit},
@@ -174,7 +186,13 @@
 #'   have to use \code{brmsfamily} to specify the family with corresponding link
 #'   function.
 #'
-#' @seealso \code{\link[brms:brm]{brm}},
+#' @references
+#'
+#' Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for [0, 1] Responses.
+#' \emph{arXiv Preprint}. \doi{10.48550/arXiv.2409.07233}
+#'
+#' @seealso
+#'   \code{\link[brms:brm]{brm}},
 #'   \code{\link[stats:family]{family}},
 #'   \code{\link{customfamily}}
 #'
@@ -610,6 +628,15 @@ Beta <- function(link = "logit", link_phi = "log") {
   slink <- substitute(link)
   .brmsfamily("beta", link = link, slink = slink,
               link_phi = link_phi)
+}
+
+#' @rdname brmsfamily
+#' @export
+xbeta <- function(link = "logit", link_phi = "log",
+                  link_kappa = "log") {
+  slink <- substitute(link)
+  .brmsfamily("xbeta", link = link, slink = slink,
+              link_phi = link_phi, link_kappa = link_kappa)
 }
 
 #' @rdname brmsfamily
@@ -1875,7 +1902,7 @@ family_bounds.brmsterms <- function(x, ...) {
     "hurdle_lognormal", "zero_inflated_poisson",
     "zero_inflated_negbinomial"
   )
-  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
+  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta", "xbeta")
   ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
   if (family %in% pos_families) {
     out <- list(lb = 0, ub = Inf)

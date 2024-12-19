@@ -56,10 +56,10 @@ More information is provided in the 'Details' section.}
 \item{joint}{Indicates which observations' log likelihoods shall be
 considered jointly in the ELPD computation. If \code{"obs"} or \code{FALSE}
 (the default), each observation is considered separately. This enables
-comparability of \code{kfold} with \code{loo}. If \code{"fold"}, the joint
-log likelihoods per fold are used. If \code{"group"}, the joint log
-likelihoods per group within folds are used (only available if argument
-\code{group} is specified).}
+comparability of \code{kfold} with \code{loo}. If \code{"fold"} or
+\code{TRUE}, the joint log likelihoods per fold are used. If
+\code{"group"}, the joint log likelihoods per group within folds are used
+(only available if argument \code{group} is specified).}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other

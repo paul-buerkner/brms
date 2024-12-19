@@ -124,7 +124,7 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   N <- choose_N(object)
-  out <- plapply(seq_len(N), log_lik_fun, cores = cores, prep = object)
+  out <- plapply(seq_len(N), log_lik_fun, .cores = cores, prep = object)
   out <- do_call(cbind, out)
   colnames(out) <- NULL
   old_order <- object$old_order
@@ -626,6 +626,19 @@ log_lik_beta <- function(i, prep) {
   out <- log_lik_censor(dist = "beta", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
     out, cdf = pbeta, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_xbeta <- function(i, prep) {
+  args <- list(
+    mu = get_dpar(prep, "mu", i = i),
+    phi = get_dpar(prep, "phi", i = i),
+    nu = get_dpar(prep, "kappa", i = i)
+  )
+  out <- log_lik_censor(dist = "xbeta", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(
+    out, cdf = pxbeta, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
