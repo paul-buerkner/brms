@@ -95,6 +95,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           c(index) <- j
         }
         prior_ij <- subset2(prior, coef = coef[i, j])
+        lprior_tag <- prior_ij$lprior
         if (NROW(px) > 1L) {
           # disambiguate priors of coefficients with the same name
           # coming from different model components
@@ -131,7 +132,13 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
               coef_prior, par_ij, broadcast = broadcast,
               bound = bound, resp = px$resp[1], normalize = normalize
             )
+            # add to the lprior
             str_add(out$tpar_prior) <- paste0(lpp(), coef_prior, ";\n")
+            # add to the lprior of the tag if specified
+            if (!is.null(lprior_tag) && lprior_tag != "") {
+              str_add(out$tpar_prior) <- paste0(lpp(tag = lprior_tag), coef_prior, ";\n")
+            }
+
           }
         }
       }
@@ -241,7 +248,7 @@ stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
       return(brmsprior()[, col])
     }
   }
-  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  vars <- c("group", "nlpar", "dpar", "resp", "class", "lprior")
   for (v in vars) {
     take <- nzchar(prior[[v]])
     if (any(take)) {
@@ -698,7 +705,11 @@ stopif_prior_bound <- function(prior, class, ...) {
 }
 
 # lprior plus equal
-lpp <- function(wsp = 2) {
+lpp <- function(wsp = 2, tag = NULL) {
   wsp <- collapse(rep(" ", wsp))
-  paste0(wsp, "lprior += ")
+  if (is.null(tag)) {
+    paste0(wsp, "lprior", " += ")
+  } else {
+    paste0(wsp, "lprior_", tag, " += ")
+  }
 }

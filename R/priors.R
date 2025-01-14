@@ -360,8 +360,8 @@
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",
-                      lb = NA, ub = NA, check = TRUE) {
-  input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, check)
+                      lb = NA, ub = NA, lprior = "", check = TRUE) {
+  input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, lprior, check)
   input <- try(as.data.frame(input), silent = TRUE)
   if (is_try_error(input)) {
     stop2("Processing arguments of 'set_prior' has failed:\n", input)
@@ -375,7 +375,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 
 # validate arguments passed to 'set_prior'
 .set_prior <- function(prior, class, coef, group, resp,
-                       dpar, nlpar, lb, ub, check) {
+                       dpar, nlpar, lb, ub, lprior, check) {
   prior <- as_one_character(prior)
   class <- as_one_character(class)
   group <- as_one_character(group)
@@ -386,16 +386,17 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
+  lprior <- as_one_character(lprior)
   if (dpar == "mu") {
     # distributional parameter 'mu' is currently implicit #1368
     dpar <- ""
   }
   if (!check) {
     # prior will be added to the log-posterior as is
-    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- ""
+    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- lprior <- ""
   }
   source <- "user"
-  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, lb, ub)
+  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, lb, ub, lprior)
   do_call(brmsprior, out)
 }
 
@@ -558,7 +559,7 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   # explicitly label default priors as such
   prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
-  to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
+  to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef, lprior))
   prior <- unique(prior[to_order, , drop = FALSE])
   rownames(prior) <- NULL
   class(prior) <- c("brmsprior", "data.frame")
@@ -1565,7 +1566,7 @@ get_sample_prior <- function(prior) {
 # create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "", lb = "", ub = "",
-                      source = "", ls = list()) {
+                      lprior = "", source = "", ls = list()) {
   if (length(ls)) {
     if (is.null(names(ls))) {
       stop("Argument 'ls' must be named.")
@@ -1580,7 +1581,7 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
   }
   out <- data.frame(
     prior, class, coef, group,
-    resp, dpar, nlpar, lb, ub, source,
+    resp, dpar, nlpar, lb, ub, lprior, source,
     stringsAsFactors = FALSE
   )
   class(out) <- c("brmsprior", "data.frame")
@@ -1594,7 +1595,7 @@ empty_prior <- function() {
   brmsprior(
     prior = char0, source = char0, class = char0,
     coef = char0, group = char0, resp = char0,
-    dpar = char0, nlpar = char0, lb = char0, ub = char0
+    dpar = char0, nlpar = char0, lb = char0, ub = char0, lprior = char0
   )
 }
 
@@ -1623,7 +1624,7 @@ prior_bounds <- function(prior) {
 # all columns of brmsprior objects
 all_cols_prior <- function() {
   c("prior", "class", "coef", "group", "resp",
-    "dpar", "nlpar", "lb", "ub", "source")
+    "dpar", "nlpar", "lb", "ub", "lprior", "source")
 }
 
 # relevant columns for duplication checks in brmsprior objects
@@ -1915,7 +1916,7 @@ as.brmsprior <- function(x) {
 
   defaults <- c(
     class = "b", coef = "", group = "", resp = "",
-    dpar = "", nlpar = "", lb = NA, ub = NA
+    dpar = "", nlpar = "", lb = NA, ub = NA, lprior = ""
   )
   for (v in names(defaults)) {
     if (!v %in% names(x)) {

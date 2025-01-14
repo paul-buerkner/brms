@@ -114,6 +114,8 @@ stancode.default <- function(object, data, family = gaussian(),
                       backend = getOption("brms.backend", "rstan"),
                       silent = TRUE, save_model = NULL, ...) {
 
+  lprior_tags <- prior$lprior[prior$lprior != ""]
+
   normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
@@ -278,12 +280,15 @@ stancode.default <- function(object, data, family = gaussian(),
 
   # generate transformed parameters block
   scode_lprior_def <- "  real lprior = 0;  // prior contributions to the log posterior\n"
+  scode_lprior_tags_def <- paste0(
+    "  real lprior_", unique(lprior_tags), " = 0;\n", collapse = "")
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
       scode_predictor[["tpar_def"]],
       scode_re[["tpar_def"]],
       scode_Xme[["tpar_def"]],
       str_if(normalize, scode_lprior_def),
+      str_if(normalize, scode_lprior_tags_def),
       collapse_stanvars(stanvars, "tparameters", "start"),
       scode_predictor[["tpar_prior_const"]],
       scode_re[["tpar_prior_const"]],
