@@ -64,6 +64,30 @@
 #'  \url{https://mc-stan.org/docs/functions-reference/matrix_operations.html}
 #'  under "Gaussian Process Covariance Functions".
 #'
+#'  There are several parameters estimated by the GP, the most important of which
+#'  are as follows (these apply to both standard GPs as well as grouped GPs as
+#'  specified by the \code{by} argument of \code{gp()}):
+#'  \tabular{llll}{
+#'  \strong{Parameter} \tab \strong{Notation} \tab \strong{Support} \tab \strong{Name} \cr
+#'  \code{lscale} \tab \eqn{\ell} \tab \eqn{\mathbb{R}^+} \tab length-scale of the GP's covariance kernel \cr
+#'  \code{sd} \tab \eqn{\sigma} \tab \eqn{\mathbb{R}^+} \tab marginal standard deviation of the GP's covariance kernel \cr
+#'  \code{z} \tab \eqn{z} \tab ??? \tab ??? \cr
+#'  }
+#'  Assuming an exponential quadratic covariance structure, the parameters
+#'  can be broadly interpreted as follows (taking mostly from
+#'  \url{https://mc-stan.org/docs/stan-users-guide/gaussian-processes.html#gaussian-process-regression}).
+#'  Note that in the above documentation the parameter \eqn{\sigma} is denoted
+#'  as \eqn{\alpha} instead, and the parameter \eqn{\ell} as \eqn{\rho}.
+#'  The length-scale \eqn{\ell} controls the frequency of the functions
+#'  represented by the GP prior i.e., values of \eqn{\rho \gg 0} lead to
+#'  lower-frequency functions, while values of \eqn{\rho \approx 0} lead to
+#'  higher-frequency functions. In slightly simpler terms, \eqn{\ell} sets
+#'  the distance over which observations in the input space are strongly
+#'  correlated. The marginal standard deviation \eqn{\sigma} controls the
+#'  magnitude of the range of the function represented by the GP i.e., it
+#'  represents how much the values of the function tend to deviate from the
+#'  mean level. Lastly, the parameter \eqn{z} represents ???.
+#'
 #' @return An object of class \code{'gp_term'}, which is a list
 #'   of arguments to be interpreted by the formula
 #'   parsing functions of \pkg{brms}.
