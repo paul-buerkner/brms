@@ -1122,3 +1122,49 @@ test_that("drop_unused_factor levels works correctly", {
   sdata <- standata(y ~ x, data = dat, drop_unused_levels = FALSE)
   expect_equal(colnames(sdata$X), c("Intercept", "xb", "xc"))
 })
+
+test_that("Group weights correctly created from `gr()`", {
+  
+  # For example with a single grouping variable
+  wtd_epilepsy <- epilepsy
+  patient_weights <- c(1, rep(c(0.9, 1.1), each = 29))
+  wtd_epilepsy[['patient_samp_wgt']] <- patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
+
+  sdata <- standata(
+    count ~ Trt + (1 + Trt | gr(patient, weights = patient_samp_wgt)),
+    data = wtd_epilepsy, family = gaussian()
+  )
+  expect_equal(object = as.vector(sdata[['GMW_1']]), expected = patient_weights)
+  
+  # Multiple grouping variables
+  # with one variable whose factor level order differs from order of appearance
+  wtd_epilepsy[['random_group']]     <- rep(c('d', 'b', 'a', 'c'), times = 59)
+  wtd_epilepsy[['random_group_wgt']] <- rep(c(0.8, 1.2, 0.7, 1.3), times = 59)
+
+  sdata <- standata(
+    count ~ Trt + (1 + Trt | gr(patient, weights = patient_samp_wgt))
+                + (1       | gr(random_group, weights = random_group_wgt)),
+    data = wtd_epilepsy, family = gaussian()
+  )
+
+  expect_equal(object = as.vector(sdata[['GMW_2']]),
+               expected = c(0.7, 1.2, 1.3, 0.8))
+  
+  # Model with multiple outcomes
+  dat <- data.frame(
+    y1 = rnorm(10), y2 = rnorm(10),
+    x = 1:10, 
+    g1 = rep(1:2, each = 5),
+    g1wgt = rep(c(0.9, 1.1), each = 5),
+    g2 = c(rep(1:4, each = 2), 1:2),
+    g2wgt = c(rep(9:12, each = 2), 9:10),
+    censi = sample(0:1, 10, TRUE)
+  )
+
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, weights = g1wgt)) + (1 | gr(g2, weights = g2wgt))) + set_rescor(TRUE)
+  prior <- prior(horseshoe(2), resp = "y1") +
+           prior(horseshoe(2), resp = "y2")
+  sdata <- standata(form, dat, prior = prior)
+  expect_in(c("GMW_1", "GMW_4"), names(sdata))
+
+})

@@ -19,6 +19,10 @@
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
+#' @param weights Optional numeric variable. Weights the contribution
+#'   of each group to the log-likelihood for the distribution of the group-level effects.
+#'   The \code{weights} variable in the data should have one distinct value for
+#'   each level of the grouping variable.
 #' @param cov An optional matrix which is proportional to the within-group
 #'   covariance matrix of the group-level effects. All levels of the grouping
 #'   factor should appear as rownames of the corresponding matrix. This argument
@@ -43,10 +47,16 @@
 #' # include Trt as a by variable
 #' fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
 #' summary(fit3)
+#'
+#' # include a group-level weight variable
+#' epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
+#' fit4 <- brm(count ~ Trt + (1|gr(patient, weights = patient_samp_wgt)),
+#'             data = epilepsy)
+#' summary(fit4)
 #' }
 #'
 #' @export
-gr <- function(..., by = NULL, cor = TRUE, id = NA,
+gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
                cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -57,10 +67,16 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   cor <- as_one_logical(cor)
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
+  gr_weights <- substitute(weights)
   if (!is.null(by)) {
     by <- deparse0(by)
   } else {
     by <- ""
+  }
+  if (!is.null(gr_weights)) {
+    gr_weights <- deparse0(gr_weights)
+  } else {
+    gr_weights <- ""
   }
   cov <- substitute(cov)
   if (!is.null(cov)) {
@@ -73,8 +89,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   byvars <- all_vars(by)
-  allvars <- str2formula(c(groups, byvars))
-  nlist(groups, allvars, label, by, cor, id, cov, dist, type = "")
+  gr_weights_vars <- all_vars(gr_weights)
+  allvars <- str2formula(c(groups, byvars, gr_weights_vars))
+  nlist(groups, allvars, label, by, cor, id, gr_weights, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
