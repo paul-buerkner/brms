@@ -109,8 +109,8 @@ A GP is a stochastic process, which
  Note that in the above documentation the parameter \eqn{\sigma} is denoted
  as \eqn{\alpha} instead, and the parameter \eqn{\ell} as \eqn{\rho}.
  The length-scale \eqn{\ell} controls the frequency of the functions
- represented by the GP prior i.e., values of \eqn{\rho \gg 0} lead to
- lower-frequency functions, while values of \eqn{\rho \approx 0} lead to
+ represented by the GP prior i.e., values of \eqn{\ell \gg 0} lead to
+ lower-frequency functions, while values of \eqn{\ell \approx 0} lead to
  higher-frequency functions. In slightly simpler terms, \eqn{\ell} sets
  the distance over which observations in the input space are strongly
  correlated. The marginal standard deviation \eqn{\sigma} controls the
