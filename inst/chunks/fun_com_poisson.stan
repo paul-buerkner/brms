@@ -4,7 +4,7 @@
 real log_Z_com_poisson_approx(real log_mu, real nu) {
   real nu2 = nu^2;
   real log_common = log(nu) + log_mu/nu;
-  real resids[4];
+  array[4] real resids;
   real ans;
   real lcte = (nu * exp(log_mu/nu)) -
     ( (nu-1)/(2*nu)* log_mu + (nu-1)/2*log(2*pi()) + 0.5 *log(nu));
