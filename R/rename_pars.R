@@ -279,6 +279,7 @@ rename_Ymi <- function(bframe, pars, ...) {
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
+      # TODO: correctly rename unique missing values
       Jmi <- bframe$frame$resp$Jmi
       fnames <- paste0(Ymi, "[", Jmi, "]")
       lc(out) <- rlist(pos, fnames)

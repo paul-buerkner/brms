@@ -50,7 +50,7 @@ resp_cens(x, y2 = NA)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_mi(sdy = NA)
+resp_mi(sdy = NA, idx = NA)
 
 resp_index(x)
 

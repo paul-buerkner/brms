@@ -404,8 +404,9 @@ data_sp <- function(bframe, data, data2, prior) {
       idxl <- get(uni_mi$idx[j], data)
       if (is.null(index[[uni_mi$var[j]]])) {
         # the 'idx' argument needs to be mapped against 'index' addition terms
-        stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ",
-              "term to compare with 'idx'. See ?mi for examples.")
+        stop2("Response '", uni_mi$var[j], "' needs to have an 'mi' addition ",
+              "term with an 'idx' variable specified to compare with 'idx' ",
+              "variables in 'mi' predictor terms. See ?mi for examples.")
       }
       idxl <- match(idxl, index[[uni_mi$var[j]]])
       if (anyNA(idxl)) {

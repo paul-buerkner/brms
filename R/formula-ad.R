@@ -190,9 +190,10 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
 
 #' @rdname addition-terms
 #' @export
-resp_mi <- function(sdy = NA) {
+resp_mi <- function(sdy = NA, idx = NA) {
   sdy <- deparse0(substitute(sdy))
-  class_resp_special("mi", call = match.call(), vars = nlist(sdy))
+  idx <- deparse0(substitute(idx))
+  class_resp_special("mi", call = match.call(), vars = nlist(sdy, idx))
 }
 
 #' @rdname addition-terms
@@ -418,7 +419,16 @@ frame_index <- function(x, data) {
 
 #' @export
 .frame_index.brmsterms <- function(x, data, ...) {
-  out <- get_ad_values(x, "index", "index", data)
+  out <- get_ad_values(x, "mi", "idx", data)
+  if (is.null(out)) {
+    out <- get_ad_values(x, "index", "index", data)
+    if (!is.null(out)) {
+      warning2(
+        "Addition term 'index' is deprecated. ",
+        "Use argument 'idx' of addition term 'mi' instead."
+      )
+    }
+  }
   if (is.null(out)) {
     return(NULL)
   }
@@ -430,9 +440,9 @@ frame_index <- function(x, data) {
   if (anyNA(out)) {
     stop2("NAs are not allowed in 'index' variables.")
   }
-  if (anyDuplicated(out)) {
-    stop2("Index of response '", x$resp, "' contains duplicated values.")
-  }
+  # if (anyDuplicated(out)) {
+  #   stop2("Index of response '", x$resp, "' contains duplicated values.")
+  # }
   out
 }
 

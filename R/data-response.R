@@ -79,7 +79,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
                                     internal = FALSE, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
-  # TODO: rename 'Y' to 'y'
+  # TODO: rename 'Y' to 'y'?
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family)) {
@@ -371,13 +371,31 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     out$ub <- ub
   }
   if (is.formula(x$adforms$mi)) {
+    # TODO: make sure that this indexing works safely also with univariate models
+    idx <- x$frame$index[[x$resp]]
     sdy <- get_sdy(x, data)
     if (is.null(sdy)) {
-      # missings only
-      which_mi <- which(is.na(out$Y))
+      # only basic missing values without additional measurement error
+      is_na_y <- is.na(out$Y)
+      which_mi <- which(is_na_y)
       out$Jmi <- as.array(which_mi)
       out$Nmi <- length(out$Jmi)
+      if (!is.null(idx)) {
+        # TODO: error only if duplicated response values are not the same
+        #   there is a function related to me terms that I may use for this purpose
+        # if (anyDuplicated(idx[!is_na_y])) {
+        #   stop2("Index of response '", x$resp, "' contains duplicated values.")
+        # }
+        # idx indexes unique latent values and is thus only required for missing values
+        idx <- idx[which_mi]
+      }
     } else {
+      # TODO: consider deprecating/removing sdy as we can also realize this
+      #   via an additional univariate model and subsetting syntax
+      #   there are pros and cons for the removal of sdy.
+      #   pro: less special code for brms to maintain without loss of feature
+      #   con: the alternative syntax to achieve the same thing is much more
+      #        verbose and error prone
       # measurement error in the response
       if (length(sdy) == 1L) {
         sdy <- rep(sdy, length(out$Y))
@@ -385,7 +403,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       if (length(sdy) != length(out$Y)) {
         stop2("'sdy' must have the same length as the response.")
       }
-      # all observations will have a latent score
+      # all observations will have a corresponding latent value
       which_mi <- which(is.na(out$Y) | is.infinite(sdy))
       out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
       out$Nme <- length(out$Jme)
@@ -393,6 +411,14 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       if (!internal) {
         out$noise[which_mi] <- Inf
       }
+    }
+    if (!is.null(idx)) {
+      # there may be fewer unique missing values than missing values in total
+      # so we need to also index unique missing values
+      # TODO: make sure this works safely also in post-processing
+      Jl <- as.numeric(as.factor(idx))
+      out$Jl <- as.array(Jl)
+      out$Nl <- length(unique(out$Jl))
     }
     # bounds are required for predicting new missing values
     # not required in Stan right now as bounds are hard-coded there

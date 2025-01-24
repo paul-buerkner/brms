@@ -212,25 +212,37 @@ stan_response <- function(bframe, threads, normalize, ...) {
     # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
     Ybounds <- bframe$frame$resp$Ybounds
     mi <- eval_rhs(bframe$adforms$mi)
-    if (mi$vars$sdy == "NA") {
+    has_idx <- mi$vars$idx != "NA"
+    has_sdy <- mi$vars$sdy != "NA"
+    if (has_idx) {
+      Nmi <- str_if(has_sdy, "N", "Nmi")
+      str_add(out$data) <- glue(
+        "  int<lower=0> Nl{resp};  // number of latent values\n",
+        "  array[{Nmi}{resp}] int<lower=1> Jl{resp};  // positions of latent values\n"
+      )
+    }
+    if (!has_sdy) {
       # response is modeled without measurement error
       str_add(out$data) <- glue(
         "  int<lower=0> Nmi{resp};  // number of missings\n",
         "  array[Nmi{resp}] int<lower=1> Jmi{resp};  // positions of missings\n"
       )
+      Nl <- str_if(has_idx, "Nl", "Nmi")
       str_add(out$par) <- glue(
-        "  vector{Ybounds}[Nmi{resp}] Ymi{resp};  // estimated missings\n"
+        "  vector{Ybounds}[{Nl}{resp}] Ymi{resp};  // estimated missings\n"
       )
       str_add(out$model_no_pll_def) <- glue(
         "  // vector combining observed and missing responses\n",
         "  vector[N{resp}] Yl{resp} = Y{resp};\n"
       )
+      Jl <- str_if(has_idx, glue("[Jl{resp}]"))
       str_add(out$model_no_pll_comp_basic) <- glue(
-        "  Yl{resp}[Jmi{resp}] = Ymi{resp};\n"
+        "  // assign latent values to the right places in the response vector\n",
+        "  Yl{resp}[Jmi{resp}] = Ymi{resp}{Jl};\n"
       )
       str_add(out$pll_args) <- glue(", vector Yl{resp}")
     } else {
-      # measurement error present
+      # measurement errors are present
       str_add(out$data) <- glue(
         "  // data for measurement-error in the response\n",
         "  vector<lower=0>[N{resp}] noise{resp};\n",
@@ -238,8 +250,9 @@ stan_response <- function(bframe, threads, normalize, ...) {
         "  int<lower=0> Nme{resp};\n",
         "  array[Nme{resp}] int<lower=1> Jme{resp};\n"
       )
+      Nl <- str_if(has_idx, "Nl", "N")
       str_add(out$par) <- glue(
-        "  vector{Ybounds}[N{resp}] Yl{resp};  // latent variable\n"
+        "  vector{Ybounds}[{Nl}{resp}] Yl{resp};  // latent variable\n"
       )
       str_add(out$model_prior) <- glue(
         "  target += normal_{lpdf}(Y{resp}[Jme{resp}]",
