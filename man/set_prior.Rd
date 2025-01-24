@@ -20,6 +20,7 @@ set_prior(
   nlpar = "",
   lb = NA,
   ub = NA,
+  lprior = "",
   check = TRUE
 )
 
