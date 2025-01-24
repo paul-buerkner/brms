@@ -2185,6 +2185,18 @@ dmultinomial <- function(x, eta, log = FALSE) {
   out
 }
 
+# density of the multinomial distribution with the softmax transform
+# @param x positive integers not greater than ncat
+# @param eta the linear predictor (of length or ncol ncat)
+# @param phi the dispersion parameter
+# @param log return values on the log scale?
+ddirichletmultinomial <- function(x, eta, phi, log = FALSE) {
+  require_package("extraDistr")
+  alpha <- softmax(eta) * phi
+  size <- sum(x)
+  extraDistr::ddirmnom(x, size = size, alpha = alpha, log = log)
+}
+
 # density of the cumulative distribution
 #
 # @param x Integer vector containing response category indices to return the
