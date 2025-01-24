@@ -346,6 +346,12 @@ test_that("posterior_predict for categorical and related models runs without err
   pred <- brms:::posterior_predict_multinomial(i = sample(1:nobs, 1), prep = prep)
   expect_equal(dim(pred), c(ns, ncat))
 
+  prep$data$trials <- sample(1:20, nobs)
+  prep$dpars$phi <- rexp(ns, 1)
+  prep$family <- dirichlet_multinomial()
+  pred <- brms:::posterior_predict_dirichlet_multinomial(i = sample(1:nobs, 1), prep = prep)
+  expect_equal(dim(pred), c(ns, ncat))
+
   prep$dpars$phi <- rexp(ns, 1)
   prep$family <- dirichlet()
   pred <- brms:::posterior_predict_dirichlet(i = sample(1:nobs, 1), prep = prep)

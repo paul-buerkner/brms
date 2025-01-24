@@ -678,6 +678,29 @@ test_that("Stan code for multinomial models is correct", {
   expect_match2(scode, "lprior += normal_lpdf(Intercept_muy3 | 0, 2);")
 })
 
+test_that("Stan code for dirichlet_multinomial models is correct", {
+  N <- 15
+  dat <- data.frame(
+    y1 = rbinom(N, 10, 0.3), y2 = rbinom(N, 10, 0.5),
+    y3 = rbinom(N, 10, 0.7), x = rnorm(N)
+  )
+  dat$size <- with(dat, y1 + y2 + y3)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  prior <- prior(normal(0, 10), "b", dpar = muy2) +
+    prior(cauchy(0, 1), "Intercept", dpar = muy2) +
+    prior(normal(0, 2), "Intercept", dpar = muy3) +
+    prior(exponential(10), "phi")
+  scode <- stancode(bf(y | trials(size)  ~ 1, muy2 ~ x), data = dat,
+                         family = dirichlet_multinomial(), prior = prior)
+  expect_match2(scode, "array[N, ncat] int Y;")
+  expect_match2(scode, "target += dirichlet_multinomial_logit2_lpmf(Y[n] | mu[n], phi);")
+  expect_match2(scode, "muy2 += Intercept_muy2 + Xc_muy2 * b_muy2;")
+  expect_match2(scode, "lprior += normal_lpdf(b_muy2 | 0, 10);")
+  expect_match2(scode, "lprior += cauchy_lpdf(Intercept_muy2 | 0, 1);")
+  expect_match2(scode, "lprior += normal_lpdf(Intercept_muy3 | 0, 2);")
+  expect_match2(scode, "lprior += exponential_lpdf(phi | 10);")
+})
+
 test_that("Stan code for dirichlet models is correct", {
   N <- 15
   dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
