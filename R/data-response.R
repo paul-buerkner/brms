@@ -390,12 +390,6 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
         idx <- idx[which_mi]
       }
     } else {
-      # TODO: consider deprecating/removing sdy as we can also realize this
-      #   via an additional univariate model and subsetting syntax
-      #   there are pros and cons for the removal of sdy.
-      #   pro: less special code for brms to maintain without loss of feature
-      #   con: the alternative syntax to achieve the same thing is much more
-      #        verbose and error prone
       # measurement error in the response
       if (length(sdy) == 1L) {
         sdy <- rep(sdy, length(out$Y))
@@ -407,9 +401,9 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       which_mi <- which(is.na(out$Y) | is.infinite(sdy))
       out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
       out$Nme <- length(out$Jme)
-      out$noise <- as.array(sdy)
+      out$sdy <- as.array(sdy)
       if (!internal) {
-        out$noise[which_mi] <- Inf
+        out$sdy[which_mi] <- Inf
       }
     }
     if (!is.null(idx)) {

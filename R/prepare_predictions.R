@@ -356,7 +356,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
       vmi <- vars_mi[i]
       dim_y <- c(nrow(out$bsp), sdata[[paste0("N_", vmi)]])
       Y <- data2draws(sdata[[paste0("Y_", vmi)]], dim_y)
-      sdy <- sdata[[paste0("noise_", vmi)]]
+      sdy <- sdata[[paste0("sdy_", vmi)]]
       if (is.null(sdy)) {
         # missings only
         out$Yl[[i]] <- Y
@@ -368,9 +368,10 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
         }
       } else {
         # measurement-error in the response
-        save_mevars <- any(grepl("^Yl_", colnames(draws)))
+        save_mevars <- any(grepl("^Ymi_", colnames(draws)))
         if (save_mevars && !new) {
-          Ymi_regex <- paste0("^Yl_", escape_all(vmi), "\\[")
+          # TODO: extend restructure to rename old Yl parameters?
+          Ymi_regex <- paste0("^Ymi_", escape_all(vmi), "\\[")
           out$Yl[[i]] <- prepare_draws(draws, Ymi_regex, regex = TRUE)
         } else {
           warn_me <- warn_me || !new
