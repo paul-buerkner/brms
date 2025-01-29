@@ -542,10 +542,9 @@ frame_sp <- function(x, data) {
 
   # extract information on covariates
   # only non-zero covariates are relevant to consider
-  # TODO: change the way covariates are extracted to allow for constant covariates
-  not_one <- apply(mm, 2, function(x) any(x != 1))
-  cumsum_not_one <- cumsum(not_one)
-  out$Ic <- ifelse(not_one, cumsum_not_one, 0)
+  has_covars <- attr(mm, "covars")
+  cumsum_covars <- cumsum(has_covars)
+  out$Ic <- ifelse(has_covars, cumsum_covars, 0)
   class(out) <- spframe_class()
   out
 }
@@ -619,7 +618,7 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   terms_replace <- terms_unique[grepl_expr(regex, terms_unique)]
   dummies <- paste0("dummy", seq_along(terms_replace), "__")
   data[dummies] <- list(1)
-  terms_comb <- rep(NA, length(terms_split))
+  terms_comb <- covars <- rep(NA, length(terms_split))
   # loop over terms and add dummy variables
   for (i in seq_along(terms_split)) {
     replace_i <- grepl_expr(regex, terms_split[[i]])
@@ -627,6 +626,8 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
     dummies_i <- dummies[match(terms_i_replace, terms_replace)]
     terms_split[[i]][replace_i] <- dummies_i
     terms_comb[i] <- paste0(terms_split[[i]], collapse = ":")
+    # non-special covariates are part of the term
+    covars[i] <- !all(replace_i)
   }
   new_formula <- str2formula(terms_comb)
   attributes(new_formula) <- attributes(formula)
@@ -635,6 +636,7 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   colnames(out) <- rm_wsp(colnames(out))
   # recover original column names
   colnames(out) <- rename(colnames(out), dummies, terms_replace)
+  attr(out, "covars") <- covars
   out
 }
 
