@@ -1,5 +1,11 @@
 # brms 3.0
 
+### New Features
+
+* Use varying coefficients as predictors in other model parts via 
+`re` predictor terms. (#1687)
+
+
 # brms 2.23
 
 ### New Features

@@ -143,6 +143,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
 
 # find rows of 'x' matching columns passed via 'ls' and '...'
 # similar to 'find_elements' but for matrix like objects
+# TODO: rename ls and fun to .ls and .fun to prevent name clashing
 find_rows <- function(x, ..., ls = list(), fun = '%in%') {
   x <- as.data.frame(x)
   if (!nrow(x)) {
@@ -160,6 +161,11 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
     out <- out & do_call(fun, list(x[[name]], ls[[name]]))
   }
   out
+}
+
+# short form of which(find_rows())
+which_rows <- function(x, ..., ls = list(), fun = '%in%') {
+  which(find_rows(x, ..., ls = ls, fun = fun))
 }
 
 # subset 'x' using arguments passed via 'ls' and '...'

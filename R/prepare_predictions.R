@@ -252,17 +252,19 @@ prepare_predictions_fe <- function(bframe, draws, sdata, ...) {
 }
 
 # prepare predictions of special effects terms
-prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
+prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
+                                   new = FALSE, ...) {
   stopifnot(is.bframel(bframe))
   out <- list()
   spframe <- bframe$frame$sp
-  meframe <- bframe$frame$me
   if (!has_rows(spframe)) {
     return(out)
   }
   p <- usc(combine_prefix(bframe))
   resp <- usc(bframe$resp)
   # prepare calls evaluated in sp_predictor
+  meframe <- bframe$frame$me
+  reframe <- unique(Reduce(rbind, spframe$reframe))
   out$calls <- vector("list", nrow(spframe))
   for (i in seq_along(out$calls)) {
     call <- spframe$joint_call[[i]]
@@ -280,6 +282,27 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
       idx_mi <- ifelse(is_na_idx, "", paste0("[, ", idx_mi, "]"))
       new_mi <- paste0("Yl_", spframe$vars_mi[[i]], idx_mi)
       call <- rename(call, spframe$calls_mi[[i]], new_mi)
+    }
+    if (!is.null(spframe$calls_re[[i]])) {
+      if (NROW(spframe$reframe[[i]]) < length(spframe$calls_re[[i]])) {
+        # this will lead to an error upon evaluation only which is important
+        # as parts of prepare_predictions may not actually be evaluated in the end
+        new_re <- paste0(
+          "stop2('Cannot find all varying coefficients required in ",
+          spframe$joint_call[[i]], ". ",
+          "Did you exclude them via argument re_formula?')"
+        )
+      } else {
+        # all required varying coefficients are present
+        new_re <- rep(NA, length(spframe$calls_re[[i]]))
+        for (j in seq_along(spframe$calls_re[[i]])) {
+          # the ordering is in reference to the unique re terms in the formula
+          k <- which_rows_reframe(spframe$reframe[[i]][j, ], reframe)
+          stopifnot(length(k) == 1L)
+          new_re[j] <- paste0("r_", k, "[, Jr_", k, ", drop = FALSE]")
+        }
+      }
+      call <- rename(call, spframe$calls_re[[i]], new_re)
     }
     if (spframe$Ic[i] > 0) {
       str_add(call) <- paste0(" * Csp_", spframe$Ic[i])
@@ -396,6 +419,20 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
       "You can control saving those variables via 'save_pars()'. ",
       "Treating original data as if it was new data as a workaround."
     )
+  }
+  # prepare predictions for 're' terms
+  if (NROW(reframe)) {
+    out$r <- out$Jr <- vector("list", nrow(reframe))
+    for (i in seq_rows(reframe)) {
+      rf <- reframe[i, ]
+      pr <- prep_re[[rf$gr]]
+      select <- which_rows_reframe(rf, pr$reframe)
+      nlevels <- length(pr$levels)
+      out$r[[i]] <- subset_matrix_ranefs(pr$rdraws, select, nlevels)
+      # the order of levels in pr$draws follows that of pr$levels
+      # so the matching approach below is always valid
+      out$Jr[[i]] <- match(pr$gf[[1]], pr$levels)
+    }
   }
   # prepare covariates
   ncovars <- max(spframe$Ic)
@@ -569,7 +606,7 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
   # used (new) levels are currently not available within the bframe argument
   # since it has been computed with the old data (but new formula) the likely
   # reason for this choice was to avoid running validate_newdata twice (in
-  # prepare_predictions and standata). Perhaps this choice can can be
+  # prepare_predictions and standata). Perhaps this choice can be
   # reconsidered in the future while avoiding multiple validate_newdata runs
   out <- named_list(groups, list())
   for (g in groups) {
@@ -590,8 +627,7 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
       )
     }
     # only prepare predictions of effects specified in the new formula
-    cols_match <- c("coef", "resp", "dpar", "nlpar")
-    used_rpars <- which(find_rows(old_reframe_g, ls = reframe_g[cols_match]))
+    used_rpars <- which_rows_reframe(old_reframe_g, reframe_g)
     used_rpars <- outer(seq_len(nlevels), (used_rpars - 1) * nlevels, "+")
     used_rpars <- as.vector(used_rpars)
     rdraws <- rdraws[, used_rpars, drop = FALSE]
@@ -621,7 +657,7 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
     rdraws <- cbind(rdraws, new_rdraws)
     # keep only those levels actually used in the current data
     levels <- unique(unlist(gf))
-    rdraws <- subset_levels(rdraws, levels, nranef)
+    rdraws <- subset_matrix_levels(rdraws, levels, nranef)
     # store all information required in 'prepare_predictions_re'
     out[[g]]$reframe <- reframe_g
     out[[g]]$rdraws <- rdraws
@@ -661,12 +697,13 @@ prepare_predictions_re <- function(bframe, sdata, prep_re = list(),
     rdraws <- prep_re[[g]]$rdraws
     nranef <- prep_re[[g]]$nranef
     levels <- prep_re[[g]]$levels
+    nlevels <- length(levels)
     max_level <- prep_re[[g]]$max_level
     gf <- prep_re[[g]]$gf
     weights <- prep_re[[g]]$weights
-    # TODO: define 'select' according to parameter names not by position
+    # TODO: define 'select' according to names instead of position?
     # store draws and corresponding data in the output
-    # special group-level terms (mo, me, mi)
+    # special group-level terms (mo, mi, etc.)
     reframe_g_px_sp <- subset2(reframe_g_px, type = "sp")
     if (nrow(reframe_g_px_sp)) {
       Z <- matrix(1, length(gf[[1]]))
@@ -675,9 +712,7 @@ prepare_predictions_re <- function(bframe, sdata, prep_re = list(),
         # select from all varying effects of that group
         select <- find_rows(reframe_g, ls = px) &
           reframe_g$coef == co & reframe_g$type == "sp"
-        select <- which(select)
-        select <- select + nranef * (seq_along(levels) - 1)
-        out[["rsp"]][[co]][[g]] <- rdraws[, select, drop = FALSE]
+        out[["rsp"]][[co]][[g]] <- subset_matrix_ranefs(rdraws, select, nlevels)
       }
     }
     # category specific group-level terms
@@ -693,9 +728,7 @@ prepare_predictions_re <- function(bframe, sdata, prep_re = list(),
         # select from all varying effects of that group
         select <- find_rows(reframe_g, ls = px) &
           grepl(index, reframe_g$coef) & reframe_g$type == "cs"
-        select <- which(select)
-        select <- as.vector(outer(select, nranef * (seq_along(levels) - 1), "+"))
-        out[["rcs"]][[g]][[i]] <- rdraws[, select, drop = FALSE]
+        out[["rcs"]][[g]][[i]] <- subset_matrix_ranefs(rdraws, select, nlevels)
       }
     }
     # basic group-level terms
@@ -714,9 +747,7 @@ prepare_predictions_re <- function(bframe, sdata, prep_re = list(),
       out[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       # select from all varying effects of that group
       select <- find_rows(reframe_g, ls = px) & reframe_g$type %in% c("", "mmc")
-      select <- which(select)
-      select <- as.vector(outer(select, nranef * (seq_along(levels) - 1), "+"))
-      out[["r"]][[g]] <- rdraws[, select, drop = FALSE]
+      out[["r"]][[g]] <- subset_matrix_ranefs(rdraws, select, nlevels)
     }
   }
   out
@@ -933,17 +964,35 @@ pseudo_prep_for_mixture <- function(prep, comp, draw_ids = NULL) {
   structure(out, class = "brmsprep")
 }
 
-# take relevant cols of a matrix of group-level terms
+# subset the columns of a matrix of group-level terms
 # if only a subset of levels is provided (for newdata)
 # @param x a matrix typically draws of r or Z design matrices
-#   draws need to be stored in row major order
+#   draws need to be stored in row major order that is
+#   all effects of the same level in consequitive columns
 # @param levels grouping factor levels to keep
-# @param nranef number of group-level effects
-subset_levels <- function(x, levels, nranef) {
-  take_levels <- ulapply(levels,
-    function(l) ((l - 1) * nranef + 1):(l * nranef)
-  )
-  x[, take_levels, drop = FALSE]
+# @param nranef total number of group-level effects
+subset_matrix_levels <- function(x, levels, nranef) {
+  if (is.logical(levels)) {
+    levels <- which(levels)
+  }
+  take <- ulapply(levels, function(l) ((l - 1) * nranef + 1):(l * nranef))
+  x[, take, drop = FALSE]
+}
+
+# subset the columns of a matrix of group-level terms
+# if only a subset of ranefs is required
+# @param x a matrix typically draws of r or Z design matrices
+#   draws need to be stored in row major order that is
+#   all effects of the same level in consequitive columns
+# @param ranef group-level effects to keep
+# @param nlevels total number of grouping factor levels
+subset_matrix_ranefs <- function(x, ranefs, nlevels) {
+  if (is.logical(ranefs)) {
+    ranefs <- which(ranefs)
+  }
+  nranef <- ncol(x) / nlevels
+  take <- as.vector(outer(ranefs, nranef * (seq_len(nlevels) - 1), "+"))
+  x[, take, drop = FALSE]
 }
 
 # transform x from column to row major order
@@ -963,7 +1012,7 @@ column_to_row_major_order <- function(x, nranef) {
 # @param gf (list of) vectors containing grouping factor values
 # @param weights optional (list of) weights of the same length as gf
 # @param max_level maximal level of 'gf'
-# @return a sparse matrix representation of Z
+# @return a sparse matrix representation of Z in row major order
 prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
   if (!is.list(Z)) {
     Z <- list(Z)
@@ -987,7 +1036,7 @@ prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
     MoreArgs = nlist(max_level)
   )
   Z <- Reduce("+", Z)
-  subset_levels(Z, levels, nranef)
+  subset_matrix_levels(Z, levels, nranef)
 }
 
 # expand a matrix into a sparse matrix of higher dimension
