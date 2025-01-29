@@ -1167,4 +1167,53 @@ test_that("Group weights correctly created from `gr()`", {
   sdata <- standata(form, dat, prior = prior)
   expect_in(c("GMW_1", "GMW_4"), names(sdata))
 
+  # Informative error message if group weight variable varies among observations in a group
+  expect_error(
+    object = {
+      sdata <- standata(
+        count ~ Trt + (1 | gr(patient, weights = bad_group_wgt)),
+        data = wtd_epilepsy |> transform(bad_group_wgt = runif(n = nrow(wtd_epilepsy))), 
+        family = gaussian()
+      )
+    },
+    regexp = "Weights.+cannot vary within a group"
+  )
+
+  # Informative error or warning for bad weight variables
+  wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, 'a', 1.3), times = 59)
+  expect_error(
+    object = {
+      sdata <- standata(
+        count ~ Trt + (1 | gr(random_group, weights = bad_random_group_wgt)),
+        data = wtd_epilepsy, 
+        family = gaussian()
+      )
+    },
+    regexp = "must be numeric"
+  )
+
+  wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, NA, 1.3), times = 59)
+  expect_warning(
+    object = {
+      sdata <- standata(
+        count ~ Trt + (1 | gr(random_group, weights = bad_random_group_wgt)),
+        data = wtd_epilepsy, 
+        family = gaussian()
+      )
+    },
+    regexp = "Rows containing NAs were excluded from the model"
+  )
+
+  wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, -1, 1.3), times = 59)
+  expect_warning(
+    object = {
+      sdata <- standata(
+        count ~ Trt + (1 | gr(random_group, weights = bad_random_group_wgt)),
+        data = wtd_epilepsy, 
+        family = gaussian()
+      )
+    },
+    regexp = "Negative weights supplied"
+  )
+
 })

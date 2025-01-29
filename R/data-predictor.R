@@ -301,6 +301,19 @@ data_gr_local <- function(bframe, data) {
         # extract weights from data as a vector (length equals number of observations)
         group_model_weights <- str2formula(id_reframe$gcall[[1]]$gr_weights)
         group_model_weights <- as.vector(eval_rhs(group_model_weights, data))
+
+        if (!is.numeric(group_model_weights)) {
+          stop2("Weights supplied in `gr()` must be numeric.")
+        }
+
+        # check that group-level weights do not vary within a group
+        group_weights_consistent <- tapply(
+          X = group_model_weights, INDEX = J, 
+          FUN = function(x) length(unique(x)) == 1
+        )
+        if (!all(group_weights_consistent)) {
+          stop2("Weights supplied in `gr()` cannot vary within a group.")
+        }
         
         # deduplicate weights vector (so length matches number of groups)
         # and order the weights vector to match groups' assigned indices
@@ -308,9 +321,10 @@ data_gr_local <- function(bframe, data) {
         group_model_weights <- group_model_weights[distinct_J_indices]
         group_model_weights <- group_model_weights[order(J[distinct_J_indices])]
 
-        if (anyNA(group_model_weights)) {
-          stop2("Weights supplied in `gr()` should not have missing values.")
+        if (any(group_model_weights < 0)) {
+          warning2("Negative weights supplied to `gr()`.")
         }
+
         out[[paste0("GMW_", id)]] <- as.array(group_model_weights)
       }
     }
