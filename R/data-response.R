@@ -45,6 +45,12 @@ get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
   out
 }
 
+# get the response variable for a univariate brms model
+get_model_response <- function(x, data) {
+  stopifnot(is.brmsterms(x))
+  model.response(model.frame(x$respform, data, na.action = na.pass))
+}
+
 #' Prepare Response Data
 #'
 #' Prepare data related to response variables in \pkg{brms}.
@@ -80,7 +86,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
   data <- subset_data(data, x)
   N <- nrow(data)
   # TODO: rename 'Y' to 'y'?
-  Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+  Y <- get_model_response(x, data)
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family)) {
     bin_levels <- x$basis$resp_levels
@@ -371,8 +377,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     out$ub <- ub
   }
   if (is.formula(x$adforms$mi)) {
-    # TODO: make sure that this indexing works safely also with univariate models
-    idx <- x$frame$index[[x$resp]]
+    idx <- get_mi_index(x, data)
     sdy <- get_sdy(x, data)
     if (is.null(sdy)) {
       # only basic missing values without additional measurement error
@@ -381,11 +386,14 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       out$Jmi <- as.array(which_mi)
       out$Nmi <- length(out$Jmi)
       if (!is.null(idx)) {
-        # TODO: error only if duplicated response values are not the same
-        #   there is a function related to me terms that I may use for this purpose
-        # if (anyDuplicated(idx[!is_na_y])) {
-        #   stop2("Index of response '", x$resp, "' contains duplicated values.")
-        # }
+        # check if non-NA responses have valid indexes
+        y_not_na <- out$Y[!is_na_y]
+        idx_not_na <- idx[!is_na_y]
+        lapply(unique(idx_not_na), function(i) {
+          if (length(unique(y_not_na[idx_not_na == i])) > 1L) {
+            stop2("Index of response '", x$resp, "' contains duplicated values.")
+          }
+        })
         # idx indexes unique latent values and is thus only required for missing values
         idx <- idx[which_mi]
       }
@@ -409,8 +417,8 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     if (!is.null(idx)) {
       # there may be fewer unique missing values than missing values in total
       # so we need to also index unique missing values
-      # TODO: make sure this works safely also in post-processing
-      Jl <- as.numeric(as.factor(idx))
+      old_idx <- x$basis$mi_index
+      Jl <- as.integer(as_factor(idx, old_idx))
       out$Jl <- as.array(Jl)
       out$Nl <- length(unique(out$Jl))
     }

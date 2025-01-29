@@ -440,15 +440,46 @@ frame_index <- function(x, data) {
   if (anyNA(out)) {
     stop2("NAs are not allowed in 'index' variables.")
   }
-  # if (anyDuplicated(out)) {
-  #   stop2("Index of response '", x$resp, "' contains duplicated values.")
-  # }
   out
 }
 
 #' @export
 .frame_index.mvbrmsterms <- function(x, data, ...) {
   lapply(x$terms, .frame_index, data = data, ...)
+}
+
+# mi_index is required to rename latent response values
+# ref: shall the output be use for referencing (e.g. for latent value names)?
+get_mi_index <- function(x, data, ref = FALSE) {
+  stopifnot(is.brmsterms(x))
+  ref <- as_one_logical(ref)
+  if (!is.formula(x$adforms$mi)) {
+    return(NULL)
+  }
+  y <- get_model_response(x, data)
+  idx <- get_ad_values(x, "mi", "idx", data)
+  if (is.null(idx)) {
+    idx <- get_ad_values(x, "index", "index", data)
+  }
+  if (!ref) {
+    return(idx)
+  }
+  sdy <- get_ad_expr(x, "mi", "sdy")
+  if (is.null(sdy)) {
+    is_na_y <- is.na(y)
+    if (is.null(idx)) {
+      idx <- which(is_na_y)
+    } else {
+      idx <- unique(idx[is_na_y])
+    }
+  } else {
+    if (is.null(idx)) {
+      idx <- seq_along(y)
+    } else {
+      idx <- unique(idx)
+    }
+  }
+  sort(idx)
 }
 
 # check if cross-formula referencing is possible in subsetted models

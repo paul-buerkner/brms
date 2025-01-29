@@ -364,6 +364,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
           Ymi_regex <- paste0("^Ymi_", escape_all(vmi), "\\[")
           Ymi <- prepare_draws(draws, Ymi_regex, regex = TRUE)
           Jmi <- sdata[[paste0("Jmi_", vmi)]]
+          # TODO: implement idx subsetting
           out$Yl[[i]][, Jmi] <- Ymi
         }
       } else {
