@@ -35,6 +35,9 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     stopifnot(is.list(frame))
     x$frame <- frame
   }
+  if (!is.null(basis)) {
+    x$frame$basis <- basis[c("resp_levels")]
+  }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
