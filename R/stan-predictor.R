@@ -963,6 +963,17 @@ stan_sp <- function(bframe, prior, stanvars, threads, normalize, ...) {
       eta <- rename(eta, spframe$calls_mi[[i]], new_mi)
       str_add(out$pll_args) <- glue(", vector Yl_{spframe$vars_mi[[i]]}")
     }
+    if (!is.null(spframe$calls_re[[i]])) {
+      r <- spframe$reframe[[i]]
+      if (NROW(r) < length(spframe$calls_re[[i]])) {
+        stop2("Cannot find all varying coefficients required in ", 
+              spframe$joint_call[[i]], ".")
+      }
+      idp <- paste0(r$id, usc(combine_prefix(r)))
+      idresp <- paste0(r$id, usc(r$resp))
+      new_re <- glue("r_{idp}_{r$cn}[J_{idresp}{n}]")
+      eta <- rename(eta, spframe$calls_re[[i]], new_re)
+    }
     if (spframe$Ic[i] > 0) {
       str_add(eta) <- glue(" * Csp{p}_{spframe$Ic[i]}{n}")
     }

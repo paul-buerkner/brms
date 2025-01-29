@@ -214,6 +214,67 @@ mo <- function(x, id = NA) {
   out
 }
 
+#' Group-level effects as predictors in \pkg{brms} Models
+#'
+#' Specify a group-level predictor term in \pkg{brms}. That is,
+#' use group-level effects defined somewhere in the model as
+#' predictors in another part of the model. The function does not
+#' evaluate its arguments -- it exists purely to help set up a model.
+#'
+#' @param gr Name of the grouping factor of the group-level effect
+#'   to be used as predictor.
+#' @param coef Optional name of the coefficient of the group-level effect.
+#'   Defaults to \code{"Intercept"}.
+#' @param resp Optional name of the response variable of the group-level effect.
+#' @param dpar Optional name of the distributional parameter of the group-level effect.
+#' @param nlpar Optional name of the non-linear parameter of the group-level effect.
+#'
+#' @seealso \code{\link{brmsformula}}
+#'
+#' @examples
+#' \dontrun{
+#' # use the group-level intercept of 'AY' for parameter 'ult'
+#' # as predictor for the residual standard deviation 'sigma'
+#' # multiplying by 1000 reduces the scale of 'ult' to roughly unity
+#' bform <- bf(
+#'   cum ~ 1000 * ult * (1 - exp(-(dev/theta)^omega)),
+#'   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
+#'   sigma ~ re(AY, nlpar = "ult"),
+#'   nl = TRUE
+#' )
+#' bprior <- c(
+#'   prior(normal(5, 1), nlpar = "ult"),
+#'   prior(normal(1, 2), nlpar = "omega"),
+#'   prior(normal(45, 10), nlpar = "theta"),
+#'   prior(normal(0, 0.5), dpar = "sigma")
+#' )
+#'
+#' fit <- brm(
+#'   bform, data = loss,
+#'   family = gaussian(),
+#'   prior = bprior,
+#'   control = list(adapt_delta = 0.9),
+#'   chains = 2
+#' )
+#' summary(fit)
+#'
+#' # shows how sigma varies as a function of the AY levels
+#' conditional_effects(fit, "AY", dpar = "sigma", re_formula = NULL)
+#' }
+#'
+#' @export
+re <- function(gr, coef = "Intercept", resp = "", dpar = "", nlpar = "") {
+  term <- as_one_character(deparse_no_string(substitute(gr)))
+  coef <- as_one_character(coef)
+  resp <- as_one_character(resp)
+  dpar <- as_one_character(dpar)
+  nlpar <- as_one_character(nlpar)
+  label <- deparse0(match.call())
+  out <- nlist(term, coef, resp, dpar, nlpar, label)
+  class(out) <- c("re_term", "sp_term")
+  out
+}
+
 # find variable names for which to keep NAs
 vars_keep_na <- function(x, ...) {
   UseMethod("vars_keep_na")
@@ -354,8 +415,7 @@ get_sp_vars <- function(x, type) {
 }
 
 # gather information of special effects terms
-# @param x either a formula or a list containing an element "sp"
-# @param data data frame containing the monotonic variables
+# @param x a formula, brmsterms, or brmsframe object
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
 frame_sp <- function(x, data) {
@@ -370,7 +430,7 @@ frame_sp <- function(x, data) {
   out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
   calls_cols <- c(paste0("calls_", all_sp_types()), "joint_call")
-  list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo")
+  list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo", "reframe")
   for (col in c(calls_cols, list_cols)) {
     out[[col]] <- vector("list", nrow(out))
   }
@@ -379,7 +439,7 @@ frame_sp <- function(x, data) {
   for (i in seq_rows(out)) {
     # prepare mo terms
     take_mo <- grepl_expr(regex_sp("mo"), terms_split[[i]])
-    if (sum(take_mo)) {
+    if (any(take_mo)) {
       out$calls_mo[[i]] <- terms_split[[i]][take_mo]
       nmo <- length(out$calls_mo[[i]])
       out$Imo[[i]] <- (kmo + 1):(kmo + nmo)
@@ -396,7 +456,7 @@ frame_sp <- function(x, data) {
     }
     # prepare me terms
     take_me <- grepl_expr(regex_sp("me"), terms_split[[i]])
-    if (sum(take_me)) {
+    if (any(take_me)) {
       out$calls_me[[i]] <- terms_split[[i]][take_me]
       # remove 'I' (identity) function calls that
       # were used solely to separate formula terms
@@ -404,7 +464,7 @@ frame_sp <- function(x, data) {
     }
     # prepare mi terms
     take_mi <- grepl_expr(regex_sp("mi"), terms_split[[i]])
-    if (sum(take_mi)) {
+    if (any(take_mi)) {
       mi_parts <- terms_split[[i]][take_mi]
       out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
       out$vars_mi[[i]] <- out$idx_mi[[i]] <- rep(NA, length(out$calls_mi[[i]]))
@@ -417,6 +477,40 @@ frame_sp <- function(x, data) {
       }
       # do it like terms_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
+    }
+    take_re <- grepl_expr(regex_sp("re"), terms_split[[i]])
+    if (any(take_re)) {
+      re_parts <- terms_split[[i]][take_re]
+      out$calls_re[[i]] <- get_matches_expr(regex_sp("re"), re_parts)
+      out$reframe[[i]] <- vector("list", length(out$calls_re[[i]]))
+      for (j in seq_along(out$calls_re[[i]])) {
+        re_call <- out$calls_re[[i]][[j]]
+        re_term <- eval2(re_call)
+        if (!is.null(x$frame$re)) {
+          stopifnot(is.reframe(x$frame$re))
+          cols <- c("coef", "resp", "dpar", "nlpar")
+          rf <- subset2(x$frame$re, group = re_term$term, ls = re_term[cols])
+          # Ideally we should check here if the required re term can be found.
+          # However this will lead to errors in post-processing even if the
+          # re terms are not actually evaluated. See prepare_predictions_sp
+          # for more details. The necessary pre-processing validity check
+          # is instead done in stan_sp.
+          # if (!NROW(rf)) {
+          #   stop2("Cannot find varying coefficients belonging to ", re_call, ".")
+          # }
+          # there should theoretically never be more than one matching row
+          stopifnot(NROW(rf) <= 1L)
+          if (isTRUE(rf$gtype == "mm")) {
+            stop2("Multimembership terms are not yet supported by 're'.")
+          }
+          out$reframe[[i]][[j]] <- rf
+        }
+      }
+      if (!isNULL(out$reframe[[i]])) {
+        out$reframe[[i]] <- Reduce(rbind, out$reframe[[i]])
+      } else {
+        out$reframe[[i]] <- empty_reframe()
+      }
     }
     has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
     sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])
@@ -542,17 +636,6 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   out
 }
 
-# formula of variables used in special effects terms
-sp_fake_formula <- function(...) {
-  dots <- c(...)
-  out <- vector("list", length(dots))
-  for (i in seq_along(dots)) {
-    tmp <- eval2(dots[[i]])
-    out[[i]] <- all_vars(c(tmp$term, tmp$sdx, tmp$gr))
-  }
-  str2formula(unique(unlist(out)))
-}
-
 # extract an me variable
 get_me_values <- function(term, data) {
   term <- get_sp_term(term)
@@ -627,7 +710,7 @@ get_sp_term <- function(term) {
 
 # all effects which fall under the 'sp' category of brms
 all_sp_types <- function() {
-  c("mo", "me", "mi")
+  c("mo", "me", "mi", "re")
 }
 
 # classes used to set up special effects terms
@@ -645,4 +728,8 @@ is.me_term <- function(x) {
 
 is.mi_term <- function(x) {
   inherits(x, "mi_term")
+}
+
+is.re_term <- function(x) {
+  inherits(x, "re_term")
 }
