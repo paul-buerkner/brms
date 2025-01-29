@@ -33,10 +33,10 @@
 #' @param joint Indicates which observations' log likelihoods shall be
 #'   considered jointly in the ELPD computation. If \code{"obs"} or \code{FALSE}
 #'   (the default), each observation is considered separately. This enables
-#'   comparability of \code{kfold} with \code{loo}. If \code{"fold"}, the joint
-#'   log likelihoods per fold are used. If \code{"group"}, the joint log
-#'   likelihoods per group within folds are used (only available if argument
-#'   \code{group} is specified).
+#'   comparability of \code{kfold} with \code{loo}. If \code{"fold"} or
+#'   \code{TRUE}, the joint log likelihoods per fold are used. If
+#'   \code{"group"}, the joint log likelihoods per group within folds are used
+#'   (only available if argument \code{group} is specified).
 #' @param save_fits If \code{TRUE}, a component \code{fits} is added to
 #'   the returned object to store the cross-validated \code{brmsfit}
 #'   objects and the indices of the omitted observations for each fold.

@@ -19,7 +19,7 @@
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
-#' @param cov An optional matrix which is proportional to the withon-group
+#' @param cov An optional matrix which is proportional to the within-group
 #'   covariance matrix of the group-level effects. All levels of the grouping
 #'   factor should appear as rownames of the corresponding matrix. This argument
 #'   can be used, among others, to model pedigrees and phylogenetic effects. See
@@ -709,6 +709,25 @@ frame_re <- function(bterms, data, old_levels = NULL) {
   out
 }
 
+# like frame_re but only returns its levels attribute
+# this avoids issue #1221 and likely some other edge cases
+frame_re_levels_only <- function(bterms, data) {
+  out <- empty_reframe()
+  data <- combine_groups(data, get_group_vars(bterms))
+  re <- get_re(bterms)
+  re <- re[!duplicated(re$group), ]
+  levels <- named_list(re$group)
+  for (i in seq_along(levels)) {
+    # combine levels of all grouping factors within one grouping term
+    levels[[i]] <- unique(ulapply(
+      re$gcall[[i]]$groups,
+      function(g) extract_levels(get(g, data))
+    ))
+  }
+  set_levels(out) <- levels
+  out
+}
+
 empty_reframe <- function() {
   out <- data.frame(
     id = numeric(0), group = character(0), gn = numeric(0), gtype = character(0),
@@ -774,7 +793,7 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
 }
 
 .get_group_vars <- function(x, ...) {
-  out <- c(get_re_groups(x), get_me_groups(x), get_ac_groups(x))
+  out <- c(get_re_group_vars(x), get_me_group_vars(x), get_ac_group_vars(x))
   out <- out[nzchar(out)]
   if (length(out)) {
     c(out) <- unlist(strsplit(out, ":"))
@@ -783,13 +802,14 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
   out
 }
 
-# get names of grouping variables of re terms
-get_re_groups <- function(x, ...) {
+# get names of grouping variables from re terms
+get_re_group_vars <- function(x, ...) {
   ufrom_list(get_re(x)$gcall, "groups")
 }
 
-# extract information about groups with a certain distribution
-get_dist_groups <- function(reframe, dist) {
+# extract information about groups with a certain distribution from an reframe
+subset_reframe_dist <- function(reframe, dist) {
+  stopifnot(is.reframe(reframe))
   out <- subset2(reframe, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
 }

@@ -47,7 +47,7 @@ If \code{summary = TRUE}, an M x C matrix is returned
 Compute a Bayesian version of R-squared for regression models
 }
 \details{
-For an introduction to the approach, see Gelman et al. (2018)
+For an introduction to the approach, see Gelman et al. (2019)
  and \url{https://github.com/jgabry/bayes_R2/}.
 }
 \examples{
@@ -63,8 +63,8 @@ bayes_R2(fit, newdata = nd)
 
 }
 \references{
-Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2018).
-  R-squared for Bayesian regression models, \emph{The American Statistician}.
-  \code{10.1080/00031305.2018.1549100} (Preprint available at
+Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2019).
+  R-squared for Bayesian regression models, \emph{The American Statistician},
+  73(3):307-309. \code{10.1080/00031305.2018.1549100} (Preprint available at
   \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf})
 }

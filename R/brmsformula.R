@@ -438,7 +438,7 @@
 #'   \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
 #'   / hurdle families); \code{nu} (degrees of freedom parameter of the
 #'   \code{student} and \code{frechet} families); \code{phi} (precision
-#'   parameter of the \code{beta} and \code{zero_inflated_beta} families);
+#'   parameter of the \code{beta}, \code{zero_inflated_beta}, and \code{xbeta} families);
 #'   \code{kappa} (precision parameter of the \code{von_mises} family);
 #'   \code{beta} (mean parameter of the exponential component of the
 #'   \code{exgaussian} family); \code{quantile} (quantile parameter of the

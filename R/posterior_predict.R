@@ -136,7 +136,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- plapply(seq_len(N), pp_fun, cores = cores, prep = object, ...)
+  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -677,6 +677,19 @@ posterior_predict_beta <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "beta",
     shape1 = mu * phi, shape2 = (1 - mu) * phi,
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
+posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  rcontinuous(
+    n = prep$ndraws,
+    dist = "xbeta",
+    mu = mu, phi = phi, nu = kappa,
     lb = prep$data$lb[i], ub = prep$data$ub[i],
     ntrys = ntrys
   )

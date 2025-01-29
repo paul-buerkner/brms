@@ -358,8 +358,7 @@ frame_me <- function(x, data, old_levels = NULL) {
     term = uni_me, xname = "", grname = "",
     stringsAsFactors = FALSE
   )
-  unique_grnames <- unique(out$grname)
-  levels <- named_list(unique_grnames)
+  levels <- list()
   for (i in seq_rows(out)) {
     tmp <- eval2(out$term[i])
     out$xname[i] <- tmp$term
@@ -374,7 +373,7 @@ frame_me <- function(x, data, old_levels = NULL) {
   out$cor <- isTRUE(x$mecor)
   if (!is.null(old_levels)) {
     # for newdata numeration has to depend on the original levels
-    set_levels(out) <- old_levels[[unique_grnames]]
+    set_levels(out) <- old_levels
     set_levels(out, "used") <- levels
   } else {
     set_levels(out) <- levels
@@ -591,8 +590,8 @@ get_sdy <- function(x, data = NULL) {
   sdy
 }
 
-# names of grouping variables used in measurement error terms
-get_me_groups <- function(x) {
+# get names of grouping variables from me terms
+get_me_group_vars <- function(x) {
   uni_me <- get_uni_me(x)
   out <- lapply(uni_me, eval2)
   out <- ufrom_list(out, "gr")

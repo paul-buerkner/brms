@@ -40,7 +40,7 @@ modelled as correlated.}
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
-\item{cov}{An optional matrix which is proportional to the withon-group
+\item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping
 factor should appear as rownames of the corresponding matrix. This argument
 can be used, among others, to model pedigrees and phylogenetic effects. See

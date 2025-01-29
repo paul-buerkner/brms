@@ -26,7 +26,7 @@ brm(
   init = NULL,
   inits = NULL,
   chains = 4,
-  iter = 2000,
+  iter = getOption("brms.iter", 2000),
   warmup = floor(iter/2),
   thin = 1,
   cores = getOption("mc.cores", 1),
@@ -183,7 +183,8 @@ values you can consult the documentation of the selected \code{backend}.}
 \item{chains}{Number of Markov chains (defaults to 4).}
 
 \item{iter}{Number of total iterations per chain (including warmup; defaults
-to 2000).}
+to 2000). Can be set globally for the current \R session via the
+\code{"brms.iter"} option (see \code{\link{options}}).}
 
 \item{warmup}{A positive integer specifying number of warmup (aka burnin)
 iterations. This also specifies the number of iterations used for stepsize
@@ -332,7 +333,7 @@ Fit Bayesian generalized (non-)linear multivariate multilevel models
 using Stan for full Bayesian inference. A wide range of distributions
 and link functions are supported, allowing users to fit -- among others --
 linear, robust linear, count data, survival, response times, ordinal,
-zero-inflated, hurdle, and even self-defined mixture models all in a
+zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
 multilevel context. Further modeling options include non-linear and
 smooth terms, auto-correlation structures, censored data, meta-analytic
 standard errors, and quite a few more. In addition, all parameters of the
@@ -491,7 +492,6 @@ fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
             family = asym_laplace())
 summary(fit7)
 conditional_effects(fit7)
-
 
 # use the future package for more flexible parallelization
 library(future)

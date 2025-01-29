@@ -471,7 +471,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out <- list()
   # special handling of student-t group effects as their 'df' parameters
   # are defined on a per-group basis instead of a per-ID basis
-  reframe_t <- get_dist_groups(reframe, "student")
+  reframe_t <- subset_reframe_dist(reframe, "student")
   if (has_rows(reframe_t)) {
     str_add(out$par) <-
       "  // parameters for student-t distributed group-level effects\n"
@@ -619,7 +619,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
 
   # define group-level coefficients
   dfm <- ""
-  tr <- get_dist_groups(r, "student")
+  tr <- subset_reframe_dist(r, "student")
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
     str_add(out$data) <- glue(

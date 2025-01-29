@@ -210,7 +210,22 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
   expect_equal(dim(pred), c(ns, nobs, ncat))
 })
 
-test_that("posterior_epred() can be reproduced by using d<family>()", {
+test_that("posterior_epred_xbeta runs without errors", {
+  ns <- 50
+  nobs <- 8
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rbeta(ns * nobs, 1.2, 2.3), ncol = nobs),
+    phi = rexp(ns, 0.01),
+    kappa = rexp(ns, 2)
+  )
+  prep$data <- list(Y = rbeta(nobs, 2, 3))
+  mu_new <- brms:::posterior_epred_xbeta(prep)
+  expect_equal(dim(mu_new), dim(prep$dpars$mu))
+  expect_true(!identical(mu_new, prep$dpars$mu))
+})
+
+test_that("posterior_epred can be reproduced by using d<family>()", {
   fit4 <- rename_pars(brms:::brmsfit_example4)
   epred4 <- posterior_epred(fit4)
 

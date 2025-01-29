@@ -607,8 +607,8 @@ get_ac_vars <- function(x, var, ...) {
   setdiff(na.omit(out), "NA")
 }
 
-# get names of autocor grouping variables
-get_ac_groups <- function(x, ...) {
+# get names of grouping variables from ac terms
+get_ac_group_vars <- function(x, ...) {
   get_ac_vars(x, "gr", ...)
 }
 

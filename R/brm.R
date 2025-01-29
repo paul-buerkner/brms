@@ -4,7 +4,7 @@
 #' using Stan for full Bayesian inference. A wide range of distributions
 #' and link functions are supported, allowing users to fit -- among others --
 #' linear, robust linear, count data, survival, response times, ordinal,
-#' zero-inflated, hurdle, and even self-defined mixture models all in a
+#' zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
 #' multilevel context. Further modeling options include non-linear and
 #' smooth terms, auto-correlation structures, censored data, meta-analytic
 #' standard errors, and quite a few more. In addition, all parameters of the
@@ -126,7 +126,8 @@
 #' @param inits (Deprecated) Alias of \code{init}.
 #' @param chains Number of Markov chains (defaults to 4).
 #' @param iter Number of total iterations per chain (including warmup; defaults
-#'   to 2000).
+#'   to 2000). Can be set globally for the current \R session via the
+#'   \code{"brms.iter"} option (see \code{\link{options}}).
 #' @param warmup A positive integer specifying number of warmup (aka burnin)
 #'   iterations. This also specifies the number of iterations used for stepsize
 #'   adaptation, so warmup draws should not be used for inference. The number
@@ -412,7 +413,6 @@
 #' summary(fit7)
 #' conditional_effects(fit7)
 #'
-#'
 #' # use the future package for more flexible parallelization
 #' library(future)
 #' plan(multisession, workers = 4)
@@ -441,7 +441,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, iter = 2000,
+                init = NULL, inits = NULL, chains = 4, 
+                iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
                 threads = getOption("brms.threads", NULL),
