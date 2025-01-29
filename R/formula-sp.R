@@ -418,6 +418,7 @@ get_sp_vars <- function(x, type) {
 # @param x a formula, brmsterms, or brmsframe object
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
+#   or go full out on list columns with one column per term predictor type?
 frame_sp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
@@ -541,6 +542,7 @@ frame_sp <- function(x, data) {
 
   # extract information on covariates
   # only non-zero covariates are relevant to consider
+  # TODO: change the way covariates are extracted to allow for constant covariates
   not_one <- apply(mm, 2, function(x) any(x != 1))
   cumsum_not_one <- cumsum(not_one)
   out$Ic <- ifelse(not_one, cumsum_not_one, 0)

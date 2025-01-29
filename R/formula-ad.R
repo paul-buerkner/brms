@@ -402,6 +402,7 @@ has_ad_terms <- function(bterms, terms) {
 }
 
 # construct a list of indices for cross-formula referencing
+# TODO: move to brmsframe.R?
 frame_index <- function(x, data) {
   out <- .frame_index(x, data)
   if (is.brmsterms(x)) {
@@ -448,11 +449,13 @@ frame_index <- function(x, data) {
   lapply(x$terms, .frame_index, data = data, ...)
 }
 
+# TODO: improve doc
+# TODO: reduce overlap from frame_index?
 # mi_index is required to rename latent response values
-# ref: shall the output be use for referencing (e.g. for latent value names)?
-get_mi_index <- function(x, data, ref = FALSE) {
+# levels: shall the output be the (unique) levels of the latent values?
+get_mi_index <- function(x, data, levels = FALSE) {
   stopifnot(is.brmsterms(x))
-  ref <- as_one_logical(ref)
+  levels <- as_one_logical(levels)
   if (!is.formula(x$adforms$mi)) {
     return(NULL)
   }
@@ -461,7 +464,7 @@ get_mi_index <- function(x, data, ref = FALSE) {
   if (is.null(idx)) {
     idx <- get_ad_values(x, "index", "index", data)
   }
-  if (!ref) {
+  if (!levels) {
     return(idx)
   }
   sdy <- get_ad_expr(x, "mi", "sdy")
@@ -470,16 +473,15 @@ get_mi_index <- function(x, data, ref = FALSE) {
     if (is.null(idx)) {
       idx <- which(is_na_y)
     } else {
-      idx <- unique(idx[is_na_y])
+      idx <- idx[is_na_y]
     }
   } else {
     if (is.null(idx)) {
       idx <- seq_along(y)
-    } else {
-      idx <- unique(idx)
     }
+    # else idx is already in the right format
   }
-  sort(idx)
+  levels(factor(idx))
 }
 
 # check if cross-formula referencing is possible in subsetted models

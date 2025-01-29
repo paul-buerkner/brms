@@ -89,7 +89,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
   Y <- get_model_response(x, data)
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family)) {
-    bin_levels <- x$basis$resp_levels
+    bin_levels <- x$frame$basis$resp_levels
     if (is.null(bin_levels)) {
       bin_levels <- levels(as.factor(out$Y))
     }
@@ -106,7 +106,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     out$Y <- as.integer(as_factor(out$Y, levels = bin_levels)) - 1
   }
   if (is_categorical(x$family)) {
-    out$Y <- as.integer(as_factor(out$Y, levels = x$basis$resp_levels))
+    out$Y <- as.integer(as_factor(out$Y, levels = x$frame$basis$resp_levels))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
     diff <- ifelse(has_extra_cat(x$family), 1L, 0L)
@@ -417,8 +417,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     if (!is.null(idx)) {
       # there may be fewer unique missing values than missing values in total
       # so we need to also index unique missing values
-      old_idx <- x$basis$mi_index
-      Jl <- as.integer(as_factor(idx, old_idx))
+      Jl <- as.integer(as_factor(idx, x$frame$basis$mi_levels))
       out$Jl <- as.array(Jl)
       out$Nl <- length(unique(out$Jl))
     }

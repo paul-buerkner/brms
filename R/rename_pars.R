@@ -279,8 +279,8 @@ rename_Ymi <- function(bframe, pars, ...) {
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
-      mi_index <- bframe$frame$resp$mi_index
-      fnames <- paste0(Ymi, "[", mi_index, "]")
+      mi_levels <- bframe$frame$resp$mi_levels
+      fnames <- paste0(Ymi, "[", mi_levels, "]")
       lc(out) <- rlist(pos, fnames)
     }
   }

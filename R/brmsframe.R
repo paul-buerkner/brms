@@ -35,6 +35,9 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     stopifnot(is.list(frame))
     x$frame <- frame
   }
+  if (!is.null(basis)) {
+    x$frame$basis <- basis[c("resp_levels", "mi_levels")]
+  }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
@@ -137,7 +140,7 @@ frame_resp <- function(x, data, ....) {
     values = y,
     bounds = trunc_bounds(x, data),
     Ybounds = trunc_bounds(x, data, incl_family = TRUE, stan = TRUE),
-    mi_index = get_mi_index(x, data, ref = TRUE),
+    mi_levels = get_mi_index(x, data, levels = TRUE),
     subset = attr(data, "subset")
   )
   out
@@ -333,7 +336,7 @@ frame_basis.brmsterms <- function(x, data, levels = NULL, ...) {
     out$resp_levels <- levels(as.factor(y))
   }
   if (is.formula(x$adforms$mi)) {
-    out$mi_index <- get_mi_index(x, data, ref = TRUE)
+    out$mi_levels <- get_mi_index(x, data, levels = TRUE)
   }
   out
 }

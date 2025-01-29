@@ -379,22 +379,30 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
       vmi <- vars_mi[i]
       dim_y <- c(nrow(out$bsp), sdata[[paste0("N_", vmi)]])
       Y <- data2draws(sdata[[paste0("Y_", vmi)]], dim_y)
+      Jl <- sdata[[paste0("Jl_", vmi)]]
       sdy <- sdata[[paste0("sdy_", vmi)]]
       if (is.null(sdy)) {
         # missings only
         out$Yl[[i]] <- Y
-        if (!new) {
+        if (!new || !is.null(Jl)) {
           Ymi_regex <- paste0("^Ymi_", escape_all(vmi), "\\[")
           Ymi <- prepare_draws(draws, Ymi_regex, regex = TRUE)
           Jmi <- sdata[[paste0("Jmi_", vmi)]]
-          # TODO: implement idx subsetting
-          out$Yl[[i]][, Jmi] <- Ymi
+          if (!is.null(Jl)) {
+            # non-NA values in Jl indicate observations with original indexes
+            # for which we have access to the corresponding latent values
+            not_na_Jl <- !is.na(Jl)
+            out$Yl[[i]][, Jmi][, not_na_Jl] <- Ymi[, Jl[not_na_Jl], drop = FALSE]
+          } else {
+            out$Yl[[i]][, Jmi] <- Ymi
+          }
         }
       } else {
         # measurement-error in the response
         save_mevars <- any(grepl("^Ymi_", colnames(draws)))
-        if (save_mevars && !new) {
+        if (save_mevars && (!new || !is.null(Jl))) {
           # TODO: extend restructure to rename old Yl parameters?
+          # TODO: handle Jl correctly
           Ymi_regex <- paste0("^Ymi_", escape_all(vmi), "\\[")
           out$Yl[[i]] <- prepare_draws(draws, Ymi_regex, regex = TRUE)
         } else {
