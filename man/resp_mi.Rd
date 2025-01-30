@@ -13,8 +13,9 @@ measurement error and (completely) missing values
 at the same time using the plausible-values-technique.}
 
 \item{idx}{Optional index variable assigning observations with missing responses
-to individual latent response values. Doing so is required when
-using the `idx` argument in \code{\link{mi}} predictor terms.}
+to individual latent response values. This allows to express that multiple
+observations share the same latent missing value. It is also needed when
+using the \code{idx} argument in \code{\link{mi}} predictor terms.}
 }
 \value{
 A list of additional response information to be processed further

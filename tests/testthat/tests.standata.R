@@ -639,7 +639,7 @@ test_that("standata handles 'mi' terms with 'subset'", {
     bf(x | mi(idx = g2) + subset(s) ~ 1) +
     set_rescor(FALSE)
   expect_error(standata(bform, dat),
-    "mi() terms of subsetted variables require the 'idx' argument",
+    "'mi' predictor terms of subsetted variables require the 'idx' argument",
     fixed = TRUE
   )
 
@@ -647,7 +647,7 @@ test_that("standata handles 'mi' terms with 'subset'", {
     bf(x | mi(idx = g2) + subset(s) ~ mi(y)) +
     set_rescor(FALSE)
   expect_error(standata(bform, dat),
-    "mi() terms in subsetted formulas require the 'idx' argument",
+    "'mi' predictor terms in subsetted formulas require the 'idx' argument",
     fixed = TRUE
   )
 })

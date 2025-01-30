@@ -416,7 +416,7 @@ data_sp <- function(bframe, data, data2, prior) {
       out[[idxl_name]] <- as.array(idxl)
     } else if (isTRUE(attr(index[[uni_mi$var[j]]], "subset"))) {
       # cross-formula referencing is required for subsetted variables
-      stop2("mi() terms of subsetted variables require ",
+      stop2("'mi' predictor terms of subsetted variables require ",
             "the 'idx' argument to be specified.")
     }
   }

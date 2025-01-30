@@ -778,8 +778,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
     if (v %in% idx_vars) {
-      # idx variables index between univariate models and are hard to set smartly
-      stop2("Cannot automatically choose values for index variable '", v, "'.")
+      conditions[[v]] <- NA
     }
     if (is_like_factor(mf[[v]])) {
       # factor-like variable
