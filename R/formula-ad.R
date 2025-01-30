@@ -271,6 +271,11 @@ get_ad_expr <- function(x, ad, name, type = "vars") {
   out
 }
 
+# check if an addition term expression is present
+has_ad_expr <- function(x, ad, name, type = "vars") {
+  !is.null(get_ad_expr(x, ad, name, type))
+}
+
 # get values of a variable used in an addition term
 # @return a vector of values or NULL
 get_ad_values <- function(x, ad, name, data) {
@@ -291,9 +296,14 @@ get_ad_vars <- function(x, ...) {
 }
 
 #' @export
-get_ad_vars.brmsterms <- function(x, ad, ...) {
+get_ad_vars.brmsterms <- function(x, ad, name = NULL, ...) {
   ad <- as_one_character(ad)
-  all_vars(x$adforms[[ad]])
+  if (is.null(name)) {
+    out <- all_vars(x$adforms[[ad]])
+  } else {
+    out <- all_vars(get_ad_expr(x, ad = ad, name = name, type = "vars"))
+  }
+  out
 }
 
 #' @export

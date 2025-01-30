@@ -614,7 +614,7 @@ test_that("standata handles 'mi' terms with 'subset'", {
   )
 
   bform <- bf(y ~ mi(x, idx = g1)) +
-    bf(x | mi() + index(g2) + subset(s)  ~ 1) +
+    bf(x | mi(idx = g2) + subset(s)  ~ 1) +
     set_rescor(FALSE)
   sdata <- standata(bform, dat)
   expect_true(all(sdata$idxl_y_x_1 %in% 9:5))
@@ -632,11 +632,11 @@ test_that("standata handles 'mi' terms with 'subset'", {
     bf(x | mi() + subset(s) ~ 1) +
     set_rescor(FALSE)
   expect_error(standata(bform, dat),
-    "Response 'x' needs to have an 'index' addition term"
+    "Response 'x' needs to have an 'mi' addition term"
   )
 
   bform <- bf(y ~ mi(x)) +
-    bf(x | mi() + subset(s) + index(g2)  ~ 1) +
+    bf(x | mi(idx = g2) + subset(s) ~ 1) +
     set_rescor(FALSE)
   expect_error(standata(bform, dat),
     "mi() terms of subsetted variables require the 'idx' argument",
@@ -644,7 +644,7 @@ test_that("standata handles 'mi' terms with 'subset'", {
   )
 
   bform <- bf(y | mi() ~ mi(x, idx = g1)) +
-    bf(x | mi() + subset(s) + index(g2)  ~ mi(y)) +
+    bf(x | mi(idx = g2) + subset(s) ~ mi(y)) +
     set_rescor(FALSE)
   expect_error(standata(bform, dat),
     "mi() terms in subsetted formulas require the 'idx' argument",

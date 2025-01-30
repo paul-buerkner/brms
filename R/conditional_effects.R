@@ -757,6 +757,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
     req_vars <- setdiff(req_vars, names(conditions))
   }
+
   # special treatment for 'trials' addition variables
   trial_vars <- all_vars(bterms$adforms$trials)
   trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
@@ -768,12 +769,18 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       conditions[[v]] <- 1L
     }
   }
+
   # use sensible default values for unspecified variables
+  idx_vars <- get_ad_vars(bterms, "mi", "idx")
   subset_vars <- get_ad_vars(bterms, "subset")
   int_vars <- get_int_vars(bterms)
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
+    if (v %in% idx_vars) {
+      # idx variables index between univariate models and are hard to set smartly
+      stop2("Cannot automatically choose values for index variable '", v, "'.")
+    }
     if (is_like_factor(mf[[v]])) {
       # factor-like variable
       if (v %in% subset_vars) {

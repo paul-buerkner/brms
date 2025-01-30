@@ -209,12 +209,10 @@ stan_response <- function(bframe, threads, normalize, ...) {
     str_add(out$pll_args) <- glue(", data array[] {rtype} ub{resp}")
   }
   if (is.formula(bframe$adforms$mi)) {
-    # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
     Ybounds <- bframe$frame$resp$Ybounds
     mi <- eval_rhs(bframe$adforms$mi)
-    # TODO: use dedicate variable check functions
-    has_idx <- mi$vars$idx != "NA"
-    has_sdy <- mi$vars$sdy != "NA"
+    has_idx <- has_ad_expr(bframe, "mi", "idx")
+    has_sdy <- has_ad_expr(bframe, "mi", "sdy")
     if (!has_sdy) {
       # response is modeled without measurement error
       str_add(out$data) <- glue(
@@ -264,12 +262,8 @@ stan_response <- function(bframe, threads, normalize, ...) {
           "  vector{Ybounds}[Nl{resp}] Ymi{resp};  // latent values\n"
         )
         str_add(out$model_no_pll_def) <- glue(
-          "  // vector combining observed and latent responses\n",
-          "  vector[N{resp}] Yl{resp};\n"
-        )
-        str_add(out$model_no_pll_comp_basic) <- glue(
           "  // assign latent values to the right places in the response vector\n",
-          "  Yl{resp} = Ymi{resp}[Jl{resp}];\n"
+          "  vector[N{resp}] Yl{resp} = Ymi{resp}[Jl{resp}];\n"
         )
       } else {
         # every observation has its own latent value
