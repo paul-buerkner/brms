@@ -70,14 +70,14 @@ me <- function(x, sdx, gr = NULL) {
 #' see \code{\link{resp_mi}}.
 #'
 #' @param x The variable containing missing values.
-#' @param idx An optional variable containing indices of observations in `x`
+#' @param idx An optional variable containing indices of observations in \code{x}
 #'   that are to be used in the model. This is mostly relevant in partially
 #'   subsetted models (via \code{resp_subset}) but may also have other
 #'   applications that I haven't thought of.
 #'
 #' @details For detailed documentation see \code{help(brmsformula)}.
 #'
-#' @seealso \code{\link{brmsformula}}
+#' @seealso \code{\link{brmsformula}}, \code{\link{resp_mi}}
 #'
 #' @examples
 #' \dontrun{

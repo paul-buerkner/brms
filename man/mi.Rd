@@ -9,7 +9,7 @@ mi(x, idx = NA)
 \arguments{
 \item{x}{The variable containing missing values.}
 
-\item{idx}{An optional variable containing indices of observations in `x`
+\item{idx}{An optional variable containing indices of observations in \code{x}
 that are to be used in the model. This is mostly relevant in partially
 subsetted models (via \code{resp_subset}) but may also have other
 applications that I haven't thought of.}
@@ -76,5 +76,5 @@ plot(conditional_effects(fit3, resp = "bmi"), ask = FALSE)
 
 }
 \seealso{
-\code{\link{brmsformula}}
+\code{\link{brmsformula}}, \code{\link{resp_mi}}
 }

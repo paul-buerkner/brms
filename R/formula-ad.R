@@ -20,8 +20,6 @@
 #'   requires \code{'left'}, \code{'none'}, \code{'right'}, and
 #'   \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
 #'   \code{2}) to indicate left, no, right, or interval censoring.
-#'   \code{resp_index} does not make any requirements other than the value being
-#'   unique for each observation.
 #' @param sigma Logical; Indicates whether the residual standard deviation
 #'  parameter \code{sigma} should be included in addition to the known
 #'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
@@ -188,7 +186,52 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
   class_resp_special("trunc", call = match.call(), vars = nlist(lb, ub))
 }
 
-#' @rdname addition-terms
+#' Additional response information for handling missing values
+#'
+#' Provide additional information on missing values in response variables
+#' in \pkg{brms} models. Required when using \code{\link{mi}} predictor terms.
+#'
+#' @param sdy Optional known measurement error of the response
+#'   treated as standard deviation. If specified, handles
+#'   measurement error and (completely) missing values
+#'   at the same time using the plausible-values-technique.
+#' @param idx Optional index variable assigning observations with missing responses
+#'   to individual latent response values. Doing so is required when
+#'   using the `idx` argument in \code{\link{mi}} predictor terms.
+#'
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
+#'
+#' @details
+#'   This function is almost solely useful when called in formulas passed to the
+#'   \pkg{brms} package. Within formulas, the \code{resp_} prefix may be
+#'   omitted. See the Details section of \code{\link{brmsformula}} (under
+#'   "Additional response information") for more information.
+#'   Please also see \code{\link{mi}} for more details and examples.
+#'
+#'   It is highly recommended to use single data variables as inputs
+#'   for \code{sdy} and \code{idx} (instead of a more complicated expression)
+#'   to make sure all post-processing functions work as expected.
+#'
+#' @seealso \code{\link{brmsformula}}, \code{\link{mi}}
+#'
+#' @examples
+#' \dontrun{
+#' data("nhanes", package = "mice")
+#' N <- nrow(nhanes)
+#'
+#' # simple model with missing data
+#' bform1 <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi() ~ age) +
+#'   set_rescor(FALSE)
+#'
+#' fit1 <- brm(bform1, data = nhanes)
+#'
+#' summary(fit1)
+#' plot(conditional_effects(fit1, resp = "bmi"), ask = FALSE)
+#' loo(fit1, newdata = na.omit(fit1$data))
+#' }
+#'
 #' @export
 resp_mi <- function(sdy = NA, idx = NA) {
   sdy <- deparse0(substitute(sdy))

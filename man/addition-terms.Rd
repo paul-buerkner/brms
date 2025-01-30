@@ -24,7 +24,6 @@
 \alias{resp_bhaz}
 \alias{resp_cens}
 \alias{resp_trunc}
-\alias{resp_mi}
 \alias{resp_index}
 \alias{resp_rate}
 \alias{resp_subset}
@@ -50,8 +49,6 @@ resp_cens(x, y2 = NA)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_mi(sdy = NA, idx = NA)
-
 resp_index(x)
 
 resp_rate(denom)
@@ -72,9 +69,7 @@ Details). Allowed values depend on the function: \code{resp_se} and
 \code{1}, or alternatively \code{FALSE} and \code{TRUE}. \code{resp_cens}
 requires \code{'left'}, \code{'none'}, \code{'right'}, and
 \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
-\code{2}) to indicate left, no, right, or interval censoring.
-\code{resp_index} does not make any requirements other than the value being
-unique for each observation.}
+\code{2}) to indicate left, no, right, or interval censoring.}
 
 \item{sigma}{Logical; Indicates whether the residual standard deviation
 parameter \code{sigma} should be included in addition to the known
@@ -104,13 +99,13 @@ the lower truncation bound.}
 \item{ub}{A numeric vector or single numeric value specifying
 the upper truncation bound.}
 
+\item{denom}{A vector of positive numeric values specifying
+the denominator values from which the response rates are computed.}
+
 \item{sdy}{Optional known measurement error of the response
 treated as standard deviation. If specified, handles
 measurement error and (completely) missing values
 at the same time using the plausible-values-technique.}
-
-\item{denom}{A vector of positive numeric values specifying
-the denominator values from which the response rates are computed.}
 }
 \value{
 A list of additional response information to be processed further
