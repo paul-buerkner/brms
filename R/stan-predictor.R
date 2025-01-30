@@ -515,7 +515,11 @@ stan_re <- function(bframe, prior, normalize, ...) {
   stopifnot(is.reframe(r))
   has_cov <- nzchar(r$cov[1])
   has_by <- nzchar(r$by[[1]])
-  has_gr_weights <- nzchar(r$gcall[[1]]$gr_weights[[1]])
+  has_gr_weights <- ifelse(
+    test = is.null(r$gcall[[1]]$gr_weights[[1]]),
+    yes  = FALSE,
+    no   = nzchar(r$gcall[[1]]$gr_weights[[1]])
+  )
   Nby <- seq_along(r$bylevels[[1]])
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)
@@ -636,15 +640,11 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  matrix[M_{id}, N_{id}] z_{id};",
       "  // standardized group-level effects\n"
     )
-    if (has_gr_weights) {
-      str_add(out$model_prior) <- glue(
-        "  target += GMW_{id} * std_normal_{lpdf}(to_vector(z_{id}));\n"
-      )
-    } else {
-      str_add(out$model_prior) <- glue(
-        "  target += std_normal_{lpdf}(to_vector(z_{id}));\n"
-      )
-    }
+    str_add(out$model_prior) <- glue(ifelse(
+      test = has_gr_weights,
+      yes  = "  target += GMW_{id} * std_normal_{lpdf}(to_vector(z_{id}));\n",
+      no   = "  target += std_normal_{lpdf}(to_vector(z_{id}));\n"
+    ))
 
     if (has_rows(tr)) {
       dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
@@ -734,16 +734,12 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  array[M_{id}] vector[N_{id}] z_{id};",
       "  // standardized group-level effects\n"
     )
-    if (!has_gr_weights) {
-      str_add(out$model_prior) <- cglue(
-        "  target += std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n"
-      )
-    }
-    if (has_gr_weights) {
-      str_add(out$model_prior) <- cglue(
-        "  target += GMW_{id} * std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n"
-      )
-    }
+    str_add(out$model_prior) <- cglue(ifelse(
+      test = has_gr_weights,
+      yes  = "  target += GMW_{id} * std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n",
+      no   = "  target += std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n"
+    ))
+
     Lcov <- str_if(has_cov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
       dfm <- glue("dfm_{tr$ggn[1]} .* ")
