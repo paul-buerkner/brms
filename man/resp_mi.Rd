@@ -23,7 +23,8 @@ A list of additional response information to be processed further
 }
 \description{
 Provide additional information on missing values in response variables
-in \pkg{brms} models. Required when using \code{\link{mi}} predictor terms.
+in \pkg{brms} models. Supported by all continuous families.
+Required when using \code{\link{mi}} predictor terms.
 }
 \details{
 This function is almost solely useful when called in formulas passed to the

@@ -24,9 +24,7 @@
 \alias{resp_bhaz}
 \alias{resp_cens}
 \alias{resp_trunc}
-\alias{resp_index}
 \alias{resp_rate}
-\alias{resp_subset}
 \alias{resp_vreal}
 \alias{resp_vint}
 \title{Additional Response Information}
@@ -49,11 +47,7 @@ resp_cens(x, y2 = NA)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_index(x)
-
 resp_rate(denom)
-
-resp_subset(x)
 
 resp_vreal(...)
 
@@ -65,8 +59,7 @@ Details). Allowed values depend on the function: \code{resp_se} and
 \code{resp_weights} require positive numeric values. \code{resp_trials},
 \code{resp_thres}, and \code{resp_cat} require positive integers.
 \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-\code{'lower'} and \code{'upper'}. \code{resp_subset} requires \code{0} and
-\code{1}, or alternatively \code{FALSE} and \code{TRUE}. \code{resp_cens}
+\code{'lower'} and \code{'upper'}. \code{resp_cens}
 requires \code{'left'}, \code{'none'}, \code{'right'}, and
 \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
 \code{2}) to indicate left, no, right, or interval censoring.}

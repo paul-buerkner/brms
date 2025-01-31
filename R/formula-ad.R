@@ -15,8 +15,7 @@
 #'   \code{resp_weights} require positive numeric values. \code{resp_trials},
 #'   \code{resp_thres}, and \code{resp_cat} require positive integers.
 #'   \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-#'   \code{'lower'} and \code{'upper'}. \code{resp_subset} requires \code{0} and
-#'   \code{1}, or alternatively \code{FALSE} and \code{TRUE}. \code{resp_cens}
+#'   \code{'lower'} and \code{'upper'}. \code{resp_cens}
 #'   requires \code{'left'}, \code{'none'}, \code{'right'}, and
 #'   \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
 #'   \code{2}) to indicate left, no, right, or interval censoring.
@@ -185,7 +184,8 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
 #' Additional response information for handling missing values
 #'
 #' Provide additional information on missing values in response variables
-#' in \pkg{brms} models. Required when using \code{\link{mi}} predictor terms.
+#' in \pkg{brms} models. Supported by all continuous families.
+#' Required when using \code{\link{mi}} predictor terms.
 #'
 #' @param sdy Optional known measurement error of the response
 #'   treated as standard deviation. If specified, handles
@@ -236,7 +236,26 @@ resp_mi <- function(sdy = NA, idx = NA) {
   class_resp_special("mi", call = match.call(), vars = nlist(sdy, idx))
 }
 
-#' @rdname addition-terms
+#' (Deprecated) Additional response information for handling response indexes
+#'
+#' Provide additional information for handling response indexes
+#' in \pkg{brms} models. This function is deprecated and replaced
+#' by the \code{idx} argument of \code{\link{resp_mi}}.
+#'
+#' @param x A vector of index values that assigns each observation to an
+#' index, which can then be used by other model terms.
+#'
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
+#'
+#' @details
+#'   This function is almost solely useful when called in formulas passed to the
+#'   \pkg{brms} package. Within formulas, the \code{resp_} prefix may be
+#'   omitted. See the Details section of \code{\link{brmsformula}} (under
+#'   "Additional response information") for more information.
+#'
+#' @seealso \code{\link{resp_mi}}, \code{\link{brmsformula}}
+#'
 #' @export
 resp_index <- function(x) {
   index <- deparse0(substitute(x))
@@ -250,7 +269,38 @@ resp_rate <- function(denom) {
   class_resp_special("rate", call = match.call(), vars = nlist(denom))
 }
 
-#' @rdname addition-terms
+#' Additional response information for subsetting data
+#'
+#' Provide additional information for subsetting data
+#' in \pkg{brms} models. This is relevant only in multivariate models
+#' where \code{resp_subset} allows to use different subsets of the data
+#' in different univariate models.
+#'
+#' @param x A logical vector or one that can be transformed to it. Observations
+#' for which \code{x} is \code{FALSE} will be excluded from the data used in
+#' that specific univariate model.
+#'
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
+#'
+#' @details
+#'   This function is almost solely useful when called in formulas passed to the
+#'   \pkg{brms} package. Within formulas, the \code{resp_} prefix may be
+#'   omitted. See the Details section of \code{\link{brmsformula}} (under
+#'   "Additional response information") for more information.
+#'
+#' @examples
+#' \dontrun{
+#' # generate a simple dataset
+#' dat <- data.frame(y = rnorm(10), z = rnorm(10),
+#'                   sub = c(rep(TRUE, 5), rep(FALSE, 5)))
+#'
+#' # only use the first 5 observations to predict z
+#' bform <- bf(y ~ 1) + bf(z | subset(sub) ~ y) + set_rescor(FALSE)
+#' fit <- brm(bform, dat)
+#' summary(fit)
+#' }
+#'
 #' @export
 resp_subset <- function(x) {
   subset <- deparse0(substitute(x))
