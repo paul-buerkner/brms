@@ -99,7 +99,7 @@ test_that("CAR models work correctly", suppressWarnings({
                "Cannot handle new locations in CAR models")
 }))
 
-test_that("Missing value imputation works correctly", suppressWarnings({
+test_that("Multiple imputation works correctly", suppressWarnings({
   library(mice)
   data("nhanes", package = "mice")
 
@@ -115,34 +115,83 @@ test_that("Missing value imputation works correctly", suppressWarnings({
   print(fit_imp1)
   expect_true(!"b_age" %in% variables(fit_imp1))
   expect_equal(ndraws(fit_imp1), 5000)
+}))
 
-  # missing value imputation within Stan
-  bform <- bf(bmi | mi() ~ age * mi(chl)) +
+test_that("Missing value imputation within Stan works correctly", suppressWarnings({
+  data("nhanes", package = "mice")
+
+  # add some new variables
+  set.seed(5324)
+  nhanes$sdy <- 5
+  nhanes$sub <- TRUE
+  nhanes$sub[1:2] <- FALSE
+  nhanes$id <- 1:N
+  nhanes$id[is.na(nhanes$chl)] <- c(500, 501)
+  nhanes$idx <- sample(nhanes$id[nhanes$sub], N, TRUE)
+
+  # basic missing value imputation
+  bform1 <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
-  fit_imp2 <- brm(bform, data = nhanes, backend = "rstan", refresh = 0)
-  print(fit_imp2)
-  pred <- predict(fit_imp2)
-  expect_true(!anyNA(pred))
-  ce <- conditional_effects(fit_imp2, resp = "bmi")
-  expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  loo <- LOO(fit_imp2, newdata = na.omit(fit_imp2$data))
-  expect_range(loo$estimates[3, 1], 200, 220)
+  fit1 <- brm(bform1, data = nhanes, backend = "rstan", refresh = 0)
 
-  # overimputation within Stan
-  dat <- nhanes
-  dat$sdy <- 5
-  bform <- bf(bmi | mi() ~ age * mi(chl)) +
+  print(fit1)
+  pred1 <- predict(fit1)
+  expect_true(!anyNA(pred1))
+  ce1 <- conditional_effects(fit1, resp = "bmi")
+  expect_ggplot(plot(ce1, ask = FALSE)[[1]])
+  loo1 <- loo(fit1, newdata = na.omit(fit1$data))
+  expect_range(loo1$estimates[3, 1], 200, 220)
+
+  # missing value imputation with indexes
+  bform2 <- bf(bmi | mi() ~ age * mi(chl, idx = idx)) +
+    bf(chl | mi(idx = id) + subset(sub) ~ age) + set_rescor(FALSE)
+  fit2 <- brm(bform2, data = nhanes, backend = "rstan", refresh = 0)
+
+  print(fit2)
+  pred2 <- predict(fit2, resp = "bmi")
+  expect_true(!anyNA(pred2))
+
+  ce2 <- conditional_effects(fit2, resp = "bmi")
+  expect_ggplot(plot(ce2, ask = FALSE)[[1]])
+
+  newdata <- nhanes
+  newdata$bmi[is.na(newdata$bmi)] <- mean(newdata$bmi, na.rm = TRUE)
+  loo2 <- loo(fit2, newdata = newdata, resp = "bmi")
+  expect_range(loo2$estimates[3, 1], 280, 320)
+
+  # overimputation
+  bform3 <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
-  fit_imp3 <- brm(bform, data = dat,
-                  save_pars = save_pars(latent = TRUE),
-                  backend = "rstan", refresh = 0)
-  print(fit_imp3)
-  pred <- predict(fit_imp3)
-  expect_true(!anyNA(pred))
-  ce <- conditional_effects(fit_imp3, resp = "bmi")
-  expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
-  expect_range(loo$estimates[3, 1], 200, 225)
+  fit3 <- brm(bform3, data = nhanes,
+              save_pars = save_pars(latent = TRUE),
+              backend = "rstan", refresh = 0)
+
+  print(fit3)
+  pred3 <- predict(fit3)
+  expect_true(!anyNA(pred3))
+  ce3 <- conditional_effects(fit3, resp = "bmi")
+  expect_ggplot(plot(ce3, ask = FALSE)[[1]])
+  loo3 <- loo(fit3, newdata = na.omit(fit3$data))
+  expect_range(loo3$estimates[3, 1], 200, 225)
+
+  # overimputation with indexes
+  bform4 <- bf(bmi | mi() ~ age * mi(chl, idx = idx)) +
+    bf(chl | mi(sdy, idx = id) + subset(sub) ~ age) + set_rescor(FALSE)
+  fit4 <- brm(bform4, data = nhanes,
+              save_pars = save_pars(latent = TRUE),
+              backend = "rstan", refresh = 0)
+
+  print(fit4)
+  pred4 <- predict(fit4, resp = "bmi")
+  expect_true(!anyNA(pred4))
+
+  ce4 <- conditional_effects(fit4, resp = "bmi")
+  expect_ggplot(plot(ce4, ask = FALSE)[[1]])
+
+  newdata <- nhanes
+  newdata$bmi[is.na(newdata$bmi)] <- mean(newdata$bmi, na.rm = TRUE)
+  loo4 <- loo(fit4, newdata = newdata, resp = "bmi")
+  expect_range(loo4$estimates[3, 1], 200, 300)
 }))
 
 test_that("student-t-distributed group-level effects work correctly",

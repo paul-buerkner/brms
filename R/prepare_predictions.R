@@ -411,7 +411,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
         }
         if (use_Yl_new) {
           warn_me <- warn_me || !new
-          sdy <- data2draws(sdy, dim)
+          sdy <- data2draws(sdy, dim_y)
           Yl_new <- rcontinuous(
             n = prod(dim), dist = "norm",
             mean = Y, sd = sdy,
