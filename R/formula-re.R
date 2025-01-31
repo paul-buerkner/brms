@@ -67,16 +67,16 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
   cor <- as_one_logical(cor)
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
-  gr_weights <- substitute(weights)
+  weights <- substitute(weights)
   if (!is.null(by)) {
     by <- deparse0(by)
   } else {
     by <- ""
   }
-  if (!is.null(gr_weights)) {
-    gr_weights <- deparse0(gr_weights)
+  if (!is.null(weights)) {
+    weights <- deparse0(weights)
   } else {
-    gr_weights <- ""
+    weights <- ""
   }
   cov <- substitute(cov)
   if (!is.null(cov)) {
@@ -89,9 +89,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   byvars <- all_vars(by)
-  gr_weights_vars <- all_vars(gr_weights)
-  allvars <- str2formula(c(groups, byvars, gr_weights_vars))
-  nlist(groups, allvars, label, by, cor, id, gr_weights, cov, dist, type = "")
+  weights_vars <- all_vars(weights)
+  allvars <- str2formula(c(groups, byvars, weights_vars))
+  nlist(groups, allvars, label, by, cor, id, weights, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}

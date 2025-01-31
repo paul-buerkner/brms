@@ -458,7 +458,7 @@ validate_newdata <- function(
       mf[[i]] <- as.factor(mf[[i]])
     }
   }
-  gr_weights_vars <- ufrom_list(get_re(bterms)$gcall, "gr_weights")
+  gr_weights_vars <- ufrom_list(get_re(bterms)$gcall, "weights")
   for (v in setdiff(gr_weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
