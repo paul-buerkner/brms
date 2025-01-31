@@ -101,11 +101,6 @@ the upper truncation bound.}
 
 \item{denom}{A vector of positive numeric values specifying
 the denominator values from which the response rates are computed.}
-
-\item{sdy}{Optional known measurement error of the response
-treated as standard deviation. If specified, handles
-measurement error and (completely) missing values
-at the same time using the plausible-values-technique.}
 }
 \value{
 A list of additional response information to be processed further

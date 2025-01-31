@@ -277,9 +277,9 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
       call <- rename(call, meframe$term, new_me)
     }
     if (!is.null(spframe$calls_mi[[i]])) {
-      is_na_idx <- is.na(spframe$idx2_mi[[i]])
       idx_mi <- paste0("idxl", p, "_", spframe$vars_mi[[i]], "_", spframe$idx2_mi[[i]])
-      idx_mi <- ifelse(is_na_idx, "", paste0("[, ", idx_mi, "]"))
+      has_idx <- !is.na(spframe$idx2_mi[[i]]) && !is.null(sdata[[idx_mi]])
+      idx_mi <- ifelse(has_idx, paste0("[, ", idx_mi, "]"), "")
       new_mi <- paste0("Yl_", spframe$vars_mi[[i]], idx_mi)
       call <- rename(call, spframe$calls_mi[[i]], new_mi)
     }

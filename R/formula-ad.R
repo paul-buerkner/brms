@@ -34,10 +34,6 @@
 #'   the lower truncation bound.
 #' @param ub A numeric vector or single numeric value specifying
 #'   the upper truncation bound.
-#' @param sdy Optional known measurement error of the response
-#'   treated as standard deviation. If specified, handles
-#'   measurement error and (completely) missing values
-#'   at the same time using the plausible-values-technique.
 #' @param denom A vector of positive numeric values specifying
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
@@ -456,24 +452,14 @@ has_ad_terms <- function(bterms, terms) {
 }
 
 # construct a list of indices for cross-formula referencing
-# TODO: move to brmsframe.R?
-frame_index <- function(x, data) {
-  out <- .frame_index(x, data)
-  if (is.brmsterms(x)) {
-    # ensure consistent format for both uni- and multivariate models
-    out <- list(out)
-    names(out)[1] <- terms_resp(x$respform)
-  }
-  out
-}
-
 # internal version of frame_index
-.frame_index <- function(x, ...) {
-  UseMethod(".frame_index")
+frame_index <- function(x, ...) {
+  UseMethod("frame_index")
 }
 
+# @param mv is this univariate model part of a multivariate model?
 #' @export
-.frame_index.brmsterms <- function(x, data, ...) {
+frame_index.brmsterms <- function(x, data, mv = FALSE, ...) {
   out <- get_ad_values(x, "mi", "idx", data)
   if (is.null(out)) {
     out <- get_ad_values(x, "index", "index", data)
@@ -484,23 +470,29 @@ frame_index <- function(x, data) {
       )
     }
   }
-  if (is.null(out)) {
-    return(NULL)
+  if (!is.null(out)) {
+    # index variable specified
+    if (has_subset(x)) {
+      len_old <- length(out)
+      subset <- as.logical(get_ad_values(x, "subset", "subset", data))
+      # same NA behavior as in subset_data
+      subset[is.na(subset)] <- TRUE
+      out <- out[subset]
+      # if all observations are kept, it isn't really subsetting
+      attr(out, "subset") <- length(out) < len_old
+    }
   }
-  if (has_subset(x)) {
-    subset <- as.logical(get_ad_values(x, "subset", "subset", data))
-    out <- out[subset]
-    attr(out, "subset") <- TRUE
-  }
-  if (anyNA(out)) {
-    stop2("NAs are not allowed in 'index' variables.")
+  if (!mv) {
+    # ensure consistent format for both uni- and multivariate models
+    out <- list(out)
+    names(out)[1] <- terms_resp(x$respform)
   }
   out
 }
 
 #' @export
-.frame_index.mvbrmsterms <- function(x, data, ...) {
-  lapply(x$terms, .frame_index, data = data, ...)
+frame_index.mvbrmsterms <- function(x, data, ...) {
+  lapply(x$terms, frame_index, data = data, mv = TRUE, ...)
 }
 
 # TODO: improve doc
@@ -548,7 +540,7 @@ check_cross_formula_indexing <- function(bterms) {
   mi_terms <- get_matches_expr(regex_sp("mi"), sp_terms)
   idx_vars <- lapply(mi_terms, function(x) eval2(x)$idx)
   if (any(idx_vars == "NA")) {
-    stop2("mi() terms in subsetted formulas require ",
+    stop2("'mi' predictor terms in subsetted formulas require ",
           "the 'idx' argument to be specified.")
   }
   invisible(TRUE)

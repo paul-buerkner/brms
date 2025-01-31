@@ -263,9 +263,9 @@ subset_data <- function(data, bterms) {
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }
-    if (anyNA(subset)) {
-      stop2("Subset variables may not contain NAs.")
-    }
+    # Treating NAs as TRUE simplifies post-processing
+    # during model fitting NAs are excluded anyway
+    subset[is.na(subset)] <- TRUE
     # cross-formula indexing is no longer trivial for subsetted models
     check_cross_formula_indexing(bterms)
     data <- data[subset, , drop = FALSE]

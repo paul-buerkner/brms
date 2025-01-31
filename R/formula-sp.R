@@ -409,9 +409,17 @@ default_mecor <- function(mecor = NULL) {
 }
 
 # find names of all variables used in a special effects type
-get_sp_vars <- function(x, type) {
+get_sp_vars <- function(x, type, name = NULL) {
   sp_terms <- ulapply(get_effect(x, "sp"), all_terms)
-  all_vars(str2formula(get_matches_expr(regex_sp(type), sp_terms)))
+  sp_terms <- unique(get_matches_expr(regex_sp(type), sp_terms))
+  if (is.null(name)) {
+    # extract all variable names
+    out <- all_vars(sp_terms)
+  } else {
+    # extract only variable names from a specific sp term argument
+    out <- all_vars(ulapply(sp_terms, function(x) eval2(x)[[name]]))
+  }
+  out
 }
 
 # gather information of special effects terms
