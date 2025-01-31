@@ -98,7 +98,7 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
         if (length(x) == 1L) {
           scode <- paste0("int ", name)
         } else {
-          scode <- paste0("int ", name, "[", length(x), "]")
+          scode <- paste0("array[", length(x), "] int ", name)
         }
       } else if (is.vector(x)) {
         if (length(x) == 1L) {
