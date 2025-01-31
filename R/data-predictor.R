@@ -400,12 +400,20 @@ data_sp <- function(bframe, data, data2, prior) {
   uni_mi <- attr(spframe, "uni_mi")
   index <- bframe$frame$index
   for (j in seq_rows(uni_mi)) {
-    if (!is.na(uni_mi$idx[j])) {
+    has_idx <- !is.na(uni_mi$idx[j])
+    if (has_idx) {
       idxl <- get(uni_mi$idx[j], data)
+      # a fully NA index variable will be treated as not having an index variable
+      # this is useful in post-processing to turn off indexing entirely if desired
+      has_idx <- !all(is.na(idxl))
+    }
+    has_subset <- isTRUE(attr(index[[uni_mi$var[j]]], "subset"))
+    if (has_idx) {
       if (is.null(index[[uni_mi$var[j]]])) {
         # the 'idx' argument needs to be mapped against 'index' addition terms
-        stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ",
-              "term to compare with 'idx'. See ?mi for examples.")
+        stop2("Response '", uni_mi$var[j], "' needs to have an 'mi' addition ",
+              "term with an 'idx' variable specified to compare with 'idx' ",
+              "variables in 'mi' predictor terms. See ?mi for examples.")
       }
       idxl <- match(idxl, index[[uni_mi$var[j]]])
       if (anyNA(idxl)) {
@@ -413,9 +421,9 @@ data_sp <- function(bframe, data, data2, prior) {
       }
       idxl_name <- paste0("idxl", p, "_", uni_mi$var[j], "_", uni_mi$idx2[j])
       out[[idxl_name]] <- as.array(idxl)
-    } else if (isTRUE(attr(index[[uni_mi$var[j]]], "subset"))) {
+    } else if (has_subset) {
       # cross-formula referencing is required for subsetted variables
-      stop2("mi() terms of subsetted variables require ",
+      stop2("'mi' predictor terms of subsetted variables require ",
             "the 'idx' argument to be specified.")
     }
   }

@@ -70,14 +70,14 @@ me <- function(x, sdx, gr = NULL) {
 #' see \code{\link{resp_mi}}.
 #'
 #' @param x The variable containing missing values.
-#' @param idx An optional variable containing indices of observations in `x`
+#' @param idx An optional variable containing indices of observations in \code{x}
 #'   that are to be used in the model. This is mostly relevant in partially
 #'   subsetted models (via \code{resp_subset}) but may also have other
 #'   applications that I haven't thought of.
 #'
 #' @details For detailed documentation see \code{help(brmsformula)}.
 #'
-#' @seealso \code{\link{brmsformula}}
+#' @seealso \code{\link{brmsformula}}, \code{\link{resp_mi}}
 #'
 #' @examples
 #' \dontrun{
@@ -110,15 +110,18 @@ me <- function(x, sdx, gr = NULL) {
 #' plot(conditional_effects(fit2, resp = "bmi"), ask = FALSE)
 #'
 #' # 'mi' terms can also be used when some responses are subsetted
+#' # indicates which observations in the chl model shall be kept
 #' nhanes$sub <- TRUE
-#' nhanes$sub[1:2] <- FALSE
-#' nhanes$id <- 1:N
-#' nhanes$idx <- sample(3:N, N, TRUE)
+#' nhanes$sub[1:5] <- FALSE
 #'
-#' # this requires the addition term 'index' being specified
-#' # in the subsetted part of the model
-#' bform3 <- bf(bmi | mi() ~ age * mi(chl, idx)) +
-#'   bf(chl | mi(se) + subset(sub) + index(id) ~ age) +
+#' # unique IDs of the chl observations
+#' nhanes$id <- 1:N
+#'
+#' # IDs of the chl observations as used in predicting bmi
+#' nhanes$idx <- sample(6:N, N, TRUE)
+#'
+#' bform3 <- bf(bmi | mi() ~ age * mi(chl, idx = idx)) +
+#'   bf(chl | mi(idx = id) + subset(sub) ~ age) +
 #'   set_rescor(FALSE)
 #'
 #' fit3 <- brm(bform3, data = nhanes)
@@ -406,15 +409,24 @@ default_mecor <- function(mecor = NULL) {
 }
 
 # find names of all variables used in a special effects type
-get_sp_vars <- function(x, type) {
+get_sp_vars <- function(x, type, name = NULL) {
   sp_terms <- ulapply(get_effect(x, "sp"), all_terms)
-  all_vars(str2formula(get_matches_expr(regex_sp(type), sp_terms)))
+  sp_terms <- unique(get_matches_expr(regex_sp(type), sp_terms))
+  if (is.null(name)) {
+    # extract all variable names
+    out <- all_vars(sp_terms)
+  } else {
+    # extract only variable names from a specific sp term argument
+    out <- all_vars(ulapply(sp_terms, function(x) eval2(x)[[name]]))
+  }
+  out
 }
 
 # gather information of special effects terms
 # @param x a formula, brmsterms, or brmsframe object
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
+#   or go full out on list columns with one column per term predictor type?
 frame_sp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu

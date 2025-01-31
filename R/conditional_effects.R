@@ -614,6 +614,22 @@ get_int_vars.brmsterms <- function(x, ...) {
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
+# extract names of variables used to index responses
+get_index_vars <- function(x, ...) {
+  UseMethod("get_index_vars")
+}
+
+#' @export
+get_index_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_index_vars))
+}
+
+#' @export
+get_index_vars.brmsterms <- function(x, ...) {
+  out <- c(get_ad_vars(x, "mi", "idx"), get_sp_vars(x, "mi", "idx"))
+  unique(out)
+}
+
 # transform posterior draws of ordinal probabilities to a
 # continuous scale assuming equidistance between adjacent categories
 # @param x an ndraws x nobs x ncat array of posterior draws
@@ -757,6 +773,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
     req_vars <- setdiff(req_vars, names(conditions))
   }
+
   # special treatment for 'trials' addition variables
   trial_vars <- all_vars(bterms$adforms$trials)
   trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
@@ -768,29 +785,27 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       conditions[[v]] <- 1L
     }
   }
+
   # use sensible default values for unspecified variables
+  index_vars <- get_index_vars(bterms)
   subset_vars <- get_ad_vars(bterms, "subset")
   int_vars <- get_int_vars(bterms)
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
-    if (is_like_factor(mf[[v]])) {
+    if (v %in% c(index_vars, subset_vars)) {
+      # NA in index vars leads to ignoring indexes (see data_sp)
+      # NA in subset vars leads to not subsetting (see subset_data)
+      conditions[[v]] <- NA
+    } else if (is_like_factor(mf[[v]])) {
       # factor-like variable
-      if (v %in% subset_vars) {
-        # avoid unintentional subsetting of newdata (#755)
-        conditions[[v]] <- TRUE
-      } else {
-        # use reference category for factors
-        levels <- levels(as.factor(mf[[v]]))
-        ordered <- is.ordered(mf[[v]])
-        conditions[[v]] <- factor(levels[1], levels, ordered = ordered)
-      }
+      # use reference category for factors
+      levels <- levels(as.factor(mf[[v]]))
+      ordered <- is.ordered(mf[[v]])
+      conditions[[v]] <- factor(levels[1], levels, ordered = ordered)
     } else {
       # numeric-like variable
-      if (v %in% subset_vars) {
-        # avoid unintentional subsetting of newdata (#755)
-        conditions[[v]] <- 1
-      } else if (v %in% int_vars) {
+      if (v %in% int_vars) {
         # ensure valid integer values
         conditions[[v]] <- round(median(mf[[v]], na.rm = TRUE))
       } else {

@@ -9,7 +9,7 @@ mi(x, idx = NA)
 \arguments{
 \item{x}{The variable containing missing values.}
 
-\item{idx}{An optional variable containing indices of observations in `x`
+\item{idx}{An optional variable containing indices of observations in \code{x}
 that are to be used in the model. This is mostly relevant in partially
 subsetted models (via \code{resp_subset}) but may also have other
 applications that I haven't thought of.}
@@ -54,15 +54,18 @@ summary(fit2)
 plot(conditional_effects(fit2, resp = "bmi"), ask = FALSE)
 
 # 'mi' terms can also be used when some responses are subsetted
+# indicates which observations in the chl model shall be kept
 nhanes$sub <- TRUE
-nhanes$sub[1:2] <- FALSE
-nhanes$id <- 1:N
-nhanes$idx <- sample(3:N, N, TRUE)
+nhanes$sub[1:5] <- FALSE
 
-# this requires the addition term 'index' being specified
-# in the subsetted part of the model
-bform3 <- bf(bmi | mi() ~ age * mi(chl, idx)) +
-  bf(chl | mi(se) + subset(sub) + index(id) ~ age) +
+# unique IDs of the chl observations
+nhanes$id <- 1:N
+
+# IDs of the chl observations as used in predicting bmi
+nhanes$idx <- sample(6:N, N, TRUE)
+
+bform3 <- bf(bmi | mi() ~ age * mi(chl, idx = idx)) +
+  bf(chl | mi(idx = id) + subset(sub) ~ age) +
   set_rescor(FALSE)
 
 fit3 <- brm(bform3, data = nhanes)
@@ -73,5 +76,5 @@ plot(conditional_effects(fit3, resp = "bmi"), ask = FALSE)
 
 }
 \seealso{
-\code{\link{brmsformula}}
+\code{\link{brmsformula}}, \code{\link{resp_mi}}
 }

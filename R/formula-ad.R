@@ -15,13 +15,10 @@
 #'   \code{resp_weights} require positive numeric values. \code{resp_trials},
 #'   \code{resp_thres}, and \code{resp_cat} require positive integers.
 #'   \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-#'   \code{'lower'} and \code{'upper'}. \code{resp_subset} requires \code{0} and
-#'   \code{1}, or alternatively \code{FALSE} and \code{TRUE}. \code{resp_cens}
+#'   \code{'lower'} and \code{'upper'}. \code{resp_cens}
 #'   requires \code{'left'}, \code{'none'}, \code{'right'}, and
 #'   \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1}, and
 #'   \code{2}) to indicate left, no, right, or interval censoring.
-#'   \code{resp_index} does not make any requirements other than the value being
-#'   unique for each observation.
 #' @param sigma Logical; Indicates whether the residual standard deviation
 #'  parameter \code{sigma} should be included in addition to the known
 #'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
@@ -36,10 +33,6 @@
 #'   the lower truncation bound.
 #' @param ub A numeric vector or single numeric value specifying
 #'   the upper truncation bound.
-#' @param sdy Optional known measurement error of the response
-#'   treated as standard deviation. If specified, handles
-#'   measurement error and (completely) missing values
-#'   at the same time using the plausible-values-technique.
 #' @param denom A vector of positive numeric values specifying
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
@@ -188,14 +181,81 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
   class_resp_special("trunc", call = match.call(), vars = nlist(lb, ub))
 }
 
-#' @rdname addition-terms
+#' Additional response information for handling missing values
+#'
+#' Provide additional information on missing values in response variables
+#' in \pkg{brms} models. Supported by all continuous families.
+#' Required when using \code{\link{mi}} predictor terms.
+#'
+#' @param sdy Optional known measurement error of the response
+#'   treated as standard deviation. If specified, handles
+#'   measurement error and (completely) missing values
+#'   at the same time using the plausible-values-technique.
+#' @param idx Optional index variable assigning observations with missing responses
+#'   to individual latent response values. This allows to express that multiple
+#'   observations share the same latent missing value. It is also needed when
+#'   using the \code{idx} argument in \code{\link{mi}} predictor terms.
+#'
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
+#'
+#' @details
+#'   This function is almost solely useful when called in formulas passed to the
+#'   \pkg{brms} package. Within formulas, the \code{resp_} prefix may be
+#'   omitted. See the Details section of \code{\link{brmsformula}} (under
+#'   "Additional response information") for more information.
+#'   Please also see \code{\link{mi}} for more details and examples.
+#'
+#'   It is highly recommended to use single data variables as inputs
+#'   for \code{sdy} and \code{idx} (instead of a more complicated expression)
+#'   to make sure all post-processing functions work as expected.
+#'
+#' @seealso \code{\link{brmsformula}}, \code{\link{mi}}
+#'
+#' @examples
+#' \dontrun{
+#' data("nhanes", package = "mice")
+#' N <- nrow(nhanes)
+#'
+#' # simple model with missing data
+#' bform1 <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi() ~ age) +
+#'   set_rescor(FALSE)
+#'
+#' fit1 <- brm(bform1, data = nhanes)
+#'
+#' summary(fit1)
+#' plot(conditional_effects(fit1, resp = "bmi"), ask = FALSE)
+#' loo(fit1, newdata = na.omit(fit1$data))
+#' }
+#'
 #' @export
-resp_mi <- function(sdy = NA) {
+resp_mi <- function(sdy = NA, idx = NA) {
   sdy <- deparse0(substitute(sdy))
-  class_resp_special("mi", call = match.call(), vars = nlist(sdy))
+  idx <- deparse0(substitute(idx))
+  class_resp_special("mi", call = match.call(), vars = nlist(sdy, idx))
 }
 
-#' @rdname addition-terms
+#' (Deprecated) Additional response information for handling response indexes
+#'
+#' Provide additional information for handling response indexes
+#' in \pkg{brms} models. This function is deprecated and replaced
+#' by the \code{idx} argument of \code{\link{resp_mi}}.
+#'
+#' @param x A vector of index values that assigns each observation to an
+#' index, which can then be used by other model terms.
+#'
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
+#'
+#' @details
+#'   This function is almost solely useful when called in formulas passed to the
+#'   \pkg{brms} package. Within formulas, the \code{resp_} prefix may be
+#'   omitted. See the Details section of \code{\link{brmsformula}} (under
+#'   "Additional response information") for more information.
+#'
+#' @seealso \code{\link{resp_mi}}, \code{\link{brmsformula}}
+#'
 #' @export
 resp_index <- function(x) {
   index <- deparse0(substitute(x))
@@ -209,7 +269,38 @@ resp_rate <- function(denom) {
   class_resp_special("rate", call = match.call(), vars = nlist(denom))
 }
 
-#' @rdname addition-terms
+#' Additional response information for subsetting data
+#'
+#' Provide additional information for subsetting data
+#' in \pkg{brms} models. This is relevant only in multivariate models
+#' where \code{resp_subset} allows to use different subsets of the data
+#' in different univariate models.
+#'
+#' @param x A logical vector or one that can be transformed to it. Observations
+#' for which \code{x} is \code{FALSE} will be excluded from the data used in
+#' that specific univariate model.
+#'
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
+#'
+#' @details
+#'   This function is almost solely useful when called in formulas passed to the
+#'   \pkg{brms} package. Within formulas, the \code{resp_} prefix may be
+#'   omitted. See the Details section of \code{\link{brmsformula}} (under
+#'   "Additional response information") for more information.
+#'
+#' @examples
+#' \dontrun{
+#' # generate a simple dataset
+#' dat <- data.frame(y = rnorm(10), z = rnorm(10),
+#'                   sub = c(rep(TRUE, 5), rep(FALSE, 5)))
+#'
+#' # only use the first 5 observations to predict z
+#' bform <- bf(y ~ 1) + bf(z | subset(sub) ~ y) + set_rescor(FALSE)
+#' fit <- brm(bform, dat)
+#' summary(fit)
+#' }
+#'
 #' @export
 resp_subset <- function(x) {
   subset <- deparse0(substitute(x))
@@ -270,6 +361,11 @@ get_ad_expr <- function(x, ad, name, type = "vars") {
   out
 }
 
+# check if an addition term expression is present
+has_ad_expr <- function(x, ad, name, type = "vars") {
+  !is.null(get_ad_expr(x, ad, name, type))
+}
+
 # get values of a variable used in an addition term
 # @return a vector of values or NULL
 get_ad_values <- function(x, ad, name, data) {
@@ -290,9 +386,14 @@ get_ad_vars <- function(x, ...) {
 }
 
 #' @export
-get_ad_vars.brmsterms <- function(x, ad, ...) {
+get_ad_vars.brmsterms <- function(x, ad, name = NULL, ...) {
   ad <- as_one_character(ad)
-  all_vars(x$adforms[[ad]])
+  if (is.null(name)) {
+    out <- all_vars(x$adforms[[ad]])
+  } else {
+    out <- all_vars(get_ad_expr(x, ad = ad, name = name, type = "vars"))
+  }
+  out
 }
 
 #' @export
@@ -401,9 +502,28 @@ has_ad_terms <- function(bterms, terms) {
 }
 
 # construct a list of indices for cross-formula referencing
-frame_index <- function(x, data) {
-  out <- .frame_index(x, data)
-  if (is.brmsterms(x)) {
+# internal version of frame_index
+frame_index <- function(x, ...) {
+  UseMethod("frame_index")
+}
+
+# @param mv is this univariate model part of a multivariate model?
+#' @export
+frame_index.brmsterms <- function(x, data, mv = FALSE, ...) {
+  out <- get_mi_index(x, data)
+  if (!is.null(out)) {
+    # index variable specified
+    if (has_subset(x)) {
+      len_old <- length(out)
+      subset <- as.logical(get_ad_values(x, "subset", "subset", data))
+      # same NA behavior as in subset_data
+      subset[is.na(subset)] <- TRUE
+      out <- out[subset]
+      # if all observations are kept, it isn't really subsetting
+      attr(out, "subset") <- length(out) < len_old
+    }
+  }
+  if (!mv) {
     # ensure consistent format for both uni- and multivariate models
     out <- list(out)
     names(out)[1] <- terms_resp(x$respform)
@@ -411,34 +531,50 @@ frame_index <- function(x, data) {
   out
 }
 
-# internal version of frame_index
-.frame_index <- function(x, ...) {
-  UseMethod(".frame_index")
+#' @export
+frame_index.mvbrmsterms <- function(x, data, ...) {
+  lapply(x$terms, frame_index, data = data, mv = TRUE, ...)
 }
 
-#' @export
-.frame_index.brmsterms <- function(x, data, ...) {
-  out <- get_ad_values(x, "index", "index", data)
-  if (is.null(out)) {
+# extract index values of response variables
+# levels: shall the output be the (unique) levels of the latent values?
+get_mi_index <- function(x, data, levels = FALSE) {
+  stopifnot(is.brmsterms(x))
+  levels <- as_one_logical(levels)
+  if (!is.formula(x$adforms$mi)) {
     return(NULL)
   }
-  if (has_subset(x)) {
-    subset <- as.logical(get_ad_values(x, "subset", "subset", data))
-    out <- out[subset]
-    attr(out, "subset") <- TRUE
+  idx <- get_ad_values(x, "mi", "idx", data)
+  if (is.null(idx)) {
+    idx <- get_ad_values(x, "index", "index", data)
+    if (!is.null(idx)) {
+      warning2(
+        "Addition term 'index' is deprecated. ",
+        "Use argument 'idx' of addition term 'mi' instead."
+      )
+    }
   }
-  if (anyNA(out)) {
-    stop2("NAs are not allowed in 'index' variables.")
+  if (!levels) {
+    return(idx)
   }
-  if (anyDuplicated(out)) {
-    stop2("Index of response '", x$resp, "' contains duplicated values.")
+  y <- get_model_response(x, data)
+  if (has_ad_expr(x, "mi", "sdy")) {
+    # measurement error specified such that all observations
+    # have corresponding latent values
+    if (is.null(idx)) {
+      idx <- seq_along(y)
+    } # else idx is already in the right format
+  } else {
+    # idx does only apply to observations with missing responses
+    # as such it has reduced length
+    is_na_y <- is.na(y)
+    if (is.null(idx)) {
+      idx <- which(is_na_y)
+    } else {
+      idx <- idx[is_na_y]
+    }
   }
-  out
-}
-
-#' @export
-.frame_index.mvbrmsterms <- function(x, data, ...) {
-  lapply(x$terms, .frame_index, data = data, ...)
+  levels(factor(idx))
 }
 
 # check if cross-formula referencing is possible in subsetted models
@@ -449,9 +585,9 @@ check_cross_formula_indexing <- function(bterms) {
     stop2("Cannot use me() terms in subsetted formulas.")
   }
   mi_terms <- get_matches_expr(regex_sp("mi"), sp_terms)
-  idx_vars <- lapply(mi_terms, function(x) eval2(x)$idx)
+  idx_vars <- ulapply(mi_terms, function(x) eval2(x)$idx)
   if (any(idx_vars == "NA")) {
-    stop2("mi() terms in subsetted formulas require ",
+    stop2("'mi' predictor terms in subsetted formulas require ",
           "the 'idx' argument to be specified.")
   }
   invisible(TRUE)

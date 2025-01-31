@@ -36,7 +36,7 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     x$frame <- frame
   }
   if (!is.null(basis)) {
-    x$frame$basis <- basis[c("resp_levels")]
+    x$frame$basis <- basis[c("resp_levels", "mi_levels")]
   }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
@@ -135,12 +135,12 @@ initialize_frame <- function(x, data, basis = NULL, ...) {
 
 frame_resp <- function(x, data, ....) {
   stopifnot(is.brmsterms(x))
-  y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+  y <- get_model_response(x, data)
   out <- list(
     values = y,
     bounds = trunc_bounds(x, data),
     Ybounds = trunc_bounds(x, data, incl_family = TRUE, stan = TRUE),
-    Jmi = as.array(which(is.na(y))),
+    mi_levels = get_mi_index(x, data, levels = TRUE),
     subset = attr(data, "subset")
   )
   out
@@ -332,8 +332,11 @@ frame_basis.brmsterms <- function(x, data, levels = NULL, ...) {
   # to differentiate more easily whether or not old levels were provided
   out$group_levels <- levels
   if (is_binary(x$family) || is_categorical(x$family)) {
-    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    y <- get_model_response(x, data)
     out$resp_levels <- levels(as.factor(y))
+  }
+  if (is.formula(x$adforms$mi)) {
+    out$mi_levels <- get_mi_index(x, data, levels = TRUE)
   }
   out
 }
@@ -427,7 +430,7 @@ frame_basis_bhaz <- function(x, data, ...) {
   out <- list()
   if (is_cox(x$family)) {
     # compute basis matrix of the baseline hazard for the Cox model
-    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    y <- get_model_response(x, data)
     args <- family_info(x, "bhaz")$args
     out$basis_matrix <- bhaz_basis_matrix(y, args = args)
   }

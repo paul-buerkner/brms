@@ -277,9 +277,9 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
       call <- rename(call, meframe$term, new_me)
     }
     if (!is.null(spframe$calls_mi[[i]])) {
-      is_na_idx <- is.na(spframe$idx2_mi[[i]])
       idx_mi <- paste0("idxl", p, "_", spframe$vars_mi[[i]], "_", spframe$idx2_mi[[i]])
-      idx_mi <- ifelse(is_na_idx, "", paste0("[, ", idx_mi, "]"))
+      has_idx <- !is.na(spframe$idx2_mi[[i]]) && !is.null(sdata[[idx_mi]])
+      idx_mi <- ifelse(has_idx, paste0("[, ", idx_mi, "]"), "")
       new_mi <- paste0("Yl_", spframe$vars_mi[[i]], idx_mi)
       call <- rename(call, spframe$calls_mi[[i]], new_mi)
     }
@@ -377,34 +377,66 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
     out$Yl <- named_list(Yl_names)
     for (i in seq_along(out$Yl)) {
       vmi <- vars_mi[i]
+      Y <- sdata[[paste0("Y_", vmi)]]
+      is_na_y <- is.na(Y)
       dim_y <- c(nrow(out$bsp), sdata[[paste0("N_", vmi)]])
-      Y <- data2draws(sdata[[paste0("Y_", vmi)]], dim_y)
-      sdy <- sdata[[paste0("noise_", vmi)]]
+      Y <- data2draws(Y, dim_y)
+      Jl <- sdata[[paste0("Jl_", vmi)]]
+      is_na_Jl <- is.na(Jl)
+      use_idx <- !is.null(Jl) && !all(is_na_Jl)
+      sdy <- sdata[[paste0("sdy_", vmi)]]
+      Ymi_regex <- paste0("^Ymi_", escape_all(vmi), "\\[")
       if (is.null(sdy)) {
         # missings only
         out$Yl[[i]] <- Y
-        if (!new) {
-          Ymi_regex <- paste0("^Ymi_", escape_all(vmi), "\\[")
+        use_Yl_old <- !new || use_idx
+        if (use_Yl_old) {
           Ymi <- prepare_draws(draws, Ymi_regex, regex = TRUE)
-          Jmi <- sdata[[paste0("Jmi_", vmi)]]
-          out$Yl[[i]][, Jmi] <- Ymi
+          if (use_idx) {
+            # non-NA values in Jl indicate observations with original indexes
+            # for which we have access to the corresponding latent values
+            # overwrite only responses which were previously NA
+            out$Yl[[i]][, is_na_y][, !is_na_Jl] <- Ymi[, Jl[!is_na_Jl], drop = FALSE]
+          } else {
+            out$Yl[[i]][, is_na_y] <- Ymi
+          }
         }
       } else {
-        # measurement-error in the response
-        save_mevars <- any(grepl("^Yl_", colnames(draws)))
-        if (save_mevars && !new) {
-          Ymi_regex <- paste0("^Yl_", escape_all(vmi), "\\[")
-          out$Yl[[i]] <- prepare_draws(draws, Ymi_regex, regex = TRUE)
-        } else {
+        # missings + measurement error
+        save_mevars <- any(grepl("^Ymi_", colnames(draws)))
+        use_Yl_old <- (!new || use_idx) && save_mevars
+        use_Yl_new <- new || !save_mevars
+        if (use_Yl_old) {
+          Yl_old <- prepare_draws(draws, Ymi_regex, regex = TRUE)
+        }
+        if (use_Yl_new) {
           warn_me <- warn_me || !new
-          sdy <- data2draws(sdy, dim)
-          out$Yl[[i]] <- rcontinuous(
+          sdy <- data2draws(sdy, dim_y)
+          Yl_new <- rcontinuous(
             n = prod(dim), dist = "norm",
             mean = Y, sd = sdy,
             lb = sdata[[paste0("lbmi_", vmi)]],
             ub = sdata[[paste0("ubmi_", vmi)]]
           )
-          out$Yl[[i]] <- array(out$Yl[[i]], dim_y)
+          Yl_new <- array(Yl_new, dim_y)
+        }
+        if (use_idx) {
+          # if sdy is present, we know that length(Jl) == ncol(Y)
+          if (use_Yl_new) {
+            out$Yl[[i]] <- Yl_new
+            if (use_Yl_old) {
+              # overwrite only values which were previously NA and have an old index
+              take_Jl <- is_na_y & !is_na_Jl
+              out$Yl[[i]][, take_Jl] <- Yl_old[, Jl[take_Jl], drop = FALSE]
+            }
+          } else {
+            # for the original data all observations have estimated latent values
+            out$Yl[[i]] <- Yl_old[, Jl, drop = FALSE]
+          }
+        } else if (use_Yl_new) {
+          out$Yl[[i]] <- Yl_new
+        } else {
+          out$Yl[[i]] <- Yl_old
         }
       }
     }

@@ -2208,13 +2208,15 @@ test_that("Stan code for missing value terms works correctly", {
 test_that("Stan code for overimputation works correctly", {
   dat = data.frame(y = rnorm(10), x_x = rnorm(10), g = 1:10, z = 1)
   dat$x[c(1, 3, 9)] <- NA
-  bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(g) ~ 1) + set_rescor(FALSE)
+
+  # model without index variable
+  bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(z) ~ 1) + set_rescor(FALSE)
   scode <- stancode(bform, dat, sample_prior = "yes")
   expect_match2(scode, "target += normal_lpdf(Yl_xx | mu_xx, sigma_xx)")
   expect_match2(scode,
-    "target += normal_lpdf(Y_xx[Jme_xx] | Yl_xx[Jme_xx], noise_xx[Jme_xx])"
+    "target += normal_lpdf(Y_xx[Jme_xx] | Yl_xx[Jme_xx], sdy_xx[Jme_xx])"
   )
-  expect_match2(scode, "vector[N_xx] Yl_xx;")
+  expect_match2(scode, "vector[N_xx] Yl_xx = Ymi_xx;")
 })
 
 test_that("Missing value terms can be combined with 'subset'", {
@@ -2222,11 +2224,12 @@ test_that("Missing value terms can be combined with 'subset'", {
     y = rnorm(10), x = c(rnorm(9), NA),
     z = rnorm(10), g2 = 10:1,
     g1 = sample(1:5, 10, TRUE),
-    s = c(FALSE, rep(TRUE, 9))
+    s = c(FALSE, rep(TRUE, 9)),
+    se = 1
   )
 
-  bform <- bf(y ~ mi(x, idx = g1)*mi(z)) +
-    bf(x | mi() + index(g2) + subset(s)  ~ 1) +
+  bform <- bf(y ~ mi(x, idx = g1) * mi(z)) +
+    bf(x | mi(idx = g2)  + subset(s)  ~ 1) +
     bf(z | mi() ~ s) +
     set_rescor(FALSE)
   scode <- stancode(bform, dat)
@@ -2234,6 +2237,14 @@ test_that("Missing value terms can be combined with 'subset'", {
   expect_match2(scode, "(bsp_y[2]) * Yl_z[n]")
   expect_match2(scode, "(bsp_y[3]) * Yl_x[idxl_y_x_1[n]] * Yl_z[n]")
   expect_match2(scode, "array[N_y] int idxl_y_x_1;")
+
+  bform <- bf(y ~ mi(x, idx = g1) * mi(z)) +
+    bf(x | mi(se, idx = g2)  + subset(s)  ~ 1) +
+    bf(z | mi() ~ s) +
+    set_rescor(FALSE)
+  scode <- stancode(bform, dat)
+  expect_match2(scode, "vector[Nmi_z] Ymi_z;  // latent values")
+  expect_match2(scode, "vector[N_x] Yl_x = Ymi_x[Jl_x];")
 })
 
 test_that("Stan code for advanced count data distribution is correct", {
