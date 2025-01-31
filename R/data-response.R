@@ -85,7 +85,6 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
                                     internal = FALSE, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
-  # TODO: rename 'Y' to 'y'?
   Y <- get_model_response(x, data)
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family)) {

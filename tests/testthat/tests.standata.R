@@ -603,12 +603,13 @@ test_that("standata handles overimputation", {
   sdata <- standata(bform, dat)
   expect_equal(sdata$Jme_x, as.array(setdiff(1:10, miss)))
   expect_true(all(is.infinite(sdata$Y_x[miss])))
-  expect_true(all(is.infinite(sdata$noise_x[miss])))
+  expect_true(all(is.infinite(sdata$sdy_x[miss])))
+  expect_true(all(sdata$sdy_x[!miss] == 1))
 })
 
 test_that("standata handles 'mi' terms with 'subset'", {
   dat <- data.frame(
-    y = rnorm(10), x = c(rnorm(9), NA), z = rnorm(10),
+    y = rnorm(10), x = c(rnorm(8), NA, NA), z = rnorm(10),
     g1 = sample(1:5, 10, TRUE), g2 = 10:1, g3 = 1:10,
     s = c(FALSE, rep(TRUE, 9))
   )
@@ -617,7 +618,8 @@ test_that("standata handles 'mi' terms with 'subset'", {
     bf(x | mi(idx = g2) + subset(s)  ~ 1) +
     set_rescor(FALSE)
   sdata <- standata(bform, dat)
-  expect_true(all(sdata$idxl_y_x_1 %in% 9:5))
+  expect_true(all(sdata$idxl_y_x_1 %in% 5:9))
+  expect_equal(sdata$Jl_x, as.array(c(2, 1)))
 
   # test a bunch of errors
   # fails on CRAN for some reason

@@ -799,21 +799,12 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       conditions[[v]] <- NA
     } else if (is_like_factor(mf[[v]])) {
       # factor-like variable
-      # if (v %in% subset_vars) {
-      #   # avoid unintentional subsetting of newdata (#755)
-      #   conditions[[v]] <- TRUE
-      # } else {
-        # use reference category for factors
-        levels <- levels(as.factor(mf[[v]]))
-        ordered <- is.ordered(mf[[v]])
-        conditions[[v]] <- factor(levels[1], levels, ordered = ordered)
-      # }
+      # use reference category for factors
+      levels <- levels(as.factor(mf[[v]]))
+      ordered <- is.ordered(mf[[v]])
+      conditions[[v]] <- factor(levels[1], levels, ordered = ordered)
     } else {
       # numeric-like variable
-      # if (v %in% subset_vars) {
-      #   # avoid unintentional subsetting of newdata (#755)
-      #   conditions[[v]] <- 1
-      # } else
       if (v %in% int_vars) {
         # ensure valid integer values
         conditions[[v]] <- round(median(mf[[v]], na.rm = TRUE))

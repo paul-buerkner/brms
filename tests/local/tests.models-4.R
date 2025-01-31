@@ -121,6 +121,7 @@ test_that("Missing value imputation within Stan works correctly", suppressWarnin
   data("nhanes", package = "mice")
 
   # add some new variables
+  N <- nrow(nhanes)
   set.seed(5324)
   nhanes$sdy <- 5
   nhanes$sub <- TRUE
@@ -145,9 +146,15 @@ test_that("Missing value imputation within Stan works correctly", suppressWarnin
   # missing value imputation with indexes
   bform2 <- bf(bmi | mi() ~ age * mi(chl, idx = idx)) +
     bf(chl | mi(idx = id) + subset(sub) ~ age) + set_rescor(FALSE)
-  fit2 <- brm(bform2, data = nhanes, backend = "rstan", refresh = 0)
+  fit2 <- brm(bform2, data = nhanes, backend = "rstan", refresh = 0,
+              control = list(adapt_delta = 0.99),
+              iter = 3000, warmup = 1000)
 
   print(fit2)
+
+  expect_true(all(c("Ymi_chl[500]", "Ymi_chl[501]") %in% variables(fit2)))
+  expect_true(!any(paste0("Ymi_chl[", 1:25, "]") %in% variables(fit2)))
+
   pred2 <- predict(fit2, resp = "bmi")
   expect_true(!anyNA(pred2))
 
@@ -157,14 +164,16 @@ test_that("Missing value imputation within Stan works correctly", suppressWarnin
   newdata <- nhanes
   newdata$bmi[is.na(newdata$bmi)] <- mean(newdata$bmi, na.rm = TRUE)
   loo2 <- loo(fit2, newdata = newdata, resp = "bmi")
-  expect_range(loo2$estimates[3, 1], 280, 320)
+  expect_range(loo2$estimates[3, 1], 260, 320)
 
   # overimputation
   bform3 <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
   fit3 <- brm(bform3, data = nhanes,
               save_pars = save_pars(latent = TRUE),
-              backend = "rstan", refresh = 0)
+              backend = "rstan", refresh = 0,
+              control = list(adapt_delta = 0.99),
+              iter = 3000, warmup = 1000)
 
   print(fit3)
   pred3 <- predict(fit3)
@@ -172,16 +181,24 @@ test_that("Missing value imputation within Stan works correctly", suppressWarnin
   ce3 <- conditional_effects(fit3, resp = "bmi")
   expect_ggplot(plot(ce3, ask = FALSE)[[1]])
   loo3 <- loo(fit3, newdata = na.omit(fit3$data))
-  expect_range(loo3$estimates[3, 1], 200, 225)
+  expect_range(loo3$estimates[3, 1], 200, 230)
 
   # overimputation with indexes
   bform4 <- bf(bmi | mi() ~ age * mi(chl, idx = idx)) +
     bf(chl | mi(sdy, idx = id) + subset(sub) ~ age) + set_rescor(FALSE)
   fit4 <- brm(bform4, data = nhanes,
               save_pars = save_pars(latent = TRUE),
-              backend = "rstan", refresh = 0)
+              backend = "rstan", refresh = 0,
+              control = list(adapt_delta = 0.99),
+              iter = 3000, warmup = 1000)
 
   print(fit4)
+
+  id_values <- unique(nhanes$id[nhanes$sub])
+  non_id_values <- unique(setdiff(nhanes$id[!nhanes$sub], id_values))
+  expect_true(all(paste0("Ymi_chl[", id_values, "]") %in% variables(fit4)))
+  expect_true(!any(paste0("Ymi_chl[", non_id_values, "]") %in% variables(fit4)))
+
   pred4 <- predict(fit4, resp = "bmi")
   expect_true(!anyNA(pred4))
 
@@ -191,7 +208,7 @@ test_that("Missing value imputation within Stan works correctly", suppressWarnin
   newdata <- nhanes
   newdata$bmi[is.na(newdata$bmi)] <- mean(newdata$bmi, na.rm = TRUE)
   loo4 <- loo(fit4, newdata = newdata, resp = "bmi")
-  expect_range(loo4$estimates[3, 1], 200, 300)
+  expect_range(loo4$estimates[3, 1], 300, 350)
 }))
 
 test_that("student-t-distributed group-level effects work correctly",

@@ -4,9 +4,15 @@
 
 * Use varying coefficients as predictors in other model parts via 
 `re` predictor terms. (#1687)
-* Extend the flexibility of `mi` predictor terms to handle non-unique indexes. 
+* Extend `mi` addition terms to handle non-unique indexes via argument `idx`. 
 This allows to express that multiple observations share the same latent 
 missing value. (#1733)
+
+### Other Changes
+
+* Deprecate addition argument `index` since its functionality is
+now directly available in addition term `mi`. (#1733)
+
 
 # brms 2.23
 

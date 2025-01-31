@@ -510,16 +510,7 @@ frame_index <- function(x, ...) {
 # @param mv is this univariate model part of a multivariate model?
 #' @export
 frame_index.brmsterms <- function(x, data, mv = FALSE, ...) {
-  out <- get_ad_values(x, "mi", "idx", data)
-  if (is.null(out)) {
-    out <- get_ad_values(x, "index", "index", data)
-    if (!is.null(out)) {
-      warning2(
-        "Addition term 'index' is deprecated. ",
-        "Use argument 'idx' of addition term 'mi' instead."
-      )
-    }
-  }
+  out <- get_mi_index(x, data)
   if (!is.null(out)) {
     # index variable specified
     if (has_subset(x)) {
@@ -545,9 +536,7 @@ frame_index.mvbrmsterms <- function(x, data, ...) {
   lapply(x$terms, frame_index, data = data, mv = TRUE, ...)
 }
 
-# TODO: improve doc
-# TODO: reduce overlap from frame_index?
-# mi_index is required to rename latent response values
+# extract index values of response variables
 # levels: shall the output be the (unique) levels of the latent values?
 get_mi_index <- function(x, data, levels = FALSE) {
   stopifnot(is.brmsterms(x))
@@ -555,27 +544,35 @@ get_mi_index <- function(x, data, levels = FALSE) {
   if (!is.formula(x$adforms$mi)) {
     return(NULL)
   }
-  y <- get_model_response(x, data)
   idx <- get_ad_values(x, "mi", "idx", data)
   if (is.null(idx)) {
     idx <- get_ad_values(x, "index", "index", data)
+    if (!is.null(idx)) {
+      warning2(
+        "Addition term 'index' is deprecated. ",
+        "Use argument 'idx' of addition term 'mi' instead."
+      )
+    }
   }
   if (!levels) {
     return(idx)
   }
-  sdy <- get_ad_expr(x, "mi", "sdy")
-  if (is.null(sdy)) {
+  y <- get_model_response(x, data)
+  if (has_ad_expr(x, "mi", "sdy")) {
+    # measurement error specified such that all observations
+    # have corresponding latent values
+    if (is.null(idx)) {
+      idx <- seq_along(y)
+    } # else idx is already in the right format
+  } else {
+    # idx does only apply to observations with missing responses
+    # as such it has reduced length
     is_na_y <- is.na(y)
     if (is.null(idx)) {
       idx <- which(is_na_y)
     } else {
       idx <- idx[is_na_y]
     }
-  } else {
-    if (is.null(idx)) {
-      idx <- seq_along(y)
-    }
-    # else idx is already in the right format
   }
   levels(factor(idx))
 }
@@ -588,7 +585,7 @@ check_cross_formula_indexing <- function(bterms) {
     stop2("Cannot use me() terms in subsetted formulas.")
   }
   mi_terms <- get_matches_expr(regex_sp("mi"), sp_terms)
-  idx_vars <- lapply(mi_terms, function(x) eval2(x)$idx)
+  idx_vars <- ulapply(mi_terms, function(x) eval2(x)$idx)
   if (any(idx_vars == "NA")) {
     stop2("'mi' predictor terms in subsetted formulas require ",
           "the 'idx' argument to be specified.")
