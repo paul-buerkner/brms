@@ -339,7 +339,7 @@ Below, we list common use cases for the different families.
   \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
 
   \item{Families \code{categorical}, \code{multinomial},
-  \code{dirichlet_multinomiak}and \code{dirichlet} support \code{logit}.}
+  \code{dirichlet_multinomial} and \code{dirichlet} support \code{logit}.}
 
   \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
   \code{frechet}, and \code{hurdle_gamma} support
