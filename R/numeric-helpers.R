@@ -66,9 +66,9 @@ log1m <- function(x) {
 
 step <- function(x) {
   if (is.logical(x)) {
-    warning(
+    warning2(
       "Consider using int_step() instead of step(), ",
-      "because step(FALSE) = step(TRUE) = 1 in Stan"
+      "because step(FALSE) = step(TRUE) = 1 in Stan."
     )
   }
   ifelse(x >= 0, 1, 0)
