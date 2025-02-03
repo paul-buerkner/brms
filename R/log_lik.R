@@ -842,8 +842,6 @@ log_lik_dirichlet_multinomial <- function(i, prep) {
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
-  cats <- seq_len(prep$data$ncat)
-  alpha <- dcategorical(cats, eta = eta) * phi
   out <- ddirichletmultinomial(prep$data$Y[i, ], eta = eta, phi = phi, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
