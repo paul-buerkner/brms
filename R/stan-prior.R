@@ -100,7 +100,6 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           c(index) <- j
         }
         prior_ij <- subset2(prior, coef = coef[i, j])
-        lprior_tag <- prior_ij$lprior
         if (NROW(px) > 1L) {
           # disambiguate priors of coefficients with the same name
           # coming from different model components
@@ -110,9 +109,11 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         # zero rows can happen if only global priors present
         stopifnot(nrow(prior_ij) <= 1L)
         coef_prior <- prior_ij$prior
+        lprior_tag <- prior_ij$lprior
         if (!isTRUE(nzchar(coef_prior))) {
           used_base_prior <- TRUE
           coef_prior <- base_prior
+          lprior_tag <- base_lprior_tag
         }
         if (!stan_is_constant_prior(coef_prior)) {
           # all parameters with non-constant priors are estimated
