@@ -2191,13 +2191,13 @@ dmultinomial <- function(x, eta, log = FALSE) {
 # @param phi the dispersion parameter (i.e., sum of dirichlet alphas)
 # @param log return values on the log scale?
 ddirichletmultinomial <- function(x, eta, phi, log = FALSE) {
+  require_package("extraDistr")
   if (is.null(dim(eta))) {
     eta <- matrix(eta, nrow = 1)
   }
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  require_package("extraDistr")
   alpha <- softmax(eta) * phi
   size <- sum(x)
   extraDistr::ddirmnom(x, size = size, alpha = alpha, log = log)
