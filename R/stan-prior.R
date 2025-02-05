@@ -74,7 +74,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   } else {
     # TODO: select base_prior together with tags and boundaries in one call?
     base_prior <- stan_base_prior(prior)
-    base_lprior_tag <- stan_base_prior(prior, col = "lprior")
+    base_lprior_tag <- stan_base_prior(prior, col = "tag")
     # select both bounds together so that they come from the same base prior
     base_bounds <- stan_base_prior(prior, col = c("lb", "ub"))
   }
@@ -240,7 +240,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
 #   finding the base prior
 # @return the 'col' columns of the identified base prior
 stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
-  stopifnot(all(col %in% c("prior", "lb", "ub", "lprior")))
+  stopifnot(all(col %in% c("prior", "lb", "ub", "tag")))
   if (!is.null(sel_prior)) {
     # find the base prior using sel_prior for subsetting
     stopifnot(is.brmsprior(sel_prior))
@@ -263,7 +263,7 @@ stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
       return(brmsprior()[, col])
     }
   }
-  vars <- c("group", "nlpar", "dpar", "resp", "class", "lprior")
+  vars <- c("group", "nlpar", "dpar", "resp", "class", "tag")
   for (v in vars) {
     take <- nzchar(prior[[v]])
     if (any(take)) {
