@@ -277,7 +277,7 @@ stancode.default <- function(object, data, family = gaussian(),
   )
 
   # prepare lprior tags
-  lprior_tags <- unique(prior$lprior)
+  lprior_tags <- unique(prior$tag)
   scode_lprior_def <- paste0(
     "  // prior contributions to the log posterior\n",
     collapse("  real lprior", usc(lprior_tags), " = 0;\n")
