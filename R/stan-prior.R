@@ -109,7 +109,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         # zero rows can happen if only global priors present
         stopifnot(nrow(prior_ij) <= 1L)
         coef_prior <- prior_ij$prior
-        lprior_tag <- prior_ij$lprior
+        lprior_tag <- prior_ij$tag
         if (!isTRUE(nzchar(coef_prior))) {
           used_base_prior <- TRUE
           coef_prior <- base_prior
