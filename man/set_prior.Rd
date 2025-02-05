@@ -20,7 +20,7 @@ set_prior(
   nlpar = "",
   lb = NA,
   ub = NA,
-  lprior = "",
+  tag = "",
   check = TRUE
 )
 
@@ -57,6 +57,9 @@ for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
 
 \item{ub}{Upper bound for parameter restriction. Currently only allowed
 for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
+
+\item{tag}{Character to append to lprior variable in Stan code. Used for selectively
+checking sensitivity of priors in `priorsense`.}
 
 \item{check}{Logical; Indicates whether priors
 should be checked for validity (as far as possible).
