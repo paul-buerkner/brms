@@ -35,16 +35,22 @@
 #' }
 #'
 #' @exportS3Method priorsense::create_priorsense_data brmsfit
-create_priorsense_data.brmsfit <- function(x, ...) {
+create_priorsense_data.brmsfit <- function(x, prior_tag = NULL, ...) {
+  if (!is.null(prior_tag)) {
+    log_prior_name <- paste0("lprior_", prior_tag)
+  } else {
+    log_prior_name <- "lprior"
+  }
+
   priorsense::create_priorsense_data(
     x = get_draws_ps(x),
     fit = x,
-    log_prior = log_prior_draws.brmsfit(x, ...),
+    log_prior = log_prior_draws.brmsfit(x, log_prior_name = log_prior_name),
     log_lik = log_lik_draws.brmsfit(x, ...),
-    log_prior_fn = log_prior_draws.brmsfit,
+    log_prior_fn = function(x) log_prior_draws.brmsfit(x, log_prior_name = log_prior_name),
     log_lik_fn = log_lik_draws.brmsfit,
     log_ratio_fn = powerscale_log_ratio,
-    ...
+    ...,
   )
 }
 
