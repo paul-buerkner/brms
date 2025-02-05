@@ -359,6 +359,12 @@
 #' # useful in particular for categorical or multivariate models
 #' set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 #'
+#' # specify tags for different priors for sensitivity analysis using `priorsense`
+#' # It is then possible to check the sensitivity when changing the priors with the same tag
+#' # while leaving others the same
+#' prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
+#' prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
+#' stancode(count ~ Trt + zAge + zBase + (1 | patient), data = epilepsy, prior = c(prior_cov, prior_trt))
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",
