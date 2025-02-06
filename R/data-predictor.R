@@ -642,19 +642,24 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     out[[paste0("cmeans", sfx)]] <- cmeans
     # required to compute inverse-gamma priors for length-scales
     out[[paste0("Xgp_prior", sfx)]] <- Xgp
-    # required to compute eigenfunctions of approximate GPs with new data
-    out[[paste0("Lgp", sfx)]] <- choose_L(Xgp, c = c)
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables
     Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
+
     if (length(basis)) {
-      # compute boundary factor L
       L <- basis[[paste0("Lgp", sfx)]]
     } else {
+      # compute boundary factor L
       L <- choose_L(Xgp, c = c)
     }
+
+    if (internal) {
+      # required to compute eigenfunctions of approximate GPs with new data
+      out[[paste0("Lgp", sfx)]] <- L
+    }
+
     Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)
