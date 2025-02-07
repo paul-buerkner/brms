@@ -63,6 +63,7 @@ jobs:
             testthat
             emmeans
             projpred
+            priorsense
             RWiener
             rtdists
             extraDistr
@@ -72,6 +73,7 @@ jobs:
             arm
             statmod
             diffobj
+            betareg
 
       - name: Build Cmdstan
         run: |
