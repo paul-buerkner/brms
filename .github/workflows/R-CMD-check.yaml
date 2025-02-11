@@ -20,7 +20,10 @@ jobs:
         config:
           # - {os: macOS-latest,   r: 'release', rtools: ''}
           - {os: windows-latest, r: 'release', rtools: '42'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', rtools: ''}
+          # workaround for the issue described in
+          # https://forum.posit.co/t/github-action-e-package-pandoc-citeproc-has-no-installation-candidate/197536
+          - {os: ubuntu-latest,   r: 'devel', rtools: ''}
+          # - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', rtools: ''}
           - {os: ubuntu-latest,   r: 'release', rtools: ''}
           - {os: ubuntu-latest,   r: 'oldrel-1', rtools: ''}
 
