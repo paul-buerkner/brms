@@ -1217,3 +1217,34 @@ test_that("Group weights correctly created from `gr()`", {
   )
 
 })
+
+test_that("Prior weights correctly created from `mm()`", {
+  pw_values <- runif(n = 10, min = 0.9, max = 1.1)
+  dat <- data.frame(y = rnorm(10), x = rnorm(10),
+                    g1 = sample(1:10, 10, TRUE),
+                    g2 = sample(1:10, 10, TRUE), 
+                    w1 = rep(1, 10),
+                    w2 = rep(abs(rnorm(10))))
+                    
+  dat[['pw1']] <- sapply(dat[['g1']], \(i) pw_values[i])
+  dat[['pw2']] <- sapply(dat[['g2']], \(i) pw_values[i])
+
+  included_groups <- sort(union(dat$g1, dat$g2))
+
+  sdata <- standata(y ~ (1 + x|mm(g1, g2, pw = cbind(pw1, pw2))), data = dat)
+
+  group_label_mapping <- cbind(
+    'ORIG_LABEL' = as.vector(as.matrix(dat[,c("g1", "g2")])),
+    'STAN_DATA_LABEL' = c(sdata$J_1_1, sdata$J_1_2)
+  ) |> unique()
+
+  group_label_mapping <- group_label_mapping[order(group_label_mapping[,'STAN_DATA_LABEL']),]
+  expected_weights <- unname(pw_values[group_label_mapping[,'ORIG_LABEL']])
+  stan_weights <- unname(sdata[['PW_1']])
+
+  expect_equal(
+    object   = as.numeric(stan_weights), 
+    expected = as.numeric(expected_weights)
+  )
+
+})

@@ -2779,3 +2779,22 @@ test_that("Weights from `gr()` incorporated into prior", {
   expect_match2(scode, "vector[N_4] PW_4;  // weights for group contribution to the prior")
   expect_match2(scode, "target += PW_4 * std_normal_lpdf(z_4[1]);")
 })
+
+test_that("Prior weights work in multi-membership models", {
+
+  pw_values <- runif(n = 10, min = 0.9, max = 1.1)
+  dat <- data.frame(y = rnorm(10), x = rnorm(10),
+                    g1 = sample(1:10, 10, TRUE),
+                    g2 = sample(1:10, 10, TRUE), 
+                    w1 = rep(1, 10),
+                    w2 = rep(abs(rnorm(10))))
+                    
+  dat[['pw1']] <- sapply(dat[['g1']], \(i) pw_values[i])
+  dat[['pw2']] <- sapply(dat[['g2']], \(i) pw_values[i])
+
+  scode <- stancode(y ~ (1 + x|mm(g1, g2, pw = cbind(pw1, pw2))), data = dat)
+
+  expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_1 * std_normal_lpdf(to_vector(z_1));")
+
+})

@@ -268,7 +268,7 @@ data_gr_local <- function(bframe, data) {
           weights <- sweep(weights, 1, rowSums(weights), "/")
         }
       } else {
-        # all members get equal weights by default
+        # all members get equal membership weights by default
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       group_prior_weights <- id_reframe$gcall[[1]]$pw
@@ -336,7 +336,7 @@ data_gr_local <- function(bframe, data) {
       group_prior_weights <- id_reframe$gcall[[1]]$pw
       if (nzchar(group_prior_weights)) {
         # extract weights from data as a vector (length equals number of observations)
-        group_prior_weights <- str2formula(id_reframe$gcall[[1]]$weights)
+        group_prior_weights <- str2formula(id_reframe$gcall[[1]]$pw)
         group_prior_weights <- as.vector(eval_rhs(group_prior_weights, data))
 
         if (!is.numeric(group_prior_weights)) {

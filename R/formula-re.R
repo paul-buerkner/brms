@@ -101,7 +101,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
 #' it exists purely to help set up a model with grouping terms.
 #'
 #' @inheritParams gr
-#' @param weights A matrix specifying the weights of each member.
+#' @param weights A matrix specifying the membership weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
 #'  If \code{NULL} (the default), equally weights are used.
 #' @param by An optional factor matrix, specifying sub-populations of the
@@ -110,7 +110,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
 #'   variance-covariance matrix will be fitted. Levels of the grouping factor
 #'   must be nested in levels of the \code{by} variable matrix.
 #' @param scale Logical; if \code{TRUE} (the default),
-#'  weights are standardized in order to sum to one per row.
+#'  membership weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
 #' @param pw An optional numeric matrix.
@@ -146,7 +146,8 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
 #' }
 #'
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
+mm <- function(..., weights = NULL, scale = TRUE, 
+               pw = NULL, by = NULL, cor = TRUE,
                id = NA, cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -177,15 +178,20 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
   weightvars <- all_vars(weights)
+  pw <- substitute(pw)
+  pwvars <- all_vars(pw)
   byvars <- all_vars(by)
-  allvars <- str2formula(c(groups, weightvars, byvars))
+  allvars <- str2formula(c(groups, weightvars, pwvars, byvars))
   if (!is.null(weights)) {
     weights <- str2formula(deparse_no_string(weights))
     attr(weights, "scale") <- scale
     weightvars <- str2formula(weightvars)
   }
+  if (!is.null(pw)) {
+    pw <- str2formula(deparse_no_string(pw))
+  }
   nlist(
-    groups, weights, weightvars, allvars, label,
+    groups, weights, weightvars, pw, allvars, label,
     by, cor, id, cov, dist, type = "mm"
   )
 }

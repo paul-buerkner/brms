@@ -8,6 +8,7 @@ mm(
   ...,
   weights = NULL,
   scale = TRUE,
+  pw = NULL,
   by = NULL,
   cor = TRUE,
   id = NA,
@@ -18,12 +19,12 @@ mm(
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
 
-\item{weights}{A matrix specifying the weights of each member.
+\item{weights}{A matrix specifying the membership weights of each member.
 It should have as many columns as grouping terms specified in \code{...}.
 If \code{NULL} (the default), equally weights are used.}
 
 \item{scale}{Logical; if \code{TRUE} (the default),
-weights are standardized in order to sum to one per row.
+membership weights are standardized in order to sum to one per row.
 If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
 
