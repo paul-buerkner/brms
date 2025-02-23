@@ -19,7 +19,7 @@
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
-#' @param weights Optional numeric variable. Weights the contribution
+#' @param pw Optional numeric variable. "Prior weights": weights the contribution
 #'   of each group to the log-likelihood for the distribution of the group-level effects.
 #'   The \code{weights} variable in the data should have one distinct value for
 #'   each level of the grouping variable.
@@ -50,13 +50,13 @@
 #'
 #' # include a group-level weight variable
 #' epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
-#' fit4 <- brm(count ~ Trt + (1|gr(patient, weights = patient_samp_wgt)),
+#' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
 #'             data = epilepsy)
 #' summary(fit4)
 #' }
 #'
 #' @export
-gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
+gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
                cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -67,16 +67,16 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
   cor <- as_one_logical(cor)
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
-  weights <- substitute(weights)
+  pw <- substitute(pw)
   if (!is.null(by)) {
     by <- deparse0(by)
   } else {
     by <- ""
   }
-  if (!is.null(weights)) {
-    weights <- deparse0(weights)
+  if (!is.null(pw)) {
+    pw <- deparse0(pw)
   } else {
-    weights <- ""
+    pw <- ""
   }
   cov <- substitute(cov)
   if (!is.null(cov)) {
@@ -89,9 +89,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   byvars <- all_vars(by)
-  weights_vars <- all_vars(weights)
-  allvars <- str2formula(c(groups, byvars, weights_vars))
-  nlist(groups, allvars, label, by, cor, id, weights, cov, dist, type = "")
+  pw_vars <- all_vars(pw)
+  allvars <- str2formula(c(groups, byvars, pw_vars))
+  nlist(groups, allvars, label, by, cor, id, pw, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -113,7 +113,12 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, weights = NULL,
 #'  weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
-#'
+#' @param pw An optional numeric matrix.
+#'  It should have as many columns as grouping terms specified in \code{...}.
+#'  These are "prior weights": they weight
+#'  the contribution of each group to the log-likelihood 
+#'  for the distribution of the group-level effects.
+#'  There should be only one distinct value for each group.
 #' @seealso \code{\link{brmsformula}}, \code{\link{mmc}}
 #'
 #' @examples

@@ -2742,24 +2742,24 @@ test_that("Weights from `gr()` incorporated into prior", {
   wtd_epilepsy[['patient_samp_wgt']] <- patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
 
   scode <- stancode(
-    count ~ Trt + (1 + Trt | gr(patient, weights = patient_samp_wgt)),
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt)),
     data = wtd_epilepsy, family = gaussian()
   )
-  expect_match2(scode, "vector[N_1] GMW_1;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += GMW_1 * std_normal_lpdf(to_vector(z_1));")
+  expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_1 * std_normal_lpdf(to_vector(z_1));")
 
   # Check for multiple grouping variables, varying intercept and slope
   wtd_epilepsy[['random_group']]     <- rep(4:1, times = 59)
   wtd_epilepsy[['random_group_wgt']] <- rep(c(0.8, 1.2, 0.7, 1.3), times = 59)
 
   scode <- stancode(
-    count ~ Trt + (1 + Trt | gr(patient, weights = patient_samp_wgt))
-                + (1       | gr(random_group, weights = random_group_wgt)),
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt))
+                + (1       | gr(random_group, pw = random_group_wgt)),
     data = wtd_epilepsy, family = gaussian()
   )
-  expect_match2(scode, "vector[N_2] GMW_2;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += GMW_1 * std_normal_lpdf(to_vector(z_1));")
-  expect_match2(scode, "target += GMW_2 * std_normal_lpdf(z_2[1]);")
+  expect_match2(scode, "vector[N_2] PW_2;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_1 * std_normal_lpdf(to_vector(z_1));")
+  expect_match2(scode, "target += PW_2 * std_normal_lpdf(z_2[1]);")
 
   # Check for multivariate model
   dat <- data.frame(
@@ -2772,10 +2772,10 @@ test_that("Weights from `gr()` incorporated into prior", {
     censi = sample(0:1, 10, TRUE)
   )
   # models with residual correlations
-  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, weights = g1wgt)) + (1 | gr(g2, weights = g2wgt))) + set_rescor(TRUE)
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) + set_rescor(TRUE)
   prior <- prior(horseshoe(2), resp = "y1") +
            prior(horseshoe(2), resp = "y2")
   scode <- stancode(form, dat, prior = prior)
-  expect_match2(scode, "vector[N_4] GMW_4;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += GMW_4 * std_normal_lpdf(z_4[1]);")
+  expect_match2(scode, "vector[N_4] PW_4;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_4 * std_normal_lpdf(z_4[1]);")
 })

@@ -458,8 +458,8 @@ validate_newdata <- function(
       mf[[i]] <- as.factor(mf[[i]])
     }
   }
-  gr_weights_vars <- ufrom_list(get_re(bterms)$gcall, "weights")
-  for (v in setdiff(gr_weights_vars, names(newdata))) {
+  pw_vars <- ufrom_list(get_re(bterms)$gcall, "pw")
+  for (v in setdiff(pw_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
   # fixes issue #279

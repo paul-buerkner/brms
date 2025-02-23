@@ -9,7 +9,7 @@ gr(
   by = NULL,
   cor = TRUE,
   id = NA,
-  weights = NULL,
+  pw = NULL,
   cov = NULL,
   dist = "gaussian"
 )
@@ -29,7 +29,7 @@ modelled as correlated.}
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
-\item{weights}{Optional numeric variable. Weights the contribution
+\item{pw}{Optional numeric variable. "Prior weights": weights the contribution
 of each group to the log-likelihood for the distribution of the group-level effects.
 The \code{weights} variable in the data should have one distinct value for
 each level of the grouping variable.}
@@ -67,7 +67,7 @@ summary(fit3)
 
 # include a group-level weight variable
 epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
-fit4 <- brm(count ~ Trt + (1|gr(patient, weights = patient_samp_wgt)),
+fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
             data = epilepsy)
 summary(fit4)
 }

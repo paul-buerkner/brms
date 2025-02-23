@@ -27,6 +27,13 @@ weights are standardized in order to sum to one per row.
 If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
 
+\item{pw}{An optional numeric matrix.
+It should have as many columns as grouping terms specified in \code{...}.
+These are "prior weights": they weight
+the contribution of each group to the log-likelihood 
+for the distribution of the group-level effects.
+There should be only one distinct value for each group.}
+
 \item{by}{An optional factor matrix, specifying sub-populations of the
 groups. It should have as many columns as grouping terms specified in
 \code{...}. For each level of the \code{by} variable, a separate

@@ -1131,10 +1131,10 @@ test_that("Group weights correctly created from `gr()`", {
   wtd_epilepsy[['patient_samp_wgt']] <- patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
 
   sdata <- standata(
-    count ~ Trt + (1 + Trt | gr(patient, weights = patient_samp_wgt)),
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt)),
     data = wtd_epilepsy, family = gaussian()
   )
-  expect_equal(object = as.vector(sdata[['GMW_1']]), expected = patient_weights)
+  expect_equal(object = as.vector(sdata[['PW_1']]), expected = patient_weights)
   
   # Multiple grouping variables
   # with one variable whose factor level order differs from order of appearance
@@ -1142,12 +1142,12 @@ test_that("Group weights correctly created from `gr()`", {
   wtd_epilepsy[['random_group_wgt']] <- rep(c(0.8, 1.2, 0.7, 1.3), times = 59)
 
   sdata <- standata(
-    count ~ Trt + (1 + Trt | gr(patient, weights = patient_samp_wgt))
-                + (1       | gr(random_group, weights = random_group_wgt)),
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt))
+                + (1       | gr(random_group, pw = random_group_wgt)),
     data = wtd_epilepsy, family = gaussian()
   )
 
-  expect_equal(object = as.vector(sdata[['GMW_2']]),
+  expect_equal(object = as.vector(sdata[['PW_2']]),
                expected = c(0.7, 1.2, 1.3, 0.8))
   
   # Model with multiple outcomes
@@ -1161,17 +1161,17 @@ test_that("Group weights correctly created from `gr()`", {
     censi = sample(0:1, 10, TRUE)
   )
 
-  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, weights = g1wgt)) + (1 | gr(g2, weights = g2wgt))) + set_rescor(TRUE)
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) + set_rescor(TRUE)
   prior <- prior(horseshoe(2), resp = "y1") +
            prior(horseshoe(2), resp = "y2")
   sdata <- standata(form, dat, prior = prior)
-  expect_in(c("GMW_1", "GMW_4"), names(sdata))
+  expect_in(c("PW_1", "PW_4"), names(sdata))
 
   # Informative error message if group weight variable varies among observations in a group
   expect_error(
     object = {
       sdata <- standata(
-        count ~ Trt + (1 | gr(patient, weights = bad_group_wgt)),
+        count ~ Trt + (1 | gr(patient, pw = bad_group_wgt)),
         data = wtd_epilepsy |> transform(bad_group_wgt = runif(n = nrow(wtd_epilepsy))), 
         family = gaussian()
       )
@@ -1196,7 +1196,7 @@ test_that("Group weights correctly created from `gr()`", {
   expect_warning(
     object = {
       sdata <- standata(
-        count ~ Trt + (1 | gr(random_group, weights = bad_random_group_wgt)),
+        count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
         data = wtd_epilepsy, 
         family = gaussian()
       )
@@ -1208,7 +1208,7 @@ test_that("Group weights correctly created from `gr()`", {
   expect_warning(
     object = {
       sdata <- standata(
-        count ~ Trt + (1 | gr(random_group, weights = bad_random_group_wgt)),
+        count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
         data = wtd_epilepsy, 
         family = gaussian()
       )
