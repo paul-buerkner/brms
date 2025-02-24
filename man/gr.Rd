@@ -4,7 +4,15 @@
 \alias{gr}
 \title{Set up basic grouping terms in \pkg{brms}}
 \usage{
-gr(..., by = NULL, cor = TRUE, id = NA, cov = NULL, dist = "gaussian")
+gr(
+  ...,
+  by = NULL,
+  cor = TRUE,
+  id = NA,
+  pw = NULL,
+  cov = NULL,
+  dist = "gaussian"
+)
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
@@ -20,6 +28,11 @@ modelled as correlated.}
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
+
+\item{pw}{Optional numeric variable specifying prior weights. They weight the
+contribution of each group to the log-prior of the group-level
+coefficients. Should have one distinct value for each level of the
+grouping variable.}
 
 \item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping
@@ -51,6 +64,12 @@ summary(fit2)
 # include Trt as a by variable
 fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
 summary(fit3)
+
+# include a group-level weight variable
+epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
+fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
+            data = epilepsy)
+summary(fit4)
 }
 
 }

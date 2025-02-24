@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Specify group-level prior weights via argument `pw` in multilevel
+`gr` and `mm` terms thanks to Ben Schneider. (#1719)
 * Fit extended-support Beta models via family `xbeta` 
 thanks to Ioannis Kosmidis. (#1698)
 * Add a `seed` argument to `loo_R2` thanks to Marco Colombo. (#1713)
