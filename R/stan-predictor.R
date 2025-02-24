@@ -515,11 +515,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   stopifnot(is.reframe(r))
   has_cov <- nzchar(r$cov[1])
   has_by <- nzchar(r$by[[1]])
-  has_pw <- ifelse(
-    test = is.null(r$gcall[[1]]$pw[[1]]),
-    yes  = FALSE,
-    no   = nzchar(r$gcall[[1]]$pw[[1]])
-  )
+  has_pw <- isTRUE(nzchar(r$gcall[[1]]$pw))
   Nby <- seq_along(r$bylevels[[1]])
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)

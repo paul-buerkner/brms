@@ -8,10 +8,10 @@ mm(
   ...,
   weights = NULL,
   scale = TRUE,
-  pw = NULL,
   by = NULL,
   cor = TRUE,
   id = NA,
+  pw = NULL,
   cov = NULL,
   dist = "gaussian"
 )
@@ -28,13 +28,6 @@ membership weights are standardized in order to sum to one per row.
 If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
 
-\item{pw}{An optional numeric matrix.
-It should have as many columns as grouping terms specified in \code{...}.
-These are "prior weights": they weight
-the contribution of each group to the log-likelihood 
-for the distribution of the group-level effects.
-There should be only one distinct value for each group.}
-
 \item{by}{An optional factor matrix, specifying sub-populations of the
 groups. It should have as many columns as grouping terms specified in
 \code{...}. For each level of the \code{by} variable, a separate
@@ -47,6 +40,13 @@ modelled as correlated.}
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
+
+\item{pw}{Optional numeric variable specifying prior weights. They weight the
+contribution of each group to the log-prior of the group-level
+coefficients. Should have one distinct value for each level of the grouping
+variables. Currently, the latter condition is checked only against the
+last grouping variable. So make sure that the last grouping variable
+contains all levels.}
 
 \item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping

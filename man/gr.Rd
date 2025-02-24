@@ -29,10 +29,10 @@ modelled as correlated.}
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
-\item{pw}{Optional numeric variable. "Prior weights": weights the contribution
-of each group to the log-likelihood for the distribution of the group-level effects.
-The \code{weights} variable in the data should have one distinct value for
-each level of the grouping variable.}
+\item{pw}{Optional numeric variable specifying prior weights. They weight the
+contribution of each group to the log-prior of the group-level
+coefficients. Should have one distinct value for each level of the
+grouping variable.}
 
 \item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping

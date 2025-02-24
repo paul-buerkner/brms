@@ -1123,19 +1123,20 @@ test_that("drop_unused_factor levels works correctly", {
   expect_equal(colnames(sdata$X), c("Intercept", "xb", "xc"))
 })
 
-test_that("Group weights correctly created from `gr()`", {
-  
+test_that("Group prior weights are correctly created", {
+
   # For example with a single grouping variable
   wtd_epilepsy <- epilepsy
   patient_weights <- c(1, rep(c(0.9, 1.1), each = 29))
-  wtd_epilepsy[['patient_samp_wgt']] <- patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
+  wtd_epilepsy[['patient_samp_wgt']] <-
+    patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
 
   sdata <- standata(
     count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt)),
     data = wtd_epilepsy, family = gaussian()
   )
-  expect_equal(object = as.vector(sdata[['PW_1']]), expected = patient_weights)
-  
+  expect_equal(as.vector(sdata[['PW_1']]), patient_weights)
+
   # Multiple grouping variables
   # with one variable whose factor level order differs from order of appearance
   wtd_epilepsy[['random_group']]     <- rep(c('d', 'b', 'a', 'c'), times = 59)
@@ -1146,14 +1147,12 @@ test_that("Group weights correctly created from `gr()`", {
                 + (1       | gr(random_group, pw = random_group_wgt)),
     data = wtd_epilepsy, family = gaussian()
   )
+  expect_equal(as.vector(sdata[['PW_2']]), c(0.7, 1.2, 1.3, 0.8))
 
-  expect_equal(object = as.vector(sdata[['PW_2']]),
-               expected = c(0.7, 1.2, 1.3, 0.8))
-  
   # Model with multiple outcomes
   dat <- data.frame(
     y1 = rnorm(10), y2 = rnorm(10),
-    x = 1:10, 
+    x = 1:10,
     g1 = rep(1:2, each = 5),
     g1wgt = rep(c(0.9, 1.1), each = 5),
     g2 = c(rep(1:4, each = 2), 1:2),
@@ -1161,90 +1160,45 @@ test_that("Group weights correctly created from `gr()`", {
     censi = sample(0:1, 10, TRUE)
   )
 
-  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) + set_rescor(TRUE)
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) +
+    set_rescor(TRUE)
   prior <- prior(horseshoe(2), resp = "y1") +
            prior(horseshoe(2), resp = "y2")
   sdata <- standata(form, dat, prior = prior)
   expect_in(c("PW_1", "PW_4"), names(sdata))
 
-  # Informative error message if group weight variable varies among observations in a group
+  # multi-membership model
+  sdata <- SW(standata(y1 ~ x + (x | mm(g1, g2, pw = g2wgt)), data = dat))
+  expect_equal(as.vector(sdata$PW_1), 9:12)
+
+  # test informative error and warning messages
   expect_error(
-    object = {
-      sdata <- standata(
-        count ~ Trt + (1 | gr(patient, pw = bad_group_wgt)),
-        data = wtd_epilepsy |> transform(bad_group_wgt = runif(n = nrow(wtd_epilepsy))), 
-        family = gaussian()
-      )
-    },
-    regexp = "Weights.+cannot vary within a group"
+    standata(
+      count ~ Trt + (1 | gr(patient, pw = bad_group_wgt)),
+      data = wtd_epilepsy |> transform(bad_group_wgt = runif(n = nrow(wtd_epilepsy))),
+      family = gaussian()
+    ),
+    "Prior weights cannot vary within a group"
   )
 
   # Informative error or warning for bad weight variables
   wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, 'a', 1.3), times = 59)
   expect_error(
-    object = {
-      sdata <- standata(
-        count ~ Trt + (1 | gr(random_group, weights = bad_random_group_wgt)),
-        data = wtd_epilepsy, 
-        family = gaussian()
-      )
-    },
-    regexp = "must be numeric"
-  )
-
-  wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, NA, 1.3), times = 59)
-  expect_warning(
-    object = {
-      sdata <- standata(
-        count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
-        data = wtd_epilepsy, 
-        family = gaussian()
-      )
-    },
-    regexp = "Rows containing NAs were excluded from the model"
+    standata(
+      count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
+      data = wtd_epilepsy,
+      family = gaussian()
+    ),
+    "must be numeric"
   )
 
   wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, -1, 1.3), times = 59)
   expect_warning(
-    object = {
-      sdata <- standata(
+    standata(
         count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
-        data = wtd_epilepsy, 
+        data = wtd_epilepsy,
         family = gaussian()
-      )
-    },
-    regexp = "Negative weights supplied"
+      ),
+    "Negative prior weights detected"
   )
-
-})
-
-test_that("Prior weights correctly created from `mm()`", {
-  pw_values <- runif(n = 10, min = 0.9, max = 1.1)
-  dat <- data.frame(y = rnorm(10), x = rnorm(10),
-                    g1 = sample(1:10, 10, TRUE),
-                    g2 = sample(1:10, 10, TRUE), 
-                    w1 = rep(1, 10),
-                    w2 = rep(abs(rnorm(10))))
-                    
-  dat[['pw1']] <- sapply(dat[['g1']], \(i) pw_values[i])
-  dat[['pw2']] <- sapply(dat[['g2']], \(i) pw_values[i])
-
-  included_groups <- sort(union(dat$g1, dat$g2))
-
-  sdata <- standata(y ~ (1 + x|mm(g1, g2, pw = cbind(pw1, pw2))), data = dat)
-
-  group_label_mapping <- cbind(
-    'ORIG_LABEL' = as.vector(as.matrix(dat[,c("g1", "g2")])),
-    'STAN_DATA_LABEL' = c(sdata$J_1_1, sdata$J_1_2)
-  ) |> unique()
-
-  group_label_mapping <- group_label_mapping[order(group_label_mapping[,'STAN_DATA_LABEL']),]
-  expected_weights <- unname(pw_values[group_label_mapping[,'ORIG_LABEL']])
-  stan_weights <- unname(sdata[['PW_1']])
-
-  expect_equal(
-    object   = as.numeric(stan_weights), 
-    expected = as.numeric(expected_weights)
-  )
-
 })

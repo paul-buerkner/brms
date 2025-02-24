@@ -2734,12 +2734,12 @@ test_that("Normalizing Stan code works correctly", {
                  normalize_stancode("b*/"))
 })
 
-test_that("Weights from `gr()` incorporated into prior", {
-
+test_that("Grouping prior weights are added to the Stan code", {
   # Check for a single grouping variable, varying intercept only
   wtd_epilepsy <- epilepsy
   patient_weights <- c(1, rep(c(0.9, 1.1), each = 29))
-  wtd_epilepsy[['patient_samp_wgt']] <- patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
+  wtd_epilepsy[['patient_samp_wgt']] <-
+    patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
 
   scode <- stancode(
     count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt)),
@@ -2764,37 +2764,25 @@ test_that("Weights from `gr()` incorporated into prior", {
   # Check for multivariate model
   dat <- data.frame(
     y1 = rnorm(10), y2 = rnorm(10),
-    x = 1:10, 
+    x = 1:10,
     g1 = rep(1:2, each = 5),
     g1wgt = rep(c(0.9, 1.1), each = 5),
     g2 = c(rep(1:4, each = 2), 1:2),
     g2wgt = c(rep(9:12, each = 2), 9:10),
     censi = sample(0:1, 10, TRUE)
   )
+
   # models with residual correlations
-  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) + set_rescor(TRUE)
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) +
+    set_rescor(TRUE)
   prior <- prior(horseshoe(2), resp = "y1") +
            prior(horseshoe(2), resp = "y2")
   scode <- stancode(form, dat, prior = prior)
   expect_match2(scode, "vector[N_4] PW_4;  // weights for group contribution to the prior")
   expect_match2(scode, "target += PW_4 * std_normal_lpdf(z_4[1]);")
-})
 
-test_that("Prior weights work in multi-membership models", {
-
-  pw_values <- runif(n = 10, min = 0.9, max = 1.1)
-  dat <- data.frame(y = rnorm(10), x = rnorm(10),
-                    g1 = sample(1:10, 10, TRUE),
-                    g2 = sample(1:10, 10, TRUE), 
-                    w1 = rep(1, 10),
-                    w2 = rep(abs(rnorm(10))))
-                    
-  dat[['pw1']] <- sapply(dat[['g1']], \(i) pw_values[i])
-  dat[['pw2']] <- sapply(dat[['g2']], \(i) pw_values[i])
-
-  scode <- stancode(y ~ (1 + x|mm(g1, g2, pw = cbind(pw1, pw2))), data = dat)
-
+  # multi-membership model
+  scode <- stancode(y1 ~ x + (x | mm(g1, g2, pw = g2wgt)), data = dat)
   expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
   expect_match2(scode, "target += PW_1 * std_normal_lpdf(to_vector(z_1));")
-
 })

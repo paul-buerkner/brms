@@ -271,7 +271,6 @@ data_gr_local <- function(bframe, data) {
         # all members get equal membership weights by default
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
-      group_prior_weights <- id_reframe$gcall[[1]]$pw
       for (i in seq_along(gs)) {
         gdata <- get(gs[i], data)
         J <- match(gdata, levels)
@@ -284,42 +283,6 @@ data_gr_local <- function(bframe, data) {
         out[[paste0("J_", idresp, "_", i)]] <- as.array(J)
         out[[paste0("W_", idresp, "_", i)]] <- as.array(weights[, i])
       }
-      if (is.formula(group_prior_weights)) {
-        group_prior_weights <- as.matrix(eval_rhs(group_prior_weights, data))
-        if (!identical(dim(group_prior_weights), c(nrow(data), ngs))) {
-          stop2(
-            "Grouping structure 'mm' expects 'pw' to be ",
-            "a matrix with as many columns as grouping factors."
-          )
-        }
-        if (!is.numeric(group_prior_weights)) {
-          stop2("Prior weights supplied to `pw` argument in `mm()` must be numeric.")
-        }
-        if (any(group_prior_weights < 0)) {
-          warning2("Negative weights supplied to `gr()`.")
-        }
-      } else {
-        # all groups get equal prior weights by default
-        group_prior_weights <- matrix(1, nrow = nrow(data), ncol = ngs)
-      }
-      gdata <- do.call(`c`, lapply(seq_along(gs), \(i) get(gs[i], data)))
-      J <- match(gdata, levels)
-      group_prior_weights <- as.vector(group_prior_weights)
-      # check that group-level weights do not vary within a group
-      group_weights_consistent <- tapply(
-        X = group_prior_weights, INDEX = J,
-        FUN = function(x) length(unique(x)) == 1
-      )
-      if (!all(group_weights_consistent)) {
-        stop2("Weights supplied in `gr()` cannot vary within a group.")
-      }
-
-      # deduplicate weights vector (so length matches number of groups)
-      # and order the weights vector to match groups' assigned indices
-      distinct_J_indices <- !duplicated(J)
-      group_prior_weights <- group_prior_weights[distinct_J_indices]
-      group_prior_weights <- group_prior_weights[order(J[distinct_J_indices])]
-      out[[paste0("PW_", id)]] <- as.array(group_prior_weights)
     } else {
       # ordinary grouping term
       g <- id_reframe$gcall[[1]]$groups
@@ -332,38 +295,37 @@ data_gr_local <- function(bframe, data) {
         J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
       }
       out[[paste0("J_", idresp)]] <- as.array(J)
-
-      group_prior_weights <- id_reframe$gcall[[1]]$pw
-      if (nzchar(group_prior_weights)) {
-        # extract weights from data as a vector (length equals number of observations)
-        group_prior_weights <- str2formula(id_reframe$gcall[[1]]$pw)
-        group_prior_weights <- as.vector(eval_rhs(group_prior_weights, data))
-
-        if (!is.numeric(group_prior_weights)) {
-          stop2("Weights supplied in `gr()` must be numeric.")
-        }
-
-        # check that group-level weights do not vary within a group
-        group_weights_consistent <- tapply(
-          X = group_prior_weights, INDEX = J,
-          FUN = function(x) length(unique(x)) == 1
-        )
-        if (!all(group_weights_consistent)) {
-          stop2("Weights supplied in `gr()` cannot vary within a group.")
-        }
-
-        # deduplicate weights vector (so length matches number of groups)
-        # and order the weights vector to match groups' assigned indices
-        distinct_J_indices <- !duplicated(J)
-        group_prior_weights <- group_prior_weights[distinct_J_indices]
-        group_prior_weights <- group_prior_weights[order(J[distinct_J_indices])]
-
-        if (any(group_prior_weights < 0)) {
-          warning2("Negative weights supplied to `gr()`.")
-        }
-
-        out[[paste0("PW_", id)]] <- as.array(group_prior_weights)
+    }
+    # prepare data for group prior weights if specified
+    if (nzchar(id_reframe$gcall[[1]]$pw)) {
+      if (id_reframe$gtype[1] == "mm") {
+        # currently the last grouping factor in mm() needs to contain
+        # all levels for prior weights to work
+        warning2("Support for prior weights in multimembership terms is experimental.")
       }
+      # extract and validate prior weights
+      group_prior_weights <- str2formula(id_reframe$gcall[[1]]$pw)
+      group_prior_weights <- as.vector(eval_rhs(group_prior_weights, data))
+      if (!is.numeric(group_prior_weights)) {
+        stop2("Prior weights of grouping factors must be numeric.")
+      }
+      if (any(group_prior_weights < 0)) {
+        warning2("Negative prior weights detected. Make sure this is intentional.")
+      }
+      # check that group-level weights do not vary within a group
+      group_weights_consistent <- tapply(
+        X = group_prior_weights, INDEX = J,
+        FUN = function(x) length(unique(x)) == 1
+      )
+      if (!all(group_weights_consistent)) {
+        stop2("Prior weights cannot vary within a group.")
+      }
+      # deduplicate weights vector (so length matches number of groups)
+      # and order the weights vector to match groups' assigned indices
+      distinct_J_indices <- !duplicated(J)
+      group_prior_weights <- group_prior_weights[distinct_J_indices]
+      group_prior_weights <- group_prior_weights[order(J[distinct_J_indices])]
+      out[[paste0("PW_", id)]] <- as.array(group_prior_weights)
     }
   }
   out
