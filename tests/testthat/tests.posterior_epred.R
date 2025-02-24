@@ -182,7 +182,7 @@ test_that("posterior_epred for advanced count data distributions runs without er
   expect_equal(dim(pred), c(ns, nobs))
 })
 
-test_that("posterior_epred for multinomial and dirichlet models runs without errors", {
+test_that("posterior_epred for multinomial, dirichlet_multinomial and dirichlet models runs without errors", {
   ns <- 15
   nobs <- 8
   ncat <- 3
@@ -196,6 +196,10 @@ test_that("posterior_epred for multinomial and dirichlet models runs without err
 
   prep$family <- multinomial()
   pred <- brms:::posterior_epred_multinomial(prep = prep)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
+
+  prep$family <- dirichlet_multinomial()
+  pred <- brms:::posterior_epred_dirichlet_multinomial(prep = prep)
   expect_equal(dim(pred), c(ns, nobs, ncat))
 
   prep$family <- dirichlet()

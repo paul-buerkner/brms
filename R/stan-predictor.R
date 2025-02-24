@@ -988,7 +988,7 @@ stan_sp <- function(bframe, prior, stanvars, threads, normalize, ...) {
       str_add(eta) <- glue(" * Csp{p}_{spframe$Ic[i]}{n}")
     }
     r <- subset2(reframe, coef = spframe_coef[i])
-    rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r)}"))
+    rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r, threads)}"))
     str_add(out$loopeta) <- glue(" + (bsp{p}[{i}]{rpars}) * {eta}")
   }
 
@@ -2109,9 +2109,10 @@ stan_eta_re <- function(bframe, threads) {
 # Stan code for group-level parameters in special predictor terms
 # @param r data.frame created by frame_re
 # @return a character vector: one element per row of 'r'
-stan_eta_rsp <- function(r) {
+stan_eta_rsp <- function(r, threads) {
   stopifnot(is.reframe(r))
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
+  n <- stan_nn(threads)
   rpx <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(rpx)))
   idresp <- paste0(r$id, usc(rpx$resp))
@@ -2120,12 +2121,12 @@ stan_eta_rsp <- function(r) {
     out <- rep("", nrow(r))
     for (i in seq_along(out)) {
       out[i] <- glue(
-        "W_{idresp[i]}_{ng}[n] * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}[n]]",
+        "W_{idresp[i]}_{ng}{n} * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}{n}]",
         collapse = " + "
       )
     }
   } else {
-    out <- glue("r_{idp}_{r$cn}[J_{idresp}[n]]")
+    out <- glue("r_{idp}_{r$cn}[J_{idresp}{n}]")
   }
   out
 }

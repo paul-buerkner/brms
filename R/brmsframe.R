@@ -36,6 +36,9 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     x$frame <- frame
     x$frame$re <- subset2(x$frame$re, resp = x$resp)
   }
+  if (!is.null(basis)) {
+    x$frame$basis <- basis[c("resp_levels")]
+  }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
@@ -381,7 +384,7 @@ frame_basis_sm <- function(x, data, ...) {
 frame_basis_gp <- function(x, data, ...) {
   stopifnot(is.btl(x))
   out <- data_gp(x, data, internal = TRUE)
-  out <- out[grepl("^((Xgp)|(dmax)|(cmeans))", names(out))]
+  out <- out[grepl("^((Xgp)|(dmax)|(cmeans)|(L))", names(out))]
   out
 }
 

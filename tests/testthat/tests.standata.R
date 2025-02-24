@@ -976,7 +976,7 @@ test_that("reserved variables 'Intercept' is handled correctly", {
   expect_true(all(sdata$X[, "Intercept"] == 1))
 })
 
-test_that("data for multinomial and dirichlet models is correct", {
+test_that("data for multinomial, dirichlet_multinomial and dirichlet models is correct", {
   N <- 15
   dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
   names(dat) <- c("y1", "y2", "y3")
@@ -993,12 +993,21 @@ test_that("data for multinomial and dirichlet models is correct", {
   expect_equal(sdata$ncat, 3)
   expect_equal(sdata$Y, unname(dat$t))
 
+  sdata <- standata(t | trials(size) ~ x, dat, dirichlet_multinomial())
+  expect_equal(sdata$trials, as.array(dat$size))
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$t))
+
   sdata <- standata(y ~ x, data = dat, family = dirichlet())
   expect_equal(sdata$ncat, 3)
   expect_equal(sdata$Y, unname(dat$y))
 
   expect_error(
     standata(t | trials(10) ~ x, data = dat, family = multinomial()),
+    "Number of trials does not match the number of events"
+  )
+  expect_error(
+    standata(t | trials(10) ~ x, data = dat, family = dirichlet_multinomial()),
     "Number of trials does not match the number of events"
   )
   expect_error(standata(t ~ x, data = dat, family = dirichlet()),

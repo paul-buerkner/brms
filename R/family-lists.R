@@ -138,6 +138,20 @@
   )
 }
 
+.family_dirichlet_multinomial <- function() {
+  list(
+    links = "logit",
+    dpars = "phi",
+    multi_dpars = "mu",  # size determined by the data
+    type = "int", ybounds = c(-Inf, Inf),
+    closed = c(NA, NA),
+    ad = c("weights", "subset", "trials", "index"),
+    specials = c("multinomial", "joint_link"),
+    include = "fun_dirichlet_multinomial_logit.stan",
+    normalized = ""
+  )
+}
+
 .family_beta <- function() {
   list(
     links = c(

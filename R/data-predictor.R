@@ -676,7 +676,19 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     # basis function approach requires centered variables
     Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
-    L <- choose_L(Xgp, c = c)
+
+    if (length(basis)) {
+      L <- basis[[paste0("Lgp", sfx)]]
+    } else {
+      # compute boundary factor L
+      L <- choose_L(Xgp, c = c)
+    }
+
+    if (internal) {
+      # required to compute eigenfunctions of approximate GPs with new data
+      out[[paste0("Lgp", sfx)]] <- L
+    }
+
     Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)
