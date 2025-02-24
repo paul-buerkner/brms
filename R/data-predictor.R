@@ -297,11 +297,10 @@ data_gr_local <- function(bframe, data) {
       out[[paste0("J_", idresp)]] <- as.array(J)
     }
     # prepare data for group prior weights if specified
-    if (nzchar(id_reframe$gcall[[1]]$pw)) {
+    if (nzchar(id_reframe$gcall[[1]]$pw)) {      
       if (id_reframe$gtype[1] == "mm") {
-        # currently the last grouping factor in mm() needs to contain
-        # all levels for prior weights to work
         warning2("Support for prior weights in multimembership terms is experimental.")
+        J <- unlist(out[paste0("J_", idresp, "_", seq_along(gs))])
       }
       # extract and validate prior weights
       group_prior_weights <- str2formula(id_reframe$gcall[[1]]$pw)

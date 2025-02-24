@@ -1153,10 +1153,12 @@ test_that("Group prior weights are correctly created", {
   dat <- data.frame(
     y1 = rnorm(10), y2 = rnorm(10),
     x = 1:10,
-    g1 = rep(1:2, each = 5),
-    g1wgt = rep(c(0.9, 1.1), each = 5),
-    g2 = c(rep(1:4, each = 2), 1:2),
-    g2wgt = c(rep(9:12, each = 2), 9:10),
+    g1 = c(2, 2, rep(2:4, each = 2), 1:2),
+    g1wgt = c(1.1, 1.1, 1.1, 1.1,
+              1.0, 1.0, 1.2, 1.2,
+              0.9, 1.1),
+    g2 = rep(1:2, each = 5),
+    g2wgt = rep(c(0.9, 1.1), each = 5),
     censi = sample(0:1, 10, TRUE)
   )
 
@@ -1168,8 +1170,9 @@ test_that("Group prior weights are correctly created", {
   expect_in(c("PW_1", "PW_4"), names(sdata))
 
   # multi-membership model
-  sdata <- SW(standata(y1 ~ x + (x | mm(g1, g2, pw = g2wgt)), data = dat))
-  expect_equal(as.vector(sdata$PW_1), 9:12)
+  # (note some levels only appear in g1 or g2, not both)
+  sdata <- SW(standata(y1 ~ x + (x | mm(g1, g2, pw = cbind(g1wgt, g2wgt))), data = dat))
+  expect_equal(as.vector(sdata$PW_1), c(0.9, 1.1, 1.0, 1.2))
 
   # test informative error and warning messages
   expect_error(
