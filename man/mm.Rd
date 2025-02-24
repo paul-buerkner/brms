@@ -41,12 +41,10 @@ modelled as correlated.}
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
-\item{pw}{Optional numeric variable specifying prior weights. They weight the
+\item{pw}{Optional numeric matrix specifying prior weights. They weight the
 contribution of each group to the log-prior of the group-level
-coefficients. Should have one distinct value for each level of the grouping
-variables. Currently, the latter condition is checked only against the
-last grouping variable. So make sure that the last grouping variable
-contains all levels.}
+coefficients. Should have as many columns as grouping terms specified in
+\code{...} and one distinct value for each group level.}
 
 \item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping

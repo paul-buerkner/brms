@@ -109,12 +109,10 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
 #'   \code{...}. For each level of the \code{by} variable, a separate
 #'   variance-covariance matrix will be fitted. Levels of the grouping factor
 #'   must be nested in levels of the \code{by} variable matrix.
-#' @param pw Optional numeric variable specifying prior weights. They weight the
+#' @param pw Optional numeric matrix specifying prior weights. They weight the
 #'   contribution of each group to the log-prior of the group-level
-#'   coefficients. Should have one distinct value for each level of the grouping
-#'   variables. Currently, the latter condition is checked only against the
-#'   last grouping variable. So make sure that the last grouping variable
-#'   contains all levels.
+#'   coefficients. Should have as many columns as grouping terms specified in
+#'   \code{...} and one distinct value for each group level.
 #' @param scale Logical; if \code{TRUE} (the default),
 #'  membership weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
