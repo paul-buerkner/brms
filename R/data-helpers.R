@@ -458,6 +458,10 @@ validate_newdata <- function(
       mf[[i]] <- as.factor(mf[[i]])
     }
   }
+  pw_vars <- ufrom_list(get_re(bterms)$gcall, "pw")
+  for (v in setdiff(pw_vars, names(newdata))) {
+    newdata[[v]] <- 1
+  }
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
   new_group_vars <- get_group_vars(bterms)
