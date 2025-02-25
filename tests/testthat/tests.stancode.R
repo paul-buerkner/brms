@@ -2769,7 +2769,7 @@ test_that("Grouping prior weights are added to the Stan code", {
     data = wtd_epilepsy, family = gaussian()
   )
   expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += PW_1[n] * std_normal_lpdf(to_vector(z_1[,n]));")
+  expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
 
   # Check for multiple grouping variables, varying intercept and slope
   wtd_epilepsy[['random_group']]     <- rep(4:1, times = 59)
@@ -2781,8 +2781,8 @@ test_that("Grouping prior weights are added to the Stan code", {
     data = wtd_epilepsy, family = gaussian()
   )
   expect_match2(scode, "vector[N_2] PW_2;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += PW_1[n] * std_normal_lpdf(to_vector(z_1[,n]));")
-  expect_match2(scode, "target += PW_2[n] * std_normal_lpdf(z_2[1][n]);")
+  expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
+  expect_match2(scode, "target += PW_2[j] * std_normal_lpdf(z_2[1, j]);")
 
   # Check for multivariate model
   dat <- data.frame(
@@ -2802,10 +2802,10 @@ test_that("Grouping prior weights are added to the Stan code", {
            prior(horseshoe(2), resp = "y2")
   scode <- stancode(form, dat, prior = prior)
   expect_match2(scode, "vector[N_4] PW_4;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += PW_4[n] * std_normal_lpdf(z_4[1][n]);")
+  expect_match2(scode, "target += PW_4[j] * std_normal_lpdf(z_4[1, j]);")
 
   # multi-membership model
   scode <- stancode(y1 ~ x + (x | mm(g1, g2, pw = g2wgt)), data = dat)
   expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
-  expect_match2(scode, "target += PW_1[n] * std_normal_lpdf(to_vector(z_1[,n]));")
+  expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
 })
