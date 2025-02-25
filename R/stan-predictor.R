@@ -638,7 +638,9 @@ stan_re <- function(bframe, prior, normalize, ...) {
     )
     if (has_pw) {
       str_add(out$model_prior) <- glue(
-        "  target += PW_{id} * std_normal_{lpdf}(to_vector(z_{id}));\n"
+        "  for (n in 1:N_{id}) {{\n",
+        "    target += PW_{id}[n] * std_normal_{lpdf}(to_vector(z_{id}[,n]));\n",
+        "  }\n"
       )
     } else {
       str_add(out$model_prior) <- glue(
@@ -735,8 +737,10 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  // standardized group-level effects\n"
     )
     if (has_pw) {
-      str_add(out$model_prior) <- cglue(
-        "  target += PW_{id} * std_normal_{lpdf}(z_{id}[{seq_rows(r)}]);\n"
+      str_add(out$model_prior) <- paste0(
+        cglue("  for (n in 1:N_{id}) {{\n"),
+        cglue("    target += PW_{id}[n] * std_normal_{lpdf}(z_{id}[{seq_rows(r)}][n]);\n"),
+        paste("  }\n")
       )
     } else {
       str_add(out$model_prior) <- cglue(
