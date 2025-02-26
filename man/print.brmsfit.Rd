@@ -5,13 +5,17 @@
 \alias{print.brmssummary}
 \title{Print a summary for a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{print}{brmsfit}(x, digits = 2, ...)
+\method{print}{brmsfit}(x, digits = 2, short = getOption("brms.short_summary", FALSE), ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}}
 
 \item{digits}{The number of significant digits for printing out the summary;
 defaults to 2. The effective sample size is always rounded to integers.}
+
+\item{short}{A flag indicating whether to provide a shorter summary
+with less informational text. Defaults to \code{FALSE}. Can be set
+globally for the current session via the \code{brms.short_summary} option.}
 
 \item{...}{Additional arguments that would be passed
 to method \code{summary} of \code{brmsfit}.}
