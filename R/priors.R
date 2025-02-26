@@ -1847,8 +1847,14 @@ prepare_print_prior <- function(x) {
       x$prior[i] <- "(flat)"
     }
   }
+  for (i in which(!nzchar(x$tag))) {
+    base_lprior_tag <- stan_base_prior(x, col = "tag", sel_prior = x[i, ])
+    if (nzchar(base_lprior_tag)) {
+      x$tag[i] <- base_lprior_tag
+    }
+  }
   for (i in which(!nzchar(x$lb) & !nzchar(x$ub))) {
-    base_bounds <- stan_base_prior(x, c("lb", "ub"), sel_prior = x[i, ])
+    base_bounds <- stan_base_prior(x, col = c("lb", "ub"), sel_prior = x[i, ])
     x$lb[i] <- base_bounds[, "lb"]
     x$ub[i] <- base_bounds[, "ub"]
   }
