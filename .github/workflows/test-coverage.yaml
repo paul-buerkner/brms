@@ -10,7 +10,8 @@ name: test-coverage
 
 jobs:
   test-coverage:
-    runs-on: ubuntu-latest
+    # some issues occured on ubuntu-latest related to pandoc-citeproc
+    runs-on: ubuntu-22.04
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
