@@ -837,6 +837,15 @@ log_lik_multinomial <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_dirichlet_multinomial <- function(i, prep) {
+  stopifnot(prep$family$link == "logit")
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
+  phi <- get_dpar(prep, "phi", i = i)
+  out <- ddirichletmultinomial(prep$data$Y[i, ], eta = eta, phi = phi, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_dirichlet <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
   eta <- get_Mu(prep, i = i)
