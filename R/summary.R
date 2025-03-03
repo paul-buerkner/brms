@@ -234,19 +234,27 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
 #'
 #' @param x An object of class \code{brmsfit}
 #' @param digits The number of significant digits for printing out the summary;
-#'  defaults to 2. The effective sample size is always rounded to integers.
+#'   defaults to 2. The effective sample size is always rounded to integers.
+#' @param short A flag indicating whether to provide a shorter summary
+#'   with less informational text. Defaults to \code{FALSE}. Can be set
+#'   globally for the current session via the \code{brms.short_summary} option.
 #' @param ... Additional arguments that would be passed
 #'  to method \code{summary} of \code{brmsfit}.
 #'
 #' @seealso \code{\link{summary.brmsfit}}
 #'
 #' @export
-print.brmsfit <- function(x, digits = 2, ...) {
-  print(summary(x, ...), digits = digits, ...)
+print.brmsfit <- function(x, digits = 2,
+                          short = getOption("brms.short_summary", FALSE),
+                          ...) {
+  print(summary(x, ...), digits = digits, short = short, ...)
 }
 
 #' @export
-print.brmssummary <- function(x, digits = 2, ...) {
+print.brmssummary <- function(x, digits = 2,
+                              short = getOption("brms.short_summary", FALSE),
+                              ...) {
+  short <- as_one_logical(short)
   cat(" Family: ")
   cat(summarise_families(x$formula), "\n")
   cat("  Links: ")
@@ -261,8 +269,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat("\nThe model does not contain posterior draws.\n")
     return(invisible(x))
   }
-  # TODO: make this option a user-facing argument?
-  short <- as_one_logical(getOption("brms.short_summary", FALSE))
   if (!short) {
     cat(paste0(
       "  Draws: ", x$chains, " chains, each with iter = ", x$iter,

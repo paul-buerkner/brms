@@ -6,7 +6,13 @@
 \alias{plot.brmshypothesis}
 \title{Descriptions of \code{brmshypothesis} Objects}
 \usage{
-\method{print}{brmshypothesis}(x, digits = 2, chars = 20, ...)
+\method{print}{brmshypothesis}(
+  x,
+  digits = 2,
+  chars = 20,
+  short = getOption("brms.short_summary", FALSE),
+  ...
+)
 
 \method{plot}{brmshypothesis}(
   x,
@@ -31,6 +37,10 @@ see \code{\link[base:print.default]{print.default}}.}
 to print or plot. If \code{NULL}, print the full hypotheses.
 Defaults to \code{20}.}
 
+\item{short}{A flag indicating whether to provide a shorter summary
+with less informational text. Defaults to \code{FALSE}. Can be set
+globally for the current session via the \code{brms.short_summary} option.}
+
 \item{...}{Currently ignored.}
 
 \item{nvariables}{The number of variables (parameters) plotted per page.}
@@ -41,10 +51,9 @@ Defaults to \code{20}.}
 should also be plotted. Only used if priors were specified on
 the relevant parameters.}
 
-\item{colors}{Two values specifying the colors of the posterior
-and prior density respectively. If \code{NULL} (the default)
-colors are taken from the current color scheme of
-the \pkg{bayesplot} package.}
+\item{colors}{Two values specifying the colors of the posterior and prior
+density respectively. If \code{NULL} (the default) colors are taken from
+the current color scheme of the \pkg{bayesplot} package.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object
 modifying the appearance of the plots.
