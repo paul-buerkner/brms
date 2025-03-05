@@ -70,6 +70,7 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
+  data <- order_data(data, bterms = bterms)
   attr(data, "knots") <- knots
   attr(data, "drop_unused_levels") <- drop_unused_levels
   attr(data, "data_name") <- data_name
