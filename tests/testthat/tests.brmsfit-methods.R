@@ -905,7 +905,7 @@ test_that("update has reasonable outputs", {
   new_data <- data.frame(
     Age = rnorm(18), visit = rep(c(3, 2, 4), 6),
     Trt = rep(0:1, 9), count = rep(c(5, 17, 28), 6),
-    patient = 1, Exp = 4, volume = 0
+    patient = rep(1:6, each = 3), Exp = 4, volume = 0
   )
   up <- update(fit1, newdata = new_data, save_pars = save_pars(group = FALSE),
                testmode = TRUE)
