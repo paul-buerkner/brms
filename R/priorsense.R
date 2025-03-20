@@ -8,7 +8,8 @@
 #' functions, so you will rarely need to call it manually yourself.
 #'
 #' @param x A \code{brmsfit} object.
-#' @param ... Currently unused.
+#' @param ... Additional arguments passed to \code{\link[log_lik]},
+#'   for example \code{newdata}.
 #'
 #' @return A \code{priorsense_data} object to be used in conjunction
 #' with the \pkg{priorsense} package.
@@ -40,7 +41,7 @@ create_priorsense_data.brmsfit <- function(x, ...) {
     x = get_draws_ps(x),
     fit = x,
     log_prior = log_prior_draws.brmsfit(x),
-    log_lik = log_lik_draws.brmsfit(x),
+    log_lik = log_lik_draws.brmsfit(x, ...),
     log_prior_fn = log_prior_draws.brmsfit,
     log_lik_fn = log_lik_draws.brmsfit,
     log_ratio_fn = powerscale_log_ratio,
@@ -49,8 +50,8 @@ create_priorsense_data.brmsfit <- function(x, ...) {
 }
 
 #' @exportS3Method priorsense::log_lik_draws
-log_lik_draws.brmsfit <- function(x) {
-  log_lik <- log_lik(x)
+log_lik_draws.brmsfit <- function(x, ...) {
+  log_lik <- log_lik(x, ...)
   log_lik <- posterior::as_draws_array(log_lik)
   nvars <- nvariables(log_lik)
   posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nvars), "]")
