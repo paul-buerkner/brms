@@ -4,12 +4,13 @@
 \alias{create_priorsense_data.brmsfit}
 \title{Prior sensitivity: Create priorsense data}
 \usage{
-create_priorsense_data.brmsfit(x, ...)
+\method{create_priorsense_data}{brmsfit}(x, ...)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}
 
-\item{...}{Currently unused.}
+\item{...}{Additional arguments passed to \code{\link{log_lik}},
+for example \code{newdata}.}
 }
 \value{
 A \code{priorsense_data} object to be used in conjunction
