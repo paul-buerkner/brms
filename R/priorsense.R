@@ -8,7 +8,7 @@
 #' functions, so you will rarely need to call it manually yourself.
 #'
 #' @param x A \code{brmsfit} object.
-#' @param ... Additional arguments passed to \code{\link[log_lik]},
+#' @param ... Additional arguments passed to \code{\link{log_lik}},
 #'   for example \code{newdata}.
 #'
 #' @return A \code{priorsense_data} object to be used in conjunction

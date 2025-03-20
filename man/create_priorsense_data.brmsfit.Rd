@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{A \code{brmsfit} object.}
 
-\item{...}{Additional arguments passed to \code{\link[log_lik]},
+\item{...}{Additional arguments passed to \code{\link{log_lik}},
 for example \code{newdata}.}
 }
 \value{
