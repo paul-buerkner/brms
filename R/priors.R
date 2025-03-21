@@ -364,7 +364,8 @@
 #' # while leaving others the same
 #' prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
 #' prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
-#' stancode(count ~ Trt + zAge + zBase + (1 | patient), data = epilepsy, prior = c(prior_cov, prior_trt))
+#' stancode(count ~ Trt + zAge + zBase + (1 | patient),
+#' data = epilepsy, prior = c(prior_cov, prior_trt))
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",

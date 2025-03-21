@@ -419,7 +419,8 @@ set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 # while leaving others the same
 prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
 prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
-stancode(count ~ Trt + zAge + zBase + (1 | patient), data = epilepsy, prior = c(prior_cov, prior_trt))
+stancode(count ~ Trt + zAge + zBase + (1 | patient),
+data = epilepsy, prior = c(prior_cov, prior_trt))
 }
 \seealso{
 \code{\link[brms:default_prior.default]{default_prior}}
