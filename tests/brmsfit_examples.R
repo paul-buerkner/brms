@@ -88,6 +88,8 @@ brmsfit_example6 <- brm(
 brmsfit_example7 <- SW(brm(
   formula = count ~ Trt + (1 | patient) + (1 + Trt | visit),
   data = dat[1:40, ],
+  warmup = warmup, iter = iter, chains = chains,
+  stan_model_args = stan_model_args, rename = FALSE
   prior = c(prior(normal(0, 1), class = sd, tag = "prior_tag1"),
             prior(normal(0, 5), class = b, tag = "prior_tag2"),
             prior(normal(0, 0.5), coef = "Trt1", tag = "prior_tag3"),
