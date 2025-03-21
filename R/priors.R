@@ -20,8 +20,8 @@
 #'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param ub Upper bound for parameter restriction. Currently only allowed
 #'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
-#' @param tag Character to append to lprior variable in Stan code. Used for selectively
-#' checking sensitivity of priors in `priorsense`.
+#' @param tag Character to append to the \code{lprior} variable in the Stan code.
+#'   Used for selectively checking sensitivity of priors in \code{priorsense}.
 #' @param check Logical; Indicates whether priors
 #'   should be checked for validity (as far as possible).
 #'   Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
@@ -359,13 +359,14 @@
 #' # useful in particular for categorical or multivariate models
 #' set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 #'
-#' # specify tags for different priors for sensitivity analysis using `priorsense`
-#' # It is then possible to check the sensitivity when changing the priors with the same tag
-#' # while leaving others the same
+#' # specify tags for different priors for sensitivity analysis using priorsense
+#' # It is then possible to check the sensitivity when changing the priors with
+#' # the same tag while leaving others the same
 #' prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
 #' prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
 #' stancode(count ~ Trt + zAge + zBase + (1 | patient),
-#' data = epilepsy, prior = c(prior_cov, prior_trt))
+#'          data = epilepsy, prior = c(prior_cov, prior_trt))
+#'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",
@@ -567,8 +568,6 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   prior <- prior + prior_Xme(bframe, internal = internal)
   # explicitly label default priors as such
   prior$source <- "default"
-  # add tag column if it doesn't exist
-  prior <- add_tag_column(prior)
   # apply 'unique' as the same prior may have been included multiple times
   to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef, tag))
   prior <- unique(prior[to_order, , drop = FALSE])
@@ -1242,7 +1241,6 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
 # internal work function of 'validate_prior'
 .validate_prior <- function(prior, bframe, sample_prior, ...) {
   stopifnot(is.anybrmsframe(bframe))
-  prior <- add_tag_column(prior)
   sample_prior <- validate_sample_prior(sample_prior)
   all_priors <- .default_prior(bframe, internal = TRUE)
   if (is.null(prior)) {

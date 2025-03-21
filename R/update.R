@@ -150,7 +150,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     # update existing priors manually and keep only user-specified ones
     # default priors are recomputed base on newdata if provided
     old_user_prior <- subset2(object$prior, source = "user")
-    old_user_prior <- add_tag_column(old_user_prior)
     dots$prior <- rbind(dots$prior, old_user_prior)
     dupl_priors <- duplicated(dots$prior[, rcols_prior()])
     dots$prior <- dots$prior[!dupl_priors, ]

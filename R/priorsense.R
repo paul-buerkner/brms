@@ -37,7 +37,6 @@
 #'
 #' @exportS3Method priorsense::create_priorsense_data brmsfit
 create_priorsense_data.brmsfit <- function(x, ...) {
-
   priorsense::create_priorsense_data(
     x = get_draws_ps(x),
     fit = x,
@@ -46,7 +45,7 @@ create_priorsense_data.brmsfit <- function(x, ...) {
     log_prior_fn = log_prior_draws.brmsfit,
     log_lik_fn = log_lik_draws.brmsfit,
     log_ratio_fn = powerscale_log_ratio,
-    ...,
+    ...
   )
 }
 
