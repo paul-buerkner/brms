@@ -268,7 +268,7 @@ data_gr_local <- function(bframe, data) {
           weights <- sweep(weights, 1, rowSums(weights), "/")
         }
       } else {
-        # all members get equal weights by default
+        # all members get equal membership weights by default
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       for (i in seq_along(gs)) {
@@ -295,6 +295,35 @@ data_gr_local <- function(bframe, data) {
         J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
       }
       out[[paste0("J_", idresp)]] <- as.array(J)
+    }
+    # prepare data for group prior weights if specified
+    if (nzchar(id_reframe$gcall[[1]]$pw)) {
+      if (id_reframe$gtype[1] == "mm") {
+        J <- unlist(out[paste0("J_", idresp, "_", seq_along(gs))])
+      }
+      # extract and validate prior weights
+      group_prior_weights <- str2formula(id_reframe$gcall[[1]]$pw)
+      group_prior_weights <- as.vector(eval_rhs(group_prior_weights, data))
+      if (!is.numeric(group_prior_weights)) {
+        stop2("Prior weights of grouping factors must be numeric.")
+      }
+      if (any(group_prior_weights < 0)) {
+        warning2("Negative prior weights detected. Make sure this is intentional.")
+      }
+      # check that group-level weights do not vary within a group
+      group_weights_consistent <- tapply(
+        X = group_prior_weights, INDEX = J,
+        FUN = function(x) length(unique(x)) == 1
+      )
+      if (!all(group_weights_consistent)) {
+        stop2("Prior weights cannot vary within a group.")
+      }
+      # deduplicate weights vector (so length matches number of groups)
+      # and order the weights vector to match groups' assigned indices
+      distinct_J_indices <- !duplicated(J)
+      group_prior_weights <- group_prior_weights[distinct_J_indices]
+      group_prior_weights <- group_prior_weights[order(J[distinct_J_indices])]
+      out[[paste0("PW_", id)]] <- as.array(group_prior_weights)
     }
   }
   out
@@ -647,7 +676,19 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     # basis function approach requires centered variables
     Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
-    L <- choose_L(Xgp, c = c)
+
+    if (length(basis)) {
+      L <- basis[[paste0("Lgp", sfx)]]
+    } else {
+      # compute boundary factor L
+      L <- choose_L(Xgp, c = c)
+    }
+
+    if (internal) {
+      # required to compute eigenfunctions of approximate GPs with new data
+      out[[paste0("Lgp", sfx)]] <- L
+    }
+
     Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)

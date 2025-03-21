@@ -81,8 +81,6 @@
 #'
 #' @seealso \code{\link{brmshypothesis}}
 #'
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#'
 #' @examples
 #' \dontrun{
 #' ## define priors
@@ -198,12 +196,14 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05,
 #' @param digits Minimal number of significant digits,
 #'   see \code{\link[base:print.default]{print.default}}.
 #' @param chars Maximum number of characters of each hypothesis
-#'  to print or plot. If \code{NULL}, print the full hypotheses.
-#'  Defaults to \code{20}.
-#' @param colors Two values specifying the colors of the posterior
-#'  and prior density respectively. If \code{NULL} (the default)
-#'  colors are taken from the current color scheme of
-#'  the \pkg{bayesplot} package.
+#'   to print or plot. If \code{NULL}, print the full hypotheses.
+#'   Defaults to \code{20}.
+#' @param short A flag indicating whether to provide a shorter summary
+#'   with less informational text. Defaults to \code{FALSE}. Can be set
+#'   globally for the current session via the \code{brms.short_summary} option.
+#' @param colors Two values specifying the colors of the posterior and prior
+#'   density respectively. If \code{NULL} (the default) colors are taken from
+#'   the current color scheme of the \pkg{bayesplot} package.
 #' @param ... Currently ignored.
 #' @inheritParams plot.brmsfit
 #'
@@ -498,7 +498,10 @@ round_numeric <- function(x, digits = 2) {
 
 #' @rdname brmshypothesis
 #' @export
-print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
+print.brmshypothesis <- function(x, digits = 2, chars = 20,
+                                 short = getOption("brms.short_summary", FALSE),
+                                 ...) {
+  short <-  as_one_logical(short)
   # make sure hypothesis names are not too long
   x$hypothesis$Hypothesis <- limit_chars(
     x$hypothesis$Hypothesis, chars = chars
@@ -508,12 +511,14 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   print(x$hypothesis, quote = FALSE)
   pone <- (1 - x$alpha * 2) * 100
   ptwo <- (1 - x$alpha) * 100
-  cat(glue(
-    "---\n'CI': {pone}%-CI for one-sided and {ptwo}%-CI for two-sided hypotheses.\n",
-    "'*': For one-sided hypotheses, the posterior probability exceeds {ptwo}%;\n",
-    "for two-sided hypotheses, the value tested against lies outside the {ptwo}%-CI.\n",
-    "Posterior probabilities of point hypotheses assume equal prior probabilities.\n"
-  ))
+  if (!short) {
+    cat(glue(
+      "---\n'CI': {pone}%-CI for one-sided and {ptwo}%-CI for two-sided hypotheses.\n",
+      "'*': For one-sided hypotheses, the posterior probability exceeds {ptwo}%;\n",
+      "for two-sided hypotheses, the value tested against lies outside the {ptwo}%-CI.\n",
+      "Posterior probabilities of point hypotheses assume equal prior probabilities.\n"
+    ))
+  }
   invisible(x)
 }
 

@@ -2,9 +2,15 @@
 
 ### New Features
 
+* Specify group-level prior weights via argument `pw` in multilevel
+`gr` and `mm` terms thanks to Ben Schneider. (#1719)
 * Fit extended-support Beta models via family `xbeta` 
 thanks to Ioannis Kosmidis. (#1698)
 * Add a `seed` argument to `loo_R2` thanks to Marco Colombo. (#1713)
+* Add family `dirichlet_multinomial` to fit overdispersed 
+multinomial data thanks to Tom Peatman. (#1729)
+* Add the `int_step` R function to match the corresponding Stan 
+function thanks to Daniel Sabanes Bove. (#1734)
 
 ### Bug Fixes
 
@@ -15,6 +21,8 @@ in parallel even on Unix systems. To avoid potential speed loss for small
 models, `log_lik` will not use `option(mc.cores)` anymore.
 These changes may be reverted once the underlying causes of this
 issue have been fixed. (#1658)
+* Align the definition of the R function `step()` with the definition in Stan,
+such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
 
 ### Other Changes
 
