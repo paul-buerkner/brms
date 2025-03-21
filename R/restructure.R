@@ -238,6 +238,7 @@ restructure_v2 <- function(x) {
       x$prior[i, c("lb", "ub")] <- bounds
     }
     x$prior$bound <- NULL
+    x$prior <- add_tag_column(x$prior)
     all_priors <- get_prior(x$formula, x$data, data2 = x$data2, internal = TRUE)
     # checking for lb is sufficient because both bounds are NA at the same time
     which_needs_bounds <- which(is.na(x$prior$lb) & !nzchar(x$prior$coef))

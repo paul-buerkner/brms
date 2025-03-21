@@ -1099,3 +1099,12 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   }
   invisible(NULL)
 }
+
+# add tag column to prior object if it does not exist
+add_tag_column <- function(prior) {
+  if (!is.null(prior) && is.null(prior$tag)) {
+    # if there is no tag column, create an empty one
+    prior$tag <- ""
+  }
+  prior
+}

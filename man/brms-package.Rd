@@ -101,6 +101,7 @@ Other contributors:
   \item Ven Popov [contributor]
   \item Ioannis Kosmidis [contributor]
   \item Ben Schneider [contributor]
+  \item Noa Kallioinen [contributor]
 }
 
 }

@@ -84,6 +84,18 @@ brmsfit_example6 <- brm(
   warmup = warmup, iter = iter, chains = chains,
   stan_model_args = stan_model_args, rename = FALSE
 )
+  
+brmsfit_example7 <- SW(brm(
+  formula = count ~ Trt + (1 | patient) + (1 + Trt | visit),
+  data = dat[1:40, ],
+  prior = c(prior(normal(0, 1), class = sd, tag = "prior_tag1"),
+            prior(normal(0, 5), class = b, tag = "prior_tag2"),
+            prior(normal(0, 0.5), coef = "Trt1", tag = "prior_tag3"),
+            prior(normal(0, 10), class = "Intercept", tag = "prior_tag4"),
+            prior(lkj_corr_cholesky(3), class = "L", group = "visit", tag = "prior_tag5")
+            ),
+  family = poisson()))
+
 
 # easy loading of unchanged models to avoid refitting all of them
 # brmsfit_example1 <- brms:::brmsfit_example1
@@ -92,9 +104,11 @@ brmsfit_example6 <- brm(
 # brmsfit_example4 <- brms:::brmsfit_example4
 # brmsfit_example5 <- brms:::brmsfit_example5
 # brmsfit_example6 <- brms:::brmsfit_example6
+# brmsfit_example7 <- brms:::brmsfit_example7
 
 usethis::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3,
   brmsfit_example4, brmsfit_example5, brmsfit_example6,
+  brmsfit_example7,
   internal = TRUE, overwrite = TRUE
 )

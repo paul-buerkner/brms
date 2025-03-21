@@ -52,7 +52,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx)
       base_prior[i] <- stan_base_prior(sub_prior)
-      base_lprior_tag[i] <- stan_base_prior(sub_prior, col = "lprior")
+      base_lprior_tag[i] <- stan_base_prior(sub_prior, col = "tag")
       base_bounds[i, ] <- stan_base_prior(sub_prior, col = c("lb", "ub"))
     }
     if (length(unique(base_prior)) > 1L) {
