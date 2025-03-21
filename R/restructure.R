@@ -273,6 +273,10 @@ restructure_v2 <- function(x) {
     # in the process of introducing brmsframe objects
     class(x$ranef) <- reframe_class()
   }
+  if (version < "2.22.11") {
+    # tag column was added to the prior (#1724)
+    x$prior$tag <- ""
+  }
   x
 }
 

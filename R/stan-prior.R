@@ -46,12 +46,13 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   if (nrow(upx) > 1L) {
     # TODO: find a better solution to handle this case
     # can only happen for SD parameters of the same ID
-    base_prior <- lb <- ub <- rep(NA, nrow(upx))
+    base_prior <- base_lprior_tag <- lb <- ub <- rep(NA, nrow(upx))
     base_bounds <- data.frame(lb = lb, ub = ub)
     for (i in seq_rows(upx)) {
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx)
       base_prior[i] <- stan_base_prior(sub_prior)
+      base_lprior_tag[i] <- stan_base_prior(sub_prior, col = "tag")
       base_bounds[i, ] <- stan_base_prior(sub_prior, col = c("lb", "ub"))
     }
     if (length(unique(base_prior)) > 1L) {
@@ -61,15 +62,19 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       prior_of_coefs <- prior[take_coef_prior, vars_prefix()]
       take_base_prior <- match_rows(prior_of_coefs, upx)
       prior$prior[take_coef_prior] <- base_prior[take_base_prior]
+      prior$lprior[take_coef_prior] <- base_lprior_tag[take_base_prior]
     }
     base_prior <- base_prior[1]
+    base_lprior_tag <- base_lprior_tag[1]
     if (nrow(unique(base_bounds)) > 1L) {
       stop2("Conflicting boundary information for ",
             "coefficients of class '", class, "'.")
     }
     base_bounds <- base_bounds[1, ]
   } else {
+    # TODO: select base_prior together with tags and boundaries in one call?
     base_prior <- stan_base_prior(prior)
+    base_lprior_tag <- stan_base_prior(prior, col = "tag")
     # select both bounds together so that they come from the same base prior
     base_bounds <- stan_base_prior(prior, col = c("lb", "ub"))
   }
@@ -104,9 +109,11 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         # zero rows can happen if only global priors present
         stopifnot(nrow(prior_ij) <= 1L)
         coef_prior <- prior_ij$prior
+        lprior_tag <- prior_ij$tag
         if (!isTRUE(nzchar(coef_prior))) {
           used_base_prior <- TRUE
           coef_prior <- base_prior
+          lprior_tag <- base_lprior_tag
         }
         if (!stan_is_constant_prior(coef_prior)) {
           # all parameters with non-constant priors are estimated
@@ -131,7 +138,15 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
               coef_prior, par_ij, broadcast = broadcast,
               bound = bound, resp = px$resp[1], normalize = normalize
             )
-            str_add(out$tpar_prior) <- paste0(lpp(), coef_prior, ";\n")
+            if (isTRUE(nzchar(lprior_tag))) {
+              # add to a local lprior variable if specified
+              str_add(out$tpar_prior) <- paste0(
+                lpp(tag = lprior_tag), coef_prior, ";\n"
+              )
+            } else {
+              # add to the global lprior variable directly
+              str_add(out$tpar_prior) <- paste0(lpp(), coef_prior, ";\n")
+            }
           }
         }
       }
@@ -173,7 +188,15 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         base_prior, par = par, ncoef = ncoef, bound = bound,
         broadcast = broadcast, resp = px$resp[1], normalize = normalize
       )
-      str_add(out$tpar_prior) <- paste0(lpp(), target_base_prior, ";\n")
+      if (isTRUE(nzchar(base_lprior_tag))) {
+        # add to a local lprior variable if specified
+        str_add(out$tpar_prior) <- paste0(
+          lpp(tag = base_lprior_tag), target_base_prior, ";\n"
+        )
+      } else {
+        # add to the global lprior variable directly
+        str_add(out$tpar_prior) <- paste0(lpp(), target_base_prior, ";\n")
+      }
     }
   }
 
@@ -218,7 +241,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
 #   finding the base prior
 # @return the 'col' columns of the identified base prior
 stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
-  stopifnot(all(col %in% c("prior", "lb", "ub")))
+  stopifnot(all(col %in% c("prior", "lb", "ub", "tag")))
   if (!is.null(sel_prior)) {
     # find the base prior using sel_prior for subsetting
     stopifnot(is.brmsprior(sel_prior))
@@ -241,7 +264,7 @@ stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
       return(brmsprior()[, col])
     }
   }
-  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  vars <- c("group", "nlpar", "dpar", "resp", "class", "tag")
   for (v in vars) {
     take <- nzchar(prior[[v]])
     if (any(take)) {
@@ -698,7 +721,11 @@ stopif_prior_bound <- function(prior, class, ...) {
 }
 
 # lprior plus equal
-lpp <- function(wsp = 2) {
+lpp <- function(wsp = 2, tag = NULL) {
   wsp <- collapse(rep(" ", wsp))
-  paste0(wsp, "lprior += ")
+  if (is.null(tag)) {
+    paste0(wsp, "lprior", " += ")
+  } else {
+    paste0(wsp, "lprior_", tag, " += ")
+  }
 }
