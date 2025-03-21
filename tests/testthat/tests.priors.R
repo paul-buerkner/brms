@@ -157,5 +157,5 @@ test_that("prior tags are correctly applied", {
   expect_equal(v[which(v$class == "b" & v$coef != "Trt1"),]$tag[[1]], "prior_tag2")
   expect_equal(v[which(v$class == "b" & v$coef == "Trt1"),]$tag, "prior_tag3")
   expect_equal(v[which(v$class == "Intercept"),]$tag, "prior_tag4")
-  expect_equal(v[which(v$class == "L"),]$tag[[2]], "prior_tag5")  
+  expect_equal(v[which(v$class == "L"),]$tag[[2]], "prior_tag5")
 })

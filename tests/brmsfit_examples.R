@@ -84,7 +84,7 @@ brmsfit_example6 <- brm(
   warmup = warmup, iter = iter, chains = chains,
   stan_model_args = stan_model_args, rename = FALSE
 )
-  
+
 brmsfit_example7 <- SW(brm(
   formula = count ~ Trt + (1 | patient) + (1 + Trt | visit),
   data = dat[1:40, ],
