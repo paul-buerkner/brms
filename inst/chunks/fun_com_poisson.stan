@@ -74,8 +74,8 @@ real log_Z_com_poisson(real log_mu, real nu) {
   log_Z_terms[1] = log_k_term(log_mu, nu, 1);
   log_Z_terms[2] = log_k_term(log_mu, nu, 2);
 
-  while ((log_Z_terms[k] >= log_Z_terms[k-1]) ||
-    (bound_remainder(log_Z_terms[k], log_Z_terms[k-1]) >= leps) &&
+  while (((log_Z_terms[k] >= log_Z_terms[k-1]) ||
+    (bound_remainder(log_Z_terms[k], log_Z_terms[k-1]) >= leps)) &&
     k < M) {
     k += 1;
     log_Z_terms[k] = log_k_term(log_mu, nu, k);
