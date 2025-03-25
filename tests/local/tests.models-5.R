@@ -232,3 +232,37 @@ test_that(paste(
 
   expect_equal(draws_sratio, draws_cratio)
 }))
+
+
+test_that("prior tags correctly go to priorsense data", {
+
+  warmup <- 150
+  iter <- 200
+  chains <- 1
+
+  fit_tags <- SW(brm(
+  formula = count ~ Trt + (1 | patient) + (1 + Trt | visit),
+  data = dat[1:40, ],
+  warmup = warmup, iter = iter, chains = chains,
+  prior = c(prior(normal(0, 1), class = sd, tag = "prior_tag1"),
+            prior(normal(0, 5), class = b, tag = "prior_tag2"),
+            prior(normal(0, 0.5), coef = "Trt1", tag = "prior_tag3"),
+            prior(normal(0, 10), class = "Intercept", tag = "prior_tag4"),
+            prior(lkj_corr_cholesky(3), class = "L", group = "visit", tag = "prior_tag5")
+            ),
+  family = poisson()))
+
+  psd <- create_priorsense_data.brmsfit(fit_tags)
+
+  expect_setequal(
+    variables(psd$log_prior),
+    c(
+      "lprior",
+      "lprior_prior_tag1",
+      "lprior_prior_tag2",
+      "lprior_prior_tag3",
+      "lprior_prior_tag4",
+      "lprior_prior_tag5"
+    )
+  )
+})
