@@ -240,6 +240,20 @@ test_that("prior tags correctly go to priorsense data", {
   iter <- 200
   chains <- 1
 
+  set.seed(1234)
+  N <- 40
+  dat <- data.frame(
+    count = rpois(N, lambda = 20),
+    visit = factor(rep(1:4, each = N/4)),
+    patient = factor(rep(1:(N/4), 4)),
+    Age = rnorm(N),
+    Trt = factor(sample(0:1, N, TRUE)),
+    AgeSD = abs(rnorm(N, 1)),
+    Exp = factor(sample(1:5, N, TRUE), ordered = TRUE),
+    volume = rnorm(N),
+    gender = factor(c(rep("m", N/8), rep("f", N/8)))
+  )
+
   fit_tags <- SW(brm(
   formula = count ~ Trt + (1 | patient) + (1 + Trt | visit),
   data = dat[1:40, ],
