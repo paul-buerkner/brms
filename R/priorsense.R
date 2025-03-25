@@ -40,7 +40,7 @@ create_priorsense_data.brmsfit <- function(x, ...) {
   priorsense::create_priorsense_data(
     x = get_draws_ps(x),
     fit = x,
-    log_prior = log_prior_draws.brmsfit(x),
+    log_prior = log_prior_draws.brmsfit(x, ...),
     log_lik = log_lik_draws.brmsfit(x, ...),
     log_prior_fn = log_prior_draws.brmsfit,
     log_lik_fn = log_lik_draws.brmsfit,
@@ -59,7 +59,7 @@ log_lik_draws.brmsfit <- function(x, ...) {
 }
 
 #' @exportS3Method priorsense::log_prior_draws
-log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior") {
+log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior", ...) {
   stopifnot(length(log_prior_name) == 1)
   if (!log_prior_name %in% variables(x)) {
     warning2("Variable '", log_prior_name, "' was not found. ",
@@ -67,7 +67,8 @@ log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior") {
   }
   posterior::subset_draws(
     posterior::as_draws_array(x),
-    variable = log_prior_name
+    variable = paste0("^", log_prior_name),
+    regex = TRUE
   )
 }
 

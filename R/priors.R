@@ -20,6 +20,8 @@
 #'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param ub Upper bound for parameter restriction. Currently only allowed
 #'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
+#' @param tag Character to append to the \code{lprior} variable in the Stan code.
+#'   Used for selectively checking sensitivity of priors in \code{priorsense}.
 #' @param check Logical; Indicates whether priors
 #'   should be checked for validity (as far as possible).
 #'   Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
@@ -357,11 +359,19 @@
 #' # useful in particular for categorical or multivariate models
 #' set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
 #'
+#' # specify tags for different priors for sensitivity analysis using priorsense
+#' # It is then possible to check the sensitivity when changing the priors with
+#' # the same tag while leaving others the same
+#' prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
+#' prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
+#' stancode(count ~ Trt + zAge + zBase + (1 | patient),
+#'          data = epilepsy, prior = c(prior_cov, prior_trt))
+#'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",
-                      lb = NA, ub = NA, check = TRUE) {
-  input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, check)
+                      lb = NA, ub = NA, tag = "", check = TRUE) {
+  input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, tag, check)
   input <- try(as.data.frame(input), silent = TRUE)
   if (is_try_error(input)) {
     stop2("Processing arguments of 'set_prior' has failed:\n", input)
@@ -375,7 +385,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 
 # validate arguments passed to 'set_prior'
 .set_prior <- function(prior, class, coef, group, resp,
-                       dpar, nlpar, lb, ub, check) {
+                       dpar, nlpar, lb, ub, tag, check) {
   prior <- as_one_character(prior)
   class <- as_one_character(class)
   group <- as_one_character(group)
@@ -386,16 +396,17 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
+  tag <- as_one_character(tag)
   if (dpar == "mu") {
     # distributional parameter 'mu' is currently implicit #1368
     dpar <- ""
   }
   if (!check) {
     # prior will be added to the log-posterior as is
-    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- ""
+    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- tag <- ""
   }
   source <- "user"
-  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, lb, ub)
+  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, lb, ub, tag)
   do_call(brmsprior, out)
 }
 
@@ -558,7 +569,7 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   # explicitly label default priors as such
   prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
-  to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
+  to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef, tag))
   prior <- unique(prior[to_order, , drop = FALSE])
   rownames(prior) <- NULL
   class(prior) <- c("brmsprior", "data.frame")
@@ -1565,7 +1576,7 @@ get_sample_prior <- function(prior) {
 # create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "", lb = "", ub = "",
-                      source = "", ls = list()) {
+                      tag = "", source = "", ls = list()) {
   if (length(ls)) {
     if (is.null(names(ls))) {
       stop("Argument 'ls' must be named.")
@@ -1580,7 +1591,7 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
   }
   out <- data.frame(
     prior, class, coef, group,
-    resp, dpar, nlpar, lb, ub, source,
+    resp, dpar, nlpar, lb, ub, tag, source,
     stringsAsFactors = FALSE
   )
   class(out) <- c("brmsprior", "data.frame")
@@ -1594,7 +1605,7 @@ empty_prior <- function() {
   brmsprior(
     prior = char0, source = char0, class = char0,
     coef = char0, group = char0, resp = char0,
-    dpar = char0, nlpar = char0, lb = char0, ub = char0
+    dpar = char0, nlpar = char0, lb = char0, ub = char0, tag = char0
   )
 }
 
@@ -1623,7 +1634,7 @@ prior_bounds <- function(prior) {
 # all columns of brmsprior objects
 all_cols_prior <- function() {
   c("prior", "class", "coef", "group", "resp",
-    "dpar", "nlpar", "lb", "ub", "source")
+    "dpar", "nlpar", "lb", "ub", "tag", "source")
 }
 
 # relevant columns for duplication checks in brmsprior objects
@@ -1838,8 +1849,14 @@ prepare_print_prior <- function(x) {
       x$prior[i] <- "(flat)"
     }
   }
+  for (i in which(!nzchar(x$tag))) {
+    base_lprior_tag <- stan_base_prior(x, col = "tag", sel_prior = x[i, ])
+    if (nzchar(base_lprior_tag)) {
+      x$tag[i] <- base_lprior_tag
+    }
+  }
   for (i in which(!nzchar(x$lb) & !nzchar(x$ub))) {
-    base_bounds <- stan_base_prior(x, c("lb", "ub"), sel_prior = x[i, ])
+    base_bounds <- stan_base_prior(x, col = c("lb", "ub"), sel_prior = x[i, ])
     x$lb[i] <- base_bounds[, "lb"]
     x$ub[i] <- base_bounds[, "ub"]
   }
@@ -1915,7 +1932,7 @@ as.brmsprior <- function(x) {
 
   defaults <- c(
     class = "b", coef = "", group = "", resp = "",
-    dpar = "", nlpar = "", lb = NA, ub = NA
+    dpar = "", nlpar = "", lb = NA, ub = NA, tag = ""
   )
   for (v in names(defaults)) {
     if (!v %in% names(x)) {

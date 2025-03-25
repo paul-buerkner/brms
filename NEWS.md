@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Specify a prior `tag` for use in prior sensitivity analysis
+via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
 `gr` and `mm` terms thanks to Ben Schneider. (#1719)
 * Fit extended-support Beta models via family `xbeta` 
