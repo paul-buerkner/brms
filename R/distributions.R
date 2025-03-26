@@ -80,7 +80,7 @@ rstudent_t <- function(n, df, mu = 0, sigma = 1) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'
-#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/docs/}
 #' for details on the parameterization
 #'
 #' @export
@@ -146,7 +146,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'
-#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/docs/}
 #'   for details on the parameterization
 #'
 #' @export
