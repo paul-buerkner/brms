@@ -239,6 +239,7 @@ restructure_v2 <- function(x) {
     }
     x$prior$bound <- NULL
     all_priors <- get_prior(x$formula, x$data, data2 = x$data2, internal = TRUE)
+    all_priors$tag <- NULL
     # checking for lb is sufficient because both bounds are NA at the same time
     which_needs_bounds <- which(is.na(x$prior$lb) & !nzchar(x$prior$coef))
     for (i in which_needs_bounds) {
@@ -272,6 +273,10 @@ restructure_v2 <- function(x) {
     # the class of random effects data.frames was changed
     # in the process of introducing brmsframe objects
     class(x$ranef) <- reframe_class()
+  }
+  if (version < "2.22.11") {
+    # tag column was added to the prior (#1724)
+    x$prior$tag <- ""
   }
   x
 }
