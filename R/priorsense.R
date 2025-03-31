@@ -51,10 +51,20 @@ create_priorsense_data.brmsfit <- function(x, ...) {
 
 #' @exportS3Method priorsense::log_lik_draws
 log_lik_draws.brmsfit <- function(x, ...) {
-  nchains <- nchains(x)
-  niters <- niterations(x)
+
+  args <- list(...)
   log_lik <- log_lik(x, ...)
-  nobs <- length(log_lik) / (nchains * niters)
+
+  if (any(c("ndraws", "draw_ids", "nsamples", "subset") %in% names(args))) {
+    nchains <- 1
+    niters <- nrow(log_lik)
+  } else {
+    nchains <- nchains(x)
+    niters <- niterations(x)
+  }
+
+  nobs <- ncol(log_lik)
+
   dim(log_lik) <- c(niters, nchains, nobs)
   log_lik <- as_draws_array(log_lik)
   nvars <- nvariables(log_lik)
