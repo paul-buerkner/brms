@@ -67,8 +67,7 @@ log_lik_draws.brmsfit <- function(x, ...) {
 
   dim(log_lik) <- c(niters, nchains, nobs)
   log_lik <- as_draws_array(log_lik)
-  nvars <- nvariables(log_lik)
-  posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nvars), "]")
+  posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nobs), "]")
 
   log_lik
 }
