@@ -58,7 +58,7 @@ log_lik_draws.brmsfit <- function(x, ...) {
   niters <- niterations(x)
 
   # check if log-lik was subset, if so, merge the chains
-  if (nrow(log_lik) < niters) {
+  if (nrow(log_lik) < niters * nchains) {
     niters <- nrow(log_lik)
     nchains <- 1
   }
