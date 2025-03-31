@@ -51,27 +51,21 @@ create_priorsense_data.brmsfit <- function(x, ...) {
 
 #' @exportS3Method priorsense::log_lik_draws
 log_lik_draws.brmsfit <- function(x, ...) {
-
   log_lik <- log_lik(x, ...)
-
   # check if log-lik was subset, if so, merge the chains
   if (nrow(log_lik) < ndraws(x)) {
     niters <- nrow(log_lik)
     nchains <- 1
   } else {
-    nchains <- nchains(x)
     niters <- niterations(x)
+    nchains <- nchains(x)
   }
-
   nobs <- ncol(log_lik)
-
   dim(log_lik) <- c(niters, nchains, nobs)
   log_lik <- as_draws_array(log_lik)
   posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nobs), "]")
-
   log_lik
 }
-
 
 #' @exportS3Method priorsense::log_prior_draws
 log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior", ...) {
