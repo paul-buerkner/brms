@@ -52,15 +52,15 @@ create_priorsense_data.brmsfit <- function(x, ...) {
 #' @exportS3Method priorsense::log_lik_draws
 log_lik_draws.brmsfit <- function(x, ...) {
 
-  args <- list(...)
   log_lik <- log_lik(x, ...)
 
-  if (any(c("ndraws", "draw_ids", "nsamples", "subset") %in% names(args))) {
-    nchains <- 1
+  nchains <- nchains(x)
+  niters <- niterations(x)
+
+  # check if log-lik was subset, if so, merge the chains
+  if (nrow(log_lik) < niters) {
     niters <- nrow(log_lik)
-  } else {
-    nchains <- nchains(x)
-    niters <- niterations(x)
+    nchains <- 1
   }
 
   nobs <- ncol(log_lik)
