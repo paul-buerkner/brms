@@ -16,17 +16,20 @@ params:
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
 options(width = 90)
+knitr::knit_hooks$set(pngquant = knitr::hook_pngquant)
 opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "jpeg",
-  dpi = 100,
+  dev = "ragg_png",
+  dpi = 72,
+  fig.retina = 1.5,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
-  fig.align = "center"
+  fig.align = "center",
+  pngquant = "--speed=1 --quality=50"
 )
 library(ggplot2)
 library(brms)
