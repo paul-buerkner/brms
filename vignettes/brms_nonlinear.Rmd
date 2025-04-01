@@ -16,7 +16,7 @@ params:
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
 options(width = 90)
-knitr::knit_hooks$set(pngquant = knitr::hook_pngquant)
+knit_hooks$set(pngquant = knitr::hook_pngquant)
 opts_chunk$set(
   comment = NA,
   message = FALSE,
