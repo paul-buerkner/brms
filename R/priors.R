@@ -1248,6 +1248,11 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
   }
+  if (!"tag" %in% names(prior)) {
+    # the tag column was added in version 2.22.11 (#1724)
+    # manually adding it retains compatibility with old brmsprior objects
+    prior$tag <- ""
+  }
   # when updating existing priors, invalid priors should be allowed
   allow_invalid_prior <- isTRUE(attr(prior, "allow_invalid_prior"))
   # temporarily exclude priors that should not be checked
