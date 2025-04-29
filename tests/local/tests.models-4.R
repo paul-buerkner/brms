@@ -181,6 +181,37 @@ test_that("multinomial models work correctly", suppressWarnings({
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 }))
 
+test_that("dirichlet_multinomial models work correctly", suppressWarnings({
+  require("extraDistr")
+  set.seed(1245)
+  N <- 100
+  dat <- as.data.frame(extraDistr::rdirmnom(N, 10, c(10, 5, 1)))
+  names(dat) <- paste0("y", 1:3)
+  dat$size <- with(dat, y1 + y2 + y3)
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+
+  fit <- brm(
+    y | trials(size) ~ x, data = dat,
+    family = dirichlet_multinomial(),
+    prior = prior("exponential(0.01)", "phi")
+  )
+  print(summary(fit))
+
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  expect_equal(dimnames(pred)[[3]], c("y1", "y2", "y3"))
+
+  pred_mean <- fitted(fit)
+  expect_equal(dim(pred_mean), c(nobs(fit), 4, 3))
+
+  waic <- waic(fit)
+  expect_range(waic$estimates[3, 1], 550, 650)
+
+  ce <- conditional_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
+}))
+
 test_that("dirichlet models work correctly", suppressWarnings({
   set.seed(1246)
   N <- 100

@@ -267,10 +267,11 @@ fit_model <- function(model, backend, ...) {
   }
   use_threading <- use_threading(threads, force = TRUE)
   if (algorithm %in% c("sampling", "fixed_param")) {
-    c(args) <- nlist(
+    c(args) <- list(
       iter_sampling = iter - warmup,
       iter_warmup = warmup,
-      chains, thin,
+      chains = chains,
+      thin = thin,
       parallel_chains = cores,
       show_messages = silent < 2,
       show_exceptions = silent == 0,
@@ -310,6 +311,7 @@ fit_model <- function(model, backend, ...) {
     }
     out <- do_call(model$variational, args)
   } else if (algorithm %in% c("pathfinder")) {
+    c(args) <- list(num_paths = chains)
     if (use_threading) {
       args$num_threads <- threads$threads
     }

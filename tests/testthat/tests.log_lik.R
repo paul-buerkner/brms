@@ -445,6 +445,12 @@ test_that("log_lik for categorical and related models runs without erros", {
   ll <- sapply(1:nobs, brms:::log_lik_multinomial, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
 
+  prep$data$trials <- sample(1:20, nobs)
+  prep$dpars$phi <- rexp(ns, 10)
+  prep$family <- dirichlet_multinomial()
+  ll <- sapply(1:nobs, brms:::log_lik_dirichlet_multinomial, prep = prep)
+  expect_equal(dim(ll), c(ns, nobs))
+
   prep$data$Y <- prep$data$Y / rowSums(prep$data$Y)
   prep$dpars$phi <- rexp(ns, 10)
   prep$family <- dirichlet()

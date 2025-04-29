@@ -114,8 +114,6 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   internal <- as_one_logical(internal)
-  # order data for use in autocorrelation models
-  data <- order_data(data, bterms = bframe)
   out <- data_response(
     bframe, data, check_response = check_response,
     internal = internal

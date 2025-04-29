@@ -100,6 +100,8 @@ Other contributors:
   \item Stephen Wild [contributor]
   \item Ven Popov [contributor]
   \item Ioannis Kosmidis [contributor]
+  \item Ben Schneider [contributor]
+  \item Noa Kallioinen [contributor]
 }
 
 }

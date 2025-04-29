@@ -8,7 +8,8 @@
 #' functions, so you will rarely need to call it manually yourself.
 #'
 #' @param x A \code{brmsfit} object.
-#' @param ... Currently unused.
+#' @param ... Additional arguments passed to \code{\link{log_lik}},
+#'   for example \code{newdata}.
 #'
 #' @return A \code{priorsense_data} object to be used in conjunction
 #' with the \pkg{priorsense} package.
@@ -39,8 +40,8 @@ create_priorsense_data.brmsfit <- function(x, ...) {
   priorsense::create_priorsense_data(
     x = get_draws_ps(x),
     fit = x,
-    log_prior = log_prior_draws.brmsfit(x),
-    log_lik = log_lik_draws.brmsfit(x),
+    log_prior = log_prior_draws.brmsfit(x, ...),
+    log_lik = log_lik_draws.brmsfit(x, ...),
     log_prior_fn = log_prior_draws.brmsfit,
     log_lik_fn = log_lik_draws.brmsfit,
     log_ratio_fn = powerscale_log_ratio,
@@ -49,34 +50,44 @@ create_priorsense_data.brmsfit <- function(x, ...) {
 }
 
 #' @exportS3Method priorsense::log_lik_draws
-log_lik_draws.brmsfit <- function(x) {
-  log_lik <- log_lik(x)
-  log_lik <- posterior::as_draws_array(log_lik)
-  nvars <- nvariables(log_lik)
-  posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nvars), "]")
+log_lik_draws.brmsfit <- function(x, ...) {
+  log_lik <- log_lik(x, ...)
+  # check if log-lik was subset, if so, merge the chains
+  if (nrow(log_lik) < ndraws(x)) {
+    niters <- nrow(log_lik)
+    nchains <- 1
+  } else {
+    niters <- niterations(x)
+    nchains <- nchains(x)
+  }
+  nobs <- ncol(log_lik)
+  dim(log_lik) <- c(niters, nchains, nobs)
+  log_lik <- as_draws_array(log_lik)
+  posterior::variables(log_lik) <- paste0("log_lik[", seq_len(nobs), "]")
   log_lik
 }
 
 #' @exportS3Method priorsense::log_prior_draws
-log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior") {
+log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior", ...) {
   stopifnot(length(log_prior_name) == 1)
   if (!log_prior_name %in% variables(x)) {
     warning2("Variable '", log_prior_name, "' was not found. ",
              "Perhaps you used normalize = FALSE?")
   }
   posterior::subset_draws(
-    posterior::as_draws_array(x),
-    variable = log_prior_name
+    as_draws_array(x),
+    variable = paste0("^", log_prior_name),
+    regex = TRUE
   )
 }
 
 get_draws_ps <- function(x, variable = NULL, regex = FALSE,
                          log_prior_name = "lprior") {
   excluded_variables <- c(log_prior_name, "lp__")
-  draws <- posterior::as_draws_df(x, regex = regex)
+  draws <- as_draws_df(x, regex = regex)
   if (is.null(variable)) {
     # remove unnecessary variables
-    variable <- posterior::variables(x)
+    variable <- variables(x)
     variable <- variable[!(variable %in% excluded_variables)]
     draws <- posterior::subset_draws(draws, variable = variable)
   }
@@ -92,9 +103,9 @@ powerscale_log_ratio <- function(draws, fit, alpha, component_fn) {
 rowsums_draws <- function(x) {
   posterior::draws_array(
     sum = rowSums(
-      posterior::as_draws_array(x),
+      as_draws_array(x),
       dims = 2
     ),
-    .nchains = posterior::nchains(x)
+    .nchains = nchains(x)
   )
 }

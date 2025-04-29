@@ -599,9 +599,9 @@ rename <- function(x, pattern = NULL, replacement = NULL,
     # default renaming to avoid special characters in coeffcient names
     pattern <- c(
       " ", "(", ")", "[", "]", ",", "\"", "'",
-      "?", "+", "-", "*", "/", "^", "="
+      "?", "+", "-", "*", "/", "^", "=", "$"
     )
-    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ")
+    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ", "USD")
   }
   if (length(replacement) == 1L) {
     replacement <- rep(replacement, length(pattern))
