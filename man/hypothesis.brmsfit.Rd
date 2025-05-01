@@ -161,6 +161,3 @@ hypothesis(dat, "b_age > 0")
 \seealso{
 \code{\link{brmshypothesis}}
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.22.8
-Date: 2024-12-05
+Version: 2.22.11
+Date: 2025-03-21
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -19,7 +19,9 @@ Authors@R:
       person("Simon C.", "Mills", role = c("ctb")),
       person("Stephen", "Wild", role = c("ctb")),
       person("Ven", "Popov", role = c("ctb")),
-      person("Ioannis", "Kosmidis", role = c("ctb")))
+      person("Ioannis", "Kosmidis", role = c("ctb")),
+      person("Ben", "Schneider", role = c("ctb")),
+      person("Noa", "Kallioinen", role = c("ctb")))
 Depends:
     R (>= 3.6.0),
     Rcpp (>= 0.12.0),
@@ -75,7 +77,8 @@ Suggests:
     gtable,
     shiny,
     knitr,
-    rmarkdown
+    rmarkdown,
+    ragg
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions
     and link functions are supported, allowing users to fit -- among others --
@@ -100,6 +103,7 @@ URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, http
 BugReports: https://github.com/paul-buerkner/brms/issues
 Additional_repositories:
     https://stan-dev.r-universe.dev/
+SystemRequirements: pngquant
 VignetteBuilder:
     knitr,
     R.rsp

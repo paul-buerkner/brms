@@ -276,8 +276,18 @@ stancode.default <- function(object, data, family = gaussian(),
     "}\n"
   )
 
+  # prepare lprior tags
+  lprior_tags <- unique(prior$tag)
+  scode_lprior_def <- paste0(
+    "  // prior contributions to the log posterior\n",
+    collapse("  real lprior", usc(lprior_tags), " = 0;\n")
+  )
+  lprior_tags <- lprior_tags[nzchar(lprior_tags)]
+  scode_lprior_assign <- str_if(length(lprior_tags),
+    collapse("  lprior += lprior", usc(lprior_tags), ";\n")
+  )
+
   # generate transformed parameters block
-  scode_lprior_def <- "  real lprior = 0;  // prior contributions to the log posterior\n"
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
       scode_predictor[["tpar_def"]],
@@ -295,6 +305,7 @@ stancode.default <- function(object, data, family = gaussian(),
       # lprior cannot contain _lupdf functions in transformed parameters
       # as discussed on github.com/stan-dev/stan/issues/3094
       str_if(normalize, scode_tpar_prior),
+      str_if(normalize, scode_lprior_assign),
       collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
@@ -311,6 +322,7 @@ stancode.default <- function(object, data, family = gaussian(),
       "  }\n",
       "  // priors", not_const, " including constants\n",
       str_if(!normalize, scode_tpar_prior),
+      str_if(!normalize, scode_lprior_assign),
       "  target += lprior;\n",
       scode_predictor[["model_prior"]],
       scode_re[["model_prior"]],
@@ -349,13 +361,6 @@ stancode.default <- function(object, data, family = gaussian(),
   if (parse) {
     scode <- parse_model(scode, backend, silent = silent)
   }
-  # if (backend == "cmdstanr") {
-  #   if (requireNamespace("cmdstanr", quietly = TRUE) &&
-  #       cmdstanr::cmdstan_version() >= "2.29.0") {
-  #     tmp_file <- cmdstanr::write_stan_file(scode)
-  #     scode <- .canonicalize_stan_model(tmp_file, overwrite_file = FALSE)
-  #   }
-  # }
   if (is.character(save_model)) {
     cat(scode, file = save_model)
   }

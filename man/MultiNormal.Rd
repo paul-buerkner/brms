@@ -31,6 +31,6 @@ Density function and random generation for the multivariate normal
 distribution with mean vector \code{mu} and covariance matrix \code{Sigma}.
 }
 \details{
-See the Stan user's manual \url{https://mc-stan.org/documentation/}
+See the Stan user's manual \url{https://mc-stan.org/docs/}
 for details on the parameterization
 }

@@ -10,12 +10,13 @@ name: test-coverage
 
 jobs:
   test-coverage:
-    runs-on: ubuntu-latest
+    # some issues occured on ubuntu-latest related to pandoc-citeproc
+    runs-on: ubuntu-22.04
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: n1hility/cancel-previous-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -44,6 +45,7 @@ jobs:
             RcppEigen
             emmeans
             projpred
+            priorsense
             RWiener
             rtdists
             extraDistr
@@ -53,6 +55,7 @@ jobs:
             arm
             statmod
             diffobj
+            betareg
             usethis
             testthat
             covr
