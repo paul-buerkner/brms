@@ -38,6 +38,19 @@
     return k_current_term - log(- expm1(k_current_term - k_previous_term));
   }
 
+  // stopping criterio with bucket
+  // Args:
+  //   k_current_term: the log of a_k term
+  //   k_previous_term: the log of a_(k-1) term
+  //   k: k term of the series
+  //   leps: log(eps)
+  int stopping_criterio_bucket(real k_current_term, real k_previous_term, int k, real leps) {
+    if (k % 50 == 0) {
+      return (bound_remainder(k_current_term, k_previous_term) >= leps);
+    }
+    return (1e300 >= leps); // Int > leps
+  }
+
   // log normalizing constant of the COM Poisson distribution
   // implementation inspired by code of Ben Goodrich
   // improved following suggestions of Sebastian Weber (#892)
@@ -65,7 +78,7 @@
       return log_Z_com_poisson_approx(log_mu, nu);
     }
     // direct computation of the truncated series
-  //   check if the Mth term of the series pass in the stopping criteria
+    // check if the Mth term of the series pass in the stopping criteria
     if (bound_remainder(log_k_term(log_mu, nu, M),
                         log_k_term(log_mu, nu, M-1)) >= leps) {
       reject("nu is too close to zero.");
@@ -76,7 +89,7 @@
     log_Z_terms[2] = log_k_term(log_mu, nu, 2);
 
     while (((log_Z_terms[k] >= log_Z_terms[k-1]) ||
-      (bound_remainder(log_Z_terms[k], log_Z_terms[k-1]) >= leps)) &&
+      (stopping_criterio_bucket(log_Z_terms[k], log_Z_terms[k-1], k, leps))) &&
       k < M) {
       k += 1;
       log_Z_terms[k] = log_k_term(log_mu, nu, k);
