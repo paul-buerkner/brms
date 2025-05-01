@@ -9,14 +9,15 @@
     real lcte = (nu * exp(log_mu / nu)) -
       ((nu - 1) / (2 * nu) * log_mu +
        (nu - 1) / 2 * log(2 * pi()) + 0.5 * log(nu));
-    real c_1 = (nu2 - 1) / 24;
-    real c_2 = (nu2 - 1) / 1152 * (nu2 + 23);
-    real c_3 = (nu2 - 1) / 414720 * (5 * square(nu2) - 298 * nu2 + 11237);
-    resids[1] = 1;
-    resids[2] = c_1 * exp(-1 * log_common);
-    resids[3] = c_2 * exp(-2 * log_common);
-    resids[4] = c_3 * exp(-3 * log_common);
-    ans = lcte + log(sum(resids));
+    real lc_1 = log((nu2 - 1)) - log(24);
+    real lc_2 = log((nu2 - 1)) - log(1152) + log(nu2 + 23);
+    real lc_3 = log((nu2 - 1)) - log(414720) +
+      log(5 * square(nu2) - 298 * nu2 + 11237);
+    resids[1] = 0;
+    resids[2] = lc_1 + -1 * log_common;
+    resids[3] = lc_2 + -2 * log_common;
+    resids[4] = lc_3 + -3 * log_common;
+    ans = lcte + log_sum_exp(resids);
     return ans;
   }
 
