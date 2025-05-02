@@ -22,6 +22,8 @@ Authors@R:
       person("Ioannis", "Kosmidis", role = c("ctb")),
       person("Ben", "Schneider", role = c("ctb")),
       person("Noa", "Kallioinen", role = c("ctb")))
+      person("Wellington J.", "Silva", role = c("ctb")))
+      person("Luiz", "Carvalho", role = c("ctb")))
 Depends:
     R (>= 3.6.0),
     Rcpp (>= 0.12.0),
