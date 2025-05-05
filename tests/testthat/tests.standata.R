@@ -1015,6 +1015,7 @@ test_that("data for multinomial, dirichlet_multinomial and dirichlet models is c
 })
 
 test_that("standata handles cox models correctly", {
+  skip_if_not_installed("splines2")
   data <- data.frame(y = rexp(100), x = rnorm(100),
                      g = sample(1:3, 100, TRUE))
 

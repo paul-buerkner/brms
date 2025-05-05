@@ -212,6 +212,8 @@ test_that("posterior_predict for bernoulli and beta models works correctly", {
 })
 
 test_that("posterior_predict for xbeta models works correctly", {
+  skip_if_not_installed("betareg")
+
   ns <- 17
   nobs <- 10
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")

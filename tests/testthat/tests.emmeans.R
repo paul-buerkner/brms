@@ -1,5 +1,5 @@
 context("Tests for emmeans support")
-
+skip_if_not_installed("emmeans")
 skip_on_cran()
 
 require(emmeans)
@@ -11,6 +11,8 @@ fit4 <- rename_pars(brms:::brmsfit_example4)
 fit6 <- rename_pars(brms:::brmsfit_example6)
 
 test_that("emmeans returns expected output structure", {
+  skip_if_not_installed("emmeans")
+
   em <- summary(emmeans(fit1, "Age", by = "Trt"))
   expect_equal(nrow(em), 2)
 
@@ -31,6 +33,8 @@ test_that("emmeans returns expected output structure", {
 })
 
 test_that("emmeans supports 'epred' predictions", {
+  skip_if_not_installed("emmeans")
+
   em <- summary(emmeans(fit2, "Age", epred = TRUE))
   expect_equal(nrow(em), 1)
 
@@ -43,6 +47,8 @@ test_that("emmeans supports 'epred' predictions", {
 })
 
 test_that("emmeans supports multilevel terms", {
+  skip_if_not_installed("emmeans")
+
   em <- summary(emmeans(fit1, "Age", by = "Trt", re_formula = NULL))
   expect_equal(nrow(em), 2)
 
