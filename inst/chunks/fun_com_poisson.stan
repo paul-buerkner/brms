@@ -80,7 +80,7 @@
     // direct computation of the truncated series
     // check if the Mth term of the series pass in the stopping criteria
     if (bound_remainder(log_k_term(log_mu, nu, M),
-                        log_k_term(log_mu, nu, M-1)) >= leps) {
+                        log_k_term(log_mu, nu, M - 1)) >= leps) {
       reject("nu is too close to zero.");
     }
 
@@ -131,7 +131,7 @@
       reject("cannot handle y > 10000");
     }
     log_mu = log(mu);
-    if (y * log_mu - nu*lgamma(y + 1) <= -36.0) {
+    if (y * log_mu - nu * lgamma(y + 1) <= -36.0) {
       // y is large enough for the CDF to be very close to 1;
       return 0;
     }

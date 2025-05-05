@@ -102,6 +102,8 @@ Other contributors:
   \item Ioannis Kosmidis [contributor]
   \item Ben Schneider [contributor]
   \item Noa Kallioinen [contributor]
+  \item Wellington J. Silva [contributor]
+  \item Luiz Carvalho [contributor]
 }
 
 }
