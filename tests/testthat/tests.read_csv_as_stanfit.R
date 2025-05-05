@@ -120,10 +120,7 @@ test_that("rstan can locate max_treedepth", {
     max_treedepth = 2,
     adapt_delta = .1
   )
-  fit <- fit_treedepth$output_files() |>
-    read_csv_as_stanfit()
-  fit |>
-    rstan::check_treedepth() |>
-    expect_message("depth of 2")
+  fit <- read_csv_as_stanfit(fit_treedepth$output_files())
+  expect_message(rstan::check_treedepth(fit), "depth of 2")
 })
 
