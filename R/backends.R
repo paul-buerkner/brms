@@ -755,7 +755,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   )
 
   # @model_name
-  model_name = gsub(".csv", "", basename(files[[1]]))
+  model_name <- gsub(".csv", "", basename(files[[1]]))
 
   # @model_pars
   model_pars <- csfit$metadata$stan_variables
@@ -1001,7 +1001,12 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     adaptation_info = NA, # add in loop
     has_time = is.numeric(csfit$metadata$time$total),
     time_info = NA, # add in loop
-    sampler_t = sampler_t
+    sampler_t = sampler_t,
+    # rstan looks in @stan_args$control for some metadata
+    control = list(
+      adapt_delta = csfit$metadata$adapt_delta,
+      max_treedepth = csfit$metadata$max_treedepth
+    )
   )
 
   sargs_rep <- replicate(n_chains, sargs, simplify = FALSE)
