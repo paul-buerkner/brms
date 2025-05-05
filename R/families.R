@@ -1550,9 +1550,7 @@ summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
 summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
   x <- brmsterms(x)
   dpars <- valid_dpars(x)
-  links <- setNames(rep("identity", length(dpars)), dpars)
-  links_pred <- ulapply(x$dpars, function(x) x$family$link)
-  links[names(links_pred)] <- links_pred
+  links <- ulapply(x$dpars, function(x) x$family$link)
   if (conv_cats_dpars(x)) {
     links[grepl("^mu", names(links))] <- x$family$link
   }
