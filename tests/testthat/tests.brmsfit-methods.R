@@ -670,7 +670,7 @@ test_that("pp_check has reasonable outputs", {
                  group = "visit", newdata = fit1$data[1:10, ])
   expect_ggplot(pp)
 
-  pp <- SW(pp_check(fit1, type = "loo_pit", cores = 1))
+  pp <- SW(pp_check(fit1, type = "loo_pit_qq", cores = 1))
   expect_ggplot(pp)
 
   # ppd plots work

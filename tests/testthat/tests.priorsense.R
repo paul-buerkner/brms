@@ -1,8 +1,8 @@
 context("Tests for priorsense support")
+skip_if_not_installed("priorsense")
+skip_on_cran()
 
 SW <- suppressWarnings
-
-skip_on_cran()
 
 require(priorsense)
 

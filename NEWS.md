@@ -25,6 +25,8 @@ These changes may be reverted once the underlying causes of this
 issue have been fixed. (#1658)
 * Align the definition of the R function `step()` with the definition in Stan,
 such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
+* Make `read_csv_as_stanfit()` store `adapt_delta` and `max_treedepth` values in
+`$control` so rstan can find these values. Thanks to Tristan Mahr (#1767).
 
 ### Other Changes
 
