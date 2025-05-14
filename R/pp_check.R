@@ -125,6 +125,7 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
       "intervals", "intervals_grouped",
       "loo_intervals", "loo_pit", "loo_pit_overlay",
       "loo_pit_qq", "loo_ribbon",
+      "loo_pit_ecdf",
       'pit_ecdf', 'pit_ecdf_grouped',
       "ribbon", "ribbon_grouped",
       "rootogram", "scatter_avg", "scatter_avg_grouped",
