@@ -29,10 +29,11 @@ as well as \url{https://mc-stan.org/docs/2_26/stan-users-guide/opencl.html}.
 \dontrun{
 # this model just serves as an illustration
 # OpenCL may not actually speed things up here
-fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-           data = epilepsy, family = poisson(),
-           chains = 2, cores = 2, opencl = opencl(c(0, 0)),
-           backend = "cmdstanr")
+fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson(),
+  chains = 2, cores = 2, opencl = opencl(c(0, 0)),
+  backend = "cmdstanr"
+)
 summary(fit)
 }
 

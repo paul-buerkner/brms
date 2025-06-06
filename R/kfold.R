@@ -98,8 +98,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-#'            data = epilepsy, family = poisson())
+#' fit1 <- brm(count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
+#'   data = epilepsy, family = poisson()
+#' )
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
 #' # perform 10-fold cross validation
@@ -124,16 +125,19 @@
 #' set.seed(7)
 #' fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 #' options(cmdstanr_write_stan_file_dir = getwd())
-#' fit_cmdstanr <- brm(rate ~ conc + state, data = Puromycin,
-#'                     backend = "cmdstanr", file = fname)
+#' fit_cmdstanr <- brm(rate ~ conc + state,
+#'   data = Puromycin,
+#'   backend = "cmdstanr", file = fname
+#' )
 #'
 #' # now restart the R session and run the following (after attaching 'brms')
 #' set.seed(7)
 #' fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 #' fit_cmdstanr <- brm(rate ~ conc + state,
-#'                     data = Puromycin,
-#'                     backend = "cmdstanr",
-#'                     file = fname)
+#'   data = Puromycin,
+#'   backend = "cmdstanr",
+#'   file = fname
+#' )
 #' kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #' }
 #'
@@ -190,8 +194,10 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   if (!is.null(group)) {
     valid_groups <- get_cat_vars(x)
     if (length(group) != 1L || !group %in% valid_groups) {
-      stop2("Group '", group, "' is not a valid grouping factor. ",
-            "Valid groups are: \n", collapse_comma(valid_groups))
+      stop2(
+        "Group '", group, "' is not a valid grouping factor. ",
+        "Valid groups are: \n", collapse_comma(valid_groups)
+      )
     }
     gvar <- factor(get(group, newdata))
   }
@@ -418,8 +424,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zBase * Trt + (1|patient),
-#'            data = epilepsy, family = poisson())
+#' fit <- brm(count ~ zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = poisson()
+#' )
 #'
 #' # perform k-fold cross validation
 #' (kf <- kfold(fit, save_fits = TRUE, chains = 1))
@@ -461,7 +468,8 @@ kfold_predict <- function(x, method = "posterior_predict", resp = NULL, ...) {
     newdata <- x$data[predicted_k, , drop = FALSE]
     y[obs_names] <- get_y(fit_k, resp, newdata = newdata, ...)
     yrep[, obs_names] <- method(
-      fit_k, newdata = newdata, resp = resp,
+      fit_k,
+      newdata = newdata, resp = resp,
       allow_new_levels = TRUE, summary = FALSE, ...
     )
   }

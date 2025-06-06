@@ -69,8 +69,9 @@ predicted responses. Can be performed for the data used to fit the model
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler, cores = 2)
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, cores = 2
+)
 
 ## extract predictive errors
 pe <- predictive_error(fit)

@@ -1,14 +1,12 @@
 #' @export
 #' @rdname prepare_predictions
 prepare_predictions.brmsfit <- function(
-  x, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  incl_autocor = TRUE, oos = NULL, resp = NULL, ndraws = NULL, draw_ids = NULL,
-  nsamples = NULL, subset = NULL, nug = NULL, smooths_only = FALSE,
-  offset = TRUE, newdata2 = NULL, new_objects = NULL, point_estimate = NULL,
-  ndraws_point_estimate = 1, ...
-) {
-
+    x, newdata = NULL, re_formula = NULL,
+    allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+    incl_autocor = TRUE, oos = NULL, resp = NULL, ndraws = NULL, draw_ids = NULL,
+    nsamples = NULL, subset = NULL, nug = NULL, smooths_only = FALSE,
+    offset = TRUE, newdata2 = NULL, new_objects = NULL, point_estimate = NULL,
+    ndraws_point_estimate = 1, ...) {
   x <- restructure(x)
   # allows functions to fall back to old default behavior
   # which was used when originally fitting the model
@@ -22,7 +20,8 @@ prepare_predictions.brmsfit <- function(
   warn_brmsfit_multiple(x, newdata = newdata)
   newdata2 <- use_alias(newdata2, new_objects)
   x <- exclude_terms(
-    x, incl_autocor = incl_autocor,
+    x,
+    incl_autocor = incl_autocor,
     offset = offset, smooths_only = smooths_only
   )
   resp <- validate_resp(resp, x)
@@ -32,7 +31,8 @@ prepare_predictions.brmsfit <- function(
   draws <- point_draws(draws, point_estimate, ndraws_point_estimate)
 
   sdata <- standata(
-    x, newdata = newdata, re_formula = re_formula,
+    x,
+    newdata = newdata, re_formula = re_formula,
     newdata2 = newdata2, resp = resp,
     allow_new_levels = allow_new_levels,
     internal = TRUE, ...
@@ -47,7 +47,8 @@ prepare_predictions.brmsfit <- function(
     sample_new_levels = sample_new_levels,
   )
   prepare_predictions(
-    bframe, draws = draws, sdata = sdata,
+    bframe,
+    draws = draws, sdata = sdata,
     prep_re = prep_re, resp = resp,
     sample_new_levels = sample_new_levels, nug = nug,
     new = !is.null(newdata), oos = oos,
@@ -60,15 +61,18 @@ prepare_predictions.mvbrmsframe <- function(x, draws, sdata, resp = NULL, ...) {
   resp <- validate_resp(resp, x$responses)
   if (length(resp) > 1) {
     if (has_subset(x)) {
-      stop2("Argument 'resp' must be a single variable name ",
-            "for models using addition argument 'subset'.")
+      stop2(
+        "Argument 'resp' must be a single variable name ",
+        "for models using addition argument 'subset'."
+      )
     }
     out <- list(ndraws = nrow(draws), nobs = sdata$N)
     out$resps <- named_list(resp)
     out$old_order <- attr(sdata, "old_order")
     for (r in resp) {
       out$resps[[r]] <- prepare_predictions(
-        x$terms[[r]], draws = draws, sdata = sdata, ...
+        x$terms[[r]],
+        draws = draws, sdata = sdata, ...
       )
     }
     if (x$rescor) {
@@ -88,7 +92,8 @@ prepare_predictions.mvbrmsframe <- function(x, draws, sdata, resp = NULL, ...) {
     out <- structure(out, class = "mvbrmsprep")
   } else {
     out <- prepare_predictions(
-      x$terms[[resp]], draws = draws, sdata = sdata, ...
+      x$terms[[resp]],
+      draws = draws, sdata = sdata, ...
     )
   }
   out
@@ -115,7 +120,8 @@ prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
     dp_regex <- paste0("^", dp, resp, "$")
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       out$dpars[[dp]] <- prepare_predictions(
-        x$dpars[[dp]], draws = draws, sdata = sdata, ...
+        x$dpars[[dp]],
+        draws = draws, sdata = sdata, ...
       )
     } else if (any(grepl(dp_regex, colnames(draws)))) {
       out$dpars[[dp]] <-
@@ -129,7 +135,8 @@ prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
   out$nlpars <- named_list(names(x$nlpars))
   for (nlp in names(x$nlpars)) {
     out$nlpars[[nlp]] <- prepare_predictions(
-      x$nlpars[[nlp]], draws = draws, sdata = sdata, ...
+      x$nlpars[[nlp]],
+      draws = draws, sdata = sdata, ...
     )
   }
   if (is.mixfamily(x$family)) {
@@ -139,7 +146,8 @@ prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
       # theta was predicted
       missing_id <- which(ulapply(out$dpars[thetas], is.null))
       out$dpars[[paste0("theta", missing_id)]] <- structure(
-        data2draws(0, c(ndraws, nobs)), predicted = TRUE
+        data2draws(0, c(ndraws, nobs)),
+        predicted = TRUE
       )
     } else {
       # theta was not predicted
@@ -478,14 +486,16 @@ prepare_predictions_gp <- function(bframe, draws, sdata, new = FALSE,
       gp <- named_list(cons)
       for (j in seq_along(cons)) {
         gp[[j]] <- .prepare_predictions_gp(
-          gpframe, draws = draws, sdata = sdata,
+          gpframe,
+          draws = draws, sdata = sdata,
           nug = nug, new = new, byj = j, p = p, i = i
         )
       }
       attr(gp, "byfac") <- TRUE
     } else {
       gp <- .prepare_predictions_gp(
-        gpframe, draws = draws, sdata = sdata,
+        gpframe,
+        draws = draws, sdata = sdata,
         nug = nug, new = new, p = p, i = i
       )
     }
@@ -777,8 +787,10 @@ prepare_predictions_ac <- function(bframe, draws, sdata, oos = NULL,
       out$err <- prepare_draws(draws, err_regex, regex = TRUE)
     } else {
       if (!use_ac_cov_time(acframe)) {
-        stop2("Cannot predict new latent residuals ",
-              "when using cov = FALSE in autocor terms.")
+        stop2(
+          "Cannot predict new latent residuals ",
+          "when using cov = FALSE in autocor terms."
+        )
       }
       # need to sample correlated residuals
       out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
@@ -940,7 +952,8 @@ pseudo_prep_for_mixture <- function(prep, comp, draw_ids = NULL) {
 # @param levels grouping factor levels to keep
 # @param nranef number of group-level effects
 subset_levels <- function(x, levels, nranef) {
-  take_levels <- ulapply(levels,
+  take_levels <- ulapply(
+    levels,
     function(l) ((l - 1) * nranef + 1):(l * nranef)
   )
   x[, take_levels, drop = FALSE]
@@ -952,7 +965,8 @@ subset_levels <- function(x, levels, nranef) {
 # @param nranef number of group-level effects
 column_to_row_major_order <- function(x, nranef) {
   nlevels <- ncol(x) / nranef
-  sort_levels <- ulapply(seq_len(nlevels),
+  sort_levels <- ulapply(
+    seq_len(nlevels),
     function(l) seq(l, ncol(x), by = nlevels)
   )
   x[, sort_levels, drop = FALSE]
@@ -983,7 +997,8 @@ prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
   levels <- unique(unlist(gf))
   nranef <- ncol(Z[[1]])
   Z <- mapply(
-    expand_matrix, A = Z, x = gf, weights = weights,
+    expand_matrix,
+    A = Z, x = gf, weights = weights,
     MoreArgs = nlist(max_level)
   )
   Z <- Reduce("+", Z)
@@ -1022,7 +1037,7 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
 # @param draws optional matrix of draws from all model parameters
 # @return a matrix of draws for new group levels
 get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
-                             sample_new_levels, draws = NULL) {
+                           sample_new_levels, draws = NULL) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   g <- unique(reframe$group)
@@ -1082,8 +1097,10 @@ get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
         }
       } else if (sample_new_levels == "gaussian") {
         if (any(!reframe$dist %in% "gaussian")) {
-          stop2("Option sample_new_levels = 'gaussian' is not ",
-                "available for non-gaussian group-level effects.")
+          stop2(
+            "Option sample_new_levels = 'gaussian' is not ",
+            "available for non-gaussian group-level effects."
+          )
         }
         for (j in seq_along(new_indices)) {
           # extract hyperparameters used to compute the covariance matrix
@@ -1153,7 +1170,8 @@ point_draws <- function(draws, point_estimate = NULL,
   }
   draws <- t(draws)
   draws <- matrix(
-    draws, nrow = ndraws_point_estimate,
+    draws,
+    nrow = ndraws_point_estimate,
     ncol = ncol(draws), byrow = TRUE
   )
   colnames(draws) <- variables
@@ -1198,7 +1216,7 @@ is.bprepnl <- function(x) {
 #' @param allow_new_levels A flag indicating if new levels of group-level
 #'   effects are allowed (defaults to \code{FALSE}). Only relevant if
 #'   \code{newdata} is provided.
-#'@param sample_new_levels Indicates how to sample new levels for grouping
+#' @param sample_new_levels Indicates how to sample new levels for grouping
 #'  factors specified in \code{re_formula}. This argument is only relevant if
 #'  \code{newdata} is provided and \code{allow_new_levels} is set to
 #'  \code{TRUE}. If \code{"uncertainty"} (default), each posterior sample for a
@@ -1271,7 +1289,9 @@ prepare_predictions.default <- function(x, ...) {
 # remove it eventually in brms 3.0
 #' @export
 extract_draws <- function(x, ...) {
-  warning2("Method 'extract_draws' is deprecated. ",
-           "Please use 'prepare_predictions' instead.")
+  warning2(
+    "Method 'extract_draws' is deprecated. ",
+    "Please use 'prepare_predictions' instead."
+  )
   UseMethod("prepare_predictions")
 }

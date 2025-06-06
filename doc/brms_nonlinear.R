@@ -1,5 +1,5 @@
 params <-
-list(EVAL = TRUE)
+  list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -29,7 +29,8 @@ dat1 <- data.frame(x, y)
 prior1 <- prior(normal(1, 2), nlpar = "b1") +
   prior(normal(0, 2), nlpar = "b2")
 fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
-            data = dat1, prior = prior1)
+  data = dat1, prior = prior1
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit1)
@@ -55,9 +56,10 @@ head(loss)
 
 ## ---- results='hide'--------------------------------------------------------------------
 fit_loss <- brm(
-  bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
-     nl = TRUE),
+  bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+    ult ~ 1 + (1 | AY), omega ~ 1, theta ~ 1,
+    nl = TRUE
+  ),
   data = loss, family = gaussian(),
   prior = c(
     prior(normal(5000, 1000), nlpar = "ult"),
@@ -76,7 +78,8 @@ conditional_effects(fit_loss)
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
 me_loss <- conditional_effects(
-  fit_loss, conditions = conditions,
+  fit_loss,
+  conditions = conditions,
   re_formula = NULL, method = "predict"
 )
 plot(me_loss, ncol = 5, points = TRUE)
@@ -98,7 +101,9 @@ plot(conditional_effects(fit_ir1), points = TRUE)
 ## ---- results='hide'--------------------------------------------------------------------
 fit_ir2 <- brm(
   bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
-     eta ~ ability, nl = TRUE),
+    eta ~ ability,
+    nl = TRUE
+  ),
   data = dat_ir, family = bernoulli("identity"),
   prior = prior(normal(0, 5), nlpar = "eta")
 )
@@ -113,7 +118,9 @@ loo(fit_ir1, fit_ir2)
 ## ---- results='hide'--------------------------------------------------------------------
 fit_ir3 <- brm(
   bf(answer ~ guess + (1 - guess) * inv_logit(eta),
-    eta ~ 0 + ability, guess ~ 1, nl = TRUE),
+    eta ~ 0 + ability, guess ~ 1,
+    nl = TRUE
+  ),
   data = dat_ir, family = bernoulli("identity"),
   prior = c(
     prior(normal(0, 5), nlpar = "eta"),
@@ -125,4 +132,3 @@ fit_ir3 <- brm(
 summary(fit_ir3)
 plot(fit_ir3)
 plot(conditional_effects(fit_ir3), points = TRUE)
-

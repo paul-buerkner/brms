@@ -179,7 +179,8 @@
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
-#'            data = epilepsy, family = poisson())
+#'   data = epilepsy, family = poisson()
+#' )
 #'
 #' ## plot all conditional effects
 #' plot(conditional_effects(fit), ask = FALSE)
@@ -194,23 +195,33 @@
 #' ## only plot the conditional interaction effect of 'zBase:Trt'
 #' ## for different values for 'zAge'
 #' conditions <- data.frame(zAge = c(-1, 0, 1))
-#' plot(conditional_effects(fit, effects = "zBase:Trt",
-#'                          conditions = conditions))
+#' plot(conditional_effects(fit,
+#'   effects = "zBase:Trt",
+#'   conditions = conditions
+#' ))
 #'
 #' ## also incorporate group-level effects variance over patients
 #' ## also add data points and a rug representation of predictor values
-#' plot(conditional_effects(fit, effects = "zBase:Trt",
-#'                          conditions = conditions, re_formula = NULL),
-#'      points = TRUE, rug = TRUE)
+#' plot(
+#'   conditional_effects(fit,
+#'     effects = "zBase:Trt",
+#'     conditions = conditions, re_formula = NULL
+#'   ),
+#'   points = TRUE, rug = TRUE
+#' )
 #'
 #' ## change handling of two-way interactions
 #' int_conditions <- list(
 #'   zBase = setNames(c(-2, 1, 0), c("b", "c", "a"))
 #' )
-#' conditional_effects(fit, effects = "Trt:zBase",
-#'                     int_conditions = int_conditions)
-#' conditional_effects(fit, effects = "Trt:zBase",
-#'                     int_conditions = list(zBase = quantile))
+#' conditional_effects(fit,
+#'   effects = "Trt:zBase",
+#'   int_conditions = int_conditions
+#' )
+#' conditional_effects(fit,
+#'   effects = "Trt:zBase",
+#'   int_conditions = list(zBase = quantile)
+#' )
 #'
 #' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
@@ -218,7 +229,8 @@
 #' conditional_effects(fit3way, "zBase:Trt", conditions = conditions)
 #' ## only include points close to the specified values of zAge
 #' ce <- conditional_effects(
-#'   fit3way, "zBase:Trt", conditions = conditions,
+#'   fit3way, "zBase:Trt",
+#'   conditions = conditions,
 #'   select_points = 0.1
 #' )
 #' plot(ce, points = TRUE)
@@ -249,8 +261,10 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop2("'transform' is only allowed if 'method = posterior_predict'.")
   }
   if (ordinal) {
-    warning2("Argument 'ordinal' is deprecated. ",
-             "Please use 'categorical' instead.")
+    warning2(
+      "Argument 'ordinal' is deprecated. ",
+      "Please use 'categorical' instead."
+    )
   }
   rsv_vars <- rsv_vars(bterms)
   use_def_effects <- is.null(effects)
@@ -260,15 +274,20 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     # allow to define interactions in any order
     effects <- strsplit(as.character(effects), split = ":")
     if (any(unique(unlist(effects)) %in% rsv_vars)) {
-      stop2("Variables ", collapse_comma(rsv_vars),
-            " should not be used as effects for this model")
+      stop2(
+        "Variables ", collapse_comma(rsv_vars),
+        " should not be used as effects for this model"
+      )
     }
     if (any(lengths(effects) > 2L)) {
-      stop2("To display interactions of order higher than 2 ",
-            "please use the 'conditions' argument.")
+      stop2(
+        "To display interactions of order higher than 2 ",
+        "please use the 'conditions' argument."
+      )
     }
     all_effects <- get_all_effects(
-      bterms, rsv_vars = rsv_vars, comb_all = TRUE
+      bterms,
+      rsv_vars = rsv_vars, comb_all = TRUE
     )
     ae_coll <- all_effects[lengths(all_effects) == 1L]
     ae_coll <- ulapply(ae_coll, paste, collapse = ":")
@@ -306,10 +325,12 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   }
   mf <- model.frame(x)
   conditions <- prepare_conditions(
-    x, conditions = conditions, effects = effects,
+    x,
+    conditions = conditions, effects = effects,
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_conditions <- lapply(int_conditions,
+  int_conditions <- lapply(
+    int_conditions,
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
   int_vars <- get_int_vars(bterms)
@@ -318,7 +339,8 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   for (i in seq_along(effects)) {
     eff <- effects[[i]]
     cond_data <- prepare_cond_data(
-      mf[, eff, drop = FALSE], conditions = conditions,
+      mf[, eff, drop = FALSE],
+      conditions = conditions,
       int_conditions = int_conditions, int_vars = int_vars,
       group_vars = group_vars, surface = surface,
       resolution = resolution, reorder = use_def_effects
@@ -330,11 +352,13 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         g2 = cond_data[[eff[2]]],
         d1 = mf[, eff[1]],
         d2 = mf[, eff[2]],
-        dist = too_far)
+        dist = too_far
+      )
       cond_data <- cond_data[!ex_too_far, ]
     }
     c(out) <- conditional_effects(
-      bterms, fit = x, cond_data = cond_data, method = method,
+      bterms,
+      fit = x, cond_data = cond_data, method = method,
       surface = surface, spaghetti = spaghetti, categorical = categorical,
       ordinal = ordinal, re_formula = re_formula, transform = transform,
       conditions = conditions, int_conditions = int_conditions,
@@ -366,16 +390,16 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
 # @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
 conditional_effects.brmsterms <- function(
-  x, fit, cond_data, int_conditions, method, surface,
-  spaghetti, categorical, ordinal, probs, robust,
-  dpar = NULL, nlpar = NULL, resp = NULL, ...
-) {
+    x, fit, cond_data, int_conditions, method, surface,
+    spaghetti, categorical, ordinal, probs, robust,
+    dpar = NULL, nlpar = NULL, resp = NULL, ...) {
   stopifnot(is.brmsfit(fit))
   effects <- attr(cond_data, "effects")
   types <- attr(cond_data, "types")
   catscale <- NULL
   pred_args <- list(
-    fit, newdata = cond_data, allow_new_levels = TRUE,
+    fit,
+    newdata = cond_data, allow_new_levels = TRUE,
     dpar = dpar, nlpar = nlpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
@@ -391,8 +415,10 @@ conditional_effects.brmsterms <- function(
       stop2("Can only use 'categorical' with method = 'posterior_epred'.")
     }
     if (!is_polytomous(x)) {
-      stop2("Argument 'categorical' may only be used ",
-            "for categorical or ordinal models.")
+      stop2(
+        "Argument 'categorical' may only be used ",
+        "for categorical or ordinal models."
+      )
     }
     if (categorical && ordinal) {
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
@@ -548,10 +574,12 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE, ...)
 
 #' @export
 get_all_effects.btl <- function(x, ...) {
-  c(get_var_combs(x[["fe"]], x[["cs"]]),
+  c(
+    get_var_combs(x[["fe"]], x[["cs"]]),
     get_all_effects_type(x, "sp"),
     get_all_effects_type(x, "sm"),
-    get_all_effects_type(x, "gp"))
+    get_all_effects_type(x, "gp")
+  )
 }
 
 # extract variable combinations from special terms
@@ -761,8 +789,10 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   trial_vars <- all_vars(bterms$adforms$trials)
   trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
   if (length(trial_vars)) {
-    message("Setting all 'trials' variables to 1 by ",
-            "default if not specified otherwise.")
+    message(
+      "Setting all 'trials' variables to 1 by ",
+      "default if not specified otherwise."
+    )
     req_vars <- setdiff(req_vars, trial_vars)
     for (v in trial_vars) {
       conditions[[v]] <- 1L
@@ -808,7 +838,8 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   }
   cond__ <- conditions$cond__
   conditions <- validate_newdata(
-    conditions, fit, re_formula = re_formula,
+    conditions, fit,
+    re_formula = re_formula,
     allow_new_levels = TRUE, check_response = FALSE,
     incl_autocor = FALSE
   )
@@ -1024,28 +1055,31 @@ print.brms_conditional_effects <- function(x, ...) {
 #' @importFrom rlang .data
 #' @export
 plot.brms_conditional_effects <- function(
-  x, ncol = NULL, points = getOption("brms.plot_points", FALSE),
-  rug = getOption("brms.plot_rug", FALSE), mean = TRUE,
-  jitter_width = 0, stype = c("contour", "raster"),
-  line_args = list(), cat_args = list(), errorbar_args = list(),
-  surface_args = list(), spaghetti_args = list(), point_args = list(),
-  rug_args = list(), facet_args = list(), theme = NULL, ask = TRUE,
-  plot = TRUE, ...
-) {
+    x, ncol = NULL, points = getOption("brms.plot_points", FALSE),
+    rug = getOption("brms.plot_rug", FALSE), mean = TRUE,
+    jitter_width = 0, stype = c("contour", "raster"),
+    line_args = list(), cat_args = list(), errorbar_args = list(),
+    surface_args = list(), spaghetti_args = list(), point_args = list(),
+    rug_args = list(), facet_args = list(), theme = NULL, ask = TRUE,
+    plot = TRUE, ...) {
   dots <- list(...)
   plot <- use_alias(plot, dots$do_plot)
   stype <- match.arg(stype)
   smooths_only <- isTRUE(attr(x, "smooths_only"))
   if (points && smooths_only) {
-    stop2("Argument 'points' is invalid for objects ",
-          "returned by 'conditional_smooths'.")
+    stop2(
+      "Argument 'points' is invalid for objects ",
+      "returned by 'conditional_smooths'."
+    )
   }
   if (!is_equal(jitter_width, 0)) {
-    warning2("'jitter_width' is deprecated. Please use ",
-             "'point_args = list(width = <width>)' instead.")
+    warning2(
+      "'jitter_width' is deprecated. Please use ",
+      "'point_args = list(width = <width>)' instead."
+    )
   }
   if (!is.null(theme) && !is.theme(theme)) {
-      stop2("Argument 'theme' should be a 'theme' object.")
+    stop2("Argument 'theme' should be a 'theme' object.")
   }
   if (plot) {
     default_ask <- devAskNewPage()
@@ -1107,7 +1141,8 @@ plot.brms_conditional_effects <- function(
       if (!is.null(gvar)) {
         aes_tmp$colour <- aes(colour = .data[[gvar]])$colour
       }
-      plots[[i]] <- ggplot(x[[i]]) + aes_tmp +
+      plots[[i]] <- ggplot(x[[i]]) +
+        aes_tmp +
         labs(x = effects[1], y = response, colour = effects[2])
       if (is.null(spaghetti)) {
         aes_tmp <- aes(ymin = .data[["lower__"]], ymax = .data[["upper__"]])
@@ -1172,7 +1207,8 @@ plot.brms_conditional_effects <- function(
         }
         if (rug) {
           .rug_args <- list(
-            aes(x = .data[["effect1__"]]), sides = "b",
+            aes(x = .data[["effect1__"]]),
+            sides = "b",
             data = df_points, inherit.aes = FALSE
           )
           if (is_like_factor(df_points[, gvar])) {
@@ -1234,8 +1270,10 @@ marginal_effects <- function(x, ...) {
 
 #' @export
 marginal_effects.brmsfit <- function(x, ...) {
-  warning2("Method 'marginal_effects' is deprecated. ",
-           "Please use 'conditional_effects' instead.")
+  warning2(
+    "Method 'marginal_effects' is deprecated. ",
+    "Please use 'conditional_effects' instead."
+  )
   conditional_effects.brmsfit(x, ...)
 }
 

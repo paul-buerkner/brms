@@ -37,7 +37,7 @@ test_that("log_lik for various skewed normal models works as expected", {
   prep <- structure(list(), class = "brmsprep")
   prep$dpars <- list(
     sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
-    mu = matrix(rnorm(ns*2), ncol = 2),
+    mu = matrix(rnorm(ns * 2), ncol = 2),
     alpha = rnorm(ns), ndt = 1
   )
   prep$data <- list(Y = rlnorm(ns))
@@ -77,7 +77,7 @@ test_that("log_lik of aysm_laplace models runs without errors", {
   prep$dpars <- list(
     sigma = rchisq(ns, 3),
     quantile = rbeta(ns, 2, 1),
-    mu = matrix(rnorm(ns*2), ncol = 2),
+    mu = matrix(rnorm(ns * 2), ncol = 2),
     zi = rbeta(ns, 10, 10)
   )
   prep$data <- list(Y = brms:::rasym_laplace(ns))
@@ -94,9 +94,9 @@ test_that("log_lik for multivariate linear models runs without errors", {
   ncols <- 4
   nobs <- nvars * ncols
   prep <- structure(list(), class = "mvbrmsprep")
-  Sigma = array(cov(matrix(rnorm(300), ncol = 3)), dim = c(3, 3, 10))
+  Sigma <- array(cov(matrix(rnorm(300), ncol = 3)), dim = c(3, 3, 10))
   prep$mvpars <- list(
-    Mu = array(rnorm(ns*nobs*nvars), dim = c(ns, nobs, nvars)),
+    Mu = array(rnorm(ns * nobs * nvars), dim = c(ns, nobs, nvars)),
     Sigma = aperm(Sigma, c(3, 1, 2))
   )
   prep$dpars <- list(nu = rgamma(ns, 5))
@@ -114,7 +114,7 @@ test_that("log_lik for ARMA models runs without errors", {
   nobs <- 15
   prep <- structure(list(ndraws = ns), class = "brmsprep")
   prep$dpars <- list(
-    mu = matrix(rnorm(ns*nobs), ncol = nobs),
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
     sigma = rchisq(ns, 3),
     nu = rgamma(ns, 5) + 15
   )
@@ -140,7 +140,7 @@ test_that("log_lik for SAR models runs without errors", {
     nu = rep(10, 3),
     sigma = rep(10, 3)
   )
-  prep$ac <-  list(
+  prep$ac <- list(
     lagsar = matrix(c(0.3, 0.5, 0.7)),
     Msar = diag(10)
   )
@@ -184,7 +184,7 @@ test_that("log_lik for count and survival models works correctly", {
   trials <- sample(10:30, nobs, replace = TRUE)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    eta = matrix(rnorm(ns*nobs), ncol = nobs),
+    eta = matrix(rnorm(ns * nobs), ncol = nobs),
     shape = rgamma(ns, 4),
     xi = runif(ns, -1, 0.5),
     phi = rgamma(ns, 1)
@@ -346,7 +346,7 @@ test_that("log_lik for zero-inflated and hurdle models runs without erros", {
   resp <- rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1))
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    eta = matrix(rnorm(ns*nobs), ncol = nobs),
+    eta = matrix(rnorm(ns * nobs), ncol = nobs),
     shape = rgamma(ns, 4),
     phi = rgamma(ns, 1),
     zi = rbeta(ns, 1, 1),
@@ -431,8 +431,8 @@ test_that("log_lik for categorical and related models runs without erros", {
   ncat <- 3
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
-    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+    mu1 = array(rnorm(ns * nobs), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns * nobs), dim = c(ns, nobs))
   )
   prep$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   prep$family <- categorical()
@@ -488,7 +488,7 @@ test_that("censored and truncated log_lik run without errors", {
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
     sigma = rchisq(ns, 3)
   )
-  prep$data <- list(Y = rnorm(ns), cens = c(-1,0,1))
+  prep$data <- list(Y = rnorm(ns), cens = c(-1, 0, 1))
   ll <- sapply(1:nobs, brms:::log_lik_gaussian, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
   prep$data <- list(Y = sample(-3:3, nobs), lb = -4, ub = 5)
@@ -538,7 +538,8 @@ test_that("log_lik_custom runs without errors", {
     trials = rep(1, nobs)
   )
   prep$family <- custom_family(
-    "beta_binomial2", dpars = c("mu", "tau"),
+    "beta_binomial2",
+    dpars = c("mu", "tau"),
     links = c("logit", "log"), lb = c(NA, 0),
     type = "int", vars = "trials[n]"
   )

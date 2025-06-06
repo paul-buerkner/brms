@@ -31,8 +31,8 @@
 #'  output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 #'  respectively.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
-#'  to make results reproducible. This is currently only relevant for point 
-#'  hypotheses that scope over at least two parameters (see Details). 
+#'  to make results reproducible. This is currently only relevant for point
+#'  hypotheses that scope over at least two parameters (see Details).
 #' @param ... Currently ignored.
 #'
 #' @details Among others, \code{hypothesis} computes an evidence ratio
@@ -52,23 +52,23 @@
 #'   related to the hypothesis must have proper priors and argument
 #'   \code{sample_prior} of function \code{brm} must be set to \code{"yes"}.
 #'   Otherwise \code{Evid.Ratio} (and \code{Post.Prob}) will be \code{NA}.
-#'   
-#'   Please note that the Savage-Dickey density ratio as implemented here provides 
-#'   only a very basic test of point hypotheses. It is recommended that you use 
-#'   bridge sampling instead (via \code{\link{bayes_factor}} which relies on the 
-#'   \pkg{bridgesampling} package). When interpreting Bayes factors for point 
-#'   hypotheses, make sure that your priors are reasonable and carefully chosen, 
-#'   as the result will depend heavily on the priors. In particular, avoid using 
-#'   default priors. Additionally, note that point hypotheses that scope over more 
+#'
+#'   Please note that the Savage-Dickey density ratio as implemented here provides
+#'   only a very basic test of point hypotheses. It is recommended that you use
+#'   bridge sampling instead (via \code{\link{bayes_factor}} which relies on the
+#'   \pkg{bridgesampling} package). When interpreting Bayes factors for point
+#'   hypotheses, make sure that your priors are reasonable and carefully chosen,
+#'   as the result will depend heavily on the priors. In particular, avoid using
+#'   default priors. Additionally, note that point hypotheses that scope over more
 #'   than one parameter (e.g., when testing equality between two parameters) involve
-#'   random sampling of the priors over those parameters (to accommodate the 
-#'   the assumption that priors for different parameters are independent of each other). 
-#'   This introduces an element of randomness into such hypothesis tests. Consider 
-#'   repeating the test to assure results are sufficiently stable, and use the argument 
-#'   \code{seed} for reproducibility. Finally, note that, for technical reasons, we 
-#'   cannot sample from priors of certain parameters classes. Most notably, these include 
+#'   random sampling of the priors over those parameters (to accommodate the
+#'   the assumption that priors for different parameters are independent of each other).
+#'   This introduces an element of randomness into such hypothesis tests. Consider
+#'   repeating the test to assure results are sufficiently stable, and use the argument
+#'   \code{seed} for reproducibility. Finally, note that, for technical reasons, we
+#'   cannot sample from priors of certain parameters classes. Most notably, these include
 #'   overall intercept parameters (prior class \code{"Intercept"}) as well as group-level
-#'   coefficients. 
+#'   coefficients.
 #'
 #'   For one-sided hypotheses, the \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
 #'   small or large evidence, respectively, in favor of the tested hypothesis.
@@ -96,15 +96,18 @@
 #' @examples
 #' \dontrun{
 #' ## define priors
-#' prior <- c(set_prior("normal(0,2)", class = "b"),
-#'            set_prior("student_t(10,0,1)", class = "sigma"),
-#'            set_prior("student_t(10,0,1)", class = "sd"))
+#' prior <- c(
+#'   set_prior("normal(0,2)", class = "b"),
+#'   set_prior("student_t(10,0,1)", class = "sigma"),
+#'   set_prior("student_t(10,0,1)", class = "sd")
+#' )
 #'
 #' ## fit a linear mixed effects models
-#' fit <- brm(time ~ age + sex + disease + (1 + age|patient),
-#'            data = kidney, family = lognormal(),
-#'            prior = prior, sample_prior = "yes",
-#'            control = list(adapt_delta = 0.95))
+#' fit <- brm(time ~ age + sex + disease + (1 + age | patient),
+#'   data = kidney, family = lognormal(),
+#'   prior = prior, sample_prior = "yes",
+#'   control = list(adapt_delta = 0.95)
+#' )
 #'
 #' ## perform two-sided hypothesis testing
 #' (hyp1 <- hypothesis(fit, "sexfemale = age + diseasePKD"))
@@ -115,11 +118,14 @@
 #' hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
 #'
 #' hypothesis(fit, "age < Intercept",
-#'            class = "sd", group  = "patient")
+#'   class = "sd", group = "patient"
+#' )
 #'
 #' ## test the amount of random intercept variance on all variance
-#' h <- paste("sd_patient__Intercept^2 / (sd_patient__Intercept^2 +",
-#'            "sd_patient__age^2 + sigma^2) = 0")
+#' h <- paste(
+#'   "sd_patient__Intercept^2 / (sd_patient__Intercept^2 +",
+#'   "sd_patient__age^2 + sigma^2) = 0"
+#' )
 #' (hyp2 <- hypothesis(fit, h, class = NULL))
 #' plot(hyp2)
 #'
@@ -161,7 +167,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       class <- paste0(class, "_")
     }
     out <- .hypothesis(
-      x, hypothesis, class = class, alpha = alpha,
+      x, hypothesis,
+      class = class, alpha = alpha,
       robust = robust, ...
     )
   } else {
@@ -170,7 +177,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       stop2("'group' should be one of ", collapse_comma(names(co)))
     }
     out <- hypothesis_coef(
-      co[[group]], hypothesis, alpha = alpha,
+      co[[group]], hypothesis,
+      alpha = alpha,
       robust = robust, ...
     )
   }
@@ -189,7 +197,8 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05,
                                robust = FALSE, ...) {
   x <- as.data.frame(x)
   .hypothesis(
-    x, hypothesis, class = "", alpha = alpha,
+    x, hypothesis,
+    class = "", alpha = alpha,
     robust = robust, ...
   )
 }
@@ -248,7 +257,8 @@ NULL
   out <- vector("list", length(hypothesis))
   for (i in seq_along(out)) {
     out[[i]] <- eval_hypothesis(
-      hypothesis[i], x = x, class = class,
+      hypothesis[i],
+      x = x, class = class,
       alpha = alpha, robust = robust,
       name = names(hypothesis)[i]
     )
@@ -265,13 +275,14 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   stopifnot(is.array(x), length(dim(x)) == 3L)
   levels <- dimnames(x)[[2]]
   coefs <- dimnames(x)[[3]]
-  x <- lapply(seq_along(levels), function(l)
+  x <- lapply(seq_along(levels), function(l) {
     structure(as.data.frame(x[, l, ]), names = coefs)
-  )
+  })
   out <- vector("list", length(levels))
   for (l in seq_along(levels)) {
     out[[l]] <- .hypothesis(
-      x[[l]], hypothesis, class = "",
+      x[[l]], hypothesis,
+      class = "",
       alpha = alpha, combine = FALSE, ...
     )
     for (i in seq_along(out[[l]])) {
@@ -325,7 +336,7 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
     stop2("Some parameters cannot be found in the model: \n", miss_pars)
   }
   # rename hypothesis for correct evaluation
-  h_renamed <- rename(h, c(":", "[", "]", ","),  c("___", ".", ".", ".."))
+  h_renamed <- rename(h, c(":", "[", "]", ","), c("___", ".", ".", ".."))
   # get posterior and prior draws
   pattern <- c(paste0("^", class), ":", "\\[", "\\]", ",")
   repl <- c("", "___", ".", ".", "..")
@@ -335,17 +346,23 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   prior_samples <- prior_draws(x, variable = parsH)
   if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
     names(prior_samples) <- rename(
-      names(prior_samples), pattern, repl, fixed = FALSE
+      names(prior_samples), pattern, repl,
+      fixed = FALSE
     )
     prior_samples <- as.matrix(eval2(h_renamed, prior_samples))
   } else {
     prior_samples <- NULL
   }
   # summarize hypothesis
-  wsign <- switch(sign, "=" = "equal", "<" = "less", ">" = "greater")
+  wsign <- switch(sign,
+    "=" = "equal",
+    "<" = "less",
+    ">" = "greater"
+  )
   probs <- switch(sign,
     "=" = c(alpha / 2, 1 - alpha / 2),
-    "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
+    "<" = c(alpha, 1 - alpha),
+    ">" = c(alpha, 1 - alpha)
   )
   if (robust) {
     measures <- c("median", "mad")
@@ -354,7 +371,8 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   }
   measures <- c(measures, "quantile", "evidence_ratio")
   sm <- lapply(
-    measures, get_estimate, draws = samples, probs = probs,
+    measures, get_estimate,
+    draws = samples, probs = probs,
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
@@ -513,10 +531,11 @@ round_numeric <- function(x, digits = 2) {
 print.brmshypothesis <- function(x, digits = 2, chars = 20,
                                  short = getOption("brms.short_summary", FALSE),
                                  ...) {
-  short <-  as_one_logical(short)
+  short <- as_one_logical(short)
   # make sure hypothesis names are not too long
   x$hypothesis$Hypothesis <- limit_chars(
-    x$hypothesis$Hypothesis, chars = chars
+    x$hypothesis$Hypothesis,
+    chars = chars
   )
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis <- round_numeric(x$hypothesis, digits = digits)
@@ -539,7 +558,7 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20,
 #' @export
 plot.brmshypothesis <- function(x, nvariables = 5, N = NULL,
                                 ignore_prior = FALSE, chars = 40, colors = NULL,
-                                theme = NULL, ask = TRUE, plot = TRUE,  ...) {
+                                theme = NULL, ask = TRUE, plot = TRUE, ...) {
   dots <- list(...)
   nvariables <- use_alias(nvariables, N)
   if (!is.data.frame(x$samples)) {
@@ -560,9 +579,13 @@ plot.brmshypothesis <- function(x, nvariables = 5, N = NULL,
     ignore_prior <- ignore_prior || length(unique(samples$Type)) == 1L
     gg <- ggplot(samples, aes(x = .data[["values"]])) +
       facet_wrap("ind", ncol = 1, scales = "free") +
-      xlab("") + ylab("") + theme +
-      theme(axis.text.y = element_blank(),
-            axis.ticks.y = element_blank())
+      xlab("") +
+      ylab("") +
+      theme +
+      theme(
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+      )
     if (ignore_prior) {
       gg <- gg +
         geom_density(alpha = 0.7, fill = colors[1], na.rm = TRUE)

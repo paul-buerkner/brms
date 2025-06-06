@@ -27,4 +27,3 @@ test_that("powerscale returns without error", {
 test_that("powerscale_sensitivity returns without error", {
   expect_no_error(SW(powerscale_sensitivity(fit1)))
 })
-

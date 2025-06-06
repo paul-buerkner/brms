@@ -1,1 +1,1 @@
-options(repos=c(CRAN="https://cran.rstudio.com/"))
+options(repos = c(CRAN = "https://cran.rstudio.com/"))

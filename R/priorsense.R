@@ -18,8 +18,9 @@
 #' \dontrun{
 #' # fit a model with non-uniform priors
 #' fit <- brm(rating ~ treat + period + carry,
-#'            data = inhaler, family = sratio(),
-#'            prior = set_prior("normal(0, 0.5)"))
+#'   data = inhaler, family = sratio(),
+#'   prior = set_prior("normal(0, 0.5)")
+#' )
 #' summary(fit)
 #'
 #' # The following code requires the 'priorsense' package to be installed:
@@ -71,8 +72,10 @@ log_lik_draws.brmsfit <- function(x, ...) {
 log_prior_draws.brmsfit <- function(x, log_prior_name = "lprior", ...) {
   stopifnot(length(log_prior_name) == 1)
   if (!log_prior_name %in% variables(x)) {
-    warning2("Variable '", log_prior_name, "' was not found. ",
-             "Perhaps you used normalize = FALSE?")
+    warning2(
+      "Variable '", log_prior_name, "' was not found. ",
+      "Perhaps you used normalize = FALSE?"
+    )
   }
   posterior::subset_draws(
     as_draws_array(x),

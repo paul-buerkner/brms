@@ -13,10 +13,12 @@ test_that("global shrinkage priors work correctly", suppressWarnings({
     prior(R2D2(), class = sdgp) +
     prior(R2D2(), class = ar) +
     prior(R2D2(), class = ma)
-  bform <- bf(count ~ Trt * Base + Age + mo(x1) + (1|patient) +
-                gp(x2) + s(x3) + arma(p = 2, q = 2, gr = patient))
-  fit <- brm(bform, data = dat, prior = bprior, cores = 4,
-             control = list(adapt_delta = 0.95), seed = 8892)
+  bform <- bf(count ~ Trt * Base + Age + mo(x1) + (1 | patient) +
+    gp(x2) + s(x3) + arma(p = 2, q = 2, gr = patient))
+  fit <- brm(bform,
+    data = dat, prior = bprior, cores = 4,
+    control = list(adapt_delta = 0.95), seed = 8892
+  )
 
   classes <- c("sdb", "sdbsp", "sdbs", "sdar", "sdma")
   for (cl in classes) {
@@ -28,8 +30,8 @@ test_that("global shrinkage priors work correctly", suppressWarnings({
 test_that("Non-linear matrix covariates work correctly", suppressWarnings({
   set.seed(2134)
   N <- 100
-  dat <- data.frame(y=rnorm(N))
-  dat$X <- matrix(rnorm(N*2), N, 2)
+  dat <- data.frame(y = rnorm(N))
+  dat$X <- matrix(rnorm(N * 2), N, 2)
 
   nlfun_stan <- "
     real nlfun(real a, real b, real c, row_vector X) {
@@ -39,11 +41,11 @@ test_that("Non-linear matrix covariates work correctly", suppressWarnings({
   nlstanvar <- stanvar(scode = nlfun_stan, block = "functions")
 
   # fit the model
-  bform <- bf(y~nlfun(a, b, c, X), a~1, b~1, c~1, nl = TRUE)
+  bform <- bf(y ~ nlfun(a, b, c, X), a ~ 1, b ~ 1, c ~ 1, nl = TRUE)
   fit <- brm(bform, dat, stanvars = nlstanvar)
   b <- as.matrix(fit, variable = "b_b_Intercept")
   # fit benchmark model that should yield the same results up to MCMC error
-  fit2 <- brm(y~X, dat)
+  fit2 <- brm(y ~ X, dat)
   b2 <- as.matrix(fit2, variable = "b_X1")
   expect_range(mean(b) - mean(b2), -0.1, 0.1)
 
@@ -64,8 +66,8 @@ test_that("Addition argument 'subset' works correctly", suppressWarnings({
   BTdata$sub1 <- sample(0:1, nrow(BTdata), replace = TRUE)
   BTdata$sub2 <- sample(0:1, nrow(BTdata), replace = TRUE)
 
-  bform <- bf(tarsus | subset(sub1) ~ sex + (1|p|fosternest) + (1|q|dam)) +
-    bf(back | subset(sub2) ~ sex + (1|p|fosternest) + (1|q|dam)) +
+  bform <- bf(tarsus | subset(sub1) ~ sex + (1 | p | fosternest) + (1 | q | dam)) +
+    bf(back | subset(sub2) ~ sex + (1 | p | fosternest) + (1 | q | dam)) +
     set_rescor(FALSE)
   fit <- brm(bform, BTdata, refresh = 0)
   print(summary(fit))
@@ -83,84 +85,91 @@ test_that("Addition argument 'subset' works correctly", suppressWarnings({
 
 test_that("Cox models work correctly", suppressWarnings({
   set.seed(12345)
-  covs <- data.frame(id  = 1:200, trt = stats::rbinom(200, 1L, 0.5))
-  d1 <- simsurv::simsurv(lambdas = 0.1, gammas  = 1.5, betas = c(trt = -0.5),
-                         x = covs, maxt  = 5)
+  covs <- data.frame(id = 1:200, trt = stats::rbinom(200, 1L, 0.5))
+  d1 <- simsurv::simsurv(
+    lambdas = 0.1, gammas = 1.5, betas = c(trt = -0.5),
+    x = covs, maxt = 5
+  )
   d1 <- merge(d1, covs)
   d1$g <- sample(c("a", "b"), nrow(d1), TRUE)
 
   fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt,
-              data = d1, family = brmsfamily("cox"), refresh = 0)
+    data = d1, family = brmsfamily("cox"), refresh = 0
+  )
   print(summary(fit1))
   expect_range(posterior_summary(fit1)["b_trt", "Estimate"], -0.70, -0.30)
   expect_range(waic(fit1)$estimates[3, 1], 620, 670)
 
   fit2 <- brm(eventtime | cens(1 - status) + bhaz(gr = g) ~ 1 + trt,
-              data = d1, family = brmsfamily("cox"), refresh = 0)
+    data = d1, family = brmsfamily("cox"), refresh = 0
+  )
   print(summary(fit2))
   expect_true("sbhaz[a,2]" %in% variables(fit2))
   expect_range(waic(fit2)$estimates[3, 1], 620, 670)
 }))
 
-test_that("ordinal model with grouped thresholds works correctly",
-          suppressWarnings({
-  set.seed(1234)
-  dat <- data.frame(
-    y = sample(1:6, 100, TRUE),
-    gr = rep(c("a", "b"), each = 50),
-    th = rep(5:6, each = 50),
-    x = rnorm(100)
-  )
-
-  prior <- prior(normal(0,1), class = "Intercept", group = "b")
-  fit <- brm(y | thres(th, gr) ~ x, dat, cumulative(), prior = prior)
-  print(summary(fit))
-  pred <- predict(fit)
-  expect_equal(dim(pred), c(nrow(dat), max(dat$th) + 1))
-  expect_range(waic(fit)$estimates[3, 1], 350, 400)
-  ce <- conditional_effects(fit, categorical = TRUE)
-  expect_ggplot(plot(ce, ask = FALSE)[[1]])
-
-  # test incl_thres = TRUE
-  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
-  bprep <- prepare_predictions(fit)
-  thres <- bprep$thres$thres
-  eta <- posterior_linpred(fit)
-  gr_unq <- unique(family(fit)$thres$group)
-  gr_vec <- fit$data$gr
-  nthres_max <- max(
-    by(family(fit)$thres, family(fit)$thres$group, function(x) max(x$thres))
-  )
-  thres_minus_eta_ch <- lapply(setNames(nm = gr_unq), function(gr) {
-    thres_gr_nms <- grepl(paste0("^b_Intercept\\[", gr, ","), colnames(thres))
-    thres_gr <- thres[, thres_gr_nms]
-    eta_gr <- eta[, gr_vec == gr, drop = FALSE]
-    thres_minus_eta_ch_gr <- apply(thres_gr, 2, "-", eta_gr)
-    thres_minus_eta_ch_gr <- array(
-      thres_minus_eta_ch_gr,
-      dim = c(nrow(thres_gr), ncol(eta_gr), ncol(thres_gr))
+test_that(
+  "ordinal model with grouped thresholds works correctly",
+  suppressWarnings({
+    set.seed(1234)
+    dat <- data.frame(
+      y = sample(1:6, 100, TRUE),
+      gr = rep(c("a", "b"), each = 50),
+      th = rep(5:6, each = 50),
+      x = rnorm(100)
     )
-    if (ncol(thres_gr) < nthres_max) {
-      dim_NA <- c(
-        dim(thres_minus_eta_ch_gr)[-3],
-        nthres_max - dim(thres_minus_eta_ch_gr)[3]
+
+    prior <- prior(normal(0, 1), class = "Intercept", group = "b")
+    fit <- brm(y | thres(th, gr) ~ x, dat, cumulative(), prior = prior)
+    print(summary(fit))
+    pred <- predict(fit)
+    expect_equal(dim(pred), c(nrow(dat), max(dat$th) + 1))
+    expect_range(waic(fit)$estimates[3, 1], 350, 400)
+    ce <- conditional_effects(fit, categorical = TRUE)
+    expect_ggplot(plot(ce, ask = FALSE)[[1]])
+
+    # test incl_thres = TRUE
+    thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+    bprep <- prepare_predictions(fit)
+    thres <- bprep$thres$thres
+    eta <- posterior_linpred(fit)
+    gr_unq <- unique(family(fit)$thres$group)
+    gr_vec <- fit$data$gr
+    nthres_max <- max(
+      by(family(fit)$thres, family(fit)$thres$group, function(x) max(x$thres))
+    )
+    thres_minus_eta_ch <- lapply(setNames(nm = gr_unq), function(gr) {
+      thres_gr_nms <- grepl(paste0("^b_Intercept\\[", gr, ","), colnames(thres))
+      thres_gr <- thres[, thres_gr_nms]
+      eta_gr <- eta[, gr_vec == gr, drop = FALSE]
+      thres_minus_eta_ch_gr <- apply(thres_gr, 2, "-", eta_gr)
+      thres_minus_eta_ch_gr <- array(
+        thres_minus_eta_ch_gr,
+        dim = c(nrow(thres_gr), ncol(eta_gr), ncol(thres_gr))
       )
-      thres_minus_eta_ch_gr <-
-        abind::abind(thres_minus_eta_ch_gr, array(dim = dim_NA))
-    }
-    dimnames(thres_minus_eta_ch_gr) <-
-      list(NULL, NULL, as.character(seq_len(nthres_max)))
-    return(thres_minus_eta_ch_gr)
+      if (ncol(thres_gr) < nthres_max) {
+        dim_NA <- c(
+          dim(thres_minus_eta_ch_gr)[-3],
+          nthres_max - dim(thres_minus_eta_ch_gr)[3]
+        )
+        thres_minus_eta_ch_gr <-
+          abind::abind(thres_minus_eta_ch_gr, array(dim = dim_NA))
+      }
+      dimnames(thres_minus_eta_ch_gr) <-
+        list(NULL, NULL, as.character(seq_len(nthres_max)))
+      return(thres_minus_eta_ch_gr)
+    })
+    new_arrnms <- dimnames(thres_minus_eta_ch[[1]])
+    thres_minus_eta_ch <- abind::abind(thres_minus_eta_ch, along = 2)
+    dimnames(thres_minus_eta_ch) <- new_arrnms
+    expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
   })
-  new_arrnms <- dimnames(thres_minus_eta_ch[[1]])
-  thres_minus_eta_ch <- abind::abind(thres_minus_eta_ch, along = 2)
-  dimnames(thres_minus_eta_ch) <- new_arrnms
-  expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
-}))
+)
 
 test_that("projpred methods can be run", suppressWarnings({
   fit <- brm(count ~ zAge + zBase + Trt,
-             data = epilepsy, family = poisson())
+    data = epilepsy, family = poisson()
+  )
   summary(fit)
 
   library(projpred)
@@ -177,21 +186,24 @@ test_that("projpred methods can be run", suppressWarnings({
 
 test_that("alternative algorithms can be used", suppressWarnings({
   fit <- brm(
-    count ~ zBase, data = epilepsy,
+    count ~ zBase,
+    data = epilepsy,
     backend = "cmdstanr", algorithm = "meanfield"
   )
   summary(fit)
   expect_is(fit, "brmsfit")
 
   fit <- brm(
-    count ~ zBase, data = epilepsy,
+    count ~ zBase,
+    data = epilepsy,
     backend = "cmdstanr", algorithm = "pathfinder"
   )
   summary(fit)
   expect_is(fit, "brmsfit")
 
   fit <- brm(
-    count ~ zBase, data = epilepsy,
+    count ~ zBase,
+    data = epilepsy,
     backend = "cmdstanr", algorithm = "laplace"
   )
   summary(fit)
@@ -215,7 +227,7 @@ test_that(paste(
   chains <- 1
 
   fit_sratio <- brm(
-    bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
+    bf(rating ~ x1 + cs(x2) + (cs(x2) || subject), disc ~ 1),
     data = dat2, family = sratio(),
     warmup = warmup, iter = iter, chains = chains,
     seed = 533273
@@ -223,7 +235,7 @@ test_that(paste(
   draws_sratio <- as.matrix(fit_sratio)
 
   fit_cratio <- brm(
-    bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
+    bf(rating ~ x1 + cs(x2) + (cs(x2) || subject), disc ~ 1),
     data = dat2, family = cratio(),
     warmup = warmup, iter = iter, chains = chains,
     seed = 533273
@@ -245,8 +257,8 @@ test_that("prior tags correctly go to priorsense data", {
   N <- 40
   dat <- data.frame(
     count = rpois(N, lambda = 20),
-    visit = factor(rep(1:4, each = N/4)),
-    patient = factor(rep(1:(N/4), 4)),
+    visit = factor(rep(1:4, each = N / 4)),
+    patient = factor(rep(1:(N / 4), 4)),
     Trt = factor(sample(0:1, N, TRUE))
   )
 
@@ -254,12 +266,13 @@ test_that("prior tags correctly go to priorsense data", {
     formula = count ~ Trt + (1 | patient) + (1 + Trt | visit),
     data = dat,
     warmup = warmup, iter = iter, chains = chains,
-    prior = c(prior(normal(0, 1), class = sd, tag = "prior_tag1"),
-              prior(normal(0, 5), class = b, tag = "prior_tag2"),
-              prior(normal(0, 0.5), coef = "Trt1", tag = "prior_tag3"),
-              prior(normal(0, 10), class = "Intercept", tag = "prior_tag4"),
-              prior(lkj_corr_cholesky(3), class = "L", group = "visit", tag = "prior_tag5")
-              ),
+    prior = c(
+      prior(normal(0, 1), class = sd, tag = "prior_tag1"),
+      prior(normal(0, 5), class = b, tag = "prior_tag2"),
+      prior(normal(0, 0.5), coef = "Trt1", tag = "prior_tag3"),
+      prior(normal(0, 10), class = "Intercept", tag = "prior_tag4"),
+      prior(lkj_corr_cholesky(3), class = "L", group = "visit", tag = "prior_tag5")
+    ),
     family = poisson()
   ))
 

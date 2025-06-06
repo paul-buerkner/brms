@@ -8,15 +8,16 @@ test_that("first_greater returns expected results", {
 })
 
 test_that("array2list performs correct conversion", {
-  A <- array(1:27, dim = c(3,3,3))
-  B <- list(matrix(1:9,3,3), matrix(10:18,3,3), matrix(19:27,3,3))
+  A <- array(1:27, dim = c(3, 3, 3))
+  B <- list(matrix(1:9, 3, 3), matrix(10:18, 3, 3), matrix(19:27, 3, 3))
   expect_equal(brms:::array2list(A), B)
 })
 
 test_that("probit and probit_approx produce similar results", {
   expect_equal(brms:::inv_link(-10:10, "probit"),
-               brms:::inv_link(-10:10, "probit_approx"),
-               tolerance = 1e-3)
+    brms:::inv_link(-10:10, "probit_approx"),
+    tolerance = 1e-3
+  )
 })
 
 test_that("autocorrelation matrices are computed correctly", {
@@ -25,17 +26,21 @@ test_that("autocorrelation matrices are computed correctly", {
 
   ar_mat <- brms:::get_cor_matrix_ar1(ar = matrix(ar), nobs = 4)
   expected_ar_mat <- 1 / (1 - ar^2) *
-                     cbind(c(1, ar, ar^2, ar^3),
-                           c(ar, 1, ar, ar^2),
-                           c(ar^2, ar, 1, ar),
-                           c(ar^3, ar^2, ar, 1))
+    cbind(
+      c(1, ar, ar^2, ar^3),
+      c(ar, 1, ar, ar^2),
+      c(ar^2, ar, 1, ar),
+      c(ar^3, ar^2, ar, 1)
+    )
   expect_equal(ar_mat[1, , ], expected_ar_mat)
 
   ma_mat <- brms:::get_cor_matrix_ma1(ma = matrix(ma), nobs = 4)
-  expected_ma_mat <- cbind(c(1+ma^2, ma, 0, 0),
-                           c(ma, 1+ma^2, ma, 0),
-                           c(0, ma, 1+ma^2, ma),
-                           c(0, 0, ma, 1+ma^2))
+  expected_ma_mat <- cbind(
+    c(1 + ma^2, ma, 0, 0),
+    c(ma, 1 + ma^2, ma, 0),
+    c(0, ma, 1 + ma^2, ma),
+    c(0, 0, ma, 1 + ma^2)
+  )
   expect_equal(ma_mat[1, , ], expected_ma_mat)
 
   arma_mat <- brms:::get_cor_matrix_arma1(
@@ -44,10 +49,12 @@ test_that("autocorrelation matrices are computed correctly", {
   g0 <- 1 + ma^2 + 2 * ar * ma
   g1 <- (1 + ar * ma) * (ar + ma)
   expected_arma_mat <- 1 / (1 - ar^2) *
-                       cbind(c(g0, g1, g1 * ar, g1 * ar^2),
-                             c(g1, g0, g1, g1 * ar),
-                             c(g1 * ar, g1, g0, g1),
-                             c(g1 * ar^2, g1 * ar, g1, g0))
+    cbind(
+      c(g0, g1, g1 * ar, g1 * ar^2),
+      c(g1, g0, g1, g1 * ar),
+      c(g1 * ar, g1, g0, g1),
+      c(g1 * ar^2, g1 * ar, g1, g0)
+    )
   expect_equal(arma_mat[1, , ], expected_arma_mat)
 
   cosy <- 0.6
@@ -66,8 +73,8 @@ test_that("evidence_ratio returns expected results", {
   prs <- -2:12
   expect_true(evidence_ratio(ps, prior_samples = prs) > 1)
   expect_true(is.na(evidence_ratio(ps)))
-  expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "greater"), 10/5)
-  expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "less"), 5/10)
+  expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "greater"), 10 / 5)
+  expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "less"), 5 / 10)
 })
 
 test_that("find_vars finds all valid variable names in a string", {
@@ -78,8 +85,8 @@ test_that("find_vars finds all valid variable names in a string", {
 test_that(".predictor_arma runs without errors", {
   ns <- 20
   nobs <- 30
-  Y = rnorm(nobs)
-  J_lag = c(1:3, 3, 3, rep(c(0:3, 3), 4), 0:3, 0)
+  Y <- rnorm(nobs)
+  J_lag <- c(1:3, 3, 3, rep(c(0:3, 3), 4), 0:3, 0)
   ar <- matrix(rnorm(ns * 3), nrow = ns, ncol = 3)
   ma <- matrix(rnorm(ns * 1), nrow = ns, ncol = 1)
   eta <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
@@ -123,37 +130,56 @@ test_that("brmsfit_needs_refit works correctly", {
   expect_equal(cache_res, fake_fit_file)
 
   expect_false(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model1,
-    algorithm = "sampling", silent = TRUE))
+    cache_res,
+    sdata = sdata_model1, scode = scode_model1,
+    algorithm = "sampling", silent = TRUE
+  ))
   expect_false(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model1, algorithm = NULL,
-    silent = TRUE))
+    cache_res,
+    sdata = sdata_model1, scode = scode_model1, algorithm = NULL,
+    silent = TRUE
+  ))
   expect_false(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = NULL,
-    algorithm = "sampling", silent = TRUE))
+    cache_res,
+    sdata = sdata_model1, scode = NULL,
+    algorithm = "sampling", silent = TRUE
+  ))
   expect_false(brmsfit_needs_refit(
-    cache_res, sdata = NULL, scode = scode_model1, algorithm = "sampling",
-    silent = TRUE))
+    cache_res,
+    sdata = NULL, scode = scode_model1, algorithm = "sampling",
+    silent = TRUE
+  ))
 
 
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model2, scode = scode_model1,
-    algorithm = "sampling", silent = TRUE))
+    cache_res,
+    sdata = sdata_model2, scode = scode_model1,
+    algorithm = "sampling", silent = TRUE
+  ))
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model2,
-    algorithm = "sampling", silent = TRUE))
+    cache_res,
+    sdata = sdata_model1, scode = scode_model2,
+    algorithm = "sampling", silent = TRUE
+  ))
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model2, scode = scode_model2,
-    algorithm = "sampling", silent = TRUE))
+    cache_res,
+    sdata = sdata_model2, scode = scode_model2,
+    algorithm = "sampling", silent = TRUE
+  ))
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = sdata_model1, scode = scode_model1,
-    algorithm = "optimize", silent = TRUE))
+    cache_res,
+    sdata = sdata_model1, scode = scode_model1,
+    algorithm = "optimize", silent = TRUE
+  ))
 
   expect_true(brmsfit_needs_refit(
-    cache_res, sdata = make_standata(y ~ x, data = data_model1,
-                                     sample_prior = "only"),
-    scode = scode_model1, algorithm = NULL, silent = TRUE))
-
+    cache_res,
+    sdata = make_standata(y ~ x,
+      data = data_model1,
+      sample_prior = "only"
+    ),
+    scode = scode_model1, algorithm = NULL, silent = TRUE
+  ))
 })
 
 test_that("insert_refcat() works correctly", {
@@ -176,7 +202,8 @@ test_that("insert_refcat() works correctly", {
           fam_list <- c(fam_list, list(fam_ref2 = categorical(refcat = cats[2])))
         }
         eta_test_list <- list(array(rnorm(ndraws * nobsv * (ncat - 1)),
-                                    dim = c(ndraws, nobsv, ncat - 1)))
+          dim = c(ndraws, nobsv, ncat - 1)
+        ))
         if (nobsv == 1) {
           eta_test_list <- c(
             eta_test_list,
@@ -208,3 +235,38 @@ test_that("insert_refcat() works correctly", {
     }
   }
 })
+
+#
+test_that("split_folder_and_file returns expected results", {
+
+  files <- c("somefile",  "./somefile" , "somepath/somefolder/somefile" )
+  result <- base::lapply(files, split_folder_and_file)
+
+
+  exp_result <-   list( list( folder = '.' , file= 'somefile' ) ,
+                    list( folder = '.' , file= 'somefile' ) ,
+                    list( folder = 'somepath/somefolder' , file= 'somefile' )
+  )
+  expect_equal(result ,exp_result )
+
+
+})
+
+test_that("check_brmsfit_file returns expected results", {
+
+  files <- c("somefile",  "./somefile"  , "somefile.rds" , "somepath/somefolder/somefile" )
+
+  result <- base::lapply(files, function(x) check_brmsfit_file(x ,  .check_folder = F  ))
+
+
+  exp_result <-   list(  "./somefile.rds" ,
+                         "./somefile.rds" ,
+                         "./somefile.rds" ,
+                         "somepath/somefolder/somefile.rds" )
+
+  expect_equal(result ,exp_result )
+
+
+})
+
+

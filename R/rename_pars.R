@@ -66,7 +66,8 @@ rename_predictor.mvbrmsterms <- function(x, pars, ...) {
   }
   if (x$rescor) {
     rescor_names <- get_cornames(
-      x$responses, type = "rescor", brackets = FALSE
+      x$responses,
+      type = "rescor", brackets = FALSE
     )
     lc(out) <- rlist(grepl("^rescor\\[", pars), rescor_names)
   }
@@ -95,12 +96,14 @@ rename_predictor.brmsterms <- function(x, ...) {
 # @param pars vector of all parameter names
 #' @export
 rename_predictor.bframel <- function(x, ...) {
-  c(rename_fe(x, ...),
+  c(
+    rename_fe(x, ...),
     rename_sm(x, ...),
     rename_cs(x, ...),
     rename_sp(x, ...),
     rename_gp(x, ...),
-    rename_ac(x, ...))
+    rename_ac(x, ...)
+  )
 }
 
 # helps in renaming fixed effects parameters
@@ -149,7 +152,8 @@ rename_sp <- function(bframe, pars, prior, ...) {
     simo_names <- paste0(simo_new, "[", seq_len(sum(pos)), "]")
     lc(out) <- rlist(pos, simo_names)
     c(out) <- rename_prior(
-      simo_old, pars, new_class = simo_new, is_vector = TRUE
+      simo_old, pars,
+      new_class = simo_new, is_vector = TRUE
     )
   }
   if (has_special_prior(prior, bframe, class = "b")) {
@@ -175,7 +179,8 @@ rename_cs <- function(bframe, pars, ...) {
     csenames <- paste0(bcsp, "_", csenames)
     sort_cse <- ulapply(seq_len(ncs), seq, to = thres * ncs, by = ncs)
     lc(out) <- rlist(
-      grepl(paste0("^", bcsp, "\\["), pars), csenames, sort = sort_cse
+      grepl(paste0("^", bcsp, "\\["), pars), csenames,
+      sort = sort_cse
     )
     c(out) <- rename_prior(bcsp, pars, names = csef)
   }
@@ -263,7 +268,8 @@ rename_Xme <- function(bframe, pars, ...) {
       cor_pos <- grepl(cor_regex, pars)
       lc(out) <- rlist(cor_pos, cor_names)
       c(out) <- rename_prior(
-        paste0("corme_", i), pars, new_class = paste0("corme", usc(g))
+        paste0("corme_", i), pars,
+        new_class = paste0("corme", usc(g))
       )
     }
   }
@@ -412,7 +418,8 @@ rename_re <- function(bframe, pars, ...) {
     sd_pos <- grepl(paste0("^sd_", id, "(\\[|$)"), pars)
     lc(out) <- rlist(sd_pos, sd_names)
     c(out) <- rename_prior(
-      paste0("sd_", id), pars, new_class = paste0("sd_", g),
+      paste0("sd_", id), pars,
+      new_class = paste0("sd_", g),
       names = paste0("_", as.vector(rnames))
     )
     # rename group-level correlations
@@ -422,7 +429,8 @@ rename_re <- function(bframe, pars, ...) {
         cor_names <- named_list(r$bylevels[[1]])
         for (j in seq_along(cor_names)) {
           cor_names[[j]] <- get_cornames(
-            rnames[, j], type, brackets = FALSE
+            rnames[, j], type,
+            brackets = FALSE
           )
         }
         cor_names <- unlist(cor_names)
@@ -433,7 +441,8 @@ rename_re <- function(bframe, pars, ...) {
       cor_pos <- grepl(cor_regex, pars)
       lc(out) <- rlist(cor_pos, cor_names)
       c(out) <- rename_prior(
-        paste0("cor_", id), pars, new_class = paste0("cor_", g)
+        paste0("cor_", id), pars,
+        new_class = paste0("cor_", g)
       )
     }
   }
@@ -450,7 +459,7 @@ rename_re <- function(bframe, pars, ...) {
 }
 
 # helps in renaming varying effects parameters per level
-rename_re_levels <- function(bframe, pars, ...)  {
+rename_re_levels <- function(bframe, pars, ...) {
   out <- list()
   reframe <- bframe$frame$re
   stopifnot(is.reframe(reframe))
@@ -476,7 +485,8 @@ rename_family_cor_pars <- function(x, pars, ...) {
   if (is_logistic_normal(x$family)) {
     predcats <- get_predcats(x$family)
     lncor_names <- get_cornames(
-      predcats, type = "lncor", brackets = FALSE
+      predcats,
+      type = "lncor", brackets = FALSE
     )
     lc(out) <- rlist(grepl("^lncor\\[", pars), lncor_names)
   }
@@ -542,8 +552,9 @@ is.rlist <- function(x) {
 # @param dim the number of output dimensions
 # @return all index pairs of rows and cols
 make_index_names <- function(rownames, colnames = NULL, dim = 1) {
-  if (!dim %in% c(1, 2))
+  if (!dim %in% c(1, 2)) {
     stop("dim must be 1 or 2")
+  }
   if (dim == 1) {
     index_names <- paste0("[", rownames, "]")
   } else {
@@ -620,9 +631,9 @@ reorder_pars <- function(x) {
   has_subpars <- nsubpars > 0
   new_order <- new_order[has_subpars]
   nsubpars <- nsubpars[has_subpars]
-  num <- lapply(seq_along(new_order), function(x)
+  num <- lapply(seq_along(new_order), function(x) {
     as.numeric(paste0(x, ".", sprintf("%010d", seq_len(nsubpars[x]))))
-  )
+  })
   new_order <- order(unlist(num[order(new_order)]))
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[new_order]
   chains <- length(x$fit@sim$samples)
@@ -659,8 +670,10 @@ compute_xi.brmsfit <- function(x, ...) {
   }
   prep <- try(prepare_predictions(x))
   if (is_try_error(prep)) {
-    warning2("Trying to compute 'xi' was unsuccessful. ",
-             "Some S3 methods may not work as expected.")
+    warning2(
+      "Trying to compute 'xi' was unsuccessful. ",
+      "Some S3 methods may not work as expected."
+    )
     return(x)
   }
   compute_xi(prep, fit = x, ...)

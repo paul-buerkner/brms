@@ -36,8 +36,9 @@ When updating a \code{brmsfit} created with the \pkg{cmdstanr}
 }
 \examples{
 \dontrun{
-fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-            data = kidney, family = gaussian("log"))
+fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+  data = kidney, family = gaussian("log")
+)
 summary(fit1)
 
 ## remove effects of 'disease'
@@ -46,13 +47,17 @@ summary(fit2)
 
 ## remove the group specific term of 'patient' and
 ## change the data (just take a subset in this example)
-fit3 <- update(fit1, formula. = ~ . - (1|patient),
-               newdata = kidney[1:38, ])
+fit3 <- update(fit1,
+  formula. = ~ . - (1 | patient),
+  newdata = kidney[1:38, ]
+)
 summary(fit3)
 
 ## use another family and add population-level priors
-fit4 <- update(fit1, family = weibull(), init = "0",
-               prior = set_prior("normal(0,5)"))
+fit4 <- update(fit1,
+  family = weibull(), init = "0",
+  prior = set_prior("normal(0,5)")
+)
 summary(fit4)
 
 ## to avoid a recompilation when updating a 'cmdstanr'-backend fit in a fresh
@@ -65,18 +70,21 @@ set.seed(7)
 fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 options(cmdstanr_write_stan_file_dir = getwd())
 fit_cmdstanr <- brm(rate ~ conc + state,
-                    data = Puromycin,
-                    backend = "cmdstanr",
-                    file = fname)
+  data = Puromycin,
+  backend = "cmdstanr",
+  file = fname
+)
 # now restart the R session and run the following (after attaching 'brms')
 set.seed(7)
 fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 fit_cmdstanr <- brm(rate ~ conc + state,
-                    data = Puromycin,
-                    backend = "cmdstanr",
-                    file = fname)
+  data = Puromycin,
+  backend = "cmdstanr",
+  file = fname
+)
 upd_cmdstanr <- update(fit_cmdstanr,
-                       formula. = rate ~ conc)
+  formula. = rate ~ conc
+)
 }
 
 }

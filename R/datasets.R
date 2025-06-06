@@ -32,14 +32,16 @@
 #' \dontrun{
 #' ## performing surivival analysis using the "weibull" family
 #' fit1 <- brm(time | cens(censored) ~ age + sex + disease,
-#'             data = kidney, family = weibull, init = "0")
+#'   data = kidney, family = weibull, init = "0"
+#' )
 #' summary(fit1)
 #' plot(fit1)
 #'
 #' ## adding random intercepts over patients
-#' fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
-#'             data = kidney, family = weibull(), init = "0",
-#'             prior = set_prior("cauchy(0,2)", class = "sd"))
+#' fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1 | patient),
+#'   data = kidney, family = weibull(), init = "0",
+#'   prior = set_prior("cauchy(0,2)", class = "sd")
+#' )
 #' summary(fit2)
 #' plot(fit2)
 #' }
@@ -75,16 +77,18 @@
 #' \dontrun{
 #' ## ordinal regression with family "sratio"
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = sratio(),
-#'             prior = set_prior("normal(0,5)"))
+#'   data = inhaler, family = sratio(),
+#'   prior = set_prior("normal(0,5)")
+#' )
 #' summary(fit1)
 #' plot(fit1)
 #'
 #' ## ordinal regression with family "cumulative"
 #' ## and random intercept over subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'               data = inhaler, family = cumulative(),
-#'               prior = set_prior("normal(0,5)"))
+#' fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = cumulative(),
+#'   prior = set_prior("normal(0,5)")
+#' )
 #' summary(fit2)
 #' plot(fit2)
 #' }
@@ -129,15 +133,17 @@
 #' \dontrun{
 #' ## poisson regression without random effects.
 #' fit1 <- brm(count ~ zAge + zBase * Trt,
-#'             data = epilepsy, family = poisson())
+#'   data = epilepsy, family = poisson()
+#' )
 #' summary(fit1)
 #' plot(fit1)
 #'
 #' ## poisson regression with varying intercepts of patients
 #' ## as well as normal priors for overall effects parameters.
-#' fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'             data = epilepsy, family = poisson(),
-#'             prior = set_prior("normal(0,5)"))
+#' fit2 <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = poisson(),
+#'   prior = set_prior("normal(0,5)")
+#' )
 #' summary(fit2)
 #' plot(fit2)
 #' }
@@ -165,9 +171,10 @@
 #' \dontrun{
 #' # non-linear model to predict cumulative loss payments
 #' fit_loss <- brm(
-#'   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-#'      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
-#'      nl = TRUE),
+#'   bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+#'     ult ~ 1 + (1 | AY), omega ~ 1, theta ~ 1,
+#'     nl = TRUE
+#'   ),
 #'   data = loss, family = gaussian(),
 #'   prior = c(
 #'     prior(normal(5000, 1000), nlpar = "ult"),
@@ -185,7 +192,8 @@
 #' conditions <- data.frame(AY = unique(loss$AY))
 #' rownames(conditions) <- unique(loss$AY)
 #' me_loss <- conditional_effects(
-#'   fit_loss, conditions = conditions,
+#'   fit_loss,
+#'   conditions = conditions,
 #'   re_formula = NULL, method = "predict"
 #' )
 #' plot(me_loss, ncol = 5, points = TRUE)

@@ -83,8 +83,9 @@ Predicting `incidence` by `period` and a varying intercept of `herd` is straight
 forward in **brms**:
 
 ```{r fit1, results='hide'}
-fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
-            data = cbpp, family = binomial())
+fit1 <- brm(incidence | trials(size) ~ period + (1 | herd),
+  data = cbpp, family = binomial()
+)
 ```
 
 In the summary output, we see that the incidence probability varies
@@ -149,7 +150,8 @@ beta-binomial example, this results in the following custom family:
 
 ```{r beta_binomial2}
 beta_binomial2 <- custom_family(
-  "beta_binomial2", dpars = c("mu", "phi"),
+  "beta_binomial2",
+  dpars = c("mu", "phi"),
   links = c("logit", "log"),
   lb = c(0, 0), ub = c(1, NA),
   type = "int", vars = "vint1[n]"
@@ -193,7 +195,8 @@ We now have all components together to fit our custom beta-binomial model:
 
 ```{r fit2, results='hide'}
 fit2 <- brm(
-  incidence | vint(size) ~ period + (1|herd), data = cbpp,
+  incidence | vint(size) ~ period + (1 | herd),
+  data = cbpp,
   family = beta_binomial2, stanvars = stanvars
 )
 ```

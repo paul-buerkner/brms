@@ -36,16 +36,18 @@ Ezzet and Whitehead (1991) analyze data from a two-treatment,
 \dontrun{
 ## ordinal regression with family "sratio"
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler, family = sratio(),
-            prior = set_prior("normal(0,5)"))
+  data = inhaler, family = sratio(),
+  prior = set_prior("normal(0,5)")
+)
 summary(fit1)
 plot(fit1)
 
 ## ordinal regression with family "cumulative"
 ## and random intercept over subjects
-fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-              data = inhaler, family = cumulative(),
-              prior = set_prior("normal(0,5)"))
+fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = cumulative(),
+  prior = set_prior("normal(0,5)")
+)
 summary(fit2)
 plot(fit2)
 }

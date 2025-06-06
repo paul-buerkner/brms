@@ -11,8 +11,7 @@ stan_link <- function(link, transform = TRUE) {
     # or we have a non-linear parameter that has no link function
     return("")
   }
-  out <- switch(
-    link,
+  out <- switch(link,
     identity = "",
     log = "log",
     logm1 = "logm1",
@@ -43,8 +42,7 @@ stan_inv_link <- function(link, transform = TRUE) {
     # or we have a non-linear parameter that has no link function
     return("")
   }
-  out <- switch(
-    link,
+  out <- switch(link,
     identity = "",
     log = "exp",
     logm1 = "expp1",

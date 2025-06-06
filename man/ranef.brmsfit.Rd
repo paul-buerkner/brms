@@ -55,8 +55,9 @@ from a \code{brmsfit} object.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-           data = epilepsy, family = gaussian(), chains = 2)
+fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+  data = epilepsy, family = gaussian(), chains = 2
+)
 ranef(fit)
 }
 

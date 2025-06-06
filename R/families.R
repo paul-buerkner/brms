@@ -199,12 +199,12 @@
 #'   \code{\link{customfamily}}
 #'
 #' @examples
-#'  # create a family object
-#'  (fam1 <- student("log"))
-#'  # alternatively use the brmsfamily function
-#'  (fam2 <- brmsfamily("student", "log"))
-#'  # both leads to the same object
-#'  identical(fam1, fam2)
+#' # create a family object
+#' (fam1 <- student("log"))
+#' # alternatively use the brmsfamily function
+#' (fam2 <- brmsfamily("student", "log"))
+#' # both leads to the same object
+#' identical(fam1, fam2)
 #'
 #' @export
 brmsfamily <- function(family, link = NULL, link_sigma = "log",
@@ -221,7 +221,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily(
-    family, link = link, slink = slink,
+    family,
+    link = link, slink = slink,
     link_sigma = link_sigma, link_shape = link_shape,
     link_nu = link_nu, link_phi = link_phi,
     link_kappa = link_kappa, link_beta = link_beta,
@@ -254,8 +255,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   ok_families <- lsp("brms", pattern = "^\\.family_")
   ok_families <- sub("^\\.family_", "", ok_families)
   if (!family %in% ok_families) {
-    stop2(family, " is not a supported family. Supported ",
-          "families are:\n", collapse_comma(ok_families))
+    stop2(
+      family, " is not a supported family. Supported ",
+      "families are:\n", collapse_comma(ok_families)
+    )
   }
   family_info <- get(paste0(".family_", family))()
   ok_links <- family_info$links
@@ -278,9 +281,11 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     slink <- ok_links[1]
   }
   if (!slink %in% ok_links) {
-    stop2("'", slink, "' is not a supported link ",
-          "for family '", family, "'.\nSupported links are: ",
-          collapse_comma(ok_links))
+    stop2(
+      "'", slink, "' is not a supported link ",
+      "for family '", family, "'.\nSupported links are: ",
+      collapse_comma(ok_links)
+    )
   }
   out <- list(
     family = family, link = slink,
@@ -378,7 +383,7 @@ family_info.default <- function(x, y, ...) {
   }
   info <- get(paste0(".family_", x))()
   if (y == "link") {
-    out <- info$links[1]  # default link
+    out <- info$links[1] # default link
   } else {
     info$links <- NULL
     out <- info[[y]]
@@ -487,8 +492,10 @@ combine_family_info <- function(x, y, ...) {
 #' @export
 student <- function(link = "identity", link_sigma = "log", link_nu = "logm1") {
   slink <- substitute(link)
-  .brmsfamily("student", link = link, slink = slink,
-              link_sigma = link_sigma, link_nu = link_nu)
+  .brmsfamily("student",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_nu = link_nu
+  )
 }
 
 #' @rdname brmsfamily
@@ -509,8 +516,10 @@ beta_binomial <- function(link = "logit", link_phi = "log") {
 #' @export
 negbinomial <- function(link = "log", link_shape = "log") {
   slink <- substitute(link)
-  .brmsfamily("negbinomial", link = link, slink = slink,
-              link_shape = link_shape)
+  .brmsfamily("negbinomial",
+    link = link, slink = slink,
+    link_shape = link_shape
+  )
 }
 
 # not yet officially supported
@@ -518,8 +527,10 @@ negbinomial <- function(link = "log", link_shape = "log") {
 # @export
 negbinomial2 <- function(link = "log", link_sigma = "log") {
   slink <- substitute(link)
-  .brmsfamily("negbinomial2", link = link, slink = slink,
-              link_sigma = link_sigma)
+  .brmsfamily("negbinomial2",
+    link = link, slink = slink,
+    link_sigma = link_sigma
+  )
 }
 
 #' @rdname brmsfamily
@@ -534,8 +545,10 @@ geometric <- function(link = "log") {
 # @export
 discrete_weibull <- function(link = "logit", link_shape = "log") {
   slink <- substitute(link)
-  .brmsfamily("discrete_weibull", link = link, slink = slink,
-              link_shape = link_shape)
+  .brmsfamily("discrete_weibull",
+    link = link, slink = slink,
+    link_shape = link_shape
+  )
 }
 
 # do not export yet!
@@ -543,16 +556,20 @@ discrete_weibull <- function(link = "logit", link_shape = "log") {
 # @export
 com_poisson <- function(link = "log", link_shape = "log") {
   slink <- substitute(link)
-  .brmsfamily("com_poisson", link = link, slink = slink,
-              link_shape = link_shape)
+  .brmsfamily("com_poisson",
+    link = link, slink = slink,
+    link_shape = link_shape
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 lognormal <- function(link = "identity", link_sigma = "log") {
   slink <- substitute(link)
-  .brmsfamily("lognormal", link = link, slink = slink,
-              link_sigma = link_sigma)
+  .brmsfamily("lognormal",
+    link = link, slink = slink,
+    link_sigma = link_sigma
+  )
 }
 
 #' @rdname brmsfamily
@@ -560,8 +577,10 @@ lognormal <- function(link = "identity", link_sigma = "log") {
 shifted_lognormal <- function(link = "identity", link_sigma = "log",
                               link_ndt = "log") {
   slink <- substitute(link)
-  .brmsfamily("shifted_lognormal", link = link, slink = slink,
-              link_sigma = link_sigma, link_ndt = link_ndt)
+  .brmsfamily("shifted_lognormal",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_ndt = link_ndt
+  )
 }
 
 #' @rdname brmsfamily
@@ -569,8 +588,10 @@ shifted_lognormal <- function(link = "identity", link_sigma = "log",
 skew_normal <- function(link = "identity", link_sigma = "log",
                         link_alpha = "identity") {
   slink <- substitute(link)
-  .brmsfamily("skew_normal", link = link, slink = slink,
-              link_sigma = link_sigma, link_alpha = link_alpha)
+  .brmsfamily("skew_normal",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_alpha = link_alpha
+  )
 }
 
 #' @rdname brmsfamily
@@ -584,16 +605,20 @@ exponential <- function(link = "log") {
 #' @export
 weibull <- function(link = "log", link_shape = "log") {
   slink <- substitute(link)
-  .brmsfamily("weibull", link = link, slink = slink,
-              link_shape = link_shape)
+  .brmsfamily("weibull",
+    link = link, slink = slink,
+    link_shape = link_shape
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 frechet <- function(link = "log", link_nu = "logm1") {
   slink <- substitute(link)
-  .brmsfamily("frechet", link = link, slink = slink,
-              link_nu = link_nu)
+  .brmsfamily("frechet",
+    link = link, slink = slink,
+    link_nu = link_nu
+  )
 }
 
 #' @rdname brmsfamily
@@ -601,8 +626,10 @@ frechet <- function(link = "log", link_nu = "logm1") {
 gen_extreme_value <- function(link = "identity", link_sigma = "log",
                               link_xi = "log1p") {
   slink <- substitute(link)
-  .brmsfamily("gen_extreme_value", link = link, slink = slink,
-              link_sigma = link_sigma, link_xi = link_xi)
+  .brmsfamily("gen_extreme_value",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_xi = link_xi
+  )
 }
 
 #' @rdname brmsfamily
@@ -610,8 +637,10 @@ gen_extreme_value <- function(link = "identity", link_sigma = "log",
 exgaussian <- function(link = "identity", link_sigma = "log",
                        link_beta = "log") {
   slink <- substitute(link)
-  .brmsfamily("exgaussian", link = link, slink = slink,
-              link_sigma = link_sigma, link_beta = link_beta)
+  .brmsfamily("exgaussian",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_beta = link_beta
+  )
 }
 
 #' @rdname brmsfamily
@@ -619,17 +648,21 @@ exgaussian <- function(link = "identity", link_sigma = "log",
 wiener <- function(link = "identity", link_bs = "log",
                    link_ndt = "log", link_bias = "logit") {
   slink <- substitute(link)
-  .brmsfamily("wiener", link = link, slink = slink,
-              link_bs = link_bs, link_ndt = link_ndt,
-              link_bias = link_bias)
+  .brmsfamily("wiener",
+    link = link, slink = slink,
+    link_bs = link_bs, link_ndt = link_ndt,
+    link_bias = link_bias
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 Beta <- function(link = "logit", link_phi = "log") {
   slink <- substitute(link)
-  .brmsfamily("beta", link = link, slink = slink,
-              link_phi = link_phi)
+  .brmsfamily("beta",
+    link = link, slink = slink,
+    link_phi = link_phi
+  )
 }
 
 #' @rdname brmsfamily
@@ -637,16 +670,20 @@ Beta <- function(link = "logit", link_phi = "log") {
 xbeta <- function(link = "logit", link_phi = "log",
                   link_kappa = "log") {
   slink <- substitute(link)
-  .brmsfamily("xbeta", link = link, slink = slink,
-              link_phi = link_phi, link_kappa = link_kappa)
+  .brmsfamily("xbeta",
+    link = link, slink = slink,
+    link_phi = link_phi, link_kappa = link_kappa
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("dirichlet", link = link, slink = slink,
-              link_phi = link_phi, refcat = refcat)
+  .brmsfamily("dirichlet",
+    link = link, slink = slink,
+    link_phi = link_phi, refcat = refcat
+  )
 }
 
 # not yet exported
@@ -662,16 +699,20 @@ dirichlet2 <- function(link = "log") {
 logistic_normal <- function(link = "identity", link_sigma = "log",
                             refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("logistic_normal", link = link, slink = slink,
-              link_sigma = link_sigma, refcat = refcat)
+  .brmsfamily("logistic_normal",
+    link = link, slink = slink,
+    link_sigma = link_sigma, refcat = refcat
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 von_mises <- function(link = "tan_half", link_kappa = "log") {
   slink <- substitute(link)
-  .brmsfamily("von_mises", link = link, slink = slink,
-              link_kappa = link_kappa)
+  .brmsfamily("von_mises",
+    link = link, slink = slink,
+    link_kappa = link_kappa
+  )
 }
 
 #' @rdname brmsfamily
@@ -679,8 +720,10 @@ von_mises <- function(link = "tan_half", link_kappa = "log") {
 asym_laplace <- function(link = "identity", link_sigma = "log",
                          link_quantile = "logit") {
   slink <- substitute(link)
-  .brmsfamily("asym_laplace", link = link, slink = slink,
-              link_sigma = link_sigma, link_quantile = link_quantile)
+  .brmsfamily("asym_laplace",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_quantile = link_quantile
+  )
 }
 
 # do not export yet!
@@ -690,9 +733,11 @@ zero_inflated_asym_laplace <- function(link = "identity", link_sigma = "log",
                                        link_quantile = "logit",
                                        link_zi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_inflated_asym_laplace", link = link, slink = slink,
-              link_sigma = link_sigma, link_quantile = link_quantile,
-              link_zi = link_zi)
+  .brmsfamily("zero_inflated_asym_laplace",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_quantile = link_quantile,
+    link_zi = link_zi
+  )
 }
 
 #' @rdname brmsfamily
@@ -706,8 +751,10 @@ cox <- function(link = "log") {
 #' @export
 hurdle_poisson <- function(link = "log", link_hu = "logit") {
   slink <- substitute(link)
-  .brmsfamily("hurdle_poisson", link = link, slink = slink,
-              link_hu = link_hu)
+  .brmsfamily("hurdle_poisson",
+    link = link, slink = slink,
+    link_hu = link_hu
+  )
 }
 
 #' @rdname brmsfamily
@@ -715,8 +762,10 @@ hurdle_poisson <- function(link = "log", link_hu = "logit") {
 hurdle_negbinomial <- function(link = "log", link_shape = "log",
                                link_hu = "logit") {
   slink <- substitute(link)
-  .brmsfamily("hurdle_negbinomial", link = link, slink = slink,
-              link_shape = link_shape, link_hu = link_hu)
+  .brmsfamily("hurdle_negbinomial",
+    link = link, slink = slink,
+    link_shape = link_shape, link_hu = link_hu
+  )
 }
 
 #' @rdname brmsfamily
@@ -724,8 +773,10 @@ hurdle_negbinomial <- function(link = "log", link_shape = "log",
 hurdle_gamma <- function(link = "log", link_shape = "log",
                          link_hu = "logit") {
   slink <- substitute(link)
-  .brmsfamily("hurdle_gamma", link = link, slink = slink,
-              link_shape = link_shape, link_hu = link_hu)
+  .brmsfamily("hurdle_gamma",
+    link = link, slink = slink,
+    link_shape = link_shape, link_hu = link_hu
+  )
 }
 
 #' @rdname brmsfamily
@@ -733,8 +784,10 @@ hurdle_gamma <- function(link = "log", link_shape = "log",
 hurdle_lognormal <- function(link = "identity", link_sigma = "log",
                              link_hu = "logit") {
   slink <- substitute(link)
-  .brmsfamily("hurdle_lognormal", link = link, slink = slink,
-              link_sigma = link_sigma, link_hu = link_hu)
+  .brmsfamily("hurdle_lognormal",
+    link = link, slink = slink,
+    link_sigma = link_sigma, link_hu = link_hu
+  )
 }
 
 #' @rdname brmsfamily
@@ -742,9 +795,11 @@ hurdle_lognormal <- function(link = "identity", link_sigma = "log",
 hurdle_cumulative <- function(link = "logit", link_hu = "logit",
                               link_disc = "log", threshold = "flexible") {
   slink <- substitute(link)
-  .brmsfamily("hurdle_cumulative", link = link, slink = slink,
-               link_hu = link_hu, link_disc = link_disc,
-               threshold = threshold)
+  .brmsfamily("hurdle_cumulative",
+    link = link, slink = slink,
+    link_hu = link_hu, link_disc = link_disc,
+    threshold = threshold
+  )
 }
 
 #' @rdname brmsfamily
@@ -752,8 +807,10 @@ hurdle_cumulative <- function(link = "logit", link_hu = "logit",
 zero_inflated_beta <- function(link = "logit", link_phi = "log",
                                link_zi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_inflated_beta", link = link, slink = slink,
-              link_phi = link_phi, link_zi = link_zi)
+  .brmsfamily("zero_inflated_beta",
+    link = link, slink = slink,
+    link_phi = link_phi, link_zi = link_zi
+  )
 }
 
 #' @rdname brmsfamily
@@ -761,17 +818,21 @@ zero_inflated_beta <- function(link = "logit", link_phi = "log",
 zero_one_inflated_beta <- function(link = "logit", link_phi = "log",
                                    link_zoi = "logit", link_coi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_one_inflated_beta", link = link, slink = slink,
-              link_phi = link_phi, link_zoi = link_zoi,
-              link_coi = link_coi)
+  .brmsfamily("zero_one_inflated_beta",
+    link = link, slink = slink,
+    link_phi = link_phi, link_zoi = link_zoi,
+    link_coi = link_coi
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 zero_inflated_poisson <- function(link = "log", link_zi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_inflated_poisson", link = link, slink = slink,
-              link_zi = link_zi)
+  .brmsfamily("zero_inflated_poisson",
+    link = link, slink = slink,
+    link_zi = link_zi
+  )
 }
 
 #' @rdname brmsfamily
@@ -779,16 +840,20 @@ zero_inflated_poisson <- function(link = "log", link_zi = "logit") {
 zero_inflated_negbinomial <- function(link = "log", link_shape = "log",
                                       link_zi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_inflated_negbinomial", link = link, slink = slink,
-              link_shape = link_shape, link_zi = link_zi)
+  .brmsfamily("zero_inflated_negbinomial",
+    link = link, slink = slink,
+    link_shape = link_shape, link_zi = link_zi
+  )
 }
 
 #' @rdname brmsfamily
 #' @export
 zero_inflated_binomial <- function(link = "logit", link_zi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_inflated_binomial", link = link, slink = slink,
-              link_zi = link_zi)
+  .brmsfamily("zero_inflated_binomial",
+    link = link, slink = slink,
+    link_zi = link_zi
+  )
 }
 
 #' @rdname brmsfamily
@@ -796,8 +861,10 @@ zero_inflated_binomial <- function(link = "logit", link_zi = "logit") {
 zero_inflated_beta_binomial <- function(link = "logit", link_phi = "log",
                                         link_zi = "logit") {
   slink <- substitute(link)
-  .brmsfamily("zero_inflated_beta_binomial", link = link, slink = slink,
-              link_phi = link_phi, link_zi = link_zi)
+  .brmsfamily("zero_inflated_beta_binomial",
+    link = link, slink = slink,
+    link_phi = link_phi, link_zi = link_zi
+  )
 }
 
 #' @rdname brmsfamily
@@ -819,8 +886,10 @@ multinomial <- function(link = "logit", refcat = NULL) {
 dirichlet_multinomial <- function(link = "logit", link_phi = "log",
                                   refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("dirichlet_multinomial", link = link, slink = slink,
-              link_phi = link_phi, refcat = refcat)
+  .brmsfamily("dirichlet_multinomial",
+    link = link, slink = slink,
+    link_phi = link_phi, refcat = refcat
+  )
 }
 
 #' @rdname brmsfamily
@@ -828,8 +897,10 @@ dirichlet_multinomial <- function(link = "logit", link_phi = "log",
 cumulative <- function(link = "logit", link_disc = "log",
                        threshold = "flexible") {
   slink <- substitute(link)
-  .brmsfamily("cumulative", link = link, slink = slink,
-              link_disc = link_disc, threshold = threshold)
+  .brmsfamily("cumulative",
+    link = link, slink = slink,
+    link_disc = link_disc, threshold = threshold
+  )
 }
 
 #' @rdname brmsfamily
@@ -837,8 +908,10 @@ cumulative <- function(link = "logit", link_disc = "log",
 sratio <- function(link = "logit", link_disc = "log",
                    threshold = "flexible") {
   slink <- substitute(link)
-  .brmsfamily("sratio", link = link, slink = slink,
-              link_disc = link_disc, threshold = threshold)
+  .brmsfamily("sratio",
+    link = link, slink = slink,
+    link_disc = link_disc, threshold = threshold
+  )
 }
 
 #' @rdname brmsfamily
@@ -846,8 +919,10 @@ sratio <- function(link = "logit", link_disc = "log",
 cratio <- function(link = "logit", link_disc = "log",
                    threshold = "flexible") {
   slink <- substitute(link)
-  .brmsfamily("cratio", link = link, slink = slink,
-              link_disc = link_disc, threshold = threshold)
+  .brmsfamily("cratio",
+    link = link, slink = slink,
+    link_disc = link_disc, threshold = threshold
+  )
 }
 
 #' @rdname brmsfamily
@@ -855,8 +930,10 @@ cratio <- function(link = "logit", link_disc = "log",
 acat <- function(link = "logit", link_disc = "log",
                  threshold = "flexible") {
   slink <- substitute(link)
-  .brmsfamily("acat", link = link, slink = slink,
-              link_disc = link_disc, threshold = threshold)
+  .brmsfamily("acat",
+    link = link, slink = slink,
+    link_disc = link_disc, threshold = threshold
+  )
 }
 
 #' Finite Mixture Families in \pkg{brms}
@@ -922,27 +999,35 @@ acat <- function(link = "logit", link_disc = "log",
 #'   prior(normal(0, 7), Intercept, dpar = mu1),
 #'   prior(normal(5, 7), Intercept, dpar = mu2)
 #' )
-#' fit1 <- brm(bf(y ~ x + z), dat, family = mix,
-#'             prior = prior, chains = 2)
+#' fit1 <- brm(bf(y ~ x + z), dat,
+#'   family = mix,
+#'   prior = prior, chains = 2
+#' )
 #' summary(fit1)
 #' pp_check(fit1)
 #'
 #' ## use different predictors for the components
-#' fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
-#'             prior = prior, chains = 2)
+#' fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat,
+#'   family = mix,
+#'   prior = prior, chains = 2
+#' )
 #' summary(fit2)
 #'
 #' ## fix the mixing proportions
 #' fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
-#'             dat, family = mix, prior = prior,
-#'             init = 0, chains = 2)
+#'   dat,
+#'   family = mix, prior = prior,
+#'   init = 0, chains = 2
+#' )
 #' summary(fit3)
 #' pp_check(fit3)
 #'
 #' ## predict the mixing proportions
 #' fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
-#'             dat, family = mix, prior = prior,
-#'             init = 0, chains = 2)
+#'   dat,
+#'   family = mix, prior = prior,
+#'   init = 0, chains = 2
+#' )
 #' summary(fit4)
 #' pp_check(fit4)
 #'
@@ -957,8 +1042,10 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
     nmix <- rep(nmix, length(dots))
   }
   if (length(dots) != length(nmix)) {
-    stop2("The length of 'nmix' should be the same ",
-          "as the number of mixture components.")
+    stop2(
+      "The length of 'nmix' should be the same ",
+      "as the number of mixture components."
+    )
   }
   dots <- dots[rep(seq_along(dots), nmix)]
   family <- list(
@@ -1005,8 +1092,10 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
     if (is.character(order)) {
       valid_order <- c("none", "mu")
       if (!order %in% valid_order) {
-        stop2("Argument 'order' is invalid. Valid options are: ",
-              collapse_comma(valid_order))
+        stop2(
+          "Argument 'order' is invalid. Valid options are: ",
+          collapse_comma(valid_order)
+        )
       }
       family$order <- order
     } else {
@@ -1113,7 +1202,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'
 #' # define a custom family
 #' beta_binomial2 <- custom_family(
-#'   "beta_binomial2", dpars = c("mu", "phi"),
+#'   "beta_binomial2",
+#'   dpars = c("mu", "phi"),
 #'   links = c("logit", "log"), lb = c(NA, 0),
 #'   type = "int", vars = "vint1[n]"
 #' )
@@ -1127,15 +1217,18 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' stanvars <- stanvar(scode = stan_density, block = "functions")
 #'
 #' # fit the model
-#' fit <- brm(y | vint(ntrials) ~ z, data = dat,
-#'            family = beta_binomial2, stanvars = stanvars)
+#' fit <- brm(y | vint(ntrials) ~ z,
+#'   data = dat,
+#'   family = beta_binomial2, stanvars = stanvars
+#' )
 #' summary(fit)
 #'
 #'
 #' # define a *vectorized* custom family (no loop over observations)
 #' # notice also that 'vint' no longer has an observation index
 #' beta_binomial2_vec <- custom_family(
-#'   "beta_binomial2", dpars = c("mu", "phi"),
+#'   "beta_binomial2",
+#'   dpars = c("mu", "phi"),
 #'   links = c("logit", "log"), lb = c(NA, 0),
 #'   type = "int", vars = "vint1", loop = FALSE
 #' )
@@ -1149,9 +1242,11 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' stanvars_vec <- stanvar(scode = stan_density_vec, block = "functions")
 #'
 #' # fit the model
-#' fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
-#'            family = beta_binomial2_vec,
-#'            stanvars = stanvars_vec)
+#' fit_vec <- brm(y | vint(ntrials) ~ z,
+#'   data = dat,
+#'   family = beta_binomial2_vec,
+#'   stanvars = stanvars_vec
+#' )
 #' summary(fit_vec)
 #' }
 #'
@@ -1201,16 +1296,20 @@ custom_family <- function(name, dpars = "mu", links = "identity",
     log_lik <- as.function(log_lik)
     args <- names(formals(log_lik))
     if (!is_equal(args[1:2], c("i", "prep"))) {
-      stop2("The first two arguments of 'log_lik' ",
-            "should be 'i' and 'prep'.")
+      stop2(
+        "The first two arguments of 'log_lik' ",
+        "should be 'i' and 'prep'."
+      )
     }
   }
   if (!is.null(posterior_predict)) {
     posterior_predict <- as.function(posterior_predict)
     args <- names(formals(posterior_predict))
     if (!is_equal(args[1:3], c("i", "prep", "..."))) {
-      stop2("The first three arguments of 'posterior_predict' ",
-            "should be 'i', 'prep', and '...'.")
+      stop2(
+        "The first three arguments of 'posterior_predict' ",
+        "should be 'i', 'prep', and '...'."
+      )
     }
   }
   if (!is.null(posterior_epred)) {
@@ -1345,7 +1444,7 @@ links_dpars <- function(dpar) {
   if (!length(dpar)) dpar <- ""
   switch(dpar,
     character(0),
-    mu = "identity",  # not actually used
+    mu = "identity", # not actually used
     sigma = c("log", "identity", "softplus", "squareplus"),
     shape = c("log", "identity", "softplus", "squareplus"),
     nu = c("logm1", "identity"),
@@ -1794,8 +1893,10 @@ no_sigma <- function(bterms) {
     se <- eval_rhs(bterms$adforms$se)
     se_only <- isFALSE(se$flags$sigma)
     if (se_only && use_ac_cov_time(bterms)) {
-      stop2("Please set argument 'sigma' of function 'se' ",
-            "to TRUE when modeling time-series covariance matrices.")
+      stop2(
+        "Please set argument 'sigma' of function 'se' ",
+        "to TRUE when modeling time-series covariance matrices."
+      )
     }
   } else {
     se_only <- FALSE
@@ -1919,8 +2020,10 @@ family_bounds.brmsterms <- function(x, ...) {
     out <- list(lb = 0, ub = 1)
   } else if (family %in% c("categorical", ordinal_families)) {
     out <- list(lb = 1, ub = paste0("ncat", resp))
-  } else if (family %in% c("binomial", "zero_inflated_binomial",
-                           "beta_binomial", "zero_inflated_beta_binomial")) {
+  } else if (family %in% c(
+    "binomial", "zero_inflated_binomial",
+    "beta_binomial", "zero_inflated_beta_binomial"
+  )) {
     out <- list(lb = 0, ub = paste0("trials", resp))
   } else if (family %in% "von_mises") {
     out <- list(lb = -pi, ub = pi)

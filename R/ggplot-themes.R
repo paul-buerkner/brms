@@ -21,8 +21,9 @@
 #' bayesplot::color_scheme_set("viridisC")
 #'
 #' # fit a simple model
-#' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'            data = epilepsy, family = poisson(), chains = 2)
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = poisson(), chains = 2
+#' )
 #' summary(fit)
 #'
 #' # create various plots
@@ -32,9 +33,11 @@
 #' }
 #'
 #' @export
-theme_black = function(base_size = 12, base_family = "") {
-  warning2("'theme_black' is deprecated. Please use the 'ggdark' package ",
-           "for dark ggplot themes.")
+theme_black <- function(base_size = 12, base_family = "") {
+  warning2(
+    "'theme_black' is deprecated. Please use the 'ggdark' package ",
+    "for dark ggplot themes."
+  )
   theme_grey(base_size = base_size, base_family = base_family) %+replace%
     theme(
       # axis options
@@ -45,7 +48,7 @@ theme_black = function(base_size = 12, base_family = "") {
       axis.text.y = element_text(
         size = base_size * 0.8, color = "white", lineheight = 0.9
       ),
-      axis.ticks = element_line(color = "white", size  =  0.2),
+      axis.ticks = element_line(color = "white", size = 0.2),
       axis.title.x = element_text(
         size = base_size, color = "white", margin = margin(10, 0, 0, 0)
       ),
@@ -70,7 +73,7 @@ theme_black = function(base_size = 12, base_family = "") {
       legend.direction = "vertical",
       legend.box = NULL,
       # panel options
-      panel.background = element_rect(fill = "black", color  =  NA),
+      panel.background = element_rect(fill = "black", color = NA),
       panel.border = element_rect(fill = NA, color = "white"),
       panel.grid.major = element_line(color = "grey35"),
       panel.grid.minor = element_line(color = "grey20"),

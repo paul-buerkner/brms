@@ -10,19 +10,29 @@ test_that("p performs correct indexing", {
 })
 
 test_that("rmNULL removes all NULL entries", {
-  expect_equal(rmNULL(list(a = NULL, b = 1, c = list(NULL, 1))),
-               list(b = 1, c = list(1)))
-  expect_equal(rmNULL(list(a = NULL, b = 1, c = NULL)),
-               list(b = 1))
+  expect_equal(
+    rmNULL(list(a = NULL, b = 1, c = list(NULL, 1))),
+    list(b = 1, c = list(1))
+  )
+  expect_equal(
+    rmNULL(list(a = NULL, b = 1, c = NULL)),
+    list(b = 1)
+  )
 })
 
 test_that("rename returns an error on duplicated names", {
-  expect_error(rename(c(letters[1:4],"a()","a["), check_dup = TRUE), fixed = TRUE,
-               paste("Occured for: 'a', 'a()', 'a['"))
-  expect_error(rename(c("aDb","a/b","b"), check_dup = TRUE), fixed = TRUE,
-               paste("Occured for: 'aDb', 'a/b'"))
-  expect_error(rename(c("log(a,b)","logab","bac","ba"), check_dup = TRUE), fixed = TRUE,
-               paste("Occured for: 'log(a,b)', 'logab'"))
+  expect_error(rename(c(letters[1:4], "a()", "a["), check_dup = TRUE),
+    fixed = TRUE,
+    paste("Occured for: 'a', 'a()', 'a['")
+  )
+  expect_error(rename(c("aDb", "a/b", "b"), check_dup = TRUE),
+    fixed = TRUE,
+    paste("Occured for: 'aDb', 'a/b'")
+  )
+  expect_error(rename(c("log(a,b)", "logab", "bac", "ba"), check_dup = TRUE),
+    fixed = TRUE,
+    paste("Occured for: 'log(a,b)', 'logab'")
+  )
 })
 
 test_that("rename perform correct renaming", {
@@ -41,12 +51,20 @@ test_that("collapse_lists performs correct collapsing after names", {
   x <- list(a = "a <- ", b = "b <- ")
   y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")
   expect_equal(collapse_lists(list()), list())
-  expect_equal(collapse_lists(x, y),
-               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)",
-                    c = "normal(0,1)"))
-  expect_equal(collapse_lists(ls = list(c(x, c = "c <- "), y)),
-               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)",
-                    c = "c <- normal(0,1)"))
+  expect_equal(
+    collapse_lists(x, y),
+    list(
+      a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)",
+      c = "normal(0,1)"
+    )
+  )
+  expect_equal(
+    collapse_lists(ls = list(c(x, c = "c <- "), y)),
+    list(
+      a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)",
+      c = "c <- normal(0,1)"
+    )
+  )
 })
 
 test_that("nlist works correctly", {
@@ -61,16 +79,20 @@ test_that("nlist works correctly", {
 test_that("use_alias works correctly", {
   a <- 2
   b <- 3
-  expect_warning(use_alias(a, b), fixed = TRUE,
-                 "'b' is deprecated. Please use argument 'a' instead.")
+  expect_warning(use_alias(a, b),
+    fixed = TRUE,
+    "'b' is deprecated. Please use argument 'a' instead."
+  )
   dots <- list(c = 1)
-  expect_warning(use_alias(a, dots$c), fixed = TRUE,
-                 "'c' is deprecated. Please use argument 'a' instead.")
+  expect_warning(use_alias(a, dots$c),
+    fixed = TRUE,
+    "'c' is deprecated. Please use argument 'a' instead."
+  )
   expect_equal(use_alias(a, dots$c, warn = FALSE), dots$c)
 })
 
 test_that("rhs keeps attributes", {
-  form <- structure(y~x, test = TRUE)
+  form <- structure(y ~ x, test = TRUE)
   expect_equal(attributes(form), attributes(rhs(form)))
 })
 

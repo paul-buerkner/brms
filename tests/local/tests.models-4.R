@@ -14,7 +14,7 @@ test_that("UNSTR models work correctly", suppressWarnings({
   expect_true(waic$estimates[3, 1] + 200 < waic_without$estimates[3, 1])
 
   waic_new <- waic(fit, newdata = epilepsy2[1:100, ])
-  expect_range(waic_new $estimates[3, 1], 700, 760)
+  expect_range(waic_new$estimates[3, 1], 700, 760)
 
   newdat <- epilepsy2[1:5, ]
   newdat$visit[1] <- 5
@@ -27,8 +27,9 @@ test_that("UNSTR models work correctly", suppressWarnings({
 test_that("SAR models work correctly", suppressWarnings({
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb),
-                    data = COL.OLD, data2 = list(COL.nb = COL.nb),
-                    chains = 2, refresh = 0)
+    data = COL.OLD, data2 = list(COL.nb = COL.nb),
+    chains = 2, refresh = 0
+  )
   print(fit_lagsar)
   expect_ggplot(pp_check(fit_lagsar))
   ce <- conditional_effects(fit_lagsar, ndraws = 200)
@@ -36,8 +37,9 @@ test_that("SAR models work correctly", suppressWarnings({
   expect_range(WAIC(fit_lagsar)$estimates[3, 1], 350, 380)
 
   fit_errorsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
-                      data = COL.OLD, data2 = list(COL.nb = COL.nb),
-                      chains = 2, refresh = 0)
+    data = COL.OLD, data2 = list(COL.nb = COL.nb),
+    chains = 2, refresh = 0
+  )
   print(fit_errorsar)
   expect_ggplot(pp_check(fit_errorsar))
   ce <- conditional_effects(fit_errorsar, ndraws = 200)
@@ -63,7 +65,8 @@ test_that("CAR models work correctly", suppressWarnings({
   x2 <- rnorm(K)
   theta <- rnorm(K, sd = 0.05)
   phi <- rmulti_normal(
-    1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+    1,
+    mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
   )
   eta <- x1 + x2 + phi
   prob <- exp(eta) / (1 + exp(eta))
@@ -79,7 +82,7 @@ test_that("CAR models work correctly", suppressWarnings({
   )
   print(fit_car)
   expect_ggplot(pp_check(fit_car))
-  ce = conditional_effects(fit_car, ndraws = 200)
+  ce <- conditional_effects(fit_car, ndraws = 200)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(LOO(fit_car)$estimates[3, 1], 450, 550)
   expect_false(isTRUE(all.equal(
@@ -95,8 +98,10 @@ test_that("CAR models work correctly", suppressWarnings({
   new_W <- W
   rownames(W)[1] <- "-1"
   newdata2 <- list(W = new_W)
-  expect_error(predict(fit_car, newdata = newdata, newdata2 = newdata2),
-               "Cannot handle new locations in CAR models")
+  expect_error(
+    predict(fit_car, newdata = newdata, newdata2 = newdata2),
+    "Cannot handle new locations in CAR models"
+  )
 }))
 
 test_that("Missing value imputation works correctly", suppressWarnings({
@@ -105,9 +110,11 @@ test_that("Missing value imputation works correctly", suppressWarnings({
 
   # missing value imputation via multiple imputation
   imp <- mice(nhanes, m = 5)
-  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1,
-                           iter = 2000, warmup = 1000,
-                           backend = "rstan", refresh = 0)
+  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp,
+    chains = 1,
+    iter = 2000, warmup = 1000,
+    backend = "rstan", refresh = 0
+  )
   print(fit_imp1)
   expect_equal(ndraws(fit_imp1), 5000)
 
@@ -133,9 +140,11 @@ test_that("Missing value imputation works correctly", suppressWarnings({
   dat$sdy <- 5
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
-  fit_imp3 <- brm(bform, data = dat,
-                  save_pars = save_pars(latent = TRUE),
-                  backend = "rstan", refresh = 0)
+  fit_imp3 <- brm(bform,
+    data = dat,
+    save_pars = save_pars(latent = TRUE),
+    backend = "rstan", refresh = 0
+  )
   print(fit_imp3)
   pred <- predict(fit_imp3)
   expect_true(!anyNA(pred))
@@ -145,19 +154,21 @@ test_that("Missing value imputation works correctly", suppressWarnings({
   expect_range(loo$estimates[3, 1], 200, 225)
 }))
 
-test_that("student-t-distributed group-level effects work correctly",
-          suppressWarnings({
-  fit <- brm(
-    count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
-    data = epilepsy, family = poisson(),
-    chains = 1, refresh = 0
-  )
-  print(summary(fit))
-  expect_true("df_patient" %in% variables(fit))
-  expect_true(!"udf_1" %in% variables(fit))
-  waic <- suppressWarnings(waic(fit))
-  expect_range(waic$estimates[3, 1], 1300, 1400)
-}))
+test_that(
+  "student-t-distributed group-level effects work correctly",
+  suppressWarnings({
+    fit <- brm(
+      count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
+      data = epilepsy, family = poisson(),
+      chains = 1, refresh = 0
+    )
+    print(summary(fit))
+    expect_true("df_patient" %in% variables(fit))
+    expect_true(!"udf_1" %in% variables(fit))
+    waic <- suppressWarnings(waic(fit))
+    expect_range(waic$estimates[3, 1], 1300, 1400)
+  })
+)
 
 test_that("multinomial models work correctly", suppressWarnings({
   set.seed(1245)
@@ -169,8 +180,10 @@ test_that("multinomial models work correctly", suppressWarnings({
   dat$size <- with(dat, y1 + y2 + y3)
   dat$y <- with(dat, cbind(y1, y2, y3))
 
-  fit <- brm(y | trials(size) ~ x, data = dat,
-             family = multinomial(), refresh = 0)
+  fit <- brm(y | trials(size) ~ x,
+    data = dat,
+    family = multinomial(), refresh = 0
+  )
   print(summary(fit))
   pred <- predict(fit)
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
@@ -192,7 +205,8 @@ test_that("dirichlet_multinomial models work correctly", suppressWarnings({
   dat$y <- with(dat, cbind(y1, y2, y3))
 
   fit <- brm(
-    y | trials(size) ~ x, data = dat,
+    y | trials(size) ~ x,
+    data = dat,
     family = dirichlet_multinomial(),
     prior = prior("exponential(0.01)", "phi")
   )

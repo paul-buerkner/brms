@@ -92,7 +92,8 @@ residual standard deviation of the normal response distribution.
 
 ```{r, results='hide'}
 fit1 <- brm(bf(symptom_post ~ group, sigma ~ group),
-            data = dat1, family = gaussian())
+  data = dat1, family = gaussian()
+)
 ```
 
 Useful summary statistics and plots can be obtained via
@@ -111,8 +112,10 @@ residual standard deviations on the original scale using the `hypothesis`
 method.
 
 ```{r}
-hyp <- c("exp(sigma_Intercept) = 0",
-         "exp(sigma_Intercept + sigma_grouptreat) = 0")
+hyp <- c(
+  "exp(sigma_Intercept) = 0",
+  "exp(sigma_Intercept + sigma_grouptreat) = 0"
+)
 hypothesis(fit1, hyp)
 ```
 
@@ -162,7 +165,8 @@ zero-inflation probability across observations.
 
 ```{r, results='hide'}
 fit_zinb1 <- brm(count ~ persons + child + camper,
-                 data = zinb, family = zero_inflated_poisson())
+  data = zinb, family = zero_inflated_poisson()
+)
 ```
 
 Again, we summarize the results using the usual methods.
@@ -190,7 +194,8 @@ reasonable to make full use of the data.
 
 ```{r, results='hide'}
 fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
-                 data = zinb, family = zero_inflated_poisson())
+  data = zinb, family = zero_inflated_poisson()
+)
 ```
 
 ```{r}
@@ -238,7 +243,7 @@ a smoothing term of `x0` and a varying intercept of `fac`.
 
 ```{r, results='hide'}
 fit_smooth1 <- brm(
-  bf(y ~ s(x1) + s(x2) + (1|fac), sigma ~ s(x0) + (1|fac)),
+  bf(y ~ s(x1) + s(x2) + (1 | fac), sigma ~ s(x0) + (1 | fac)),
   data = dat_smooth, family = gaussian(),
   chains = 2, control = list(adapt_delta = 0.95)
 )

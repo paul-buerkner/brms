@@ -78,8 +78,9 @@ group-level intercept is incorporated to account for the resulting dependency in
 the data.
 
 ```{r fit1, results='hide', message=FALSE}
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-            data = epilepsy, family = poisson())
+fit1 <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson()
+)
 ```
 
 The results (i.e., posterior draws) can be investigated using
@@ -160,8 +161,9 @@ this purpose, we include a second group-level intercept that captures possible
 overdispersion.
 
 ```{r fit2, results='hide', message=FALSE}
-fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-            data = epilepsy, family = poisson())
+fit2 <- brm(count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
+  data = epilepsy, family = poisson()
+)
 ```
 
 We can then go ahead and compare both models via approximate leave-one-out (LOO)

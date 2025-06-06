@@ -26,8 +26,9 @@ Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
 }
 \examples{
 \dontrun{
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler, family = "gaussian")
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = "gaussian"
+)
 launch_shinystan(fit)
 }
 

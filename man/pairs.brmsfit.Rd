@@ -38,9 +38,11 @@ For a detailed description see
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt
-           + (1|patient) + (1|visit),
-           data = epilepsy, family = "poisson")
+fit <- brm(
+  count ~ zAge + zBase * Trt
+    + (1 | patient) + (1 | visit),
+  data = epilepsy, family = "poisson"
+)
 pairs(fit, variable = variables(fit)[1:3])
 pairs(fit, variable = "^sd_", regex = TRUE)
 }

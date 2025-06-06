@@ -76,10 +76,11 @@ Validate priors supplied by the user. Return a complete
 set of priors for the given model, including default priors.
 }
 \examples{
-prior1 <- prior(normal(0,10), class = b) +
-  prior(cauchy(0,2), class = sd)
-validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
-               data = epilepsy, family = poisson())
+prior1 <- prior(normal(0, 10), class = b) +
+  prior(cauchy(0, 2), class = sd)
+validate_prior(prior1, count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson()
+)
 
 }
 \seealso{

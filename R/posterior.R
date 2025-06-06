@@ -45,7 +45,9 @@ nvariables.brmsfit <- function(x, ...) {
 #' @export
 #' @export niterations
 niterations.brmsfit <- function(x) {
-  if (!is.stanfit(x$fit)) return(0)
+  if (!is.stanfit(x$fit)) {
+    return(0)
+  }
   niterations <- x$fit@sim$n_save[1] %||% 0
   niterations - nwarmup(x)
 }
@@ -56,7 +58,9 @@ niterations.brmsfit <- function(x) {
 #' @export
 #' @export nchains
 nchains.brmsfit <- function(x) {
-  if (!is.stanfit(x$fit)) return(0)
+  if (!is.stanfit(x$fit)) {
+    return(0)
+  }
   x$fit@sim$chains %||% 0
 }
 
@@ -70,12 +74,16 @@ ndraws.brmsfit <- function(x) {
 }
 
 nwarmup <- function(x) {
-  if (!is.stanfit(x$fit)) return(0)
+  if (!is.stanfit(x$fit)) {
+    return(0)
+  }
   x$fit@sim$warmup2[1] %||% 0
 }
 
 nthin <- function(x) {
-  if (!is.stanfit(x$fit)) return(1)
+  if (!is.stanfit(x$fit)) {
+    return(1)
+  }
   x$fit@sim$thin %||% 1
 }
 
@@ -106,8 +114,9 @@ nthin <- function(x) {
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'            data = epilepsy, family = poisson())
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = poisson()
+#' )
 #'
 #' # extract posterior draws in an array format
 #' (draws_fit <- as_draws_array(fit))
@@ -133,7 +142,8 @@ as_draws.brmsfit <- function(x, variable = NULL, regex = FALSE,
                              inc_warmup = FALSE, ...) {
   # draws_list is the fastest format to convert to at the moment
   as_draws_list(
-    x, variable = variable, regex = regex,
+    x,
+    variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   )
 }
@@ -146,7 +156,8 @@ as_draws.brmsfit <- function(x, variable = NULL, regex = FALSE,
 as_draws_matrix.brmsfit <- function(x, variable = NULL, regex = FALSE,
                                     inc_warmup = FALSE, ...) {
   as_draws_matrix(as_draws_list(
-    x, variable = variable, regex = regex,
+    x,
+    variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
 }
@@ -159,7 +170,8 @@ as_draws_matrix.brmsfit <- function(x, variable = NULL, regex = FALSE,
 as_draws_array.brmsfit <- function(x, variable = NULL, regex = FALSE,
                                    inc_warmup = FALSE, ...) {
   as_draws_array(as_draws_list(
-    x, variable = variable, regex = regex,
+    x,
+    variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
 }
@@ -172,7 +184,8 @@ as_draws_array.brmsfit <- function(x, variable = NULL, regex = FALSE,
 as_draws_df.brmsfit <- function(x, variable = NULL, regex = FALSE,
                                 inc_warmup = FALSE, ...) {
   as_draws_df(as_draws_list(
-    x, variable = variable, regex = regex,
+    x,
+    variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
 }
@@ -185,7 +198,8 @@ as_draws_df.brmsfit <- function(x, variable = NULL, regex = FALSE,
 as_draws_list.brmsfit <- function(x, variable = NULL, regex = FALSE,
                                   inc_warmup = FALSE, ...) {
   .as_draws_list(
-    x$fit, variable = variable, regex = regex,
+    x$fit,
+    variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   )
 }
@@ -198,7 +212,8 @@ as_draws_list.brmsfit <- function(x, variable = NULL, regex = FALSE,
 as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
                                    inc_warmup = FALSE, ...) {
   as_draws_rvars(as_draws_list(
-    x, variable = variable, regex = regex,
+    x,
+    variable = variable, regex = regex,
     inc_warmup = inc_warmup, ...
   ))
 }

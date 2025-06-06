@@ -15,8 +15,10 @@
 
 .family_gaussian <- function() {
   list(
-    links = c("identity", "log", "inverse", "softplus", "squareplus",
-              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
+    links = c(
+      "identity", "log", "inverse", "softplus", "squareplus",
+      "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"
+    ),
     dpars = c("mu", "sigma"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index"),
@@ -27,8 +29,10 @@
 
 .family_student <- function() {
   list(
-    links = c("identity", "log", "inverse", "softplus", "squareplus",
-              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
+    links = c(
+      "identity", "log", "inverse", "softplus", "squareplus",
+      "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"
+    ),
     dpars = c("mu", "sigma", "nu"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index"),
@@ -40,8 +44,10 @@
 
 .family_skew_normal <- function() {
   list(
-    links = c("identity", "log", "inverse", "softplus", "squareplus",
-              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
+    links = c(
+      "identity", "log", "inverse", "softplus", "squareplus",
+      "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"
+    ),
     dpars = c("mu", "sigma", "alpha"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi", "index")
@@ -116,7 +122,7 @@
   list(
     links = "logit",
     dpars = NULL,
-    multi_dpars = "mu",  # size determined by the data
+    multi_dpars = "mu", # size determined by the data
     type = "int", ybounds = c(-Inf, Inf),
     closed = c(NA, NA),
     ad = c("weights", "subset", "index"),
@@ -128,7 +134,7 @@
   list(
     links = "logit",
     dpars = NULL,
-    multi_dpars = "mu",  # size determined by the data
+    multi_dpars = "mu", # size determined by the data
     type = "int", ybounds = c(-Inf, Inf),
     closed = c(NA, NA),
     ad = c("weights", "subset", "trials", "index"),
@@ -142,7 +148,7 @@
   list(
     links = "logit",
     dpars = "phi",
-    multi_dpars = "mu",  # size determined by the data
+    multi_dpars = "mu", # size determined by the data
     type = "int", ybounds = c(-Inf, Inf),
     closed = c(NA, NA),
     ad = c("weights", "subset", "trials", "index"),
@@ -168,7 +174,7 @@
   list(
     links = "logit",
     dpars = "phi",
-    multi_dpars = "mu",  # size determined by the data
+    multi_dpars = "mu", # size determined by the data
     type = "real", ybounds = c(0, 1),
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"),
@@ -182,7 +188,7 @@
   list(
     links = c("log", "softplus", "squareplus", "identity", "logm1"),
     dpars = NULL,
-    multi_dpars = "mu",  # size determined by the data
+    multi_dpars = "mu", # size determined by the data
     type = "real", ybounds = c(0, 1),
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"),
@@ -196,7 +202,7 @@
   list(
     links = "identity",
     dpars = NULL,
-    multi_dpars = c("mu", "sigma"),  # size determined by the data
+    multi_dpars = c("mu", "sigma"), # size determined by the data
     type = "real", ybounds = c(0, 1),
     closed = c(FALSE, FALSE),
     ad = c("weights", "subset", "index"),
@@ -455,7 +461,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit"  # , "softit"
+      "cloglog", "cauchit" # , "softit"
     ),
     dpars = c("mu", "disc"), type = "int",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -469,7 +475,7 @@
   list(
     links = c(
       "logit", "probit", "probit_approx",
-      "cloglog", "cauchit"  # , "softit"
+      "cloglog", "cauchit" # , "softit"
     ),
     dpars = c("mu", "disc"), type = "int",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
@@ -646,8 +652,10 @@
 
 .family_custom <- function() {
   list(
-    ad = c("weights", "subset", "se", "cens", "trunc", "trials",
-           "thres", "cat", "dec", "mi", "index", "vreal", "vint"),
+    ad = c(
+      "weights", "subset", "se", "cens", "trunc", "trials",
+      "thres", "cat", "dec", "mi", "index", "vreal", "vint"
+    ),
     ybounds = c(-Inf, Inf), closed = c(NA, NA)
   )
 }

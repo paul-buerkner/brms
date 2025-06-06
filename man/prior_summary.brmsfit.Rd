@@ -24,10 +24,10 @@ Extract priors of models fitted with \pkg{brms}.
 \examples{
 \dontrun{
 fit <- brm(
-  count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
+  count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
   data = epilepsy, family = poisson(),
-  prior = prior(student_t(5,0,10), class = b) +
-    prior(cauchy(0,2), class = sd)
+  prior = prior(student_t(5, 0, 10), class = b) +
+    prior(cauchy(0, 2), class = sd)
 )
 
 prior_summary(fit)

@@ -43,7 +43,8 @@
 #' \dontrun{
 #' # fit a simple model
 #' fit <- brm(count ~ zAge + zBase * Trt,
-#'            data = epilepsy, family = poisson())
+#'   data = epilepsy, family = poisson()
+#' )
 #' summary(fit)
 #'
 #' # The following code requires the 'projpred' package to be installed:
@@ -115,8 +116,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset", "sm"))
   if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
-    stop2("Projpred only supports standard multilevel and smoothing terms as ",
-          "well as offsets.")
+    stop2(
+      "Projpred only supports standard multilevel and smoothing terms as ",
+      "well as offsets."
+    )
   }
 
   # only use the raw formula for selection of terms
@@ -166,15 +169,18 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
 
   if (utils::packageVersion("projpred") <= "2.0.2" && NROW(object$ranef)) {
-    warning2("In projpred versions <= 2.0.2, projpred's K-fold CV results may ",
-             "not be reproducible for multilevel brms reference models.")
+    warning2(
+      "In projpred versions <= 2.0.2, projpred's K-fold CV results may ",
+      "not be reproducible for multilevel brms reference models."
+    )
   }
 
   # extract a list of K-fold sub-models
   if (is.null(cvfun)) {
     cvfun <- function(folds, ...) {
       kfold(
-        object, K = max(folds), save_fits = TRUE, folds = folds,
+        object,
+        K = max(folds), save_fits = TRUE, folds = folds,
         seed = kfold_seed, ...
       )$fits[, "fit"]
     }
@@ -192,18 +198,23 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     } else {
       brms_seed_k <- brms_seed + cvfit$projpred_k
     }
-    projpred::get_refmodel(cvfit, resp = resp, dis = dis, latent = latent,
-                           brms_seed = brms_seed_k,
-                           called_from_cvrefbuilder = TRUE, ...)
+    projpred::get_refmodel(cvfit,
+      resp = resp, dis = dis, latent = latent,
+      brms_seed = brms_seed_k,
+      called_from_cvrefbuilder = TRUE, ...
+    )
   }
 
   # prepare data passed to projpred
   if (!is.null(newdata)) {
-    warning2("Argument 'newdata' of get_refmodel.brmsfit() is deprecated and ",
-             "will be removed in the future.")
+    warning2(
+      "Argument 'newdata' of get_refmodel.brmsfit() is deprecated and ",
+      "will be removed in the future."
+    )
   }
   data <- current_data(
-    object, newdata, resp = resp, check_response = TRUE,
+    object, newdata,
+    resp = resp, check_response = TRUE,
     allow_new_levels = TRUE
   )
   attr(data, "terms") <- NULL
@@ -261,7 +272,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   y <- NULL
   if (extract_y) {
     data <- current_data(
-      object, newdata, resp = resp, check_response = TRUE,
+      object, newdata,
+      resp = resp, check_response = TRUE,
       allow_new_levels = TRUE, req_vars = all.vars(bterms$respform)
     )
     y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
@@ -313,8 +325,10 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 # Helper function for throwing a warning if argument `wrhs` or `orhs` is
 # non-`NULL`.
 warn_wrhs_orhs <- function(arg_nm) {
-  warning2("Argument `", arg_nm, "` is currently ignored. See section ",
-           "'Details' of `?brms:::get_refmodel.brmsfit` for details.")
+  warning2(
+    "Argument `", arg_nm, "` is currently ignored. See section ",
+    "'Details' of `?brms:::get_refmodel.brmsfit` for details."
+  )
 }
 
 # Construct the inverse-link function required for the latent projection in case
@@ -339,8 +353,10 @@ latent_ilink_cumulative <- function(object, family, bterms, resp) {
   thres_regex <- paste0("^b", usc(combine_prefix(bterms)), "_Intercept\\[")
   thres_draws <- prepare_draws(draws_mat, variable = thres_regex, regex = TRUE)
   if (ncol(thres_draws) > length(family$cats) - 1L) {
-    stop2("Currently, projpred does not support group-specific thresholds ",
-          "(argument `gr` of resp_thres()).")
+    stop2(
+      "Currently, projpred does not support group-specific thresholds ",
+      "(argument `gr` of resp_thres())."
+    )
   }
   # Note: Currently, `disc` should always be constantly 1 because
   # distributional models are not allowed here.

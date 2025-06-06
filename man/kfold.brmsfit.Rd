@@ -141,8 +141,9 @@ The \code{kfold} function performs exact \eqn{K}-fold
 }
 \examples{
 \dontrun{
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-           data = epilepsy, family = poisson())
+fit1 <- brm(count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
+  data = epilepsy, family = poisson()
+)
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
 # perform 10-fold cross validation
@@ -167,16 +168,19 @@ plan(sequential)
 set.seed(7)
 fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 options(cmdstanr_write_stan_file_dir = getwd())
-fit_cmdstanr <- brm(rate ~ conc + state, data = Puromycin,
-                    backend = "cmdstanr", file = fname)
+fit_cmdstanr <- brm(rate ~ conc + state,
+  data = Puromycin,
+  backend = "cmdstanr", file = fname
+)
 
 # now restart the R session and run the following (after attaching 'brms')
 set.seed(7)
 fname <- paste0("fit_cmdstanr_", sample.int(.Machine$integer.max, 1))
 fit_cmdstanr <- brm(rate ~ conc + state,
-                    data = Puromycin,
-                    backend = "cmdstanr",
-                    file = fname)
+  data = Puromycin,
+  backend = "cmdstanr",
+  file = fname
+)
 kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 }
 

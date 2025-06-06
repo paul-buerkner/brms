@@ -322,7 +322,7 @@
 #' \dontrun{
 #' # Poisson regression for the number of seizures in epileptic patients
 #' fit1 <- brm(
-#'   count ~ zBase * Trt + (1|patient),
+#'   count ~ zBase * Trt + (1 | patient),
 #'   data = epilepsy, family = poisson(),
 #'   prior = prior(normal(0, 10), class = b) +
 #'     prior(cauchy(0, 2), class = sd)
@@ -348,8 +348,9 @@
 #' # Ordinal regression modeling patient's rating of inhaler instructions
 #' # category specific effects are estimated for variable 'treat'
 #' fit2 <- brm(rating ~ period + carry + cs(treat),
-#'             data = inhaler, family = sratio("logit"),
-#'             prior = set_prior("normal(0,5)"), chains = 2)
+#'   data = inhaler, family = sratio("logit"),
+#'   prior = set_prior("normal(0,5)"), chains = 2
+#' )
 #' summary(fit2)
 #' plot(fit2, ask = FALSE)
 #' WAIC(fit2)
@@ -357,8 +358,9 @@
 #'
 #' # Survival regression modeling the time between the first
 #' # and second recurrence of an infection in kidney patients.
-#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-#'             data = kidney, family = lognormal())
+#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+#'   data = kidney, family = lognormal()
+#' )
 #' summary(fit3)
 #' plot(fit3, ask = FALSE)
 #' plot(conditional_effects(fit3), ask = FALSE)
@@ -369,16 +371,19 @@
 #' success <- rbinom(100, size = ntrials, prob = 0.4)
 #' x <- rnorm(100)
 #' data4 <- data.frame(ntrials, success, x)
-#' fit4 <- brm(success | trials(ntrials) ~ x, data = data4,
-#'             family = binomial("probit"))
+#' fit4 <- brm(success | trials(ntrials) ~ x,
+#'   data = data4,
+#'   family = binomial("probit")
+#' )
 #' summary(fit4)
 #'
 #'
 #' # Non-linear Gaussian model
 #' fit5 <- brm(
-#'   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-#'      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
-#'      nl = TRUE),
+#'   bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+#'     ult ~ 1 + (1 | AY), omega ~ 1, theta ~ 1,
+#'     nl = TRUE
+#'   ),
 #'   data = loss, family = gaussian(),
 #'   prior = c(
 #'     prior(normal(5000, 1000), nlpar = "ult"),
@@ -408,8 +413,10 @@
 #'
 #'
 #' # Quantile regression predicting the 25%-quantile
-#' fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
-#'             family = asym_laplace())
+#' fit7 <- brm(bf(y ~ x, quantile = 0.25),
+#'   data = data_het,
+#'   family = asym_laplace()
+#' )
 #' summary(fit7)
 #' conditional_effects(fit7)
 #'
@@ -441,7 +448,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, 
+                init = NULL, inits = NULL, chains = 4,
                 iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
@@ -456,7 +463,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
                 empty = FALSE, rename = TRUE, ...) {
-
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
@@ -496,7 +502,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x_from_file <- read_brmsfit(file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
-          x_from_file, scode = stancode(x), sdata = sdata,
+          x_from_file,
+          scode = stancode(x), sdata = sdata,
           data = x$data, algorithm = algorithm, silent = silent
         )
         if (!needs_refit) {
@@ -510,38 +517,44 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   } else {
     # build new model
     formula <- validate_formula(
-      formula, data = data, family = family,
+      formula,
+      data = data, family = family,
       autocor = autocor, sparse = sparse,
       cov_ranef = cov_ranef
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
     data2 <- validate_data2(
-      data2, bterms = bterms,
+      data2,
+      bterms = bterms,
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
     data <- validate_data(
-      data, bterms = bterms,
+      data,
+      bterms = bterms,
       data2 = data2, knots = knots,
       drop_unused_levels = drop_unused_levels,
       data_name = substitute_name(data)
     )
     bframe <- brmsframe(bterms, data)
     prior <- .validate_prior(
-      prior, bframe = bframe,
+      prior,
+      bframe = bframe,
       sample_prior = sample_prior
     )
     stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     save_pars <- validate_save_pars(
-      save_pars, save_ranef = save_ranef,
+      save_pars,
+      save_ranef = save_ranef,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
 
     # generate Stan code
     model <- .stancode(
-      bframe, prior = prior, stanvars = stanvars,
+      bframe,
+      prior = prior, stanvars = stanvars,
       save_model = save_model, backend = backend, threads = threads,
       opencl = opencl, normalize = normalize
     )
@@ -558,7 +571,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
-      bframe, data = data, prior = prior, data2 = data2,
+      bframe,
+      data = data, prior = prior, data2 = data2,
       stanvars = stanvars, threads = threads
     )
 
@@ -571,7 +585,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x_from_file <- read_brmsfit(file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
-          x_from_file, scode = model, sdata = sdata, data = data,
+          x_from_file,
+          scode = model, sdata = sdata, data = data,
           algorithm = algorithm, silent = silent
         )
         if (!needs_refit) {

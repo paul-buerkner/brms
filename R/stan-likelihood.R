@@ -72,7 +72,8 @@ stan_log_lik_mixfamily <- function(bterms, threads, ...) {
     sbterms$dpars <- sbterms$dpars[dp_ids == i]
     sbterms$fdpars <- sbterms$fdpars[fdp_ids == i]
     ll[i] <- stan_log_lik_family(
-      sbterms, pred_mix_prob = pred_mix_prob, threads = threads, ...
+      sbterms,
+      pred_mix_prob = pred_mix_prob, threads = threads, ...
     )
   }
   resp <- usc(bterms$resp)
@@ -188,7 +189,8 @@ stan_log_lik_mix <- function(ll, bterms, pred_mix_prob, threads,
   stopifnot(is.sdist(ll))
   resp <- usc(bterms$resp)
   mix <- get_mix_id(bterms)
-  theta <- str_if(pred_mix_prob,
+  theta <- str_if(
+    pred_mix_prob,
     glue("theta{mix}{resp}[n]"),
     glue("log(theta{mix}{resp})")
   )
@@ -357,7 +359,6 @@ stan_log_lik_add_se <- function(sigma, bterms, reqn = stan_log_lik_adj(bterms),
 stan_log_lik_multiply_rate_denom <- function(
     dpar, bterms, reqn = stan_log_lik_adj(bterms),
     log = FALSE, transform = NULL, threads = NULL, ...) {
-
   dpar_transform <- dpar
   if (!is.null(transform)) {
     dpar_transform <- glue("{transform}({dpar})")
@@ -406,7 +407,7 @@ stan_log_lik_gaussian <- function(bterms, ...) {
   out
 }
 
-stan_log_lik_gaussian_mv <- function(bterms,...) {
+stan_log_lik_gaussian_mv <- function(bterms, ...) {
   reqn <- stan_log_lik_adj(bterms) || bterms$sigma_pred
   p <- list(Mu = paste0("Mu", str_if(reqn, "[n]")))
   p$LSigma <- paste0("LSigma", str_if(bterms$sigma_pred, "[n]"))
@@ -431,7 +432,8 @@ stan_log_lik_gaussian_time <- function(bterms, ...) {
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
-  sdist(glue("normal_time_{sfx}"),
+  sdist(
+    glue("normal_time_{sfx}"),
     p$mu, p$sigma, p$se2, p$Lcortime,
     p$nobs_tg, p$begin_tg, p$end_tg, p$Jtime_tg
   )
@@ -495,7 +497,8 @@ stan_log_lik_student_time <- function(bterms, ...) {
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
   sfx <- str_if(has_se, paste0(sfx, "_se"), sfx)
   sfx <- str_if(flex, paste0(sfx, "_flex"), sfx)
-  sdist(glue("student_t_time_{sfx}"),
+  sdist(
+    glue("student_t_time_{sfx}"),
     p$nu, p$mu, p$sigma, p$se2, p$Lcortime,
     p$nobs_tg, p$begin_tg, p$end_tg, p$Jtime_tg
   )
@@ -511,13 +514,15 @@ stan_log_lik_student_fcor <- function(bterms, ...) {
   sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$Lfcor)
 }
 
-stan_log_lik_student_lagsar <- function(bterms,...) {
+stan_log_lik_student_lagsar <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = FALSE)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn = FALSE, ...)
   v <- c("lagsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, usc(bterms$resp)))
-  sdist("student_t_lagsar", p$nu, p$mu, p$sigma,
-        p$lagsar, p$Msar, p$eigenMsar)
+  sdist(
+    "student_t_lagsar", p$nu, p$mu, p$sigma,
+    p$lagsar, p$Msar, p$eigenMsar
+  )
 }
 
 stan_log_lik_student_errorsar <- function(bterms, ...) {
@@ -525,8 +530,10 @@ stan_log_lik_student_errorsar <- function(bterms, ...) {
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, reqn = FALSE, ...)
   v <- c("errorsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, usc(bterms$resp)))
-  sdist("student_t_errorsar", p$nu, p$mu, p$sigma,
-        p$errorsar, p$Msar, p$eigenMsar)
+  sdist(
+    "student_t_errorsar", p$nu, p$mu, p$sigma,
+    p$errorsar, p$Msar, p$eigenMsar
+  )
 }
 
 stan_log_lik_lognormal <- function(bterms, ...) {
@@ -539,7 +546,7 @@ stan_log_lik_shifted_lognormal <- function(bterms, ...) {
   sdist("lognormal", p$mu, p$sigma, shift = paste0(" - ", p$ndt))
 }
 
-stan_log_lik_asym_laplace <- function(bterms,...) {
+stan_log_lik_asym_laplace <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
   sdist("asym_laplace", p$mu, p$sigma, p$quantile, vec = FALSE)
 }
@@ -593,7 +600,8 @@ stan_log_lik_negbinomial2 <- function(bterms, ...) {
     p <- stan_log_lik_dpars(bterms)
     p$mu <- stan_log_lik_multiply_rate_denom(p$mu, bterms, log = TRUE, ...)
     p$shape <- stan_log_lik_multiply_rate_denom(
-      p$sigma, bterms, transform = "inv", ...
+      p$sigma, bterms,
+      transform = "inv", ...
     )
     lpdf <- stan_log_lik_simple_lpdf("neg_binomial_2", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
@@ -712,7 +720,8 @@ stan_log_lik_wiener <- function(bterms, ...) {
 
 stan_log_lik_beta <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
-  sdist("beta",
+  sdist(
+    "beta",
     paste0(p$mu, " .* ", p$phi),
     paste0("(1 - ", p$mu, ") .* ", p$phi)
   )
@@ -793,7 +802,7 @@ stan_log_lik_dirichlet <- function(bterms, ...) {
   sdist("dirichlet_logit", mu, phi, vec = FALSE)
 }
 
-stan_log_lik_dirichlet2 <- function(bterms,...) {
+stan_log_lik_dirichlet2 <- function(bterms, ...) {
   mu <- stan_log_lik_dpars(bterms, reqn = TRUE, dpars = "mu", type = "multi")$mu
   sdist("dirichlet", mu, vec = FALSE)
 }
@@ -839,8 +848,10 @@ stan_log_lik_ordinal <- function(bterms, ...) {
   }
   if (has_cs(bterms)) {
     if (has_thres_groups(bterms)) {
-      stop2("Cannot use category specific effects ",
-            "in models with multiple thresholds.")
+      stop2(
+        "Cannot use category specific effects ",
+        "in models with multiple thresholds."
+      )
     }
     str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
@@ -901,8 +912,10 @@ stan_log_lik_hurdle_cumulative <- function(bterms, ...) {
   }
   if (has_cs(bterms)) {
     if (has_thres_groups(bterms)) {
-      stop2("Cannot use category specific effects ",
-            "in models with multiple thresholds.")
+      stop2(
+        "Cannot use category specific effects ",
+        "in models with multiple thresholds."
+      )
     }
     str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
@@ -963,8 +976,10 @@ stan_log_lik_custom <- function(bterms, threads = NULL, ...) {
   family <- bterms$family
   no_loop <- isFALSE(family$loop)
   if (no_loop && (stan_log_lik_adj(bterms))) {
-    stop2("This model requires evaluating the custom ",
-          "likelihood as a loop over observations.")
+    stop2(
+      "This model requires evaluating the custom ",
+      "likelihood as a loop over observations."
+    )
   }
   resp <- usc(bterms$resp)
   p <- stan_log_lik_dpars(bterms, reqn = !no_loop)
@@ -1288,8 +1303,8 @@ use_glm_primitive <- function(bterms) {
   mu <- bterms$dpars[["mu"]]
   non_glm_adterms <- c("se", "weights", "thres", "cens", "trunc", "rate")
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
-      isTRUE(bterms$rescor) || is.formula(mu$ac) ||
-      has_ad_terms(bterms, non_glm_adterms)) {
+    isTRUE(bterms$rescor) || is.formula(mu$ac) ||
+    has_ad_terms(bterms, non_glm_adterms)) {
     return(FALSE)
   }
   # some primitives do not support special terms in the way

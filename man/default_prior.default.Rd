@@ -78,8 +78,9 @@ may be specified including default priors.
 }
 \examples{
 # get all parameters and parameters classes to define priors on
-(prior <- default_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-                        data = epilepsy, family = poisson()))
+(prior <- default_prior(count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
+  data = epilepsy, family = poisson()
+))
 
 # define a prior on all population-level effects a once
 prior$prior[1] <- "normal(0,10)"
@@ -88,9 +89,10 @@ prior$prior[1] <- "normal(0,10)"
 prior$prior[5] <- "student_t(10, 0, 5)"
 
 # verify that the priors indeed found their way into Stan's model code
-stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-         data = epilepsy, family = poisson(),
-         prior = prior)
+stancode(count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
+  data = epilepsy, family = poisson(),
+  prior = prior
+)
 
 }
 \seealso{

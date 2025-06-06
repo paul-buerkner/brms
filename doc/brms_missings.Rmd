@@ -86,7 +86,7 @@ it is less typing. Fitting our model of interest with **brms** to the multiple
 imputed data sets is straightforward.
 
 ```{r, results = 'hide', message = FALSE}
-fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
+fit_imp1 <- brm_multiple(bmi ~ age * chl, data = imp, chains = 2)
 ```
 
 The returned fitted model is an ordinary `brmsfit` object containing the

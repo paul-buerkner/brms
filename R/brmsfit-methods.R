@@ -21,7 +21,8 @@
 #' @examples
 #' \dontrun{
 #' fit <- brm(time | cens(censored) ~ age + sex + disease,
-#'            data = kidney, family = "exponential")
+#'   data = kidney, family = "exponential"
+#' )
 #' fixef(fit)
 #' # extract only some coefficients
 #' fixef(fit, pars = c("age", "sex"))
@@ -31,8 +32,8 @@
 #' @export
 #' @export fixef
 #' @importFrom nlme fixef
-fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
-                           probs = c(0.025, 0.975), pars = NULL, ...) {
+fixef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
+                          probs = c(0.025, 0.975), pars = NULL, ...) {
   contains_draws(object)
   all_pars <- variables(object)
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
@@ -67,8 +68,9 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-#'            data = epilepsy, family = gaussian(), chains = 2)
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+#'   data = epilepsy, family = gaussian(), chains = 2
+#' )
 #' vcov(fit)
 #' }
 #'
@@ -118,8 +120,9 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-#'            data = epilepsy, family = gaussian(), chains = 2)
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+#'   data = epilepsy, family = gaussian(), chains = 2
+#' )
 #' ranef(fit)
 #' }
 #'
@@ -198,8 +201,9 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-#'            data = epilepsy, family = gaussian(), chains = 2)
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+#'   data = epilepsy, family = gaussian(), chains = 2
+#' )
 #' ## extract population and group-level coefficients separately
 #' fixef(fit)
 #' ranef(fit)
@@ -213,8 +217,10 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   contains_draws(object)
   object <- restructure(object)
   if (!has_rows(object$ranef)) {
-    stop2("No group-level effects detected. Call method ",
-          "'fixef' to access population-level effects.")
+    stop2(
+      "No group-level effects detected. Call method ",
+      "'fixef' to access population-level effects."
+    )
   }
   fixef <- fixef(object, summary = FALSE, ...)
   coef <- ranef(object, summary = FALSE, ...)
@@ -304,8 +310,9 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-#'            data = epilepsy, family = gaussian(), chains = 2)
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+#'   data = epilepsy, family = gaussian(), chains = 2
+#' )
 #' VarCorr(fit)
 #' }
 #'
@@ -545,22 +552,25 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
   if (x$backend == "cmdstanr") {
     if ("expose_functions" %in% names(stanmodel)) {
       funs <- .expose_functions_cmdstanr(
-        stanmodel, vectorize = vectorize, env = env, ...
+        stanmodel,
+        vectorize = vectorize, env = env, ...
       )
     } else {
       # older versions of cmdstanr cannot export stan functions (#1176)
-      scode  <- strsplit(stancode(x), "\n")[[1]]
+      scode <- strsplit(stancode(x), "\n")[[1]]
       data_line <- grep("^data[ ]+\\{$", scode)
       scode <- paste0(c(scode[seq_len(data_line - 1)], "\n"), collapse = "\n")
       stanmodel <- tempfile(fileext = ".stan")
       cat(scode, file = stanmodel)
       funs <- .expose_functions_rstan(
-        stanmodel, vectorize = vectorize, env = env, ...
+        stanmodel,
+        vectorize = vectorize, env = env, ...
       )
     }
   } else {
     funs <- .expose_functions_rstan(
-      stanmodel, vectorize = vectorize, env = env, ...
+      stanmodel,
+      vectorize = vectorize, env = env, ...
     )
   }
   invisible(funs)

@@ -103,8 +103,10 @@ prior <- c(
   prior(normal(0, 5), Intercept, nlpar = mu2),
   prior(dirichlet(2, 2), theta)
 )
-fit1 <- brm(bf(y ~ x), dat, family = mix,
-            prior = prior, chains = 2, init = 0)
+fit1 <- brm(bf(y ~ x), dat,
+  family = mix,
+  prior = prior, chains = 2, init = 0
+)
 summary(fit1)
 
 ## compute the membership probabilities

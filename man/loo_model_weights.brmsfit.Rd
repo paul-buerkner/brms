@@ -31,10 +31,12 @@ or pseudo-BMA weighting. For more details, see
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler, family = "gaussian")
+  data = inhaler, family = "gaussian"
+)
 # model with an additional varying intercept for subjects
-fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler, family = "gaussian")
+fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = "gaussian"
+)
 loo_model_weights(fit1, fit2)
 }
 

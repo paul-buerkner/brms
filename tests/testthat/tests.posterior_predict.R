@@ -42,7 +42,7 @@ test_that("posterior_predict for aysm_laplace models runs without errors", {
   prep$dpars <- list(
     sigma = rchisq(ns, 3),
     quantile = rbeta(ns, 2, 1),
-    mu = matrix(rnorm(ns*2), ncol = 2),
+    mu = matrix(rnorm(ns * 2), ncol = 2),
     zi = rbeta(ns, 10, 10)
   )
   pred <- brms:::posterior_predict_asym_laplace(1, prep = prep)
@@ -56,10 +56,10 @@ test_that("posterior_predict for multivariate linear models runs without errors"
   nvars <- 3
   ncols <- 4
   nobs <- nvars * ncols
-  Sigma = array(cov(matrix(rnorm(300), ncol = 3)), dim = c(3, 3, 10))
+  Sigma <- array(cov(matrix(rnorm(300), ncol = 3)), dim = c(3, 3, 10))
   prep <- structure(list(ndraws = ns), class = "mvbrmsprep")
   prep$mvpars <- list(
-    Mu = array(rnorm(ns*nobs*nvars), dim = c(ns, nobs, nvars)),
+    Mu = array(rnorm(ns * nobs * nvars), dim = c(ns, nobs, nvars)),
     Sigma = aperm(Sigma, c(3, 1, 2))
   )
   prep$dpars <- list(nu = rgamma(ns, 5))
@@ -77,7 +77,7 @@ test_that("posterior_predict for ARMA covariance models runs without errors", {
   nobs <- 15
   prep <- structure(list(ndraws = ns), class = "brmsprep")
   prep$dpars <- list(
-    mu = matrix(rnorm(ns*nobs), ncol = nobs),
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
     sigma = rchisq(ns, 3),
     nu = rgamma(ns, 5)
   )
@@ -98,7 +98,7 @@ test_that("posterior_predict for ARMA covariance models runs without errors", {
 })
 
 test_that("loglik for SAR models runs without errors", {
-  ns = 3
+  ns <- 3
   prep <- structure(list(ndraws = ns, nobs = 10), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(30), nrow = ns),
@@ -334,8 +334,8 @@ test_that("posterior_predict for categorical and related models runs without err
   ncat <- 3
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    mu1 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs)),
-    mu2 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs))
+    mu1 = array(rnorm(ns * nobs, 0, 0.1), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns * nobs, 0, 0.1), dim = c(ns, nobs))
   )
   prep$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   prep$family <- categorical()
@@ -429,7 +429,8 @@ test_that("posterior_predict_custom runs without errors", {
   )
   prep$data <- list(trials = rep(1, nobs))
   prep$family <- custom_family(
-    "beta_binomial2", dpars = c("mu", "tau"),
+    "beta_binomial2",
+    dpars = c("mu", "tau"),
     links = c("logit", "log"), lb = c(NA, 0),
     type = "int", vars = "trials[n]"
   )

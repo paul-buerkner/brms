@@ -77,7 +77,8 @@ The \code{extract_model_data} function used internally by
 \dontrun{
 # fit a simple model
 fit <- brm(count ~ zAge + zBase * Trt,
-           data = epilepsy, family = poisson())
+  data = epilepsy, family = poisson()
+)
 summary(fit)
 
 # The following code requires the 'projpred' package to be installed:

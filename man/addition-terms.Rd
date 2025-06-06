@@ -143,27 +143,32 @@ sei <- runif(nstudies, 0.05, 0.3)
 outcomes <- rnorm(nstudies, true_effects, sei)
 data1 <- data.frame(outcomes, sei)
 fit1 <- brm(outcomes | se(sei, sigma = TRUE) ~ 1,
-            data = data1)
+  data = data1
+)
 summary(fit1)
 
 ## Probit regression using the binomial family
-n <- sample(1:10, 100, TRUE)  # number of trials
+n <- sample(1:10, 100, TRUE) # number of trials
 success <- rbinom(100, size = n, prob = 0.4)
 x <- rnorm(100)
 data2 <- data.frame(n, success, x)
-fit2 <- brm(success | trials(n) ~ x, data = data2,
-            family = binomial("probit"))
+fit2 <- brm(success | trials(n) ~ x,
+  data = data2,
+  family = binomial("probit")
+)
 summary(fit2)
 
 ## Survival regression modeling the time between the first
 ## and second recurrence of an infection in kidney patients.
-fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-            data = kidney, family = lognormal())
+fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+  data = kidney, family = lognormal()
+)
 summary(fit3)
 
 ## Poisson model with truncated counts
 fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt,
-            data = epilepsy, family = poisson())
+  data = epilepsy, family = poisson()
+)
 summary(fit4)
 }
 

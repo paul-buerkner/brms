@@ -25,8 +25,9 @@
 #'   \code{\link{stancode.default}}, \code{\link{stancode.brmsfit}}
 #'
 #' @examples
-#' stancode(rating ~ treat + period + carry + (1|subject),
-#'          data = inhaler, family = "cumulative")
+#' stancode(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "cumulative"
+#' )
 #'
 #' @export
 stancode <- function(object, ...) {
@@ -57,11 +58,13 @@ make_stancode <- function(formula, ...) {
 #'   to facilitate pretty printing.
 #'
 #' @examples
-#' stancode(rating ~ treat + period + carry + (1|subject),
-#'          data = inhaler, family = "cumulative")
+#' stancode(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "cumulative"
+#' )
 #'
-#' stancode(count ~ zAge + zBase * Trt + (1|patient),
-#'          data = epilepsy, family = "poisson")
+#' stancode(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = "poisson"
+#' )
 #'
 #' @export
 stancode.default <- function(object, data, family = gaussian(),
@@ -73,35 +76,39 @@ stancode.default <- function(object, data, family = gaussian(),
                              threads = getOption("brms.threads", NULL),
                              normalize = getOption("brms.normalize", TRUE),
                              save_model = NULL, ...) {
-
   object <- validate_formula(
-    object, data = data, family = family,
+    object,
+    data = data, family = family,
     autocor = autocor, sparse = sparse,
     cov_ranef = cov_ranef
   )
   bterms <- brmsterms(object)
   data2 <- validate_data2(
-    data2, bterms = bterms,
+    data2,
+    bterms = bterms,
     get_data2_autocor(object),
     get_data2_cov_ranef(object)
   )
   data <- validate_data(
-    data, bterms = bterms,
+    data,
+    bterms = bterms,
     data2 = data2, knots = knots,
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    prior, bframe = bframe,
+    prior,
+    bframe = bframe,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   threads <- validate_threads(threads)
 
- .stancode(
-   bframe, prior = prior, stanvars = stanvars, threads = threads,
-   normalize = normalize, save_model = save_model, ...
- )
+  .stancode(
+    bframe,
+    prior = prior, stanvars = stanvars, threads = threads,
+    normalize = normalize, save_model = save_model, ...
+  )
 }
 
 # internal work function of 'stancode.default'
@@ -113,20 +120,22 @@ stancode.default <- function(object, data, family = gaussian(),
                       parse = getOption("brms.parse_stancode", FALSE),
                       backend = getOption("brms.backend", "rstan"),
                       silent = TRUE, save_model = NULL, ...) {
-
   normalize <- as_one_logical(normalize)
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
   scode_predictor <- stan_predictor(
-    bterms, prior = prior, normalize = normalize,
+    bterms,
+    prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
   )
   scode_re <- stan_re(
-    bterms, prior = prior, threads = threads, normalize = normalize
+    bterms,
+    prior = prior, threads = threads, normalize = normalize
   )
   scode_Xme <- stan_Xme(
-    bterms, prior = prior, threads = threads, normalize = normalize
+    bterms,
+    prior = prior, threads = threads, normalize = normalize
   )
 
   # extend Stan's likelihood part
@@ -225,10 +234,10 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_functions <- paste0(
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
-      scode_predictor[["fun"]],
-      scode_re[["fun"]],
-      collapse_stanvars(stanvars, "functions"),
-      scode_predictor[["partial_log_lik"]],
+    scode_predictor[["fun"]],
+    scode_re[["fun"]],
+    collapse_stanvars(stanvars, "functions"),
+    scode_predictor[["partial_log_lik"]],
     "}\n"
   )
 
@@ -247,10 +256,10 @@ stancode.default <- function(object, data, family = gaussian(),
   # generate transformed parameters block
   scode_transformed_data <- paste0(
     "transformed data {\n",
-       scode_predictor[["tdata_def"]],
-       collapse_stanvars(stanvars, "tdata", "start"),
-       scode_predictor[["tdata_comp"]],
-       collapse_stanvars(stanvars, "tdata", "end"),
+    scode_predictor[["tdata_def"]],
+    collapse_stanvars(stanvars, "tdata", "start"),
+    scode_predictor[["tdata_comp"]],
+    collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
 
@@ -270,9 +279,9 @@ stancode.default <- function(object, data, family = gaussian(),
   )
   scode_parameters <- paste0(
     "parameters {\n",
-      scode_parameters,
-      scode_rngprior[["par"]],
-      collapse_stanvars(stanvars, "parameters"),
+    scode_parameters,
+    scode_rngprior[["par"]],
+    collapse_stanvars(stanvars, "parameters"),
     "}\n"
   )
 
@@ -293,23 +302,23 @@ stancode.default <- function(object, data, family = gaussian(),
   # generate transformed parameters block
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
-      scode_predictor[["tpar_def"]],
-      scode_re[["tpar_def"]],
-      scode_Xme[["tpar_def"]],
-      str_if(normalize, scode_lprior_def),
-      collapse_stanvars(stanvars, "tparameters", "start"),
-      scode_predictor[["tpar_prior_const"]],
-      scode_re[["tpar_prior_const"]],
-      scode_Xme[["tpar_prior_const"]],
-      scode_predictor[["tpar_comp"]],
-      scode_predictor[["tpar_special_prior"]],
-      scode_re[["tpar_comp"]],
-      scode_Xme[["tpar_comp"]],
-      # lprior cannot contain _lupdf functions in transformed parameters
-      # as discussed on github.com/stan-dev/stan/issues/3094
-      str_if(normalize, scode_tpar_prior),
-      str_if(normalize, scode_lprior_assign),
-      collapse_stanvars(stanvars, "tparameters", "end"),
+    scode_predictor[["tpar_def"]],
+    scode_re[["tpar_def"]],
+    scode_Xme[["tpar_def"]],
+    str_if(normalize, scode_lprior_def),
+    collapse_stanvars(stanvars, "tparameters", "start"),
+    scode_predictor[["tpar_prior_const"]],
+    scode_re[["tpar_prior_const"]],
+    scode_Xme[["tpar_prior_const"]],
+    scode_predictor[["tpar_comp"]],
+    scode_predictor[["tpar_special_prior"]],
+    scode_re[["tpar_comp"]],
+    scode_Xme[["tpar_comp"]],
+    # lprior cannot contain _lupdf functions in transformed parameters
+    # as discussed on github.com/stan-dev/stan/issues/3094
+    str_if(normalize, scode_tpar_prior),
+    str_if(normalize, scode_lprior_assign),
+    collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
 
@@ -317,36 +326,36 @@ stancode.default <- function(object, data, family = gaussian(),
   not_const <- str_if(!normalize, " not")
   scode_model <- paste0(
     "model {\n",
-      str_if(!normalize, scode_lprior_def),
-      collapse_stanvars(stanvars, "model", "start"),
-      "  // likelihood", not_const, " including constants\n",
-      "  if (!prior_only) {\n",
-      scode_predictor[["model_lik"]],
-      "  }\n",
-      "  // priors", not_const, " including constants\n",
-      str_if(!normalize, scode_tpar_prior),
-      str_if(!normalize, scode_lprior_assign),
-      "  target += lprior;\n",
-      scode_predictor[["model_prior"]],
-      scode_re[["model_prior"]],
-      scode_Xme[["model_prior"]],
-      stan_unchecked_prior(prior),
-      collapse_stanvars(stanvars, "model", "end"),
+    str_if(!normalize, scode_lprior_def),
+    collapse_stanvars(stanvars, "model", "start"),
+    "  // likelihood", not_const, " including constants\n",
+    "  if (!prior_only) {\n",
+    scode_predictor[["model_lik"]],
+    "  }\n",
+    "  // priors", not_const, " including constants\n",
+    str_if(!normalize, scode_tpar_prior),
+    str_if(!normalize, scode_lprior_assign),
+    "  target += lprior;\n",
+    scode_predictor[["model_prior"]],
+    scode_re[["model_prior"]],
+    scode_Xme[["model_prior"]],
+    stan_unchecked_prior(prior),
+    collapse_stanvars(stanvars, "model", "end"),
     "}\n"
   )
   # generate generated quantities block
   scode_generated_quantities <- paste0(
     "generated quantities {\n",
-      scode_predictor[["gen_def"]],
-      scode_re[["gen_def"]],
-      scode_Xme[["gen_def"]],
-      scode_rngprior[["gen_def"]],
-      collapse_stanvars(stanvars, "genquant", "start"),
-      scode_predictor[["gen_comp"]],
-      scode_re[["gen_comp"]],
-      scode_rngprior[["gen_comp"]],
-      scode_Xme[["gen_comp"]],
-      collapse_stanvars(stanvars, "genquant", "end"),
+    scode_predictor[["gen_def"]],
+    scode_re[["gen_def"]],
+    scode_Xme[["gen_def"]],
+    scode_rngprior[["gen_def"]],
+    collapse_stanvars(stanvars, "genquant", "start"),
+    scode_predictor[["gen_comp"]],
+    scode_re[["gen_comp"]],
+    scode_rngprior[["gen_comp"]],
+    scode_Xme[["gen_comp"]],
+    collapse_stanvars(stanvars, "genquant", "end"),
     "}\n"
   )
   # combine all elements into a complete Stan model
@@ -399,7 +408,6 @@ print.brmsmodel <- function(x, ...) {
 #' @export
 stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
                              threads = NULL, backend = NULL, ...) {
-
   if (is.null(regenerate)) {
     # determine whether regenerating the Stan code is required
     regenerate <- FALSE
@@ -407,7 +415,7 @@ stancode.brmsfit <- function(object, version = TRUE, regenerate = NULL,
     if ("threads" %in% names(cl)) {
       threads <- validate_threads(threads)
       if (use_threading(threads) && !use_threading(object$threads) ||
-          !use_threading(threads) && use_threading(object$threads)) {
+        !use_threading(threads) && use_threading(object$threads)) {
         # threading changed; regenerated Stan code
         regenerate <- TRUE
       }
@@ -495,7 +503,7 @@ normalize_stancode <- function(x) {
   # Remove multi-line comments
   x <- gsub("/\\*([^*]*(\\*[^/])?)*\\*/", " ", x)
   # Standardize whitespace (including newlines)
-  x <- gsub("[[:space:]]+"," ", x)
+  x <- gsub("[[:space:]]+", " ", x)
   trimws(x)
 }
 
@@ -505,8 +513,8 @@ require_old_stan_syntax <- function(object, backend, version) {
   stopifnot(is.brmsfit(object))
   isTRUE(
     (object$backend == "rstan" && object$version$rstan >= version ||
-       object$backend == "cmdstanr" && object$version$cmdstan >= version) &&
+      object$backend == "cmdstanr" && object$version$cmdstan >= version) &&
       (backend == "rstan" && utils::packageVersion("rstan") < version ||
-         backend == "cmdstanr" && cmdstanr::cmdstan_version() < version)
+        backend == "cmdstanr" && cmdstanr::cmdstan_version() < version)
   )
 }

@@ -39,7 +39,7 @@ This function is a constructor for the \code{cor_arma} class,
 allowing for moving average terms only.
 }
 \examples{
-cor_ma(~visit|patient, q = 2)
+cor_ma(~ visit | patient, q = 2)
 
 }
 \seealso{

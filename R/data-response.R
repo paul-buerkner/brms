@@ -14,7 +14,7 @@
 #'
 #' @keywords internal
 #' @export
-get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE,  ...) {
+get_y <- function(x, resp = NULL, sort = FALSE, warn = FALSE, ...) {
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x)
   sort <- as_one_logical(sort)
@@ -117,8 +117,10 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     }
     if (is_binary(x$family)) {
       if (any(!out$Y %in% c(0, 1))) {
-        stop2("Family '", family4error, "' requires responses ",
-              "to contain only two different values.")
+        stop2(
+          "Family '", family4error, "' requires responses ",
+          "to contain only two different values."
+        )
       }
     }
     if (is_ordinal(x$family)) {
@@ -126,8 +128,10 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       min_int <- ifelse(extra_cat, 0L, 1L)
       msg <- ifelse(extra_cat, "non-negative", "positive")
       if (any(!is_wholenumber(out$Y)) || any(out$Y < min_int)) {
-        stop2("Family '", family4error, "' requires either ", msg,
-              " integers or ordered factors as responses.")
+        stop2(
+          "Family '", family4error, "' requires either ", msg,
+          " integers or ordered factors as responses."
+        )
       }
     }
     if (use_int(x$family)) {
@@ -150,21 +154,29 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     if (is.finite(ybounds[1])) {
       y_min <- min(out$Y, na.rm = TRUE)
       if (closed[1] && y_min < ybounds[1]) {
-        stop2("Family '", family4error, "' requires response greater ",
-              "than or equal to ", ybounds[1], ".")
+        stop2(
+          "Family '", family4error, "' requires response greater ",
+          "than or equal to ", ybounds[1], "."
+        )
       } else if (!closed[1] && y_min <= ybounds[1]) {
-        stop2("Family '", family4error, "' requires response greater ",
-              "than ", round(ybounds[1], 2), ".")
+        stop2(
+          "Family '", family4error, "' requires response greater ",
+          "than ", round(ybounds[1], 2), "."
+        )
       }
     }
     if (is.finite(ybounds[2])) {
       y_max <- max(out$Y, na.rm = TRUE)
       if (closed[2] && y_max > ybounds[2]) {
-        stop2("Family '", family4error, "' requires response smaller ",
-              "than or equal to ", ybounds[2], ".")
+        stop2(
+          "Family '", family4error, "' requires response smaller ",
+          "than or equal to ", ybounds[2], "."
+        )
       } else if (!closed[2] && y_max >= ybounds[2]) {
-        stop2("Family '", family4error, "' requires response smaller ",
-              "than ", round(ybounds[2], 2), ".")
+        stop2(
+          "Family '", family4error, "' requires response smaller ",
+          "than ", round(ybounds[2], 2), "."
+        )
       }
     }
     out$Y <- as.array(out$Y)
@@ -196,8 +208,10 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
         }
       } else if (has_trials(x$family)) {
         if (max(trials) == 1L && !internal) {
-          message("Only 2 levels detected so that family 'bernoulli' ",
-                  "might be a more efficient choice.")
+          message(
+            "Only 2 levels detected so that family 'bernoulli' ",
+            "might be a more efficient choice."
+          )
         }
         if (any(out$Y > trials)) {
           stop2("Number of trials is smaller than the number of events.")
@@ -213,12 +227,16 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     }
     if (!has_multicol(x$family)) {
       if (ncat == 2L && !internal) {
-        message("Only 2 levels detected so that family 'bernoulli' ",
-                "might be a more efficient choice.")
+        message(
+          "Only 2 levels detected so that family 'bernoulli' ",
+          "might be a more efficient choice."
+        )
       }
       if (check_response && any(out$Y > ncat)) {
-        stop2("Number of categories is smaller than the response ",
-              "variable would suggest.")
+        stop2(
+          "Number of categories is smaller than the response ",
+          "variable would suggest."
+        )
       }
     }
     out$ncat <- ncat
@@ -251,14 +269,18 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       }
     }
     if (max(nthres) == 1L && !internal) {
-      message("Only 2 levels detected so that family 'bernoulli' ",
-              "might be a more efficient choice.")
+      message(
+        "Only 2 levels detected so that family 'bernoulli' ",
+        "might be a more efficient choice."
+      )
     }
     out$nthres <- nthres
   }
   if (is.formula(x$adforms$cat)) {
-    warning2("Addition argument 'cat' is deprecated. Use 'thres' instead. ",
-             "See ?brmsformula for more details.")
+    warning2(
+      "Addition argument 'cat' is deprecated. Use 'thres' instead. ",
+      "See ?brmsformula for more details."
+    )
   }
 
   if (is.formula(x$adforms$se)) {
@@ -288,8 +310,10 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     dec <- get_ad_values(x, "dec", "dec", data)
     if (is.character(dec) || is.factor(dec)) {
       if (!all(unique(dec) %in% c("lower", "upper"))) {
-        stop2("Decisions should be 'lower' or 'upper' ",
-              "when supplied as characters or factors.")
+        stop2(
+          "Decisions should be 'lower' or 'upper' ",
+          "when supplied as characters or factors."
+        )
       }
       dec <- ifelse(dec == "lower", 0, 1)
     } else {
@@ -323,8 +347,10 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
       cens <- rep(cens, N)
     }
     if (length(cens) != N) {
-      stop2("Censoring information needs to have length ",
-            "equal to the number of data rows.")
+      stop2(
+        "Censoring information needs to have length ",
+        "equal to the number of data rows."
+      )
     }
     out$cens <- as.array(cens)
     icens <- cens %in% 2
@@ -341,10 +367,12 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
         stop2("'y2' should not be NA for interval censored observations.")
       }
       if (any(out$Y[icens] >= y2[icens])) {
-        stop2("Left censor points must be smaller than right ",
-              "censor points for interval censored data.")
+        stop2(
+          "Left censor points must be smaller than right ",
+          "censor points for interval censored data."
+        )
       }
-      y2[!icens] <- 0  # not used in Stan
+      y2[!icens] <- 0 # not used in Stan
       out$rcens <- as.array(y2)
     }
   }
@@ -665,9 +693,11 @@ extract_nthres <- function(formula, data, extra_cat = FALSE) {
     out <- max(mr) - 1L
   }
   if (out < 1L) {
-    stop2("Could not extract the number of thresholds. Use ordered factors ",
-          "or positive integers as your ordinal response and ensure that ",
-          "more than on response category is present.")
+    stop2(
+      "Could not extract the number of thresholds. Use ordered factors ",
+      "or positive integers as your ordinal response and ensure that ",
+      "more than on response category is present."
+    )
   }
   out
 }

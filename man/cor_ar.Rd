@@ -44,7 +44,7 @@ AR refers to autoregressive effects of residuals, which
   variable, which is called ARR in \pkg{brms}.
 }
 \examples{
-cor_ar(~visit|patient, p = 2)
+cor_ar(~ visit | patient, p = 2)
 
 }
 \seealso{

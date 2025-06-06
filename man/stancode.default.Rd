@@ -141,10 +141,12 @@ A character string containing the fully commented \pkg{Stan} code
 Generate Stan code for \pkg{brms} models
 }
 \examples{
-stancode(rating ~ treat + period + carry + (1|subject),
-         data = inhaler, family = "cumulative")
+stancode(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = "cumulative"
+)
 
-stancode(count ~ zAge + zBase * Trt + (1|patient),
-         data = epilepsy, family = "poisson")
+stancode(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = "poisson"
+)
 
 }

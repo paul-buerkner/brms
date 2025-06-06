@@ -33,12 +33,14 @@ All \code{brmsfit} objects should contain precomputed
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler)
+  data = inhaler
+)
 fit1 <- add_criterion(fit1, "waic")
 
 # model with an additional varying intercept for subjects
-fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler)
+fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler
+)
 fit2 <- add_criterion(fit2, "waic")
 
 # compare both models

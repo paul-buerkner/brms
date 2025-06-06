@@ -17,7 +17,8 @@ brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
   x$frame <- initialize_frame(x, data = data, basis = basis, ...)
   for (r in names(x$terms)) {
     x$terms[[r]] <- brmsframe(
-      x$terms[[r]], data = data, frame = x$frame,
+      x$terms[[r]],
+      data = data, frame = x$frame,
       basis = basis$resps[[r]], ...
     )
   }
@@ -44,13 +45,15 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   x$frame$ac <- frame_ac(x, data = data)
   for (dp in names(x$dpars)) {
     x$dpars[[dp]] <- brmsframe(
-      x$dpars[[dp]], data, frame = x$frame,
+      x$dpars[[dp]], data,
+      frame = x$frame,
       basis = basis$dpars[[dp]], ...
     )
   }
   for (nlp in names(x$nlpars)) {
     x$nlpars[[nlp]] <- brmsframe(
-      x$nlpars[[nlp]], data, frame = x$frame,
+      x$nlpars[[nlp]], data,
+      frame = x$frame,
       basis = basis$nlpars[[nlp]], ...
     )
   }
@@ -221,7 +224,7 @@ is.bframenl <- function(x) {
 }
 
 # assignment function to store levels as an attribute
-'set_levels<-' <- function(x, prefix = "", value) {
+"set_levels<-" <- function(x, prefix = "", value) {
   prefix_ <- usc(prefix, "suffix")
   attr_name <- paste0(prefix_, "levels")
   attr(x, attr_name) <- value

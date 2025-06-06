@@ -6,7 +6,8 @@ test_that("Multivariate GAMMs work correctly", suppressWarnings({
   sig <- 2
   dat <- mgcv::gamSim(1, n = n, scale = sig)
   fit_gam <- brm(
-    y ~ t2(x0, x2) + s(x1), data = dat, chains = 2,
+    y ~ t2(x0, x2) + s(x1),
+    data = dat, chains = 2,
     control = list(adapt_delta = 0.95), refresh = 0
   )
   print(fit_gam)
@@ -26,8 +27,10 @@ test_that("Multivariate GAMMs work correctly", suppressWarnings({
   expect_range(loo(fit_gam)$estimates[3, 1], 830, 870)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
 
-  newd <- data.frame(x0 = (0:30)/30, x1 = (0:30)/30,
-                     x2 = (0:30)/30, x3 = (0:30)/30)
+  newd <- data.frame(
+    x0 = (0:30) / 30, x1 = (0:30) / 30,
+    x2 = (0:30) / 30, x3 = (0:30) / 30
+  )
   prfi <- cbind(predict(fit_gam, newd), fitted(fit_gam, newdata = newd))
   expect_range(prfi[, 1], prfi[, 5] - 0.25, prfi[, 5] + 0.25)
 }))
@@ -36,7 +39,8 @@ test_that("GAMMs with factor variable in 'by' work correctly", suppressWarnings(
   set.seed(7)
   dat <- mgcv::gamSim(4, n = 200, dist = "normal")
   fit_gam2 <- brm(y ~ fac + s(x2, by = fac, k = 4), dat,
-                  chains = 2, refresh = 0)
+    chains = 2, refresh = 0
+  )
   print(fit_gam2)
 
   ce <- conditional_effects(fit_gam2, "x2:fac")
@@ -45,7 +49,8 @@ test_that("GAMMs with factor variable in 'by' work correctly", suppressWarnings(
   expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
 
   fit_gam3 <- brm(y ~ fac + t2(x1, x2, by = fac), dat,
-                  chains = 2, refresh = 0)
+    chains = 2, refresh = 0
+  )
   print(fit_gam3)
 
   ce <- conditional_effects(fit_gam3, "x2:fac")
@@ -62,13 +67,15 @@ test_that("generalized extreme value models work correctly", suppressWarnings({
     fremantle,
     list(cYear = c(
       min(Year) - c(10, 0), 1945,
-      max(Year) + c(0, 10)) - median(Year)
-    )
+      max(Year) + c(0, 10)
+    ) - median(Year))
   )
 
   fit_gev <- brm(
-    bf(SeaLevel ~ cYear + SOI,
-       sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI),
+    bf(
+      SeaLevel ~ cYear + SOI,
+      sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI
+    ),
     data = fremantle, family = gen_extreme_value(),
     knots = knots, init = 0.5, chains = 4,
     control = list(adapt_delta = 0.95), refresh = 0
@@ -89,7 +96,8 @@ test_that("Wiener diffusion models work correctly", suppressWarnings({
   dat$x <- x
 
   fit_d1 <- brm(bf(q | dec(resp) ~ x), dat,
-                family = wiener(), refresh = 0)
+    family = wiener(), refresh = 0
+  )
   print(fit_d1)
   expect_ggplot(plot(conditional_effects(fit_d1), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d1))
@@ -97,7 +105,9 @@ test_that("Wiener diffusion models work correctly", suppressWarnings({
   expect_true(min(pp) < 0)
 
   fit_d2 <- brm(bf(q | dec(resp) ~ x, ndt ~ x),
-                dat, family = wiener(), refresh = 0)
+    dat,
+    family = wiener(), refresh = 0
+  )
   print(fit_d2)
   expect_ggplot(plot(conditional_effects(fit_d2), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d2))
@@ -110,9 +120,9 @@ test_that("Wiener diffusion models work correctly", suppressWarnings({
 
 test_that("disc parameter in ordinal models is handled correctly", suppressWarnings({
   fit <- brm(
-    bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
+    bf(rating ~ period + carry + treat + (1 | subject), disc ~ 1),
     data = inhaler, family = cumulative(),
-    prior = prior(normal(0,5)),
+    prior = prior(normal(0, 5)),
     chains = 2, refresh = 0
   )
   print(fit)
@@ -120,29 +130,33 @@ test_that("disc parameter in ordinal models is handled correctly", suppressWarni
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit)), c(nobs(fit), ncat))
   expect_ggplot(plot(
-    conditional_effects(fit), ask = FALSE,
+    conditional_effects(fit),
+    ask = FALSE,
     points = TRUE, point_args = list(width = 0.3)
   )[[3]])
 }))
 
-test_that("Argument `incl_thres` works correctly for non-grouped thresholds",
-          suppressWarnings({
-  fit <- brm(
-    bf(rating ~ period + carry + treat + (1|subject)),
-    data = inhaler, family = cumulative(),
-    prior = prior(normal(0,5)),
-    chains = 2, refresh = 0
-  )
-  thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
-  bprep <- prepare_predictions(fit)
-  thres <- bprep$thres$thres
-  eta <- posterior_linpred(fit)
-  thres_minus_eta_ch <- apply(thres, 2, "-", eta)
-  thres_minus_eta_ch <- array(
-    thres_minus_eta_ch, dim = c(nrow(thres), ncol(eta), ncol(thres))
-  )
-  expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
-}))
+test_that(
+  "Argument `incl_thres` works correctly for non-grouped thresholds",
+  suppressWarnings({
+    fit <- brm(
+      bf(rating ~ period + carry + treat + (1 | subject)),
+      data = inhaler, family = cumulative(),
+      prior = prior(normal(0, 5)),
+      chains = 2, refresh = 0
+    )
+    thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
+    bprep <- prepare_predictions(fit)
+    thres <- bprep$thres$thres
+    eta <- posterior_linpred(fit)
+    thres_minus_eta_ch <- apply(thres, 2, "-", eta)
+    thres_minus_eta_ch <- array(
+      thres_minus_eta_ch,
+      dim = c(nrow(thres), ncol(eta), ncol(thres))
+    )
+    expect_equivalent(thres_minus_eta, thres_minus_eta_ch)
+  })
+)
 
 test_that("hurdle_cumulative family works correctly", suppressWarnings({
   inhaler2 <- inhaler
@@ -150,7 +164,7 @@ test_that("hurdle_cumulative family works correctly", suppressWarnings({
   fit <- brm(
     bf(rating ~ period + carry + treat, hu ~ treat),
     data = inhaler2, family = hurdle_cumulative(),
-    prior = prior(normal(0,5)),
+    prior = prior(normal(0, 5)),
     chains = 2, refresh = 0
   )
   print(fit)
@@ -158,7 +172,8 @@ test_that("hurdle_cumulative family works correctly", suppressWarnings({
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit)), c(nobs(fit), ncat))
   expect_ggplot(plot(
-    SW(conditional_effects(fit)), ask = FALSE,
+    SW(conditional_effects(fit)),
+    ask = FALSE,
     points = TRUE, point_args = list(width = 0.3)
   )[[3]])
 }))
@@ -182,7 +197,8 @@ test_that("Mixture models work correctly", suppressWarnings({
   )
 
   fit1 <- brm(
-    bform1, data = dat, family = mixfam,
+    bform1,
+    data = dat, family = mixfam,
     prior = c(prior, prior(dirichlet(1, 1, 1), theta)),
     chains = 2, init = 0, refresh = 0, seed = 1234
   )
@@ -193,7 +209,8 @@ test_that("Mixture models work correctly", suppressWarnings({
 
   bform2 <- bf(bform1, theta1 = 1, theta2 = 1, theta3 = 1)
   fit2 <- brm(
-    bform2, data = dat, family = mixfam,
+    bform2,
+    data = dat, family = mixfam,
     prior = prior, chains = 2,
     init = 0, refresh = 0
   )
@@ -228,7 +245,8 @@ test_that("Gaussian processes work correctly", suppressWarnings({
   set.seed(1112)
   dat <- mgcv::gamSim(1, n = 30, scale = 2)
   fit1 <- brm(y ~ gp(x0) + x1 + gp(x2, cov = "matern32") + x3, dat,
-              chains = 2, refresh = 0)
+    chains = 2, refresh = 0
+  )
   print(fit1)
   expect_ggplot(pp_check(fit1))
   ce <- conditional_effects(fit1, ndraws = 200, nug = 1e-07)
@@ -240,7 +258,8 @@ test_that("Gaussian processes work correctly", suppressWarnings({
   print(fit2)
   expect_ggplot(pp_check(fit2))
   ce <- conditional_effects(
-    fit2, ndraws = 200, nug = 1e-07,
+    fit2,
+    ndraws = 200, nug = 1e-07,
     surface = TRUE, resolution = 10
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
@@ -248,11 +267,13 @@ test_that("Gaussian processes work correctly", suppressWarnings({
 
   # multivariate non-isotropic GPs
   fit3 <- brm(y ~ gp(x1, x2, iso = FALSE, cov = "matern32"),
-              data = dat, chains = 2, refresh = 0)
+    data = dat, chains = 2, refresh = 0
+  )
   print(fit3)
   expect_ggplot(pp_check(fit3))
   ce <- conditional_effects(
-    fit3, ndraws = 200, nug = 1e-07,
+    fit3,
+    ndraws = 200, nug = 1e-07,
     surface = TRUE, resolution = 10
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
@@ -260,7 +281,8 @@ test_that("Gaussian processes work correctly", suppressWarnings({
 
   # GP with continuous 'by' variable
   fit4 <- brm(y ~ gp(x1, by = x2, cov = "matern52"), dat,
-              chains = 2, refresh = 0)
+    chains = 2, refresh = 0
+  )
   print(fit4)
   expect_ggplot(pp_check(fit4))
   ce <- conditional_effects(fit4, ndraws = 200, nug = 1e-07)
@@ -270,7 +292,8 @@ test_that("Gaussian processes work correctly", suppressWarnings({
   # GP with factor 'by' variable
   dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
   fit5 <- brm(y ~ gp(x2, by = fac, cov = "exponential"), dat2,
-              chains = 2, refresh = 0)
+    chains = 2, refresh = 0
+  )
   print(fit5)
   expect_ggplot(pp_check(fit5))
   ce <- conditional_effects(fit5, ndraws = 200, nug = 1e-07)
@@ -284,14 +307,15 @@ test_that("Approximate Gaussian processes work correctly", suppressWarnings({
 
   # isotropic approximate GP
   fit1 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, cov = "matern32"),
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5 / 4, cov = "matern32"),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
   print(fit1)
   expect_range(bayes_R2(fit1)[1, 1], 0.45, 0.7)
   ce <- conditional_effects(
-    fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
+    fit1, "x2:x1",
+    conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
@@ -299,15 +323,18 @@ test_that("Approximate Gaussian processes work correctly", suppressWarnings({
 
   # non-isotropic approximate GP
   fit2 <- brm(
-    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE,
-           cov = "matern52"),
+    y ~ gp(x1, x2,
+      by = fac, k = 10, c = 5 / 4, iso = FALSE,
+      cov = "matern52"
+    ),
     data = dat, chains = 2, cores = 2, refresh = 0,
     control = list(adapt_delta = 0.99)
   )
   print(fit2)
   expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.62)
   ce <- conditional_effects(
-    fit2, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
+    fit2, "x2:x1",
+    conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])

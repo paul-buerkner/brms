@@ -32,10 +32,12 @@
 #' dat <- data.frame(
 #'   y = rnorm(N), x1 = rnorm(N),
 #'   x2 = rnorm(N), sdx = abs(rnorm(N, 1))
-#'  )
+#' )
 #' # fit a simple error-in-variables model
-#' fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat,
-#'             save_pars = save_pars(latent = TRUE))
+#' fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx),
+#'   data = dat,
+#'   save_pars = save_pars(latent = TRUE)
+#' )
 #' summary(fit1)
 #'
 #' # turn off modeling of correlations
@@ -177,7 +179,8 @@ mi <- function(x, idx = NA) {
 #' # generate some data
 #' income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
 #' income <- factor(sample(income_options, 100, TRUE),
-#'                  levels = income_options, ordered = TRUE)
+#'   levels = income_options, ordered = TRUE
+#' )
 #' mean_ls <- c(30, 60, 70, 75)
 #' ls <- mean_ls[income] + rnorm(100, sd = 7)
 #' dat <- data.frame(income, ls)
@@ -190,12 +193,12 @@ mi <- function(x, idx = NA) {
 #'
 #' # model interaction with other variables
 #' dat$x <- sample(c("a", "b", "c"), 100, TRUE)
-#' fit2 <- brm(ls ~ mo(income)*x, data = dat)
+#' fit2 <- brm(ls ~ mo(income) * x, data = dat)
 #' summary(fit2)
 #' plot(conditional_effects(fit2), points = TRUE)
 #'
 #' # ensure conditional monotonicity
-#' fit3 <- brm(ls ~ mo(income, id = "i")*x, data = dat)
+#' fit3 <- brm(ls ~ mo(income, id = "i") * x, data = dat)
 #' summary(fit3)
 #' plot(conditional_effects(fit3), points = TRUE)
 #' }
@@ -226,7 +229,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
   miss_mi <- setdiff(vars_mi, out)
   if (length(miss_mi)) {
     stop2(
-      "Response models of variables in 'mi' terms require " ,
+      "Response models of variables in 'mi' terms require ",
       "specification of the addition argument 'mi'. See ?mi. ",
       "Error occurred for ", collapse_comma(miss_mi), "."
     )
@@ -253,7 +256,7 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
     miss_mi <- setdiff(vars_mi, responses)
     if (length(miss_mi)) {
       stop2(
-        "Variables in 'mi' terms should also be specified " ,
+        "Variables in 'mi' terms should also be specified ",
         "as response variables in the model. See ?mi. ",
         "Error occurred for ", collapse_comma(miss_mi), "."
       )
@@ -386,7 +389,7 @@ frame_sp <- function(x, data) {
         mo_term <- out$calls_mo[[i]][[j]]
         mo_match <- get_matches_expr(regex_sp("mo"), mo_term)
         if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_term)) {
-          stop2("The monotonic term '",  mo_term, "' is invalid.")
+          stop2("The monotonic term '", mo_term, "' is invalid.")
         }
         out$ids_mo[[i]][j] <- eval2(mo_term)$id
       }
@@ -435,7 +438,8 @@ frame_sp <- function(x, data) {
   for (i in seq_rows(out)) {
     for (j in seq_along(out$idx_mi[[i]])) {
       sub <- subset2(
-        uni_mi, var = out$vars_mi[[i]][j],
+        uni_mi,
+        var = out$vars_mi[[i]][j],
         idx = out$idx_mi[[i]][j]
       )
       out$idx2_mi[[i]][j] <- sub$idx2

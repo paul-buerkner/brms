@@ -44,8 +44,10 @@
 #'   prior(normal(0, 5), Intercept, nlpar = mu2),
 #'   prior(dirichlet(2, 2), theta)
 #' )
-#' fit1 <- brm(bf(y ~ x), dat, family = mix,
-#'             prior = prior, chains = 2, init = 0)
+#' fit1 <- brm(bf(y ~ x), dat,
+#'   family = mix,
+#'   prior = prior, chains = 2, init = 0
+#' )
 #' summary(fit1)
 #'
 #' ## compute the membership probabilities
@@ -79,7 +81,8 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     stop2("Method 'pp_mixture' can only be applied to mixture models.")
   }
   prep <- prepare_predictions(
-    x, newdata = newdata, re_formula = re_formula, resp = resp,
+    x,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     draw_ids = draw_ids, ndraws = ndraws, check_response = TRUE, ...
   )
   stopifnot(is.brmsprep(prep))

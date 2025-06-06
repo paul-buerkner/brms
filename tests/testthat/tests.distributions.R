@@ -2,55 +2,89 @@ context("Tests for distribution functions")
 
 test_that("student distribution works correctly", {
   expect_equal(integrate(dstudent_t, -100, 100, df = 15, mu = 10, sigma = 5)$value, 1)
-  expect_equal(dstudent_t(1, df = 10, mu = 0, sigma = 5), dt(1/5, df = 10)/5)
+  expect_equal(dstudent_t(1, df = 10, mu = 0, sigma = 5), dt(1 / 5, df = 10) / 5)
   expect_equal(pstudent_t(2, df = 20, mu = 2, sigma = 0.4), pt(0, df = 20))
-  ps <- c(-1,0,0.7,1,1.5)
-  SW(expect_equal(qstudent_t(ps, df = 5, mu = 2, sigma = 3), 2 + 3*qt(ps, df = 5)))
+  ps <- c(-1, 0, 0.7, 1, 1.5)
+  SW(expect_equal(qstudent_t(ps, df = 5, mu = 2, sigma = 3), 2 + 3 * qt(ps, df = 5)))
   expect_equal(length(rstudent_t(10, df = 10, mu = rnorm(10), sigma = 1:10)), 10)
 })
 
 test_that("multivariate normal and student distributions work correctly", {
   mu <- rnorm(3)
   Sigma <- cov(matrix(rnorm(300), ncol = 3))
-  expect_equal(dmulti_normal(1:3, mu = mu, Sigma = Sigma),
-               mnormt::dmnorm(1:3, mu, Sigma))
-  expect_equal(dmulti_student_t(1:3, mu = mu, Sigma = Sigma, df = 10, log = TRUE),
-               mnormt::dmt(1:3, df = 10, mean = mu, S = Sigma, log = TRUE))
+  expect_equal(
+    dmulti_normal(1:3, mu = mu, Sigma = Sigma),
+    mnormt::dmnorm(1:3, mu, Sigma)
+  )
+  expect_equal(
+    dmulti_student_t(1:3, mu = mu, Sigma = Sigma, df = 10, log = TRUE),
+    mnormt::dmt(1:3, df = 10, mean = mu, S = Sigma, log = TRUE)
+  )
   expect_equal(dim(rmulti_normal(7, mu = mu, Sigma = Sigma)), c(7, 3))
-  expect_equal(dim(rmulti_student_t(7, mu = mu, Sigma = Sigma, df = 10)),
-               c(7, 3))
+  expect_equal(
+    dim(rmulti_student_t(7, mu = mu, Sigma = Sigma, df = 10)),
+    c(7, 3)
+  )
   # test errors
-  expect_error(dmulti_normal(1:3, mu = rnorm(2), Sigma = Sigma, check = TRUE),
-               "Dimension of mu is incorrect")
-  expect_error(dmulti_normal(1:3, mu = mu, Sigma = Sigma[1:2, 1:2],
-                             check = TRUE),
-               "Dimension of Sigma is incorrect")
-  expect_error(dmulti_normal(1:3, mu = mu, Sigma = Sigma[1:3, 3:1],
-                             check = TRUE),
-               "Sigma must be a symmetric matrix")
-  expect_error(rmulti_normal(1.5, mu = mu, Sigma = Sigma, check = TRUE),
-               "n must be a positive integer")
-  expect_error(rmulti_normal(10, mu = mu, Sigma = Sigma[1:3, 3:1],
-                             check = TRUE),
-               "Sigma must be a symmetric matrix")
-  expect_error(dmulti_student_t(rnorm(3), mu = mu, Sigma = Sigma,
-                                df = -1, check = TRUE),
-               "df must be greater than 0")
-  expect_error(dmulti_student_t(rnorm(3), mu = mu, Sigma = Sigma[1:3, 3:1],
-                                df = 30, check = TRUE),
-               "Sigma must be a symmetric matrix")
-  expect_error(rmulti_student_t(10, mu = mu, Sigma = Sigma,
-                                df = -1, check = TRUE),
-               "df must be greater than 0")
+  expect_error(
+    dmulti_normal(1:3, mu = rnorm(2), Sigma = Sigma, check = TRUE),
+    "Dimension of mu is incorrect"
+  )
+  expect_error(
+    dmulti_normal(1:3,
+      mu = mu, Sigma = Sigma[1:2, 1:2],
+      check = TRUE
+    ),
+    "Dimension of Sigma is incorrect"
+  )
+  expect_error(
+    dmulti_normal(1:3,
+      mu = mu, Sigma = Sigma[1:3, 3:1],
+      check = TRUE
+    ),
+    "Sigma must be a symmetric matrix"
+  )
+  expect_error(
+    rmulti_normal(1.5, mu = mu, Sigma = Sigma, check = TRUE),
+    "n must be a positive integer"
+  )
+  expect_error(
+    rmulti_normal(10,
+      mu = mu, Sigma = Sigma[1:3, 3:1],
+      check = TRUE
+    ),
+    "Sigma must be a symmetric matrix"
+  )
+  expect_error(
+    dmulti_student_t(rnorm(3),
+      mu = mu, Sigma = Sigma,
+      df = -1, check = TRUE
+    ),
+    "df must be greater than 0"
+  )
+  expect_error(
+    dmulti_student_t(rnorm(3),
+      mu = mu, Sigma = Sigma[1:3, 3:1],
+      df = 30, check = TRUE
+    ),
+    "Sigma must be a symmetric matrix"
+  )
+  expect_error(
+    rmulti_student_t(10,
+      mu = mu, Sigma = Sigma,
+      df = -1, check = TRUE
+    ),
+    "df must be greater than 0"
+  )
 })
 
 test_that("von_mises distribution functions run without errors", {
   n <- 10
   res <- dvon_mises(runif(n, -pi, pi), mu = 1, kappa = 1:n)
   expect_true(length(res) == n)
-  res <- pvon_mises(runif(n, -pi, pi), mu = rnorm(n), kappa = 0:(n-1))
+  res <- pvon_mises(runif(n, -pi, pi), mu = rnorm(n), kappa = 0:(n - 1))
   expect_true(length(res) == n)
-  res <- rvon_mises(n, mu = rnorm(n), kappa = 0:(n-1))
+  res <- rvon_mises(n, mu = rnorm(n), kappa = 0:(n - 1))
   expect_true(length(res) == n)
 })
 
@@ -59,12 +93,16 @@ test_that("skew_normal distribution functions run without errors", {
   x <- rnorm(n, 10, 3)
   res <- dskew_normal(x, mu = 1, sigma = 2, alpha = 1)
   expect_true(length(res) == n)
-  res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n,
-                      alpha = 3, log.p = TRUE)
+  res <- pskew_normal(x,
+    mu = rnorm(n), sigma = 1:n,
+    alpha = 3, log.p = TRUE
+  )
   expect_true(length(res) == n)
   p <- log(runif(n, 0, 1))
-  res <- qskew_normal(p, mu = rnorm(n), sigma = 1:n,
-                      alpha = 3, log.p = TRUE)
+  res <- qskew_normal(p,
+    mu = rnorm(n), sigma = 1:n,
+    alpha = 3, log.p = TRUE
+  )
   expect_true(length(res) == n)
   ps <- c(-1, 0, 0.5, 1, 1.5)
   res <- SW(qskew_normal(ps))
@@ -78,8 +116,10 @@ test_that("exgaussian distribution functions run without errors", {
   x <- rnorm(n, 10, 3)
   res <- dexgaussian(x, mu = 1, sigma = 2, beta = 1)
   expect_true(length(res) == n)
-  res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n,
-                     beta = 3, log.p = TRUE)
+  res <- pexgaussian(x,
+    mu = rnorm(n), sigma = 1:n,
+    beta = 3, log.p = TRUE
+  )
   expect_true(length(res) == n)
   res <- rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
   expect_true(length(res) == n)
@@ -148,8 +188,10 @@ test_that("asym_laplace distribution functions run without errors", {
   expect_true(length(res) == n)
   res <- pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
   expect_true(length(res) == n)
-  res <- rasym_laplace(n, mu = rnorm(n), sigma = 10,
-                       quantile = runif(n, 0, 1))
+  res <- rasym_laplace(n,
+    mu = rnorm(n), sigma = 10,
+    quantile = runif(n, 0, 1)
+  )
   expect_true(length(res) == n)
 })
 
@@ -263,28 +305,36 @@ test_that("d<ordinal_family>() works correctly", {
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           # cumulative():
           d_cumul <- dcumulative(seq_len(ncat),
-                                 eta_test, thres_test, link = link)
+            eta_test, thres_test,
+            link = link
+          )
           d_cumul_ch <- inv_link_cumulative_ch(thres_eta, link = link)
           expect_equivalent(d_cumul, d_cumul_ch)
           expect_equal(dim(d_cumul), c(ndraws, ncat))
 
           # sratio():
           d_sratio <- dsratio(seq_len(ncat),
-                              eta_test, thres_test, link = link)
+            eta_test, thres_test,
+            link = link
+          )
           d_sratio_ch <- inv_link_sratio_ch(thres_eta, link = link)
           expect_equivalent(d_sratio, d_sratio_ch)
           expect_equal(dim(d_sratio), c(ndraws, ncat))
 
           # cratio():
           d_cratio <- dcratio(seq_len(ncat),
-                              eta_test, thres_test, link = link)
+            eta_test, thres_test,
+            link = link
+          )
           d_cratio_ch <- inv_link_cratio_ch(eta_thres, link = link)
           expect_equivalent(d_cratio, d_cratio_ch)
           expect_equal(dim(d_cratio), c(ndraws, ncat))
 
           # acat():
           d_acat <- dacat(seq_len(ncat),
-                          eta_test, thres_test, link = link)
+            eta_test, thres_test,
+            link = link
+          )
           d_acat_ch <- inv_link_acat_ch(eta_thres, link = link)
           expect_equivalent(d_acat, d_acat_ch)
           expect_equal(dim(d_acat), c(ndraws, ncat))
@@ -301,7 +351,8 @@ test_that("inv_link_<ordinal_family>() works correctly for arrays", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                        dim = c(ndraws, nobsv, ncat - 1))
+          dim = c(ndraws, nobsv, ncat - 1)
+        )
         nx_test <- -x_test
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           # cumulative():
@@ -340,7 +391,8 @@ test_that("link_<ordinal_family>() works correctly for arrays", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
-                        dim = c(ndraws, nobsv, ncat))
+          dim = c(ndraws, nobsv, ncat)
+        )
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           # cumulative():
           l_cumul <- link_cumulative(x_test, link = link)
@@ -377,7 +429,8 @@ test_that("inv_link_<ordinal_family>() inverts link_<ordinal_family>()", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
-                        dim = c(ndraws, nobsv, ncat))
+          dim = c(ndraws, nobsv, ncat)
+        )
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           # cumulative():
           l_cumul <- link_cumulative(x_test, link = link)
@@ -410,7 +463,8 @@ test_that("link_<ordinal_family>() inverts inv_link_<ordinal_family>()", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                        dim = c(ndraws, nobsv, ncat - 1))
+          dim = c(ndraws, nobsv, ncat - 1)
+        )
         nx_test <- -x_test
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           # cumulative():
@@ -456,9 +510,13 @@ test_that(paste(
       for (eta_test in eta_test_list) {
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           d_sratio <- dsratio(seq_len(ncat),
-                              eta_test, thres_test, link = link)
+            eta_test, thres_test,
+            link = link
+          )
           d_cratio <- dcratio(seq_len(ncat),
-                              eta_test, thres_test, link = link)
+            eta_test, thres_test,
+            link = link
+          )
           if (link != "cloglog") {
             expect_equal(d_sratio, d_cratio)
           } else {
@@ -480,7 +538,8 @@ test_that(paste(
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                        dim = c(ndraws, nobsv, ncat - 1))
+          dim = c(ndraws, nobsv, ncat - 1)
+        )
         nx_test <- -x_test
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           il_sratio <- inv_link_sratio(x_test, link = link)
@@ -506,7 +565,8 @@ test_that(paste(
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
-                        dim = c(ndraws, nobsv, ncat))
+          dim = c(ndraws, nobsv, ncat)
+        )
         for (link in c("logit", "probit", "cauchit", "cloglog")) {
           l_sratio <- link_sratio(x_test, link = link)
           l_cratio <- link_cratio(x_test, link = link)
@@ -535,7 +595,8 @@ test_that("dcategorical() works correctly", {
       for (eta_test in eta_test_list) {
         d_categorical <- dcategorical(seq_len(ncat), eta_test)
         d_categorical_ch <- inv_link_categorical_ch(eta_test,
-                                                    refcat_ins = FALSE)
+          refcat_ins = FALSE
+        )
         expect_equivalent(d_categorical, d_categorical_ch)
         expect_equal(dim(d_categorical), c(ndraws, ncat))
       }
@@ -550,7 +611,8 @@ test_that("inv_link_categorical() works correctly for arrays", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                        dim = c(ndraws, nobsv, ncat - 1))
+          dim = c(ndraws, nobsv, ncat - 1)
+        )
         il_categorical <- inv_link_categorical(x_test)
         il_categorical_ch <- inv_link_categorical_ch(x_test)
         expect_equivalent(il_categorical, il_categorical_ch)
@@ -567,7 +629,8 @@ test_that("link_categorical() works correctly for arrays", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
-                        dim = c(ndraws, nobsv, ncat))
+          dim = c(ndraws, nobsv, ncat)
+        )
         l_categorical <- link_categorical(x_test)
         l_categorical_ch <- link_categorical_ch(x_test)
         expect_equivalent(l_categorical, l_categorical_ch)
@@ -583,7 +646,8 @@ test_that("inv_link_categorical() inverts link_categorical()", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rdirichlet(ndraws * nobsv, alpha = rep(1, ncat)),
-                        dim = c(ndraws, nobsv, ncat))
+          dim = c(ndraws, nobsv, ncat)
+        )
         l_categorical <- link_categorical(x_test)
         il_categorical <- inv_link_categorical(l_categorical)
         expect_equivalent(il_categorical, x_test)
@@ -598,7 +662,8 @@ test_that("link_categorical() inverts inv_link_categorical()", {
     for (nobsv in nobsv_vec) {
       for (ncat in ncat_vec) {
         x_test <- array(rnorm(ndraws * nobsv * (ncat - 1)),
-                        dim = c(ndraws, nobsv, ncat - 1))
+          dim = c(ndraws, nobsv, ncat - 1)
+        )
         il_categorical <- inv_link_categorical(x_test)
         l_categorical <- link_categorical(il_categorical)
         expect_equivalent(l_categorical, x_test)

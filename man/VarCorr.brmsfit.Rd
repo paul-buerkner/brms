@@ -49,8 +49,9 @@ correlations and covariances are also returned.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-           data = epilepsy, family = gaussian(), chains = 2)
+fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+  data = epilepsy, family = gaussian(), chains = 2
+)
 VarCorr(fit)
 }
 

@@ -34,8 +34,9 @@ See \code{\link{standata.default}} for the default method applied for
 of \code{standata}.
 }
 \examples{
-sdata1 <- standata(rating ~ treat + period + carry + (1|subject),
-                   data = inhaler, family = "cumulative")
+sdata1 <- standata(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = "cumulative"
+)
 str(sdata1)
 
 }

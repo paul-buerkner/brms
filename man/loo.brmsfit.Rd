@@ -92,12 +92,14 @@ See \code{\link{loo_compare}} for details on model comparisons.
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler)
+  data = inhaler
+)
 (loo1 <- loo(fit1))
 
 # model with an additional varying intercept for subjects
-fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler)
+fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler
+)
 (loo2 <- loo(fit2))
 
 # compare both models

@@ -13,8 +13,10 @@ is_mv <- function(x) {
 stopifnot_resp <- function(x, resp = NULL) {
   # TODO: merge into validate_resp?
   if (is_mv(x) && length(resp) != 1L) {
-    stop2("Argument 'resp' must be a single variable name ",
-          "when applying this method to a multivariate model.")
+    stop2(
+      "Argument 'resp' must be a single variable name ",
+      "when applying this method to a multivariate model."
+    )
   }
   invisible(NULL)
 }
@@ -105,8 +107,10 @@ validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
   if (is.null(draw_ids) && !is.null(ndraws)) {
     ndraws <- as_one_integer(ndraws)
     if (ndraws < 1 || ndraws > ndraws_total) {
-      stop2("Argument 'ndraws' should be between 1 and ",
-            "the maximum number of draws (", ndraws_total, ").")
+      stop2(
+        "Argument 'ndraws' should be between 1 and ",
+        "the maximum number of draws (", ndraws_total, ")."
+      )
     }
     draw_ids <- sample(seq_len(ndraws_total), ndraws)
   }
@@ -132,7 +136,7 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
     for (i in seq_along(names)[-1]) {
       for (j in seq_len(i - 1)) {
         if (brackets) {
-          c(cornames) <- paste0(type, "(", names[j], "," , names[i], ")")
+          c(cornames) <- paste0(type, "(", names[j], ",", names[i], ")")
         } else {
           c(cornames) <- paste0(type, sep, names[j], sep, names[i])
         }
@@ -174,7 +178,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
     k <- 0
     for (i in seq_len(size)[-1]) {
       for (j in seq_len(i - 1)) {
-        k = k + 1
+        k <- k + 1
         out[, j, i] <- out[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
     }
@@ -204,7 +208,7 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
     k <- 0
     for (i in seq_len(size)[-1]) {
       for (j in seq_len(i - 1)) {
-        k = k + 1
+        k <- k + 1
         out[, j, i] <- out[, i, j] <- cor[, k]
       }
     }
@@ -705,8 +709,10 @@ validate_resp <- function(resp, x, multiple = TRUE) {
   if (length(resp)) {
     resp <- as.character(resp)
     if (!all(resp %in% x)) {
-      stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(x))
+      stop2(
+        "Invalid argument 'resp'. Valid response ",
+        "variables are: ", collapse_comma(x)
+      )
     }
     if (!multiple) {
       resp <- as_one_character(resp)
@@ -973,8 +979,10 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   if (!is.null(algorithm)) {
     if (algorithm != fit$algorithm) {
       if (!silent) {
-        message("Algorithm has changed from '", fit$algorithm,
-                "' to '", algorithm, "'.\n")
+        message(
+          "Algorithm has changed from '", fit$algorithm,
+          "' to '", algorithm, "'.\n"
+        )
       }
       refit <- TRUE
     }
@@ -982,18 +990,61 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   refit
 }
 
+
+#' Determine Cache Folder for brms
+#'
+#' Checks if the provided file path includes a directory. If so, returns that directory.
+#' Otherwise, looks for a user‐defined `brms_cache_folder` option. If the option is not set,
+#' defaults to the current directory (".").
+#'
+#' @param file A file path (string) that may include a directory component.
+#' @return A string indicating which folder to use for caching.
+get_cache_folder <- function(file) {
+  dir <- dirname(file)
+
+  # If the file path already contains a directory, use it
+  if (dir != ".") {
+    return(dir)
+  }
+
+  # Otherwise, check for a user‐defined cache folder option
+  cache_folder <- getOption("brms_cache_folder", default = ".")
+  return(cache_folder)
+}
+
+
+# Check that a directory exists
+# @param folder A character string specifying a directory path.
+# @return NULL (invisibly) if the directory exists; otherwise throws an error.
+check_folder <- function(folder) {
+  if (!dir.exists(folder)) {
+    stop2(
+      "The directory '", folder, "' does not exist. Please choose an ",
+      "existing directory where the model can be saved after fitting."
+    )
+  }
+  invisible(T)
+}
+
+
+# Split a file path into cache folder and file components
+# @param file A character string specifying a file path or file name.
+# @return A list with two elements:
+#   \item{folder}{The directory returned by get_cache_folder(file).}
+#   \item{file}{The original file argument (unchanged).}
+split_folder_and_file <- function(file) {
+  cache_folder <- get_cache_folder(file)
+  file <- basename(file)
+
+  list(folder = cache_folder, file = file)
+}
+
+
 # read a brmsfit object from a file
 # @param file path to an rds file
 # @return a brmsfit object or NULL
 read_brmsfit <- function(file) {
   file <- check_brmsfit_file(file)
-  dir <- dirname(file)
-  if (!dir.exists(dir)) {
-    stop2(
-      "The directory '", dir, "' does not exist. Please choose an ",
-      "existing directory where the model can be saved after fitting."
-    )
-  }
   x <- suppressWarnings(try(readRDS(file), silent = TRUE))
   if (!is_try_error(x)) {
     if (!is.brmsfit(x)) {
@@ -1019,8 +1070,10 @@ write_brmsfit <- function(x, file, compress = TRUE) {
   invisible(x)
 }
 
+
+
 # check validity of file name to store a brmsfit object in
-check_brmsfit_file <- function(file) {
+check_brmsfit_file_name <- function(file) {
   file <- as_one_character(file)
   file_ending <- tolower(get_matches("\\.[^\\.]+$", file))
   if (!isTRUE(file_ending == ".rds")) {
@@ -1028,6 +1081,26 @@ check_brmsfit_file <- function(file) {
   }
   file
 }
+# Prepare and optionally validate a file path for a brmsfit object
+# @param file A character string specifying a file path or bare filename.
+# @param .check_folder Logical; if TRUE (default), verify that the folder exists via check_folder().
+#                      If FALSE, skip this existence check.
+# @return A normalized file path (character) including the correct folder and “.rds” extension.
+check_brmsfit_file <- function(file, .check_folder = TRUE) {
+
+  flist <- split_folder_and_file(file)
+
+  if (.check_folder) {
+    check_folder(flist$folder)
+  }
+
+  file_name <- check_brmsfit_file_name(flist$file)
+  full_name <- file.path(flist$folder, file_name)
+
+  full_name
+}
+
+
 
 # check if a function requires an old default setting
 # only used to ensure backwards compatibility

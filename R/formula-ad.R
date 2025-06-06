@@ -76,27 +76,32 @@
 #' outcomes <- rnorm(nstudies, true_effects, sei)
 #' data1 <- data.frame(outcomes, sei)
 #' fit1 <- brm(outcomes | se(sei, sigma = TRUE) ~ 1,
-#'             data = data1)
+#'   data = data1
+#' )
 #' summary(fit1)
 #'
 #' ## Probit regression using the binomial family
-#' n <- sample(1:10, 100, TRUE)  # number of trials
+#' n <- sample(1:10, 100, TRUE) # number of trials
 #' success <- rbinom(100, size = n, prob = 0.4)
 #' x <- rnorm(100)
 #' data2 <- data.frame(n, success, x)
-#' fit2 <- brm(success | trials(n) ~ x, data = data2,
-#'             family = binomial("probit"))
+#' fit2 <- brm(success | trials(n) ~ x,
+#'   data = data2,
+#'   family = binomial("probit")
+#' )
 #' summary(fit2)
 #'
 #' ## Survival regression modeling the time between the first
 #' ## and second recurrence of an infection in kidney patients.
-#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-#'             data = kidney, family = lognormal())
+#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+#'   data = kidney, family = lognormal()
+#' )
 #' summary(fit3)
 #'
 #' ## Poisson model with truncated counts
 #' fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt,
-#'             data = epilepsy, family = poisson())
+#'   data = epilepsy, family = poisson()
+#' )
 #' summary(fit4)
 #' }
 #'
@@ -110,7 +115,8 @@ resp_se <- function(x, sigma = FALSE) {
   se <- deparse0(substitute(x))
   sigma <- as_one_logical(sigma)
   class_resp_special(
-    "se", call = match.call(),
+    "se",
+    call = match.call(),
     vars = nlist(se), flags = nlist(sigma)
   )
 }
@@ -121,7 +127,8 @@ resp_weights <- function(x, scale = FALSE) {
   weights <- deparse0(substitute(x))
   scale <- as_one_logical(scale)
   class_resp_special(
-    "weights", call = match.call(),
+    "weights",
+    call = match.call(),
     vars = nlist(weights), flags = nlist(scale)
   )
 }
@@ -149,7 +156,8 @@ resp_cat <- function(x) {
   thres <- deparse0(substitute(x))
   str_add(thres) <- " - 1"
   class_resp_special(
-    "thres", call = match.call(),
+    "thres",
+    call = match.call(),
     vars = nlist(thres, gr = "NA")
   )
 }
@@ -451,8 +459,10 @@ check_cross_formula_indexing <- function(bterms) {
   mi_terms <- get_matches_expr(regex_sp("mi"), sp_terms)
   idx_vars <- lapply(mi_terms, function(x) eval2(x)$idx)
   if (any(idx_vars == "NA")) {
-    stop2("mi() terms in subsetted formulas require ",
-          "the 'idx' argument to be specified.")
+    stop2(
+      "mi() terms in subsetted formulas require ",
+      "the 'idx' argument to be specified."
+    )
   }
   invisible(TRUE)
 }

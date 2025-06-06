@@ -31,8 +31,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-#'             data = kidney, family = lognormal())
+#' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+#'   data = kidney, family = lognormal()
+#' )
 #' summary(fit1)
 #'
 #' # summarize via 'emmeans'
@@ -51,9 +52,9 @@
 #' summary(fit2)
 #'
 #' # results will be on the log scale by default
-#' emmeans(fit2, ~ cyl)
+#' emmeans(fit2, ~cyl)
 #' # log transform is detected and can be adjusted automatically
-#' emmeans(fit2, ~ cyl, epred = TRUE, type = "response")
+#' emmeans(fit2, ~cyl, epred = TRUE, type = "response")
 #' }
 NULL
 
@@ -64,7 +65,8 @@ recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL,
                                  nlpar = NULL, re_formula = NA,
                                  epred = FALSE, ...) {
   bterms <- .extract_par_terms(
-    object, resp = resp, dpar = dpar, nlpar = nlpar,
+    object,
+    resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
   data <- rm_attr(object$data, "terms")
@@ -95,18 +97,21 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   }
   epred <- as_one_logical(epred)
   bterms <- .extract_par_terms(
-    object, resp = resp, dpar = dpar, nlpar = nlpar,
+    object,
+    resp = resp, dpar = dpar, nlpar = nlpar,
     re_formula = re_formula, epred = epred
   )
   if (epred) {
     post.beta <- posterior_epred(
-      object, newdata = grid, re_formula = re_formula,
+      object,
+      newdata = grid, re_formula = re_formula,
       resp = resp, incl_autocor = FALSE, ...
     )
   } else {
     req_vars <- all_vars(bterms$allvars)
     post.beta <- posterior_linpred(
-      object, newdata = grid, re_formula = re_formula,
+      object,
+      newdata = grid, re_formula = re_formula,
       resp = resp, dpar = dpar, nlpar = nlpar,
       incl_autocor = FALSE, req_vars = req_vars,
       # offsets are handled by emmeans (#1096)
@@ -125,7 +130,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     }
     dims <- dim(post.beta)
     post.beta <- matrix(post.beta, ncol = prod(dims[2:3]))
-    misc$ylevs = list(rep.meas = ynames)
+    misc$ylevs <- list(rep.meas = ynames)
   }
   attr(post.beta, "n.chains") <- object$fit@sim$chains
   X <- diag(ncol(post.beta))
@@ -160,8 +165,10 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   new_formula <- exclude_terms(new_formula, incl_autocor = FALSE)
   bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is_ordinal(bterms)) {
-    warning2("brms' emmeans support for ordinal models is experimental ",
-             "and currently ignores the threshold parameters.")
+    warning2(
+      "brms' emmeans support for ordinal models is experimental ",
+      "and currently ignores the threshold parameters."
+    )
   }
   .extract_par_terms(bterms, resp = resp, dpar = dpar, epred = epred, ...)
 }
@@ -183,9 +190,11 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   }
   out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
   misc_list <- unique(from_list(out$terms, ".misc"))
-  if (length(misc_list) > 1L){
-    stop2("brms' emmeans support for multivariate models is limited ",
-          "to cases where all univariate models have the same family.")
+  if (length(misc_list) > 1L) {
+    stop2(
+      "brms' emmeans support for multivariate models is limited ",
+      "to cases where all univariate models have the same family."
+    )
   }
   out$.misc <- misc_list[[1]]
   out

@@ -560,15 +560,17 @@
 #'
 #' @examples
 #' # multilevel model with smoothing terms
-#' brmsformula(y ~ x1*x2 + s(z) + (1+x1|1) + (1|g2))
+#' brmsformula(y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2))
 #'
 #' # additionally predict 'sigma'
-#' brmsformula(y ~ x1*x2 + s(z) + (1+x1|1) + (1|g2),
-#'             sigma ~ x1 + (1|g2))
+#' brmsformula(
+#'   y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2),
+#'   sigma ~ x1 + (1 | g2)
+#' )
 #'
 #' # use the shorter alias 'bf'
-#' (formula1 <- brmsformula(y ~ x + (x|g)))
-#' (formula2 <- bf(y ~ x + (x|g)))
+#' (formula1 <- brmsformula(y ~ x + (x | g)))
+#' (formula2 <- bf(y ~ x + (x | g)))
 #' # will be TRUE
 #' identical(formula1, formula2)
 #'
@@ -579,20 +581,22 @@
 #' bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE)
 #'
 #' # predict a1 and a2 differently
-#' bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
+#' bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x | g), nl = TRUE)
 #'
 #' # correlated group-level effects across parameters
-#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 |2| g), a2 ~ x + (x |2| g), nl = TRUE)
+#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | 2 | g), a2 ~ x + (x | 2 | g), nl = TRUE)
 #' # alternative but equivalent way to specify the above model
 #' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | gr(g, id = 2)),
-#'    a2 ~ x + (x | gr(g, id = 2)), nl = TRUE)
+#'   a2 ~ x + (x | gr(g, id = 2)),
+#'   nl = TRUE
+#' )
 #'
 #' # define a multivariate model
-#' bf(mvbind(y1, y2) ~ x * z + (1|g))
+#' bf(mvbind(y1, y2) ~ x * z + (1 | g))
 #'
 #' # define a zero-inflated model
 #' # also predicting the zero-inflation part
-#' bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
+#' bf(y ~ x * z + (1 + x | ID1 | g), zi ~ x + (1 | ID1 | g))
 #'
 #' # specify a predictor as monotonic
 #' bf(y ~ mo(x) + more_predictors)
@@ -601,7 +605,7 @@
 #' # specify a predictor as category specific
 #' bf(y ~ cs(x) + more_predictors)
 #' # add a category specific group-level intercept
-#' bf(y ~ cs(x) + (cs(1)|g))
+#' bf(y ~ cs(x) + (cs(1) | g))
 #' # specify parameter 'disc'
 #' bf(y ~ person + item, disc ~ item)
 #'
@@ -625,17 +629,17 @@
 #' # use the '+' operator to specify models
 #' bf(y ~ 1) +
 #'   nlf(sigma ~ a * exp(b * x), a ~ x) +
-#'   lf(b ~ z + (1|g), dpar = "sigma") +
+#'   lf(b ~ z + (1 | g), dpar = "sigma") +
 #'   gaussian()
 #'
 #' # specify a multivariate model using the '+' operator
-#' bf(y1 ~ x + (1|g)) +
-#'   gaussian() + cor_ar(~1|g) +
+#' bf(y1 ~ x + (1 | g)) +
+#'   gaussian() + cor_ar(~ 1 | g) +
 #'   bf(y2 ~ z) + poisson()
 #'
 #' # specify correlated residuals of a gaussian and a poisson model
-#' form1 <- bf(y1 ~ 1 + x + (1|c|obs), sigma = 1) + gaussian()
-#' form2 <- bf(y2 ~ 1 + x + (1|c|obs)) + poisson()
+#' form1 <- bf(y1 ~ 1 + x + (1 | c | obs), sigma = 1) + gaussian()
+#' form2 <- bf(y2 ~ 1 + x + (1 | c | obs)) + poisson()
 #'
 #' # model missing values in predictors
 #' bf(bmi ~ age * mi(chl)) +
@@ -699,12 +703,16 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
         stop2("Can only equate parameters of the same class.")
       }
       if (out$pfix[[dp]] %in% names(out$pfix)) {
-        stop2("Cannot use fixed parameters on ",
-              "the right-hand side of an equation.")
+        stop2(
+          "Cannot use fixed parameters on ",
+          "the right-hand side of an equation."
+        )
       }
       if (out$pfix[[dp]] %in% names(out$pforms)) {
-        stop2("Cannot use predicted parameters on ",
-              "the right-hand side of an equation.")
+        stop2(
+          "Cannot use predicted parameters on ",
+          "the right-hand side of an equation."
+        )
       }
     }
   }
@@ -766,7 +774,8 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
                nl = NULL, loop = NULL, center = NULL, cmc = NULL,
                sparse = NULL, decomp = NULL) {
   brmsformula(
-    formula, ..., flist = flist, family = family, autocor = autocor,
+    formula, ...,
+    flist = flist, family = family, autocor = autocor,
     nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse,
     decomp = decomp
   )
@@ -812,7 +821,7 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
 #' # add more formulas to the model
 #' bf(y ~ 1) +
 #'   nlf(sigma ~ a * exp(b * x)) +
-#'   lf(a ~ x, b ~ z + (1|g)) +
+#'   lf(a ~ x, b ~ z + (1 | g)) +
 #'   gaussian()
 #'
 #' # specify 'nl' later on
@@ -821,7 +830,7 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
 #'   set_nl(TRUE)
 #'
 #' # specify a multivariate model
-#' bf(y1 ~ x + (1|g)) +
+#' bf(y1 ~ x + (1 | g)) +
 #'   bf(y2 ~ z) +
 #'   set_rescor(TRUE)
 #'
@@ -944,7 +953,7 @@ set_nl <- function(nl = TRUE, dpar = NULL, resp = NULL) {
 #' @seealso \code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
 #'
 #' @examples
-#' bf1 <- bf(y1 ~ x + (1|g))
+#' bf1 <- bf(y1 ~ x + (1 | g))
 #' bf2 <- bf(y2 ~ s(z))
 #' mvbf(bf1, bf2)
 #'
@@ -1091,8 +1100,10 @@ plus_brmsformula <- function(e1, e2) {
   } else if (inherits(e2, "setrescor")) {
     stop2("Setting 'rescor' is only possible in multivariate models.")
   } else if (is.ac_term(e2)) {
-    stop2("Autocorrelation terms can only be specified on the right-hand ",
-          "side of a formula, not added to a 'brmsformula' object.")
+    stop2(
+      "Autocorrelation terms can only be specified on the right-hand ",
+      "side of a formula, not added to a 'brmsformula' object."
+    )
   } else if (!is.null(e2)) {
     e1 <- bf(e1, e2)
   }
@@ -1117,11 +1128,15 @@ plus_mvbrmsformula <- function(e1, e2) {
     e1 <- mvbf(e1, e2)
   } else if (is.mvbrmsformula(e2)) {
     # TODO: enable this option
-    stop2("Cannot add two 'mvbrmsformula' objects together. Instead, ",
-          "please add the individual 'brmsformula' objects directly.")
+    stop2(
+      "Cannot add two 'mvbrmsformula' objects together. Instead, ",
+      "please add the individual 'brmsformula' objects directly."
+    )
   } else if (is.ac_term(e2)) {
-    stop2("Autocorrelation terms can only be specified on the right-hand ",
-          "side of a formula, not added to a 'mvbrmsformula' object.")
+    stop2(
+      "Autocorrelation terms can only be specified on the right-hand ",
+      "side of a formula, not added to a 'mvbrmsformula' object."
+    )
   } else if (!is.null(e2)) {
     resp <- attr(e2, "resp", TRUE)
     if (is.null(resp)) {
@@ -1213,8 +1228,10 @@ validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
   }
   inv_pars <- intersect(pars, rsv_pars)
   if (length(inv_pars)) {
-    stop2("The following parameter names are reserved",
-          "for this model:\n", collapse_comma(inv_pars))
+    stop2(
+      "The following parameter names are reserved",
+      "for this model:\n", collapse_comma(inv_pars)
+    )
   }
   out
 }
@@ -1227,7 +1244,7 @@ validate_resp_formula <- function(x, empty_ok = TRUE) {
   out <- lhs(as_formula(x))
   if (is.null(out)) {
     if (empty_ok) {
-      out <- ~ 1
+      out <- ~1
     } else {
       str_x <- formula2str(x, space = "trim")
       stop2("Response variable is missing in formula ", str_x)
@@ -1263,10 +1280,9 @@ validate_formula.default <- function(formula, ...) {
 # @return a brmsformula object compatible with the current version of brms
 #' @export
 validate_formula.brmsformula <- function(
-  formula, family = gaussian(), autocor = NULL,
-  data = NULL, threshold = NULL, sparse = NULL,
-  cov_ranef = NULL, ...
-) {
+    formula, family = gaussian(), autocor = NULL,
+    data = NULL, threshold = NULL, sparse = NULL,
+    cov_ranef = NULL, ...) {
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
     out$family <- validate_family(family)
@@ -1313,8 +1329,10 @@ validate_formula.brmsformula <- function(
       predcats <- out$family$cats
     } else {
       if (!out$family$refcat %in% out$family$cats) {
-        stop2("The reference response category must be one of ",
-              collapse_comma(out$family$cats), ".")
+        stop2(
+          "The reference response category must be one of ",
+          collapse_comma(out$family$cats), "."
+        )
       }
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
@@ -1323,8 +1341,10 @@ validate_formula.brmsformula <- function(
     for (dp in rev(multi_dpars)) {
       dp_dpars <- make_stan_names(paste0(dp, predcats))
       if (any(duplicated(dp_dpars))) {
-        stop2("Invalid response category names. Please avoid ",
-              "using any special characters in the names.")
+        stop2(
+          "Invalid response category names. Please avoid ",
+          "using any special characters in the names."
+        )
       }
       old_dp_dpars <- str_subset(out$family$dpars, paste0("^", dp))
       out$family$dpars <- setdiff(out$family$dpars, old_dp_dpars)
@@ -1386,24 +1406,28 @@ validate_formula.brmsformula <- function(
 # allow passing lists of families or autocors
 #' @export
 validate_formula.mvbrmsformula <- function(
-  formula, family = NULL, autocor = NULL, cov_ranef = NULL, ...
-) {
+    formula, family = NULL, autocor = NULL, cov_ranef = NULL, ...) {
   nresp <- length(formula$forms)
   if (!is(family, "list")) {
     family <- replicate(nresp, family, simplify = FALSE)
   } else if (length(family) != nresp) {
-    stop2("If 'family' is a list, it has to be of the same ",
-          "length as the number of response variables.")
+    stop2(
+      "If 'family' is a list, it has to be of the same ",
+      "length as the number of response variables."
+    )
   }
   if (!is(autocor, "list")) {
     autocor <- replicate(nresp, autocor, simplify = FALSE)
   } else if (length(autocor) != nresp) {
-    stop2("If 'autocor' is a list, it has to be of the same ",
-          "length as the number of response variables.")
+    stop2(
+      "If 'autocor' is a list, it has to be of the same ",
+      "length as the number of response variables."
+    )
   }
   for (i in seq_len(nresp)) {
     formula$forms[[i]] <- validate_formula(
-      formula$forms[[i]], family = family[[i]],
+      formula$forms[[i]],
+      family = family[[i]],
       autocor = autocor[[i]], ...
     )
   }
@@ -1413,9 +1437,9 @@ validate_formula.mvbrmsformula <- function(
   allow_rescor <- allow_rescor(formula)
   if (is.null(formula$rescor)) {
     # with 'mi' terms we usually don't want rescor to be estimated
-    miforms <- ulapply(formula$forms, function(f)
+    miforms <- ulapply(formula$forms, function(f) {
       terms_ad(f$formula, f$family, FALSE)[["mi"]]
-    )
+    })
     formula$rescor <- allow_rescor && !length(miforms)
     message("Setting 'rescor' to ", formula$rescor, " by default for this model")
     if (formula$rescor) {
@@ -1429,8 +1453,10 @@ validate_formula.mvbrmsformula <- function(
   formula$rescor <- as_one_logical(formula$rescor)
   if (formula$rescor) {
     if (!allow_rescor) {
-      stop2("Currently, estimating 'rescor' is only possible ",
-            "in multivariate gaussian or student models.")
+      stop2(
+        "Currently, estimating 'rescor' is only possible ",
+        "in multivariate gaussian or student models."
+      )
     }
   }
   # handle default of correlations between 'me' terms
@@ -1486,8 +1512,10 @@ update.brmsformula <- function(object, formula.,
     new_form <- old_form
   }
   flist <- c(object$pforms, object$pfix, formula.$pforms, formula.$pfix)
-  bf(new_form, flist = flist, family = up_family,
-     autocor = up_autocor, nl = up_nl)
+  bf(new_form,
+    flist = flist, family = up_family,
+    autocor = up_autocor, nl = up_nl
+  )
 }
 
 #' @export
@@ -1571,9 +1599,9 @@ print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   }
   pfix <- x$pfix
   if (length(pfix)) {
-    pfix <- lapply(pfix, function(x)
+    pfix <- lapply(pfix, function(x) {
       ifelse(is.numeric(x), round(x, digits), x)
-    )
+    })
     pfix <- paste0(names(pfix), " = ", unlist(pfix))
     cat(collapse(str_wsp, pfix, "\n"))
   }

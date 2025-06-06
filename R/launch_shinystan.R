@@ -16,8 +16,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler, family = "gaussian")
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "gaussian"
+#' )
 #' launch_shinystan(fit)
 #' }
 #'
@@ -25,8 +26,7 @@
 #'
 #' @exportS3Method shinystan::launch_shinystan brmsfit
 launch_shinystan.brmsfit <- function(
-  object, rstudio = getOption("shinystan.rstudio"), ...
-) {
+    object, rstudio = getOption("shinystan.rstudio"), ...) {
   contains_draws(object)
   if (object$algorithm != "sampling") {
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))

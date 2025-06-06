@@ -43,8 +43,10 @@ posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL,
     nlpar <- as_one_character(nlpar)
     nlpars <- names(bterms$nlpars)
     if (!nlpar %in% nlpars) {
-      stop2("Invalid argument 'nlpar'. Valid non-linear ",
-            "parameters are: ", collapse_comma(nlpars))
+      stop2(
+        "Invalid argument 'nlpar'. Valid non-linear ",
+        "parameters are: ", collapse_comma(nlpars)
+      )
     }
     bterms <- bterms$nlpars[[nlpar]]
   } else {
@@ -52,13 +54,16 @@ posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL,
     dpar <- as_one_character(dpar)
     dpars <- names(bterms$dpars)
     if (!dpar %in% dpars) {
-      stop2("Invalid argument 'dpar'. Valid distributional ",
-            "parameters are: ", collapse_comma(dpars))
+      stop2(
+        "Invalid argument 'dpar'. Valid distributional ",
+        "parameters are: ", collapse_comma(dpars)
+      )
     }
     bterms <- bterms$dpars[[dpar]]
   }
   posterior_smooths(
-    bterms, fit = object, smooth = smooth, newdata = newdata,
+    bterms,
+    fit = object, smooth = smooth, newdata = newdata,
     ndraws = ndraws, draw_ids = draw_ids, ...
   )
 }
@@ -76,8 +81,10 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   smframe$term <- rm_wsp(smframe$term)
   smterms <- unique(smframe$term)
   if (!smooth %in% smterms) {
-    stop2("Term '", smooth, "' cannot be found. Available ",
-          "smooth terms are: ", collapse_comma(smterms))
+    stop2(
+      "Term '", smooth, "' cannot be found. Available ",
+      "smooth terms are: ", collapse_comma(smterms)
+    )
   }
   # find relevant variables
   sub_smframe <- subset2(smframe, term = smooth)
@@ -86,7 +93,8 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
   req_vars <- c(covars, byvars)
   # prepare predictions for splines
   sdata <- standata(
-    fit, newdata, re_formula = NA, internal = TRUE,
+    fit, newdata,
+    re_formula = NA, internal = TRUE,
     check_response = FALSE, req_vars = req_vars
   )
   draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)

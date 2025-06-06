@@ -34,8 +34,9 @@ See \code{\link{default_prior.default}} for the default method applied for
 }
 \examples{
 ## get all parameters and parameters classes to define priors on
-(prior <- default_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-                        data = epilepsy, family = poisson()))
+(prior <- default_prior(count ~ zAge + zBase * Trt + (1 | patient) + (1 | obs),
+  data = epilepsy, family = poisson()
+))
 
 }
 \seealso{

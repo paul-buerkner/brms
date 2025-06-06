@@ -32,8 +32,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler, family = "cumulative")
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "cumulative"
+#' )
 #'
 #' # extract posterior samples of population-level effects
 #' samples1 <- posterior_samples(fit, pars = "^b")
@@ -96,8 +97,10 @@ posterior_samples.brmsfit <- function(x, pars = NA, fixed = FALSE,
 #' @rdname posterior_samples.brmsfit
 #' @export
 posterior_samples <- function(x, pars = NA, ...) {
-  warning2("Method 'posterior_samples' is deprecated. ",
-           "Please see ?as_draws for recommended alternatives.")
+  warning2(
+    "Method 'posterior_samples' is deprecated. ",
+    "Please see ?as_draws for recommended alternatives."
+  )
   UseMethod("posterior_samples")
 }
 
@@ -181,8 +184,10 @@ extract_pars <- function(pars, all_pars, fixed = FALSE,
 check_deprecated_fixed <- function(fixed, exact_match) {
   if (!isFALSE(exact_match)) {
     # deprecated as of brms 2.10.6; remove in brms 3.0
-    warning2("Argument 'exact_match' is deprecated. ",
-             "Please use 'fixed' instead.")
+    warning2(
+      "Argument 'exact_match' is deprecated. ",
+      "Please use 'fixed' instead."
+    )
     fixed <- exact_match
   }
   fixed

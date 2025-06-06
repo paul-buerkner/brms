@@ -16,30 +16,40 @@ model {
 stan_file <- cmdstanr::write_stan_file(code = model_code)
 mod <- cmdstan_model(stan_file)
 
-fit <- mod$sample(parallel_chains = 2,
-                  iter_warmup = 200,
-                  iter_sampling=200)
+fit <- mod$sample(
+  parallel_chains = 2,
+  iter_warmup = 200,
+  iter_sampling = 200
+)
 
-fit_warmup <- mod$sample(parallel_chains = 2,
-                         iter_warmup = 200,
-                         iter_sampling=200,
-                         save_warmup = TRUE)
+fit_warmup <- mod$sample(
+  parallel_chains = 2,
+  iter_warmup = 200,
+  iter_sampling = 200,
+  save_warmup = TRUE
+)
 
-fit_dense_warmup <- mod$sample(parallel_chains = 4,
-                               iter_warmup = 200,
-                               iter_sampling=200,
-                               metric = "dense_e",
-                               save_warmup = TRUE)
+fit_dense_warmup <- mod$sample(
+  parallel_chains = 4,
+  iter_warmup = 200,
+  iter_sampling = 200,
+  metric = "dense_e",
+  save_warmup = TRUE
+)
 
-fit_nosampling <- mod$sample(parallel_chains = 4,
-                             iter_warmup = 200,
-                             iter_sampling = 0,
-                             save_warmup = TRUE)
+fit_nosampling <- mod$sample(
+  parallel_chains = 4,
+  iter_warmup = 200,
+  iter_sampling = 0,
+  save_warmup = TRUE
+)
 
-fit_thinned <-  mod$sample(parallel_chains = 4,
-                           iter_warmup = 200,
-                           iter_sampling = 200,
-                           thin = 5)
+fit_thinned <- mod$sample(
+  parallel_chains = 4,
+  iter_warmup = 200,
+  iter_sampling = 200,
+  thin = 5
+)
 
 
 fit_variational <- mod$variational()
@@ -123,4 +133,3 @@ test_that("rstan can locate max_treedepth", {
   fit <- read_csv_as_stanfit(fit_treedepth$output_files())
   expect_message(rstan::check_treedepth(fit), "depth of 2")
 })
-

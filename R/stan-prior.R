@@ -30,15 +30,18 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
                        normalize = TRUE) {
   prior_only <- isTRUE(attr(prior, "sample_prior") == "only")
   prior <- subset2(
-    prior, class = class, coef = c(coef, ""),
+    prior,
+    class = class, coef = c(coef, ""),
     group = c(group, ""), ls = px
   )
   # special priors cannot be passed literally to Stan
   is_special_prior <- is_special_prior(prior$prior)
   if (any(is_special_prior)) {
     special_prior <- prior$prior[is_special_prior]
-    stop2("Prior ", collapse_comma(special_prior), " is used in an invalid ",
-          "context. See ?set_prior for details on how to use special priors.")
+    stop2(
+      "Prior ", collapse_comma(special_prior), " is used in an invalid ",
+      "context. See ?set_prior for details on how to use special priors."
+    )
   }
 
   px <- as.data.frame(px, stringsAsFactors = FALSE)
@@ -67,8 +70,10 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     base_prior <- base_prior[1]
     base_lprior_tag <- base_lprior_tag[1]
     if (nrow(unique(base_bounds)) > 1L) {
-      stop2("Conflicting boundary information for ",
-            "coefficients of class '", class, "'.")
+      stop2(
+        "Conflicting boundary information for ",
+        "coefficients of class '", class, "'."
+      )
     }
     base_bounds <- base_bounds[1, ]
   } else {
@@ -130,12 +135,14 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           }
           if (stan_is_constant_prior(coef_prior)) {
             coef_prior <- stan_constant_prior(
-              coef_prior, par_ij, broadcast = broadcast
+              coef_prior, par_ij,
+              broadcast = broadcast
             )
             str_add(out$tpar_prior_const) <- paste0(coef_prior, ";\n")
           } else {
             coef_prior <- stan_target_prior(
-              coef_prior, par_ij, broadcast = broadcast,
+              coef_prior, par_ij,
+              broadcast = broadcast,
               bound = bound, resp = px$resp[1], normalize = normalize
             )
             if (isTRUE(nzchar(lprior_tag))) {
@@ -180,12 +187,14 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     has_constant_priors <- stan_is_constant_prior(base_prior)
     if (has_constant_priors) {
       constant_base_prior <- stan_constant_prior(
-        base_prior, par = par, ncoef = ncoef, broadcast = broadcast
+        base_prior,
+        par = par, ncoef = ncoef, broadcast = broadcast
       )
       str_add(out$tpar_prior_const) <- paste0(constant_base_prior, ";\n")
     } else {
       target_base_prior <- stan_target_prior(
-        base_prior, par = par, ncoef = ncoef, bound = bound,
+        base_prior,
+        par = par, ncoef = ncoef, bound = bound,
         broadcast = broadcast, resp = px$resp[1], normalize = normalize
       )
       if (isTRUE(nzchar(base_lprior_tag))) {
@@ -226,9 +235,11 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   }
   has_improper_prior <- !is.null(out$par) && is.null(out$tpar_prior)
   if (prior_only && has_improper_prior) {
-    stop2("Sampling from priors is not possible as ",
-          "some parameters have no proper priors. ",
-          "Error occurred for parameter '", par, "'.")
+    stop2(
+      "Sampling from priors is not possible as ",
+      "some parameters have no proper priors. ",
+      "Error occurred for parameter '", par, "'."
+    )
   }
   out
 }
@@ -246,7 +257,8 @@ stan_base_prior <- function(prior, col = "prior", sel_prior = NULL, ...) {
     # find the base prior using sel_prior for subsetting
     stopifnot(is.brmsprior(sel_prior))
     prior <- subset2(
-      prior, class = sel_prior$class, group = c(sel_prior$group, ""),
+      prior,
+      class = sel_prior$class, group = c(sel_prior$group, ""),
       dpar = sel_prior$dpar, nlpar = sel_prior$nlpar, resp = sel_prior$resp,
       ...
     )
@@ -287,7 +299,8 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
                               bound = "", resp = "", normalize = TRUE) {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
-    "^[^\\(]+(?=\\()", prior, perl = TRUE, simplify = FALSE
+    "^[^\\(]+(?=\\()", prior,
+    perl = TRUE, simplify = FALSE
   )
   for (i in seq_along(prior_name)) {
     if (length(prior_name[[i]]) != 1L) {
@@ -474,9 +487,9 @@ stan_special_prior <- function(bterms, out, prior, normalize, ...) {
   lengths <- c("1", lengths)
   for (i in seq_along(scales)) {
     lower <- paste0(lengths[1:i], collapse = "+")
-    upper <- paste0(lengths[2:(i+1)], collapse = "+")
+    upper <- paste0(lengths[2:(i + 1)], collapse = "+")
     # some scale parameters are a scalar not a vector
-    bracket1 <- str_if(lengths[i+1] == "1", "[1]")
+    bracket1 <- str_if(lengths[i + 1] == "1", "[1]")
     str_add(out$tpar_comp) <- glue(
       "  {scales[i]} = scales{p}[({lower}):({upper})]{bracket1};\n"
     )
@@ -562,7 +575,9 @@ stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
-  if (!NROW(D)) return(list())
+  if (!NROW(D)) {
+    return(list())
+  }
 
   # rename parameters containing indices
   has_ind <- grepl("\\[[[:digit:]]+\\]", D$par)
@@ -573,7 +588,9 @@ stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
   })
   # cannot handle priors on variable transformations
   D <- D[D$par %in% stan_all_vars(D$par), ]
-  if (!NROW(D)) return(list())
+  if (!NROW(D)) {
+    return(list())
+  }
 
   class_old <- c("^L_", "^Lrescor")
   class_new <- c("cor_", "rescor")
@@ -598,7 +615,8 @@ stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
   all_bounds <- get_matches("<.+>", par_declars, first = TRUE)
   all_types <- get_matches("^[^[:blank:]]+", par_declars)
   all_dims <- get_matches(
-    "(?<=\\[)[^\\]]*", par_declars, first = TRUE, perl = TRUE
+    "(?<=\\[)[^\\]]*", par_declars,
+    first = TRUE, perl = TRUE
   )
 
   # define parameter types and boundaries
@@ -618,7 +636,9 @@ stan_rngprior <- function(tpar_prior, par_declars, gen_quantities,
   found_vars <- lapply(D$args, find_vars, dot = FALSE, brackets = FALSE)
   contains_other_pars <- ulapply(found_vars, function(x) any(x %in% all_pars))
   D <- D[!contains_other_pars, ]
-  if (!NROW(D)) return(list())
+  if (!NROW(D)) {
+    return(list())
+  }
 
   out <- list()
   # sample priors in the generated quantities block

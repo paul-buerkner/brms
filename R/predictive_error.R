@@ -16,8 +16,9 @@
 #' @examples
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler, cores = 2)
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, cores = 2
+#' )
 #'
 #' ## extract predictive errors
 #' pe <- predictive_error(fit)
@@ -30,16 +31,16 @@
 #' @export
 #' @export predictive_error
 predictive_error.brmsfit <- function(
-  object, newdata = NULL, re_formula = NULL, re.form = NULL,
-  method = "posterior_predict", resp = NULL, ndraws = NULL,
-  draw_ids = NULL, sort = FALSE, ...
-) {
+    object, newdata = NULL, re_formula = NULL, re.form = NULL,
+    method = "posterior_predict", resp = NULL, ndraws = NULL,
+    draw_ids = NULL, sort = FALSE, ...) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
   }
   .predictive_error(
-    object, newdata = newdata, re_formula = re_formula,
+    object,
+    newdata = newdata, re_formula = re_formula,
     method = method, type = "ordinary", resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, sort = sort, ...
   )
@@ -79,8 +80,9 @@ predictive_error.brmsfit <- function(
 #' @examples
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler, cores = 2)
+#' fit <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, cores = 2
+#' )
 #'
 #' ## extract residuals/predictive errors
 #' res <- residuals(fit)
@@ -97,7 +99,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               probs = c(0.025, 0.975), ...) {
   summary <- as_one_logical(summary)
   out <- .predictive_error(
-    object, newdata = newdata, re_formula = re_formula,
+    object,
+    newdata = newdata, re_formula = re_formula,
     method = method, type = type, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, sort = sort, ...
   )

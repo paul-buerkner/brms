@@ -49,8 +49,8 @@ head(BTdata)
 We begin with a relatively simple multivariate normal model.
 
 ```{r fit1, message=FALSE, warning=FALSE, results='hide'}
-bform1 <- 
-  bf(mvbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam)) +
+bform1 <-
+  bf(mvbind(tarsus, back) ~ sex + hatchdate + (1 | p | fosternest) + (1 | q | dam)) +
   set_rescor(TRUE)
 
 fit1 <- brm(bform1, data = BTdata, chains = 2, cores = 2)
@@ -115,10 +115,11 @@ formulas for different response variables. We can no longer use `mvbind` syntax
 and so we have to use a more verbose approach:
 
 ```{r fit2, message=FALSE, warning=FALSE, results='hide'}
-bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam))
-bf_back <- bf(back ~ hatchdate + (1|p|fosternest) + (1|q|dam))
-fit2 <- brm(bf_tarsus + bf_back + set_rescor(TRUE), 
-            data = BTdata, chains = 2, cores = 2)
+bf_tarsus <- bf(tarsus ~ sex + (1 | p | fosternest) + (1 | q | dam))
+bf_back <- bf(back ~ hatchdate + (1 | p | fosternest) + (1 | q | dam))
+fit2 <- brm(bf_tarsus + bf_back + set_rescor(TRUE),
+  data = BTdata, chains = 2, cores = 2
+)
 ```
 
 Note that we have literally *added* the two model parts via the `+` operator,
@@ -154,9 +155,9 @@ previously assumed by fitting a non-linear spline of `hatchdate`. On top of it,
 we model separate residual variances of `tarsus` for male and female chicks.
 
 ```{r fit3, message=FALSE, warning=FALSE, results='hide'}
-bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
+bf_tarsus <- bf(tarsus ~ sex + (1 | p | fosternest) + (1 | q | dam)) +
   lf(sigma ~ 0 + sex) + skew_normal()
-bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +
+bf_back <- bf(back ~ s(hatchdate) + (1 | p | fosternest) + (1 | q | dam)) +
   gaussian()
 
 fit3 <- brm(

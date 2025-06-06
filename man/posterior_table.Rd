@@ -26,7 +26,8 @@ of ordinal models.
 \examples{
 \dontrun{
 fit <- brm(rating ~ period + carry + treat,
-           data = inhaler, family = cumulative())
+  data = inhaler, family = cumulative()
+)
 pr <- predict(fit, summary = FALSE)
 posterior_table(pr)
 }

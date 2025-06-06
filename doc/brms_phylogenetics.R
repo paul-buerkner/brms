@@ -1,5 +1,5 @@
 params <-
-list(EVAL = TRUE)
+  list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -32,7 +32,7 @@ A <- ape::vcv.phylo(phylo)
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_simple <- brm(
-  phen ~ cofactor + (1|gr(phylo, cov = A)),
+  phen ~ cofactor + (1 | gr(phylo, cov = A)),
   data = data_simple,
   family = gaussian(),
   data2 = list(A = A),
@@ -65,15 +65,15 @@ head(data_repeat)
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_repeat1 <- brm(
-  phen ~ spec_mean_cf + (1|gr(phylo, cov = A)) + (1|species),
+  phen ~ spec_mean_cf + (1 | gr(phylo, cov = A)) + (1 | species),
   data = data_repeat,
   family = gaussian(),
   data2 = list(A = A),
   prior = c(
-    prior(normal(0,10), "b"),
-    prior(normal(0,50), "Intercept"),
-    prior(student_t(3,0,20), "sd"),
-    prior(student_t(3,0,20), "sigma")
+    prior(normal(0, 10), "b"),
+    prior(normal(0, 50), "Intercept"),
+    prior(student_t(3, 0, 20), "sd"),
+    prior(student_t(3, 0, 20), "sigma")
   ),
   sample_prior = TRUE, chains = 2, cores = 2,
   iter = 4000, warmup = 1000
@@ -95,7 +95,8 @@ data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_repeat2 <- update(
-  model_repeat1, formula = ~ . + within_spec_cf,
+  model_repeat1,
+  formula = ~ . + within_spec_cf,
   newdata = data_repeat, chains = 2, cores = 2,
   iter = 4000, warmup = 1000
 )
@@ -120,7 +121,7 @@ head(data_fisher)
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_fisher <- brm(
-  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|gr(phylo, cov = A)) + (1|obs),
+  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1 | gr(phylo, cov = A)) + (1 | obs),
   data = data_fisher, family = gaussian(),
   data2 = list(A = A),
   prior = c(
@@ -145,7 +146,7 @@ head(data_pois)
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_pois <- brm(
-  phen_pois ~ cofactor + (1|gr(phylo, cov = A)) + (1|obs),
+  phen_pois ~ cofactor + (1 | gr(phylo, cov = A)) + (1 | obs),
   data = data_pois, family = poisson("log"),
   data2 = list(A = A),
   chains = 2, cores = 2, iter = 4000,
@@ -158,7 +159,7 @@ plot(conditional_effects(model_pois), points = TRUE)
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_normal <- brm(
-  phen_pois ~ cofactor + (1|gr(phylo, cov = A)),
+  phen_pois ~ cofactor + (1 | gr(phylo, cov = A)),
   data = data_pois, family = gaussian(),
   data2 = list(A = A),
   chains = 2, cores = 2, iter = 4000,
@@ -174,4 +175,3 @@ pp_check(model_normal)
 
 ## ---------------------------------------------------------------------------------------
 loo(model_pois, model_normal)
-

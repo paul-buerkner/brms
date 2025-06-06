@@ -15,7 +15,7 @@ test_that("posterior_epred helper functions run without errors", {
   fit <- add_dummy_draws(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
   fit <- add_dummy_draws(fit, "xi", dist = "unif", min = -1, max = 0.5)
   fit <- add_dummy_draws(fit, "ndt", dist = "exp")
-  fit$formula$formula <- update(fit$formula$formula, .~. - arma(visit, patient))
+  fit$formula$formula <- update(fit$formula$formula, . ~ . - arma(visit, patient))
   prep <- brms:::prepare_predictions(fit)
   prep$dpars$mu <- brms:::get_dpar(prep, "mu")
   prep$dpars$sigma <- brms:::get_dpar(prep, "sigma")
@@ -31,33 +31,45 @@ test_that("posterior_epred helper functions run without errors", {
 
   # pseudo log-normal model
   fit$family <- fit$formula$family <- lognormal()
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
-               c(ndraws, nobs))
+  expect_equal(
+    dim(posterior_epred(fit, summary = FALSE)),
+    c(ndraws, nobs)
+  )
 
   # pseudo shifted log-normal model
   fit$family <- fit$formula$family <- shifted_lognormal()
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
-               c(ndraws, nobs))
+  expect_equal(
+    dim(posterior_epred(fit, summary = FALSE)),
+    c(ndraws, nobs)
+  )
 
   # pseudo skew-normal model
   fit$family <- fit$formula$family <- skew_normal()
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
-               c(ndraws, nobs))
+  expect_equal(
+    dim(posterior_epred(fit, summary = FALSE)),
+    c(ndraws, nobs)
+  )
 
   # pseudo asym_laplace model
   fit$family <- fit$formula$family <- asym_laplace()
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
-               c(ndraws, nobs))
+  expect_equal(
+    dim(posterior_epred(fit, summary = FALSE)),
+    c(ndraws, nobs)
+  )
 
   # pseudo zero_inflated_asym_laplace model
   fit$family <- fit$formula$family <- brmsfamily("zero_inflated_asym_laplace")
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
-               c(ndraws, nobs))
+  expect_equal(
+    dim(posterior_epred(fit, summary = FALSE)),
+    c(ndraws, nobs)
+  )
 
   # pseudo gen_extreme_value model
   fit$family <- fit$formula$family <- gen_extreme_value()
-  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
-               c(ndraws, nobs))
+  expect_equal(
+    dim(posterior_epred(fit, summary = FALSE)),
+    c(ndraws, nobs)
+  )
 
   # pseudo weibull model
   fit$formula$pforms <- NULL
@@ -86,8 +98,9 @@ test_that("posterior_epred helper functions run without errors", {
   # pseudo hurdle poisson model
   fit$formula$formula <- old_formula
   fit$family <- fit$formula$family <- hurdle_poisson()
-  fit$formula <- bf(count ~ Trt*Age + mo(Exp) + offset(Age) + (1+Trt|visit),
-                    family = family(fit))
+  fit$formula <- bf(count ~ Trt * Age + mo(Exp) + offset(Age) + (1 + Trt | visit),
+    family = family(fit)
+  )
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(ndraws, nobs))
 
   # pseudo zero-inflated poisson model
@@ -99,7 +112,8 @@ test_that("posterior_epred helper functions run without errors", {
     prep$dpars$mu
   }
   fit$family <- fit$formula$family <- custom_family(
-    "test", dpars = "mu", links = c("logit"),
+    "test",
+    dpars = "mu", links = c("logit"),
     type = "int", vars = "trials[n]"
   )
   expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(ndraws, nobs))
@@ -170,8 +184,8 @@ test_that("posterior_epred for advanced count data distributions runs without er
   ncat <- 3
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    mu = array(rbeta(ns*nobs, 2, 2), dim = c(ns, nobs)),
-    shape = array(rexp(ns*nobs, 3), dim = c(ns, nobs))
+    mu = array(rbeta(ns * nobs, 2, 2), dim = c(ns, nobs)),
+    shape = array(rexp(ns * nobs, 3), dim = c(ns, nobs))
   )
   prep$family <- brmsfamily("discrete_weibull")
   pred <- suppressWarnings(brms:::posterior_epred_discrete_weibull(prep))
@@ -188,8 +202,8 @@ test_that("posterior_epred for multinomial, dirichlet_multinomial and dirichlet 
   ncat <- 3
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
-    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
-    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+    mu1 = array(rnorm(ns * nobs), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns * nobs), dim = c(ns, nobs))
   )
   prep$data <- list(ncat = ncat, trials = sample(1:20, nobs))
   prep$refcat <- 1
@@ -207,9 +221,9 @@ test_that("posterior_epred for multinomial, dirichlet_multinomial and dirichlet 
   expect_equal(dim(pred), c(ns, nobs, ncat))
 
   prep$family <- brmsfamily("dirichlet2")
-  prep$dpars$mu1 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
-  prep$dpars$mu2 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
-  prep$dpars$mu3 <- array(rexp(ns*nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu1 <- array(rexp(ns * nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu2 <- array(rexp(ns * nobs, 1), dim = c(ns, nobs))
+  prep$dpars$mu3 <- array(rexp(ns * nobs, 1), dim = c(ns, nobs))
   pred <- brms:::posterior_epred_dirichlet2(prep = prep)
   expect_equal(dim(pred), c(ns, nobs, ncat))
 })
@@ -244,4 +258,3 @@ test_that("posterior_epred can be reproduced by using d<family>()", {
 
   expect_equivalent(epred4, epred4_ch)
 })
-

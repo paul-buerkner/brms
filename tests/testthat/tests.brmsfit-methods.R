@@ -104,8 +104,10 @@ test_that("as.mcmc has reasonable ouputs", {
   mc <- SW(as.mcmc(fit1, combine_chains = TRUE))
   expect_equal(dim(mc), c(ndraws(fit1), length(variables(fit1))))
   # test assumes thin = 1
-  expect_equal(dim(SW(as.mcmc(fit1, inc_warmup = TRUE)[[1]])),
-               c(fit1$fit@sim$iter, length(variables(fit1))))
+  expect_equal(
+    dim(SW(as.mcmc(fit1, inc_warmup = TRUE)[[1]])),
+    c(fit1$fit@sim$iter, length(variables(fit1)))
+  )
 })
 
 test_that("autocor has reasonable ouputs", {
@@ -149,15 +151,19 @@ test_that("combine_models has reasonable ouputs", {
 test_that("conditional_effects has reasonable ouputs", {
   me <- conditional_effects(fit1, resp = "count")
   expect_equal(nrow(me[[2]]), 100)
-  meplot <- plot(me, points = TRUE, rug = TRUE,
-                 ask = FALSE, plot = FALSE)
+  meplot <- plot(me,
+    points = TRUE, rug = TRUE,
+    ask = FALSE, plot = FALSE
+  )
   expect_ggplot(meplot[[1]])
 
   me <- conditional_effects(fit1, "Trt", select_points = 0.1)
   expect_lt(nrow(attr(me[[1]], "points")), nobs(fit1))
 
-  me <- conditional_effects(fit1, "volume:Age", surface = TRUE,
-                            resolution = 15, too_far = 0.2)
+  me <- conditional_effects(fit1, "volume:Age",
+    surface = TRUE,
+    resolution = 15, too_far = 0.2
+  )
   meplot <- plot(me, plot = FALSE)
   expect_ggplot(meplot[[1]])
   meplot <- plot(me, stype = "raster", plot = FALSE)
@@ -172,13 +178,15 @@ test_that("conditional_effects has reasonable ouputs", {
     "Cannot use 'spaghetti' and 'surface' at the same time"
   )
 
-  me <- conditional_effects(fit1, effects = c("Age", "Age:visit"),
-                            re_formula = NULL)
+  me <- conditional_effects(fit1,
+    effects = c("Age", "Age:visit"),
+    re_formula = NULL
+  )
   expect_equal(nrow(me[[1]]), 100)
   exp_nrow <- 100 * length(unique(fit1$data$visit))
   expect_equal(nrow(me[[2]]), exp_nrow)
 
-  mdata = data.frame(
+  mdata <- data.frame(
     Age = c(-0.3, 0, 0.3),
     count = c(10, 20, 30),
     Exp = c(1, 3, 5)
@@ -192,20 +200,28 @@ test_that("conditional_effects has reasonable ouputs", {
   expect_equal(nrow(me$Age), exp_nrow)
 
   me <- conditional_effects(
-    fit1, "Age:Trt", int_conditions = list(Age = rnorm(5))
+    fit1, "Age:Trt",
+    int_conditions = list(Age = rnorm(5))
   )
   expect_equal(nrow(me[[1]]), 10)
   me <- conditional_effects(
-    fit1, "Age:Trt", int_conditions = list(Age = quantile)
+    fit1, "Age:Trt",
+    int_conditions = list(Age = quantile)
   )
   expect_equal(nrow(me[[1]]), 10)
 
-  expect_error(conditional_effects(fit1, effects = "Trtc"),
-               "All specified effects are invalid for this model")
-  expect_warning(conditional_effects(fit1, effects = c("Trtc", "Trt")),
-                 "Some specified effects are invalid for this model")
-  expect_error(conditional_effects(fit1, effects = "Trtc:a:b"),
-               "please use the 'conditions' argument")
+  expect_error(
+    conditional_effects(fit1, effects = "Trtc"),
+    "All specified effects are invalid for this model"
+  )
+  expect_warning(
+    conditional_effects(fit1, effects = c("Trtc", "Trt")),
+    "Some specified effects are invalid for this model"
+  )
+  expect_error(
+    conditional_effects(fit1, effects = "Trtc:a:b"),
+    "please use the 'conditions' argument"
+  )
 
   mdata$visit <- NULL
   mdata$Exp <- NULL
@@ -272,10 +288,14 @@ test_that("conditional_smooths has reasonable ouputs", {
   ms <- conditional_smooths(fit1, spaghetti = TRUE, ndraws = 10)
   expect_equal(nrow(attr(ms[[1]], "spaghetti")), 1000)
 
-  expect_error(conditional_smooths(fit1, smooths = "s3"),
-               "No valid smooth terms found in the model")
-  expect_error(conditional_smooths(fit2),
-               "No valid smooth terms found in the model")
+  expect_error(
+    conditional_smooths(fit1, smooths = "s3"),
+    "No valid smooth terms found in the model"
+  )
+  expect_error(
+    conditional_smooths(fit2),
+    "No valid smooth terms found in the model"
+  )
 })
 
 test_that("family has reasonable ouputs", {
@@ -300,8 +320,10 @@ test_that("fitted has reasonable outputs", {
   fi <- fitted(fit1, newdata = newdata)
   expect_equal(dim(fi), c(2, 4))
   newdata$visit <- c(1, 6)
-  fi <- fitted(fit1, newdata = newdata,
-               allow_new_levels = TRUE)
+  fi <- fitted(fit1,
+    newdata = newdata,
+    allow_new_levels = TRUE
+  )
   expect_equal(dim(fi), c(2, 4))
 
   # fitted values with new_levels
@@ -309,11 +331,15 @@ test_that("fitted has reasonable outputs", {
     Age = 0, visit = paste0("a", 1:100), Trt = 0,
     count = 20, patient = 1, Exp = 2, volume = 0
   )
-  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE,
-               sample_new_levels = "old_levels", ndraws = 10)
+  fi <- fitted(fit1,
+    newdata = newdata, allow_new_levels = TRUE,
+    sample_new_levels = "old_levels", ndraws = 10
+  )
   expect_equal(dim(fi), c(100, 4))
-  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE,
-               sample_new_levels = "gaussian", ndraws = 1)
+  fi <- fitted(fit1,
+    newdata = newdata, allow_new_levels = TRUE,
+    sample_new_levels = "gaussian", ndraws = 1
+  )
   expect_equal(dim(fi), c(100, 4))
 
   # fitted values of auxiliary parameters
@@ -327,13 +353,17 @@ test_that("fitted has reasonable outputs", {
   fi_lin <- fitted(fit1, dpar = "sigma", scale = "linear")
   expect_equal(dim(fi_lin), c(nobs(fit1), 4))
   expect_true(!isTRUE(all.equal(fi, fi_lin)))
-  expect_error(fitted(fit1, dpar = "inv"),
-               "Invalid argument 'dpar'")
+  expect_error(
+    fitted(fit1, dpar = "inv"),
+    "Invalid argument 'dpar'"
+  )
 
   fi <- fitted(fit2)
   expect_equal(dim(fi), c(nobs(fit2), 4))
-  fi <- fitted(fit2, newdata = newdata,
-               allow_new_levels = TRUE)
+  fi <- fitted(fit2,
+    newdata = newdata,
+    allow_new_levels = TRUE
+  )
   expect_equal(dim(fi), c(2, 4))
   fi <- fitted(fit2, dpar = "shape")
   expect_equal(dim(fi), c(nobs(fit2), 4))
@@ -361,9 +391,12 @@ test_that("fitted has reasonable outputs", {
 
 test_that("fixef has reasonable ouputs", {
   fixef1 <- SM(fixef(fit1))
-  expect_equal(rownames(fixef1),
-               c("Intercept", "sigma_Intercept", "Trt1", "Age", "volume",
-                 "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp")
+  expect_equal(
+    rownames(fixef1),
+    c(
+      "Intercept", "sigma_Intercept", "Trt1", "Age", "volume",
+      "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp"
+    )
   )
   fixef1 <- SM(fixef(fit1, pars = c("Age", "sAge_1")))
   expect_equal(rownames(fixef1), c("Age", "sAge_1"))
@@ -396,16 +429,22 @@ test_that("hypothesis has reasonable ouputs", {
   expect_equal(dim(hyp$hypothesis), c(8, 9))
   expect_equal(hyp$hypothesis$Group[1], factor(1, levels = 1:4))
 
-  expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
-               "cannot be found in the model: \n'b_x'")
-  expect_error(hypothesis(fit1, 1),
-               "Argument 'hypothesis' must be a character vector")
+  expect_error(hypothesis(fit1, "Intercept > x"),
+    fixed = TRUE,
+    "cannot be found in the model: \n'b_x'"
+  )
+  expect_error(
+    hypothesis(fit1, 1),
+    "Argument 'hypothesis' must be a character vector"
+  )
   expect_error(hypothesis(fit2, "b_Age = 0", alpha = 2),
-               "Argument 'alpha' must be a single value in [0,1]",
-               fixed = TRUE)
+    "Argument 'alpha' must be a single value in [0,1]",
+    fixed = TRUE
+  )
   expect_error(hypothesis(fit3, "b_Age x 0"),
-               "Every hypothesis must be of the form 'left (= OR < OR >) right'",
-               fixed = TRUE)
+    "Every hypothesis must be of the form 'left (= OR < OR >) right'",
+    fixed = TRUE
+  )
 
   # test hypothesis.default method
   hyp <- hypothesis(as.data.frame(fit3), "bsp_meAgeAgeSD > sigma")
@@ -490,7 +529,8 @@ test_that("loo_epred has reasonable outputs", {
     count = 20, patient = 1, Exp = 2, volume = 0
   )
   llp <- SW(loo_epred(
-    fit1, newdata = newdata,
+    fit1,
+    newdata = newdata,
     type = "quantile", probs = c(0.25, 0.75),
     allow_new_levels = TRUE
   ))
@@ -526,7 +566,8 @@ test_that("loo_predict has reasonable outputs", {
     count = 20, patient = 1, Exp = 2, volume = 0
   )
   llp <- SW(loo_predict(
-    fit1, newdata = newdata,
+    fit1,
+    newdata = newdata,
     type = "quantile", probs = c(0.25, 0.75),
     allow_new_levels = TRUE
   ))
@@ -585,8 +626,10 @@ test_that("nsamples has reasonable ouputs", {
 })
 
 test_that("pairs has reasonable outputs", {
-  expect_s3_class(SW(pairs(fit1, variable = variables(fit1)[1:3])),
-                  "bayesplot_grid")
+  expect_s3_class(
+    SW(pairs(fit1, variable = variables(fit1)[1:3])),
+    "bayesplot_grid"
+  )
 })
 
 test_that("plot has reasonable outputs", {
@@ -598,8 +641,10 @@ test_that("plot has reasonable outputs", {
 
 test_that("post_prob has reasonable ouputs", {
   # only test error messages for now
-  expect_error(post_prob(fit1, fit2, model_names = "test1"),
-               "Number of model names is not equal to the number of models")
+  expect_error(
+    post_prob(fit1, fit2, model_names = "test1"),
+    "Number of model names is not equal to the number of models"
+  )
 })
 
 test_that("posterior_average has reasonable outputs", {
@@ -610,7 +655,8 @@ test_that("posterior_average has reasonable outputs", {
 
   weights <- rexp(3)
   draws <- brms:::SW(posterior_average(
-    fit1, fit2, fit3, variable = "nu", weights = rexp(3),
+    fit1, fit2, fit3,
+    variable = "nu", weights = rexp(3),
     missing = 1, ndraws = 10
   ))
   expect_equal(dim(draws), c(10, 1))
@@ -621,9 +667,13 @@ test_that("posterior_samples has reasonable outputs", {
   draws <- SW(posterior_samples(fit1))
   expect_equal(dim(draws), c(ndraws(fit1), length(variables(fit1))))
   expect_equal(names(draws), variables(fit1))
-  expect_equal(names(SW(posterior_samples(fit1, pars = "^b_"))),
-               c("b_Intercept", "b_sigma_Intercept", "b_Trt1",
-                 "b_Age", "b_volume", "b_Trt1:Age", "b_sigma_Trt1"))
+  expect_equal(
+    names(SW(posterior_samples(fit1, pars = "^b_"))),
+    c(
+      "b_Intercept", "b_sigma_Intercept", "b_Trt1",
+      "b_Age", "b_volume", "b_Trt1:Age", "b_sigma_Trt1"
+    )
+  )
 
   # test default method
   draws <- SW(posterior_samples(fit1$fit, "^b_Intercept$"))
@@ -636,18 +686,24 @@ test_that("posterior_summary has reasonable outputs", {
 })
 
 test_that("posterior_interval has reasonable outputs", {
-  expect_equal(dim(posterior_interval(fit1)),
-               c(length(variables(fit1)), 2))
+  expect_equal(
+    dim(posterior_interval(fit1)),
+    c(length(variables(fit1)), 2)
+  )
 })
 
 test_that("posterior_predict has reasonable outputs", {
-  expect_equal(dim(posterior_predict(fit1)),
-               c(ndraws(fit1), nobs(fit1)))
+  expect_equal(
+    dim(posterior_predict(fit1)),
+    c(ndraws(fit1), nobs(fit1))
+  )
 })
 
 test_that("posterior_linpred has reasonable outputs", {
-  expect_equal(dim(posterior_linpred(fit1)),
-               c(ndraws(fit1), nobs(fit1)))
+  expect_equal(
+    dim(posterior_linpred(fit1)),
+    c(ndraws(fit1), nobs(fit1))
+  )
 })
 
 test_that("pp_average has reasonable outputs", {
@@ -666,8 +722,10 @@ test_that("pp_check has reasonable outputs", {
   expect_ggplot(pp_check(fit1, "error_binned"))
   pp <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
   expect_ggplot(pp)
-  pp <- pp_check(fit1, type = "violin_grouped",
-                 group = "visit", newdata = fit1$data[1:10, ])
+  pp <- pp_check(fit1,
+    type = "violin_grouped",
+    group = "visit", newdata = fit1$data[1:10, ]
+  )
   expect_ggplot(pp)
 
   pp <- SW(pp_check(fit1, type = "loo_pit_qq", cores = 1))
@@ -681,32 +739,41 @@ test_that("pp_check has reasonable outputs", {
 
   expect_ggplot(pp_check(fit3))
   expect_ggplot(pp_check(fit2, "ribbon", x = "Age"))
-  expect_error(pp_check(fit2, "ribbon", x = "x"),
-               "Variable 'x' could not be found in the data")
+  expect_error(
+    pp_check(fit2, "ribbon", x = "x"),
+    "Variable 'x' could not be found in the data"
+  )
   expect_error(pp_check(fit1, "wrong_type"))
   expect_error(pp_check(fit2, "violin_grouped"), "group")
-  expect_error(pp_check(fit1, "stat_grouped", group = "g"),
-               "Variable 'g' could not be found in the data")
+  expect_error(
+    pp_check(fit1, "stat_grouped", group = "g"),
+    "Variable 'g' could not be found in the data"
+  )
   expect_ggplot(pp_check(fit4))
   expect_ggplot(pp_check(fit5))
-  expect_error(pp_check(fit4, "error_binned"),
-               "Type 'error_binned' is not available")
+  expect_error(
+    pp_check(fit4, "error_binned"),
+    "Type 'error_binned' is not available"
+  )
 })
 
 test_that("posterior_epred has reasonable outputs", {
   expect_equal(dim(posterior_epred(fit1)), c(ndraws(fit1), nobs(fit1)))
 
   # test that point_estimate produces identical draws
-  pe <- posterior_epred(fit1, point_estimate = "median",
-                        ndraws_point_estimate = 2)
+  pe <- posterior_epred(fit1,
+    point_estimate = "median",
+    ndraws_point_estimate = 2
+  )
   expect_equal(nrow(pe), 2)
   expect_true(all(pe[1, ] == pe[2, ]))
 })
 
 test_that("pp_mixture has reasonable outputs", {
   expect_equal(dim(pp_mixture(fit5)), c(nobs(fit5), 4, 2))
-  expect_error(pp_mixture(fit1),
-               "Method 'pp_mixture' can only be applied to mixture models"
+  expect_error(
+    pp_mixture(fit1),
+    "Method 'pp_mixture' can only be applied to mixture models"
   )
 })
 
@@ -756,17 +823,23 @@ test_that("predict has reasonable outputs", {
   expect_equal(dim(pred), c(nobs(fit5), 4))
   newdata <- fit5$data[1:5, ]
   newdata$patient <- "a"
-  pred <- predict(fit5, newdata, allow_new_levels = TRUE,
-                  sample_new_levels = "old_levels")
+  pred <- predict(fit5, newdata,
+    allow_new_levels = TRUE,
+    sample_new_levels = "old_levels"
+  )
   expect_equal(dim(pred), c(5, 4))
-  pred <- predict(fit5, newdata, allow_new_levels = TRUE,
-                  sample_new_levels = "gaussian")
+  pred <- predict(fit5, newdata,
+    allow_new_levels = TRUE,
+    sample_new_levels = "gaussian"
+  )
   expect_equal(dim(pred), c(5, 4))
 })
 
 test_that("predictive_error has reasonable outputs", {
-  expect_equal(dim(predictive_error(fit1)),
-               c(ndraws(fit1), nobs(fit1)))
+  expect_equal(
+    dim(predictive_error(fit1)),
+    c(ndraws(fit1), nobs(fit1))
+  )
 })
 
 test_that("print has reasonable outputs", {
@@ -842,16 +915,22 @@ test_that("stancode has reasonable outputs", {
 })
 
 test_that("standata has reasonable outputs", {
-  expect_equal(sort(names(standata(fit1))),
-    sort(c("N", "Y", "Kar", "Kma", "J_lag", "K", "Kc", "X", "Ksp", "Imo",
-           "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", "nb_1",
-           "knots_1", "Zs_1_1", "Ks", "Xs", "offsets", "K_sigma", "Kc_sigma",
-           "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only"))
+  expect_equal(
+    sort(names(standata(fit1))),
+    sort(c(
+      "N", "Y", "Kar", "Kma", "J_lag", "K", "Kc", "X", "Ksp", "Imo",
+      "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", "nb_1",
+      "knots_1", "Zs_1_1", "Ks", "Xs", "offsets", "K_sigma", "Kc_sigma",
+      "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only"
+    ))
   )
-  expect_equal(sort(names(standata(fit2))),
-    sort(c("N", "Y", "weights", "C_1", "K_a", "X_a", "Z_1_a_1",
-           "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
-           "NC_1", "prior_only"))
+  expect_equal(
+    sort(names(standata(fit2))),
+    sort(c(
+      "N", "Y", "weights", "C_1", "K_a", "X_a", "Z_1_a_1",
+      "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
+      "NC_1", "prior_only"
+    ))
   )
 })
 
@@ -867,21 +946,33 @@ test_that("mcmc_plot has reasonable outputs", {
   expect_ggplot(mcmc_plot(fit1, type = "acf"))
   expect_silent(p <- mcmc_plot(fit1, type = "nuts_divergence"))
   expect_error(mcmc_plot(fit1, type = "density"), "Invalid plot type")
-  expect_error(mcmc_plot(fit1, type = "hex"),
-               "Exactly 2 parameters must be selected")
+  expect_error(
+    mcmc_plot(fit1, type = "hex"),
+    "Exactly 2 parameters must be selected"
+  )
 })
 
 test_that("summary has reasonable outputs", {
   summary1 <- SW(summary(fit1, priors = TRUE))
   expect_true(is.data.frame(summary1$fixed))
-  expect_equal(rownames(summary1$fixed),
-               c("Intercept", "sigma_Intercept", "Trt1", "Age", "volume",
-                 "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp"))
-  expect_equal(colnames(summary1$fixed),
-               c("Estimate", "Est.Error", "l-95% CI",
-                 "u-95% CI", "Rhat", "Bulk_ESS", "Tail_ESS"))
-  expect_equal(rownames(summary1$random$visit),
-               c("sd(Intercept)", "sd(Trt1)", "cor(Intercept,Trt1)"))
+  expect_equal(
+    rownames(summary1$fixed),
+    c(
+      "Intercept", "sigma_Intercept", "Trt1", "Age", "volume",
+      "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp"
+    )
+  )
+  expect_equal(
+    colnames(summary1$fixed),
+    c(
+      "Estimate", "Est.Error", "l-95% CI",
+      "u-95% CI", "Rhat", "Bulk_ESS", "Tail_ESS"
+    )
+  )
+  expect_equal(
+    rownames(summary1$random$visit),
+    c("sd(Intercept)", "sd(Trt1)", "cor(Intercept,Trt1)")
+  )
   expect_output(print(summary1), "Regression Coefficients:")
   expect_output(print(summary1), "Priors:")
 
@@ -907,25 +998,33 @@ test_that("update has reasonable outputs", {
     Trt = rep(0:1, 9), count = rep(c(5, 17, 28), 6),
     patient = rep(1:6, each = 3), Exp = 4, volume = 0
   )
-  up <- update(fit1, newdata = new_data, save_pars = save_pars(group = FALSE),
-               testmode = TRUE)
+  up <- update(fit1,
+    newdata = new_data, save_pars = save_pars(group = FALSE),
+    testmode = TRUE
+  )
   expect_true(is(up, "brmsfit"))
   expect_equal(attr(up$data, "data_name"), "new_data")
   # expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
   # expect_true("r_1_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")
 
-  up <- update(fit1, formula = ~ . + I(exp(Age)), testmode = TRUE,
-               prior = set_prior("normal(0,10)"))
+  up <- update(fit1,
+    formula = ~ . + I(exp(Age)), testmode = TRUE,
+    prior = set_prior("normal(0,10)")
+  )
   expect_true(is(up, "brmsfit"))
-  up <- update(fit1, ~ . - Age + factor(Age),  testmode = TRUE)
+  up <- update(fit1, ~ . - Age + factor(Age), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
 
-  up <- update(fit1, formula = ~ . + I(exp(Age)), newdata = new_data,
-               sample_prior = FALSE, testmode = TRUE)
+  up <- update(fit1,
+    formula = ~ . + I(exp(Age)), newdata = new_data,
+    sample_prior = FALSE, testmode = TRUE
+  )
   expect_true(is(up, "brmsfit"))
-  expect_error(update(fit1, formula. = ~ . + wrong_var),
-               "New variables found: 'wrong_var'")
+  expect_error(
+    update(fit1, formula. = ~ . + wrong_var),
+    "New variables found: 'wrong_var'"
+  )
 
   up <- update(fit1, save_pars = save_pars(group = FALSE), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
@@ -937,8 +1036,10 @@ test_that("update has reasonable outputs", {
   up <- update(fit2, algorithm = "fullrank", testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   # expect_equal(up$algorithm, "fullrank")
-  up <- update(fit2, formula. = bf(. ~ ., a + b ~ 1, nl = TRUE),
-               testmode = TRUE)
+  up <- update(fit2,
+    formula. = bf(. ~ ., a + b ~ 1, nl = TRUE),
+    testmode = TRUE
+  )
   expect_true(is(up, "brmsfit"))
   up <- update(fit2, formula. = bf(count ~ a + b, nl = TRUE), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
@@ -965,16 +1066,20 @@ test_that("VarCorr has reasonable outputs", {
 
 test_that("variables has reasonable ouputs", {
   expect_true(all(
-    c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1",
+    c(
+      "b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1",
       "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]",
-      "prior_sd_visit", "prior_cor_visit", "lp__") %in%
+      "prior_sd_visit", "prior_cor_visit", "lp__"
+    ) %in%
       variables(fit1)
   ))
   expect_true(all(
-    c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
+    c(
+      "b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
       "cor_patient__a_Intercept__b_Intercept",
       "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
-      "prior_b_a") %in%
+      "prior_b_a"
+    ) %in%
       variables(fit2)
   ))
   expect_true(all(
@@ -1007,8 +1112,10 @@ test_that("waic has reasonable outputs", {
   expect_true(is.numeric(waic2$estimates))
   waic_pointwise <- SW(waic(fit2, pointwise = TRUE))
   expect_equal(waic2, waic_pointwise)
-  expect_warning(compare_ic(waic1, waic2),
-                 "Model comparisons are likely invalid")
+  expect_warning(
+    compare_ic(waic1, waic2),
+    "Model comparisons are likely invalid"
+  )
   waic4 <- SW(waic(fit4))
   expect_true(is.numeric(waic4$estimates))
 })

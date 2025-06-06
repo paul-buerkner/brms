@@ -35,7 +35,7 @@ models for all parameters of the assumed response distributions.
 See \code{vignette("brms_multivariate")} for a case study.
 }
 \examples{
-bf1 <- bf(y1 ~ x + (1|g))
+bf1 <- bf(y1 ~ x + (1 | g))
 bf2 <- bf(y2 ~ s(z))
 mvbf(bf1, bf2)
 

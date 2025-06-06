@@ -82,7 +82,6 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          seed = NA, file = NULL, file_compress = TRUE,
                          file_refit = getOption("brms.file_refit", "never"),
                          ...) {
-
   combine <- as_one_logical(combine)
   file_refit <- match.arg(file_refit, file_refit_options())
   if (!is.null(file)) {
@@ -125,7 +124,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     class(fit) <- setdiff(class(fit), "brmsfit_multiple")
   } else {
     args <- nlist(
-      formula, data = data[[1]], family, prior, data2 = data2[[1]],
+      formula,
+      data = data[[1]], family, prior, data2 = data2[[1]],
       autocor, cov_ranef, sample_prior, sparse, knots, stanvars,
       stan_funs, algorithm, silent, seed, ...
     )
@@ -147,12 +147,15 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     if (silent < 2) {
       message("Fitting imputed model ", i)
     }
-    update(fit, newdata = data[[i]], data2 = data2[[i]],
-           recompile = recompile, silent = silent, ...)
+    update(fit,
+      newdata = data[[i]], data2 = data2[[i]],
+      recompile = recompile, silent = silent, ...
+    )
   }
 
   fits <- future.apply::future_lapply(
-    seq_along(data), .brm, ..., future.seed = TRUE
+    seq_along(data), .brm, ...,
+    future.seed = TRUE
   )
 
   if (combine) {
