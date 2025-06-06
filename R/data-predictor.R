@@ -130,7 +130,8 @@ data_sm <- function(bframe, data) {
       sm <- basis[[i]]$sm
     } else {
       sm <- smoothCon(
-        eval2(smterms[i]), data = data,
+        eval2(smterms[i]),
+        data = data,
         knots = knots, absorb.cons = TRUE,
         diagonal.penalty = diagonal.penalty
       )
@@ -201,8 +202,10 @@ data_re <- function(bframe, data) {
         for (t in mmc_terms) {
           pos <- which(grepl_expr(escape_all(t), colnames(Z)))
           if (length(pos) != ng) {
-            stop2("Invalid term '", t, "': Expected ", ng,
-                  " coefficients but found ", length(pos), ".")
+            stop2(
+              "Invalid term '", t, "': Expected ", ng,
+              " coefficients but found ", length(pos), "."
+            )
           }
           for (j in seq_along(Znames)) {
             for (k in seq_len(ng)) {
@@ -359,8 +362,10 @@ data_gr_global <- function(bframe, data2) {
       found_levels <- rownames(cov_mat)
       found <- levels %in% found_levels
       if (any(!found)) {
-        stop2("Levels of the within-group covariance matrix for '", group,
-              "' do not match names of the grouping levels.")
+        stop2(
+          "Levels of the within-group covariance matrix for '", group,
+          "' do not match names of the grouping levels."
+        )
       }
       cov_mat <- cov_mat[levels, levels, drop = FALSE]
       tmp$Lcov <- t(chol(cov_mat))
@@ -433,8 +438,10 @@ data_sp <- function(bframe, data, data2, prior) {
       idxl <- get(uni_mi$idx[j], data)
       if (is.null(index[[uni_mi$var[j]]])) {
         # the 'idx' argument needs to be mapped against 'index' addition terms
-        stop2("Response '", uni_mi$var[j], "' needs to have an 'index' addition ",
-              "term to compare with 'idx'. See ?mi for examples.")
+        stop2(
+          "Response '", uni_mi$var[j], "' needs to have an 'index' addition ",
+          "term to compare with 'idx'. See ?mi for examples."
+        )
       }
       idxl <- match(idxl, index[[uni_mi$var[j]]])
       if (anyNA(idxl)) {
@@ -444,8 +451,10 @@ data_sp <- function(bframe, data, data2, prior) {
       out[[idxl_name]] <- as.array(idxl)
     } else if (isTRUE(attr(index[[uni_mi$var[j]]], "subset"))) {
       # cross-formula referencing is required for subsetted variables
-      stop2("mi() terms of subsetted variables require ",
-            "the 'idx' argument to be specified.")
+      stop2(
+        "mi() terms of subsetted variables require ",
+        "the 'idx' argument to be specified."
+      )
     }
   }
   out
@@ -506,7 +515,7 @@ data_Xme <- function(bframe, data) {
           # validate values of the same level
           take <- Jme %in% l
           if (length(unique(Xn[take])) > 1L ||
-              length(unique(noise[take])) > 1L) {
+            length(unique(noise[take])) > 1L) {
             stop2(
               "Measured values and measurement error should be ",
               "unique for each group. Occured for level '",
@@ -544,9 +553,9 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     Xgp <- lapply(gpframe$covars[[i]], eval2, data)
     D <- length(Xgp)
     out[[paste0("Dgp", pi)]] <- D
-    invalid <- ulapply(Xgp, function(x)
+    invalid <- ulapply(Xgp, function(x) {
       !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
-    )
+    })
     if (any(invalid)) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
@@ -557,7 +566,7 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     k <- gpframe$k[i]
     c <- gpframe$c[[i]]
     if (!isNA(k)) {
-      out[[paste0("NBgp", pi)]] <- k ^ D
+      out[[paste0("NBgp", pi)]] <- k^D
       Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     }
     byvar <- gpframe$byvars[[i]]
@@ -577,7 +586,8 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
         Cgp <- con_mat[, j]
         sfx <- paste0(pi, "_", j)
         tmp <- .data_gp(
-          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c,
+          Xgp,
+          k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c,
           scale = scale, internal = internal, basis = basis,
           ...
         )
@@ -592,7 +602,8 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
       c(out) <- .data_gp(
-        Xgp, k = k, gr = gr, sfx = pi, c = c,
+        Xgp,
+        k = k, gr = gr, sfx = pi, c = c,
         scale = scale, internal = internal, basis = basis,
         ...
       )
@@ -637,7 +648,7 @@ data_gp <- function(bframe, data, internal = FALSE, ...) {
     if (!is.null(Cgp)) {
       attr(out, "Nsubgp") <- Nsubgp
     } else {
-      out[[paste0("Nsubgp", sfx)]]  <- Nsubgp
+      out[[paste0("Nsubgp", sfx)]] <- Nsubgp
     }
     out[[paste0("Jgp", sfx)]] <- as.array(Jgp)
     not_dupl_Jgp <- !duplicated(Jgp)
@@ -745,7 +756,8 @@ data_ac <- function(bframe, data, data2, ...) {
     #   see comment on PR #1435
     out$N_tg <- length(unique(tgroup))
     out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-    out$nobs_tg <- as.array(with(out,
+    out$nobs_tg <- as.array(with(
+      out,
       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
@@ -782,8 +794,10 @@ data_ac <- function(bframe, data, data2, ...) {
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (!is_equal(dim(M), rep(N, 2))) {
-      stop2("Dimensions of 'M' for SAR terms must be equal to ",
-            "the number of observations.")
+      stop2(
+        "Dimensions of 'M' for SAR terms must be equal to ",
+        "the number of observations."
+      )
     }
     out$Msar <- as.matrix(M)
     out$eigenMsar <- eigen(M)$values
@@ -815,8 +829,10 @@ data_ac <- function(bframe, data, data2, ...) {
       }
       found <- locations %in% rownames(M)
       if (any(!found)) {
-        stop2("Row names of 'M' for CAR terms do not match ",
-              "the names of the grouping levels.")
+        stop2(
+          "Row names of 'M' for CAR terms do not match ",
+          "the names of the grouping levels."
+        )
       }
       M <- M[locations, locations, drop = FALSE]
     } else {
@@ -829,11 +845,15 @@ data_ac <- function(bframe, data, data2, ...) {
       Jloc <- as.array(seq_len(Nloc))
       if (!is_equal(dim(M), rep(Nloc, 2))) {
         if (length(basis)) {
-          stop2("Cannot handle new data in CAR terms ",
-                "without a grouping factor.")
+          stop2(
+            "Cannot handle new data in CAR terms ",
+            "without a grouping factor."
+          )
         } else {
-          stop2("Dimensions of 'M' for CAR terms must be equal ",
-                "to the number of observations.")
+          stop2(
+            "Dimensions of 'M' for CAR terms must be equal ",
+            "to the number of observations."
+          )
         }
       }
     }
@@ -841,7 +861,8 @@ data_ac <- function(bframe, data, data2, ...) {
     edges_cols <- sort(Matrix::triu(M)@i + 1) ## sort to make consistent with rows
     edges <- cbind("rows" = edges_rows, "cols" = edges_cols)
     c(out) <- nlist(
-      Nloc, Jloc, Nedges = length(edges_rows),
+      Nloc, Jloc,
+      Nedges = length(edges_rows),
       edges1 = as.array(edges_rows),
       edges2 = as.array(edges_cols)
     )
@@ -871,8 +892,10 @@ data_ac <- function(bframe, data, data2, ...) {
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (nrow(M) != N) {
-      stop2("Dimensions of 'M' for FCOR terms must be equal ",
-            "to the number of observations.")
+      stop2(
+        "Dimensions of 'M' for FCOR terms must be equal ",
+        "to the number of observations."
+      )
     }
     out$Mfcor <- M
     # simplifies code of choose_N

@@ -142,10 +142,9 @@ validate_weights_method <- function(method) {
 #'
 #' @export
 pp_average.brmsfit <- function(
-  x, ..., weights = "stacking", method = "posterior_predict",
-  ndraws = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975),
-  robust = FALSE, model_names = NULL, control = list(), seed = NULL
-) {
+    x, ..., weights = "stacking", method = "posterior_predict",
+    ndraws = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975),
+    robust = FALSE, model_names = NULL, control = list(), seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -200,8 +199,10 @@ validate_weights <- function(weights, models, control = list()) {
     weights <- do_call(model_weights, weight_args)
   } else {
     if (length(weights) != length(models)) {
-      stop2("If numeric, 'weights' must have the same length ",
-            "as the number of models.")
+      stop2(
+        "If numeric, 'weights' must have the same length ",
+        "as the number of models."
+      )
     }
     if (any(weights < 0)) {
       stop2("If numeric, 'weights' must be positive.")
@@ -249,10 +250,9 @@ validate_weights <- function(weights, models, control = list()) {
 #'
 #' @export
 posterior_average.brmsfit <- function(
-  x, ..., variable = NULL, pars = NULL, weights = "stacking", ndraws = NULL,
-  nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
-  seed = NULL
-) {
+    x, ..., variable = NULL, pars = NULL, weights = "stacking", ndraws = NULL,
+    nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
+    seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -292,8 +292,10 @@ posterior_average.brmsfit <- function(
       ))
       inv_vars <- setdiff(all_miss_vars, names(missing))
       if (length(inv_vars)) {
-        stop2("Argument 'missing' has no value for parameters ",
-              collapse_comma(inv_vars), ".")
+        stop2(
+          "Argument 'missing' has no value for parameters ",
+          collapse_comma(inv_vars), "."
+        )
       }
       missing <- lapply(missing, as_one_numeric, allow_na = TRUE)
     } else {
@@ -316,11 +318,13 @@ posterior_average.brmsfit <- function(
       found_vars <- intersect(variable, variables(models[[i]]))
       if (length(found_vars)) {
         out[[i]] <- as.data.frame(
-          models[[i]], variable = found_vars, draw = draw
+          models[[i]],
+          variable = found_vars, draw = draw
         )
       } else {
         out[[i]] <- as.data.frame(matrix(
-          numeric(0), nrow = ndraws[i], ncol = 0
+          numeric(0),
+          nrow = ndraws[i], ncol = 0
         ))
       }
       if (!is.null(missing)) {

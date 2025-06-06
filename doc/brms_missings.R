@@ -1,5 +1,5 @@
 params <-
-list(EVAL = TRUE)
+  list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -28,7 +28,7 @@ library(mice)
 imp <- mice(nhanes, m = 5, print = FALSE)
 
 ## ---- results = 'hide', message = FALSE-------------------------------------------------
-fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
+fit_imp1 <- brm_multiple(bmi ~ age * chl, data = imp, chains = 2)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_imp1)
@@ -58,4 +58,3 @@ nhanes$se <- rexp(nrow(nhanes), 2)
 #  bform <- bf(bmi | mi() ~ age * mi(chl)) +
 #    bf(chl | mi(se) ~ age) + set_rescor(FALSE)
 #  fit_imp3 <- brm(bform, data = nhanes)
-

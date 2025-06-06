@@ -38,8 +38,8 @@
 #' @examples
 #' \dontrun{
 #' ## data from help("lm")
-#' ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
-#' trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
+#' ctl <- c(4.17, 5.58, 5.18, 6.11, 4.50, 4.61, 5.17, 4.53, 5.33, 5.14)
+#' trt <- c(4.81, 4.17, 4.41, 3.59, 5.87, 3.83, 6.03, 4.89, 4.32, 4.69)
 #' d <- data.frame(
 #'   weight = c(ctl, trt),
 #'   group = gl(2, 10, 20, labels = c("Ctl", "Trt"))
@@ -130,7 +130,8 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
   alpha <- (1 - prob) / 2
   probs <- c(alpha, 1 - alpha)
   intervals <- loo_predict(
-    object, type = "quantile", probs = probs,
+    object,
+    type = "quantile", probs = probs,
     psis_object = psis_object, ...
   )
   intervals
@@ -181,7 +182,7 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #'  (M = number of response variables and c = \code{length(probs) + 2})
 #'  containing Bayesian bootstrap based summary statistics of the
 #'  LOO-adjusted R-squared values. If \code{summary = FALSE}, the
-#'  Bayesian bootstrap draws of the LOO-adjusted R-squared values 
+#'  Bayesian bootstrap draws of the LOO-adjusted R-squared values
 #'  are returned in an S x M matrix (S is the number of draws).
 #'
 #'  @details LOO-R2 uses LOO residuals and is defined as
@@ -197,7 +198,7 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #'
 #' @references Vehtari and Lampinen (2002). Bayesian model assessment
 #' and comparison using cross-validation predictive densities. Neural
-#' Computation, 14(10):2439-2468. 
+#' Computation, 14(10):2439-2468.
 #'
 #' @examples
 #' \dontrun{
@@ -291,10 +292,10 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
 
   var_y <- (N / (N - 1)) *
     (rowSums(sweep(weights, 2, y^2, FUN = "*")) -
-        rowSums(sweep(weights, 2, y, FUN = "*"))^2)
+      rowSums(sweep(weights, 2, y, FUN = "*"))^2)
   var_err_loo <- (N / (N - 1)) *
     (rowSums(sweep(weights, 2, err_loo^2, FUN = "*")) -
-       rowSums(sweep(weights, 2, err_loo, FUN = "*"))^2)
+      rowSums(sweep(weights, 2, err_loo, FUN = "*"))^2)
 
   out <- unname(1 - var_err_loo / var_y)
   out[out < -1] <- -1

@@ -29,9 +29,10 @@ This dataset, discussed in Gesmann & Morris (2020), contains
 \dontrun{
 # non-linear model to predict cumulative loss payments
 fit_loss <- brm(
-  bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
-     nl = TRUE),
+  bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+    ult ~ 1 + (1 | AY), omega ~ 1, theta ~ 1,
+    nl = TRUE
+  ),
   data = loss, family = gaussian(),
   prior = c(
     prior(normal(5000, 1000), nlpar = "ult"),
@@ -49,7 +50,8 @@ conditional_effects(fit_loss)
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
 me_loss <- conditional_effects(
-  fit_loss, conditions = conditions,
+  fit_loss,
+  conditions = conditions,
   re_formula = NULL, method = "predict"
 )
 plot(me_loss, ncol = 5, points = TRUE)

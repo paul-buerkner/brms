@@ -36,10 +36,12 @@ N <- 100
 dat <- data.frame(
   y = rnorm(N), x1 = rnorm(N),
   x2 = rnorm(N), sdx = abs(rnorm(N, 1))
- )
+)
 # fit a simple error-in-variables model
-fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat,
-            save_pars = save_pars(latent = TRUE))
+fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx),
+  data = dat,
+  save_pars = save_pars(latent = TRUE)
+)
 summary(fit1)
 
 # turn off modeling of correlations

@@ -102,28 +102,34 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
         dp_comment <- paste0(dp_comment, " (temporary)")
       }
       str_add_list(out) <- stan_prior(
-        prior, dp, prefix = prefix, suffix = resp,
+        prior, dp,
+        prefix = prefix, suffix = resp,
         header_type = "real", px = px,
         comment = dp_comment, normalize = normalize
       )
     }
   }
   str_add_list(out) <- stan_dpar_transform(
-    x, prior = prior, normalize = normalize, ...
+    x,
+    prior = prior, normalize = normalize, ...
   )
   str_add_list(out) <- stan_mixture(
-    x, prior = prior, normalize = normalize, ...
+    x,
+    prior = prior, normalize = normalize, ...
   )
   out$model_log_lik <- stan_log_lik(
-    x, normalize = normalize, ...
+    x,
+    normalize = normalize, ...
   )
   list(out)
 }
 
 #' @export
 stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
-  out <- lapply(x$terms, stan_predictor, prior = prior, threads = threads,
-                normalize = normalize, ...)
+  out <- lapply(x$terms, stan_predictor,
+    prior = prior, threads = threads,
+    normalize = normalize, ...
+  )
   out <- unlist(out, recursive = FALSE)
   if (!x$rescor) {
     return(out)
@@ -134,9 +140,11 @@ stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
   adforms <- from_list(x$terms, "adforms")
   adnames <- unique(ulapply(adforms, names))
   adallowed <- c("se", "weights", "mi")
-  if (!all(adnames %in% adallowed))  {
-    stop2("Only ", collapse_comma(adallowed), " are supported ",
-          "addition arguments when 'rescor' is estimated.")
+  if (!all(adnames %in% adallowed)) {
+    stop2(
+      "Only ", collapse_comma(adallowed), " are supported ",
+      "addition arguments when 'rescor' is estimated."
+    )
   }
   # we already know at this point that all families are identical
   family <- family_names(x)[1]
@@ -185,14 +193,16 @@ stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
     }
   }
   str_add_list(out) <- stan_prior(
-    prior, class = "Lrescor",
+    prior,
+    class = "Lrescor",
     type = "cholesky_factor_corr[nresp]", header_type = "matrix",
     comment = "parameters for multivariate linear models",
     normalize = normalize
   )
   if (family == "student") {
     str_add_list(out) <- stan_prior(
-      prior, class = "nu", header_type = "real",
+      prior,
+      class = "nu", header_type = "real",
       normalize = normalize
     )
   }
@@ -262,7 +272,8 @@ stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
     )
   }
   out$model_log_lik <- stan_log_lik(
-    x, threads = threads, normalize = normalize, ...
+    x,
+    threads = threads, normalize = normalize, ...
   )
   list(out)
 }
@@ -320,7 +331,8 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         )
       } else {
         str_add_list(out) <- stan_prior(
-          prior, class = "b", coef = fixef, type = b_type,
+          prior,
+          class = "b", coef = fixef, type = b_type,
           px = px, suffix = p, header_type = "vector",
           comment = "regression coefficients", normalize = normalize
         )
@@ -335,7 +347,8 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         )
       } else {
         str_add_list(out) <- stan_prior(
-          prior, class = "b", coef = fixef, type = b_type,
+          prior,
+          class = "b", coef = fixef, type = b_type,
           px = px, suffix = glue("Q{p}"), header_type = "vector",
           comment = "regression coefficients on QR scale",
           normalize = normalize
@@ -413,7 +426,8 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         "  real b{p}_Intercept = Intercept{p}{sub_X_means};\n"
       )
       str_add_list(out) <- stan_prior(
-        prior, class = "Intercept", type = intercept_type,
+        prior,
+        class = "Intercept", type = intercept_type,
         suffix = p, px = px, header_type = "real",
         comment = "temporary intercept for centered predictors",
         normalize = normalize
@@ -479,7 +493,8 @@ stan_re <- function(bframe, prior, normalize, ...) {
       g <- usc(reframe_t$ggn[i])
       id <- reframe_t$id[i]
       str_add_list(out) <- stan_prior(
-        prior, class = "df", group = reframe_t$group[i],
+        prior,
+        class = "df", group = reframe_t$group[i],
         suffix = g, normalize = normalize
       )
       str_add(out$par) <- glue(
@@ -499,7 +514,8 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
   # the ID syntax requires group-level effects to be evaluated separately
   tmp <- lapply(
-    IDs, .stan_re, bframe = bframe, prior = prior,
+    IDs, .stan_re,
+    bframe = bframe, prior = prior,
     normalize = normalize, ...
   )
   out <- collapse_lists(ls = c(list(out), tmp))
@@ -594,11 +610,14 @@ stan_re <- function(bframe, prior, normalize, ...) {
   has_special_prior <- has_special_prior(prior, px, class = "sd")
   if (has_by) {
     if (has_special_prior) {
-      stop2("Special priors on class 'sd' are not yet compatible ",
-            "with the 'by' argument.")
+      stop2(
+        "Special priors on class 'sd' are not yet compatible ",
+        "with the 'by' argument."
+      )
     }
     str_add_list(out) <- stan_prior(
-      prior, class = "sd", group = r$group[1], coef = r$coef,
+      prior,
+      class = "sd", group = r$group[1], coef = r$coef,
       type = glue("matrix[M_{id}, Nby_{id}]"),
       coef_type = glue("row_vector[Nby_{id}]"),
       suffix = glue("_{id}"), px = px, broadcast = "matrix",
@@ -608,15 +627,18 @@ stan_re <- function(bframe, prior, normalize, ...) {
   } else {
     if (has_special_prior) {
       if (stan_has_multiple_base_priors(px)) {
-        stop2("Special priors on class 'sd' are not yet compatible with ",
-              "group-level coefficients correlated across formulas.")
+        stop2(
+          "Special priors on class 'sd' are not yet compatible with ",
+          "group-level coefficients correlated across formulas."
+        )
       }
       str_add(out$tpar_def) <- glue(
         "  vector<lower=0>[M_{id}] sd_{id};  // group-level standard deviations\n"
       )
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sd", group = r$group[1], coef = r$coef,
+        prior,
+        class = "sd", group = r$group[1], coef = r$coef,
         type = glue("vector[M_{id}]"), suffix = glue("_{id}"), px = px,
         comment = "group-level standard deviations",
         normalize = normalize
@@ -653,7 +675,8 @@ stan_re <- function(bframe, prior, normalize, ...) {
     }
     if (has_by) {
       str_add_list(out) <- stan_prior(
-        prior, class = "L", group = r$group[1], coef = Nby,
+        prior,
+        class = "L", group = r$group[1], coef = Nby,
         type = glue("cholesky_factor_corr[M_{id}]"),
         coef_type = glue("cholesky_factor_corr[M_{id}]"),
         suffix = glue("_{id}"), dim = glue("[Nby_{id}]"),
@@ -671,7 +694,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
         )
       } else {
         str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
-        rdef  <- glue("scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id})")
+        rdef <- glue("scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id})")
       }
       str_add(out$tpar_comp) <- glue(
         "  // compute actual group-level effects\n",
@@ -688,7 +711,8 @@ stan_re <- function(bframe, prior, normalize, ...) {
       )
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "L", group = r$group[1], suffix = usc(id),
+        prior,
+        class = "L", group = r$group[1], suffix = usc(id),
         type = glue("cholesky_factor_corr[M_{id}]"),
         comment = "cholesky factor of correlation matrix",
         normalize = normalize
@@ -805,7 +829,8 @@ stan_sm <- function(bframe, prior, threads, normalize, ...) {
       )
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "b", coef = Xs_names,
+        prior,
+        class = "b", coef = Xs_names,
         type = glue("vector[Ks{p}]"), suffix = glue("s{p}"),
         header_type = "vector", px = px,
         comment = "unpenalized spline coefficients",
@@ -816,7 +841,7 @@ stan_sm <- function(bframe, prior, threads, normalize, ...) {
   }
   for (i in seq_rows(smframe)) {
     if (smframe$nbases[[i]] == 0) {
-      next  # no penalized spline components present
+      next # no penalized spline components present
     }
     pi <- glue("{p}_{i}")
     nb <- seq_len(smframe$nbases[[i]])
@@ -846,7 +871,8 @@ stan_sm <- function(bframe, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" nb{pi}")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sds", coef = smframe$term[i], suffix = pi, px = px,
+        prior,
+        class = "sds", coef = smframe$term[i], suffix = pi, px = px,
         type = glue("vector[nb{pi}]"), coef_type = glue("vector[nb{pi}]"),
         comment = "SDs of penalized spline coefficients",
         normalize = normalize
@@ -890,7 +916,8 @@ stan_cs <- function(bframe, prior, threads, normalize, ...) {
     )
     str_add(out$pll_args) <- glue(", data matrix Xcs{p}")
     str_add_list(out) <- stan_prior(
-      prior, class = "b", coef = csef,
+      prior,
+      class = "b", coef = csef,
       type = glue("matrix[Kcs{p}, nthres{resp}]"),
       coef_type = glue("row_vector[nthres{resp}]"),
       suffix = glue("cs{p}"), px = px, broadcast = "matrix",
@@ -1071,7 +1098,8 @@ stan_sp <- function(bframe, prior, stanvars, threads, normalize, ...) {
     )
   } else {
     str_add_list(out) <- stan_prior(
-      prior, class = "b", coef = spframe$coef,
+      prior,
+      class = "b", coef = spframe$coef,
       type = glue("vector[Ksp{p}]"), px = px,
       suffix = glue("sp{p}"), header_type = "vector",
       comment = "special effects coefficients",
@@ -1129,7 +1157,8 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" Kgp{pi}")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sdgp", coef = sfx1, px = px, suffix = pi,
+        prior,
+        class = "sdgp", coef = sfx1, px = px, suffix = pi,
         type = glue("vector[Kgp{pi}]"), coef_type = glue("vector[Kgp{pi}]"),
         comment = "GP standard deviation parameters",
         normalize = normalize
@@ -1163,7 +1192,8 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
         ", data array[] int {Igp}, data vector Cgp{pi}_{J}"
       )
       str_add_list(out) <- stan_prior(
-        prior, class = "lscale", coef = sfx2,
+        prior,
+        class = "lscale", coef = sfx2,
         type = lscale_type, dim = lscale_dim, suffix = glue("{pi}"),
         px = px, comment = lscale_comment, normalize = normalize
       )
@@ -1238,7 +1268,8 @@ stan_gp <- function(bframe, prior, threads, normalize, ...) {
     } else {
       # no by-factor variable
       str_add_list(out) <- stan_prior(
-        prior, class = "lscale", coef = sfx2,
+        prior,
+        class = "lscale", coef = sfx2,
         type = lscale_type, dim = lscale_dim, suffix = glue("{pi}"),
         px = px, comment = lscale_comment, normalize = normalize
       )
@@ -1353,7 +1384,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" 1")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sderr", px = px, suffix = p,
+        prior,
+        class = "sderr", px = px, suffix = p,
         comment = "SD of residuals", normalize = normalize
       )
     }
@@ -1405,8 +1437,10 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         if (acframe_arma$q > 0) {
           # AR and MA structures cannot be distinguished when
           # using a single vector of latent residuals
-          stop2("Please set cov = TRUE when modeling MA structures ",
-                "for this family.")
+          stop2(
+            "Please set cov = TRUE when modeling MA structures ",
+            "for this family."
+          )
         }
         str_add(out$tpar_comp) <- glue(
           "  // compute ctime-series residuals\n",
@@ -1414,10 +1448,12 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         )
         comp_err <- ""
       }
-      add_ar <- str_if(acframe_arma$p > 0,
+      add_ar <- str_if(
+        acframe_arma$p > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")
       )
-      add_ma <- str_if(acframe_arma$q > 0,
+      add_ma <- str_if(
+        acframe_arma$q > 0,
         glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")
       )
       str_add(out$model_comp_arma) <- glue(
@@ -1442,7 +1478,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         )
       } else {
         str_add_list(out) <- stan_prior(
-          prior, class = "ar", px = px, suffix = p,
+          prior,
+          class = "ar", px = px, suffix = p,
           coef = seq_along(acframe_arma$p),
           type = glue("vector[Kar{p}]"),
           header_type = "vector",
@@ -1461,7 +1498,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         )
       } else {
         str_add_list(out) <- stan_prior(
-          prior, class = "ma", px = px, suffix = p,
+          prior,
+          class = "ma", px = px, suffix = p,
           coef = seq_along(acframe_arma$q),
           type = glue("vector[Kma{p}]"),
           header_type = "vector",
@@ -1477,7 +1515,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
     str_add_list(out) <- stan_prior(
-      prior, class = "cosy", px = px, suffix = p,
+      prior,
+      class = "cosy", px = px, suffix = p,
       comment = "compound symmetry correlation",
       normalize = normalize
     )
@@ -1490,7 +1529,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
     # define prior on the Cholesky scale to consistency across
     # autocorrelation structures
     str_add_list(out) <- stan_prior(
-      prior, class = "Lcortime", px = px, suffix = p,
+      prior,
+      class = "Lcortime", px = px, suffix = p,
       type = glue("cholesky_factor_corr[n_unique_t{p}]"),
       header_type = "matrix",
       comment = "cholesky factor of unstructured autocorrelation matrix",
@@ -1604,7 +1644,6 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         )
       }
     }
-
   }
 
   acframe_sar <- subset2(acframe, class = "sar")
@@ -1632,7 +1671,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         str_add(out$fun) <- "  #include 'fun_student_t_lagsar.stan'\n"
       }
       str_add_list(out) <- stan_prior(
-        prior, class = "lagsar", px = px, suffix = p,
+        prior,
+        class = "lagsar", px = px, suffix = p,
         comment = "lag-SAR correlation parameter",
         normalize = normalize
       )
@@ -1644,7 +1684,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         str_add(out$fun) <- "  #include 'fun_student_t_errorsar.stan'\n"
       }
       str_add_list(out) <- stan_prior(
-        prior, class = "errorsar", px = px, suffix = p,
+        prior,
+        class = "errorsar", px = px, suffix = p,
         comment = "error-SAR correlation parameter",
         normalize = normalize
       )
@@ -1672,7 +1713,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
       str_add(out$prior_global_lengths) <- glue(" 1")
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sdcar", px = px, suffix = p,
+        prior,
+        class = "sdcar", px = px, suffix = p,
         comment = "SD of the CAR structure", normalize = normalize
       )
     }
@@ -1690,7 +1732,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         "  vector[Nloc{p}] rcar{p};\n"
       )
       str_add_list(out) <- stan_prior(
-        prior, class = "car", px = px, suffix = p,
+        prior,
+        class = "car", px = px, suffix = p,
         normalize = normalize
       )
       car_args <- c(
@@ -1762,7 +1805,8 @@ stan_ac <- function(bframe, prior, threads, normalize, ...) {
         "  // proportion of variance in the spatial part\n"
       )
       str_add_list(out) <- stan_prior(
-        prior, class = "rhocar", px = px, suffix = p,
+        prior,
+        class = "rhocar", px = px, suffix = p,
         normalize = normalize
       )
       # separate definition from computation to support fixed parameters
@@ -1819,7 +1863,7 @@ stan_offset <- function(bframe, threads, ...) {
     resp <- usc(bframe$resp)
     slice <- stan_slice(threads)
     # use 'offsets' as 'offset' is reserved in stanc3
-    str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
+    str_add(out$data) <- glue("  vector[N{resp}] offsets{p};\n")
     str_add(out$pll_args) <- glue(", data vector offsets{p}")
     str_add(out$eta) <- glue(" + offsets{p}{slice}")
   }
@@ -1951,12 +1995,14 @@ stan_Xme <- function(bframe, prior, threads, normalize) {
       "  vector<lower=0>[{Nme}] noise_{K};  // measurement noise\n"
     )
     str_add_list(out) <- stan_prior(
-      prior, "meanme", coef = coefs[K], suffix = usc(i),
+      prior, "meanme",
+      coef = coefs[K], suffix = usc(i),
       type = glue("vector[Mme_{i}]"), comment = "latent means",
       normalize = normalize
     )
     str_add_list(out) <- stan_prior(
-      prior, "sdme", coef = coefs[K], suffix = usc(i),
+      prior, "sdme",
+      coef = coefs[K], suffix = usc(i),
       type = glue("vector[Mme_{i}]"), comment = "latent SDs",
       normalize = normalize
     )
@@ -1971,7 +2017,8 @@ stan_Xme <- function(bframe, prior, threads, normalize) {
         "  matrix[Mme_{i}, {Nme}] zme_{i};  // standardized latent values\n"
       )
       str_add_list(out) <- stan_prior(
-        prior, "Lme", group = g, suffix = usc(i),
+        prior, "Lme",
+        group = g, suffix = usc(i),
         type = glue("cholesky_factor_corr[Mme_{i}]"),
         comment = "cholesky factor of the latent correlation matrix",
         normalize = normalize
@@ -2151,7 +2198,8 @@ stan_center_X <- function(x) {
 
 stan_dpar_comments <- function(dpar, family) {
   dpar_class <- dpar_class(dpar, family)
-  out <- switch(dpar_class, "",
+  out <- switch(dpar_class,
+    "",
     sigma = "dispersion parameter",
     shape = "shape parameter",
     nu = "degrees of freedom or shape",
@@ -2276,8 +2324,10 @@ stan_dpar_transform <- function(bframe, prior, threads, normalize, ...) {
   }
   if (any(families %in% "gen_extreme_value")) {
     # TODO: remove the gen_extreme_value family in brms 3.0
-    warning2("The 'gen_extreme_value' family is deprecated ",
-             "and will be removed in the future.")
+    warning2(
+      "The 'gen_extreme_value' family is deprecated ",
+      "and will be removed in the future."
+    )
     dp_names <- c(names(bframe$dpars), names(bframe$fdpars))
     for (i in which(families %in% "gen_extreme_value")) {
       id <- str_if(length(families) == 1L, "", i)
@@ -2328,7 +2378,8 @@ stan_dpar_transform <- function(bframe, prior, threads, normalize, ...) {
       "  int nlncor{p} = choose({ncatm1}, 2);\n"
     )
     str_add_list(out) <- stan_prior(
-      prior, "Llncor", suffix = p, px = px,
+      prior, "Llncor",
+      suffix = p, px = px,
       type = glue("cholesky_factor_corr[{ncatm1}]"),
       header_type = "matrix",
       comment = "logistic-normal Cholesky correlation matrix",
@@ -2360,7 +2411,8 @@ stan_sigma_transform <- function(bframe, id = "", threads = NULL) {
   sigma <- str_if(has_sigma, glue("sigma{id}{p}{ns}"))
   if (is.formula(bframe$adforms$se)) {
     nse <- stan_nn(threads)
-    sigma <- str_if(nzchar(sigma),
+    sigma <- str_if(
+      nzchar(sigma),
       glue("sqrt(square({sigma}) + se2{p}{nse})"),
       glue("se{p}{nse}")
     )

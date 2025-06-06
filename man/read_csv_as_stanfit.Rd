@@ -47,7 +47,7 @@ mod <- cmdstanr::cmdstan_model(cmdstanr::write_stan_file(scode))
 stanfit <- mod$sample(data = sdata)
 
 # feed the Stan model back into brms
-fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = 'cmdstanr')
+fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = "cmdstanr")
 fit$fit <- read_csv_as_stanfit(stanfit$output_files(), model = mod)
 fit <- rename_pars(fit)
 summary(fit)

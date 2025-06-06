@@ -42,9 +42,10 @@ model. The output of this function is meant for usage in the
 \examples{
 \dontrun{
 # don't store group-level coefficients
-fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-           data = epilepsy, family = poisson(),
-           save_pars = save_pars(group = FALSE))
+fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson(),
+  save_pars = save_pars(group = FALSE)
+)
 variables(fit)
 }
 

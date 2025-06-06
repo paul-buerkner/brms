@@ -4,7 +4,7 @@
 \alias{create_priorsense_data.brmsfit}
 \title{Prior sensitivity: Create priorsense data}
 \usage{
-create_priorsense_data.brmsfit(x, ...)
+\method{create_priorsense_data}{brmsfit}(x, ...)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}
@@ -28,8 +28,9 @@ functions, so you will rarely need to call it manually yourself.
 \dontrun{
 # fit a model with non-uniform priors
 fit <- brm(rating ~ treat + period + carry,
-           data = inhaler, family = sratio(),
-           prior = set_prior("normal(0, 0.5)"))
+  data = inhaler, family = sratio(),
+  prior = set_prior("normal(0, 0.5)")
+)
 summary(fit)
 
 # The following code requires the 'priorsense' package to be installed:

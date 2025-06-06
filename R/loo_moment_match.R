@@ -43,9 +43,10 @@
 #'
 #' @examples
 #' \dontrun{
-#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'             data = epilepsy, family = poisson(),
-#'             save_pars = save_pars(all = TRUE))
+#' fit1 <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = poisson(),
+#'   save_pars = save_pars(all = TRUE)
+#' )
 #'
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
@@ -86,7 +87,8 @@ loo_moment_match.brmsfit <- function(x, loo = NULL, k_threshold = 0.7,
   # otherwise loo_moment_match may fail in a new R session or on another machine
   x <- update_misc_env(x, recompile = recompile)
   out <- try(loo::loo_moment_match.default(
-    x, loo = loo,
+    x,
+    loo = loo,
     post_draws = as.matrix,
     log_lik_i = .log_lik_i,
     unconstrain_pars = .unconstrain_pars,
@@ -145,8 +147,10 @@ loo_moment_match.loo <- function(x, fit, ...) {
   # bring draws into the right structure
   new_draws <- named_list(x$fit@sim$fnames_oi_old, list(numeric(ndraws)))
   if (length(new_draws) != nrow(pars)) {
-    stop2("Updating parameters in `loo_moment_match.brmsfit' failed. ",
-          "Please report a bug at https://github.com/paul-buerkner/brms.")
+    stop2(
+      "Updating parameters in `loo_moment_match.brmsfit' failed. ",
+      "Please report a bug at https://github.com/paul-buerkner/brms."
+    )
   }
   for (i in seq_len(npars)) {
     new_draws[[i]] <- pars[i, ]
@@ -205,12 +209,14 @@ unconstrain_pars_stanfit <- function(x, pars, ...) {
 
 # compute log_prob for each posterior draws on the unconstrained space
 log_prob_upars_stanfit <- function(x, upars, ...) {
-  apply(upars, 1, rstan::log_prob, object = x,
-        adjust_transform = TRUE, gradient = FALSE)
+  apply(upars, 1, rstan::log_prob,
+    object = x,
+    adjust_transform = TRUE, gradient = FALSE
+  )
 }
 
 # create a named list of draws for use with rstan methods
-.rstan_relist <- function (x, skeleton) {
+.rstan_relist <- function(x, skeleton) {
   out <- utils::relist(x, skeleton)
   for (i in seq_along(skeleton)) {
     dim(out[[i]]) <- dim(skeleton[[i]])
@@ -219,10 +225,12 @@ log_prob_upars_stanfit <- function(x, upars, ...) {
 }
 
 # rstan helper function to get dims of parameters right
-.create_skeleton <- function (pars, dims) {
+.create_skeleton <- function(pars, dims) {
   out <- lapply(seq_along(pars), function(i) {
     len_dims <- length(dims[[i]])
-    if (len_dims < 1) return(0)
+    if (len_dims < 1) {
+      return(0)
+    }
     return(array(0, dim = dims[[i]]))
   })
   names(out) <- pars

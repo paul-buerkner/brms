@@ -19,9 +19,8 @@ exclude_terms.mvbrmsformula <- function(x, ...) {
 
 #' @export
 exclude_terms.brmsformula <- function(
-  x, excl_term_types = NULL, incl_autocor = TRUE,
-  smooths_only = FALSE, offset = TRUE, ...
-) {
+    x, excl_term_types = NULL, incl_autocor = TRUE,
+    smooths_only = FALSE, offset = TRUE, ...) {
   excl_term_types <- as.character(excl_term_types)
   # TODO: deprecate the three arguments below?
   incl_autocor <- as_one_logical(incl_autocor)
@@ -41,8 +40,10 @@ exclude_terms.brmsformula <- function(
   }
   invalid_types <- setdiff(excl_term_types, all_term_types())
   if (length(invalid_types)) {
-    stop2("The following term types are invalid: ",
-          collapse_comma(invalid_types))
+    stop2(
+      "The following term types are invalid: ",
+      collapse_comma(invalid_types)
+    )
   }
   attr(x$formula, "excl_term_types") <- excl_term_types
   for (i in seq_along(x$pforms)) {

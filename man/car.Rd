@@ -56,7 +56,8 @@ x1 <- rnorm(K)
 x2 <- rnorm(K)
 theta <- rnorm(K, sd = 0.05)
 phi <- rmulti_normal(
-  1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+  1,
+  mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
 )
 eta <- x1 + x2 + phi
 prob <- exp(eta) / (1 + exp(eta))
@@ -67,8 +68,9 @@ dat <- data.frame(y, size, x1, x2, g)
 
 # fit a CAR model
 fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
-           data = dat, data2 = list(W = W),
-           family = binomial())
+  data = dat, data2 = list(W = W),
+  family = binomial()
+)
 summary(fit)
 }
 

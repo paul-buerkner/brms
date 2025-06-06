@@ -324,12 +324,14 @@ stan_thres <- function(bterms, prior, normalize, ...) {
       bound <- subset2(prior, class = "delta", group = "", ls = px)$bound
       for (i in seq_along(groups)) {
         str_add_list(out) <- stan_prior(
-          prior, class = "Intercept", group = groups[i],
+          prior,
+          class = "Intercept", group = groups[i],
           prefix = "first_", suffix = glue("{p}{gr[i]}"), px = px,
           comment = "first threshold", normalize = normalize
         )
         str_add_list(out) <- stan_prior(
-          prior, class = "delta", group = groups[i], px = px, suffix = gr[i],
+          prior,
+          class = "delta", group = groups[i], px = px, suffix = gr[i],
           comment = "distance between thresholds", normalize = normalize
         )
       }
@@ -349,7 +351,8 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     } else {
       for (i in seq_along(groups)) {
         str_add_list(out) <- stan_prior(
-          prior, class = "Intercept", group = groups[i],
+          prior,
+          class = "Intercept", group = groups[i],
           coef = get_thres(bterms, group = groups[i]),
           type = glue("{type}[nthres{resp}{grb[i]}]"),
           coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
@@ -571,7 +574,8 @@ stan_mixture <- function(bterms, prior, threads, normalize, ...) {
     coef_type <- str_if(has_ordered_thres(bterms), "", "real")
     for (i in seq_along(groups)) {
       str_add_list(out) <- stan_prior(
-        prior, class = "Intercept",
+        prior,
+        class = "Intercept",
         coef = get_thres(bterms, group = groups[i]),
         type = glue("{type}[nthres{p}{grb[i]}]"),
         coef_type = coef_type, px = px,

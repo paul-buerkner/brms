@@ -54,8 +54,9 @@ To subset iterations, chains, or draws, use the
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-           data = epilepsy, family = poisson())
+fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson()
+)
 
 # extract posterior draws in an array format
 (draws_fit <- as_draws_array(fit))

@@ -76,13 +76,17 @@ compile_model <- function(model, backend, ...) {
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
     } else {
-      stop2("Threading is not supported by backend 'rstan' version ",
-            utils::packageVersion("rstan"), ".")
+      stop2(
+        "Threading is not supported by backend 'rstan' version ",
+        utils::packageVersion("rstan"), "."
+      )
     }
   }
   if (use_opencl(opencl)) {
-    stop2("OpenCL is not supported by backend 'rstan' version ",
-          utils::packageVersion("rstan"), ".")
+    stop2(
+      "OpenCL is not supported by backend 'rstan' version ",
+      utils::packageVersion("rstan"), "."
+    )
   }
   eval_silent(
     do_call(rstan::stan_model, args),
@@ -145,7 +149,6 @@ fit_model <- function(model, backend, ...) {
 .fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin,
                              chains, cores, threads, opencl, init, exclude,
                              seed, control, silent, future, ...) {
-
   # some input checks and housekeeping
   if (use_threading(threads, force = TRUE)) {
     if (utils::packageVersion("rstan") >= "2.26") {
@@ -153,13 +156,17 @@ fit_model <- function(model, backend, ...) {
       on.exit(rstan::rstan_options(threads_per_chain = threads_per_chain_def))
       rstan::rstan_options(threads_per_chain = threads$threads)
     } else {
-      stop2("Threading is not supported by backend 'rstan' version ",
-            utils::packageVersion("rstan"), ".")
+      stop2(
+        "Threading is not supported by backend 'rstan' version ",
+        utils::packageVersion("rstan"), "."
+      )
     }
   }
   if (use_opencl(opencl)) {
-    stop2("OpenCL is not supported by backend 'rstan' version ",
-          utils::packageVersion("rstan"), ".")
+    stop2(
+      "OpenCL is not supported by backend 'rstan' version ",
+      utils::packageVersion("rstan"), "."
+    )
   }
   if (is.null(init)) {
     init <- "random"
@@ -228,7 +235,6 @@ fit_model <- function(model, backend, ...) {
 .fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin,
                                 chains, cores, threads, opencl, init, exclude,
                                 seed, control, silent, future, ...) {
-
   require_package("cmdstanr")
   # some input checks and housekeeping
   class(sdata) <- "list"
@@ -336,7 +342,8 @@ fit_model <- function(model, backend, ...) {
   }
 
   out <- read_csv_as_stanfit(
-    output_files, variables = stan_variables,
+    output_files,
+    variables = stan_variables,
     model = model, exclude = exclude, algorithm = algorithm
   )
 
@@ -418,7 +425,8 @@ recompile_model <- function(x, recompile = NULL) {
   message("Recompiling the Stan model")
   backend <- x$backend %||% "rstan"
   new_model <- compile_model(
-    stancode(x), backend = backend, threads = x$threads,
+    stancode(x),
+    backend = backend, threads = x$threads,
     opencl = x$opencl, silent = 2
   )
   if (backend == "rstan") {
@@ -514,10 +522,11 @@ require_backend <- function(backend, x) {
 #' \dontrun{
 #' # this model just serves as an illustration
 #' # threading may not actually speed things up here
-#' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'            data = epilepsy, family = negbinomial(),
-#'            chains = 1, threads = threading(2, grainsize = 100),
-#'            backend = "cmdstanr")
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = negbinomial(),
+#'   chains = 1, threads = threading(2, grainsize = 100),
+#'   backend = "cmdstanr"
+#' )
 #' summary(fit)
 #' }
 #'
@@ -557,8 +566,10 @@ validate_threads <- function(threads) {
     threads <- as_one_numeric(threads)
     threads <- threading(threads)
   } else if (!is.brmsthreads(threads)) {
-    stop2("Argument 'threads' needs to be numeric or ",
-          "specified via the 'threading' function.")
+    stop2(
+      "Argument 'threads' needs to be numeric or ",
+      "specified via the 'threading' function."
+    )
   }
   threads
 }
@@ -595,10 +606,11 @@ use_threading <- function(threads, force = FALSE) {
 #' \dontrun{
 #' # this model just serves as an illustration
 #' # OpenCL may not actually speed things up here
-#' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'            data = epilepsy, family = poisson(),
-#'            chains = 2, cores = 2, opencl = opencl(c(0, 0)),
-#'            backend = "cmdstanr")
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = poisson(),
+#'   chains = 2, cores = 2, opencl = opencl(c(0, 0)),
+#'   backend = "cmdstanr"
+#' )
 #' summary(fit)
 #' }
 #'
@@ -627,8 +639,10 @@ validate_opencl <- function(opencl) {
   } else if (is.numeric(opencl)) {
     opencl <- opencl(opencl)
   } else if (!is.brmsopencl(opencl)) {
-    stop2("Argument 'opencl' needs to an integer vector or ",
-          "specified via the 'opencl' function.")
+    stop2(
+      "Argument 'opencl' needs to an integer vector or ",
+      "specified via the 'opencl' function."
+    )
   }
   opencl
 }
@@ -722,7 +736,7 @@ file_refit_options <- function() {
 #' stanfit <- mod$sample(data = sdata)
 #'
 #' # feed the Stan model back into brms
-#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = 'cmdstanr')
+#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE, backend = "cmdstanr")
 #' fit$fit <- read_csv_as_stanfit(stanfit$output_files(), model = mod)
 #' fit <- rename_pars(fit)
 #' summary(fit)
@@ -770,9 +784,9 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   par_dims <- vector("list", length(model_pars))
   names(par_dims) <- model_pars
   par_dims <- lapply(par_dims, function(x) integer(0))
-  pdims_num <- ulapply(model_pars, function(x)
+  pdims_num <- ulapply(model_pars, function(x) {
     sum(grepl(paste0("^", x, "\\[.*\\]$"), csfit$metadata$model_params))
-  )
+  })
   par_dims[pdims_num != 0] <-
     csfit$metadata$stan_variable_sizes[model_pars][pdims_num != 0]
 
@@ -780,8 +794,10 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   mode <- 0L
 
   # @sim
-  rstan_diagn_order <- c("accept_stat__", "treedepth__", "stepsize__",
-                         "divergent__", "n_leapfrog__", "energy__")
+  rstan_diagn_order <- c(
+    "accept_stat__", "treedepth__", "stepsize__",
+    "divergent__", "n_leapfrog__", "energy__"
+  )
 
   if (!is.null(sampler_diagnostics)) {
     rstan_diagn_order <- rstan_diagn_order[rstan_diagn_order %in% sampler_diagnostics]
@@ -826,7 +842,6 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     diagnostics <- as.data.frame(diagnostics)
     diag_chain_ids <- diagnostics$.chain
     diagnostics[res_vars] <- NULL
-
   } else if ("draws" %in% names(csfit)) {
     # for variational inference "samplers"
     n_chains <- 1
@@ -912,16 +927,19 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
       if (is_equal(sampler_t, "NUTS(dense_e)")) {
         mmatrix_txt <- "\n# Elements of inverse mass matrix:\n# "
         mmat <- paste0(apply(csfit$inv_metric[[i]], 1, paste0, collapse = ", "),
-                       collapse = "\n# ")
+          collapse = "\n# "
+        )
       } else {
         mmatrix_txt <- "\n# Diagonal elements of inverse mass matrix:\n# "
         mmat <- paste0(csfit$inv_metric[[i]], collapse = ", ")
       }
 
-      adapt_info[[i]] <- paste0("# Step size = ",
-                                csfit$step_size[[i]],
-                                mmatrix_txt,
-                                mmat, "\n# ")
+      adapt_info[[i]] <- paste0(
+        "# Step size = ",
+        csfit$step_size[[i]],
+        mmatrix_txt,
+        mmat, "\n# "
+      )
       attr(samples[[i]], "adaptation_info") <- adapt_info[[i]]
     } else {
       attr(samples[[i]], "adaptation_info") <- character(0)
@@ -1034,13 +1052,15 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   cxxdso_class <- "cxxdso"
   attr(cxxdso_class, "package") <- "rstan"
   null_dso <- new(
-    cxxdso_class, sig = list(character(0)), dso_saved = FALSE,
+    cxxdso_class,
+    sig = list(character(0)), dso_saved = FALSE,
     dso_filename = character(0), modulename = character(0),
     system = R.version$system, cxxflags = character(0),
     .CXXDSOMISC = new.env(parent = emptyenv())
   )
   null_sm <- new(
-    "stanmodel", model_name = model_name, model_code = character(0),
+    "stanmodel",
+    model_name = model_name, model_code = character(0),
     model_cpp = list(), dso = null_dso
   )
 
@@ -1058,7 +1078,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     inits = list(),
     stan_args = sargs_rep,
     stanmodel = null_sm,
-    date = sdate,  # not the time of sampling
+    date = sdate, # not the time of sampling
     .MISC = new.env(parent = emptyenv())
   )
 

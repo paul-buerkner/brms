@@ -105,8 +105,9 @@ with additional arguments for obtaining summaries of the computed draws.
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler)
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler
+)
 
 ## compute expected predictions
 fitted_values <- fitted(fit)
@@ -114,7 +115,8 @@ head(fitted_values)
 
 ## plot expected predictions against actual response
 dat <- as.data.frame(cbind(Y = standata(fit)$Y, fitted_values))
-ggplot(dat) + geom_point(aes(x = Estimate, y = Y))
+ggplot(dat) +
+  geom_point(aes(x = Estimate, y = Y))
 }
 
 }

@@ -56,12 +56,14 @@
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
+#'   data = inhaler
+#' )
 #' (loo1 <- loo(fit1))
 #'
 #' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler)
+#' fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #' (loo2 <- loo(fit2))
 #'
 #' # compare both models
@@ -84,11 +86,11 @@
 #' @importFrom loo loo is.loo
 #' @export loo
 #' @export
-loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = FALSE, moment_match = FALSE,
-                         reloo = FALSE, k_threshold = 0.7, save_psis = FALSE,
-                         moment_match_args = list(), reloo_args = list(),
-                         model_names = NULL) {
+loo.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                        pointwise = FALSE, moment_match = FALSE,
+                        reloo = FALSE, k_threshold = 0.7, save_psis = FALSE,
+                        moment_match_args = list(), reloo_args = list(),
+                        model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   if (!"use_stored" %in% names(args)) {
     further_arg_names <- c(
@@ -144,12 +146,14 @@ LOO <- function(x, ...) {
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
+#'   data = inhaler
+#' )
 #' (waic1 <- waic(fit1))
 #'
 #' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler)
+#' fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #' (waic2 <- waic(fit2))
 #'
 #' # compare both models
@@ -279,21 +283,24 @@ loo_criteria <- function() {
                  moment_match_args, reloo_args, newdata,
                  resp, model_name, save_psis, ...) {
   loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp,
+    x,
+    newdata = newdata, resp = resp,
     pointwise = pointwise, save_psis = save_psis,
     ...
   )
   out <- SW(do_call("loo", loo_args, pkg = "loo"))
   if (moment_match) {
     c(moment_match_args) <- nlist(
-      x, loo = out, newdata, resp,
+      x,
+      loo = out, newdata, resp,
       k_threshold, check = FALSE, ...
     )
     out <- do_call("loo_moment_match", moment_match_args)
   }
   if (reloo) {
     c(reloo_args) <- nlist(
-      x, loo = out, newdata, resp,
+      x,
+      loo = out, newdata, resp,
       k_threshold, check = FALSE, ...
     )
     out <- do_call("reloo", reloo_args)
@@ -306,7 +313,8 @@ loo_criteria <- function() {
 # @param model_name ignored but included to avoid being passed to '...'
 .waic <- function(x, pointwise, newdata, resp, model_name, ...) {
   loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp,
+    x,
+    newdata = newdata, resp = resp,
     pointwise = pointwise, ...
   )
   do_call("waic", loo_args, pkg = "loo")
@@ -333,14 +341,15 @@ loo_criteria <- function() {
 #' \dontrun{
 #' fit <- brm(rating ~ treat + period + carry, data = inhaler)
 #' psis(fit)
-#'}
+#' }
 #' @importFrom loo psis
 #' @export psis
 #' @export
 psis.brmsfit <- function(log_ratios, newdata = NULL, resp = NULL,
                          model_name = NULL, ...) {
   loo_args <- prepare_loo_args(
-    log_ratios, newdata = newdata, resp = resp,
+    log_ratios,
+    newdata = newdata, resp = resp,
     pointwise = FALSE, ...
   )
   loo_args$log_ratios <- -loo_args$x
@@ -385,12 +394,14 @@ prepare_loo_args <- function(x, newdata, resp, pointwise, ...) {
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
+#'   data = inhaler
+#' )
 #' fit1 <- add_criterion(fit1, "waic")
 #'
 #' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler)
+#' fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #' fit2 <- add_criterion(fit2, "waic")
 #'
 #' # compare both models
@@ -437,10 +448,12 @@ loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
+#'   data = inhaler, family = "gaussian"
+#' )
 #' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
+#' fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "gaussian"
+#' )
 #' loo_model_weights(fit1, fit2)
 #' }
 #'
@@ -452,9 +465,9 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   models <- args$models
   args$models <- NULL
-  log_lik_list <- lapply(models, function(x)
+  log_lik_list <- lapply(models, function(x) {
     do_call(log_lik, c(list(x), args))
-  )
+  })
   args$x <- log_lik_list
   args$r_eff_list <- mapply(
     r_eff_log_lik, log_lik_list,
@@ -535,8 +548,10 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   loo_options <- c("loo", "waic", "kfold", "loo_subsample")
   options <- c(loo_options, "bayes_R2", "loo_R2", "marglik")
   if (!length(criterion) || !all(criterion %in% options)) {
-    stop2("Argument 'criterion' should be a subset of ",
-          collapse_comma(options))
+    stop2(
+      "Argument 'criterion' should be a subset of ",
+      collapse_comma(options)
+    )
   }
   auto_save <- FALSE
   if (!is.null(file)) {
@@ -594,7 +609,8 @@ hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
   require_package("digest")
   stopifnot(is.brmsfit(x))
   sdata <- standata(
-    x, newdata = newdata, re_formula = NA, internal = TRUE,
+    x,
+    newdata = newdata, re_formula = NA, internal = TRUE,
     check_response = TRUE, only_response = TRUE
   )
   add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
@@ -704,7 +720,7 @@ recommend_loo_options <- function(loo, k_threshold = 0.7, moment_match = FALSE,
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
       model_name, ". We recommend to set 'reloo = TRUE' in order to ",
-      "calculate the ELPD without the assumption that these observations " ,
+      "calculate the ELPD without the assumption that these observations ",
       "are negligible. This will refit the model ", n, " times to compute ",
       "the ELPDs for the problematic observations directly."
     )
@@ -790,7 +806,8 @@ r_eff_log_lik.function <- function(x, fit, draws, allow_na = FALSE, ...) {
   }
   chain_id <- get_chain_id(draws$ndraws, fit)
   r_eff_helper(
-    lik_fun, chain_id = chain_id, draws = draws,
+    lik_fun,
+    chain_id = chain_id, draws = draws,
     allow_na = allow_na, ...
   )
 }
@@ -881,7 +898,7 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
 
 #' @rdname add_ic
 #' @export
-'add_ic<-' <- function(x, ..., value) {
+"add_ic<-" <- function(x, ..., value) {
   add_ic(x, ic = value, ...)
 }
 
@@ -917,12 +934,14 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
+#'   data = inhaler
+#' )
 #' waic1 <- waic(fit1)
 #'
 #' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler)
+#' fit2 <- brm(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler
+#' )
 #' waic2 <- waic(fit2)
 #'
 #' # compare both models
@@ -949,8 +968,10 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
     }
   }
   if (!all(sapply(x, inherits, "loo"))) {
-    stop2("All inputs should have class 'loo' ",
-          "or contain precomputed 'loo' objects.")
+    stop2(
+      "All inputs should have class 'loo' ",
+      "or contain precomputed 'loo' objects."
+    )
   }
   if (length(x) < 2L) {
     stop2("Expecting at least two objects.")

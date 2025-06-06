@@ -94,8 +94,9 @@ Residuals of type \code{'ordinary'} are of the form \eqn{R = Y -
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler, cores = 2)
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, cores = 2
+)
 
 ## extract residuals/predictive errors
 res <- residuals(fit)

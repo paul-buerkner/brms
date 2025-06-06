@@ -113,7 +113,7 @@ formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
 # add more formulas to the model
 bf(y ~ 1) +
   nlf(sigma ~ a * exp(b * x)) +
-  lf(a ~ x, b ~ z + (1|g)) +
+  lf(a ~ x, b ~ z + (1 | g)) +
   gaussian()
 
 # specify 'nl' later on
@@ -122,7 +122,7 @@ bf(y ~ a * inv_logit(x * b)) +
   set_nl(TRUE)
 
 # specify a multivariate model
-bf(y1 ~ x + (1|g)) +
+bf(y1 ~ x + (1 | g)) +
   bf(y2 ~ z) +
   set_rescor(TRUE)
 

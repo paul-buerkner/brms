@@ -90,7 +90,7 @@ it is less typing. Fitting our model of interest with **brms** to the multiple
 imputed data sets is straightforward.
 
 ```{r, results = 'hide', message = FALSE}
-fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
+fit_imp1 <- brm_multiple(bmi ~ age * chl, data = imp, chains = 2)
 ```
 
 The returned fitted model is an ordinary `brmsfit` object containing the
@@ -124,8 +124,9 @@ library(posterior)
 draws <- as_draws_array(fit_imp1)
 # every dataset has nc = 2 chains in this example
 nc <- nchains(fit_imp1) / m
-draws_per_dat <- lapply(1:m, 
-  \(i) subset_draws(draws, chain = ((i-1)*nc+1):(i*nc))
+draws_per_dat <- lapply(
+  1:m,
+  \(i) subset_draws(draws, chain = ((i - 1) * nc + 1):(i * nc))
 )
 lapply(draws_per_dat, summarise_draws, default_convergence_measures())
 ```

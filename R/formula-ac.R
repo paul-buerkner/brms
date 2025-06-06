@@ -156,8 +156,10 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
   }
   cov <- as_one_logical(cov)
   if (cov && (p > 1 || q > 1)) {
-    stop2("Covariance formulation of ARMA structures is ",
-          "only possible for effects of maximal order one.")
+    stop2(
+      "Covariance formulation of ARMA structures is ",
+      "only possible for effects of maximal order one."
+    )
   }
   label <- as_one_character(label)
   out <- nlist(time, gr, p, q, cov, label)
@@ -265,14 +267,16 @@ unstr <- function(time, gr) {
 #' \dontrun{
 #' data(oldcol, package = "spdep")
 #' fit1 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "lag"),
-#'             data = COL.OLD, data2 = list(COL.nb = COL.nb),
-#'             chains = 2, cores = 2)
+#'   data = COL.OLD, data2 = list(COL.nb = COL.nb),
+#'   chains = 2, cores = 2
+#' )
 #' summary(fit1)
 #' plot(fit1)
 #'
 #' fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
-#'             data = COL.OLD, data2 = list(COL.nb = COL.nb),
-#'             chains = 2, cores = 2)
+#'   data = COL.OLD, data2 = list(COL.nb = COL.nb),
+#'   chains = 2, cores = 2
+#' )
 #' summary(fit2)
 #' plot(fit2)
 #' }
@@ -340,7 +344,8 @@ sar <- function(M, type = "lag") {
 #' x2 <- rnorm(K)
 #' theta <- rnorm(K, sd = 0.05)
 #' phi <- rmulti_normal(
-#'   1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+#'   1,
+#'   mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
 #' )
 #' eta <- x1 + x2 + phi
 #' prob <- exp(eta) / (1 + exp(eta))
@@ -351,8 +356,9 @@ sar <- function(M, type = "lag") {
 #'
 #' # fit a CAR model
 #' fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
-#'            data = dat, data2 = list(W = W),
-#'            family = binomial())
+#'   data = dat, data2 = list(W = W),
+#'   family = binomial()
+#' )
 #' summary(fit)
 #' }
 #'
@@ -418,8 +424,10 @@ validate_autocor <- function(autocor) {
     return(NULL)
   }
   if (is.cor_brms(autocor)) {
-    warning2("Using 'cor_brms' objects for 'autocor' is deprecated. ",
-             "Please see ?cor_brms for details.")
+    warning2(
+      "Using 'cor_brms' objects for 'autocor' is deprecated. ",
+      "Please see ?cor_brms for details."
+    )
     autocor <- as_formula_cor_brms(autocor)
   }
   if (is.null(autocor)) {
@@ -469,8 +477,10 @@ frame_ac.brmsterms <- function(x, ...) {
   }
   if (use_ac_cov(out)) {
     if (isTRUE(x$rescor)) {
-      stop2("Explicit covariance terms cannot be modeled ",
-            "when 'rescor' is estimated at the same time.")
+      stop2(
+        "Explicit covariance terms cannot be modeled ",
+        "when 'rescor' is estimated at the same time."
+      )
     }
   }
   out
@@ -573,7 +583,7 @@ frame_ac.btl <- function(x, data = NULL, ...) {
 }
 
 #' @export
-frame_ac.btnl <- function(x, ... ) {
+frame_ac.btnl <- function(x, ...) {
   frame_ac.btl(x, ...)
 }
 
@@ -699,8 +709,10 @@ validate_fcor_matrix <- function(M) {
 # regex to extract all parameter names of autocorrelation structures
 regex_autocor_pars <- function() {
   # cortime is ignored here to allow custom renaming in summary.brmsfit
-  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar",
-         "car", "sdcar", "rhocar")
+  p <- c(
+    "ar", "ma", "sderr", "cosy", "lagsar", "errorsar",
+    "car", "sdcar", "rhocar"
+  )
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")
 }

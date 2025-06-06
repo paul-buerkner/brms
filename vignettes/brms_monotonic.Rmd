@@ -80,7 +80,8 @@ illustration purposes.
 ```{r}
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
 income <- factor(sample(income_options, 100, TRUE),
-                 levels = income_options, ordered = TRUE)
+  levels = income_options, ordered = TRUE
+)
 mean_ls <- c(30, 60, 70, 75)
 ls <- mean_ls[income] + rnorm(100, sd = 7)
 dat <- data.frame(income, ls)
@@ -159,8 +160,10 @@ To fit the model we write:
 
 ```{r, results='hide'}
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simo", coef = "moincome1")
-fit4 <- brm(ls ~ mo(income), data = dat,
-            prior = prior4, sample_prior = TRUE)
+fit4 <- brm(ls ~ mo(income),
+  data = dat,
+  prior = prior4, sample_prior = TRUE
+)
 ```
 
 The `1` at the end of `"moincome1"` may appear strange when first working with
@@ -196,7 +199,7 @@ of income and age. Interactions with monotonic variables can be specified in the
 usual way using the `*` operator:
 
 ```{r, results='hide'}
-fit5 <- brm(ls ~ mo(income)*age, data = dat)
+fit5 <- brm(ls ~ mo(income) * age, data = dat)
 ```
 
 ```{r}
@@ -220,7 +223,7 @@ With the following code, we fit a multilevel model assuming the intercept and
 the effect of `income` to vary by city:
 
 ```{r, results='hide'}
-fit6 <- brm(ls ~ mo(income)*age + (mo(income) | city), data = dat)
+fit6 <- brm(ls ~ mo(income) * age + (mo(income) | city), data = dat)
 ```
 
 ```{r}

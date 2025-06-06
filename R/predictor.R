@@ -196,7 +196,8 @@ predictor_sp <- function(prep, i) {
       )
     }
     eta <- eta + .predictor_sp(
-      eval_list, call = sp[["calls"]][[j]],
+      eval_list,
+      call = sp[["calls"]][[j]],
       b = sp[["bsp"]][, j],
       r = Reduce("+", rsp)
     )
@@ -401,7 +402,8 @@ predictor_cs <- function(eta, prep, i) {
     }
   }
   .predictor_cs(
-    eta, X = p(cs[["Xcs"]], i),
+    eta,
+    X = p(cs[["Xcs"]], i),
     b = cs[["bcs"]], nthres = nthres, r = rcs
   )
 }
@@ -461,7 +463,8 @@ predictor_ac <- function(eta, prep, i, fprep = NULL) {
       stop2("Pointwise evaluation is not possible for ARMA models.")
     }
     eta <- .predictor_arma(
-      eta, ar = prep$ac$ar, ma = prep$ac$ma,
+      eta,
+      ar = prep$ac$ar, ma = prep$ac$ma,
       Y = prep$ac$Y, J_lag = prep$ac$J_lag,
       fprep = fprep
     )

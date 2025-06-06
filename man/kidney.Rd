@@ -42,14 +42,16 @@ This dataset, originally discussed in
 \dontrun{
 ## performing surivival analysis using the "weibull" family
 fit1 <- brm(time | cens(censored) ~ age + sex + disease,
-            data = kidney, family = weibull, init = "0")
+  data = kidney, family = weibull, init = "0"
+)
 summary(fit1)
 plot(fit1)
 
 ## adding random intercepts over patients
-fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
-            data = kidney, family = weibull(), init = "0",
-            prior = set_prior("cauchy(0,2)", class = "sd"))
+fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1 | patient),
+  data = kidney, family = weibull(), init = "0",
+  prior = set_prior("cauchy(0,2)", class = "sd")
+)
 summary(fit2)
 plot(fit2)
 }

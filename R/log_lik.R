@@ -46,7 +46,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE, ...
   )
   if (add_point_estimate) {
@@ -55,7 +56,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # difficult due to its highly nested structure. As an alternative, a second
     # prep object is created from the point estimates of the draws directly.
     attr(prep, "point_estimate") <- prepare_predictions(
-      object, newdata = newdata, re_formula = re_formula, resp = resp,
+      object,
+      newdata = newdata, re_formula = re_formula, resp = resp,
       ndraws = ndraws, draw_ids = draw_ids, check_response = TRUE,
       point_estimate = "median", ...
     )
@@ -162,7 +164,8 @@ log_lik_gaussian <- function(i, prep) {
   # log_lik_censor computes the conventional log_lik in case of no censoring
   out <- log_lik_censor(dist = "norm", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pnorm, args = args, i = i, prep = prep
+    out,
+    cdf = pnorm, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -177,7 +180,8 @@ log_lik_student <- function(i, prep) {
     dist = "student_t", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pstudent_t, args = args, i = i, prep = prep
+    out,
+    cdf = pstudent_t, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -187,7 +191,8 @@ log_lik_lognormal <- function(i, prep) {
   args <- list(meanlog = get_dpar(prep, "mu", i), sdlog = sigma)
   out <- log_lik_censor(dist = "lnorm", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = plnorm, args = args, i = i, prep = prep
+    out,
+    cdf = plnorm, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -211,7 +216,8 @@ log_lik_skew_normal <- function(i, prep) {
     dist = "skew_normal", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pskew_normal, args = args, i = i, prep = prep
+    out,
+    cdf = pskew_normal, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -221,7 +227,8 @@ log_lik_gaussian_mv <- function(i, prep) {
   Sigma <- get_Sigma(prep, i = i)
   dmn <- function(s) {
     dmulti_normal(
-      prep$data$Y[i, ], mu = Mu[s, ],
+      prep$data$Y[i, ],
+      mu = Mu[s, ],
       Sigma = Sigma[s, , ], log = TRUE
     )
   }
@@ -235,7 +242,8 @@ log_lik_student_mv <- function(i, prep) {
   Sigma <- get_Sigma(prep, i = i)
   dmst <- function(s) {
     dmulti_student_t(
-      prep$data$Y[i, ], df = nu[s], mu = Mu[s, ],
+      prep$data$Y[i, ],
+      df = nu[s], mu = Mu[s, ],
       Sigma = Sigma[s, , ], log = TRUE
     )
   }
@@ -422,7 +430,8 @@ log_lik_binomial <- function(i, prep) {
     dist = "binom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pbinom, args = args, i = i, prep = prep
+    out,
+    cdf = pbinom, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -454,7 +463,8 @@ log_lik_poisson <- function(i, prep) {
     dist = "pois", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = ppois, args = args, i = i, prep = prep
+    out,
+    cdf = ppois, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -469,7 +479,8 @@ log_lik_negbinomial <- function(i, prep) {
     dist = "nbinom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pnbinom, args = args, i = i, prep = prep
+    out,
+    cdf = pnbinom, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -484,7 +495,8 @@ log_lik_negbinomial2 <- function(i, prep) {
     dist = "nbinom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pnbinom, args = args, i = i, prep = prep
+    out,
+    cdf = pnbinom, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -499,7 +511,8 @@ log_lik_geometric <- function(i, prep) {
     dist = "nbinom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pnbinom, args = args, i = i, prep = prep
+    out,
+    cdf = pnbinom, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -513,7 +526,8 @@ log_lik_discrete_weibull <- function(i, prep) {
     dist = "discrete_weibull", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pdiscrete_weibull, args = args, i = i, prep = prep
+    out,
+    cdf = pdiscrete_weibull, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -532,7 +546,8 @@ log_lik_exponential <- function(i, prep) {
   args <- list(rate = 1 / get_dpar(prep, "mu", i))
   out <- log_lik_censor(dist = "exp", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pexp, args = args, i = i, prep = prep
+    out,
+    cdf = pexp, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -543,7 +558,8 @@ log_lik_gamma <- function(i, prep) {
   args <- nlist(shape, scale)
   out <- log_lik_censor(dist = "gamma", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pgamma, args = args, i = i, prep = prep
+    out,
+    cdf = pgamma, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -556,7 +572,8 @@ log_lik_weibull <- function(i, prep) {
     dist = "weibull", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pweibull, args = args, i = i, prep = prep
+    out,
+    cdf = pweibull, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -569,7 +586,8 @@ log_lik_frechet <- function(i, prep) {
     dist = "frechet", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pfrechet, args = args, i = i, prep = prep
+    out,
+    cdf = pfrechet, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -579,31 +597,47 @@ log_lik_gen_extreme_value <- function(i, prep) {
   xi <- get_dpar(prep, "xi", i = i)
   mu <- get_dpar(prep, "mu", i)
   args <- nlist(mu, sigma, xi)
-  out <- log_lik_censor(dist = "gen_extreme_value", args = args,
-                       i = i, prep = prep)
-  out <- log_lik_truncate(out, cdf = pgen_extreme_value,
-                         args = args, i = i, prep = prep)
+  out <- log_lik_censor(
+    dist = "gen_extreme_value", args = args,
+    i = i, prep = prep
+  )
+  out <- log_lik_truncate(out,
+    cdf = pgen_extreme_value,
+    args = args, i = i, prep = prep
+  )
   log_lik_weight(out, i = i, prep = prep)
 }
 
 log_lik_inverse.gaussian <- function(i, prep) {
-  args <- list(mu = get_dpar(prep, "mu", i),
-               shape = get_dpar(prep, "shape", i = i))
-  out <- log_lik_censor(dist = "inv_gaussian", args = args,
-                       i = i, prep = prep)
-  out <- log_lik_truncate(out, cdf = pinv_gaussian, args = args,
-                         i = i, prep = prep)
+  args <- list(
+    mu = get_dpar(prep, "mu", i),
+    shape = get_dpar(prep, "shape", i = i)
+  )
+  out <- log_lik_censor(
+    dist = "inv_gaussian", args = args,
+    i = i, prep = prep
+  )
+  out <- log_lik_truncate(out,
+    cdf = pinv_gaussian, args = args,
+    i = i, prep = prep
+  )
   log_lik_weight(out, i = i, prep = prep)
 }
 
 log_lik_exgaussian <- function(i, prep) {
-  args <- list(mu = get_dpar(prep, "mu", i),
-               sigma = get_dpar(prep, "sigma", i = i),
-               beta = get_dpar(prep, "beta", i = i))
-  out <- log_lik_censor(dist = "exgaussian", args = args,
-                       i = i, prep = prep)
-  out <- log_lik_truncate(out, cdf = pexgaussian, args = args,
-                         i = i, prep = prep)
+  args <- list(
+    mu = get_dpar(prep, "mu", i),
+    sigma = get_dpar(prep, "sigma", i = i),
+    beta = get_dpar(prep, "beta", i = i)
+  )
+  out <- log_lik_censor(
+    dist = "exgaussian", args = args,
+    i = i, prep = prep
+  )
+  out <- log_lik_truncate(out,
+    cdf = pexgaussian, args = args,
+    i = i, prep = prep
+  )
   log_lik_weight(out, i = i, prep = prep)
 }
 
@@ -625,7 +659,8 @@ log_lik_beta <- function(i, prep) {
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
   out <- log_lik_censor(dist = "beta", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pbeta, args = args, i = i, prep = prep
+    out,
+    cdf = pbeta, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -638,7 +673,8 @@ log_lik_xbeta <- function(i, prep) {
   )
   out <- log_lik_censor(dist = "xbeta", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pxbeta, args = args, i = i, prep = prep
+    out,
+    cdf = pxbeta, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -652,7 +688,8 @@ log_lik_von_mises <- function(i, prep) {
     dist = "von_mises", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pvon_mises, args = args, i = i, prep = prep
+    out,
+    cdf = pvon_mises, args = args, i = i, prep = prep
   )
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -868,7 +905,8 @@ log_lik_logistic_normal <- function(i, prep, ...) {
   Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   dlmn <- function(s) {
     dlogistic_normal(
-      prep$data$Y[i, ], mu = mu[s, ], Sigma = Sigma[s, , ],
+      prep$data$Y[i, ],
+      mu = mu[s, ], Sigma = Sigma[s, , ],
       refcat = prep$refcat, log = TRUE
     )
   }
@@ -903,7 +941,8 @@ log_lik_sratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)),
+  q <- sapply(
+    seq_len(min(y, nthres)),
     function(k) log_ccdf(eta[, k], prep$family$link)
   )
   if (y == 1L) {
@@ -925,7 +964,8 @@ log_lik_cratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)),
+  q <- sapply(
+    seq_len(min(y, nthres)),
     function(k) log_cdf(eta[, k], prep$family$link)
   )
   if (y == 1L) {
@@ -951,22 +991,28 @@ log_lik_acat <- function(i, prep) {
   if (prep$family$link == "logit") {
     # more efficient computation for logit link
     q <- sapply(1:nthres, function(k) eta[, k])
-    p <- cbind(rep(0, nrow(eta)), q[, 1],
-               matrix(0, nrow = nrow(eta), ncol = nthres - 1))
+    p <- cbind(
+      rep(0, nrow(eta)), q[, 1],
+      matrix(0, nrow = nrow(eta), ncol = nthres - 1)
+    )
     if (nthres > 1L) {
       p[, 3:(nthres + 1)] <-
         sapply(3:(nthres + 1), function(k) rowSums(q[, 1:(k - 1)]))
     }
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
-    q <- sapply(1:nthres, function(k)
-      inv_link(eta[, k], prep$family$link))
-    p <- cbind(apply(1 - q[, 1:nthres], 1, prod),
-               matrix(0, nrow = nrow(eta), ncol = nthres))
+    q <- sapply(1:nthres, function(k) {
+      inv_link(eta[, k], prep$family$link)
+    })
+    p <- cbind(
+      apply(1 - q[, 1:nthres], 1, prod),
+      matrix(0, nrow = nrow(eta), ncol = nthres)
+    )
     if (nthres > 1L) {
-      p[, 2:nthres] <- sapply(2:nthres, function(k)
+      p[, 2:nthres] <- sapply(2:nthres, function(k) {
         apply(as.matrix(q[, 1:(k - 1)]), 1, prod) *
-          apply(as.matrix(1 - q[, k:nthres]), 1, prod))
+          apply(as.matrix(1 - q[, k:nthres]), 1, prod)
+      })
     }
     p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
     out <- log(p[, y]) - log(apply(p, 1, sum))
@@ -1064,8 +1110,10 @@ log_lik_weight <- function(x, i, prep) {
 # I disallowed computation of log-likelihood values for some models
 # until pointwise solutions are implemented
 stop_no_pw <- function() {
-  stop2("Cannot yet compute pointwise log-likelihood for this model ",
-        "because the observations are not conditionally independent.")
+  stop2(
+    "Cannot yet compute pointwise log-likelihood for this model ",
+    "because the observations are not conditionally independent."
+  )
 }
 
 # multiplicate factor for conditional student-t models

@@ -24,7 +24,7 @@ instance to model multivariate effect sizes in meta-analysis.
 \dontrun{
 dat <- data.frame(y = rnorm(3))
 V <- cbind(c(0.5, 0.3, 0.2), c(0.3, 1, 0.1), c(0.2, 0.1, 0.2))
-fit <- brm(y~1, data = dat, autocor = cor_fixed(V))
+fit <- brm(y ~ 1, data = dat, autocor = cor_fixed(V))
 }
 
 }

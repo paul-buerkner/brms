@@ -43,8 +43,10 @@ link_sratio_ch <- function(x, link) {
       prev_res <- .F_k(k - 1)
     }
     F_k <- slice(x, ndim, k) / prev_res$S_km1_prod
-    return(list(F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
-                S_km1_prod = prev_res$S_km1_prod * (1 - F_k)))
+    return(list(
+      F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
+      S_km1_prod = prev_res$S_km1_prod * (1 - F_k)
+    ))
   }
   x <- .F_k(dim(x)[ndim] - 1)$F_k
   link_ch(x, link)
@@ -61,8 +63,10 @@ link_cratio_ch <- function(x, link) {
       prev_res <- .F_k(k - 1)
     }
     F_k <- 1 - slice(x, ndim, k) / prev_res$F_km1_prod
-    return(list(F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
-                F_km1_prod = prev_res$F_km1_prod * F_k))
+    return(list(
+      F_k = abind::abind(prev_res$F_k, F_k, along = ndim),
+      F_km1_prod = prev_res$F_km1_prod * F_k
+    ))
   }
   x <- .F_k(dim(x)[ndim] - 1)$F_k
   link_ch(x, link)

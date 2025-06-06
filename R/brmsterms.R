@@ -235,7 +235,8 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
   }
   list_allvars <- lapply(out$terms, get_allvars)
   out$allvars <- allvars_formula(
-    list_allvars, .env = environment(list_allvars[[1]])
+    list_allvars,
+    .env = environment(list_allvars[[1]])
   )
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse0(lhs(x$respform)[[2]])
@@ -324,16 +325,20 @@ terms_ad <- function(formula, family = NULL, check_response = TRUE) {
           if (!is.na(x[[a]]) && a %in% valid_ads) {
             x[[a]] <- str2formula(x[[a]])
           } else {
-            stop2("Argument '", a, "' is not supported for ",
-                  "family '", summary(family), "'.")
+            stop2(
+              "Argument '", a, "' is not supported for ",
+              "family '", summary(family), "'."
+            )
           }
         } else if (length(matches) > 1L) {
           stop2("Each addition argument may only be defined once.")
         }
       }
       if (length(ad_terms)) {
-        stop2("The following addition terms are invalid:\n",
-              collapse_comma(ad_terms))
+        stop2(
+          "The following addition terms are invalid:\n",
+          collapse_comma(ad_terms)
+        )
       }
     }
     if (check_response && "wiener" %in% families && !is.formula(x$dec)) {
@@ -461,8 +466,10 @@ terms_sm <- function(formula) {
     return(NULL)
   }
   if (any(grepl("^(te|ti)\\(", out))) {
-    stop2("Tensor product smooths 'te' and 'ti' are not yet ",
-          "implemented in brms. Consider using 't2' instead.")
+    stop2(
+      "Tensor product smooths 'te' and 'ti' are not yet ",
+      "implemented in brms. Consider using 't2' instead."
+    )
   }
   out <- str2formula(out)
   attr(out, "allvars") <- mgcv::interpret.gam(out)$fake.formula
@@ -618,15 +625,18 @@ as.brmsterms <- function(x) {
   out$family$fun <- paste0(out$family$family, "_mv")
   info <- get(paste0(".family_", families[1]))()
   out$family[names(info)] <- info
-  out$sigma_pred <- any(ulapply(x$terms,
+  out$sigma_pred <- any(ulapply(
+    x$terms,
     function(x) is_pred_dpar(x, "sigma") || has_ad_terms(x, "se")
   ))
   weight_forms <- rmNULL(lapply(x$terms, function(x) x$adforms$weights))
   if (length(weight_forms)) {
     str_wf <- unique(ulapply(weight_forms, formula2str))
     if (length(str_wf) > 1L) {
-      stop2("All responses should use the same",
-            "weights if 'rescor' is estimated.")
+      stop2(
+        "All responses should use the same",
+        "weights if 'rescor' is estimated."
+      )
     }
     out$adforms$weights <- weight_forms[[1]]
   }
@@ -652,8 +662,10 @@ avoid_dpars <- function(names, bterms) {
     invalid <- any(ulapply(dpars_prefix, grepl, names))
     if (invalid) {
       dpars <- paste0("'", dpars, "_'", collapse = ", ")
-      stop2("Variable names starting with ", dpars,
-            " are not allowed for this model.")
+      stop2(
+        "Variable names starting with ", dpars,
+        " are not allowed for this model."
+      )
     }
   }
   invisible(NULL)
@@ -732,8 +744,10 @@ allvars_formula <- function(..., .env = parent.frame()) {
   all_vars <- all_vars(out)
   invalid_vars <- setdiff(all_vars, make.names(all_vars))
   if (length(invalid_vars)) {
-    stop2("The following variable names are invalid: ",
-          collapse_comma(invalid_vars))
+    stop2(
+      "The following variable names are invalid: ",
+      collapse_comma(invalid_vars)
+    )
   }
   str2formula(c(out, all_vars), env = .env)
 }
@@ -1096,15 +1110,19 @@ check_cs <- function(bterms) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   if (has_cs(bterms)) {
     if (!is_equal(dpar_class(bterms$dpar), "mu")) {
-      stop2("Category specific effects are only supported ",
-            "for the main parameter 'mu'.")
+      stop2(
+        "Category specific effects are only supported ",
+        "for the main parameter 'mu'."
+      )
     }
     if (!(is.null(bterms$family) || allow_cs(bterms$family))) {
       stop2("Category specific effects are not supported for this family.")
     }
     if (needs_ordered_cs(bterms$family)) {
-      warning2("Category specific effects for this family should be ",
-               "considered experimental and may have convergence issues.")
+      warning2(
+        "Category specific effects for this family should be ",
+        "considered experimental and may have convergence issues."
+      )
     }
   }
   invisible(NULL)
@@ -1125,8 +1143,10 @@ check_accidental_helper_functions <- function(formula) {
   for (m in matches) {
     loc <- utils::find(m, mode = "function")
     if (is_equal(loc[1], "package:brms")) {
-      stop2("Function '", m, "' should not be part of the right-hand side ",
-            "of a formula. See help('brmsformula-helpers') for the correct syntax.")
+      stop2(
+        "Function '", m, "' should not be part of the right-hand side ",
+        "of a formula. See help('brmsformula-helpers') for the correct syntax."
+      )
     }
   }
   invisible(TRUE)

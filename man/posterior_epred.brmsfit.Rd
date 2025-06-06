@@ -96,8 +96,9 @@ other useful arguments to control specific aspects of the predictions.
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler)
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler
+)
 
 ## compute expected predictions
 ppe <- posterior_epred(fit)

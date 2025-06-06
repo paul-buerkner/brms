@@ -46,7 +46,7 @@ If \code{summary = TRUE}, an M x C matrix is returned
  (M = number of response variables and c = \code{length(probs) + 2})
  containing Bayesian bootstrap based summary statistics of the
  LOO-adjusted R-squared values. If \code{summary = FALSE}, the
- Bayesian bootstrap draws of the LOO-adjusted R-squared values 
+ Bayesian bootstrap draws of the LOO-adjusted R-squared values
  are returned in an S x M matrix (S is the number of draws).
 
  @details LOO-R2 uses LOO residuals and is defined as

@@ -47,7 +47,8 @@ from a \code{brmsfit} object.
 \examples{
 \dontrun{
 fit <- brm(time | cens(censored) ~ age + sex + disease,
-           data = kidney, family = "exponential")
+  data = kidney, family = "exponential"
+)
 fixef(fit)
 # extract only some coefficients
 fixef(fit, pars = c("age", "sex"))

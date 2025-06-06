@@ -589,15 +589,17 @@ models for all parameters of the assumed response distribution.
 }
 \examples{
 # multilevel model with smoothing terms
-brmsformula(y ~ x1*x2 + s(z) + (1+x1|1) + (1|g2))
+brmsformula(y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2))
 
 # additionally predict 'sigma'
-brmsformula(y ~ x1*x2 + s(z) + (1+x1|1) + (1|g2),
-            sigma ~ x1 + (1|g2))
+brmsformula(
+  y ~ x1 * x2 + s(z) + (1 + x1 | 1) + (1 | g2),
+  sigma ~ x1 + (1 | g2)
+)
 
 # use the shorter alias 'bf'
-(formula1 <- brmsformula(y ~ x + (x|g)))
-(formula2 <- bf(y ~ x + (x|g)))
+(formula1 <- brmsformula(y ~ x + (x | g)))
+(formula2 <- bf(y ~ x + (x | g)))
 # will be TRUE
 identical(formula1, formula2)
 
@@ -608,20 +610,22 @@ bf(y | cens(censor_variable) ~ predictors)
 bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE)
 
 # predict a1 and a2 differently
-bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
+bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x | g), nl = TRUE)
 
 # correlated group-level effects across parameters
-bf(y ~ a1 - a2^x, a1 ~ 1 + (1 |2| g), a2 ~ x + (x |2| g), nl = TRUE)
+bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | 2 | g), a2 ~ x + (x | 2 | g), nl = TRUE)
 # alternative but equivalent way to specify the above model
 bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | gr(g, id = 2)),
-   a2 ~ x + (x | gr(g, id = 2)), nl = TRUE)
+  a2 ~ x + (x | gr(g, id = 2)),
+  nl = TRUE
+)
 
 # define a multivariate model
-bf(mvbind(y1, y2) ~ x * z + (1|g))
+bf(mvbind(y1, y2) ~ x * z + (1 | g))
 
 # define a zero-inflated model
 # also predicting the zero-inflation part
-bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
+bf(y ~ x * z + (1 + x | ID1 | g), zi ~ x + (1 | ID1 | g))
 
 # specify a predictor as monotonic
 bf(y ~ mo(x) + more_predictors)
@@ -630,7 +634,7 @@ bf(y ~ mo(x) + more_predictors)
 # specify a predictor as category specific
 bf(y ~ cs(x) + more_predictors)
 # add a category specific group-level intercept
-bf(y ~ cs(x) + (cs(1)|g))
+bf(y ~ cs(x) + (cs(1) | g))
 # specify parameter 'disc'
 bf(y ~ person + item, disc ~ item)
 
@@ -654,17 +658,17 @@ bf(y ~ x, sigma2 = "sigma1", family = mix)
 # use the '+' operator to specify models
 bf(y ~ 1) +
   nlf(sigma ~ a * exp(b * x), a ~ x) +
-  lf(b ~ z + (1|g), dpar = "sigma") +
+  lf(b ~ z + (1 | g), dpar = "sigma") +
   gaussian()
 
 # specify a multivariate model using the '+' operator
-bf(y1 ~ x + (1|g)) +
-  gaussian() + cor_ar(~1|g) +
+bf(y1 ~ x + (1 | g)) +
+  gaussian() + cor_ar(~ 1 | g) +
   bf(y2 ~ z) + poisson()
 
 # specify correlated residuals of a gaussian and a poisson model
-form1 <- bf(y1 ~ 1 + x + (1|c|obs), sigma = 1) + gaussian()
-form2 <- bf(y2 ~ 1 + x + (1|c|obs)) + poisson()
+form1 <- bf(y1 ~ 1 + x + (1 | c | obs), sigma = 1) + gaussian()
+form2 <- bf(y2 ~ 1 + x + (1 | c | obs)) + poisson()
 
 # model missing values in predictors
 bf(bmi ~ age * mi(chl)) +

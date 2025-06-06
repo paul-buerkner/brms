@@ -32,8 +32,9 @@ ggplot2::theme_set(theme_black())
 bayesplot::color_scheme_set("viridisC")
 
 # fit a simple model
-fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-           data = epilepsy, family = poisson(), chains = 2)
+fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson(), chains = 2
+)
 summary(fit)
 
 # create various plots

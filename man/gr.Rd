@@ -54,21 +54,22 @@ and there is usually no need to call it directly.
 \examples{
 \dontrun{
 # model using basic lme4-style formula
-fit1 <- brm(count ~ Trt + (1|patient), data = epilepsy)
+fit1 <- brm(count ~ Trt + (1 | patient), data = epilepsy)
 summary(fit1)
 
 # equivalent model using 'gr' which is called anyway internally
-fit2 <- brm(count ~ Trt + (1|gr(patient)), data = epilepsy)
+fit2 <- brm(count ~ Trt + (1 | gr(patient)), data = epilepsy)
 summary(fit2)
 
 # include Trt as a by variable
-fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
+fit3 <- brm(count ~ Trt + (1 | gr(patient, by = Trt)), data = epilepsy)
 summary(fit3)
 
 # include a group-level weight variable
-epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
-fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
-            data = epilepsy)
+epilepsy[["patient_samp_wgt"]] <- c(1, rep(c(0.9, 1.1), each = 29))
+fit4 <- brm(count ~ Trt + (1 | gr(patient, pw = patient_samp_wgt)),
+  data = epilepsy
+)
 summary(fit4)
 }
 

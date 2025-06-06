@@ -47,8 +47,8 @@ pstudent_t <- function(q, df, mu = 0, sigma = 1,
 
 #' @rdname StudentT
 #' @export
-qstudent_t <-  function(p, df, mu = 0, sigma = 1,
-                        lower.tail = TRUE, log.p = FALSE) {
+qstudent_t <- function(p, df, mu = 0, sigma = 1,
+                       lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(sigma < 0))) {
     stop2("sigma must be non-negative.")
   }
@@ -172,8 +172,8 @@ dmulti_student_t <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   chol_Sigma <- chol(Sigma)
   rooti <- backsolve(chol_Sigma, t(x) - mu, transpose = TRUE)
   quads <- colSums(rooti^2)
-  out <- lgamma((p + df)/2) - (lgamma(df / 2) + sum(log(diag(chol_Sigma))) +
-         p / 2 * log(pi * df)) - 0.5 * (df + p) * log1p(quads / df)
+  out <- lgamma((p + df) / 2) - (lgamma(df / 2) + sum(log(diag(chol_Sigma))) +
+    p / 2 * log(pi * df)) - 0.5 * (df + p) * log1p(quads / df)
   if (!log) {
     out <- exp(out)
   }
@@ -315,7 +315,8 @@ pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0,
       } else {
         S <- matrix(c(1, -delta[k], -delta[k], 1), 2, 2)
         out[k] <- 2 * mnormt::biv.nt.prob(
-          0, lower = rep(-Inf, 2), upper = c(z[k], 0),
+          0,
+          lower = rep(-Inf, 2), upper = c(z[k], 0),
           mean = c(0, 0), S = S
         )
       }
@@ -414,16 +415,16 @@ cp2dp <- function(mu = 0, sigma = 1, alpha = 0,
 skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   cumulants_half_norm <- function(n) {
     n <- max(n, 2)
-    n <- as.integer(2 * ceiling(n/2))
-    half.n <- as.integer(n/2)
+    n <- as.integer(2 * ceiling(n / 2))
+    half.n <- as.integer(n / 2)
     m <- 0:(half.n - 1)
-    a <- sqrt(2/pi)/(gamma(m + 1) * 2^m * (2 * m + 1))
+    a <- sqrt(2 / pi) / (gamma(m + 1) * 2^m * (2 * m + 1))
     signs <- rep(c(1, -1), half.n)[seq_len(half.n)]
     a <- as.vector(rbind(signs * a, rep(0, half.n)))
     coeff <- rep(a[1], n)
     for (k in 2:n) {
       ind <- seq_len(k - 1)
-      coeff[k] <- a[k] - sum(ind * coeff[ind] * a[rev(ind)]/k)
+      coeff[k] <- a[k] - sum(ind * coeff[ind] * a[rev(ind)] / k)
     }
     kappa <- coeff * gamma(seq_len(n) + 1)
     kappa[2] <- 1 + kappa[2]
@@ -435,7 +436,7 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
     # do it like sn::sn.cumulants
     delta <- alpha / sqrt(1 + alpha^2)
     kv <- cumulants_half_norm(n)
-    if (length(kv) > n)  {
+    if (length(kv) > n) {
       kv <- kv[-(n + 1)]
     }
     kv[2] <- kv[2] - 1
@@ -450,7 +451,7 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
 
 # CDF of the inverse gamma function
 pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
-  pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
+  pgamma(1 / q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
 }
 
 #' The von Mises Distribution
@@ -508,7 +509,8 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
     rd <- abs(term) >= acc
     if (sum(rd)) {
       sum[rd] <- rec_sum(
-        q[rd], kappa[rd], acc, sum = sum[rd], i = i + 1
+        q[rd], kappa[rd], acc,
+        sum = sum[rd], i = i + 1
       )
     }
     sum
@@ -640,7 +642,8 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   args$mu <- with(args, mu - beta)
   args$z <- with(args, x - mu - sigma^2 / beta)
 
-  out <- with(args,
+  out <- with(
+    args,
     -log(beta) - (z + sigma^2 / (2 * beta)) / beta +
       pnorm(z / sigma, log.p = TRUE)
   )
@@ -665,10 +668,11 @@ pexgaussian <- function(q, mu, sigma, beta,
   args$mu <- with(args, mu - beta)
   args$z <- with(args, q - mu - sigma^2 / beta)
 
-  out <- with(args,
+  out <- with(
+    args,
     pnorm((q - mu) / sigma) - pnorm(z / sigma) *
       exp(((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) /
-            (2 * sigma^2))
+        (2 * sigma^2))
   )
   if (!lower.tail) {
     out <- 1 - out
@@ -720,7 +724,8 @@ dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   x <- (x - loc) / scale
   args <- nlist(x, loc, scale, shape)
   args <- do_call(expand, args)
-  out <- with(args,
+  out <- with(
+    args,
     log(shape / scale) - (1 + shape) * log(x) - x^(-shape)
   )
   if (!log) {
@@ -761,7 +766,7 @@ qfrechet <- function(p, loc = 0, scale = 1, shape = 1,
     stop2("Argument 'shape' must be positive.")
   }
   p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
-  loc + scale * (-log(p))^(-1/shape)
+  loc + scale * (-log(p))^(-1 / shape)
 }
 
 #' @rdname Frechet
@@ -848,9 +853,10 @@ dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
   }
   args <- nlist(x, mu, shape)
   args <- do_call(expand, args)
-  out <- with(args,
+  out <- with(
+    args,
     0.5 * log(shape / (2 * pi)) -
-    1.5 * log(x) - 0.5 * shape * (x - mu)^2 / (x * mu^2)
+      1.5 * log(x) - 0.5 * shape * (x - mu)^2 / (x * mu^2)
   )
   if (!log) {
     out <- exp(out)
@@ -870,7 +876,8 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   }
   args <- nlist(q, mu, shape)
   args <- do_call(expand, args)
-  out <- with(args,
+  out <- with(
+    args,
     pnorm(sqrt(shape / q) * (q / mu - 1)) +
       exp(2 * shape / mu) * pnorm(-sqrt(shape / q) * (q / mu + 1))
   )
@@ -899,7 +906,8 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
   args <- do_call(expand, args)
   # algorithm from wikipedia
   args$y <- rnorm(n)^2
-  args$x <- with(args,
+  args$x <- with(
+    args,
     mu + (mu^2 * y) / (2 * shape) - mu / (2 * shape) *
       sqrt(4 * mu * shape * y + mu^2 * y^2)
   )
@@ -940,8 +948,10 @@ pbeta_binomial <- function(q, size, mu, phi, lower.tail = TRUE, log.p = FALSE) {
   require_package("extraDistr")
   alpha <- mu * phi
   beta <- (1 - mu) * phi
-  extraDistr::pbbinom(q, size, alpha = alpha, beta = beta,
-                      lower.tail = lower.tail, log.p = log.p)
+  extraDistr::pbbinom(q, size,
+    alpha = alpha, beta = beta,
+    lower.tail = lower.tail, log.p = log.p
+  )
 }
 
 #' @rdname BetaBinomial
@@ -1027,7 +1037,7 @@ qgen_extreme_value <- function(p, mu = 0, sigma = 1, xi = 0,
   out <- with(args, ifelse(
     xi == 0,
     mu - sigma * log(-log(p)),
-    mu - sigma * (1 - (-log(p)) ^ (-xi)) / xi
+    mu - sigma * (1 - (-log(p))^(-xi)) / xi
   ))
   out
 }
@@ -1070,9 +1080,9 @@ dasym_laplace <- function(x, mu = 0, sigma = 1, quantile = 0.5,
                           log = FALSE) {
   out <- ifelse(x < mu,
     yes = (quantile * (1 - quantile) / sigma) *
-           exp((1 - quantile) * (x - mu) / sigma),
+      exp((1 - quantile) * (x - mu) / sigma),
     no = (quantile * (1 - quantile) / sigma) *
-          exp(-quantile * (x - mu) / sigma)
+      exp(-quantile * (x - mu) / sigma)
   )
   if (log) {
     out <- log(out)
@@ -1421,8 +1431,8 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
     shape <- shape[use_exact]
     log_mu <- log(mu)
     # first 2 terms of the series
-    log_num <- shape * log_mu  # numerator
-    log_Z <- log1p_exp(shape * log_mu)  # denominator
+    log_num <- shape * log_mu # numerator
+    log_Z <- log1p_exp(shape * log_mu) # denominator
     lfac <- 0
     k <- 2
     converged <- FALSE
@@ -1665,7 +1675,8 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
     n <- max_len
   }
   out <- rtdists::rdiffusion(
-    n, a = alpha, t0 = tau, z = beta * alpha, v = delta
+    n,
+    a = alpha, t0 = tau, z = beta * alpha, v = delta
   )
   # TODO: use column names of rtdists in the output?
   names(out)[names(out) == "rt"] <- "q"
@@ -1856,7 +1867,8 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
   pars <- nlist(mu, sigma, quantile)
   # zi_asym_laplace is technically a hurdle model
   .phurdle(q, "asym_laplace", zi, pars, lower.tail, log.p,
-           type = "real", lb = -Inf, ub = Inf)
+    type = "real", lb = -Inf, ub = Inf
+  )
 }
 
 # density of a zero-inflated distribution
@@ -2512,7 +2524,8 @@ inv_link_acat <- function(x, link) {
       perm = c(marg_noncat + 1, 1)
     )
     Sx_cumprod_rev <- slice(
-      Sx_cumprod_rev, ndim, rev(seq_len(nthres)), drop = FALSE
+      Sx_cumprod_rev, ndim, rev(seq_len(nthres)),
+      drop = FALSE
     )
     out <- abind::abind(ones_arr, x_cumprod) *
       abind::abind(Sx_cumprod_rev, ones_arr)

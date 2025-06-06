@@ -106,7 +106,7 @@
 #' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
-               gr = TRUE, cmc = TRUE, scale = TRUE, c = 5/4) {
+               gr = TRUE, cmc = TRUE, scale = TRUE, c = 5 / 4) {
   call <- match.call()
   label <- deparse0(call)
   vars <- as.list(substitute(list(...)))[-1]
@@ -252,14 +252,14 @@ cov_gp_exponential <- function(diff_quad, sdgp, lscale) {
 cov_gp_matern32 <- function(diff_quad, sdgp, lscale) {
   diff_abs <- sqrt(diff_quad)
   sdgp^2 * (1 + sqrt(3) * diff_abs / lscale) *
-    exp(- sqrt(3) * diff_abs / lscale)
+    exp(-sqrt(3) * diff_abs / lscale)
 }
 
 # Matern 5/2 covariance kernel
 cov_gp_matern52 <- function(diff_quad, sdgp, lscale) {
   diff_abs <- sqrt(diff_quad)
   sdgp^2 * (1 + sqrt(5) * diff_abs / lscale + 5 * diff_quad / (3 * lscale^2)) *
-    exp(- sqrt(5) * diff_abs / lscale)
+    exp(-sqrt(5) * diff_abs / lscale)
 }
 
 # compute squared differences
@@ -308,7 +308,7 @@ spd_gp_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   } else {
     # multi-dimensional non-isotropic GP
     constant <- constant * matrixStats::rowProds(lscale)
-    neg_half_lscale2 = -0.5 * lscale^2
+    neg_half_lscale2 <- -0.5 * lscale^2
     for (m in seq_len(NB)) {
       x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
       out[, m] <- constant * exp(rowSums(neg_half_lscale2 * x2))
@@ -323,16 +323,16 @@ spd_gp_exponential <- function(x, sdgp = 1, lscale = 1) {
   NB <- NROW(x)
   D <- NCOL(x)
   Dls <- NCOL(lscale)
-  constant = square(sdgp) *
+  constant <- square(sdgp) *
     (2^D * pi^(D / 2) * gamma((D + 1) / 2)) / sqrt(pi)
-  expo = -(D + 1) / 2
+  expo <- -(D + 1) / 2
   lscale2 <- lscale^2
   out <- matrix(nrow = length(sdgp), ncol = NB)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
     constant <- constant * lscale^D
     for (m in seq_len(NB)) {
-      out[, m] <- constant * (1 + lscale2 * sum(x[m, ]^2))^expo;
+      out[, m] <- constant * (1 + lscale2 * sum(x[m, ]^2))^expo
     }
   } else {
     # multi-dimensional non-isotropic GP
@@ -351,16 +351,16 @@ spd_gp_matern32 <- function(x, sdgp = 1, lscale = 1) {
   NB <- NROW(x)
   D <- NCOL(x)
   Dls <- NCOL(lscale)
-  constant = square(sdgp) *
+  constant <- square(sdgp) *
     (2^D * pi^(D / 2) * gamma((D + 3) / 2) * 3^(3 / 2)) / (0.5 * sqrt(pi))
-  expo = -(D + 3) / 2
+  expo <- -(D + 3) / 2
   lscale2 <- lscale^2
   out <- matrix(nrow = length(sdgp), ncol = NB)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
     constant <- constant * lscale^D
     for (m in seq_len(NB)) {
-      out[, m] <- constant * (3 + lscale2 * sum(x[m, ]^2))^expo;
+      out[, m] <- constant * (3 + lscale2 * sum(x[m, ]^2))^expo
     }
   } else {
     # multi-dimensional non-isotropic GP
@@ -379,16 +379,16 @@ spd_gp_matern52 <- function(x, sdgp = 1, lscale = 1) {
   NB <- NROW(x)
   D <- NCOL(x)
   Dls <- NCOL(lscale)
-  constant = square(sdgp) *
+  constant <- square(sdgp) *
     (2^D * pi^(D / 2) * gamma((D + 5) / 2) * 5^(5 / 2)) / (0.75 * sqrt(pi))
-  expo = -(D + 5) / 2
+  expo <- -(D + 5) / 2
   lscale2 <- lscale^2
   out <- matrix(nrow = length(sdgp), ncol = NB)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
     constant <- constant * lscale^D
     for (m in seq_len(NB)) {
-      out[, m] <- constant * (5 + lscale2 * sum(x[m, ]^2))^expo;
+      out[, m] <- constant * (5 + lscale2 * sum(x[m, ]^2))^expo
     }
   } else {
     # multi-dimensional non-isotropic GP
@@ -438,8 +438,10 @@ validate_gp_cov <- function(cov, k = NA) {
   }
   cov_choices <- c("exp_quad", "matern52", "matern32", "exponential")
   if (!cov %in% cov_choices) {
-    stop2("'", cov, "' is not a valid GP covariance kernel. Valid kernels are: ",
-          collapse_comma(cov_choices))
+    stop2(
+      "'", cov, "' is not a valid GP covariance kernel. Valid kernels are: ",
+      collapse_comma(cov_choices)
+    )
   }
   if (!isNA(k)) {
     # currently all kernels support HSGPs but this may change in the future
@@ -456,9 +458,11 @@ validate_gp_cov <- function(cov, k = NA) {
 try_nug <- function(expr, nug) {
   out <- try(expr, silent = TRUE)
   if (is_try_error(out)) {
-    stop2("The Gaussian process covariance matrix is not positive ",
-          "definite.\nThis occurs for numerical reasons. Setting ",
-          "'nug' above ", nug, " may help.")
+    stop2(
+      "The Gaussian process covariance matrix is not positive ",
+      "definite.\nThis occurs for numerical reasons. Setting ",
+      "'nug' above ", nug, " may help."
+    )
   }
   out
 }

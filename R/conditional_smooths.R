@@ -71,7 +71,8 @@ conditional_smooths.brmsfit <- function(x, smooths = NULL,
   draw_ids <- validate_draw_ids(x, draw_ids, ndraws)
   bterms <- brmsterms(exclude_terms(x$formula, smooths_only = TRUE))
   out <- conditional_smooths(
-    bterms, fit = x, smooths = smooths,
+    bterms,
+    fit = x, smooths = smooths,
     conditions = conditions, int_conditions = int_conditions,
     too_far = too_far, resolution = resolution, probs = probs,
     spaghetti = spaghetti, surface = surface, draw_ids = draw_ids
@@ -269,8 +270,9 @@ marginal_smooths <- function(x, ...) {
 
 #' @export
 marginal_smooths.brmsfit <- function(x, ...) {
-  warning2("Method 'marginal_smooths' is deprecated. ",
-           "Please use 'conditional_smooths' instead.")
+  warning2(
+    "Method 'marginal_smooths' is deprecated. ",
+    "Please use 'conditional_smooths' instead."
+  )
   conditional_smooths.brmsfit(x, ...)
 }
-

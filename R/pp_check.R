@@ -40,11 +40,13 @@
 #'
 #' @examples
 #' \dontrun{
-#' fit <-  brm(count ~ zAge + zBase * Trt
-#'             + (1|patient) + (1|obs),
-#'             data = epilepsy, family = poisson())
+#' fit <- brm(
+#'   count ~ zAge + zBase * Trt
+#'     + (1 | patient) + (1 | obs),
+#'   data = epilepsy, family = poisson()
+#' )
 #'
-#' pp_check(fit)  # shows dens_overlay plot by default
+#' pp_check(fit) # shows dens_overlay plot by default
 #' pp_check(fit, type = "error_hist", ndraws = 11)
 #' pp_check(fit, type = "scatter_avg", ndraws = 100)
 #' pp_check(fit, type = "stat_2d")
@@ -85,8 +87,10 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
     valid_types <- as.character(bayesplot::available_ppc(""))
     valid_types <- sub("^ppc_", "", valid_types)
     if (!type %in% valid_types) {
-      stop2("Type '", type, "' is not a valid ppc type. ",
-            "Valid types are:\n", collapse_comma(valid_types))
+      stop2(
+        "Type '", type, "' is not a valid ppc type. ",
+        "Valid types are:\n", collapse_comma(valid_types)
+      )
     }
   }
   ppc_fun <- get(paste0(prefix, "_", type), asNamespace("bayesplot"))
@@ -126,7 +130,7 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
       "loo_intervals", "loo_pit", "loo_pit_overlay",
       "loo_pit_qq", "loo_ribbon",
       "loo_pit_ecdf",
-      'pit_ecdf', 'pit_ecdf_grouped',
+      "pit_ecdf", "pit_ecdf_grouped",
       "ribbon", "ribbon_grouped",
       "rootogram", "scatter_avg", "scatter_avg_grouped",
       "stat", "stat_2d", "stat_freqpoly_grouped", "stat_grouped",
@@ -136,12 +140,16 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
       ndraws <- NULL
     } else if (type %in% aps_types) {
       ndraws <- NULL
-      message("Using all posterior draws for ppc type '",
-              type, "' by default.")
+      message(
+        "Using all posterior draws for ppc type '",
+        type, "' by default."
+      )
     } else {
       ndraws <- 10
-      message("Using 10 posterior draws for ppc type '",
-              type, "' by default.")
+      message(
+        "Using 10 posterior draws for ppc type '",
+        type, "' by default."
+      )
     }
   }
 
@@ -152,7 +160,8 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
   }
   draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- list(
-    object, newdata = newdata, resp = resp,
+    object,
+    newdata = newdata, resp = resp,
     draw_ids = draw_ids, ...
   )
   yrep <- do_call(method, pred_args)
@@ -165,7 +174,8 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
   }
 
   data <- current_data(
-    object, newdata = newdata, resp = resp,
+    object,
+    newdata = newdata, resp = resp,
     re_formula = NA, check_response = TRUE, ...
   )
 

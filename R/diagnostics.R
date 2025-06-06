@@ -78,7 +78,8 @@ neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
   # bayesplot::neff_ratio(object$fit, pars = pars, ...)
   draws <- as_draws_array(object, variable = pars, ...)
   tmp <- posterior::summarise_draws(
-    draws, ess_bulk = posterior::ess_bulk, ess_tail = posterior::ess_tail
+    draws,
+    ess_bulk = posterior::ess_bulk, ess_tail = posterior::ess_tail
   )
   # min of ess_bulk and ess_tail mimics definition of posterior::rhat.default
   ess <- matrixStats::rowMins(cbind(tmp$ess_bulk, tmp$ess_tail))

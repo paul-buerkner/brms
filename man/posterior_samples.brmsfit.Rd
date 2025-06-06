@@ -57,8 +57,9 @@ functions of the \pkg{posterior} package instead.
 }
 \examples{
 \dontrun{
-fit <- brm(rating ~ treat + period + carry + (1|subject),
-           data = inhaler, family = "cumulative")
+fit <- brm(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = "cumulative"
+)
 
 # extract posterior samples of population-level effects
 samples1 <- posterior_samples(fit, pars = "^b")

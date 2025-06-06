@@ -65,18 +65,18 @@ it exists purely to help set up a model with grouping terms.
 \dontrun{
 # simulate some data
 dat <- data.frame(
- y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
- g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
+  y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
+  g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
 )
 
 # multi-membership model with two members per group and equal weights
-fit1 <- brm(y ~ x1 + (1|mm(g1, g2)), data = dat)
+fit1 <- brm(y ~ x1 + (1 | mm(g1, g2)), data = dat)
 summary(fit1)
 
 # weight the first member two times for than the second member
 dat$w1 <- rep(2, 100)
 dat$w2 <- rep(1, 100)
-fit2 <- brm(y ~ x1 + (1|mm(g1, g2, weights = cbind(w1, w2))), data = dat)
+fit2 <- brm(y ~ x1 + (1 | mm(g1, g2, weights = cbind(w1, w2))), data = dat)
 summary(fit2)
 
 # multi-membership model with level specific covariate values

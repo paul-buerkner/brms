@@ -277,7 +277,8 @@ When creating \code{conditional_effects} for a particular predictor
 \examples{
 \dontrun{
 fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
-           data = epilepsy, family = poisson())
+  data = epilepsy, family = poisson()
+)
 
 ## plot all conditional effects
 plot(conditional_effects(fit), ask = FALSE)
@@ -292,23 +293,33 @@ plot(ce, plot = FALSE)[[1]] +
 ## only plot the conditional interaction effect of 'zBase:Trt'
 ## for different values for 'zAge'
 conditions <- data.frame(zAge = c(-1, 0, 1))
-plot(conditional_effects(fit, effects = "zBase:Trt",
-                         conditions = conditions))
+plot(conditional_effects(fit,
+  effects = "zBase:Trt",
+  conditions = conditions
+))
 
 ## also incorporate group-level effects variance over patients
 ## also add data points and a rug representation of predictor values
-plot(conditional_effects(fit, effects = "zBase:Trt",
-                         conditions = conditions, re_formula = NULL),
-     points = TRUE, rug = TRUE)
+plot(
+  conditional_effects(fit,
+    effects = "zBase:Trt",
+    conditions = conditions, re_formula = NULL
+  ),
+  points = TRUE, rug = TRUE
+)
 
 ## change handling of two-way interactions
 int_conditions <- list(
   zBase = setNames(c(-2, 1, 0), c("b", "c", "a"))
 )
-conditional_effects(fit, effects = "Trt:zBase",
-                    int_conditions = int_conditions)
-conditional_effects(fit, effects = "Trt:zBase",
-                    int_conditions = list(zBase = quantile))
+conditional_effects(fit,
+  effects = "Trt:zBase",
+  int_conditions = int_conditions
+)
+conditional_effects(fit,
+  effects = "Trt:zBase",
+  int_conditions = list(zBase = quantile)
+)
 
 ## fit a model to illustrate how to plot 3-way interactions
 fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
@@ -316,7 +327,8 @@ conditions <- make_conditions(fit3way, "zAge")
 conditional_effects(fit3way, "zBase:Trt", conditions = conditions)
 ## only include points close to the specified values of zAge
 ce <- conditional_effects(
-  fit3way, "zBase:Trt", conditions = conditions,
+  fit3way, "zBase:Trt",
+  conditions = conditions,
   select_points = 0.1
 )
 plot(ce, points = TRUE)

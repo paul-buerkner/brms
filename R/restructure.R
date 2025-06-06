@@ -214,7 +214,8 @@ restructure_v2 <- function(x) {
     save_mevars <- isTRUE(attr(x$exclude, "save_mevars"))
     save_all_pars <- isTRUE(attr(x$exclude, "save_all_pars"))
     x$save_pars <- SW(validate_save_pars(
-      save_pars(), save_ranef = save_ranef,
+      save_pars(),
+      save_ranef = save_ranef,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     ))
@@ -293,7 +294,8 @@ restructure_v1 <- function(x) {
   }
   x$formula <- restructure_formula_v1(formula(x), x$nonlinear)
   x$formula <- SW(validate_formula(
-    formula(x), data = model.frame(x), family = family(x),
+    formula(x),
+    data = model.frame(x), family = family(x),
     autocor = x$autocor, threshold = x$threshold
   ))
   x$nonlinear <- x$partial <- x$threshold <- NULL
@@ -399,9 +401,11 @@ restructure_formula_v1 <- function(formula, nonlinear = NULL) {
 
 # parameters to be restructured in old brmsformula objects
 old_dpars <- function() {
-  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
+  c(
+    "mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
     "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias",
-    "quantile", "alpha", "theta")
+    "quantile", "alpha", "theta"
+  )
 }
 
 # interchanges group and nlpar in names of group-level parameters
@@ -427,11 +431,13 @@ rename_old_re <- function(ranef, pars, dims) {
     }
     # rename cor-parameters
     new_cor_names <- get_cornames(
-      paste0(nlpar, "_", r$coef), type = paste0("cor_", g),
+      paste0(nlpar, "_", r$coef),
+      type = paste0("cor_", g),
       brackets = FALSE, sep = "_"
     )
     old_cor_names <- get_cornames(
-      r$coef, brackets = FALSE, sep = "_",
+      r$coef,
+      brackets = FALSE, sep = "_",
       type = paste0("cor_", nlpar, "_", g)
     )
     for (i in seq_along(old_cor_names)) {
@@ -474,11 +480,13 @@ rename_old_re2 <- function(ranef, pars, dims) {
     }
     # rename cor-parameters
     new_cor_names <- get_cornames(
-      paste0(nlpars_usc, r$coef), type = paste0("cor_", g),
+      paste0(nlpars_usc, r$coef),
+      type = paste0("cor_", g),
       brackets = FALSE
     )
     old_cor_names <- get_cornames(
-      paste0(nlpars_usc, r$coef), type = paste0("cor_", g),
+      paste0(nlpars_usc, r$coef),
+      type = paste0("cor_", g),
       brackets = FALSE, sep = "_"
     )
     for (i in seq_along(old_cor_names)) {
@@ -567,8 +575,10 @@ rename_old_mo <- function(bterms, data, pars) {
     bmo_old <- pars[grepl(bmo_regex, pars)]
     bmo_new <- paste0(bmo_prefix, spframe$coef)
     if (length(bmo_old) != length(bmo_new)) {
-      stop2("Restructuring failed. Please refit your ",
-            "model with the latest version of brms.")
+      stop2(
+        "Restructuring failed. Please refit your ",
+        "model with the latest version of brms."
+      )
     }
     for (i in seq_along(bmo_old)) {
       pos <- grepl(paste0("^", bmo_old[i]), pars)
@@ -639,7 +649,9 @@ rename_old_categorical <- function(bterms, data, pars) {
 # as of brms 2.2 'mo' and 'me' terms are handled together
 rename_old_bsp <- function(pars) {
   pos <- grepl("^(bmo|bme)_", pars)
-  if (!any(pos)) return(list())
+  if (!any(pos)) {
+    return(list())
+  }
   fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
   list(nlist(pos, fnames))
 }

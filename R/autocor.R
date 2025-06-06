@@ -86,8 +86,10 @@ cor_arma <- function(formula = ~1, p = 0, q = 0, r = 0, cov = FALSE) {
     stop2("At least one of 'p' and 'q' should be greater zero.")
   }
   if (cov && (p > 1 || q > 1)) {
-    stop2("Covariance formulation of ARMA structures is ",
-          "only possible for effects of maximal order one.")
+    stop2(
+      "Covariance formulation of ARMA structures is ",
+      "only possible for effects of maximal order one."
+    )
   }
   x <- nlist(formula, p, q, cov)
   class(x) <- c("cor_arma", "cor_brms")
@@ -114,7 +116,7 @@ cor_arma <- function(formula = ~1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' @seealso \code{\link{cor_arma}}
 #'
 #' @examples
-#' cor_ar(~visit|patient, p = 2)
+#' cor_ar(~ visit | patient, p = 2)
 #'
 #' @export
 cor_ar <- function(formula = ~1, p = 1, cov = FALSE) {
@@ -137,7 +139,7 @@ cor_ar <- function(formula = ~1, p = 1, cov = FALSE) {
 #' @seealso \code{\link{cor_arma}}
 #'
 #' @examples
-#' cor_ma(~visit|patient, q = 2)
+#' cor_ma(~ visit | patient, q = 2)
 #'
 #' @export
 cor_ma <- function(formula = ~1, q = 1, cov = FALSE) {
@@ -209,15 +211,19 @@ cor_cosy <- function(formula = ~1) {
 #' @examples
 #' \dontrun{
 #' data(oldcol, package = "spdep")
-#' fit1 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD,
-#'             autocor = cor_lagsar(COL.nb),
-#'             chains = 2, cores = 2)
+#' fit1 <- brm(CRIME ~ INC + HOVAL,
+#'   data = COL.OLD,
+#'   autocor = cor_lagsar(COL.nb),
+#'   chains = 2, cores = 2
+#' )
 #' summary(fit1)
 #' plot(fit1)
 #'
-#' fit2 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD,
-#'             autocor = cor_errorsar(COL.nb),
-#'             chains = 2, cores = 2)
+#' fit2 <- brm(CRIME ~ INC + HOVAL,
+#'   data = COL.OLD,
+#'   autocor = cor_errorsar(COL.nb),
+#'   chains = 2, cores = 2
+#' )
 #' summary(fit2)
 #' plot(fit2)
 #' }
@@ -294,7 +300,8 @@ cor_errorsar <- function(W) {
 #' x2 <- rnorm(K)
 #' theta <- rnorm(K, sd = 0.05)
 #' phi <- rmulti_normal(
-#'   1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+#'   1,
+#'   mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
 #' )
 #' eta <- x1 + x2 + phi
 #' prob <- exp(eta) / (1 + exp(eta))
@@ -303,8 +310,10 @@ cor_errorsar <- function(W) {
 #' dat <- data.frame(y, size, x1, x2)
 #'
 #' # fit a CAR model
-#' fit <- brm(y | trials(size) ~ x1 + x2, data = dat,
-#'            family = binomial(), autocor = cor_car(W))
+#' fit <- brm(y | trials(size) ~ x1 + x2,
+#'   data = dat,
+#'   family = binomial(), autocor = cor_car(W)
+#' )
 #' summary(fit)
 #' }
 #'
@@ -353,7 +362,7 @@ cor_icar <- function(W, formula = ~1) {
 #' \dontrun{
 #' dat <- data.frame(y = rnorm(3))
 #' V <- cbind(c(0.5, 0.3, 0.2), c(0.3, 1, 0.1), c(0.2, 0.1, 0.2))
-#' fit <- brm(y~1, data = dat, autocor = cor_fixed(V))
+#' fit <- brm(y ~ 1, data = dat, autocor = cor_fixed(V))
 #' }
 #'
 #' @export
@@ -556,7 +565,7 @@ terms_autocor <- function(autocor) {
 # this ensure compatibility with brms <= 2.11
 as_formula_cor_brms <- function(x) {
   stop_not_cor_brms(x)
-  if (is.cor_empty(x))  {
+  if (is.cor_empty(x)) {
     return(NULL)
   }
   args <- data2 <- list()

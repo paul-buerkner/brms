@@ -76,9 +76,10 @@ The moment matching algorithm requires draws of all variables
 }
 \examples{
 \dontrun{
-fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-            data = epilepsy, family = poisson(),
-            save_pars = save_pars(all = TRUE))
+fit1 <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson(),
+  save_pars = save_pars(all = TRUE)
+)
 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))

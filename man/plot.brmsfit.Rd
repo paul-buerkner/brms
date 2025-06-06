@@ -81,9 +81,11 @@ Trace and Density Plots for MCMC Draws
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt
-           + (1|patient) + (1|visit),
-           data = epilepsy, family = "poisson")
+fit <- brm(
+  count ~ zAge + zBase * Trt
+    + (1 | patient) + (1 | visit),
+  data = epilepsy, family = "poisson"
+)
 plot(fit)
 ## plot population-level effects only
 plot(fit, variable = "^b_", regex = TRUE)

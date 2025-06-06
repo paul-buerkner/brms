@@ -37,21 +37,22 @@
 #' @examples
 #' \dontrun{
 #' # model using basic lme4-style formula
-#' fit1 <- brm(count ~ Trt + (1|patient), data = epilepsy)
+#' fit1 <- brm(count ~ Trt + (1 | patient), data = epilepsy)
 #' summary(fit1)
 #'
 #' # equivalent model using 'gr' which is called anyway internally
-#' fit2 <- brm(count ~ Trt + (1|gr(patient)), data = epilepsy)
+#' fit2 <- brm(count ~ Trt + (1 | gr(patient)), data = epilepsy)
 #' summary(fit2)
 #'
 #' # include Trt as a by variable
-#' fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
+#' fit3 <- brm(count ~ Trt + (1 | gr(patient, by = Trt)), data = epilepsy)
 #' summary(fit3)
 #'
 #' # include a group-level weight variable
-#' epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
-#' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
-#'             data = epilepsy)
+#' epilepsy[["patient_samp_wgt"]] <- c(1, rep(c(0.9, 1.1), each = 29))
+#' fit4 <- brm(count ~ Trt + (1 | gr(patient, pw = patient_samp_wgt)),
+#'   data = epilepsy
+#' )
 #' summary(fit4)
 #' }
 #'
@@ -123,18 +124,18 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
 #' \dontrun{
 #' # simulate some data
 #' dat <- data.frame(
-#'  y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
-#'  g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
+#'   y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
+#'   g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
 #' )
 #'
 #' # multi-membership model with two members per group and equal weights
-#' fit1 <- brm(y ~ x1 + (1|mm(g1, g2)), data = dat)
+#' fit1 <- brm(y ~ x1 + (1 | mm(g1, g2)), data = dat)
 #' summary(fit1)
 #'
 #' # weight the first member two times for than the second member
 #' dat$w1 <- rep(2, 100)
 #' dat$w2 <- rep(1, 100)
-#' fit2 <- brm(y ~ x1 + (1|mm(g1, g2, weights = cbind(w1, w2))), data = dat)
+#' fit2 <- brm(y ~ x1 + (1 | mm(g1, g2, weights = cbind(w1, w2))), data = dat)
 #' summary(fit2)
 #'
 #' # multi-membership model with level specific covariate values
@@ -145,7 +146,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
 #'
 #' @export
 mm <- function(..., weights = NULL, scale = TRUE,
-               by = NULL, cor = TRUE, id = NA,  pw = NULL,
+               by = NULL, cor = TRUE, id = NA, pw = NULL,
                cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -192,7 +193,8 @@ mm <- function(..., weights = NULL, scale = TRUE,
   }
   nlist(
     groups, weights, weightvars, allvars, label,
-    by, cor, id, pw, cov, dist, type = "mm"
+    by, cor, id, pw, cov, dist,
+    type = "mm"
   )
 }
 
@@ -316,8 +318,10 @@ split_re_terms <- function(re_terms) {
     # otherwise varying intercepts cannot be handled reliably
     is_cs_term <- grepl_expr(regex_sp("cs"), lhs_all_terms)
     if (any(is_cs_term) && !all(is_cs_term)) {
-      stop2("Please specify category specific effects ",
-            "in separate group-level terms.")
+      stop2(
+        "Please specify category specific effects ",
+        "in separate group-level terms."
+      )
     }
     new_lhs <- NULL
     # prepare effects of special terms
@@ -627,8 +631,10 @@ frame_re <- function(bterms, data, old_levels = NULL) {
         rdat$id <- new_ids[k]
         new_id_groups <- c(re$group[[i]], re$gcall[[i]]$groups)
         if (!identical(new_id_groups, id_groups[[k]])) {
-          stop2("Can only combine group-level terms of the ",
-                "same grouping factors.")
+          stop2(
+            "Can only combine group-level terms of the ",
+            "same grouping factors."
+          )
         }
       } else {
         used_ids <- c(used_ids, id)
@@ -711,8 +717,10 @@ frame_re <- function(bterms, data, old_levels = NULL) {
         }
         df <- unique(df)
         if (nrow(df) > length(unique(J))) {
-          stop2("Some levels of ", collapse_comma(groups),
-                " correspond to multiple levels of '", by, "'.")
+          stop2(
+            "Some levels of ", collapse_comma(groups),
+            " correspond to multiple levels of '", by, "'."
+          )
         }
         df <- df[order(df$J), ]
         by_per_level <- bylevels[match(df$by, bylevels)]
@@ -909,8 +917,10 @@ update_ranef_cov <- function(reframe, bterms) {
   }
   unused_names <- setdiff(cr_names, reframe$group)
   if (length(unused_names)) {
-    stop2("The following elements of 'cov_ranef' are unused: ",
-          collapse_comma(unused_names))
+    stop2(
+      "The following elements of 'cov_ranef' are unused: ",
+      collapse_comma(unused_names)
+    )
   }
   has_cov <- reframe$group %in% cr_names
   reframe$cov[has_cov] <- reframe$group[has_cov]

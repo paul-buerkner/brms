@@ -32,7 +32,8 @@ Compute posterior uncertainty intervals for \code{brmsfit} objects.
 \examples{
 \dontrun{
 fit <- brm(count ~ zAge + zBase * Trt,
-           data = epilepsy, family = negbinomial())
+  data = epilepsy, family = negbinomial()
+)
 posterior_interval(fit)
 }
 

@@ -44,30 +44,39 @@
 #' @examples
 #' bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
 #' stanvars <- stanvar(5, name = "mean_intercept")
-#' stancode(count ~ Trt, epilepsy, prior = bprior,
-#'          stanvars = stanvars)
+#' stancode(count ~ Trt, epilepsy,
+#'   prior = bprior,
+#'   stanvars = stanvars
+#' )
 #'
 #' # define a multi-normal prior with known covariance matrix
 #' bprior <- prior(multi_normal(M, V), class = "b")
 #' stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
 #'   stanvar(diag(2), "V", scode = "  matrix[K, K] V;")
 #' stancode(count ~ Trt + zBase, epilepsy,
-#'          prior = bprior, stanvars = stanvars)
+#'   prior = bprior, stanvars = stanvars
+#' )
 #'
 #' # define a hierachical prior on the regression coefficients
 #' bprior <- set_prior("normal(0, tau)", class = "b") +
 #'   set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
-#' stanvars <- stanvar(scode = "real<lower=0> tau;",
-#'                     block = "parameters")
+#' stanvars <- stanvar(
+#'   scode = "real<lower=0> tau;",
+#'   block = "parameters"
+#' )
 #' stancode(count ~ Trt + zBase, epilepsy,
-#'          prior = bprior, stanvars = stanvars)
+#'   prior = bprior, stanvars = stanvars
+#' )
 #'
 #' # ensure that 'tau' is passed to the likelihood of a threaded model
 #' # not necessary for this example but may be necessary in other cases
-#' stanvars <- stanvar(scode = "real<lower=0> tau;",
-#'                     block = "parameters", pll_args = "real tau")
+#' stanvars <- stanvar(
+#'   scode = "real<lower=0> tau;",
+#'   block = "parameters", pll_args = "real tau"
+#' )
 #' stancode(count ~ Trt + zBase, epilepsy,
-#'          stanvars = stanvars, threads = threading(2))
+#'   stanvars = stanvars, threads = threading(2)
+#' )
 #'
 #' @export
 stanvar <- function(x = NULL, name = NULL, scode = NULL,
@@ -89,8 +98,10 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
     }
     name <- as_one_character(name)
     if (!is_equal(name, make.names(name)) || grepl("\\.", name)) {
-      stop2("'", limit_chars(name, 30), "' is not ",
-            "a valid variable name in Stan.")
+      stop2(
+        "'", limit_chars(name, 30), "' is not ",
+        "a valid variable name in Stan."
+      )
     }
     if (is.null(scode)) {
       # infer scode from x
@@ -218,8 +229,10 @@ validate_stanvars <- function(x, stan_funs = NULL) {
     stop2("Argument 'stanvars' is invalid. See ?stanvar for help.")
   }
   if (length(stan_funs) > 0) {
-    warning2("Argument 'stan_funs' is deprecated. Please use argument ",
-             "'stanvars' instead. See ?stanvar for more help.")
+    warning2(
+      "Argument 'stan_funs' is deprecated. Please use argument ",
+      "'stanvars' instead. See ?stanvar for more help."
+    )
     stan_funs <- as_one_character(stan_funs)
     x <- x + stanvar(scode = stan_funs, block = "functions")
   }

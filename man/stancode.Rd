@@ -36,8 +36,9 @@ See \code{\link[brms:stancode.default]{stancode.default}} for the default
   The \code{make_stancode} function is an alias of \code{stancode}.
 }
 \examples{
-stancode(rating ~ treat + period + carry + (1|subject),
-         data = inhaler, family = "cumulative")
+stancode(rating ~ treat + period + carry + (1 | subject),
+  data = inhaler, family = "cumulative"
+)
 
 }
 \seealso{

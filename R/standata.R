@@ -20,8 +20,9 @@
 #' of \code{standata}.
 #'
 #' @examples
-#' sdata1 <- standata(rating ~ treat + period + carry + (1|subject),
-#'                    data = inhaler, family = "cumulative")
+#' sdata1 <- standata(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "cumulative"
+#' )
 #' str(sdata1)
 #'
 #' @seealso
@@ -55,12 +56,14 @@ make_standata <- function(formula, ...) {
 #'   to fit a \pkg{brms} model with \pkg{Stan}.
 #'
 #' @examples
-#' sdata1 <- standata(rating ~ treat + period + carry + (1|subject),
-#'                    data = inhaler, family = "cumulative")
+#' sdata1 <- standata(rating ~ treat + period + carry + (1 | subject),
+#'   data = inhaler, family = "cumulative"
+#' )
 #' str(sdata1)
 #'
-#' sdata2 <- standata(count ~ zAge + zBase * Trt + (1|patient),
-#'                    data = epilepsy, family = "poisson")
+#' sdata2 <- standata(count ~ zAge + zBase * Trt + (1 | patient),
+#'   data = epilepsy, family = "poisson"
+#' )
 #' str(sdata2)
 #'
 #' @export
@@ -69,31 +72,35 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
                              sample_prior = "no", stanvars = NULL,
                              threads = getOption("brms.threads", NULL),
                              knots = NULL, drop_unused_levels = TRUE, ...) {
-
   object <- validate_formula(
-    object, data = data, family = family,
+    object,
+    data = data, family = family,
     autocor = autocor, cov_ranef = cov_ranef
   )
   bterms <- brmsterms(object)
   data2 <- validate_data2(
-    data2, bterms = bterms,
+    data2,
+    bterms = bterms,
     get_data2_autocor(object),
     get_data2_cov_ranef(object)
   )
   data <- validate_data(
-    data, bterms = bterms,
+    data,
+    bterms = bterms,
     knots = knots, data2 = data2,
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    prior, bframe = bframe,
+    prior,
+    bframe = bframe,
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)
   .standata(
-    bframe, data = data, prior = prior,
+    bframe,
+    data = data, prior = prior,
     data2 = data2, stanvars = stanvars,
     threads = threads, ...
   )
@@ -109,13 +116,13 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
 .standata <- function(bframe, data, prior, stanvars, data2,
                       threads = threading(), check_response = TRUE,
                       only_response = FALSE, internal = FALSE, ...) {
-
   stopifnot(is.anybrmsframe(bframe))
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   internal <- as_one_logical(internal)
   out <- data_response(
-    bframe, data, check_response = check_response,
+    bframe, data,
+    check_response = check_response,
     internal = internal
   )
   if (!only_response) {
@@ -124,7 +131,8 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     # this would require passing data2 to brmsframe
     sdata_gr_global <- data_gr_global(bframe, data2 = data2)
     c(out) <- data_predictor(
-      bframe, data = data, prior = prior, data2 = data2,
+      bframe,
+      data = data, prior = prior, data2 = data2,
       sdata = sdata_gr_global
     )
     c(out) <- sdata_gr_global
@@ -142,8 +150,10 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     stanvars <- subset_stanvars(stanvars, block = "data")
     inv_names <- intersect(names(stanvars), names(out))
     if (length(inv_names)) {
-      stop2("Cannot overwrite existing variables: ",
-            collapse_comma(inv_names))
+      stop2(
+        "Cannot overwrite existing variables: ",
+        collapse_comma(inv_names)
+      )
     }
     out[names(stanvars)] <- from_list(stanvars, "sdata")
   }
@@ -172,7 +182,6 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
 standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              newdata2 = NULL, new_objects = NULL,
                              incl_autocor = TRUE, ...) {
-
   # allows functions to fall back to old default behavior
   # which was used when originally fitting the model
   options(.brmsfit_version = object$version$brms)
@@ -185,7 +194,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   newdata2 <- use_alias(newdata2, new_objects)
   data2 <- current_data2(object, newdata2)
   data <- current_data(
-    object, newdata, newdata2 = data2,
+    object, newdata,
+    newdata2 = data2,
     re_formula = re_formula, ...
   )
   stanvars <- add_newdata_stanvars(object$stanvars, data2)
@@ -201,7 +211,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   bframe <- brmsframe(bterms, data = data, basis = basis)
   .standata(
-    bframe, data = data, prior = object$prior,
+    bframe,
+    data = data, prior = object$prior,
     data2 = data2, stanvars = stanvars,
     threads = object$threads, ...
   )

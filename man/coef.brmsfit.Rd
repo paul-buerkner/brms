@@ -41,8 +41,9 @@ effects and corresponding group-level effects
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
-           data = epilepsy, family = gaussian(), chains = 2)
+fit <- brm(count ~ zAge + zBase * Trt + (1 + Trt | visit),
+  data = epilepsy, family = gaussian(), chains = 2
+)
 ## extract population and group-level coefficients separately
 fixef(fit)
 ranef(fit)

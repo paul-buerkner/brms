@@ -45,15 +45,17 @@ Breslow and Clayton (1993) analyze data initially
 \dontrun{
 ## poisson regression without random effects.
 fit1 <- brm(count ~ zAge + zBase * Trt,
-            data = epilepsy, family = poisson())
+  data = epilepsy, family = poisson()
+)
 summary(fit1)
 plot(fit1)
 
 ## poisson regression with varying intercepts of patients
 ## as well as normal priors for overall effects parameters.
-fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-            data = epilepsy, family = poisson(),
-            prior = set_prior("normal(0,5)"))
+fit2 <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = poisson(),
+  prior = set_prior("normal(0,5)")
+)
 summary(fit2)
 plot(fit2)
 }

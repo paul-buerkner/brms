@@ -30,7 +30,8 @@ See Bürkner and Charpentier (2020) for the underlying theory. For
 # generate some data
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
 income <- factor(sample(income_options, 100, TRUE),
-                 levels = income_options, ordered = TRUE)
+  levels = income_options, ordered = TRUE
+)
 mean_ls <- c(30, 60, 70, 75)
 ls <- mean_ls[income] + rnorm(100, sd = 7)
 dat <- data.frame(income, ls)
@@ -43,12 +44,12 @@ plot(conditional_effects(fit1), points = TRUE)
 
 # model interaction with other variables
 dat$x <- sample(c("a", "b", "c"), 100, TRUE)
-fit2 <- brm(ls ~ mo(income)*x, data = dat)
+fit2 <- brm(ls ~ mo(income) * x, data = dat)
 summary(fit2)
 plot(conditional_effects(fit2), points = TRUE)
 
 # ensure conditional monotonicity
-fit3 <- brm(ls ~ mo(income, id = "i")*x, data = dat)
+fit3 <- brm(ls ~ mo(income, id = "i") * x, data = dat)
 summary(fit3)
 plot(conditional_effects(fit3), points = TRUE)
 }

@@ -1,5 +1,5 @@
 params <-
-list(EVAL = TRUE)
+  list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -24,15 +24,17 @@ data("cbpp", package = "lme4")
 head(cbpp)
 
 ## ----fit1, results='hide'---------------------------------------------------------------
-fit1 <- brm(incidence | trials(size) ~ period + (1|herd),
-            data = cbpp, family = binomial())
+fit1 <- brm(incidence | trials(size) ~ period + (1 | herd),
+  data = cbpp, family = binomial()
+)
 
 ## ----fit1_summary-----------------------------------------------------------------------
 summary(fit1)
 
 ## ----beta_binomial2---------------------------------------------------------------------
 beta_binomial2 <- custom_family(
-  "beta_binomial2", dpars = c("mu", "phi"),
+  "beta_binomial2",
+  dpars = c("mu", "phi"),
   links = c("logit", "log"),
   lb = c(0, 0), ub = c(1, NA),
   type = "int", vars = "vint1[n]"
@@ -53,7 +55,8 @@ stanvars <- stanvar(scode = stan_funs, block = "functions")
 
 ## ----fit2, results='hide'---------------------------------------------------------------
 fit2 <- brm(
-  incidence | vint(size) ~ period + (1|herd), data = cbpp,
+  incidence | vint(size) ~ period + (1 | herd),
+  data = cbpp,
   family = beta_binomial2, stanvars = stanvars
 )
 
@@ -96,4 +99,3 @@ posterior_epred_beta_binomial2 <- function(prep) {
 
 ## ----conditional_effects----------------------------------------------------------------
 conditional_effects(fit2, conditions = data.frame(size = 1))
-

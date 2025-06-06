@@ -33,8 +33,10 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
   if (length(missing_vars)) {
     missing_vars2 <- setdiff(missing_vars, names(data2))
     if (length(missing_vars2)) {
-      stop2("The following variables can neither be found in ",
-            "'data' nor in 'data2':\n", collapse_comma(missing_vars2))
+      stop2(
+        "The following variables can neither be found in ",
+        "'data' nor in 'data2':\n", collapse_comma(missing_vars2)
+      )
     }
     # all initially missing variables can be found in 'data2'
     # they are not necessarily of the length required for 'data'
@@ -56,16 +58,21 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
     na_action(object, bterms = bterms, ...)
   }
   data <- model.frame(
-    all_vars_terms, data, na.action = na_action_bterms,
+    all_vars_terms, data,
+    na.action = na_action_bterms,
     drop.unused.levels = drop_unused_levels
   )
   if (any(grepl("__|_$", colnames(data)))) {
-    stop2("Variable names may not contain double underscores ",
-          "or underscores at the end.")
+    stop2(
+      "Variable names may not contain double underscores ",
+      "or underscores at the end."
+    )
   }
   if (!isTRUE(nrow(data) > 0L)) {
-    stop2("All observations in the data were removed ",
-          "presumably because of NA values.")
+    stop2(
+      "All observations in the data were removed ",
+      "presumably because of NA values."
+    )
   }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
@@ -161,16 +168,22 @@ data_rsv_intercept <- function(data, bterms) {
   fe_forms <- get_effect(bterms, "fe")
   if (any(ulapply(fe_forms, no_int))) {
     if ("intercept" %in% ulapply(fe_forms, all_vars)) {
-      warning2("Reserved variable name 'intercept' is deprecated. ",
-               "Please use 'Intercept' instead.")
+      warning2(
+        "Reserved variable name 'intercept' is deprecated. ",
+        "Please use 'Intercept' instead."
+      )
     }
     if (any(data[["intercept"]] != 1)) {
-      stop2("Variable name 'intercept' is reserved in models ",
-            "without a population-level intercept.")
+      stop2(
+        "Variable name 'intercept' is reserved in models ",
+        "without a population-level intercept."
+      )
     }
     if (any(data[["Intercept"]] != 1)) {
-      stop2("Variable name 'Intercept' is reserved in models ",
-            "without a population-level intercept.")
+      stop2(
+        "Variable name 'Intercept' is reserved in models ",
+        "without a population-level intercept."
+      )
     }
     data$intercept <- data$Intercept <- rep(1, length(data[[1]]))
   }
@@ -204,7 +217,7 @@ combine_groups <- function(data, ...) {
 fix_factor_contrasts <- function(data, olddata = NULL, ignore = NULL) {
   stopifnot(is(data, "data.frame"))
   stopifnot(is.null(olddata) || is.list(olddata))
-  olddata <- as.data.frame(olddata)  # fixes issue #105
+  olddata <- as.data.frame(olddata) # fixes issue #105
   for (i in seq_along(data)) {
     needs_contrast <- is.factor(data[[i]]) && !names(data)[i] %in% ignore
     if (needs_contrast && is.null(attr(data[[i]], "contrasts"))) {
@@ -231,8 +244,10 @@ order_data <- function(data, bterms) {
   time <- get_ac_vars(bterms, "time", dim = "time")
   gr <- get_ac_vars(bterms, "gr", dim = "time")
   if (length(time) > 1L || length(gr) > 1L) {
-    stop2("All time-series structures must have the same ",
-          "'time' and 'gr' variables.")
+    stop2(
+      "All time-series structures must have the same ",
+      "'time' and 'gr' variables."
+    )
   }
   if (length(time) || length(gr)) {
     if (length(gr)) {
@@ -397,10 +412,9 @@ get_data_name <- function(data) {
 #'
 #' @export
 validate_newdata <- function(
-  newdata, object, re_formula = NULL, allow_new_levels = FALSE,
-  newdata2 = NULL, resp = NULL, check_response = TRUE,
-  incl_autocor = TRUE, group_vars = NULL, req_vars = NULL, ...
-) {
+    newdata, object, re_formula = NULL, allow_new_levels = FALSE,
+    newdata2 = NULL, resp = NULL, check_response = TRUE,
+    incl_autocor = TRUE, group_vars = NULL, req_vars = NULL, ...) {
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is_try_error(newdata)) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
@@ -438,8 +452,10 @@ validate_newdata <- function(
   missing_resp <- setdiff(c(only_resp, dec_vars), names(newdata))
   if (length(missing_resp)) {
     if (check_response) {
-      stop2("Response variables must be specified in 'newdata'.\n",
-            "Missing variables: ", collapse_comma(missing_resp))
+      stop2(
+        "Response variables must be specified in 'newdata'.\n",
+        "Missing variables: ", collapse_comma(missing_resp)
+      )
     } else {
       newdata <- fill_newdata(newdata, missing_resp)
     }
@@ -530,8 +546,10 @@ validate_newdata <- function(
   num_names <- setdiff(num_names, group_vars)
   for (nm in intersect(num_names, names(newdata))) {
     if (!anyNA(newdata[[nm]]) && !is.numeric(newdata[[nm]])) {
-      stop2("Variable '", nm, "' was originally ",
-            "numeric but is not in 'newdata'.")
+      stop2(
+        "Variable '", nm, "' was originally ",
+        "numeric but is not in 'newdata'."
+      )
     }
   }
   # validate monotonic variables
@@ -545,8 +563,10 @@ validate_newdata <- function(
       invalid <- new_values < min_value | new_values > max(mf[[v]])
       invalid <- invalid | !is_wholenumber(new_values)
       if (sum(invalid)) {
-        stop2("Invalid values in variable '", v, "': ",
-              collapse_comma(new_values[invalid]))
+        stop2(
+          "Invalid values in variable '", v, "': ",
+          collapse_comma(new_values[invalid])
+        )
       }
       attr(newdata[[v]], "min") <- min_value
     }
@@ -582,7 +602,8 @@ validate_newdata <- function(
   attr_terms <- c("variables", "predvars")
   attr_terms <- attributes(old_terms)[attr_terms]
   newdata <- validate_data(
-    newdata, bterms = bterms, na_action = na.pass,
+    newdata,
+    bterms = bterms, na_action = na.pass,
     drop_unused_levels = FALSE, attr_terms = attr_terms,
     data2 = current_data2(object, newdata2),
     knots = get_knots(object$data)

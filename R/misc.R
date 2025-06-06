@@ -121,7 +121,7 @@ match_rows <- function(x, y, ...) {
 }
 
 # find elements of 'x' matching sub-elements passed via 'ls' and '...'
-find_elements <- function(x, ..., ls = list(), fun = '%in%') {
+find_elements <- function(x, ..., ls = list(), fun = "%in%") {
   x <- as.list(x)
   if (!length(x)) {
     return(logical(0))
@@ -143,7 +143,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
 
 # find rows of 'x' matching columns passed via 'ls' and '...'
 # similar to 'find_elements' but for matrix like objects
-find_rows <- function(x, ..., ls = list(), fun = '%in%') {
+find_rows <- function(x, ..., ls = list(), fun = "%in%") {
   x <- as.data.frame(x)
   if (!nrow(x)) {
     return(logical(0))
@@ -163,7 +163,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
 }
 
 # subset 'x' using arguments passed via 'ls' and '...'
-subset2 <- function(x, ..., ls = list(), fun = '%in%') {
+subset2 <- function(x, ..., ls = list(), fun = "%in%") {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
@@ -384,7 +384,7 @@ subset_keep_attr <- function(x, y) {
   x
 }
 
-'%||%' <- function(x, y) {
+"%||%" <- function(x, y) {
   if (is.null(x)) x <- y
   x
 }
@@ -423,7 +423,7 @@ cblapply <- function(X, FUN, ...) {
 # parallel lapply sensitive to the operating system
 # args:
 #  .psock: use a PSOCK cluster? Default is TRUE until
-#.    the zombie worker issue #1658 has been fully resolved
+# .    the zombie worker issue #1658 has been fully resolved
 plapply <- function(X, FUN, .cores = 1, .psock = TRUE, ...) {
   if (.cores == 1) {
     out <- lapply(X, FUN, ...)
@@ -466,7 +466,7 @@ ufrom_list <- function(x, name, ..., recursive = TRUE, use.names = TRUE) {
 
 # check if the operating system is Windows
 os_is_windows <- function() {
-  isTRUE(Sys.info()[['sysname']] == "Windows")
+  isTRUE(Sys.info()[["sysname"]] == "Windows")
 }
 
 # find variables in a character string or expression
@@ -495,11 +495,11 @@ lc <- function(x, ...) {
   c(x, dots)
 }
 
-'c<-' <- function(x, value) {
+"c<-" <- function(x, value) {
   c(x, value)
 }
 
-'lc<-' <- function(x, value) {
+"lc<-" <- function(x, value) {
   lc(x, value)
 }
 
@@ -512,12 +512,12 @@ collapse_comma <- function(...) {
 }
 
 # add characters to an existing string
-'str_add<-' <- function(x, start = FALSE, value) {
+"str_add<-" <- function(x, start = FALSE, value) {
   if (start) paste0(value, x) else paste0(x, value)
 }
 
 # add list of characters to an existing list
-'str_add_list<-' <- function(x, start = FALSE, value) {
+"str_add_list<-" <- function(x, start = FALSE, value) {
   stopifnot(is.list(x), is.list(value))
   out <- if (start) list(value, x) else list(x, value)
   collapse_lists(ls = out)
@@ -576,8 +576,10 @@ require_package <- function(package, version = NULL) {
   if (!is.null(version)) {
     version <- as.package_version(version)
     if (utils::packageVersion(package) < version) {
-      stop2("Please install package '", package,
-            "' version ", version, " or higher.")
+      stop2(
+        "Please install package '", package,
+        "' version ", version, " or higher."
+      )
     }
   }
   invisible(TRUE)
@@ -618,9 +620,11 @@ rename <- function(x, pattern = NULL, replacement = NULL,
   dup <- duplicated(out)
   if (check_dup && any(dup)) {
     dup <- x[out %in% out[dup]]
-    stop2("Internal renaming led to duplicated names. ",
-          "Consider renaming your variables to have different suffixes.\n",
-          "Occured for: ", collapse_comma(dup))
+    stop2(
+      "Internal renaming led to duplicated names. ",
+      "Consider renaming your variables to have different suffixes.\n",
+      "Occured for: ", collapse_comma(dup)
+    )
   }
   out
 }
@@ -644,7 +648,9 @@ nlist <- function(...) {
   dots <- list(...)
   no_names <- is.null(names(dots))
   has_name <- if (no_names) FALSE else nzchar(names(dots))
-  if (all(has_name)) return(dots)
+  if (all(has_name)) {
+    return(dots)
+  }
   nms <- as.character(m)[-1]
   if (no_names) {
     names(dots) <- nms
@@ -741,7 +747,7 @@ empty_data_frame <- function() {
 # @param x named list-like object
 # @param value another named list-like object
 # @param dont_replace names of elements that cannot be replaced
-'replace_args<-' <- function(x, dont_replace = NULL, value) {
+"replace_args<-" <- function(x, dont_replace = NULL, value) {
   value_name <- deparse0(substitute(value), max_char = 100L)
   value <- as.list(value)
   if (length(value) && is.null(names(value))) {
@@ -798,7 +804,8 @@ eval_silent <- function(expr, type = "output", try = FALSE,
   if (silent) {
     if (try && type == "message") {
       try_out <- try(utils::capture.output(
-        out <- eval(expr, envir), type = type, ...
+        out <- eval(expr, envir),
+        type = type, ...
       ))
       if (is_try_error(try_out)) {
         # try again without suppressing error messages
@@ -917,8 +924,9 @@ get_matches_expr <- function(pattern, expr, ...) {
 
 # like 'grepl' but handles (parse trees of) expressions
 grepl_expr <- function(pattern, expr, ...) {
-  as.logical(ulapply(expr, function(e)
-    length(get_matches_expr(pattern, e, ...)) > 0L))
+  as.logical(ulapply(expr, function(e) {
+    length(get_matches_expr(pattern, e, ...)) > 0L
+  }))
 }
 
 # combine character vectors into a joint regular 'or' expression
@@ -1042,8 +1050,10 @@ use_alias <- function(arg, alias = NULL, default = NULL, warn = TRUE) {
       alias_name <- gsub("^dots\\[\\[\"|\"\\]\\]$", "", alias_name)
     }
     if (warn) {
-      warning2("Argument '", alias_name, "' is deprecated. ",
-               "Please use argument '", arg_name, "' instead.")
+      warning2(
+        "Argument '", alias_name, "' is deprecated. ",
+        "Please use argument '", arg_name, "' instead."
+      )
     }
   }
   arg
@@ -1094,7 +1104,7 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   # dynamically register the 'recover_data' and 'emm_basis'
   # methods needed by 'emmeans', if that package is installed
   if (requireNamespace("emmeans", quietly = TRUE) &&
-      utils::packageVersion("emmeans") >= "1.4.0") {
+    utils::packageVersion("emmeans") >= "1.4.0") {
     emmeans::.emm_register("brmsfit", pkgname)
   }
   invisible(NULL)

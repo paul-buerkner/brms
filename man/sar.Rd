@@ -40,14 +40,16 @@ The \code{lagsar} structure implements SAR of the response values:
 \dontrun{
 data(oldcol, package = "spdep")
 fit1 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "lag"),
-            data = COL.OLD, data2 = list(COL.nb = COL.nb),
-            chains = 2, cores = 2)
+  data = COL.OLD, data2 = list(COL.nb = COL.nb),
+  chains = 2, cores = 2
+)
 summary(fit1)
 plot(fit1)
 
 fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
-            data = COL.OLD, data2 = list(COL.nb = COL.nb),
-            chains = 2, cores = 2)
+  data = COL.OLD, data2 = list(COL.nb = COL.nb),
+  chains = 2, cores = 2
+)
 summary(fit2)
 plot(fit2)
 }

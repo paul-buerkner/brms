@@ -386,8 +386,11 @@ fixef_pars <- function() {
 # algorithm used in the model fitting
 algorithm <- function(x) {
   stopifnot(is.brmsfit(x))
-  if (is.null(x$algorithm)) "sampling"
-  else x$algorithm
+  if (is.null(x$algorithm)) {
+    "sampling"
+  } else {
+    x$algorithm
+  }
 }
 
 #' Summarize Posterior draws
@@ -444,7 +447,8 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   }
   .posterior_summary <- function(x) {
     do_call(cbind, lapply(
-      coefs, get_estimate, draws = x,
+      coefs, get_estimate,
+      draws = x,
       probs = probs, na.rm = TRUE
     ))
   }
@@ -540,7 +544,8 @@ validate_ci_bounds <- function(prob, probs = NULL) {
 #' @examples
 #' \dontrun{
 #' fit <- brm(rating ~ period + carry + treat,
-#'            data = inhaler, family = cumulative())
+#'   data = inhaler, family = cumulative()
+#' )
 #' pr <- predict(fit, summary = FALSE)
 #' posterior_table(pr)
 #' }
@@ -558,7 +563,8 @@ posterior_table <- function(x, levels = NULL) {
   if (length(xlevels) != length(levels)) {
     xlevels <- levels
   }
-  out <- lapply(seq_len(ncol(x)),
+  out <- lapply(
+    seq_len(ncol(x)),
     function(n) table(factor(x[, n], levels = levels))
   )
   out <- do_call(rbind, out)
@@ -585,7 +591,8 @@ posterior_table <- function(x, levels = NULL) {
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ zAge + zBase * Trt,
-#'            data = epilepsy, family = negbinomial())
+#'   data = epilepsy, family = negbinomial()
+#' )
 #' posterior_interval(fit)
 #' }
 #'
@@ -595,8 +602,7 @@ posterior_table <- function(x, levels = NULL) {
 #' @export posterior_interval
 #' @importFrom rstantools posterior_interval
 posterior_interval.brmsfit <- function(
-  object, pars = NA, variable = NULL, prob = 0.95, ...
-) {
+    object, pars = NA, variable = NULL, prob = 0.95, ...) {
   ps <- as.matrix(object, pars = pars, variable = variable, ...)
   rstantools::posterior_interval(ps, prob = prob)
 }

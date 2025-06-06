@@ -25,8 +25,9 @@ called in formulas passed to the \pkg{brms} package.
 \examples{
 \dontrun{
 fit <- brm(rating ~ period + carry + cs(treat),
-           data = inhaler, family = sratio("cloglog"),
-           prior = set_prior("normal(0,5)"), chains = 2)
+  data = inhaler, family = sratio("cloglog"),
+  prior = set_prior("normal(0,5)"), chains = 2
+)
 summary(fit)
 plot(fit, ask = FALSE)
 }

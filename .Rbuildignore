@@ -7,6 +7,7 @@
 ^\.Rproj\.user$
 ^\.git$
 ^\.github$
+^ignore_$
 ^.*\.Rprofile$
 ^README\.Rmd$
 ^README-.*\.png$

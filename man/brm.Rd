@@ -402,7 +402,7 @@ Fit a generalized (non-)linear multivariate multilevel model via
 \dontrun{
 # Poisson regression for the number of seizures in epileptic patients
 fit1 <- brm(
-  count ~ zBase * Trt + (1|patient),
+  count ~ zBase * Trt + (1 | patient),
   data = epilepsy, family = poisson(),
   prior = prior(normal(0, 10), class = b) +
     prior(cauchy(0, 2), class = sd)
@@ -428,8 +428,9 @@ pp_check(fit1)
 # Ordinal regression modeling patient's rating of inhaler instructions
 # category specific effects are estimated for variable 'treat'
 fit2 <- brm(rating ~ period + carry + cs(treat),
-            data = inhaler, family = sratio("logit"),
-            prior = set_prior("normal(0,5)"), chains = 2)
+  data = inhaler, family = sratio("logit"),
+  prior = set_prior("normal(0,5)"), chains = 2
+)
 summary(fit2)
 plot(fit2, ask = FALSE)
 WAIC(fit2)
@@ -437,8 +438,9 @@ WAIC(fit2)
 
 # Survival regression modeling the time between the first
 # and second recurrence of an infection in kidney patients.
-fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-            data = kidney, family = lognormal())
+fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+  data = kidney, family = lognormal()
+)
 summary(fit3)
 plot(fit3, ask = FALSE)
 plot(conditional_effects(fit3), ask = FALSE)
@@ -449,16 +451,19 @@ ntrials <- sample(1:10, 100, TRUE)
 success <- rbinom(100, size = ntrials, prob = 0.4)
 x <- rnorm(100)
 data4 <- data.frame(ntrials, success, x)
-fit4 <- brm(success | trials(ntrials) ~ x, data = data4,
-            family = binomial("probit"))
+fit4 <- brm(success | trials(ntrials) ~ x,
+  data = data4,
+  family = binomial("probit")
+)
 summary(fit4)
 
 
 # Non-linear Gaussian model
 fit5 <- brm(
-  bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
-     nl = TRUE),
+  bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+    ult ~ 1 + (1 | AY), omega ~ 1, theta ~ 1,
+    nl = TRUE
+  ),
   data = loss, family = gaussian(),
   prior = c(
     prior(normal(5000, 1000), nlpar = "ult"),
@@ -488,8 +493,10 @@ ggplot(stack(sigmas), aes(values)) +
 
 
 # Quantile regression predicting the 25\%-quantile
-fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
-            family = asym_laplace())
+fit7 <- brm(bf(y ~ x, quantile = 0.25),
+  data = data_het,
+  family = asym_laplace()
+)
 summary(fit7)
 conditional_effects(fit7)
 

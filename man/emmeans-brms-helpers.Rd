@@ -6,7 +6,7 @@
 \alias{emm_basis.brmsfit}
 \title{Support Functions for \pkg{emmeans}}
 \usage{
-recover_data.brmsfit(
+\method{recover_data}{brmsfit}(
   object,
   data,
   resp = NULL,
@@ -17,7 +17,7 @@ recover_data.brmsfit(
   ...
 )
 
-emm_basis.brmsfit(
+\method{emm_basis}{brmsfit}(
   object,
   trms,
   xlev,
@@ -75,8 +75,9 @@ coefficients.
 }
 \examples{
 \dontrun{
-fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
-            data = kidney, family = lognormal())
+fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1 | patient),
+  data = kidney, family = lognormal()
+)
 summary(fit1)
 
 # summarize via 'emmeans'
@@ -95,8 +96,8 @@ fit2 <- brm(log(mpg) ~ factor(cyl), data = mtcars)
 summary(fit2)
 
 # results will be on the log scale by default
-emmeans(fit2, ~ cyl)
+emmeans(fit2, ~cyl)
 # log transform is detected and can be adjusted automatically
-emmeans(fit2, ~ cyl, epred = TRUE, type = "response")
+emmeans(fit2, ~cyl, epred = TRUE, type = "response")
 }
 }

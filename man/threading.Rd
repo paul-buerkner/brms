@@ -52,10 +52,11 @@ The adaptive scheduling procedure used by \code{reduce_sum} will
 \dontrun{
 # this model just serves as an illustration
 # threading may not actually speed things up here
-fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
-           data = epilepsy, family = negbinomial(),
-           chains = 1, threads = threading(2, grainsize = 100),
-           backend = "cmdstanr")
+fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
+  data = epilepsy, family = negbinomial(),
+  chains = 1, threads = threading(2, grainsize = 100),
+  backend = "cmdstanr"
+)
 summary(fit)
 }
 
