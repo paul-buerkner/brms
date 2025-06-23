@@ -208,3 +208,24 @@ test_that("insert_refcat() works correctly", {
     }
   }
 })
+
+
+test_that("split_folder_and_file returns expected results", {
+  files <- c("somefile",  "./somefile" , "somepath/somefolder/somefile" )
+  result <- base::lapply(files, split_folder_and_file)
+  exp_result <-   list( list( folder = '.' , file= 'somefile' ) ,
+                        list( folder = '.' , file= 'somefile' ) ,
+                        list( folder = 'somepath/somefolder' , file= 'somefile' )
+  )
+  expect_equal(result ,exp_result )
+})
+
+test_that("check_brmsfit_file returns expected results", {
+  files <- c("somefile",  "./somefile"  , "somefile.rds" , "somepath/somefolder/somefile" )
+  result <- base::lapply(files, function(x) check_brmsfit_file(x ,  .check_folder = F  ))
+  exp_result <-   list(  "./somefile.rds" ,
+                         "./somefile.rds" ,
+                         "./somefile.rds" ,
+                         "somepath/somefolder/somefile.rds" )
+  expect_equal(result ,exp_result )
+})

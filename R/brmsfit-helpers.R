@@ -982,18 +982,58 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   refit
 }
 
+#' Determine Cache Folder for brms
+#'
+#' Checks if the provided file path includes a directory. If so, returns that directory.
+#' Otherwise, looks for a user‐defined `brms_cache_folder` option. If the option is not set,
+#' defaults to the current directory (".").
+#'
+#' @param file A file path (string) that may include a directory component.
+#' @return A string indicating which folder to use for caching.
+get_cache_folder <- function(file) {
+  dir <- dirname(file)
+
+  # If the file path already contains a directory, use it
+  if (dir != ".") {
+    return(dir)
+  }
+
+  # Otherwise, check for a user‐defined cache folder option
+  cache_folder <- getOption("brms.cache_folder", default = ".")
+
+  cache_folder
+}
+
+# Check that a directory exists
+# @param folder A character string specifying a directory path.
+# @return NULL (invisibly) if the directory exists; otherwise throws an error.
+check_folder <- function(folder) {
+  if (!dir.exists(folder)) {
+    stop2(
+      "The directory '", folder, "' does not exist. Please choose an ",
+      "existing directory where the model can be saved after fitting."
+    )
+  }
+  invisible(TRUE)
+}
+
+# Split a file path into cache folder and file components
+# @param file A character string specifying a file path or file name.
+# @return A list with two elements:
+#   \item{folder}{The directory returned by get_cache_folder(file).}
+#   \item{file}{The original file argument (unchanged).}
+split_folder_and_file <- function(file) {
+  cache_folder <- get_cache_folder(file)
+  file <- basename(file)
+
+  list(folder = cache_folder, file = file)
+}
+
 # read a brmsfit object from a file
 # @param file path to an rds file
 # @return a brmsfit object or NULL
 read_brmsfit <- function(file) {
   file <- check_brmsfit_file(file)
-  dir <- dirname(file)
-  if (!dir.exists(dir)) {
-    stop2(
-      "The directory '", dir, "' does not exist. Please choose an ",
-      "existing directory where the model can be saved after fitting."
-    )
-  }
   x <- suppressWarnings(try(readRDS(file), silent = TRUE))
   if (!is_try_error(x)) {
     if (!is.brmsfit(x)) {
@@ -1019,14 +1059,42 @@ write_brmsfit <- function(x, file, compress = TRUE) {
   invisible(x)
 }
 
-# check validity of file name to store a brmsfit object in
-check_brmsfit_file <- function(file) {
+# Helper function to ensure a valid filename for saving a brmsfit object
+#
+# Appends a `.rds` extension to the filename if not already present.
+#
+# @param file A character string specifying a file path or base filename.
+# @return A character string with a valid `.rds` file name.
+check_brmsfit_file_name <- function(file) {
   file <- as_one_character(file)
   file_ending <- tolower(get_matches("\\.[^\\.]+$", file))
   if (!isTRUE(file_ending == ".rds")) {
     file <- paste0(file, ".rds")
   }
   file
+}
+
+# Validate and prepare a file path for storing a brmsfit object
+#
+# Splits the provided file path into folder and file components,
+# checks that the folder exists (if enabled), ensures the file name ends with `.rds`,
+# and then returns the full normalized file path.
+#
+# @param file A character string specifying a file path or base filename.
+# @param .check_folder Logical; if TRUE (default), validates that the folder exists using `check_folder()`.
+#                      If FALSE, the folder check is skipped. Mainly used in test scenarios.
+# @return A fully qualified file path (character string) with the `.rds` extension.
+check_brmsfit_file <- function(file, .check_folder = TRUE) {
+  flist <- split_folder_and_file(file)
+
+  if (.check_folder) {
+    check_folder(flist$folder)
+  }
+
+  file_name <- check_brmsfit_file_name(flist$file)
+  full_name <- file.path(flist$folder, file_name)
+
+  full_name
 }
 
 # check if a function requires an old default setting
