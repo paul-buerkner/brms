@@ -1014,7 +1014,7 @@ check_folder <- function(folder) {
       "existing directory where the model can be saved after fitting."
     )
   }
-  invisible(TRUE)
+  invisible(NULL)
 }
 
 # Split a file path into cache folder and file components
