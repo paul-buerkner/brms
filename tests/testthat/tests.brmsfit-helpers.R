@@ -209,7 +209,7 @@ test_that("insert_refcat() works correctly", {
   }
 })
 
-
+# split_folder_and_file
 test_that("split_folder_and_file returns expected results", {
   files <- c("somefile",  "./somefile" , "somepath/somefolder/somefile" )
   result <- base::lapply(files, split_folder_and_file)
@@ -220,6 +220,7 @@ test_that("split_folder_and_file returns expected results", {
   expect_equal(result ,exp_result )
 })
 
+# check_brmsfit_file
 test_that("check_brmsfit_file returns expected results", {
   files <- c("somefile",  "./somefile"  , "somefile.rds" , "somepath/somefolder/somefile" )
   result <- base::lapply(files, function(x) check_brmsfit_file(x ,  .check_folder = F  ))
@@ -227,5 +228,29 @@ test_that("check_brmsfit_file returns expected results", {
                          "./somefile.rds" ,
                          "./somefile.rds" ,
                          "somepath/somefolder/somefile.rds" )
+  expect_equal(result ,exp_result )
+})
+
+# get_cache_folder
+test_that("get_cache_folder returns expected results", {
+
+  old_val <- getOption("brms.cache_folder", NULL)
+  options(brms.cache_folder = "SomeFolder")
+
+  on.exit({
+    if (is.null(old_val)) {
+      options(your.option.name = NULL)
+    } else {
+      options(your.option.name = old_val)
+    }
+  }, add = TRUE)
+
+
+  files <- c("somefile",  "./somefile"  , "abcde/somefile.rds" , "somepath/somefolder/somefile" )
+  result <- base::lapply(files,  get_cache_folder )
+  exp_result <-   list(  "SomeFolder" ,
+                         "SomeFolder" ,
+                         "abcde" ,
+                         "somepath/somefolder" )
   expect_equal(result ,exp_result )
 })
