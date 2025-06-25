@@ -1864,7 +1864,11 @@ prepare_family <- function(x) {
 order_intercepts <- function(bterms) {
   dpar <- dpar_class(bterms[["dpar"]])
   if (!length(dpar)) dpar <- "mu"
-  isTRUE(!is_ordinal(bterms) && dpar %in% bterms$family[["order"]])
+  isTRUE(
+    !is_ordinal(bterms) &&
+    dpar %in% bterms$family[["order"]] &&
+    !get_nl(bterms$formula)
+  )
 }
 
 # fix intercepts to help identifying mixture components?
