@@ -107,7 +107,8 @@ test_that("brmsfit_needs_refit works correctly", {
   fake_fit <- brm(y ~ x, data = data_model1, empty = TRUE)
 
   fake_fit_file <- fake_fit
-  fake_fit_file$file <- cache_tmp
+  # align windows with unix encoding of file paths
+  fake_fit_file$file <- gsub("\\", "/", cache_tmp, fixed = TRUE)
 
   scode_model1 <- make_stancode(y ~ x, data = data_model1)
   sdata_model1 <- make_standata(y ~ x, data = data_model1)
@@ -116,7 +117,6 @@ test_that("brmsfit_needs_refit works correctly", {
   data_model2$x[1] <- data_model2$x[1] + 1
   scode_model2 <- make_stancode(y ~ 0 + x, data = data_model2)
   sdata_model2 <- make_standata(y ~ 0 + x, data = data_model2)
-
 
   write_brmsfit(fake_fit, file = cache_tmp)
   cache_res <- read_brmsfit(file = cache_tmp)
