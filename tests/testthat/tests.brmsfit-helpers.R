@@ -246,11 +246,14 @@ test_that("get_cache_folder returns expected results", {
   }, add = TRUE)
 
 
-  files <- c("somefile",  "./somefile"  , "abcde/somefile.rds" , "somepath/somefolder/somefile" )
-  result <- base::lapply(files,  get_cache_folder )
-  exp_result <-   list(  "SomeFolder" ,
-                         "SomeFolder" ,
-                         "abcde" ,
-                         "somepath/somefolder" )
-  expect_equal(result ,exp_result )
+  files <- c("somefile", "./somefile", "abcde/somefile.rds" ,
+             "somepath/somefolder/somefile")
+  result <- base::lapply(files, brms:::get_cache_folder)
+  exp_result <-   list(
+    "SomeFolder" ,
+    "SomeFolder" ,
+    "abcde" ,
+    "somepath/somefolder"
+  )
+  expect_equal(result, exp_result)
 })

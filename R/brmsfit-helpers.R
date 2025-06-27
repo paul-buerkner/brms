@@ -982,25 +982,22 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   refit
 }
 
-#' Determine Cache Folder for brms
-#'
-#' Checks if the provided file path includes a directory. If so, returns that directory.
-#' Otherwise, looks for a user‐defined `brms_cache_folder` option. If the option is not set,
-#' defaults to the current directory (".").
-#'
-#' @param file A file path (string) that may include a directory component.
-#' @return A string indicating which folder to use for caching.
+# Determine Cache Folder for brms
+#
+# Checks if the provided file path includes a directory. If so, returns that directory.
+# Otherwise, looks for a user‐defined `brms_cache_folder` option. If the option is not set,
+# defaults to the current directory (".").
+#
+# @param file A file path (string) that may include a directory component.
+# @return A string indicating which folder to use for caching.
 get_cache_folder <- function(file) {
   dir <- dirname(file)
-
   # If the file path already contains a directory, use it
   if (dir != ".") {
     return(dir)
   }
-
   # Otherwise, check for a user‐defined cache folder option
   cache_folder <- getOption("brms.cache_folder", default = ".")
-
   cache_folder
 }
 
@@ -1025,7 +1022,6 @@ check_folder <- function(folder) {
 split_folder_and_file <- function(file) {
   cache_folder <- get_cache_folder(file)
   file <- basename(file)
-
   list(folder = cache_folder, file = file)
 }
 
@@ -1081,19 +1077,17 @@ check_brmsfit_file_name <- function(file) {
 # and then returns the full normalized file path.
 #
 # @param file A character string specifying a file path or base filename.
-# @param .check_folder Logical; if TRUE (default), validates that the folder exists using `check_folder()`.
-#                      If FALSE, the folder check is skipped. Mainly used in test scenarios.
+# @param .check_folder Logical; if TRUE (default), validates that the folder
+#   exists using `check_folder()`.
+#   If FALSE, the folder check is skipped. Mainly used in test scenarios.
 # @return A fully qualified file path (character string) with the `.rds` extension.
 check_brmsfit_file <- function(file, .check_folder = TRUE) {
   flist <- split_folder_and_file(file)
-
   if (.check_folder) {
     check_folder(flist$folder)
   }
-
   file_name <- check_brmsfit_file_name(flist$file)
   full_name <- file.path(flist$folder, file_name)
-
   full_name
 }
 
