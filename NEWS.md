@@ -13,6 +13,9 @@ thanks to Ioannis Kosmidis. (#1698)
 multinomial data thanks to Tom Peatman. (#1729)
 * Add the `int_step` R function to match the corresponding Stan 
 function thanks to Daniel Sabanes Bove. (#1734)
+* Add a new global option `brms.cache_folder`, which allows users to define a 
+default directory for saving and loading cached brmsfit objects.
+Thanks to Sermet Pekin. (#1790)
 
 ### Bug Fixes
 
