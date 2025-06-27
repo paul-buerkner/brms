@@ -11,3 +11,4 @@ tests/local/models_1.2.0.Rda
 tests/local/Rplots.pdf
 /Meta/
 .DS_Store
+ignore_*/
