@@ -53,7 +53,8 @@ Imports:
     parallel,
     grDevices,
     backports,
-    digest
+    digest,
+    cli (>= 3.0.0)
 Suggests:
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
