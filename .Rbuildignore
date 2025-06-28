@@ -23,4 +23,6 @@
 ^CRAN-RELEASE$
 ^CRAN-SUBMISSION$
 ^\brms-ci-docker-sp$
+^\ignore_checks$
 ^cache-brm*\.Rds$
+

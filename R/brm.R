@@ -486,18 +486,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   rename <- as_one_logical(rename)
 
 
-  # formula and family parameters may come with their own environment which requires
-  #  special care when we need to create a hash from call
-  .clean_for_hash <- function(x) {
-    if (inherits(x, "formula")) {
-      environment(x) <- NULL
-      x <- as.character(x)
-    }
-    if (inherits(x, "family")) {
-      x$env <- NULL
-    }
-    x
-  }
+
 
   # this check is to allow other tests to test what they were expected to do
   #   when function was called with data parameter missing. We avoid an early

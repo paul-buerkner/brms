@@ -1091,6 +1091,19 @@ check_brmsfit_file <- function(file, .check_folder = TRUE) {
   full_name
 }
 
+# formula and family parameters may come with their own environment which requires
+#  special care when we need to create a hash from call
+.clean_for_hash <- function(x) {
+  if (inherits(x, "formula")) {
+    environment(x) <- NULL
+    x <- as.character(x)
+  }
+  if (inherits(x, "family")) {
+    x$env <- NULL
+  }
+  x
+}
+
 # check if a function requires an old default setting
 # only used to ensure backwards compatibility
 # @param version brms version in which the change to the default was made
