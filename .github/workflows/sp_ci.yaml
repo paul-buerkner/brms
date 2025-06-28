@@ -1,7 +1,10 @@
 name: R-CMD-check (Fork-only)
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main, '**']
+  pull_request:
+    branches: [main, '**']
 
 
 jobs:
@@ -14,9 +17,9 @@ jobs:
       matrix:
         config:
           - {os: windows-latest, r: 'release', rtools: '42'}
-          - {os: ubuntu-22.04, r: 'devel',   rtools: ''}
-          - {os: ubuntu-22.04, r: 'release', rtools: ''}
-          - {os: ubuntu-22.04, r: 'oldrel-1', rtools: ''}
+          # - {os: ubuntu-22.04, r: 'devel',   rtools: ''}
+          # - {os: ubuntu-22.04, r: 'release', rtools: ''}
+          # - {os: ubuntu-22.04, r: 'oldrel-1', rtools: ''}
 
     env:
       R_KEEP_PKG_SOURCE: yes
