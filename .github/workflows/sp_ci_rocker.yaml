@@ -31,9 +31,14 @@ jobs:
             "R.rsp", "knitr", "rcmdcheck", "rmarkdown", "lme4", "mice", "BH", "MCMCglmm",
             "ape", "cmdstanr", "RcppEigen", "testthat", "emmeans", "projpred", "priorsense",
             "RWiener", "rtdists", "extraDistr", "spdep", "mnormt", "splines2", "arm",
-            "statmod", "diffobj", "betareg" , "digest" , "cmdstanr"
+            "statmod", "diffobj", "betareg" , "digest"
           ), repos = "https://cloud.r-project.org")
         shell: Rscript {0}
+
+      - name: Install cmdstanr from GitHub
+        run: |
+          remotes::install_github("stan-dev/cmdstanr", dependencies = TRUE)
+
 
       - name: Install CmdStan
         run: |

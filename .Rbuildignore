@@ -22,3 +22,5 @@
 ^LICENSE$
 ^CRAN-RELEASE$
 ^CRAN-SUBMISSION$
+^\brms-ci-docker-sp$
+^cache-brm*\.Rds$
