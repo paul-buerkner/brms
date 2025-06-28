@@ -1,28 +1,39 @@
-^Meta$
-^doc$
-^man-roxygen$
+# Project + editor files
 ^.*\.Rproj$
-^.*\.RData$
-^.*\.Rhistory$
 ^\.Rproj\.user$
+^.*\.Rhistory$
+^.*\.RData$
+^.*\.Rprofile$
+
+# Git and GitHub
 ^\.git$
 ^\.github$
-^.*\.Rprofile$
+
+# Documentation
 ^README\.Rmd$
 ^README-.*\.png$
-^\README_cache$
+^README_cache$
+^doc$
+^man-roxygen$
 ^cran-comments\.md$
-^brm\.txt$
-^brm\.stan$
-^\.travis\.yml$
+
+# Testing
 ^tests/testthat/Rplots\.pdf$
 ^tests/local$
 ^tests/brmsfit_examples\.R$
+
+# CI and local dev
+^\.travis\.yml$
 ^ignore_caches$
-^LICENSE$
+^ignore_checks$
+^brms-ci-docker-sp$
+^brm\.txt$
+^brm\.stan$
+^cache-brm.*\.Rds$
+
+# CRAN helpers
 ^CRAN-RELEASE$
 ^CRAN-SUBMISSION$
-^\brms-ci-docker-sp$
-^\ignore_checks$
-^cache-brm*\.Rds$
 
+# Optional files
+^LICENSE$

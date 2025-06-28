@@ -44,7 +44,8 @@ brm(
   file = NULL,
   file_compress = TRUE,
   file_refit = getOption("brms.file_refit", "never"),
-  file_auto = FALSE,
+  file_auto = getOption("brms.file_auto", FALSE),
+  preview = FALSE,
   empty = FALSE,
   rename = TRUE,
   ...
@@ -316,6 +317,11 @@ automatically with the parameters given omitting the ones that do not change
 the calculation. If \code{TRUE} this parameter overrides file calculating a hash
 and file_refit as \code{"on_change"} which will save calculation and reuse
 this result when available.}
+
+\item{preview}{Logical. If \code{TRUE}, the function will evaluate and display
+key setup components—such as the model formula, data dimensions, and generated
+file hash—without fitting the model. Useful for debugging or verifying
+configurations before running a potentially time-consuming model fit.}
 
 \item{empty}{Logical. If \code{TRUE}, the Stan model is not created
 and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
