@@ -1,0 +1,58 @@
+name: R-CMD-check (Fork-only, Rocker)
+
+on:
+  push:
+    branches: [main, '**']
+  pull_request:
+    branches: [main, '**']
+
+jobs:
+
+  # ──────────────────────────────────────────────────────────────
+  # Linux via rocker/verse container  (fast, no setup-r)
+  # ──────────────────────────────────────────────────────────────
+  R-CMD-check-linux:
+    runs-on: ubuntu-latest     # runner host
+    container:
+      image: rocker/verse:latest   # R, tidyverse, TeX & pandoc pre-installed
+      options: --user root         # allow apt-get if you need sys-deps
+    name: rocker/verse (R release)
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+    steps:
+      - uses: actions/checkout@v4
+
+      # (Optional) install extra system libraries here
+      # - name: Install system libs
+      #   run: |
+      #     apt-get update -qq &&
+      #     apt-get install -y libglpk-dev
+
+      # Install R packages that are NOT already in rocker/verse
+      - name: Install R deps
+        run: |
+          install.packages("remotes")
+          remotes::install_cran(c(
+            "rcmdcheck", "testthat", "R.rsp", "knitr", "rmarkdown",
+            "lme4", "mice", "BH", "MCMCglmm", "ape", "RcppEigen",
+            "emmeans", "projpred", "priorsense", "RWiener", "rtdists",
+            "extraDistr", "spdep", "mnormt", "splines2", "arm",
+            "statmod", "diffobj", "betareg"
+          ))
+          remotes::install_github("stan-dev/cmdstanr")
+
+        shell: Rscript {0}
+
+      - name: Build CmdStan (linux)
+        run: |
+          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
+          cmdstanr::install_cmdstan(cores = parallel::detectCores())
+        shell: Rscript {0}
+
+      - name: R CMD check
+        run: |
+          rcmdcheck::rcmdcheck(args = c(
+            "--no-manual", "--as-cran", "--ignore-vignettes"
+          ))
+        shell: Rscript {0}
