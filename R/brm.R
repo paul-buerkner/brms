@@ -236,6 +236,10 @@
 #'   the calculation. If \code{TRUE} this parameter overrides file calculating a hash
 #'   and file_refit as \code{"on_change"} which will save calculation and reuse
 #'   this result when available.
+#' @param preview Logical. If \code{TRUE}, the function will evaluate and display
+#'   key setup components—such as the model formula, data dimensions, and generated
+#'   file hash—without fitting the model. Useful for debugging or verifying
+#'   configurations before running a potentially time-consuming model fit.
 #' @param empty Logical. If \code{TRUE}, the Stan model is not created
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created
@@ -462,7 +466,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                file_auto = FALSE ,
+                file_auto = getOption("brms.file_auto", FALSE ),
+                preview = FALSE ,
                 empty = FALSE, rename = TRUE, ...) {
   # keep given seed value for hash function
   orig_seed <- seed
@@ -484,9 +489,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-
-
-
 
   # this check is to allow other tests to test what they were expected to do
   #   when function was called with data parameter missing. We avoid an early
@@ -533,6 +535,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     algo = "xxhash64"
   )
 
+  # in preview mode we will just show evaluated parameters
+  # and unique hash that corresponds to the current call.
+  if(isTRUE(preview)){
+    message("preview mode: skipping model fitting.")
+    return(
+      list(hash = hash , params= .params_list , call=match.call() )
+    )
+  }
   # Handle file_auto is TRUE case
   #   will define a value for file argument automatically to return previous result
   #   with same parameters

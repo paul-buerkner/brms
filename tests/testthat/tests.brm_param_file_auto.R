@@ -13,6 +13,10 @@ if(!dir.exists(cache_folder))
     }
   }, add = TRUE)
 
+
+  fit1_preview <- brm(count ~ zAge + zBase * Trt + (1|patient),
+              data = epilepsy, family = poisson() , file_auto = TRUE , preview = TRUE  )
+
   fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
               data = epilepsy, family = poisson() , file_auto = TRUE )
 
@@ -45,3 +49,43 @@ if(!dir.exists(cache_folder))
   expect_false(  fit1$run_info$hash  ==  fit1_gaussian$run_info$hash )
 
 })
+
+
+test_that("preview parameter for brm function works", {
+
+  # This test will be faster since it will use preview parameter and get a list
+  # evaluated parameters for the call and the hash value for the call.
+
+  fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
+                      data = epilepsy, family = poisson() , file_auto = TRUE , preview = TRUE  )
+
+  fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
+              data = epilepsy, family = poisson() , file_auto = TRUE , preview = TRUE)
+
+  fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient),
+              data = epilepsy, family = poisson() , file_auto = TRUE , preview = TRUE)
+
+  fit3 <- brm(count ~ zAge + zBase  + (1|patient),
+              data = epilepsy, family = poisson() , file_auto = TRUE  , preview = TRUE )
+
+  fit4 <- brm(count ~ zAge + zBase  + (1|patient),
+              data = epilepsy, family = poisson() , file_auto = FALSE , preview = TRUE )
+
+  fit1_gaussian <- brm(count ~ zAge + zBase * Trt + (1|patient),
+                       data = epilepsy, family = gaussian() , file_auto = TRUE , preview = TRUE )
+
+
+
+  # fit2 will return same result with fit1 cause file_auto is TRUE
+  expect_equal(  fit1$hash  ,  fit2$hash )
+  # fit1 and fit3 must have different hashes
+  expect_false(  fit1$hash  ==  fit3$hash )
+
+  # fit3 and fit4 has same parameters that has an effect on the result
+  expect_equal(  fit3$hash , fit4$hash )
+
+  # check if family parameter also changes the hash
+  expect_false(  fit1$hash  ==  fit1_gaussian$hash )
+
+})
+
