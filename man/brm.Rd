@@ -44,6 +44,7 @@ brm(
   file = NULL,
   file_compress = TRUE,
   file_refit = getOption("brms.file_refit", "never"),
+  file_auto = FALSE,
   empty = FALSE,
   rename = TRUE,
   ...
@@ -309,6 +310,12 @@ Refit will not be triggered for changes in additional parameters of the fit
 (e.g., initial values, number of iterations, control arguments, ...). A
 known limitation is that a refit will be triggered if within-chain
 parallelization is switched on/off.}
+
+\item{file_auto}{Logical If \code{TRUE} file parameter will be calculated
+automatically with the parameters given omitting the ones that do not change
+the calculation. If \code{TRUE} this parameter overrides file calculating a hash
+and file_refit as \code{"on_change"} which will save calculation and reuse
+this result when available.}
 
 \item{empty}{Logical. If \code{TRUE}, the Stan model is not created
 and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}

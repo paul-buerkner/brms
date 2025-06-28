@@ -1,0 +1,14 @@
+pandoc: 3.6.1
+pkgdown: 2.1.3
+pkgdown_sha: ~
+articles:
+  brms_customfamilies: brms_customfamilies.html
+  brms_distreg: brms_distreg.html
+  brms_families: brms_families.html
+  brms_missings: brms_missings.html
+  brms_monotonic: brms_monotonic.html
+  brms_multivariate: brms_multivariate.html
+  brms_nonlinear: brms_nonlinear.html
+  brms_phylogenetics: brms_phylogenetics.html
+  brms_threading: brms_threading.html
+last_built: 2025-06-24T19:05Z

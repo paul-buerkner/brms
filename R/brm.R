@@ -231,6 +231,11 @@
 #'   (e.g., initial values, number of iterations, control arguments, ...). A
 #'   known limitation is that a refit will be triggered if within-chain
 #'   parallelization is switched on/off.
+#' @param file_auto Logical If \code{TRUE} file parameter will be calculated
+#'   automatically with the parameters given omitting the ones that do not change
+#'   the calculation. If \code{TRUE} this parameter overrides file calculating a hash
+#'   and file_refit as \code{"on_change"} which will save calculation and reuse
+#'   this result when available.
 #' @param empty Logical. If \code{TRUE}, the Stan model is not created
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created
@@ -441,7 +446,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, 
+                init = NULL, inits = NULL, chains = 4,
                 iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
@@ -452,21 +457,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = 1,
-                seed = NA, save_model = NULL, stan_model_args = list(),
+                seed = NA,
+                save_model = NULL,
+                stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
+                file_auto = FALSE ,
                 empty = FALSE, rename = TRUE, ...) {
-
-  # optionally load brmsfit from file
-  # Loading here only when we should directly load the file.
-  # The "on_change" option needs sdata and scode to be built
-  file_refit <- match.arg(file_refit, file_refit_options())
-  if (!is.null(file) && file_refit == "never") {
-    x <- read_brmsfit(file)
-    if (!is.null(x)) {
-      return(x)
-    }
-  }
+  # keep given seed value for hash function
+  orig_seed <- seed
 
   # validate arguments later passed to Stan
   algorithm <- match.arg(algorithm, algorithm_choices())
@@ -485,6 +484,96 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
+
+
+  # formula and family parameters may come with their own environment which requires
+  #  special care when we need to create a hash from call
+  .clean_for_hash <- function(x) {
+    if (inherits(x, "formula")) {
+      environment(x) <- NULL
+      x <- as.character(x)
+    }
+    if (inherits(x, "family")) {
+      x$env <- NULL
+    }
+    x
+  }
+
+  # this check is to allow other tests to test what they were expected to do
+  #   when function was called with data parameter missing. We avoid an early
+  #   fail by adding this conversion to d for in our hash function
+  if(missing(data)){
+    d<- NULL
+  }else{
+    d <- data
+  }
+
+  # This list must include only/all the parameters that may change the result
+  .params_list <- list(
+    formula = formula,  data = d,
+    family = family,  prior = prior,
+    autocor = autocor,   data2 = data2,
+    cov_ranef = cov_ranef,  sample_prior = sample_prior,
+    sparse = sparse,  knots = knots,
+    drop_unused_levels = drop_unused_levels,
+    stanvars = stanvars,  stan_funs = stan_funs,
+    fit = fit, save_pars = save_pars,
+    save_ranef = save_ranef, save_mevars = save_mevars,
+    save_all_pars = save_all_pars, init = init,
+    inits = inits, chains = chains,
+    iter = iter, warmup = warmup,
+    thin = thin, cores = cores,
+    threads = threads, opencl = opencl,
+    normalize = normalize, control = control,
+    algorithm = algorithm, backend = backend,
+    future = future,
+    silent = silent,
+    orig_seed = orig_seed,
+    # save_model = save_model,
+    stan_model_args = stan_model_args,
+    # file = file,
+    # file_compress = file_compress,
+    # file_refit = file_refit,
+    empty = empty
+    # rename = rename,
+    # ...
+  )
+  # one way hash from parameters
+  hash  <-  digest::digest(
+    lapply(.params_list, .clean_for_hash),
+    algo = "xxhash64"
+  )
+
+  # Handle file_auto is TRUE case
+  #   will define a value for file argument automatically to return previous result
+  #   with same parameters
+  if( isTRUE( file_auto  ) ) {
+   # override file parameter and file_refit if file_auto is TRUE
+    orig_file <- file
+    file <- paste0('cache-brm-result_' ,  hash , '.Rds' )
+    orig_file_refit <- file_refit
+    file_refit <- "on_change"
+
+    # We inform user that we override file or file_refit parameters in case necessary
+    if(!is.null(orig_file) | orig_file_refit != 'on_change'  ){
+      .msg_file_auto = "Since file_auto parameter was given as TRUE
+      this function overrides file or/and file_refit option to return brmsfit results to user
+      from the cache file that was saved earlier."
+        message(.msg_file_auto )
+    }
+
+  }
+
+  # optionally load brmsfit from file
+  # Loading here only when we should directly load the file.
+  # The "on_change" option needs sdata and scode to be built
+  file_refit <- match.arg(file_refit, file_refit_options())
+  if (!is.null(file) && file_refit == "never") {
+    x <- read_brmsfit(file)
+    if (!is.null(x)) {
+      return(x)
+    }
+  }
 
   # initialize brmsfit object
   if (is.brmsfit(fit)) {
@@ -595,7 +684,16 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
     threads, opencl, init, exclude, control, future, seed, silent, ...
   )
+
+  run_start <- Sys.time()
   x$fit <- do_call(fit_model, fit_args)
+  run_end <- Sys.time()
+
+  # run time information for our fit function
+  x$run_info  <- list(params =  .params_list ,
+                      hash = hash,
+                      start= run_start ,
+                      end = run_end )
 
   # rename parameters to have human readable names
   if (rename) {

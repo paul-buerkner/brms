@@ -18,6 +18,7 @@
 ^tests/testthat/Rplots\.pdf$
 ^tests/local$
 ^tests/brmsfit_examples\.R$
+^ignore_caches$
 ^LICENSE$
 ^CRAN-RELEASE$
 ^CRAN-SUBMISSION$

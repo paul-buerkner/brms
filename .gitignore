@@ -12,3 +12,4 @@ tests/local/Rplots.pdf
 /Meta/
 .DS_Store
 ignore_*/
+cache-brm-result*.*
