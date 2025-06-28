@@ -5,54 +5,45 @@ on:
     branches: [main, '**']
   pull_request:
     branches: [main, '**']
+name: R-CMD-check (rocker)
 
 jobs:
-
-  # ──────────────────────────────────────────────────────────────
-  # Linux via rocker/verse container  (fast, no setup-r)
-  # ──────────────────────────────────────────────────────────────
-  R-CMD-check-linux:
-    runs-on: ubuntu-latest     # runner host
+  R-CMD-check:
+    runs-on: ubuntu-latest
     container:
-      image: rocker/verse:latest   # R, tidyverse, TeX & pandoc pre-installed
-      options: --user root         # allow apt-get if you need sys-deps
-    name: rocker/verse (R release)
+      image: rocker/verse:latest
+
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+
     steps:
       - uses: actions/checkout@v4
 
-      # (Optional) install extra system libraries here
-      # - name: Install system libs
-      #   run: |
-      #     apt-get update -qq &&
-      #     apt-get install -y libglpk-dev
-
-      # Install R packages that are NOT already in rocker/verse
-      - name: Install R deps
+      - name: Install system dependencies
         run: |
-          install.packages("remotes")
-          remotes::install_cran(c(
-            "rcmdcheck", "testthat", "R.rsp", "knitr", "rmarkdown",
-            "lme4", "mice", "BH", "MCMCglmm", "ape", "RcppEigen",
-            "emmeans", "projpred", "priorsense", "RWiener", "rtdists",
-            "extraDistr", "spdep", "mnormt", "splines2", "arm",
-            "statmod", "diffobj", "betareg"
-          ))
-          remotes::install_github("stan-dev/cmdstanr")
+          apt-get update
+          apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libglpk-dev
 
+      - name: Install R dependencies
+        run: |
+          install.packages(c(
+            "rstan", "bayesplot", "bridgesampling", "future", "future.apply", "nleqslv",
+            "R.rsp", "knitr", "rcmdcheck", "rmarkdown", "lme4", "mice", "BH", "MCMCglmm",
+            "ape", "cmdstanr", "RcppEigen", "testthat", "emmeans", "projpred", "priorsense",
+            "RWiener", "rtdists", "extraDistr", "spdep", "mnormt", "splines2", "arm",
+            "statmod", "diffobj", "betareg" , "digest"
+          ), repos = "https://cloud.r-project.org")
         shell: Rscript {0}
 
-      - name: Build CmdStan (linux)
+      - name: Install CmdStan
         run: |
           cmdstanr::check_cmdstan_toolchain(fix = TRUE)
           cmdstanr::install_cmdstan(cores = parallel::detectCores())
         shell: Rscript {0}
 
-      - name: R CMD check
+      - name: Run R CMD check
         run: |
-          rcmdcheck::rcmdcheck(args = c(
-            "--no-manual", "--as-cran", "--ignore-vignettes"
-          ))
+          rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran", "--ignore-vignettes"))
         shell: Rscript {0}
+
