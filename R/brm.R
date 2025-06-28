@@ -490,7 +490,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
 
-  # this check is to allow other tests to test what they were expected to do
+  # this check is to allow other tests to continue doing what they were expected to do
   #   when function was called with data parameter missing. We avoid an early
   #   fail by adding this conversion to d for in our hash function
   if(missing(data)){
@@ -538,10 +538,13 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   # in preview mode we will just show evaluated parameters
   # and unique hash that corresponds to the current call.
   if(isTRUE(preview)){
-    message("preview mode: skipping model fitting.")
-    return(
+    message("preview mode: skipping model fitting. For a real run set preview=FALSE when calling brm() function.")
+    preview_call  <- (
       list(hash = hash , params= .params_list , call=match.call() )
     )
+
+    class(preview_call) <- c('brm_call_preview' , 'list')
+    return(preview_call)
   }
   # Handle file_auto is TRUE case
   #   will define a value for file argument automatically to return previous result
@@ -705,4 +708,30 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- write_brmsfit(x, file, compress = file_compress)
   }
   x
+}
+
+realize <- function(x, ...) {
+  if (!inherits(x, "brm_call_preview")) {
+    stop("Object must be of class 'brm_call_preview'")
+  }
+
+  # Retrieve the original call
+  call <- x$call
+  eval_env <- parent.frame()
+
+  # Turn the call into a brm call and expand dots
+  call <- match.call(definition = brm, call = call, expand.dots = TRUE)
+
+  # Convert to list, update preview to FALSE, merge additional args
+  call_list <- as.list(call)
+  call_list$preview <- FALSE
+
+  # Let user override or add parameters via ...
+  call_list <- modifyList(call_list, list(...))
+
+  # Convert back to call
+  call <- as.call(call_list)
+
+  # Evaluate
+  eval(call, envir = eval_env)
 }

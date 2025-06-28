@@ -600,3 +600,21 @@ posterior_interval.brmsfit <- function(
   ps <- as.matrix(object, pars = pars, variable = variable, ...)
   rstantools::posterior_interval(ps, prob = prob)
 }
+
+#' @export
+print.brm_call_preview <- function(x, ...) {
+  cat(cli::rule("Preview Mode for brm()"), "\n\n")
+
+  cli::cli_alert_info("Model will not be fitted. This is just a preview.")
+
+  cli::cli_text("• Hash: {.strong {x$hash}}")
+
+  cli::cli_text("\n• Parameters provided:")
+  print(str(x$params, max.level = 1))
+
+  cli::cli_text("\n• Original call:")
+  print(x$call)
+
+  cat("\nTo run the model, call brm(..., preview = FALSE)\n")
+  invisible(x)
+}

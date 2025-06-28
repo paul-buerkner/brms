@@ -225,11 +225,14 @@ test_that("split_folder_and_file returns expected results", {
 
 # check_brmsfit_file
 test_that("check_brmsfit_file returns expected results", {
+
+  cache_folder <- getOption('brms.cache_folder' , default = '.')
+
   files <- c("somefile",  "./somefile"  , "somefile.rds" , "somepath/somefolder/somefile" )
   result <- base::lapply(files, function(x) check_brmsfit_file(x ,  .check_folder = F  ))
-  exp_result <-   list(  "./somefile.rds" ,
-                         "./somefile.rds" ,
-                         "./somefile.rds" ,
+  exp_result <-   list( file.path(cache_folder, "somefile.rds") ,
+                        file.path(cache_folder, "somefile.rds") ,
+                        file.path(cache_folder, "somefile.rds") ,
                          "somepath/somefolder/somefile.rds" )
   expect_equal(result ,exp_result )
 })
