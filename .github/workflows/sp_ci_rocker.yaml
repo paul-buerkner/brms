@@ -31,7 +31,7 @@ jobs:
             "R.rsp", "knitr", "rcmdcheck", "rmarkdown", "lme4", "mice", "BH", "MCMCglmm",
             "ape", "cmdstanr", "RcppEigen", "testthat", "emmeans", "projpred", "priorsense",
             "RWiener", "rtdists", "extraDistr", "spdep", "mnormt", "splines2", "arm",
-            "statmod", "diffobj", "betareg" , "digest"
+            "statmod", "diffobj", "betareg" , "digest" , "cmdstanr"
           ), repos = "https://cloud.r-project.org")
         shell: Rscript {0}
 
