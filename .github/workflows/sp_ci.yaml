@@ -2,9 +2,9 @@ name: R-CMD-check (Fork-only)
 
 on:
   push:
-    branches: [main]
+    branches: [main , '**']
   pull_request:
-    branches: [main]
+    branches: [main , '**']
 
 jobs:
   R-CMD-check:
