@@ -13,4 +13,5 @@ tests/local/Rplots.pdf
 .DS_Store
 ignore_*/
 cache-brm-result*.*
+brms-ci-docker-sp/
 
