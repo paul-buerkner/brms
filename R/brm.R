@@ -690,10 +690,13 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   run_end <- Sys.time()
 
   # run time information for our fit function
-  x$run_info  <- list(params =  .params_list ,
-                      hash = hash,
-                      start= run_start ,
-                      end = run_end )
+  x$run_info <- list(
+    params    = .params_list,
+    hash      = hash,
+    start     = run_start,
+    end       = run_end,
+    duration  = as.numeric(difftime(run_end, run_start, units = "secs"))
+  )
 
   # rename parameters to have human readable names
   if (rename) {
