@@ -19,17 +19,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # pandoc for vignettes / rmarkdown
       - uses: r-lib/actions/setup-pandoc@v2
 
+      # R (release) from Posit PPM
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: release
           use-public-rspm: true
 
+      # Install CRAN + GitHub deps (with cache)
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          dependencies: NA
-          cache: true
+          dependencies: NA          # Imports/Depends only
+          cache: true               # cache compiled packages
           extra-packages: |
             R.rsp
             knitr
@@ -40,8 +43,8 @@ jobs:
             BH
             MCMCglmm
             ape
-            stan-dev/cmdstanr
             RcppEigen
+            stan-dev/cmdstanr
             testthat
             emmeans
             projpred
@@ -56,26 +59,29 @@ jobs:
             statmod
             diffobj
             betareg
-            cmdstanr
             digest
 
+      # -------- CmdStan cache ----------
       - name: Restore CmdStan cache
         uses: actions/cache@v3
         with:
-          path: ~/.cmdstan
-          key: cmdstan-ubuntu-22.04-release-v1
+          path: ~/.cmdstan            # default cmdstan location
+          key: cmdstan-ubuntu22.04-${{ hashFiles('**/DESCRIPTION') }}-v1
+          restore-keys: |
+            cmdstan-ubuntu22.04-
 
-      - name: Build or use cached CmdStan
+      - name: Build (or reuse) CmdStan
         run: |
-          if (isTRUE(cmdstanr::cmdstan_version(TRUE))) {
-            message("✔ CmdStan already available: ", cmdstanr::cmdstan_version())
+          if (cmdstanr::cmdstan_available()) {
+            cat("✔ Cached CmdStan version:", cmdstanr::cmdstan_version(), "\n")
           } else {
             cmdstanr::check_cmdstan_toolchain(fix = TRUE)
             cmdstanr::install_cmdstan(cores = parallel::detectCores())
           }
         shell: Rscript {0}
 
+      # -------- R CMD check ------------
       - uses: r-lib/actions/check-r-package@v2
         with:
           build_args: 'c("--no-manual", "--no-build-vignettes")'
-          args: 'c("--no-manual", "--as-cran", "--ignore-vignettes")'
+          args:       'c("--no-manual", "--as-cran", "--ignore-vignettes")'
