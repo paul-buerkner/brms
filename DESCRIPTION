@@ -52,7 +52,8 @@ Imports:
     utils,
     parallel,
     grDevices,
-    backports
+    backports,
+    digest
 Suggests:
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
@@ -73,7 +74,6 @@ Suggests:
     ape,
     arm,
     statmod,
-    digest,
     diffobj,
     betareg,
     R.rsp,
