@@ -52,7 +52,8 @@ Imports:
     utils,
     parallel,
     grDevices,
-    backports
+    backports,
+    digest
 Suggests:
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
@@ -73,7 +74,6 @@ Suggests:
     ape,
     arm,
     statmod,
-    digest,
     diffobj,
     betareg,
     R.rsp,
@@ -81,7 +81,8 @@ Suggests:
     shiny,
     knitr,
     rmarkdown,
-    ragg
+    ragg,
+    withr
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions
     and link functions are supported, allowing users to fit -- among others --
