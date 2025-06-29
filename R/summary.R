@@ -601,20 +601,54 @@ posterior_interval.brmsfit <- function(
   rstantools::posterior_interval(ps, prob = prob)
 }
 
+#' Print Method for brm_call_preview Objects
+#'
+#' This function provides a clean and informative printout of a `brm_call_preview` object.
+#' It is used when `preview = TRUE` is passed to the `brm()` function from the `brms` package.
+#' The method displays the evaluated hash, relevant parameters, and the original call,
+#' allowing users to inspect what would be run—without fitting the model.
+#'
+#' @param x An object of class `brm_call_preview`, created when `preview = TRUE` in `brm()`.
+#' @param ... Additional arguments passed to or from other methods (ignored).
+#'
+#' @details
+#' The preview mode is useful for debugging or testing what input arguments will be used in the model call.
+#' Instead of fitting the model, the function returns a lightweight summary of the evaluated call.
+#'
+#' @return Invisibly returns the input object `x`, after printing the preview details to the console.
+#'
+#' @seealso [brms::brm()], [realize()] for turning a preview into a real model fit.
+#'
+#' @examples
+#' \dontrun{
+#' # Enable preview mode in brm
+#' preview_obj <- brm(
+#'   count ~ zAge + zBase * Trt + (1|patient),
+#'   data = epilepsy, family = poisson(), preview = TRUE
+#' )
+#'
+#' # Print the preview
+#' print(preview_obj)
+#'
+#' # Alternatively, the print method is invoked automatically:
+#' preview_obj
+#' }
+#'
 #' @export
 print.brm_call_preview <- function(x, ...) {
   cat(cli::rule("Preview Mode for brm()"), "\n\n")
 
   cli::cli_alert_info("Model will not be fitted. This is just a preview.")
 
-  cli::cli_text("• Hash: {.strong {x$hash}}")
+  cli::cli_text("- Hash: {.strong {x$hash}}")
 
-  cli::cli_text("\n• Parameters provided:")
+  cli::cli_text("\n- Parameters provided:")
   print(str(x$params, max.level = 1))
 
-  cli::cli_text("\n• Original call:")
+  cli::cli_text("\n- Original call:")
   print(x$call)
 
   cat("\nTo run the model, call brm(..., preview = FALSE)\n")
   invisible(x)
 }
+

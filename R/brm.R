@@ -710,28 +710,3 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   x
 }
 
-realize <- function(x, ...) {
-  if (!inherits(x, "brm_call_preview")) {
-    stop("Object must be of class 'brm_call_preview'")
-  }
-
-  # Retrieve the original call
-  call <- x$call
-  eval_env <- parent.frame()
-
-  # Turn the call into a brm call and expand dots
-  call <- match.call(definition = brm, call = call, expand.dots = TRUE)
-
-  # Convert to list, update preview to FALSE, merge additional args
-  call_list <- as.list(call)
-  call_list$preview <- FALSE
-
-  # Let user override or add parameters via ...
-  call_list <- modifyList(call_list, list(...))
-
-  # Convert back to call
-  call <- as.call(call_list)
-
-  # Evaluate
-  eval(call, envir = eval_env)
-}

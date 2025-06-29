@@ -7,6 +7,14 @@ test_that("preview parameter for brm function works", {
   fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
                       data = epilepsy, family = poisson() , file_auto = TRUE , preview = TRUE  )
 
+  fit1_gaussian <- brm(count ~ zAge + zBase * Trt + (1|patient),
+              data = epilepsy, family = gaussian() , file_auto = TRUE , preview = TRUE  )
+
+  # override any parameter of a brm_call_preview with realize
+  fit1_gaussian2 <- realize( fit1 , family= gaussian() , preview= TRUE )
+
+  expect_equal(  fit1_gaussian$hash , fit1_gaussian2$hash )
+
   fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient),
               data = epilepsy, family = poisson() , file_auto = TRUE , preview = TRUE)
 
@@ -16,8 +24,7 @@ test_that("preview parameter for brm function works", {
   fit4 <- brm(count ~ zAge + zBase  + (1|patient),
               data = epilepsy, family = poisson() , file_auto = FALSE , preview = TRUE )
 
-  fit1_gaussian <- brm(count ~ zAge + zBase * Trt + (1|patient),
-                       data = epilepsy, family = gaussian() , file_auto = TRUE , preview = TRUE )
+
 
 
 
