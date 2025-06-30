@@ -6,7 +6,7 @@
 \usage{
 brm(
   formula,
-  data,
+  data = NULL,
   family = gaussian(),
   prior = NULL,
   autocor = NULL,
@@ -311,11 +311,14 @@ Refit will not be triggered for changes in additional parameters of the fit
 known limitation is that a refit will be triggered if within-chain
 parallelization is switched on/off.}
 
-\item{file_auto}{Logical If \code{TRUE} file parameter will be calculated
-automatically with the parameters given omitting the ones that do not change
-the calculation. If \code{TRUE} this parameter overrides file calculating a hash
-and file_refit as \code{"on_change"} which will save calculation and reuse
-this result when available.}
+\item{file_auto}{Logical. If \code{TRUE}, the \code{file} argument is
+automatically generated based on a hash of the model-relevant arguments
+(e.g., formula, data, priors). Parameters that do not affect the model
+outcome are omitted from the hash. When \code{file_auto = TRUE}, the
+resulting file name is used for caching the model fit, and the behavior of
+\code{file_refit} is implicitly set to \code{"on_change"} to ensure the model
+is re-used only when appropriate. This option is useful for avoiding
+redundant model fitting during development or repeated runs.}
 
 \item{empty}{Logical. If \code{TRUE}, the Stan model is not created
 and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
