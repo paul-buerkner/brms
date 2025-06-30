@@ -490,14 +490,14 @@ brm <- function(formula, data = NULL , family = gaussian(), prior = NULL,
   #             if file_auto is TRUE
   # ======================================================================
   # define file argument automatically when file_auto is TRUE
-  if( file_auto ){
+  if(file_auto){
     orig_seed <- seed
-    d <- NULL
-    if(!missing(data)){
-      d <- data
-    }
+    # d <- NULL
+    # if(!missing(data)){
+    #   d <- data
+    # }
     # This list must include only/all the parameters that may change the result
-    args_list <- nlist(formula, d, family, prior, autocor, data2, cov_ranef,
+    args_list <- nlist(formula, data, family, prior, autocor, data2, cov_ranef,
                        sample_prior, sparse, knots, drop_unused_levels, stanvars,
                        stan_funs, fit, save_pars, save_ranef, save_mevars,
                        save_all_pars, init, inits, chains, iter, warmup, thin,

@@ -1079,12 +1079,15 @@ clean_for_hash <- function(x) {
     environment(x) <- NULL
     x <- as.character(x)
   }
-  if (inherits(x, "family")) {     x <- substitute(x ) }
+  if (inherits(x, "family")) {
+   x <- deparse1(substitute(x))
+  }
   x
 }
-# if file_auto parameter is TRUE create a file argument value that will save
-# and reuse the results
-# this will return file and refit values untouched if file_auto != TRUE
+
+# If the file_auto argument is TRUE, generate a file name based on the model inputs
+# to automatically save and reuse fitted model results.
+# If file_auto is FALSE, return the original file and file_refit values unchanged.
 create_filename_auto<- function( file , file_refit , file_auto  , args_list  ){
   if( !file_auto ){ return(   nlist( file , file_refit ) )}
   slist  <- lapply(  args_list , clean_for_hash)
@@ -1100,7 +1103,7 @@ create_filename_auto<- function( file , file_refit , file_auto  , args_list  ){
   orig_file_refit <- file_refit
   file_refit <- "on_change"
 
-  # We inform user that we override file or file_refit parameters in case necessary
+  # We inform user that we override file or file_refit arguments in case necessary
   if(!is.null(orig_file) | orig_file_refit != 'on_change'  ){
     .msg_file_auto = "Since file_auto parameter was given as TRUE
       this function overrides file or/and file_refit option to return brmsfit results to user
