@@ -464,7 +464,7 @@ brm <- function(formula, data = NULL , family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                file_auto = getOption("brms.file_auto", FALSE ),
+                file_auto = getOption("brms.file_auto", FALSE),
                 empty = FALSE, rename = TRUE, ...) {
 
   # validate arguments later passed to Stan
