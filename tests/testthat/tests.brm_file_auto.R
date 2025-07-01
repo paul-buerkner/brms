@@ -56,31 +56,30 @@ brm_mock_for_file_auto <- function(formula, data = NULL , family = gaussian(), p
     file <- auto_res$file
     file_refit <- auto_res$file_refit
   }
-  nlist(file , file_refit)
+  nlist(file, file_refit)
 }
-
+# file_auto 
 test_that("file_auto option works", {
   # skip("Temporarily disabled for debugging reasons")
   # test_cache_dir <- tempdir()
   # options(brms.cache_folder = test_cache_dir)
-    epilepsy2 <- epilepsy[ -c(1) , ]
+    epilepsy2 <- epilepsy[-c(1), ]
     # same
     f1 <- brm_mock_for_file_auto(count ~ zAge + zBase * Trt + (1|patient),
                            data = epilepsy, family = poisson() ,    file_auto = TRUE)
-
     f2 <- brm_mock_for_file_auto(count ~ zAge + zBase * Trt + (1|patient),
                                  data = epilepsy, family = gaussian() ,    file_auto = TRUE)
     expect_equal(f1$file, f2$file)
     # different data
     f1 <- brm_mock_for_file_auto(count ~ zAge + zBase * Trt + (1|patient),
-                                 data = epilepsy, family = poisson() ,    file_auto = TRUE)
+                                 data = epilepsy, family = poisson(), file_auto = TRUE)
     f2 <- brm_mock_for_file_auto(count ~ zAge + zBase * Trt + (1|patient),
-                                 data = epilepsy2, family = poisson() ,    file_auto = TRUE)
+                                 data = epilepsy2, family = poisson(), file_auto = TRUE)
     expect_false(f1$file == f2$file)
     # different family
     f1 <- brm_mock_for_file_auto(count ~ zAge + zBase * Trt + (1|patient),
-                                 data = epilepsy, family = poisson() ,    file_auto = TRUE)
+                                 data = epilepsy, family = poisson(), file_auto = TRUE)
     f2 <- brm_mock_for_file_auto(count ~ zAge + zBase * Trt + (1|patient),
-                                 data = epilepsy, family = gaussian() ,    file_auto = TRUE)
+                                 data = epilepsy, family = gaussian(), file_auto = TRUE)
     expect_equal(f1$file, f2$file)
 })
