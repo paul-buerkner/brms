@@ -21,7 +21,10 @@ hash_brms_call <- function(args_list,
 
   require_package("digest")
 
-  ## ─── 2.  Sanitiser (recursive) ──────────────────────────────────────────
+  ## ── 0. *NEW*  Make top-level arg order irrelevant ──────────────────────
+  args_list <- args_list[sort(names(args_list))]
+
+  ## ── 1. Sanitiser (recursive) ───────────────────────────────────────────
   clean <- function(x) {
     if (inherits(x, "formula")) {
       environment(x) <- emptyenv()
@@ -29,20 +32,15 @@ hash_brms_call <- function(args_list,
     }
 
     if (inherits(x, "brmsformula")) {
-      # Strip environments from its internal formulas
       x$formula <- clean(x$formula)
-      if (!is.null(x$pforms)) {
-        x$pforms <- lapply(x$pforms, clean)
-      }
-      if (!is.null(x$nlpars)) {
-        x$nlpars <- sort(x$nlpars)  # to be safe
-      }
+      if (!is.null(x$pforms)) x$pforms <- lapply(x$pforms, clean)
+      if (!is.null(x$nlpars)) x$nlpars <- sort(x$nlpars)
       return(x)
     }
 
     if (inherits(x, "mvbrmsformula")) {
-      # Multi-response models: list of brmsformula
-      x$forms <- lapply(x$forms, clean)
+      ## *NEW*  sort component names so mvbf() order is irrelevant
+      x$forms <- lapply(x$forms[sort(names(x$forms))], clean)
       return(x)
     }
 
@@ -66,10 +64,9 @@ hash_brms_call <- function(args_list,
     x
   }
 
-  ## ─── 3.  Apply sanitiser to everything ──────────────────────────────────
+  ## 2–5 unchanged ---------------------------------------------------------
   args_list <- lapply(args_list, clean)
 
-  ## ─── 4.  Optional data fingerprint ──────────────────────────────────────
   policy <- match.arg(data_policy)
   if ("data" %in% names(args_list) && !is.null(args_list$data) && policy != "none") {
     d <- args_list$data
@@ -81,10 +78,8 @@ hash_brms_call <- function(args_list,
     )
   }
 
-  ## ─── 5.  Final digest ───────────────────────────────────────────────────
   digest::digest(args_list, algo = algo, serialize = TRUE)
 }
-
 
 # hash_dots
 #

@@ -68,4 +68,59 @@ test_that("changing *one* statistical input changes the hash", {
 })
 
 
+# -------------------------------------------------------------------------
+# Data: just something to pass; content is irrelevant for hashing logic
+d <- mtcars
+
+# Helper: a small convenience to shorten calls
+h <- function(...) hash_dots(..., data = d, family = gaussian(), data_policy = "names")
+
+context("hash_dots() – complex formula structures")
+
+# ─────────────────────────────────────────────────────────────────────────
+test_that("Hidden environments in nested brmsformula are ignored", {
+  # Non-linear single-response model
+  bf1 <- bf(y ~ mu, mu ~ wt + (1|cyl), nl = TRUE)
+  bf2 <- bf1
+  # Attach a random environment to *internal* formula
+  environment(bf2$formula) <- new.env(parent = emptyenv())
+
+  expect_identical(h(formula = bf1),
+                   h(formula = bf2))
+})
+
+
+
+# ─────────────────────────────────────────────────────────────────────────
+test_that("Changing an internal sub-formula *does* change the hash", {
+  base <- bf(y ~ mu, mu ~ wt, nl = TRUE)
+  changed <- bf(y ~ mu, mu ~ wt + hp, nl = TRUE)  # extra predictor
+
+  expect_false(identical(h(formula = base),
+                         h(formula = changed)))
+})
+
+# ─────────────────────────────────────────────────────────────────────────
+test_that("Changing only the prior alters the hash", {
+  f <- bf(mpg ~ wt)
+
+  h_base <- h(formula = f,
+              prior   = NULL)
+
+  h_prior <- h(formula = f,
+               prior   = prior(normal(0, 5), class = "b"))
+
+  expect_false(identical(h_base, h_prior))
+})
+
+# ─────────────────────────────────────────────────────────────────────────
+test_that("List argument order is normalised", {
+  f <- bf(mpg ~ wt)
+
+  h1 <- hash_dots(formula = f, data = d, family = gaussian(), iter = 2000)
+  h2 <- hash_dots(iter = 2000, family = gaussian(), data = d, formula = f)
+
+  expect_identical(h1, h2)
+})
+
 
