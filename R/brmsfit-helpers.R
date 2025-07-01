@@ -1088,9 +1088,16 @@ clean_for_hash <- function(x) {
 # If the file_auto argument is TRUE, generate a file name based on the model inputs
 # to automatically save and reuse fitted model results.
 # If file_auto is FALSE, return the original file and file_refit values unchanged.
-create_filename_auto<- function( file , file_refit , file_auto  , args_list  ){
+create_filename_auto<- function( file , file_refit , file_auto  , args_list , .test = FALSE  ){
   if( !file_auto ){ return(   nlist( file , file_refit ) )}
   slist  <- lapply(  args_list , clean_for_hash)
+
+  if (!requireNamespace("digest", quietly = TRUE) | .test ) {
+    stop("The 'digest' package is required but not installed.
+         Please install it using install.packages('digest').", call. = FALSE)
+  }
+
+
   # one way hash from parameters
   hash  <-  digest::digest(
     lapply( slist , clean_for_hash),
