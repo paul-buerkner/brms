@@ -444,7 +444,7 @@
 #' @import stats
 #' @import Rcpp
 #' @export
-brm <- function(formula, data = NULL , family = gaussian(), prior = NULL,
+brm <- function(formula, data = NULL, family = gaussian(), prior = NULL,
                 autocor = NULL, data2 = NULL, cov_ranef = NULL,
                 sample_prior = "no", sparse = NULL, knots = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
@@ -487,9 +487,8 @@ brm <- function(formula, data = NULL , family = gaussian(), prior = NULL,
   file_auto<- as_one_logical(file_auto)
 
   # ======================================================================
-  #             if file_auto is TRUE
-  # ======================================================================
-  # define file argument automatically when file_auto is TRUE
+  # define file value when file_auto was given as TRUE  
+  # override file and file_refit
   if(file_auto){
     orig_seed <- seed
     # This list must include only/all the parameters that may change the result
@@ -498,7 +497,7 @@ brm <- function(formula, data = NULL , family = gaussian(), prior = NULL,
                        stan_funs, fit, save_pars, save_ranef, save_mevars,
                        save_all_pars, init, inits, chains, iter, warmup, thin,
                        cores, threads, opencl, normalize, control, algorithm,
-                       backend, future, orig_seed= orig_seed, stan_model_args, empty)
+                       backend, future, orig_seed, stan_model_args, empty)
     auto_res <- create_filename_auto(file , file_refit , file_auto  , args_list)
     file <- auto_res$file
     file_refit <- auto_res$file_refit
