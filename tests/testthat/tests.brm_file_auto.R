@@ -50,7 +50,7 @@ brm_mock_for_file_auto <- function(formula, data = NULL , family = gaussian(), p
                        stan_funs, fit, save_pars, save_ranef, save_mevars,
                        save_all_pars, init, inits, chains, iter, warmup, thin,
                        cores, threads, opencl, normalize, control, algorithm,
-                       backend, future, orig_seed= orig_seed, stan_model_args, empty)
+                       backend, future, orig_seed, stan_model_args, empty)
     # args_list <- match.call()
     auto_res <- create_filename_auto(file, file_refit, file_auto, args_list)
     file <- auto_res$file
