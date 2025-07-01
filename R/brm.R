@@ -1,4 +1,3 @@
-
 #' Fit Bayesian Generalized (Non-)Linear Multivariate Multilevel Models
 #'
 #' Fit Bayesian generalized (non-)linear multivariate multilevel models
@@ -489,7 +488,7 @@ brm <- function(formula, data = NULL, family = gaussian(), prior = NULL,
   # ======================================================================
   # define file value when file_auto was given as TRUE  
   # override file and file_refit
-  if(file_auto){
+  if (file_auto) {
     orig_seed <- seed
     # This list must include only/all the parameters that may change the result
     args_list <- nlist(formula, data, family, prior, autocor, data2, cov_ranef,
@@ -498,7 +497,7 @@ brm <- function(formula, data = NULL, family = gaussian(), prior = NULL,
                        save_all_pars, init, inits, chains, iter, warmup, thin,
                        cores, threads, opencl, normalize, control, algorithm,
                        backend, future, orig_seed, stan_model_args, empty)
-    auto_res <- create_filename_auto(file , file_refit , file_auto  , args_list)
+    auto_res <- create_filename_auto(file, file_refit, file_auto, args_list)
     file <- auto_res$file
     file_refit <- auto_res$file_refit
   }

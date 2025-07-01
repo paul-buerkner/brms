@@ -1137,11 +1137,11 @@ clean_for_hash <- function(x) {
 # If the file_auto argument is TRUE, generate a file name based on the model inputs
 # to automatically save and reuse fitted model results.
 # If file_auto is FALSE, return the original file and file_refit values unchanged.
-create_filename_auto<- function(file, file_refit, file_auto, args_list) {
+create_filename_auto <- function(file, file_refit, file_auto, args_list) {
   if (!file_auto) { 
     return(nlist(file, file_refit))
   }
-  slist  <- lapply(args_list, clean_for_hash)
+  slist <- lapply(args_list, clean_for_hash)
   require_package("digest")
 
   # one way hash from parameters
