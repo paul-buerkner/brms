@@ -1121,40 +1121,18 @@ add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   x
 }
 
-# formula and family parameters may come with their own environment which requires
-# special care when we need to create a hash from call
-clean_for_hash <- function(x) {
-  if (inherits(x, "formula")) {
-    environment(x) <- NULL
-    x <- as.character(x)
-  }
-  if (inherits(x, "family")) {
-    x <- deparse1(substitute(x))
-  }
-  x
-}
-
 # If the file_auto argument is TRUE, generate a file name based on the model inputs
 # to automatically save and reuse fitted model results.
 # If file_auto is FALSE, return the original file and file_refit values unchanged.
 create_filename_auto <- function(file, file_refit, file_auto, args_list) {
-  if (!file_auto) { 
+  if (!file_auto) {
     return(nlist(file, file_refit))
   }
-  slist <- lapply(args_list, clean_for_hash)
-  require_package("digest")
-
-  # one way hash from parameters
-  hash <- digest::digest(
-    lapply(slist, clean_for_hash),
-    algo = "xxhash64"
-  )
-
+  hash <- hash_brms_call(args_list)
   orig_file <- file
   file <- paste0('cache-brm-result_', hash, '.Rds')
   orig_file_refit <- file_refit
   file_refit <- "on_change"
-
   # We inform user that we override file or file_refit arguments in case necessary
   if (!is.null(orig_file) | orig_file_refit != 'on_change') {
     message("Since file_auto = TRUE, the file and file_refit arguments were overwritten.")
