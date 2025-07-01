@@ -19,7 +19,7 @@ brm_mock_for_file_auto <- function(formula, data = NULL , family = gaussian(), p
                                    seed = NA, save_model = NULL, stan_model_args = list(),
                                    file = NULL, file_compress = TRUE,
                                    file_refit = getOption("brms.file_refit", "never"),
-                                   file_auto = getOption("brms.file_auto", FALSE ),
+                                   file_auto = getOption("brms.file_auto", FALSE),
                                    empty = FALSE, rename = TRUE, ...) {
 
   # validate arguments later passed to Stan
@@ -44,23 +44,19 @@ brm_mock_for_file_auto <- function(formula, data = NULL , family = gaussian(), p
   # define file argument automatically when file_auto is TRUE
   if( file_auto ){
     orig_seed <- seed
-    d <- NULL
-    if(!missing(data)){
-      d <- data
-    }
     # This list must include only/all the parameters that may change the result
-    args_list <- nlist(formula, d, family, prior, autocor, data2, cov_ranef,
+    args_list <- nlist(formula, data, family, prior, autocor, data2, cov_ranef,
                        sample_prior, sparse, knots, drop_unused_levels, stanvars,
                        stan_funs, fit, save_pars, save_ranef, save_mevars,
                        save_all_pars, init, inits, chains, iter, warmup, thin,
                        cores, threads, opencl, normalize, control, algorithm,
                        backend, future, orig_seed= orig_seed, stan_model_args, empty)
     # args_list <- match.call()
-    auto_res <- create_filename_auto(file , file_refit , file_auto  , args_list)
+    auto_res <- create_filename_auto(file, file_refit, file_auto, args_list)
     file <- auto_res$file
     file_refit <- auto_res$file_refit
   }
-  nlist( file , file_refit )
+  nlist(file , file_refit)
 }
 
 test_that("file_auto option works", {
