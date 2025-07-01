@@ -27,21 +27,42 @@ hash_brms_call <- function(args_list,
       environment(x) <- emptyenv()
       return(as.character(x))
     }
+
+    if (inherits(x, "brmsformula")) {
+      # Strip environments from its internal formulas
+      x$formula <- clean(x$formula)
+      if (!is.null(x$pforms)) {
+        x$pforms <- lapply(x$pforms, clean)
+      }
+      if (!is.null(x$nlpars)) {
+        x$nlpars <- sort(x$nlpars)  # to be safe
+      }
+      return(x)
+    }
+
+    if (inherits(x, "mvbrmsformula")) {
+      # Multi-response models: list of brmsformula
+      x$forms <- lapply(x$forms, clean)
+      return(x)
+    }
+
     if (inherits(x, "family")) {
       return(list(family = x$family, link = x$link))
     }
+
     if (is.function(x)) {
-      # Functions may have environments that differ even if bodies are equal
       return(deparse(body(x), width.cutoff = 500L))
     }
+
     if (is.call(x) || is.language(x) || is.expression(x)) {
       return(deparse(x, width.cutoff = 500L))
     }
+
     if (is.list(x) && !inherits(x, "data.frame")) {
-      # sort names so order of named args is irrelevant
       x <- x[sort(names(x))]
       return(lapply(x, clean))
     }
+
     x
   }
 
