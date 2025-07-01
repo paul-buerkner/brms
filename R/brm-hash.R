@@ -91,5 +91,4 @@ hash_brms_call <- function(args_list,
 hash_dots  <- function(...){
   dots <- nlist(...)
   hash_brms_call( dots  )
-
 }
