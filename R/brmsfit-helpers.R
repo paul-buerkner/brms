@@ -1,14 +1,15 @@
-
 contains_draws <- function(x) {
   if (!(is.brmsfit(x) && length(x$fit@sim))) {
     stop2("The model does not contain posterior draws.")
   }
   invisible(TRUE)
 }
+
 is_mv <- function(x) {
   stopifnot(is.brmsfit(x))
   is.mvbrmsformula(x$formula)
 }
+
 stopifnot_resp <- function(x, resp = NULL) {
   # TODO: merge into validate_resp?
   if (is_mv(x) && length(resp) != 1L) {
@@ -17,6 +18,7 @@ stopifnot_resp <- function(x, resp = NULL) {
   }
   invisible(NULL)
 }
+
 # apply a link function
 # @param x an array of arbitrary dimension
 # @param link character string defining the link
@@ -41,6 +43,7 @@ link <- function(x, link) {
          stop2("Link '", link, "' is not supported.")
   )
 }
+
 # apply an inverse link function
 # @param x an array of arbitrary dimension
 # @param link a character string defining the link
@@ -65,6 +68,7 @@ inv_link <- function(x, link) {
          stop2("Link '", link, "' is not supported.")
   )
 }
+
 # log CDF for unit interval link functions
 # @param x an array of arbitrary dimension
 # @param link a character string defining the link
@@ -79,6 +83,7 @@ log_cdf <- function(x, link) {
          stop2("Link '", link, "' is not supported.")
   )
 }
+
 # log CCDF for unit interval link functions
 # @param x an array of arbitrary dimension
 # @param link a character string defining the link
@@ -93,6 +98,7 @@ log_ccdf <- function(x, link) {
          stop2("Link '", link, "' is not supported.")
   )
 }
+
 # validate integers indicating which draws to subset
 validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
   ndraws_total <- ndraws(x)
@@ -112,6 +118,7 @@ validate_draw_ids <- function(x, draw_ids = NULL, ndraws = NULL) {
   }
   draw_ids
 }
+
 # get correlation names as combinations of variable names
 # @param names the variable names
 # @param type character string to be put in front of the returned strings
@@ -134,6 +141,7 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   }
   cornames
 }
+
 # extract names of categorical variables in the model
 get_cat_vars <- function(x) {
   stopifnot(is.brmsfit(x))
@@ -144,6 +152,7 @@ get_cat_vars <- function(x) {
   )
   unique(valid_groups[nzchar(valid_groups)])
 }
+
 # covariance matrices based on correlation and SD draws
 # @param sd matrix of draws of standard deviations
 # @param cor matrix of draws of correlations
@@ -172,6 +181,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
   }
   out
 }
+
 # correlation matrices based on correlation draws
 # @param cor draws of correlations
 # @param size optional size of the desired correlation matrix;
@@ -201,6 +211,7 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
   }
   out
 }
+
 # compute covariance matrices of autocor structures
 # @param prep a brmsprep object
 # @param obs observations for which to compute the covariance matrix
@@ -264,6 +275,7 @@ get_cov_matrix_ac <- function(prep, obs = NULL, Jtime = NULL, latent = FALSE) {
   }
   sigma2 * cor + se2
 }
+
 # compute AR1 correlation matrices
 # @param ar AR1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
@@ -282,6 +294,7 @@ get_cor_matrix_ar1 <- function(ar, nobs) {
   }
   out
 }
+
 # compute MA1 correlation matrices
 # @param ma MA1 autocorrelation draws
 # @param nobs number of rows of the covariance matrix
@@ -300,6 +313,7 @@ get_cor_matrix_ma1 <- function(ma, nobs) {
   }
   out
 }
+
 # compute ARMA1 correlation matrices
 # @param ar AR1 autocorrelation draws
 # @param ma MA1 autocorrelation draws
@@ -321,6 +335,7 @@ get_cor_matrix_arma1 <- function(ar, ma, nobs) {
   }
   out
 }
+
 # compute compound symmetry correlation matrices
 # @param cosy compund symmetry correlation draws
 # @param nobs number of rows of the covariance matrix
@@ -336,6 +351,7 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
   }
   out
 }
+
 # compute unstructured time correlation matrices
 # @param cortime time correlation draws
 # @param Jtime indictor of rows/cols to consider in cortime
@@ -346,6 +362,7 @@ get_cor_matrix_unstr <- function(cortime, Jtime) {
   Jtime <- Jtime[Jtime > 0]
   get_cor_matrix(cortime)[, Jtime, Jtime, drop = FALSE]
 }
+
 # prepare a fixed correlation matrix
 # @param Mfcor correlation matrix to be prepared
 # @param ndraws number of posterior draws
@@ -354,6 +371,7 @@ get_cor_matrix_fcor <- function(Mfcor, ndraws) {
   out <- array(Mfcor, dim = c(dim(Mfcor), ndraws))
   aperm(out, c(3, 1, 2))
 }
+
 # compute an identity correlation matrix
 # @param ndraws number of posterior draws
 # @param nobs number of rows of the covariance matrix
@@ -365,6 +383,7 @@ get_cor_matrix_ident <- function(ndraws, nobs) {
   }
   out
 }
+
 #' Draws of a Distributional Parameter
 #'
 #' Get draws of a distributional parameter from a \code{brmsprep} or
@@ -428,6 +447,7 @@ get_dpar <- function(prep, dpar, i = NULL, inv_link = NULL) {
   }
   out
 }
+
 # get draws of a non-linear parameter
 # @param x object to extract posterior draws from
 # @param nlpar name of the non-linear parameter
@@ -452,6 +472,7 @@ get_nlpar <- function(prep, nlpar, i = NULL) {
   }
   out
 }
+
 # get the mixing proportions of mixture models
 get_theta <- function(prep, i = NULL) {
   stopifnot(is.brmsprep(prep))
@@ -477,6 +498,7 @@ get_theta <- function(prep, i = NULL) {
   }
   theta
 }
+
 # get posterior draws of multivariate mean vectors
 # only used in multivariate models with 'rescor'
 # and in univariate models with multiple 'mu' pars such as logistic_normal
@@ -508,6 +530,7 @@ get_Mu <- function(prep, i = NULL) {
   }
   Mu
 }
+
 # get posterior draws of residual covariance matrices
 # only used in multivariate models with 'rescor'
 # and in univariate models with multiple 'mu' pars such as logistic_normal
@@ -568,6 +591,7 @@ get_Sigma <- function(prep, i = NULL, cor_name = NULL) {
   }
   Sigma
 }
+
 # extract user-defined standard errors
 get_se <- function(prep, i = NULL) {
   stopifnot(is.brmsprep(prep))
@@ -585,6 +609,7 @@ get_se <- function(prep, i = NULL) {
   }
   se
 }
+
 # add user defined standard errors to 'sigma'
 # @param sigma draws of the 'sigma' parameter
 add_sigma_se <- function(sigma, prep, i = NULL) {
@@ -594,6 +619,7 @@ add_sigma_se <- function(sigma, prep, i = NULL) {
   }
   sigma
 }
+
 # extract user-defined rate denominators
 get_rate_denom <- function(prep, i = NULL) {
   stopifnot(is.brmsprep(prep))
@@ -611,6 +637,7 @@ get_rate_denom <- function(prep, i = NULL) {
   }
   denom
 }
+
 # multiply a parameter with the 'rate' denominator
 # @param dpar draws of the distributional parameter
 multiply_dpar_rate_denom <- function(dpar, prep, i = NULL) {
@@ -620,6 +647,7 @@ multiply_dpar_rate_denom <- function(dpar, prep, i = NULL) {
   }
   dpar
 }
+
 # return draws of ordinal thresholds for observation i
 # @param prep a bprepl or bprepnl object
 # @param i observation number
@@ -631,11 +659,13 @@ subset_thres <- function(prep, i) {
   }
   thres
 }
+
 # helper function of 'get_dpar' to decide if
 # the link function should be applied directly
 apply_dpar_inv_link <- function(dpar, family) {
   !(has_joint_link(family) && dpar_class(dpar, family) == "mu")
 }
+
 # insert zeros for the predictor term of the reference category
 # in categorical-like models using the softmax response function
 insert_refcat <- function(eta, refcat = 1) {
@@ -657,6 +687,7 @@ insert_refcat <- function(eta, refcat = 1) {
     slice(eta, ndim, after, drop = FALSE)
   )
 }
+
 # validate the 'resp' argument of 'predict' and related methods
 # @param resp response names to be validated
 # @param x valid response names or brmsfit object to extract names from
@@ -685,6 +716,7 @@ validate_resp <- function(resp, x, multiple = TRUE) {
   }
   resp
 }
+
 # split '...' into a list of model objects and other arguments
 # takes its argument names from parent.frame()
 # @param .... objects to split into model and non-model objects
@@ -724,6 +756,7 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
   }
   out
 }
+
 # reorder observations to be in the initial user-defined order
 # currently only relevant for autocorrelation models
 # @param eta 'ndraws' x 'nobs' matrix or array
@@ -738,6 +771,7 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   stopifnot(length(old_order) == NCOL(eta))
   p(eta, old_order, row = FALSE)
 }
+
 # update .MISC environment of the stanfit object
 # allows to call log_prob and other C++ using methods
 # on objects not created in the current R session
@@ -758,6 +792,7 @@ update_misc_env <- function(x, recompile = FALSE, only_windows = FALSE) {
   }
   x
 }
+
 #' Add compiled \pkg{rstan} models to \code{brmsfit} objects
 #'
 #' Compile a \code{\link[rstan:stanmodel-class]{stanmodel}} and add
@@ -788,6 +823,7 @@ add_rstan_model <- function(x, overwrite = FALSE) {
   }
   x
 }
+
 # does the model have a non-empty rstan 'stanmodel'
 # that can be used for 'log_prob' and friends?
 has_rstan_model <- function(x) {
@@ -795,6 +831,7 @@ has_rstan_model <- function(x) {
   isTRUE(nzchar(x$fit@stanmodel@model_cpp$model_cppname)) &&
     length(ls(pos = x$fit@.MISC)) > 0
 }
+
 # extract argument names of a post-processing method
 arg_names <- function(method) {
   opts <- c("posterior_predict", "posterior_epred", "log_lik")
@@ -806,6 +843,7 @@ arg_names <- function(method) {
   out <- setdiff(out, c("object", "x", "..."))
   out
 }
+
 # validate 'cores' argument for use in post-processing functions
 validate_cores_post_processing <- function(cores, use_mc_cores = FALSE) {
   if (is.null(cores)) {
@@ -825,6 +863,7 @@ validate_cores_post_processing <- function(cores, use_mc_cores = FALSE) {
   }
   cores
 }
+
 #' Check if cached fit can be used.
 #'
 #' Checks whether a given cached fit can be used without refitting when
@@ -941,6 +980,7 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
   }
   refit
 }
+
 # Determine Cache Folder for brms
 #
 # Checks if the provided file path includes a directory. If so, returns that directory.
@@ -959,6 +999,7 @@ get_cache_folder <- function(file) {
   cache_folder <- getOption("brms.cache_folder", default = ".")
   cache_folder
 }
+
 # Check that a directory exists
 # @param folder A character string specifying a directory path.
 # @return NULL (invisibly) if the directory exists; otherwise throws an error.
@@ -971,6 +1012,7 @@ check_folder <- function(folder) {
   }
   invisible(NULL)
 }
+
 # Split a file path into cache folder and file components
 # @param file A character string specifying a file path or file name.
 # @return A list with two elements:
@@ -981,6 +1023,7 @@ split_folder_and_file <- function(file) {
   file <- basename(file)
   list(folder = cache_folder, file = file)
 }
+
 # read a brmsfit object from a file
 # @param file path to an rds file
 # @return a brmsfit object or NULL
@@ -997,6 +1040,7 @@ read_brmsfit <- function(file) {
   }
   x
 }
+
 # write a brmsfit object to a file
 # @param x a brmsfit object
 # @param file path to an rds file
@@ -1009,6 +1053,7 @@ write_brmsfit <- function(x, file, compress = TRUE) {
   saveRDS(x, file = file, compress = compress)
   invisible(x)
 }
+
 # Helper function to ensure a valid filename for saving a brmsfit object
 #
 # Appends a `.rds` extension to the filename if not already present.
@@ -1023,6 +1068,7 @@ check_brmsfit_file_name <- function(file) {
   }
   file
 }
+
 # Validate and prepare a file path for storing a brmsfit object
 #
 # Splits the provided file path into folder and file components,
@@ -1043,6 +1089,7 @@ check_brmsfit_file <- function(file, .check_folder = TRUE) {
   full_name <- file.path(flist$folder, file_name)
   full_name
 }
+
 # check if a function requires an old default setting
 # only used to ensure backwards compatibility
 # @param version brms version in which the change to the default was made
@@ -1052,6 +1099,7 @@ require_old_default <- function(version) {
   brmsfit_version <- getOption(".brmsfit_version")
   isTRUE(brmsfit_version < version)
 }
+
 # add dummy draws to a brmsfit object for use in unit tests
 # @param x a brmsfit object
 # @param newpar name of the new parameter to add
@@ -1072,15 +1120,16 @@ add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
+
 # formula and family parameters may come with their own environment which requires
-#  special care when we need to create a hash from call
+# special care when we need to create a hash from call
 clean_for_hash <- function(x) {
   if (inherits(x, "formula")) {
     environment(x) <- NULL
     x <- as.character(x)
   }
   if (inherits(x, "family")) {
-   x <- deparse1(substitute(x))
+    x <- deparse1(substitute(x))
   }
   x
 }
@@ -1088,34 +1137,27 @@ clean_for_hash <- function(x) {
 # If the file_auto argument is TRUE, generate a file name based on the model inputs
 # to automatically save and reuse fitted model results.
 # If file_auto is FALSE, return the original file and file_refit values unchanged.
-create_filename_auto<- function( file , file_refit , file_auto  , args_list , .test = FALSE  ){
-  if( !file_auto ){ return(   nlist( file , file_refit ) )}
-  slist  <- lapply(  args_list , clean_for_hash)
-
-  if (!requireNamespace("digest", quietly = TRUE) | .test ) {
-    stop("The 'digest' package is required but not installed.
-         Please install it using install.packages('digest').", call. = FALSE)
+create_filename_auto<- function(file, file_refit, file_auto, args_list) {
+  if (!file_auto) { 
+    return(nlist(file, file_refit))
   }
-
+  slist  <- lapply(args_list, clean_for_hash)
+  require_package("digest")
 
   # one way hash from parameters
-  hash  <-  digest::digest(
-    lapply( slist , clean_for_hash),
+  hash <- digest::digest(
+    lapply(slist, clean_for_hash),
     algo = "xxhash64"
   )
 
   orig_file <- file
-  file <- paste0('cache-brm-result_' ,  hash , '.Rds' )
-
+  file <- paste0('cache-brm-result_', hash, '.Rds')
   orig_file_refit <- file_refit
   file_refit <- "on_change"
 
   # We inform user that we override file or file_refit arguments in case necessary
-  if(!is.null(orig_file) | orig_file_refit != 'on_change'  ){
-    .msg_file_auto = "Since file_auto parameter was given as TRUE
-      this function overrides file or/and file_refit option to return brmsfit results to user
-      from the cache file that was saved earlier."
-    message(.msg_file_auto )
+  if (!is.null(orig_file) | orig_file_refit != 'on_change') {
+    message("Since file_auto = TRUE, the file and file_refit arguments were overwritten.")
   }
-  nlist( file , file_refit )
+  nlist(file, file_refit)
 }

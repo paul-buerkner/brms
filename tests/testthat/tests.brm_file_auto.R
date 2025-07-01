@@ -58,6 +58,7 @@ brm_mock_for_file_auto <- function(formula, data = NULL , family = gaussian(), p
   }
   nlist(file, file_refit)
 }
+
 # file_auto 
 test_that("file_auto option works", {
   # skip("Temporarily disabled for debugging reasons")
