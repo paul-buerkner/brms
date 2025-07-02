@@ -1121,21 +1121,3 @@ add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   x
 }
 
-# If the file_auto argument is TRUE, generate a file name based on the model inputs
-# to automatically save and reuse fitted model results.
-# If file_auto is FALSE, return the original file and file_refit values unchanged.
-create_filename_auto <- function(file, file_refit, file_auto, args_list) {
-  if (!file_auto) {
-    return(nlist(file, file_refit))
-  }
-  hash <- hash_brms_call(args_list)
-  orig_file <- file
-  file <- paste0('cache-brm-result_', hash, '.Rds')
-  orig_file_refit <- file_refit
-  file_refit <- "on_change"
-  # We inform user that we override file or file_refit arguments in case necessary
-  if (!is.null(orig_file) | orig_file_refit != 'on_change') {
-    message("Since file_auto = TRUE, the file and file_refit arguments were overwritten.")
-  }
-  nlist(file, file_refit)
-}
