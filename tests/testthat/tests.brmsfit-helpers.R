@@ -106,6 +106,8 @@ test_that("brmsfit_needs_refit works correctly", {
   data_model1 <- data.frame(y = rnorm(10), x = rnorm(10))
   fake_fit <- brm(y ~ x, data = data_model1, empty = TRUE)
 
+  expect_error(summary(fake_fit), NA)
+
   fake_fit_file <- fake_fit
   # align windows with unix encoding of file paths
   fake_fit_file$file <- gsub("\\", "/", cache_tmp, fixed = TRUE)
@@ -120,6 +122,8 @@ test_that("brmsfit_needs_refit works correctly", {
 
   write_brmsfit(fake_fit, file = cache_tmp)
   cache_res <- read_brmsfit(file = cache_tmp)
+  expect_error(summary(cache_res), NA)
+
   expect_equal(cache_res, fake_fit_file)
 
   expect_false(brmsfit_needs_refit(
