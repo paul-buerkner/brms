@@ -9,6 +9,7 @@ cran-comments.md
 .RData
 .RProfile
 .DS_Store
+..Rcheck/
 
 # Test artifacts and local test models
 tests/testthat/Rplots.pdf
