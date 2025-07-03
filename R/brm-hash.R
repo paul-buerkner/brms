@@ -42,7 +42,7 @@ brm_to_call <- function(formula, data = NULL, family = gaussian(), prior = NULL,
   rename <- as_one_logical(rename)
   file_auto<- as_one_logical(file_auto)
 
-  .call <- match.call()
+  # .call <- match.call()
   orig_seed <- seed
   # This list must include only/all the parameters that may change the result
   args_list <- nlist(formula, data, family, prior, autocor, data2, cov_ranef,
@@ -50,87 +50,125 @@ brm_to_call <- function(formula, data = NULL, family = gaussian(), prior = NULL,
                      stan_funs, fit, save_pars, save_ranef, save_mevars,
                      save_all_pars, init, inits, chains, iter, warmup, thin,
                      cores, threads, opencl, normalize, control, algorithm,
-                     backend, future, orig_seed, stan_model_args, empty , .call)
+                     backend, future, orig_seed, stan_model_args, empty)
   args_list
 }
 
 
 
-## Recursively sanitize brms inputs for hashing purposes
-## Converts or strips elements that may cause unnecessary variability in hashing
-sanitizer_recursive <- function(x) {
+# ## Recursively sanitize brms inputs for hashing purposes
+# ## Converts or strips elements that may cause unnecessary variability in hashing
+# sanitizer_recursive <- function(x) {
+#
+#   # Handle formula objects by removing their environments and converting to character
+#   if (inherits(x, "formula")) {
+#     environment(x) <- emptyenv()
+#     return(as.character(x))
+#   }
+#
+#   # Handle brmsformula objects by recursively sanitizing internal formulas
+#   if (inherits(x, "brmsformula")) {
+#     x$formula <- sanitizer_recursive(x$formula)
+#     if (!is.null(x$pforms)) x$pforms <- lapply(x$pforms, sanitizer_recursive)
+#     if (!is.null(x$nlpars)) x$nlpars <- sort(x$nlpars)  # Sort for consistent ordering
+#     return(x)
+#   }
+#
+#   # Handle multivariate brms formulas (mvbrmsformula) by sorting and sanitizing each component
+#   if (inherits(x, "mvbrmsformula")) {
+#     # Sort component names to ensure ordering does not affect the hash
+#     x$forms <- lapply(x$forms[sort(names(x$forms))], sanitizer_recursive)
+#     return(x)
+#   }
+#
+#   # Handle family objects by reducing to essential components
+#   if (inherits(x, "family")) {
+#     return(list(family = x$family, link = x$link))
+#   }
+#
+#   # Handle function objects by hashing their body as character
+#   if (is.function(x)) {
+#     return(deparse(body(x), width.cutoff = 500L))
+#   }
+#
+#   # Handle calls, language objects, and expressions by converting to character
+#   if (is.call(x) || is.language(x) || is.expression(x)) {
+#     return(deparse(x, width.cutoff = 500L))
+#   }
+#
+#   # Recursively handle generic lists (excluding data frames), sorting for stable order
+#   if (is.list(x) && !inherits(x, "data.frame")) {
+#     x <- x[sort(names(x))]
+#     return(lapply(x, sanitizer_recursive))
+#   }
+#
+#   # Return all other values unchanged
+#   x
+# }
+#
+# # Clean and sanitize the formula object for hashing
+# handle_formula_for_hash<-function(formula){
+#   sanitizer_recursive(formula)
+# }
+# # Clean and sanitize the family object for hashing
+# handle_family_for_hash<-function(family){
+#   sanitizer_recursive(family)
+# }
 
-  # Handle formula objects by removing their environments and converting to character
-  if (inherits(x, "formula")) {
-    environment(x) <- emptyenv()
-    return(as.character(x))
-  }
 
-  # Handle brmsformula objects by recursively sanitizing internal formulas
-  if (inherits(x, "brmsformula")) {
-    x$formula <- sanitizer_recursive(x$formula)
-    if (!is.null(x$pforms)) x$pforms <- lapply(x$pforms, sanitizer_recursive)
-    if (!is.null(x$nlpars)) x$nlpars <- sort(x$nlpars)  # Sort for consistent ordering
-    return(x)
-  }
+# # Generate a unique hash string based on key components of the brm() call
+# hash_brm_call_list <-function(args_list){
+#   algo = "xxhash64"
+#   requireNamespace("digest")
+#   data <- args_list$data
+#   # handle formula
+#   formula <- handle_formula_for_hash(args_list$formula)
+#   # handle family
+#   family <- handle_family_for_hash(args_list$family)
+#   # handle data
+#   data <- get_same_data_if_null(data)
+#   hashed_data  <- hash_data(data)
+#   #package version
+#   brms_version <- packageVersion("brms")
+#   args_list <- nlist(formula, family, hashed_data, brms_version )
+#   digest::digest(args_list, algo = algo)
+# }
 
-  # Handle multivariate brms formulas (mvbrmsformula) by sorting and sanitizing each component
-  if (inherits(x, "mvbrmsformula")) {
-    # Sort component names to ensure ordering does not affect the hash
-    x$forms <- lapply(x$forms[sort(names(x$forms))], sanitizer_recursive)
-    return(x)
-  }
+#' Stable hash for a set of brm() arguments
+#'
+#' @param args_list A **named** list containing the arguments that uniquely
+#'   define a model (e.g., formula, data, family, prior, …).
+#' @param algo      Digest algorithm passed to \code{digest}.
+#' @return          A character hash key.
+#' @export
+hash_brm_call_master <- function(args_list, algo = "xxhash64") {
 
-  # Handle family objects by reducing to essential components
-  if (inherits(x, "family")) {
-    return(list(family = x$family, link = x$link))
-  }
+  if (is.null(names(args_list)) || any(names(args_list) == ""))
+    stop("args_list must be a *named* list", call. = FALSE)
 
-  # Handle function objects by hashing their body as character
-  if (is.function(x)) {
-    return(deparse(body(x), width.cutoff = 500L))
-  }
+  ## 0.  Alphabetical order so name order never matters
+  args_list <- args_list[order(names(args_list))]
 
-  # Handle calls, language objects, and expressions by converting to character
-  if (is.call(x) || is.language(x) || is.expression(x)) {
-    return(deparse(x, width.cutoff = 500L))
-  }
+  ## 1.  Hash each element using the S3 dispatch you just defined
+  hashed_parts <- lapply(args_list, hash_brm_arg, algo = algo)
 
-  # Recursively handle generic lists (excluding data frames), sorting for stable order
-  if (is.list(x) && !inherits(x, "data.frame")) {
-    x <- x[sort(names(x))]
-    return(lapply(x, sanitizer_recursive))
-  }
+  # for (prop in names(args_list)) {
+  #   e = args_list[[prop]]
+  #
+  #   print(prop)
+  #   print(e)
+  #   hash_brm_arg(e)
+  #
+  # }
 
-  # Return all other values unchanged
-  x
-}
-
-# Clean and sanitize the formula object for hashing
-handle_formula_for_hash<-function(formula){
-  sanitizer_recursive(formula)
-}
-# Clean and sanitize the family object for hashing
-handle_family_for_hash<-function(family){
-  sanitizer_recursive(family)
-}
-# Generate a unique hash string based on key components of the brm() call
-hash_brm_call_list <-function(args_list){
-  algo = "xxhash64"
-  requireNamespace("digest")
-  data <- args_list$data
-  # handle formula
-  formula <- handle_formula_for_hash(args_list$formula)
-  # handle family
-  family <- handle_family_for_hash(args_list$family)
-  # handle data
-  data <- get_same_data_if_null(data)
-  hashed_data  <- hash_data(data)
-  #package version
+  #   #package version
   brms_version <- packageVersion("brms")
-  args_list <- nlist(formula, family, hashed_data, brms_version )
-  digest::digest(args_list, algo = algo)
+
+  ## 2.  Collapse the per-argument hashes into one final key
+
+  .brms_digest(nlist(hashed_parts , brms_version ) )
 }
+
 
 # Internal function to use testing that will behave like brm function
 # collect the arguments but return hash value for the call
@@ -138,8 +176,9 @@ hash_func_for_testing <- function(...){
 
   # 1 - get list from brm()
   dots <- brm_to_call(...)
+  # assign("dbg_dots", dots , .GlobalEnv)
   # 2 - convert list to hash value
-  hash <-  hash_brm_call_list(dots)
+  hash <-  hash_brm_call_master(dots)
   # create file argument value
   hash
 
@@ -152,7 +191,7 @@ create_filename_auto <- function(file, file_refit, file_auto, args_list) {
   if (!file_auto) {
     return(nlist(file, file_refit))
   }
-  hash <- hash_brm_call_list(args_list)
+  hash <- hash_brm_call_master(args_list)
   orig_file <- file
   file <- paste0('cache-brm-result_', hash, '.Rds')
   orig_file_refit <- file_refit
@@ -180,43 +219,29 @@ create_filename_auto <- function(file, file_refit, file_auto, args_list) {
   # different formula
   c1 <-   hash_func_for_testing(count ~  zAge + zBase * Trt + (1|patient),
                                 data = epilepsy, family = poisson())
-
   c2 <-  hash_func_for_testing( count ~   zBase * Trt + (1|patient),
                                 data = epilepsy, family = poisson() )
-
   expect_false( c1 == c2 )
 
   # different data
   c1 <-   hash_func_for_testing(count ~  zAge + zBase * Trt + (1|patient),
-                                data = epilepsy, family = poisson())
-
+                               data = epilepsy, family = poisson())
   c2 <-  hash_func_for_testing( count ~   zBase * Trt + (1|patient),
                                 data = epilepsy[-c(1), ], family = poisson() )
-
   expect_false( c1 == c2 )
-
-
-
   a <- hash_func_for_testing( count ~  zBase * Trt + (1|patient),
                        data = epilepsy[-c(1) , ], family = poisson() )
-
   b <- hash_func_for_testing( count ~  zBase * Trt + (1|patient),
                        data = epilepsy[-c(1) , ], family = poisson() )
-
   expect_true( a == b )
 
   a <- hash_func_for_testing( count ~  zBase * Trt + (1|patient),
-                       data = epilepsy[-c(2) , ], family = poisson() )
-
+                      data = epilepsy[-c(2) , ], family = poisson() )
   b <- hash_func_for_testing( count ~  zBase * Trt + (1|patient),
                        data = epilepsy[-c(1) , ], family = poisson() )
-
   expect_false( a == b )
-
-
-
-  m1 <- brm( count ~  zBase * Trt + (1|patient),
-             data = epilepsy[-c(2) , ], family = poisson()  , file = "m")
+  # m1 <- brm( count ~  zBase * Trt + (1|patient),
+  #            data = epilepsy[-c(2) , ], family = poisson()  , file = "m")
 
 
 }

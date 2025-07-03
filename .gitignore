@@ -12,3 +12,5 @@ tests/local/Rplots.pdf
 /Meta/
 .DS_Store
 ignore_*/
+
+m.rds
