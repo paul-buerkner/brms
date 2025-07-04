@@ -95,10 +95,10 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 #' Internal engine to evaluate and fit a brms model
 #' @noRd
 .brm_internal <- function(brm_call_list) {
- ...f <- function(){
-   brm_call_list <- fit1
-
- }
+ # ...f <- function(){
+ #   brm_call_list <- fit1
+ #
+ # }
   # Check if fit object can be reused from file
   result <- .brm_check(brm_call_list)
   if (!is.null(result)) {
