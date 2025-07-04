@@ -868,7 +868,7 @@ stop2 <- function(message = "", ..., .subclass = NULL,
                   call = NULL, .envir = parent.frame()) {
 
   if (is.null(call)) {
-    call <- rlang::caller_call()     # evaluated at run-time → CRAN-safe
+    call <- rlang::caller_call()
   }
 
   rlang::abort(
