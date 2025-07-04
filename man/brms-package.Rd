@@ -104,6 +104,7 @@ Other contributors:
   \item Noa Kallioinen [contributor]
   \item Wellington J. Silva [contributor]
   \item Luiz Carvalho [contributor]
+  \item Sermet Pekin [contributor]
 }
 
 }

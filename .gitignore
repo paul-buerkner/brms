@@ -9,6 +9,7 @@ cran-comments.md
 .RData
 .RProfile
 .DS_Store
+..Rcheck/
 
 # Test artifacts and local test models
 tests/testthat/Rplots.pdf
@@ -20,7 +21,10 @@ tests/local/models_1.2.0.Rda
 # Ignore folders or patterns
 ignore_*/
 
+
+m.rds
 # Optional: temp and OS files
 *.tmp
 *.swp
 *~
+

@@ -24,23 +24,23 @@ stopifnot_resp <- function(x, resp = NULL) {
 # @param link character string defining the link
 link <- function(x, link) {
   switch(link,
-    identity = x,
-    log = log(x),
-    logm1 = logm1(x),
-    log1p = log1p(x),
-    inverse = 1 / x,
-    sqrt = sqrt(x),
-    "1/mu^2" = 1 / x^2,
-    tan_half = tan(x / 2),
-    logit = logit(x),
-    probit = qnorm(x),
-    cauchit = qcauchy(x),
-    cloglog = cloglog(x),
-    probit_approx = qnorm(x),
-    softplus = log_expm1(x),
-    squareplus = (x^2 - 1) / x,
-    softit = softit(x),
-    stop2("Link '", link, "' is not supported.")
+         identity = x,
+         log = log(x),
+         logm1 = logm1(x),
+         log1p = log1p(x),
+         inverse = 1 / x,
+         sqrt = sqrt(x),
+         "1/mu^2" = 1 / x^2,
+         tan_half = tan(x / 2),
+         logit = logit(x),
+         probit = qnorm(x),
+         cauchit = qcauchy(x),
+         cloglog = cloglog(x),
+         probit_approx = qnorm(x),
+         softplus = log_expm1(x),
+         squareplus = (x^2 - 1) / x,
+         softit = softit(x),
+         stop2("Link '", link, "' is not supported.")
   )
 }
 
@@ -49,23 +49,23 @@ link <- function(x, link) {
 # @param link a character string defining the link
 inv_link <- function(x, link) {
   switch(link,
-    identity = x,
-    log = exp(x),
-    logm1 = expp1(x),
-    log1p = expm1(x),
-    inverse = 1 / x,
-    sqrt = x^2,
-    "1/mu^2" = 1 / sqrt(x),
-    tan_half = 2 * atan(x),
-    logit = inv_logit(x),
-    probit = pnorm(x),
-    cauchit = pcauchy(x),
-    cloglog = inv_cloglog(x),
-    probit_approx = pnorm(x),
-    softplus = log1p_exp(x),
-    squareplus = (x + sqrt(x^2 + 4)) / 2,
-    softit = inv_softit(x),
-    stop2("Link '", link, "' is not supported.")
+         identity = x,
+         log = exp(x),
+         logm1 = expp1(x),
+         log1p = expm1(x),
+         inverse = 1 / x,
+         sqrt = x^2,
+         "1/mu^2" = 1 / sqrt(x),
+         tan_half = 2 * atan(x),
+         logit = inv_logit(x),
+         probit = pnorm(x),
+         cauchit = pcauchy(x),
+         cloglog = inv_cloglog(x),
+         probit_approx = pnorm(x),
+         softplus = log1p_exp(x),
+         squareplus = (x + sqrt(x^2 + 4)) / 2,
+         softit = inv_softit(x),
+         stop2("Link '", link, "' is not supported.")
   )
 }
 
@@ -74,13 +74,13 @@ inv_link <- function(x, link) {
 # @param link a character string defining the link
 log_cdf <- function(x, link) {
   switch(link,
-    logit = log_inv_logit(x),
-    probit = pnorm(x, log.p = TRUE),
-    cauchit = pcauchy(x, log.p = TRUE),
-    cloglog = log1m_exp(-exp(x)),
-    probit_approx = pnorm(x, log.p = TRUE),
-    softit = log_inv_softit(x),
-    stop2("Link '", link, "' is not supported.")
+         logit = log_inv_logit(x),
+         probit = pnorm(x, log.p = TRUE),
+         cauchit = pcauchy(x, log.p = TRUE),
+         cloglog = log1m_exp(-exp(x)),
+         probit_approx = pnorm(x, log.p = TRUE),
+         softit = log_inv_softit(x),
+         stop2("Link '", link, "' is not supported.")
   )
 }
 
@@ -89,13 +89,13 @@ log_cdf <- function(x, link) {
 # @param link a character string defining the link
 log_ccdf <- function(x, link) {
   switch(link,
-    logit = log1m_inv_logit(x),
-    probit = pnorm(x, log.p = TRUE, lower.tail = FALSE),
-    cauchit = pcauchy(x, log.p = TRUE, lower.tail = FALSE),
-    cloglog = -exp(x),
-    probit_approx = pnorm(x, log.p = TRUE, lower.tail = FALSE),
-    softit = log1m_inv_softit(x),
-    stop2("Link '", link, "' is not supported.")
+         logit = log1m_inv_logit(x),
+         probit = pnorm(x, log.p = TRUE, lower.tail = FALSE),
+         cauchit = pcauchy(x, log.p = TRUE, lower.tail = FALSE),
+         cloglog = -exp(x),
+         probit_approx = pnorm(x, log.p = TRUE, lower.tail = FALSE),
+         softit = log1m_inv_softit(x),
+         stop2("Link '", link, "' is not supported.")
   )
 }
 
@@ -913,7 +913,6 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
     algorithm <- as_one_character(algorithm)
     stopifnot(!is.null(fit$algorithm))
   }
-
   refit <- FALSE
   if (!is.null(scode)) {
     if (normalize_stancode(scode) != normalize_stancode(cached_scode)) {
@@ -1121,3 +1120,4 @@ add_dummy_draws <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
+

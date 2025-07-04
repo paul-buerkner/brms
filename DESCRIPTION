@@ -82,6 +82,7 @@ Suggests:
     knitr,
     rmarkdown,
     ragg,
+    withr
     colorspace
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions

@@ -231,6 +231,14 @@
 #'   (e.g., initial values, number of iterations, control arguments, ...). A
 #'   known limitation is that a refit will be triggered if within-chain
 #'   parallelization is switched on/off.
+#' @param file_auto Logical. If \code{TRUE}, the \code{file} argument is
+#'   automatically generated based on a hash of the model-relevant arguments
+#'   (e.g., formula, data, priors). Parameters that do not affect the model
+#'   outcome are omitted from the hash. When \code{file_auto = TRUE}, the
+#'   resulting file name is used for caching the model fit, and the behavior of
+#'   \code{file_refit} is implicitly set to \code{"on_change"} to ensure the model
+#'   is re-used only when appropriate. This option is useful for avoiding
+#'   redundant model fitting during development or repeated runs.
 #' @param empty Logical. If \code{TRUE}, the Stan model is not created
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created
@@ -435,13 +443,13 @@
 #' @import stats
 #' @import Rcpp
 #' @export
-brm <- function(formula, data, family = gaussian(), prior = NULL,
+brm <- function(formula, data = NULL, family = gaussian(), prior = NULL,
                 autocor = NULL, data2 = NULL, cov_ranef = NULL,
                 sample_prior = "no", sparse = NULL, knots = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, 
+                init = NULL, inits = NULL, chains = 4,
                 iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
@@ -455,18 +463,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
+                file_auto = getOption("brms.file_auto", FALSE),
                 empty = FALSE, rename = TRUE, ...) {
-
-  # optionally load brmsfit from file
-  # Loading here only when we should directly load the file.
-  # The "on_change" option needs sdata and scode to be built
-  file_refit <- match.arg(file_refit, file_refit_options())
-  if (!is.null(file) && file_refit == "never") {
-    x <- read_brmsfit(file)
-    if (!is.null(x)) {
-      return(x)
-    }
-  }
 
   # validate arguments later passed to Stan
   algorithm <- match.arg(algorithm, algorithm_choices())
@@ -485,6 +483,36 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
+  file_auto<- as_one_logical(file_auto)
+
+  # ======================================================================
+  # define file value when file_auto was given as TRUE  
+  # override file and file_refit
+  if (file_auto) {
+    orig_seed <- seed
+    # This list must include only/all the parameters that may change the result
+    args_list <- nlist(formula, data, family, prior, autocor, data2, cov_ranef,
+                       sample_prior, sparse, knots, drop_unused_levels, stanvars,
+                       stan_funs, fit, save_pars, save_ranef, save_mevars,
+                       save_all_pars, init, inits, chains, iter, warmup, thin,
+                       cores, threads, opencl, normalize, control, algorithm,
+                       backend, future, orig_seed, stan_model_args, empty)
+    auto_res <- create_filename_auto(file, file_refit, file_auto, args_list)
+    file <- auto_res$file
+    file_refit <- auto_res$file_refit
+  }
+
+  # ======================================================================
+  # optionally load brmsfit from file
+  # Loading here only when we should directly load the file.
+  # The "on_change" option needs sdata and scode to be built
+  file_refit <- match.arg(file_refit, file_refit_options())
+  if (!is.null(file) && file_refit == "never") {
+    x <- read_brmsfit(file)
+    if (!is.null(x)) {
+      return(x)
+    }
+  }
 
   # initialize brmsfit object
   if (is.brmsfit(fit)) {

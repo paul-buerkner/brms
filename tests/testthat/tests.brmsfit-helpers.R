@@ -25,10 +25,10 @@ test_that("autocorrelation matrices are computed correctly", {
 
   ar_mat <- brms:::get_cor_matrix_ar1(ar = matrix(ar), nobs = 4)
   expected_ar_mat <- 1 / (1 - ar^2) *
-                     cbind(c(1, ar, ar^2, ar^3),
-                           c(ar, 1, ar, ar^2),
-                           c(ar^2, ar, 1, ar),
-                           c(ar^3, ar^2, ar, 1))
+    cbind(c(1, ar, ar^2, ar^3),
+          c(ar, 1, ar, ar^2),
+          c(ar^2, ar, 1, ar),
+          c(ar^3, ar^2, ar, 1))
   expect_equal(ar_mat[1, , ], expected_ar_mat)
 
   ma_mat <- brms:::get_cor_matrix_ma1(ma = matrix(ma), nobs = 4)
@@ -44,10 +44,10 @@ test_that("autocorrelation matrices are computed correctly", {
   g0 <- 1 + ma^2 + 2 * ar * ma
   g1 <- (1 + ar * ma) * (ar + ma)
   expected_arma_mat <- 1 / (1 - ar^2) *
-                       cbind(c(g0, g1, g1 * ar, g1 * ar^2),
-                             c(g1, g0, g1, g1 * ar),
-                             c(g1 * ar, g1, g0, g1),
-                             c(g1 * ar^2, g1 * ar, g1, g0))
+    cbind(c(g0, g1, g1 * ar, g1 * ar^2),
+          c(g1, g0, g1, g1 * ar),
+          c(g1 * ar, g1, g0, g1),
+          c(g1 * ar^2, g1 * ar, g1, g0))
   expect_equal(arma_mat[1, , ], expected_arma_mat)
 
   cosy <- 0.6
@@ -105,7 +105,6 @@ test_that("brmsfit_needs_refit works correctly", {
 
   data_model1 <- data.frame(y = rnorm(10), x = rnorm(10))
   fake_fit <- brm(y ~ x, data = data_model1, empty = TRUE)
-
   expect_error(summary(fake_fit), NA)
 
   fake_fit_file <- fake_fit
@@ -215,49 +214,34 @@ test_that("insert_refcat() works correctly", {
 
 # split_folder_and_file
 test_that("split_folder_and_file returns expected results", {
-  files <- c("somefile",  "./somefile" , "somepath/somefolder/somefile" )
+  cache_folder <- getOption('brms.cache_folder' , default = '.')
+  files <- c("somefile",  "./somefile" , "somepath/somefolder/somefile")
   result <- base::lapply(files, split_folder_and_file)
-  exp_result <-   list( list( folder = '.' , file= 'somefile' ) ,
-                        list( folder = '.' , file= 'somefile' ) ,
-                        list( folder = 'somepath/somefolder' , file= 'somefile' )
+  exp_result <-   list( list(folder = cache_folder, file = "somefile") ,
+                        list(folder = cache_folder, file = "somefile") ,
+                        list(folder = "somepath/somefolder", file = "somefile")
   )
-  expect_equal(result ,exp_result )
+  expect_equal(result, exp_result)
 })
 
 # check_brmsfit_file
 test_that("check_brmsfit_file returns expected results", {
-  files <- c("somefile",  "./somefile"  , "somefile.rds" , "somepath/somefolder/somefile" )
-  result <- base::lapply(files, function(x) check_brmsfit_file(x ,  .check_folder = F  ))
-  exp_result <-   list(  "./somefile.rds" ,
-                         "./somefile.rds" ,
-                         "./somefile.rds" ,
-                         "somepath/somefolder/somefile.rds" )
-  expect_equal(result ,exp_result )
+  cache_folder <- getOption('brms.cache_folder', default = '.')
+  files <- c("somefile",  "./somefile", "somefile.rds", "somepath/somefolder/somefile")
+  result <- base::lapply(files, function(x) check_brmsfit_file(x, .check_folder = F))
+  exp_result <-   list( file.path(cache_folder, "somefile.rds"),
+                        file.path(cache_folder, "somefile.rds"),
+                        file.path(cache_folder, "somefile.rds"),
+                        "somepath/somefolder/somefile.rds")
+  expect_equal(result, exp_result)
 })
 
 # get_cache_folder
 test_that("get_cache_folder returns expected results", {
-
-  old_val <- getOption("brms.cache_folder", NULL)
-  options(brms.cache_folder = "SomeFolder")
-
-  on.exit({
-    if (is.null(old_val)) {
-      options(your.option.name = NULL)
-    } else {
-      options(your.option.name = old_val)
-    }
-  }, add = TRUE)
-
-
-  files <- c("somefile", "./somefile", "abcde/somefile.rds" ,
+  cache_folder <- getOption('brms.cache_folder', default = '.')
+  files <- c("somefile", "./somefile", "abcde/somefile.rds",
              "somepath/somefolder/somefile")
   result <- base::lapply(files, brms:::get_cache_folder)
-  exp_result <-   list(
-    "SomeFolder" ,
-    "SomeFolder" ,
-    "abcde" ,
-    "somepath/somefolder"
-  )
+  exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
   expect_equal(result, exp_result)
 })
