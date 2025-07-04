@@ -851,9 +851,9 @@ sort_dependencies <- function(x, sorted = NULL) {
 #   stop(..., call. = FALSE)
 # }
 
-stop2 <- function(message = "", ..., .subclass = NULL, call = rlang::caller_call()) {
+stop2 <- function(message = "", ..., .subclass = NULL, call = rlang::caller_call() , .envir = parent.frame()) {
   rlang::abort(
-    message = glue::glue(message, ...),
+    message = glue::glue(message, ..., .envir = .envir),
     .subclass = c(.subclass, "brms_error"),
     call = call
   )
