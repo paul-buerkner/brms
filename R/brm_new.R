@@ -353,7 +353,9 @@ build_new_model<- function(brm_call_list){
   if(empty){
     return(.list) #x
   }
-  # model, exclude, backend
+  # ==================================
+  # model, exclude, backend, x, sdata
+  # ===================================
   fit_args <- c(
     nlist(
       model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
