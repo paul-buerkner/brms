@@ -845,12 +845,6 @@ sort_dependencies <- function(x, sorted = NULL) {
   out
 }
 
-# older version of stop2 was preserved here to compare
-# in case of any error
-# stop2 <- function(...) {
-#   stop(..., call. = FALSE)
-# }
-
 stop2 <- function(message = "", ..., .subclass = NULL, call = rlang::caller_call() , .envir = parent.frame()) {
   rlang::abort(
     message = glue::glue(message, ..., .envir = .envir),
