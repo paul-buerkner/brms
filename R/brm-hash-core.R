@@ -6,7 +6,6 @@ get_same_data_if_null <- function(data) {
   if (is.null(data)) {
     # Use a subset of epilepsy as a fallback test dataset
     utils::data("epilepsy", package = "brms", envir = environment())
-
     epilepsy_data <- get("epilepsy", envir = environment())
     correct_data <- epilepsy_data[-c(1, 8, 11, 25, 29, 12), ]
   } else {
