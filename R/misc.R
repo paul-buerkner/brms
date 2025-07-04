@@ -845,13 +845,39 @@ sort_dependencies <- function(x, sorted = NULL) {
   out
 }
 
-stop2 <- function(message = "", ..., .subclass = NULL, call = rlang::caller_call() , .envir = parent.frame()) {
+#' Internal abort helper
+#'
+#' A drop-in replacement for the old `stop2()` that throws structured
+#' errors via **rlang**.
+#' The error message is built with **glue**, so you can use
+#'   `{.val {x}}`, `{.arg {y}}`, etc.
+#' Every error inherits from `"brms_error"` plus any subclasses
+#'   supplied through `.subclass`, making it easy to `tryCatch()`.
+#'
+#' @param message A character (or glue) string describing the error.
+#' @param ... Additional strings merged into the message; kept for
+#'   backward compatibility with existing `stop2("foo", "bar")` calls.
+#' @param .subclass Optional character vector of extra condition classes.
+#' @param call A call object to store with the condition; defaults to the
+#'   caller (set internally to avoid CRAN’s “function call as default”
+#'   NOTE).
+#' @param .envir Environment in which glue expressions are evaluated.
+#' @keywords internal
+#' @noRd
+stop2 <- function(message = "", ..., .subclass = NULL,
+                  call = NULL, .envir = parent.frame()) {
+
+  if (is.null(call)) {
+    call <- rlang::caller_call()     # evaluated at run-time → CRAN-safe
+  }
+
   rlang::abort(
-    message = glue::glue(message, ..., .envir = .envir),
+    message   = glue::glue(message, ..., .envir = .envir),
     .subclass = c(.subclass, "brms_error"),
-    call = call
+    call      = call
   )
 }
+
 
 warning2 <- function(...) {
   warning(..., call. = FALSE)
