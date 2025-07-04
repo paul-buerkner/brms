@@ -86,6 +86,11 @@ jobs:
           cmdstanr::install_cmdstan(cores = parallel::detectCores())
         shell: Rscript {0}
 
+      - name: Install colorspace manually
+        run: |
+          install.packages("colorspace", repos = "https://cran.rstudio.com/")
+        shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           build_args: 'c("--no-manual", "--no-build-vignettes")'

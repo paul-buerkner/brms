@@ -54,7 +54,7 @@ Imports:
     grDevices,
     backports
 Suggests:
-    testthat (>= 0.9.1),
+    testthat (>= 3.1.9),
     emmeans (>= 1.4.2),
     cmdstanr (>= 0.5.0),
     projpred (>= 2.0.0),
@@ -83,6 +83,7 @@ Suggests:
     rmarkdown,
     ragg,
     withr
+    colorspace
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions
     and link functions are supported, allowing users to fit -- among others --
