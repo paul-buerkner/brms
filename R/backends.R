@@ -138,6 +138,12 @@ fit_model <- function(model, backend, ...) {
   .fit_model(model, ...)
 }
 
+fit_model_with_brm_call <- function(.brm_call_list) {
+  backend <- as_one_character(.brm_call_list$backend)
+  .fit_model <- get(paste0(".fit_model_", backend), mode = "function")
+  .fit_model(.brm_call_list$model, rlang::splice(.brm_call_list$dot_args))
+}
+
 # fit Stan model with rstan
 # @param model a compiled Stan model
 # @param sdata named list to be passed to Stan as data
