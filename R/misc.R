@@ -845,8 +845,18 @@ sort_dependencies <- function(x, sorted = NULL) {
   out
 }
 
-stop2 <- function(...) {
-  stop(..., call. = FALSE)
+# older version of stop2 was preserved here to compare
+# in case of any error
+# stop2 <- function(...) {
+#   stop(..., call. = FALSE)
+# }
+
+stop2 <- function(message = "", ..., .subclass = NULL, call = rlang::caller_call()) {
+  rlang::abort(
+    message = glue::glue(message, ...),
+    .subclass = c(.subclass, "brms_error"),
+    call = call
+  )
 }
 
 warning2 <- function(...) {
