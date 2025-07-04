@@ -1,5 +1,3 @@
-# tests/testthat/test-stop2.R
-
 test_that("stop2() throws a brms_error with simple message", {
   expect_error(stop2("Something went wrong"), class = "brms_error")
 })
