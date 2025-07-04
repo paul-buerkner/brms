@@ -19,6 +19,7 @@
   ## 3. stash the dot-args for later splicing
   arg_list$dot_args <- list(...)
 
+
   ### --- very lightweight checks (optional) ----
   arg_list$algorithm <- match.arg(arg_list$algorithm, algorithm_choices())
   arg_list$backend   <- match.arg(arg_list$backend,   backend_choices())
@@ -69,7 +70,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
 
-  args <- .brm_collect_args()
+  args <- .brm_collect_args(...)
   .brm_internal(args)
 }
 
@@ -153,15 +154,11 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   future<- brm_call_list$future
   seed<- brm_call_list$seed
   silent<- brm_call_list$silent
+  file_compress <- brm_call_list$file_compress
 
+  assign("dbg_brm_call_list" ,brm_call_list  , envir = .GlobalEnv)
 
-  # brm_call_list$dot_args
-
-  #
-  # model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
-  # threads, opencl, init, exclude, control, future, seed, silent, brm_call_list$dot_args
-  #
-    # --- Build a new brmsfit object from scratch ---
+  # --- Build a new brmsfit object from scratch ---
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
@@ -221,13 +218,19 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
       opencl = opencl, normalize = normalize
     )
     # initialize S3 object
+    stan_args <- c(
+      nlist(init, silent, control, stan_model_args),
+      brm_call_list$dot_args
+    )
+
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior,
       stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
       save_pars = save_pars, ranef = bframe$frame$re, family = family,
       basis = frame_basis(bframe, data = data),
-      stan_args = nlist(init, silent, control, stan_model_args, brm_call_list$dot_args)
+      # stan_args = nlist(init, silent, control, stan_model_args, rlang::splice(brm_call_list$dot_args))
+      stan_args = stan_args
     )
     exclude <- exclude_pars(x, bframe = bframe)
     # generate Stan data before compiling the model to avoid
@@ -265,17 +268,16 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     model <- do_call(compile_model, compile_args)
   }
 
-  # fit the Stan model
-  # fit_args <- nlist(
-  #   model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
-  #   threads, opencl, init, exclude, control, future, seed, silent
-  # )
-
-
-  fit_args <- nlist(
-    model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
-    threads, opencl, init, exclude, control, future, seed, silent, rlang::splice(brm_call_list$dot_args)
+  fit_args <- c(
+    nlist(
+      model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
+      threads, opencl, init, exclude, control, future, seed, silent
+    ),
+    brm_call_list$dot_args
   )
+
+  assign("dbg_fit_args", fit_args, envir = .GlobalEnv)
+
   x$fit <- do_call(fit_model, fit_args)
   # x$fit <- do_call(fit_model_with_brm_call, brm_call_list )
   # x$fit <- fit_model_with_brm_call(brm_call_list)
@@ -290,5 +292,5 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     x <- write_brmsfit(x, file, compress = file_compress)
   }
   x
-  }
+}
 
