@@ -5,12 +5,16 @@
 get_same_data_if_null <- function(data) {
   if (is.null(data)) {
     # Use a subset of epilepsy as a fallback test dataset
-    correct_data <- epilepsy[-c(1, 8, 11, 25, 29, 12), ]
+    utils::data("epilepsy", package = "brms", envir = environment())
+
+    epilepsy_data <- get("epilepsy", envir = environment())
+    correct_data <- epilepsy_data[-c(1, 8, 11, 25, 29, 12), ]
   } else {
     correct_data <- data
   }
   correct_data
 }
+
 
 #' Hash or fingerprint a data.frame for caching
 #'
