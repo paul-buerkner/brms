@@ -293,11 +293,8 @@ build_new_model<- function(brm_call_list){
 
   ## 3. stash the dot-args for later splicing
   arg_list$dot_args <- list(...)
-
   arg_list
 }
-
-
 
 #' #' Fit Bayesian Generalized (Non-)Linear Multivariate Multilevel Models
 #' #'
