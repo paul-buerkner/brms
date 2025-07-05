@@ -220,9 +220,16 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
                 file_refit = getOption("brms.file_refit", "never"),
                 empty = FALSE, rename = TRUE, call_only = FALSE, ...) {
 
+  call_only <- as_one_logical(call_only)
   # if called with a `brm_call` object handle it first
   if(inherits(formula , 'brm_call')){
     args <- formula
+    if(call_only){
+      # when called with brm(brm_call, call_only = TRUE)
+      # also returns `brm_call`
+      return(args)
+    }
+
     return( .brm_internal(args))
   }
 
@@ -242,7 +249,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-  call_only <- as_one_logical(call_only)
+
   args <- .brm_collect_args(...)
   class(args) <- c("brm_call" , "list")
   # if call_only is TRUE return a brm_call object
