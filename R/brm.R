@@ -44,41 +44,42 @@ re_use_existing_model<- function(.brm_call_list){
 
 #' Internal engine to evaluate and fit a brms model
 #' @noRd
-.brm_internal <- function(brm_call_list) {
+.brm_internal <- function(brm_call) {
+
   # TODO simplify extractions
   # Extract parameters
-  fit        <- brm_call_list$fit
-  model      <- brm_call_list$model
-  file       <- brm_call_list$file
-  file_compress <- brm_call_list$file_compress
-  empty        <-  brm_call_list$empty
-  rename       <- brm_call_list$rename
-  algorithm    <- brm_call_list$algorithm
-  backend      <- brm_call_list$backend
-  iter         <- brm_call_list$iter
-  warmup       <- brm_call_list$warmup
-  thin         <- brm_call_list$thin
-  chains       <- brm_call_list$chains
-  cores        <- brm_call_list$cores
-  threads      <- brm_call_list$threads
-  opencl       <- brm_call_list$opencl
-  init         <- brm_call_list$init
-  exclude      <- brm_call_list$exclude
-  control      <- brm_call_list$control
-  future       <- brm_call_list$future
-  seed         <- brm_call_list$seed
-  silent       <- brm_call_list$silent
+  # fit        <- brm_call$fit
+  # model      <- brm_call$model
+  # file       <- brm_call$file
+  # file_compress <- brm_call$file_compress
+  # empty        <-  brm_call$empty
+  # rename       <- brm_call$rename
+  # algorithm    <- brm_call$algorithm
+  # backend      <- brm_call$backend
+  # iter         <- brm_call$iter
+  # warmup       <- brm_call$warmup
+  # thin         <- brm_call$thin
+  # chains       <- brm_call$chains
+  # cores        <- brm_call$cores
+  # threads      <- brm_call$threads
+  # opencl       <- brm_call$opencl
+  # init         <- brm_call$init
+  # exclude      <- brm_call$exclude
+  # control      <- brm_call$control
+  # future       <- brm_call$future
+  # seed         <- brm_call$seed
+  # silent       <- brm_call$silent
 
   # Check if fit object can be reused from file
-  result <- .brm_check(brm_call_list)
+  result <- .brm_check(brm_call)
   if (!is.null(result)) {
     return(result)
   }
 
   # initialize brmsfit object
-  if (is.brmsfit(fit)) {
+  if (is.brmsfit(brm_call$fit)) {
     # re-use existing model
-    .list    <- re_use_existing_model( brm_call_list )
+    .list    <- re_use_existing_model(brm_call)
     backend  <- .list$backend
     model    <- .list$model
     exclude  <- .list$exclude
@@ -90,7 +91,7 @@ re_use_existing_model<- function(.brm_call_list){
 
   } else {
     # build new model
-    .list   <-  build_new_model(brm_call_list)
+    .list   <-  build_new_model(brm_call)
     backend <- .list$backend
     model   <- .list$model
     exclude <- .list$exclude
@@ -98,7 +99,7 @@ re_use_existing_model<- function(.brm_call_list){
     sdata   <- .list$sdata
   }
 
-  if(empty){
+  if(brm_call$empty){
     return(.list$x)
   }
   # ==================================
@@ -106,20 +107,28 @@ re_use_existing_model<- function(.brm_call_list){
   # ===================================
   fit_args <- c(
     nlist(
-      model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
-      threads, opencl, init, exclude, control, future, seed, silent
+      model, sdata, # maybe modifed above
+      algorithm = brm_call$algorithm,
+      backend, # maybe modifed above
+      iter = brm_call$iter, warmup = brm_call$warmup, thin = brm_call$thin,
+      chains = brm_call$chains, cores = brm_call$cores,
+      threads = brm_call$threads, opencl = brm_call$opencl,
+      init = brm_call$init,
+      exclude, # maybe modifed above
+      control = brm_call$control, future = brm_call$future,
+      seed = brm_call$seed, silent = brm_call$silent
     ),
-    brm_call_list$dot_args
+    brm_call$dot_args
   )
 
   x$fit <- do_call(fit_model, fit_args)
 
   # rename parameters to have human readable names
-  if (rename) {
+  if (brm_call$rename) {
     x <- rename_pars(x)
   }
-  if (!is.null(file)) {
-    x <- write_brmsfit(x, file, compress = file_compress)
+  if (!is.null(brm_call$file)) {
+    x <- write_brmsfit(x, file, compress = brm_call$file_compress)
   }
   x
 }
