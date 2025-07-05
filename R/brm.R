@@ -199,41 +199,13 @@ build_new_model<- function(brm_call_list){
 
   # Extract parameters
   fit        <- brm_call_list$fit
-  file       <- brm_call_list$file
-  file_refit <- brm_call_list$file_refit
-  algorithm  <- brm_call_list$algorithm
-  backend    <- brm_call_list$backend
-  silent     <- brm_call_list$silent
-  data       <- brm_call_list$data
-  data2      <- brm_call_list$data2
-  family     <- brm_call_list$family
   model      <- brm_call_list$model
-  formula    <- brm_call_list$formula
-  sparse     <- brm_call_list$sparse
-  cov_ranef  <- brm_call_list$cov_ranef
-  data2      <- brm_call_list$data2
-  knots      <- brm_call_list$knots
-  drop_unused_levels    <- brm_call_list$drop_unused_levels
-  prior        <- brm_call_list$prior
-  bframe       <- brm_call_list$bframe
-  sample_prior <- brm_call_list$sample_prior
-  stanvars     <- brm_call_list$stanvars
-  stan_funs    <- brm_call_list$stan_funs
-  save_ranef   <- brm_call_list$save_ranef
-  save_mevars  <- brm_call_list$save_mevars
-  save_all_pars <- brm_call_list$save_all_pars
-  backend      <- brm_call_list$backend
-  threads      <- brm_call_list$threads
-  opencl       <- brm_call_list$opencl
-  normalize    <- brm_call_list$normalize
-  control      <- brm_call_list$control
-  autocor      <- brm_call_list$autocor
-  save_pars    <- brm_call_list$save_pars
-  save_model   <- brm_call_list$save_model
-  rename       <- brm_call_list$rename
-  init         <- brm_call_list$init
-  stan_model_args <-  brm_call_list$stan_model_args
+  file       <- brm_call_list$file
+  file_compress <- brm_call_list$file_compress
   empty        <-  brm_call_list$empty
+  rename       <- brm_call_list$rename
+  algorithm  <- brm_call_list$algorithm
+  backend      <- brm_call_list$backend
   iter         <- brm_call_list$iter
   warmup       <- brm_call_list$warmup
   thin         <- brm_call_list$thin
@@ -241,13 +213,12 @@ build_new_model<- function(brm_call_list){
   cores        <- brm_call_list$cores
   threads      <- brm_call_list$threads
   opencl       <- brm_call_list$opencl
+  init         <- brm_call_list$init
   exclude      <- brm_call_list$exclude
   control      <- brm_call_list$control
   future       <- brm_call_list$future
   seed         <- brm_call_list$seed
   silent       <- brm_call_list$silent
-  file_compress <- brm_call_list$file_compress
-
 
   # Check if fit object can be reused from file
   result <- .brm_check(brm_call_list)
@@ -257,9 +228,10 @@ build_new_model<- function(brm_call_list){
 
   # initialize brmsfit object
   if (is.brmsfit(fit)) {
+    # re-use existing model
     .list    <- re_use_existing_model( brm_call_list )
     backend  <- .list$backend
-    model.   <- .list$model
+    model    <- .list$model
     exclude  <- .list$exclude
     x        <- .list$x
     sdata    <- .list$sdata
@@ -268,7 +240,7 @@ build_new_model<- function(brm_call_list){
     }
 
   } else {
-
+    # build new model
     .list   <-  build_new_model(brm_call_list)
     backend <- .list$backend
     model   <- .list$model
