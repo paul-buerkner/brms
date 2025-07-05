@@ -41,6 +41,71 @@ re_use_existing_model<- function(.brm_call_list){
   return(nlist(backend, model, exclude, x_from_file, needs_refit))
 }
 
+#' Validate a `brm_call` object
+#'
+#' Internal helper – stops with an informative error if core fields
+#' are missing or malformed.  Returns the input invisibly on success.
+#'
+#' Uses **rlang** predicates for concise, CRAN-friendly checks.
+#'
+#' @param brm_call A list with class <brm_call>.
+#' @return `brm_call` (invisibly) or an error via `rlang::abort()`.
+#' @noRd
+brm_call_type_check <- function(brm_call) {
+
+  # --------------------------------------------------------------------- #
+  # 1.  Top-level class ---------------------------------------------------
+  if (!inherits(brm_call, "brm_call")) {
+    rlang::abort("`brm_call` must inherit from class <brm_call>.",
+                 arg = "brm_call")
+  }
+
+  # --------------------------------------------------------------------- #
+  # 2.  Required fields  --------------------------------------------------
+  req <- list(
+    formula = function(x) is.formula(x) ||  is.brmsformula(x) || is.list(x),
+
+    # TODO Currently we let data to be null.
+    # We may modify this part later. Some of the parameters not checked yet.
+    # data    = is.data.frame,
+    # family  = function(x) is.family(x) || rlang::is_string(x),
+    backend = rlang::is_string,
+    iter    = rlang::is_scalar_integerish,
+    chains  = rlang::is_scalar_integerish,
+    call_only = rlang::is_scalar_logical
+  )
+
+  for (nm in names(req)) {
+    if (!nm %in% names(brm_call)) {
+      rlang::abort(
+        glue::glue("Field `{nm}` is missing from `brm_call`."),
+        arg = nm
+      )
+    }
+    if (!isTRUE(req[[nm]](brm_call[[nm]]))) {
+      rlang::abort(
+        glue::glue("Field `{nm}` has the wrong type or length."),
+        arg = nm
+      )
+    }
+  }
+
+  # --------------------------------------------------------------------- #
+  # 3.  Value constraints  -----------------------------------------------
+  if (brm_call$iter <= 0) {
+    rlang::abort("`iter` must be a positive integer.", arg = "iter")
+  }
+  if (brm_call$chains <= 0) {
+    rlang::abort("`chains` must be a positive integer.", arg = "chains")
+  }
+  if (rlang::is_true(brm_call$call_only) && !is.null(brm_call$fit)) {
+    rlang::abort("`brm_call` with `call_only = TRUE` must not contain a `fit`.",
+                 arg = "fit")
+  }
+
+  invisible(brm_call)
+}
+
 
 #' Internal engine to evaluate and fit a brms model
 #' @noRd
@@ -184,5 +249,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   if(call_only){
     return(args)
   }
+
+  brm_call_type_check(args)
   .brm_internal(args)
 }
