@@ -6,6 +6,11 @@
 \usage{
 create_brm_call(...)
 }
+\arguments{
+\item{...}{Any arguments accepted by \code{\link[brms]{brm}}.
+They are stored unmodified in the returned object.  See the
+\pkg{brms} help page for the exhaustive list.}
+}
 \value{
 A list of class \code{c("brm_call", "list")}.
 }
@@ -13,31 +18,7 @@ A list of class \code{c("brm_call", "list")}.
 `create_brm_call()` is a wafer-thin wrapper around
 \code{\link[brms]{brm}} that adds \code{call_only = TRUE}.
 All other arguments are forwarded unchanged.
-The result is a lightweight object of class
-\code{c("brm_call", "list")} that stores the fully assembled argument list
-without compiling the Stan model or drawing any samples.
 }
-\details{
-This is handy for:
-\itemize{
-  \item **unit-testing** helpers that mutate \code{brm()} calls;
-  \item **inspecting** a complex model specification before spending time on
-    sampling;
-  \item **programmatically tweaking** the call and running it later via
-    \code{do.call(brms::brm, stored_call)}.
-}
-}
-\examples{
-if (interactive() && requireNamespace("brms", quietly = TRUE)) {
-  call_obj <- create_brm_call(
-    formula = count ~ zAge + zBase * Trt + (1 | patient),
-    data    = brms::epilepsy,
-    family  = poisson()
-  )
-
-  print(call_obj)                 # quick overview
-  ## ... later ...
-  ## fit <- brm(call_obj)
-}
-
+\seealso{
+\code{\link[brms]{brm}}
 }

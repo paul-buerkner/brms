@@ -46,30 +46,6 @@ re_use_existing_model<- function(.brm_call_list){
 #' @noRd
 .brm_internal <- function(brm_call) {
 
-  # TODO simplify extractions
-  # Extract parameters
-  # fit        <- brm_call$fit
-  # model      <- brm_call$model
-  # file       <- brm_call$file
-  # file_compress <- brm_call$file_compress
-  # empty        <-  brm_call$empty
-  # rename       <- brm_call$rename
-  # algorithm    <- brm_call$algorithm
-  # backend      <- brm_call$backend
-  # iter         <- brm_call$iter
-  # warmup       <- brm_call$warmup
-  # thin         <- brm_call$thin
-  # chains       <- brm_call$chains
-  # cores        <- brm_call$cores
-  # threads      <- brm_call$threads
-  # opencl       <- brm_call$opencl
-  # init         <- brm_call$init
-  # exclude      <- brm_call$exclude
-  # control      <- brm_call$control
-  # future       <- brm_call$future
-  # seed         <- brm_call$seed
-  # silent       <- brm_call$silent
-
   # Check if fit object can be reused from file
   result <- .brm_check(brm_call)
   if (!is.null(result)) {
