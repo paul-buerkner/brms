@@ -42,14 +42,10 @@ re_use_existing_model<- function(.brm_call_list){
 }
 
 
-
-
-
-
 #' Internal engine to evaluate and fit a brms model
 #' @noRd
 .brm_internal <- function(brm_call_list) {
-
+  # TODO simplify extractions
   # Extract parameters
   fit        <- brm_call_list$fit
   model      <- brm_call_list$model
@@ -110,7 +106,7 @@ re_use_existing_model<- function(.brm_call_list){
   # ===================================
   fit_args <- c(
     nlist(
-      model, sdata, algorithm,backend = backend, iter, warmup, thin, chains, cores,
+      model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
       threads, opencl, init, exclude, control, future, seed, silent
     ),
     brm_call_list$dot_args
