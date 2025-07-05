@@ -45,7 +45,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   class(out) <- "brmssummary"
 
   # check if the model contains any posterior draws
-  model_is_empty <-  is.null(object$fit) || !length(object$fit@sim) ||
+  model_is_empty <- is.null(object$fit) || !length(object$fit@sim) ||
     isTRUE(object$fit@sim$iter <= object$fit@sim$warmup)
 
   if (model_is_empty) {

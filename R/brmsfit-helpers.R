@@ -991,26 +991,20 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
 # @param file A file path (string) that may include a directory component.
 # @return A string indicating which folder to use for caching.
 get_cache_folder <- function(file = NULL) {
-
   fallback <- getOption("brms.cache_folder", ".")
-
   if(is.function(file)){
     stop2("file argument must be character type!")
     return(fallback)
   }
-
   if (is.null(file) ||
       length(file) == 0L ||
       (is.character(file) && !nzchar(file[1]))) {
     return(fallback)
   }
-
   dir_part <- dirname(file[1])
-
   if (nzchar(dir_part) && dir_part != ".") {
     return(dir_part)
   }
-
   fallback
 }
 
