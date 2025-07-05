@@ -247,31 +247,3 @@ test_that("get_cache_folder returns expected results", {
   exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
   expect_equal(result, exp_result)
 })
-
-# get_cache_folder
-test_that("get_cache_folder returns expected results", {
-  cache_folder <- getOption('brms.cache_folder', default = '.')
-  files <- c("somefile", "./somefile", "abcde/somefile.rds",
-             "somepath/somefolder/somefile")
-  result <- base::lapply(files, get_cache_folder)
-  exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
-  expect_equal(result, exp_result)
-})
-
-# tempfile with cache folder
-test_that("get_cache_folder returns expected results", {
-
-
-  cache_folder <- getOption('brms.cache_folder', default = '.')
-  tmp <- tempfile()
-  folder <- get_cache_folder(tmp)
-
-  f <- file.path(folder , basename(tmp))
-
-
-  # files <- c("somefile", "./somefile", "abcde/somefile.rds",
-  #            "somepath/somefolder/somefile")
-  # result <- base::lapply(files, get_cache_folder)
-  # exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
-  # expect_equal(result, exp_result)
-})

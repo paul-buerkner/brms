@@ -1035,10 +1035,7 @@ check_folder <- function(folder) {
 #   \item{file}{The original file argument (unchanged).}
 split_folder_and_file <- function(.file) {
   if(!is.character(.file)){
-    # TODO
-    assign('dbg_file' , .file , .GlobalEnv )
     stop2("file must be a character type")
-
   }
   cache_folder <- get_cache_folder(.file)
   .file <- basename(.file)
