@@ -4,7 +4,7 @@
 \alias{create_priorsense_data.brmsfit}
 \title{Prior sensitivity: Create priorsense data}
 \usage{
-create_priorsense_data.brmsfit(x, ...)
+\method{create_priorsense_data}{brmsfit}(x, ...)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}
