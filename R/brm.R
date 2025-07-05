@@ -172,7 +172,12 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                empty = FALSE, rename = TRUE, ...) {
+                empty = FALSE, rename = TRUE, call_only = FALSE, ...) {
+
+  if(inherits(formula , 'brm_call')){
+    args <- formula
+    return( .brm_internal(args))
+  }
 
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
@@ -190,8 +195,11 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-
+  call_only <- as_one_logical(call_only)
   args <- .brm_collect_args(...)
-  # args
+  class(args) <- c("brm_call" , "list")
+  if(call_only){
+    return(args)
+  }
   .brm_internal(args)
 }

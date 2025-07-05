@@ -46,6 +46,7 @@ brm(
   file_refit = getOption("brms.file_refit", "never"),
   empty = FALSE,
   rename = TRUE,
+  call_only = FALSE,
   ...
 )
 }
@@ -316,6 +317,15 @@ object will be empty. This is useful if you have estimated a brms-created
 Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{rename}{For internal use only.}
+
+\item{call_only}{Logical. If \code{TRUE}, \code{brm()} skips model
+compilation and sampling and instead returns a lightweight object of
+class \code{"brm_call"} containing the fully assembled argument list.
+This is handy for unit-testing, interactive inspection, or programmatic
+modification of the call before actually fitting the model.
+Defaults to \code{FALSE}.  When supplied, the flag must be named (e.g.
+\code{call_only = TRUE}) so it can be intercepted and removed before the
+Stan call is constructed.}
 
 \item{...}{Further arguments passed to Stan.
 For \code{backend = "rstan"} the arguments are passed to
