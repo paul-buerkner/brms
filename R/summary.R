@@ -45,11 +45,14 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   class(out) <- "brmssummary"
 
   # check if the model contains any posterior draws
-  model_is_empty <- is.null(object$fit) || is.character(object$fit) || !length(object$fit@sim) ||
+  model_is_empty <-  is.null(object$fit) ||  (is.character(object$backend) && object$backend == "mock") ||
+    !length(object$fit@sim) ||
     isTRUE(object$fit@sim$iter <= object$fit@sim$warmup)
+
   if (model_is_empty) {
     return(out)
   }
+
 
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")

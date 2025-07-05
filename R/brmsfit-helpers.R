@@ -990,16 +990,30 @@ brmsfit_needs_refit <- function(fit, sdata = NULL, scode = NULL, data = NULL,
 #
 # @param file A file path (string) that may include a directory component.
 # @return A string indicating which folder to use for caching.
-get_cache_folder <- function(file) {
-  dir <- dirname(file)
-  # If the file path already contains a directory, use it
-  if (dir != ".") {
-    return(dir)
+get_cache_folder <- function(file = NULL) {
+
+  fallback <- getOption("brms.cache_folder", ".")
+
+  if(is.function(file)){
+    stop2("file argument must be character type!")
+    return(fallback)
   }
-  # Otherwise, check for a user‐defined cache folder option
-  cache_folder <- getOption("brms.cache_folder", default = ".")
-  cache_folder
+
+  if (is.null(file) ||
+      length(file) == 0L ||
+      (is.character(file) && !nzchar(file[1]))) {
+    return(fallback)
+  }
+
+  dir_part <- dirname(file[1])
+
+  if (nzchar(dir_part) && dir_part != ".") {
+    return(dir_part)
+  }
+
+  fallback
 }
+
 
 # Check that a directory exists
 # @param folder A character string specifying a directory path.
@@ -1019,10 +1033,16 @@ check_folder <- function(folder) {
 # @return A list with two elements:
 #   \item{folder}{The directory returned by get_cache_folder(file).}
 #   \item{file}{The original file argument (unchanged).}
-split_folder_and_file <- function(file) {
-  cache_folder <- get_cache_folder(file)
-  file <- basename(file)
-  list(folder = cache_folder, file = file)
+split_folder_and_file <- function(.file) {
+  if(!is.character(.file)){
+    # TODO
+    assign('dbg_file' , .file , .GlobalEnv )
+    stop2("file must be a character type")
+
+  }
+  cache_folder <- get_cache_folder(.file)
+  .file <- basename(.file)
+  list(folder = cache_folder, file = .file)
 }
 
 # read a brmsfit object from a file
@@ -1081,8 +1101,8 @@ check_brmsfit_file_name <- function(file) {
 #   exists using `check_folder()`.
 #   If FALSE, the folder check is skipped. Mainly used in test scenarios.
 # @return A fully qualified file path (character string) with the `.rds` extension.
-check_brmsfit_file <- function(file, .check_folder = TRUE) {
-  flist <- split_folder_and_file(file)
+check_brmsfit_file <- function(.file, .check_folder = TRUE) {
+  flist <- split_folder_and_file(.file)
   if (.check_folder) {
     check_folder(flist$folder)
   }

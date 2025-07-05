@@ -128,7 +128,7 @@ re_use_existing_model<- function(.brm_call_list){
     x <- rename_pars(x)
   }
   if (!is.null(brm_call$file)) {
-    x <- write_brmsfit(x, file, compress = brm_call$file_compress)
+    x <- write_brmsfit(x, brm_call$file, compress = brm_call$file_compress)
   }
   x
 }

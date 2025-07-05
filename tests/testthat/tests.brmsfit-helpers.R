@@ -213,7 +213,6 @@ test_that("insert_refcat() works correctly", {
   }
 })
 
-
 # split_folder_and_file
 test_that("split_folder_and_file returns expected results", {
   cache_folder <- getOption('brms.cache_folder' , default = '.')
@@ -231,6 +230,7 @@ test_that("check_brmsfit_file returns expected results", {
   cache_folder <- getOption('brms.cache_folder', default = '.')
   files <- c("somefile",  "./somefile", "somefile.rds", "somepath/somefolder/somefile")
   result <- base::lapply(files, function(x) check_brmsfit_file(x, .check_folder = F))
+
   exp_result <-   list( file.path(cache_folder, "somefile.rds"),
                         file.path(cache_folder, "somefile.rds"),
                         file.path(cache_folder, "somefile.rds"),
@@ -243,8 +243,35 @@ test_that("get_cache_folder returns expected results", {
   cache_folder <- getOption('brms.cache_folder', default = '.')
   files <- c("somefile", "./somefile", "abcde/somefile.rds",
              "somepath/somefolder/somefile")
-  result <- base::lapply(files, brms:::get_cache_folder)
+  result <- base::lapply(files, get_cache_folder)
   exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
   expect_equal(result, exp_result)
 })
 
+# get_cache_folder
+test_that("get_cache_folder returns expected results", {
+  cache_folder <- getOption('brms.cache_folder', default = '.')
+  files <- c("somefile", "./somefile", "abcde/somefile.rds",
+             "somepath/somefolder/somefile")
+  result <- base::lapply(files, get_cache_folder)
+  exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
+  expect_equal(result, exp_result)
+})
+
+# tempfile with cache folder
+test_that("get_cache_folder returns expected results", {
+
+
+  cache_folder <- getOption('brms.cache_folder', default = '.')
+  tmp <- tempfile()
+  folder <- get_cache_folder(tmp)
+
+  f <- file.path(folder , basename(tmp))
+
+
+  # files <- c("somefile", "./somefile", "abcde/somefile.rds",
+  #            "somepath/somefolder/somefile")
+  # result <- base::lapply(files, get_cache_folder)
+  # exp_result <- list(cache_folder, cache_folder, "abcde", "somepath/somefolder")
+  # expect_equal(result, exp_result)
+})

@@ -2,7 +2,7 @@
 original_cache_folder <- getOption("brms.cache_folder")
 
 # Set a temporary value for tests
-test_cache_dir <- tempdir()
+test_cache_dir <- '.' # tempdir()
 options(brms.cache_folder = test_cache_dir)
 
 # Optional: only show message in interactive mode
