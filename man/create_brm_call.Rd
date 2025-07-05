@@ -8,7 +8,6 @@ create_brm_call(...)
 }
 \value{
 A list of class \code{c("brm_call", "list")}.
-  See \code{print.brm_call()} for a concise preview.
 }
 \description{
 `create_brm_call()` is a wafer-thin wrapper around
@@ -38,10 +37,7 @@ if (interactive() && requireNamespace("brms", quietly = TRUE)) {
 
   print(call_obj)                 # quick overview
   ## ... later ...
-  ## fit <- do.call(brms::brm, call_obj)
+  ## fit <- brm(call_obj)
 }
 
-}
-\seealso{
-\code{\link[brms]{brm}}, \code{\link{print.brm_call}}
 }

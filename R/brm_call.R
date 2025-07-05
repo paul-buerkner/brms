@@ -34,7 +34,6 @@ create_brm_call <- function(...) {
   brms::brm(..., call_only = TRUE)
 }
 
-
 #' @export
 print.brm_call <- function(x, ...) {
 
