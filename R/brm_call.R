@@ -44,26 +44,22 @@ identical_brm_calls <- function(c1, c2){
 #' @param ... Currently ignored
 #'
 #' @export
-all.equal.brm_call <- function(a, b, ...) {
-  identical_brm_calls(a, b)
+all.equal.brm_call <- function(target, current, ...) {
+  identical_brm_calls(target, current)
 }
 
 #' @export
 print.brm_call <- function(x, ...) {
-
   # helper: safe extraction by name (case-insensitive)
   get_arg <- function(nm) {
     hit <- match(tolower(nm), tolower(names(x)), nomatch = 0L)
     if (hit) x[[hit]] else NULL
   }
-
   ## ---- 1. headline fields ---------------------------------------
   formula <- get_arg("formula")
   data    <- get_arg("data")
   family  <- get_arg("family")
-
   cat("<brm_call>\n")
-
   if (!is.null(formula)) {
     cat("  Formula : ",
         paste(deparse(formula, nlines = 1L), collapse = " "),
@@ -82,12 +78,10 @@ print.brm_call <- function(x, ...) {
     fam <- if (inherits(family, "family")) family$family else as.character(family)
     cat("  Family  : ", fam, "\n", sep = "")
   }
-
   ## ---- 2. everything else ---------------------------------------
   # which names have NOT been printed?
   printed <- c("formula", "data", "family")
   keep    <- !(tolower(names(x)) %in% printed)
-
   if (any(keep)) {
     cat("  Other arguments (", sum(keep), "):\n", sep = "")
     for (nm in names(x)[keep]) {
@@ -101,11 +95,9 @@ print.brm_call <- function(x, ...) {
       } else {
         paste0("<", class(val)[1L], ">")
       }
-
       cat("    - ", nm, " = ", summary, "\n", sep = "")
     }
   }
-
   invisible(x)
 }
 
@@ -141,36 +133,26 @@ local_digest <- function(object, algo = "xxhash64", serialize = TRUE) {
 #' and versions of backend and brms packages.
 #' @noRd
 hash_model_signature <- function(call) {
-  # Cancelled for now
-  # it is taking too long during tests so we need to use
-  # hashing without stancode
   if(!call$file_auto)
     return(call)
-
-  # Build *just enough* to get Stan code & bframe ------------------------
   data_row_threshold <- 1e5
-
   if(call$backend == 'mock'){
     call$model_hash <- 'mock_hash'
     return(call)
   }
-
   fit_args <- .create_fit_args(call)
   # check for model code in mock case or empty case maybe not able to produce
   if( !is.list(fit_args) || is.null(fit_args$model)){
     return(call)
   }
-
   if(call$backend == 'rstan') {
     scode <- fit_args$model@model_code
   } else { # cmdstanr
     scode <- fit_args$model$code()
   }
-
   scode <- paste(scode, collapse="\n")
   data = call$data
   data_sig <- "NULL"
-
   if(is.data.frame(data)){
     nrows <- NROW(data)
     if(nrows < data_row_threshold) {
@@ -182,44 +164,30 @@ hash_model_signature <- function(call) {
       )
     }
   }
-
   ## map backend → package  -------------------------------------------------
   packages_backend <- list(rstan   = "rstan",
                            cmdstanr = "cmdstanr",
                            mock     = "mock")
-
   backend_pkg      <- packages_backend[[call$backend]]
   backend_version  <- v_package(backend_pkg)
   brms_version     <- v_package("brms")
 
   versions <- c(brms  = brms_version,
                 backend = backend_version)
-
-  # compact <- function(x) x[!vapply(x, function(z) length(z) == 0 || is.na(z),
-  #                                  logical(1))]
-
   payload <- list(
     versions  = versions,
     code_hash = local_digest(scode, algo = "xxhash64", serialize = FALSE),
     data_sig  = data_sig,
     backend   = call$backend
   )
-
   payload <- c(payload,
                list(threads  = call$threads,
                             opencl   = call$opencl,
                             normalize = call$normalize))
-
   ## final model signature ---------------------------------------------------
   model_hash <- local_digest(payload, algo = "xxhash64", serialize = TRUE)
-  # attr(call, "model_hash") <- model_hash
   call$model_hash <- model_hash
-  # local_digest(payload, algo = "xxhash64", serialize = TRUE)
   call$file <- paste0("cache_brmsfit_", model_hash, ".rds")
   call$file_refit <- 'on_change'
   call
 }
-
-
-
-

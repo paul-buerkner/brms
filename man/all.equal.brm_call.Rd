@@ -4,14 +4,14 @@
 \alias{all.equal.brm_call}
 \title{Checks if two brm_call objects are equal}
 \usage{
-\method{all}{equal.brm_call}(a, b, ...)
+\method{all}{equal.brm_call}(target, current, ...)
 }
 \arguments{
+\item{...}{Currently ignored}
+
 \item{a}{A \code{brm_call} object}
 
 \item{b}{Another \code{brm_call} object}
-
-\item{...}{Currently ignored}
 }
 \description{
 Checks if two brm_call objects are equal
