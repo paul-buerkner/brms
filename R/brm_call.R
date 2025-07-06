@@ -215,7 +215,7 @@ hash_model_signature <- function(call) {
   # attr(call, "model_hash") <- model_hash
   call$model_hash <- model_hash
   # local_digest(payload, algo = "xxhash64", serialize = TRUE)
-  call$file <- paste("cache_brmsfit_", model_hash)
+  call$file <- paste0("cache_brmsfit_", model_hash, ".rds")
   call$file_refit <- 'on_change'
   call
 }
