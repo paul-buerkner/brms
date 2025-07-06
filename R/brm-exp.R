@@ -51,7 +51,7 @@ build_new_model <- function(call){
 
   bframe <- brmsframe(bterms, data)
   prior <- .validate_prior(
-    call$prior, bframe =  bframe,
+    call$prior, bframe = bframe,
     sample_prior = call$sample_prior
   )
 

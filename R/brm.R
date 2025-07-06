@@ -143,7 +143,7 @@ brm_call_type_check <- function(brm_call) {
   invisible(brm_call)
 }
 
-# Internal method to create fit args
+#' Internal method to create fit args
 #' @noRd
 .create_fit_args <- function(brm_call){
   #   model, exclude, backend, x, sdata may be changed or created in `.build_or_reuse`
@@ -172,8 +172,8 @@ brm_call_type_check <- function(brm_call) {
   fit_args
 }
 
-# Internal function that will create or reuse existing brmsfit
-#
+#' Internal function that will create or reuse existing brmsfit
+#' @noRd
 .build_or_reuse <- function(brm_call){
   # ====================================================================
   #   model, exclude, backend, x, sdata may be changed or created here
@@ -214,7 +214,7 @@ brm_call_type_check <- function(brm_call) {
   # fit happens
   fit_args <- .create_fit_args(brm_call)
   x$fit <- do_call(fit_model, fit_args)
-
+  x$brm_call <- brm_call
   # rename parameters to have human readable names
   if (brm_call$rename) {
     x <- rename_pars(x)
@@ -291,14 +291,14 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   call_only <- as_one_logical(call_only)
   # if called with a `brm_call` object handle it first
   if(is.brm_call(formula)) {
-    args <- formula
+    brm_call <- formula
     if(call_only) {
       # when called with brm(brm_call, call_only = TRUE)
       # also returns `brm_call`
-      return(args)
+      return(brm_call)
     }
 
-    return(.brm_internal(args))
+    return(.brm_internal(brm_call))
   }
 
   algorithm <- match.arg(algorithm, algorithm_choices())
@@ -320,11 +320,13 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 
   args <- .brm_collect_args(...)
   class(args) <- c("brm_call" , "list")
+  brm_call <- args
+
   # if call_only is TRUE return a brm_call object
   if(call_only){
-    return(args)
+    return(brm_call)
   }
 
-  brm_call_type_check(args)
-  .brm_internal(args)
+  brm_call_type_check(brm_call)
+  .brm_internal(brm_call)
 }
