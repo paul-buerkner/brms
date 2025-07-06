@@ -1,4 +1,5 @@
 test_that("create fit args and created stancode changes or stays same as expected", {
+  skip_on_cran()
   clean <- function(txt) {
     txt <- paste(txt, collapse='\n')
     txt <- gsub("//.*$",          "", txt, perl = TRUE)  # strip // comments
