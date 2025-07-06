@@ -14,6 +14,9 @@ create_brm_call <- function(...) {
   brm(..., call_only = TRUE)
 }
 
+#' @noRd
+is.brm_call <- function(x) inherits(x, "brm_call")
+
 #' @export
 print.brm_call <- function(x, ...) {
 
@@ -78,6 +81,89 @@ print.brm_call <- function(x, ...) {
 #' @export
 summary.brm_call <- function(object, ...) {
   cat("Summary of <brm_call>\n")
-  str(object, max.level = 1, give.attr = FALSE, no.list = TRUE)
+  utils::str(object, max.level = 1, give.attr = FALSE, no.list = TRUE)
   invisible(object)
 }
+#' Get a package’s version as a string
+#'
+#' Silently returns `"NA"` when the package is not installed.
+#' @noRd
+v_package <- function(pkg) {
+  if (identical(pkg, "mock")) {
+    return("mock-1.0.0")
+  }
+  tryCatch(
+    as.character(utils::packageVersion(pkg)),
+    error = function(...) NA_character_
+  )
+}
+
+
+# experimental lots of
+# TODO here
+hash_model_signature <- function(call) {
+  # Build *just enough* to get Stan code & bframe ------------------------
+  bframe  <- brmsterms(call$formula)
+  prior   <- .validate_prior(call$prior, bframe)
+  stanvars <- validate_stanvars(call$stanvars, call$stan_funs)
+
+  scode <- .stancode(bframe,
+                     prior     = prior,
+                     stanvars  = stanvars,
+                     backend   = call$backend,
+                     threads   = call$threads,
+                     opencl    = call$opencl,
+                     normalize = call$normalize)
+
+  # Canonicalise: drop comments, collapse whitespace --------------------
+  scode <- gsub("^//.*?$|/\\*.*?\\*/", "", scode, perl = TRUE)    # rm comments
+  scode <- gsub("[[:space:]]+", " ", scode)                       # one space
+  scode <- trimws(scode)
+
+  data = call$data
+  if(is.null(data)){
+    data_sig <- 'NULL'
+  }else{
+    data_sig = list(
+      n    = NROW(call$data),
+      vars = sort(names(call$data))
+    )
+  }
+
+  ## map backend → package  -------------------------------------------------
+  packages_backend <- list(rstan   = "rstan",
+                           cmdstanr = "cmdstanr",
+                           mock     = "mock")
+
+  backend_pkg      <- packages_backend[[call$backend]]
+  backend_version  <- v_package(backend_pkg)
+  brms_version     <- v_package("brms")
+
+  versions <- c(brms  = brms_version,
+                backend = backend_version)
+
+
+  compact <- function(x) x[!vapply(x, function(z) length(z) == 0 || is.na(z),
+                                   logical(1))]
+
+  payload <- list(
+    versions  = versions,
+    code_hash = digest::digest(scode, algo = "xxhash64", serialize = FALSE),
+    data_sig  = data_sig,
+    backend   = call$backend
+  )
+
+  payload <- c(payload,
+               compact(list(threads  = call$threads,
+                            opencl   = call$opencl,
+                            normalize = call$normalize)))
+
+  ## final model signature ---------------------------------------------------
+  model_hash <- digest::digest(payload, algo = "xxhash64", serialize = TRUE)
+  attr(brm_call, "model_hash") <- model_hash
+
+
+  digest::digest(payload, algo = "xxhash64", serialize = TRUE)
+}
+
+

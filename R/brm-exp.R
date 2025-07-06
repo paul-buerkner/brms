@@ -1,9 +1,31 @@
-# build_new_model
-#
+#' Build a fresh `brmsfit` shell from a validated call
+#'
+#' Internal helper used by `brm()` when no existing fit can be re-used.
+#' It prepares data, generates Stan code, compiles the model (unless
+#' `empty = TRUE`), and returns all artefacts needed for sampling.
+#'
+#' @param call A list of class **`brm_call`** containing *validated* user
+#'   arguments.  The object is assumed to have passed `brm_call_type_check()`.
+#'
+#' @return A named list with components
+#'   \describe{
+#'     \item{`x`}{A pre-initialised **`brmsfit`** object (may have an empty
+#'       `fit` slot if `empty = TRUE`).}
+#'     \item{`sdata`}{The standata list (NULL when `empty = TRUE`).}
+#'     \item{`backend`}{Backend string (`"rstan"`, `"cmdstanr"`, or `"mock"`).}
+#'     \item{`model`}{Compiled Stan model or `NULL` when `empty = TRUE`.}
+#'     \item{`exclude`}{Character vector of parameter names to drop
+#'       after sampling.}
+#'     \item{`x_from_file`}{A cached fit (if `file` was supplied and no refit
+#'       was needed) or `NULL`.}
+#'     \item{`needs_refit`}{Logical flag used upstream to decide whether the
+#'       sampler must be run.}
+#'   }
+#' @noRd
 build_new_model <- function(call){
 
   needs_refit <- TRUE
-# --- Build a new brmsfit object from scratch ---
+  # --- Build a new brmsfit object from scratch ---
   # ========================================================
   # build new model
   x_from_file <- NULL
@@ -94,7 +116,6 @@ build_new_model <- function(call){
   compile_args <- c(call$stan_model_args,
                     nlist(model, backend = call$backend, threads = call$threads,
                           opencl = call$opencl, silent = call$silent))
-  # assign('dbg_compile_args', compile_args, .GlobalEnv)
   model <- do_call(compile_model, compile_args)
 
   return(nlist(x, sdata, backend = call$backend, model, exclude, x_from_file, needs_refit))

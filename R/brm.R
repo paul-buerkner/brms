@@ -1,4 +1,19 @@
-#' Check for an existing cached brmsfit and return it if valid
+#' Check for an existing cached `brmsfit` and return it if valid
+#'
+#' Early-exit helper used by `.brm_internal()`.
+#' If the user supplied a `file` argument and the cached fit can be reused
+#' under the chosen `file_refit` policy, this function loads the object and
+#' hands it back; otherwise it returns `NULL` and the caller proceeds to
+#' (re-)build the model.
+#'
+#' **`file_refit` rules**
+#' * `"never"`   – always reuse the fit (default).
+#' * `"always"`  – never reuse; force a refit.
+#' * `"on_change"` – reuse only when the *hash* of the current call matches
+#'   the hash stored in the cached object (attribute `"brm_call_hash"`).
+#'
+#' @param call A validated **`brm_call`** list.
+#' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
 #' @noRd
 .brm_check <- function(brm_call_list) {
   file       <- brm_call_list$file
@@ -14,8 +29,30 @@
   NULL
 }
 
-# re_use_existing_model
-#
+#' Re-use a compiled Stan model when possible
+#'
+#' Internal helper called from `.brm_internal()` when the user passed a
+#' **previously fitted** `brmsfit` object via the `fit` field of the
+#' `brm_call`.  It decides whether that compiled model can be recycled,
+#' pulls out the pieces we still need, and returns them in a tidy bundle.
+#'
+#' @param call A validated **`brm_call`** list whose `fit` element is a
+#'   `brmsfit` object.
+#'
+#' @return A named list with elements
+#'   \describe{
+#'     \item{`backend`}{Backend string (`"rstan"`, `"cmdstanr"`, or `"mock"`).}
+#'     \item{`model`}{Compiled Stan model reused from the old fit.}
+#'     \item{`exclude`}{Names of parameters that should be dropped after
+#'       sampling (copied from the old fit).}
+#'     \item{`x`}{The old `brmsfit` object, ready for updating.}
+#'     \item{`sdata`}{The standata list extracted from the fit.}
+#'     \item{`needs_refit`}{Logical flag; `FALSE` if the cached fit can be
+#'       returned as-is, `TRUE` if we must run the sampler again.}
+#'     \item{`x_from_file`}{`NULL` – kept for API symmetry with the
+#'       `build_new_model()` helper.}
+#'   }
+#' @noRd
 re_use_existing_model<- function(.brm_call_list){
 
   # re-use existing model
@@ -106,8 +143,53 @@ brm_call_type_check <- function(brm_call) {
   invisible(brm_call)
 }
 
+# Internal method to create fit args
+#' @noRd
+.create_fit_args <- function(brm_call){
+  #   model, exclude, backend, x, sdata may be changed or created in `.build_or_reuse`
+  .list <- .build_or_reuse(brm_call)
+  backend <- .list$backend
+  model   <- .list$model
+  exclude <- .list$exclude
+  sdata   <- .list$sdata
 
-#' Internal engine to evaluate and fit a brms model
+  # maybe modifed by .build_or_reuse
+  fit_args <- c(
+    nlist(
+      model, sdata, # maybe modifed by .build_or_reuse
+      algorithm = brm_call$algorithm,
+      backend, # maybe modifed
+      iter = brm_call$iter, warmup = brm_call$warmup, thin = brm_call$thin,
+      chains = brm_call$chains, cores = brm_call$cores,
+      threads = brm_call$threads, opencl = brm_call$opencl,
+      init = brm_call$init,
+      exclude, # maybe modifed
+      control = brm_call$control, future = brm_call$future,
+      seed = brm_call$seed, silent = brm_call$silent
+    ),
+    brm_call$dot_args
+  )
+  fit_args
+}
+
+# Internal function that will create or reuse existing brmsfit
+#
+.build_or_reuse <- function(brm_call){
+  # ====================================================================
+  #   model, exclude, backend, x, sdata may be changed or created here
+  # ====================================================================
+  # initialize brmsfit object
+  if (is.brmsfit(brm_call$fit)) {
+    # re-use existing model
+    .list    <- re_use_existing_model(brm_call)
+  } else {
+    # build new model
+    .list   <-  build_new_model(brm_call)
+  }
+  .list
+}
+
+#' Internal engine to evaluate and fit a *brms* model
 #' @noRd
 .brm_internal <- function(brm_call) {
 
@@ -117,51 +199,20 @@ brm_call_type_check <- function(brm_call) {
     return(result)
   }
 
-  # initialize brmsfit object
-  if (is.brmsfit(brm_call$fit)) {
-    # re-use existing model
-    .list    <- re_use_existing_model(brm_call)
-    backend  <- .list$backend
-    model    <- .list$model
-    exclude  <- .list$exclude
-    x        <- .list$x
-    sdata    <- .list$sdata
-    if(!.list$needs_refit){
-      return(.list$x_from_file)
-    }
-
-  } else {
-    # build new model
-    .list   <-  build_new_model(brm_call)
-    backend <- .list$backend
-    model   <- .list$model
-    exclude <- .list$exclude
-    x       <- .list$x
-    sdata   <- .list$sdata
+  # build new or reuse existing fit
+  .list <- .build_or_reuse(brm_call)
+  if(!.list$needs_refit){
+     return(.list$x_from_file) # return x from file
   }
-
+  # empty model returns
   if(brm_call$empty){
     return(.list$x)
   }
-  # ==================================
-  # model, exclude, backend, x, sdata may be changed or created
-  # ===================================
-  fit_args <- c(
-    nlist(
-      model, sdata, # maybe modifed above
-      algorithm = brm_call$algorithm,
-      backend, # maybe modifed above
-      iter = brm_call$iter, warmup = brm_call$warmup, thin = brm_call$thin,
-      chains = brm_call$chains, cores = brm_call$cores,
-      threads = brm_call$threads, opencl = brm_call$opencl,
-      init = brm_call$init,
-      exclude, # maybe modifed above
-      control = brm_call$control, future = brm_call$future,
-      seed = brm_call$seed, silent = brm_call$silent
-    ),
-    brm_call$dot_args
-  )
 
+  # brmsfit object `x`
+  x <- .list$x
+  # fit happens
+  fit_args <- .create_fit_args(brm_call)
   x$fit <- do_call(fit_model, fit_args)
 
   # rename parameters to have human readable names
@@ -174,7 +225,24 @@ brm_call_type_check <- function(brm_call) {
   x
 }
 
-#' Collect brm() arguments into a clean list
+#' Collect `brm()` arguments into a tidy **brm_call** object
+#'
+#' Internal helper used at the very top of `brm()`.
+#' It separates *formal* `brm()` arguments from any extra
+#' Stan-backend tuning options that a user might pass through `...`,
+#' then stores everything in a lightweight list with class
+#' **`brm_call`**.  The resulting object goes straight to
+#' `brm_call_type_check()` and then into `.brm_internal()`.
+#'
+#' *Implementation notes*
+#' * We grab the names of the **current** `brm()` formals at run-time
+#'   (`names(formals(brms::brm))`) so the helper automatically stays in
+#'   sync with upstream changes in **brms**.
+#' * Any argument not in that set is treated as an
+#'   *extra* Stan argument and saved under `dot_args`.
+#'
+#' @param ... Arguments passed from the public `brm()` wrapper.
+#' @return A list of class `c("brm_call", "list")`.
 #' @noRd
 .brm_collect_args <- function(...) {
 
@@ -222,15 +290,15 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 
   call_only <- as_one_logical(call_only)
   # if called with a `brm_call` object handle it first
-  if(inherits(formula , 'brm_call')){
+  if(is.brm_call(formula)) {
     args <- formula
-    if(call_only){
+    if(call_only) {
       # when called with brm(brm_call, call_only = TRUE)
       # also returns `brm_call`
       return(args)
     }
 
-    return( .brm_internal(args))
+    return(.brm_internal(args))
   }
 
   algorithm <- match.arg(algorithm, algorithm_choices())
