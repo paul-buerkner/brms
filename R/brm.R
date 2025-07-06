@@ -15,7 +15,7 @@
 #' @param call A validated **`brm_call`** list.
 #' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
 #' @noRd
-.brm_check <- function(call) {
+maybe_load_cached_fit <- function(call) {
   file       <- call$file
   file_refit <- match.arg(call$file_refit, file_refit_options())
   # Load brmsfit only if refit is explicitly set to 'never'
@@ -306,26 +306,33 @@ brm_call_type_check <- function(brm_call) {
 #' Internal engine to evaluate and fit a *brms* model
 #' @noRd
 .brm_internal <- function(brm_call) {
-  # Check if fit object can be reused from file
-  result <- .brm_check(brm_call)
+
+  # optionally load brmsfit from file
+  # Loading here only when we should directly load the file.
+  # The "on_change" option needs sdata and scode to be built
+  result <- maybe_load_cached_fit(brm_call)
   if (!is.null(result)) {
     return(result)
   }
   # build new or reuse existing fit
   .list <- .build_or_reuse(brm_call)
-  if(!.list$needs_refit){
+  if(!.list$needs_refit) {
      return(.list$x_from_file) # return x from file
   }
-  # empty model returns
-  if(brm_call$empty){
+
+  if(brm_call$empty) {
+    # return the brmsfit object with an empty 'fit' slot
     return(.list$x)
   }
+
   # brmsfit object `x`
   x <- .list$x
   x$brm_call <- brm_call
-  # fit happens
+
+  # fit the Stan model
   fit_args <- .create_fit_args(brm_call)
   x$fit <- do_call(fit_model, fit_args)
+
   # rename parameters to have human readable names
   if (brm_call$rename) {
     x <- rename_pars(x)
@@ -406,6 +413,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     }
     return(.brm_internal(brm_call))
   }
+  file_refit <- match.arg(file_refit, file_refit_options())
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
   normalize <- as_one_logical(normalize)
