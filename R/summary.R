@@ -25,7 +25,6 @@
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             robust = FALSE, mc_se = FALSE, ...) {
-
   priors <- as_one_logical(priors)
   probs <- validate_ci_bounds(prob)
   robust <- as_one_logical(robust)
