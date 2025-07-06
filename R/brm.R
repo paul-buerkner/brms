@@ -310,7 +310,7 @@ brm_call_type_check <- function(brm_call) {
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
   result <- maybe_load_cached_fit(brm_call)
-  if (!is.null(result)) {
+  if (is.brmsfit(result)) {
     return(result)
   }
   # build new or reuse existing fit
