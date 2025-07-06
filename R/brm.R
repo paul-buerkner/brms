@@ -15,10 +15,9 @@
 #' @param call A validated **`brm_call`** list.
 #' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
 #' @noRd
-.brm_check <- function(brm_call_list) {
-  file       <- brm_call_list$file
-  file_refit <- match.arg(brm_call_list$file_refit, file_refit_options())
-
+.brm_check <- function(call) {
+  file       <- call$file
+  file_refit <- match.arg(call$file_refit, file_refit_options())
   # Load brmsfit only if refit is explicitly set to 'never'
   if (!is.null(file) && file_refit == "never") {
     x <- read_brmsfit(file)
@@ -54,11 +53,8 @@
 #'   }
 #' @noRd
 build_new_model <- function(call){
-
   needs_refit <- TRUE
   # --- Build a new brmsfit object from scratch ---
-  # ========================================================
-  # build new model
   x_from_file <- NULL
   formula <- validate_formula(
     call$formula, data = call$data, family = call$family,
@@ -67,6 +63,7 @@ build_new_model <- function(call){
   )
   family <- get_element(formula, "family")
   bterms <- brmsterms(formula)
+
   data2  <- validate_data2(
     call$data2, bterms = bterms,
     get_data2_autocor(formula),
@@ -79,8 +76,8 @@ build_new_model <- function(call){
     drop_unused_levels = call$drop_unused_levels,
     data_name = substitute_name(data)
   )
-
   bframe <- brmsframe(bterms, data)
+
   prior <- .validate_prior(
     call$prior, bframe = bframe,
     sample_prior = call$sample_prior
@@ -103,6 +100,7 @@ build_new_model <- function(call){
     nlist(init = call$init, silent= call$silent, control = call$control, stan_model_args = call$stan_model_args),
     call$dot_args
   )
+
   x <- brmsfit(
     formula = formula, data = data, data2 = data2, prior = prior,
     stanvars = stanvars, model = model, algorithm = call$algorithm,
@@ -111,7 +109,6 @@ build_new_model <- function(call){
     basis = frame_basis(bframe, data = data),
     stan_args = stan_args
   )
-
   x$brm_call <- call
   exclude <- exclude_pars(x, bframe = bframe)
   # generate Stan data before compiling the model to avoid
@@ -120,9 +117,9 @@ build_new_model <- function(call){
     bframe, data = data, prior = prior, data2 = data2,
     stanvars = stanvars, threads = call$threads
   )
+
   if (call$empty) {
     # return the brmsfit object with an empty 'fit' slot
-
     model <- NULL
     x_from_file <- NULL
     return(nlist(x, sdata, call$backend, model, exclude, x_from_file, needs_refit))
@@ -148,7 +145,6 @@ build_new_model <- function(call){
                     nlist(model, backend = call$backend, threads = call$threads,
                           opencl = call$opencl, silent = call$silent))
   model <- do_call(compile_model, compile_args)
-
   return(nlist(x, sdata, backend = call$backend, model, exclude, x_from_file, needs_refit))
 }
 
@@ -177,7 +173,6 @@ build_new_model <- function(call){
 #'   }
 #' @noRd
 re_use_existing_model<- function(.brm_call_list){
-
   # re-use existing model
   x <- .brm_call_list$fit
   x$criteria <- list()
@@ -215,21 +210,19 @@ re_use_existing_model<- function(.brm_call_list){
 #' @return `brm_call` (invisibly) or an error via `rlang::abort()`.
 #' @noRd
 brm_call_type_check <- function(brm_call) {
-
   # --------------------------------------------------------------------- #
   # 1.  Top-level class ---------------------------------------------------
   if (!inherits(brm_call, "brm_call")) {
     rlang::abort("`brm_call` must inherit from class <brm_call>.",
                  arg = "brm_call")
   }
-
   # --------------------------------------------------------------------- #
   # 2.  Required fields  --------------------------------------------------
   req <- list(
     formula = function(x) is.formula(x) ||  is.brmsformula(x) || is.list(x),
 
     # TODO Currently we let data to be null.
-    # We may modify this part later. Some of the parameters not checked yet.
+    #  -we may add family check, formula check and some other params here
     # data    = is.data.frame,
     # family  = function(x) is.family(x) || rlang::is_string(x),
     backend = rlang::is_string,
@@ -252,7 +245,6 @@ brm_call_type_check <- function(brm_call) {
       )
     }
   }
-
   # --------------------------------------------------------------------- #
   # 3.  Value constraints  -----------------------------------------------
   if (brm_call$iter <= 0) {
@@ -261,14 +253,14 @@ brm_call_type_check <- function(brm_call) {
   if (brm_call$chains <= 0) {
     rlang::abort("`chains` must be a positive integer.", arg = "chains")
   }
-
   invisible(brm_call)
 }
 
 #' Internal method to create fit args
 #' @noRd
 .create_fit_args <- function(brm_call){
-  #   model, exclude, backend, x, sdata may be changed or created in `.build_or_reuse`
+  # model, exclude, backend, x, sdata may be changed or created
+  # in `.build_or_reuse`
   .list <- .build_or_reuse(brm_call)
   backend <- .list$backend
   model   <- .list$model
@@ -314,13 +306,11 @@ brm_call_type_check <- function(brm_call) {
 #' Internal engine to evaluate and fit a *brms* model
 #' @noRd
 .brm_internal <- function(brm_call) {
-
   # Check if fit object can be reused from file
   result <- .brm_check(brm_call)
   if (!is.null(result)) {
     return(result)
   }
-
   # build new or reuse existing fit
   .list <- .build_or_reuse(brm_call)
   if(!.list$needs_refit){
@@ -330,11 +320,9 @@ brm_call_type_check <- function(brm_call) {
   if(brm_call$empty){
     return(.list$x)
   }
-
   # brmsfit object `x`
   x <- .list$x
   x$brm_call <- brm_call
-
   # fit happens
   fit_args <- .create_fit_args(brm_call)
   x$fit <- do_call(fit_model, fit_args)
@@ -416,7 +404,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
       # also returns `brm_call`
       return(brm_call)
     }
-
     return(.brm_internal(brm_call))
   }
   algorithm <- match.arg(algorithm, algorithm_choices())
