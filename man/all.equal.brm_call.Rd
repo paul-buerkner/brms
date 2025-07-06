@@ -7,11 +7,11 @@
 \method{all}{equal.brm_call}(target, current, ...)
 }
 \arguments{
+\item{target}{A \code{brm_call} object}
+
+\item{current}{Another \code{brm_call} object}
+
 \item{...}{Currently ignored}
-
-\item{a}{A \code{brm_call} object}
-
-\item{b}{Another \code{brm_call} object}
 }
 \description{
 Checks if two brm_call objects are equal

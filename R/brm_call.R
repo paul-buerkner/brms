@@ -30,7 +30,7 @@ identical_brm_calls <- function(c1, c2){
     stop2("Cannot compare other types than `brm_call`", .subclass = "brms_invalid_brm_call")
   }
   if(isTRUE(is.null(c1$model_hash) || is.null(c2$model_hash))){
-    warning2("Using `all.equal.list` fallback because `model_hash` was not computed.")
+    # warning2("Using `all.equal.list` fallback because `model_hash` was not computed.")
     return(all.equal.list(c1, c2))
   }
   c1$model_hash == c2$model_hash
@@ -38,8 +38,8 @@ identical_brm_calls <- function(c1, c2){
 
 #' Checks if two brm_call objects are equal
 #'
-#' @param a A \code{brm_call} object
-#' @param b Another \code{brm_call} object
+#' @param target A \code{brm_call} object
+#' @param current Another \code{brm_call} object
 #' @param ... Currently ignored
 #'
 #' @export
