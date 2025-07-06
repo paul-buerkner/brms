@@ -84,8 +84,8 @@ summary.brm_call <- function(object, ...) {
   utils::str(object, max.level = 1, give.attr = FALSE, no.list = TRUE)
   invisible(object)
 }
+
 #' Get a package’s version as a string
-#'
 #' Silently returns `"NA"` when the package is not installed.
 #' @noRd
 v_package <- function(pkg) {
@@ -98,36 +98,58 @@ v_package <- function(pkg) {
   )
 }
 
+#' local_digest lots of
+#' @noRd
+local_digest <- function(object, algo = "xxhash64", serialize = TRUE) {
+  require_package('digest')
+  digest::digest(object, algo = algo, serialize = serialize)
+}
 
-# experimental lots of
-# TODO here
+#' hash_model_signature
+#' currently takes into account stancode produced, data hash with a threshold
+#' and versions of backend and brms packages.
+#' @noRd
 hash_model_signature <- function(call) {
+  # Cancelled for now
+  # it is taking too long during tests so we need to use
+  # hashing without stancode
+  if(!call$file_auto)
+    return(call)
+
   # Build *just enough* to get Stan code & bframe ------------------------
-  bframe  <- brmsterms(call$formula)
-  prior   <- .validate_prior(call$prior, bframe)
-  stanvars <- validate_stanvars(call$stanvars, call$stan_funs)
+  data_row_threshold <- 1e5
 
-  scode <- .stancode(bframe,
-                     prior     = prior,
-                     stanvars  = stanvars,
-                     backend   = call$backend,
-                     threads   = call$threads,
-                     opencl    = call$opencl,
-                     normalize = call$normalize)
+  if(call$backend == 'mock'){
+    call$model_hash <- 'mock_hash'
+    return(call)
+  }
 
-  # Canonicalise: drop comments, collapse whitespace --------------------
-  scode <- gsub("^//.*?$|/\\*.*?\\*/", "", scode, perl = TRUE)    # rm comments
-  scode <- gsub("[[:space:]]+", " ", scode)                       # one space
-  scode <- trimws(scode)
+  fit_args <- .create_fit_args(call)
+  # check for model code in mock case or empty case maybe not able to produce
+  if( !is.list(fit_args) || is.null(fit_args$model)){
+    return(call)
+  }
 
+  if(call$backend == 'rstan') {
+    scode <- fit_args$model@model_code
+  } else { # cmdstanr
+    scode <- fit_args$model$code()
+  }
+
+  scode <- paste(scode, collapse="\n")
   data = call$data
-  if(is.null(data)){
-    data_sig <- 'NULL'
-  }else{
-    data_sig = list(
-      n    = NROW(call$data),
-      vars = sort(names(call$data))
-    )
+  data_sig <- "NULL"
+
+  if(is.data.frame(data)){
+    nrows <- NROW(data)
+    if(nrows < data_row_threshold) {
+      data_sig <- local_digest(data)
+    }else{
+      data_sig = list(
+        n    = NROW(call$data),
+        vars = sort(names(call$data))
+      )
+    }
   }
 
   ## map backend → package  -------------------------------------------------
@@ -142,28 +164,46 @@ hash_model_signature <- function(call) {
   versions <- c(brms  = brms_version,
                 backend = backend_version)
 
-
-  compact <- function(x) x[!vapply(x, function(z) length(z) == 0 || is.na(z),
-                                   logical(1))]
+  # compact <- function(x) x[!vapply(x, function(z) length(z) == 0 || is.na(z),
+  #                                  logical(1))]
 
   payload <- list(
     versions  = versions,
-    code_hash = digest::digest(scode, algo = "xxhash64", serialize = FALSE),
+    code_hash = local_digest(scode, algo = "xxhash64", serialize = FALSE),
     data_sig  = data_sig,
     backend   = call$backend
   )
 
   payload <- c(payload,
-               compact(list(threads  = call$threads,
+               list(threads  = call$threads,
                             opencl   = call$opencl,
-                            normalize = call$normalize)))
+                            normalize = call$normalize))
 
   ## final model signature ---------------------------------------------------
-  model_hash <- digest::digest(payload, algo = "xxhash64", serialize = TRUE)
-  attr(brm_call, "model_hash") <- model_hash
-
-
-  digest::digest(payload, algo = "xxhash64", serialize = TRUE)
+  model_hash <- local_digest(payload, algo = "xxhash64", serialize = TRUE)
+  # attr(call, "model_hash") <- model_hash
+  call$model_hash <- model_hash
+  # local_digest(payload, algo = "xxhash64", serialize = TRUE)
+  call$file <- paste("cache_brmsfit_", model_hash)
+  call$file_refit <- 'on_change'
+  call
 }
 
+#' Compare two brm_call if they are identical using hash value whcih was created
+#' @noRd
+identical_brm_calls <- function(c1, c2){
+  if(isFALSE(is.brm_call(c1) && is.brm_call(c2)))  {
+    stop2("Cannot compare other types than `brm_call`", .subclass = "brms_invalid_brm_call")
+  }
+  if(isTRUE(is.null(c1$model_hash) || is.null(c2$model_hash))){
+    stop2("one or both brm_calls was does not have hash value to calculate yet.
+          Did you forget `file_auto = TRUE`",
+          .subclass = "brms_missing_model_hash")
+  }
+  c1$model_hash == c2$model_hash
+}
 
+#' @export
+all.equal.brm_call <- function(a, b) {
+  identical_brm_calls(a, b)
+}

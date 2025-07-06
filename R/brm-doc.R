@@ -232,6 +232,14 @@
 #'   (e.g., initial values, number of iterations, control arguments, ...). A
 #'   known limitation is that a refit will be triggered if within-chain
 #'   parallelization is switched on/off.
+#' @param file_auto Logical. If \code{TRUE}, the \code{file} argument is
+#'   automatically generated based on a hash of the model-relevant arguments
+#'   (e.g., formula, data, priors). Parameters that do not affect the model
+#'   outcome are omitted from the hash. When \code{file_auto = TRUE}, the
+#'   resulting file name is used for caching the model fit, and the behavior of
+#'   \code{file_refit} is implicitly set to \code{"on_change"} to ensure the model
+#'   is re-used only when appropriate. This option is useful for avoiding
+#'   redundant model fitting during development or repeated runs.
 #' @param empty Logical. If \code{TRUE}, the Stan model is not created
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created

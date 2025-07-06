@@ -261,10 +261,6 @@ brm_call_type_check <- function(brm_call) {
   if (brm_call$chains <= 0) {
     rlang::abort("`chains` must be a positive integer.", arg = "chains")
   }
-  if (rlang::is_true(brm_call$call_only) && !is.null(brm_call$fit)) {
-    rlang::abort("`brm_call` with `call_only = TRUE` must not contain a `fit`.",
-                 arg = "fit")
-  }
 
   invisible(brm_call)
 }
@@ -372,24 +368,19 @@ brm_call_type_check <- function(brm_call) {
 #' @return A list of class `c("brm_call", "list")`.
 #' @noRd
 .brm_collect_args <- function(...) {
-
   call_env  <- parent.frame()
   arg_names <- names(formals(brm))
-
   ## 1. drop the literal "..." from arg_names
   arg_names <- arg_names[arg_names != "..."]
-
   ## 2. capture every formal (already evaluated inside brm())
   arg_list <- setNames(
     lapply(arg_names, function(a) get(a, envir = call_env)),
     arg_names
   )
-
   ## 3. stash the dot-args for later splicing
   arg_list$dot_args <- list(...)
   arg_list
 }
-
 
 #' @rdname brm
 #' @export
@@ -413,6 +404,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
+                file_auto = getOption("brms.file_auto", FALSE),
                 empty = FALSE, rename = TRUE, call_only = FALSE, ...) {
 
   call_only <- as_one_logical(call_only)
@@ -427,7 +419,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 
     return(.brm_internal(brm_call))
   }
-
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
   normalize <- as_one_logical(normalize)
@@ -444,16 +435,21 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-
   args <- .brm_collect_args(...)
   class(args) <- c("brm_call" , "list")
   brm_call <- args
-
-  # if call_only is TRUE return a brm_call object
+  # for debugging and tests
+  if(empty && call_only){
+    return(brm_call)
+  }
+  # # Calculate a hash value for the call
+  # if file_auto is TRUE it will create hash value
+  # file value will be calculated if file_auto is TRUE
+  brm_call <- hash_model_signature(brm_call)
+  # it should type check before returning when call_only
+  brm_call_type_check(brm_call)
   if(call_only){
     return(brm_call)
   }
-
-  brm_call_type_check(brm_call)
   .brm_internal(brm_call)
 }
