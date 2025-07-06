@@ -14,8 +14,39 @@ create_brm_call <- function(...) {
   brm(..., call_only = TRUE)
 }
 
+#' Checks if argument is a \code{brm_call} object
+#'
+#' @param x An \R object
+#'
+#' @export
+is.brm_call <- function(x) {
+  inherits(x, "brm_call")
+}
+
+#' Compare two brm_call if they are identical using hash value whcih was created
 #' @noRd
-is.brm_call <- function(x) inherits(x, "brm_call")
+identical_brm_calls <- function(c1, c2){
+  if(isFALSE(is.brm_call(c1) && is.brm_call(c2)))  {
+    stop2("Cannot compare other types than `brm_call`", .subclass = "brms_invalid_brm_call")
+  }
+  if(isTRUE(is.null(c1$model_hash) || is.null(c2$model_hash))){
+    stop2("one or both brm_calls was does not have hash value to calculate yet.
+          Did you forget `file_auto = TRUE`",
+          .subclass = "brms_missing_model_hash")
+  }
+  c1$model_hash == c2$model_hash
+}
+
+#' Checks if two brm_call objects are equal
+#'
+#' @param a A \code{brm_call} object
+#' @param b Another \code{brm_call} object
+#' @param ... Currently ignored
+#'
+#' @export
+all.equal.brm_call <- function(a, b, ...) {
+  identical_brm_calls(a, b)
+}
 
 #' @export
 print.brm_call <- function(x, ...) {
@@ -189,21 +220,6 @@ hash_model_signature <- function(call) {
   call
 }
 
-#' Compare two brm_call if they are identical using hash value whcih was created
-#' @noRd
-identical_brm_calls <- function(c1, c2){
-  if(isFALSE(is.brm_call(c1) && is.brm_call(c2)))  {
-    stop2("Cannot compare other types than `brm_call`", .subclass = "brms_invalid_brm_call")
-  }
-  if(isTRUE(is.null(c1$model_hash) || is.null(c2$model_hash))){
-    stop2("one or both brm_calls was does not have hash value to calculate yet.
-          Did you forget `file_auto = TRUE`",
-          .subclass = "brms_missing_model_hash")
-  }
-  c1$model_hash == c2$model_hash
-}
 
-#' @export
-all.equal.brm_call <- function(a, b) {
-  identical_brm_calls(a, b)
-}
+
+
