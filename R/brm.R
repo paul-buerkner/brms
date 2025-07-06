@@ -16,11 +16,10 @@
 #' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
 #' @noRd
 maybe_load_cached_fit <- function(call) {
-  file       <- call$file
-  file_refit <- match.arg(call$file_refit, file_refit_options())
+
   # Load brmsfit only if refit is explicitly set to 'never'
-  if (!is.null(file) && file_refit == "never") {
-    x <- read_brmsfit(file)
+  if (!is.null(call$file) && call$file_refit == "never") {
+    x <- read_brmsfit(call$file)
     if (!is.null(x)) {
       return(x)
     }
