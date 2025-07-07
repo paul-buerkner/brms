@@ -404,6 +404,8 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   # if called with a `brm_call` object handle it first
   if(is.brm_call(formula)) {
     brm_call <- formula
+    # here we should check again just in case some argument was changed by user
+    brm_call_type_check(brm_call)
     if(call_only) {
       # brm(brm_call, call_only = TRUE) should also
       # return a`brm_call` object
@@ -431,11 +433,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   args <- .brm_collect_args(...)
   class(args) <- c("brm_call" , "list")
   brm_call <- args
-
-  if(empty && call_only){
-    # for debugging and tests
-    return(brm_call)
-  }
 
   # check elements of `brm_call` for type and value restrictions
   brm_call_type_check(brm_call)
