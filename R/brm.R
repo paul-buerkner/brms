@@ -21,7 +21,7 @@ maybe_load_cached_fit <- function(call) {
   if (!is.null(call$file) && call$file_refit == "never") {
     x <- read_brmsfit(call$file)
     if (!is.null(x)) {
-      return(x)
+      return(ensure_type(x, is.brmsfit))
     }
   }
   NULL
@@ -252,7 +252,7 @@ brm_call_type_check <- function(brm_call) {
   if (brm_call$chains <= 0) {
     rlang::abort("`chains` must be a positive integer.", arg = "chains")
   }
-  invisible(brm_call)
+  ensure_type(brm_call, is.brm_call)
 }
 
 #' Internal method to create fit args
@@ -299,7 +299,8 @@ brm_call_type_check <- function(brm_call) {
     # build new model
     .list   <-  build_new_model(brm_call)
   }
-  .list
+  # check type return .list or fail
+  ensure_type(.list, is.list)
 }
 
 #' Internal engine to evaluate and fit a *brms* model
@@ -316,12 +317,14 @@ brm_call_type_check <- function(brm_call) {
   # build new or reuse existing fit
   .list <- .build_or_reuse(brm_call)
   if(!.list$needs_refit) {
-     return(.list$x_from_file) # return x from file
+    x_from_file <- ensure_type(.list$x_from_file, is.brmsfit)
+    return(x_from_file) # return x from file
   }
 
   if(brm_call$empty) {
     # return the brmsfit object with an empty 'fit' slot
-    return(.list$x)
+    x <- ensure_type(.list$x, is.brmsfit)
+    return(x)
   }
 
   # brmsfit object `x`
@@ -339,7 +342,8 @@ brm_call_type_check <- function(brm_call) {
   if (!is.null(brm_call$file)) {
     x <- write_brmsfit(x, brm_call$file, compress = brm_call$file_compress)
   }
-  x
+
+  ensure_type(x, is.brmsfit) # check type return x or fail
 }
 
 #' Collect `brm()` arguments into a tidy **brm_call** object

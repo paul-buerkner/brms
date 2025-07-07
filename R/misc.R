@@ -1117,6 +1117,49 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   invisible(NULL)
 }
 
+
+#' Ensure an object satisfies a type check
+#'
+#' @param obj The object to check.
+#' @param pred A function (like is.data.frame or inherits) or a string (like "character").
+#' @param arg Optional argument name for clearer error messages.
+#'
+#' @return The object, invisibly (for piping).
+#' @export
+ensure_type <- function(obj, pred, arg = deparse(substitute(obj)), doc="NULL") {
+
+  # Get the name of the calling function (2 frames up)
+  caller <- sys.call(-1)
+  caller_name <- if (!is.null(caller)) deparse(caller[[1]]) else "<unknown>"
+
+  # Allow string shorthand: "character" → is.character
+  if (is.character(pred)) {
+    pred_fun <- get(paste0("is.", pred), mode = "function", inherits = TRUE)
+  } else if (is.function(pred)) {
+    pred_fun <- pred
+  } else {
+    stop2("`pred` must be a function or a type name string.")
+  }
+
+  result <- tryCatch(pred_fun(obj), error = function(e) FALSE)
+
+  if (!isTRUE(result)) {
+    cls <- sub("^is\\.", "", deparse(substitute(pred)))
+    cls <- if (identical(cls, deparse(substitute(pred)))) deparse(substitute(pred)) else cls
+
+    stop2(
+      "In `{caller_name}()`: Argument {arg} must be of type `{cls}` but it has got {typeof(obj)}.\n{doc}\n",
+      .subclass = paste0("brms_type_error_",cls)
+
+    )
+  }
+
+  invisible(obj)
+}
+
+
+
+
 # code to execute when loading brms
 .onLoad <- function(libname, pkgname) {
   # ensure compatibility with older R versions
