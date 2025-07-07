@@ -398,7 +398,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                file_auto = getOption("brms.file_auto", FALSE),
                 empty = FALSE, rename = TRUE, call_only = FALSE, ...) {
 
   call_only <- as_one_logical(call_only)
@@ -406,8 +405,8 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   if(is.brm_call(formula)) {
     brm_call <- formula
     if(call_only) {
-      # when called with brm(brm_call, call_only = TRUE)
-      # also returns `brm_call`
+      # brm(brm_call, call_only = TRUE) should also
+      # return a`brm_call` object
       return(brm_call)
     }
     return(.brm_internal(brm_call))
@@ -432,15 +431,13 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   args <- .brm_collect_args(...)
   class(args) <- c("brm_call" , "list")
   brm_call <- args
-  # for debugging and tests
+
   if(empty && call_only){
+    # for debugging and tests
     return(brm_call)
   }
-  # # Calculate a hash value for the call
-  # if file_auto is TRUE it will create hash value
-  # file value will be calculated if file_auto is TRUE
-  brm_call <- hash_model_signature(brm_call)
-  # it should type check before returning when call_only
+
+  # check elements of `brm_call` for type and value restrictions
   brm_call_type_check(brm_call)
   if(call_only){
     return(brm_call)
