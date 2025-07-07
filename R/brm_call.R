@@ -33,7 +33,9 @@ identical_brm_calls <- function(c1, c2){
     # warning2("Using `all.equal.list` fallback because `model_hash` was not computed.")
     return(all.equal.list(c1, c2))
   }
-  c1$model_hash == c2$model_hash
+  # for this PR since we have not implemented hash methods yet
+  # fall back to list check
+  return(all.equal.list(c1, c2))
 }
 
 #' Checks if two brm_call objects are equal
