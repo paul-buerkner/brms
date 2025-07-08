@@ -490,7 +490,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-  #collect args as brm_call from this environment in `.brm_collect_args`
+  #collect arguments from this environment as brm_call
   brm_call <- .brm_collect_args(...)
 
   if (call_only) {
@@ -540,18 +540,11 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 
 #' Check for an existing cached `brmsfit` and return it if valid
 #'
-#' Early-exit helper used by `.brm_internal()`.
+#' Early-exit helper used by `.brm()`.
 #' If the user supplied a `file` argument and the cached fit can be reused
 #' under the chosen `file_refit` policy, this function loads the object and
 #' hands it back; otherwise it returns `NULL` and the caller proceeds to
 #' (re-)build the model.
-#'
-#' **`file_refit` rules**
-#' * `"never"`   – always reuse the fit (default).
-#' * `"always"`  – never reuse; force a refit.
-#' * `"on_change"` – reuse only when the *hash* of the current call matches
-#'   the hash stored in the cached object (attribute `"brm_call_hash"`).
-#'
 #' @param brm_call A validated **`brm_call`** list.
 #' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
 #' @noRd
