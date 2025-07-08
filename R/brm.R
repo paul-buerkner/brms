@@ -468,8 +468,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   # if called with a `brm_call` object handle it first
   if (is.brm_call(formula)) {
     brm_call <- formula
-    # here we should check again just in case some argument was changed by user
-    brm_call_type_check(brm_call)
     if (call_only) {
       return(brm_call)
     }
@@ -492,12 +490,9 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-  args <- .brm_collect_args(...)
-  class(args) <- c("brm_call" , "list")
-  brm_call <- args
+  #collect args as brm_call from this environment in `.brm_collect_args`
+  brm_call <- .brm_collect_args(...)
 
-  # check elements of `brm_call` for type and value restrictions
-  brm_call_type_check(brm_call)
   if (call_only) {
     return(brm_call)
   }
@@ -510,25 +505,23 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
-  result <- maybe_load_cached_brmsfit(brm_call)
-  if (is.brmsfit(result)) {
-    return(result)
+  out <- maybe_load_cached_brmsfit(brm_call)
+  if (is.brmsfit(out)) {
+    return(out)
   }
   # build new or reuse existing fit
-  .list <- build_or_reuse_brmsfit(brm_call)
-  if (!.list$needs_refit) {
+  out <- build_or_reuse_brmsfit(brm_call)
+  if (!out$needs_refit) {
     # return the brmsfit object from file
-    x_from_file <- ensure_type(.list$x_from_file, is.brmsfit)
-    return(x_from_file)
+    return(out$x_from_file)
   }
   if (brm_call$empty) {
     # return the brmsfit object with an empty 'fit' slot
-    x <- ensure_type(.list$x, is.brmsfit)
-    return(x)
+    return(out$x)
   }
 
   # brmsfit object `x`
-  x <- .list$x
+  x <- out$x
   x$brm_call <- brm_call
 
   # fit the Stan model
@@ -542,7 +535,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   if (!is.null(brm_call$file)) {
     x <- write_brmsfit(x, brm_call$file, compress = brm_call$file_compress)
   }
-  ensure_type(x, is.brmsfit) # check type return x or fail
+  x
 }
 
 #' Check for an existing cached `brmsfit` and return it if valid
@@ -559,14 +552,14 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 #' * `"on_change"` – reuse only when the *hash* of the current call matches
 #'   the hash stored in the cached object (attribute `"brm_call_hash"`).
 #'
-#' @param call A validated **`brm_call`** list.
+#' @param brm_call A validated **`brm_call`** list.
 #' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
 #' @noRd
-maybe_load_cached_brmsfit <- function(call) {
+maybe_load_cached_brmsfit <- function(brm_call) {
   # Load brmsfit only if refit is explicitly set to 'never'
   out <- NULL
-  if (!is.null(call$file) && call$file_refit == "never") {
-    out <- read_brmsfit(call$file)
+  if (!is.null(brm_call$file) && brm_call$file_refit == "never") {
+    out <- read_brmsfit(brm_call$file)
   }
   out
 }
@@ -585,7 +578,7 @@ build_or_reuse_brmsfit <- function(brm_call) {
     # build new brmsfit object
     out <- build_new_brmsfit(brm_call)
   }
-  ensure_type(out, is.list)
+  out
 }
 
 #' Build a fresh `brmsfit` shell from a validated call
@@ -595,7 +588,7 @@ build_or_reuse_brmsfit <- function(brm_call) {
 #' `empty = TRUE`), and returns all artefacts needed for sampling.
 #'
 #' @param call A list of class **`brm_call`** containing *validated* user
-#'   arguments.  The object is assumed to have passed `brm_call_type_check()`.
+#'   arguments.
 #'
 #' @return A named list with components
 #'   \describe{
@@ -612,94 +605,95 @@ build_or_reuse_brmsfit <- function(brm_call) {
 #'       sampler must be run.}
 #'   }
 #' @noRd
-build_new_brmsfit <- function(call) {
+build_new_brmsfit <- function(brm_call) {
   needs_refit <- TRUE
   x_from_file <- NULL
   formula <- validate_formula(
-    call$formula, data = call$data, family = call$family,
-    autocor = call$autocor, sparse = call$sparse,
-    cov_ranef = call$cov_ranef
+    brm_call$formula, data = brm_call$data, family = brm_call$family,
+    autocor = brm_call$autocor, sparse = brm_call$sparse,
+    cov_ranef = brm_call$cov_ranef
   )
   family <- get_element(formula, "family")
   bterms <- brmsterms(formula)
 
   data2  <- validate_data2(
-    call$data2, bterms = bterms,
+    brm_call$data2, bterms = bterms,
     get_data2_autocor(formula),
     get_data2_cov_ranef(formula)
   )
 
   data <- validate_data(
-    call$data, bterms = bterms,
-    data2 = data2, knots = call$knots,
-    drop_unused_levels = call$drop_unused_levels,
+    brm_call$data, bterms = bterms,
+    data2 = data2, knots = brm_call$knots,
+    drop_unused_levels = brm_call$drop_unused_levels,
     data_name = substitute_name(data)
   )
   bframe <- brmsframe(bterms, data)
 
   prior <- .validate_prior(
-    call$prior, bframe = bframe,
-    sample_prior = call$sample_prior
+    brm_call$prior, bframe = bframe,
+    sample_prior = brm_call$sample_prior
   )
 
-  stanvars <- validate_stanvars(call$stanvars, stan_funs = call$stan_funs)
+  stanvars <- validate_stanvars(brm_call$stanvars, stan_funs = brm_call$stan_funs)
   save_pars <- validate_save_pars(
-    call$save_pars, save_ranef = call$save_ranef,
-    save_mevars = call$save_mevars,
-    save_all_pars = call$save_all_pars
+    brm_call$save_pars, save_ranef = brm_call$save_ranef,
+    save_mevars = brm_call$save_mevars,
+    save_all_pars = brm_call$save_all_pars
   )
   # generate Stan code
   model <- .stancode(
     bframe, prior = prior, stanvars = stanvars,
-    save_model = call$save_model, backend = call$backend, threads = call$threads,
-    opencl = call$opencl, normalize = call$normalize
+    save_model = brm_call$save_model, backend = brm_call$backend,
+    threads = brm_call$threads, opencl = brm_call$opencl,
+    normalize = brm_call$normalize
   )
   # initialize S3 object
   stan_args <- nlist(
-    init = call$init, silent = call$silent,
-    control = call$control, stan_model_args = call$stan_model_args
+    init = brm_call$init, silent = brm_call$silent,
+    control = brm_call$control, stan_model_args = brm_call$stan_model_args
   )
-  stan_args <- c(stan_args, call$dot_args)
+  stan_args <- c(stan_args, brm_call$dot_args)
 
   x <- brmsfit(
     formula = formula, data = data, data2 = data2, prior = prior,
-    stanvars = stanvars, model = model, algorithm = call$algorithm,
-    backend = call$backend, threads = call$threads, opencl = call$opencl,
+    stanvars = stanvars, model = model, algorithm = brm_call$algorithm,
+    backend = brm_call$backend, threads = brm_call$threads, opencl = brm_call$opencl,
     save_pars = save_pars, ranef = bframe$frame$re, family = family,
     basis = frame_basis(bframe, data = data),
     stan_args = stan_args
   )
-  x$brm_call <- call
+  x$brm_call <- brm_call
   exclude <- exclude_pars(x, bframe = bframe)
   # generate Stan data before compiling the model to avoid
   # unnecessary compilations in case of invalid data
   sdata <- .standata(
     bframe, data = data, prior = prior, data2 = data2,
-    stanvars = stanvars, threads = call$threads
+    stanvars = stanvars, threads = brm_call$threads
   )
 
-  if (call$empty) {
+  if (brm_call$empty) {
     # return the brmsfit object with an empty 'fit' slot
     model <- NULL
     x_from_file <- NULL
     out <- nlist(
-      x, sdata, backend = call$backend, model,
+      x, sdata, backend = brm_call$backend, model,
       exclude, x_from_file, needs_refit
     )
     return(out)
   }
 
-  if (!is.null(call$file) && call$file_refit == "on_change") {
-    x_from_file <- read_brmsfit(call$file)
+  if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
+    x_from_file <- read_brmsfit(brm_call$file)
     if (!is.null(x_from_file)) {
       needs_refit <- brmsfit_needs_refit(
         x_from_file, scode = model, sdata = sdata, data = data,
-        algorithm = call$algorithm, silent = call$silent
+        algorithm = brm_call$algorithm, silent = brm_call$silent
       )
       if (!needs_refit) {
         model <- NULL
         out <- nlist(
-          x, sdata, backend = call$backend, model,
+          x, sdata, backend = brm_call$backend, model,
           exclude, x_from_file, needs_refit
         )
         return(out)
@@ -709,13 +703,13 @@ build_new_brmsfit <- function(call) {
 
   # compile the Stan model
   compile_args <- nlist(
-    model, backend = call$backend, threads = call$threads,
-    opencl = call$opencl, silent = call$silent
+    model, backend = brm_call$backend, threads = brm_call$threads,
+    opencl = brm_call$opencl, silent = brm_call$silent
   )
-  compile_args <- c(compile_args, call$stan_model_args)
+  compile_args <- c(compile_args, brm_call$stan_model_args)
   model <- do_call(compile_model, compile_args)
   out <- nlist(
-    x, sdata, backend = call$backend, model,
+    x, sdata, backend = brm_call$backend, model,
     exclude, x_from_file, needs_refit
   )
   out
@@ -728,7 +722,7 @@ build_new_brmsfit <- function(call) {
 #' `brm_call`.  It decides whether that compiled model can be recycled,
 #' pulls out the pieces we still need, and returns them in a tidy bundle.
 #'
-#' @param call A validated **`brm_call`** list whose `fit` element is a
+#' @param brm_call A validated **`brm_call`** list whose `fit` element is a
 #'   `brmsfit` object.
 #'
 #' @return A named list with elements
@@ -745,17 +739,17 @@ build_new_brmsfit <- function(call) {
 #'       `build_new_model()` helper.}
 #'   }
 #' @noRd
-reuse_existing_brmsfit <- function(.brm_call_list) {
-  x <- .brm_call_list$fit
+reuse_existing_brmsfit <- function(brm_call) {
+  x <- brm_call$fit
   x$criteria <- list()
   sdata <- standata(x)
   x_from_file <- NULL
-  if (!is.null(.brm_call_list$file) && .brm_call_list$file_refit == "on_change") {
-    x_from_file <- read_brmsfit(.brm_call_list$file)
+  if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
+    x_from_file <- read_brmsfit(brm_call$file)
     if (!is.null(x_from_file)) {
       needs_refit <- brmsfit_needs_refit(
         x_from_file, scode = stancode(x), sdata = sdata,
-        data = x$data, algorithm = .brm_call_list$algorithm, silent = .brm_call_list$silent
+        data = x$data, algorithm = brm_call$algorithm, silent = brm_call$silent
       )
       if (!needs_refit) {
         # we will only use x_from_file since it does not need refit
@@ -771,73 +765,16 @@ reuse_existing_brmsfit <- function(.brm_call_list) {
   return(nlist(backend, model, exclude, x_from_file, needs_refit))
 }
 
-#' Validate a `brm_call` object
-#'
-#' Internal helper – stops with an informative error if core fields
-#' are missing or malformed.  Returns the input invisibly on success.
-#'
-#' Uses **rlang** predicates for concise, CRAN-friendly checks.
-#'
-#' @param brm_call A list with class <brm_call>.
-#' @return `brm_call` (invisibly) or an error via `rlang::abort()`.
-#' @noRd
-brm_call_type_check <- function(brm_call) {
-  # --------------------------------------------------------------------- #
-  # 1.  Top-level class ---------------------------------------------------
-  if (!inherits(brm_call, "brm_call")) {
-    rlang::abort("`brm_call` must inherit from class <brm_call>.",
-                 arg = "brm_call")
-  }
-  # --------------------------------------------------------------------- #
-  # 2.  Required fields  --------------------------------------------------
-  req <- list(
-    formula = function(x) is.formula(x) ||  is.brmsformula(x) || is.list(x),
-
-    # TODO Currently we let data to be null.
-    #  -we may add family check, formula check and some other params here
-    # data    = is.data.frame,
-    # family  = function(x) is.family(x) || rlang::is_string(x),
-    backend = rlang::is_string,
-    iter    = rlang::is_scalar_integerish,
-    chains  = rlang::is_scalar_integerish,
-    call_only = rlang::is_scalar_logical
-  )
-
-  for (nm in names(req)) {
-    if (!nm %in% names(brm_call)) {
-      rlang::abort(
-        glue::glue("Field `{nm}` is missing from `brm_call`."),
-        arg = nm
-      )
-    }
-    if (!isTRUE(req[[nm]](brm_call[[nm]]))) {
-      rlang::abort(
-        glue::glue("Field `{nm}` has the wrong type or length."),
-        arg = nm
-      )
-    }
-  }
-  # --------------------------------------------------------------------- #
-  # 3.  Value constraints  -----------------------------------------------
-  if (brm_call$iter <= 0) {
-    rlang::abort("`iter` must be a positive integer.", arg = "iter")
-  }
-  if (brm_call$chains <= 0) {
-    rlang::abort("`chains` must be a positive integer.", arg = "chains")
-  }
-  ensure_type(brm_call, is.brm_call)
-}
-
 #' Internal method to create fit args for Stan
 #' @noRd
 create_fit_args <- function(brm_call) {
   # model, exclude, backend, x, sdata may be changed or created
   # in `.build_or_reuse`
-  .list <- build_or_reuse_brmsfit(brm_call)
-  backend <- .list$backend
-  model   <- .list$model
-  exclude <- .list$exclude
-  sdata   <- .list$sdata
+  out <- build_or_reuse_brmsfit(brm_call)
+  backend <- out$backend
+  model   <- out$model
+  exclude <- out$exclude
+  sdata   <- out$sdata
 
   # maybe modifed by .build_or_reuse
   fit_args <- c(
@@ -869,9 +806,7 @@ create_fit_args <- function(brm_call) {
 #' It separates *formal* `brm()` arguments from any extra
 #' Stan-backend tuning options that a user might pass through `...`,
 #' then stores everything in a lightweight list with class
-#' **`brm_call`**.  The resulting object goes straight to
-#' `brm_call_type_check()` and then into `.brm_internal()`.
-#'
+#' **`brm_call`**.
 #' *Implementation notes*
 #' * We grab the names of the **current** `brm()` formals at run-time
 #'   (`names(formals(brms::brm))`) so the helper automatically stays in
@@ -888,11 +823,12 @@ create_fit_args <- function(brm_call) {
   ## 1. drop the literal "..." from arg_names
   arg_names <- arg_names[arg_names != "..."]
   ## 2. capture every formal (already evaluated inside brm())
-  arg_list <- setNames(
+  brm_call <- setNames(
     lapply(arg_names, function(a) get(a, envir = call_env)),
     arg_names
   )
   ## 3. stash the dot-args for later splicing
-  arg_list$dot_args <- list(...)
-  arg_list
+  brm_call$dot_args <- list(...)
+  class(brm_call) <- c("brm_call" , "list")
+  brm_call
 }
