@@ -747,9 +747,18 @@ reuse_existing_brmsfit <- function(brm_call) {
 
 #' Internal method to create fit args for Stan
 #' @noRd
-create_fit_args <- function(brm_call, tmp) {
+create_fit_args <- function(brm_call, tmp = NULL) {
   # tmp was created inside .brm() and passed here which includes model, exclude,
   # backend, x, sdata
+  if(is.null(tmp)){
+    if (is.brmsfit(brm_call$fit)) {
+      # re-use existing brmsfit object
+      tmp <- reuse_existing_brmsfit(brm_call)
+    } else {
+      # build new brmsfit object
+      tmp <- build_new_brmsfit(brm_call)
+    }
+  }
   backend <- tmp$backend
   model   <- tmp$model
   exclude <- tmp$exclude
