@@ -323,9 +323,7 @@ compilation and sampling and instead returns a lightweight object of
 class \code{"brm_call"} containing the fully assembled argument list.
 This is handy for unit-testing, interactive inspection, or programmatic
 modification of the call before actually fitting the model.
-Defaults to \code{FALSE}.  When supplied, the flag must be named (e.g.
-\code{call_only = TRUE}) so it can be intercepted and removed before the
-Stan call is constructed.}
+Defaults to \code{FALSE}.}
 
 \item{...}{Further arguments passed to Stan.
 For \code{backend = "rstan"} the arguments are passed to

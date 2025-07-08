@@ -14,6 +14,40 @@ create_brm_call <- function(...) {
   brm(..., call_only = TRUE)
 }
 
+#' Collect `brm()` arguments into a tidy **brm_call** object
+#'
+#' Internal helper used at the very top of `brm()`.
+#' It separates *formal* `brm()` arguments from any extra
+#' Stan-backend tuning options that a user might pass through `...`,
+#' then stores everything in a lightweight list with class
+#' **`brm_call`**.
+#' 
+#' *Implementation notes*
+#' * We grab the names of the **current** `brm()` formals at run-time
+#'   (`names(formals(brms::brm))`) so the helper automatically stays in
+#'   sync with upstream changes in **brms**.
+#' * Any argument not in that set is treated as an
+#'   *extra* Stan argument and saved under `dot_args`.
+#'
+#' @param ... Arguments passed from the public `brm()` wrapper.
+#' @return A list of class `c("brm_call", "list")`.
+#' @noRd
+.create_brm_call <- function(...) {
+  call_env  <- parent.frame()
+  arg_names <- names(formals(brm))
+  ## 1. drop the literal "..." from arg_names
+  arg_names <- arg_names[arg_names != "..."]
+  ## 2. capture every formal (already evaluated inside brm())
+  brm_call <- setNames(
+    lapply(arg_names, function(a) get(a, envir = call_env)),
+    arg_names
+  )
+  ## 3. stash the dot-args for later splicing
+  brm_call$dot_args <- list(...)
+  class(brm_call) <- c("brm_call" , "list")
+  brm_call
+}
+
 #' Checks if argument is a \code{brm_call} object
 #'
 #' @param x An \R object
