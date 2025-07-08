@@ -507,12 +507,9 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   if (is.brmsfit(x)) {
     return(x)
   }
-
   if (is.brmsfit(brm_call$fit)) {
-    # re-use existing brmsfit object
     tmp <- reuse_existing_brmsfit(brm_call)
   } else {
-    # build new brmsfit object
     tmp <- build_new_brmsfit(brm_call)
   }
   if (!tmp$needs_refit) {
@@ -523,15 +520,12 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     # return the brmsfit object with an empty 'fit' slot
     return(tmp$x)
   }
-
   # brmsfit object `x`
   x <- tmp$x
   x$brm_call <- brm_call
-
   # fit the Stan model
   fit_args <- create_fit_args(brm_call, tmp)
   x$fit <- do_call(fit_model, fit_args)
-
   # rename parameters to have human readable names
   if (brm_call$rename) {
     x <- rename_pars(x)
@@ -567,7 +561,7 @@ maybe_load_cached_brmsfit <- function(brm_call) {
 #' It prepares data, generates Stan code, compiles the model (unless
 #' `empty = TRUE`), and returns all artefacts needed for sampling.
 #'
-#' @param call A list of class **`brm_call`** containing *validated* user
+#' @param brm_call A list of class **`brm_call`** containing *validated* user
 #'   arguments.
 #'
 #' @return A named list with components
@@ -748,14 +742,11 @@ reuse_existing_brmsfit <- function(brm_call) {
 #' Internal method to create fit args for Stan
 #' @noRd
 create_fit_args <- function(brm_call, tmp = NULL) {
-  # tmp was created inside .brm() and passed here which includes model, exclude,
-  # backend, x, sdata
+
   if(is.null(tmp)){
     if (is.brmsfit(brm_call$fit)) {
-      # re-use existing brmsfit object
       tmp <- reuse_existing_brmsfit(brm_call)
     } else {
-      # build new brmsfit object
       tmp <- build_new_brmsfit(brm_call)
     }
   }
@@ -764,12 +755,11 @@ create_fit_args <- function(brm_call, tmp = NULL) {
   exclude <- tmp$exclude
   sdata   <- tmp$sdata
 
-  # maybe modifed by .build_or_reuse
   fit_args <- c(
     nlist(
-      model, sdata, # maybe modifed by .build_or_reuse
+      model, sdata,
       algorithm = brm_call$algorithm,
-      backend, # maybe modifed
+      backend,
       iter = brm_call$iter, warmup = brm_call$warmup,
       thin = brm_call$thin,
       chains = brm_call$chains,
@@ -777,7 +767,7 @@ create_fit_args <- function(brm_call, tmp = NULL) {
       threads = brm_call$threads,
       opencl = brm_call$opencl,
       init = brm_call$init,
-      exclude, # maybe modifed
+      exclude,
       control = brm_call$control,
       future = brm_call$future,
       seed = brm_call$seed,

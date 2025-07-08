@@ -21,7 +21,7 @@ create_brm_call <- function(...) {
 #' Stan-backend tuning options that a user might pass through `...`,
 #' then stores everything in a lightweight list with class
 #' **`brm_call`**.
-#' 
+#'
 #' *Implementation notes*
 #' * We grab the names of the **current** `brm()` formals at run-time
 #'   (`names(formals(brms::brm))`) so the helper automatically stays in
@@ -67,8 +67,7 @@ identical_brm_calls <- function(c1, c2){
     # warning2("Using `all.equal.list` fallback because `model_hash` was not computed.")
     return(all.equal.list(c1, c2))
   }
-  # for this PR since we have not implemented hash methods yet
-  # fall back to list check
+  # TODO will be checking hash of brm_call later
   return(all.equal.list(c1, c2))
 }
 
