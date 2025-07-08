@@ -529,7 +529,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   x$brm_call <- brm_call
 
   # fit the Stan model
-  fit_args <- create_fit_args(brm_call)
+  fit_args <- create_fit_args(brm_call, tmp)
   x$fit <- do_call(fit_model, fit_args)
 
   # rename parameters to have human readable names
@@ -747,14 +747,13 @@ reuse_existing_brmsfit <- function(brm_call) {
 
 #' Internal method to create fit args for Stan
 #' @noRd
-create_fit_args <- function(brm_call) {
-  # model, exclude, backend, x, sdata may be changed or created
-  # in `.build_or_reuse`
-  out <- build_or_reuse_brmsfit(brm_call)
-  backend <- out$backend
-  model   <- out$model
-  exclude <- out$exclude
-  sdata   <- out$sdata
+create_fit_args <- function(brm_call, tmp) {
+  # tmp was created inside .brm() and passed here which includes model, exclude,
+  # backend, x, sdata
+  backend <- tmp$backend
+  model   <- tmp$model
+  exclude <- tmp$exclude
+  sdata   <- tmp$sdata
 
   # maybe modifed by .build_or_reuse
   fit_args <- c(
