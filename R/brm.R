@@ -500,261 +500,136 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 #' Internal engine to evaluate and fit a *brms* model
 #' @noRd
 .brm <- function(brm_call) {
+
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
-  x <- maybe_load_cached_brmsfit(brm_call)
-  if (is.brmsfit(x)) {
-    return(x)
+  if (!is.null(brm_call$file) && brm_call$file_refit == "never") {
+    x <- read_brmsfit(brm_call$file)
+    if (!is.null(x)) {
+      return(x)
+    }
   }
+
+  backend <- brm_call$backend
+
+  # initialize brmsfit object
   if (is.brmsfit(brm_call$fit)) {
-    tmp <- reuse_existing_brmsfit(brm_call)
+    # re-use existing brmsfit
+    x <- brm_call$fit
+    x$criteria <- list()
+    sdata <- standata(x)
+    if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
+      x_from_file <- read_brmsfit(brm_call$file)
+      if (!is.null(x_from_file)) {
+        needs_refit <- brmsfit_needs_refit(
+          x_from_file, scode = stancode(x), sdata = sdata,
+          data = x$data, algorithm = brm_call$algorithm,
+          silent = brm_call$silent
+        )
+        if (!needs_refit) {
+          return(x_from_file)
+        }
+      }
+    }
+    backend <- x$backend
+    model <- compiled_model(x)
+    exclude <- exclude_pars(x)
   } else {
-    tmp <- build_new_brmsfit(brm_call)
+    # build new model
+    formula <- validate_formula(
+      brm_call$formula, data = brm_call$data, family = brm_call$family,
+      autocor = brm_call$autocor, sparse = brm_call$sparse,
+      cov_ranef = brm_call$cov_ranef
+    )
+    family <- get_element(formula, "family")
+    bterms <- brmsterms(formula)
+
+    data2  <- validate_data2(
+      brm_call$data2, bterms = bterms,
+      get_data2_autocor(formula),
+      get_data2_cov_ranef(formula)
+    )
+
+    data <- validate_data(
+      brm_call$data, bterms = bterms,
+      data2 = data2, knots = brm_call$knots,
+      drop_unused_levels = brm_call$drop_unused_levels,
+      data_name = substitute_name(data)
+    )
+    bframe <- brmsframe(bterms, data)
+
+    prior <- .validate_prior(
+      brm_call$prior, bframe = bframe,
+      sample_prior = brm_call$sample_prior
+    )
+
+    stanvars <- validate_stanvars(brm_call$stanvars, stan_funs = brm_call$stan_funs)
+    save_pars <- validate_save_pars(
+      brm_call$save_pars, save_ranef = brm_call$save_ranef,
+      save_mevars = brm_call$save_mevars,
+      save_all_pars = brm_call$save_all_pars
+    )
+    # generate Stan code
+    model <- .stancode(
+      bframe, prior = prior, stanvars = stanvars,
+      save_model = brm_call$save_model, backend = brm_call$backend,
+      threads = brm_call$threads, opencl = brm_call$opencl,
+      normalize = brm_call$normalize
+    )
+    # initialize S3 object
+    stan_args <- nlist(
+      init = brm_call$init, silent = brm_call$silent,
+      control = brm_call$control, stan_model_args = brm_call$stan_model_args
+    )
+    stan_args <- c(stan_args, brm_call$dot_args)
+
+    x <- brmsfit(
+      formula = formula, data = data, data2 = data2, prior = prior,
+      stanvars = stanvars, model = model, algorithm = brm_call$algorithm,
+      backend = brm_call$backend, threads = brm_call$threads, opencl = brm_call$opencl,
+      save_pars = save_pars, ranef = bframe$frame$re, family = family,
+      basis = frame_basis(bframe, data = data),
+      stan_args = stan_args
+    )
+    x$brm_call <- brm_call
+    exclude <- exclude_pars(x, bframe = bframe)
+    # generate Stan data before compiling the model to avoid
+    # unnecessary compilations in case of invalid data
+    sdata <- .standata(
+      bframe, data = data, prior = prior, data2 = data2,
+      stanvars = stanvars, threads = brm_call$threads
+    )
+
+    if (brm_call$empty) {
+      # return the brmsfit object with an empty 'fit' slot
+      return(x)
+    }
+
+    if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
+      x_from_file <- read_brmsfit(brm_call$file)
+      if (!is.null(x_from_file)) {
+        needs_refit <- brmsfit_needs_refit(
+          x_from_file, scode = model, sdata = sdata, data = data,
+          algorithm = brm_call$algorithm, silent = brm_call$silent
+        )
+        if (!needs_refit) {
+          return(x_from_file)
+        }
+      }
+    }
+
+    # compile the Stan model
+    compile_args <- nlist(
+      model, backend = brm_call$backend, threads = brm_call$threads,
+      opencl = brm_call$opencl, silent = brm_call$silent
+    )
+    compile_args <- c(compile_args, brm_call$stan_model_args)
+    model <- do_call(compile_model, compile_args)
   }
-  if (!tmp$needs_refit) {
-    # return the brmsfit object from file
-    return(tmp$x_from_file)
-  }
-  if (brm_call$empty) {
-    # return the brmsfit object with an empty 'fit' slot
-    return(tmp$x)
-  }
-  # brmsfit object `x`
-  x <- tmp$x
+
   x$brm_call <- brm_call
   # fit the Stan model
-  fit_args <- create_fit_args(brm_call, tmp)
-  x$fit <- do_call(fit_model, fit_args)
-  # rename parameters to have human readable names
-  if (brm_call$rename) {
-    x <- rename_pars(x)
-  }
-  if (!is.null(brm_call$file)) {
-    x <- write_brmsfit(x, brm_call$file, compress = brm_call$file_compress)
-  }
-  x
-}
-
-#' Check for an existing cached `brmsfit` and return it if valid
-#'
-#' Early-exit helper used by `.brm()`.
-#' If the user supplied a `file` argument and the cached fit can be reused
-#' under the chosen `file_refit` policy, this function loads the object and
-#' hands it back; otherwise it returns `NULL` and the caller proceeds to
-#' (re-)build the model.
-#' @param brm_call A validated **`brm_call`** list.
-#' @return A `brmsfit` object **or** `NULL` if no valid cache can be used.
-#' @noRd
-maybe_load_cached_brmsfit <- function(brm_call) {
-  # Load brmsfit only if refit is explicitly set to 'never'
-  out <- NULL
-  if (!is.null(brm_call$file) && brm_call$file_refit == "never") {
-    out <- read_brmsfit(brm_call$file)
-  }
-  out
-}
-
-#' Build a fresh `brmsfit` shell from a validated call
-#'
-#' Internal helper used by `brm()` when no existing fit can be re-used.
-#' It prepares data, generates Stan code, compiles the model (unless
-#' `empty = TRUE`), and returns all artefacts needed for sampling.
-#'
-#' @param brm_call A list of class **`brm_call`** containing *validated* user
-#'   arguments.
-#'
-#' @return A named list with components
-#'   \describe{
-#'     \item{`x`}{A pre-initialised **`brmsfit`** object (may have an empty
-#'       `fit` slot if `empty = TRUE`).}
-#'     \item{`sdata`}{The standata list (NULL when `empty = TRUE`).}
-#'     \item{`backend`}{Backend string (`"rstan"`, `"cmdstanr"`, or `"mock"`).}
-#'     \item{`model`}{Compiled Stan model or `NULL` when `empty = TRUE`.}
-#'     \item{`exclude`}{Character vector of parameter names to drop
-#'       after sampling.}
-#'     \item{`x_from_file`}{A cached fit (if `file` was supplied and no refit
-#'       was needed) or `NULL`.}
-#'     \item{`needs_refit`}{Logical flag used upstream to decide whether the
-#'       sampler must be run.}
-#'   }
-#' @noRd
-build_new_brmsfit <- function(brm_call) {
-  needs_refit <- TRUE
-  x_from_file <- NULL
-  formula <- validate_formula(
-    brm_call$formula, data = brm_call$data, family = brm_call$family,
-    autocor = brm_call$autocor, sparse = brm_call$sparse,
-    cov_ranef = brm_call$cov_ranef
-  )
-  family <- get_element(formula, "family")
-  bterms <- brmsterms(formula)
-
-  data2  <- validate_data2(
-    brm_call$data2, bterms = bterms,
-    get_data2_autocor(formula),
-    get_data2_cov_ranef(formula)
-  )
-
-  data <- validate_data(
-    brm_call$data, bterms = bterms,
-    data2 = data2, knots = brm_call$knots,
-    drop_unused_levels = brm_call$drop_unused_levels,
-    data_name = substitute_name(data)
-  )
-  bframe <- brmsframe(bterms, data)
-
-  prior <- .validate_prior(
-    brm_call$prior, bframe = bframe,
-    sample_prior = brm_call$sample_prior
-  )
-
-  stanvars <- validate_stanvars(brm_call$stanvars, stan_funs = brm_call$stan_funs)
-  save_pars <- validate_save_pars(
-    brm_call$save_pars, save_ranef = brm_call$save_ranef,
-    save_mevars = brm_call$save_mevars,
-    save_all_pars = brm_call$save_all_pars
-  )
-  # generate Stan code
-  model <- .stancode(
-    bframe, prior = prior, stanvars = stanvars,
-    save_model = brm_call$save_model, backend = brm_call$backend,
-    threads = brm_call$threads, opencl = brm_call$opencl,
-    normalize = brm_call$normalize
-  )
-  # initialize S3 object
-  stan_args <- nlist(
-    init = brm_call$init, silent = brm_call$silent,
-    control = brm_call$control, stan_model_args = brm_call$stan_model_args
-  )
-  stan_args <- c(stan_args, brm_call$dot_args)
-
-  x <- brmsfit(
-    formula = formula, data = data, data2 = data2, prior = prior,
-    stanvars = stanvars, model = model, algorithm = brm_call$algorithm,
-    backend = brm_call$backend, threads = brm_call$threads, opencl = brm_call$opencl,
-    save_pars = save_pars, ranef = bframe$frame$re, family = family,
-    basis = frame_basis(bframe, data = data),
-    stan_args = stan_args
-  )
-  x$brm_call <- brm_call
-  exclude <- exclude_pars(x, bframe = bframe)
-  # generate Stan data before compiling the model to avoid
-  # unnecessary compilations in case of invalid data
-  sdata <- .standata(
-    bframe, data = data, prior = prior, data2 = data2,
-    stanvars = stanvars, threads = brm_call$threads
-  )
-
-  if (brm_call$empty) {
-    # return the brmsfit object with an empty 'fit' slot
-    model <- NULL
-    x_from_file <- NULL
-    out <- nlist(
-      x, sdata, backend = brm_call$backend, model,
-      exclude, x_from_file, needs_refit
-    )
-    return(out)
-  }
-
-  if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
-    x_from_file <- read_brmsfit(brm_call$file)
-    if (!is.null(x_from_file)) {
-      needs_refit <- brmsfit_needs_refit(
-        x_from_file, scode = model, sdata = sdata, data = data,
-        algorithm = brm_call$algorithm, silent = brm_call$silent
-      )
-      if (!needs_refit) {
-        model <- NULL
-        out <- nlist(
-          x, sdata, backend = brm_call$backend, model,
-          exclude, x_from_file, needs_refit
-        )
-        return(out)
-      }
-    }
-  }
-
-  # compile the Stan model
-  compile_args <- nlist(
-    model, backend = brm_call$backend, threads = brm_call$threads,
-    opencl = brm_call$opencl, silent = brm_call$silent
-  )
-  compile_args <- c(compile_args, brm_call$stan_model_args)
-  model <- do_call(compile_model, compile_args)
-  nlist(
-    x, sdata, backend = brm_call$backend, model,
-    exclude, x_from_file, needs_refit
-  )
-}
-
-#' Re-use a compiled Stan model when possible
-#'
-#' Internal helper called from `.brm_internal()` when the user passed a
-#' **previously fitted** `brmsfit` object via the `fit` field of the
-#' `brm_call`.  It decides whether that compiled model can be recycled,
-#' pulls out the pieces we still need, and returns them in a tidy bundle.
-#'
-#' @param brm_call A validated **`brm_call`** list whose `fit` element is a
-#'   `brmsfit` object.
-#'
-#' @return A named list with elements
-#'   \describe{
-#'     \item{`backend`}{Backend string (`"rstan"`, `"cmdstanr"`, or `"mock"`).}
-#'     \item{`model`}{Compiled Stan model reused from the old fit.}
-#'     \item{`exclude`}{Names of parameters that should be dropped after
-#'       sampling (copied from the old fit).}
-#'     \item{`x`}{The old `brmsfit` object, ready for updating.}
-#'     \item{`sdata`}{The standata list extracted from the fit.}
-#'     \item{`needs_refit`}{Logical flag; `FALSE` if the cached fit can be
-#'       returned as-is, `TRUE` if we must run the sampler again.}
-#'     \item{`x_from_file`}{`NULL` – kept for API symmetry with the
-#'       `build_new_model()` helper.}
-#'   }
-#' @noRd
-reuse_existing_brmsfit <- function(brm_call) {
-  x <- brm_call$fit
-  x$criteria <- list()
-  sdata <- standata(x)
-  x_from_file <- NULL
-  if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
-    x_from_file <- read_brmsfit(brm_call$file)
-    if (!is.null(x_from_file)) {
-      needs_refit <- brmsfit_needs_refit(
-        x_from_file, scode = stancode(x), sdata = sdata,
-        data = x$data, algorithm = brm_call$algorithm,
-        silent = brm_call$silent
-      )
-      if (!needs_refit) {
-        # we will only use x_from_file since it does not need refit
-        # passing NULL for other elements for consistency.
-        return(nlist(backend = NULL, model = NULL, exclude = NULL,
-                     x_from_file, needs_refit, sdata))
-      }
-    }
-  }
-  backend <- x$backend
-  model <- compiled_model(x)
-  exclude <- exclude_pars(x)
-  nlist(backend, model, exclude, x_from_file, needs_refit, sdata)
-}
-
-#' Internal method to create fit args for Stan
-#' @noRd
-create_fit_args <- function(brm_call, tmp = NULL) {
-
-  if(is.null(tmp)){
-    if (is.brmsfit(brm_call$fit)) {
-      tmp <- reuse_existing_brmsfit(brm_call)
-    } else {
-      tmp <- build_new_brmsfit(brm_call)
-    }
-  }
-  backend <- tmp$backend
-  model   <- tmp$model
-  exclude <- tmp$exclude
-  sdata   <- tmp$sdata
-
   fit_args <- c(
     nlist(
       model, sdata,
@@ -775,5 +650,13 @@ create_fit_args <- function(brm_call, tmp = NULL) {
     ),
     brm_call$dot_args
   )
-  fit_args
+  x$fit <- do_call(fit_model, fit_args)
+  # rename parameters to have human readable names
+  if (brm_call$rename) {
+    x <- rename_pars(x)
+  }
+  if (!is.null(brm_call$file)) {
+    x <- write_brmsfit(x, brm_call$file, compress = brm_call$file_compress)
+  }
+  x
 }
