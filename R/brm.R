@@ -729,14 +729,14 @@ reuse_existing_brmsfit <- function(brm_call) {
         # we will only use x_from_file since it does not need refit
         # passing NULL for other elements for consistency.
         return(nlist(backend = NULL, model = NULL, exclude = NULL,
-                     x_from_file, needs_refit))
+                     x_from_file, needs_refit, sdata))
       }
     }
   }
   backend <- x$backend
   model <- compiled_model(x)
   exclude <- exclude_pars(x)
-  nlist(backend, model, exclude, x_from_file, needs_refit)
+  nlist(backend, model, exclude, x_from_file, needs_refit, sdata)
 }
 
 #' Internal method to create fit args for Stan
