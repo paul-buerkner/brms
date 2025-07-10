@@ -6,7 +6,7 @@
 \usage{
 brm(
   formula,
-  data,
+  data = NULL,
   family = gaussian(),
   prior = NULL,
   autocor = NULL,
@@ -46,6 +46,7 @@ brm(
   file_refit = getOption("brms.file_refit", "never"),
   empty = FALSE,
   rename = TRUE,
+  call_only = FALSE,
   ...
 )
 }
@@ -317,6 +318,13 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{rename}{For internal use only.}
 
+\item{call_only}{Logical. If \code{TRUE}, \code{brm()} skips model
+compilation and sampling and instead returns a lightweight object of
+class \code{"brm_call"} containing the fully assembled argument list.
+This is handy for unit-testing, interactive inspection, or programmatic
+modification of the call before actually fitting the model.
+Defaults to \code{FALSE}.}
+
 \item{...}{Further arguments passed to Stan.
 For \code{backend = "rstan"} the arguments are passed to
 \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
@@ -509,7 +517,6 @@ fit8$fit <- stanfit
 fit8 <- rename_pars(fit8)
 summary(fit8)
 }
-
 }
 \references{
 Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel

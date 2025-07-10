@@ -25,6 +25,7 @@ test_that("brm works fully with mock backend", {
 
 test_that("brm(file = xx) works fully with mock backend", {
   skip_on_cran()
+
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
 
   file <- tempfile(fileext = ".rds")

@@ -236,6 +236,12 @@
 #'   object will be empty. This is useful if you have estimated a brms-created
 #'   Stan model outside of \pkg{brms} and want to feed it back into the package.
 #' @param rename For internal use only.
+#' @param call_only Logical. If \code{TRUE}, \code{brm()} skips model
+#'   compilation and sampling and instead returns a lightweight object of
+#'   class \code{"brm_call"} containing the fully assembled argument list.
+#'   This is handy for unit-testing, interactive inspection, or programmatic
+#'   modification of the call before actually fitting the model.
+#'   Defaults to \code{FALSE}.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{rstan::stan_model}} for \code{backend =
 #'   "rstan"} or to \code{cmdstanr::cmdstan_model} for \code{backend =
@@ -429,19 +435,18 @@
 #' fit8 <- rename_pars(fit8)
 #' summary(fit8)
 #' }
-#'
 #' @import parallel
 #' @import methods
 #' @import stats
 #' @import Rcpp
 #' @export
-brm <- function(formula, data, family = gaussian(), prior = NULL,
+brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
                 autocor = NULL, data2 = NULL, cov_ranef = NULL,
                 sample_prior = "no", sparse = NULL, knots = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, 
+                init = NULL, inits = NULL, chains = 4,
                 iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
@@ -455,20 +460,18 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                empty = FALSE, rename = TRUE, ...) {
+                empty = FALSE, rename = TRUE, call_only = FALSE, ...) {
 
-  # optionally load brmsfit from file
-  # Loading here only when we should directly load the file.
-  # The "on_change" option needs sdata and scode to be built
-  file_refit <- match.arg(file_refit, file_refit_options())
-  if (!is.null(file) && file_refit == "never") {
-    x <- read_brmsfit(file)
-    if (!is.null(x)) {
-      return(x)
+  call_only <- as_one_logical(call_only)
+  # if called with a `brm_call` object handle it first
+  if (is.brm_call(formula)) {
+    brm_call <- formula
+    if (call_only) {
+      return(brm_call)
     }
+    return(.brm(brm_call))
   }
-
-  # validate arguments later passed to Stan
+  file_refit <- match.arg(file_refit, file_refit_options())
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
   normalize <- as_one_logical(normalize)
@@ -486,93 +489,127 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
 
+  # collect arguments from this environment as brm_call
+  call <- .create_brm_call(...)
+  if (call_only) {
+    return(call)
+  }
+  .brm(call)
+}
+
+#' Internal engine to evaluate and fit a *brms* model
+#' @noRd
+.brm <- function(call) {
+
+  # optionally load brmsfit from file
+  # Loading here only when we should directly load the file.
+  # The "on_change" option needs sdata and scode to be built
+  if (!is.null(call$file) && call$file_refit == "never") {
+    x <- read_brmsfit(call$file)
+    if (!is.null(x)) {
+      return(x)
+    }
+  }
+
   # initialize brmsfit object
-  if (is.brmsfit(fit)) {
-    # re-use existing model
-    x <- fit
+  if (is.brmsfit(call$fit)) {
+    # re-use existing brmsfit
+    x <- call$fit
     x$criteria <- list()
     sdata <- standata(x)
-    if (!is.null(file) && file_refit == "on_change") {
-      x_from_file <- read_brmsfit(file)
+    if (!is.null(call$file) && call$file_refit == "on_change") {
+      x_from_file <- read_brmsfit(call$file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
           x_from_file, scode = stancode(x), sdata = sdata,
-          data = x$data, algorithm = algorithm, silent = silent
+          data = x$data, algorithm = call$algorithm,
+          silent = call$silent
         )
         if (!needs_refit) {
           return(x_from_file)
         }
       }
     }
-    backend <- x$backend
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
+    backend <- x$backend
   } else {
     # build new model
     formula <- validate_formula(
-      formula, data = data, family = family,
-      autocor = autocor, sparse = sparse,
-      cov_ranef = cov_ranef
+      call$formula, data = call$data, family = call$family,
+      autocor = call$autocor, sparse = call$sparse,
+      cov_ranef = call$cov_ranef
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
-    data2 <- validate_data2(
-      data2, bterms = bterms,
+
+    data2  <- validate_data2(
+      call$data2, bterms = bterms,
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
+
     data <- validate_data(
-      data, bterms = bterms,
-      data2 = data2, knots = knots,
-      drop_unused_levels = drop_unused_levels,
+      call$data, bterms = bterms,
+      data2 = data2, knots = call$knots,
+      drop_unused_levels = call$drop_unused_levels,
       data_name = substitute_name(data)
     )
     bframe <- brmsframe(bterms, data)
+
     prior <- .validate_prior(
-      prior, bframe = bframe,
-      sample_prior = sample_prior
-    )
-    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
-    save_pars <- validate_save_pars(
-      save_pars, save_ranef = save_ranef,
-      save_mevars = save_mevars,
-      save_all_pars = save_all_pars
+      call$prior, bframe = bframe,
+      sample_prior = call$sample_prior
     )
 
+    stanvars <- validate_stanvars(call$stanvars, stan_funs = call$stan_funs)
+    save_pars <- validate_save_pars(
+      call$save_pars, save_ranef = call$save_ranef,
+      save_mevars = call$save_mevars,
+      save_all_pars = call$save_all_pars
+    )
     # generate Stan code
     model <- .stancode(
       bframe, prior = prior, stanvars = stanvars,
-      save_model = save_model, backend = backend, threads = threads,
-      opencl = opencl, normalize = normalize
+      save_model = call$save_model, backend = call$backend,
+      threads = call$threads, opencl = call$opencl,
+      normalize = call$normalize
     )
     # initialize S3 object
+    stan_args <- nlist(
+      init = call$init, silent = call$silent,
+      control = call$control, stan_model_args = call$stan_model_args
+    )
+    stan_args <- c(stan_args, call$dot_args)
+
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior,
-      stanvars = stanvars, model = model, algorithm = algorithm,
-      backend = backend, threads = threads, opencl = opencl,
+      stanvars = stanvars, model = model, algorithm = call$algorithm,
+      backend = call$backend, threads = call$threads, opencl = call$opencl,
       save_pars = save_pars, ranef = bframe$frame$re, family = family,
       basis = frame_basis(bframe, data = data),
-      stan_args = nlist(init, silent, control, stan_model_args, ...)
+      stan_args = stan_args,
     )
     exclude <- exclude_pars(x, bframe = bframe)
+
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
       bframe, data = data, prior = prior, data2 = data2,
-      stanvars = stanvars, threads = threads
+      stanvars = stanvars, threads = call$threads
     )
 
-    if (empty) {
+    if (call$empty) {
       # return the brmsfit object with an empty 'fit' slot
       return(x)
     }
 
-    if (!is.null(file) && file_refit == "on_change") {
-      x_from_file <- read_brmsfit(file)
+    if (!is.null(call$file) && call$file_refit == "on_change") {
+      x_from_file <- read_brmsfit(call$file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
           x_from_file, scode = model, sdata = sdata, data = data,
-          algorithm = algorithm, silent = silent
+          algorithm = call$algorithm, silent = call$silent
         )
         if (!needs_refit) {
           return(x_from_file)
@@ -581,28 +618,44 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
 
     # compile the Stan model
-    compile_args <- stan_model_args
-    compile_args$model <- model
-    compile_args$backend <- backend
-    compile_args$threads <- threads
-    compile_args$opencl <- opencl
-    compile_args$silent <- silent
+    compile_args <- nlist(
+      model, backend = call$backend, threads = call$threads,
+      opencl = call$opencl, silent = call$silent
+    )
+    compile_args <- c(compile_args, call$stan_model_args)
     model <- do_call(compile_model, compile_args)
+    backend <- call$backend
   }
 
   # fit the Stan model
-  fit_args <- nlist(
-    model, sdata, algorithm, backend, iter, warmup, thin, chains, cores,
-    threads, opencl, init, exclude, control, future, seed, silent, ...
+  fit_args <- c(
+    nlist(
+      model, sdata,
+      algorithm = call$algorithm,
+      backend = backend,
+      iter = call$iter,
+      warmup = call$warmup,
+      thin = call$thin,
+      chains = call$chains,
+      cores = call$cores,
+      threads = call$threads,
+      opencl = call$opencl,
+      init = call$init,
+      exclude = exclude,
+      control = call$control,
+      future = call$future,
+      seed = call$seed,
+      silent = call$silent
+    ),
+    call$dot_args
   )
   x$fit <- do_call(fit_model, fit_args)
-
   # rename parameters to have human readable names
-  if (rename) {
+  if (call$rename) {
     x <- rename_pars(x)
   }
-  if (!is.null(file)) {
-    x <- write_brmsfit(x, file, compress = file_compress)
+  if (!is.null(call$file)) {
+    x <- write_brmsfit(x, call$file, compress = call$file_compress)
   }
   x
 }
