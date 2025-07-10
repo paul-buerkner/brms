@@ -533,7 +533,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
     call$backend <- x$backend
-    # TODO: how to correctly merge the old and new call here?
   } else {
     # build new model
     formula <- validate_formula(
@@ -626,8 +625,6 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     model <- do_call(compile_model, compile_args)
   }
 
-  # TODO: is storing the whole call object necessary and safe?
-  x$call <- call
   # fit the Stan model
   fit_args <- c(
     nlist(
