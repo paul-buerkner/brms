@@ -532,7 +532,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     }
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
-    call$backend <- x$backend
+    backend <- x$backend
   } else {
     # build new model
     formula <- validate_formula(
@@ -591,6 +591,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
       stan_args = stan_args,
     )
     exclude <- exclude_pars(x, bframe = bframe)
+
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
@@ -623,6 +624,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     )
     compile_args <- c(compile_args, call$stan_model_args)
     model <- do_call(compile_model, compile_args)
+    backend <- call$backend
   }
 
   # fit the Stan model
@@ -630,7 +632,7 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
     nlist(
       model, sdata,
       algorithm = call$algorithm,
-      backend = call$backend,
+      backend = backend,
       iter = call$iter,
       warmup = call$warmup,
       thin = call$thin,
