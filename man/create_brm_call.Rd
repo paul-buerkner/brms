@@ -12,7 +12,7 @@ They are stored unmodified in the returned object.  See the
 \pkg{brms} help page for the exhaustive list.}
 }
 \value{
-A list of class \code{c("brm_call", "list")}.
+A \code{"brm_call"} object.
 }
 \description{
 `create_brm_call()` is a wafer-thin wrapper around

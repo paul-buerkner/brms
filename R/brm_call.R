@@ -7,7 +7,7 @@
 #'   They are stored unmodified in the returned object.  See the
 #'   \pkg{brms} help page for the exhaustive list.
 #'
-#' @return A list of class \code{c("brm_call", "list")}.
+#' @return A \code{"brm_call"} object.
 #' @seealso \code{\link[brms]{brm}}
 #' @export
 create_brm_call <- function(...) {
@@ -60,10 +60,10 @@ is.brm_call <- function(x) {
 #' Compare two brm_call if they are identical using hash value whcih was created
 #' @noRd
 identical_brm_calls <- function(c1, c2){
-  if(isFALSE(is.brm_call(c1) && is.brm_call(c2)))  {
+  if (!is.brm_call(c1) || !is.brm_call(c2))  {
     stop2("Cannot compare other types than `brm_call`", .subclass = "brms_invalid_brm_call")
   }
-  if(isTRUE(is.null(c1$model_hash) || is.null(c2$model_hash))){
+  if (is.null(c1$model_hash) || is.null(c2$model_hash)) {
     # warning2("Using `all.equal.list` fallback because `model_hash` was not computed.")
     return(all.equal.list(c1, c2))
   }

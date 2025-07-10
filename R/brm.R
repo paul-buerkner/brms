@@ -490,128 +490,126 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
   rename <- as_one_logical(rename)
 
   # collect arguments from this environment as brm_call
-  brm_call <- .create_brm_call(...)
+  call <- .create_brm_call(...)
   if (call_only) {
-    return(brm_call)
+    return(call)
   }
-  .brm(brm_call)
+  .brm(call)
 }
 
 #' Internal engine to evaluate and fit a *brms* model
 #' @noRd
-.brm <- function(brm_call) {
+.brm <- function(call) {
 
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
   # The "on_change" option needs sdata and scode to be built
-  if (!is.null(brm_call$file) && brm_call$file_refit == "never") {
-    x <- read_brmsfit(brm_call$file)
+  if (!is.null(call$file) && call$file_refit == "never") {
+    x <- read_brmsfit(call$file)
     if (!is.null(x)) {
       return(x)
     }
   }
 
-  backend <- brm_call$backend
-
   # initialize brmsfit object
-  if (is.brmsfit(brm_call$fit)) {
+  if (is.brmsfit(call$fit)) {
     # re-use existing brmsfit
-    x <- brm_call$fit
+    x <- call$fit
     x$criteria <- list()
     sdata <- standata(x)
-    if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
-      x_from_file <- read_brmsfit(brm_call$file)
+    if (!is.null(call$file) && call$file_refit == "on_change") {
+      x_from_file <- read_brmsfit(call$file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
           x_from_file, scode = stancode(x), sdata = sdata,
-          data = x$data, algorithm = brm_call$algorithm,
-          silent = brm_call$silent
+          data = x$data, algorithm = call$algorithm,
+          silent = call$silent
         )
         if (!needs_refit) {
           return(x_from_file)
         }
       }
     }
-    backend <- x$backend
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
+    call$backend <- x$backend
+    # TODO: how to correctly merge the old and new call here?
   } else {
     # build new model
     formula <- validate_formula(
-      brm_call$formula, data = brm_call$data, family = brm_call$family,
-      autocor = brm_call$autocor, sparse = brm_call$sparse,
-      cov_ranef = brm_call$cov_ranef
+      call$formula, data = call$data, family = call$family,
+      autocor = call$autocor, sparse = call$sparse,
+      cov_ranef = call$cov_ranef
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
 
     data2  <- validate_data2(
-      brm_call$data2, bterms = bterms,
+      call$data2, bterms = bterms,
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
 
     data <- validate_data(
-      brm_call$data, bterms = bterms,
-      data2 = data2, knots = brm_call$knots,
-      drop_unused_levels = brm_call$drop_unused_levels,
+      call$data, bterms = bterms,
+      data2 = data2, knots = call$knots,
+      drop_unused_levels = call$drop_unused_levels,
       data_name = substitute_name(data)
     )
     bframe <- brmsframe(bterms, data)
 
     prior <- .validate_prior(
-      brm_call$prior, bframe = bframe,
-      sample_prior = brm_call$sample_prior
+      call$prior, bframe = bframe,
+      sample_prior = call$sample_prior
     )
 
-    stanvars <- validate_stanvars(brm_call$stanvars, stan_funs = brm_call$stan_funs)
+    stanvars <- validate_stanvars(call$stanvars, stan_funs = call$stan_funs)
     save_pars <- validate_save_pars(
-      brm_call$save_pars, save_ranef = brm_call$save_ranef,
-      save_mevars = brm_call$save_mevars,
-      save_all_pars = brm_call$save_all_pars
+      call$save_pars, save_ranef = call$save_ranef,
+      save_mevars = call$save_mevars,
+      save_all_pars = call$save_all_pars
     )
     # generate Stan code
     model <- .stancode(
       bframe, prior = prior, stanvars = stanvars,
-      save_model = brm_call$save_model, backend = brm_call$backend,
-      threads = brm_call$threads, opencl = brm_call$opencl,
-      normalize = brm_call$normalize
+      save_model = call$save_model, backend = call$backend,
+      threads = call$threads, opencl = call$opencl,
+      normalize = call$normalize
     )
     # initialize S3 object
     stan_args <- nlist(
-      init = brm_call$init, silent = brm_call$silent,
-      control = brm_call$control, stan_model_args = brm_call$stan_model_args
+      init = call$init, silent = call$silent,
+      control = call$control, stan_model_args = call$stan_model_args
     )
-    stan_args <- c(stan_args, brm_call$dot_args)
+    stan_args <- c(stan_args, call$dot_args)
 
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior,
-      stanvars = stanvars, model = model, algorithm = brm_call$algorithm,
-      backend = brm_call$backend, threads = brm_call$threads, opencl = brm_call$opencl,
+      stanvars = stanvars, model = model, algorithm = call$algorithm,
+      backend = call$backend, threads = call$threads, opencl = call$opencl,
       save_pars = save_pars, ranef = bframe$frame$re, family = family,
       basis = frame_basis(bframe, data = data),
-      stan_args = stan_args
+      stan_args = stan_args,
     )
-    x$brm_call <- brm_call
     exclude <- exclude_pars(x, bframe = bframe)
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
       bframe, data = data, prior = prior, data2 = data2,
-      stanvars = stanvars, threads = brm_call$threads
+      stanvars = stanvars, threads = call$threads
     )
 
-    if (brm_call$empty) {
+    if (call$empty) {
       # return the brmsfit object with an empty 'fit' slot
       return(x)
     }
 
-    if (!is.null(brm_call$file) && brm_call$file_refit == "on_change") {
-      x_from_file <- read_brmsfit(brm_call$file)
+    if (!is.null(call$file) && call$file_refit == "on_change") {
+      x_from_file <- read_brmsfit(call$file)
       if (!is.null(x_from_file)) {
         needs_refit <- brmsfit_needs_refit(
           x_from_file, scode = model, sdata = sdata, data = data,
-          algorithm = brm_call$algorithm, silent = brm_call$silent
+          algorithm = call$algorithm, silent = call$silent
         )
         if (!needs_refit) {
           return(x_from_file)
@@ -621,42 +619,44 @@ brm <- function(formula, data= NULL, family = gaussian(), prior = NULL,
 
     # compile the Stan model
     compile_args <- nlist(
-      model, backend = brm_call$backend, threads = brm_call$threads,
-      opencl = brm_call$opencl, silent = brm_call$silent
+      model, backend = call$backend, threads = call$threads,
+      opencl = call$opencl, silent = call$silent
     )
-    compile_args <- c(compile_args, brm_call$stan_model_args)
+    compile_args <- c(compile_args, call$stan_model_args)
     model <- do_call(compile_model, compile_args)
   }
 
-  x$brm_call <- brm_call
+  # TODO: is storing the whole call object necessary and safe?
+  x$call <- call
   # fit the Stan model
   fit_args <- c(
     nlist(
       model, sdata,
-      algorithm = brm_call$algorithm,
-      backend,
-      iter = brm_call$iter, warmup = brm_call$warmup,
-      thin = brm_call$thin,
-      chains = brm_call$chains,
-      cores = brm_call$cores,
-      threads = brm_call$threads,
-      opencl = brm_call$opencl,
-      init = brm_call$init,
-      exclude,
-      control = brm_call$control,
-      future = brm_call$future,
-      seed = brm_call$seed,
-      silent = brm_call$silent
+      algorithm = call$algorithm,
+      backend = call$backend,
+      iter = call$iter,
+      warmup = call$warmup,
+      thin = call$thin,
+      chains = call$chains,
+      cores = call$cores,
+      threads = call$threads,
+      opencl = call$opencl,
+      init = call$init,
+      exclude = exclude,
+      control = call$control,
+      future = call$future,
+      seed = call$seed,
+      silent = call$silent
     ),
-    brm_call$dot_args
+    call$dot_args
   )
   x$fit <- do_call(fit_model, fit_args)
   # rename parameters to have human readable names
-  if (brm_call$rename) {
+  if (call$rename) {
     x <- rename_pars(x)
   }
-  if (!is.null(brm_call$file)) {
-    x <- write_brmsfit(x, brm_call$file, compress = brm_call$file_compress)
+  if (!is.null(call$file)) {
+    x <- write_brmsfit(x, call$file, compress = call$file_compress)
   }
   x
 }
