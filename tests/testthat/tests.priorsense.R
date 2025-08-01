@@ -1,6 +1,8 @@
 context("Tests for priorsense support")
-
+skip_if_not_installed("priorsense")
 skip_on_cran()
+
+SW <- suppressWarnings
 
 require(priorsense)
 
@@ -18,10 +20,11 @@ test_that("create_priorsense_data returns expected output structure", {
 })
 
 test_that("powerscale returns without error", {
-  expect_no_error(powerscale(fit1, component = "prior", alpha = 0.8))
-  expect_no_error(powerscale(fit1, component = "likelihood", alpha = 1.1))
+  expect_no_error(SW(powerscale(fit1, component = "prior", alpha = 0.8)))
+  expect_no_error(SW(powerscale(fit1, component = "likelihood", alpha = 1.1)))
 })
 
 test_that("powerscale_sensitivity returns without error", {
-  expect_no_error(powerscale_sensitivity(fit1))
+  expect_no_error(SW(powerscale_sensitivity(fit1)))
 })
+

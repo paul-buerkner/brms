@@ -882,6 +882,16 @@ posterior_predict_multinomial <- function(i, prep, ...) {
   rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
+posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
+  phi <- get_dpar(prep, "phi", i = i)
+  alpha <- dcategorical(seq_len(prep$data$ncat), eta = eta) * phi
+  p <- rdirichlet(prep$ndraws, alpha = alpha)
+  size <- prep$data$trials[i]
+  rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
+}
+
 posterior_predict_dirichlet <- function(i, prep, ...) {
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)

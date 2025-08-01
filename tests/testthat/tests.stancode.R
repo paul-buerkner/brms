@@ -678,6 +678,29 @@ test_that("Stan code for multinomial models is correct", {
   expect_match2(scode, "lprior += normal_lpdf(Intercept_muy3 | 0, 2);")
 })
 
+test_that("Stan code for dirichlet_multinomial models is correct", {
+  N <- 15
+  dat <- data.frame(
+    y1 = rbinom(N, 10, 0.3), y2 = rbinom(N, 10, 0.5),
+    y3 = rbinom(N, 10, 0.7), x = rnorm(N)
+  )
+  dat$size <- with(dat, y1 + y2 + y3)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  prior <- prior(normal(0, 10), "b", dpar = muy2) +
+    prior(cauchy(0, 1), "Intercept", dpar = muy2) +
+    prior(normal(0, 2), "Intercept", dpar = muy3) +
+    prior(exponential(10), "phi")
+  scode <- stancode(bf(y | trials(size)  ~ 1, muy2 ~ x), data = dat,
+                         family = dirichlet_multinomial(), prior = prior)
+  expect_match2(scode, "array[N, ncat] int Y;")
+  expect_match2(scode, "target += dirichlet_multinomial_logit2_lpmf(Y[n] | mu[n], phi);")
+  expect_match2(scode, "muy2 += Intercept_muy2 + Xc_muy2 * b_muy2;")
+  expect_match2(scode, "lprior += normal_lpdf(b_muy2 | 0, 10);")
+  expect_match2(scode, "lprior += cauchy_lpdf(Intercept_muy2 | 0, 1);")
+  expect_match2(scode, "lprior += normal_lpdf(Intercept_muy3 | 0, 2);")
+  expect_match2(scode, "lprior += exponential_lpdf(phi | 10);")
+})
+
 test_that("Stan code for dirichlet models is correct", {
   N <- 15
   dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
@@ -2779,4 +2802,57 @@ test_that("Normalizing Stan code works correctly", {
   # should handle wrong nested comments
   expect_false(normalize_stancode("/* \n\n */\na*/") ==
                  normalize_stancode("b*/"))
+})
+
+test_that("Grouping prior weights are added to the Stan code", {
+  # Check for a single grouping variable, varying intercept only
+  wtd_epilepsy <- epilepsy
+  patient_weights <- c(1, rep(c(0.9, 1.1), each = 29))
+  wtd_epilepsy[['patient_samp_wgt']] <-
+    patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
+
+  scode <- stancode(
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt)),
+    data = wtd_epilepsy, family = gaussian()
+  )
+  expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
+
+  # Check for multiple grouping variables, varying intercept and slope
+  wtd_epilepsy[['random_group']]     <- rep(4:1, times = 59)
+  wtd_epilepsy[['random_group_wgt']] <- rep(c(0.8, 1.2, 0.7, 1.3), times = 59)
+
+  scode <- stancode(
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt))
+                + (1       | gr(random_group, pw = random_group_wgt)),
+    data = wtd_epilepsy, family = gaussian()
+  )
+  expect_match2(scode, "vector[N_2] PW_2;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
+  expect_match2(scode, "target += PW_2[j] * std_normal_lpdf(z_2[1, j]);")
+
+  # Check for multivariate model
+  dat <- data.frame(
+    y1 = rnorm(10), y2 = rnorm(10),
+    x = 1:10,
+    g1 = rep(1:2, each = 5),
+    g1wgt = rep(c(0.9, 1.1), each = 5),
+    g2 = c(rep(1:4, each = 2), 1:2),
+    g2wgt = c(rep(9:12, each = 2), 9:10),
+    censi = sample(0:1, 10, TRUE)
+  )
+
+  # models with residual correlations
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) +
+    set_rescor(TRUE)
+  prior <- prior(horseshoe(2), resp = "y1") +
+           prior(horseshoe(2), resp = "y2")
+  scode <- stancode(form, dat, prior = prior)
+  expect_match2(scode, "vector[N_4] PW_4;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_4[j] * std_normal_lpdf(z_4[1, j]);")
+
+  # multi-membership model
+  scode <- stancode(y1 ~ x + (x | mm(g1, g2, pw = g2wgt)), data = dat)
+  expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
+  expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
 })

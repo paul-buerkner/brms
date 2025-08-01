@@ -468,6 +468,9 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
       "  // a-priori concentration vector of baseline coefficients\n",
       "  array[ngrbhaz{resp}] vector<lower=0>[Kbhaz{resp}] con_sbhaz{resp};\n"
     )
+    str_add(out$pll_args) <- glue(
+      ", data array[] int Jgrbhaz{resp}"
+    )
     str_add(out$par) <- glue(
       "  // stratified baseline hazard coefficients\n",
       "  array[ngrbhaz{resp}] simplex[Kbhaz{resp}] sbhaz{resp};\n"
@@ -490,7 +493,7 @@ stan_bhaz <- function(bterms, prior, threads, normalize, ...) {
       "    cbhaz{resp}{n} = Zcbhaz{resp}{n} * sbhaz{resp}[Jgrbhaz{resp}{n}];\n",
       "  }}\n"
     )
-    str_add(out$pll_args) <- glue(", array[] sbhaz{resp}")
+    str_add(out$pll_args) <- glue(", array[] vector sbhaz{resp}")
   } else {
     # a single baseline hazard function
     str_add(out$data) <- glue(

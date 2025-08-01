@@ -390,7 +390,7 @@ frame_basis_sm <- function(x, data, ...) {
 frame_basis_gp <- function(x, data, ...) {
   stopifnot(is.btl(x))
   out <- data_gp(x, data, internal = TRUE)
-  out <- out[grepl("^((Xgp)|(dmax)|(cmeans))", names(out))]
+  out <- out[grepl("^((Xgp)|(dmax)|(cmeans)|(L))", names(out))]
   out
 }
 

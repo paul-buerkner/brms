@@ -20,6 +20,7 @@ set_prior(
   nlpar = "",
   lb = NA,
   ub = NA,
+  tag = "",
   check = TRUE
 )
 
@@ -56,6 +57,9 @@ for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
 
 \item{ub}{Upper bound for parameter restriction. Currently only allowed
 for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
+
+\item{tag}{Character to append to the \code{lprior} variable in the Stan code.
+Used for selectively checking sensitivity of priors in \code{priorsense}.}
 
 \item{check}{Logical; Indicates whether priors
 should be checked for validity (as far as possible).
@@ -409,6 +413,14 @@ stancode(count ~ Trt, data = epilepsy, prior = prior)
 # define priors in a vectorized manner
 # useful in particular for categorical or multivariate models
 set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
+
+# specify tags for different priors for sensitivity analysis using priorsense
+# It is then possible to check the sensitivity when changing the priors with
+# the same tag while leaving others the same
+prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
+prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
+stancode(count ~ Trt + zAge + zBase + (1 | patient),
+         data = epilepsy, prior = c(prior_cov, prior_trt))
 
 }
 \seealso{

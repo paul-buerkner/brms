@@ -23,23 +23,24 @@ fit <- mod$sample(parallel_chains = 2,
 fit_warmup <- mod$sample(parallel_chains = 2,
                          iter_warmup = 200,
                          iter_sampling=200,
-                         save_warmup = T)
+                         save_warmup = TRUE)
 
 fit_dense_warmup <- mod$sample(parallel_chains = 4,
                                iter_warmup = 200,
                                iter_sampling=200,
                                metric = "dense_e",
-                               save_warmup = T)
+                               save_warmup = TRUE)
 
 fit_nosampling <- mod$sample(parallel_chains = 4,
                              iter_warmup = 200,
                              iter_sampling = 0,
-                             save_warmup = T)
+                             save_warmup = TRUE)
 
 fit_thinned <-  mod$sample(parallel_chains = 4,
                            iter_warmup = 200,
                            iter_sampling = 200,
                            thin = 5)
+
 
 fit_variational <- mod$variational()
 
@@ -108,5 +109,18 @@ test_that("read methods identical: variational inference", {
   # comparison of parameters and their draws may fail because
   # of CSV preprocessing done differently by rstan and cmdstanr
   compare_functions(test_set$VI, check_pars = FALSE)
+})
+
+
+test_that("rstan can locate max_treedepth", {
+  fit_treedepth <- mod$sample(
+    parallel_chains = 2,
+    iter_warmup = 200,
+    iter_sampling = 200,
+    max_treedepth = 2,
+    adapt_delta = .1
+  )
+  fit <- read_csv_as_stanfit(fit_treedepth$output_files())
+  expect_message(rstan::check_treedepth(fit), "depth of 2")
 })
 

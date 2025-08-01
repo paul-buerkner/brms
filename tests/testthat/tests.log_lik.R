@@ -177,6 +177,8 @@ test_that("log_lik for FCOR models runs without errors", {
 })
 
 test_that("log_lik for count and survival models works correctly", {
+  skip_if_not_installed("extraDistr")
+
   ns <- 25
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
@@ -337,6 +339,7 @@ test_that("log_lik for circular models runs without errors", {
 })
 
 test_that("log_lik for zero-inflated and hurdle models runs without erros", {
+  skip_if_not_installed("extraDistr")
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
@@ -422,6 +425,7 @@ test_that("log_lik for ordinal models runs without erros", {
 })
 
 test_that("log_lik for categorical and related models runs without erros", {
+  skip_if_not_installed("extraDistr")
   ns <- 50
   nobs <- 8
   ncat <- 3
@@ -443,6 +447,12 @@ test_that("log_lik for categorical and related models runs without erros", {
   prep$data$trials <- sample(1:20, nobs)
   prep$family <- multinomial()
   ll <- sapply(1:nobs, brms:::log_lik_multinomial, prep = prep)
+  expect_equal(dim(ll), c(ns, nobs))
+
+  prep$data$trials <- sample(1:20, nobs)
+  prep$dpars$phi <- rexp(ns, 10)
+  prep$family <- dirichlet_multinomial()
+  ll <- sapply(1:nobs, brms:::log_lik_dirichlet_multinomial, prep = prep)
   expect_equal(dim(ll), c(ns, nobs))
 
   prep$data$Y <- prep$data$Y / rowSums(prep$data$Y)
@@ -487,6 +497,7 @@ test_that("censored and truncated log_lik run without errors", {
 })
 
 test_that("log_lik for the wiener diffusion model runs without errors", {
+  skip_if_not_installed("RWiener")
   ns <- 5
   nobs <- 3
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
@@ -501,6 +512,7 @@ test_that("log_lik for the wiener diffusion model runs without errors", {
 })
 
 test_that("log_lik for the xbeta model runs without errors", {
+  skip_if_not_installed("betareg")
   ns <- 50
   nobs <- 8
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")

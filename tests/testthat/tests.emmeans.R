@@ -1,5 +1,5 @@
 context("Tests for emmeans support")
-
+skip_if_not_installed("emmeans")
 skip_on_cran()
 
 require(emmeans)

@@ -267,10 +267,11 @@ fit_model <- function(model, backend, ...) {
   }
   use_threading <- use_threading(threads, force = TRUE)
   if (algorithm %in% c("sampling", "fixed_param")) {
-    c(args) <- nlist(
+    c(args) <- list(
       iter_sampling = iter - warmup,
       iter_warmup = warmup,
-      chains, thin,
+      chains = chains,
+      thin = thin,
       parallel_chains = cores,
       show_messages = silent < 2,
       show_exceptions = silent == 0,
@@ -310,6 +311,7 @@ fit_model <- function(model, backend, ...) {
     }
     out <- do_call(model$variational, args)
   } else if (algorithm %in% c("pathfinder")) {
+    c(args) <- list(num_paths = chains)
     if (use_threading) {
       args$num_threads <- threads$threads
     }
@@ -753,7 +755,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   )
 
   # @model_name
-  model_name = gsub(".csv", "", basename(files[[1]]))
+  model_name <- gsub(".csv", "", basename(files[[1]]))
 
   # @model_pars
   model_pars <- csfit$metadata$stan_variables
@@ -999,7 +1001,12 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     adaptation_info = NA, # add in loop
     has_time = is.numeric(csfit$metadata$time$total),
     time_info = NA, # add in loop
-    sampler_t = sampler_t
+    sampler_t = sampler_t,
+    # rstan looks in @stan_args$control for some metadata
+    control = list(
+      adapt_delta = csfit$metadata$adapt_delta,
+      max_treedepth = csfit$metadata$max_treedepth
+    )
   )
 
   sargs_rep <- replicate(n_chains, sargs, simplify = FALSE)

@@ -777,6 +777,14 @@ stan_log_lik_multinomial <- function(bterms, ...) {
   sdist("multinomial_logit2", p$mu, vec = FALSE)
 }
 
+stan_log_lik_dirichlet_multinomial <- function(bterms, ...) {
+  stopifnot(bterms$family$link == "logit")
+  mu <- stan_log_lik_dpars(bterms, reqn = TRUE, dpars = "mu", type = "multi")$mu
+  reqn_phi <- is_pred_dpar(bterms, "phi")
+  phi <- stan_log_lik_dpars(bterms, reqn = reqn_phi, dpars = "phi")$phi
+  sdist("dirichlet_multinomial_logit2", mu, phi, vec = FALSE)
+}
+
 stan_log_lik_dirichlet <- function(bterms, ...) {
   stopifnot(bterms$family$link == "logit")
   mu <- stan_log_lik_dpars(bterms, reqn = TRUE, dpars = "mu", type = "multi")$mu

@@ -734,7 +734,9 @@ allvars_formula <- function(..., .env = parent.frame()) {
     stop2("The following variable names are invalid: ",
           collapse_comma(invalid_vars))
   }
-  str2formula(c(out, all_vars), env = .env)
+  out <- str2formula(c(out, all_vars), env = .env)
+  # remove redundant terms to simplify the formula (#1786)
+  formula(terms.formula(out, simplify = TRUE))
 }
 
 # conveniently extract a formula of all relevant variables

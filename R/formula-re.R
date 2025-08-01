@@ -19,6 +19,10 @@
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
+#' @param pw Optional numeric variable specifying prior weights. They weight the
+#'   contribution of each group to the log-prior of the group-level
+#'   coefficients. Should have one distinct value for each level of the
+#'   grouping variable.
 #' @param cov An optional matrix which is proportional to the within-group
 #'   covariance matrix of the group-level effects. All levels of the grouping
 #'   factor should appear as rownames of the corresponding matrix. This argument
@@ -43,10 +47,16 @@
 #' # include Trt as a by variable
 #' fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
 #' summary(fit3)
+#'
+#' # include a group-level weight variable
+#' epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
+#' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
+#'             data = epilepsy)
+#' summary(fit4)
 #' }
 #'
 #' @export
-gr <- function(..., by = NULL, cor = TRUE, id = NA,
+gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
                cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -62,6 +72,12 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   } else {
     by <- ""
   }
+  pw <- substitute(pw)
+  if (!is.null(pw)) {
+    pw <- deparse0(pw)
+  } else {
+    pw <- ""
+  }
   cov <- substitute(cov)
   if (!is.null(cov)) {
     cov <- all.vars(cov)
@@ -73,8 +89,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   byvars <- all_vars(by)
-  allvars <- str2formula(c(groups, byvars))
-  nlist(groups, allvars, label, by, cor, id, cov, dist, type = "")
+  pwvars <- all_vars(pw)
+  allvars <- str2formula(c(groups, byvars, pwvars))
+  nlist(groups, allvars, label, by, cor, id, pw, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -84,7 +101,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' it exists purely to help set up a model with grouping terms.
 #'
 #' @inheritParams gr
-#' @param weights A matrix specifying the weights of each member.
+#' @param weights A matrix specifying the membership weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
 #'  If \code{NULL} (the default), equally weights are used.
 #' @param by An optional factor matrix, specifying sub-populations of the
@@ -92,11 +109,14 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #'   \code{...}. For each level of the \code{by} variable, a separate
 #'   variance-covariance matrix will be fitted. Levels of the grouping factor
 #'   must be nested in levels of the \code{by} variable matrix.
+#' @param pw Optional numeric matrix specifying prior weights. They weight the
+#'   contribution of each group to the log-prior of the group-level
+#'   coefficients. Should have as many columns as grouping terms specified in
+#'   \code{...} and one distinct value for each group level.
 #' @param scale Logical; if \code{TRUE} (the default),
-#'  weights are standardized in order to sum to one per row.
+#'  membership weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
-#'
 #' @seealso \code{\link{brmsformula}}, \code{\link{mmc}}
 #'
 #' @examples
@@ -124,8 +144,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' }
 #'
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
-               id = NA, cov = NULL, dist = "gaussian") {
+mm <- function(..., weights = NULL, scale = TRUE,
+               by = NULL, cor = TRUE, id = NA,  pw = NULL,
+               cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
@@ -142,6 +163,12 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   } else {
     by <- ""
   }
+  pw <- substitute(pw)
+  if (!is.null(pw)) {
+    pw <- deparse0(pw)
+  } else {
+    pw <- ""
+  }
   cov <- substitute(cov)
   if (!is.null(cov)) {
     cov <- all.vars(cov)
@@ -155,8 +182,9 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
   weightvars <- all_vars(weights)
+  pwvars <- all_vars(pw)
   byvars <- all_vars(by)
-  allvars <- str2formula(c(groups, weightvars, byvars))
+  allvars <- str2formula(c(groups, weightvars, pwvars, byvars))
   if (!is.null(weights)) {
     weights <- str2formula(deparse_no_string(weights))
     attr(weights, "scale") <- scale
@@ -164,7 +192,7 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   }
   nlist(
     groups, weights, weightvars, allvars, label,
-    by, cor, id, cov, dist, type = "mm"
+    by, cor, id, pw, cov, dist, type = "mm"
   )
 }
 

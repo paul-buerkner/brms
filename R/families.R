@@ -18,7 +18,7 @@
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 #'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
 #'   \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
-#'   \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+#'   \code{multinomial}, \code{dirichlet_multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
@@ -51,8 +51,9 @@
 #'   consecutive thresholds to the same value, and
 #'   \code{"sum_to_zero"} ensures the thresholds sum to zero.
 #' @param refcat Optional name of the reference response category used in
-#'   \code{categorical}, \code{multinomial}, \code{dirichlet} and
-#'   \code{logistic_normal} models. If \code{NULL} (the default), the first
+#'   \code{categorical}, \code{multinomial}, \code{dirichlet},
+#'   \code{dirichlet_multinomial} and \code{logistic_normal} models.
+#'   If \code{NULL} (the default), the first
 #'   category is used as the reference. If \code{NA}, all categories will be
 #'   predicted, which requires strong priors or carefully specified predictor
 #'   terms in order to lead to an identified model.
@@ -76,8 +77,9 @@
 #'   can be used for binary regression (i.e., most commonly logistic
 #'   regression).}
 #'
-#'   \item{Families \code{categorical} and \code{multinomial} can be used for
-#'   multi-logistic regression when there are more than two possible outcomes.}
+#'   \item{Families \code{categorical}, \code{multinomial} and
+#'   \code{dirichlet_multinomial} can be used for multi-logistic regression
+#'   when there are more than two possible outcomes.}
 #'
 #'   \item{Families \code{cumulative}, \code{cratio} ('continuation ratio'),
 #'   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category')
@@ -150,8 +152,8 @@
 #'   \code{acat}, and \code{hurdle_cumulative} support \code{logit},
 #'   \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
 #'
-#'   \item{Families \code{categorical}, \code{multinomial}, and \code{dirichlet}
-#'   support \code{logit}.}
+#'   \item{Families \code{categorical}, \code{multinomial},
+#'   \code{dirichlet_multinomial} and \code{dirichlet} support \code{logit}.}
 #'
 #'   \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
 #'   \code{frechet}, and \code{hurdle_gamma} support
@@ -810,6 +812,15 @@ categorical <- function(link = "logit", refcat = NULL) {
 multinomial <- function(link = "logit", refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily("multinomial", link = link, slink = slink, refcat = refcat)
+}
+
+#' @rdname brmsfamily
+#' @export
+dirichlet_multinomial <- function(link = "logit", link_phi = "log",
+                                  refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet_multinomial", link = link, slink = slink,
+              link_phi = link_phi, refcat = refcat)
 }
 
 #' @rdname brmsfamily
@@ -1539,9 +1550,7 @@ summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
 summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
   x <- brmsterms(x)
   dpars <- valid_dpars(x)
-  links <- setNames(rep("identity", length(dpars)), dpars)
-  links_pred <- ulapply(x$dpars, function(x) x$family$link)
-  links[names(links_pred)] <- links_pred
+  links <- ulapply(x$dpars, function(x) x$family$link)
   if (conv_cats_dpars(x)) {
     links[grepl("^mu", names(links))] <- x$family$link
   }
@@ -1855,7 +1864,11 @@ prepare_family <- function(x) {
 order_intercepts <- function(bterms) {
   dpar <- dpar_class(bterms[["dpar"]])
   if (!length(dpar)) dpar <- "mu"
-  isTRUE(!is_ordinal(bterms) && dpar %in% bterms$family[["order"]])
+  isTRUE(
+    !is_ordinal(bterms) &&
+    dpar %in% bterms$family[["order"]] &&
+    !get_nl(bterms$formula)
+  )
 }
 
 # fix intercepts to help identifying mixture components?

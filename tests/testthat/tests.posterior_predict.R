@@ -212,6 +212,8 @@ test_that("posterior_predict for bernoulli and beta models works correctly", {
 })
 
 test_that("posterior_predict for xbeta models works correctly", {
+  skip_if_not_installed("betareg")
+
   ns <- 17
   nobs <- 10
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
@@ -344,6 +346,12 @@ test_that("posterior_predict for categorical and related models runs without err
   prep$data$trials <- sample(1:20, nobs)
   prep$family <- multinomial()
   pred <- brms:::posterior_predict_multinomial(i = sample(1:nobs, 1), prep = prep)
+  expect_equal(dim(pred), c(ns, ncat))
+
+  prep$data$trials <- sample(1:20, nobs)
+  prep$dpars$phi <- rexp(ns, 1)
+  prep$family <- dirichlet_multinomial()
+  pred <- brms:::posterior_predict_dirichlet_multinomial(i = sample(1:nobs, 1), prep = prep)
   expect_equal(dim(pred), c(ns, ncat))
 
   prep$dpars$phi <- rexp(ns, 1)

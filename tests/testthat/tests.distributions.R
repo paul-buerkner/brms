@@ -114,6 +114,8 @@ test_that("inv_gaussian distribution functions run without errors", {
 })
 
 test_that("beta_binomial distribution functions run without errors", {
+  skip_if_not_installed("extraDistr")
+
   n <- 10
   x <- rpois(n, lambda = 1)
 
@@ -152,6 +154,7 @@ test_that("asym_laplace distribution functions run without errors", {
 })
 
 test_that("zero-inflated distribution functions run without errors", {
+  skip_if_not_installed("extraDistr")
   n <- 10
   x <- rpois(n, lambda = 1)
 
@@ -208,6 +211,8 @@ test_that("hurdle distribution functions run without errors", {
 })
 
 test_that("wiener distribution functions run without errors", {
+  skip_if_not_installed("RWiener")
+
   set.seed(1234)
   n <- 10
   x <- seq(0.1, 1, 0.1)

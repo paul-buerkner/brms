@@ -605,9 +605,9 @@ rename <- function(x, pattern = NULL, replacement = NULL,
     # default renaming to avoid special characters in coeffcient names
     pattern <- c(
       " ", "(", ")", "[", "]", ",", "\"", "'",
-      "?", "+", "-", "*", "/", "^", "="
+      "?", "+", "-", "*", "/", "^", "=", "$"
     )
-    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ")
+    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ", "USD")
   }
   if (length(replacement) == 1L) {
     replacement <- rep(replacement, length(pattern))
@@ -851,9 +851,39 @@ sort_dependencies <- function(x, sorted = NULL) {
   out
 }
 
-stop2 <- function(...) {
-  stop(..., call. = FALSE)
+#' Internal abort helper
+#'
+#' A drop-in replacement for the old `stop2()` that throws structured
+#' errors via **rlang**.
+#' The error message is built with **glue**, so you can use
+#'   `{.val {x}}`, `{.arg {y}}`, etc.
+#' Every error inherits from `"brms_error"` plus any subclasses
+#'   supplied through `.subclass`, making it easy to `tryCatch()`.
+#'
+#' @param message A character (or glue) string describing the error.
+#' @param ... Additional strings merged into the message; kept for
+#'   backward compatibility with existing `stop2("foo", "bar")` calls.
+#' @param .subclass Optional character vector of extra condition classes.
+#' @param call A call object to store with the condition; defaults to the
+#'   caller (set internally to avoid CRAN’s “function call as default”
+#'   NOTE).
+#' @param .envir Environment in which glue expressions are evaluated.
+#' @keywords internal
+#' @noRd
+stop2 <- function(message = "", ..., .subclass = NULL,
+                  call = NULL, .envir = parent.frame()) {
+
+  if (is.null(call)) {
+    call <- rlang::caller_call()
+  }
+
+  rlang::abort(
+    message   = glue::glue(message, ..., .envir = .envir),
+    .subclass = c(.subclass, "brms_error"),
+    call      = call
+  )
 }
+
 
 warning2 <- function(...) {
   warning(..., call. = FALSE)
