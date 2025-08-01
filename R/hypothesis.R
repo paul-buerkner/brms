@@ -386,16 +386,42 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
 # @return all valid variable names within the string
 # @note does not use the R parser itself to allow for double points,
 #   square brackets, and commas at the end of names
-find_vars <- function(x, dot = TRUE, brackets = TRUE) {
-  x <- gsub("[[:space:]]", "", as_one_character(x))
+find_vars = function (x, dot = TRUE, brackets = TRUE){
+  # Convert x to a single character string
+  x <- as_one_character(x)
+  
+  # Extract backtick-enclosed tokens (e.g. `foo&bar`) as single tokens ---
+  bt_pattern <- "`[^`]+`"              # matches text between backticks
+  bt_match <- gregexpr(bt_pattern, x)[[1]]
+  out_bt <- character(0)
+  
+  if (bt_match[1] != -1L) {
+    match_length <- attr(bt_match, "match.length")
+    out_bt <- unlist(regmatches(x, list(bt_match)))
+    # remove the actual backticks
+    out_bt <- gsub("^`|`$", "", out_bt)
+    # replace them in x with space (so they won't interfere with subsequent parsing)
+    x <- gsub(bt_pattern, " ", x)
+  }
+
+  # Original logic for variable extraction ---
+  x <- gsub("[[:space:]]", "", x)
   dot <- as_one_logical(dot)
   brackets <- as_one_logical(brackets)
+  
+  # Properly escape $ so R doesn't complain about unrecognised escapes
+  # If brackets=TRUE, we allow ( \$begin:math:display\$ ... \$end:math:display\$ )?
+  # In the final regex, each \$ must be written as \\$
+  # Hence in the R string, each \\$ is written as \\\\$ (i.e. four backslashes).
+  #
   regex_all <- paste0(
     "([^([:digit:]|[:punct:])]", if (dot) "|\\.", ")",
     "[[:alnum:]_\\:", if (dot) "\\.", "]*",
     if (brackets) "(\\[[^],]+(,[^],]+)*\\])?"
   )
+
   pos_all <- gregexpr(regex_all, x)[[1]]
+  
   regex_fun <- paste0(
     "([^([:digit:]|[:punct:])]", if (dot) "|\\.", ")",
     "[[:alnum:]_", if (dot) "\\.", "]*\\("
@@ -410,6 +436,12 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   } else {
     out <- character(0)
   }
+
+  # --- 3) Combine original results with backtick tokens ---
+  if (length(out_bt)) {
+    out <- unique(c(out, out_bt))
+  }
+
   out
 }
 
