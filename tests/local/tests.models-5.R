@@ -224,7 +224,7 @@ test_that("Univariate models with re-predictor terms yield sensible outputs", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_error(
     conditional_effects(fit, dpar = "sigma"),
-    "Some of the varying coefficients required"
+    "Cannot find all varying coefficients required"
   )
   # check if predictions without re terms can be performed
   # while random effects are excluded
