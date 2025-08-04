@@ -1123,6 +1123,25 @@ test_that("NAs are allowed in unused interval censoring variables", {
   )
 })
 
+test_that("Stan data for re predictor terms is correct", {
+  dat <- data.frame(
+    y = rnorm(100, mean = rep(1:10, each = 10)),
+    x = rnorm(100), gr = rep(1:10, each = 10),
+    sub = sample(c(TRUE, FALSE), 100, TRUE)
+  )
+
+  bform <- bf(y ~ x + (1 + x | gr), sigma ~ re(gr, coef = "x"))
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jsub_1, as.array(dat$gr))
+
+  bform <- bf(y ~ (1|gr)) +
+    bf(x | subset(sub) ~ (1|gr) + re(gr, resp = "y")) +
+    set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jsub_1_x, as.array(dat$gr[dat$sub]))
+  expect_equal(sdata$Jsub_1_y, as.array(dat$gr))
+})
+
 test_that("drop_unused_factor levels works correctly", {
   dat <- data.frame(y = rnorm(10), x = factor(c("a", "b"), levels = c("a", "b", "c")))
 

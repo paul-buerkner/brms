@@ -426,7 +426,7 @@ get_sp_vars <- function(x, type, name = NULL) {
 # @param x a formula, brmsterms, or brmsframe object
 # @return a data.frame with one row per special term
 # TODO: refactor to store in long format to avoid several list columns?
-#   or go full out on list columns with one column per term predictor type?
+#   or go full out on list columns with one column per predictor type?
 frame_sp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
@@ -608,6 +608,26 @@ get_me_group_vars <- function(x) {
   out <- lapply(uni_me, eval2)
   out <- ufrom_list(out, "gr")
   out[nzchar(out)]
+}
+
+# extract reframe belonging to the unique re() predictor terms
+get_uni_re_reframe <- function(x, reframe, unique_id = FALSE) {
+  stopifnot(is.reframe(reframe))
+  uni_re <- unique(ulapply(get_effect(x, "sp"), attr, "uni_re"))
+  if (!length(uni_re)) {
+    return(empty_reframe())
+  }
+  out <- vector("list", length(uni_re))
+  for (i in seq_along(uni_re)) {
+    re_term <- eval2(uni_re[i])
+    cols <- c("coef", "resp", "dpar", "nlpar")
+    out[[i]] <- subset2(reframe, group = re_term$term, ls = re_term[cols])
+  }
+  out <- Reduce(rbind, out)
+  if (unique_id) {
+    out <- out[!duplicated(out$id), ]
+  }
+  out
 }
 
 # get the design matrix of special effects terms

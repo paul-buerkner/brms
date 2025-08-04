@@ -297,7 +297,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
         new_re <- rep(NA, length(spframe$calls_re[[i]]))
         for (j in seq_along(spframe$calls_re[[i]])) {
           # the ordering is in reference to the unique re terms in the formula
-          k <- which_rows_reframe(spframe$reframe[[i]][j, ], reframe)
+          k <- which_rows_reframe(reframe, spframe$reframe[[i]][j, ])
           stopifnot(length(k) == 1L)
           new_re[j] <- paste0("r_", k, "[, Jr_", k, ", drop = FALSE]")
         }
@@ -458,7 +458,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, prep_re = list(),
     for (i in seq_rows(reframe)) {
       rf <- reframe[i, ]
       pr <- prep_re[[rf$gr]]
-      select <- which_rows_reframe(rf, pr$reframe)
+      select <- which_rows_reframe(pr$reframe, rf)
       nlevels <- length(pr$levels)
       out$r[[i]] <- subset_matrix_ranefs(pr$rdraws, select, nlevels)
       # the order of levels in pr$draws follows that of pr$levels
@@ -658,6 +658,7 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
         "You can control saving those coefficients via 'save_pars()'."
       )
     }
+
     # only prepare predictions of effects specified in the new formula
     used_rpars <- which_rows_reframe(old_reframe_g, reframe_g)
     used_rpars <- outer(seq_len(nlevels), (used_rpars - 1) * nlevels, "+")
@@ -678,6 +679,15 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
       gf <- sdata[paste0("J_", idresp)]
       weights <- list(rep(1, length(gf[[1]])))
     }
+    if (isNULL(gf)) {
+      # missing J sdata may happen for re predictor terms
+      # since those need random effects of other model components
+      # the group index information then needs to be extracted from J_sub
+      id <- reframe_g$id[1]
+      idresp <- paste0(id, usc(resp))
+      gf <- sdata[paste0("Jsub_", idresp)]
+    }
+
     # generate draws for new levels
     args_new_rdraws <- nlist(
       reframe = reframe_g, gf, used_levels = used_levels_g,
@@ -1103,7 +1113,7 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
 # @param draws optional matrix of draws from all model parameters
 # @return a matrix of draws for new group levels
 get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
-                             sample_new_levels, draws = NULL) {
+                           sample_new_levels, draws = NULL) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   g <- unique(reframe$group)

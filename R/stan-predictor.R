@@ -469,6 +469,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   stopifnot(is.reframe(reframe))
   IDs <- unique(reframe$id)
   out <- list()
+
   # special handling of student-t group effects as their 'df' parameters
   # are defined on a per-group basis instead of a per-ID basis
   reframe_t <- subset_reframe_dist(reframe, "student")
@@ -497,12 +498,42 @@ stan_re <- function(bframe, prior, normalize, ...) {
       )
     }
   }
+
   # the ID syntax requires group-level effects to be evaluated separately
   tmp <- lapply(
     IDs, .stan_re, bframe = bframe, prior = prior,
     normalize = normalize, ...
   )
   out <- collapse_lists(ls = c(list(out), tmp))
+
+  # define group indicators for re predictor terms
+  # They need to be separate from the J_<id>_* data because model components
+  # may be subsetted differently, leading to the requirement of cross-formula
+  # referencing of observations.
+  uni_re_reframe <- get_uni_re_reframe(bframe, reframe, unique_id = TRUE)
+  for (i in seq_rows(uni_re_reframe)) {
+    id <- uni_re_reframe$id[i]
+    if (is.mvbrmsframe(bframe)) {
+      # multivariate model
+      resps <- bframe$responses
+      str_add(out$data) <- "  // group indicators for re predictor terms\n"
+      str_add(out$data) <- cglue(
+        "  array[N_{resps}] int<lower=1> Jsub_{id}_{resps};\n"
+      )
+      str_add(out$pll_args) <- cglue(
+        ", data array[] int Jsub_{id}_{resps}"
+      )
+    } else {
+      # univariate model
+      str_add(out$data) <- glue(
+        "  // group indicator for re predictor terms\n",
+        "  array[N] int<lower=1> Jsub_{id};\n"
+      )
+      str_add(out$pll_args) <- glue(
+        ", data array[] int Jsub_{id}"
+      )
+    }
+  }
   out
 }
 
@@ -991,12 +1022,12 @@ stan_sp <- function(bframe, prior, stanvars, threads, normalize, ...) {
     if (!is.null(spframe$calls_re[[i]])) {
       r <- spframe$reframe[[i]]
       if (NROW(r) < length(spframe$calls_re[[i]])) {
-        stop2("Cannot find all varying coefficients required in ", 
+        stop2("Cannot find all varying coefficients required in ",
               spframe$joint_call[[i]], ".")
       }
       idp <- paste0(r$id, usc(combine_prefix(r)))
-      idresp <- paste0(r$id, usc(r$resp))
-      new_re <- glue("r_{idp}_{r$cn}[J_{idresp}{n}]")
+      Jsub <- paste0("Jsub_", r$id, resp)
+      new_re <- glue("r_{idp}_{r$cn}[{Jsub}{n}]")
       eta <- rename(eta, spframe$calls_re[[i]], new_re)
     }
     if (spframe$Ic[i] > 0) {

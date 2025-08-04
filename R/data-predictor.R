@@ -330,10 +330,14 @@ data_gr_local <- function(bframe, data) {
 }
 
 # prepare global data for each group-level-ID
-data_gr_global <- function(bframe, data2) {
+data_gr_global <- function(bframe, data, data2) {
   stopifnot(is.anybrmsframe(bframe))
   out <- list()
   reframe <- bframe$frame$re
+  if (!NROW(reframe)) {
+    return(out)
+  }
+
   for (id in unique(reframe$id)) {
     tmp <- list()
     id_reframe <- subset2(reframe, id = id)
@@ -351,6 +355,7 @@ data_gr_global <- function(bframe, data2) {
       tmp$Nby <- length(bylevels)
       tmp$Jby <- as.array(Jby)
     }
+
     # prepare within-group covariance matrices
     cov <- id_reframe$cov[1]
     if (nzchar(cov)) {
@@ -367,6 +372,51 @@ data_gr_global <- function(bframe, data2) {
     }
     names(tmp) <- paste0(names(tmp), "_", id)
     c(out) <- tmp
+  }
+
+  # define group indicators for re predictor terms
+  # They need to be separate from the J_<id>_* data because model components
+  # may be subsetted differently, leading to the requirement of cross-formula
+  # referencing of observations.
+  uni_re_reframe <- get_uni_re_reframe(bframe, reframe, unique_id = TRUE)
+  for (i in seq_rows(uni_re_reframe)) {
+    # prepare J as in data_gr_local()
+    g <- uni_re_reframe$gcall[[i]]$groups[1]
+    gdata <- get(g, data)
+    group <- uni_re_reframe$group[i]
+    levels <- attr(reframe, "levels")[[group]]
+    J <- match(gdata, levels)
+    if (anyNA(J)) {
+      # occurs for new levels only
+      new_gdata <- gdata[!gdata %in% levels]
+      new_levels <- unique(new_gdata)
+      J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
+    }
+    id <- uni_re_reframe$id[i]
+    if (is.mvbrmsframe(bframe)) {
+      # multivariate model
+      for (resp in names(bframe$terms)) {
+        Jsub <- J
+        bframe_resp <- bframe$terms[[resp]]
+        if (is.formula(bframe_resp$adforms$subset)) {
+          # prepare subset as in subset_data()
+          subset <- as.logical(get_ad_values(bframe_resp, "subset", "subset", data))
+          subset[is.na(subset)] <- TRUE
+          Jsub <- Jsub[subset]
+        }
+        out[[paste0("Jsub_", id, "_", resp)]] <- as.array(Jsub)
+      }
+    } else {
+      # univariate model
+      Jsub <- J
+      if (is.formula(bframe$adforms$subset)) {
+        # prepare subset as in subset_data()
+        subset <- as.logical(get_ad_values(bframe, "subset", "subset", data))
+        subset[is.na(subset)] <- TRUE
+        Jsub <- Jsub[subset]
+      }
+      out[[paste0("Jsub_", id)]] <- as.array(Jsub)
+    }
   }
   out
 }

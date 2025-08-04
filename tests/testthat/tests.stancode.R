@@ -1165,14 +1165,14 @@ test_that("Stan code for re predictor terms is correct", {
 
   bform <- bf(y ~ x + (1 + x|gr), sigma ~ re(gr, coef = "x"))
   scode <- make_stancode(bform, dat)
-  expect_match2(scode, "sigma[n] += (bsp_sigma[1]) * r_1_2[J_1[n]];")
+  expect_match2(scode, "sigma[n] += (bsp_sigma[1]) * r_1_2[Jsub_1[n]];")
 
   bform <- bf(y ~ (1|gr)) +
     bf(x ~ (1|gr) + re(gr, resp = "y")) +
     set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
   expect_match2(scode,
-    "mu_x[n] += (bsp_x[1]) * r_1_y_1[J_1_y[n]] + r_2_x_1[J_2_x[n]] * Z_2_x_1[n];"
+    "mu_x[n] += (bsp_x[1]) * r_1_y_1[Jsub_1_x[n]] + r_2_x_1[J_2_x[n]] * Z_2_x_1[n];"
   )
 
   bform <- bf(
@@ -1183,8 +1183,8 @@ test_that("Stan code for re predictor terms is correct", {
     nl = TRUE
   )
   scode <- make_stancode(bform, dat)
-  expect_match2(scode, "nlp_a[n] += (bsp_a[1]) * r_1_sigma_1[J_1[n]] +")
-  expect_match2(scode, "nlp_b[n] += (bsp_b[1]) * r_1_a_3[J_1[n]] +")
+  expect_match2(scode, "nlp_a[n] += (bsp_a[1]) * r_1_sigma_1[Jsub_1[n]] +")
+  expect_match2(scode, "nlp_b[n] += (bsp_b[1]) * r_1_a_3[Jsub_1[n]] +")
 
   bform <- bf(y ~ x + (1 + x|gr), sigma ~ re(gr, coef = "z"))
   expect_error(

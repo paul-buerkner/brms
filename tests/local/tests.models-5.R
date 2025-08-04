@@ -198,7 +198,7 @@ test_that("alternative algorithms can be used", suppressWarnings({
   expect_is(fit, "brmsfit")
 }))
 
-test_that("Models with re-predictor terms yield sensible outputs", {
+test_that("Univariate models with re-predictor terms yield sensible outputs", {
   fit <- brm(
     bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
       ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
@@ -229,6 +229,51 @@ test_that("Models with re-predictor terms yield sensible outputs", {
   # check if predictions without re terms can be performed
   # while random effects are excluded
   ce <- conditional_effects(fit, "dev", dpar = "mu", re_formula = NA)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
+})
+
+test_that("Multivariate models with re-predictor terms yield sensible outputs", {
+  # example provided by Luna Fazio
+  gen_df = function(
+    num_people = 100, num_followup = 20,
+    mu_sd = 1, sd_sd = 0.25, # emo randeff pars
+    b_mure = 1, b_sdre = 1, # randeff slopes
+    emo_b0 = 0, neuro_b0 = 0, neuro_sd = 0.5
+  ) {
+    df = data.frame(
+      id = rep(1:num_people, each = num_followup),
+      time = rep(1:num_followup, num_people),
+      emo = NA_real_, neuro = NA_real_
+    )
+    df$first = df$time == 1 # for subsetting
+    raneff_mu = rnorm(num_people, 0, mu_sd)
+    raneff_sd = rnorm(num_people, 0, sd_sd)
+    for(i in 1:num_people) {
+      df[df$id == i, "emo"] = rnorm(
+        num_followup, emo_b0 + raneff_mu[i], exp(raneff_sd[i])
+      )
+      df[df$id == i, "neuro"] = rnorm(
+        1, neuro_b0 + b_mure*raneff_mu[i] + b_sdre*raneff_sd[i],
+        neuro_sd
+      )
+    }
+    return(df)
+  }
+
+  set.seed(7345)
+  df <- gen_df()
+
+  fit <- brm(
+    bf(emo ~ (1|id), sigma ~ (1|id)) +
+      bf(neuro | subset(first) ~ re(id, resp = "emo") + re(id, resp = "emo", dpar = "sigma")) +
+      set_rescor(FALSE),
+    data = df
+  )
+
+  summary(fit)
+  expect_range(loo(fit, resp = "emo")$estimates[3, 1], 5680, 5775)
+  expect_range(SW(loo(fit, resp = "neuro")$estimates[3, 1]), 130, 180)
+  ce <- conditional_effects(fit, resp = "neuro", re_formula = NULL)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
