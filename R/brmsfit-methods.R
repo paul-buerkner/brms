@@ -604,3 +604,28 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
 expose_functions <- function(x, ...) {
   UseMethod("expose_functions")
 }
+
+#' Extract Initial Values Used for Each Chain
+#'
+#' Extract the initial values used by Stan for each chain.
+#' This is available if the model was fitted with
+#' \code{rstan} backend.
+#'
+#' @param object A brmsfit object.
+#' @param ... Currently ignored.
+#' @return A list of initial values for each chain (if available).
+#' @export
+get_inits.brmsfit <- function(object, ...) {
+
+  if (object$backend == "rstan") {
+    return(rstan::get_inits(fit <- object$fit))
+  } else {
+    stop("Retrieving initial values is only supported for rstan backend.")
+  }
+
+}
+
+#' @export
+get_inits <- function(object, ...) {
+  UseMethod("get_inits")
+}
