@@ -19,7 +19,6 @@ fit3 <- rename_pars(brms:::brmsfit_example3)
 fit4 <- rename_pars(brms:::brmsfit_example4)
 fit5 <- rename_pars(brms:::brmsfit_example5)
 fit6 <- rename_pars(brms:::brmsfit_example6)
-fit7 <- rename_pars(brms:::brmsfit_example7)
 
 # some high level info about the data sets
 nobs <- 40
@@ -380,8 +379,9 @@ test_that("get_inits has reasonable ouputs", {
   expect_type(inits1, "list")
   expect_length(inits1, nchains(fit1))
 
-  # cmdstanr backend
-  expect_error(get_inits(fit7), "Retrieving initial values is only supported for rstan backend.")
+  inits2 <- get_inits(fit2)
+  expect_type(inits2, "list")
+  expect_length(inits2, nchains(fit2))
 })
 
 test_that("hypothesis has reasonable ouputs", {

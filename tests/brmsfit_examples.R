@@ -85,18 +85,6 @@ brmsfit_example6 <- brm(
   stan_model_args = stan_model_args, rename = FALSE
 )
 
-brmsfit_example7 <- brm(
-  bf(count ~ Trt*Age + mo(Exp) + s(Age) + volume +
-       offset(Age) + (1+Trt|visit) + arma(visit, patient),
-     sigma ~ Trt),
-  data = dat, family = student(),
-  prior = set_prior("normal(0,2)", class = "b") +
-    set_prior("cauchy(0,2)", class = "sd") +
-    set_prior("normal(0,3)", dpar = "sigma"),
-  sample_prior = TRUE,
-  warmup = warmup, iter = iter, chains = chains,
-  backend = "cmdstanr", rename = FALSE
-)
 
 # easy loading of unchanged models to avoid refitting all of them
 # brmsfit_example1 <- brms:::brmsfit_example1
@@ -105,10 +93,9 @@ brmsfit_example7 <- brm(
 # brmsfit_example4 <- brms:::brmsfit_example4
 # brmsfit_example5 <- brms:::brmsfit_example5
 # brmsfit_example6 <- brms:::brmsfit_example6
-# brmsfit_example7 <- brms:::brmsfit_example7
 
 usethis::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3,
   brmsfit_example4, brmsfit_example5, brmsfit_example6,
-  brmsfit_example7, internal = TRUE, overwrite = TRUE
+  internal = TRUE, overwrite = TRUE
 )
