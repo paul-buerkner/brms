@@ -608,24 +608,27 @@ expose_functions <- function(x, ...) {
 #' Extract Initial Values Used for Each Chain
 #'
 #' Extract the initial values used by Stan for each chain.
-#' This is available if the model was fitted with
-#' \code{rstan} backend.
+#' This is currently only available if the model was fitted with
+#' the \code{rstan} backend.
 #'
-#' @param object A brmsfit object.
+#' @param x A \code{brmsfit} object.
 #' @param ... Currently ignored.
-#' @return A list of initial values for each chain (if available).
+#' @return The initial values (either user-specified or generated randomly) for
+#'  all chains. This is a list with one component per chain. Each component is
+#'  a named list containing the initial values for each parameter for the
+#'  corresponding chain.
 #' @export
-get_inits.brmsfit <- function(object, ...) {
-
-  if (object$backend == "rstan") {
-    return(rstan::get_inits(fit <- object$fit))
+inits.brmsfit <- function(x, ...) {
+  if (x$backend == "rstan") {
+    out <- rstan::get_inits(x$fit)
   } else {
-    stop("Retrieving initial values is only supported for rstan backend.")
+    stop2("Retrieving initial values is currently only supported for rstan backend.")
   }
-
+  out
 }
 
+#' @rdname inits.brmsfit
 #' @export
-get_inits <- function(object, ...) {
-  UseMethod("get_inits")
+inits <- function(x, ...) {
+  UseMethod("inits")
 }

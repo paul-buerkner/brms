@@ -373,13 +373,13 @@ test_that("formula has reasonable ouputs", {
   expect_true(is.brmsformula(formula(fit1)))
 })
 
-test_that("get_inits has reasonable ouputs", {
+test_that("inits has reasonable ouputs", {
   # rstan backend
-  inits1 <- get_inits(fit1)
+  inits1 <- inits(fit1)
   expect_type(inits1, "list")
   expect_length(inits1, nchains(fit1))
 
-  inits2 <- get_inits(fit2)
+  inits2 <- inits(fit2)
   expect_type(inits2, "list")
   expect_length(inits2, nchains(fit2))
 })
