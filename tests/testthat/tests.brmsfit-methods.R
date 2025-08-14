@@ -373,6 +373,17 @@ test_that("formula has reasonable ouputs", {
   expect_true(is.brmsformula(formula(fit1)))
 })
 
+test_that("inits has reasonable ouputs", {
+  # rstan backend
+  inits1 <- inits(fit1)
+  expect_type(inits1, "list")
+  expect_length(inits1, nchains(fit1))
+
+  inits2 <- inits(fit2)
+  expect_type(inits2, "list")
+  expect_length(inits2, nchains(fit2))
+})
+
 test_that("hypothesis has reasonable ouputs", {
   hyp <- hypothesis(fit1, c("Age > Trt1", "Trt1:Age = -1"))
   expect_equal(dim(hyp$hypothesis), c(2, 8))
