@@ -447,8 +447,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
     } else if (to < point) {
       to <- point + sd(x) / 4
     }
-    dens <- do_call(density, c(nlist(x, from, to), dots))
-    return(spline(dens$x, dens$y, xout = point)$y)
+    logspline::dlogspline(point, logspline::logspline(x, lbound = from, ubound = to))
   }
 
   out <- ulapply(point, eval_density, x = x)
