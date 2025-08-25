@@ -62,8 +62,8 @@ test_that("autocorrelation matrices are computed correctly", {
 })
 
 test_that("evidence_ratio returns expected results", {
-  ps <- rnorm(100, mean = 0.1, sd = 0.3)
-  prs <- rnorm(100)
+  ps <- rnorm(1000, mean = 0.1, sd = 0.3)
+  prs <- rnorm(1000)
   expect_true(evidence_ratio(ps, prior_samples = prs) > 1)
   expect_true(is.na(evidence_ratio(ps)))
   expect_true(evidence_ratio(ps, cut = 0, wsign = "greater") > 1)
