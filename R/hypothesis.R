@@ -31,8 +31,8 @@
 #'  output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 #'  respectively.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
-#'  to make results reproducible. This is currently only relevant for point 
-#'  hypotheses that scope over at least two parameters (see Details). 
+#'  to make results reproducible. This is currently only relevant for point
+#'  hypotheses that scope over at least two parameters (see Details).
 #' @param ... Currently ignored.
 #'
 #' @details Among others, \code{hypothesis} computes an evidence ratio
@@ -52,23 +52,23 @@
 #'   related to the hypothesis must have proper priors and argument
 #'   \code{sample_prior} of function \code{brm} must be set to \code{"yes"}.
 #'   Otherwise \code{Evid.Ratio} (and \code{Post.Prob}) will be \code{NA}.
-#'   
-#'   Please note that the Savage-Dickey density ratio as implemented here provides 
-#'   only a very basic test of point hypotheses. It is recommended that you use 
-#'   bridge sampling instead (via \code{\link{bayes_factor}} which relies on the 
-#'   \pkg{bridgesampling} package). When interpreting Bayes factors for point 
-#'   hypotheses, make sure that your priors are reasonable and carefully chosen, 
-#'   as the result will depend heavily on the priors. In particular, avoid using 
-#'   default priors. Additionally, note that point hypotheses that scope over more 
+#'
+#'   Please note that the Savage-Dickey density ratio as implemented here provides
+#'   only a very basic test of point hypotheses. It is recommended that you use
+#'   bridge sampling instead (via \code{\link{bayes_factor}} which relies on the
+#'   \pkg{bridgesampling} package). When interpreting Bayes factors for point
+#'   hypotheses, make sure that your priors are reasonable and carefully chosen,
+#'   as the result will depend heavily on the priors. In particular, avoid using
+#'   default priors. Additionally, note that point hypotheses that scope over more
 #'   than one parameter (e.g., when testing equality between two parameters) involve
-#'   random sampling of the priors over those parameters (to accommodate the 
-#'   the assumption that priors for different parameters are independent of each other). 
-#'   This introduces an element of randomness into such hypothesis tests. Consider 
-#'   repeating the test to assure results are sufficiently stable, and use the argument 
-#'   \code{seed} for reproducibility. Finally, note that, for technical reasons, we 
-#'   cannot sample from priors of certain parameters classes. Most notably, these include 
+#'   random sampling of the priors over those parameters (to accommodate the
+#'   the assumption that priors for different parameters are independent of each other).
+#'   This introduces an element of randomness into such hypothesis tests. Consider
+#'   repeating the test to assure results are sufficiently stable, and use the argument
+#'   \code{seed} for reproducibility. Finally, note that, for technical reasons, we
+#'   cannot sample from priors of certain parameters classes. Most notably, these include
 #'   overall intercept parameters (prior class \code{"Intercept"}) as well as group-level
-#'   coefficients. 
+#'   coefficients.
 #'
 #'   For one-sided hypotheses, the \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
 #'   small or large evidence, respectively, in favor of the tested hypothesis.
@@ -443,24 +443,16 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
 #' density_ratio(x, y, point = c(0, 1))
 #'
 #' @export
-density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
+density_ratio <- function(x, y = NULL, point = 0, ...) {
   require_package("logspline")
   x <- as.numeric(x)
   point <- as.numeric(point)
   dots <- list(...)
-  dots <- dots[names(dots) %in% names(formals("density.default"))]
-  dots$n <- n
+  dots <- dots[names(dots) %in% names(formals("logspline"))]
 
   eval_density <- function(x, point) {
-    # evaluate density of x at point
-    from <- min(x)
-    to <- max(x)
-    if (from > point) {
-      from <- point - sd(x) / 4
-    } else if (to < point) {
-      to <- point + sd(x) / 4
-    }
-    logspline::dlogspline(point, logspline::logspline(x, lbound = from, ubound = to))
+    logspline_density <- logspline::logspline(x)
+    logspline::dlogspline(point, logspline_density)
   }
 
   out <- ulapply(point, eval_density, x = x)
