@@ -447,8 +447,6 @@ density_ratio <- function(x, y = NULL, point = 0, ...) {
   require_package("logspline")
   x <- as.numeric(x)
   point <- as.numeric(point)
-  dots <- list(...)
-  dots <- dots[names(dots) %in% names(formals("logspline"))]
 
   eval_density <- function(x, point) {
     logspline_density <- logspline::logspline(x)
