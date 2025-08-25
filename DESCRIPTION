@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.21.1
-Date: 2024-03-23
+Version: 2.22.13
+Date: 2025-06-27
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -18,7 +18,13 @@ Authors@R:
       person("Hayden", "Rabel", role = c("ctb")),
       person("Simon C.", "Mills", role = c("ctb")),
       person("Stephen", "Wild", role = c("ctb")),
-      person("Ven", "Popov", role = c("ctb")))
+      person("Ven", "Popov", role = c("ctb")),
+      person("Ioannis", "Kosmidis", role = c("ctb")),
+      person("Ben", "Schneider", role = c("ctb")),
+      person("Noa", "Kallioinen", role = c("ctb")),
+      person("Wellington J.", "Silva", role = c("ctb")),
+      person("Luiz", "Carvalho", role = c("ctb")),
+      person("Sermet", "Pekin", role = c("ctb")))
 Depends:
     R (>= 3.6.0),
     Rcpp (>= 0.12.0),
@@ -26,8 +32,8 @@ Depends:
 Imports:
     rstan (>= 2.29.0),
     ggplot2 (>= 2.0.0),
-    loo (>= 2.3.1),
-    posterior (>= 1.0.0),
+    loo (>= 2.8.0),
+    posterior (>= 1.6.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
     rstantools (>= 2.1.1),
@@ -48,10 +54,11 @@ Imports:
     grDevices,
     backports
 Suggests:
-    testthat (>= 0.9.1),
+    testthat (>= 3.1.9),
     emmeans (>= 1.4.2),
     cmdstanr (>= 0.5.0),
     projpred (>= 2.0.0),
+    priorsense (>= 1.0.0),
     shinystan (>= 2.4.0),
     splines2 (>= 0.5.0),
     RWiener,
@@ -69,11 +76,14 @@ Suggests:
     logspline,
     digest,
     diffobj,
+    betareg,
     R.rsp,
     gtable,
     shiny,
     knitr,
     rmarkdown,
+    ragg,
+    colorspace
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions
     and link functions are supported, allowing users to fit -- among others --
@@ -94,11 +104,12 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
 LazyData: true
 NeedsCompilation: no
 License: GPL-2
-URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, https://paul-buerkner.github.io/brms/
+URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, https://paulbuerkner.com/brms/
 BugReports: https://github.com/paul-buerkner/brms/issues
 Additional_repositories:
-    https://mc-stan.org/r-packages/
+    https://stan-dev.r-universe.dev/
+SystemRequirements: pngquant
 VignetteBuilder:
     knitr,
     R.rsp
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

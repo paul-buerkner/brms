@@ -124,7 +124,7 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   N <- choose_N(object)
-  out <- plapply(seq_len(N), log_lik_fun, cores = cores, prep = object)
+  out <- plapply(seq_len(N), log_lik_fun, .cores = cores, prep = object)
   out <- do_call(cbind, out)
   colnames(out) <- NULL
   old_order <- object$old_order
@@ -149,7 +149,7 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 }
 
 # All log_lik_<family> functions have the same arguments structure
-# @param i index of the observatio for which to compute log-lik values
+# @param i index of the observation for which to compute log-lik values
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @return a vector of length prep$ndraws containing the pointwise
@@ -630,6 +630,19 @@ log_lik_beta <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_xbeta <- function(i, prep) {
+  args <- list(
+    mu = get_dpar(prep, "mu", i = i),
+    phi = get_dpar(prep, "phi", i = i),
+    nu = get_dpar(prep, "kappa", i = i)
+  )
+  out <- log_lik_censor(dist = "xbeta", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(
+    out, cdf = pxbeta, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_von_mises <- function(i, prep) {
   args <- list(
     mu = get_dpar(prep, "mu", i),
@@ -821,6 +834,15 @@ log_lik_multinomial <- function(i, prep) {
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   out <- dmultinomial(prep$data$Y[i, ], eta = eta, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
+log_lik_dirichlet_multinomial <- function(i, prep) {
+  stopifnot(prep$family$link == "logit")
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
+  phi <- get_dpar(prep, "phi", i = i)
+  out <- ddirichletmultinomial(prep$data$Y[i, ], eta = eta, phi = phi, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
 

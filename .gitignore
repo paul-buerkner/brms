@@ -1,12 +1,26 @@
-Meta
+# Meta and release
+Meta/
+CRAN-release
+cran-comments.md
+
+# RStudio and user-specific files
 .Rproj.user
 .Rhistory
 .RData
-CRAN-release
+.RProfile
+.DS_Store
+
+# Test artifacts and local test models
 tests/testthat/Rplots.pdf
-cran-comments.md
+tests/local/Rplots.pdf
 tests/local/models_0.8.0.Rda
 tests/local/models_0.10.0.Rda
 tests/local/models_1.2.0.Rda
-tests/local/Rplots.pdf
-/Meta/
+
+# Ignore folders or patterns
+ignore_*/
+
+# Optional: temp and OS files
+*.tmp
+*.swp
+*~

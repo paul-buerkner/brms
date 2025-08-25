@@ -211,6 +211,26 @@ test_that("posterior_predict for bernoulli and beta models works correctly", {
   expect_equal(length(pred), ns)
 })
 
+test_that("posterior_predict for xbeta models works correctly", {
+  skip_if_not_installed("betareg")
+
+  ns <- 17
+  nobs <- 10
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = brms:::inv_logit(matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs)),
+    phi = rgamma(ns, 4),
+    kappa = rexp(ns, 5)
+  )
+  i <- sample(1:nobs, 1)
+
+  pred <- brms:::posterior_predict_xbeta(i, prep = prep)
+  expect_equal(length(pred), ns)
+
+  pred <- brms:::posterior_predict_xbeta(i, prep = prep)
+  expect_equal(length(pred), ns)
+})
+
 test_that("posterior_predict for circular models runs without errors", {
   ns <- 15
   nobs <- 10
@@ -326,6 +346,12 @@ test_that("posterior_predict for categorical and related models runs without err
   prep$data$trials <- sample(1:20, nobs)
   prep$family <- multinomial()
   pred <- brms:::posterior_predict_multinomial(i = sample(1:nobs, 1), prep = prep)
+  expect_equal(dim(pred), c(ns, ncat))
+
+  prep$data$trials <- sample(1:20, nobs)
+  prep$dpars$phi <- rexp(ns, 1)
+  prep$family <- dirichlet_multinomial()
+  pred <- brms:::posterior_predict_dirichlet_multinomial(i = sample(1:nobs, 1), prep = prep)
   expect_equal(dim(pred), c(ns, ncat))
 
   prep$dpars$phi <- rexp(ns, 1)

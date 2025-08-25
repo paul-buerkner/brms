@@ -55,7 +55,7 @@
 #' # fit the model using brms
 #' fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #' summary(fit_imp2)
-#' plot(fit_imp2, pars = "^b_")
+#' plot(fit_imp2, variable = "^b_", regex = TRUE)
 #'
 #' # investigate convergence of the original models
 #' library(posterior)
@@ -67,7 +67,7 @@
 #' # use the future package for parallelization
 #' library(future)
 #' plan(multisession, workers = 4)
-#' fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+#' fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #' summary(fit_imp3)
 #' }
 #'
@@ -155,26 +155,12 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     seq_along(data), .brm, ..., future.seed = TRUE
   )
 
-  # commented out for now as it does not work reliable on all systems
-  # TODO: replace with a viable post-processing solution
-  # rhats <- vector("list", length(data))
-  # for (i in seq_along(data)) {
-  #   if (algorithm == "sampling") {
-  #     rhats[[i]] <- data.frame(as.list(rhat(fits[[i]])))
-  #     if (any(rhats[[i]] > 1.05, na.rm = TRUE)) {
-  #       warning2("Imputed model ", i, " did not converge. ",
-  #                "See brmsfit$rhats for details.")
-  #     }
-  #   }
-  # }
-
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
     attr(fits$data, "data_name") <- data_name
+    # attribute to remember how many imputed datasets where used
+    attr(fits, "nimp") <- length(data)
     class(fits) <- c("brmsfit_multiple", class(fits))
-    # if (algorithm == "sampling") {
-    #   fits$rhats <- do_call(rbind, rhats)
-    # }
   }
   if (!is.null(file)) {
     fits <- write_brmsfit(fits, file, compress = file_compress)

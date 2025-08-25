@@ -16,7 +16,7 @@
 #'  If \code{NULL} all draws are used. If not specified,
 #'  the number of posterior draws is chosen automatically.
 #'  Ignored if \code{draw_ids} is not \code{NULL}.
-#' @param prefix The prefix of the \pkg{bayesplot} function to be applied. 
+#' @param prefix The prefix of the \pkg{bayesplot} function to be applied.
 #'  Either `"ppc"` (posterior predictive check; the default)
 #'  or `"ppd"` (posterior predictive distribution), the latter being the same
 #'  as the former except that the observed data is not shown for `"ppd"`.
@@ -53,7 +53,7 @@
 #'
 #' ## get an overview of all valid types
 #' pp_check(fit, type = "xyz")
-#' 
+#'
 #' ## get a plot without the observed data
 #' pp_check(fit, prefix = "ppd")
 #' }
@@ -62,7 +62,7 @@
 #' @export pp_check
 #' @export
 pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd"),
-                             group = NULL, x = NULL, newdata = NULL, resp = NULL, 
+                             group = NULL, x = NULL, newdata = NULL, resp = NULL,
                              draw_ids = NULL, nsamples = NULL, subset = NULL, ...) {
   dots <- list(...)
   if (missing(type)) {
@@ -124,7 +124,8 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
       "error_scatter_avg", "error_scatter_avg_vs_x",
       "intervals", "intervals_grouped",
       "loo_intervals", "loo_pit", "loo_pit_overlay",
-      "loo_pit_qq", "loo_ribbon", 
+      "loo_pit_qq", "loo_ribbon",
+      "loo_pit_ecdf",
       'pit_ecdf', 'pit_ecdf_grouped',
       "ribbon", "ribbon_grouped",
       "rootogram", "scatter_avg", "scatter_avg_grouped",
@@ -147,7 +148,7 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
   y <- NULL
   if (prefix == "ppc") {
     # y is ignored in prefix 'ppd' plots
-    y <- get_y(object, resp = resp, newdata = newdata, ...) 
+    y <- get_y(object, resp = resp, newdata = newdata, ...)
   }
   draw_ids <- validate_draw_ids(object, draw_ids, ndraws)
   pred_args <- list(
@@ -167,7 +168,7 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
     object, newdata = newdata, resp = resp,
     re_formula = NA, check_response = TRUE, ...
   )
-  
+
   # prepare plotting arguments
   ppc_args <- list()
   if (prefix == "ppc") {
@@ -185,25 +186,33 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
       ppc_args$x <- as.numeric(ppc_args$x)
     }
   }
-  if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
-    ppc_args$psis_object <- do_call(
-      compute_loo, c(pred_args, criterion = "psis")
-    )
-  }
   if ("lw" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
-    ppc_args$lw <- weights(
-      do_call(compute_loo, c(pred_args, criterion = "psis"))
-    )
+    # run loo instead of psis to allow for moment matching
+    loo_object <- do_call(loo, c(pred_args, save_psis = TRUE))
+    ppc_args$lw <- weights(loo_object$psis_object, log = TRUE)
+  } else if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
+    # some PPCs may only support 'psis_object' but not 'lw' for whatever reason
+    loo_object <- do_call(loo, c(pred_args, save_psis = TRUE))
+    ppc_args$psis_object <- loo_object$psis_object
   }
-  
+
   # censored responses are misleading when displayed in pp_check
   bterms <- brmsterms(object$formula)
   cens <- get_cens(bterms, data, resp = resp)
-  if (!is.null(cens) & type != 'km_overlay') {
-    warning2("Censored responses are not shown in 'pp_check'.")
-    take <- !cens
+  is_censoring_type <- type %in% c("km_overlay", "km_overlay_grouped")
+  if (!is.null(cens)) {
+    if (is_censoring_type) {
+      if (any(cens %in% c(-1, 2))) {
+        warning2("Left and interval censored responses are not included.")
+      }
+      take <- cens %in% c(0, 1)
+      ppc_args$status_y <- 1 - cens[take]
+    } else {
+      warning2("Censored responses are not included.")
+      take <- !cens
+    }
     if (!any(take)) {
-      stop2("No non-censored responses found.")
+      stop2("No valid responses found to include.")
     }
     ppc_args$y <- ppc_args$y[take]
     ppc_args$yrep <- ppc_args$yrep[, take, drop = FALSE]
@@ -213,20 +222,19 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
     if (!is.null(ppc_args$x)) {
       ppc_args$x <- ppc_args$x[take]
     }
-    if (!is.null(ppc_args$psis_object)) {
-      # tidier to re-compute with subset
-      psis_args <- c(pred_args, criterion = "psis")
-      psis_args$newdata <- data[take, ]
-      ppc_args$psis_object <- do_call(compute_loo, psis_args)
-    }
     if (!is.null(ppc_args$lw)) {
-      ppc_args$lw <- ppc_args$lw[,take]
+      ppc_args$lw <- ppc_args$lw[, take]
+    } else if (!is.null(ppc_args$psis_object)) {
+      ppc_args$psis_object <- subset(ppc_args$psis_object, take)
     }
+  } else if (is_censoring_type) {
+    # status_y is mandatory for some ppc types
+    ppc_args$status_y <- rep(1, length(ppc_args$y))
   }
-  
+
   # most ... arguments are meant for the prediction function
   for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
   ppc_args <- c(ppc_args, dots[!for_pred])
-  
+
   do_call(ppc_fun, ppc_args)
 }

@@ -217,7 +217,7 @@ as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
   # first subset variables then remove warmup as removing warmup
   # will take a lot of time when extracting many variables
   out <- subset_draws(out, variable = variable, regex = regex)
-  if (!inc_warmup) {
+  if (nvariables(out) > 0 && !inc_warmup) {
     nwarmup <- x@sim$warmup2[1] %||% 0
     warmup_ids <- seq_len(nwarmup)
     iteration_ids <- posterior::iteration_ids(out)

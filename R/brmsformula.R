@@ -438,7 +438,7 @@
 #'   \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
 #'   / hurdle families); \code{nu} (degrees of freedom parameter of the
 #'   \code{student} and \code{frechet} families); \code{phi} (precision
-#'   parameter of the \code{beta} and \code{zero_inflated_beta} families);
+#'   parameter of the \code{beta}, \code{zero_inflated_beta}, and \code{xbeta} families);
 #'   \code{kappa} (precision parameter of the \code{von_mises} family);
 #'   \code{beta} (mean parameter of the exponential component of the
 #'   \code{exgaussian} family); \code{quantile} (quantile parameter of the
@@ -1296,12 +1296,6 @@ validate_formula.brmsformula <- function(
       out$family$thres <- extract_thres_names(out, data)
       out$family$cats <- extract_cat_names(out, data)
     }
-    if (is.mixfamily(out$family)) {
-      # every mixture family needs to know about response categories
-      for (i in seq_along(out$family$mix)) {
-        out$family$mix[[i]]$thres <- out$family$thres
-      }
-    }
   }
   conv_cats_dpars <- conv_cats_dpars(out$family)
   if (conv_cats_dpars && !is.null(data)) {
@@ -1335,6 +1329,18 @@ validate_formula.brmsformula <- function(
       old_dp_dpars <- str_subset(out$family$dpars, paste0("^", dp))
       out$family$dpars <- setdiff(out$family$dpars, old_dp_dpars)
       out$family$dpars <- union(dp_dpars, out$family$dpars)
+    }
+  }
+  if (is_cox(out$family) && !is.null(data)) {
+    # for easy access of baseline hazards
+    out$family$bhaz <- extract_bhaz(out, data)
+  }
+  if (is.mixfamily(out$family)) {
+    # every mixture family needs to know about additional response information
+    for (i in seq_along(out$family$mix)) {
+      for (term in c("cats", "thres", "bhaz")) {
+        out$family$mix[[i]][[term]] <- out$family[[term]]
+      }
     }
   }
 

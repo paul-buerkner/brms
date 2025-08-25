@@ -1,3 +1,74 @@
+# brms 2.23
+
+### New Features
+
+* Specify a prior `tag` for use in prior sensitivity analysis
+via `priorsense` thanks to Kallioinen. (#1585)
+* Specify group-level prior weights via argument `pw` in multilevel
+`gr` and `mm` terms thanks to Ben Schneider. (#1719)
+* Fit extended-support Beta models via family `xbeta` 
+thanks to Ioannis Kosmidis. (#1698)
+* Add a `seed` argument to `loo_R2` thanks to Marco Colombo. (#1713)
+* Add family `dirichlet_multinomial` to fit overdispersed 
+multinomial data thanks to Tom Peatman. (#1729)
+* Add the `int_step` R function to match the corresponding Stan 
+function thanks to Daniel Sabanes Bove. (#1734)
+* Add a new global option `brms.cache_folder`, which allows users to define a 
+default directory for saving and loading cached brmsfit objects.
+Thanks to Sermet Pekin. (#1790)
+
+### Bug Fixes
+
+* Avoid the creation of zombie workers when executing `log_lik`
+in parallel thanks to Aki Vehtari and Noa Kallioinen. 
+For now, `log_lik` will use PSOCK clusters if run
+in parallel even on Unix systems. To avoid potential speed loss for small
+models, `log_lik` will not use `option(mc.cores)` anymore.
+These changes may be reverted once the underlying causes of this
+issue have been fixed. (#1658)
+* Align the definition of the R function `step()` with the definition in Stan,
+such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
+* Make `read_csv_as_stanfit()` store `adapt_delta` and `max_treedepth` values in
+`$control` so rstan can find these values. Thanks to Tristan Mahr (#1767).
+
+### Other Changes
+
+* Improve sampling efficiency of `beta_binomial` models. (#1703)
+
+# brms 2.22.0
+
+### New Features
+
+* Support different Gaussian process kernels in `gp` terms. (#234)
+* Support stratified `cox` models via the new addition term `bhaz`. (#1489)
+* Support futures for parallelization in the `cmdstanr` backend. (#1684)
+* Add method `loo_epred` thanks to Aki Vehtari. (#1641)
+* Add priorsense support via `create_priorsense_data.brmsfit` 
+thanks to Noa Kallioinen. (#1354)
+* Vectorize censored log likelihoods in the Stan code when possible. (#1657)
+* Force Stan to activate threading without altering the Stan code
+via argument `force` of function `threading`. (#1549)
+* Support moment matching `loo` prediction methods. (#1674)
+
+### Bug Fixes
+
+* Fix a bug that led to partially duplicated Stan code in multilevel terms
+thanks to Henrik Singmann. (#1651)
+* Fix problems with parallel executions of post-processing functions 
+sometimes leaving unused R instances behind. Thanks to Andrew Johnson,
+Aki Vehtari, and Noa Kallioinen. (#1658)
+* Fix several minor bugs. (#1648, #1644, #1672, #1642, #1634, #1666, #1664)
+
+### Other Changes
+
+* Refactor some of the internal code base to avoid evaluating
+many data-dependent quantities several times. (#1653)
+* Smartly access internal functions when evaluating non-linear formulas. (#1635)
+* Improve the documentation in several places.
+* Make argument `loo` optional in `loo_moment_match`.
+* Change the output format of `loo_predict` and `loo_linpred` to be
+more consistent with other post-processing functions.
+
 # brms 2.21.0
 
 ### New Features

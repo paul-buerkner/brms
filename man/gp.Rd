@@ -24,11 +24,13 @@ each predictor. In the numeric vector case, the elements multiply
 the values returned by the GP. In the factor variable
 case, a separate GP is fitted for each factor level.}
 
-\item{k}{Optional number of basis functions for computing approximate
-GPs. If \code{NA} (the default), exact GPs are computed.}
+\item{k}{Optional number of basis functions for computing Hilbert-space
+approximate GPs. If \code{NA} (the default), exact GPs are computed.}
 
-\item{cov}{Name of the covariance kernel. By default,
-the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
+\item{cov}{Name of the covariance kernel. Currently supported are
+\code{"exp_quad"} (exponentiated-quadratic kernel; default),
+\code{"matern32"} (Matern 3/2 kernel), \code{"matern52"} (Matern 5/2 kernel),
+and \code{"exponential"} (exponential kernel; alias: \code{"matern12"}).}
 
 \item{iso}{A flag to indicate whether an isotropic (\code{TRUE}; the
 default) or a non-isotropic GP should be used.
@@ -88,19 +90,9 @@ A GP is a stochastic process, which
  For a more detailed introduction to Gaussian processes,
  see \url{https://en.wikipedia.org/wiki/Gaussian_process}.
 
- Below, we describe the currently supported covariance kernels:
- \itemize{
-   \item "exp_quad": The exponentiated quadratic kernel is defined as
-   \eqn{k(x_i, x_j) = sdgp^2 \exp(- || x_i - x_j ||^2 / (2 lscale^2))},
-   where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a
-   standard deviation parameter, and \eqn{lscale} is characteristic
-   length-scale parameter. The latter practically measures how close two
-   points \eqn{x_i} and \eqn{x_j} have to be to influence each other
-   substantially.
- }
-
- In the current implementation, \code{"exp_quad"} is the only supported
- covariance kernel. More options will follow in the future.
+ For mathematical details on the supported kernels, please see the Stan manual:
+ \url{https://mc-stan.org/docs/functions-reference/matrix_operations.html}
+ under "Gaussian Process Covariance Functions".
 }
 \examples{
 \dontrun{
@@ -113,14 +105,14 @@ summary(fit1)
 me1 <- conditional_effects(fit1, ndraws = 200, spaghetti = TRUE)
 plot(me1, ask = FALSE, points = TRUE)
 
-# fit a more complicated GP model
-fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
+# fit a more complicated GP model and use an approximate GP for x2
+fit2 <- brm(y ~ gp(x0) + x1 + gp(x2, k = 10) + x3, dat, chains = 2)
 summary(fit2)
 me2 <- conditional_effects(fit2, ndraws = 200, spaghetti = TRUE)
 plot(me2, ask = FALSE, points = TRUE)
 
-# fit a multivariate GP model
-fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
+# fit a multivariate GP model with Matern 3/2 kernel
+fit3 <- brm(y ~ gp(x1, x2, cov = "matern32"), dat, chains = 2)
 summary(fit3)
 me3 <- conditional_effects(fit3, ndraws = 200, spaghetti = TRUE)
 plot(me3, ask = FALSE, points = TRUE)

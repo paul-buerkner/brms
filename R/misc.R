@@ -167,6 +167,9 @@ subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
+# not-in operator
+"%notin%" <- Negate("%in%")
+
 # convert array to list of elements with reduced dimension
 # @param x an arrary of dimension d
 # @return a list of arrays of dimension d-1
@@ -251,6 +254,15 @@ isNA <- function(x) {
 
 is_equal <- function(x, y, check.attributes = FALSE, ...) {
   isTRUE(all.equal(x, y, check.attributes = check.attributes, ...))
+}
+
+# extract factor levels from an arbitrary variable
+extract_levels <- function(x) {
+  # do not check for NAs according to #1355
+  if (!is.factor(x)) {
+    x <- factor(x)
+  }
+  levels(x)
 }
 
 # check if 'x' will behave like a factor in design matrices
@@ -409,17 +421,33 @@ cblapply <- function(X, FUN, ...) {
 }
 
 # parallel lapply sensitive to the operating system
-plapply <- function(X, FUN, cores = 1, ...) {
-  if (cores == 1) {
+# args:
+#  .psock: use a PSOCK cluster? Default is TRUE until
+#.    the zombie worker issue #1658 has been fully resolved
+plapply <- function(X, FUN, .cores = 1, .psock = TRUE, ...) {
+  if (.cores == 1) {
     out <- lapply(X, FUN, ...)
   } else {
-    if (!os_is_windows()) {
-      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = cores, ...)
+    if (!os_is_windows() && !.psock) {
+      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = .cores, ...)
     } else {
-      cl <- parallel::makePSOCKcluster(cores)
+      cl <- parallel::makePSOCKcluster(.cores)
       on.exit(parallel::stopCluster(cl))
       out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
     }
+    # The version below was suggested to prevent the spawning of zombies
+    # but it does not always succeed in that. It also seems to cause
+    # other issues as discussed in #1658, so commented out for now.
+    # cl_type <- ifelse(os_is_windows(), "PSOCK", "FORK")
+    # cl <- parallel::makeCluster(.cores, type = cl_type)
+    # # Register a cleanup for the cluster in case the function fails
+    # # Need to wrap in a tryCatch to avoid error if cluster is already stopped
+    # on.exit(tryCatch(
+    #   { parallel::stopCluster(cl) },
+    #   error = function(e) invisible(NULL)
+    # ))
+    # out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
+    # parallel::stopCluster(cl)
   }
   out
 }
@@ -571,9 +599,9 @@ rename <- function(x, pattern = NULL, replacement = NULL,
     # default renaming to avoid special characters in coeffcient names
     pattern <- c(
       " ", "(", ")", "[", "]", ",", "\"", "'",
-      "?", "+", "-", "*", "/", "^", "="
+      "?", "+", "-", "*", "/", "^", "=", "$"
     )
-    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ")
+    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ", "USD")
   }
   if (length(replacement) == 1L) {
     replacement <- rep(replacement, length(pattern))
@@ -590,7 +618,8 @@ rename <- function(x, pattern = NULL, replacement = NULL,
   dup <- duplicated(out)
   if (check_dup && any(dup)) {
     dup <- x[out %in% out[dup]]
-    stop2("Internal renaming led to duplicated names. \n",
+    stop2("Internal renaming led to duplicated names. ",
+          "Consider renaming your variables to have different suffixes.\n",
           "Occured for: ", collapse_comma(dup))
   }
   out
@@ -816,9 +845,39 @@ sort_dependencies <- function(x, sorted = NULL) {
   out
 }
 
-stop2 <- function(...) {
-  stop(..., call. = FALSE)
+#' Internal abort helper
+#'
+#' A drop-in replacement for the old `stop2()` that throws structured
+#' errors via **rlang**.
+#' The error message is built with **glue**, so you can use
+#'   `{.val {x}}`, `{.arg {y}}`, etc.
+#' Every error inherits from `"brms_error"` plus any subclasses
+#'   supplied through `.subclass`, making it easy to `tryCatch()`.
+#'
+#' @param message A character (or glue) string describing the error.
+#' @param ... Additional strings merged into the message; kept for
+#'   backward compatibility with existing `stop2("foo", "bar")` calls.
+#' @param .subclass Optional character vector of extra condition classes.
+#' @param call A call object to store with the condition; defaults to the
+#'   caller (set internally to avoid CRAN’s “function call as default”
+#'   NOTE).
+#' @param .envir Environment in which glue expressions are evaluated.
+#' @keywords internal
+#' @noRd
+stop2 <- function(message = "", ..., .subclass = NULL,
+                  call = NULL, .envir = parent.frame()) {
+
+  if (is.null(call)) {
+    call <- rlang::caller_call()
+  }
+
+  rlang::abort(
+    message   = glue::glue(message, ..., .envir = .envir),
+    .subclass = c(.subclass, "brms_error"),
+    call      = call
+  )
 }
+
 
 warning2 <- function(...) {
   warning(..., call. = FALSE)

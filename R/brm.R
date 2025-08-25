@@ -4,7 +4,7 @@
 #' using Stan for full Bayesian inference. A wide range of distributions
 #' and link functions are supported, allowing users to fit -- among others --
 #' linear, robust linear, count data, survival, response times, ordinal,
-#' zero-inflated, hurdle, and even self-defined mixture models all in a
+#' zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
 #' multilevel context. Further modeling options include non-linear and
 #' smooth terms, auto-correlation structures, censored data, meta-analytic
 #' standard errors, and quite a few more. In addition, all parameters of the
@@ -126,7 +126,8 @@
 #' @param inits (Deprecated) Alias of \code{init}.
 #' @param chains Number of Markov chains (defaults to 4).
 #' @param iter Number of total iterations per chain (including warmup; defaults
-#'   to 2000).
+#'   to 2000). Can be set globally for the current \R session via the
+#'   \code{"brms.iter"} option (see \code{\link{options}}).
 #' @param warmup A positive integer specifying number of warmup (aka burnin)
 #'   iterations. This also specifies the number of iterations used for stepsize
 #'   adaptation, so warmup draws should not be used for inference. The number
@@ -163,7 +164,9 @@
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions,
 #'   \code{"fullrank"} for variational inference with a multivariate normal
-#'   distribution, or \code{"fixed_param"} for sampling from fixed parameter
+#'   distribution, \code{"pathfinder"} for the pathfinder algorithm,
+#'   \code{"laplace"} for the laplace approximation,
+#'   or \code{"fixed_param"} for sampling from fixed parameter
 #'   values. Can be set globally for the current \R session via the
 #'   \code{"brms.algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
@@ -410,7 +413,6 @@
 #' summary(fit7)
 #' conditional_effects(fit7)
 #'
-#'
 #' # use the future package for more flexible parallelization
 #' library(future)
 #' plan(multisession, workers = 4)
@@ -439,7 +441,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, iter = 2000,
+                init = NULL, inits = NULL, chains = 4, 
+                iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
                 threads = getOption("brms.threads", NULL),
@@ -518,15 +521,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
-    data_name <- substitute_name(data)
     data <- validate_data(
       data, bterms = bterms,
       data2 = data2, knots = knots,
-      drop_unused_levels = drop_unused_levels
+      drop_unused_levels = drop_unused_levels,
+      data_name = substitute_name(data)
     )
-    attr(data, "data_name") <- data_name
+    bframe <- brmsframe(bterms, data)
     prior <- .validate_prior(
-      prior, bterms = bterms, data = data,
+      prior, bframe = bframe,
       sample_prior = sample_prior
     )
     stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
@@ -535,29 +538,27 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
-    ranef <- tidy_ranef(bterms, data = data)
+
     # generate Stan code
     model <- .stancode(
-      bterms, data = data, prior = prior,
-      stanvars = stanvars, save_model = save_model,
-      backend = backend, threads = threads, opencl = opencl,
-      normalize = normalize
+      bframe, prior = prior, stanvars = stanvars,
+      save_model = save_model, backend = backend, threads = threads,
+      opencl = opencl, normalize = normalize
     )
-
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior,
       stanvars = stanvars, model = model, algorithm = algorithm,
       backend = backend, threads = threads, opencl = opencl,
-      save_pars = save_pars, ranef = ranef, family = family,
-      basis = standata_basis(bterms, data = data),
+      save_pars = save_pars, ranef = bframe$frame$re, family = family,
+      basis = frame_basis(bframe, data = data),
       stan_args = nlist(init, silent, control, stan_model_args, ...)
     )
-    exclude <- exclude_pars(x)
+    exclude <- exclude_pars(x, bframe = bframe)
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .standata(
-      bterms, data = data, prior = prior, data2 = data2,
+      bframe, data = data, prior = prior, data2 = data2,
       stanvars = stanvars, threads = threads
     )
 

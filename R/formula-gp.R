@@ -11,10 +11,12 @@
 #'   each predictor. In the numeric vector case, the elements multiply
 #'   the values returned by the GP. In the factor variable
 #'   case, a separate GP is fitted for each factor level.
-#' @param k Optional number of basis functions for computing approximate
-#'   GPs. If \code{NA} (the default), exact GPs are computed.
-#' @param cov Name of the covariance kernel. By default,
-#'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
+#' @param k Optional number of basis functions for computing Hilbert-space
+#'   approximate GPs. If \code{NA} (the default), exact GPs are computed.
+#' @param cov Name of the covariance kernel. Currently supported are
+#'   \code{"exp_quad"} (exponentiated-quadratic kernel; default),
+#'   \code{"matern32"} (Matern 3/2 kernel), \code{"matern52"} (Matern 5/2 kernel),
+#'   and \code{"exponential"} (exponential kernel; alias: \code{"matern12"}).
 #' @param iso A flag to indicate whether an isotropic (\code{TRUE}; the
 #'   default) or a non-isotropic GP should be used.
 #'   In the former case, the same amount of smoothing is applied to all
@@ -58,19 +60,9 @@
 #'  For a more detailed introduction to Gaussian processes,
 #'  see \url{https://en.wikipedia.org/wiki/Gaussian_process}.
 #'
-#'  Below, we describe the currently supported covariance kernels:
-#'  \itemize{
-#'    \item "exp_quad": The exponentiated quadratic kernel is defined as
-#'    \eqn{k(x_i, x_j) = sdgp^2 \exp(- || x_i - x_j ||^2 / (2 lscale^2))},
-#'    where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a
-#'    standard deviation parameter, and \eqn{lscale} is characteristic
-#'    length-scale parameter. The latter practically measures how close two
-#'    points \eqn{x_i} and \eqn{x_j} have to be to influence each other
-#'    substantially.
-#'  }
-#'
-#'  In the current implementation, \code{"exp_quad"} is the only supported
-#'  covariance kernel. More options will follow in the future.
+#'  For mathematical details on the supported kernels, please see the Stan manual:
+#'  \url{https://mc-stan.org/docs/functions-reference/matrix_operations.html}
+#'  under "Gaussian Process Covariance Functions".
 #'
 #' @return An object of class \code{'gp_term'}, which is a list
 #'   of arguments to be interpreted by the formula
@@ -87,14 +79,14 @@
 #' me1 <- conditional_effects(fit1, ndraws = 200, spaghetti = TRUE)
 #' plot(me1, ask = FALSE, points = TRUE)
 #'
-#' # fit a more complicated GP model
-#' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
+#' # fit a more complicated GP model and use an approximate GP for x2
+#' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2, k = 10) + x3, dat, chains = 2)
 #' summary(fit2)
 #' me2 <- conditional_effects(fit2, ndraws = 200, spaghetti = TRUE)
 #' plot(me2, ask = FALSE, points = TRUE)
 #'
-#' # fit a multivariate GP model
-#' fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
+#' # fit a multivariate GP model with Matern 3/2 kernel
+#' fit3 <- brm(y ~ gp(x1, x2, cov = "matern32"), dat, chains = 2)
 #' summary(fit3)
 #' me3 <- conditional_effects(fit3, ndraws = 200, spaghetti = TRUE)
 #' plot(me3, ask = FALSE, points = TRUE)
@@ -115,10 +107,10 @@
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
                gr = TRUE, cmc = TRUE, scale = TRUE, c = 5/4) {
-  cov <- match.arg(cov, choices = c("exp_quad"))
   call <- match.call()
   label <- deparse0(call)
   vars <- as.list(substitute(list(...)))[-1]
+  cov <- validate_gp_cov(cov, k = k)
   by <- deparse0(substitute(by))
   cmc <- as_one_logical(cmc)
   if (is.null(call[["gr"]]) && require_old_default("2.12.8")) {
@@ -160,7 +152,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
 # @param x either a formula or a list containing an element "gp"
 # @param data data frame containing the covariates
 # @return a data.frame with one row per GP term
-tidy_gpef <- function(x, data) {
+frame_gp <- function(x, data) {
   if (is.formula(x)) {
     x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
@@ -168,7 +160,11 @@ tidy_gpef <- function(x, data) {
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
-  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
+  out <- data.frame(
+    term = all_terms(form),
+    label = NA, cov = NA, k = NA, iso = NA, gr = NA, scale = NA,
+    stringsAsFactors = FALSE
+  )
   nterms <- nrow(out)
   out$cons <- out$byvars <- out$covars <-
     out$sfx1 <- out$sfx2 <- out$c <- vector("list", nterms)
@@ -202,29 +198,68 @@ tidy_gpef <- function(x, data) {
       out$sfx2[[i]] <- outer(out$sfx1[[i]], out$covars[[i]], paste0)
     }
   }
+  class(out) <- gpframe_class()
   out
 }
 
-# exponential-quadratic covariance matrix
+gpframe_class <- function() {
+  c("gpframe", "data.frame")
+}
+
+is.gpframe <- function(x) {
+  inherits(x, "gpframe")
+}
+
+# covariance matrix of Gaussian processes
 # not vectorized over parameter values
-cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
+cov_gp <- function(x, x_new = NULL, sdgp = 1, lscale = 1, cov = "exp_quad") {
   sdgp <- as.numeric(sdgp)
   lscale <- as.numeric(lscale)
   Dls <- length(lscale)
+  cov <- as_one_character(cov)
+  cov_fun <- paste0("cov_gp_", cov)
+  cov_fun <- get(cov_fun, asNamespace("brms"))
   if (Dls == 1L) {
     # one dimensional or isotropic GP
     diff_quad <- diff_quad(x = x, x_new = x_new)
-    out <- sdgp^2 * exp(-diff_quad / (2 * lscale^2))
+    out <- cov_fun(diff_quad, sdgp = sdgp, lscale = lscale)
   } else {
     # multi-dimensional non-isotropic GP
     diff_quad <- diff_quad(x = x[, 1], x_new = x_new[, 1])
-    out <- sdgp^2 * exp(-diff_quad / (2 * lscale[1]^2))
+    out <- cov_fun(diff_quad, sdgp = sdgp, lscale = lscale[1])
     for (d in seq_len(Dls)[-1]) {
       diff_quad <- diff_quad(x = x[, d], x_new = x_new[, d])
-      out <- out * exp(-diff_quad / (2 * lscale[d]^2))
+      # sdgp = 1 as to not multiply the cov matrix with sdgp more than once
+      out <- out * cov_fun(diff_quad, sdgp = 1, lscale = lscale[d])
     }
   }
   out
+}
+
+# Squared exponential covariance kernel
+# @param diff_quad squared difference matrix
+cov_gp_exp_quad <- function(diff_quad, sdgp, lscale) {
+  sdgp^2 * exp(-diff_quad / (2 * lscale^2))
+}
+
+# Exponential covariance kernel
+cov_gp_exponential <- function(diff_quad, sdgp, lscale) {
+  diff_abs <- sqrt(diff_quad)
+  sdgp^2 * exp(-diff_abs / lscale)
+}
+
+# Matern 3/2 covariance kernel
+cov_gp_matern32 <- function(diff_quad, sdgp, lscale) {
+  diff_abs <- sqrt(diff_quad)
+  sdgp^2 * (1 + sqrt(3) * diff_abs / lscale) *
+    exp(- sqrt(3) * diff_abs / lscale)
+}
+
+# Matern 5/2 covariance kernel
+cov_gp_matern52 <- function(diff_quad, sdgp, lscale) {
+  diff_abs <- sqrt(diff_quad)
+  sdgp^2 * (1 + sqrt(5) * diff_abs / lscale + 5 * diff_quad / (3 * lscale^2)) *
+    exp(- sqrt(5) * diff_abs / lscale)
 }
 
 # compute squared differences
@@ -247,23 +282,32 @@ diff_quad <- function(x, x_new = NULL) {
   out
 }
 
-# spectral density function
+# spectral density function for approximate Gaussian processes
 # vectorized over parameter values
-spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
+spd_gp <- function(x, sdgp = 1, lscale = 1, cov = "exp_quad") {
+  spd_fun <- paste0("spd_gp_", cov)
+  spd_fun <- get(spd_fun, asNamespace("brms"))
+  spd_fun(x, sdgp = sdgp, lscale = lscale)
+}
+
+# spectral density function of the squared exponential kernel
+# vectorized over parameter values
+spd_gp_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   NB <- NROW(x)
   D <- NCOL(x)
   Dls <- NCOL(lscale)
+  constant <- sdgp^2 * sqrt(2 * pi)^D
   out <- matrix(nrow = length(sdgp), ncol = NB)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
-    constant <- sdgp^2 * (sqrt(2 * pi) * lscale)^D
+    constant <- constant * lscale^D
     neg_half_lscale2 <- -0.5 * lscale^2
     for (m in seq_len(NB)) {
       out[, m] <- constant * exp(neg_half_lscale2 * sum(x[m, ]^2))
     }
   } else {
     # multi-dimensional non-isotropic GP
-    constant <- sdgp^2 * sqrt(2 * pi)^D * matrixStats::rowProds(lscale)
+    constant <- constant * matrixStats::rowProds(lscale)
     neg_half_lscale2 = -0.5 * lscale^2
     for (m in seq_len(NB)) {
       x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
@@ -273,13 +317,97 @@ spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   out
 }
 
+# spectral density function of the exponential kernel
+# vectorized over parameter values
+spd_gp_exponential <- function(x, sdgp = 1, lscale = 1) {
+  NB <- NROW(x)
+  D <- NCOL(x)
+  Dls <- NCOL(lscale)
+  constant = square(sdgp) *
+    (2^D * pi^(D / 2) * gamma((D + 1) / 2)) / sqrt(pi)
+  expo = -(D + 1) / 2
+  lscale2 <- lscale^2
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- constant * lscale^D
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * (1 + lscale2 * sum(x[m, ]^2))^expo;
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- constant * matrixStats::rowProds(lscale)
+    for (m in seq_len(NB)) {
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * (1 + rowSums(lscale2 * x2))^expo
+    }
+  }
+  out
+}
+
+# spectral density function of the Matern 3/2 kernel
+# vectorized over parameter values
+spd_gp_matern32 <- function(x, sdgp = 1, lscale = 1) {
+  NB <- NROW(x)
+  D <- NCOL(x)
+  Dls <- NCOL(lscale)
+  constant = square(sdgp) *
+    (2^D * pi^(D / 2) * gamma((D + 3) / 2) * 3^(3 / 2)) / (0.5 * sqrt(pi))
+  expo = -(D + 3) / 2
+  lscale2 <- lscale^2
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- constant * lscale^D
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * (3 + lscale2 * sum(x[m, ]^2))^expo;
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- constant * matrixStats::rowProds(lscale)
+    for (m in seq_len(NB)) {
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * (3 + rowSums(lscale2 * x2))^expo
+    }
+  }
+  out
+}
+
+# spectral density function of the Matern 5/2 kernel
+# vectorized over parameter values
+spd_gp_matern52 <- function(x, sdgp = 1, lscale = 1) {
+  NB <- NROW(x)
+  D <- NCOL(x)
+  Dls <- NCOL(lscale)
+  constant = square(sdgp) *
+    (2^D * pi^(D / 2) * gamma((D + 5) / 2) * 5^(5 / 2)) / (0.75 * sqrt(pi))
+  expo = -(D + 5) / 2
+  lscale2 <- lscale^2
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- constant * lscale^D
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * (5 + lscale2 * sum(x[m, ]^2))^expo;
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- constant * matrixStats::rowProds(lscale)
+    for (m in seq_len(NB)) {
+      x2 <- data2draws(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * (5 + rowSums(lscale2 * x2))^expo
+    }
+  }
+  out
+}
+
 # compute the mth eigen value of an approximate GP
-eigen_val_cov_exp_quad <- function(m, L) {
+eigen_val_laplacian <- function(m, L) {
   ((m * pi) / (2 * L))^2
 }
 
 # compute the mth eigen function of an approximate GP
-eigen_fun_cov_exp_quad <- function(x, m, L) {
+eigen_fun_laplacian <- function(x, m, L) {
   x <- as.matrix(x)
   D <- ncol(x)
   stopifnot(length(m) == D, length(L) == D)
@@ -299,6 +427,28 @@ choose_L <- function(x, c) {
     range <- max(1, max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
   }
   c * range
+}
+
+# validate the 'cov' argument of 'gp' terms
+validate_gp_cov <- function(cov, k = NA) {
+  cov <- as_one_character(cov)
+  if (cov == "matern12") {
+    # matern12 and exponential refer to the same kernel
+    cov <- "exponential"
+  }
+  cov_choices <- c("exp_quad", "matern52", "matern32", "exponential")
+  if (!cov %in% cov_choices) {
+    stop2("'", cov, "' is not a valid GP covariance kernel. Valid kernels are: ",
+          collapse_comma(cov_choices))
+  }
+  if (!isNA(k)) {
+    # currently all kernels support HSGPs but this may change in the future
+    hs_cov_choices <- c("exp_quad", "matern52", "matern32", "exponential")
+    if (!cov %in% hs_cov_choices) {
+      stop2("HSGPs with covariance kernel '", cov, "' are not yet supported.")
+    }
+  }
+  cov
 }
 
 # try to evaluate a GP term and

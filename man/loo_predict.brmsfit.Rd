@@ -3,8 +3,10 @@
 \name{loo_predict.brmsfit}
 \alias{loo_predict.brmsfit}
 \alias{loo_predict}
+\alias{loo_epred}
 \alias{loo_linpred}
 \alias{loo_predictive_interval}
+\alias{loo_epred.brmsfit}
 \alias{loo_linpred.brmsfit}
 \alias{loo_predictive_interval.brmsfit}
 \title{Compute Weighted Expectations Using LOO}
@@ -17,6 +19,17 @@
   resp = NULL,
   ...
 )
+
+\method{loo_epred}{brmsfit}(
+  object,
+  type = c("mean", "var", "quantile"),
+  probs = 0.5,
+  psis_object = NULL,
+  resp = NULL,
+  ...
+)
+
+loo_epred(object, ...)
 
 \method{loo_linpred}{brmsfit}(
   object,
@@ -48,7 +61,8 @@ are performed only for the specified response variables.}
 
 \item{...}{Optional arguments passed to the underlying methods that is
 \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
-\code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or
+\code{\link[brms:posterior_predict.brmsfit]{posterior_predict}},
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} or
 \code{\link[brms:posterior_linpred.brmsfit]{posterior_linpred}}.}
 
 \item{prob}{For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
@@ -56,18 +70,16 @@ indicating the desired probability mass to include in the intervals. The
 default is \code{prob = 0.9} (\eqn{90}\% intervals).}
 }
 \value{
-\code{loo_predict} and \code{loo_linpred} return a vector with one
-  element per observation. The only exception is if \code{type = "quantile"}
-  and \code{length(probs) >= 2}, in which case a separate vector for each
-  element of \code{probs} is computed and they are returned in a matrix with
-  \code{length(probs)} rows and one column per observation.
+\code{loo_predict}, \code{loo_epred}, \code{loo_linpred}, and
+  \code{loo_predictive_interval} all return a matrix with one row per
+  observation and one column per summary statistic as specified by
+  arguments \code{type} and \code{probs}. In multivariate or categorical models
+  a third dimension is added to represent the response variables or categories,
+  respectively.
 
-  \code{loo_predictive_interval} returns a matrix with one row per
-  observation and two columns.
   \code{loo_predictive_interval(..., prob = p)} is equivalent to
   \code{loo_predict(..., type = "quantile", probs = c(a, 1-a))} with
-  \code{a = (1 - p)/2}, except it transposes the result and adds informative
-  column names.
+  \code{a = (1 - p)/2}.
 }
 \description{
 These functions are wrappers around the \code{\link[loo]{E_loo}}
@@ -89,6 +101,7 @@ loo_predictive_interval(fit, prob = 0.8)
 psis <- loo::psis(-log_lik(fit), cores = 2)
 loo_predictive_interval(fit, prob = 0.8, psis_object = psis)
 loo_predict(fit, type = "var", psis_object = psis)
+loo_epred(fit, type = "var", psis_object = psis)
 }
 
 }

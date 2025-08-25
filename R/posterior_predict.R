@@ -136,7 +136,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- plapply(seq_len(N), pp_fun, cores = cores, prep = object, ...)
+  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -682,6 +682,19 @@ posterior_predict_beta <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  rcontinuous(
+    n = prep$ndraws,
+    dist = "xbeta",
+    mu = mu, phi = phi, nu = kappa,
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "von_mises",
@@ -865,6 +878,16 @@ posterior_predict_multinomial <- function(i, prep, ...) {
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
+  size <- prep$data$trials[i]
+  rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
+}
+
+posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
+  eta <- get_Mu(prep, i = i)
+  eta <- insert_refcat(eta, refcat = prep$refcat)
+  phi <- get_dpar(prep, "phi", i = i)
+  alpha <- dcategorical(seq_len(prep$data$ncat), eta = eta) * phi
+  p <- rdirichlet(prep$ndraws, alpha = alpha)
   size <- prep$data$trials[i]
   rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }

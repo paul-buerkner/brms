@@ -976,7 +976,7 @@ test_that("reserved variables 'Intercept' is handled correctly", {
   expect_true(all(sdata$X[, "Intercept"] == 1))
 })
 
-test_that("data for multinomial and dirichlet models is correct", {
+test_that("data for multinomial, dirichlet_multinomial and dirichlet models is correct", {
   N <- 15
   dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
   names(dat) <- c("y1", "y2", "y3")
@@ -993,6 +993,11 @@ test_that("data for multinomial and dirichlet models is correct", {
   expect_equal(sdata$ncat, 3)
   expect_equal(sdata$Y, unname(dat$t))
 
+  sdata <- standata(t | trials(size) ~ x, dat, dirichlet_multinomial())
+  expect_equal(sdata$trials, as.array(dat$size))
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$t))
+
   sdata <- standata(y ~ x, data = dat, family = dirichlet())
   expect_equal(sdata$ncat, 3)
   expect_equal(sdata$Y, unname(dat$y))
@@ -1001,12 +1006,19 @@ test_that("data for multinomial and dirichlet models is correct", {
     standata(t | trials(10) ~ x, data = dat, family = multinomial()),
     "Number of trials does not match the number of events"
   )
+  expect_error(
+    standata(t | trials(10) ~ x, data = dat, family = dirichlet_multinomial()),
+    "Number of trials does not match the number of events"
+  )
   expect_error(standata(t ~ x, data = dat, family = dirichlet()),
                "Response values in simplex models must sum to 1")
 })
 
 test_that("standata handles cox models correctly", {
-  data <- data.frame(y = rexp(100), x = rnorm(100))
+  skip_if_not_installed("splines2")
+  data <- data.frame(y = rexp(100), x = rnorm(100),
+                     g = sample(1:3, 100, TRUE))
+
   bform <- bf(y ~ x)
   bprior <- prior(dirichlet(3), sbhaz)
   sdata <- standata(bform, data, brmsfamily("cox"), prior = bprior)
@@ -1014,9 +1026,19 @@ test_that("standata handles cox models correctly", {
   expect_equal(dim(sdata$Zcbhaz), c(100, 5))
   expect_equal(sdata$con_sbhaz, as.array(rep(3, 5)))
 
-  sdata <- standata(bform, data, brmsfamily("cox", bhaz = list(df = 6)))
+  bform <- bf(y | bhaz(df = 6) ~ x)
+  sdata <- standata(bform, data, brmsfamily("cox"))
   expect_equal(dim(sdata$Zbhaz), c(100, 6))
   expect_equal(dim(sdata$Zcbhaz), c(100, 6))
+
+  bform <- bf(y | bhaz(gr = g) ~ x)
+  bprior <- prior(dirichlet(3), "sbhaz", group = 2)
+  sdata <- standata(bform, data, family = brmsfamily("cox"),
+                    prior = bprior)
+  expect_equal(sdata$ngrbhaz, 3)
+  expect_equivalent(sdata$Jgrbhaz, data$g)
+  con_mat <- rbind(rep(1, 5), rep(3, 5), rep(1, 5))
+  expect_equivalent(sdata$con_sbhaz, con_mat)
 })
 
 test_that("standata handles addition term 'rate' is correctly", {
@@ -1109,4 +1131,87 @@ test_that("drop_unused_factor levels works correctly", {
   # should not drop level "c"
   sdata <- standata(y ~ x, data = dat, drop_unused_levels = FALSE)
   expect_equal(colnames(sdata$X), c("Intercept", "xb", "xc"))
+})
+
+test_that("Group prior weights are correctly created", {
+
+  # For example with a single grouping variable
+  wtd_epilepsy <- epilepsy
+  patient_weights <- c(1, rep(c(0.9, 1.1), each = 29))
+  wtd_epilepsy[['patient_samp_wgt']] <-
+    patient_weights[match(epilepsy$patient, levels(epilepsy$patient))]
+
+  sdata <- standata(
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt)),
+    data = wtd_epilepsy, family = gaussian()
+  )
+  expect_equal(as.vector(sdata[['PW_1']]), patient_weights)
+
+  # Multiple grouping variables
+  # with one variable whose factor level order differs from order of appearance
+  wtd_epilepsy[['random_group']]     <- rep(c('d', 'b', 'a', 'c'), times = 59)
+  wtd_epilepsy[['random_group_wgt']] <- rep(c(0.8, 1.2, 0.7, 1.3), times = 59)
+
+  sdata <- standata(
+    count ~ Trt + (1 + Trt | gr(patient, pw = patient_samp_wgt))
+                + (1       | gr(random_group, pw = random_group_wgt)),
+    data = wtd_epilepsy, family = gaussian()
+  )
+  expect_equal(as.vector(sdata[['PW_2']]), c(0.7, 1.2, 1.3, 0.8))
+
+  # Model with multiple outcomes
+  dat <- data.frame(
+    y1 = rnorm(10), y2 = rnorm(10),
+    x = 1:10,
+    g1 = c(2, 2, rep(2:4, each = 2), 1:2),
+    g1wgt = c(1.1, 1.1, 1.1, 1.1,
+              1.0, 1.0, 1.2, 1.2,
+              0.9, 1.1),
+    g2 = rep(1:2, each = 5),
+    g2wgt = rep(c(0.9, 1.1), each = 5),
+    censi = sample(0:1, 10, TRUE)
+  )
+
+  form <- bf(mvbind(y1, y2) ~ x + (1 | gr(g1, pw = g1wgt)) + (1 | gr(g2, pw = g2wgt))) +
+    set_rescor(TRUE)
+  prior <- prior(horseshoe(2), resp = "y1") +
+           prior(horseshoe(2), resp = "y2")
+  sdata <- standata(form, dat, prior = prior)
+  expect_in(c("PW_1", "PW_4"), names(sdata))
+
+  # multi-membership model
+  # (note some levels only appear in g1 or g2, not both)
+  sdata <- SW(standata(y1 ~ x + (x | mm(g1, g2, pw = cbind(g1wgt, g2wgt))), data = dat))
+  expect_equal(as.vector(sdata$PW_1), c(0.9, 1.1, 1.0, 1.2))
+
+  # test informative error and warning messages
+  expect_error(
+    standata(
+      count ~ Trt + (1 | gr(patient, pw = bad_group_wgt)),
+      data = wtd_epilepsy |> transform(bad_group_wgt = runif(n = nrow(wtd_epilepsy))),
+      family = gaussian()
+    ),
+    "Prior weights cannot vary within a group"
+  )
+
+  # Informative error or warning for bad weight variables
+  wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, 'a', 1.3), times = 59)
+  expect_error(
+    standata(
+      count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
+      data = wtd_epilepsy,
+      family = gaussian()
+    ),
+    "must be numeric"
+  )
+
+  wtd_epilepsy[['bad_random_group_wgt']] <- rep(c(0.8, 1.2, -1, 1.3), times = 59)
+  expect_warning(
+    standata(
+        count ~ Trt + (1 | gr(random_group, pw = bad_random_group_wgt)),
+        data = wtd_epilepsy,
+        family = gaussian()
+      ),
+    "Negative prior weights detected"
+  )
 })

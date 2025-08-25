@@ -15,24 +15,22 @@ data_predictor <- function(x, ...) {
 }
 
 #' @export
-data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, basis = NULL, ...) {
+data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, ...) {
   out <- list(N = nrow(data))
   for (r in names(x$terms)) {
-    bs <- basis$resps[[r]]
-    c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, basis = bs, ...)
+    c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, ...)
   }
   out
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
-                                     sdata = NULL, basis = NULL, ...) {
+data_predictor.brmsterms <- function(x, data, data2, prior, sdata = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, data2, ranef, prior, sdata, ...)
+  args_eff <- nlist(data, data2, prior, sdata, ...)
   for (dp in names(x$dpars)) {
-    args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
+    args_eff_spec <- list(x = x$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
@@ -41,66 +39,64 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
     }
   }
   for (nlp in names(x$nlpars)) {
-    args_eff_spec <- list(x = x$nlpars[[nlp]], basis = basis$nlpars[[nlp]])
+    args_eff_spec <- list(x = x$nlpars[[nlp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
-  c(out) <- data_gr_local(x, data = data, ranef = ranef)
+  c(out) <- data_gr_local(x, data = data)
   c(out) <- data_mixture(x, data2 = data2, prior = prior)
   out
 }
 
 # prepare data for all types of effects for use in Stan
 # @param data the data passed by the user
-# @param ranef object retuend by 'tidy_ranef'
 # @param prior an object of class brmsprior
-# @param basis information from original Stan data used to correctly
-#   predict from new data. See 'standata_basis' for details.
 # @param ... currently ignored
 # @return a named list of data to be passed to Stan
 #' @export
-data_predictor.btl <- function(x, data, data2 = list(), ranef = empty_ranef(),
-                               prior = brmsprior(), sdata = NULL,
-                               index = NULL, basis = NULL, ...) {
+data_predictor.btl <- function(x, data, data2 = list(), prior = brmsprior(),
+                               sdata = NULL, ...) {
   out <- c(
     data_fe(x, data),
-    data_sp(x, data, data2 = data2, prior = prior, index = index, basis = basis$sp),
-    data_re(x, data, ranef = ranef),
+    data_sp(x, data, data2 = data2, prior = prior),
+    data_re(x, data),
     data_cs(x, data),
-    data_sm(x, data, basis = basis$sm),
-    data_gp(x, data, basis = basis$gp),
-    data_ac(x, data, data2 = data2, basis = basis$ac),
+    data_sm(x, data),
+    data_gp(x, data),
+    data_ac(x, data, data2 = data2),
     data_offset(x, data),
-    data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
+    data_bhaz(x, data, data2 = data2, prior = prior)
   )
-  c(out) <- data_special_prior(
-    x, data, prior = prior, ranef = ranef,
-    sdata = c(sdata, out)
-  )
+  c(out) <- data_special_prior(x, data, prior = prior, sdata = c(sdata, out))
   out
 }
 
 # prepare data for non-linear parameters for use in Stan
 #' @export
 data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
-                                basis = NULL, ...) {
+                                ...) {
   out <- list()
   c(out) <- data_cnl(x, data)
-  c(out) <- data_ac(x, data, data2 = data2, basis = basis$ac)
-  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz)
+  c(out) <- data_ac(x, data, data2 = data2)
+  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior)
   out
 }
 
 # prepare data of fixed effects
-data_fe <- function(bterms, data) {
+data_fe <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$fe)) {
+    # standata was already precomputed
+    return(bframe$sdata$fe)
+  }
   out <- list()
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   # the intercept is removed inside the Stan code for non-ordinal models
-  is_ord <- is_ordinal(bterms)
+  is_ord <- is_ordinal(bframe)
   cols2remove <- if (is_ord) "(Intercept)"
-  X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
-  avoid_dpars(colnames(X), bterms = bterms)
+  X <- get_model_matrix(rhs(bframe$fe), data, cols2remove = cols2remove)
+  avoid_dpars(colnames(X), bframe)
   out[[paste0("K", p)]] <- ncol(X)
-  if (stan_center_X(bterms)) {
+  if (stan_center_X(bframe)) {
     # relevant if the intercept is treated separately to enable centering
     out[[paste0("Kc", p)]] <- ncol(X) - ifelse(is_ord, 0, 1)
   }
@@ -109,13 +105,20 @@ data_fe <- function(bterms, data) {
 }
 
 # data preparation for splines
-data_sm <- function(bterms, data, basis = NULL) {
+data_sm <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$sm)) {
+    # standata was already precomputed
+    return(bframe$sdata$sm)
+  }
   out <- list()
-  smterms <- all_terms(bterms[["sm"]])
+  smterms <- all_terms(bframe[["sm"]])
   if (!length(smterms)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
+  # basis contains information on the smooths from the original data
+  basis <- bframe$basis$sm
   new <- length(basis) > 0L
   knots <- get_knots(data)
   diagonal.penalty <- !require_old_default("2.8.7")
@@ -162,7 +165,7 @@ data_sm <- function(bterms, data, basis = NULL) {
     }
   }
   Xs <- do_call(cbind, lXs)
-  avoid_dpars(colnames(Xs), bterms = bterms)
+  avoid_dpars(colnames(Xs), bframe)
   smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
   Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
   colnames(Xs) <- rename(colnames(Xs))
@@ -172,17 +175,17 @@ data_sm <- function(bterms, data, basis = NULL) {
 }
 
 # prepare data for group-level effects for use in Stan
-data_re <- function(bterms, data, ranef) {
+data_re <- function(bframe, data) {
+  stopifnot(is.bframel(bframe))
   out <- list()
-  px <- check_prefix(bterms)
-  take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
-  ranef <- ranef[take, ]
-  if (!nrow(ranef)) {
+  px <- check_prefix(bframe)
+  reframe <- subset2(bframe$frame$re, type = "sp", fun = "%notin%")
+  if (!has_rows(reframe)) {
     return(out)
   }
-  gn <- unique(ranef$gn)
+  gn <- unique(reframe$gn)
   for (i in seq_along(gn)) {
-    r <- subset2(ranef, gn = gn[i])
+    r <- subset2(reframe, gn = gn[i])
     Z <- get_model_matrix(r$form[[1]], data = data, rename = FALSE)
     idp <- paste0(r$id[1], usc(combine_prefix(px)))
     Znames <- paste0("Z_", idp, "_", r$cn)
@@ -233,22 +236,22 @@ data_re <- function(bterms, data, ranef) {
 }
 
 # compute data for each group-level-ID per univariate model
-data_gr_local <- function(bterms, data, ranef) {
-  stopifnot(is.brmsterms(bterms))
+data_gr_local <- function(bframe, data) {
+  stopifnot(is.brmsframe(bframe))
   out <- list()
-  ranef <- subset2(ranef, resp = bterms$resp)
-  resp <- usc(bterms$resp)
-  for (id in unique(ranef$id)) {
-    id_ranef <- subset2(ranef, id = id)
+  reframe <- subset2(bframe$frame$re, resp = bframe$resp)
+  resp <- usc(bframe$resp)
+  for (id in unique(reframe$id)) {
+    id_reframe <- subset2(reframe, id = id)
     idresp <- paste0(id, resp)
-    nranef <- nrow(id_ranef)
-    group <- id_ranef$group[1]
-    levels <- attr(ranef, "levels")[[group]]
-    if (id_ranef$gtype[1] == "mm") {
+    nranef <- nrow(id_reframe)
+    group <- id_reframe$group[1]
+    levels <- get_levels(reframe)[[group]]
+    if (id_reframe$gtype[1] == "mm") {
       # multi-membership grouping term
-      gs <- id_ranef$gcall[[1]]$groups
+      gs <- id_reframe$gcall[[1]]$groups
       ngs <- length(gs)
-      weights <- id_ranef$gcall[[1]]$weights
+      weights <- id_reframe$gcall[[1]]$weights
       if (is.formula(weights)) {
         scale <- isTRUE(attr(weights, "scale"))
         weights <- as.matrix(eval_rhs(weights, data))
@@ -265,7 +268,7 @@ data_gr_local <- function(bterms, data, ranef) {
           weights <- sweep(weights, 1, rowSums(weights), "/")
         }
       } else {
-        # all members get equal weights by default
+        # all members get equal membership weights by default
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       for (i in seq_along(gs)) {
@@ -282,7 +285,7 @@ data_gr_local <- function(bterms, data, ranef) {
       }
     } else {
       # ordinary grouping term
-      g <- id_ranef$gcall[[1]]$groups
+      g <- id_reframe$gcall[[1]]$groups
       gdata <- get(g, data)
       J <- match(gdata, levels)
       if (anyNA(J)) {
@@ -293,32 +296,63 @@ data_gr_local <- function(bterms, data, ranef) {
       }
       out[[paste0("J_", idresp)]] <- as.array(J)
     }
+    # prepare data for group prior weights if specified
+    if (nzchar(id_reframe$gcall[[1]]$pw)) {
+      if (id_reframe$gtype[1] == "mm") {
+        J <- unlist(out[paste0("J_", idresp, "_", seq_along(gs))])
+      }
+      # extract and validate prior weights
+      group_prior_weights <- str2formula(id_reframe$gcall[[1]]$pw)
+      group_prior_weights <- as.vector(eval_rhs(group_prior_weights, data))
+      if (!is.numeric(group_prior_weights)) {
+        stop2("Prior weights of grouping factors must be numeric.")
+      }
+      if (any(group_prior_weights < 0)) {
+        warning2("Negative prior weights detected. Make sure this is intentional.")
+      }
+      # check that group-level weights do not vary within a group
+      group_weights_consistent <- tapply(
+        X = group_prior_weights, INDEX = J,
+        FUN = function(x) length(unique(x)) == 1
+      )
+      if (!all(group_weights_consistent)) {
+        stop2("Prior weights cannot vary within a group.")
+      }
+      # deduplicate weights vector (so length matches number of groups)
+      # and order the weights vector to match groups' assigned indices
+      distinct_J_indices <- !duplicated(J)
+      group_prior_weights <- group_prior_weights[distinct_J_indices]
+      group_prior_weights <- group_prior_weights[order(J[distinct_J_indices])]
+      out[[paste0("PW_", id)]] <- as.array(group_prior_weights)
+    }
   }
   out
 }
 
 # prepare global data for each group-level-ID
-data_gr_global <- function(ranef, data2) {
+data_gr_global <- function(bframe, data2) {
+  stopifnot(is.anybrmsframe(bframe))
   out <- list()
-  for (id in unique(ranef$id)) {
+  reframe <- bframe$frame$re
+  for (id in unique(reframe$id)) {
     tmp <- list()
-    id_ranef <- subset2(ranef, id = id)
-    nranef <- nrow(id_ranef)
-    group <- id_ranef$group[1]
-    levels <- attr(ranef, "levels")[[group]]
+    id_reframe <- subset2(reframe, id = id)
+    nranef <- nrow(id_reframe)
+    group <- id_reframe$group[1]
+    levels <- attr(reframe, "levels")[[group]]
     tmp$N <- length(levels)
     tmp$M <- nranef
     tmp$NC <- as.integer(nranef * (nranef - 1) / 2)
     # prepare number of levels of an optional 'by' variable
-    if (nzchar(id_ranef$by[1])) {
-      stopifnot(!nzchar(id_ranef$type[1]))
-      bylevels <- id_ranef$bylevels[[1]]
+    if (nzchar(id_reframe$by[1])) {
+      stopifnot(!nzchar(id_reframe$type[1]))
+      bylevels <- id_reframe$bylevels[[1]]
       Jby <- match(attr(levels, "by"), bylevels)
       tmp$Nby <- length(bylevels)
       tmp$Jby <- as.array(Jby)
     }
     # prepare within-group covariance matrices
-    cov <- id_ranef$cov[1]
+    cov <- id_reframe$cov[1]
     if (nzchar(cov)) {
       # validation is only necessary here for compatibility with 'cov_ranef'
       cov_mat <- validate_recov_matrix(data2[[cov]])
@@ -338,26 +372,34 @@ data_gr_global <- function(ranef, data2) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
+data_sp <- function(bframe, data, data2, prior) {
+  stopifnot(is.bframel(bframe))
+  if (!is.null(bframe$sdata$sp)) {
+    # standata was already precomputed
+    return(bframe$sdata$sp)
+  }
   out <- list()
-  spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) return(out)
-  px <- check_prefix(bterms)
+  spframe <- bframe$frame$sp
+  if (!has_rows(spframe)) {
+    return(out)
+  }
+  basis <- bframe$basis$sp
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   # prepare general data
-  out[[paste0("Ksp", p)]] <- nrow(spef)
-  Csp <- sp_model_matrix(bterms$sp, data)
-  avoid_dpars(colnames(Csp), bterms = bterms)
-  Csp <- Csp[, spef$Ic > 0, drop = FALSE]
+  out[[paste0("Ksp", p)]] <- nrow(spframe)
+  Csp <- sp_model_matrix(bframe$sp, data)
+  avoid_dpars(colnames(Csp), bframe)
+  Csp <- Csp[, spframe$Ic > 0, drop = FALSE]
   Csp <- lapply(seq_cols(Csp), function(i) as.array(Csp[, i]))
   if (length(Csp)) {
     Csp_names <- paste0("Csp", p, "_", seq_along(Csp))
     out <- c(out, setNames(Csp, Csp_names))
   }
-  if (any(lengths(spef$Imo) > 0)) {
+  if (any(lengths(spframe$Imo) > 0)) {
     # prepare data specific to monotonic effects
-    out[[paste0("Imo", p)]] <- max(unlist(spef$Imo))
-    Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
+    out[[paste0("Imo", p)]] <- max(unlist(spframe$Imo))
+    Xmo <- lapply(unlist(spframe$calls_mo), get_mo_values, data = data)
     Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
     c(out) <- setNames(Xmo, Xmo_names)
     if (!is.null(basis$Jmo)) {
@@ -368,8 +410,8 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters
-    simo_coef <- get_simo_labels(spef, use_id = TRUE)
-    ids <- unlist(spef$ids_mo)
+    simo_coef <- get_simo_labels(spframe, use_id = TRUE)
+    ids <- unlist(spframe$ids_mo)
     for (j in seq_along(simo_coef)) {
       # index of first ID appearance
       j_id <- match(ids[j], ids)
@@ -384,7 +426,8 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
       }
     }
   }
-  uni_mi <- attr(spef, "uni_mi")
+  uni_mi <- attr(spframe, "uni_mi")
+  index <- bframe$frame$index
   for (j in seq_rows(uni_mi)) {
     if (!is.na(uni_mi$idx[j])) {
       idxl <- get(uni_mi$idx[j], data)
@@ -409,12 +452,17 @@ data_sp <- function(bterms, data, data2, prior, index = NULL, basis = NULL) {
 }
 
 # prepare data for category specific effects
-data_cs <- function(bterms, data) {
+data_cs <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$cs)) {
+    # standata was already precomputed
+    return(bframe$sdata$cs)
+  }
   out <- list()
-  if (length(all_terms(bterms[["cs"]]))) {
-    p <- usc(combine_prefix(bterms))
-    Xcs <- get_model_matrix(bterms$cs, data)
-    avoid_dpars(colnames(Xcs), bterms = bterms)
+  if (length(all_terms(bframe[["cs"]]))) {
+    p <- usc(combine_prefix(bframe))
+    Xcs <- get_model_matrix(bframe$cs, data)
+    avoid_dpars(colnames(Xcs), bframe)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
     out <- setNames(out, paste0(names(out), p))
   }
@@ -422,19 +470,21 @@ data_cs <- function(bterms, data) {
 }
 
 # prepare global data for noise free variables
-data_Xme <- function(meef, data) {
-  stopifnot(is.meef_frame(meef))
+data_Xme <- function(bframe, data) {
+  stopifnot(is.anybrmsframe(bframe))
+  meframe <- bframe$frame$me
+  stopifnot(is.meframe(meframe))
   out <- list()
-  groups <- unique(meef$grname)
+  groups <- unique(meframe$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
-    K <- which(meef$grname %in% g)
+    K <- which(meframe$grname %in% g)
     Mme <- length(K)
     out[[paste0("Mme_", i)]] <- Mme
     out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
     if (nzchar(g)) {
-      levels <- get_levels(meef)[[g]]
-      gr <- get_me_group(meef$term[K[1]], data)
+      levels <- get_levels(meframe)[[g]]
+      gr <- get_me_group(meframe$term[K[1]], data)
       Jme <- match(gr, levels)
       if (anyNA(Jme)) {
         # occurs for new levels only
@@ -449,8 +499,8 @@ data_Xme <- function(meef, data) {
       out[[paste0("Jme_", i)]] <- Jme
     }
     for (k in K) {
-      Xn <- get_me_values(meef$term[k], data)
-      noise <- get_me_noise(meef$term[k], data)
+      Xn <- get_me_values(meframe$term[k], data)
+      noise <- get_me_noise(meframe$term[k], data)
       if (nzchar(g)) {
         for (l in ilevels) {
           # validate values of the same level
@@ -477,15 +527,21 @@ data_Xme <- function(meef, data) {
 # prepare data for Gaussian process terms
 # @param internal store some intermediate data for internal post-processing?
 # @param ... passed to '.data_gp'
-data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
+data_gp <- function(bframe, data, internal = FALSE, ...) {
+  stopifnot(is.bframel(bframe))
+  if (!is.null(bframe$sdata$gp)) {
+    # standata was already precomputed
+    return(bframe$sdata$gp)
+  }
   out <- list()
   internal <- as_one_logical(internal)
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
-  gpef <- tidy_gpef(bterms, data)
-  for (i in seq_rows(gpef)) {
+  basis <- bframe$basis$gp
+  gpframe <- bframe$frame$gp
+  for (i in seq_rows(gpframe)) {
     pi <- paste0(p, "_", i)
-    Xgp <- lapply(gpef$covars[[i]], eval2, data)
+    Xgp <- lapply(gpframe$covars[[i]], eval2, data)
     D <- length(Xgp)
     out[[paste0("Dgp", pi)]] <- D
     invalid <- ulapply(Xgp, function(x)
@@ -495,17 +551,17 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
     Xgp <- do_call(cbind, Xgp)
-    cmc <- gpef$cmc[i]
-    scale <- gpef$scale[i]
-    gr <- gpef$gr[i]
-    k <- gpef$k[i]
-    c <- gpef$c[[i]]
+    cmc <- gpframe$cmc[i]
+    scale <- gpframe$scale[i]
+    gr <- gpframe$gr[i]
+    k <- gpframe$k[i]
+    c <- gpframe$c[[i]]
     if (!isNA(k)) {
       out[[paste0("NBgp", pi)]] <- k ^ D
       Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     }
-    byvar <- gpef$byvars[[i]]
-    byfac <- length(gpef$cons[[i]]) > 0L
+    byvar <- gpframe$byvars[[i]]
+    byfac <- length(gpframe$cons[[i]]) > 0L
     bynum <- !is.null(byvar) && !byfac
     if (byfac) {
       # for categorical 'by' variables prepare one GP per level
@@ -558,7 +614,7 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 # helper function to preparae GP related data
 # @inheritParams data_gp
 # @param Xgp matrix of covariate values
-# @param k, gr, c see 'tidy_gpef'
+# @param k, gr, c see 'frame_gp'
 # @param sfx suffix to put at the end of data names
 # @param Cgp optional vector of values belonging to
 #   a certain contrast of a factor 'by' variable
@@ -620,13 +676,25 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
     # basis function approach requires centered variables
     Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
-    L <- choose_L(Xgp, c = c)
+
+    if (length(basis)) {
+      L <- basis[[paste0("Lgp", sfx)]]
+    } else {
+      # compute boundary factor L
+      L <- choose_L(Xgp, c = c)
+    }
+
+    if (internal) {
+      # required to compute eigenfunctions of approximate GPs with new data
+      out[[paste0("Lgp", sfx)]] <- L
+    }
+
     Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)
     for (m in seq_rows(Ks)) {
-      XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp, m = Ks[m, ], L = L)
-      slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
+      XgpL[, m] <- eigen_fun_laplacian(Xgp, m = Ks[m, ], L = L)
+      slambda[m, ] <- sqrt(eigen_val_laplacian(m = Ks[m, ], L = L))
     }
     out[[paste0("Xgp", sfx)]] <- XgpL
     out[[paste0("slambda", sfx)]] <- slambda
@@ -637,24 +705,30 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 }
 
 # data for autocorrelation variables
-data_ac <- function(bterms, data, data2, basis = NULL, ...) {
+data_ac <- function(bframe, data, data2, ...) {
+  if (!is.null(bframe$sdata$ac)) {
+    # standata was already precomputed
+    return(bframe$sdata$ac)
+  }
   out <- list()
   N <- nrow(data)
-  acef <- tidy_acef(bterms)
-  if (has_ac_subset(bterms, dim = "time")) {
-    gr <- get_ac_vars(acef, "gr", dim = "time")
+  basis <- bframe$basis$ac
+  acframe <- bframe$frame$ac
+  stopifnot(is.acframe(acframe))
+  if (has_ac_subset(bframe, dim = "time")) {
+    gr <- get_ac_vars(acframe, "gr", dim = "time")
     if (isTRUE(nzchar(gr))) {
       tgroup <- as.numeric(factor(data[[gr]]))
     } else {
       tgroup <- rep(1, N)
     }
   }
-  if (has_ac_class(acef, "arma")) {
+  if (has_ac_class(acframe, "arma")) {
     # ARMA correlations
-    acef_arma <- subset2(acef, class = "arma")
-    out$Kar <- acef_arma$p
-    out$Kma <- acef_arma$q
-    if (!use_ac_cov_time(acef_arma)) {
+    acframe_arma <- subset2(acframe, class = "arma")
+    out$Kar <- acframe_arma$p
+    out$Kma <- acframe_arma$q
+    if (!use_ac_cov_time(acframe_arma)) {
       # data for the 'predictor' version of ARMA
       max_lag <- max(out$Kar, out$Kma)
       out$J_lag <- as.array(rep(0, N))
@@ -665,7 +739,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       }
     }
   }
-  if (use_ac_cov_time(acef)) {
+  if (use_ac_cov_time(acframe)) {
     # data for the 'covariance' versions of time-series structures
     # TODO: change begin[i]:end[i] notation to slice[i]:(slice[i+1] - 1)
     #   see comment on PR #1435
@@ -675,8 +749,8 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
     ))
     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-    if (has_ac_class(acef, "unstr")) {
-      time <- get_ac_vars(bterms, "time", dim = "time")
+    if (has_ac_class(acframe, "unstr")) {
+      time <- get_ac_vars(bframe, "time", dim = "time")
       time_data <- get(time, data)
       new_times <- extract_levels(time_data)
       if (length(basis)) {
@@ -699,9 +773,9 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       }
     }
   }
-  if (has_ac_class(acef, "sar")) {
-    acef_sar <- subset2(acef, class = "sar")
-    M <- data2[[acef_sar$M]]
+  if (has_ac_class(acframe, "sar")) {
+    acframe_sar <- subset2(acframe, class = "sar")
+    M <- data2[[acframe_sar$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
       class(rmd_rows) <- NULL
@@ -716,15 +790,15 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     # simplifies code of choose_N
     out$N_tg <- 1
   }
-  if (has_ac_class(acef, "car")) {
-    acef_car <- subset2(acef, class = "car")
+  if (has_ac_class(acframe, "car")) {
+    acframe_car <- subset2(acframe, class = "car")
     locations <- NULL
     if (length(basis)) {
       locations <- basis$locations
     }
-    M <- data2[[acef_car$M]]
-    if (acef_car$gr != "NA") {
-      loc_data <- get(acef_car$gr, data)
+    M <- data2[[acframe_car$M]]
+    if (acframe_car$gr != "NA") {
+      loc_data <- get(acframe_car$gr, data)
       new_locations <- extract_levels(loc_data)
       if (is.null(locations)) {
         locations <- new_locations
@@ -771,7 +845,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       edges1 = as.array(edges_rows),
       edges2 = as.array(edges_cols)
     )
-    if (acef_car$type %in% c("escar", "esicar")) {
+    if (acframe_car$type %in% c("escar", "esicar")) {
       Nneigh <- Matrix::colSums(M)
       if (any(Nneigh == 0) && !length(basis)) {
         stop2(
@@ -784,13 +858,13 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
       eigenMcar <- t(inv_sqrt_D) %*% M %*% inv_sqrt_D
       eigenMcar <- eigen(eigenMcar, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenMcar)
-    } else if (acef_car$type %in% "bym2") {
+    } else if (acframe_car$type %in% "bym2") {
       c(out) <- list(car_scale = .car_scale(edges, Nloc))
     }
   }
-  if (has_ac_class(acef, "fcor")) {
-    acef_fcor <- subset2(acef, class = "fcor")
-    M <- data2[[acef_fcor$M]]
+  if (has_ac_class(acframe, "fcor")) {
+    acframe_fcor <- subset2(acframe, class = "fcor")
+    M <- data2[[acframe_fcor$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
       class(rmd_rows) <- NULL
@@ -805,20 +879,25 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     out$N_tg <- 1
   }
   if (length(out)) {
-    resp <- usc(combine_prefix(bterms))
+    resp <- usc(combine_prefix(bframe))
     out <- setNames(out, paste0(names(out), resp))
   }
   out
 }
 
 # prepare data of offsets for use in Stan
-data_offset <- function(bterms, data) {
+data_offset <- function(bframe, data) {
+  stopifnot(is.btl(bframe))
+  if (!is.null(bframe$sdata$offset)) {
+    # standata was already precomputed
+    return(bframe$sdata$offset)
+  }
   out <- list()
-  px <- check_prefix(bterms)
-  if (is.formula(bterms$offset)) {
+  px <- check_prefix(bframe)
+  if (is.formula(bframe$offset)) {
     p <- usc(combine_prefix(px))
     mf <- rm_attr(data, "terms")
-    mf <- model.frame(bterms$offset, mf, na.action = na.pass)
+    mf <- model.frame(bframe$offset, mf, na.action = na.pass)
     offset <- model.offset(mf)
     if (length(offset) == 1L) {
       offset <- rep(offset, nrow(data))
@@ -832,14 +911,18 @@ data_offset <- function(bterms, data) {
 # data for covariates in non-linear models
 # @param x a btnl object
 # @return a named list of data passed to Stan
-data_cnl <- function(bterms, data) {
-  stopifnot(is.btnl(bterms))
+data_cnl <- function(bframe, data) {
+  stopifnot(is.btnl(bframe))
+  if (!is.null(bframe$sdata$cnl)) {
+    # standata was already precomputed
+    return(bframe$sdata$cnl)
+  }
   out <- list()
-  covars <- all.vars(bterms$covars)
+  covars <- all.vars(bframe$covars)
   if (!length(covars)) {
     return(out)
   }
-  p <- usc(combine_prefix(bterms))
+  p <- usc(combine_prefix(bframe))
   for (i in seq_along(covars)) {
     cvalues <- get(covars[i], data)
     if (is_like_factor(cvalues)) {
@@ -890,9 +973,9 @@ data_cnl <- function(bterms, data) {
 }
 
 # data for special priors such as horseshoe and R2D2
-data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
+data_special_prior <- function(bframe, data, prior, sdata = NULL) {
   out <- list()
-  px <- check_prefix(bterms)
+  px <- check_prefix(bframe)
   p <- usc(combine_prefix(px))
   if (!has_special_prior(prior, px)) {
     return(out)
@@ -931,7 +1014,7 @@ data_special_prior <- function(bterms, data, prior, ranef, sdata = NULL) {
     Kscales <- Kscales + 1
   }
   if (has_special_prior(prior, px, class = "sd")) {
-    ids <- unique(subset2(ranef, ls = px)$id)
+    ids <- unique(bframe$frame$re$id)
     Kscales <- Kscales + sum(unlist(sdata[paste0("M_", ids)]))
   }
   out[[paste0("Kscales", p)]] <- Kscales

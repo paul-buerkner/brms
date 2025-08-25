@@ -42,8 +42,9 @@ test_that("print for class brmsprior works correctly", {
 
 test_that("default_prior returns correct nlpar names for random effects pars", {
   # reported in issue #47
-  data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
-  gp <- default_prior(bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE), data = data)
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
+  bform <- bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE)
+  gp <- default_prior(bform, data = dat)
   expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
@@ -62,7 +63,8 @@ test_that("default_prior returns correct fixed effect names for GAMMs", {
 test_that("default_prior returns correct prior names for auxiliary parameters", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10),
                     z = rnorm(10), g = rep(1:2, 5))
-  prior <- default_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
+  bform <- bf(y ~ 1, phi ~ z + (1|g), family = Beta())
+  prior <- default_prior(bform, data = dat)
   prior <- prior[prior$dpar == "phi", ]
   pdata <- data.frame(class = c("b", "b", "Intercept", rep("sd", 3)),
                       coef = c("", "z", "", "", "", "Intercept"),
@@ -136,4 +138,24 @@ test_that("as.brmsprior works correctly", {
   expect_equal(bprior$coef, c("a", "b"))
   expect_equal(bprior$x, NULL)
   expect_equal(bprior$lb, rep(NA_character_, 2))
+})
+
+test_that("prior tags are correctly applied", {
+
+  prior1 <- prior(normal(0, 1), class = sd, tag = "prior_tag1")
+  prior2 <- prior(normal(0, 5), class = b, tag = "prior_tag2")
+  prior3 <- prior(normal(0, 0.5), coef = "Trt1", tag = "prior_tag3")
+  prior4 <- prior(normal(0, 10), class = "Intercept", tag = "prior_tag4")
+  prior5 <- prior(lkj_corr_cholesky(3), class = "L", group = "visit", tag = "prior_tag5")
+
+  v <- validate_prior(
+    c(prior1, prior2, prior3, prior4, prior5),
+    formula = count ~ zBase * Trt + (1 | patient) + (1 + Trt | visit),
+    data = epilepsy, family = poisson())
+
+  expect_equal(v[which(v$class == "sd"),]$tag[[1]], "prior_tag1")
+  expect_equal(v[which(v$class == "b" & v$coef != "Trt1"),]$tag[[1]], "prior_tag2")
+  expect_equal(v[which(v$class == "b" & v$coef == "Trt1"),]$tag, "prior_tag3")
+  expect_equal(v[which(v$class == "Intercept"),]$tag, "prior_tag4")
+  expect_equal(v[which(v$class == "L"),]$tag[[2]], "prior_tag5")
 })

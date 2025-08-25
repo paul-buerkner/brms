@@ -106,8 +106,11 @@ test_that("brmsfit_needs_refit works correctly", {
   data_model1 <- data.frame(y = rnorm(10), x = rnorm(10))
   fake_fit <- brm(y ~ x, data = data_model1, empty = TRUE)
 
+  expect_error(summary(fake_fit), NA)
+
   fake_fit_file <- fake_fit
-  fake_fit_file$file <- cache_tmp
+  # align windows with unix encoding of file paths
+  fake_fit_file$file <- gsub("\\", "/", cache_tmp, fixed = TRUE)
 
   scode_model1 <- make_stancode(y ~ x, data = data_model1)
   sdata_model1 <- make_standata(y ~ x, data = data_model1)
@@ -117,9 +120,10 @@ test_that("brmsfit_needs_refit works correctly", {
   scode_model2 <- make_stancode(y ~ 0 + x, data = data_model2)
   sdata_model2 <- make_standata(y ~ 0 + x, data = data_model2)
 
-
   write_brmsfit(fake_fit, file = cache_tmp)
   cache_res <- read_brmsfit(file = cache_tmp)
+  expect_error(summary(cache_res), NA)
+
   expect_equal(cache_res, fake_fit_file)
 
   expect_false(brmsfit_needs_refit(
@@ -207,4 +211,53 @@ test_that("insert_refcat() works correctly", {
       }
     }
   }
+})
+
+# split_folder_and_file
+test_that("split_folder_and_file returns expected results", {
+  files <- c("somefile",  "./somefile" , "somepath/somefolder/somefile" )
+  result <- base::lapply(files, split_folder_and_file)
+  exp_result <-   list( list( folder = '.' , file= 'somefile' ) ,
+                        list( folder = '.' , file= 'somefile' ) ,
+                        list( folder = 'somepath/somefolder' , file= 'somefile' )
+  )
+  expect_equal(result ,exp_result )
+})
+
+# check_brmsfit_file
+test_that("check_brmsfit_file returns expected results", {
+  files <- c("somefile",  "./somefile"  , "somefile.rds" , "somepath/somefolder/somefile" )
+  result <- base::lapply(files, function(x) check_brmsfit_file(x ,  .check_folder = F  ))
+  exp_result <-   list(  "./somefile.rds" ,
+                         "./somefile.rds" ,
+                         "./somefile.rds" ,
+                         "somepath/somefolder/somefile.rds" )
+  expect_equal(result ,exp_result )
+})
+
+# get_cache_folder
+test_that("get_cache_folder returns expected results", {
+
+  old_val <- getOption("brms.cache_folder", NULL)
+  options(brms.cache_folder = "SomeFolder")
+
+  on.exit({
+    if (is.null(old_val)) {
+      options(your.option.name = NULL)
+    } else {
+      options(your.option.name = old_val)
+    }
+  }, add = TRUE)
+
+
+  files <- c("somefile", "./somefile", "abcde/somefile.rds" ,
+             "somepath/somefolder/somefile")
+  result <- base::lapply(files, brms:::get_cache_folder)
+  exp_result <-   list(
+    "SomeFolder" ,
+    "SomeFolder" ,
+    "abcde" ,
+    "somepath/somefolder"
+  )
+  expect_equal(result, exp_result)
 })

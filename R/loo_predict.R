@@ -3,7 +3,7 @@
 #' These functions are wrappers around the \code{\link[loo]{E_loo}}
 #' function of the \pkg{loo} package.
 #'
-#' @aliases loo_predict loo_linpred loo_predictive_interval
+#' @aliases loo_predict loo_epred loo_linpred loo_predictive_interval
 #'
 #' @param object An object of class \code{brmsfit}.
 #' @param type The statistic to be computed on the results.
@@ -19,22 +19,21 @@
 #'   internally, which may be time consuming for models fit to very large datasets.
 #' @param ... Optional arguments passed to the underlying methods that is
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
-#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or
+#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}},
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} or
 #'   \code{\link[brms:posterior_linpred.brmsfit]{posterior_linpred}}.
 #' @inheritParams posterior_predict.brmsfit
 #'
-#' @return \code{loo_predict} and \code{loo_linpred} return a vector with one
-#'   element per observation. The only exception is if \code{type = "quantile"}
-#'   and \code{length(probs) >= 2}, in which case a separate vector for each
-#'   element of \code{probs} is computed and they are returned in a matrix with
-#'   \code{length(probs)} rows and one column per observation.
+#' @return \code{loo_predict}, \code{loo_epred}, \code{loo_linpred}, and
+#'   \code{loo_predictive_interval} all return a matrix with one row per
+#'   observation and one column per summary statistic as specified by
+#'   arguments \code{type} and \code{probs}. In multivariate or categorical models
+#'   a third dimension is added to represent the response variables or categories,
+#'   respectively.
 #'
-#'   \code{loo_predictive_interval} returns a matrix with one row per
-#'   observation and two columns.
 #'   \code{loo_predictive_interval(..., prob = p)} is equivalent to
 #'   \code{loo_predict(..., type = "quantile", probs = c(a, 1-a))} with
-#'   \code{a = (1 - p)/2}, except it transposes the result and adds informative
-#'   column names.
+#'   \code{a = (1 - p)/2}.
 #'
 #' @examples
 #' \dontrun{
@@ -52,6 +51,7 @@
 #' psis <- loo::psis(-log_lik(fit), cores = 2)
 #' loo_predictive_interval(fit, prob = 0.8, psis_object = psis)
 #' loo_predict(fit, type = "var", psis_object = psis)
+#' loo_epred(fit, type = "var", psis_object = psis)
 #' }
 #'
 #' @method loo_predict brmsfit
@@ -62,13 +62,40 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
                                 probs = 0.5, psis_object = NULL, resp = NULL,
                                 ...) {
   type <- match.arg(type)
-  stopifnot_resp(object, resp)
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
+    # run loo instead of psis to allow for moment matching
+    loo_object <- loo(object, resp = resp, save_psis = TRUE, ...)
+    psis_object <- loo_object$psis_object
   }
   preds <- posterior_predict(object, resp = resp, ...)
-  loo::E_loo(preds, psis_object, type = type, probs = probs)$value
+  E_loo_value(preds, psis_object, type = type, probs = probs)
+}
+
+# #' @importFrom rstantools loo_epred
+#' @rdname loo_predict.brmsfit
+#' @method loo_epred brmsfit
+#' @export loo_epred
+#' @export
+loo_epred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
+                              probs = 0.5, psis_object = NULL, resp = NULL,
+                              ...) {
+  type <- match.arg(type)
+  if (is.null(psis_object)) {
+    message("Running PSIS to compute weights")
+    # run loo instead of psis to allow for moment matching
+    loo_object <- loo(object, resp = resp, save_psis = TRUE, ...)
+    psis_object <- loo_object$psis_object
+  }
+  preds <- posterior_epred(object, resp = resp, ...)
+  E_loo_value(preds, psis_object, type = type, probs = probs)
+}
+
+#' @rdname loo_predict.brmsfit
+#' @export
+loo_epred <- function(object, ...) {
+  # TODO: remove this generic once it is available in rstantools
+  UseMethod("loo_epred")
 }
 
 #' @rdname loo_predict.brmsfit
@@ -80,18 +107,14 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
                                 probs = 0.5, psis_object = NULL, resp = NULL,
                                 ...) {
   type <- match.arg(type)
-  stopifnot_resp(object, resp)
-  family <- family(object, resp = resp)
-  if (is_ordinal(family) || is_categorical(family)) {
-    stop2("Method 'loo_linpred' is not implemented ",
-          "for categorical or ordinal models")
-  }
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
+    # run loo instead of psis to allow for moment matching
+    loo_object <- loo(object, resp = resp, save_psis = TRUE, ...)
+    psis_object <- loo_object$psis_object
   }
   preds <- posterior_linpred(object, resp = resp, ...)
-  loo::E_loo(preds, psis_object, type = type, probs = probs)$value
+  E_loo_value(preds, psis_object, type = type, probs = probs)
 }
 
 #' @rdname loo_predict.brmsfit
@@ -106,13 +129,40 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
   }
   alpha <- (1 - prob) / 2
   probs <- c(alpha, 1 - alpha)
-  labs <- paste0(100 * probs, "%")
   intervals <- loo_predict(
     object, type = "quantile", probs = probs,
     psis_object = psis_object, ...
   )
-  rownames(intervals) <- labs
-  t(intervals)
+  intervals
+}
+
+# convenient wrapper around loo::E_loo
+E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
+  .E_loo_value <- function(x) {
+    y <- loo::E_loo(x, psis_object, type = type, probs = probs)$value
+    # loo::E_loo has output dimensions inconsistent with brms conventions
+    # ensure that observations are stored as rows and summaries as columns
+    if (is.matrix(y) && ncol(x) == ncol(y)) {
+      y <- t(y)
+    } else if (is.vector(y)) {
+      # create a matrix with one column representing the summary statistic
+      y <- matrix(y)
+    }
+    # ensure names consistent with the posterior package
+    labs <- type
+    if (labs == "quantile") {
+      labs <- paste0("q", probs * 100)
+    }
+    colnames(y) <- labs
+    return(y)
+  }
+  if (length(dim(x)) == 3) {
+    out <- apply(x, 3, .E_loo_value, simplify = FALSE)
+    out <- abind::abind(out, rev.along = 0)
+  } else {
+    out <- .E_loo_value(x)
+  }
+  out
 }
 
 #' Compute a LOO-adjusted R-squared for regression models
@@ -120,6 +170,8 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @aliases loo_R2
 #'
 #' @inheritParams bayes_R2.brmsfit
+#' @param seed Optional integer used to initialize the random number
+#'   generator.
 #' @param ... Further arguments passed to
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
@@ -127,9 +179,25 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #'
 #' @return If \code{summary = TRUE}, an M x C matrix is returned
 #'  (M = number of response variables and c = \code{length(probs) + 2})
-#'  containing summary statistics of the LOO-adjusted R-squared values.
-#'  If \code{summary = FALSE}, the posterior draws of the LOO-adjusted
-#'  R-squared values are returned in an S x M matrix (S is the number of draws).
+#'  containing Bayesian bootstrap based summary statistics of the
+#'  LOO-adjusted R-squared values. If \code{summary = FALSE}, the
+#'  Bayesian bootstrap draws of the LOO-adjusted R-squared values 
+#'  are returned in an S x M matrix (S is the number of draws).
+#'
+#'  @details LOO-R2 uses LOO residuals and is defined as
+#' \eqn{1-Var_{loo-res} / Var_y},
+#' with
+#' \deqn{
+#' Var_y = V_{n=1}^N y_n, and
+#' Var_{loo-res} = V_{n=1}^N \hat{e}_{loo,n},
+#' }
+#' where \eqn{\hat{e}_{loo,n}=y_n-\hat{y}_{loo,n}}.
+#' Bayesian bootstrap is used to draw from the approximated uncertainty
+#' distribution as described by Vehtari and Lampinen (2002).
+#'
+#' @references Vehtari and Lampinen (2002). Bayesian model assessment
+#' and comparison using cross-validation predictive densities. Neural
+#' Computation, 14(10):2439-2468. 
 #'
 #' @examples
 #' \dontrun{
@@ -147,7 +215,8 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @export loo_R2
 #' @export
 loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
-                           robust = FALSE, probs = c(0.025, 0.975), ...) {
+                           robust = FALSE, probs = c(0.025, 0.975),
+                           seed = NULL, ...) {
   contains_draws(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
@@ -173,6 +242,16 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       "'loo_R2' which is likely invalid for ordinal families."
     )
   }
+
+  # set the random seed if required
+  if (!is.null(seed)) {
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
+
   args_y <- list(object, warn = TRUE, ...)
   args_ypred <- list(object, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
@@ -204,7 +283,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
   err_loo <- ypredloo - y
 
-  # simulated dirichlet weights
+  # simulated Dirichlet weights
   S <- nrow(ypred)
   N <- ncol(ypred)
   exp_draws <- matrix(rexp(S * N, rate = 1), nrow = S, ncol = N)
@@ -215,7 +294,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
         rowSums(sweep(weights, 2, y, FUN = "*"))^2)
   var_err_loo <- (N / (N - 1)) *
     (rowSums(sweep(weights, 2, err_loo^2, FUN = "*")) -
-       rowSums(sweep(weights, 2, err_loo, FUN = "*")^2))
+       rowSums(sweep(weights, 2, err_loo, FUN = "*"))^2)
 
   out <- unname(1 - var_err_loo / var_y)
   out[out < -1] <- -1

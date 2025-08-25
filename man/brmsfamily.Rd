@@ -17,6 +17,7 @@
 \alias{exgaussian}
 \alias{wiener}
 \alias{Beta}
+\alias{xbeta}
 \alias{dirichlet}
 \alias{logistic_normal}
 \alias{von_mises}
@@ -35,6 +36,7 @@
 \alias{zero_inflated_beta_binomial}
 \alias{categorical}
 \alias{multinomial}
+\alias{dirichlet_multinomial}
 \alias{cumulative}
 \alias{sratio}
 \alias{cratio}
@@ -62,8 +64,7 @@ brmsfamily(
   link_alpha = "identity",
   link_quantile = "logit",
   threshold = "flexible",
-  refcat = NULL,
-  bhaz = NULL
+  refcat = NULL
 )
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
@@ -101,6 +102,8 @@ wiener(
 
 Beta(link = "logit", link_phi = "log")
 
+xbeta(link = "logit", link_phi = "log", link_kappa = "log")
+
 dirichlet(link = "logit", link_phi = "log", refcat = NULL)
 
 logistic_normal(link = "identity", link_sigma = "log", refcat = NULL)
@@ -109,7 +112,7 @@ von_mises(link = "tan_half", link_kappa = "log")
 
 asym_laplace(link = "identity", link_sigma = "log", link_quantile = "logit")
 
-cox(link = "log", bhaz = NULL)
+cox(link = "log")
 
 hurdle_poisson(link = "log", link_hu = "logit")
 
@@ -151,6 +154,8 @@ categorical(link = "logit", refcat = NULL)
 
 multinomial(link = "logit", refcat = NULL)
 
+dirichlet_multinomial(link = "logit", link_phi = "log", refcat = NULL)
+
 cumulative(link = "logit", link_disc = "log", threshold = "flexible")
 
 sratio(link = "logit", link_disc = "log", threshold = "flexible")
@@ -169,12 +174,12 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
 \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
-\code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+\code{multinomial}, \code{dirichlet_multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
 \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-\code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.}
+\code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbeta}.}
 
 \item{link}{A specification for the model link function. This can be a
 name/expression or character string. See the 'Details' section for more
@@ -222,13 +227,12 @@ consecutive thresholds to the same value, and
 \code{"sum_to_zero"} ensures the thresholds sum to zero.}
 
 \item{refcat}{Optional name of the reference response category used in
-\code{categorical}, \code{multinomial}, \code{dirichlet} and
-\code{logistic_normal} models. If \code{NULL} (the default), the first
+\code{categorical}, \code{multinomial}, \code{dirichlet},
+\code{dirichlet_multinomial} and \code{logistic_normal} models.
+If \code{NULL} (the default), the first
 category is used as the reference. If \code{NA}, all categories will be
 predicted, which requires strong priors or carefully specified predictor
 terms in order to lead to an identified model.}
-
-\item{bhaz}{Currently for experimental purposes only.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models
@@ -259,8 +263,9 @@ Below, we list common use cases for the different families.
   can be used for binary regression (i.e., most commonly logistic
   regression).}
 
-  \item{Families \code{categorical} and \code{multinomial} can be used for
-  multi-logistic regression when there are more than two possible outcomes.}
+  \item{Families \code{categorical}, \code{multinomial} and
+  \code{dirichlet_multinomial} can be used for multi-logistic regression
+  when there are more than two possible outcomes.}
 
   \item{Families \code{cumulative}, \code{cratio} ('continuation ratio'),
   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category')
@@ -276,6 +281,16 @@ Below, we list common use cases for the different families.
 
   \item{Families \code{beta}, \code{dirichlet}, and \code{logistic_normal}
   can be used to model responses representing rates or probabilities.}
+
+  \item{Family \code{xbeta} extends the \code{beta} family to
+  support \code{[0, 1]} responses with exact \code{0}s and / or
+  \code{1}s, when each response takes values \code{0}, \code{1},
+  and \code{(0, 1)} according to a single process. If there is
+  merit in assuming that 0 and 1 values arise from different
+  processes than \code{(0, 1)} values, then the
+  \code{zero_inflated_beta}, \code{zero_one_inflated_beta} families
+  provide more flexibility.  For details see Kosmidis & Zeileis
+  (2024).}
 
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -298,31 +313,33 @@ Below, we list common use cases for the different families.
   that cannot be explained by the primary distribution of the response.}
   }
 
-  Below, we list all possible links for each family.
-  The first link mentioned for each family is the default.
-  \itemize{
-  \item{Families \code{gaussian}, \code{student}, \code{skew_normal},
-  \code{exgaussian}, \code{asym_laplace}, and \code{gen_extreme_value}
-  support the links (as names) \code{identity}, \code{log}, \code{inverse},
-  and \code{softplus}.}
+  Below, we list all possible links for each family.  The first
+  link mentioned for each family is the default.  \itemize{
+  \item{Families \code{gaussian}, \code{student},
+  \code{skew_normal}, \code{exgaussian}, \code{asym_laplace}, and
+  \code{gen_extreme_value} support the links (as names)
+  \code{identity}, \code{log}, \code{inverse}, and
+  \code{softplus}.}
 
   \item{Families \code{poisson}, \code{negbinomial}, \code{geometric},
   \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
   \code{hurdle_poisson}, and \code{hurdle_negbinomial} support
   \code{log}, \code{identity}, \code{sqrt}, and \code{softplus}.}
 
-  \item{Families \code{binomial}, \code{bernoulli}, \code{beta_binomial},
-  \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
-  \code{Beta}, \code{zero_inflated_beta}, and \code{zero_one_inflated_beta}
-  support \code{logit}, \code{probit}, \code{probit_approx}, \code{cloglog},
-  \code{cauchit}, \code{identity}, and \code{log}.}
+  \item{Families \code{binomial}, \code{bernoulli},
+  \code{beta_binomial}, \code{zero_inflated_binomial},
+  \code{zero_inflated_beta_binomial}, \code{Beta},
+  \code{zero_inflated_beta}, \code{zero_one_inflated_beta}, and
+  \code{xbeta} support \code{logit}, \code{probit},
+  \code{probit_approx}, \code{cloglog}, \code{cauchit},
+  \code{identity}, and \code{log}.}
 
   \item{Families \code{cumulative}, \code{cratio}, \code{sratio},
   \code{acat}, and \code{hurdle_cumulative} support \code{logit},
   \code{probit}, \code{probit_approx}, \code{cloglog}, and \code{cauchit}.}
 
-  \item{Families \code{categorical}, \code{multinomial}, and \code{dirichlet}
-  support \code{logit}.}
+  \item{Families \code{categorical}, \code{multinomial},
+  \code{dirichlet_multinomial} and \code{dirichlet} support \code{logit}.}
 
   \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
   \code{frechet}, and \code{hurdle_gamma} support
@@ -365,6 +382,10 @@ Below, we list common use cases for the different families.
  # both leads to the same object
  identical(fam1, fam2)
 
+}
+\references{
+Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for [0, 1] Responses.
+\emph{arXiv Preprint}. \doi{10.48550/arXiv.2409.07233}
 }
 \seealso{
 \code{\link[brms:brm]{brm}},

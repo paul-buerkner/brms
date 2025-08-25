@@ -16,17 +16,20 @@ params:
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
 options(width = 90)
+knit_hooks$set(pngquant = knitr::hook_pngquant)
 opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
   eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  dev = "jpeg",
-  dpi = 100,
+  dev = "ragg_png",
+  dpi = 72,
+  fig.retina = 1.5,
   fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
-  fig.align = "center"
+  fig.align = "center",
+  pngquant = "--speed=1 --quality=50"
 )
 library(brms)
 ggplot2::theme_set(theme_default())
@@ -75,8 +78,8 @@ summary(fit1)
 
 The summary output of multivariate models closely resembles those of univariate
 models, except that the parameters now have the corresponding response variable
-as prefix. Within dams, tarsus length and back color seem to be negatively
-correlated, while within fosternests the opposite is true. This indicates
+as prefix. Across dams, tarsus length and back color seem to be negatively
+correlated, while across fosternests the opposite is true. This indicates
 differential effects of genetic and environmental factors on these two
 characteristics. Further, the small residual correlation `rescor(tarsus, back)`
 on the bottom of the output indicates that there is little unmodeled dependency

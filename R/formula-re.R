@@ -19,7 +19,11 @@
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
-#' @param cov An optional matrix which is proportional to the withon-group
+#' @param pw Optional numeric variable specifying prior weights. They weight the
+#'   contribution of each group to the log-prior of the group-level
+#'   coefficients. Should have one distinct value for each level of the
+#'   grouping variable.
+#' @param cov An optional matrix which is proportional to the within-group
 #'   covariance matrix of the group-level effects. All levels of the grouping
 #'   factor should appear as rownames of the corresponding matrix. This argument
 #'   can be used, among others, to model pedigrees and phylogenetic effects. See
@@ -43,10 +47,16 @@
 #' # include Trt as a by variable
 #' fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
 #' summary(fit3)
+#'
+#' # include a group-level weight variable
+#' epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
+#' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
+#'             data = epilepsy)
+#' summary(fit4)
 #' }
 #'
 #' @export
-gr <- function(..., by = NULL, cor = TRUE, id = NA,
+gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
                cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -62,6 +72,12 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   } else {
     by <- ""
   }
+  pw <- substitute(pw)
+  if (!is.null(pw)) {
+    pw <- deparse0(pw)
+  } else {
+    pw <- ""
+  }
   cov <- substitute(cov)
   if (!is.null(cov)) {
     cov <- all.vars(cov)
@@ -73,8 +89,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   byvars <- all_vars(by)
-  allvars <- str2formula(c(groups, byvars))
-  nlist(groups, allvars, label, by, cor, id, cov, dist, type = "")
+  pwvars <- all_vars(pw)
+  allvars <- str2formula(c(groups, byvars, pwvars))
+  nlist(groups, allvars, label, by, cor, id, pw, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -84,7 +101,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' it exists purely to help set up a model with grouping terms.
 #'
 #' @inheritParams gr
-#' @param weights A matrix specifying the weights of each member.
+#' @param weights A matrix specifying the membership weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
 #'  If \code{NULL} (the default), equally weights are used.
 #' @param by An optional factor matrix, specifying sub-populations of the
@@ -92,11 +109,14 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #'   \code{...}. For each level of the \code{by} variable, a separate
 #'   variance-covariance matrix will be fitted. Levels of the grouping factor
 #'   must be nested in levels of the \code{by} variable matrix.
+#' @param pw Optional numeric matrix specifying prior weights. They weight the
+#'   contribution of each group to the log-prior of the group-level
+#'   coefficients. Should have as many columns as grouping terms specified in
+#'   \code{...} and one distinct value for each group level.
 #' @param scale Logical; if \code{TRUE} (the default),
-#'  weights are standardized in order to sum to one per row.
+#'  membership weights are standardized in order to sum to one per row.
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
-#'
 #' @seealso \code{\link{brmsformula}}, \code{\link{mmc}}
 #'
 #' @examples
@@ -124,8 +144,9 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA,
 #' }
 #'
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
-               id = NA, cov = NULL, dist = "gaussian") {
+mm <- function(..., weights = NULL, scale = TRUE,
+               by = NULL, cor = TRUE, id = NA,  pw = NULL,
+               cov = NULL, dist = "gaussian") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
@@ -142,6 +163,12 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   } else {
     by <- ""
   }
+  pw <- substitute(pw)
+  if (!is.null(pw)) {
+    pw <- deparse0(pw)
+  } else {
+    pw <- ""
+  }
   cov <- substitute(cov)
   if (!is.null(cov)) {
     cov <- all.vars(cov)
@@ -155,8 +182,9 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
   weightvars <- all_vars(weights)
+  pwvars <- all_vars(pw)
   byvars <- all_vars(by)
-  allvars <- str2formula(c(groups, weightvars, byvars))
+  allvars <- str2formula(c(groups, weightvars, pwvars, byvars))
   if (!is.null(weights)) {
     weights <- str2formula(deparse_no_string(weights))
     attr(weights, "scale") <- scale
@@ -164,7 +192,7 @@ mm <- function(..., weights = NULL, scale = TRUE, by = NULL, cor = TRUE,
   }
   nlist(
     groups, weights, weightvars, allvars, label,
-    by, cor, id, cov, dist, type = "mm"
+    by, cor, id, pw, cov, dist, type = "mm"
   )
 }
 
@@ -533,10 +561,10 @@ get_re.btl <- function(x, ...) {
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
 #   form: formula used to compute the effects
-tidy_ranef <- function(bterms, data, old_levels = NULL) {
+frame_re <- function(bterms, data, old_levels = NULL) {
   data <- combine_groups(data, get_group_vars(bterms))
   re <- get_re(bterms)
-  ranef <- vector("list", nrow(re))
+  out <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
   id_groups <- list()
   j <- 1
@@ -544,7 +572,8 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
     if (!nzchar(re$type[i])) {
       coef <- colnames(get_model_matrix(re$form[[i]], data))
     } else if (re$type[i] == "sp") {
-      coef <- tidy_spef(re$form[[i]], data)$coef
+      # TODO: try to avoid having to call frame_sp here
+      coef <- frame_sp(re$form[[i]], data)$coef
     } else if (re$type[i] == "mmc") {
       coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
@@ -560,7 +589,7 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
       coef <- as.vector(t(outer(coef, indices, paste0)))
     }
-    avoid_dpars(coef, bterms = bterms)
+    avoid_dpars(coef, bterms)
     rdat <- data.frame(
       id = re$id[[i]],
       group = re$group[[i]],
@@ -609,112 +638,133 @@ tidy_ranef <- function(bterms, data, old_levels = NULL) {
         j <- j + 1
       }
     }
-    ranef[[i]] <- rdat
+    out[[i]] <- rdat
   }
-  ranef <- do_call(rbind, c(list(empty_ranef()), ranef))
+  out <- do_call(rbind, c(list(empty_reframe()), out))
   # check for overlap between different group types
-  rsv_groups <- ranef[nzchar(ranef$gtype), "group"]
-  other_groups <- ranef[!nzchar(ranef$gtype), "group"]
+  rsv_groups <- out[nzchar(out$gtype), "group"]
+  other_groups <- out[!nzchar(out$gtype), "group"]
   inv_groups <- intersect(rsv_groups, other_groups)
   if (length(inv_groups)) {
     inv_groups <- paste0("'", inv_groups, "'", collapse = ", ")
     stop2("Grouping factor names ", inv_groups, " are resevered.")
   }
   # check for duplicated and thus not identified effects
-  dup <- duplicated(ranef[, c("group", "coef", vars_prefix())])
+  dup <- duplicated(out[, c("group", "coef", vars_prefix())])
   if (any(dup)) {
-    dr <- ranef[which(dup)[1], ]
+    dr <- out[which(dup)[1], ]
     stop2(
       "Duplicated group-level effects are not allowed.\n",
       "Occured for effect '", dr$coef, "' of group '", dr$group, "'."
     )
   }
-  if (nrow(ranef)) {
-    for (id in unique(ranef$id)) {
-      ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
+  if (has_rows(out)) {
+    for (id in unique(out$id)) {
+      out$cn[out$id == id] <- seq_len(sum(out$id == id))
     }
-    ranef$ggn <- match(ranef$group, unique(ranef$group))
-    if (is.null(old_levels)) {
-      rsub <- ranef[!duplicated(ranef$group), ]
-      levels <- named_list(rsub$group)
-      for (i in seq_along(levels)) {
-        # combine levels of all grouping factors within one grouping term
-        levels[[i]] <- unique(ulapply(
-          rsub$gcall[[i]]$groups,
-          function(g) extract_levels(get(g, data))
-        ))
-        # fixes issue #1353
-        bysel <- ranef$group == names(levels)[i] &
-          nzchar(ranef$by) & !duplicated(ranef$by)
-        bysel <- which(bysel)
-        if (length(bysel) > 1L) {
-          stop2("Each grouping factor can only be associated with one 'by' variable.")
-        }
-        # ensure that a non-NULL by-variable is found if present
-        if (length(bysel) == 1L) {
-          rsub[i, ] <- ranef[bysel, ]
-        }
-        # store information of corresponding by-levels
-        if (nzchar(rsub$by[i])) {
-          stopifnot(rsub$type[i] %in% c("", "mmc"))
-          by <- rsub$by[i]
-          bylevels <- rsub$bylevels[[i]]
-          byvar <- rm_wsp(eval2(by, data))
-          groups <- rsub$gcall[[i]]$groups
-          if (rsub$gtype[i] == "mm") {
-            byvar <- as.matrix(byvar)
-            if (!identical(dim(byvar), c(nrow(data), length(groups)))) {
-              stop2(
-                "Grouping structure 'mm' expects 'by' to be ",
-                "a matrix with as many columns as grouping factors."
-              )
-            }
-            df <- J <- named_list(groups)
-            for (k in seq_along(groups)) {
-              J[[k]] <- match(get(groups[k], data), levels[[i]])
-              df[[k]] <- data.frame(J = J[[k]], by = byvar[, k])
-            }
-            J <- unlist(J)
-            df <- do_call(rbind, df)
-          } else {
-            J <- match(get(groups, data), levels[[i]])
-            df <- data.frame(J = J, by = byvar)
-          }
-          df <- unique(df)
-          if (nrow(df) > length(unique(J))) {
-            stop2("Some levels of ", collapse_comma(groups),
-                  " correspond to multiple levels of '", by, "'.")
-          }
-          df <- df[order(df$J), ]
-          by_per_level <- bylevels[match(df$by, bylevels)]
-          attr(levels[[i]], "by") <- by_per_level
-        }
+    out$ggn <- match(out$group, unique(out$group))
+    # compute random effects levels
+    rsub <- out[!duplicated(out$group), ]
+    levels <- named_list(rsub$group)
+    for (i in seq_along(levels)) {
+      # combine levels of all grouping factors within one grouping term
+      levels[[i]] <- unique(ulapply(
+        rsub$gcall[[i]]$groups,
+        function(g) extract_levels(get(g, data))
+      ))
+      # fixes issue #1353
+      bysel <- out$group == names(levels)[i] &
+        nzchar(out$by) & !duplicated(out$by)
+      bysel <- which(bysel)
+      if (length(bysel) > 1L) {
+        stop2("Each grouping factor can only be associated with one 'by' variable.")
       }
-      attr(ranef, "levels") <- levels
-    } else {
+      # ensure that a non-NULL by-variable is found if present
+      if (length(bysel) == 1L) {
+        rsub[i, ] <- out[bysel, ]
+      }
+      # store information of corresponding by-levels
+      if (nzchar(rsub$by[i])) {
+        stopifnot(rsub$type[i] %in% c("", "mmc"))
+        by <- rsub$by[i]
+        bylevels <- rsub$bylevels[[i]]
+        byvar <- rm_wsp(eval2(by, data))
+        groups <- rsub$gcall[[i]]$groups
+        if (rsub$gtype[i] == "mm") {
+          byvar <- as.matrix(byvar)
+          if (!identical(dim(byvar), c(nrow(data), length(groups)))) {
+            stop2(
+              "Grouping structure 'mm' expects 'by' to be ",
+              "a matrix with as many columns as grouping factors."
+            )
+          }
+          df <- J <- named_list(groups)
+          for (k in seq_along(groups)) {
+            J[[k]] <- match(get(groups[k], data), levels[[i]])
+            df[[k]] <- data.frame(J = J[[k]], by = byvar[, k])
+          }
+          J <- unlist(J)
+          df <- do_call(rbind, df)
+        } else {
+          J <- match(get(groups, data), levels[[i]])
+          df <- data.frame(J = J, by = byvar)
+        }
+        df <- unique(df)
+        if (nrow(df) > length(unique(J))) {
+          stop2("Some levels of ", collapse_comma(groups),
+                " correspond to multiple levels of '", by, "'.")
+        }
+        df <- df[order(df$J), ]
+        by_per_level <- bylevels[match(df$by, bylevels)]
+        attr(levels[[i]], "by") <- by_per_level
+      }
+    }
+    if (!is.null(old_levels)) {
       # for newdata numeration has to depend on the original levels
-      attr(ranef, "levels") <- old_levels
+      set_levels(out) <- old_levels
+      set_levels(out, "used") <- levels
+    } else {
+      set_levels(out) <- levels
     }
     # incorporate deprecated 'cov_ranef' argument
-    ranef <- update_ranef_cov(ranef, bterms)
+    out <- update_ranef_cov(out, bterms)
   }
   # ordering after IDs matches the order of the posterior draws
   # if multiple IDs are used for the same grouping factor (#835)
-  ranef <- ranef[order(ranef$id), , drop = FALSE]
-  structure(ranef, class = c("ranef_frame", "data.frame"))
+  out <- out[order(out$id), , drop = FALSE]
+  class(out) <- reframe_class()
+  out
 }
 
-empty_ranef <- function() {
-  structure(
-    data.frame(
-      id = numeric(0), group = character(0), gn = numeric(0),
-      coef = character(0), cn = numeric(0), resp = character(0),
-      dpar = character(0), nlpar = character(0), ggn = numeric(0),
-      cor = logical(0), type = character(0), form = character(0),
-      stringsAsFactors = FALSE
-    ),
-    class = c("ranef_frame", "data.frame")
+# like frame_re but only returns its levels attribute
+# this avoids issue #1221 and likely some other edge cases
+frame_re_levels_only <- function(bterms, data) {
+  out <- empty_reframe()
+  data <- combine_groups(data, get_group_vars(bterms))
+  re <- get_re(bterms)
+  re <- re[!duplicated(re$group), ]
+  levels <- named_list(re$group)
+  for (i in seq_along(levels)) {
+    # combine levels of all grouping factors within one grouping term
+    levels[[i]] <- unique(ulapply(
+      re$gcall[[i]]$groups,
+      function(g) extract_levels(get(g, data))
+    ))
+  }
+  set_levels(out) <- levels
+  out
+}
+
+empty_reframe <- function() {
+  out <- data.frame(
+    id = numeric(0), group = character(0), gn = numeric(0),
+    coef = character(0), cn = numeric(0), resp = character(0),
+    dpar = character(0), nlpar = character(0), ggn = numeric(0),
+    cor = logical(0), type = character(0), form = character(0),
+    stringsAsFactors = FALSE
   )
+  class(out) <- reframe_class()
+  out
 }
 
 empty_re <- function() {
@@ -725,8 +775,12 @@ empty_re <- function() {
   )
 }
 
-is.ranef_frame <- function(x) {
-  inherits(x, "ranef_frame")
+reframe_class <- function() {
+  c("reframe", "data.frame")
+}
+
+is.reframe <- function(x) {
+  inherits(x, "reframe")
 }
 
 # extract names of all grouping variables
@@ -755,7 +809,7 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
 }
 
 .get_group_vars <- function(x, ...) {
-  out <- c(get_re_groups(x), get_me_groups(x), get_ac_groups(x))
+  out <- c(get_re_group_vars(x), get_me_group_vars(x), get_ac_group_vars(x))
   out <- out[nzchar(out)]
   if (length(out)) {
     c(out) <- unlist(strsplit(out, ":"))
@@ -764,66 +818,40 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
   out
 }
 
-# get names of grouping variables of re terms
-get_re_groups <- function(x, ...) {
+# get names of grouping variables from re terms
+get_re_group_vars <- function(x, ...) {
   ufrom_list(get_re(x)$gcall, "groups")
 }
 
-# extract information about groups with a certain distribution
-get_dist_groups <- function(ranef, dist) {
-  out <- subset2(ranef, dist = dist)
+# extract information about groups with a certain distribution from an reframe
+subset_reframe_dist <- function(reframe, dist) {
+  stopifnot(is.reframe(reframe))
+  out <- subset2(reframe, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
 }
 
-# extract list of levels with one element per grouping factor
-# @param ... objects with a level attribute
-get_levels <- function(...) {
-  dots <- list(...)
-  out <- vector("list", length(dots))
-  for (i in seq_along(out)) {
-    levels <- attr(dots[[i]], "levels", exact = TRUE)
-    if (is.list(levels)) {
-      stopifnot(!is.null(names(levels)))
-      out[[i]] <- as.list(levels)
-    } else if (!is.null(levels)) {
-      stopifnot(isTRUE(nzchar(names(dots)[i])))
-      out[[i]] <- setNames(list(levels), names(dots)[[i]])
-    }
-  }
-  out <- unlist(out, recursive = FALSE)
-  out[!duplicated(names(out))]
-}
-
-extract_levels <- function(x) {
-  # do not check for NAs according to #1355
-  if (!is.factor(x)) {
-    x <- factor(x)
-  }
-  levels(x)
-}
-
 # extract names of group-level effects
-# @param ranef output of tidy_ranef()
+# @param reframe output of frame_re()
 # @param group optional name of a grouping factor for
 #   which to extract effect names
 # @param bylevels optional names of 'by' levels for
 #    which to extract effect names
 # @return a vector of character strings
-get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
-  stopifnot(is.data.frame(ranef))
+get_rnames <- function(reframe, group = NULL, bylevels = NULL) {
+  stopifnot(is.data.frame(reframe))
   if (!is.null(group)) {
     group <- as_one_character(group)
-    ranef <- subset2(ranef, group = group)
+    reframe <- subset2(reframe, group = group)
   }
-  stopifnot(length(unique(ranef$group)) == 1L)
-  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
-  if (isTRUE(nzchar(ranef$by[1]))) {
+  stopifnot(length(unique(reframe$group)) == 1L)
+  out <- paste0(usc(combine_prefix(reframe), "suffix"), reframe$coef)
+  if (isTRUE(nzchar(reframe$by[1]))) {
     if (!is.null(bylevels)) {
-      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
+      stopifnot(all(bylevels %in% reframe$bylevels[[1]]))
     } else {
-      bylevels <- ranef$bylevels[[1]]
+      bylevels <- reframe$bylevels[[1]]
     }
-    bylabels <- paste0(ranef$by[1], bylevels)
+    bylabels <- paste0(reframe$by[1], bylevels)
     out <- outer(out, bylabels, paste, sep = ":")
   }
   out
@@ -872,21 +900,21 @@ validate_cov_ranef <- function(cov_ranef) {
   cov_ranef
 }
 
-# update 'ranef' according to information in 'cov_ranef'
+# update 'reframe' according to information in 'cov_ranef'
 # argument 'cov_ranef' is deprecated as of version 2.12.5
-update_ranef_cov <- function(ranef, bterms) {
+update_ranef_cov <- function(reframe, bterms) {
   cr_names <- names(bterms$cov_ranef)
   if (!length(cr_names)) {
-    return(ranef)
+    return(reframe)
   }
-  unused_names <- setdiff(cr_names, ranef$group)
+  unused_names <- setdiff(cr_names, reframe$group)
   if (length(unused_names)) {
     stop2("The following elements of 'cov_ranef' are unused: ",
           collapse_comma(unused_names))
   }
-  has_cov <- ranef$group %in% cr_names
-  ranef$cov[has_cov] <- ranef$group[has_cov]
-  ranef
+  has_cov <- reframe$group %in% cr_names
+  reframe$cov[has_cov] <- reframe$group[has_cov]
+  reframe
 }
 
 # extract 'cov_ranef' for storage in 'data2'

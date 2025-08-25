@@ -95,8 +95,8 @@ restructure_v2 <- function(x) {
   }
   if (version < "2.1.9") {
     # reworked 'me' terms (#372)
-    meef <- tidy_meef(bterms, model.frame(x))
-    if (isTRUE(nrow(meef) > 0)) {
+    meframe <- frame_me(bterms, model.frame(x))
+    if (isTRUE(nrow(meframe) > 0)) {
       warning2(
         "Measurement error ('me') terms have been reworked ",
         "in version 2.1.9. I strongly recommend refitting your ",
@@ -106,7 +106,7 @@ restructure_v2 <- function(x) {
   }
   if (version < "2.2.4") {
     # added 'dist' argument to grouping terms
-    x$ranef <- tidy_ranef(bterms, model.frame(x))
+    x$ranef <- frame_re(bterms, model.frame(x))
   }
   if (version < "2.3.7") {
     check_old_nl_dpars(bterms)
@@ -239,6 +239,7 @@ restructure_v2 <- function(x) {
     }
     x$prior$bound <- NULL
     all_priors <- get_prior(x$formula, x$data, data2 = x$data2, internal = TRUE)
+    all_priors$tag <- NULL
     # checking for lb is sufficient because both bounds are NA at the same time
     which_needs_bounds <- which(is.na(x$prior$lb) & !nzchar(x$prior$coef))
     for (i in which_needs_bounds) {
@@ -265,8 +266,17 @@ restructure_v2 <- function(x) {
     # a slot was added to store parts of the Stan data computed at fitting time.
     # storing this is strictly required only for spline models but there it is
     # critical due to the machine-specific output of SVD (#1465)
-    bterms <- brmsterms(x$formula)
-    x$basis <- standata_basis(bterms, data = x$data)
+    bframe <- brmsframe(x$formula, data = x$data)
+    x$basis <- frame_basis(bframe, data = x$data)
+  }
+  if (version < "2.21.3") {
+    # the class of random effects data.frames was changed
+    # in the process of introducing brmsframe objects
+    class(x$ranef) <- reframe_class()
+  }
+  if (version < "2.22.11") {
+    # tag column was added to the prior (#1724)
+    x$prior$tag <- ""
   }
   x
 }
@@ -290,7 +300,7 @@ restructure_v1 <- function(x) {
   bterms <- brmsterms(formula(x))
   x$data <- rm_attr(x$data, "brmsframe")
   x$data <- validate_data(x$data, bterms)
-  x$ranef <- tidy_ranef(bterms, model.frame(x))
+  x$ranef <- frame_re(bterms, model.frame(x))
   if ("prior_frame" %in% class(x$prior)) {
     class(x$prior) <- c("brmsprior", "data.frame")
   }
@@ -396,7 +406,7 @@ old_dpars <- function() {
 
 # interchanges group and nlpar in names of group-level parameters
 # required for brms <= 0.10.0.9000
-# @param ranef output of tidy_ranef
+# @param ranef output of frame_re
 # @param pars names of all parameters in the model
 # @param dims dimension of parameters
 # @return a list whose elements can be interpreted by do_renaming
@@ -446,7 +456,7 @@ rename_old_re <- function(ranef, pars, dims) {
 # add double underscore in group-level parameters
 # required for brms < 1.0.0
 # @note assumes that group and nlpar are correctly ordered already
-# @param ranef output of tidy_ranef
+# @param ranef output of frame_re
 # @param pars names of all parameters in the model
 # @param dims dimension of parameters
 # @return a list whose elements can be interpreted by do_renaming
@@ -496,11 +506,11 @@ rename_old_re2 <- function(ranef, pars, dims) {
 rename_old_sm <- function(bterms, data, pars, dims) {
   .rename_old_sm <- function(bt) {
     out <- list()
-    smef <- tidy_smef(bt, data)
-    if (nrow(smef)) {
+    smframe <- frame_sm(bt, data)
+    if (nrow(smframe)) {
       p <- usc(combine_prefix(bt), "suffix")
-      old_smooths <- rename(paste0(p, smef$term))
-      new_smooths <- rename(paste0(p, smef$label))
+      old_smooths <- rename(paste0(p, smframe$term))
+      new_smooths <- rename(paste0(p, smframe$label))
       old_sds_pars <- paste0("sds_", old_smooths)
       new_sds_pars <- paste0("sds_", new_smooths, "_1")
       old_s_pars <- paste0("s_", old_smooths)
@@ -545,17 +555,17 @@ rename_old_sm <- function(bterms, data, pars, dims) {
 rename_old_mo <- function(bterms, data, pars) {
   .rename_old_mo <- function(bt) {
     out <- list()
-    spef <- tidy_spef(bt, data)
-    has_mo <- lengths(spef$calls_mo) > 0
+    spframe <- frame_sp(bt, data)
+    has_mo <- lengths(spframe$calls_mo) > 0
     if (!any(has_mo)) {
       return(out)
     }
-    spef <- spef[has_mo, ]
+    spframe <- spframe[has_mo, ]
     p <- usc(combine_prefix(bt))
     bmo_prefix <- paste0("bmo", p, "_")
     bmo_regex <- paste0("^", bmo_prefix, "[^_]+$")
     bmo_old <- pars[grepl(bmo_regex, pars)]
-    bmo_new <- paste0(bmo_prefix, spef$coef)
+    bmo_new <- paste0(bmo_prefix, spframe$coef)
     if (length(bmo_old) != length(bmo_new)) {
       stop2("Restructuring failed. Please refit your ",
             "model with the latest version of brms.")
@@ -568,7 +578,7 @@ rename_old_mo <- function(bterms, data, pars) {
     simo_old_all <- pars[grepl(simo_regex, pars)]
     simo_index <- get_matches("\\[[[:digit:]]+\\]$", simo_old_all)
     simo_old <- unique(sub("\\[[[:digit:]]+\\]$", "", simo_old_all))
-    simo_coef <- get_simo_labels(spef)
+    simo_coef <- get_simo_labels(spframe)
     for (i in seq_along(simo_old)) {
       regex_pos <- paste0("^", simo_old[i])
       pos <- grepl(regex_pos, pars)
@@ -684,8 +694,8 @@ rescale_old_mo.btnl <- function(x, fit, ...) {
 
 #' @export
 rescale_old_mo.btl <- function(x, fit, ...) {
-  spef <- tidy_spef(x, fit$data)
-  has_mo <- lengths(spef$Imo) > 0L
+  spframe <- frame_sp(x, fit$data)
+  has_mo <- lengths(spframe$Imo) > 0L
   if (!any(has_mo)) {
     return(fit)
   }
@@ -699,8 +709,8 @@ rescale_old_mo.btl <- function(x, fit, ...) {
   all_pars <- variables(fit)
   chains <- fit$fit@sim$chains
   for (i in which(has_mo)) {
-    bsp_par <- paste0("bsp", p, "_", spef$coef[i])
-    simo_regex <- paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+    bsp_par <- paste0("bsp", p, "_", spframe$coef[i])
+    simo_regex <- paste0(spframe$coef[i], seq_along(spframe$Imo[[i]]))
     simo_regex <- paste0("simo", p, "_", simo_regex, "[")
     simo_regex <- paste0("^", escape_all(simo_regex))
     # scaling factor by which to divide the old 'b' coefficients

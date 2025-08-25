@@ -21,7 +21,6 @@
 #' MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221
 #'
 #' @method summary brmsfit
-#' @importMethodsFrom rstan summary
 #' @importFrom posterior subset_draws summarize_draws
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
@@ -45,7 +44,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   class(out) <- "brmssummary"
 
   # check if the model contains any posterior draws
-  model_is_empty <- !length(object$fit@sim) ||
+  model_is_empty <- is.null(object$fit) || !length(object$fit@sim) ||
     isTRUE(object$fit@sim$iter <= object$fit@sim$warmup)
   if (model_is_empty) {
     return(out)
@@ -106,12 +105,15 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
       }
       measures$Est.Error <- sd
     }
-    c(measures) <- list(
-      quantiles = .quantile,
-      Rhat = posterior::rhat,
-      Bulk_ESS = posterior::ess_bulk,
-      Tail_ESS = posterior::ess_tail
-    )
+    c(measures) <- list(quantiles = .quantile)
+    if (!is.brmsfit_multiple(object)) {
+      # TODO: add a viable post-processing solution for brm_multiple models
+      c(measures) <- list(
+        Rhat = posterior::rhat,
+        Bulk_ESS = posterior::ess_bulk,
+        Tail_ESS = posterior::ess_tail
+      )
+    }
     out <- do.call(summarize_draws, c(list(draws), measures))
     out <- as.data.frame(out)
     rownames(out) <- out$variable
@@ -120,14 +122,17 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
 
   full_summary <- .summary(draws, variables, probs, robust)
+  out$has_rhat <- "Rhat" %in% colnames(full_summary)
   if (algorithm(object) == "sampling") {
-    Rhats <- full_summary[, "Rhat"]
-    if (any(Rhats > 1.05, na.rm = TRUE)) {
-      warning2(
-        "Parts of the model have not converged (some Rhats are > 1.05). ",
-        "Be careful when analysing the results! We recommend running ",
-        "more iterations and/or setting stronger priors."
-      )
+    if (out$has_rhat) {
+      Rhats <- full_summary[, "Rhat"]
+      if (any(Rhats > 1.05, na.rm = TRUE)) {
+        warning2(
+          "Parts of the model have not converged (some Rhats are > 1.05). ",
+          "Be careful when analysing the results! We recommend running ",
+          "more iterations and/or setting stronger priors."
+        )
+      }
     }
     div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
     adapt_delta <- control_params(object)$adapt_delta
@@ -229,19 +234,27 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
 #'
 #' @param x An object of class \code{brmsfit}
 #' @param digits The number of significant digits for printing out the summary;
-#'  defaults to 2. The effective sample size is always rounded to integers.
+#'   defaults to 2. The effective sample size is always rounded to integers.
+#' @param short A flag indicating whether to provide a shorter summary
+#'   with less informational text. Defaults to \code{FALSE}. Can be set
+#'   globally for the current session via the \code{brms.short_summary} option.
 #' @param ... Additional arguments that would be passed
 #'  to method \code{summary} of \code{brmsfit}.
 #'
 #' @seealso \code{\link{summary.brmsfit}}
 #'
 #' @export
-print.brmsfit <- function(x, digits = 2, ...) {
-  print(summary(x, ...), digits = digits, ...)
+print.brmsfit <- function(x, digits = 2,
+                          short = getOption("brms.short_summary", FALSE),
+                          ...) {
+  print(summary(x, ...), digits = digits, short = short, ...)
 }
 
 #' @export
-print.brmssummary <- function(x, digits = 2, ...) {
+print.brmssummary <- function(x, digits = 2,
+                              short = getOption("brms.short_summary", FALSE),
+                              ...) {
+  short <- as_one_logical(short)
   cat(" Family: ")
   cat(summarise_families(x$formula), "\n")
   cat("  Links: ")
@@ -256,8 +269,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat("\nThe model does not contain posterior draws.\n")
     return(invisible(x))
   }
-  # TODO: make this option a user-facing argument?
-  short <- as_one_logical(getOption("brms.short_summary", FALSE))
   if (!short) {
     cat(paste0(
       "  Draws: ", x$chains, " chains, each with iter = ", x$iter,
@@ -320,13 +331,21 @@ print.brmssummary <- function(x, digits = 2, ...) {
   if (!short) {
     cat(paste0("Draws were sampled using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
-      cat(paste0(
-        "For each parameter, Bulk_ESS\n",
-        "and Tail_ESS are effective sample size measures, ",
-        "and Rhat is the potential\n",
-        "scale reduction factor on split chains ",
-        "(at convergence, Rhat = 1)."
-      ))
+      if (isTRUE(x$has_rhat)) {
+        cat(paste0(
+          "For each parameter, Bulk_ESS\n",
+          "and Tail_ESS are effective sample size measures, ",
+          "and Rhat is the potential\n",
+          "scale reduction factor on split chains ",
+          "(at convergence, Rhat = 1)."
+        ))
+      } else {
+        cat(paste0(
+          "Overall Rhat and ESS estimates\n",
+          "are not informative for brm_multiple models and are hence not displayed.\n",
+          "Please see ?brm_multiple for how to assess convergence of such models."
+        ))
+      }
     }
     cat("\n")
   }

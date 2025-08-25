@@ -142,7 +142,9 @@ the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.}
 Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 variational inference with independent normal distributions,
 \code{"fullrank"} for variational inference with a multivariate normal
-distribution, or \code{"fixed_param"} for sampling from fixed parameter
+distribution, \code{"pathfinder"} for the pathfinder algorithm,
+\code{"laplace"} for the laplace approximation,
+or \code{"fixed_param"} for sampling from fixed parameter
 values. Can be set globally for the current \R session via the
 \code{"brms.algorithm"} option (see \code{\link{options}}).}
 
@@ -216,7 +218,7 @@ summary(pool(fit_imp1))
 # fit the model using brms
 fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 summary(fit_imp2)
-plot(fit_imp2, pars = "^b_")
+plot(fit_imp2, variable = "^b_", regex = TRUE)
 
 # investigate convergence of the original models
 library(posterior)
@@ -228,7 +230,7 @@ lapply(draws_per_dat, summarise_draws, default_convergence_measures())
 # use the future package for parallelization
 library(future)
 plan(multisession, workers = 4)
-fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 summary(fit_imp3)
 }
 

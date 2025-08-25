@@ -34,10 +34,11 @@
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
 #' @param save_psis Should the \code{"psis"} object created internally be saved
 #'   in the returned object? For more details see \code{\link[loo:loo]{loo}}.
-#' @param moment_match_args Optional \code{list} of additional arguments passed to
-#'   \code{\link{loo_moment_match}}.
-#' @param reloo_args Optional \code{list} of additional arguments passed to
-#'   \code{\link{reloo}}.
+#' @param moment_match_args Optional named \code{list} of additional arguments
+#'  passed to \code{\link{loo_moment_match}}.
+#' @param reloo_args Optional named \code{list} of additional arguments passed to
+#'   \code{\link{reloo}}. This can be useful, among others, to control
+#'   how many chains, iterations, etc. to use for the fitted sub-models.
 #' @param model_names If \code{NULL} (the default) will use model names
 #'   derived from deparsing the call. Otherwise will use the passed
 #'   values as model names.
@@ -720,6 +721,24 @@ recommend_loo_options <- function(loo, k_threshold = 0.7, moment_match = FALSE,
     out <- "loo"
   }
   invisible(out)
+}
+
+# subset observations in a psis object
+# this is a bit cumbersome because of how psis stores information
+# @param subset vector with which to subset
+#' @export
+subset.psis <- function(x, subset, ...) {
+  stopifnot(is.vector(subset))
+  x$log_weights <- x$log_weights[, subset, drop = FALSE]
+  for (d in names(x$diagnostics)) {
+    x$diagnostics[[d]] <- x$diagnostics[[d]][subset]
+  }
+  attr_names <- c("norm_const_log", "tail_len", "r_eff")
+  for (a in attr_names) {
+    attr(x, a) <- attr(x, a)[subset]
+  }
+  attr(x, "dims") <- dim(x$log_weights)
+  x
 }
 
 # helper function to compute relative efficiences

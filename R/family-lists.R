@@ -61,6 +61,32 @@
   )
 }
 
+.family_xbeta <- function() {
+  list(
+    links = c(
+      "logit", "probit", "probit_approx", "cloglog",
+      "cauchit", "softit", "identity", "log"
+    ),
+    dpars = c("mu", "phi", "kappa"),
+    type = "real",
+    ybounds = c(0, 1),
+    closed = c(TRUE, TRUE),
+    ad = c("weights", "subset", "index"),
+    include = "fun_xbeta.stan",
+    prior = function(dpar, link = "identity", ...) {
+      if (dpar == "kappa") {
+        if (link == "identity") {
+          return("gamma(0.01, 0.01)")
+        } else {
+          return("student_t(3, 0, 2.5)")
+        }
+      }
+      NULL
+    },
+    normalized = ""
+  )
+}
+
 .family_beta_binomial <- function() {
   list(
     links = c(
@@ -108,6 +134,20 @@
     ad = c("weights", "subset", "trials", "index"),
     specials = c("multinomial", "joint_link"),
     include = "fun_multinomial_logit.stan",
+    normalized = ""
+  )
+}
+
+.family_dirichlet_multinomial <- function() {
+  list(
+    links = "logit",
+    dpars = "phi",
+    multi_dpars = "mu",  # size determined by the data
+    type = "int", ybounds = c(-Inf, Inf),
+    closed = c(NA, NA),
+    ad = c("weights", "subset", "trials", "index"),
+    specials = c("multinomial", "joint_link"),
+    include = "fun_dirichlet_multinomial_logit.stan",
     normalized = ""
   )
 }
@@ -349,7 +389,7 @@
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
-    include = c("fun_tan_half.stan", "fun_von_mises.stan"),
+    include = c("fun_tan_half.stan"),
     normalized = "",
     # experimental use of default priors stored in families #1614
     prior = function(dpar, link = "identity", ...) {
@@ -387,7 +427,7 @@
     links = c("log", "identity", "softplus", "squareplus"),
     dpars = c("mu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "index"),
+    ad = c("weights", "subset", "cens", "trunc", "index", "bhaz"),
     include = "fun_cox.stan",
     specials = c("cox", "sbi_log", "sbi_log_cdf"),
     normalized = ""

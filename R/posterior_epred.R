@@ -376,7 +376,6 @@ posterior_epred_binomial <- function(prep) {
 }
 
 posterior_epred_beta_binomial <- function(prep) {
-  # beta part included in mu
   trials <- data2draws(prep$data$trials, dim_mu(prep))
   prep$dpars$mu * trials
 }
@@ -448,6 +447,22 @@ posterior_epred_wiener <- function(prep) {
 
 posterior_epred_beta <- function(prep) {
   prep$dpars$mu
+}
+
+posterior_epred_xbeta <- function(prep) {
+  # see https://arxiv.org/abs/2409.07233 for details
+  mu <- get_dpar(prep, "mu")
+  phi <- get_dpar(prep, "phi")
+  nu <- get_dpar(prep, "kappa")
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  d <- (1 + 2 * nu)
+  q0 <- nu / d
+  q1 <- (1 + nu) / d
+  t3 <- pbeta(q1, a, b)
+  t1 <- d * mu * (pbeta(q1, a + 1, b) - pbeta(q0, a + 1, b))
+  t2 <- nu * (t3 - pbeta(q0, a, b))
+  1 + t1 - t2 - t3
 }
 
 posterior_epred_von_mises <- function(prep) {
@@ -569,6 +584,12 @@ posterior_epred_multinomial <- function(prep) {
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- prep$cats
   out
+}
+
+posterior_epred_dirichlet_multinomial <- function(prep) {
+  # mean of dirichlet-multinomial is equal to multinomial
+  # (phi only affects variance of distribution)
+  posterior_epred_multinomial(prep)
 }
 
 posterior_epred_dirichlet <- function(prep) {

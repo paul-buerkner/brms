@@ -13,10 +13,11 @@ Argument is named "log_ratios" to match the argument name of the
 \code{\link[loo:psis]{loo::psis}} generic function.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.
-\code{NA} values within factors are interpreted as if all dummy
-variables of this factor are zero. This allows, for instance, to make
-predictions of the grand mean when using sum coding.}
+\code{NULL} (default), the original data of the model is used. \code{NA}
+values within factors (excluding grouping variables) are interpreted as if
+all dummy variables of this factor are zero. This allows, for instance, to
+make predictions of the grand mean when using sum coding. \code{NA} values
+within grouping variables are treated as a new level.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
@@ -73,7 +74,7 @@ Method used for importance sampling, here \code{psis}.
 Implementation of Pareto smoothed importance sampling (PSIS), a method for
 stabilizing importance ratios. The version of PSIS implemented here
 corresponds to the algorithm presented in Vehtari, Simpson, Gelman, Yao,
-and Gabry (2022).
+and Gabry (2024).
 For PSIS diagnostics see the \link[loo]{pareto-k-diagnostic} page.
 }
 \examples{
@@ -89,7 +90,8 @@ evaluation using leave-one-out cross-validation and WAIC.
 (\href{https://link.springer.com/article/10.1007/s11222-016-9696-4}{journal version},
 \href{https://arxiv.org/abs/1507.04544}{preprint arXiv:1507.04544}).
 
-Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2022).
-Pareto smoothed importance sampling.
-\href{https://arxiv.org/abs/1507.02646}{preprint arXiv:1507.02646}
+Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2024).
+Pareto smoothed importance sampling. \emph{Journal of Machine Learning Research},
+25(72):1-58.
+\href{https://jmlr.org/papers/v25/19-556.html}{PDF}
 }

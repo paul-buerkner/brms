@@ -80,7 +80,7 @@ rstudent_t <- function(n, df, mu = 0, sigma = 1) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'
-#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/docs/}
 #' for details on the parameterization
 #'
 #' @export
@@ -146,7 +146,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'
-#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/docs/}
 #'   for details on the parameterization
 #'
 #' @export
@@ -1721,6 +1721,27 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
   out
 }
 
+# ensures that posterior_predict and friends can safely find these functions
+dxbeta <- function(...) {
+  require_package("betareg")
+  betareg::dxbeta(...)
+}
+
+pxbeta <- function(...) {
+  require_package("betareg")
+  betareg::pxbeta(...)
+}
+
+qxbeta <- function(...) {
+  require_package("betareg")
+  betareg::qxbeta(...)
+}
+
+rxbeta <- function(...) {
+  require_package("betareg")
+  betareg::rxbeta(...)
+}
+
 #' Zero-Inflated Distributions
 #'
 #' Density and distribution functions for zero-inflated distributions.
@@ -2162,6 +2183,24 @@ dmultinomial <- function(x, eta, log = FALSE) {
     out <- exp(out)
   }
   out
+}
+
+# density of the dirichlet-multinomial distribution with the softmax transform
+# @param x positive integers not greater than ncat
+# @param eta the linear predictor (of length or ncol ncat)
+# @param phi the dispersion parameter (i.e., sum of dirichlet alphas)
+# @param log return values on the log scale?
+ddirichletmultinomial <- function(x, eta, phi, log = FALSE) {
+  require_package("extraDistr")
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  if (length(dim(eta)) != 2L) {
+    stop2("eta must be a numeric vector or matrix.")
+  }
+  alpha <- softmax(eta) * phi
+  size <- sum(x)
+  extraDistr::ddirmnom(x, size = size, alpha = alpha, log = log)
 }
 
 # density of the cumulative distribution
