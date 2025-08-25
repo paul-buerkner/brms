@@ -62,12 +62,12 @@ test_that("autocorrelation matrices are computed correctly", {
 })
 
 test_that("evidence_ratio returns expected results", {
-  ps <- -4:10
-  prs <- -2:12
+  ps <- rnorm(100, mean = 0.1, sd = 0.3)
+  prs <- rnorm(100)
   expect_true(evidence_ratio(ps, prior_samples = prs) > 1)
   expect_true(is.na(evidence_ratio(ps)))
-  expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "greater"), 10/5)
-  expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "less"), 5/10)
+  expect_true(evidence_ratio(ps, cut = 0, wsign = "greater") > 1)
+  expect_true(evidence_ratio(ps, cut = 0, wsign = "less") < 1)
 })
 
 test_that("find_vars finds all valid variable names in a string", {

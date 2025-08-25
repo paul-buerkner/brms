@@ -432,7 +432,7 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
 #'
 #' @export
 density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
-  require_package("KernSmooth")
+  require_package("logspline")
   x <- as.numeric(x)
   point <- as.numeric(point)
   dots <- list(...)
@@ -448,8 +448,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
     } else if (to < point) {
       to <- point + sd(x) / 4
     }
-    density <- KernSmooth::bkde(x, range.x = c(from, to), gridsize = n)
-    stats::approx(density$x, density$y, xout = point)$y
+    logspline::dlogspline(point, logspline::logspline(x, lbound = from, ubound = to))
   }
 
   out <- ulapply(point, eval_density, x = x)
