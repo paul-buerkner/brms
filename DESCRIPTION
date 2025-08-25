@@ -66,6 +66,7 @@ Suggests:
     ape,
     arm,
     statmod,
+    KernSmooth,
     digest,
     diffobj,
     R.rsp,
@@ -73,7 +74,6 @@ Suggests:
     shiny,
     knitr,
     rmarkdown,
-    KernSmooth
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions
     and link functions are supported, allowing users to fit -- among others --

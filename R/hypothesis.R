@@ -332,8 +332,8 @@ eval_hypothesis <- function(h, x, class, alpha, robust, name = NULL) {
   # summarize hypothesis
   wsign <- switch(sign, "=" = "equal", "<" = "less", ">" = "greater")
   probs <- switch(sign,
-                  "=" = c(alpha / 2, 1 - alpha / 2),
-                  "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
+    "=" = c(alpha / 2, 1 - alpha / 2),
+    "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
   )
   if (robust) {
     measures <- c("median", "mad")
@@ -432,6 +432,7 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
 #'
 #' @export
 density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
+  require_package("KernSmooth")
   x <- as.numeric(x)
   point <- as.numeric(point)
   dots <- list(...)
@@ -447,7 +448,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
     } else if (to < point) {
       to <- point + sd(x) / 4
     }
-    density <- KernSmooth::bkde(x, range.x = c(from,to), gridsize = n)
+    density <- KernSmooth::bkde(x, range.x = c(from, to), gridsize = n)
     stats::approx(density$x, density$y, xout = point)$y
   }
 
