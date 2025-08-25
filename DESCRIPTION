@@ -73,6 +73,7 @@ Suggests:
     ape,
     arm,
     statmod,
+    logspline,
     digest,
     diffobj,
     betareg,
