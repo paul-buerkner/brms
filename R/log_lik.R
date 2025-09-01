@@ -278,7 +278,7 @@ log_lik_student_time <- function(i, prep) {
     g <- solve(C, e)
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -323,7 +323,7 @@ log_lik_student_lagsar <- function(i, prep) {
     g <- Cinv %*% e
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -366,7 +366,7 @@ log_lik_student_errorsar <- function(i, prep) {
     g <- Cinv %*% e
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -407,7 +407,7 @@ log_lik_student_fcor <- function(i, prep) {
     g <- solve(C, e)
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -1072,22 +1072,21 @@ stop_no_pw <- function() {
 # see http://proceedings.mlr.press/v33/shah14.pdf
 # note that brms parameterizes C instead of Cov(y) = df / (df - 2) * C
 # @param df degrees of freedom parameter
-# @param Cinv inverse of the full matrix
+# @param cbar vector of inverse variances (diag(Cinv))
 # @param e vector of error terms, that is, y - mu
-student_t_cov_factor <- function(df, Cinv, e) {
-  beta1 <- student_t_beta1(Cinv, e)
-  (df + beta1) / (df + nrow(Cinv) - 1)
+# @param g vector of Cinv %*% e
+student_t_cov_factor <- function(df, cbar, e, g) {
+  beta1 <- student_t_beta1(cbar, e, g)
+  (df + beta1) / (df + length(cbar) - 1)
 }
 
 # beta1 in equation (6) of http://proceedings.mlr.press/v33/shah14.pdf
 # Optimized version that reuses existing computations (brms#1820)
-# @param Cinv inverse of the full matrix
+# @param cbar vector of inverse variances (diag(Cinv))
 # @param e vector of error terms, that is, y - mu
-# @return vector of beta1 values for each observation
-student_t_beta1 <- function(Cinv, e) {
-  g <- Cinv %*% e
-  beta0 <- e %*% g
-  overline_sigma <- diag(Cinv)
-  zsq <- g^2 / overline_sigma
+# @param g vector of Cinv %*% e
+student_t_beta1 <- function(cbar, e, g) {
+  zsq <- g^2 / cbar
+  beta0 <- as.numeric(t(e) %*% g)
   beta0 - zsq
 }
