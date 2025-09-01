@@ -513,7 +513,14 @@
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_hurdle_negbinomial.stan",
     specials = c("sbi_log", "sbi_hu_logit"),
-    normalized = ""
+    normalized = "",
+    # experimental use of default priors stored in families #1614
+    prior = function(dpar, link = "identity", ...) {
+      if (dpar == "shape" && link == "identity") {
+        return("inv_gamma(0.4, 0.3)")
+      }
+      NULL
+    }
   )
 }
 
@@ -578,7 +585,14 @@
     ad = c("weights", "subset", "cens", "trunc", "index"),
     include = "fun_zero_inflated_negbinomial.stan",
     specials = c("sbi_log", "sbi_zi_logit"),
-    normalized = ""
+    normalized = "",
+    # experimental use of default priors stored in families #1614
+    prior = function(dpar, link = "identity", ...) {
+      if (dpar == "shape" && link == "identity") {
+        return("inv_gamma(0.4, 0.3)")
+      }
+      NULL
+    }
   )
 }
 
