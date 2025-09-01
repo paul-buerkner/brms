@@ -1075,27 +1075,19 @@ stop_no_pw <- function() {
 # @param Cinv inverse of the full matrix
 # @param e vector of error terms, that is, y - mu
 student_t_cov_factor <- function(df, Cinv, e) {
-  beta1 <- ulapply(seq_rows(Cinv), student_t_beta1_i, Cinv, e)
+  beta1 <- student_t_beta1(Cinv, e)
   (df + beta1) / (df + nrow(Cinv) - 1)
 }
 
 # beta1 in equation (6) of http://proceedings.mlr.press/v33/shah14.pdf
-# @param i observation index to exclude in the submatrix
+# Optimized version that reuses existing computations (brms#1820)
 # @param Cinv inverse of the full matrix
 # @param e vector of error terms, that is, y - mu
-# @param vector of length one
-student_t_beta1_i <- function(i, Cinv, e) {
-  sub_Cinv_i <- sub_inverse_symmetric(Cinv, i)
-  t(e[-i]) %*% sub_Cinv_i %*% e[-i]
-}
-
-# efficient submatrix inverse for a symmetric matrix
-# see http://www.scielo.org.mx/pdf/cys/v20n2/1405-5546-cys-20-02-00251.pdf
-# @param Cinv inverse of the full matrix
-# @param i observation index to exclude in the submatrix
-# @return inverse of the submatrix after removing observation i
-sub_inverse_symmetric <- function(Cinv, i) {
-  csub <- Cinv[i, -i]
-  D <- outer(csub, csub)
-  Cinv[-i, -i] - D / Cinv[i, i]
+# @return vector of beta1 values for each observation
+student_t_beta1 <- function(Cinv, e) {
+  g <- Cinv %*% e
+  beta0 <- e %*% g
+  overline_sigma <- diag(Cinv)
+  zsq <- g^2 / overline_sigma
+  beta0 - zsq
 }
