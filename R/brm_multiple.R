@@ -38,6 +38,8 @@
 #'   to the individual models and then run convergence diagnostics.
 #'   See Examples below for details.
 #'
+#' @template parallelization
+#'
 #' @return If \code{combine = TRUE} a \code{brmsfit_multiple} object, which
 #'   inherits from class \code{brmsfit} and behaves essentially the same. If
 #'   \code{combine = FALSE} a list of \code{brmsfit} objects.

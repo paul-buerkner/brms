@@ -306,6 +306,8 @@
 #'   usually be larger than the current default of \code{10}. For more details
 #'   on the \code{control} argument see \code{\link[rstan:stan]{stan}}.
 #'
+#' @template parallelization
+#'
 #' @references
 #' Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel
 #' Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28.
@@ -416,8 +418,15 @@
 #' # use the future package for more flexible parallelization
 #' library(future)
 #' plan(multisession, workers = 4)
-#' fit7 <- update(fit7, future = TRUE)
+#' fit7a <- update(fit7, future = TRUE)
 #'
+#' # we may also use mirai allowing the use of remote machines as
+#' # well, including the use of computer clusters managed by queuing
+#' # systems
+#' mirai::daemons(4) # distributed computing with url and remote argument
+#' plan(future.mirai::mirai_cluster)
+#' fit7b <- update(fit7, future = TRUE)
+#' mirai::daemons(0) # shuts down the 4 workers
 #'
 #' # fit a model manually via rstan
 #' scode <- stancode(count ~ Trt, data = epilepsy)

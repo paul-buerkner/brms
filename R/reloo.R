@@ -43,6 +43,8 @@
 #' previous estimates from these \eqn{J} observations that are stored in the
 #' original \code{loo} object.
 #'
+#' @template parallelization
+#'
 #' @seealso \code{\link{loo}}, \code{\link{kfold}}
 #'
 #' @examples

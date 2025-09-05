@@ -96,6 +96,8 @@
 #'   \code{"cmdstanr_write_stan_file_dir"} to a nontemporary path of your choice
 #'   before creating the original \code{brmsfit} (see section 'Examples' below).
 #'
+#' @template parallelization
+#'
 #' @examples
 #' \dontrun{
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
