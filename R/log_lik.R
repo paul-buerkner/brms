@@ -278,7 +278,7 @@ log_lik_student_time <- function(i, prep) {
     g <- solve(C, e)
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -323,7 +323,7 @@ log_lik_student_lagsar <- function(i, prep) {
     g <- Cinv %*% e
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -366,7 +366,7 @@ log_lik_student_errorsar <- function(i, prep) {
     g <- Cinv %*% e
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -407,7 +407,7 @@ log_lik_student_fcor <- function(i, prep) {
     g <- solve(C, e)
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
-    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, cbar, e, g))
     dfloo <- df + nrow(Cinv) - 1
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
@@ -1072,30 +1072,21 @@ stop_no_pw <- function() {
 # see http://proceedings.mlr.press/v33/shah14.pdf
 # note that brms parameterizes C instead of Cov(y) = df / (df - 2) * C
 # @param df degrees of freedom parameter
-# @param Cinv inverse of the full matrix
+# @param cbar vector of inverse variances (diag(Cinv))
 # @param e vector of error terms, that is, y - mu
-student_t_cov_factor <- function(df, Cinv, e) {
-  beta1 <- ulapply(seq_rows(Cinv), student_t_beta1_i, Cinv, e)
-  (df + beta1) / (df + nrow(Cinv) - 1)
+# @param g vector of Cinv %*% e
+student_t_cov_factor <- function(df, cbar, e, g) {
+  beta1 <- student_t_beta1(cbar, e, g)
+  (df + beta1) / (df + length(cbar) - 1)
 }
 
 # beta1 in equation (6) of http://proceedings.mlr.press/v33/shah14.pdf
-# @param i observation index to exclude in the submatrix
-# @param Cinv inverse of the full matrix
+# Optimized version that reuses existing computations (brms#1820)
+# @param cbar vector of inverse variances (diag(Cinv))
 # @param e vector of error terms, that is, y - mu
-# @param vector of length one
-student_t_beta1_i <- function(i, Cinv, e) {
-  sub_Cinv_i <- sub_inverse_symmetric(Cinv, i)
-  t(e[-i]) %*% sub_Cinv_i %*% e[-i]
-}
-
-# efficient submatrix inverse for a symmetric matrix
-# see http://www.scielo.org.mx/pdf/cys/v20n2/1405-5546-cys-20-02-00251.pdf
-# @param Cinv inverse of the full matrix
-# @param i observation index to exclude in the submatrix
-# @return inverse of the submatrix after removing observation i
-sub_inverse_symmetric <- function(Cinv, i) {
-  csub <- Cinv[i, -i]
-  D <- outer(csub, csub)
-  Cinv[-i, -i] - D / Cinv[i, i]
+# @param g vector of Cinv %*% e
+student_t_beta1 <- function(cbar, e, g) {
+  zsq <- g^2 / cbar
+  beta0 <- as.numeric(t(e) %*% g)
+  beta0 - zsq
 }
