@@ -283,13 +283,14 @@ models for all parameters of the assumed response distribution.
   predicted only for those observations for which \code{sub} evaluates
   to \code{TRUE}.
 
-  For log-linear models such as poisson models, \code{rate} may be used
+  For log-linear models such as Poisson models, \code{rate} may be used
   in the \code{aterms} part to specify the denominator of a response that
   is expressed as a rate. The numerator is given by the actual response
-  variable and has a distribution according to the family as usual. Using
-  \code{rate(denom)} is equivalent to adding \code{offset(log(denom))} to
-  the linear predictor of the main parameter but the former is arguably
-  more convenient and explicit.
+  variable and has a distribution according to the family as usual.
+  In Poisson models, using \code{rate(denom)} is equivalent to adding
+  \code{offset(log(denom))} to the linear predictor of the main parameter.
+  For negative-binomial models, this equivalence no longer holds and
+  \code{rate(denom)} remains the statistically correct approach.
 
   With the exception of categorical and ordinal families,
   left, right, and interval censoring can be modeled through
