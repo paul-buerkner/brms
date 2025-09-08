@@ -576,6 +576,14 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   prior
 }
 
+#' @export
+default_prior.brmsfit <- function(object, ...) {
+  object <- restructure(object)
+  bterms <- brmsterms(object$formula)
+  bframe <- brmsframe(bterms, data = object$data)
+  .default_prior(bframe, ...)
+}
+
 # generate priors for predictor terms
 # @return a 'brmsprior' object
 prior_predictor <- function(x, ...) {
@@ -1796,12 +1804,6 @@ prior_summary.brmsfit <- function(object, all = TRUE, ...) {
     prior <- prior[nzchar(prior$prior), ]
   }
   prior
-}
-
-#' @export
-default_prior.brmsfit <- function(object, ...) {
-  # just in case people try to apply default_prior to brmsfit objects
-  prior_summary.brmsfit(object, ...)
 }
 
 #' Checks if argument is a \code{brmsprior} object
