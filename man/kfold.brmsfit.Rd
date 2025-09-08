@@ -24,7 +24,8 @@
 \arguments{
 \item{x}{A \code{brmsfit} object.}
 
-\item{...}{Further arguments passed to \code{\link{brm}}.}
+\item{...}{Further arguments passed to \code{\link{brm}} and
+\code{\link{log_lik}}.}
 
 \item{K}{The number of subsets of equal (if possible) size
 into which the data will be partitioned for performing
@@ -138,6 +139,12 @@ The \code{kfold} function performs exact \eqn{K}-fold
   executable to a temporary directory. To avoid that, set option
   \code{"cmdstanr_write_stan_file_dir"} to a nontemporary path of your choice
   before creating the original \code{brmsfit} (see section 'Examples' below).
+
+By default, this method uses \code{sample_new_levels = "gaussian"}
+  to sample parameter values for new grouping-factor levels (see also
+  \code{\link{prepare_predictions}}). This default will fail for models with
+  non-Gaussian group-level effects. In this case, we recommend setting
+  \code{sample_new_levels = "uncertainty"}.
 }
 \section{Parallelization with multiple CPU cores}{
 

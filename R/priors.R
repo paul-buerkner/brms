@@ -553,6 +553,14 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   .default_prior(bframe, ...)
 }
 
+#' @export
+default_prior.brmsfit <- function(object, ...) {
+  object <- restructure(object)
+  bterms <- brmsterms(object$formula)
+  bframe <- brmsframe(bterms, data = object$data)
+  .default_prior(bframe, ...)
+}
+
 # internal work function of 'default_prior'
 # @param internal return priors for internal use?
 # @return a brmsprior object
@@ -574,14 +582,6 @@ default_prior.default <- function(object, data, family = gaussian(), autocor = N
   rownames(prior) <- NULL
   class(prior) <- c("brmsprior", "data.frame")
   prior
-}
-
-#' @export
-default_prior.brmsfit <- function(object, ...) {
-  object <- restructure(object)
-  bterms <- brmsterms(object$formula)
-  bframe <- brmsframe(bterms, data = object$data)
-  .default_prior(bframe, ...)
 }
 
 # generate priors for predictor terms

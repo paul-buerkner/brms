@@ -43,6 +43,7 @@
 #' previous estimates from these \eqn{J} observations that are stored in the
 #' original \code{loo} object.
 #'
+#' @template details-sample_new_levels_gaussian
 #' @template parallelization
 #'
 #' @seealso \code{\link{loo}}, \code{\link{kfold}}
