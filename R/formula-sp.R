@@ -365,6 +365,15 @@ frame_sp <- function(x, data) {
   }
   mm <- sp_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
+
+  # fixes issue #1754
+  try_parse <- try(parse(text = out$term))
+  if (is_try_error(try_parse)) {
+    stop2("Cannot parse special effects terms (see above error message). ",
+          "Likely this is because of factor levels with special symbols ",
+          "such as '$' or '@'.")
+  }
+
   out$coef <- rename(out$term)
   calls_cols <- c(paste0("calls_", all_sp_types()), "joint_call")
   list_cols <- c("vars_mi", "idx_mi", "idx2_mi", "ids_mo", "Imo")
