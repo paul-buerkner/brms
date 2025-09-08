@@ -67,6 +67,10 @@ validate_data <- function(data, bterms, data2 = list(), knots = NULL,
     stop2("All observations in the data were removed ",
           "presumably because of NA values.")
   }
+  if (any(ulapply(data, is.infinite))) {
+    warning2("Found infinite values in the data, ",
+             "which may cause issues for Stan.")
+  }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
