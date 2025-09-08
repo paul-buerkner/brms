@@ -1091,7 +1091,7 @@ def_dpar_prior <- function(x, dpar) {
   dpar_class <- dpar_class(dpar, family = x)
   link <- x$dpars[[dpar]]$family$link %||% "identity"
   if (is.function(x$family$prior)) {
-    # experimental use of default priors stored in families #1614
+    # use default priors stored in families #1614
     # TODO: use this feature more generally?
     out <- x$family$prior(dpar_class, link = link)
     if (!is.null(out)) {
