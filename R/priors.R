@@ -1105,7 +1105,7 @@ def_dpar_prior <- function(x, dpar) {
     out <- switch(dpar_class, "",
       mu = def_scale_prior(x, center = FALSE, dpar = dpar),
       sigma = def_scale_prior(x),
-      shape = "inv_gamma(0.4, 0.3)",
+      shape = "gamma(0.01, 0.01)",
       nu = "gamma(2, 0.1)",
       phi = "gamma(0.01, 0.01)",
       kappa = "gamma(2, 0.01)",
