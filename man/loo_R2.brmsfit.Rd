@@ -12,6 +12,8 @@
   robust = FALSE,
   probs = c(0.025, 0.975),
   seed = NULL,
+  args_epred = list(),
+  args_loglik = list(),
   ...
 )
 }
@@ -36,17 +38,22 @@ function. Only used if \code{summary} is \code{TRUE}.}
 \item{seed}{Optional integer used to initialize the random number
 generator.}
 
-\item{...}{Further arguments passed to
+\item{args_epred}{A named list of further arguments passed only to
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.}
+
+\item{args_loglik}{A named list of further arguments passed only to
+\code{\link[brms:log_lik.brmsfit]{log_lik}}.}
+
+\item{...}{Further arguments passed to both
 \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
-\code{\link[brms:log_lik.brmsfit]{log_lik}},
-which are used in the computation of the R-squared values.}
+\code{\link[brms:log_lik.brmsfit]{log_lik}}.}
 }
 \value{
 If \code{summary = TRUE}, an M x C matrix is returned
  (M = number of response variables and c = \code{length(probs) + 2})
  containing Bayesian bootstrap based summary statistics of the
  LOO-adjusted R-squared values. If \code{summary = FALSE}, the
- Bayesian bootstrap draws of the LOO-adjusted R-squared values 
+ Bayesian bootstrap draws of the LOO-adjusted R-squared values
  are returned in an S x M matrix (S is the number of draws).
 
  @details LOO-R2 uses LOO residuals and is defined as
