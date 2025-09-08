@@ -295,7 +295,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #'   separate model. Each of the named lists contains objects representing data
 #'   which cannot be passed via argument \code{data} (see \code{\link{brm}} for
 #'   examples). The length of the outer list should match the length of the list
-#'   passed to the \code{data} argument.
+#'   passed to the \code{data} argument. Currently required even if the original
+#'   data should be used.
 #' @param ... Other arguments passed to \code{\link{update.brmsfit}}
 #'   and \code{\link{brm_multiple}}.
 #'
@@ -335,8 +336,8 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL,
     if (!is_data2_list(data2)) {
       stop2("'data2' must be a list of named lists.")
     }
-    if (length(data2) != length(data)) {
-      stop2("'data2' must have the same length as 'data'.")
+    if (length(data2) != length(newdata)) {
+      stop2("'data2' must have the same length as 'newdata'.")
     }
   }
 

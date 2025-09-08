@@ -19,7 +19,8 @@ Currently required even if the original data should be used.}
 separate model. Each of the named lists contains objects representing data
 which cannot be passed via argument \code{data} (see \code{\link{brm}} for
 examples). The length of the outer list should match the length of the list
-passed to the \code{data} argument.}
+passed to the \code{data} argument. Currently required even if the original
+data should be used.}
 
 \item{...}{Other arguments passed to \code{\link{update.brmsfit}}
 and \code{\link{brm_multiple}}.}
