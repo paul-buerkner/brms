@@ -4,7 +4,7 @@
 \alias{update.brmsfit_multiple}
 \title{Update \pkg{brms} models based on multiple data sets}
 \usage{
-\method{update}{brmsfit_multiple}(object, formula., newdata = NULL, ...)
+\method{update}{brmsfit_multiple}(object, formula., newdata = NULL, data2 = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit_multiple}.}
@@ -14,6 +14,12 @@
 
 \item{newdata}{List of \code{data.frames} to update the model with new data.
 Currently required even if the original data should be used.}
+
+\item{data2}{A \emph{list} of named lists each of which will be used to fit a
+separate model. Each of the named lists contains objects representing data
+which cannot be passed via argument \code{data} (see \code{\link{brm}} for
+examples). The length of the outer list should match the length of the list
+passed to the \code{data} argument.}
 
 \item{...}{Other arguments passed to \code{\link{update.brmsfit}}
 and \code{\link{brm_multiple}}.}
