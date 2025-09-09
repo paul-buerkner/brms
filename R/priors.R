@@ -1554,6 +1554,8 @@ validate_special_prior.btl <- function(x, prior, allow_autoscale = TRUE, ...) {
           "allowed when using special priors for the whole class."
         )
       }
+      # the brms function may not be in the search path of formula env
+      sub_prior <- paste0("brms::", sub_prior)
       tmp <- attributes(eval2(sub_prior, environment(x$formula)))
       tmp$autoscale <- isTRUE(tmp$autoscale) && allow_autoscale
       special[[sc]] <- tmp
