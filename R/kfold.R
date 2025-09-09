@@ -47,7 +47,8 @@
 #' @param future_args A list of further arguments passed to
 #'   \code{\link[future:future]{future}} for additional control over parallel
 #'   execution if activated.
-#' @param ... Further arguments passed to \code{\link{brm}}.
+#' @param ... Further arguments passed to \code{\link{brm}} and
+#'    \code{\link{log_lik}}.
 #'
 #' @return \code{kfold} returns an object that has a similar structure as the
 #'   objects returned by the \code{loo} and \code{waic} methods and
@@ -95,6 +96,9 @@
 #'   executable to a temporary directory. To avoid that, set option
 #'   \code{"cmdstanr_write_stan_file_dir"} to a nontemporary path of your choice
 #'   before creating the original \code{brmsfit} (see section 'Examples' below).
+#'
+#' @template details-sample_new_levels_gaussian
+#' @template parallelization
 #'
 #' @examples
 #' \dontrun{

@@ -93,6 +93,30 @@ A GP is a stochastic process, which
  For mathematical details on the supported kernels, please see the Stan manual:
  \url{https://mc-stan.org/docs/functions-reference/matrix_operations.html}
  under "Gaussian Process Covariance Functions".
+
+ There are several parameters estimated for GPs, the most important of which
+ are as follows:
+ \tabular{llll}{
+ \strong{Parameter} \tab \strong{Notation} \tab \strong{Support} \tab \strong{Meaning} \cr
+ \code{lscale} \tab \eqn{\ell} \tab \eqn{\mathbb{R}^+} \tab length-scale of the GP's covariance kernel \cr
+ \code{sdgp} \tab \eqn{\sigma} \tab \eqn{\mathbb{R}^+} \tab marginal standard deviation of the GP's covariance kernel \cr
+ \code{zgp} \tab \eqn{z} \tab \eqn{\mathbb{R}} \tab latent variable values of the training data \cr
+ }
+ Assuming an exponentiated quadratic covariance structure, the parameters
+ can be broadly interpreted as follows (see also
+ \url{https://mc-stan.org/docs/stan-users-guide/gaussian-processes.html#gaussian-process-regression}).
+ Note that in the above documentation the parameter \eqn{\sigma} is denoted
+ as \eqn{\alpha} instead, and the parameter \eqn{\ell} as \eqn{\rho}.
+ The length-scale \eqn{\ell} controls the frequency of the functions
+ represented by the GP prior i.e., values of \eqn{\ell \gg 0} lead to
+ lower-frequency functions, while values of \eqn{\ell \approx 0} lead to
+ higher-frequency functions. In slightly simpler terms, \eqn{\ell} sets
+ the distance over which observations in the input space are strongly
+ correlated. The marginal standard deviation \eqn{\sigma} controls the
+ magnitude of the range of the function represented by the GP i.e., it
+ represents how much the values of the function tend to deviate from the
+ mean level. Lastly, the parameter \eqn{z} represents latent variable values
+ per observation (or unique input point).
 }
 \examples{
 \dontrun{

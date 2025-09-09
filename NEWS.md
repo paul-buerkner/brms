@@ -46,10 +46,15 @@ issue have been fixed. (#1658)
 such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
 * Make `read_csv_as_stanfit()` store `adapt_delta` and `max_treedepth` values in
 `$control` so rstan can find these values. Thanks to Tristan Mahr (#1767).
+* Enable updating argument `data2` for `brmsfit_multiple` objects. (#1776)
+* Fix several other minor bugs.
 
 ### Other Changes
 
 * Improve sampling efficiency of `beta_binomial` models. (#1703)
+* Improve efficiency of non-factorizable log-likelihoods 
+for Student-t models thanks to Seth Axen. (#1820)
+* Improve documentation in several places.
 
 # brms 2.22.0
 

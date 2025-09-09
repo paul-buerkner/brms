@@ -3,7 +3,7 @@ Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
 Version: 2.99.9002
-Date: 2025-08-01
+Date: 2025-09-08
 Authors@R:
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
@@ -82,7 +82,9 @@ Suggests:
     knitr,
     rmarkdown,
     ragg,
-    colorspace
+    colorspace,
+    mirai,
+    future.mirai
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
     using 'Stan' for full Bayesian inference. A wide range of distributions
     and link functions are supported, allowing users to fit -- among others --

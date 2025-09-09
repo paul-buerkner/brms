@@ -291,6 +291,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
 #' @param newdata List of \code{data.frames} to update the model with new data.
 #'   Currently required even if the original data should be used.
+#' @param data2 A \emph{list} of named lists each of which will be used to fit a
+#'   separate model. Each of the named lists contains objects representing data
+#'   which cannot be passed via argument \code{data} (see \code{\link{brm}} for
+#'   examples). The length of the outer list should match the length of the list
+#'   passed to the \code{data} argument. Currently required even if the original
+#'   data should be used.
 #' @param ... Other arguments passed to \code{\link{update.brmsfit}}
 #'   and \code{\link{brm_multiple}}.
 #'
@@ -309,7 +315,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #' }
 #'
 #' @export
-update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
+update.brmsfit_multiple <- function(object, formula., newdata = NULL,
+                                    data2 = NULL, ...) {
   dots <- list(...)
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute
@@ -325,18 +332,27 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   } else if (!(is.list(newdata) && is.vector(newdata))) {
     stop2("'newdata' must be a list of data.frames.")
   }
+  if (!is.null(data2)) {
+    if (!is_data2_list(data2)) {
+      stop2("'data2' must be a list of named lists.")
+    }
+    if (length(data2) != length(newdata)) {
+      stop2("'data2' must have the same length as 'newdata'.")
+    }
+  }
 
   # update the template model using all arguments
   if (missing(formula.)) {
     formula. <- NULL
   }
-  args <- c(nlist(object, formula., newdata = newdata[[1]]), dots)
+  args <- nlist(object, formula., newdata = newdata[[1]], data2 = data2[[1]])
+  args <- c(args, dots)
   args$file <- NULL
   args$chains <- 0
   fit <- do_call(update.brmsfit, args)
 
   # arguments later passed to brm_multiple
-  args <- c(nlist(fit, data = newdata), dots)
+  args <- c(nlist(fit, data = newdata, data2), dots)
   # update arguments controlling the sampling process
   # they cannot be accessed directly from the template model
   # as it does not contain any draws (chains = 0)

@@ -59,7 +59,7 @@ the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.}
 
 \item{seed}{A single numeric value passed to \code{\link{set.seed}}
-to make results reproducible. This is currently only relevant for point 
+to make results reproducible. This is currently only relevant for point
 hypotheses that scope over at least two parameters (see Details).}
 
 \item{...}{Currently ignored.}
@@ -88,23 +88,23 @@ Among others, \code{hypothesis} computes an evidence ratio
   related to the hypothesis must have proper priors and argument
   \code{sample_prior} of function \code{brm} must be set to \code{"yes"}.
   Otherwise \code{Evid.Ratio} (and \code{Post.Prob}) will be \code{NA}.
-  
-  Please note that the Savage-Dickey density ratio as implemented here provides 
-  only a very basic test of point hypotheses. It is recommended that you use 
-  bridge sampling instead (via \code{\link{bayes_factor}} which relies on the 
-  \pkg{bridgesampling} package). When interpreting Bayes factors for point 
-  hypotheses, make sure that your priors are reasonable and carefully chosen, 
-  as the result will depend heavily on the priors. In particular, avoid using 
-  default priors. Additionally, note that point hypotheses that scope over more 
+
+  Please note that the Savage-Dickey density ratio as implemented here provides
+  only a very basic test of point hypotheses. It is recommended that you use
+  bridge sampling instead (via \code{\link{bayes_factor}} which relies on the
+  \pkg{bridgesampling} package). When interpreting Bayes factors for point
+  hypotheses, make sure that your priors are reasonable and carefully chosen,
+  as the result will depend heavily on the priors. In particular, avoid using
+  default priors. Additionally, note that point hypotheses that scope over more
   than one parameter (e.g., when testing equality between two parameters) involve
-  random sampling of the priors over those parameters (to accommodate the 
-  the assumption that priors for different parameters are independent of each other). 
-  This introduces an element of randomness into such hypothesis tests. Consider 
-  repeating the test to assure results are sufficiently stable, and use the argument 
-  \code{seed} for reproducibility. Finally, note that, for technical reasons, we 
-  cannot sample from priors of certain parameters classes. Most notably, these include 
+  random sampling of the priors over those parameters (to accommodate the
+  the assumption that priors for different parameters are independent of each other).
+  This introduces an element of randomness into such hypothesis tests. Consider
+  repeating the test to assure results are sufficiently stable, and use the argument
+  \code{seed} for reproducibility. Finally, note that, for technical reasons, we
+  cannot sample from priors of certain parameters classes. Most notably, these include
   overall intercept parameters (prior class \code{"Intercept"}) as well as group-level
-  coefficients. 
+  coefficients.
 
   For one-sided hypotheses, the \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
   small or large evidence, respectively, in favor of the tested hypothesis.

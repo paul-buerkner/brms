@@ -1187,12 +1187,11 @@ plot.brms_conditional_effects <- function(
         }
         if (rug) {
           .rug_args <- list(
-            aes(x = .data[["effect1__"]]), sides = "b",
+            mapping = aes(x = .data[["effect1__"]]), sides = "b",
             data = df_points, inherit.aes = FALSE
           )
           if (is_like_factor(df_points[, gvar])) {
-            .point_args$mapping[c("colour", "fill")] <-
-              aes(colour = .data[[gvar]], fill = .data[[gvar]])
+            .rug_args$mapping["colour"] <- aes(colour = .data[[gvar]])
           }
           replace_args(.rug_args, dont_replace) <- rug_args
           plots[[i]] <- plots[[i]] +

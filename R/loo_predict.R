@@ -172,16 +172,19 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #' @inheritParams bayes_R2.brmsfit
 #' @param seed Optional integer used to initialize the random number
 #'   generator.
-#' @param ... Further arguments passed to
+#' @param args_epred A named list of further arguments passed only to
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
+#' @param args_loglik A named list of further arguments passed only to
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#' @param ... Further arguments passed to both
 #'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
-#'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
-#'   which are used in the computation of the R-squared values.
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
 #'
 #' @return If \code{summary = TRUE}, an M x C matrix is returned
 #'  (M = number of response variables and c = \code{length(probs) + 2})
 #'  containing Bayesian bootstrap based summary statistics of the
 #'  LOO-adjusted R-squared values. If \code{summary = FALSE}, the
-#'  Bayesian bootstrap draws of the LOO-adjusted R-squared values 
+#'  Bayesian bootstrap draws of the LOO-adjusted R-squared values
 #'  are returned in an S x M matrix (S is the number of draws).
 #'
 #'  @details LOO-R2 uses LOO residuals and is defined as
@@ -197,7 +200,7 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #'
 #' @references Vehtari and Lampinen (2002). Bayesian model assessment
 #' and comparison using cross-validation predictive densities. Neural
-#' Computation, 14(10):2439-2468. 
+#' Computation, 14(10):2439-2468.
 #'
 #' @examples
 #' \dontrun{
@@ -216,11 +219,13 @@ E_loo_value <- function(x, psis_object, type = "mean", probs = 0.5) {
 #' @export
 loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
                            robust = FALSE, probs = c(0.025, 0.975),
-                           seed = NULL, ...) {
+                           seed = NULL, args_epred = list(),
+                           args_loglik = list(), ...) {
   contains_draws(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
   summary <- as_one_logical(summary)
+  stopifnot(is.list(args_epred), is.list(args_loglik))
   # check for precomputed values
   R2 <- get_criterion(object, "loo_R2")
   if (is.matrix(R2)) {
@@ -259,8 +264,8 @@ loo_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
     # assumes expectations of different responses to be independent
     args_ypred$resp <- args_y$resp <- resp[i]
     y <- do_call(get_y, args_y)
-    ypred <- do_call(posterior_epred, args_ypred)
-    ll <- do_call(log_lik, args_ypred)
+    ypred <- do_call(posterior_epred, c(args_ypred, args_epred))
+    ll <- do_call(log_lik, c(args_ypred, args_loglik))
     r_eff <- r_eff_log_lik(ll, object)
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)
