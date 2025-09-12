@@ -503,7 +503,7 @@ validate_newdata <- function(
           # contrasts are not defined for factors with 1 or fewer levels
           next
         }
-        new_levels <- levels(new_factor)
+        new_levels <- levels(droplevels(new_factor))
         old_contrasts <- contrasts(factors[[i]])
         old_ordered <- is.ordered(factors[[i]])
         to_zero <- is.na(new_factor) | new_factor %in% "zero__"
