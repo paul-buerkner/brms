@@ -503,7 +503,7 @@ validate_newdata <- function(
           # contrasts are not defined for factors with 1 or fewer levels
           next
         }
-        new_levels <- levels(droplevels(new_factor))
+        new_levels <- levels(new_factor)
         old_contrasts <- contrasts(factors[[i]])
         old_ordered <- is.ordered(factors[[i]])
         to_zero <- is.na(new_factor) | new_factor %in% "zero__"
@@ -515,11 +515,13 @@ validate_newdata <- function(
           old_levels <- c(old_levels, "zero__")
           old_contrasts <- rbind(old_contrasts, zero__ = 0)
         }
-        if (any(!new_levels %in% old_levels)) {
+        # only actually used new levels should cause an error
+        used_new_levels <- levels(droplevels(new_factor))
+        if (any(!used_new_levels %in% old_levels)) {
           stop2(
             "New factor levels are not allowed.",
             "\nLevels allowed: ", collapse_comma(old_levels),
-            "\nLevels found: ", collapse_comma(new_levels)
+            "\nLevels found: ", collapse_comma(used_new_levels)
           )
         }
         newdata[[factor_names[i]]] <-
