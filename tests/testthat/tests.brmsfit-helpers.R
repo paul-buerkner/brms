@@ -241,14 +241,7 @@ test_that("get_cache_folder returns expected results", {
   old_val <- getOption("brms.cache_folder", NULL)
   options(brms.cache_folder = "SomeFolder")
 
-  on.exit({
-    if (is.null(old_val)) {
-      options(your.option.name = NULL)
-    } else {
-      options(your.option.name = old_val)
-    }
-  }, add = TRUE)
-
+  on.exit(options(brms.cache_folder = old_val), add = TRUE)
 
   files <- c("somefile", "./somefile", "abcde/somefile.rds" ,
              "somepath/somefolder/somefile")
