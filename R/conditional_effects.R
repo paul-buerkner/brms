@@ -1036,16 +1036,16 @@ plot.brms_conditional_effects <- function(
   plot <- use_alias(plot, dots$do_plot)
   stype <- match.arg(stype)
   smooths_only <- isTRUE(attr(x, "smooths_only"))
-  if (points && smooths_only) {
-    stop2("Argument 'points' is invalid for objects ",
-          "returned by 'conditional_smooths'.")
+  if (smooths_only) {
+    # plotting points does not make sense for conditional_smooths plots
+    points <- FALSE
   }
   if (!is_equal(jitter_width, 0)) {
     warning2("'jitter_width' is deprecated. Please use ",
              "'point_args = list(width = <width>)' instead.")
   }
   if (!is.null(theme) && !is.theme(theme)) {
-      stop2("Argument 'theme' should be a 'theme' object.")
+    stop2("Argument 'theme' should be a 'theme' object.")
   }
   if (plot) {
     default_ask <- devAskNewPage()
