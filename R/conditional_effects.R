@@ -272,9 +272,9 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     )
     ae_coll <- all_effects[lengths(all_effects) == 1L]
     ae_coll <- ulapply(ae_coll, paste, collapse = ":")
-    matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
-    if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
-      invalid <- effects[setdiff(seq_along(effects), sort(matches))]
+    matches <- lapply(effects, sort) %in% lapply(all_effects, sort)
+    if (any(!matches) && any(matches)) {
+      invalid <- unique(effects[!matches])
       invalid <- ulapply(invalid, paste, collapse = ":")
       warning2(
         "Some specified effects are invalid for this model: ",
@@ -282,12 +282,11 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         "(combinations of): ", collapse_comma(ae_coll)
       )
     }
-    effects <- unique(effects[sort(matches)])
+    effects <- unique(effects[matches])
     if (!length(effects)) {
       stop2(
         "All specified effects are invalid for this model.\n",
-        "Valid effects are (combinations of): ",
-        collapse_comma(ae_coll)
+        "Valid effects are (combinations of): ", collapse_comma(ae_coll)
       )
     }
   }
