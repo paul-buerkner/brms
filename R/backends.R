@@ -742,7 +742,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     if (algorithm %in% c("meanfield", "fullrank")) {
       variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
     } else if (algorithm %in% "pathfinder") {
-      variables <- setdiff(variables, "lp_approx__")
+      variables <- setdiff(variables, c("lp_approx__", "path__"))
     } else if (algorithm %in% "laplace") {
       variables <- setdiff(variables, c("lp__", "lp_approx__"))
     }
