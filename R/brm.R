@@ -573,9 +573,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
 
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot
+      attr(x, '.empty_brmfit') <- TRUE
       return(x)
     }
 
+    attr(x, '.empty_brmfit') <- FALSE
     if (!is.null(file) && file_refit == "on_change") {
       x_from_file <- read_brmsfit(file)
       if (!is.null(x_from_file)) {
