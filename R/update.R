@@ -362,7 +362,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL,
   args$chains <- 0
   fit <- do_call(update.brmsfit, args)
   # check if object in an empty brmfit
-  # `@` is not a safe call and foo@bar will err out if foo 
+  # `@` is not a safe call and foo@bar will err out if foo is not S4
   # im checking with isS4 but it can be is.null (looser test) or is.stanfit (need def)
   empty_fit <- isS4(object$fit)
   
