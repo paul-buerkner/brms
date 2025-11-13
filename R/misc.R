@@ -237,7 +237,7 @@ first_not_null <- function(...) {
   i <- 1L
   while (isNULL(out) && i <= length(dots)) {
     if (!isNULL(dots[[i]])) {
-      out <- eval(dots[[i]])
+      out <- dots[[i]]
     }
     i <- i + 1L
   }
