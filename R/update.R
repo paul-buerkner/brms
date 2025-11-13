@@ -236,7 +236,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     old_stancode <- stancode(object, version = FALSE)
     recompile <- needs_recompilation(object) || !same_backend ||
       !is_equal(new_stancode, old_stancode) || empty_fit
-    if (recompile && silent < 2) {
+    if (recompile && silent < 2 && !empty_fit) {
       message("The desired updates require recompiling the model")
     }
   }
