@@ -87,7 +87,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   # check if object in an empty brmfit
   # `@` is not a safe call and foo@bar will err out if foo 
   # im checking with isS4 but it can be is.null (looser test) or is.stanfit (need def)
-  empty_fit <- isS4(object$fit)
+  empty_fit <- !isS4(object$fit)
 
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute
