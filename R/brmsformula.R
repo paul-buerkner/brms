@@ -1001,7 +1001,12 @@ split_bf <- function(x) {
       flist[[i]]$formula[[2]] <- parse(text = str_lhs)[[1]]
       flist[[i]]$resp <- resp[[i]]
     }
-    x <- mvbf(flist = flist)
+    if (length(resp) > 1L) {
+      x <- mvbf(flist = flist)
+    } else {
+      # single response with mvbind is just a univariate model
+      x <- flist[[1]]
+    }
   }
   x
 }
