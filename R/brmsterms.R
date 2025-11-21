@@ -542,6 +542,7 @@ terms_resp <- function(formula, check_names = TRUE) {
   if (is.null(formula)) {
     return(NULL)
   }
+  used_mvbind <- FALSE
   expr <- validate_resp_formula(formula)[[2]]
   if (length(expr) <= 1L) {
     out <- deparse_no_string(expr)
@@ -557,6 +558,7 @@ terms_resp <- function(formula, check_names = TRUE) {
   if (check_names) {
     out <- make_stan_names(out)
   }
+  attr(out, "mvbind") <- used_mvbind
   out
 }
 

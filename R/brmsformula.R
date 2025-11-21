@@ -992,7 +992,7 @@ split_bf <- function(x) {
   resp <- terms_resp(x$formula, check_names = FALSE)
   str_adform <- formula2str(x$formula)
   str_adform <- get_matches("\\|[^~]*(?=~)", str_adform, perl = TRUE)
-  if (length(resp) > 1L) {
+  if (isTRUE(attr(resp, "mvbind"))) {
     # mvbind syntax used to specify MV model
     flist <- named_list(resp)
     for (i in seq_along(resp)) {
