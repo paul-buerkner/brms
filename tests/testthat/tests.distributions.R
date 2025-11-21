@@ -10,6 +10,7 @@ test_that("student distribution works correctly", {
 })
 
 test_that("multivariate normal and student distributions work correctly", {
+  skip_if_not_installed("mnormt")
   mu <- rnorm(3)
   Sigma <- cov(matrix(rnorm(300), ncol = 3))
   expect_equal(dmulti_normal(1:3, mu = mu, Sigma = Sigma),
