@@ -1,0 +1,55 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  pull_request:
+  # build dev site on merged pushes
+  push:
+    branches: [main, master]
+  # build full site on releases
+  release:
+    types: [published]
+  workflow_dispatch:
+
+name: pkgdown.yaml
+
+jobs:
+  pkgdown:
+    runs-on: ubuntu-latest
+    # Only restrict concurrency for non-PR jobs
+    concurrency:
+      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
+      cancel-in-progress: true
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      NOT_CRAN: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::., stan-dev/pkgdown-config
+          extra-repositories: 'https://stan-dev.r-universe.dev'
+
+      - name: Build site
+        run: |
+            pkgdown::build_site_github_pages(
+              lazy = FALSE, # change to TRUE if runner times out.
+              run_dont_run = TRUE,
+              new_process = TRUE
+            )
+        shell: Rscript {0}
+
+      - name: Deploy to GitHub pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          clean: false
+          branch: gh-pages
+          folder: docs
