@@ -36,7 +36,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::., stan-dev/pkgdown-config, any::BH
+          extra-packages: |
+            any::pkgdown
+            local::.
+            stan-dev/pkgdown-config
+            any::BH
+            any::RcppEigen
 
       - name: Build site
         run: |
