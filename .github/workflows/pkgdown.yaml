@@ -51,7 +51,7 @@ jobs:
       - name: Build site
         run: |
             pkgdown::build_site_github_pages(
-              lazy = FALSE, # change to TRUE if runner times out.
+              lazy = TRUE,
               run_dont_run = TRUE,
               new_process = TRUE
             )
@@ -60,6 +60,6 @@ jobs:
       - name: Deploy to GitHub pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          clean: false
+          clean: true
           branch: gh-pages
           folder: docs
