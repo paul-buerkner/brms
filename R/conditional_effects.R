@@ -1107,14 +1107,19 @@ plot.brms_conditional_effects <- function(
         aes_tmp$colour <- aes(colour = .data[[gvar]])$colour
       }
       plots[[i]] <- ggplot(x[[i]]) + aes_tmp +
-        labs(x = effects[1], y = response, colour = effects[2])
+        labs(x = effects[1], y = response)
+      if (!is.na(effects[2])) {
+        plots[[i]] <- plots[[i]] + labs(colour = effects[2])
+      }
       if (is.null(spaghetti)) {
         aes_tmp <- aes(ymin = .data[["lower__"]], ymax = .data[["upper__"]])
         if (!is.null(gvar)) {
           aes_tmp$fill <- aes(fill = .data[[gvar]])$fill
         }
-        plots[[i]] <- plots[[i]] + aes_tmp +
-          labs(fill = effects[2])
+        plots[[i]] <- plots[[i]] + aes_tmp
+        if (!is.na(effects[2])) {
+          plots[[i]] <- plots[[i]] + labs(fill = effects[2])
+        }
       }
       # extract suggested colors for later use
       colors <- ggplot_build(plots[[i]])

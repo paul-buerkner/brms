@@ -992,7 +992,7 @@ split_bf <- function(x) {
   resp <- terms_resp(x$formula, check_names = FALSE)
   str_adform <- formula2str(x$formula)
   str_adform <- get_matches("\\|[^~]*(?=~)", str_adform, perl = TRUE)
-  if (length(resp) > 1L) {
+  if (isTRUE(attr(resp, "mvbind"))) {
     # mvbind syntax used to specify MV model
     flist <- named_list(resp)
     for (i in seq_along(resp)) {
@@ -1001,7 +1001,12 @@ split_bf <- function(x) {
       flist[[i]]$formula[[2]] <- parse(text = str_lhs)[[1]]
       flist[[i]]$resp <- resp[[i]]
     }
-    x <- mvbf(flist = flist)
+    if (length(resp) > 1L) {
+      x <- mvbf(flist = flist)
+    } else {
+      # single response with mvbind is just a univariate model
+      x <- flist[[1]]
+    }
   }
   x
 }
