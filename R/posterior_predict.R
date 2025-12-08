@@ -716,6 +716,17 @@ posterior_predict_asym_laplace <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_skew_double_exponential <- function(i, prep, ntrys = 5, ...) {
+  rcontinuous(
+    n = prep$ndraws, dist = "asym_laplace",
+    mu = get_dpar(prep, "mu", i = i),
+    sigma = get_dpar(prep, "sigma", i = i),
+    quantile = get_dpar(prep, "tau", i = i),
+    lb = prep$data$lb[i], ub = prep$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
                                                          ...) {
   zi <- get_dpar(prep, "zi", i = i)

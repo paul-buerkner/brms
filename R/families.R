@@ -683,6 +683,15 @@ asym_laplace <- function(link = "identity", link_sigma = "log",
               link_sigma = link_sigma, link_quantile = link_quantile)
 }
 
+#' @rdname brmsfamily
+#' @export
+skew_double_exponential <- function(link = "identity", link_sigma = "log",
+                                    link_tau = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("skew_double_exponential", link = link, slink = slink,
+              link_sigma = link_sigma, link_tau = link_tau)
+}
+
 # do not export yet!
 # @rdname brmsfamily
 # @export

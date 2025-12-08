@@ -1052,6 +1052,9 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
 #' Density, distribution function, quantile function and random generation
 #' for the asymmetric Laplace distribution with location \code{mu},
 #' scale \code{sigma} and asymmetry parameter \code{quantile}.
+#' 
+#' Skew double exponential functions are aliases of the Asym Laplace counterparts,
+#' following the built-in implementation in Stan 2.28+
 #'
 #' @name AsymLaplace
 #'
@@ -1082,6 +1085,19 @@ dasym_laplace <- function(x, mu = 0, sigma = 1, quantile = 0.5,
 
 #' @rdname AsymLaplace
 #' @export
+dskew_double_exponential <- function(x, mu = 0, sigma = 1, tau = 0.5,
+                          log = FALSE){
+  dasym_laplace(
+    x = x,
+    mu = mu,
+    sigma = sigma,
+    quantile = tau,
+    log = log
+  )
+}
+
+#' @rdname AsymLaplace
+#' @export
 pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
   out <- ifelse(q < mu,
@@ -1095,6 +1111,20 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
     out <- log(out)
   }
   out
+}
+
+#' @rdname AsymLaplace
+#' @export
+pskew_double_exponential <- function(x, mu = 0, sigma = 1, tau = 0.5,
+                          lower.tail = TRUE, log.p = FALSE){
+  pasym_laplace(
+    x = x,
+    mu = mu,
+    sigma = sigma,
+    quantile = tau,
+    lower.tail = lower.tail,
+    log.p = log.p
+  )
 }
 
 #' @rdname AsymLaplace
@@ -1113,9 +1143,34 @@ qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
 
 #' @rdname AsymLaplace
 #' @export
+qskew_double_exponential <- function(x, mu = 0, sigma = 1, tau = 0.5,
+                          lower.tail = TRUE, log.p = FALSE){
+  qasym_laplace(
+    x = x,
+    mu = mu,
+    sigma = sigma,
+    quantile = tau,
+    lower.tail = lower.tail,
+    log.p = log.p
+  )
+}
+
+#' @rdname AsymLaplace
+#' @export
 rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
   u <- runif(n)
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
+}
+
+#' @rdname AsymLaplace
+#' @export
+rskew_double_exponential <- function(x,  mu = 0, sigma = 1, tau = 0.5){
+  rasym_laplace(
+    x = x,
+    mu = mu,
+    sigma = sigma,
+    quantile = tau
+  )
 }
 
 # The Discrete Weibull Distribution

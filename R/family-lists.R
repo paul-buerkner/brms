@@ -410,6 +410,16 @@
   )
 }
 
+.family_skew_double_exponential <- function() {
+  list(
+    links = c("identity", "log", "inverse", "softplus", "squareplus"),
+    dpars = c("mu", "sigma", "tau"), type = "real",
+    ybounds = c(-Inf, Inf), closed = c(NA, NA),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
+    normalized = ""
+  )
+}
+
 .family_zero_inflated_asym_laplace <- function() {
   list(
     links = c("identity", "log", "inverse", "softplus", "squareplus"),
