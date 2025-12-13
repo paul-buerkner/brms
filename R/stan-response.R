@@ -295,14 +295,16 @@ stan_thres <- function(bterms, prior, normalize, ...) {
   }
   family <- bterms$family$family
   link <- bterms$family$link
-  if (has_extra_cat(bterms)) {
-    str_add(out$fun) <- glue(
-      "  #includeR `stan_hurdle_ordinal_lpmf('{family}', '{link}')`\n"
-    )
-  } else {
-    str_add(out$fun) <- glue(
-      "  #includeR `stan_ordinal_lpmf('{family}', '{link}')`\n"
-    )
+  if (family != "custom") {
+    if (has_extra_cat(bterms)) {
+        str_add(out$fun) <- glue(
+        "  #includeR `stan_hurdle_ordinal_lpmf('{family}', '{link}')`\n"
+        )
+    } else {
+        str_add(out$fun) <- glue(
+        "  #includeR `stan_ordinal_lpmf('{family}', '{link}')`\n"
+        )
+    }
   }
   if (fix_intercepts(bterms)) {
     # identify ordinal mixtures by fixing their thresholds to the same values
