@@ -654,6 +654,12 @@ test_that("posterior_interval has reasonable outputs", {
 test_that("posterior_predict has reasonable outputs", {
   expect_equal(dim(posterior_predict(fit1)),
                c(ndraws(fit1), nobs(fit1)))
+
+  # tests issue #1814
+  df <- fit1$data
+  levels(df$Trt) <- c(levels(df$Trt), "-1")
+  pp <- posterior_predict(fit1, newdata = df)
+  expect_equal(dim(pp), c(ndraws(fit1), nrow(df)))
 })
 
 test_that("posterior_linpred has reasonable outputs", {

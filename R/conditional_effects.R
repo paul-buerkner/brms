@@ -272,9 +272,9 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     )
     ae_coll <- all_effects[lengths(all_effects) == 1L]
     ae_coll <- ulapply(ae_coll, paste, collapse = ":")
-    matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
-    if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
-      invalid <- effects[setdiff(seq_along(effects), sort(matches))]
+    matches <- lapply(effects, sort) %in% lapply(all_effects, sort)
+    if (any(!matches) && any(matches)) {
+      invalid <- unique(effects[!matches])
       invalid <- ulapply(invalid, paste, collapse = ":")
       warning2(
         "Some specified effects are invalid for this model: ",
@@ -282,12 +282,11 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         "(combinations of): ", collapse_comma(ae_coll)
       )
     }
-    effects <- unique(effects[sort(matches)])
+    effects <- unique(effects[matches])
     if (!length(effects)) {
       stop2(
         "All specified effects are invalid for this model.\n",
-        "Valid effects are (combinations of): ",
-        collapse_comma(ae_coll)
+        "Valid effects are (combinations of): ", collapse_comma(ae_coll)
       )
     }
   }
@@ -1051,16 +1050,16 @@ plot.brms_conditional_effects <- function(
   plot <- use_alias(plot, dots$do_plot)
   stype <- match.arg(stype)
   smooths_only <- isTRUE(attr(x, "smooths_only"))
-  if (points && smooths_only) {
-    stop2("Argument 'points' is invalid for objects ",
-          "returned by 'conditional_smooths'.")
+  if (smooths_only) {
+    # plotting points does not make sense for conditional_smooths plots
+    points <- FALSE
   }
   if (!is_equal(jitter_width, 0)) {
     warning2("'jitter_width' is deprecated. Please use ",
              "'point_args = list(width = <width>)' instead.")
   }
   if (!is.null(theme) && !is.theme(theme)) {
-      stop2("Argument 'theme' should be a 'theme' object.")
+    stop2("Argument 'theme' should be a 'theme' object.")
   }
   if (plot) {
     default_ask <- devAskNewPage()
@@ -1123,14 +1122,19 @@ plot.brms_conditional_effects <- function(
         aes_tmp$colour <- aes(colour = .data[[gvar]])$colour
       }
       plots[[i]] <- ggplot(x[[i]]) + aes_tmp +
-        labs(x = effects[1], y = response, colour = effects[2])
+        labs(x = effects[1], y = response)
+      if (!is.na(effects[2])) {
+        plots[[i]] <- plots[[i]] + labs(colour = effects[2])
+      }
       if (is.null(spaghetti)) {
         aes_tmp <- aes(ymin = .data[["lower__"]], ymax = .data[["upper__"]])
         if (!is.null(gvar)) {
           aes_tmp$fill <- aes(fill = .data[[gvar]])$fill
         }
-        plots[[i]] <- plots[[i]] + aes_tmp +
-          labs(fill = effects[2])
+        plots[[i]] <- plots[[i]] + aes_tmp
+        if (!is.na(effects[2])) {
+          plots[[i]] <- plots[[i]] + labs(fill = effects[2])
+        }
       }
       # extract suggested colors for later use
       colors <- ggplot_build(plots[[i]])
