@@ -477,7 +477,7 @@ posterior_epred_asym_laplace <- function(prep) {
 
 posterior_epred_skew_double_exponential <- function(prep) {
   with(prep$dpars,
-    mu + sigma * (1 - 2 * tau) / (tau * (1 - tau))
+    mu + sigma * (1 - 2 * tau) / (2 * tau * (1 - tau))
   )
 }
 

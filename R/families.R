@@ -17,7 +17,7 @@
 #'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 #'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
-#'   \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+#'   \code{asym_laplace}, \code{skew_double_exponential}, \code{gen_extreme_value}, \code{categorical},
 #'   \code{multinomial}, \code{dirichlet_multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
@@ -43,6 +43,7 @@
 #' @param link_bias Link of auxiliary parameter \code{bias} if being predicted.
 #' @param link_alpha Link of auxiliary parameter \code{alpha} if being predicted.
 #' @param link_quantile Link of auxiliary parameter \code{quantile} if being predicted.
+#' @param link_tau Link of auxiliary parameter \code{tau} if being predicted.
 #' @param link_xi Link of auxiliary parameter \code{xi} if being predicted.
 #' @param threshold A character string indicating the type
 #'   of thresholds (i.e. intercepts) used in an ordinal model.
@@ -108,6 +109,11 @@
 #'
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
+#' 
+#'   \item{Family \code{skew_double_exponential} (EXPERIMENTAL) 
+#'   behaves similarly to family \code{asym_laplace}
+#'   but uses the native implementation by Stan 2.28+. 
+#'   The auxiliary \code{tau} parameter to the quantile of interest.}
 #'
 #'   \item{Family \code{exgaussian} ('exponentially modified Gaussian') and
 #'   \code{shifted_lognormal} are especially suited to model reaction times.}
@@ -679,6 +685,9 @@ von_mises <- function(link = "tan_half", link_kappa = "log") {
 asym_laplace <- function(link = "identity", link_sigma = "log",
                          link_quantile = "logit") {
   slink <- substitute(link)
+  # for now keep asym_laplace until we are confident about skew_double_exponential
+  # uncomment the below line then
+  # warn_deprecated('skew_double_exponential', 'asym_laplace')
   .brmsfamily("asym_laplace", link = link, slink = slink,
               link_sigma = link_sigma, link_quantile = link_quantile)
 }
@@ -1370,6 +1379,7 @@ links_dpars <- function(dpar) {
     ndt = c("log", "identity", "softplus", "squareplus"),
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
+    tau = c("logit", "identity"),
     xi = c("log1p", "identity"),
     alpha = c("identity", "log", "softplus", "squareplus"),
     theta = c("identity")

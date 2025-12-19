@@ -720,7 +720,7 @@ posterior_predict_skew_double_exponential <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "asym_laplace",
     mu = get_dpar(prep, "mu", i = i),
-    sigma = get_dpar(prep, "sigma", i = i),
+    sigma = get_dpar(prep, "sigma", i = i)/2,
     quantile = get_dpar(prep, "tau", i = i),
     lb = prep$data$lb[i], ub = prep$data$ub[i],
     ntrys = ntrys
