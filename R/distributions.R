@@ -1090,7 +1090,7 @@ dskew_double_exponential <- function(x, mu = 0, sigma = 1, tau = 0.5,
   dasym_laplace(
     x = x,
     mu = mu,
-    sigma = sigma,
+    sigma = sigma/2,
     quantile = tau,
     log = log
   )
@@ -1120,7 +1120,7 @@ pskew_double_exponential <- function(x, mu = 0, sigma = 1, tau = 0.5,
   pasym_laplace(
     x = x,
     mu = mu,
-    sigma = sigma,
+    sigma = sigma/2,
     quantile = tau,
     lower.tail = lower.tail,
     log.p = log.p
@@ -1148,7 +1148,7 @@ qskew_double_exponential <- function(x, mu = 0, sigma = 1, tau = 0.5,
   qasym_laplace(
     x = x,
     mu = mu,
-    sigma = sigma,
+    sigma = sigma/2,
     quantile = tau,
     lower.tail = lower.tail,
     log.p = log.p
@@ -1168,7 +1168,7 @@ rskew_double_exponential <- function(x,  mu = 0, sigma = 1, tau = 0.5){
   rasym_laplace(
     x = x,
     mu = mu,
-    sigma = sigma,
+    sigma = sigma/2,
     quantile = tau
   )
 }

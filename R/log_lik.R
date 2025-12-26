@@ -671,7 +671,7 @@ log_lik_asym_laplace <- function(i, prep, ...) {
 log_lik_skew_double_exponential <- function(i, prep, ...) {
   args <- list(
     mu = get_dpar(prep, "mu", i),
-    sigma = get_dpar(prep, "sigma", i),
+    sigma = get_dpar(prep, "sigma", i)/2,
     quantile = get_dpar(prep, "tau", i)
   )
   out <- log_lik_censor(dist = "asym_laplace", args, i, prep)
