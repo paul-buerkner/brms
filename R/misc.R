@@ -883,6 +883,14 @@ warning2 <- function(...) {
   warning(..., call. = FALSE)
 }
 
+# Create a list of warned warnings that won't appear in the same session
+warned <- c()
+warning_once <- function(message, warn_id, ...){
+  if (warn_id %in% warned) return(invisible())
+  warned <- c(warned, warn_id)
+  warning2(message, ..., call. = FALSE)
+}
+
 # get first occurrence of 'x' in '...' objects
 # @param x The name of the required element
 # @param ... named R objects that may contain 'x'
