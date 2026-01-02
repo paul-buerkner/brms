@@ -188,7 +188,7 @@ fit_model <- function(model, backend, ...) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
-      out <- futures <- vector("list", chains)
+      futures <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_id <- i
         if (is.list(init)) {
@@ -200,9 +200,7 @@ fit_model <- function(model, backend, ...) {
           seed = TRUE
         )
       }
-      for (i in seq_len(chains)) {
-        out[[i]] <- future::value(futures[[i]])
-      }
+      out <- future::value(futures)
       out <- rstan::sflist2stanfit(out)
       rm(futures)
     } else {
@@ -285,7 +283,7 @@ fit_model <- function(model, backend, ...) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
-      out <- futures <- vector("list", chains)
+      futures <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_ids <- i
         if (is.list(init)) {
@@ -297,9 +295,7 @@ fit_model <- function(model, backend, ...) {
           seed = TRUE
         )
       }
-      for (i in seq_len(chains)) {
-        out[[i]] <- future::value(futures[[i]])
-      }
+      out <- future::value(futures)
       rm(futures)
     } else {
       out <- do_call(model$sample, args)
