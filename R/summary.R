@@ -12,7 +12,7 @@
 #' @inheritParams posterior_summary
 #'
 #' @details The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and
-#' \code{Tail_ESS} are described in detail in Vehtari et al. (2020).
+#' \code{Tail_ESS} are described in detail by Vehtari et al. (2020).
 #'
 #' @references
 #' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
@@ -128,9 +128,9 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
       Rhats <- full_summary[, "Rhat"]
       if (any(Rhats > 1.05, na.rm = TRUE)) {
         warning2(
-          "Parts of the model have not converged (some Rhats are > 1.05). ",
+          "Inference for the model posterior has not converged (some Rhats are > 1.05). ",
           "Be careful when analysing the results! We recommend running ",
-          "more iterations and/or setting stronger priors."
+          "more iterations or setting stronger priors."
         )
       }
     }
@@ -343,7 +343,7 @@ print.brmssummary <- function(x, digits = 2,
         cat(paste0(
           "Overall Rhat and ESS estimates\n",
           "are not informative for brm_multiple models and are hence not displayed.\n",
-          "Please see ?brm_multiple for how to assess convergence of such models."
+          "Please see ?brm_multiple for how to assess convergence in case of such models."
         ))
       }
     }
