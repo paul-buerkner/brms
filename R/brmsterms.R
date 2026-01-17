@@ -1108,7 +1108,7 @@ check_cs <- function(bterms) {
     }
     if (needs_ordered_cs(bterms$family)) {
       warning2("Category specific effects for this family should be ",
-               "considered experimental and may have convergence issues.")
+               "considered experimental and there may be convergence issues.")
     }
   }
   invisible(NULL)
