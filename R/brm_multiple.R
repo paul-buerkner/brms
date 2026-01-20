@@ -31,11 +31,12 @@
 #'   the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.
 #' @param ... Further arguments passed to \code{\link{brm}}.
 #'
-#' @details The combined model may issue false positive convergence warnings, as
-#'   the MCMC chains corresponding to different datasets may not necessarily
-#'   overlap, even if each of the original models did converge. To find out
-#'   whether each of the original models converged, subset the draws belonging
-#'   to the individual models and then run convergence diagnostics.
+#' @details The inference for the combined model posterior may issue false positive
+#'   convergence warnings, as the MCMC chains corresponding to posteriors with
+#'   different datasets may not necessarily overlap, even if the inference for each
+#'   of the original posterior did converge. To find out whether the inference for
+#'   each of the original posterior converged, subset the draws belonging to the
+#'   individual posteriors (model fits) and then run convergence diagnostics.
 #'   See Examples below for details.
 #'
 #' @template parallelization
@@ -59,7 +60,7 @@
 #' summary(fit_imp2)
 #' plot(fit_imp2, variable = "^b_", regex = TRUE)
 #'
-#' # investigate convergence of the original models
+#' # investigate convergence of inference for the original posteriors
 #' library(posterior)
 #' draws <- as_draws_array(fit_imp2)
 #' # every dataset has just one chain here
