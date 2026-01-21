@@ -465,6 +465,23 @@ posterior_epred_xbeta <- function(prep) {
   1 + t1 - t2 - t3
 }
 
+posterior_epred_ordbeta <- function(prep) {
+  # Based on Kubinec (2023): https://doi.org/10.1017/pan.2022.20
+  mu <- get_dpar(prep, "mu")
+  cutzero <- get_dpar(prep, "cutzero")
+  cutone <- get_dpar(prep, "cutone")
+  # compute thresholds (cutone is parameterized as log-offset)
+  thresh1 <- cutzero
+  thresh2 <- cutzero + exp(cutone)
+  # probability of each component
+  pr_zero <- 1 - plogis(mu - thresh1)
+  pr_one <- plogis(mu - thresh2)
+  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  # expected value is weighted average across components
+  # E[Y] = 0 * pr_zero + plogis(mu) * pr_cont + 1 * pr_one
+  pr_zero * 0 + pr_cont * plogis(mu) + pr_one * 1
+}
+
 posterior_epred_von_mises <- function(prep) {
   prep$dpars$mu
 }

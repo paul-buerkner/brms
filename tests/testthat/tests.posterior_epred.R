@@ -229,6 +229,22 @@ test_that("posterior_epred_xbeta runs without errors", {
   expect_true(!identical(mu_new, prep$dpars$mu))
 })
 
+test_that("posterior_epred_ordbeta runs without errors", {
+  ns <- 50
+  nobs <- 8
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    phi = matrix(rexp(ns * nobs, 0.1), ncol = nobs),
+    cutzero = matrix(rnorm(ns * nobs, -1, 0.5), ncol = nobs),
+    cutone = matrix(rnorm(ns * nobs, 0, 0.5), ncol = nobs)
+  )
+  prep$data <- list(Y = c(0, 0.3, 0.5, 0.7, 1, 0.2, 0.8, 0.4))
+  mu_new <- brms:::posterior_epred_ordbeta(prep)
+  expect_equal(dim(mu_new), dim(prep$dpars$mu))
+  expect_true(all(mu_new >= 0 & mu_new <= 1))
+})
+
 test_that("posterior_epred can be reproduced by using d<family>()", {
   fit4 <- rename_pars(brms:::brmsfit_example4)
   epred4 <- posterior_epred(fit4)

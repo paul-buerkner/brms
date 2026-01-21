@@ -695,6 +695,17 @@ posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_ordbeta <- function(i, prep, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  cutzero <- get_dpar(prep, "cutzero", i = i)
+  cutone <- get_dpar(prep, "cutone", i = i)
+  rordbeta(
+    n = prep$ndraws,
+    mu = mu, phi = phi, cutzero = cutzero, cutone = cutone
+  )
+}
+
 posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "von_mises",

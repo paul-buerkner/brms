@@ -643,6 +643,18 @@ log_lik_xbeta <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_ordbeta <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  cutzero <- get_dpar(prep, "cutzero", i = i)
+  cutone <- get_dpar(prep, "cutone", i = i)
+  y <- prep$data$Y[i]
+  args <- list(mu = mu, phi = phi, cutzero = cutzero, cutone = cutone)
+  out <- dordbeta(x = y, mu = mu, phi = phi,
+                  cutzero = cutzero, cutone = cutone, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_von_mises <- function(i, prep) {
   args <- list(
     mu = get_dpar(prep, "mu", i),

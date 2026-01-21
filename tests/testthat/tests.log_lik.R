@@ -580,6 +580,22 @@ test_that("log_lik for the xbeta model runs without errors", {
   expect_equal(length(ll), ns)
 })
 
+test_that("log_lik for the ordbeta model runs without errors", {
+  ns <- 50
+  nobs <- 8
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    phi = rexp(ns, 0.1),
+    cutzero = rnorm(ns, -1, 0.5),
+    cutone = rnorm(ns, 0, 0.5)
+  )
+  prep$data <- list(Y = c(0, 0.3, 0.5, 0.7, 1, 0.2, 0.8, 0.4))
+  ll <- brms:::log_lik_ordbeta(3, prep = prep)
+  expect_equal(length(ll), ns)
+  expect_true(all(is.finite(ll)))
+})
+
 test_that("log_lik_custom runs without errors", {
   ns <- 15
   nobs <- 10

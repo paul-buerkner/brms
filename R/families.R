@@ -23,7 +23,8 @@
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 #'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbeta}.
+#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, \code{xbeta},
+#'   and \code{ordbeta}.
 #' @param link A specification for the model link function. This can be a
 #'   name/expression or character string. See the 'Details' section for more
 #'   information on link functions supported by each family.
@@ -44,6 +45,8 @@
 #' @param link_alpha Link of auxiliary parameter \code{alpha} if being predicted.
 #' @param link_quantile Link of auxiliary parameter \code{quantile} if being predicted.
 #' @param link_xi Link of auxiliary parameter \code{xi} if being predicted.
+#' @param link_cutzero Link of auxiliary parameter \code{cutzero} if being predicted.
+#' @param link_cutone Link of auxiliary parameter \code{cutone} if being predicted.
 #' @param threshold A character string indicating the type
 #'   of thresholds (i.e. intercepts) used in an ordinal model.
 #'   \code{"flexible"} provides the standard unstructured thresholds,
@@ -105,6 +108,13 @@
 #'   \code{zero_inflated_beta}, \code{zero_one_inflated_beta} families
 #'   provide more flexibility.  For details see Kosmidis & Zeileis
 #'   (2024).}
+#'
+#'   \item{Family \code{ordbeta} ('ordered beta') provides an alternative
+#'   approach to handling \code{[0, 1]} responses with exact \code{0}s
+#'   and \code{1}s. It models the response as a mixture of a degenerate
+#'   distribution at 0, a beta distribution for (0,1), and a degenerate
+#'   distribution at 1. The cutpoint parameters control the probability
+#'   of each component. For details see Kubinec (2023).}
 #'
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -193,6 +203,10 @@
 #' Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for [0, 1] Responses.
 #' \emph{arXiv Preprint}. \doi{10.48550/arXiv.2409.07233}
 #'
+#' Kubinec R (2023). Ordered Beta Regression: A Parsimonious, Well-Fitting
+#' Model for Continuous Data with Lower and Upper Bounds.
+#' \emph{Political Analysis}, 31(4), 519-536. \doi{10.1017/pan.2022.20}
+#'
 #' @seealso
 #'   \code{\link[brms:brm]{brm}},
 #'   \code{\link[stats:family]{family}},
@@ -217,6 +231,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity",
                        link_quantile = "logit",
+                       link_cutzero = "identity",
+                       link_cutone = "identity",
                        threshold = "flexible",
                        refcat = NULL) {
   slink <- substitute(link)
@@ -231,6 +247,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
+    link_cutzero = link_cutzero, link_cutone = link_cutone,
     threshold = threshold, refcat = refcat
   )
 }
@@ -639,6 +656,16 @@ xbeta <- function(link = "logit", link_phi = "log",
   slink <- substitute(link)
   .brmsfamily("xbeta", link = link, slink = slink,
               link_phi = link_phi, link_kappa = link_kappa)
+}
+
+#' @rdname brmsfamily
+#' @export
+ordbeta <- function(link = "identity", link_phi = "log",
+                    link_cutzero = "identity", link_cutone = "identity") {
+  slink <- substitute(link)
+  .brmsfamily("ordbeta", link = link, slink = slink,
+              link_phi = link_phi, link_cutzero = link_cutzero,
+              link_cutone = link_cutone)
 }
 
 #' @rdname brmsfamily

@@ -1742,6 +1742,192 @@ rxbeta <- function(...) {
   betareg::rxbeta(...)
 }
 
+#' Ordered Beta Distribution
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the ordered beta distribution as described in Kubinec (2023).
+#'
+#' @name OrdBeta
+#'
+#' @param x,q vector of quantiles
+#' @param p vector of probabilities
+#' @param n number of observations
+#' @param mu linear predictor (on identity scale)
+#' @param phi precision parameter of the beta distribution
+#' @param cutzero first cutpoint parameter
+#' @param cutone second cutpoint parameter (parameterized as log-offset from cutzero)
+#' @param log,log.p logical; if TRUE, probabilities are given as log(p)
+#' @param lower.tail logical; if TRUE (default), probabilities are
+#'   \eqn{P(X \le x)}, otherwise, \eqn{P(X > x)}
+#'
+#' @details
+#' The ordered beta distribution combines a beta distribution for values
+#' in (0, 1) with point masses at 0 and 1. The probability of each component
+#' is determined by the cutpoints: P(Y=0) = 1 - logit^{-1}(mu - cutzero),
+#' P(Y=1) = logit^{-1}(mu - cutzero - exp(cutone)), and P(0 < Y < 1)
+#' is the remaining probability. For the continuous component, the mean
+#' is logit^{-1}(mu) and precision is phi.
+#'
+#' @references
+#' Kubinec, R. (2023). Ordered Beta Regression: A Parsimonious, Well-Fitting
+#' Model for Continuous Data with Lower and Upper Bounds.
+#' \emph{Political Analysis}, 31(4), 519-536.
+#' \doi{10.1017/pan.2022.20}
+#'
+NULL
+
+#' @rdname OrdBeta
+#' @export
+dordbeta <- function(x, mu, phi, cutzero, cutone, log = FALSE) {
+  # compute thresholds (cutone is parameterized as log-offset)
+  thresh1 <- cutzero
+  thresh2 <- cutzero + exp(cutone)
+  # mean for beta component
+  beta_mu <- plogis(mu)
+  # probability of each component
+  pr_zero <- 1 - plogis(mu - thresh1)
+  pr_one <- plogis(mu - thresh2)
+  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  # compute log-density
+  out <- rep(NA_real_, length(x))
+  is_zero <- x == 0
+  is_one <- x == 1
+  is_cont <- x > 0 & x < 1
+  if (any(is_zero)) {
+    out[is_zero] <- log(pr_zero[is_zero])
+  }
+  if (any(is_one)) {
+    out[is_one] <- log(pr_one[is_one])
+  }
+  if (any(is_cont)) {
+    out[is_cont] <- log(pr_cont[is_cont]) +
+      dbeta(x[is_cont], beta_mu[is_cont] * phi[is_cont],
+            (1 - beta_mu[is_cont]) * phi[is_cont], log = TRUE)
+  }
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+#' @rdname OrdBeta
+#' @export
+pordbeta <- function(q, mu, phi, cutzero, cutone,
+                     lower.tail = TRUE, log.p = FALSE) {
+  # compute thresholds
+  thresh1 <- cutzero
+  thresh2 <- cutzero + exp(cutone)
+  # mean for beta component
+  beta_mu <- plogis(mu)
+  # probability of each component
+  pr_zero <- 1 - plogis(mu - thresh1)
+  pr_one <- plogis(mu - thresh2)
+  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  # compute CDF
+  out <- rep(NA_real_, length(q))
+  is_neg <- q < 0
+  is_zero <- q == 0
+  is_cont <- q > 0 & q < 1
+  is_one <- q >= 1
+  if (any(is_neg)) {
+    out[is_neg] <- 0
+  }
+  if (any(is_zero)) {
+    out[is_zero] <- pr_zero[is_zero]
+  }
+  if (any(is_cont)) {
+    out[is_cont] <- pr_zero[is_cont] + pr_cont[is_cont] *
+      pbeta(q[is_cont], beta_mu[is_cont] * phi[is_cont],
+            (1 - beta_mu[is_cont]) * phi[is_cont])
+  }
+  if (any(is_one)) {
+    out[is_one] <- 1
+  }
+  if (!lower.tail) {
+    out <- 1 - out
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
+#' @rdname OrdBeta
+#' @export
+qordbeta <- function(p, mu, phi, cutzero, cutone,
+                     lower.tail = TRUE, log.p = FALSE) {
+  if (log.p) {
+    p <- exp(p)
+  }
+  if (!lower.tail) {
+    p <- 1 - p
+  }
+  # compute thresholds
+  thresh1 <- cutzero
+  thresh2 <- cutzero + exp(cutone)
+  # mean for beta component
+  beta_mu <- plogis(mu)
+  # probability of each component
+  pr_zero <- 1 - plogis(mu - thresh1)
+  pr_one <- plogis(mu - thresh2)
+  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  # compute quantile
+  out <- rep(NA_real_, length(p))
+  is_zero <- p <= pr_zero
+  is_one <- p >= 1 - pr_one
+  is_cont <- !is_zero & !is_one
+  if (any(is_zero)) {
+    out[is_zero] <- 0
+  }
+  if (any(is_one)) {
+    out[is_one] <- 1
+  }
+  if (any(is_cont)) {
+    # rescale p to be within the continuous component
+    p_rescaled <- (p[is_cont] - pr_zero[is_cont]) / pr_cont[is_cont]
+    out[is_cont] <- qbeta(p_rescaled, beta_mu[is_cont] * phi[is_cont],
+                          (1 - beta_mu[is_cont]) * phi[is_cont])
+  }
+  out
+}
+
+#' @rdname OrdBeta
+#' @export
+rordbeta <- function(n, mu, phi, cutzero, cutone) {
+  # recycle parameters to length n
+  mu <- rep_len(mu, n)
+  phi <- rep_len(phi, n)
+  cutzero <- rep_len(cutzero, n)
+  cutone <- rep_len(cutone, n)
+  # compute thresholds
+  thresh1 <- cutzero
+  thresh2 <- cutzero + exp(cutone)
+  # mean for beta component
+  beta_mu <- plogis(mu)
+  # probability of each component
+  pr_zero <- 1 - plogis(mu - thresh1)
+  pr_one <- plogis(mu - thresh2)
+  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  # sample component indicators
+  u <- runif(n)
+  out <- rep(NA_real_, n)
+  is_zero <- u < pr_zero
+  is_one <- u >= 1 - pr_one
+  is_cont <- !is_zero & !is_one
+  if (any(is_zero)) {
+    out[is_zero] <- 0
+  }
+  if (any(is_one)) {
+    out[is_one] <- 1
+  }
+  if (any(is_cont)) {
+    out[is_cont] <- rbeta(sum(is_cont),
+                          beta_mu[is_cont] * phi[is_cont],
+                          (1 - beta_mu[is_cont]) * phi[is_cont])
+  }
+  out
+}
+
 #' Zero-Inflated Distributions
 #'
 #' Density and distribution functions for zero-inflated distributions.
