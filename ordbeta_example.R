@@ -3,7 +3,7 @@
 
 # install from my own working branch using remotes (if not installed already)
 
-# remotes::install_github("saudiwin/brms",ref="aebdd5601fb97d5275f34a1202a76c4de9fe09ee")
+# remotes::install_github("saudiwin/brms",ref="7e83794b3f56359b8d0799d9d0e5b41fdee9bbe2")
 
 library(brms)
 
