@@ -90,13 +90,26 @@
 .family_ordbeta <- function() {
   list(
     links = c("logit", "probit", "probit_approx", "cloglog", "cauchit"),
-    dpars = c("mu", "phi"),
+    dpars = c("mu", "phi", "zoi", "kappa"),
     type = "real",
     ybounds = c(0, 1),
     closed = c(TRUE, TRUE),
-    ad = c("weights", "subset", "thres", "index"),
+    ad = c("weights", "subset", "index"),
     include = "fun_ordbeta.stan",
-    specials = c("ordinal", "ordered_thres", "joint_link"),
+    prior = function(dpar, link = "identity", ...) {
+      if (dpar == "zoi") {
+        return("student_t(3, 0, 2.5)")
+      }
+      if (dpar == "kappa") {
+        if (link == "identity") {
+          return("gamma(0.01, 0.01)")
+        } else {
+          return("student_t(3, 0, 2.5)")
+        }
+      }
+      NULL
+    },
+    specials = character(0),
     normalized = ""
   )
 }

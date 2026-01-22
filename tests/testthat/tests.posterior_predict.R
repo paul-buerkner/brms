@@ -235,14 +235,14 @@ test_that("posterior_predict for ordbeta models works correctly", {
   ns <- 17
   nobs <- 10
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  # mu should be on response scale (0, 1) for ordbeta
+  # kappa is positive (distance from zoi to coi)
   prep$dpars <- list(
-    mu = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
-    phi = rgamma(ns, 4)
+    mu = matrix(plogis(rnorm(ns * nobs * 2)), ncol = 2 * nobs),
+    phi = rgamma(ns, 4),
+    zoi = matrix(rnorm(ns * nobs * 2, -1, 0.5), ncol = 2 * nobs),
+    kappa = matrix(rexp(ns * nobs * 2, 0.5), ncol = 2 * nobs)
   )
-  # Thresholds: thres[,1] < thres[,2] (ordered)
-  thres1 <- rnorm(ns, -1, 0.5)
-  thres2 <- thres1 + abs(rnorm(ns, 2, 0.5))
-  prep$thres <- list(thres = cbind(thres1, thres2))
   prep$family <- list(link = "logit")
   i <- sample(1:nobs, 1)
 

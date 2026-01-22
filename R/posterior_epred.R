@@ -467,18 +467,20 @@ posterior_epred_xbeta <- function(prep) {
 
 posterior_epred_ordbeta <- function(prep) {
   # Based on Kubinec (2023): https://doi.org/10.1017/pan.2022.20
-  link <- prep$family$link
+  # mu is already on response scale (0-1) after brms applies link function
   mu <- get_dpar(prep, "mu")
-  # thresholds are stored in prep$thres$thres (ndraws x nthres matrix)
-  thres <- prep$thres$thres
-  # probability of each component using the link function
-  # P(Y=0) = F(thres[1] - mu), P(Y=1) = 1 - F(thres[2] - mu)
-  pr_zero <- inv_link(thres[, 1] - mu, link)
-  pr_one <- 1 - inv_link(thres[, 2] - mu, link)
-  pr_cont <- inv_link(thres[, 2] - mu, link) - inv_link(thres[, 1] - mu, link)
-  # expected value is weighted average across components
-  # E[Y] = 0 * pr_zero + inv_link(mu) * pr_cont + 1 * pr_one
-  pr_cont * inv_link(mu, link) + pr_one
+  zoi <- get_dpar(prep, "zoi")
+  kappa <- get_dpar(prep, "kappa")
+  # coi = zoi + kappa (ensures ordering)
+  coi <- zoi + kappa
+  # Transform mu to latent scale for threshold comparison
+  mu_latent <- qlogis(mu)
+  # probability of each component
+  pr_zero <- plogis(zoi - mu_latent)
+  pr_one <- 1 - plogis(coi - mu_latent)
+  pr_cont <- plogis(coi - mu_latent) - plogis(zoi - mu_latent)
+  # expected value: E[Y] = 0 * pr_zero + mu * pr_cont + 1 * pr_one
+  pr_cont * mu + pr_one
 }
 
 posterior_epred_von_mises <- function(prep) {

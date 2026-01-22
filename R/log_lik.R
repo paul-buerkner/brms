@@ -644,13 +644,15 @@ log_lik_xbeta <- function(i, prep) {
 }
 
 log_lik_ordbeta <- function(i, prep) {
-  link <- prep$family$link
+  # mu is already on response scale (0-1) after brms applies link function
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  thres <- subset_thres(prep, i)
+  zoi <- get_dpar(prep, "zoi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  # coi = zoi + kappa (ensures ordering)
+  coi <- zoi + kappa
   y <- prep$data$Y[i]
-  out <- dordbeta(x = y, mu = mu, phi = phi, thres = thres,
-                  link = link, log = TRUE)
+  out <- dordbeta(x = y, mu = mu, phi = phi, zoi = zoi, coi = coi, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
 

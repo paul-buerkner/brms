@@ -592,10 +592,6 @@ extract_thres_names <- function(x, data) {
   if (is.null(x$adforms)) {
     x$adforms <- terms_ad(x$formula, x$family)
   }
-  # ordbeta family always has exactly 2 thresholds (for boundaries 0 and 1)
-  if (is_ordbeta(x$family)) {
-    return(data.frame(thres = 1:2, group = "", stringsAsFactors = FALSE))
-  }
   nthres <- get_ad_values(x, "thres", "thres", data)
   if (any(!is_wholenumber(nthres) | nthres < 1L)) {
     stop2("Number of thresholds must be a positive integer.")

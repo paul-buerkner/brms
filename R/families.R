@@ -655,10 +655,11 @@ xbeta <- function(link = "logit", link_phi = "log",
 
 #' @rdname brmsfamily
 #' @export
-ordbeta <- function(link = "logit", link_phi = "log") {
+ordbeta <- function(link = "logit", link_phi = "log",
+                    link_zoi = "identity", link_kappa = "log") {
   slink <- substitute(link)
   .brmsfamily("ordbeta", link = link, slink = slink,
-              link_phi = link_phi)
+              link_phi = link_phi, link_zoi = link_zoi, link_kappa = link_kappa)
 }
 
 #' @rdname brmsfamily
@@ -1619,10 +1620,6 @@ is_categorical <- function(family) {
 
 is_ordinal <- function(family) {
   "ordinal" %in% family_info(family, "specials")
-}
-
-is_ordbeta <- function(family) {
-  all(family_names(family) == "ordbeta")
 }
 
 is_multinomial <- function(family) {
