@@ -96,7 +96,7 @@
     closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "thres", "index"),
     include = "fun_ordbeta.stan",
-    specials = c("ordinal", "ordered_thres"),
+    specials = c("ordinal", "ordered_thres", "joint_link"),
     normalized = ""
   )
 }
