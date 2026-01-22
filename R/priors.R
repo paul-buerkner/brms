@@ -1687,7 +1687,7 @@ dpar_bounds <- function(dpar, suffix = "", family = NULL) {
     beta = list(lb = "0", ub = ""),
     zi = list(lb = "0", ub = "1"),
     hu = list(lb = "0", ub = "1"),
-    zoi = list(lb = "0", ub = "1"),
+    zoi = list(lb = "", ub = ""),
     coi = list(lb = "0", ub = "1"),
     bs = list(lb = "0", ub = ""),
     ndt = list(lb = "0", ub = min_Y),
