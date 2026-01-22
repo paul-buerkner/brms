@@ -3,7 +3,7 @@
 
 # install from my own working branch using remotes (if not installed already)
 
-# remotes::install_github("saudiwin/brms",ref="7e83794b3f56359b8d0799d9d0e5b41fdee9bbe2")
+remotes::install_github("saudiwin/brms",ref="7e83794b3f56359b8d0799d9d0e5b41fdee9bbe2")
 
 library(brms)
 
@@ -14,8 +14,8 @@ x <- rnorm(n)
 
 # True parameters
 mu_true <- 0.5 * x
-thres1_true <- -1   # threshold for boundary at 0
-thres2_true <- 1.5  # threshold for boundary at 1
+thres1_true <- -1   # threshold for boundary at 0 (parameter zoi in brms)
+thres2_true <- 1.5  # threshold for boundary at 1 (parameter kappa = zoi + thres2_true in brms)
 
 # Generate ordered beta data
 pr_zero <- plogis(thres1_true - mu_true)
