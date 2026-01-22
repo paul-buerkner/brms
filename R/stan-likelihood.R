@@ -725,13 +725,7 @@ stan_log_lik_xbeta <- function(bterms, ...) {
 
 stan_log_lik_ordbeta <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  lpdf <- paste0("ordbeta_", bterms$family$link)
-  p$thres <- "Intercept"
-  resp <- usc(bterms$resp)
-  mix <- get_mix_id(bterms)
-  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
-  str_add(p$thres) <- prefix
-  sdist(lpdf, p$mu, p$phi, p$thres, vec = FALSE)
+  sdist("ordbeta", p$mu, p$phi, p$zoi, p$kappa, vec = FALSE)
 }
 
 stan_log_lik_von_mises <- function(bterms, ...) {
