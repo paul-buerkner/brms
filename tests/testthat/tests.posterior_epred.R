@@ -235,10 +235,13 @@ test_that("posterior_epred_ordbeta runs without errors", {
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
-    phi = matrix(rexp(ns * nobs, 0.1), ncol = nobs),
-    cutzero = matrix(rnorm(ns * nobs, -1, 0.5), ncol = nobs),
-    cutone = matrix(rnorm(ns * nobs, 0, 0.5), ncol = nobs)
+    phi = matrix(rexp(ns * nobs, 0.1), ncol = nobs)
   )
+  # Thresholds: thres[,1] < thres[,2] (ordered)
+  thres1 <- rnorm(ns, -1, 0.5)
+  thres2 <- thres1 + abs(rnorm(ns, 2, 0.5))
+  prep$thres <- list(thres = cbind(thres1, thres2))
+  prep$family <- list(link = "logit")
   prep$data <- list(Y = c(0, 0.3, 0.5, 0.7, 1, 0.2, 0.8, 0.4))
   mu_new <- brms:::posterior_epred_ordbeta(prep)
   expect_equal(dim(mu_new), dim(prep$dpars$mu))

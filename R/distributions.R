@@ -1752,10 +1752,11 @@ rxbeta <- function(...) {
 #' @param x,q vector of quantiles
 #' @param p vector of probabilities
 #' @param n number of observations
-#' @param mu linear predictor (on identity scale)
+#' @param mu latent mean parameter
 #' @param phi precision parameter of the beta distribution
-#' @param cutzero first cutpoint parameter
-#' @param cutone second cutpoint parameter (parameterized as log-offset from cutzero)
+#' @param thres vector or matrix of ordered thresholds (2 thresholds)
+#' @param link character string specifying the link function
+#'   (default "logit", also supports "probit", "cauchit", "cloglog")
 #' @param log,log.p logical; if TRUE, probabilities are given as log(p)
 #' @param lower.tail logical; if TRUE (default), probabilities are
 #'   \eqn{P(X \le x)}, otherwise, \eqn{P(X > x)}
@@ -1763,10 +1764,10 @@ rxbeta <- function(...) {
 #' @details
 #' The ordered beta distribution combines a beta distribution for values
 #' in (0, 1) with point masses at 0 and 1. The probability of each component
-#' is determined by the cutpoints: P(Y=0) = 1 - logit^{-1}(mu - cutzero),
-#' P(Y=1) = logit^{-1}(mu - cutzero - exp(cutone)), and P(0 < Y < 1)
-#' is the remaining probability. For the continuous component, the mean
-#' is logit^{-1}(mu) and precision is phi.
+#' is determined by ordered thresholds: P(Y=0) = F(thres[1] - mu),
+#' P(Y=1) = 1 - F(thres[2] - mu), and P(0 < Y < 1) is the remaining
+#' probability, where F is the CDF corresponding to the link function.
+#' For the continuous component, the mean is F(mu) and precision is phi.
 #'
 #' @references
 #' Kubinec, R. (2023). Ordered Beta Regression: A Parsimonious, Well-Fitting
@@ -1776,20 +1777,46 @@ rxbeta <- function(...) {
 #'
 NULL
 
+# helper to get inverse link function for ordbeta
+ordbeta_inv_link <- function(x, link) {
+ switch(link,
+   logit = plogis(x),
+   probit = pnorm(x),
+   cauchit = pcauchy(x),
+   cloglog = 1 - exp(-exp(x)),
+   stop2("Link '", link, "' is not supported for ordbeta.")
+ )
+}
+
 #' @rdname OrdBeta
 #' @export
-dordbeta <- function(x, mu, phi, cutzero, cutone, log = FALSE) {
-  # compute thresholds (cutone is parameterized as log-offset)
-  thresh1 <- cutzero
-  thresh2 <- cutzero + exp(cutone)
-  # mean for beta component
-  beta_mu <- plogis(mu)
+dordbeta <- function(x, mu, phi, thres, link = "logit", log = FALSE) {
+  # thres can be a vector (length 2) or matrix (ndraws x 2)
+  if (is.matrix(thres)) {
+    thresh1 <- thres[, 1]
+    thresh2 <- thres[, 2]
+  } else {
+    thresh1 <- thres[1]
+    thresh2 <- thres[2]
+  }
+  # mean for beta component using link function
+  beta_mu <- ordbeta_inv_link(mu, link)
   # probability of each component
-  pr_zero <- 1 - plogis(mu - thresh1)
-  pr_one <- plogis(mu - thresh2)
-  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
-  # compute log-density
-  out <- rep(NA_real_, length(x))
+  pr_zero <- ordbeta_inv_link(thresh1 - mu, link)
+  pr_one <- 1 - ordbeta_inv_link(thresh2 - mu, link)
+  pr_cont <- ordbeta_inv_link(thresh2 - mu, link) - ordbeta_inv_link(thresh1 - mu, link)
+  # compute log-density - output length matches mu (for vectorized evaluation)
+  n <- max(length(x), length(mu))
+  x <- rep_len(x, n)
+  if (length(mu) == 1) {
+    mu <- rep_len(mu, n)
+    beta_mu <- rep_len(beta_mu, n)
+    pr_zero <- rep_len(pr_zero, n)
+    pr_one <- rep_len(pr_one, n)
+    pr_cont <- rep_len(pr_cont, n)
+    phi <- rep_len(phi, n)
+  }
+  out <- rep(NA_real_, n)
   is_zero <- x == 0
   is_one <- x == 1
   is_cont <- x > 0 & x < 1
@@ -1812,17 +1839,22 @@ dordbeta <- function(x, mu, phi, cutzero, cutone, log = FALSE) {
 
 #' @rdname OrdBeta
 #' @export
-pordbeta <- function(q, mu, phi, cutzero, cutone,
+pordbeta <- function(q, mu, phi, thres, link = "logit",
                      lower.tail = TRUE, log.p = FALSE) {
-  # compute thresholds
-  thresh1 <- cutzero
-  thresh2 <- cutzero + exp(cutone)
+  # thres can be a vector (length 2) or matrix (ndraws x 2)
+  if (is.matrix(thres)) {
+    thresh1 <- thres[, 1]
+    thresh2 <- thres[, 2]
+  } else {
+    thresh1 <- thres[1]
+    thresh2 <- thres[2]
+  }
   # mean for beta component
-  beta_mu <- plogis(mu)
+  beta_mu <- ordbeta_inv_link(mu, link)
   # probability of each component
-  pr_zero <- 1 - plogis(mu - thresh1)
-  pr_one <- plogis(mu - thresh2)
-  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  pr_zero <- ordbeta_inv_link(thresh1 - mu, link)
+  pr_one <- 1 - ordbeta_inv_link(thresh2 - mu, link)
+  pr_cont <- ordbeta_inv_link(thresh2 - mu, link) - ordbeta_inv_link(thresh1 - mu, link)
   # compute CDF
   out <- rep(NA_real_, length(q))
   is_neg <- q < 0
@@ -1854,7 +1886,7 @@ pordbeta <- function(q, mu, phi, cutzero, cutone,
 
 #' @rdname OrdBeta
 #' @export
-qordbeta <- function(p, mu, phi, cutzero, cutone,
+qordbeta <- function(p, mu, phi, thres, link = "logit",
                      lower.tail = TRUE, log.p = FALSE) {
   if (log.p) {
     p <- exp(p)
@@ -1862,15 +1894,20 @@ qordbeta <- function(p, mu, phi, cutzero, cutone,
   if (!lower.tail) {
     p <- 1 - p
   }
-  # compute thresholds
-  thresh1 <- cutzero
-  thresh2 <- cutzero + exp(cutone)
+  # thres can be a vector (length 2) or matrix (ndraws x 2)
+  if (is.matrix(thres)) {
+    thresh1 <- thres[, 1]
+    thresh2 <- thres[, 2]
+  } else {
+    thresh1 <- thres[1]
+    thresh2 <- thres[2]
+  }
   # mean for beta component
-  beta_mu <- plogis(mu)
+  beta_mu <- ordbeta_inv_link(mu, link)
   # probability of each component
-  pr_zero <- 1 - plogis(mu - thresh1)
-  pr_one <- plogis(mu - thresh2)
-  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  pr_zero <- ordbeta_inv_link(thresh1 - mu, link)
+  pr_one <- 1 - ordbeta_inv_link(thresh2 - mu, link)
+  pr_cont <- ordbeta_inv_link(thresh2 - mu, link) - ordbeta_inv_link(thresh1 - mu, link)
   # compute quantile
   out <- rep(NA_real_, length(p))
   is_zero <- p <= pr_zero
@@ -1893,21 +1930,24 @@ qordbeta <- function(p, mu, phi, cutzero, cutone,
 
 #' @rdname OrdBeta
 #' @export
-rordbeta <- function(n, mu, phi, cutzero, cutone) {
+rordbeta <- function(n, mu, phi, thres, link = "logit") {
   # recycle parameters to length n
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
-  cutzero <- rep_len(cutzero, n)
-  cutone <- rep_len(cutone, n)
-  # compute thresholds
-  thresh1 <- cutzero
-  thresh2 <- cutzero + exp(cutone)
+  # thres can be a vector (length 2) or matrix (ndraws x 2)
+  if (is.matrix(thres)) {
+    thresh1 <- thres[, 1]
+    thresh2 <- thres[, 2]
+  } else {
+    thresh1 <- rep_len(thres[1], n)
+    thresh2 <- rep_len(thres[2], n)
+  }
   # mean for beta component
-  beta_mu <- plogis(mu)
+  beta_mu <- ordbeta_inv_link(mu, link)
   # probability of each component
-  pr_zero <- 1 - plogis(mu - thresh1)
-  pr_one <- plogis(mu - thresh2)
-  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  pr_zero <- ordbeta_inv_link(thresh1 - mu, link)
+  pr_one <- 1 - ordbeta_inv_link(thresh2 - mu, link)
+  pr_cont <- ordbeta_inv_link(thresh2 - mu, link) - ordbeta_inv_link(thresh1 - mu, link)
   # sample component indicators
   u <- runif(n)
   out <- rep(NA_real_, n)

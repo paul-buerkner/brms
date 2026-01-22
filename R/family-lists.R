@@ -89,16 +89,14 @@
 
 .family_ordbeta <- function() {
   list(
-    links = c(
-      "logit", "probit", "probit_approx", "cloglog",
-      "cauchit", "softit", "identity", "log"
-    ),
-    dpars = c("mu", "phi", "cutzero", "cutone"),
+    links = c("logit", "probit", "probit_approx", "cloglog", "cauchit"),
+    dpars = c("mu", "phi"),
     type = "real",
     ybounds = c(0, 1),
     closed = c(TRUE, TRUE),
-    ad = c("weights", "subset", "index"),
+    ad = c("weights", "subset", "thres", "index"),
     include = "fun_ordbeta.stan",
+    specials = c("ordinal", "ordered_thres"),
     normalized = ""
   )
 }

@@ -1,29 +1,73 @@
-  /* Ordered beta regression log-PDF of a single response
+  /* Ordered beta regression log-PDF for a single response
    * Based on Kubinec (2023): https://doi.org/10.1017/pan.2022.20
    * Args:
    *   y: the response value in [0, 1]
-   *   mu: linear predictor (on identity scale)
+   *   mu: latent mean parameter
    *   phi: precision parameter of the beta distribution
-   *   cutzero: first cutpoint parameter
-   *   cutone: second cutpoint parameter (parameterized as log-offset from cutzero)
+   *   thres: ordered thresholds (2 elements)
    * Returns:
    *   a scalar to be added to the log posterior
    */
-  real ordbeta_lpdf(real y, real mu, real phi, real cutzero, real cutone) {
-    real thresh1 = cutzero;
-    real thresh2 = cutzero + exp(cutone);
+  real ordbeta_logit_lpdf(real y, real mu, real phi, vector thres) {
     if (y == 0) {
-      return log1m_inv_logit(mu - thresh1);
+      return log_inv_logit(thres[1] - mu);
     } else if (y == 1) {
-      return log_inv_logit(mu - thresh2);
+      return log1m_inv_logit(thres[2] - mu);
     } else {
-      return log_diff_exp(log_inv_logit(mu - thresh1), log_inv_logit(mu - thresh2)) +
-             beta_lpdf(y | inv_logit(mu) * phi, (1 - inv_logit(mu)) * phi);
+      real p_cont = inv_logit(thres[2] - mu) - inv_logit(thres[1] - mu);
+      real beta_mu = inv_logit(mu);
+      return log(p_cont) + beta_lpdf(y | beta_mu * phi, (1 - beta_mu) * phi);
     }
   }
 
-  // vectorized version: all parameters are vectors
-  real ordbeta_lpdf(vector y, vector mu, vector phi, vector cutzero, vector cutone) {
+  /* Ordered beta regression log-PDF for a single response (probit link)
+   */
+  real ordbeta_probit_lpdf(real y, real mu, real phi, vector thres) {
+    if (y == 0) {
+      return std_normal_lcdf(thres[1] - mu);
+    } else if (y == 1) {
+      return std_normal_lccdf(thres[2] - mu);
+    } else {
+      real p_cont = Phi(thres[2] - mu) - Phi(thres[1] - mu);
+      real beta_mu = Phi(mu);
+      return log(p_cont) + beta_lpdf(y | beta_mu * phi, (1 - beta_mu) * phi);
+    }
+  }
+
+  /* Ordered beta regression log-PDF for a single response (cloglog link)
+   */
+  real ordbeta_cloglog_lpdf(real y, real mu, real phi, vector thres) {
+    if (y == 0) {
+      return log1m_exp(-exp(thres[1] - mu));
+    } else if (y == 1) {
+      return -exp(thres[2] - mu);
+    } else {
+      real p1 = inv_cloglog(thres[1] - mu);
+      real p2 = inv_cloglog(thres[2] - mu);
+      real p_cont = p2 - p1;
+      real beta_mu = inv_cloglog(mu);
+      return log(p_cont) + beta_lpdf(y | beta_mu * phi, (1 - beta_mu) * phi);
+    }
+  }
+
+  /* Ordered beta regression log-PDF for a single response (cauchit link)
+   */
+  real ordbeta_cauchit_lpdf(real y, real mu, real phi, vector thres) {
+    real p1 = cauchy_cdf(thres[1] - mu | 0, 1);
+    real p2 = cauchy_cdf(thres[2] - mu | 0, 1);
+    if (y == 0) {
+      return log(p1);
+    } else if (y == 1) {
+      return log1m(p2);
+    } else {
+      real p_cont = p2 - p1;
+      real beta_mu = cauchy_cdf(mu | 0, 1);
+      return log(p_cont) + beta_lpdf(y | beta_mu * phi, (1 - beta_mu) * phi);
+    }
+  }
+
+  // Vectorized version for logit link: y is vector, mu is vector, phi is scalar, thres is vector
+  real ordbeta_logit_lpdf(vector y, vector mu, real phi, vector thres) {
     int N = size(y);
     int N_zer = 0;
     int N_one = 0;
@@ -51,22 +95,16 @@
         oth[i_oth] = i;
       }
     }
-    vector[N_zer] thresh1_zer = cutzero[zer];
-    vector[N_one] thresh1_one = cutzero[one];
-    vector[N_one] thresh2_one = cutzero[one] + exp(cutone[one]);
-    vector[N_oth] thresh1_oth = cutzero[oth];
-    vector[N_oth] thresh2_oth = cutzero[oth] + exp(cutone[oth]);
-    real ll_zer = sum(log1m_inv_logit(mu[zer] - thresh1_zer));
-    real ll_one = sum(log_inv_logit(mu[one] - thresh2_one));
-    real ll_oth = sum(log_diff_exp(log_inv_logit(mu[oth] - thresh1_oth),
-                                   log_inv_logit(mu[oth] - thresh2_oth))) +
-                  beta_lpdf(y[oth] | inv_logit(mu[oth]) .* phi[oth],
-                            (1 - inv_logit(mu[oth])) .* phi[oth]);
+    real ll_zer = sum(log_inv_logit(thres[1] - mu[zer]));
+    real ll_one = sum(log1m_inv_logit(thres[2] - mu[one]));
+    vector[N_oth] p_cont = inv_logit(thres[2] - mu[oth]) - inv_logit(thres[1] - mu[oth]);
+    vector[N_oth] beta_mu = inv_logit(mu[oth]);
+    real ll_oth = sum(log(p_cont)) + beta_lpdf(y[oth] | beta_mu * phi, (1 - beta_mu) * phi);
     return ll_zer + ll_one + ll_oth;
   }
 
-  // vectorized version: mu is vector, phi/cutzero/cutone are scalars
-  real ordbeta_lpdf(vector y, vector mu, real phi, real cutzero, real cutone) {
+  // Vectorized version for logit link: y is vector, mu is vector, phi is vector, thres is vector
+  real ordbeta_logit_lpdf(vector y, vector mu, vector phi, vector thres) {
     int N = size(y);
     int N_zer = 0;
     int N_one = 0;
@@ -94,19 +132,16 @@
         oth[i_oth] = i;
       }
     }
-    real thresh1 = cutzero;
-    real thresh2 = cutzero + exp(cutone);
-    real ll_zer = sum(log1m_inv_logit(mu[zer] - thresh1));
-    real ll_one = sum(log_inv_logit(mu[one] - thresh2));
-    real ll_oth = sum(log_diff_exp(log_inv_logit(mu[oth] - thresh1),
-                                   log_inv_logit(mu[oth] - thresh2))) +
-                  beta_lpdf(y[oth] | inv_logit(mu[oth]) * phi,
-                            (1 - inv_logit(mu[oth])) * phi);
+    real ll_zer = sum(log_inv_logit(thres[1] - mu[zer]));
+    real ll_one = sum(log1m_inv_logit(thres[2] - mu[one]));
+    vector[N_oth] p_cont = inv_logit(thres[2] - mu[oth]) - inv_logit(thres[1] - mu[oth]);
+    vector[N_oth] beta_mu = inv_logit(mu[oth]);
+    real ll_oth = sum(log(p_cont)) + beta_lpdf(y[oth] | beta_mu .* phi[oth], (1 - beta_mu) .* phi[oth]);
     return ll_zer + ll_one + ll_oth;
   }
 
-  // vectorized version: mu/phi are vectors, cutzero/cutone are scalars
-  real ordbeta_lpdf(vector y, vector mu, vector phi, real cutzero, real cutone) {
+  // Vectorized version for probit link
+  real ordbeta_probit_lpdf(vector y, vector mu, real phi, vector thres) {
     int N = size(y);
     int N_zer = 0;
     int N_one = 0;
@@ -134,19 +169,16 @@
         oth[i_oth] = i;
       }
     }
-    real thresh1 = cutzero;
-    real thresh2 = cutzero + exp(cutone);
-    real ll_zer = sum(log1m_inv_logit(mu[zer] - thresh1));
-    real ll_one = sum(log_inv_logit(mu[one] - thresh2));
-    real ll_oth = sum(log_diff_exp(log_inv_logit(mu[oth] - thresh1),
-                                   log_inv_logit(mu[oth] - thresh2))) +
-                  beta_lpdf(y[oth] | inv_logit(mu[oth]) .* phi[oth],
-                            (1 - inv_logit(mu[oth])) .* phi[oth]);
+    real ll_zer = std_normal_lcdf(thres[1] - mu[zer] | );
+    real ll_one = std_normal_lccdf(thres[2] - mu[one] | );
+    vector[N_oth] p_cont = Phi(thres[2] - mu[oth]) - Phi(thres[1] - mu[oth]);
+    vector[N_oth] beta_mu = Phi(mu[oth]);
+    real ll_oth = sum(log(p_cont)) + beta_lpdf(y[oth] | beta_mu * phi, (1 - beta_mu) * phi);
     return ll_zer + ll_one + ll_oth;
   }
 
-  // vectorized version: mu/cutzero/cutone are vectors, phi is scalar
-  real ordbeta_lpdf(vector y, vector mu, real phi, vector cutzero, vector cutone) {
+  // Vectorized version for probit link with vector phi
+  real ordbeta_probit_lpdf(vector y, vector mu, vector phi, vector thres) {
     int N = size(y);
     int N_zer = 0;
     int N_one = 0;
@@ -174,16 +206,10 @@
         oth[i_oth] = i;
       }
     }
-    vector[N_zer] thresh1_zer = cutzero[zer];
-    vector[N_one] thresh1_one = cutzero[one];
-    vector[N_one] thresh2_one = cutzero[one] + exp(cutone[one]);
-    vector[N_oth] thresh1_oth = cutzero[oth];
-    vector[N_oth] thresh2_oth = cutzero[oth] + exp(cutone[oth]);
-    real ll_zer = sum(log1m_inv_logit(mu[zer] - thresh1_zer));
-    real ll_one = sum(log_inv_logit(mu[one] - thresh2_one));
-    real ll_oth = sum(log_diff_exp(log_inv_logit(mu[oth] - thresh1_oth),
-                                   log_inv_logit(mu[oth] - thresh2_oth))) +
-                  beta_lpdf(y[oth] | inv_logit(mu[oth]) * phi,
-                            (1 - inv_logit(mu[oth])) * phi);
+    real ll_zer = std_normal_lcdf(thres[1] - mu[zer] | );
+    real ll_one = std_normal_lccdf(thres[2] - mu[one] | );
+    vector[N_oth] p_cont = Phi(thres[2] - mu[oth]) - Phi(thres[1] - mu[oth]);
+    vector[N_oth] beta_mu = Phi(mu[oth]);
+    real ll_oth = sum(log(p_cont)) + beta_lpdf(y[oth] | beta_mu .* phi[oth], (1 - beta_mu) .* phi[oth]);
     return ll_zer + ll_one + ll_oth;
   }

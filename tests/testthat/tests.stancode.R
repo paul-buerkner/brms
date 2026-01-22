@@ -986,8 +986,9 @@ test_that("Stan code for ordbeta models is correct", {
   dat <- data.frame(y = c(0, 0.3, 0.5, 0.7, 1, 0.2, 0.8, 0.4, 0.6, 0.1),
                     x = rnorm(10))
   scode <- stancode(y ~ x, dat, family = ordbeta())
-  expect_match2(scode, "target += ordbeta_lpdf(Y | mu, phi, cutzero, cutone);")
-  expect_match2(scode, "real ordbeta_lpdf")
+  expect_match2(scode, "target += ordbeta_logit_lpdf(Y[n] | mu[n], phi, Intercept);")
+  expect_match2(scode, "real ordbeta_logit_lpdf")
+  expect_match2(scode, "ordered[nthres] Intercept;")
 })
 
 test_that("ordinal disc parameters appear in the Stan code", {

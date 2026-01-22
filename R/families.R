@@ -45,8 +45,6 @@
 #' @param link_alpha Link of auxiliary parameter \code{alpha} if being predicted.
 #' @param link_quantile Link of auxiliary parameter \code{quantile} if being predicted.
 #' @param link_xi Link of auxiliary parameter \code{xi} if being predicted.
-#' @param link_cutzero Link of auxiliary parameter \code{cutzero} if being predicted.
-#' @param link_cutone Link of auxiliary parameter \code{cutone} if being predicted.
 #' @param threshold A character string indicating the type
 #'   of thresholds (i.e. intercepts) used in an ordinal model.
 #'   \code{"flexible"} provides the standard unstructured thresholds,
@@ -231,8 +229,6 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity",
                        link_quantile = "logit",
-                       link_cutzero = "identity",
-                       link_cutone = "identity",
                        threshold = "flexible",
                        refcat = NULL) {
   slink <- substitute(link)
@@ -247,7 +243,6 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
-    link_cutzero = link_cutzero, link_cutone = link_cutone,
     threshold = threshold, refcat = refcat
   )
 }
@@ -660,12 +655,10 @@ xbeta <- function(link = "logit", link_phi = "log",
 
 #' @rdname brmsfamily
 #' @export
-ordbeta <- function(link = "identity", link_phi = "log",
-                    link_cutzero = "identity", link_cutone = "identity") {
+ordbeta <- function(link = "logit", link_phi = "log") {
   slink <- substitute(link)
   .brmsfamily("ordbeta", link = link, slink = slink,
-              link_phi = link_phi, link_cutzero = link_cutzero,
-              link_cutone = link_cutone)
+              link_phi = link_phi)
 }
 
 #' @rdname brmsfamily
@@ -1626,6 +1619,10 @@ is_categorical <- function(family) {
 
 is_ordinal <- function(family) {
   "ordinal" %in% family_info(family, "specials")
+}
+
+is_ordbeta <- function(family) {
+  all(family_names(family) == "ordbeta")
 }
 
 is_multinomial <- function(family) {

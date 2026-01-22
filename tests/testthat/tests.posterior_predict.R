@@ -237,10 +237,13 @@ test_that("posterior_predict for ordbeta models works correctly", {
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
-    phi = rgamma(ns, 4),
-    cutzero = rnorm(ns, -1, 0.5),
-    cutone = rnorm(ns, 0, 0.5)
+    phi = rgamma(ns, 4)
   )
+  # Thresholds: thres[,1] < thres[,2] (ordered)
+  thres1 <- rnorm(ns, -1, 0.5)
+  thres2 <- thres1 + abs(rnorm(ns, 2, 0.5))
+  prep$thres <- list(thres = cbind(thres1, thres2))
+  prep$family <- list(link = "logit")
   i <- sample(1:nobs, 1)
 
   pred <- brms:::posterior_predict_ordbeta(i, prep = prep)

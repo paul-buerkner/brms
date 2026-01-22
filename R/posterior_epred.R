@@ -467,19 +467,18 @@ posterior_epred_xbeta <- function(prep) {
 
 posterior_epred_ordbeta <- function(prep) {
   # Based on Kubinec (2023): https://doi.org/10.1017/pan.2022.20
+  link <- prep$family$link
   mu <- get_dpar(prep, "mu")
-  cutzero <- get_dpar(prep, "cutzero")
-  cutone <- get_dpar(prep, "cutone")
-  # compute thresholds (cutone is parameterized as log-offset)
-  thresh1 <- cutzero
-  thresh2 <- cutzero + exp(cutone)
-  # probability of each component
-  pr_zero <- 1 - plogis(mu - thresh1)
-  pr_one <- plogis(mu - thresh2)
-  pr_cont <- plogis(mu - thresh1) - plogis(mu - thresh2)
+  # thresholds are stored in prep$thres$thres (ndraws x nthres matrix)
+  thres <- prep$thres$thres
+  # probability of each component using the link function
+  # P(Y=0) = F(thres[1] - mu), P(Y=1) = 1 - F(thres[2] - mu)
+  pr_zero <- inv_link(thres[, 1] - mu, link)
+  pr_one <- 1 - inv_link(thres[, 2] - mu, link)
+  pr_cont <- inv_link(thres[, 2] - mu, link) - inv_link(thres[, 1] - mu, link)
   # expected value is weighted average across components
-  # E[Y] = 0 * pr_zero + plogis(mu) * pr_cont + 1 * pr_one
-  pr_zero * 0 + pr_cont * plogis(mu) + pr_one * 1
+  # E[Y] = 0 * pr_zero + inv_link(mu) * pr_cont + 1 * pr_one
+  pr_cont * inv_link(mu, link) + pr_one
 }
 
 posterior_epred_von_mises <- function(prep) {
