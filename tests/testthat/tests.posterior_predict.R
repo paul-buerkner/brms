@@ -236,11 +236,11 @@ test_that("posterior_predict for ordbeta models works correctly", {
   nobs <- 10
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   # mu should be on response scale (0, 1) for ordbeta
-  # kappa is positive (distance from zoi to coi)
+  # kappa is positive (distance from xi to coi)
   prep$dpars <- list(
     mu = matrix(plogis(rnorm(ns * nobs * 2)), ncol = 2 * nobs),
     phi = rgamma(ns, 4),
-    zoi = matrix(rnorm(ns * nobs * 2, -1, 0.5), ncol = 2 * nobs),
+    xi = matrix(rnorm(ns * nobs * 2, -1, 0.5), ncol = 2 * nobs),
     kappa = matrix(rexp(ns * nobs * 2, 0.5), ncol = 2 * nobs)
   )
   prep$family <- list(link = "logit")

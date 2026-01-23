@@ -725,7 +725,7 @@ stan_log_lik_xbeta <- function(bterms, ...) {
 
 stan_log_lik_ordbeta <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
-  sdist("ordbeta", p$mu, p$phi, p$zoi, p$kappa, vec = FALSE)
+  sdist("ordbeta", p$mu, p$phi, p$xi, p$kappa, vec = FALSE)
 }
 
 stan_log_lik_von_mises <- function(bterms, ...) {

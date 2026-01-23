@@ -4,20 +4,20 @@
    *   y: the response value in [0, 1]
    *   mu: mean parameter (on response scale, i.e., in (0, 1))
    *   phi: precision parameter of the beta distribution
-   *   zoi: first cutpoint/threshold for boundary at 0 (latent scale)
-   *   kappa: positive distance to second cutpoint, so coi = zoi + kappa
+   *   xi: first cutpoint/threshold for boundary at 0 (latent scale)
+   *   kappa: positive distance to second cutpoint, so coi = xi + kappa
    * Returns:
    *   a scalar to be added to the log posterior
    */
-  real ordbeta_lpdf(real y, real mu, real phi, real zoi, real kappa) {
-    // Compute coi (second cutpoint) from zoi and kappa
-    real coi = zoi + kappa;
+  real ordbeta_lpdf(real y, real mu, real phi, real xi, real kappa) {
+    // Compute coi (second cutpoint) from xi and kappa
+    real coi = xi + kappa;
     // Transform mu to latent scale for threshold comparison
     real mu_latent = logit(mu);
     // Compute probabilities for each component
-    real pr_zero = inv_logit(zoi - mu_latent);
+    real pr_zero = inv_logit(xi - mu_latent);
     real pr_one = 1 - inv_logit(coi - mu_latent);
-    real pr_cont = inv_logit(coi - mu_latent) - inv_logit(zoi - mu_latent);
+    real pr_cont = inv_logit(coi - mu_latent) - inv_logit(xi - mu_latent);
     if (y == 0) {
       return log(pr_zero);
     } else if (y == 1) {
@@ -28,9 +28,9 @@
   }
 
   // Vectorized version: y is vector, mu is vector, phi is scalar
-  real ordbeta_lpdf(vector y, vector mu, real phi, real zoi, real kappa) {
-    // Compute coi (second cutpoint) from zoi and kappa
-    real coi = zoi + kappa;
+  real ordbeta_lpdf(vector y, vector mu, real phi, real xi, real kappa) {
+    // Compute coi (second cutpoint) from xi and kappa
+    real coi = xi + kappa;
     int N = size(y);
     int N_zer = 0;
     int N_one = 0;
@@ -61,17 +61,17 @@
     }
     // Transform mu to latent scale
     vector[N] mu_latent = logit(mu);
-    real ll_zer = sum(log_inv_logit(zoi - mu_latent[zer]));
+    real ll_zer = sum(log_inv_logit(xi - mu_latent[zer]));
     real ll_one = sum(log1m_inv_logit(coi - mu_latent[one]));
-    vector[N_oth] pr_cont = inv_logit(coi - mu_latent[oth]) - inv_logit(zoi - mu_latent[oth]);
+    vector[N_oth] pr_cont = inv_logit(coi - mu_latent[oth]) - inv_logit(xi - mu_latent[oth]);
     real ll_oth = sum(log(pr_cont)) + beta_lpdf(y[oth] | mu[oth] * phi, (1 - mu[oth]) * phi);
     return ll_zer + ll_one + ll_oth;
   }
 
   // Vectorized version: y is vector, mu is vector, phi is vector
-  real ordbeta_lpdf(vector y, vector mu, vector phi, real zoi, real kappa) {
-    // Compute coi (second cutpoint) from zoi and kappa
-    real coi = zoi + kappa;
+  real ordbeta_lpdf(vector y, vector mu, vector phi, real xi, real kappa) {
+    // Compute coi (second cutpoint) from xi and kappa
+    real coi = xi + kappa;
     int N = size(y);
     int N_zer = 0;
     int N_one = 0;
@@ -102,9 +102,9 @@
     }
     // Transform mu to latent scale
     vector[N] mu_latent = logit(mu);
-    real ll_zer = sum(log_inv_logit(zoi - mu_latent[zer]));
+    real ll_zer = sum(log_inv_logit(xi - mu_latent[zer]));
     real ll_one = sum(log1m_inv_logit(coi - mu_latent[one]));
-    vector[N_oth] pr_cont = inv_logit(coi - mu_latent[oth]) - inv_logit(zoi - mu_latent[oth]);
+    vector[N_oth] pr_cont = inv_logit(coi - mu_latent[oth]) - inv_logit(xi - mu_latent[oth]);
     real ll_oth = sum(log(pr_cont)) + beta_lpdf(y[oth] | mu[oth] .* phi[oth], (1 - mu[oth]) .* phi[oth]);
     return ll_zer + ll_one + ll_oth;
   }

@@ -1,6 +1,6 @@
-# Example: Ordered Beta Regression in brms (with zoi and kappa modeled)
+# Example: Ordered Beta Regression in brms (with xi and kappa modeled)
 # Based on Kubinec (2023) - doi:10.1017/pan.2022.20
-# This version simulates covariate effects on BOTH zoi and kappa thresholds
+# This version simulates covariate effects on BOTH xi and kappa thresholds
 # and estimates them via brms distributional formulas.
 
 # install from my own working branch using remotes (if not installed already)
@@ -9,7 +9,7 @@ remotes::install_github("saudiwin/brms", ref="7e83794b3f56359b8d0799d9d0e5b41fde
 library(brms)
 
 # -------------------------------------------------------------------
-# Simulate ordered beta data where zoi and kappa depend on x
+# Simulate ordered beta data where xi and kappa depend on x
 # -------------------------------------------------------------------
 set.seed(123)
 n <- 200
@@ -20,20 +20,20 @@ b_mu0_true <- 0.0
 b_mux_true <- 0.5
 mu_true <- b_mu0_true + b_mux_true * x
 
-# zoi model (lower threshold)
-b_zoi0_true <- -1.0
-b_zoix_true <- 0.8
-zoi_true <- b_zoi0_true + b_zoix_true * x
+# xi model (lower threshold)
+b_xi0_true <- -1.0
+b_xix_true <- 0.8
+xi_true <- b_xi0_true + b_xix_true * x
 
-# kappa model (upper threshold), constructed to stay > zoi
+# kappa model (upper threshold), constructed to stay > xi
 b_kappa0_true <- 1.0
 b_kappa_true <- 0.3
-kappa_true <- exp(b_kappa0_true + b_kappa_true * x) + zoi_true # to stay positive
+kappa_true <- exp(b_kappa0_true + b_kappa_true * x) + xi_true # to stay positive
 
 # Mixture probabilities for 0 / continuous / 1
-# pr_zero = logistic(zoi - mu)
+# pr_zero = logistic(xi - mu)
 # pr_one  = 1 - logistic(kappa - mu)
-pr_zero <- plogis(zoi_true - mu_true)
+pr_zero <- plogis(xi_true - mu_true)
 pr_one  <- 1 - plogis(kappa_true - mu_true)
 pr_cont <- pmax(0, 1 - pr_zero - pr_one)
 
@@ -57,19 +57,19 @@ cat("  Ones:", sum(dat$y == 1), "\n")
 cat("  Continuous (0,1):", sum(dat$y > 0 & dat$y < 1), "\n")
 
 # -------------------------------------------------------------------
-# Fit ordered beta regression with distributional models for zoi and kappa
+# Fit ordered beta regression with distributional models for xi and kappa
 # -------------------------------------------------------------------
 # We estimate:
 #   mu    ~ x
-#   zoi   ~ x
+#   xi   ~ x
 #   kappa ~ x
 #
-# NOTE: In the generative simulation above, kappa is constrained to exceed zoi
+# NOTE: In the generative simulation above, kappa is constrained to exceed xi
 # by construction. In estimation, brms will apply the ordbeta family's internal
 # constraints/parameterization for ordered thresholds.
 
 fit <- brm(
-  bf(y ~ x, zoi ~ x, kappa ~ x),
+  bf(y ~ x, xi ~ x, kappa ~ x),
   data = dat,
   family = ordbeta(),
   chains = 2,
@@ -83,9 +83,9 @@ summary(fit)
 # Posterior predictive check
 pp_check(fit)
 
-# Conditional effects for mu, zoi, and kappa
+# Conditional effects for mu, xi, and kappa
 conditional_effects(fit, dpar = "mu")
-conditional_effects(fit, dpar = "zoi")
+conditional_effects(fit, dpar = "xi")
 conditional_effects(fit, dpar = "kappa")
 
 # Expected values / predictions
@@ -104,4 +104,4 @@ print(loo_result)
 # -------------------------------------------------------------------
 cat("\n\nGenerated Stan code:\n")
 cat("====================\n")
-stancode(bf(y ~ x, zoi ~ x, kappa ~ x), data = dat, family = ordbeta())
+stancode(bf(y ~ x, xi ~ x, kappa ~ x), data = dat, family = ordbeta())

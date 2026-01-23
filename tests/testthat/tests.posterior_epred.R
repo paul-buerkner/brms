@@ -234,11 +234,11 @@ test_that("posterior_epred_ordbeta runs without errors", {
   nobs <- 8
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   # mu should be on response scale (0, 1) for ordbeta
-  # kappa is positive (distance from zoi to coi)
+  # kappa is positive (distance from xi to coi)
   prep$dpars <- list(
     mu = matrix(plogis(rnorm(ns * nobs)), ncol = nobs),
     phi = matrix(rexp(ns * nobs, 0.1), ncol = nobs),
-    zoi = matrix(rnorm(ns * nobs, -1, 0.5), ncol = nobs),
+    xi = matrix(rnorm(ns * nobs, -1, 0.5), ncol = nobs),
     kappa = matrix(rexp(ns * nobs, 0.5), ncol = nobs)
   )
   prep$family <- list(link = "logit")

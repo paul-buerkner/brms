@@ -120,7 +120,7 @@ test_that("response interval is defined correctly", {
 
 test_that("distributional parameters are as expected", {
     expect_identical(xbeta()$dpars, c("mu", "phi", "kappa"))
-    expect_identical(ordbeta()$dpars, c("mu", "phi", "zoi", "kappa"))
+    expect_identical(ordbeta()$dpars, c("mu", "phi", "xi", "kappa"))
 })
 
 test_that("default priors are as expected", {

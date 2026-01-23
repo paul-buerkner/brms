@@ -1754,8 +1754,8 @@ rxbeta <- function(...) {
 #' @param n number of observations
 #' @param mu mean parameter (on response scale, i.e., in (0, 1))
 #' @param phi precision parameter of the beta distribution
-#' @param zoi threshold for boundary at 0 (latent scale)
-#' @param coi threshold for boundary at 1 (latent scale, must be > zoi)
+#' @param xi cutpoint of boundary at 0 (latent scale)
+#' @param kappa offset to xi for cutpoint of boundary at 1 (i.e., cutpoint = xi + kappa)
 #' @param log,log.p logical; if TRUE, probabilities are given as log(p)
 #' @param lower.tail logical; if TRUE (default), probabilities are
 #'   \eqn{P(X \le x)}, otherwise, \eqn{P(X > x)}
@@ -1763,8 +1763,8 @@ rxbeta <- function(...) {
 #' @details
 #' The ordered beta distribution combines a beta distribution for values
 #' in (0, 1) with point masses at 0 and 1. The probability of each component
-#' is determined by cutpoint thresholds: P(Y=0) = logit^-1(zoi - logit(mu)),
-#' P(Y=1) = 1 - logit^-1(coi - logit(mu)), and P(0 < Y < 1) is the remaining
+#' is determined by cutpoint thresholds: P(Y=0) = logit^-1(xi - logit(mu)),
+#' P(Y=1) = 1 - logit^-1((xi + kappa) - logit(mu)), and P(0 < Y < 1) is the remaining
 #' probability. For the continuous component, the mean is mu and precision is phi.
 #'
 #' @references
@@ -1777,20 +1777,20 @@ NULL
 
 #' @rdname OrdBeta
 #' @export
-dordbeta <- function(x, mu, phi, zoi, coi, log = FALSE) {
+dordbeta <- function(x, mu, phi, xi, coi, log = FALSE) {
   # Determine output length
   n <- max(length(x), length(mu))
   x <- rep_len(x, n)
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
-  zoi <- rep_len(zoi, n)
+  xi <- rep_len(xi, n)
   coi <- rep_len(coi, n)
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
-  pr_zero <- plogis(zoi - mu_latent)
+  pr_zero <- plogis(xi - mu_latent)
   pr_one <- 1 - plogis(coi - mu_latent)
-  pr_cont <- plogis(coi - mu_latent) - plogis(zoi - mu_latent)
+  pr_cont <- plogis(coi - mu_latent) - plogis(xi - mu_latent)
   # compute log-density
   out <- rep(NA_real_, n)
   is_zero <- x == 0
@@ -1815,21 +1815,21 @@ dordbeta <- function(x, mu, phi, zoi, coi, log = FALSE) {
 
 #' @rdname OrdBeta
 #' @export
-pordbeta <- function(q, mu, phi, zoi, coi,
+pordbeta <- function(q, mu, phi, xi, coi,
                      lower.tail = TRUE, log.p = FALSE) {
   # Determine output length
   n <- max(length(q), length(mu))
   q <- rep_len(q, n)
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
-  zoi <- rep_len(zoi, n)
+  xi <- rep_len(xi, n)
   coi <- rep_len(coi, n)
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
-  pr_zero <- plogis(zoi - mu_latent)
+  pr_zero <- plogis(xi - mu_latent)
   pr_one <- 1 - plogis(coi - mu_latent)
-  pr_cont <- plogis(coi - mu_latent) - plogis(zoi - mu_latent)
+  pr_cont <- plogis(coi - mu_latent) - plogis(xi - mu_latent)
   # compute CDF
   out <- rep(NA_real_, n)
   is_neg <- q < 0
@@ -1861,7 +1861,7 @@ pordbeta <- function(q, mu, phi, zoi, coi,
 
 #' @rdname OrdBeta
 #' @export
-qordbeta <- function(p, mu, phi, zoi, coi,
+qordbeta <- function(p, mu, phi, xi, coi,
                      lower.tail = TRUE, log.p = FALSE) {
   if (log.p) {
     p <- exp(p)
@@ -1874,14 +1874,14 @@ qordbeta <- function(p, mu, phi, zoi, coi,
   p <- rep_len(p, n)
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
-  zoi <- rep_len(zoi, n)
+  xi <- rep_len(xi, n)
   coi <- rep_len(coi, n)
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
-  pr_zero <- plogis(zoi - mu_latent)
+  pr_zero <- plogis(xi - mu_latent)
   pr_one <- 1 - plogis(coi - mu_latent)
-  pr_cont <- plogis(coi - mu_latent) - plogis(zoi - mu_latent)
+  pr_cont <- plogis(coi - mu_latent) - plogis(xi - mu_latent)
   # compute quantile
   out <- rep(NA_real_, n)
   is_zero <- p <= pr_zero
@@ -1904,18 +1904,18 @@ qordbeta <- function(p, mu, phi, zoi, coi,
 
 #' @rdname OrdBeta
 #' @export
-rordbeta <- function(n, mu, phi, zoi, coi) {
+rordbeta <- function(n, mu, phi, xi, coi) {
   # recycle parameters to length n
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
-  zoi <- rep_len(zoi, n)
+  xi <- rep_len(xi, n)
   coi <- rep_len(coi, n)
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
-  pr_zero <- plogis(zoi - mu_latent)
+  pr_zero <- plogis(xi - mu_latent)
   pr_one <- 1 - plogis(coi - mu_latent)
-  pr_cont <- plogis(coi - mu_latent) - plogis(zoi - mu_latent)
+  pr_cont <- plogis(coi - mu_latent) - plogis(xi - mu_latent)
   # sample component indicators
   u <- runif(n)
   out <- rep(NA_real_, n)
