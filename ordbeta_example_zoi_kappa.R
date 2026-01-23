@@ -4,7 +4,7 @@
 # and estimates them via brms distributional formulas.
 
 # install from my own working branch using remotes (if not installed already)
-remotes::install_github("saudiwin/brms", ref="7e83794b3f56359b8d0799d9d0e5b41fdee9bbe2")
+remotes::install_github("saudiwin/brms", ref="4b7662bf51c4c4c5a39710fac3866f4efa634c3d")
 
 library(brms)
 
