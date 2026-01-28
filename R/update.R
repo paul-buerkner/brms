@@ -83,6 +83,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   object$file <- NULL
+  
+  # check if object in an empty brmfit
+  # `@` is not a safe call and foo@bar will err out if foo 
+  # im checking with isS4 but it can be is.null (looser test) or is.stanfit (need def)
+  empty_fit <- !isS4(object$fit)
 
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute
@@ -199,18 +204,24 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   same_backend <- is_equal(dots$backend, object$backend)
   if (same_algorithm) {
     # reusing sampling arguments in other algorithms may cause errors #1564
-    if (is.null(dots$iter)) {
-      # only keep old 'warmup' if also keeping old 'iter'
-      dots$warmup <- first_not_null(dots$warmup, object$fit@sim$warmup)
+    if (!empty_fit){
+      if (is.null(dots$iter)) {
+        # only keep old 'warmup' if also keeping old 'iter'
+        dots$warmup <- first_not_null(dots$warmup, object$fit@sim$warmup)
+      }
+      dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
+      dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
+      dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
     }
-    dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
-    dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
-    dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
+    
     if (same_backend) {
       # reusing control arguments in other backends may cause errors #1259
-      control <- attr(object$fit@sim$samples[[1]], "args")$control
-      control <- control[setdiff(names(control), names(dots$control))]
-      dots$control[names(control)] <- control
+      # only update argument from old fit if the old fit exists
+      if (!empty_fit) {
+        control <- attr(object$fit@sim$samples[[1]], "args")$control
+        control <- control[setdiff(names(control), names(dots$control))]
+        dots$control[names(control)] <- control
+      }
       # reuse backend arguments originally passed to brm #1373
       names_old_stan_args <- setdiff(names(object$stan_args), names(dots))
       dots[names_old_stan_args] <- object$stan_args[names_old_stan_args]
@@ -224,8 +235,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
     recompile <- needs_recompilation(object) || !same_backend ||
-      !is_equal(new_stancode, old_stancode)
-    if (recompile && silent < 2) {
+      !is_equal(new_stancode, old_stancode) || empty_fit
+    if (recompile && silent < 2 && !empty_fit) {
       message("The desired updates require recompiling the model")
     }
   }
@@ -350,6 +361,11 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL,
   args$file <- NULL
   args$chains <- 0
   fit <- do_call(update.brmsfit, args)
+  # check if object in an empty brmfit
+  # `@` is not a safe call and foo@bar will err out if foo is not S4
+  # im checking with isS4 but it can be is.null (looser test) or is.stanfit (need def)
+  empty_fit <- isS4(object$fit)
+  
 
   # arguments later passed to brm_multiple
   args <- c(nlist(fit, data = newdata, data2), dots)
@@ -363,13 +379,21 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL,
   if (is.null(args$chains)) {
     # chains were combined across all submodels
     nimp <- max(attr(object, "nimp"), 1)
+    # FIXME i put this safeguard here as I don't
+    # know what is going on here
+    if (empty_fit){
+      stop2('Argument "chains" must exist when updating an empty fit.')
+    }
     args$chains <- object$fit@sim$chains / nimp
   }
-  args$iter <- first_not_null(args$iter, object$fit@sim$iter)
-  args$thin <- first_not_null(args$thin, object$fit@sim$thin)
-  control <- attr(object$fit@sim$samples[[1]], "args")$control
-  control <- control[setdiff(names(control), names(args$control))]
-  args$control[names(control)] <- control
+  # only update argument from old fit if the old fit exists
+  if (!empty_fit){
+    args$iter <- first_not_null(args$iter, object$fit@sim$iter)
+    args$thin <- first_not_null(args$thin, object$fit@sim$thin)
+    control <- attr(object$fit@sim$samples[[1]], "args")$control
+    control <- control[setdiff(names(control), names(args$control))]
+    args$control[names(control)] <- control
+  }
   args$recompile <- NULL
 
   out <- do_call(brm_multiple, args)
