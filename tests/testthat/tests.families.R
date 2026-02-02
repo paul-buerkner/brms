@@ -74,11 +74,17 @@ test_that("family functions returns expected results", {
   expect_error(xbeta(link_phi = "sqrt")$link_phi, "sqrt")
   expect_equal(xbeta(link_kappa = "identity")$link_kappa, "identity")
   expect_equal(xbeta(link_kappa = "log")$link_kappa, "log")
+  expect_equal(ordbeta()$link, "logit")
+  expect_equal(ordbeta("logit")$link, "logit")
+  expect_equal(ordbeta("probit")$link, "probit")
+  expect_error(ordbeta("1/mu"), "ordbeta")
+  expect_equal(ordbeta(link_phi = "log")$link_phi, "log")
 })
 
 test_that("print brmsfamily works correctly", {
     expect_output(print(weibull()), "Family: weibull \nLink function: log")
     expect_output(print(xbeta()), "Family: xbeta \nLink function: logit")
+    expect_output(print(ordbeta()), "Family: ordbeta \nLink function: logit")
 })
 
 test_that("mixture returns expected results and errors", {
@@ -107,10 +113,14 @@ test_that("response interval is defined correctly", {
     expect_equal(xbeta()$closed, rep(TRUE, 2))
     expect_equal(xbeta()$ybounds, c(0, 1))
     expect_equal(xbeta()$type, "real")
+    expect_equal(ordbeta()$closed, rep(TRUE, 2))
+    expect_equal(ordbeta()$ybounds, c(0, 1))
+    expect_equal(ordbeta()$type, "real")
 })
 
 test_that("distributional parameters are as expected", {
     expect_identical(xbeta()$dpars, c("mu", "phi", "kappa"))
+    expect_identical(ordbeta()$dpars, c("mu", "phi", "xi", "kappa"))
 })
 
 test_that("default priors are as expected", {
@@ -120,4 +130,5 @@ test_that("default priors are as expected", {
 
 test_that("correct STAN code is used", {
     expect_equal(xbeta()$include, "fun_xbeta.stan")
+    expect_equal(ordbeta()$include, "fun_ordbeta.stan")
 })
