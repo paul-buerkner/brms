@@ -114,7 +114,7 @@
     }  
       NULL 
     },
-    specials = character(0),
+    specials = c("ordbeta"),
     normalized = ""
   )
 }
