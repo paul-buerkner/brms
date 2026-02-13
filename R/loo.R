@@ -747,6 +747,10 @@ subset.psis <- function(x, subset, ...) {
 # @param allow_na allow NA values in the output?
 # @return a numeric vector of length NCOL(x)
 r_eff_helper <- function(x, chain_id, allow_na = TRUE, ...) {
+  if (anyNA(x) || any(is.infinite(x))) {
+    warning2("Ignoring relative efficiencies due to NA or infinte inputs.")
+    return(rep(1, NCOL(x)))
+  }
   out <- loo::relative_eff(x, chain_id = chain_id, ...)
   if (!allow_na && anyNA(out)) {
     # avoid error in loo if some but not all r_effs are NA

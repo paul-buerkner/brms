@@ -900,7 +900,7 @@ acat <- function(link = "logit", link_disc = "log",
 #'
 #' For most mixture models, you may want to specify priors on the
 #' population-level intercepts via \code{\link{set_prior}} to improve
-#' convergence. In addition, it is sometimes necessary to set \code{init = 0}
+#' posterior inference. In addition, it is sometimes necessary to set \code{init = 0}
 #' in the call to \code{\link{brm}} to allow chains to initialize properly.
 #'
 #' For more details on the specification of mixture

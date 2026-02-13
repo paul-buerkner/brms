@@ -38,7 +38,7 @@ Create a summary of a fitted model represented by a \code{brmsfit} object
 }
 \details{
 The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and
-\code{Tail_ESS} are described in detail in Vehtari et al. (2020).
+\code{Tail_ESS} are described in detail by Vehtari et al. (2020).
 }
 \references{
 Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
