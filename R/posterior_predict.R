@@ -82,7 +82,7 @@
 posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
-  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
+  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5, type = "r",
   cores = NULL, ...
 ) {
   cl <- match.call()
@@ -93,11 +93,11 @@ posterior_predict.brmsfit <- function(
   object <- restructure(object)
   prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp,
-    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
+    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, type = type, ...
   )
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE
+    negative_rt = negative_rt, cores = cores, summary = FALSE, type = type
   )
 }
 
@@ -119,7 +119,7 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
-                                       cores = NULL, ...) {
+                                       cores = NULL, type = "r", ...) {
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
   if (is.customfamily(object$family)) {
@@ -136,7 +136,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, ...)
+  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, type = type, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -309,28 +309,44 @@ validate_pp_method <- function(method) {
 # @param ... ignored arguments
 # @param A vector of length prep$ndraws containing draws
 #   from the posterior predictive distribution
-posterior_predict_gaussian <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_gaussian <- function(i, prep, ntrys = 5, type = "r", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "norm",
-    mean = mu, sd = sigma,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+  switch(type,
+         r = rcontinuous(
+           n = prep$ndraws, dist = "norm",
+           mean = mu, sd = sigma,
+           lb = prep$data$lb[i], ub = prep$data$ub[i],
+           ntrys = ntrys
+         ),
+         p = pcontinuous(
+           n = prep$ndraws, dist = "norm",
+           q = prep$data$Y[i], mean = mu, sd = sigma,
+           lb = prep$data$lb[i], ub = prep$data$ub[i],
+           ntrys = ntrys
+         )
   )
 }
 
-posterior_predict_student <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_student <- function(i, prep, ntrys = 5, type = "r", ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "student_t",
-    df = nu, mu = mu, sigma = sigma,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+  switch(type,
+         r =   rcontinuous(
+           n = prep$ndraws, dist = "student_t",
+           df = nu, mu = mu, sigma = sigma,
+           lb = prep$data$lb[i], ub = prep$data$ub[i],
+           ntrys = ntrys
+         ),
+         p = pcontinuous(
+           n = prep$ndraws, dist = "student_t",
+           q = prep$data$Y[i], df = nu, mu = mu, sigma = sigma,
+           lb = prep$data$lb[i], ub = prep$data$ub[i],
+           ntrys = ntrys
+         )
   )
 }
 
@@ -982,6 +998,34 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
     rdist <- paste0("r", dist)
     out <- do_call(rdist, c(list(n), args))
   } else {
+    # sample from truncated distribution
+    pdist <- paste0("p", dist)
+    qdist <- paste0("q", dist)
+    if (!exists(pdist, mode = "function") || !exists(qdist, mode = "function")) {
+      # use rejection sampling as CDF or quantile function are not available
+      out <- rdiscrete(n, dist, ..., lb = lb, ub = ub, ntrys = ntrys)
+    } else {
+      if (is.null(lb)) lb <- -Inf
+      if (is.null(ub)) ub <- Inf
+      plb <- do_call(pdist, c(list(lb), args))
+      pub <- do_call(pdist, c(list(ub), args))
+      out <- runif(n, min = plb, max = pub)
+      out <- do_call(qdist, c(list(out), args))
+      # infinite values may be caused by numerical imprecision
+      out[out %in% c(-Inf, Inf)] <- NA
+    }
+  }
+  out
+}
+
+pcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
+  args <- list(...)
+  if (is.null(lb) && is.null(ub)) {
+    # sample as usual
+    pdist <- paste0("p", dist)
+    out <- do_call(pdist, c(list(n), args))
+  } else {
+    error("not implemented yet")
     # sample from truncated distribution
     pdist <- paste0("p", dist)
     qdist <- paste0("q", dist)
