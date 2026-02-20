@@ -44,5 +44,5 @@ The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and
 Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
 Paul-Christian Bürkner (2020). Rank-normalization, folding, and
 localization: An improved R-hat for assessing convergence of
-MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221
+MCMC. \emph{Bayesian Analysis}. 1–28. \code{doi:10.1214/20-BA1221}
 }
