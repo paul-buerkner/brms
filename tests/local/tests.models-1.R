@@ -31,6 +31,11 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   # test kfold
   kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
   expect_range(kfold1$estimates[3, 1], 1210, 1260)
+  # expected output structure
+  expect_equal(names(kfold1), c("estimates", "pointwise", "pareto_k", 
+  "fits", "data", "data2"))
+  # expected length of pareto-k slot in kfold output (by default k=10)
+  expect_equal(length(kfold1$pareto_k), 10)
   # define a loss function
   rmse <- function(y, yrep) {
     yrep_mean <- colMeans(yrep)
