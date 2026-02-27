@@ -1002,28 +1002,26 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 
 pcontinuous <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   args <- list(...)
+  pdist <- paste0("p", dist)
+
   if (is.null(lb) && is.null(ub)) {
-    # sample as usual
-    pdist <- paste0("p", dist)
+    # non-truncated case
     out <- do_call(pdist, c(list(q), args))
   } else {
-    error("not implemented yet")
-    # sample from truncated distribution
-    pdist <- paste0("p", dist)
-    qdist <- paste0("q", dist)
-    if (!exists(pdist, mode = "function") || !exists(qdist, mode = "function")) {
-      # use rejection sampling as CDF or quantile function are not available
-      out <- rdiscrete(n, dist, ..., lb = lb, ub = ub, ntrys = ntrys)
-    } else {
-      if (is.null(lb)) lb <- -Inf
-      if (is.null(ub)) ub <- Inf
-      plb <- do_call(pdist, c(list(lb), args))
-      pub <- do_call(pdist, c(list(ub), args))
-      out <- runif(n, min = plb, max = pub)
-      out <- do_call(qdist, c(list(out), args))
-      # infinite values may be caused by numerical imprecision
-      out[out %in% c(-Inf, Inf)] <- NA
-    }
+    # truncated case
+    F_q <- do_call(pdist, c(list(q), args))
+    F_lb <- do_call(pdist, c(list(lb), args))
+    F_ub <- do_call(pdist, c(list(ub), args))
+    
+    scale_factor <- F_ub - F_lb
+    
+    # compute truncated CDF: (F(q) - F(lb)) / (F(ub) - F(lb))
+    out <- dplyr::case_when(
+      q < lb  ~ 0,
+      q > ub  ~ 1,
+      (F_ub - F_lb) == 0 ~ 1,
+      TRUE ~ (F_q - F_lb) / (F_ub - F_lb)
+    )
   }
   out
 }
