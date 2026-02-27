@@ -301,35 +301,6 @@ validate_pp_method <- function(method) {
   method
 }
 
-# Helper function to predict continuous distributions
-# @param output "probability" or "random"
-# @param prep A named list returned by prepare_predictions containing
-#   all required data and posterior draws
-# @param i index of the observation for which to compute pp values
-# @param dist name of the distribution
-# @param ntrys number of trys in rejection sampling for truncated models
-# @param ... additional arguments passed to the distribution functions
-# @return a vector of draws from the distribution
-.predict_continuous_helper <- function(output, prep, i, dist, ntrys, ...) {
-  lb <- prep$data$lb[i]
-  ub <- prep$data$ub[i]
-  
-  switch(output,
-    "probability" = {
-      q <- prep$data$Y[i]
-      pcontinuous(
-        q = q, dist = dist, lb = lb, ub = ub, ntrys = ntrys,
-        ndraws = prep$ndraws, ...
-      )
-    },
-    "random" = {
-      rcontinuous(
-        n = prep$ndraws, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
-      )
-    }
-  )
-}
-
 # ------------------- family specific posterior_predict methods ---------------------
 # All posterior_predict_<family> functions have the same arguments structure
 # @param i index of the observation for which to compute pp values
@@ -345,7 +316,7 @@ posterior_predict_gaussian <- function(i, prep, ntrys = 5, output = "random", ..
 
   .predict_continuous_helper(
     output = output, prep = prep, i = i, ntrys = ntrys,
-    dist = "norm", mean = mu, sd = sigma
+    dist = "norm", mean = mu, sd = sigma, ...
   )
 }
 
@@ -357,7 +328,7 @@ posterior_predict_student <- function(i, prep, ntrys = 5, output = "random", ...
   
   .predict_continuous_helper(
     output = output, prep = prep, i = i, ntrys = ntrys,
-    dist = "student_t", df = nu, mu = mu, sigma = sigma
+    dist = "student_t", df = nu, mu = mu, sigma = sigma, ...
   )
 }
 
@@ -1029,12 +1000,12 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   out
 }
 
-pcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
+pcontinuous <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   args <- list(...)
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     pdist <- paste0("p", dist)
-    out <- do_call(pdist, c(list(n), args))
+    out <- do_call(pdist, c(list(q), args))
   } else {
     error("not implemented yet")
     # sample from truncated distribution
@@ -1139,4 +1110,35 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
     )
   }
   round(x)
+}
+
+# predict random numbers or probability values from continuous distributions
+# @param output "probability" or "random"
+# @param prep A named list returned by prepare_predictions containing
+#   all required data and posterior draws
+# @param i index of the observation for which to compute pp values
+# @param dist name of the distribution
+# @param ntrys number of trys in rejection sampling for truncated models
+# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i] 
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of draws
+.predict_continuous_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...) {
+  lb <- prep$data$lb[i]
+  ub <- prep$data$ub[i]
+  
+  switch(output,
+    "probability" = {
+      if (is.null(q)) {
+        q <- prep$data$Y[i]
+      }
+      pcontinuous(
+        q = prep$data$Y[i], dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+      )
+    },
+    "random" = {
+      rcontinuous(
+        n = prep$ndraws, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+      )
+    }
+  )
 }
