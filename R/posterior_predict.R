@@ -1132,7 +1132,7 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
         q <- prep$data$Y[i]
       }
       pcontinuous(
-        q = prep$data$Y[i], dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+        q = q, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
       )
     },
     "random" = {
