@@ -440,28 +440,25 @@ test_that("posterior_predict_custom runs without errors", {
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
 
-test_that("posterior_predict for location shift models runs with 'output' argument without error", {
-  ns <- 30
-  nobs <- 10
-  prep <- structure(list(ndraws = ns), class = "brmsprep")
-  prep$dpars <- list(
-    mu = matrix(rnorm(ns * nobs), ncol = nobs),
-    sigma = rchisq(ns, 3), nu = rgamma(ns, 4)
-  )
-  prep$data <- list(Y  = rpred)
-  i <- sample(nobs, 1)
-
-  pnorm(prep$data$Y[i])
+test_that("posterior_predict_gaussian runs with various 'output' values without error", {
+  fit <- rename_pars(brms:::brmsfit_example3)
+  prep <- brms::prepare_predictions(fit)
+  model_fit <- fit$fit@sim
+  S <- model_fit$chains * (model_fit$iter - model_fit$warmup)
+  i <- 1
 
   # probability
   rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
-  expect_equal(length(rpred), ns)
+  expect_equal(length(rpred), S)
 
-  qpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  # compute PIT values (q = prep$data$Y[i])
+  PITs <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), S)
+  expect_true(all(PITs >= 0 & PITs <= 1))
   
-  expect_equal(length(qpred), ns)
-
-  pred <- brms:::posterior_predict_student(i, prep = prep)
-  expect_equal(length(pred), ns)
+  # compute cdf based on custom 'q'
+  qpred <- brms:::posterior_predict_gaussian(i, q = 15, prep = prep, output = "probability")
+  expect_equal(length(qpred), S)
+  expect_true(all(qpred >= 0 & qpred <= 1))
 })
 
