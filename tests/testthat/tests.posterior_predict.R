@@ -463,3 +463,37 @@ test_that("posterior_predict_gaussian runs with various 'output' values without 
   expect_true(all(qpred >= 0 & qpred <= 1))
 })
 
+test_that("truncated posterior_predict_gaussian runs with various 'output' values without error", {
+  skip_if_not_installed("truncnorm")
+  set.seed(1335)
+  ns <- 30
+  nobs <- 15
+  i <- 3
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    sigma = rchisq(ns, 3)
+  )
+  prep$data <- list(
+    Y = rnorm(nobs),
+    lb = replicate(nobs, 0),
+    ub = replicate(nobs, 10)
+  )
+ 
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
+
+  # compute cdf for truncated distribution
+  obs_trunc_PITs <- brms:::posterior_predict_gaussian(
+    i, prep = prep, output = "probability")
+  expected_PITs <- truncnorm::ptruncnorm(
+    q = prep$data$Y[i], a = prep$data$lb[i],
+    b = prep$data$ub[i], mean = mu, sd = sigma
+  )
+  expect_equal(obs_trunc_PITs, expected_PITs)
+
+  # take random draws from a truncated distribution
+  rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
+  expect_true(all(rpred >= prep$data$lb[i] & rpred <= prep$data$ub[i]))
+})
