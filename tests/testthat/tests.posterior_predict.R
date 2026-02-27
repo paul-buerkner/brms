@@ -439,3 +439,29 @@ test_that("posterior_predict_custom runs without errors", {
   }
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
+
+test_that("posterior_predict for location shift models runs with 'output' argument without error", {
+  ns <- 30
+  nobs <- 10
+  prep <- structure(list(ndraws = ns), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    sigma = rchisq(ns, 3), nu = rgamma(ns, 4)
+  )
+  prep$data <- list(Y  = rpred)
+  i <- sample(nobs, 1)
+
+  pnorm(prep$data$Y[i])
+
+  # probability
+  rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
+  expect_equal(length(rpred), ns)
+
+  qpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  
+  expect_equal(length(qpred), ns)
+
+  pred <- brms:::posterior_predict_student(i, prep = prep)
+  expect_equal(length(pred), ns)
+})
+
