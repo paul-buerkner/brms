@@ -82,7 +82,7 @@
 posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
-  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5, type = "r",
+  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5, output = "random",
   cores = NULL, ...
 ) {
   cl <- match.call()
@@ -93,11 +93,11 @@ posterior_predict.brmsfit <- function(
   object <- restructure(object)
   prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp,
-    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, type = type, ...
+    ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE, type = type
+    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output
   )
 }
 
@@ -119,7 +119,7 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
-                                       cores = NULL, type = "r", ...) {
+                                       cores = NULL, ...) {
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
   if (is.customfamily(object$family)) {
@@ -136,7 +136,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, type = type, ...)
+  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, output = output, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -301,52 +301,63 @@ validate_pp_method <- function(method) {
   method
 }
 
+# Helper function to predict continuous distributions
+# @param output "probability" or "random"
+# @param prep A named list returned by prepare_predictions containing
+#   all required data and posterior draws
+# @param i index of the observation for which to compute pp values
+# @param dist name of the distribution
+# @param ntrys number of trys in rejection sampling for truncated models
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of draws from the distribution
+.predict_continuous_helper <- function(output, prep, i, dist, ntrys, ...) {
+  lb <- prep$data$lb[i]
+  ub <- prep$data$ub[i]
+  
+  switch(output,
+    "probability" = {
+      q <- prep$data$Y[i]
+      pcontinuous(
+        q = q, dist = dist, lb = lb, ub = ub, ntrys = ntrys,
+        ndraws = prep$ndraws, ...
+      )
+    },
+    "random" = {
+      rcontinuous(
+        n = prep$ndraws, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+      )
+    }
+  )
+}
+
 # ------------------- family specific posterior_predict methods ---------------------
 # All posterior_predict_<family> functions have the same arguments structure
-# @param i index of the observatio for which to compute pp values
+# @param i index of the observation for which to compute pp values
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @param ... ignored arguments
 # @param A vector of length prep$ndraws containing draws
 #   from the posterior predictive distribution
-posterior_predict_gaussian <- function(i, prep, ntrys = 5, type = "r", ...) {
+posterior_predict_gaussian <- function(i, prep, ntrys = 5, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  switch(type,
-         r = rcontinuous(
-           n = prep$ndraws, dist = "norm",
-           mean = mu, sd = sigma,
-           lb = prep$data$lb[i], ub = prep$data$ub[i],
-           ntrys = ntrys
-         ),
-         p = pcontinuous(
-           n = prep$ndraws, dist = "norm",
-           q = prep$data$Y[i], mean = mu, sd = sigma,
-           lb = prep$data$lb[i], ub = prep$data$ub[i],
-           ntrys = ntrys
-         )
+
+  .predict_continuous_helper(
+    output = output, prep = prep, i = i, ntrys = ntrys,
+    dist = "norm", mean = mu, sd = sigma
   )
 }
 
-posterior_predict_student <- function(i, prep, ntrys = 5, type = "r", ...) {
+posterior_predict_student <- function(i, prep, ntrys = 5, output = "random", ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  switch(type,
-         r =   rcontinuous(
-           n = prep$ndraws, dist = "student_t",
-           df = nu, mu = mu, sigma = sigma,
-           lb = prep$data$lb[i], ub = prep$data$ub[i],
-           ntrys = ntrys
-         ),
-         p = pcontinuous(
-           n = prep$ndraws, dist = "student_t",
-           q = prep$data$Y[i], df = nu, mu = mu, sigma = sigma,
-           lb = prep$data$lb[i], ub = prep$data$ub[i],
-           ntrys = ntrys
-         )
+  
+  .predict_continuous_helper(
+    output = output, prep = prep, i = i, ntrys = ntrys,
+    dist = "student_t", df = nu, mu = mu, sigma = sigma
   )
 }
 
