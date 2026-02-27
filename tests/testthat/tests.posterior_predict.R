@@ -459,6 +459,7 @@ test_that("posterior_predict_gaussian runs with various 'output' values without 
   # compute cdf based on custom 'q'
   qpred <- brms:::posterior_predict_gaussian(i, q = 15, prep = prep, output = "probability")
   expect_equal(length(qpred), S)
+  expect_false(all(PITs == qpred))
   expect_true(all(qpred >= 0 & qpred <= 1))
 })
 
