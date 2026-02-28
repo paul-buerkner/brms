@@ -540,3 +540,37 @@ test_that("posterior_predict_student runs with various 'output' values without e
   expect_equal(length(qpred_trunc), ns)
   expect_false(all(qpred == qpred_trunc))
 })
+
+test_that("posterior_predict_binomial works for different 'output' values without error", {
+  ns <- 25
+  nobs <- 10
+  trials <- sample(10:30, nobs, replace = TRUE)
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    eta = matrix(rnorm(ns * nobs), ncol = nobs),
+    shape = rgamma(ns, 4), xi = 0, phi = rgamma(ns, 1)
+  )
+  prep$dpars$nu <- prep$dpars$sigma <- prep$dpars$shape + 1
+  i <- 3
+
+  prep$dpars$mu <- brms:::inv_cloglog(prep$dpars$eta)
+  
+  prep$data <- list(
+    trialsb = trials,
+    Y = rbinom(nobs, size = trials, prob = prep$dpars$mu)
+  )
+  # random draws from binomial
+  pred <- brms:::posterior_predict_binomial(i, prep = prep, output = "random")
+  expect_equal(length(pred), ns)
+
+  # compute PIT values (q = prep$data$trials[i])
+  PITs <- brms:::posterior_predict_binomial(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+
+  # compute PIT values for custom 'q' (e.g., q = 5)
+  qpred <- brms:::posterior_predict_binomial(i, q = 5, prep = prep, output = "probability")
+  expect_equal(length(qpred), ns)
+  expect_true(all(qpred >= 0 & qpred <= 1))
+  expect_false(all(PITs == qpred))
+})
