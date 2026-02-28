@@ -439,3 +439,193 @@ test_that("posterior_predict_custom runs without errors", {
   }
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
+
+test_that("posterior_predict_gaussian runs with various 'output' values without error", {
+  fit <- rename_pars(brms:::brmsfit_example3)
+  prep <- brms::prepare_predictions(fit)
+  model_fit <- fit$fit@sim
+  S <- model_fit$chains * (model_fit$iter - model_fit$warmup)
+  i <- 1
+
+  # random draws from Gaussian
+  rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
+  expect_equal(length(rpred), S)
+
+  # compute PIT values (q = prep$data$Y[i])
+  PITs <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), S)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+  
+  # compute cdf based on custom 'q'
+  qpred <- brms:::posterior_predict_gaussian(i, q = 15, prep = prep, output = "probability")
+  expect_equal(length(qpred), S)
+  expect_false(all(PITs == qpred))
+  expect_true(all(qpred >= 0 & qpred <= 1))
+})
+
+test_that("truncated posterior_predict_gaussian runs with various 'output' values without error", {
+  skip_if_not_installed("truncnorm")
+  set.seed(1335)
+  ns <- 30
+  nobs <- 15
+  i <- 3
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    sigma = rchisq(ns, 3)
+  )
+  prep$data <- list(
+    Y = rnorm(nobs),
+    lb = replicate(nobs, 0),
+    ub = replicate(nobs, 10)
+  )
+ 
+  mu <- brms:::get_dpar(prep, "mu", i = i)
+  sigma <- brms:::get_dpar(prep, "sigma", i = i)
+  sigma <- brms:::add_sigma_se(sigma, prep, i = i)
+
+  # compute cdf for truncated distribution
+  obs_trunc_PITs <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  expected_PITs <- truncnorm::ptruncnorm(q = prep$data$Y[i], a = prep$data$lb[i],
+    b = prep$data$ub[i], mean = mu, sd = sigma)
+  expect_equal(obs_trunc_PITs, expected_PITs)
+
+  # take random draws from a truncated distribution
+  rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
+  expect_true(all(rpred >= prep$data$lb[i] & rpred <= prep$data$ub[i]))
+})
+
+test_that("posterior_predict_student runs with various 'output' values without error", {
+  set.seed(1334)
+  ns <- 30
+  nobs <- 10
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    sigma = rchisq(ns, 3), 
+    nu = rgamma(ns, 4)
+  )
+  prep$data <- list(Y = rstudent_t(nobs, df = 3))
+  i <- 8
+
+  # random draws from non-truncated t
+  rpred <- brms:::posterior_predict_student(i, prep = prep, output = "random")
+  expect_equal(length(rpred), ns)
+
+  # compute PIT values (q = prep$data$Y[i])
+  PITs <- brms:::posterior_predict_student(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+  
+  # compute cdf based on custom 'q'
+  qpred <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability")
+  expect_equal(length(qpred), ns)
+  expect_false(all(PITs == qpred))
+  expect_true(all(qpred >= 0 & qpred <= 1))
+
+  prep$data$lb <- replicate(nobs, 0)  
+  prep$data$ub <- replicate(nobs, 30)
+
+  # random draws from truncated t
+  rpred <- brms:::posterior_predict_student(i, prep = prep, output = "random")
+  expect_true(all(rpred >= prep$data$lb[i] & rpred <= prep$data$ub[i]))
+
+  # compute PIT values for truncated t (q = prep$data$Y[i])
+  PITs_trunc <- brms:::posterior_predict_student(i, prep = prep, output = "probability")
+  expect_equal(length(PITs_trunc), ns)
+  expect_false(all(PITs == PITs_trunc))
+  
+  # compute cdf for truncated t based on custom 'q'
+  qpred_trunc <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability")
+  expect_equal(length(qpred_trunc), ns)
+  expect_false(all(qpred == qpred_trunc))
+})
+
+test_that("posterior_predict_binomial works for different 'output' values without error", {
+  ns <- 25
+  nobs <- 10
+  trials <- sample(10:30, nobs, replace = TRUE)
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    eta = matrix(rnorm(ns * nobs), ncol = nobs),
+    shape = rgamma(ns, 4), xi = 0, phi = rgamma(ns, 1)
+  )
+  prep$dpars$nu <- prep$dpars$sigma <- prep$dpars$shape + 1
+  i <- 3
+
+  prep$dpars$mu <- brms:::inv_cloglog(prep$dpars$eta)
+  
+  prep$data <- list(
+    trialsb = trials,
+    Y = rbinom(nobs, size = trials, prob = prep$dpars$mu)
+  )
+  # random draws from binomial
+  pred <- brms:::posterior_predict_binomial(i, prep = prep, output = "random")
+  expect_equal(length(pred), ns)
+
+  # compute PIT values (q = prep$data$trials[i])
+  PITs <- brms:::posterior_predict_binomial(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+
+  # compute PIT values for custom 'q' (e.g., q = 5)
+  qpred <- brms:::posterior_predict_binomial(i, q = 5, prep = prep, output = "probability")
+  expect_equal(length(qpred), ns)
+  expect_true(all(qpred >= 0 & qpred <= 1))
+  expect_false(all(PITs == qpred))
+})
+
+
+test_that("posterior_predict_poisson works for different 'output' values without error", {
+  set.seed(1386)
+  ns <- 25
+  nobs <- 10
+  trials <- sample(10:30, nobs, replace = TRUE)
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = exp(matrix(rnorm(ns * nobs), ncol = nobs))
+  )
+  prep$data <- list(
+    Y = rpois(nobs, lambda = prep$dpars$mu)
+  )
+  i <- 4
+
+  pred <- brms:::posterior_predict_poisson(i, prep = prep, output = "random")
+  expect_equal(length(pred), ns)
+
+  PITs <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+
+  # truncation interval [1, 6]
+  prep$data$lb <- replicate(nobs, 1) 
+  prep$data$ub <- replicate(nobs, 6)
+
+  rpred_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "random", ntrys = 1000)
+  # check whether invalid draws were returned
+  # in case of invalid draws, the corresponding draw is a double and not an integer
+  # this implementation is not ideal when posterior_predict is used by developers outside brms
+  # would be better to return NA for invalid draws, or to throw an error if ntrys is exceeded or so
+  rpred_trunc <- brms:::check_discrete_trunc_bounds(rpred_trunc, prep$data$lb[i], prep$data$ub[i])
+  expect_equal(length(rpred_trunc), ns)
+  expect_true(all(rpred_trunc >= prep$data$lb[i] & rpred_trunc <= prep$data$ub[i]))
+
+  PITs_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability")
+  expect_equal(length(PITs_trunc), ns)
+  expect_true(all(PITs_trunc >= 0 & PITs_trunc <= 1))
+
+  # analytical sanity check for the cdf of a zero-truncated Poisson distribution
+  # truncation interval [1, Inf]
+  .zero_trunc_pois <- function(x, lambda) {
+    (ppois(x, lambda = lambda) - exp(-lambda)) / (1 - exp(-lambda))
+  }
+  prep$dpars <- list(mu = 5)
+  prep$data$lb <- 1.
+  prep$data$ub <- Inf
+  prep$data$Y <- rpois(1, lambda = prep$dpars$mu)
+
+  obs_cdf <- brms:::posterior_predict_poisson(1, prep = prep, output = "probability")
+  expected_cdf <- .zero_trunc_pois(prep$data$Y[1], lambda = prep$dpars$mu)
+
+  expect_equal(obs_cdf, expected_cdf)
+})
