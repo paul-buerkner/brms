@@ -507,14 +507,15 @@ posterior_predict_bernoulli <- function(i, prep, ...) {
   rbinom(length(mu), size = 1, prob = mu)
 }
 
-posterior_predict_poisson <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_poisson <- function(i, prep, ntrys = 5, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "pois", lambda = mu,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    output = output, i = i, prep = prep, ntrys = ntrys,
+    dist = "pois", lambda = mu, ...
   )
+
 }
 
 posterior_predict_negbinomial <- function(i, prep, ntrys = 5, ...) {
@@ -1058,6 +1059,16 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   out
 }
 
+# probability values from (possibly truncated) discrete distributions
+# Note: lb and ub are treated as inclusive in order to be consistent with the 
+# behavior of rdiscrete.
+# @param q quantile value(s) for which to compute the CDF
+# @param dist name of a distribution for which the functions
+# @param ... additional arguments passed to the distribution functions
+# @param lb optional lower truncation bound (inclusive)
+# @param ub optional upper truncation bound
+# @param ntrys number of trys in rejection sampling for truncated models
+# @return a vector of probability values
 pdiscrete <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   args <- list(...)
   pdist <- paste0("p", dist)
@@ -1066,9 +1077,11 @@ pdiscrete <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
     # non-truncated case
     out <- do_call(pdist, c(list(q), args))
   } else {
-    # truncated case
+    # truncated case (treat lb as inclusive)
     F_q <- do_call(pdist, c(list(q), args))
-    F_lb <- do_call(pdist, c(list(lb), args))
+    # include (lb - 1) to treat lb as inclusive 
+    # this is only relevant for discrete distributions
+    F_lb <- do_call(pdist, c(list(lb - 1), args))
     F_ub <- do_call(pdist, c(list(ub), args))
     
     scale_factor <- F_ub - F_lb
