@@ -481,13 +481,13 @@ posterior_predict_student_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_binomial <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "binom",
-    size = prep$data$trials[i],
-    prob = get_dpar(prep, "mu", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_binomial <- function(i, prep, ntrys = 5, output = "random", ...) {
+  mu = get_dpar(prep, "mu", i = i)
+  size = prep$data$trials[i]
+  
+  predict_discrete_helper(
+    output = output, i = i, prep = prep, ntrys = ntrys,
+    dist = "binom", prob = mu, size = size, ...
   )
 }
 
@@ -1058,6 +1058,32 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   out
 }
 
+pdiscrete <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
+  args <- list(...)
+  pdist <- paste0("p", dist)
+
+  if (is.null(lb) && is.null(ub)) {
+    # non-truncated case
+    out <- do_call(pdist, c(list(q), args))
+  } else {
+    # truncated case
+    F_q <- do_call(pdist, c(list(q), args))
+    F_lb <- do_call(pdist, c(list(lb), args))
+    F_ub <- do_call(pdist, c(list(ub), args))
+    
+    scale_factor <- F_ub - F_lb
+    
+    # compute truncated CDF: (F(q) - F(lb)) / (F(ub) - F(lb))
+    out <- dplyr::case_when(
+      q < lb  ~ 0,
+      q > ub  ~ 1,
+      (F_ub - F_lb) == 0 ~ 1,
+      TRUE ~ (F_q - F_lb) / (F_ub - F_lb)
+    )
+  }
+  out
+}
+
 # sample from the IDs of the mixture components
 sample_mixture_ids <- function(theta) {
   stopifnot(is.matrix(theta))
@@ -1135,6 +1161,37 @@ predict_continuous_helper <- function(output, prep, i, dist, ntrys, q = NULL, ..
     },
     "random" = {
       rcontinuous(
+        n = prep$ndraws, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+      )
+    }
+  )
+}
+
+# predict random numbers or probability values from discrete distributions
+# @param output "probability" or "random"
+# @param prep A named list returned by prepare_predictions containing
+#   all required data and posterior draws
+# @param i index of the observation for which to compute pp values
+# @param dist name of the distribution
+# @param ntrys number of trys in rejection sampling for truncated models
+# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i] 
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of draws
+predict_discrete_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...) {
+  lb <- prep$data$lb[i]
+  ub <- prep$data$ub[i]
+  
+  switch(output,
+    "probability" = {
+      if (is.null(q)) {
+        q <- prep$data$Y[i]
+      }
+      pdiscrete(
+        q = q, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+      )
+    },
+    "random" = {
+      rdiscrete(
         n = prep$ndraws, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
       )
     }
