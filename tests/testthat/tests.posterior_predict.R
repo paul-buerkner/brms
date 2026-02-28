@@ -574,3 +574,58 @@ test_that("posterior_predict_binomial works for different 'output' values withou
   expect_true(all(qpred >= 0 & qpred <= 1))
   expect_false(all(PITs == qpred))
 })
+
+
+test_that("posterior_predict_poisson works for different 'output' values without error", {
+  set.seed(1386)
+  ns <- 25
+  nobs <- 10
+  trials <- sample(10:30, nobs, replace = TRUE)
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = exp(matrix(rnorm(ns * nobs), ncol = nobs))
+  )
+  prep$data <- list(
+    Y = rpois(nobs, lambda = prep$dpars$mu)
+  )
+  i <- 4
+
+  pred <- brms:::posterior_predict_poisson(i, prep = prep, output = "random")
+  expect_equal(length(pred), ns)
+
+  PITs <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+
+  # truncation interval [1, 6]
+  prep$data$lb <- replicate(nobs, 1) 
+  prep$data$ub <- replicate(nobs, 6)
+
+  rpred_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "random", ntrys = 1000)
+  # check whether invalid draws were returned
+  # in case of invalid draws, the corresponding draw is a double and not an integer
+  # this implementation is not ideal when posterior_predict is used by developers outside brms
+  # would be better to return NA for invalid draws, or to throw an error if ntrys is exceeded or so
+  rpred_trunc <- brms:::check_discrete_trunc_bounds(rpred_trunc, prep$data$lb[i], prep$data$ub[i])
+  expect_equal(length(rpred_trunc), ns)
+  expect_true(all(rpred_trunc >= prep$data$lb[i] & rpred_trunc <= prep$data$ub[i]))
+
+  PITs_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability")
+  expect_equal(length(PITs_trunc), ns)
+  expect_true(all(PITs_trunc >= 0 & PITs_trunc <= 1))
+
+  # analytical sanity check for the cdf of a zero-truncated Poisson distribution
+  # truncation interval [1, Inf]
+  .zero_trunc_pois <- function(x, lambda) {
+    (ppois(x, lambda = lambda) - exp(-lambda)) / (1 - exp(-lambda))
+  }
+  prep$dpars <- list(mu = 5)
+  prep$data$lb <- 1.
+  prep$data$ub <- Inf
+  prep$data$Y <- rpois(1, lambda = prep$dpars$mu)
+
+  obs_cdf <- brms:::posterior_predict_poisson(1, prep = prep, output = "probability")
+  expected_cdf <- .zero_trunc_pois(prep$data$Y[1], lambda = prep$dpars$mu)
+
+  expect_equal(obs_cdf, expected_cdf)
+})
