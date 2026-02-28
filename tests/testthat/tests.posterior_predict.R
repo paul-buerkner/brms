@@ -447,7 +447,7 @@ test_that("posterior_predict_gaussian runs with various 'output' values without 
   S <- model_fit$chains * (model_fit$iter - model_fit$warmup)
   i <- 1
 
-  # probability
+  # random draws from Gaussian
   rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
   expect_equal(length(rpred), S)
 
@@ -480,20 +480,63 @@ test_that("truncated posterior_predict_gaussian runs with various 'output' value
     ub = replicate(nobs, 10)
   )
  
-  mu <- get_dpar(prep, "mu", i = i)
-  sigma <- get_dpar(prep, "sigma", i = i)
-  sigma <- add_sigma_se(sigma, prep, i = i)
+  mu <- brms:::get_dpar(prep, "mu", i = i)
+  sigma <- brms:::get_dpar(prep, "sigma", i = i)
+  sigma <- brms:::add_sigma_se(sigma, prep, i = i)
 
   # compute cdf for truncated distribution
-  obs_trunc_PITs <- brms:::posterior_predict_gaussian(
-    i, prep = prep, output = "probability")
-  expected_PITs <- truncnorm::ptruncnorm(
-    q = prep$data$Y[i], a = prep$data$lb[i],
-    b = prep$data$ub[i], mean = mu, sd = sigma
-  )
+  obs_trunc_PITs <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  expected_PITs <- truncnorm::ptruncnorm(q = prep$data$Y[i], a = prep$data$lb[i],
+    b = prep$data$ub[i], mean = mu, sd = sigma)
   expect_equal(obs_trunc_PITs, expected_PITs)
 
   # take random draws from a truncated distribution
   rpred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
   expect_true(all(rpred >= prep$data$lb[i] & rpred <= prep$data$ub[i]))
+})
+
+test_that("posterior_predict_student runs with various 'output' values without error", {
+  set.seed(1334)
+  ns <- 30
+  nobs <- 10
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    sigma = rchisq(ns, 3), 
+    nu = rgamma(ns, 4)
+  )
+  prep$data <- list(Y = rstudent_t(nobs, df = 3))
+  i <- 8
+
+  # random draws from non-truncated t
+  rpred <- brms:::posterior_predict_student(i, prep = prep, output = "random")
+  expect_equal(length(rpred), ns)
+
+  # compute PIT values (q = prep$data$Y[i])
+  PITs <- brms:::posterior_predict_student(i, prep = prep, output = "probability")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+  
+  # compute cdf based on custom 'q'
+  qpred <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability")
+  expect_equal(length(qpred), ns)
+  expect_false(all(PITs == qpred))
+  expect_true(all(qpred >= 0 & qpred <= 1))
+
+  prep$data$lb <- replicate(nobs, 0)  
+  prep$data$ub <- replicate(nobs, 30)
+
+  # random draws from truncated t
+  rpred <- brms:::posterior_predict_student(i, prep = prep, output = "random")
+  expect_true(all(rpred >= prep$data$lb[i] & rpred <= prep$data$ub[i]))
+
+  # compute PIT values for truncated t (q = prep$data$Y[i])
+  PITs_trunc <- brms:::posterior_predict_student(i, prep = prep, output = "probability")
+  expect_equal(length(PITs_trunc), ns)
+  expect_false(all(PITs == PITs_trunc))
+  
+  # compute cdf for truncated t based on custom 'q'
+  qpred_trunc <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability")
+  expect_equal(length(qpred_trunc), ns)
+  expect_false(all(qpred == qpred_trunc))
 })
