@@ -314,7 +314,7 @@ posterior_predict_gaussian <- function(i, prep, ntrys = 5, output = "random", ..
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
 
-  .predict_continuous_helper(
+  predict_continuous_helper(
     output = output, prep = prep, i = i, ntrys = ntrys,
     dist = "norm", mean = mu, sd = sigma, ...
   )
@@ -326,7 +326,7 @@ posterior_predict_student <- function(i, prep, ntrys = 5, output = "random", ...
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
   
-  .predict_continuous_helper(
+  predict_continuous_helper(
     output = output, prep = prep, i = i, ntrys = ntrys,
     dist = "student_t", df = nu, mu = mu, sigma = sigma, ...
   )
@@ -1120,7 +1120,7 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
 # @param q optional custom quantile value; if NULL, the default is prep$data$Y[i] 
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
-.predict_continuous_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...) {
+predict_continuous_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
   
