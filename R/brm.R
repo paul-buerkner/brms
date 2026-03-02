@@ -196,7 +196,8 @@
 #'   If \code{2}, even more messages are suppressed. The actual
 #'   sampling progress is still printed. Set \code{refresh = 0} to turn this off
 #'   as well. If using \code{backend = "rstan"} you can also set
-#'   \code{open_progress = FALSE} to prevent opening additional progress bars.
+#'   \code{open_progress = FALSE} to prevent opening additional progress bars. Can be set globally for the current \R session via the
+#'   \code{"brms.silent"} option (see \code{\link{options}}).
 #' @param seed The seed for random number generation to make results
 #'   reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
 #'   randomly.
@@ -450,7 +451,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, 
+                init = NULL, inits = NULL, chains = 4,
                 iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
@@ -460,7 +461,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 control = NULL,
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
-                future = getOption("future", FALSE), silent = 1,
+                future = getOption("future", FALSE),
+                silent = getOption("brms.silent", 1),
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),

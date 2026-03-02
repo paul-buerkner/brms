@@ -17,7 +17,7 @@ brm_multiple(
   knots = NULL,
   stanvars = NULL,
   stan_funs = NULL,
-  silent = 1,
+  silent = getOption("brms.silent", 1),
   recompile = FALSE,
   combine = TRUE,
   fit = NA,
@@ -119,7 +119,8 @@ informational messages of compiler and sampler are suppressed.
 If \code{2}, even more messages are suppressed. The actual
 sampling progress is still printed. Set \code{refresh = 0} to turn this off
 as well. If using \code{backend = "rstan"} you can also set
-\code{open_progress = FALSE} to prevent opening additional progress bars.}
+\code{open_progress = FALSE} to prevent opening additional progress bars. Can be set globally for the current \R session via the
+\code{"brms.silent"} option (see \code{\link{options}}).}
 
 \item{recompile}{Logical, indicating whether the Stan model should be
 recompiled for every imputed data set. Defaults to \code{FALSE}. If
