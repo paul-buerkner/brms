@@ -326,7 +326,6 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   res <- do_call("future_lapply", future_args, pkg = "future.apply")
 
   diagnostics <- vector("list")
-  diagnostics$pareto_k <- vector("list", length(Ksub))
   lppds <- pred_obs_list <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(list(), dim = c(length(Ksub), 3))
@@ -338,7 +337,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     }
     pred_obs_list[[i]] <- res[[i]]$predicted
     lppds[[i]] <- res[[i]]$lppds
-    diagnostics$pareto_k[[i]] <- res[[i]]$pareto_k
+    diagnostics$pareto_k[i] <- res[[i]]$pareto_k
   }
 
   lppds <- do_call(cbind, lppds)
