@@ -32,10 +32,10 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
   expect_range(kfold1$estimates[3, 1], 1210, 1260)
   # expected output structure
-  expect_equal(names(kfold1), c("estimates", "pointwise", "pareto_k", 
+  expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics", 
   "fits", "data", "data2"))
   # expected length of pareto-k slot in kfold output (by default k=10)
-  expect_equal(length(kfold1$pareto_k), 10)
+  expect_equal(length(kfold1$diagnostics$pareto_k), 10)
   # define a loss function
   rmse <- function(y, yrep) {
     yrep_mean <- colMeans(yrep)
@@ -250,4 +250,23 @@ test_that("Fixing parameters to constants works correctly", suppressWarnings({
   expect_range(waic(fit)$estimates[3, 1], 1790, 1840)
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
+}))
+
+
+test_that("Structure of kfold() output matches correctly structure of loo output", suppressWarnings({
+  fit <- brm(count ~ zAge + zBase + Trt, data = epilepsy, family = negbinomial(),
+             prior = prior(normal(0, 1), class = b), refresh = 0,
+             backend = "rstan", save_pars = save_pars(all = TRUE))
+  
+  loo1 <- loo(fit)
+
+  kfold1 <- kfold(fit, chains = 1, iter = 1000, save_fits = TRUE)
+
+  # output structure of loo and kfold object should be equal 
+  # wrt estimates, pointwise and diagnostics slots
+  expect_equal(names(loo1)[1:3], names(kfold1)[1:3])
+  
+  # diagnostics$pareto_k slot exists in kfold and loo output
+  # loo output has additionally slots for n_eff and r_eff
+  expect_true(names(kfold1$diagnostics) %in% names(loo1$diagnostics))
 }))
