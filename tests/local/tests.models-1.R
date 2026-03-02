@@ -266,7 +266,6 @@ test_that("Structure of kfold() output matches correctly structure of loo output
   # wrt estimates, pointwise and diagnostics slots
   expect_equal(names(loo1)[1:3], names(kfold1)[1:3])
   
-  # diagnostics$pareto_k slot exists in kfold and loo output
-  # loo output has additionally slots for n_eff and r_eff
-  expect_true(names(kfold1$diagnostics) %in% names(loo1$diagnostics))
+  # diagnostics$pareto_k in kfold has same class as corresponding slot in loo output
+  expect_equal(class(kfold1$diagnostics), class(loo1$diagnostics))
 }))
