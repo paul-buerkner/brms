@@ -309,10 +309,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       joint_obs <- seq_along(predicted)
     }
 
-    # add pareto-k diagnostics
-    pareto_k <- posterior::pareto_khat(lppds, are_log_weights = TRUE)
-
-    out <- nlist(lppds, omitted, predicted, joint_obs, pareto_k)
+    out <- nlist(lppds, omitted, predicted, joint_obs)
     if (save_fits) {
       out$fit <- fit
     }
@@ -337,10 +334,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     }
     pred_obs_list[[i]] <- res[[i]]$predicted
     lppds[[i]] <- res[[i]]$lppds
-    diagnostics$pareto_k[i] <- res[[i]]$pareto_k
   }
 
   lppds <- do_call(cbind, lppds)
+  # pareto_k for each column of lppds (i.e. each predicted observation)
+  diagnostics$pareto_k <- apply(lppds, 2, posterior::pareto_khat, 
+    are_log_weights = TRUE)
   elpds <- apply(lppds, 2, log_mean_exp)
   pred_obs <- unlist(pred_obs_list)
   if (joint == "obs") {
