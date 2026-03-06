@@ -150,8 +150,11 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     if (silent < 2) {
       message("Fitting imputed model ", i)
     }
-    update(fit, newdata = data[[i]], data2 = data2[[i]],
-           recompile = recompile, silent = silent, ...)
+    update(
+      fit, newdata = data[[i]], data2 = data2[[i]],
+      recompile = recompile, silent = silent, seed = seed,
+      ...
+    )
   }
 
   fits <- future.apply::future_lapply(
