@@ -747,10 +747,7 @@ subset.psis <- function(x, subset, ...) {
 # @param allow_na allow NA values in the output?
 # @return numeric vector of relative efficiencies, length NCOL(x) or nobs for function
 r_eff_helper <- function(x, chain_id, allow_na = TRUE, ...) {
-  # if pointwise=TRUE, x is a function else it is a matrix of draws
-  x <- if (is.function(x)) list(...)$draws else x
-
-  if (anyNA(x) || any(is.infinite(x))) {
+  if (!is.function(x) && (anyNA(x) || any(is.infinite(x)))) {
     warning2("Ignoring relative efficiencies due to NA or infinte inputs.")
     return(rep(1, NCOL(x)))
   }
