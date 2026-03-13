@@ -24,3 +24,9 @@ ignore_*/
 *.tmp
 *.swp
 *~
+
+# Ignore agent skills
+.agent/
+.agents/
+skills/
+skills-lock.json
