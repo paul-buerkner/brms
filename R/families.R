@@ -23,7 +23,8 @@
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta_binomial},
 #'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, and \code{xbeta}.
+#'   \code{zero_inflated_poisson}, \code{zero_one_inflated_beta}, \code{xbeta},
+#'   and \code{ordbeta}.
 #' @param link A specification for the model link function. This can be a
 #'   name/expression or character string. See the 'Details' section for more
 #'   information on link functions supported by each family.
@@ -105,6 +106,13 @@
 #'   \code{zero_inflated_beta}, \code{zero_one_inflated_beta} families
 #'   provide more flexibility.  For details see Kosmidis & Zeileis
 #'   (2024).}
+#'
+#'   \item{Family \code{ordbeta} ('ordered beta') provides an alternative
+#'   approach to handling \code{[0, 1]} responses with exact \code{0}s
+#'   and \code{1}s. It models the response as a mixture of a degenerate
+#'   distribution at 0, a beta distribution for (0,1), and a degenerate
+#'   distribution at 1. The cutpoint parameters control the probability
+#'   of each component. For details see Kubinec (2023).}
 #'
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
@@ -192,6 +200,10 @@
 #'
 #' Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for [0, 1] Responses.
 #' \emph{arXiv Preprint}. \doi{10.48550/arXiv.2409.07233}
+#'
+#' Kubinec R (2023). Ordered Beta Regression: A Parsimonious, Well-Fitting
+#' Model for Continuous Data with Lower and Upper Bounds.
+#' \emph{Political Analysis}, 31(4), 519-536. \doi{10.1017/pan.2022.20}
 #'
 #' @seealso
 #'   \code{\link[brms:brm]{brm}},
@@ -639,6 +651,15 @@ xbeta <- function(link = "logit", link_phi = "log",
   slink <- substitute(link)
   .brmsfamily("xbeta", link = link, slink = slink,
               link_phi = link_phi, link_kappa = link_kappa)
+}
+
+#' @rdname brmsfamily
+#' @export
+ordbeta <- function(link = "logit", link_phi = "log",
+                    link_xi = "identity", link_kappa = "log") {
+  slink <- substitute(link)
+  .brmsfamily("ordbeta", link = link, slink = slink,
+              link_phi = link_phi, link_xi = link_xi, link_kappa = link_kappa)
 }
 
 #' @rdname brmsfamily
@@ -1620,6 +1641,10 @@ is_polytomous <- function(family) {
 
 is_cox <- function(family) {
   "cox" %in% family_info(family, "specials")
+}
+
+is_ordbeta <- function(family) {
+  "ordbeta" %in% family_info(family, "specials")
 }
 
 # has joint link function over multiple inputs
