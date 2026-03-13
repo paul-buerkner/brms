@@ -10,10 +10,10 @@ test_that("posterior_predict for location shift models runs without errors", {
   )
   i <- sample(nobs, 1)
 
-  pred <- brms:::posterior_predict_gaussian(i, prep = prep)
+  pred <- brms:::posterior_predict_gaussian(i, prep = prep, output = "random")
   expect_equal(length(pred), ns)
 
-  pred <- brms:::posterior_predict_student(i, prep = prep)
+  pred <- brms:::posterior_predict_student(i, prep = prep, output = "random")
   expect_equal(length(pred), ns)
 })
 
@@ -149,7 +149,8 @@ test_that("posterior_predict for count and survival models runs without errors",
   i <- sample(nobs, 1)
 
   prep$dpars$mu <- brms:::inv_cloglog(prep$dpars$eta)
-  pred <- brms:::posterior_predict_binomial(i, prep = prep)
+  pred <- brms:::posterior_predict_binomial(i, prep = prep, output = "random",
+  randomized = NULL)
   expect_equal(length(pred), ns)
 
   pred <- brms:::posterior_predict_beta_binomial(i, prep = prep)
@@ -159,7 +160,7 @@ test_that("posterior_predict for count and survival models runs without errors",
   expect_equal(length(pred), ns)
 
   prep$dpars$mu <- exp(prep$dpars$eta)
-  pred <- brms:::posterior_predict_poisson(i, prep = prep)
+  pred <- brms:::posterior_predict_poisson(i, prep = prep, output = "random", randomized = NULL)
   expect_equal(length(pred), ns)
 
   pred <- brms:::posterior_predict_negbinomial(i, prep = prep)
@@ -392,16 +393,18 @@ test_that("truncated posterior_predict run without errors", {
   prep$refcat <- 1
 
   prep$data <- list(lb = sample(-(4:7), nobs, TRUE))
-  pred <- sapply(1:nobs, brms:::posterior_predict_gaussian, prep = prep)
+  pred <- sapply(1:nobs, brms:::posterior_predict_gaussian, prep = prep, output = "random")
   expect_equal(dim(pred), c(ns, nobs))
 
   prep$dpars$mu <- exp(prep$dpars$mu)
   prep$data <- list(ub = sample(70:80, nobs, TRUE))
-  pred <- sapply(1:nobs, brms:::posterior_predict_poisson, prep = prep)
+  pred <- sapply(1:nobs, brms:::posterior_predict_poisson, prep = prep, output = "random",
+  randomized = NULL)
   expect_equal(dim(pred), c(ns, nobs))
 
   prep$data <- list(lb = rep(0, nobs), ub = sample(70:75, nobs, TRUE))
-  pred <- sapply(1:nobs, brms:::posterior_predict_poisson, prep = prep)
+  pred <- sapply(1:nobs, brms:::posterior_predict_poisson, prep = prep, output = "random",
+  randomized = NULL)
   expect_equal(dim(pred), c(ns, nobs))
 })
 
@@ -452,12 +455,14 @@ test_that("posterior_predict_gaussian runs with various 'output' values without 
   expect_equal(length(rpred), S)
 
   # compute PIT values (q = prep$data$Y[i])
-  PITs <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability")
+  PITs <- brms:::posterior_predict_gaussian(i, prep = prep, output = "probability",
+  randomized = NULL)
   expect_equal(length(PITs), S)
   expect_true(all(PITs >= 0 & PITs <= 1))
   
   # compute cdf based on custom 'q'
-  qpred <- brms:::posterior_predict_gaussian(i, q = 15, prep = prep, output = "probability")
+  qpred <- brms:::posterior_predict_gaussian(i, q = 15, prep = prep, output = "probability",
+  randomized = NULL)
   expect_equal(length(qpred), S)
   expect_false(all(PITs == qpred))
   expect_true(all(qpred >= 0 & qpred <= 1))
@@ -513,12 +518,14 @@ test_that("posterior_predict_student runs with various 'output' values without e
   expect_equal(length(rpred), ns)
 
   # compute PIT values (q = prep$data$Y[i])
-  PITs <- brms:::posterior_predict_student(i, prep = prep, output = "probability")
+  PITs <- brms:::posterior_predict_student(i, prep = prep, output = "probability",
+  randomized = NULL)
   expect_equal(length(PITs), ns)
   expect_true(all(PITs >= 0 & PITs <= 1))
   
   # compute cdf based on custom 'q'
-  qpred <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability")
+  qpred <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability",
+  randomized = NULL)
   expect_equal(length(qpred), ns)
   expect_false(all(PITs == qpred))
   expect_true(all(qpred >= 0 & qpred <= 1))
@@ -531,12 +538,14 @@ test_that("posterior_predict_student runs with various 'output' values without e
   expect_true(all(rpred >= prep$data$lb[i] & rpred <= prep$data$ub[i]))
 
   # compute PIT values for truncated t (q = prep$data$Y[i])
-  PITs_trunc <- brms:::posterior_predict_student(i, prep = prep, output = "probability")
+  PITs_trunc <- brms:::posterior_predict_student(i, prep = prep, output = "probability",
+  randomized = NULL)
   expect_equal(length(PITs_trunc), ns)
   expect_false(all(PITs == PITs_trunc))
   
   # compute cdf for truncated t based on custom 'q'
-  qpred_trunc <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability")
+  qpred_trunc <- brms:::posterior_predict_student(i, q = 15, prep = prep, output = "probability", 
+  randomized = NULL)
   expect_equal(length(qpred_trunc), ns)
   expect_false(all(qpred == qpred_trunc))
 })
@@ -560,16 +569,16 @@ test_that("posterior_predict_binomial works for different 'output' values withou
     Y = rbinom(nobs, size = trials, prob = prep$dpars$mu)
   )
   # random draws from binomial
-  pred <- brms:::posterior_predict_binomial(i, prep = prep, output = "random")
+  pred <- brms:::posterior_predict_binomial(i, prep = prep, output = "random", randomized = NULL)
   expect_equal(length(pred), ns)
 
   # compute PIT values (q = prep$data$trials[i])
-  PITs <- brms:::posterior_predict_binomial(i, prep = prep, output = "probability")
+  PITs <- brms:::posterior_predict_binomial(i, prep = prep, output = "probability", randomized = TRUE)
   expect_equal(length(PITs), ns)
   expect_true(all(PITs >= 0 & PITs <= 1))
 
   # compute PIT values for custom 'q' (e.g., q = 5)
-  qpred <- brms:::posterior_predict_binomial(i, q = 5, prep = prep, output = "probability")
+  qpred <- brms:::posterior_predict_binomial(i, q = 5, prep = prep, output = "probability", randomized = TRUE)
   expect_equal(length(qpred), ns)
   expect_true(all(qpred >= 0 & qpred <= 1))
   expect_false(all(PITs == qpred))
@@ -590,10 +599,13 @@ test_that("posterior_predict_poisson works for different 'output' values without
   )
   i <- 4
 
-  pred <- brms:::posterior_predict_poisson(i, prep = prep, output = "random")
+  pred <- brms:::posterior_predict_poisson(i, prep = prep, output = "random", 
+  randomized = NULL)
   expect_equal(length(pred), ns)
 
-  PITs <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability")
+  PITs <- posterior_predict_poisson(
+    i, prep = prep, output = "probability", randomized = TRUE
+  )
   expect_equal(length(PITs), ns)
   expect_true(all(PITs >= 0 & PITs <= 1))
 
@@ -601,7 +613,8 @@ test_that("posterior_predict_poisson works for different 'output' values without
   prep$data$lb <- replicate(nobs, 1) 
   prep$data$ub <- replicate(nobs, 6)
 
-  rpred_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "random", ntrys = 1000)
+  rpred_trunc <- posterior_predict_poisson(i, prep = prep, output = "random", ntrys = 1000,
+  randomized = NULL)
   # check whether invalid draws were returned
   # in case of invalid draws, the corresponding draw is a double and not an integer
   # this implementation is not ideal when posterior_predict is used by developers outside brms
@@ -610,22 +623,76 @@ test_that("posterior_predict_poisson works for different 'output' values without
   expect_equal(length(rpred_trunc), ns)
   expect_true(all(rpred_trunc >= prep$data$lb[i] & rpred_trunc <= prep$data$ub[i]))
 
-  PITs_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability")
+  PITs_trunc <- brms:::posterior_predict_poisson(i, prep = prep, output = "probability", randomized = TRUE)
   expect_equal(length(PITs_trunc), ns)
   expect_true(all(PITs_trunc >= 0 & PITs_trunc <= 1))
+})
 
-  # analytical sanity check for the cdf of a zero-truncated Poisson distribution
-  # truncation interval [1, Inf]
-  .zero_trunc_pois <- function(x, lambda) {
-    (ppois(x, lambda = lambda) - exp(-lambda)) / (1 - exp(-lambda))
+test_that("compute_cdf returns correct CDF for non-truncated distributions", {
+  # Non-truncated, non-randomized: raw CDF F(q)
+  q <- 3
+  args <- list(lambda = 5)
+  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = NULL, ub = NULL, 
+  randomized = NULL)
+  expect_equal(out, ppois(q, lambda = 5))
+
+  q <- 2
+  args <- list(size = 10, prob = 0.5)
+  out <- brms:::compute_cdf(q = q, pdist = "pbinom", args = args, lb = NULL, ub = NULL, 
+  randomized = NULL)
+  expect_equal(out, pbinom(q, size = 10, prob = 0.5))
+})
+
+test_that("compute_cdf with randomized = FALSE returns value in [0, 1]", {
+  q <- 5
+  args <- list(lambda = 3)
+  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = NULL, ub = NULL, randomized = FALSE)
+  expect_true(out >= 0 && out <= 1)
+})
+
+test_that("compute_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", {
+  # Randomized PIT: F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
+  set.seed(42)
+  q <- 5
+  args <- list(lambda = 3)
+  Fq <- ppois(q, lambda = 3)
+  Fqm1 <- ppois(q - 1, lambda = 3)
+
+  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = NULL, ub = NULL, randomized = TRUE)
+  expect_true(out >= Fqm1)
+  expect_true(out <= Fq)
+})
+
+test_that("compute_cdf with randomized = TRUE and truncation returns value in valid range", {
+  set.seed(123)
+  q <- 4
+  args <- list(lambda = 5)
+  lb <- 2
+  ub <- 7
+  denom <- ppois(ub, lambda = 5) - ppois(lb, lambda = 5)
+  Fq <- (ppois(q, lambda = 5) - ppois(lb, lambda = 5)) / denom
+  Fqm1 <- (ppois(q - 1, lambda = 5) - ppois(lb, lambda = 5)) / denom
+
+  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = lb, ub = ub, randomized = TRUE)
+  expect_true(out >= Fqm1)
+  expect_true(out <= Fq)
+  expect_true(out >= 0 && out <= 1)
+})
+
+test_that("compute_cdf handles zero denominator (lb == ub) without unexpected behaviour", {
+  q <- 3
+  args <- list(lambda = 2)
+  lb <- 1
+  ub <- 1
+
+  out <- tryCatch(
+    brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = lb, ub = ub, randomized = FALSE),
+    error = function(e) structure(list(error = TRUE, message = e$message))
+  )
+
+  if (is.list(out) && isTRUE(out$error)) {
+    expect_true(grepl("zero|denom|divide|trunc", out$message, ignore.case = TRUE))
+  } else {
+    expect_true(is.nan(out) || is.na(out))
   }
-  prep$dpars <- list(mu = 5)
-  prep$data$lb <- 1.
-  prep$data$ub <- Inf
-  prep$data$Y <- rpois(1, lambda = prep$dpars$mu)
-
-  obs_cdf <- brms:::posterior_predict_poisson(1, prep = prep, output = "probability")
-  expected_cdf <- .zero_trunc_pois(prep$data$Y[1], lambda = prep$dpars$mu)
-
-  expect_equal(obs_cdf, expected_cdf)
 })

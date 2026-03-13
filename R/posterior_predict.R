@@ -26,6 +26,12 @@
 #' @param ntrys Parameter used in rejection sampling
 #'   for truncated discrete models only
 #'   (defaults to \code{5}). See Details for more information.
+#' @param randomized Logical. Only of interest for discrete distributions.
+#'   Parameter used in computing the cdf of the posterior predictive
+#'   distribution of a discrete distribution. If \code{TRUE}, randomized PIT.
+#'   If \code{FALSE}, the mean between F(x) and F(x-1) is returned.
+#'   Defaults to \code{TRUE} for discrete distributions and is always \code{FALSE}
+#'   for continuous distributions.
 #' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
 #'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
@@ -54,7 +60,8 @@
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-#'            data = kidney, family = "exponential", init = "0")
+#'   data = kidney, family = "exponential", init = "0"
+#' )
 #'
 #' ## predicted responses
 #' pp <- posterior_predict(fit)
@@ -83,7 +90,7 @@ posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
   ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5, output = "random",
-  cores = NULL, ...
+  randomized = NULL, cores = NULL, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -92,12 +99,15 @@ posterior_predict.brmsfit <- function(
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_predict(
-    prep, transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output
+    prep,
+    transform = transform, sort = sort, ntrys = ntrys,
+    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output,
+    randomized = randomized
   )
 }
 
@@ -119,9 +129,17 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
-                                       cores = NULL, ...) {
+                                       cores = NULL, output = "random",
+                                       randomized = NULL, ...) {
+  dots <- list(...)
+  dots$output <- NULL # remove output from dots to avoid passing it twice
+
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
+  if (!use_int(object$family) && !is.null(randomized)) {
+    warning2("'randomized' is ignored for continuous distributions.")
+    randomized <- NULL
+  }
   if (is.customfamily(object$family)) {
     # ensure that the method can be found during parallel execution
     object$family$posterior_predict <-
@@ -136,7 +154,11 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, output = output, ...)
+  out <- plapply(
+    seq_len(N), pp_fun,
+    .cores = cores, prep = object,
+    output = output, randomized = randomized, ...
+  )
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -151,15 +173,18 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   colnames(out) <- rownames(out) <- NULL
   if (use_int(object$family)) {
     out <- check_discrete_trunc_bounds(
-      out, lb = object$data$lb, ub = object$data$ub
+      out,
+      lb = object$data$lb, ub = object$data$ub
     )
   }
   out <- reorder_obs(out, object$old_order, sort = sort)
   # transform predicted response draws before summarizing them
   if (!is.null(transform)) {
     # deprecated as of brms 2.12.3
-    warning2("Argument 'transform' is deprecated ",
-             "and will be removed in the future.")
+    warning2(
+      "Argument 'transform' is deprecated ",
+      "and will be removed in the future."
+    )
     out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- object$cats
@@ -216,7 +241,8 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-#'            data = kidney, family = "exponential", init = "0")
+#'   data = kidney, family = "exponential", init = "0"
+#' )
 #'
 #' ## predicted responses
 #' pp <- predict(fit)
@@ -236,21 +262,26 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 #' }
 #'
 #' @export
-predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                            transform = NULL, resp = NULL,
-                            negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
-                            sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
-                            robust = FALSE, probs = c(0.025, 0.975), ...) {
+predict.brmsfit <- function(
+  object, newdata = NULL, re_formula = NULL,
+  transform = NULL, resp = NULL,
+  negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
+  sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
+  robust = FALSE, probs = c(0.025, 0.975), output = "random",
+  randomized = NULL, ...
+) {
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
-    object, newdata = newdata, re_formula = re_formula, resp = resp,
+    object,
+    newdata = newdata, re_formula = re_formula, resp = resp,
     ndraws = ndraws, draw_ids = draw_ids, check_response = FALSE, ...
   )
   posterior_predict(
-    prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt,
+    prep,
+    transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
-    probs = probs
+    probs = probs, output = output, randomized = randomized
   )
 }
 
@@ -309,7 +340,7 @@ validate_pp_method <- function(method) {
 # @param ... ignored arguments
 # @param A vector of length prep$ndraws containing draws
 #   from the posterior predictive distribution
-posterior_predict_gaussian <- function(i, prep, ntrys = 5, output = "random", ...) {
+posterior_predict_gaussian <- function(i, prep, output, ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
@@ -320,12 +351,11 @@ posterior_predict_gaussian <- function(i, prep, ntrys = 5, output = "random", ..
   )
 }
 
-posterior_predict_student <- function(i, prep, ntrys = 5, output = "random", ...) {
+posterior_predict_student <- function(i, prep, output, ntrys = 5, ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  
   predict_continuous_helper(
     output = output, prep = prep, i = i, ntrys = ntrys,
     dist = "student_t", df = nu, mu = mu, sigma = sigma, ...
@@ -481,13 +511,13 @@ posterior_predict_student_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_binomial <- function(i, prep, ntrys = 5, output = "random", ...) {
-  mu = get_dpar(prep, "mu", i = i)
-  size = prep$data$trials[i]
-  
+posterior_predict_binomial <- function(i, prep, ntrys = 5, output, randomized, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  size <- prep$data$trials[i]
+
   predict_discrete_helper(
     output = output, i = i, prep = prep, ntrys = ntrys,
-    dist = "binom", prob = mu, size = size, ...
+    dist = "binom", randomized = randomized, prob = mu, size = size, ...
   )
 }
 
@@ -507,15 +537,15 @@ posterior_predict_bernoulli <- function(i, prep, ...) {
   rbinom(length(mu), size = 1, prob = mu)
 }
 
-posterior_predict_poisson <- function(i, prep, ntrys = 5, output = "random", ...) {
+# TODO: Do we want to set "randomized = TRUE" by default?
+posterior_predict_poisson <- function(i, prep, ntrys = 5, output, randomized, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
 
   predict_discrete_helper(
     output = output, i = i, prep = prep, ntrys = ntrys,
-    dist = "pois", lambda = mu, ...
+    dist = "pois", randomized = randomized, lambda = mu, ...
   )
-
 }
 
 posterior_predict_negbinomial <- function(i, prep, ntrys = 5, ...) {
@@ -733,8 +763,10 @@ posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
 }
 
 posterior_predict_cox <- function(i, prep, ...) {
-  stop2("Cannot sample from the posterior predictive ",
-        "distribution for family 'cox'.")
+  stop2(
+    "Cannot sample from the posterior predictive ",
+    "distribution for family 'cox'."
+  )
 }
 
 posterior_predict_hurdle_poisson <- function(i, prep, ...) {
@@ -746,7 +778,7 @@ posterior_predict_hurdle_poisson <- function(i, prep, ...) {
   tmp <- runif(ndraws, 0, 1)
   # sample from a truncated poisson distribution
   # by adjusting lambda and adding 1
-  t = -log(1 - runif(ndraws) * (1 - exp(-lambda)))
+  t <- -log(1 - runif(ndraws) * (1 - exp(-lambda)))
   ifelse(tmp < hu, 0, rpois(ndraws, lambda = lambda - t) + 1)
 }
 
@@ -757,7 +789,7 @@ posterior_predict_hurdle_negbinomial <- function(i, prep, ...) {
   tmp <- runif(ndraws, 0, 1)
   # sample from an approximate(!) truncated negbinomial distribution
   # by adjusting mu and adding 1
-  t = -log(1 - runif(ndraws) * (1 - exp(-mu)))
+  t <- -log(1 - runif(ndraws) * (1 - exp(-mu)))
   shape <- get_dpar(prep, "shape", i = i)
   ifelse(tmp < hu, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
 }
@@ -909,8 +941,10 @@ posterior_predict_logistic_normal <- function(i, prep, ...) {
   mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   .predict <- function(s) {
-    rlogistic_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ],
-                     refcat = prep$refcat)
+    rlogistic_normal(1,
+      mu = mu[s, ], Sigma = Sigma[s, , ],
+      refcat = prep$refcat
+    )
   }
   rblapply(seq_len(prep$ndraws), .predict)
 }
@@ -975,10 +1009,11 @@ posterior_predict_mixture <- function(i, prep, ...) {
 # @param ntrys number of trys in rejection sampling for truncated models
 # @return vector of random values prep from the distribution
 rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
-  args <- list(...)
+  args <- validate_args(dist, ...)
+  
   if (is.null(lb) && is.null(ub)) {
-    # sample as usual
     rdist <- paste0("r", dist)
+    # sample as usual
     out <- do_call(rdist, c(list(n), args))
   } else {
     # sample from truncated distribution
@@ -1001,30 +1036,14 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   out
 }
 
-pcontinuous <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
-  args <- list(...)
+pcontinuous <- function(q, dist, randomized, ..., lb, ub) {
+  args <- validate_args(dist, ...)
   pdist <- paste0("p", dist)
 
-  if (is.null(lb) && is.null(ub)) {
-    # non-truncated case
-    out <- do_call(pdist, c(list(q), args))
-  } else {
-    # truncated case
-    F_q <- do_call(pdist, c(list(q), args))
-    F_lb <- do_call(pdist, c(list(lb), args))
-    F_ub <- do_call(pdist, c(list(ub), args))
-    
-    scale_factor <- F_ub - F_lb
-    
-    # compute truncated CDF: (F(q) - F(lb)) / (F(ub) - F(lb))
-    out <- dplyr::case_when(
-      q < lb  ~ 0,
-      q > ub  ~ 1,
-      (F_ub - F_lb) == 0 ~ 1,
-      TRUE ~ (F_q - F_lb) / (F_ub - F_lb)
-    )
-  }
-  out
+  compute_cdf(
+    q = q, pdist = pdist, args = args, lb = lb, ub = ub,
+    randomized
+  )
 }
 
 # random numbers from (possibly truncated) discrete distributions
@@ -1038,8 +1057,9 @@ pcontinuous <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 # @param ntrys number of trys in rejection sampling for truncated models
 # @return a vector of random values draws from the distribution
 rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
-  args <- list(...)
+  args <- validate_args(dist, ...)
   rdist <- paste0("r", dist)
+
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     out <- do_call(rdist, c(list(n), args))
@@ -1060,7 +1080,7 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 }
 
 # probability values from (possibly truncated) discrete distributions
-# Note: lb and ub are treated as inclusive in order to be consistent with the 
+# Note: lb and ub are treated as inclusive in order to be consistent with the
 # behavior of rdiscrete.
 # @param q quantile value(s) for which to compute the CDF
 # @param dist name of a distribution for which the functions
@@ -1069,41 +1089,23 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 # @param ub optional upper truncation bound
 # @param ntrys number of trys in rejection sampling for truncated models
 # @return a vector of probability values
-pdiscrete <- function(q, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
-  args <- list(...)
+pdiscrete <- function(q, dist, randomized, ..., lb, ub) {
+  args <- validate_args(dist, ...)
   pdist <- paste0("p", dist)
-
-  if (is.null(lb) && is.null(ub)) {
-    # non-truncated case
-    out <- do_call(pdist, c(list(q), args))
-  } else {
-    # truncated case (treat lb as inclusive)
-    F_q <- do_call(pdist, c(list(q), args))
-    # include (lb - 1) to treat lb as inclusive 
-    # this is only relevant for discrete distributions
-    F_lb <- do_call(pdist, c(list(lb - 1), args))
-    F_ub <- do_call(pdist, c(list(ub), args))
-    
-    scale_factor <- F_ub - F_lb
-    
-    # compute truncated CDF: (F(q) - F(lb)) / (F(ub) - F(lb))
-    out <- dplyr::case_when(
-      q < lb  ~ 0,
-      q > ub  ~ 1,
-      (F_ub - F_lb) == 0 ~ 1,
-      TRUE ~ (F_q - F_lb) / (F_ub - F_lb)
-    )
-  }
-  out
+  
+  compute_cdf(
+    q = q, pdist = pdist, args = args, lb = lb, ub = ub,
+    randomized = randomized
+  )
 }
 
 # sample from the IDs of the mixture components
 sample_mixture_ids <- function(theta) {
   stopifnot(is.matrix(theta))
   mix_comp <- seq_cols(theta)
-  ulapply(seq_rows(theta), function(s)
+  ulapply(seq_rows(theta), function(s) {
     sample(mix_comp, 1, prob = theta[s, ])
-  )
+  })
 }
 
 # extract the first valid predicted value per Stan sample per observation
@@ -1156,20 +1158,24 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
 # @param i index of the observation for which to compute pp values
 # @param dist name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
-# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i] 
+# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i]
+# @param randomized NULL or logical indicating whether to use the randomized PIT
+# NULL for continuous distributions.
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
-predict_continuous_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...) {
+predict_continuous_helper <- function(
+  output, prep, i, dist, ntrys, q = NULL, randomized, ...
+) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
-  
+
   switch(output,
     "probability" = {
       if (is.null(q)) {
         q <- prep$data$Y[i]
       }
       pcontinuous(
-        q = q, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+        q = q, dist = dist, lb = lb, ub = ub, randomized = randomized, ...
       )
     },
     "random" = {
@@ -1187,20 +1193,24 @@ predict_continuous_helper <- function(output, prep, i, dist, ntrys, q = NULL, ..
 # @param i index of the observation for which to compute pp values
 # @param dist name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
-# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i] 
+# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i]
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
-predict_discrete_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...) {
+predict_discrete_helper <- function(
+  output, prep, i, dist, ntrys, q = NULL, randomized, ...
+) {
+  randomized <- randomized %||% TRUE
+
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
-  
+
   switch(output,
     "probability" = {
       if (is.null(q)) {
         q <- prep$data$Y[i]
       }
       pdiscrete(
-        q = q, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+        q = q, dist = dist, randomized = randomized, lb = lb, ub = ub, ...
       )
     },
     "random" = {
@@ -1210,3 +1220,53 @@ predict_discrete_helper <- function(output, prep, i, dist, ntrys, q = NULL, ...)
     }
   )
 }
+
+# compute cdf dependent on whether the distribution is truncated or not
+# and whether to use the randomized PIT
+# @param q quantile value(s) for which to compute the CDF
+# @param pdist name of the distribution function
+# @param args additional arguments passed to the distribution functions
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param randomized NULL or logical indicating whether to use the randomized PIT
+# NULL for continuous distributions.
+# @return a vector of probability values
+# @noRd
+compute_cdf <- function(q, pdist, args, lb, ub, randomized) {
+  # prepare computation of (non-)truncated cdf
+  F_internal <- function(q) {
+    if (is.null(lb) && is.null(ub)) {
+      do_call(pdist, c(list(q), args))
+    } else {
+      denom <- do_call(pdist, c(list(ub), args)) - do_call(pdist, c(list(lb), args))
+      if (any(denom == 0)) stop("Division by zero")
+      (do_call(pdist, c(list(q), args)) - do_call(pdist, c(list(lb), args))) / denom
+    }
+  }
+  # randomized PIT specifically for discrete data (see, e.g.,
+  # Czado, C., Gneiting, T., Held, L.: Predictive model
+  # assessment for count data. Biometrics 65(4), 1254–1261 (2009).)
+  # F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
+  if (isTRUE(randomized)) {
+    v <- runif(length(q))
+    F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
+  } else if (isFALSE(randomized)) {
+    0.5 * (F_internal(q) + F_internal(q - 1)) # TODO: Is this okay as non-randomized solution
+  } else if (is.null(randomized)) {
+    F_internal(q)
+  }
+}
+
+# ensure that only arguments that are accepted by the RNG are passed
+validate_args <- function(dist, ...) {
+    args <- list(...)
+    rdist <- paste0("p", dist)
+    rdist_fun <- match.fun(rdist)
+    rdist_formals <- names(formals(rdist_fun))
+
+    if (!is.null(rdist_formals) && !("..." %in% rdist_formals)) {
+      args <- args[names(args) %in% rdist_formals]
+    }
+
+    args
+  }
