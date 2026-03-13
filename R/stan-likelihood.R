@@ -544,6 +544,11 @@ stan_log_lik_asym_laplace <- function(bterms,...) {
   sdist("asym_laplace", p$mu, p$sigma, p$quantile, vec = FALSE)
 }
 
+stan_log_lik_skew_double_exponential <- function(bterms,...) {
+  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  sdist("skew_double_exponential", p$mu, p$sigma, p$tau, vec = TRUE)
+}
+
 stan_log_lik_skew_normal <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, ...)

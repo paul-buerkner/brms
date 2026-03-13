@@ -3,18 +3,33 @@
 \name{AsymLaplace}
 \alias{AsymLaplace}
 \alias{dasym_laplace}
+\alias{dskew_double_exponential}
 \alias{pasym_laplace}
+\alias{pskew_double_exponential}
 \alias{qasym_laplace}
+\alias{qskew_double_exponential}
 \alias{rasym_laplace}
+\alias{rskew_double_exponential}
 \title{The Asymmetric Laplace Distribution}
 \usage{
 dasym_laplace(x, mu = 0, sigma = 1, quantile = 0.5, log = FALSE)
+
+dskew_double_exponential(x, mu = 0, sigma = 1, tau = 0.5, log = FALSE)
 
 pasym_laplace(
   q,
   mu = 0,
   sigma = 1,
   quantile = 0.5,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
+
+pskew_double_exponential(
+  x,
+  mu = 0,
+  sigma = 1,
+  tau = 0.5,
   lower.tail = TRUE,
   log.p = FALSE
 )
@@ -28,7 +43,18 @@ qasym_laplace(
   log.p = FALSE
 )
 
+qskew_double_exponential(
+  x,
+  mu = 0,
+  sigma = 1,
+  tau = 0.5,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
+
 rasym_laplace(n, mu = 0, sigma = 1, quantile = 0.5)
+
+rskew_double_exponential(x, mu = 0, sigma = 1, tau = 0.5)
 }
 \arguments{
 \item{x, q}{Vector of quantiles.}
@@ -57,6 +83,9 @@ for the asymmetric Laplace distribution with location \code{mu},
 scale \code{sigma} and asymmetry parameter \code{quantile}.
 }
 \details{
+Skew double exponential functions are aliases of the Asym Laplace counterparts,
+following the built-in implementation in Stan 2.28+
+
 See \code{vignette("brms_families")} for details
 on the parameterization.
 }
