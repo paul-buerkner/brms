@@ -1178,14 +1178,7 @@ predict_continuous_helper <- function(
   ub <- prep$data$ub[i]
 
   switch(output,
-    "probability" = {
-      if (is.null(q)) {
-        q <- prep$data$Y[i]
-      }
-      pcontinuous(
-        q = q, dist = dist, lb = lb, ub = ub, ...
-      )
-    },
+    "probability" = ,
     "pit" = {
       if (is.null(q)) {
         q <- prep$data$Y[i]
