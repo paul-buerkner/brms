@@ -26,12 +26,10 @@
 #' @param ntrys Parameter used in rejection sampling
 #'   for truncated discrete models only
 #'   (defaults to \code{5}). See Details for more information.
-#' @param randomized Logical. Only of interest for discrete distributions.
-#'   Parameter used in computing the cdf of the posterior predictive
-#'   distribution of a discrete distribution. If \code{TRUE}, randomized PIT.
-#'   If \code{FALSE}, the mean between F(x) and F(x-1) is returned.
-#'   Defaults to \code{TRUE} for discrete distributions and is always \code{FALSE}
-#'   for continuous distributions.
+#' @param output The type of output to return. Can be \code{"random"},
+#'   \code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
+#'   In case of continuous distributions, \code{"probability"} is equivalent
+#'   to \code{"pit"}.
 #' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
 #'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
@@ -89,8 +87,8 @@
 posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
-  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5, output = "random",
-  randomized = NULL, cores = NULL, ...
+  ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
+  output = "random", cores = NULL, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -106,8 +104,8 @@ posterior_predict.brmsfit <- function(
   posterior_predict(
     prep,
     transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output,
-    randomized = randomized
+    negative_rt = negative_rt, cores = cores, summary = FALSE, 
+    output = output
   )
 }
 
@@ -129,17 +127,19 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
-                                       cores = NULL, output = "random",
-                                       randomized = NULL, ...) {
+                                       cores = NULL, output = "random", ...) {
   dots <- list(...)
   dots$output <- NULL # remove output from dots to avoid passing it twice
 
+  output <- as_one_character(output)
+  if (!output %in% c("random", "probability", "pit")) {
+    stop2("Argument 'output' must be one of ",
+          "'random', 'probability', or 'pit'.")
+  }
+
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
-  if (!use_int(object$family) && !is.null(randomized)) {
-    warning2("'randomized' is ignored for continuous distributions.")
-    randomized <- NULL
-  }
+
   if (is.customfamily(object$family)) {
     # ensure that the method can be found during parallel execution
     object$family$posterior_predict <-
@@ -157,7 +157,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   out <- plapply(
     seq_len(N), pp_fun,
     .cores = cores, prep = object,
-    output = output, randomized = randomized, ...
+    output = output, ...
   )
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
@@ -267,8 +267,8 @@ predict.brmsfit <- function(
   transform = NULL, resp = NULL,
   negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
   sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), output = "random",
-  randomized = NULL, ...
+  robust = FALSE, probs = c(0.025, 0.975), 
+  output = "random", ...
 ) {
   contains_draws(object)
   object <- restructure(object)
@@ -281,7 +281,7 @@ predict.brmsfit <- function(
     prep,
     transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
-    probs = probs, output = output, randomized = randomized
+    probs = probs, output = output
   )
 }
 
@@ -511,13 +511,13 @@ posterior_predict_student_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_binomial <- function(i, prep, ntrys = 5, output, randomized, ...) {
+posterior_predict_binomial <- function(i, prep, ntrys = 5, output, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   size <- prep$data$trials[i]
 
   predict_discrete_helper(
     output = output, i = i, prep = prep, ntrys = ntrys,
-    dist = "binom", randomized = randomized, prob = mu, size = size, ...
+    dist = "binom", prob = mu, size = size, ...
   )
 }
 
@@ -537,14 +537,13 @@ posterior_predict_bernoulli <- function(i, prep, ...) {
   rbinom(length(mu), size = 1, prob = mu)
 }
 
-# TODO: Do we want to set "randomized = TRUE" by default?
-posterior_predict_poisson <- function(i, prep, ntrys = 5, output, randomized, ...) {
+posterior_predict_poisson <- function(i, prep, ntrys = 5, output, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
 
   predict_discrete_helper(
     output = output, i = i, prep = prep, ntrys = ntrys,
-    dist = "pois", randomized = randomized, lambda = mu, ...
+    dist = "pois", lambda = mu, ...
   )
 }
 
@@ -1001,7 +1000,7 @@ posterior_predict_mixture <- function(i, prep, ...) {
 }
 
 # ------------ predict helper-functions ----------------------
-# random numbers from (possibly truncated) continuous distributions
+#  random numbers from (possibly truncated) continuous distributions
 # @param n number of random values to generate
 # @param dist name of a distribution for which the functions
 #   p<dist>, q<dist>, and r<dist> are available
@@ -1036,13 +1035,24 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   out
 }
 
-pcontinuous <- function(q, dist, randomized, ..., lb, ub) {
+# probability values from (possibly truncated) continuous distributions
+# @param q quantile value(s) for which to compute the CDF
+# @param dist name of a distribution for which the functions
+# @param ... additional arguments passed to the distribution functions
+# @param randomized logical indicating whether to use the randomized PIT.
+#   For continuous distributions, this is always FALSE; thus computes
+#   standard cdf value.
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @return a vector of probability values
+# @noRd
+pcontinuous <- function(q, dist, ..., randomized = FALSE, lb, ub) {
   args <- validate_args(dist, ...)
   pdist <- paste0("p", dist)
 
   compute_cdf(
     q = q, pdist = pdist, args = args, lb = lb, ub = ub,
-    randomized
+    randomized = randomized
   )
 }
 
@@ -1085,14 +1095,14 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 # @param q quantile value(s) for which to compute the CDF
 # @param dist name of a distribution for which the functions
 # @param ... additional arguments passed to the distribution functions
+# @param randomized logical indicating whether to use the randomized PIT.
 # @param lb optional lower truncation bound (inclusive)
 # @param ub optional upper truncation bound
-# @param ntrys number of trys in rejection sampling for truncated models
 # @return a vector of probability values
-pdiscrete <- function(q, dist, randomized, ..., lb, ub) {
+pdiscrete <- function(q, dist, ..., randomized, lb, ub) {
   args <- validate_args(dist, ...)
   pdist <- paste0("p", dist)
-  
+
   compute_cdf(
     q = q, pdist = pdist, args = args, lb = lb, ub = ub,
     randomized = randomized
@@ -1151,20 +1161,18 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   round(x)
 }
 
-# predict random numbers or probability values from continuous distributions
-# @param output "probability" or "random"
+# predict random numbers or probability / PIT values from continuous distributions
+# @param output "random", "probability", or "pit" (treated as "probability")
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @param i index of the observation for which to compute pp values
 # @param dist name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
 # @param q optional custom quantile value; if NULL, the default is prep$data$Y[i]
-# @param randomized NULL or logical indicating whether to use the randomized PIT
-# NULL for continuous distributions.
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_continuous_helper <- function(
-  output, prep, i, dist, ntrys, q = NULL, randomized, ...
+  output, prep, i, dist, ntrys, q = NULL, ...
 ) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
@@ -1175,19 +1183,28 @@ predict_continuous_helper <- function(
         q <- prep$data$Y[i]
       }
       pcontinuous(
-        q = q, dist = dist, lb = lb, ub = ub, randomized = randomized, ...
+        q = q, dist = dist, lb = lb, ub = ub, ...
+      )
+    },
+    "pit" = {
+      if (is.null(q)) {
+        q <- prep$data$Y[i]
+      }
+      pcontinuous(
+        q = q, dist = dist, lb = lb, ub = ub, ...
       )
     },
     "random" = {
       rcontinuous(
-        n = prep$ndraws, dist = dist, lb = lb, ub = ub, ntrys = ntrys, ...
+        n = prep$ndraws, dist = dist, lb = lb, ub = ub, 
+        ntrys = ntrys, ...
       )
     }
   )
 }
 
-# predict random numbers or probability values from discrete distributions
-# @param output "probability" or "random"
+# predict random numbers or probability / PIT values from discrete distributions
+# @param output "random", "probability", or "pit" (treated as "probability")
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @param i index of the observation for which to compute pp values
@@ -1197,10 +1214,8 @@ predict_continuous_helper <- function(
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_discrete_helper <- function(
-  output, prep, i, dist, ntrys, q = NULL, randomized, ...
+  output, prep, i, dist, ntrys, q = NULL, ...
 ) {
-  randomized <- randomized %||% TRUE
-
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
 
@@ -1210,7 +1225,15 @@ predict_discrete_helper <- function(
         q <- prep$data$Y[i]
       }
       pdiscrete(
-        q = q, dist = dist, randomized = randomized, lb = lb, ub = ub, ...
+        q = q, dist = dist, randomized = FALSE, lb = lb, ub = ub, ...
+      )
+    },
+    "pit" = {
+      if (is.null(q)) {
+        q <- prep$data$Y[i]
+      }
+      pdiscrete(
+        q = q, dist = dist, randomized = TRUE, lb = lb, ub = ub, ...
       )
     },
     "random" = {
@@ -1228,8 +1251,7 @@ predict_discrete_helper <- function(
 # @param args additional arguments passed to the distribution functions
 # @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
-# @param randomized NULL or logical indicating whether to use the randomized PIT
-# NULL for continuous distributions.
+# @param randomized logical indicating whether to use the randomized PIT
 # @return a vector of probability values
 # @noRd
 compute_cdf <- function(q, pdist, args, lb, ub, randomized) {
@@ -1251,22 +1273,19 @@ compute_cdf <- function(q, pdist, args, lb, ub, randomized) {
     v <- runif(length(q))
     F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
   } else if (isFALSE(randomized)) {
-    0.5 * (F_internal(q) + F_internal(q - 1)) # TODO: Is this okay as non-randomized solution
-  } else if (is.null(randomized)) {
     F_internal(q)
   }
 }
-
 # ensure that only arguments that are accepted by the RNG are passed
 validate_args <- function(dist, ...) {
-    args <- list(...)
-    rdist <- paste0("p", dist)
-    rdist_fun <- match.fun(rdist)
-    rdist_formals <- names(formals(rdist_fun))
+  args <- list(...)
+  rdist <- paste0("p", dist)
+  rdist_fun <- match.fun(rdist)
+  rdist_formals <- names(formals(rdist_fun))
 
-    if (!is.null(rdist_formals) && !("..." %in% rdist_formals)) {
-      args <- args[names(args) %in% rdist_formals]
-    }
-
-    args
+  if (!is.null(rdist_formals) && !("..." %in% rdist_formals)) {
+    args <- args[names(args) %in% rdist_formals]
   }
+
+  args
+}

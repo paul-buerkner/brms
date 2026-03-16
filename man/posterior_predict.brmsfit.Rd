@@ -18,7 +18,6 @@
   sort = FALSE,
   ntrys = 5,
   output = "random",
-  randomized = NULL,
   cores = NULL,
   ...
 )
@@ -68,12 +67,10 @@ time series (\code{TRUE}).}
 for truncated discrete models only
 (defaults to \code{5}). See Details for more information.}
 
-\item{randomized}{Logical. Only of interest for discrete distributions.
-Parameter used in computing the cdf of the posterior predictive
-distribution of a discrete distribution. If \code{TRUE}, randomized PIT.
-If \code{FALSE}, the mean between F(x) and F(x-1) is returned.
-Defaults to \code{TRUE} for discrete distributions and is always \code{FALSE}
-for continuous distributions.}
+\item{output}{The type of output to return. Can be \code{"random"},
+\code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
+In case of continuous distributions, \code{"probability"} is equivalent
+to \code{"pit"}.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
 this argument can be set globally via the \code{mc.cores} option.}
