@@ -47,6 +47,11 @@
 #' @param future_args A list of further arguments passed to
 #'   \code{\link[future:future]{future}} for additional control over parallel
 #'   execution if activated.
+#' @param k_threshold The Pareto \eqn{k} threshold for which observations
+#'   \code{\link{loo_moment_match}} or \code{\link{reloo}} is applied if
+#'   argument \code{moment_match} or \code{reloo} is \code{TRUE}.
+#'   Defaults to \code{0.7}.
+#'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
 #' @param ... Further arguments passed to \code{\link{brm}} and
 #'    \code{\link{log_lik}}.
 #'
@@ -149,18 +154,21 @@
 kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
                           group = NULL, joint = FALSE, compare = TRUE,
                           resp = NULL, model_names = NULL, save_fits = FALSE,
-                          recompile = NULL, future_args = list()) {
+                          recompile = NULL, future_args = list(),
+                          k_threshold = 0.7) {
   args <- split_dots(x, ..., model_names = model_names)
   if (!"use_stored" %in% names(args)) {
     further_arg_names <- c(
-      "K", "Ksub", "folds", "group", "joint", "resp", "save_fits"
+      "K", "Ksub", "folds", "group", "joint", "resp", "save_fits",
+      "k_threshold"
     )
     args$use_stored <- all(names(args) %in% "models") &&
       !any(further_arg_names %in% names(match.call()))
   }
   c(args) <- nlist(
     criterion = "kfold", K, Ksub, folds, group, joint,
-    compare, resp, save_fits, recompile, future_args
+    compare, resp, save_fits, recompile, future_args,
+    k_threshold
   )
   do_call(compute_loolist, args)
 }
@@ -170,7 +178,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 # @param model_name ignored but included to avoid being passed to '...'
 .kfold <- function(x, K, Ksub, folds, group, joint, save_fits,
                    newdata, resp, model_name, recompile = NULL,
-                   future_args = list(), newdata2 = NULL, ...) {
+                   future_args = list(), newdata2 = NULL, 
+                   k_threshold, ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
@@ -400,6 +409,11 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     out$data <- newdata
     out$data2 <- newdata2
   }
+  warning2(
+      "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
+      " observations with a pareto_k > ", k_threshold,
+      " in model '", model_name, "'."
+  )
   structure(out, class = c("kfold", "loo"))
 }
 
