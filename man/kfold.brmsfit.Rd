@@ -18,7 +18,8 @@
   model_names = NULL,
   save_fits = FALSE,
   recompile = NULL,
-  future_args = list()
+  future_args = list(),
+  k_threshold = 0.7
 )
 }
 \arguments{
@@ -85,6 +86,10 @@ another machine than the one used to fit the model.}
 \item{future_args}{A list of further arguments passed to
 \code{\link[future:future]{future}} for additional control over parallel
 execution if activated.}
+
+\item{k_threshold}{The Pareto \eqn{k} threshold for which observations
+K-fold CV is likely to be unreliable. Defaults to \code{0.7}.
+See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.}
 }
 \value{
 \code{kfold} returns an object that has a similar structure as the

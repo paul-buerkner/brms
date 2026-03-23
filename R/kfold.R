@@ -48,9 +48,7 @@
 #'   \code{\link[future:future]{future}} for additional control over parallel
 #'   execution if activated.
 #' @param k_threshold The Pareto \eqn{k} threshold for which observations
-#'   \code{\link{loo_moment_match}} or \code{\link{reloo}} is applied if
-#'   argument \code{moment_match} or \code{reloo} is \code{TRUE}.
-#'   Defaults to \code{0.7}.
+#'   K-fold CV is likely to be unreliable. Defaults to \code{0.7}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
 #' @param ... Further arguments passed to \code{\link{brm}} and
 #'    \code{\link{log_lik}}.
@@ -179,7 +177,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 .kfold <- function(x, K, Ksub, folds, group, joint, save_fits,
                    newdata, resp, model_name, recompile = NULL,
                    future_args = list(), newdata2 = NULL, 
-                   k_threshold, ...) {
+                   k_threshold = 0.7, ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
@@ -347,8 +345,10 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 
   lppds <- do_call(cbind, lppds)
   # pareto_k for each column of lppds (i.e. each predicted observation)
-  diagnostics$pareto_k <- apply(lppds, 2, posterior::pareto_khat, 
-    are_log_weights = TRUE)
+  diagnostics$pareto_k <- apply(
+    lppds, 2, posterior::pareto_khat, 
+    are_log_weights = TRUE
+  )
   elpds <- apply(lppds, 2, log_mean_exp)
   pred_obs <- unlist(pred_obs_list)
   if (joint == "obs") {
