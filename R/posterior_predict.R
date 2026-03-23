@@ -104,7 +104,7 @@ posterior_predict.brmsfit <- function(
   posterior_predict(
     prep,
     transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE, 
+    negative_rt = negative_rt, cores = cores, summary = FALSE,
     output = output
   )
 }
@@ -133,8 +133,10 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 
   output <- as_one_character(output)
   if (!output %in% c("random", "probability", "pit")) {
-    stop2("Argument 'output' must be one of ",
-          "'random', 'probability', or 'pit'.")
+    stop2(
+      "Argument 'output' must be one of ",
+      "'random', 'probability', or 'pit'."
+    )
   }
 
   summary <- as_one_logical(summary)
@@ -267,7 +269,7 @@ predict.brmsfit <- function(
   transform = NULL, resp = NULL,
   negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
   sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), 
+  robust = FALSE, probs = c(0.025, 0.975),
   output = "random", ...
 ) {
   contains_draws(object)
@@ -332,7 +334,7 @@ validate_pp_method <- function(method) {
   method
 }
 
-# ------------------- family specific posterior_predict methods ---------------------
+# ------------------- family specific posterior_predict methods ------------
 # All posterior_predict_<family> functions have the same arguments structure
 # @param i index of the observation for which to compute pp values
 # @param prep A named list returned by prepare_predictions containing
@@ -1009,7 +1011,7 @@ posterior_predict_mixture <- function(i, prep, ...) {
 # @return vector of random values prep from the distribution
 rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   args <- validate_args(dist, ...)
-  
+
   if (is.null(lb) && is.null(ub)) {
     rdist <- paste0("r", dist)
     # sample as usual
@@ -1096,7 +1098,7 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 # @param dist name of a distribution for which the functions
 # @param ... additional arguments passed to the distribution functions
 # @param randomized logical indicating whether to use the randomized PIT.
-# @param lb optional lower truncation bound (inclusive)
+# @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
 # @return a vector of probability values
 pdiscrete <- function(q, dist, ..., randomized, lb, ub) {
@@ -1161,14 +1163,16 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   round(x)
 }
 
-# predict random numbers or probability / PIT values from continuous distributions
+# predict random numbers or probability / PIT values from
+# continuous distributions
 # @param output "random", "probability", or "pit" (treated as "probability")
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @param i index of the observation for which to compute pp values
 # @param dist name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
-# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i]
+# @param q optional custom quantile value; if NULL, the default is
+#   prep$data$Y[i]
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_continuous_helper <- function(
@@ -1189,7 +1193,7 @@ predict_continuous_helper <- function(
     },
     "random" = {
       rcontinuous(
-        n = prep$ndraws, dist = dist, lb = lb, ub = ub, 
+        n = prep$ndraws, dist = dist, lb = lb, ub = ub,
         ntrys = ntrys, ...
       )
     }
@@ -1203,7 +1207,8 @@ predict_continuous_helper <- function(
 # @param i index of the observation for which to compute pp values
 # @param dist name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
-# @param q optional custom quantile value; if NULL, the default is prep$data$Y[i]
+# @param q optional custom quantile value; if NULL, the default is
+#   prep$data$Y[i]
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_discrete_helper <- function(

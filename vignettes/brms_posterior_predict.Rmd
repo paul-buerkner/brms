@@ -45,8 +45,8 @@ n <- 200
 
 ```{r binom1-fit, include = FALSE}
 set.seed(42)
-beta0   <- -1
-beta1   <-  0.8
+beta0 <- -1
+beta1 <- 0.8
 
 dat_binom <- dplyr::tibble(
   x = rnorm(n),
@@ -71,26 +71,28 @@ bayesplot::ppc_bars(
 ```
 
 ```{r binom1-ecdf-random}
-PITs <- posterior_predict(
-  fit_binom_calibrated, output = "probability"
+pits <- posterior_predict(
+  fit_binom_calibrated,
+  output = "probability"
 )
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs)) +
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Binomial model with standard CDF")
 ```
 
 ```{r binom1-ecdf}
-PITs <- posterior_predict(
-  fit_binom_calibrated, output = "pit"
+pits <- posterior_predict(
+  fit_binom_calibrated,
+  output = "pit"
 )
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs)) +
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Binomial model with randomized PIT")
 ```
 
 ### Miscalibrated
 ```{r binom2-fit, include=FALSE}
-phi   <- 2
+phi <- 2
 alpha <- phi * 0.3
-beta  <- phi * (1 - 0.3)
+beta <- phi * (1 - 0.3)
 
 dat_overdisp <- dplyr::tibble(
   x = rnorm(n),
@@ -100,46 +102,48 @@ dat_overdisp <- dplyr::tibble(
 
 fit_binom_miscalibrated <- brms::brm(
   formula = "y | trials(size) ~ x",
-  data    = dat_overdisp,
-  family  = binomial(link = "logit"),
-  chains  = 2, 
+  data = dat_overdisp,
+  family = binomial(link = "logit"),
+  chains = 2,
   seed = 42
 )
 ```
 
 ```{r binom2-dens}
 bayesplot::ppc_bars(
-  y = dat_overdisp$y, 
+  y = dat_overdisp$y,
   yrep = posterior_predict(fit_binom_miscalibrated)
-  )
+)
 ```
 
 ```{r binom2-ecdf-random}
-PITs = posterior_predict(
-  fit_binom_miscalibrated, output = "probability"
-  )
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs)) + 
+pits <- posterior_predict(
+  fit_binom_miscalibrated,
+  output = "probability"
+)
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Binomial model with standard CDF \n(miscalibrated)")
 ```
 
 ```{r binom2-ecdf}
-PITs = posterior_predict(
-  fit_binom_miscalibrated, output = "pit"
-  )
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs)) + 
+pits <- posterior_predict(
+  fit_binom_miscalibrated,
+  output = "pit"
+)
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Binomial model with randomized PIT \n(miscalibrated)")
 ```
 
 ## Poisson
 
 ```{r pois-fit, include = FALSE}
-beta0 <- 0.5 
-beta1 <- 0.8  
+beta0 <- 0.5
+beta1 <- 0.8
 
 dat_pois <- dplyr::tibble(
   x = rnorm(n),
   y = rpois(n, lambda = exp(beta0 + beta1 * x))
-  )
+)
 
 fit_pois <- brm(
   formula = "y ~ x",
@@ -154,54 +158,54 @@ fit_pois <- brm(
 bayesplot::ppc_bars(
   y = dat_pois$y,
   yrep = posterior_predict(fit_pois)
-  )
+)
 ```
 
 ```{r pois-ecdf-random}
-PITs = posterior_predict(fit_pois, output = "pit")
+pits <- posterior_predict(fit_pois, output = "pit")
 
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs)) + 
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Poisson model with randomized PIT")
 ```
 
 ```{r pois-ecdf}
-PITs = posterior_predict(fit_pois, output = "probability")
+pits <- posterior_predict(fit_pois, output = "probability")
 
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs)) + 
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Poisson model with standard CDF")
 ```
 
 ## Normal
 
 ```{r norm-fit, include = FALSE}
-dat_normal  <- dplyr::tibble(
+dat_normal <- dplyr::tibble(
   y = rnorm(n, mean = 1.0, sd = 0.8)
-  )
+)
 
 fit_norm <- brm(
   formula = "y ~ 1",
-  data    = dat_normal,
-  family  = gaussian(),
-  chains  = 2, 
+  data = dat_normal,
+  family = gaussian(),
+  chains = 2,
   seed = 42
 )
 ```
 
 ```{r norm-dens}
 bayesplot::ppc_dens_overlay(
-  y = dat_normal$y, 
+  y = dat_normal$y,
   yrep = posterior_predict(fit_norm)
-  )
+)
 ```
 
 ```{r norm-ecdf}
-PITs = posterior_predict(fit_norm, output = "probability")
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs))
+pits <- posterior_predict(fit_norm, output = "probability")
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits))
 ```
 
 ```{r norm-ecdf}
-PITs = posterior_predict(fit_norm, output = "pit")
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs))
+pits <- posterior_predict(fit_norm, output = "pit")
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits))
 ```
 
 ## Student-t
@@ -209,25 +213,25 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(PITs))
 ```{r t-fit, include = FALSE}
 dat_student <- dplyr::tibble(
   y = rt(n, df = 5)
-  )
+)
 
 fit_student <- brm(
   formula = "y ~ 1",
-  data    = dat_student,
-  family  = student(),
-  chains  = 2, 
+  data = dat_student,
+  family = student(),
+  chains = 2,
   seed = 42
 )
 ```
 
 ```{r t-dens}
 bayesplot::ppc_dens_overlay(
-  y = dat_student$y, 
+  y = dat_student$y,
   yrep = posterior_predict(fit_student)
-  )
+)
 ```
 
 ```{r t-ecdf}
-PITs = posterior_predict(fit_student, output = "probability")
-bayesplot::ppc_pit_ecdf(pit = colMeans(PITs))
+pits <- posterior_predict(fit_student, output = "probability")
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits))
 ```
