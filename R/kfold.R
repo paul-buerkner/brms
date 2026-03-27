@@ -414,7 +414,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       " observations with a pareto_k > ", k_threshold,
       " in model '", model_name, "'."
   )
-  structure(out, class = c("kfold", "loo"))
+  structure(out, dims = dim(lppds), class = c("kfold", "loo"))
 }
 
 #' Predictions from K-Fold Cross-Validation
