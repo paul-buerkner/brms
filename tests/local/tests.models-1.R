@@ -35,6 +35,11 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   # expected output structure
   expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics", 
   "fits", "data", "data2"))
+  # dims is in attributes of kfold1
+  expect_true("dims" %in% names(attributes(kfold1)))
+  # dims has correct dimensionality
+  expect_equal(dim(kfold1)[1], ndraws(fit1))
+  expect_equal(dim(kfold1)[2], nrow(epilepsy))
   # expected length of pareto-k slot is same as pointwise slot
   expect_equal(length(kfold1$diagnostics$pareto_k), nrow(kfold1$pointwise))
   # output structure of loo and kfold object should be equal 
