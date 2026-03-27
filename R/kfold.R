@@ -409,13 +409,15 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     out$data <- newdata
     out$data2 <- newdata2
   }
-  warning2(
-      "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
-      " observations with a pareto_k > ", k_threshold,
-      " in model '", model_name, "'."
-  )
+  if (length(loo::pareto_k_ids(out, threshold = k_threshold)) > 0) {
+    warning2(
+        "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
+        " observations with a pareto_k > ", k_threshold,
+        " in model '", model_name, "'."
+    )
+  }
   structure(out, dims = dim(lppds), class = c("kfold", "loo"))
-}
+  }
 
 #' Predictions from K-Fold Cross-Validation
 #'
