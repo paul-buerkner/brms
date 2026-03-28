@@ -10,6 +10,7 @@ Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)
 [![CRAN
 Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 [![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
+[![gitcgr](https://gitcgr.com/badge/paul-buerkner/brms.svg)](https://gitcgr.com/paul-buerkner/brms)
 
 ## Overview
 
