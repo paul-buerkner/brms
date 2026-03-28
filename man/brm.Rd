@@ -37,7 +37,7 @@ brm(
   algorithm = getOption("brms.algorithm", "sampling"),
   backend = getOption("brms.backend", "rstan"),
   future = getOption("future", FALSE),
-  silent = 1,
+  silent = getOption("brms.silent", 1),
   seed = NA,
   save_model = NULL,
   stan_model_args = list(),
@@ -264,7 +264,9 @@ informational messages of compiler and sampler are suppressed.
 If \code{2}, even more messages are suppressed. The actual
 sampling progress is still printed. Set \code{refresh = 0} to turn this off
 as well. If using \code{backend = "rstan"} you can also set
-\code{open_progress = FALSE} to prevent opening additional progress bars.}
+\code{open_progress = FALSE} to prevent opening additional progress bars.
+Can be set globally for the current \R session via the
+\code{"brms.silent"} option (see \code{\link{options}}).}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed

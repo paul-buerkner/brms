@@ -403,6 +403,9 @@ check_re_formula <- function(re_formula, formula) {
     re_formula <- old_re_formula
   } else if (SW(anyNA(re_formula))) {
     re_formula <- ~1
+  } else if (is.brmsformula(re_formula) || is.mvbrmsformula(re_formula)) {
+    stop2("Passing a brmsformula to argument 're_formula' is not supported. ", 
+          "Please supply a standard formula instead.")
   } else {
     re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
     new <- brmsterms(re_formula, check_response = FALSE)$dpars$mu[["re"]]

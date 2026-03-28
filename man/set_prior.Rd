@@ -53,10 +53,10 @@ Only used in distributional models.}
 Only used in non-linear models.}
 
 \item{lb}{Lower bound for parameter restriction. Currently only allowed
-for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
+for classes \code{"b"}. Defaults to \code{NA}, that is no restriction.}
 
 \item{ub}{Upper bound for parameter restriction. Currently only allowed
-for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
+for classes \code{"b"}. Defaults to \code{NA}, that is no restriction.}
 
 \item{tag}{Character to append to the \code{lprior} variable in the Stan code.
 Used for selectively checking sensitivity of priors in \code{priorsense}.}

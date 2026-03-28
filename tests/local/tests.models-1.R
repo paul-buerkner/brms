@@ -30,7 +30,19 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
 
   # test kfold
   kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
+  loo1 <- SW(loo(fit1))
   expect_range(kfold1$estimates[3, 1], 1210, 1260)
+  # expected output structure
+  expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics", 
+  "fits", "data", "data2"))
+  # expected length of pareto-k slot is same as pointwise slot
+  expect_equal(length(kfold1$diagnostics$pareto_k), nrow(kfold1$pointwise))
+  # output structure of loo and kfold object should be equal 
+  # wrt estimates, pointwise and diagnostics slots
+  expect_equal(names(loo1)[1:3], names(kfold1)[1:3])
+  # diagnostics$pareto_k in kfold has same class as corresponding slot 
+  # in loo output
+  expect_equal(class(kfold1$diagnostics), class(loo1$diagnostics))
   # define a loss function
   rmse <- function(y, yrep) {
     yrep_mean <- colMeans(yrep)
