@@ -176,7 +176,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 # @param model_name ignored but included to avoid being passed to '...'
 .kfold <- function(x, K, Ksub, folds, group, joint, save_fits,
                    newdata, resp, model_name, recompile = NULL,
-                   future_args = list(), newdata2 = NULL, 
+                   future_args = list(), newdata2 = NULL,
                    k_threshold = 0.7, ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
@@ -346,7 +346,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   lppds <- do_call(cbind, lppds)
   # pareto_k for each column of lppds (i.e. each predicted observation)
   diagnostics$pareto_k <- apply(
-    lppds, 2, posterior::pareto_khat, 
+    lppds, 2, posterior::pareto_khat,
     are_log_weights = TRUE
   )
   elpds <- apply(lppds, 2, log_mean_exp)
@@ -411,13 +411,13 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   }
   if (length(loo::pareto_k_ids(out, threshold = k_threshold)) > 0) {
     warning2(
-        "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
-        " observations with a pareto_k > ", k_threshold,
-        " in model '", model_name, "'."
+      "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
+      " observations with a pareto_k > ", k_threshold,
+      " in model '", model_name, "'."
     )
   }
   structure(out, dims = dim(lppds), class = c("kfold", "loo"))
-  }
+}
 
 #' Predictions from K-Fold Cross-Validation
 #'
