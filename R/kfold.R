@@ -176,7 +176,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 # @param model_name ignored but included to avoid being passed to '...'
 .kfold <- function(x, K, Ksub, folds, group, joint, save_fits,
                    newdata, resp, model_name, recompile = NULL,
-                   future_args = list(), newdata2 = NULL, 
+                   future_args = list(), newdata2 = NULL,
                    k_threshold = 0.7, ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
   if (is.brmsfit_multiple(x)) {
@@ -249,6 +249,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     # see issue #441 for reasons to check for arrays
     is_array_Ksub <- is.array(Ksub)
     Ksub <- as.integer(Ksub)
+    if (length(Ksub) == 0L) {
+      stop2("'Ksub' must be a positive integer or a non-empty integer vector.")
+    }
     if (any(Ksub <= 0 | Ksub > K)) {
       stop2("'Ksub' must contain positive integers not larger than 'K'.")
     }
@@ -346,7 +349,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   lppds <- do_call(cbind, lppds)
   # pareto_k for each column of lppds (i.e. each predicted observation)
   diagnostics$pareto_k <- apply(
-    lppds, 2, posterior::pareto_khat, 
+    lppds, 2, posterior::pareto_khat,
     are_log_weights = TRUE
   )
   elpds <- apply(lppds, 2, log_mean_exp)
