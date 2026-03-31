@@ -22,6 +22,7 @@
 \alias{logistic_normal}
 \alias{von_mises}
 \alias{asym_laplace}
+\alias{skew_double_exponential}
 \alias{cox}
 \alias{hurdle_poisson}
 \alias{hurdle_negbinomial}
@@ -112,6 +113,12 @@ von_mises(link = "tan_half", link_kappa = "log")
 
 asym_laplace(link = "identity", link_sigma = "log", link_quantile = "logit")
 
+skew_double_exponential(
+  link = "identity",
+  link_sigma = "log",
+  link_tau = "logit"
+)
+
 cox(link = "log")
 
 hurdle_poisson(link = "log", link_hu = "logit")
@@ -173,7 +180,7 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
-\code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+\code{asym_laplace}, \code{skew_double_exponential}, \code{gen_extreme_value}, \code{categorical},
 \code{multinomial}, \code{dirichlet_multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
 \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
 \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{hurdle_cumulative},
@@ -233,6 +240,8 @@ If \code{NULL} (the default), the first
 category is used as the reference. If \code{NA}, all categories will be
 predicted, which requires strong priors or carefully specified predictor
 terms in order to lead to an identified model.}
+
+\item{link_tau}{Link of auxiliary parameter \code{tau} if being predicted.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models
@@ -294,6 +303,11 @@ Below, we list common use cases for the different families.
 
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}
+
+  \item{Family \code{skew_double_exponential} (EXPERIMENTAL) 
+  behaves similarly to family \code{asym_laplace}
+  but uses the native implementation by Stan 2.28+. 
+  The auxiliary \code{tau} parameter to the quantile of interest.}
 
   \item{Family \code{exgaussian} ('exponentially modified Gaussian') and
   \code{shifted_lognormal} are especially suited to model reaction times.}
