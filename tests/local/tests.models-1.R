@@ -35,6 +35,16 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   # expected output structure
   expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics", 
   "fits", "data", "data2"))
+  # ensure that the warning message works as expected if large pareto-k exist
+  expect_warning(
+    kfold(fit1, chains = 1, iter = 1000), 
+    "Found \\d+ observations with a pareto_k > 0.7"
+  )
+  # dims is in attributes of kfold1
+  expect_true("dims" %in% names(attributes(kfold1)))
+  # dims has correct dimensionality
+  expect_equal(dim(kfold1)[1], ndraws(fit1))
+  expect_equal(dim(kfold1)[2], nrow(epilepsy))
   # expected length of pareto-k slot is same as pointwise slot
   expect_equal(length(kfold1$diagnostics$pareto_k), nrow(kfold1$pointwise))
   # output structure of loo and kfold object should be equal 
@@ -73,6 +83,8 @@ test_that("Ordinal model from brm doc works correctly", suppressWarnings({
   suppressWarnings(ce <- conditional_effects(fit2, effect = "treat"),
                  "Predictions are treated as continuous variables")
   expect_ggplot(plot(ce)[[1]])
+  # ensure that no warning message is shown if all pareto-k are ok
+  expect_no_warning(kfold(fit2))
 }))
 
 test_that("Survival model from brm doc works correctly", suppressWarnings({
