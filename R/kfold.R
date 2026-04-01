@@ -352,6 +352,10 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     lppds, 2, posterior::pareto_khat,
     are_log_weights = TRUE
   )
+  # compute pointwise effective sample sizes (r_eff = 1 is hardcoded here)
+  diagnostics$r_eff <- rep(1, length(diagnostics$pareto_k))
+  diagnostics$n_eff <- .kfold_n_eff(log_weights = -lppds, r_eff = 1)
+
   elpds <- apply(lppds, 2, log_mean_exp)
   pred_obs <- unlist(pred_obs_list)
   if (joint == "obs") {
@@ -508,4 +512,34 @@ validate_joint <- function(joint) {
   joint <- as_one_character(joint)
   options <- c("obs", "fold", "group")
   match.arg(joint, options)
+}
+
+#' Compute effective sample size for K-fold cross-validation
+#'
+#' @param log_weights matrix of unnormalized log weights
+#' @param r_eff relative effective sample size estimates
+#' @return vector of effective sample sizes
+#' @note
+#' The effective sample size (ESS) is computed from the
+#' normalized importance weights as
+#' $\text{ESS}_i = \frac{1}{\sum_{s=1}^{S} \tilde w_{si}^2} \times r_{\text{eff},i}$ 
+#' for each observation $i$, where $\tilde w_{si}$ are the
+#' normalized importance weights over draws $s=1,\dots,S$, so
+#' $\sum_s \tilde w_{si}=1$. The normalization is done by
+#' $$
+#' \begin{align*}
+#' \log Z_i &= \log\left(\sum_{s=1}^S \exp(w_{si})\right) \\
+#' \log \tilde w_{si} &= w_{si} - \log Z_i \\
+#' \tilde w_{si} &= \exp(\log \tilde w_{si})
+#' \end{align*}
+#' $$
+#' where w_{si} are the unnormalized log weights.
+#' @noRd
+.kfold_n_eff <- function(log_weights, r_eff) {
+  norm_const_log <- matrixStats::colLogSumExps(log_weights)
+  log_weights_norm <- sweep(log_weights, MARGIN = 2,
+    STATS = norm_const_log, check.margin = FALSE)
+  weights_norm <- exp(log_weights_norm)
+
+  (1 / colSums(weights_norm^2)) * r_eff
 }
