@@ -71,6 +71,7 @@ stancode.default <- function(object, data, family = gaussian(),
                              stan_funs = NULL, knots = NULL,
                              drop_unused_levels = TRUE,
                              threads = getOption("brms.threads", NULL),
+                             subsample = NULL,
                              normalize = getOption("brms.normalize", TRUE),
                              save_model = NULL, ...) {
 
@@ -97,9 +98,11 @@ stancode.default <- function(object, data, family = gaussian(),
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   threads <- validate_threads(threads)
+  subsample <- validate_subsample(subsample)
 
  .stancode(
    bframe, prior = prior, stanvars = stanvars, threads = threads,
+   subsample = subsample,
    normalize = normalize, save_model = save_model, ...
  )
 }
@@ -109,6 +112,7 @@ stancode.default <- function(object, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .stancode <- function(bterms, prior, stanvars, threads = threading(),
+                      subsample = NULL,
                       normalize = getOption("brms.normalize", TRUE),
                       parse = getOption("brms.parse_stancode", FALSE),
                       backend = getOption("brms.backend", "rstan"),
@@ -120,7 +124,8 @@ stancode.default <- function(object, data, family = gaussian(),
   silent <- as_one_logical(silent)
   scode_predictor <- stan_predictor(
     bterms, prior = prior, normalize = normalize,
-    stanvars = stanvars, threads = threads
+    stanvars = stanvars, threads = threads,
+    subsample = subsample
   )
   scode_re <- stan_re(
     bterms, prior = prior, threads = threads, normalize = normalize
