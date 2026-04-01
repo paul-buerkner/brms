@@ -249,6 +249,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     # see issue #441 for reasons to check for arrays
     is_array_Ksub <- is.array(Ksub)
     Ksub <- as.integer(Ksub)
+    if (length(Ksub) == 0L) {
+      stop2("'Ksub' must be a positive integer or a non-empty integer vector.")
+    }
     if (any(Ksub <= 0 | Ksub > K)) {
       stop2("'Ksub' must contain positive integers not larger than 'K'.")
     }
