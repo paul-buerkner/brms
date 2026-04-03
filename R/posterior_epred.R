@@ -465,6 +465,24 @@ posterior_epred_xbeta <- function(prep) {
   1 + t1 - t2 - t3
 }
 
+posterior_epred_ordbeta <- function(prep) {
+  # Based on Kubinec (2023): https://doi.org/10.1017/pan.2022.20
+  # mu is already on response scale (0-1) after brms applies link function
+  mu <- get_dpar(prep, "mu")
+  xi <- get_dpar(prep, "xi")
+  kappa <- get_dpar(prep, "kappa")
+  # coi = xi + kappa (ensures ordering)
+  coi <- xi + kappa
+  # Transform mu to latent scale for threshold comparison
+  mu_latent <- qlogis(mu)
+  # probability of each component
+  pr_zero <- plogis(xi - mu_latent)
+  pr_one <- 1 - plogis(coi - mu_latent)
+  pr_cont <- plogis(coi - mu_latent) - plogis(xi - mu_latent)
+  # expected value: E[Y] = 0 * pr_zero + mu * pr_cont + 1 * pr_one
+  pr_cont * mu + pr_one
+}
+
 posterior_epred_von_mises <- function(prep) {
   prep$dpars$mu
 }
