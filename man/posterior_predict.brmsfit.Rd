@@ -17,6 +17,7 @@
   draw_ids = NULL,
   sort = FALSE,
   ntrys = 5,
+  output = "random",
   cores = NULL,
   ...
 )
@@ -65,6 +66,11 @@ time series (\code{TRUE}).}
 \item{ntrys}{Parameter used in rejection sampling
 for truncated discrete models only
 (defaults to \code{5}). See Details for more information.}
+
+\item{output}{The type of output to return. Can be \code{"random"},
+\code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
+In case of continuous distributions, \code{"probability"} is equivalent
+to \code{"pit"}.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
 this argument can be set globally via the \code{mc.cores} option.}
@@ -117,7 +123,8 @@ For truncated discrete models only: In the absence of any general
 \dontrun{
 ## fit a model
 fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-           data = kidney, family = "exponential", init = "0")
+  data = kidney, family = "exponential", init = "0"
+)
 
 ## predicted responses
 pp <- posterior_predict(fit)

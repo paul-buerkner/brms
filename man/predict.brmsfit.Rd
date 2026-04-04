@@ -19,6 +19,7 @@
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
+  output = "random",
   ...
 )
 }
@@ -80,6 +81,11 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
+\item{output}{The type of output to return. Can be \code{"random"},
+\code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
+In case of continuous distributions, \code{"probability"} is equivalent
+to \code{"pit"}.}
+
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
@@ -108,7 +114,8 @@ with additional arguments for obtaining summaries of the computed draws.
 \dontrun{
 ## fit a model
 fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-           data = kidney, family = "exponential", init = "0")
+  data = kidney, family = "exponential", init = "0"
+)
 
 ## predicted responses
 pp <- predict(fit)

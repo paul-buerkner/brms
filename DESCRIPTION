@@ -61,6 +61,8 @@ Suggests:
     priorsense (>= 1.0.0),
     shinystan (>= 2.4.0),
     splines2 (>= 0.5.0),
+    truncnorm,
+    dplyr,
     RWiener,
     rtdists,
     extraDistr,
