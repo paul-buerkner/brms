@@ -618,22 +618,20 @@ test_that("posterior_predict_poisson works for different 'output' values without
 test_that("compute_cdf returns correct CDF for non-truncated distributions", {
   # Non-truncated, non-randomized: raw CDF F(q)
   q <- 3
-  args <- list(lambda = 5)
-  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = NULL, ub = NULL, 
-  randomized = FALSE)
+  out <- brms:::compute_cdf(q = q, dist = "pois", lb = NULL, ub = NULL, 
+  randomized = FALSE, lambda = 5)
   expect_equal(out, ppois(q, lambda = 5))
 
   q <- 2
-  args <- list(size = 10, prob = 0.5)
-  out <- brms:::compute_cdf(q = q, pdist = "pbinom", args = args, lb = NULL, ub = NULL, 
-  randomized = FALSE)
+  out <- brms:::compute_cdf(q = q, dist = "binom", lb = NULL, ub = NULL, 
+  randomized = FALSE, size = 10, prob = 0.5)
   expect_equal(out, pbinom(q, size = 10, prob = 0.5))
 })
 
 test_that("compute_cdf with randomized = FALSE returns value in [0, 1]", {
   q <- 5
-  args <- list(lambda = 3)
-  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = NULL, ub = NULL, randomized = FALSE)
+  out <- brms:::compute_cdf(q = q, dist = "pois", lb = NULL, ub = NULL, 
+    randomized = FALSE, lambda = 3)
   expect_true(out >= 0 && out <= 1)
 })
 
@@ -641,11 +639,11 @@ test_that("compute_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", 
   # Randomized PIT: F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
   set.seed(42)
   q <- 5
-  args <- list(lambda = 3)
   Fq <- ppois(q, lambda = 3)
   Fqm1 <- ppois(q - 1, lambda = 3)
 
-  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = NULL, ub = NULL, randomized = TRUE)
+  out <- brms:::compute_cdf(q = q, dist = "pois", lb = NULL, ub = NULL, randomized = TRUE, 
+    lambda = 3)
   expect_true(out >= Fqm1)
   expect_true(out <= Fq)
 })
@@ -653,14 +651,13 @@ test_that("compute_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", 
 test_that("compute_cdf with randomized = TRUE and truncation returns value in valid range", {
   set.seed(123)
   q <- 4
-  args <- list(lambda = 5)
   lb <- 2
   ub <- 7
   denom <- ppois(ub, lambda = 5) - ppois(lb, lambda = 5)
   Fq <- (ppois(q, lambda = 5) - ppois(lb, lambda = 5)) / denom
   Fqm1 <- (ppois(q - 1, lambda = 5) - ppois(lb, lambda = 5)) / denom
 
-  out <- brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = lb, ub = ub, randomized = TRUE)
+  out <- brms:::compute_cdf(q = q, dist = "pois", lb = lb, ub = ub, randomized = TRUE, lambda = 5)
   expect_true(out >= Fqm1)
   expect_true(out <= Fq)
   expect_true(out >= 0 && out <= 1)
@@ -668,12 +665,11 @@ test_that("compute_cdf with randomized = TRUE and truncation returns value in va
 
 test_that("compute_cdf handles zero denominator (lb == ub) without unexpected behaviour", {
   q <- 3
-  args <- list(lambda = 2)
   lb <- 1
   ub <- 1
 
   out <- tryCatch(
-    brms:::compute_cdf(q = q, pdist = "ppois", args = args, lb = lb, ub = ub, randomized = FALSE),
+    brms:::compute_cdf(q = q, dist = "pois", lb = lb, ub = ub, randomized = FALSE, lambda = 2),
     error = function(e) structure(list(error = TRUE, message = e$message))
   )
 

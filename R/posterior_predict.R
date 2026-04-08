@@ -1037,27 +1037,6 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
   out
 }
 
-# probability values from (possibly truncated) continuous distributions
-# @param q quantile value(s) for which to compute the CDF
-# @param dist name of a distribution for which the functions
-# @param ... additional arguments passed to the distribution functions
-# @param randomized logical indicating whether to use the randomized PIT.
-#   For continuous distributions, this is always FALSE; thus computes
-#   standard cdf value.
-# @param lb optional lower truncation bound
-# @param ub optional upper truncation bound
-# @return a vector of probability values
-# @noRd
-pcontinuous <- function(q, dist, ..., randomized = FALSE, lb, ub) {
-  args <- validate_args(dist, ...)
-  pdist <- paste0("p", dist)
-
-  compute_cdf(
-    q = q, pdist = pdist, args = args, lb = lb, ub = ub,
-    randomized = randomized
-  )
-}
-
 # random numbers from (possibly truncated) discrete distributions
 # currently rejection sampling is used for truncated distributions
 # @param n number of random values to generate
@@ -1089,26 +1068,6 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
     out <- apply(out, 1, extract_valid_sample, lb = lb, ub = ub)
   }
   out
-}
-
-# probability values from (possibly truncated) discrete distributions
-# Note: lb and ub are treated as inclusive in order to be consistent with the
-# behavior of rdiscrete.
-# @param q quantile value(s) for which to compute the CDF
-# @param dist name of a distribution for which the functions
-# @param ... additional arguments passed to the distribution functions
-# @param randomized logical indicating whether to use the randomized PIT.
-# @param lb optional lower truncation bound
-# @param ub optional upper truncation bound
-# @return a vector of probability values
-pdiscrete <- function(q, dist, ..., randomized, lb, ub) {
-  args <- validate_args(dist, ...)
-  pdist <- paste0("p", dist)
-
-  compute_cdf(
-    q = q, pdist = pdist, args = args, lb = lb, ub = ub,
-    randomized = randomized
-  )
 }
 
 # sample from the IDs of the mixture components
@@ -1187,8 +1146,8 @@ predict_continuous_helper <- function(
       if (is.null(q)) {
         q <- prep$data$Y[i]
       }
-      pcontinuous(
-        q = q, dist = dist, lb = lb, ub = ub, ...
+      compute_cdf(
+        q = q, dist = dist, lb = lb, ub = ub, randomized = FALSE, ...
       )
     },
     "random" = {
@@ -1222,16 +1181,16 @@ predict_discrete_helper <- function(
       if (is.null(q)) {
         q <- prep$data$Y[i]
       }
-      pdiscrete(
-        q = q, dist = dist, randomized = FALSE, lb = lb, ub = ub, ...
+      compute_cdf(
+        q = q, dist = dist, lb = lb, ub = ub, randomized = FALSE, ...
       )
     },
     "pit" = {
       if (is.null(q)) {
         q <- prep$data$Y[i]
       }
-      pdiscrete(
-        q = q, dist = dist, randomized = TRUE, lb = lb, ub = ub, ...
+      compute_cdf(
+        q = q, dist = dist, lb = lb, ub = ub, randomized = TRUE, ...
       )
     },
     "random" = {
@@ -1245,14 +1204,16 @@ predict_discrete_helper <- function(
 # compute cdf dependent on whether the distribution is truncated or not
 # and whether to use the randomized PIT
 # @param q quantile value(s) for which to compute the CDF
-# @param pdist name of the distribution function
-# @param args additional arguments passed to the distribution functions
+# @param dist name of a distribution for which the functions
 # @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
 # @param randomized logical indicating whether to use the randomized PIT
+# @param ... additional arguments passed to the distribution functions
 # @return a vector of probability values
 # @noRd
-compute_cdf <- function(q, pdist, args, lb, ub, randomized) {
+compute_cdf <- function(q, dist, lb, ub, randomized, ...) {
+  args <- validate_args(dist, ...)
+  pdist <- paste0("p", dist)
   # prepare computation of (non-)truncated cdf
   F_internal <- function(q) {
     if (is.null(lb) && is.null(ub)) {
