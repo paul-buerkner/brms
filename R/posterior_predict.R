@@ -58,8 +58,7 @@
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
-#'   data = kidney, family = "exponential", init = "0"
-#' )
+#'            data = kidney, family = "exponential", init = "0")
 #'
 #' ## predicted responses
 #' pp <- posterior_predict(fit)
@@ -130,7 +129,6 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
-
   if (is.customfamily(object$family)) {
     # ensure that the method can be found during parallel execution
     object$family$posterior_predict <-
