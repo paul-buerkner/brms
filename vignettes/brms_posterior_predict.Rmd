@@ -1,6 +1,6 @@
 ---
 title: "Using `posterior_predict` with varying output values"
-author: "TODO"
+author: "brms team"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
@@ -34,7 +34,6 @@ opts_chunk$set(
 library(ggplot2)
 devtools::load_all()
 library(extraDistr)
-library(dplyr)
 theme_set(theme_default())
 
 n <- 200
@@ -48,11 +47,10 @@ set.seed(42)
 beta0 <- -1
 beta1 <- 0.8
 
-dat_binom <- dplyr::tibble(
-  x = rnorm(n),
-  size = sample(10:30, n, replace = TRUE),
-  y = rbinom(n, size = size, prob = plogis(beta0 + beta1 * x))
-)
+dat_binom <- data.frame(x = rnorm(n))
+dat_binom$size <- sample(10:30, n, replace = TRUE)
+dat_binom$y <- rbinom(n, size = dat_binom$size,
+  prob = plogis(beta0 + beta1 * dat_binom$x))
 
 fit_binom_calibrated <- brms::brm(
   formula = "y | trials(size) ~ x",
@@ -94,11 +92,10 @@ phi <- 2
 alpha <- phi * 0.3
 beta <- phi * (1 - 0.3)
 
-dat_overdisp <- dplyr::tibble(
-  x = rnorm(n),
-  size = sample(10:30, n, replace = TRUE),
-  y = rbbinom(n, size = size, alpha = alpha, beta = beta)
-)
+dat_overdisp <- data.frame(x = rnorm(n))
+dat_overdisp$size <- sample(10:30, n, replace = TRUE)
+dat_overdisp$y <- rbbinom(n, size = dat_overdisp$size, alpha = alpha,
+  beta = beta)
 
 fit_binom_miscalibrated <- brms::brm(
   formula = "y | trials(size) ~ x",
@@ -140,10 +137,8 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
 beta0 <- 0.5
 beta1 <- 0.8
 
-dat_pois <- dplyr::tibble(
-  x = rnorm(n),
-  y = rpois(n, lambda = exp(beta0 + beta1 * x))
-)
+dat_pois <- data.frame(x = rnorm(n))
+dat_pois$y <- rpois(n, lambda = exp(beta0 + beta1 * dat_pois$x))
 
 fit_pois <- brm(
   formula = "y ~ x",
@@ -178,7 +173,7 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
 ## Normal
 
 ```{r norm-fit, include = FALSE}
-dat_normal <- dplyr::tibble(
+dat_normal <- data.frame(
   y = rnorm(n, mean = 1.0, sd = 0.8)
 )
 
@@ -198,12 +193,12 @@ bayesplot::ppc_dens_overlay(
 )
 ```
 
-```{r norm-ecdf}
+```{r norm-ecdf-probability}
 pits <- posterior_predict(fit_norm, output = "probability")
 bayesplot::ppc_pit_ecdf(pit = colMeans(pits))
 ```
 
-```{r norm-ecdf}
+```{r norm-ecdf-pit}
 pits <- posterior_predict(fit_norm, output = "pit")
 bayesplot::ppc_pit_ecdf(pit = colMeans(pits))
 ```
@@ -211,7 +206,7 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(pits))
 ## Student-t
 
 ```{r t-fit, include = FALSE}
-dat_student <- dplyr::tibble(
+dat_student <- data.frame(
   y = rt(n, df = 5)
 )
 
