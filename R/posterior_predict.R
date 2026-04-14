@@ -500,14 +500,15 @@ posterior_predict_binomial <- function(i, prep, output = "random", ntrys = 5, ..
   )
 }
 
-posterior_predict_beta_binomial <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "beta_binomial",
-    size = prep$data$trials[i],
-    mu = get_dpar(prep, "mu", i = i),
-    phi = get_dpar(prep, "phi", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_beta_binomial <- function(i, prep, output = "random",
+  ntrys = 5, ...) {
+  size <- prep$data$trials[i]
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "beta_binomial", size = size, mu = mu, phi = phi, ...
   )
 }
 
