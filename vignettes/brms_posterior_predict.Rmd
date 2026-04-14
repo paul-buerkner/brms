@@ -131,6 +131,47 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Binomial model with randomized PIT \n(miscalibrated)")
 ```
 
+## Beta-Binomial
+
+```{r betabinom, include = FALSE}
+set.seed(42)
+beta0 <- -1
+beta1 <- 0.8
+phi   <- 5   # overdispersion parameter (smaller = more overdispersed)
+
+dat_bb <- data.frame(x = rnorm(n))
+dat_bb$size <- sample(10:30, n, replace = TRUE)
+
+# Simulate from beta-binomial: draw p from Beta, then y | p ~ Binomial
+mu    <- plogis(beta0 + beta1 * dat_bb$x)   # mean probability
+alpha <- mu * phi
+beta  <- (1 - mu) * phi
+p_i   <- rbeta(n, shape1 = alpha, shape2 = beta)
+dat_bb$y <- rbinom(n, size = dat_bb$size, prob = p_i)
+
+fit_bb_calibrated <- brms::brm(
+  formula = y | trials(size) ~ x,
+  data    = dat_bb,
+  family  = beta_binomial(link = "logit"),
+  chains  = 2,
+  seed    = 42
+)
+```
+
+```{r betabinom-dens}
+bayesplot::ppc_bars(
+  y = dat_bb$y,
+  yrep = posterior_predict(fit_bb_calibrated)
+)
+```
+
+```{r betabinom-ecdf-random}
+pits <- posterior_predict(fit_bb_calibrated, output = "pit")
+
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
+  labs(title = "Beta-Binomial model with randomized PIT")
+```
+
 ## Poisson
 
 ```{r pois-fit, include = FALSE}
