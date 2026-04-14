@@ -245,6 +245,45 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Negative-Binomial model with randomized PIT \n (mu, sigma parameterization)")
 ```
 
+## Zero-inflated Negative Binomial
+
+```{r zinb, include = FALSE}
+beta0 <- 0.5
+beta1 <- 0.8
+sigma <- 0.5
+gamma0 <- -1
+
+dat_zinb <- data.frame(x = rnorm(n))
+zi <- plogis(gamma0)
+dat_zinb$y <- ifelse(
+  rbinom(n, size = 1, prob = zi) == 1,
+  0,
+  rnbinom(n, mu = exp(beta0 + beta1 * dat_zinb$x), size = 1 / sigma)
+)
+
+fit_zinb <- brm(
+  formula = bf(y ~ x, zi ~ 1),
+  data = dat_zinb,
+  family = zero_inflated_negbinomial(link = "log"),
+  chains = 2,
+  seed = 42
+)
+```
+
+```{r zinb-dens}
+bayesplot::ppc_bars(
+  y = dat_zinb$y,
+  yrep = posterior_predict(fit_zinb)
+)
+```
+
+```{r zinb-ecdf-random}
+pits <- posterior_predict(fit_zinb, output = "pit")
+
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
+  labs(title = "Zero-Inflated Negative-Binomial model with randomized PIT")
+```
+
 ## Poisson
 
 ```{r pois-fit, include = FALSE}

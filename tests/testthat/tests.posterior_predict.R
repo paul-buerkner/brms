@@ -701,3 +701,34 @@ test_that("compute_cdf handles zero denominator (lb == ub) without unexpected be
     expect_true(is.nan(out) || is.na(out))
   }
 })
+
+test_that("zero_inflated_negative_binomial", {
+  ns <- 50
+  nobs <- 8
+  trials <- sample(10:30, nobs, replace = TRUE)
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
+    shape = rgamma(ns, 4), phi = rgamma(ns, 1),
+    zi = rbeta(ns, 1, 1), coi = rbeta(ns, 5, 7)
+  )
+  prep$dpars$mu <- prep$dpars$zi*30
+  prep$dpars$hu <- prep$dpars$zoi <- prep$dpars$zi
+  y_rand <- rnbinom(ns, size = trials, mu = prep$dpars$mu)
+  tmp <- runif(ns, 0, 1)
+  prep$data <- list(
+    Y = ifelse(tmp < prep$dpars$zi, 0L, y_rand),
+    trials = trials
+  )
+  i <- 6
+
+  PITs <- brms:::posterior_predict_zero_inflated_negbinomial(i, prep = prep,
+    output = "pit")
+  expect_equal(length(PITs), ns)
+  expect_true(all(PITs >= 0 & PITs <= 1))
+
+  probs <- brms:::posterior_predict_zero_inflated_negbinomial(i, prep = prep,
+    output = "probability")
+  expect_equal(length(probs), ns)
+  expect_true(all(probs >= 0 & probs <= 1))
+})

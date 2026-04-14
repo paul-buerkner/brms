@@ -79,13 +79,6 @@ jobs:
             statmod
             diffobj
             betareg
-            processx
-            digest
-            mirai
-            future.mirai
-            gtable
-            shiny
-            ragg
 
       - name: Build Cmdstan
         run: |

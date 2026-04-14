@@ -845,13 +845,22 @@ posterior_predict_zero_inflated_poisson <- function(i, prep, ...) {
   ifelse(tmp < zi, 0L, rpois(ndraws, lambda = lambda))
 }
 
-posterior_predict_zero_inflated_negbinomial <- function(i, prep, ...) {
+posterior_predict_zero_inflated_negbinomial <- function(i, prep,
+  output = "random", ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < zi, 0L, rnbinom(ndraws, mu = mu, size = shape))
+
+  if (output == "random") {
+    out <- predict_discrete_helper(i = i, prep = prep, output = output,
+      dist = "nbinom", mu = mu, size = shape, ...)
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(i = i, prep = prep, output = output,
+      dist = "zero_inflated_negbinomial", mu = mu, shape = shape, zi = zi, ...)
+  }
+  out
 }
 
 posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
