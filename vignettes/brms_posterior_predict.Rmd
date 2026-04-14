@@ -172,6 +172,79 @@ bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
   labs(title = "Beta-Binomial model with randomized PIT")
 ```
 
+## Negative Binomial
+### Parameterization with mu and shape
+
+```{r negbinom1, include = FALSE}
+beta0 <- 0.5
+beta1 <- 0.8
+phi   <- 3
+
+dat_nb_shape <- data.frame(x = rnorm(n))
+dat_nb_shape$y <- rnbinom(n,
+  mu   = exp(beta0 + beta1 * dat_nb_shape$x),
+  size = phi
+)
+
+fit_nb_shape <- brm(
+  formula = y ~ x,
+  data    = dat_nb_shape,
+  family  = negbinomial(link = "log"),
+  chains  = 2,
+  seed    = 42
+)
+```
+
+```{r negbinom1-dens}
+bayesplot::ppc_bars(
+  y = dat_nb_shape$y,
+  yrep = posterior_predict(fit_nb_shape)
+)
+```
+
+```{r negbinom1-ecdf-random}
+pits <- posterior_predict(fit_nb_shape, output = "pit")
+
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
+  labs(title = "Negative-Binomial model with randomized PIT \n (mu, shape parameterization)")
+```
+
+###  Parameterization with mu and sigma
+
+```{r negbinom2, include = FALSE}
+beta0 <- 0.5
+beta1 <- 0.8
+sigma <- 0.5
+
+dat_nb_sigma <- data.frame(x = rnorm(n))
+dat_nb_sigma$y <- rnbinom(n,
+  mu   = exp(beta0 + beta1 * dat_nb_sigma$x),
+  size = 1 / sigma
+)
+
+fit_nb_sigma <- brm(
+  formula = y ~ x,
+  data    = dat_nb_sigma,
+  family  = negbinomial2(link = "log"),
+  chains  = 2,
+  seed    = 42
+)
+```
+
+```{r negbinom2-dens}
+bayesplot::ppc_bars(
+  y = dat_nb_sigma$y,
+  yrep = posterior_predict(fit_nb_sigma)
+)
+```
+
+```{r negbinom2-ecdf-random}
+pits <- posterior_predict(fit_nb_sigma, output = "pit")
+
+bayesplot::ppc_pit_ecdf(pit = colMeans(pits)) +
+  labs(title = "Negative-Binomial model with randomized PIT \n (mu, sigma parameterization)")
+```
+
 ## Poisson
 
 ```{r pois-fit, include = FALSE}
