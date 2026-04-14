@@ -545,7 +545,7 @@ test_that("posterior_predict_student runs with various 'output' values without e
   expect_false(all(qpred == qpred_trunc))
 })
 
-test_that("posterior_predict_binomial and beta_binomial works for different
+test_that("posterior_predict of binomial variants works for different
 'output' values without error", {
   ns <- 25
   nobs <- 10
@@ -565,13 +565,11 @@ test_that("posterior_predict_binomial and beta_binomial works for different
     Y = rbinom(nobs, size = trials, prob = prep$dpars$mu)
   )
 
-  # compute PIT values (q = prep$data$trials[i])
   PITs <- brms:::posterior_predict_binomial(i, prep = prep, output = "pit")
   expect_equal(length(PITs), ns)
   expect_true(all(PITs >= 0 & PITs <= 1))
 
-  qpred <- brms:::posterior_predict_binomial(i, q = 5, prep = prep,
-    output = "pit")
+  qpred <- brms:::posterior_predict_binomial(i, q = 5, prep = prep, output = "pit")
   expect_equal(length(qpred), ns)
   expect_true(all(qpred >= 0 & qpred <= 1))
   expect_false(all(PITs == qpred))
@@ -582,8 +580,23 @@ test_that("posterior_predict_binomial and beta_binomial works for different
 
   PITs <- brms:::posterior_predict_beta_binomial(i, prep = prep, output = "pit")
   expect_equal(length(PITs), ns)
-})
 
+  prep$dpars$mu <- brms:::inv_cloglog(prep$dpars$eta)*30
+  probs <- brms:::posterior_predict_negbinomial(i, prep = prep, output = "pit")
+  expect_equal(length(probs), ns)
+
+  PITs <- brms:::posterior_predict_negbinomial(i, prep = prep,
+    output = "probability")
+  expect_equal(length(PITs), ns)
+
+  prep$dpars$sigma <- 1/prep$dpars$shape
+  probs <- brms:::posterior_predict_negbinomial2(i, prep = prep, output = "pit")
+  expect_equal(length(probs), ns)
+
+  PITs <- brms:::posterior_predict_negbinomial2(i, prep = prep,
+    output = "probability")
+  expect_equal(length(PITs), ns)
+})
 
 test_that("posterior_predict_poisson works for different 'output' values without error", {
   set.seed(1386)

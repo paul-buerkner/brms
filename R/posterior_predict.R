@@ -527,29 +527,29 @@ posterior_predict_poisson <- function(i, prep, output = "random", ntrys = 5, ...
   )
 }
 
-posterior_predict_negbinomial <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_negbinomial <- function(i, prep, output = "random",
+  ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- get_dpar(prep, "shape", i)
   shape <- multiply_dpar_rate_denom(shape, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "nbinom",
-    mu = mu, size = shape,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "nbinom", mu = mu, size = shape, ...
   )
 }
 
-posterior_predict_negbinomial2 <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_negbinomial2 <- function(i, prep, output = "random",
+  ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   sigma <- get_dpar(prep, "sigma", i)
   shape <- multiply_dpar_rate_denom(1 / sigma, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "nbinom",
-    mu = mu, size = shape,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "nbinom", mu = mu, size = shape, ...
   )
 }
 
