@@ -81,6 +81,13 @@ to NULL in which case \code{prep$data$Y[i]} is used for the quantiles.}
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
 this argument can be set globally via the \code{mc.cores} option.}
 
+\item{lower.tail}{logical for computing probability or PIT values. It
+defaults to TRUE in which case probabilities are P(X < x) otherwise,
+P(X > x).}
+
+\item{log.p}{logical for computing probability or PIT values. It defaults to
+FALSE, if TRUE probabilities p are given as log(p).}
+
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
