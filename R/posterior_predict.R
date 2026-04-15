@@ -89,7 +89,8 @@ posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
   ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
-  output = "random", q = NULL, cores = NULL, ...
+  output = "random", q = NULL, cores = NULL, lower.tail = TRUE,
+  log.p = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -104,7 +105,7 @@ posterior_predict.brmsfit <- function(
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys,
     negative_rt = negative_rt, cores = cores, summary = FALSE, output = output,
-    q = q
+    q = q, lower.tail = lower.tail, log.p = log.p
   )
 }
 
@@ -1182,10 +1183,14 @@ predict_discrete_helper <- function(
 # @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
 # @param randomized logical indicating whether to use the randomized PIT
+# @param lower.tail logical; if TRUE (default) probabilities are P(X < x)
+# otherwise, P(X > x)
+# @param log.p logical; if TRUE probabilities p are given as log(p)
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of probability values
 # @noRd
-compute_cdf <- function(q, distribution, lb, ub, randomized, ...) {
+compute_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
+  log.p = FALSE, ...) {
   args <- validate_distribution_args(distribution, ...)
   pdist <- paste0("p", distribution)
   # prepare computation of (non-)truncated cdf
@@ -1204,10 +1209,13 @@ compute_cdf <- function(q, distribution, lb, ub, randomized, ...) {
   # F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
   if (isTRUE(randomized)) {
     v <- runif(length(q))
-    F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
+    probs <- F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
   } else if (isFALSE(randomized)) {
-    F_internal(q)
+    probs <- F_internal(q)
   }
+  if (isFALSE(lower.tail)) probs <- 1 - probs
+  if (isTRUE(log.p)) probs <- log(probs)
+  return(probs)
 }
 
 # ensure that only arguments that are accepted by the RNG are passed

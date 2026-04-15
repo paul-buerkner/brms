@@ -732,3 +732,62 @@ test_that("zero_inflated_negative_binomial", {
   expect_equal(length(probs), ns)
   expect_true(all(probs >= 0 & probs <= 1))
 })
+
+test_that("compute_cdf respects lower.tail and log.p", {
+  q <- 0.4
+  mu <- 0.1
+  sd <- 1.7
+
+  base <- brms:::compute_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = TRUE, log.p = FALSE,
+    mean = mu, sd = sd
+  )
+
+  upper <- brms:::compute_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = FALSE, log.p = FALSE,
+    mean = mu, sd = sd
+  )
+
+  log_base <- brms:::compute_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = TRUE, log.p = TRUE,
+    mean = mu, sd = sd
+  )
+
+  log_upper <- brms:::compute_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = FALSE, log.p = TRUE,
+    mean = mu, sd = sd
+  )
+
+  expected <- pnorm(q, mean = mu, sd = sd)
+
+  expect_equal(base, expected)
+  expect_equal(upper, 1 - expected)
+  expect_equal(log_base, log(expected))
+  expect_equal(log_upper, log(1 - expected))
+})
+
+test_that("posterior_predict forwards lower.tail and log.p correctly", {
+  fit <- brms:::rename_pars(brms:::brmsfit_example3)
+  q_ref <- 15
+
+  p_lower <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = TRUE, log.p = FALSE)
+
+  p_upper <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = FALSE, log.p = FALSE)
+
+  log_lower <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = TRUE, log.p = TRUE)
+
+  log_upper <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = FALSE, log.p = TRUE)
+  
+  expect_equal(dim(p_lower), dim(p_upper))
+  expect_equal(p_upper, 1 - p_lower)
+  expect_equal(log_lower, log(p_lower))
+  expect_equal(log_upper, log(p_upper))
+})

@@ -20,6 +20,8 @@
   output = "random",
   q = NULL,
   cores = NULL,
+  lower.tail = TRUE,
+  log.p = FALSE,
   ...
 )
 }
