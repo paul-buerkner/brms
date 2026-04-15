@@ -1156,7 +1156,7 @@ predict_continuous_helper <- function(
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_discrete_helper <- function(
-  i, prep, output, distribution, ntrys, q = NULL, ...
+  i, prep, output, distribution, ntrys = NULL, q = NULL, ...
 ) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
