@@ -30,6 +30,8 @@
 #'   \code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
 #'   In case of continuous distributions, \code{"probability"} is equivalent
 #'   to \code{"pit"}.
+#' @param q Custom quantile for computing probability or PIT values. It defaults
+#'   to NULL in which case \code{prep$data$Y[i]} is used for the quantiles.
 #' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
 #'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
@@ -87,7 +89,7 @@ posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
   ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
-  output = "random", cores = NULL, ...
+  output = "random", q = NULL, cores = NULL, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -101,7 +103,8 @@ posterior_predict.brmsfit <- function(
   )
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output
+    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output,
+    q = q
   )
 }
 

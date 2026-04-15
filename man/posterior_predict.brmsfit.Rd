@@ -18,6 +18,7 @@
   sort = FALSE,
   ntrys = 5,
   output = "random",
+  q = NULL,
   cores = NULL,
   ...
 )
@@ -71,6 +72,9 @@ for truncated discrete models only
 \code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
 In case of continuous distributions, \code{"probability"} is equivalent
 to \code{"pit"}.}
+
+\item{q}{Custom quantile for computing probability or PIT values. It defaults
+to NULL in which case \code{prep$data$Y[i]} is used for the quantiles.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
 this argument can be set globally via the \code{mc.cores} option.}
