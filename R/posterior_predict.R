@@ -1129,8 +1129,10 @@ predict_continuous_helper <- function(
 
   switch(output,
     "random" = {
-      rcontinuous(n = prep$ndraws, distribution = distribution, lb = lb,
-                  ub = ub, ntrys = ntrys, ...)
+      dots <- list(...)
+      dots[c("log.p", "lower.tail")] <- NULL
+      do.call(rcontinuous, c(list(n = prep$ndraws, distribution = distribution,
+                             lb = lb, ub = ub, ntrys = ntrys), dots))
     },
     # empty "probability" = , is a "fall-through", it means if the value is
     # "probability", do nothing and execute the next case's code block instead.
@@ -1162,8 +1164,10 @@ predict_discrete_helper <- function(
 
   switch(output,
     "random" = {
-      rdiscrete(n = prep$ndraws, distribution = distribution, lb = lb,
-                ub = ub, ntrys = ntrys, ...)
+      dots <- list(...)
+      dots[c("log.p", "lower.tail")] <- NULL
+      do.call(rdiscrete, c(list(n = prep$ndraws, distribution = distribution,
+                             lb = lb, ub = ub, ntrys = ntrys), dots))
     },
     "probability" = {
       compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
