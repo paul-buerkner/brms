@@ -4,12 +4,15 @@
 \alias{BetaBinomial}
 \alias{dbeta_binomial}
 \alias{pbeta_binomial}
+\alias{qbeta_binomial}
 \alias{rbeta_binomial}
 \title{The Beta-binomial Distribution}
 \usage{
 dbeta_binomial(x, size, mu, phi, log = FALSE)
 
 pbeta_binomial(q, size, mu, phi, lower.tail = TRUE, log.p = FALSE)
+
+qbeta_binomial(p, size, mu, phi, lower.tail = TRUE, log.p = FALSE)
 
 rbeta_binomial(n, size, mu, phi)
 }
@@ -29,6 +32,8 @@ Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
+\item{p}{Vector of probabilities.}
+
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
@@ -40,4 +45,9 @@ Beta-binomial definition}:
  \item{\code{mu = alpha * beta}} mean probability of trial success.
  \item{\code{phi = (1 - mu) * beta}} precision or over-dispersion, component.
 }
+}
+\details{
+The quantile function has no known closed form for this parameterization and
+is therefore computed numerically via inversion of the cumulative
+distribution function over the finite support \code{0:size}.
 }

@@ -1,0 +1,395 @@
+---
+title: "Cheatsheet: Distribution outputs in posterior_predict()"
+author: "brms team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+vignette: >
+  %\VignetteIndexEntry{Cheatsheet: Distribution outputs in posterior_predict()}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+---
+
+```{r setup, include=FALSE}
+stopifnot(require(knitr))
+knit_hooks$set(pngquant = knitr::hook_pngquant)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "ragg_png",
+  dpi = 96,
+  fig.retina = 1.5,
+  fig.align = "center",
+  out.width = "100%",
+  pngquant = "--speed=1 --quality=50"
+)
+library(ggplot2)
+devtools::load_all()
+if (!requireNamespace("extraDistr", quietly = TRUE)) {
+  stop("Package 'extraDistr' is required to evaluate this vignette.")
+}
+theme_set(theme_minimal(base_size = 9))
+set.seed(4026)
+```
+
+This cheatsheet summarizes the distribution families that currently support all
+`posterior_predict()` output modes:
+
+- `random`
+- `probability`
+- `pit`
+- `density`
+- `quantile`
+
+## Supported families
+
+```{r support-table}
+support <- data.frame(
+  family = c(
+    "gaussian", "student", "binomial", "beta_binomial",
+    "poisson", "negbinomial", "negbinomial2", "zero_inflated_negbinomial"
+  ),
+  distribution_backend = c(
+    "norm", "student_t", "binom", "beta_binomial",
+    "pois", "nbinom", "nbinom", "zero_inflated_negbinomial"
+  ),
+  random = "\u2713",
+  probability = "\u2713",
+  pit = "\u2713",
+  density = "\u2713",
+  quantile = "\u2713",
+  stringsAsFactors = FALSE
+)
+knitr::kable(support, align = "l")
+```
+
+## Mathematical details
+
+Let \(Y\) be the posterior predictive variable for one posterior draw \(s\), with
+distribution \(F_s\) and density/mass \(f_s\). For each observation index \(i\),
+`posterior_predict()` returns one value per draw \(s = 1, \dots, S\).
+
+### 1) `output = "random"`
+
+Draw
+\[
+\tilde y_s \sim F_s.
+\]
+If truncation bounds are active (\(L, U\)), sampling is from the truncated
+distribution:
+\[
+F_{s,\text{tr}}(y) = \frac{F_s(y) - F_s(L)}{F_s(U) - F_s(L)}, \quad L \le y \le U.
+\]
+
+### 2) `output = "probability"`
+
+For a queried value \(q\), return the (possibly truncated) CDF:
+\[
+p_s(q) = F_s(q)
+\]
+or, with truncation,
+\[
+p_s(q) = \frac{F_s(q) - F_s(L)}{F_s(U) - F_s(L)}.
+\]
+With `lower.tail = FALSE`, return \(1 - p_s(q)\). With `log.p = TRUE`, return
+\(\log p_s(q)\).
+
+### 3) `output = "pit"`
+
+- Continuous case: PIT equals the CDF value,
+\[
+\text{PIT}_s = F_s(y_i).
+\]
+- Discrete case: randomized PIT (to avoid spikes),
+\[
+\text{PIT}_s = F_s(y_i - 1) + V_s \left[F_s(y_i) - F_s(y_i - 1)\right], \quad
+V_s \sim \text{Uniform}(0,1).
+\]
+
+### 4) `output = "density"`
+
+For a queried value \(q\), return
+\[
+d_s(q) = f_s(q)
+\]
+or with truncation,
+\[
+d_s(q) = \frac{f_s(q)}{F_s(U) - F_s(L)} \mathbf{1}\{L \le q \le U\}.
+\]
+With `log = TRUE`, return \(\log d_s(q)\).
+
+For discrete distributions, this corresponds to PMF values and satisfies
+\[
+d_s(k) = F_s(k) - F_s(k-1).
+\]
+
+### 5) `output = "quantile"`
+
+For queried probability \(p\), return
+\[
+q_s(p) = F_s^{-1}(p).
+\]
+With truncation, the internally transformed probability is
+\[
+p_s^\star = p \left[F_s(U) - F_s(L)\right] + F_s(L),
+\]
+and then
+\[
+q_s(p) = F_s^{-1}(p_s^\star).
+\]
+`lower.tail` and `log.p` are first converted to standard probabilities before
+applying these formulas.
+
+### Zero-inflated and hurdle families
+
+For zero-inflated families (parameter \(\pi\), baseline distribution \(G\)):
+\[
+P(Y=0) = \pi + (1-\pi)G(0), \qquad
+P(Y=y>0) = (1-\pi)G(y).
+\]
+
+For hurdle families (parameter \(h\), baseline distribution \(G\)):
+\[
+P(Y=0) = h, \qquad
+P(Y=y>0) = (1-h)\frac{G(y)}{1-G(0)}.
+\]
+
+These definitions induce the corresponding CDF, density/mass, and quantile
+computations used by `probability`, `density`, and `quantile`.
+
+```{r data-helpers, include=FALSE}
+specs <- list(
+  list(
+    family = "gaussian", type = "continuous", x = seq(-4, 4, length.out = 200),
+    p = seq(0.01, 0.99, length.out = 200),
+    d = function(x) dnorm(x, mean = 0, sd = 1),
+    cdf = function(q) pnorm(q, mean = 0, sd = 1),
+    qf = function(p) qnorm(p, mean = 0, sd = 1),
+    r = function(n) rnorm(n, mean = 0, sd = 1)
+  ),
+  list(
+    family = "student", type = "continuous", x = seq(-6, 6, length.out = 200),
+    p = seq(0.01, 0.99, length.out = 200),
+    d = function(x) dstudent_t(x, df = 7, mu = 0, sigma = 1),
+    cdf = function(q) pstudent_t(q, df = 7, mu = 0, sigma = 1),
+    qf = function(p) qstudent_t(p, df = 7, mu = 0, sigma = 1),
+    r = function(n) rstudent_t(n, df = 7, mu = 0, sigma = 1)
+  ),
+  list(
+    family = "binomial", type = "discrete", x = 0:20,
+    p = seq(0.01, 0.99, length.out = 120),
+    d = function(x) dbinom(x, size = 20, prob = 0.4),
+    cdf = function(q) pbinom(q, size = 20, prob = 0.4),
+    qf = function(p) qbinom(p, size = 20, prob = 0.4),
+    r = function(n) rbinom(n, size = 20, prob = 0.4)
+  ),
+  list(
+    family = "beta_binomial", type = "discrete", x = 0:20,
+    p = seq(0.01, 0.99, length.out = 120),
+    d = function(x) dbeta_binomial(x, size = 20, mu = 0.4, phi = 8),
+    cdf = function(q) pbeta_binomial(q, size = 20, mu = 0.4, phi = 8),
+    qf = function(p) qbeta_binomial(p, size = 20, mu = 0.4, phi = 8),
+    r = function(n) rbeta_binomial(n, size = 20, mu = 0.4, phi = 8)
+  ),
+  list(
+    family = "poisson", type = "discrete", x = 0:18,
+    p = seq(0.01, 0.99, length.out = 120),
+    d = function(x) dpois(x, lambda = 5),
+    cdf = function(q) ppois(q, lambda = 5),
+    qf = function(p) qpois(p, lambda = 5),
+    r = function(n) rpois(n, lambda = 5)
+  ),
+  list(
+    family = "negbinomial", type = "discrete", x = 0:24,
+    p = seq(0.01, 0.99, length.out = 120),
+    d = function(x) dnbinom(x, mu = 5, size = 2),
+    cdf = function(q) pnbinom(q, mu = 5, size = 2),
+    qf = function(p) qnbinom(p, mu = 5, size = 2),
+    r = function(n) rnbinom(n, mu = 5, size = 2)
+  ),
+  list(
+    family = "negbinomial2", type = "discrete", x = 0:24,
+    p = seq(0.01, 0.99, length.out = 120),
+    d = function(x) dnbinom(x, mu = 5, size = 1 / 0.6),
+    cdf = function(q) pnbinom(q, mu = 5, size = 1 / 0.6),
+    qf = function(p) qnbinom(p, mu = 5, size = 1 / 0.6),
+    r = function(n) rnbinom(n, mu = 5, size = 1 / 0.6)
+  ),
+  list(
+    family = "zero_inflated_negbinomial", type = "discrete", x = 0:24,
+    p = seq(0.01, 0.99, length.out = 120),
+    d = function(x) dzero_inflated_negbinomial(x, mu = 5, shape = 2, zi = 0.25),
+    cdf = function(q) pzero_inflated_negbinomial(q, mu = 5, shape = 2, zi = 0.25),
+    qf = function(p) qzero_inflated_negbinomial(p, mu = 5, shape = 2, zi = 0.25),
+    r = function(n) {
+      base <- rnbinom(n, mu = 5, size = 2)
+      is_zi <- runif(n) < 0.25
+      base[is_zi] <- 0
+      base
+    }
+  )
+)
+
+make_output_data <- function(spec) {
+  density_df <- data.frame(
+    family = spec$family,
+    type = spec$type,
+    x = spec$x,
+    y = spec$d(spec$x)
+  )
+  probability_df <- data.frame(
+    family = spec$family,
+    type = spec$type,
+    x = spec$x,
+    y = spec$cdf(spec$x)
+  )
+  quantile_df <- data.frame(
+    family = spec$family,
+    type = spec$type,
+    x = spec$p,
+    y = spec$qf(spec$p)
+  )
+
+  draws <- spec$r(500)
+  ecdf_fun <- ecdf(draws)
+  random_df <- data.frame(
+    family = spec$family,
+    type = spec$type,
+    x = spec$x,
+    y = ecdf_fun(spec$x)
+  )
+
+  pit_draws <- spec$r(400)
+  if (identical(spec$type, "continuous")) {
+    pit <- spec$cdf(pit_draws)
+  } else {
+    u <- runif(length(pit_draws))
+    pit <- spec$cdf(pit_draws - 1) + u * (spec$cdf(pit_draws) - spec$cdf(pit_draws - 1))
+  }
+  pit <- pmax(0, pmin(1, pit))
+  pit_hist <- hist(pit, breaks = seq(0, 1, by = 0.1), plot = FALSE)
+  pit_df <- data.frame(
+    family = spec$family,
+    midpoint = pit_hist$mids,
+    density = pit_hist$density
+  )
+
+  list(
+    density = density_df,
+    probability = probability_df,
+    quantile = quantile_df,
+    random = random_df,
+    pit = pit_df
+  )
+}
+
+all_data <- lapply(specs, make_output_data)
+density_data <- do.call(rbind, lapply(all_data, `[[`, "density"))
+probability_data <- do.call(rbind, lapply(all_data, `[[`, "probability"))
+quantile_data <- do.call(rbind, lapply(all_data, `[[`, "quantile"))
+random_data <- do.call(rbind, lapply(all_data, `[[`, "random"))
+pit_data <- do.call(rbind, lapply(all_data, `[[`, "pit"))
+
+panel_theme <- theme(
+  strip.text = element_text(size = 8),
+  axis.title = element_blank(),
+  panel.grid.minor = element_blank()
+)
+```
+
+## Random output
+
+Empirical CDF of random draws (`output = "random"`).
+
+```{r random-plot, fig.width=9, fig.height=4.2}
+ggplot(random_data, aes(x = x, y = y)) +
+  geom_line(linewidth = 0.4, color = "#2c7fb8") +
+  facet_wrap(~ family, scales = "free_x", ncol = 4) +
+  labs(title = "Random output (empirical CDF thumbnails)", y = "ECDF") +
+  panel_theme
+```
+
+## Probability output
+
+CDF values (`output = "probability"`).
+
+```{r probability-plot, fig.width=9, fig.height=4.2}
+ggplot(probability_data, aes(x = x, y = y)) +
+  geom_line(
+    data = subset(probability_data, type == "continuous"),
+    linewidth = 0.4, color = "#1b9e77"
+  ) +
+  geom_step(
+    data = subset(probability_data, type == "discrete"),
+    linewidth = 0.4, color = "#1b9e77"
+  ) +
+  facet_wrap(~ family, scales = "free_x", ncol = 4) +
+  labs(title = "Probability output (CDF thumbnails)", y = "P(X <= x)") +
+  panel_theme
+```
+
+## PIT output
+
+PIT histogram (`output = "pit"`). For calibrated models, these are near-uniform.
+
+```{r pit-plot, fig.width=9, fig.height=4.2}
+ggplot(pit_data, aes(x = midpoint, y = density)) +
+  geom_col(width = 0.085, fill = "#7570b3", alpha = 0.75) +
+  geom_hline(yintercept = 1, linewidth = 0.25, linetype = "dashed") +
+  facet_wrap(~ family, ncol = 4) +
+  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.5, 1)) +
+  labs(title = "PIT output (thumbnail histograms)", y = "Density") +
+  panel_theme
+```
+
+## Density output
+
+PDF/PMF values (`output = "density"`).
+
+```{r density-plot, fig.width=9, fig.height=4.2}
+ggplot() +
+  geom_line(
+    data = subset(density_data, type == "continuous"),
+    aes(x = x, y = y),
+    linewidth = 0.45, color = "#d95f02"
+  ) +
+  geom_col(
+    data = subset(density_data, type == "discrete"),
+    aes(x = x, y = y),
+    width = 0.85, fill = "#d95f02", alpha = 0.7
+  ) +
+  facet_wrap(~ family, scales = "free_x", ncol = 4) +
+  labs(title = "Density output (PDF/PMF thumbnails)", y = "Density / Mass") +
+  panel_theme
+```
+
+## Quantile output
+
+Inverse CDF values (`output = "quantile"`).
+
+```{r quantile-plot, fig.width=9, fig.height=4.2}
+ggplot(quantile_data, aes(x = x, y = y)) +
+  geom_line(
+    data = subset(quantile_data, type == "continuous"),
+    linewidth = 0.4, color = "#e7298a"
+  ) +
+  geom_step(
+    data = subset(quantile_data, type == "discrete"),
+    linewidth = 0.4, color = "#e7298a"
+  ) +
+  facet_wrap(~ family, scales = "free_y", ncol = 4) +
+  labs(title = "Quantile output (inverse-CDF thumbnails)", x = "p", y = "Q(p)") +
+  panel_theme
+```
+
+## Notes
+
+- Continuous families have `probability == pit`.
+- Discrete families use randomized PIT to avoid spikes.
+- The parameter values here are illustrative; the output shape changes with
+  posterior draws in real model fits.

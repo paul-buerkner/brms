@@ -27,16 +27,17 @@
 #'   for truncated discrete models only
 #'   (defaults to \code{5}). See Details for more information.
 #' @param output The type of output to return. Can be \code{"random"},
-#'   \code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
-#'   In case of continuous distributions, \code{"probability"} is equivalent
-#'   to \code{"pit"}.
-#' @param q Custom quantile for computing probability or PIT values. It defaults
-#'   to NULL in which case \code{prep$data$Y[i]} is used for the quantiles.
-#' @param lower.tail logical for computing probability or PIT values. It
-#'   defaults to TRUE in which case probabilities are P(X < x) otherwise,
-#'   P(X > x).
-#' @param log.p logical for computing probability or PIT values. It defaults to
-#'   FALSE, if TRUE probabilities p are given as log(p).
+#'   \code{"probability"}, \code{"pit"}, \code{"density"}, or
+#'   \code{"quantile"}. Defaults to \code{"random"}. In case of continuous
+#'   distributions, \code{"probability"} is equivalent to \code{"pit"}.
+#' @param q Custom quantile for computing probability, PIT, or density values.
+#'   It defaults to NULL in which case \code{prep$data$Y[i]} is used.
+#' @param p Custom probability for computing quantile values.
+#' @param lower.tail logical for computing probability or quantile values. It
+#'   defaults to TRUE in which case probabilities are P(X < x) otherwise P(X > x).
+#' @param log.p logical for computing probability or quantile values. It
+#'   defaults to FALSE, if TRUE probabilities p are given as log(p).
+#' @param log logical for computing density values. It defaults to FALSE.
 #' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
 #'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
@@ -94,8 +95,8 @@ posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
   ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
-  output = "random", q = NULL, cores = NULL, lower.tail = TRUE,
-  log.p = FALSE, ...
+  output = "random", q = NULL, p = NULL, cores = NULL, lower.tail = TRUE,
+  log.p = FALSE, log = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -110,7 +111,7 @@ posterior_predict.brmsfit <- function(
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys,
     negative_rt = negative_rt, cores = cores, summary = FALSE, output = output,
-    q = q, lower.tail = lower.tail, log.p = log.p
+    q = q, p = p, lower.tail = lower.tail, log.p = log.p, log = log
   )
 }
 
@@ -134,7 +135,9 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        probs = c(0.025, 0.975),
                                        cores = NULL, output = "random", ...) {
   output <- as_one_character(output)
-  output <- rlang::arg_match(output, values = c("random", "probability", "pit"))
+  output <- rlang::arg_match(
+    output, values = c("random", "probability", "pit", "density", "quantile")
+  )
 
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
@@ -1113,29 +1116,33 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   round(x)
 }
 
-# predict random numbers or probability / PIT values from
+# predict random numbers, CDF/PIT, density, or quantiles from
 # continuous distributions
 # @param i index of the observation for which to compute pp values
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
-# @param output "random", "probability", or "pit" (treated as "probability")
+# @param output "random", "probability", "pit", "density", or "quantile"
 # @param distribution name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
 # @param q optional custom quantile value; if NULL, the default is
 #   prep$data$Y[i]
+# @param p optional custom probability value for quantile output
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_continuous_helper <- function(
-  i, prep, output, distribution, ntrys, q = NULL, ...
+  i, prep, output, distribution, ntrys, q = NULL, p = NULL, ...
 ) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
-  if (output %in% c("probability", "pit") && is.null(q)) q <- prep$data$Y[i]
+  if (output %in% c("probability", "pit", "density") && is.null(q)) q <- prep$data$Y[i]
+  if (output == "quantile" && is.null(p)) {
+    stop2("Argument 'p' must be specified when output = 'quantile'.")
+  }
 
   switch(output,
     "random" = {
       dots <- list(...)
-      dots[c("log.p", "lower.tail")] <- NULL
+      dots[c("log.p", "lower.tail", "log", "p")] <- NULL
       do.call(rcontinuous, c(list(n = prep$ndraws, distribution = distribution,
                              lb = lb, ub = ub, ntrys = ntrys), dots))
     },
@@ -1145,32 +1152,42 @@ predict_continuous_helper <- function(
     "pit" = {
       compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
                   randomized = FALSE, ...)
+    },
+    "density" = {
+      compute_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+    },
+    "quantile" = {
+      compute_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
     }
   )
 }
 
-# predict random numbers or probability / PIT values from discrete distributions
+# predict random numbers, CDF/PIT, density, or quantiles from discrete distributions
 # @param i index of the observation for which to compute pp values
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
-# @param output "random", "probability", or "pit" (treated as "probability")
+# @param output "random", "probability", "pit", "density", or "quantile"
 # @param distribution name of the distribution
 # @param ntrys number of trys in rejection sampling for truncated models
 # @param q optional custom quantile value; if NULL, the default is
 #   prep$data$Y[i]
+# @param p optional custom probability value for quantile output
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
 predict_discrete_helper <- function(
-  i, prep, output, distribution, ntrys = NULL, q = NULL, ...
+  i, prep, output, distribution, ntrys = NULL, q = NULL, p = NULL, ...
 ) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
-  if (output %in% c("probability", "pit") && is.null(q)) q <- prep$data$Y[i]
+  if (output %in% c("probability", "pit", "density") && is.null(q)) q <- prep$data$Y[i]
+  if (output == "quantile" && is.null(p)) {
+    stop2("Argument 'p' must be specified when output = 'quantile'.")
+  }
 
   switch(output,
     "random" = {
       dots <- list(...)
-      dots[c("log.p", "lower.tail")] <- NULL
+      dots[c("log.p", "lower.tail", "log", "p")] <- NULL
       do.call(rdiscrete, c(list(n = prep$ndraws, distribution = distribution,
                              lb = lb, ub = ub, ntrys = ntrys), dots))
     },
@@ -1181,6 +1198,12 @@ predict_discrete_helper <- function(
     "pit" = {
       compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
                   randomized = TRUE, ...)
+    },
+    "density" = {
+      compute_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+    },
+    "quantile" = {
+      compute_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
     }
   )
 }
@@ -1200,7 +1223,7 @@ predict_discrete_helper <- function(
 # @noRd
 compute_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
   log.p = FALSE, ...) {
-  args <- validate_distribution_args(distribution, ...)
+  args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   pdist <- paste0("p", distribution)
   # prepare computation of (non-)truncated cdf
   F_internal <- function(q) {
@@ -1227,10 +1250,86 @@ compute_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
   return(probs)
 }
 
-# ensure that only arguments that are accepted by the RNG are passed
-validate_distribution_args <- function(distribution, ...) {
+# compute density dependent on whether the distribution is truncated or not
+# @param q quantile value(s) for which to compute the density
+# @param distribution name of a distribution
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param log logical; if TRUE densities are given as log(d)
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of density values
+# @noRd
+compute_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
+  dargs <- validate_distribution_args(distribution, fun_prefix = "d", ...)
+  pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
+  ddist <- paste0("d", distribution)
+  pdist <- paste0("p", distribution)
+  if (is.null(lb) && is.null(ub)) {
+    return(do_call(ddist, c(list(q), dargs, log = log)))
+  }
+  if (is.null(lb)) {
+    cdf_lb <- rep(0, length(q))
+  } else {
+    cdf_lb <- do_call(pdist, c(list(lb), pargs))
+  }
+  if (is.null(ub)) {
+    cdf_ub <- rep(1, length(q))
+  } else {
+    cdf_ub <- do_call(pdist, c(list(ub), pargs))
+  }
+  denom <- cdf_ub - cdf_lb
+  if (any(denom == 0)) stop("Division by zero")
+  dens <- do_call(ddist, c(list(q), dargs, log = FALSE)) / denom
+  if (!is.null(lb)) dens[q < lb] <- 0
+  if (!is.null(ub)) dens[q > ub] <- 0
+  if (isTRUE(log)) dens <- log(dens)
+  dens
+}
+
+# compute quantile dependent on whether the distribution is truncated or not
+# @param p probability value(s) for which to compute the quantile
+# @param distribution name of a distribution
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param lower.tail logical; if TRUE (default) probabilities are P(X < x)
+# otherwise, P(X > x)
+# @param log.p logical; if TRUE probabilities p are given as log(p)
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of quantile values
+# @noRd
+compute_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
+  log.p = FALSE, ...) {
+  qargs <- validate_distribution_args(distribution, fun_prefix = "q", ...)
+  pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
+  qdist <- paste0("q", distribution)
+  pdist <- paste0("p", distribution)
+  if (is.null(lb) && is.null(ub)) {
+    return(do_call(
+      qdist, c(list(p), qargs, lower.tail = lower.tail, log.p = log.p)
+    ))
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  if (is.null(lb)) {
+    cdf_lb <- rep(0, length(p))
+  } else {
+    cdf_lb <- do_call(pdist, c(list(lb), pargs))
+  }
+  if (is.null(ub)) {
+    cdf_ub <- rep(1, length(p))
+  } else {
+    cdf_ub <- do_call(pdist, c(list(ub), pargs))
+  }
+  denom <- cdf_ub - cdf_lb
+  if (any(denom == 0)) stop("Division by zero")
+  p_internal <- p * denom + cdf_lb
+  do_call(qdist, c(list(p_internal), qargs))
+}
+
+# ensure that only arguments that are accepted by distribution functions are passed
+validate_distribution_args <- function(distribution, fun_prefix = "p", ...) {
   args <- list(...)
-  rdist <- paste0("p", distribution)
+  fun_prefix <- as_one_character(fun_prefix)
+  rdist <- paste0(fun_prefix, distribution)
   rdist_fun <- match.fun(rdist)
   rdist_formals <- names(formals(rdist_fun))
 

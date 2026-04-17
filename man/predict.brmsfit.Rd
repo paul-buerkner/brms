@@ -82,9 +82,9 @@ Only used if \code{summary} is \code{TRUE}.}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{output}{The type of output to return. Can be \code{"random"},
-\code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
-In case of continuous distributions, \code{"probability"} is equivalent
-to \code{"pit"}.}
+\code{"probability"}, \code{"pit"}, \code{"density"}, or
+\code{"quantile"}. Defaults to \code{"random"}. In case of continuous
+distributions, \code{"probability"} is equivalent to \code{"pit"}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

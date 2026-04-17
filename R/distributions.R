@@ -918,6 +918,10 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
 #'  \item{\code{phi = (1 - mu) * beta}} precision or over-dispersion, component.
 #' }
 #'
+#' The quantile function has no known closed form for this parameterization and
+#' is therefore computed numerically via inversion of the cumulative
+#' distribution function over the finite support \code{0:size}.
+#'
 #' @name BetaBinomial
 #'
 #' @inheritParams StudentT
@@ -942,6 +946,31 @@ pbeta_binomial <- function(q, size, mu, phi, lower.tail = TRUE, log.p = FALSE) {
   beta <- (1 - mu) * phi
   extraDistr::pbbinom(q, size, alpha = alpha, beta = beta,
                       lower.tail = lower.tail, log.p = log.p)
+}
+
+#' @rdname BetaBinomial
+#' @export
+qbeta_binomial <- function(p, size, mu, phi, lower.tail = TRUE, log.p = FALSE) {
+  require_package("extraDistr")
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, size, mu, phi))
+  out <- vapply(seq_along(args$p), function(i) {
+    if (!is.finite(args$p[i])) {
+      return(args$p[i])
+    }
+    alpha <- args$mu[i] * args$phi[i]
+    beta <- (1 - args$mu[i]) * args$phi[i]
+    x <- 0:args$size[i]
+    cdf <- cumsum(extraDistr::dbbinom(x, args$size[i], alpha = alpha, beta = beta))
+    ind <- which(cdf >= args$p[i])[1]
+    if (is.na(ind)) {
+      args$size[i]
+    } else {
+      x[ind]
+    }
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
+  out
 }
 
 #' @rdname BetaBinomial
@@ -1761,6 +1790,8 @@ rxbeta <- function(...) {
 #' If \eqn{x = 0} set \eqn{f(x) = \theta + (1 - \theta) * g(0)}.
 #' Else set \eqn{f(x) = (1 - \theta) * g(x)},
 #' where \eqn{g(x)} is the density of the non-zero-inflated part.
+#' For the zero-inflated negative binomial distribution, the quantile function
+#' has no known closed form and is therefore computed numerically.
 NULL
 
 #' @rdname ZeroInflated
@@ -1791,6 +1822,20 @@ pzero_inflated_negbinomial <- function(q, mu, shape, zi, lower.tail = TRUE,
                                        log.p = FALSE) {
   pars <- nlist(mu, size = shape)
   .pzero_inflated(q, "nbinom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+qzero_inflated_negbinomial <- function(p, mu, shape, zi, lower.tail = TRUE,
+                                       log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, shape, zi))
+  p_nb <- with(args, ifelse(zi == 1, 0, (p - zi) / (1 - zi)))
+  p_nb <- pmin(1, pmax(0, p_nb))
+  out <- qnbinom(p_nb, mu = args$mu, size = args$shape)
+  out[!is.finite(args$p)] <- args$p[!is.finite(args$p)]
+  dim(out) <- attributes(args)$max_dim
+  out
 }
 
 #' @rdname ZeroInflated

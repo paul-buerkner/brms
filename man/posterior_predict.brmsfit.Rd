@@ -19,9 +19,11 @@
   ntrys = 5,
   output = "random",
   q = NULL,
+  p = NULL,
   cores = NULL,
   lower.tail = TRUE,
   log.p = FALSE,
+  log = FALSE,
   ...
 )
 }
@@ -71,22 +73,25 @@ for truncated discrete models only
 (defaults to \code{5}). See Details for more information.}
 
 \item{output}{The type of output to return. Can be \code{"random"},
-\code{"probability"}, or \code{"pit"}. Defaults to \code{"random"}.
-In case of continuous distributions, \code{"probability"} is equivalent
-to \code{"pit"}.}
+\code{"probability"}, \code{"pit"}, \code{"density"}, or
+\code{"quantile"}. Defaults to \code{"random"}. In case of continuous
+distributions, \code{"probability"} is equivalent to \code{"pit"}.}
 
-\item{q}{Custom quantile for computing probability or PIT values. It defaults
-to NULL in which case \code{prep$data$Y[i]} is used for the quantiles.}
+\item{q}{Custom quantile for computing probability, PIT, or density values.
+It defaults to NULL in which case \code{prep$data$Y[i]} is used.}
+
+\item{p}{Custom probability for computing quantile values.}
 
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
 this argument can be set globally via the \code{mc.cores} option.}
 
-\item{lower.tail}{logical for computing probability or PIT values. It
-defaults to TRUE in which case probabilities are P(X < x) otherwise,
-P(X > x).}
+\item{lower.tail}{logical for computing probability or quantile values. It
+defaults to TRUE in which case probabilities are P(X < x) otherwise P(X > x).}
 
-\item{log.p}{logical for computing probability or PIT values. It defaults to
-FALSE, if TRUE probabilities p are given as log(p).}
+\item{log.p}{logical for computing probability or quantile values. It
+defaults to FALSE, if TRUE probabilities p are given as log(p).}
+
+\item{log}{logical for computing density values. It defaults to FALSE.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

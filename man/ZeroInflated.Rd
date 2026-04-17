@@ -6,6 +6,7 @@
 \alias{pzero_inflated_poisson}
 \alias{dzero_inflated_negbinomial}
 \alias{pzero_inflated_negbinomial}
+\alias{qzero_inflated_negbinomial}
 \alias{dzero_inflated_binomial}
 \alias{pzero_inflated_binomial}
 \alias{dzero_inflated_beta_binomial}
@@ -21,6 +22,8 @@ pzero_inflated_poisson(q, lambda, zi, lower.tail = TRUE, log.p = FALSE)
 dzero_inflated_negbinomial(x, mu, shape, zi, log = FALSE)
 
 pzero_inflated_negbinomial(q, mu, shape, zi, lower.tail = TRUE, log.p = FALSE)
+
+qzero_inflated_negbinomial(p, mu, shape, zi, lower.tail = TRUE, log.p = FALSE)
 
 dzero_inflated_binomial(x, size, prob, zi, log = FALSE)
 
@@ -60,6 +63,8 @@ Else, return P(X > x) .}
 
 \item{shape, shape1, shape2}{shape parameter}
 
+\item{p}{Vector of probabilities.}
+
 \item{size}{number of trials}
 
 \item{prob}{probability of success on each trial}
@@ -74,4 +79,6 @@ The density of a zero-inflated distribution can be specified as follows.
 If \eqn{x = 0} set \eqn{f(x) = \theta + (1 - \theta) * g(0)}.
 Else set \eqn{f(x) = (1 - \theta) * g(x)},
 where \eqn{g(x)} is the density of the non-zero-inflated part.
+For the zero-inflated negative binomial distribution, the quantile function
+has no known closed form and is therefore computed numerically.
 }
