@@ -970,9 +970,23 @@ stan_log_lik_custom <- function(bterms, threads = NULL, ...) {
   p <- stan_log_lik_dpars(bterms, reqn = !no_loop)
   mix <- get_mix_id(bterms)
   dpars <- paste0(family$dpars, mix)
+  lpdf <- family$name
   if (is_ordinal(family)) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
-    p$thres <- paste0("Intercept", prefix)
+    if (has_thres_groups(bterms)) {
+      if (no_loop) {
+        stop2("Custom ordinal families with grouped thresholds must be ",
+              "evaluated in a loop. Set 'loop = TRUE' in 'custom_family'.")
+      }
+      str_add(lpdf) <- "_merged"
+      p$thres <- paste0("merged_Intercept", prefix)
+      p$Jthres <- stan_log_lik_advars(bterms, "Jthres", reqn = TRUE, ...)$Jthres
+    } else {
+      p$thres <- paste0("Intercept", prefix)
+    }
+    if (has_sum_to_zero_thres(bterms)) {
+      str_add(p$thres) <- "_stz"
+    }
   }
   # insert the response name into the 'vars' strings
   # addition terms contain the response in their variable name
@@ -988,7 +1002,7 @@ stan_log_lik_custom <- function(bterms, threads = NULL, ...) {
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
   vars <- paste0(var_names, var_resps, var_indices)
-  sdist(family$name, p[dpars], p$thres, vars, vec = no_loop)
+  sdist(lpdf, p[dpars], p$thres, p$Jthres, vars, vec = no_loop)
 }
 
 # ordinal log-probability density functions in Stan language

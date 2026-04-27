@@ -1236,7 +1236,9 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   }
   class(out) <- c("customfamily", "brmsfamily", "family")
   if (is_ordinal(out)) {
-    threshold <- match.arg(threshold)
+    threshold <- match.arg(
+      threshold, c("flexible", "equidistant", "sum_to_zero")
+    )
     out$threshold <- threshold
   }
   out
