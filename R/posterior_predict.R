@@ -330,7 +330,8 @@ validate_pp_method <- function(method) {
 # @param ... ignored arguments
 # @param A vector of length prep$ndraws containing draws
 #   from the posterior predictive distribution
-posterior_predict_gaussian <- function(i, prep, output = "random", ntrys = 5, ...) {
+posterior_predict_gaussian <- function(i, prep, output = "random", 
+                                       ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
@@ -341,7 +342,8 @@ posterior_predict_gaussian <- function(i, prep, output = "random", ntrys = 5, ..
   )
 }
 
-posterior_predict_student <- function(i, prep, output = "random", ntrys = 5, ...) {
+posterior_predict_student <- function(i, prep, output = "random", 
+                                      ntrys = 5, ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
@@ -353,13 +355,14 @@ posterior_predict_student <- function(i, prep, output = "random", ntrys = 5, ...
   )
 }
 
-posterior_predict_lognormal <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "lnorm",
-    meanlog = get_dpar(prep, "mu", i = i),
-    sdlog = get_dpar(prep, "sigma", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_lognormal <- function(i, prep, output = "random", 
+                                        ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "lnorm", meanlog = mu, sdlog = sigma, ...
   )
 }
 
@@ -502,7 +505,8 @@ posterior_predict_student_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_binomial <- function(i, prep, output = "random", ntrys = 5, ...) {
+posterior_predict_binomial <- function(i, prep, output = "random", 
+                                       ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   size <- prep$data$trials[i]
 
@@ -513,7 +517,7 @@ posterior_predict_binomial <- function(i, prep, output = "random", ntrys = 5, ..
 }
 
 posterior_predict_beta_binomial <- function(i, prep, output = "random",
-  ntrys = 5, ...) {
+                                            ntrys = 5, ...) {
   size <- prep$data$trials[i]
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
@@ -524,12 +528,18 @@ posterior_predict_beta_binomial <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_bernoulli <- function(i, prep, ...) {
+posterior_predict_bernoulli <- function(i, prep, output = "random", 
+                                        ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
-  rbinom(length(mu), size = 1, prob = mu)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "binom", prob = mu, size = 1, ...
+  )
 }
 
-posterior_predict_poisson <- function(i, prep, output = "random", ntrys = 5, ...) {
+posterior_predict_poisson <- function(i, prep, output = "random", 
+                                      ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
 
@@ -540,7 +550,7 @@ posterior_predict_poisson <- function(i, prep, output = "random", ntrys = 5, ...
 }
 
 posterior_predict_negbinomial <- function(i, prep, output = "random",
-  ntrys = 5, ...) {
+                                          ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- get_dpar(prep, "shape", i)
@@ -553,7 +563,7 @@ posterior_predict_negbinomial <- function(i, prep, output = "random",
 }
 
 posterior_predict_negbinomial2 <- function(i, prep, output = "random",
-  ntrys = 5, ...) {
+                                           ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   sigma <- get_dpar(prep, "sigma", i)
@@ -607,25 +617,25 @@ posterior_predict_exponential <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
-posterior_predict_gamma <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_gamma <- function(i, prep, output = "random", 
+                                    ntrys = 5, ...) {
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
-  rcontinuous(
-    n = prep$ndraws, dist = "gamma",
-    shape = shape, scale = scale,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "gamma", shape = shape, scale = scale, ...
   )
 }
 
-posterior_predict_weibull <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_weibull <- function(i, prep, output = "random", 
+                                      ntrys = 5, ...) {
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
-  rcontinuous(
-    n = prep$ndraws, dist = "weibull",
-    shape = shape, scale = scale,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "weibull", shape = shape, scale = scale, ...
   )
 }
 
@@ -691,14 +701,13 @@ posterior_predict_wiener <- function(i, prep, negative_rt = FALSE, ntrys = 5,
   out
 }
 
-posterior_predict_beta <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_beta <- function(i, prep, output = "random", ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "beta",
-    shape1 = mu * phi, shape2 = (1 - mu) * phi,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "beta", shape1 = mu * phi, shape2 = (1 - mu) * phi, ...
   )
 }
 
@@ -823,15 +832,28 @@ posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
   )
 }
 
-posterior_predict_zero_inflated_beta <- function(i, prep, ...) {
+posterior_predict_zero_inflated_beta <- function(i, prep, output = "random",
+                                                 ntrys = 5, ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  tmp <- runif(prep$ndraws, 0, 1)
-  ifelse(
-    tmp < zi, 0,
-    rbeta(prep$ndraws, shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  )
+  shape1 <- mu * phi
+  shape2 <- (1 - mu) * phi
+
+  if (output == "random") {
+    out <- predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "beta", shape1 = shape1, shape2 = shape2, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0, out)
+  } else {
+    out <- predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "zero_inflated_beta", shape1 = shape1, shape2 = shape2, zi = zi, ...
+    )
+  }
+  out
 }
 
 posterior_predict_zero_one_inflated_beta <- function(i, prep, ...) {
@@ -847,18 +869,31 @@ posterior_predict_zero_one_inflated_beta <- function(i, prep, ...) {
   )
 }
 
-posterior_predict_zero_inflated_poisson <- function(i, prep, ...) {
+posterior_predict_zero_inflated_poisson <- function(i, prep, output = "random",
+                                                    ntrys = 5, ...) {
   # zi is the bernoulli zero-inflation parameter
   zi <- get_dpar(prep, "zi", i = i)
   lambda <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  # compare with zi to incorporate the zero-inflation process
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < zi, 0L, rpois(ndraws, lambda = lambda))
+  lambda <- multiply_dpar_rate_denom(lambda, prep, i = i)
+
+  if (output == "random") {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "pois", lambda = lambda, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "zero_inflated_poisson", lambda = lambda, zi = zi, ...
+    )
+  }
+  out
 }
 
 posterior_predict_zero_inflated_negbinomial <- function(i, prep,
-  output = "random", ...) {
+                                                        output = "random", ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
@@ -875,25 +910,51 @@ posterior_predict_zero_inflated_negbinomial <- function(i, prep,
   out
 }
 
-posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
+posterior_predict_zero_inflated_binomial <- function(i, prep, output = "random",
+                                                     ntrys = 5, ...) {
   zi <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   prob <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < zi, 0L, rbinom(ndraws, size = trials, prob = prob))
+
+  if (output == "random") {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "binom", size = trials, prob = prob, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "zero_inflated_binomial", size = trials, prob = prob, zi = zi, ...
+    )
+  }
+  out
 }
 
-posterior_predict_zero_inflated_beta_binomial <- function(i, prep, ...) {
+posterior_predict_zero_inflated_beta_binomial <- function(i, prep,
+                                                          output = "random", 
+                                                          ntrys = 5, ...) {
   zi <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  ndraws <- prep$ndraws
-  draws <- rbeta_binomial(ndraws, size = trials, mu = mu, phi = phi)
-  tmp <- runif(ndraws, 0, 1)
-  draws[tmp < zi] <- 0L
-  draws
+
+  if (output == "random") {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "beta_binomial", size = trials, mu = mu, phi = phi, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "zero_inflated_beta_binomial",
+      size = trials, mu = mu, phi = phi, zi = zi, ...
+    )
+  }
+  out
 }
 
 posterior_predict_categorical <- function(i, prep, ...) {
@@ -1174,9 +1235,8 @@ predict_continuous_helper <- function(
 # @param p optional custom probability value for quantile output
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
-predict_discrete_helper <- function(
-  i, prep, output, distribution, ntrys = NULL, q = NULL, p = NULL, ...
-) {
+predict_discrete_helper <- function(i, prep, output, distribution, ntrys = NULL,
+                                    q = NULL, p = NULL, ...) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
   if (output %in% c("probability", "pit", "density") && is.null(q)) q <- prep$data$Y[i]
@@ -1189,7 +1249,7 @@ predict_discrete_helper <- function(
       dots <- list(...)
       dots[c("log.p", "lower.tail", "log", "p")] <- NULL
       do.call(rdiscrete, c(list(n = prep$ndraws, distribution = distribution,
-                             lb = lb, ub = ub, ntrys = ntrys), dots))
+                                lb = lb, ub = ub, ntrys = ntrys), dots))
     },
     "probability" = {
       compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
@@ -1222,7 +1282,7 @@ predict_discrete_helper <- function(
 # @return a vector of probability values
 # @noRd
 compute_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
-  log.p = FALSE, ...) {
+                        log.p = FALSE, ...) {
   args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   pdist <- paste0("p", distribution)
   # prepare computation of (non-)truncated cdf
@@ -1298,7 +1358,7 @@ compute_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
 # @return a vector of quantile values
 # @noRd
 compute_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
-  log.p = FALSE, ...) {
+                             log.p = FALSE, ...) {
   qargs <- validate_distribution_args(distribution, fun_prefix = "q", ...)
   pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   qdist <- paste0("q", distribution)

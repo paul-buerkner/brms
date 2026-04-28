@@ -1811,6 +1811,14 @@ pzero_inflated_poisson <- function(q, lambda, zi, lower.tail = TRUE,
 
 #' @rdname ZeroInflated
 #' @export
+qzero_inflated_poisson <- function(p, lambda, zi, lower.tail = TRUE,
+                                   log.p = FALSE) {
+  pars <- nlist(lambda)
+  .qzero_inflated(p, "pois", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
 dzero_inflated_negbinomial <- function(x, mu, shape, zi, log = FALSE) {
   pars <- nlist(mu, size = shape)
   .dzero_inflated(x, "nbinom", zi, pars, log)
@@ -1828,14 +1836,8 @@ pzero_inflated_negbinomial <- function(q, mu, shape, zi, lower.tail = TRUE,
 #' @export
 qzero_inflated_negbinomial <- function(p, mu, shape, zi, lower.tail = TRUE,
                                        log.p = FALSE) {
-  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
-  args <- do_call(expand, nlist(p, mu, shape, zi))
-  p_nb <- with(args, ifelse(zi == 1, 0, (p - zi) / (1 - zi)))
-  p_nb <- pmin(1, pmax(0, p_nb))
-  out <- qnbinom(p_nb, mu = args$mu, size = args$shape)
-  out[!is.finite(args$p)] <- args$p[!is.finite(args$p)]
-  dim(out) <- attributes(args)$max_dim
-  out
+  pars <- nlist(mu, size = shape)
+  .qzero_inflated(p, "nbinom", zi, pars, lower.tail, log.p)
 }
 
 #' @rdname ZeroInflated
@@ -1855,6 +1857,14 @@ pzero_inflated_binomial <- function(q, size, prob, zi, lower.tail = TRUE,
 
 #' @rdname ZeroInflated
 #' @export
+qzero_inflated_binomial <- function(p, size, prob, zi, lower.tail = TRUE,
+                                    log.p = FALSE) {
+  pars <- nlist(size, prob)
+  .qzero_inflated(p, "binom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
 dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
   pars <- nlist(size, mu, phi)
   .dzero_inflated(x, "beta_binomial", zi, pars, log)
@@ -1866,6 +1876,14 @@ pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi,
                                          lower.tail = TRUE, log.p = FALSE) {
   pars <- nlist(size, mu, phi)
   .pzero_inflated(q, "beta_binomial", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+qzero_inflated_beta_binomial <- function(p, size, mu, phi, zi,
+                                         lower.tail = TRUE, log.p = FALSE) {
+  pars <- nlist(size, mu, phi)
+  .qzero_inflated(p, "beta_binomial", zi, pars, lower.tail, log.p)
 }
 
 #' @rdname ZeroInflated
@@ -1883,6 +1901,15 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   pars <- nlist(shape1, shape2)
   # zi_beta is technically a hurdle model
   .phurdle(q, "beta", zi, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname ZeroInflated
+#' @export
+qzero_inflated_beta <- function(p, shape1, shape2, zi, lower.tail = TRUE,
+                                log.p = FALSE) {
+  pars <- nlist(shape1, shape2)
+  # zi_beta is technically a hurdle model
+  .qzero_inflated(p, "beta", zi, pars, lower.tail, log.p)
 }
 
 # @rdname ZeroInflated
@@ -1962,6 +1989,29 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
       out <- exp(out)
     }
   }
+  out
+}
+
+# quantile function of a zero-inflated distribution
+# @param dist name of the distribution
+# @param zi bernoulli zero-inflated parameter
+# @param pars list of parameters passed to qfun
+.qzero_inflated <- function(p, dist, zi, pars, lower.tail, log.p) {
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = c(nlist(p, zi), pars))
+  p <- args$p
+  zi <- args$zi
+  pars <- args[names(pars)]
+  qfun <- paste0("q", dist)
+  p_dist <- ifelse(zi == 1, 0, (p - zi) / (1 - zi))
+  p_dist <- pmin(1, pmax(0, p_dist))
+  out <- do_call(qfun, c(list(p_dist), pars))
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
   out
 }
 

@@ -158,31 +158,42 @@ test_that("zero-inflated distribution functions run without errors", {
   skip_if_not_installed("extraDistr")
   n <- 10
   x <- rpois(n, lambda = 1)
+  p <- rbeta(n, shape1 = 2, shape2 = 2)
 
   res <- dzero_inflated_poisson(x, lambda = 1, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_poisson(x, lambda = 1, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- qzero_inflated_poisson(p, lambda = 1, zi = 0.1)
   expect_true(length(res) == n)
 
   res <- dzero_inflated_negbinomial(x, mu = 2, shape = 5, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_negbinomial(x, mu = 2, shape = 5, zi = 0.1)
   expect_true(length(res) == n)
+  res <- qzero_inflated_negbinomial(p, mu = 2, shape = 5, zi = 0.1)
+  expect_true(length(res) == n)
 
   res <- dzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- qzero_inflated_binomial(p, size = c(2, 10), prob = 0.4, zi = 0.1)
   expect_true(length(res) == n)
 
   res <- dzero_inflated_beta_binomial(x, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_beta_binomial(x, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
   expect_true(length(res) == n)
+  res <- qzero_inflated_beta_binomial(p, c(2, 10), mu = 0.4, phi = 1, zi = 0.1)
+  expect_true(length(res) == n)
 
   x <- c(rbeta(n - 2, shape1 = 2, shape2 = 3), 0, 0)
   res <- dzero_inflated_beta(x, shape1 = 2, shape2 = 3, zi = 0.1)
   expect_true(length(res) == n)
   res <- pzero_inflated_beta(x, shape1 = 2, shape2 = 3, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- qzero_inflated_beta(p, shape1 = 2, shape2 = 3, zi = 0.1)
   expect_true(length(res) == n)
 })
 
