@@ -2434,6 +2434,49 @@ test_that("custom families are handled correctly", {
   expect_match2(scode,
     "target += beta_binomial2_vec_lpmf(Y | mu, tau, vint1, vreal1);"
   )
+
+  # check grouped thresholds with custom families
+  custom_thres_family <- custom_family(
+    "custom_thres_family",
+    dpar = c("mu", "disc"),
+    links = c("identity", "log"),
+    type = "int",
+    specials = "ordinal",
+    threshold = "flexible"
+  )
+  stan_funs <- "
+    real custom_thres_family_merged_lpmf(int y, real mu, real disc, vector thres, array[] int j) {
+      return y;
+    }
+  "
+  stanvars <- stanvar(scode = stan_funs, block = "functions")
+  dat <- data.frame(
+    response = rep(1:3, times = 2),
+    gr = rep(factor(1:3), each = 2)
+  )
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family,
+    stanvar = stanvars,
+  )
+  expect_match2(
+    scode,
+    "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept, Jthres[n]);"
+  )
+  # check sum-to-zero grouped thresholds
+  custom_thres_family_stz <- custom_thres_family
+  custom_thres_family_stz$threshold <- "sum_to_zero"
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family_stz,
+    stanvar = stanvars,
+  )
+  expect_match2(
+    scode,
+    "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept_stz, Jthres[n]);"
+  )
 })
 
 test_that("likelihood of distributional beta models is correct", {
@@ -2674,6 +2717,8 @@ test_that("Un-normalized Stan code is correct", {
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
 })
+
+
 
 # the new array syntax is now used throughout brms
 # test_that("Canonicalizing Stan code is correct", {
