@@ -2477,6 +2477,18 @@ test_that("custom families are handled correctly", {
     scode,
     "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept_stz, Jthres[n]);"
   )
+  # threaded variants: Jthres must be indexed with the global nn,
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family,
+    stanvar = stanvars,
+    threads = threading(2)
+  )
+  expect_match2(
+    scode,
+    "ptarget += custom_thres_family_merged_lpmf(Y[nn] | mu[n], disc, merged_Intercept, Jthres[nn]);"
+  )
 })
 
 test_that("likelihood of distributional beta models is correct", {

@@ -980,7 +980,9 @@ stan_log_lik_custom <- function(bterms, threads = NULL, ...) {
       }
       str_add(lpdf) <- "_merged"
       p$thres <- paste0("merged_Intercept", prefix)
-      p$Jthres <- stan_log_lik_advars(bterms, "Jthres", reqn = TRUE, ...)$Jthres
+      p$Jthres <- stan_log_lik_advars(
+        bterms, "Jthres", reqn = TRUE, threads = threads, ...
+      )$Jthres
     } else {
       p$thres <- paste0("Intercept", prefix)
     }
