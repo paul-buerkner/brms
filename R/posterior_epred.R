@@ -738,7 +738,10 @@ posterior_epred_trunc <- function(prep) {
   stopifnot(is_trunc(prep))
   lb <- data2draws(prep$data[["lb"]], dim_mu(prep))
   ub <- data2draws(prep$data[["ub"]], dim_mu(prep))
-  family_name <- if (prep$family$family == "custom") prep$family$name else prep$family$family
+  family_name <- str_if(
+    is.customfamily(prep$family), 
+    prep$family$name, prep$family$family
+  )
   posterior_epred_trunc_fun <-
     paste0("posterior_epred_trunc_", family_name)
   posterior_epred_trunc_fun <- try(
