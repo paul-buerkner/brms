@@ -797,16 +797,26 @@ posterior_predict_hurdle_poisson <- function(i, prep, output = "random",
   }
 }
 
-posterior_predict_hurdle_negbinomial <- function(i, prep, ...) {
+posterior_predict_hurdle_negbinomial <- function(i, prep, output = "random",
+                                                 ntrys = 5, ...) {
   hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  # sample from an approximate(!) truncated negbinomial distribution
-  # by adjusting mu and adding 1
-  t <- -log(1 - runif(ndraws) * (1 - exp(-mu)))
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- get_dpar(prep, "shape", i = i)
-  ifelse(tmp < hu, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
+
+  if (output == "random") {
+    if (!is.null(prep$data$lb[i]) || !is.null(prep$data$ub[i])) {
+      warning2(
+        "Truncated random sampling is not yet implemented for hurdle_negbinomial."
+      )
+    }
+    qhurdle_negbinomial(runif(prep$ndraws), mu = mu, shape = shape, hu = hu)
+  } else {
+    predict_discrete_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "hurdle_negbinomial", mu = mu, shape = shape, hu = hu, ...
+    )
+  }
 }
 
 posterior_predict_hurdle_gamma <- function(i, prep, ...) {

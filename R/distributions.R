@@ -2242,6 +2242,14 @@ phurdle_negbinomial <- function(q, mu, shape, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+qhurdle_negbinomial <- function(p, mu, shape, hu, lower.tail = TRUE,
+                                log.p = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .qhurdle(p, "nbinom", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_gamma <- function(x, shape, scale, hu, log = FALSE) {
   pars <- nlist(shape, scale)
   .dhurdle(x, "gamma", hu, pars, log, type = "real")

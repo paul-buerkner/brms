@@ -7,6 +7,7 @@
 \alias{qhurdle_poisson}
 \alias{dhurdle_negbinomial}
 \alias{phurdle_negbinomial}
+\alias{qhurdle_negbinomial}
 \alias{dhurdle_gamma}
 \alias{phurdle_gamma}
 \alias{dhurdle_lognormal}
@@ -22,6 +23,8 @@ qhurdle_poisson(p, lambda, hu, lower.tail = TRUE, log.p = FALSE)
 dhurdle_negbinomial(x, mu, shape, hu, log = FALSE)
 
 phurdle_negbinomial(q, mu, shape, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_negbinomial(p, mu, shape, hu, lower.tail = TRUE, log.p = FALSE)
 
 dhurdle_gamma(x, shape, scale, hu, log = FALSE)
 
