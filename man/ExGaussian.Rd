@@ -34,6 +34,9 @@ Else, return P(X > x) .}
 
 \item{p}{Vector of probabilities.}
 
+\item{tol}{Tolerance of the approximation used in the
+quantile function. Default 1e-8.}
+
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{

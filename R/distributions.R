@@ -665,6 +665,8 @@ rvon_mises <- function(n, mu, kappa) {
 #' @param mu Vector of means of the combined distribution.
 #' @param sigma Vector of standard deviations of the gaussian component.
 #' @param beta Vector of scales of the exponential component.
+#' @param tol Tolerance of the approximation used in the
+#'   quantile function. Default 1e-8.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
@@ -925,6 +927,8 @@ rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param shape Vector of shapes.
+#' @param tol Tolerance of the approximation used in the
+#'   quantile function. Default 1e-8.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
