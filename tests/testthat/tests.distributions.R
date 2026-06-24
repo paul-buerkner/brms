@@ -108,8 +108,10 @@ test_that("inv_gaussian distribution functions run without errors", {
   x <- rgamma(n, 10, 3)
   res <- dinv_gaussian(x, mu = 1, shape = 1)
   expect_true(length(res) == n)
-  res <- pinv_gaussian(x, mu = abs(rnorm(n)), shape = 3)
-  expect_true(length(res) == n)
+  mu <- abs(rnorm(n)) + 0.1
+  p <- runif(n, 0.01, 0.99)
+  q <- qinv_gaussian(p, mu = mu, shape = 3)
+  expect_equal(pinv_gaussian(q, mu = mu, shape = 3), p, tolerance = 1e-8)
   res <- rinv_gaussian(n, mu = abs(rnorm(n)), shape = 1:10)
   expect_true(length(res) == n)
 })

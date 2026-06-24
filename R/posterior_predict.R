@@ -668,13 +668,14 @@ posterior_predict_gen_extreme_value <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_inverse.gaussian <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "inv_gaussian",
-    mu = get_dpar(prep, "mu", i = i),
-    shape = get_dpar(prep, "shape", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_inverse.gaussian <- function(i, prep, output = "random",
+                                               ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  shape <- get_dpar(prep, "shape", i = i)
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "inv_gaussian", mu = mu, shape = shape, ...
   )
 }
 

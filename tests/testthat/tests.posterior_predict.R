@@ -606,6 +606,10 @@ test_that("posterior_predict outcome argument works for continuous families", {
       fun = brms:::posterior_predict_frechet, q_ref = 1.2, p_ref = 0.73,
       support = c(0, Inf), prep = make_prep_positive_outcome()
     ),
+    inverse_gaussian = list(
+      fun = brms:::posterior_predict_inverse.gaussian, q_ref = 1.2, p_ref = 0.73,
+      support = c(0, Inf), prep = make_prep_positive_outcome()
+    ),
     gen_extreme_value = list(
       fun = brms:::posterior_predict_gen_extreme_value, q_ref = 0.25, p_ref = 0.73,
       support = c(-Inf, Inf), prep = make_prep_positive_outcome()

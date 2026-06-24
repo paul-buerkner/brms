@@ -824,9 +824,12 @@ rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
 
 #' The Inverse Gaussian Distribution
 #'
-#' Density, distribution function, and random generation
+#' Density, distribution function, quantile function and random generation
 #' for the inverse Gaussian distribution with location \code{mu},
 #' and shape \code{shape}.
+#'
+#' The quantile function has no known closed form and is therefore computed
+#' numerically via inversion of the cumulative distribution function.
 #'
 #' @name InvGaussian
 #'
@@ -880,6 +883,46 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   if (log.p) {
     out <- log(out)
   }
+  out
+}
+
+#' @rdname InvGaussian
+#' @export
+qinv_gaussian <- function(p, mu = 1, shape = 1, lower.tail = TRUE,
+                          log.p = FALSE, tol = 1e-8) {
+  if (isTRUE(any(mu <= 0))) {
+    stop2("Argument 'mu' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, shape))
+  out <- vapply(seq_along(args$p), function(i) {
+    p_i <- args$p[i]
+    if (!is.finite(p_i)) {
+      return(p_i)
+    }
+    if (p_i <= 0) {
+      return(0)
+    }
+    if (p_i >= 1) {
+      return(Inf)
+    }
+    f <- function(x) {
+      pinv_gaussian(x, mu = args$mu[i], shape = args$shape[i]) - p_i
+    }
+    lo <- .Machine$double.eps
+    hi <- args$mu[i]
+    while (f(hi) < 0 && hi < 1e12) {
+      hi <- hi * 2
+    }
+    if (f(lo) * f(hi) > 0) {
+      return(NA_real_)
+    }
+    uniroot(f, c(lo, hi), tol = tol)$root
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
   out
 }
 
