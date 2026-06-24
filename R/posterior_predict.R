@@ -661,7 +661,7 @@ posterior_predict_gen_extreme_value <- function(i, prep, output = "random",
   sigma <- get_dpar(prep, "sigma", i = i)
   xi <- get_dpar(prep, "xi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
-  
+
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
     dist = "gen_extreme_value", sigma = sigma, xi = xi, mu = mu, ...
@@ -679,14 +679,15 @@ posterior_predict_inverse.gaussian <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_exgaussian <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "exgaussian",
-    mu = get_dpar(prep, "mu", i = i),
-    sigma = get_dpar(prep, "sigma", i = i),
-    beta = get_dpar(prep, "beta", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_exgaussian <- function(i, prep, output = "random", ntrys = 5,
+                                         ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  beta <- get_dpar(prep, "beta", i = i)
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "exgaussian", mu = mu, sigma = sigma, beta = beta, ...
   )
 }
 

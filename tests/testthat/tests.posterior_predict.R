@@ -479,6 +479,7 @@ make_prep_positive_outcome <- function(ns = 120, nobs = 8) {
     dpars = list(
       mu = matrix(exp(rnorm(ns * nobs, mean = 0.2, sd = 0.4)), ncol = nobs),
       sigma = rgamma(ns, shape = 4, rate = 3),
+      beta = rgamma(ns, shape = 4, rate = 3),
       shape = rgamma(ns, shape = 6, rate = 2) + 0.5,
       ndt = runif(ns, min = 0, max = 0.5),
       alpha = rnorm(ns),
@@ -605,6 +606,10 @@ test_that("posterior_predict outcome argument works for continuous families", {
     frechet = list(
       fun = brms:::posterior_predict_frechet, q_ref = 1.2, p_ref = 0.73,
       support = c(0, Inf), prep = make_prep_positive_outcome()
+    ),
+    exgaussian = list(
+      fun = brms:::posterior_predict_exgaussian, q_ref = 1.2, p_ref = 0.73,
+      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
     ),
     inverse_gaussian = list(
       fun = brms:::posterior_predict_inverse.gaussian, q_ref = 1.2, p_ref = 0.73,

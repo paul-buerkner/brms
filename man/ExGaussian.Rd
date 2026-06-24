@@ -4,12 +4,15 @@
 \alias{ExGaussian}
 \alias{dexgaussian}
 \alias{pexgaussian}
+\alias{qexgaussian}
 \alias{rexgaussian}
 \title{The Exponentially Modified Gaussian Distribution}
 \usage{
 dexgaussian(x, mu, sigma, beta, log = FALSE)
 
 pexgaussian(q, mu, sigma, beta, lower.tail = TRUE, log.p = FALSE)
+
+qexgaussian(p, mu, sigma, beta, lower.tail = TRUE, log.p = FALSE, tol = 1e-08)
 
 rexgaussian(n, mu, sigma, beta)
 }
@@ -29,10 +32,12 @@ Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
+\item{p}{Vector of probabilities.}
+
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, and random generation
+Density, distribution function, quantile function, and random generation
 for the exponentially modified Gaussian distribution with
 mean \code{mu} and standard deviation \code{sigma} of the gaussian
 component, as well as scale \code{beta} of the exponential

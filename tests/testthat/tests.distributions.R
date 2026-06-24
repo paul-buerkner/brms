@@ -79,9 +79,22 @@ test_that("exgaussian distribution functions run without errors", {
   x <- rnorm(n, 10, 3)
   res <- dexgaussian(x, mu = 1, sigma = 2, beta = 1)
   expect_true(length(res) == n)
-  res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n,
-                     beta = 3, log.p = TRUE)
+  mu <- rnorm(n)
+  res <- pexgaussian(x, mu = mu, sigma = 1:n, beta = 3, log.p = TRUE)
   expect_true(length(res) == n)
+  p <- runif(n, 0.01, 0.99)
+  q <- qexgaussian(p, mu = mu, sigma = 1:n, beta = 3)
+  expect_equal(pexgaussian(q, mu = mu, sigma = 1:n, beta = 3), p,
+               tolerance = 1e-8)
+  ps <- c(-1, 0, 1, 1.5)
+  res <- SW(qexgaussian(ps, mu = 1, sigma = 2, beta = 1))
+  expect_equal(res, c(NA, -Inf, Inf, NA))
+  expect_equal(
+    pexgaussian(qexgaussian(0.5, mu = 1, sigma = 2, beta = 1),
+                mu = 1, sigma = 2, beta = 1),
+    0.5,
+    tolerance = 1e-8
+  )
   res <- rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
   expect_true(length(res) == n)
 })

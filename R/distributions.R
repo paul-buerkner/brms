@@ -610,7 +610,7 @@ rvon_mises <- function(n, mu, kappa) {
 
 #' The Exponentially Modified Gaussian Distribution
 #'
-#' Density, distribution function, and random generation
+#' Density, distribution function, quantile function, and random generation
 #' for the exponentially modified Gaussian distribution with
 #' mean \code{mu} and standard deviation \code{sigma} of the gaussian
 #' component, as well as scale \code{beta} of the exponential
@@ -676,6 +676,52 @@ pexgaussian <- function(q, mu, sigma, beta,
   if (log.p) {
     out <- log(out)
   }
+  out
+}
+
+#' @rdname ExGaussian
+#' @export
+qexgaussian <- function(p, mu, sigma, beta, lower.tail = TRUE, log.p = FALSE,
+                        tol = 1e-8) {
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
+  }
+  if (isTRUE(any(beta < 0))) {
+    stop2("beta must be non-negative.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, sigma, beta))
+  out <- vapply(seq_along(args$p), function(i) {
+    p_i <- args$p[i]
+    if (!is.finite(p_i)) {
+      return(p_i)
+    }
+    if (p_i <= 0) {
+      return(-Inf)
+    }
+    if (p_i >= 1) {
+      return(Inf)
+    }
+    f <- function(x) {
+      pexgaussian(x, mu = args$mu[i], sigma = args$sigma[i],
+                  beta = args$beta[i]) - p_i
+    }
+    sd <- sqrt(args$sigma[i]^2 + args$beta[i]^2)
+    center <- qnorm(p_i, mean = args$mu[i], sd = sd)
+    lo <- center - sd
+    hi <- center + sd
+    while (f(lo) > 0 && lo > -1e12) {
+      lo <- lo - sd
+    }
+    while (f(hi) < 0 && hi < 1e12) {
+      hi <- hi + sd
+    }
+    if (f(lo) * f(hi) > 0) {
+      return(NA_real_)
+    }
+    uniroot(f, c(lo, hi), tol = tol)$root
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
   out
 }
 
