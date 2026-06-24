@@ -40,6 +40,20 @@ test_that("qcom_poisson reduces to qpois when shape is 1", {
   )
 })
 
+test_that("qhurdle_poisson satisfies the discrete quantile definition", {
+  lambda <- 2
+  hu <- 0.2
+  p <- c(0.01, 0.1, 0.5, 0.85, 0.99)
+
+  q <- brms:::qhurdle_poisson(p, lambda = lambda, hu = hu)
+  F_q <- brms:::phurdle_poisson(q, lambda = lambda, hu = hu)
+  F_qm1 <- brms:::phurdle_poisson(q - 1, lambda = lambda, hu = hu)
+
+  expect_true(all(F_q >= p))
+  expect_true(all(ifelse(q > 0, F_qm1 < p, TRUE)))
+  expect_true(all(q >= 0))
+})
+
 test_that("qzero_inflated_negbinomial satisfies the discrete quantile definition", {
   mu <- 4
   shape <- 2.5

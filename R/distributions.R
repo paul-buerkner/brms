@@ -2219,6 +2219,14 @@ phurdle_poisson <- function(q, lambda, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+qhurdle_poisson <- function(p, lambda, hu, lower.tail = TRUE,
+                            log.p = FALSE) {
+  pars <- nlist(lambda)
+  .qhurdle(p, "pois", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_negbinomial <- function(x, mu, shape, hu, log = FALSE) {
   pars <- nlist(mu, size = shape)
   .dhurdle(x, "nbinom", hu, pars, log, type = "int")
@@ -2334,6 +2342,38 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
       out <- exp(out)
     }
   }
+  out
+}
+
+# quantile function of a hurdle distribution
+# @param dist name of the distribution
+# @param hu bernoulli hurdle parameter
+# @param pars list of parameters passed to qfun
+# @param type support of distribution (int or real)
+.qhurdle <- function(p, dist, hu, pars, lower.tail, log.p, type) {
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  type <- match.arg(type, c("int", "real"))
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = c(nlist(p, hu), pars))
+  p <- args$p
+  hu <- args$hu
+  pars <- args[names(pars)]
+  qfun <- paste0("q", dist)
+  if (type == "int") {
+    pdf <- paste0("d", dist)
+    cdf0 <- do_call(pdf, c(0, pars))
+    p_dist <- cdf0 + (p - hu) / (1 - hu) * (1 - cdf0)
+  } else {
+    p_dist <- (p - hu) / (1 - hu)
+  }
+  p_dist <- ifelse(hu == 1, 0, p_dist)
+  p_dist <- pmin(1, pmax(0, p_dist))
+  out <- do_call(qfun, c(list(p_dist), pars))
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
   out
 }
 

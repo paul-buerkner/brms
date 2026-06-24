@@ -229,6 +229,9 @@ test_that("hurdle distribution functions run without errors", {
   expect_true(length(res) == n)
   res <- phurdle_poisson(x, lambda = 1, hu = 0.1)
   expect_true(length(res) == n)
+  p <- rbeta(n, shape1 = 2, shape2 = 2)
+  res <- qhurdle_poisson(p, lambda = 1, hu = 0.1)
+  expect_true(length(res) == n)
 
   res <- dhurdle_negbinomial(x, mu = 2, shape = 5, hu = 0.1)
   expect_true(length(res) == n)

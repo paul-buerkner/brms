@@ -4,6 +4,7 @@
 \alias{Hurdle}
 \alias{dhurdle_poisson}
 \alias{phurdle_poisson}
+\alias{qhurdle_poisson}
 \alias{dhurdle_negbinomial}
 \alias{phurdle_negbinomial}
 \alias{dhurdle_gamma}
@@ -15,6 +16,8 @@
 dhurdle_poisson(x, lambda, hu, log = FALSE)
 
 phurdle_poisson(q, lambda, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_poisson(p, lambda, hu, lower.tail = TRUE, log.p = FALSE)
 
 dhurdle_negbinomial(x, mu, shape, hu, log = FALSE)
 
@@ -41,6 +44,8 @@ phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
 Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
+
+\item{p}{Vector of probabilities.}
 
 \item{mu, lambda}{location parameter}
 
