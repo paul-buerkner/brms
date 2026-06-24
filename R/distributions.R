@@ -455,8 +455,9 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 
 #' The von Mises Distribution
 #'
-#' Density, distribution function, and random generation for the
-#' von Mises distribution with location \code{mu}, and precision \code{kappa}.
+#' Density, distribution function, quantile function and random generation
+#' for the von Mises distribution with location \code{mu}, and precision
+#' \code{kappa}.
 #'
 #' @name VonMises
 #'
@@ -464,6 +465,8 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 #' @param x,q Vector of quantiles between \code{-pi} and \code{pi}.
 #' @param kappa Vector of precision values.
 #' @param acc Accuracy of numerical approximations.
+#' @param tol Tolerance of the approximation used in the
+#'   quantile function.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
@@ -547,6 +550,45 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
   if (log.p) {
     out <- log(out)
   }
+  out
+}
+
+#' @rdname VonMises
+#' @export
+qvon_mises <- function(p, mu, kappa, lower.tail = TRUE, log.p = FALSE,
+                       acc = 1e-20, tol = 1e-8) {
+  if (isTRUE(any(kappa < 0))) {
+    stop2("kappa must be non-negative")
+  }
+  pi <- base::pi
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, kappa))
+  eps <- 1e-10
+  out <- vapply(seq_along(args$p), function(i) {
+    p_i <- args$p[i]
+    if (!is.finite(p_i)) {
+      return(p_i)
+    }
+    if (p_i <= 0) {
+      return(-pi)
+    }
+    if (p_i >= 1) {
+      return(pi)
+    }
+    if (args$kappa[i] == 0) {
+      return(-pi + 2 * pi * p_i)
+    }
+    f <- function(q) {
+      pvon_mises(q, mu = args$mu[i], kappa = args$kappa[i], acc = acc) - p_i
+    }
+    lo <- -pi + eps
+    hi <- pi - eps
+    if (f(lo) * f(hi) > 0) {
+      return(NA_real_)
+    }
+    uniroot(f, c(lo, hi), tol = tol)$root
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
   out
 }
 

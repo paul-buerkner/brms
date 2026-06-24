@@ -731,13 +731,14 @@ posterior_predict_xbeta <- function(i, prep, output = "random", ntrys = 5, ...) 
   )
 }
 
-posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "von_mises",
-    mu = get_dpar(prep, "mu", i = i),
-    kappa = get_dpar(prep, "kappa", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_von_mises <- function(i, prep, output = "random", ntrys = 5,
+                                        ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "von_mises", mu = mu, kappa = kappa, ...
   )
 }
 
