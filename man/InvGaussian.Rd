@@ -4,12 +4,22 @@
 \alias{InvGaussian}
 \alias{dinv_gaussian}
 \alias{pinv_gaussian}
+\alias{qinv_gaussian}
 \alias{rinv_gaussian}
 \title{The Inverse Gaussian Distribution}
 \usage{
 dinv_gaussian(x, mu = 1, shape = 1, log = FALSE)
 
 pinv_gaussian(q, mu = 1, shape = 1, lower.tail = TRUE, log.p = FALSE)
+
+qinv_gaussian(
+  p,
+  mu = 1,
+  shape = 1,
+  lower.tail = TRUE,
+  log.p = FALSE,
+  tol = 1e-08
+)
 
 rinv_gaussian(n, mu = 1, shape = 1)
 }
@@ -27,14 +37,19 @@ Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
+\item{p}{Vector of probabilities.}
+
 \item{n}{Number of draws to sample from the distribution.}
 }
 \description{
-Density, distribution function, and random generation
+Density, distribution function, quantile function and random generation
 for the inverse Gaussian distribution with location \code{mu},
 and shape \code{shape}.
 }
 \details{
+The quantile function has no known closed form and is therefore computed
+numerically via inversion of the cumulative distribution function.
+
 See \code{vignette("brms_families")} for details
 on the parameterization.
 }
