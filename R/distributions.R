@@ -1263,32 +1263,7 @@ dcom_poisson <- function(x, mu, shape, log = FALSE) {
 # random numbers from the COM-Poisson distribution
 rcom_poisson <- function(n, mu, shape, M = 10000) {
   n <- check_n_rdist(n, mu, shape)
-  M <- as.integer(as_one_numeric(M))
-  log_mu <- log(mu)
-  # approximating log_Z may yield too large random draws
-  log_Z <- log_Z_com_poisson(log_mu, shape, approx = FALSE)
-  u <- runif(n, 0, 1)
-  cdf <- exp(-log_Z)
-  lfac <- 0
-  y <- 0
-  out <- rep(0, n)
-  not_found <- cdf < u
-  while (any(not_found) && y <= M) {
-    y <- y + 1
-    out[not_found] <- y
-    lfac <- lfac + log(y)
-    cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z)
-    not_found <- cdf < u
-  }
-  if (any(not_found)) {
-    out[not_found] <- NA
-    nfailed <- sum(not_found)
-    warning2(
-      "Drawing random numbers from the 'com_poisson' ",
-      "distribution failed in ", nfailed, " cases."
-    )
-  }
-  out
+  qcom_poisson(runif(n), mu, shape, M = M)
 }
 
 # CDF of the COM-Poisson distribution
@@ -1320,6 +1295,67 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   if (!log.p) {
     out <- exp(out)
   }
+  out
+}
+
+# quantile function of the COM-Poisson distribution
+qcom_poisson <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE,
+                         M = 10000) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(p = p, mu = mu, shape = shape)
+  p <- args$p
+  mu <- args$mu
+  shape <- args$shape
+  M <- as.integer(as_one_numeric(M))
+
+  out <- rep(NA_real_, length(p))
+  dim(out) <- attributes(args)$max_dim
+  out[!is.finite(p)] <- p[!is.finite(p)]
+
+  use_poisson <- is.finite(p) & shape == 1
+  if (any(use_poisson)) {
+    out[use_poisson] <- qpois(p[use_poisson], lambda = mu[use_poisson])
+  }
+
+  use_inf <- is.finite(p) & p == 1 & shape != 1
+  if (any(use_inf)) {
+    out[use_inf] <- Inf
+  }
+
+  search_mask <- is.finite(p) & p < 1 & shape != 1
+  if (!any(search_mask)) {
+    return(out)
+  }
+
+  log_mu <- log(mu[search_mask])
+  shape_t <- shape[search_mask]
+  p_t <- p[search_mask]
+  log_Z <- log_Z_com_poisson(log_mu, shape_t, approx = FALSE)
+
+  cdf <- exp(-log_Z)
+  out_t <- rep(0, sum(search_mask))
+  not_found <- cdf < p_t
+
+  y <- 0
+  lfac <- 0
+  while (any(not_found) && y <= M) {
+    y <- y + 1
+    out_t[not_found] <- y
+    lfac <- lfac + log(y)
+    cdf <- cdf + exp(shape_t * (y * log_mu - lfac) - log_Z)
+    not_found <- cdf < p_t
+  }
+
+  if (any(not_found)) {
+    out_t[not_found] <- NA
+    nfailed <- sum(not_found)
+    warning2(
+      "Computing quantiles of the 'com_poisson' ",
+      "distribution failed in ", nfailed, " cases."
+    )
+  }
+
+  out[search_mask] <- out_t
   out
 }
 

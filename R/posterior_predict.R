@@ -600,13 +600,14 @@ posterior_predict_discrete_weibull <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_com_poisson <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "com_poisson",
-    mu = get_dpar(prep, "mu", i = i),
-    shape = get_dpar(prep, "shape", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_com_poisson <- function(i, prep, output = "random",
+                                          ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  shape <- get_dpar(prep, "shape", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "com_poisson", mu = mu, shape = shape, ...
   )
 }
 

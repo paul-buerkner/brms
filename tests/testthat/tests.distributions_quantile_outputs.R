@@ -17,6 +17,29 @@ test_that("qbeta_binomial satisfies the discrete quantile definition", {
   expect_true(all(q >= 0 & q <= size))
 })
 
+test_that("qcom_poisson satisfies the discrete quantile definition", {
+  mu <- 2
+  shape <- 0.8
+  p <- c(0.01, 0.1, 0.5, 0.85, 0.99)
+
+  q <- brms:::qcom_poisson(p, mu = mu, shape = shape)
+  F_q <- brms:::pcom_poisson(q, mu = mu, shape = shape)
+  F_qm1 <- brms:::pcom_poisson(q - 1, mu = mu, shape = shape)
+
+  expect_true(all(F_q >= p))
+  expect_true(all(ifelse(q > 0, F_qm1 < p, TRUE)))
+  expect_true(all(q >= 0))
+})
+
+test_that("qcom_poisson reduces to qpois when shape is 1", {
+  mu <- 3
+  p <- c(0.1, 0.5, 0.9)
+  expect_equal(
+    brms:::qcom_poisson(p, mu = mu, shape = 1),
+    qpois(p, lambda = mu)
+  )
+})
+
 test_that("qzero_inflated_negbinomial satisfies the discrete quantile definition", {
   mu <- 4
   shape <- 2.5
@@ -37,9 +60,11 @@ test_that("quantile functions are monotone in probability", {
 
   q_bb <- brms:::qbeta_binomial(p, size = 20, mu = 0.45, phi = 6)
   q_zinb <- brms:::qzero_inflated_negbinomial(p, mu = 5, shape = 2, zi = 0.25)
+  q_comp <- brms:::qcom_poisson(p, mu = 2, shape = 1.5)
 
   expect_true(all(diff(q_bb) >= 0))
   expect_true(all(diff(q_zinb) >= 0))
+  expect_true(all(diff(q_comp) >= 0))
 })
 
 test_that("quantile functions respect lower.tail and log.p", {
@@ -64,4 +89,24 @@ test_that("quantile functions respect lower.tail and log.p", {
     lower.tail = TRUE, log.p = FALSE
   )
   expect_equal(q_zinb_log, q_zinb_ref)
+
+  q_comp_upper <- brms:::qcom_poisson(
+    p_ref, mu = 2, shape = 0.8,
+    lower.tail = FALSE, log.p = FALSE
+  )
+  q_comp_lower <- brms:::qcom_poisson(
+    1 - p_ref, mu = 2, shape = 0.8,
+    lower.tail = TRUE, log.p = FALSE
+  )
+  expect_equal(q_comp_upper, q_comp_lower)
+
+  q_comp_log <- brms:::qcom_poisson(
+    log(p_ref), mu = 2, shape = 0.8,
+    lower.tail = TRUE, log.p = TRUE
+  )
+  q_comp_ref <- brms:::qcom_poisson(
+    p_ref, mu = 2, shape = 0.8,
+    lower.tail = TRUE, log.p = FALSE
+  )
+  expect_equal(q_comp_log, q_comp_ref)
 })
