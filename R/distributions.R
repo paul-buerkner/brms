@@ -2265,6 +2265,14 @@ phurdle_gamma <- function(q, shape, scale, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+qhurdle_gamma <- function(p, shape, scale, hu, lower.tail = TRUE,
+                          log.p = FALSE) {
+  pars <- nlist(shape, scale)
+  .qhurdle(p, "gamma", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_lognormal <- function(x, mu, sigma, hu, log = FALSE) {
   pars <- list(meanlog = mu, sdlog = sigma)
   .dhurdle(x, "lnorm", hu, pars, log, type = "real")
@@ -2276,6 +2284,14 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
                               log.p = FALSE) {
   pars <- list(meanlog = mu, sdlog = sigma)
   .phurdle(q, "lnorm", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+qhurdle_lognormal <- function(p, mu, sigma, hu, lower.tail = TRUE,
+                              log.p = FALSE) {
+  pars <- list(meanlog = mu, sdlog = sigma)
+  .qhurdle(p, "lnorm", hu, pars, lower.tail, log.p, type = "real")
 }
 
 # density of a hurdle distribution

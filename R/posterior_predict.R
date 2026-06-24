@@ -819,22 +819,46 @@ posterior_predict_hurdle_negbinomial <- function(i, prep, output = "random",
   }
 }
 
-posterior_predict_hurdle_gamma <- function(i, prep, ...) {
+posterior_predict_hurdle_gamma <- function(i, prep, output = "random",
+                                           ntrys = 5, ...) {
   hu <- get_dpar(prep, "hu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < hu, 0, rgamma(ndraws, shape = shape, scale = scale))
+
+  if (output == "random") {
+    if (!is.null(prep$data$lb[i]) || !is.null(prep$data$ub[i])) {
+      warning2(
+        "Truncated random sampling is not yet implemented for hurdle_gamma."
+      )
+    }
+    qhurdle_gamma(runif(prep$ndraws), shape = shape, scale = scale, hu = hu)
+  } else {
+    predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "hurdle_gamma", shape = shape, scale = scale, hu = hu, ...
+    )
+  }
 }
 
-posterior_predict_hurdle_lognormal <- function(i, prep, ...) {
+posterior_predict_hurdle_lognormal <- function(i, prep, output = "random",
+                                               ntrys = 5, ...) {
   hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < hu, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
+
+  if (output == "random") {
+    if (!is.null(prep$data$lb[i]) || !is.null(prep$data$ub[i])) {
+      warning2(
+        "Truncated random sampling is not yet implemented for hurdle_lognormal."
+      )
+    }
+    qhurdle_lognormal(runif(prep$ndraws), mu = mu, sigma = sigma, hu = hu)
+  } else {
+    predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "hurdle_lognormal", mu = mu, sigma = sigma, hu = hu, ...
+    )
+  }
 }
 
 posterior_predict_hurdle_cumulative <- function(i, prep, ...) {

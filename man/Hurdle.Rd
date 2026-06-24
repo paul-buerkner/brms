@@ -10,8 +10,10 @@
 \alias{qhurdle_negbinomial}
 \alias{dhurdle_gamma}
 \alias{phurdle_gamma}
+\alias{qhurdle_gamma}
 \alias{dhurdle_lognormal}
 \alias{phurdle_lognormal}
+\alias{qhurdle_lognormal}
 \title{Hurdle Distributions}
 \usage{
 dhurdle_poisson(x, lambda, hu, log = FALSE)
@@ -30,9 +32,13 @@ dhurdle_gamma(x, shape, scale, hu, log = FALSE)
 
 phurdle_gamma(q, shape, scale, hu, lower.tail = TRUE, log.p = FALSE)
 
+qhurdle_gamma(p, shape, scale, hu, lower.tail = TRUE, log.p = FALSE)
+
 dhurdle_lognormal(x, mu, sigma, hu, log = FALSE)
 
 phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_lognormal(p, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
 }
 \arguments{
 \item{x}{Vector of quantiles.}
