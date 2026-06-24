@@ -479,7 +479,14 @@ make_prep_positive_outcome <- function(ns = 120, nobs = 8) {
     dpars = list(
       mu = matrix(exp(rnorm(ns * nobs, mean = 0.2, sd = 0.4)), ncol = nobs),
       sigma = rgamma(ns, shape = 4, rate = 3),
-      shape = rgamma(ns, shape = 6, rate = 2) + 0.5
+      shape = rgamma(ns, shape = 6, rate = 2) + 0.5,
+      ndt = runif(ns, min = 0, max = 0.5),
+      alpha = rnorm(ns),
+      nu = rgamma(ns, shape = 4, rate = 1) + 2,
+      xi = rnorm(ns, sd = 0.3),
+      quantile = runif(ns, min = 0.2, max = 0.8),
+      phi = rgamma(ns, shape = 5, rate = 1),
+      kappa = rgamma(ns, shape = 2, rate = 1)
     ),
     data = list(Y = rgamma(nobs, shape = 2, rate = 1))
   )
@@ -491,6 +498,7 @@ make_prep_beta_outcome <- function(ns = 140, nobs = 9) {
     dpars = list(
       mu = matrix(plogis(rnorm(ns * nobs)), ncol = nobs),
       phi = rgamma(ns, shape = 5, rate = 1),
+      kappa = rgamma(ns, shape = 2, rate = 1),
       zi = rbeta(ns, 1.5, 5),
       zoi = rbeta(ns, 1.5, 5),
       coi = rbeta(ns, 2, 6)
@@ -582,6 +590,34 @@ test_that("posterior_predict outcome argument works for continuous families", {
       fun = brms:::posterior_predict_weibull, q_ref = 1.2, p_ref = 0.73,
       support = c(0, Inf), prep = make_prep_positive_outcome()
     ),
+    exponential = list(
+      fun = brms:::posterior_predict_exponential, q_ref = 1.2, p_ref = 0.73,
+      support = c(0, Inf), prep = make_prep_positive_outcome()
+    ),
+    shifted_lognormal = list(
+      fun = brms:::posterior_predict_shifted_lognormal, q_ref = 1.2, p_ref = 0.73,
+      support = c(0, Inf), prep = make_prep_positive_outcome()
+    ),
+    skew_normal = list(
+      fun = brms:::posterior_predict_skew_normal, q_ref = 0.25, p_ref = 0.73,
+      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
+    ),
+    frechet = list(
+      fun = brms:::posterior_predict_frechet, q_ref = 1.2, p_ref = 0.73,
+      support = c(0, Inf), prep = make_prep_positive_outcome()
+    ),
+    gen_extreme_value = list(
+      fun = brms:::posterior_predict_gen_extreme_value, q_ref = 0.25, p_ref = 0.73,
+      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
+    ),
+    asym_laplace = list(
+      fun = brms:::posterior_predict_asym_laplace, q_ref = 0.25, p_ref = 0.73,
+      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
+    ),
+    xbeta = list(
+      fun = brms:::posterior_predict_xbeta, q_ref = 0.4, p_ref = 0.73,
+      support = c(0, 1), prep = make_prep_beta_outcome(), requires = "betareg"
+    ),
     beta = list(
       fun = brms:::posterior_predict_beta, q_ref = 0.4, p_ref = 0.73,
       support = c(0, 1), prep = make_prep_beta_outcome()
@@ -597,6 +633,9 @@ test_that("posterior_predict outcome argument works for continuous families", {
   )
 
   for (spec in family_specs) {
+    if (!is.null(spec$requires)) {
+      skip_if_not_installed(spec$requires)
+    }
     expect_outcome_modes(
       family_fun = spec$fun,
       prep = spec$prep,
@@ -620,6 +659,9 @@ test_that("posterior_predict outcome argument works for discrete families", {
     negbinomial = list(fun = brms:::posterior_predict_negbinomial, q_ref = 3),
     negbinomial2 = list(fun = brms:::posterior_predict_negbinomial2, q_ref = 3),
     geometric = list(fun = brms:::posterior_predict_geometric, q_ref = 3),
+    discrete_weibull = list(
+      fun = brms:::posterior_predict_discrete_weibull, q_ref = 3
+    ),
     com_poisson = list(fun = brms:::posterior_predict_com_poisson, q_ref = 3),
     zero_inflated_poisson = list(
       fun = brms:::posterior_predict_zero_inflated_poisson, q_ref = 3
@@ -636,6 +678,9 @@ test_that("posterior_predict outcome argument works for discrete families", {
   )
 
   for (spec in family_specs) {
+    if (!is.null(spec$requires)) {
+      skip_if_not_installed(spec$requires)
+    }
     expect_outcome_modes(
       family_fun = spec$fun,
       prep = prep,

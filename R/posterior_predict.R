@@ -366,27 +366,28 @@ posterior_predict_lognormal <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_shifted_lognormal <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "shifted_lnorm",
-    meanlog = get_dpar(prep, "mu", i = i),
-    sdlog = get_dpar(prep, "sigma", i = i),
-    shift = get_dpar(prep, "ndt", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_shifted_lognormal <- function(i, prep, output = "random",
+                                                ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  ndt <- get_dpar(prep, "ndt", i = i)
+  
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "shifted_lnorm", meanlog = mu, sdlog = sigma, shift = ndt, ...
   )
 }
 
-posterior_predict_skew_normal <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_skew_normal <- function(i, prep, output = "random",
+                                          ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
   alpha <- get_dpar(prep, "alpha", i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "skew_normal",
-    mu = mu, sigma = sigma, alpha = alpha,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "skew_normal", mu = mu, sigma = sigma, alpha = alpha, ...
   )
 }
 
@@ -575,26 +576,27 @@ posterior_predict_negbinomial2 <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_geometric <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_geometric <- function(i, prep, output = "random",
+                                        ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- 1
   shape <- multiply_dpar_rate_denom(shape, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "nbinom",
-    mu = mu, size = shape,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "nbinom", mu = mu, size = shape, ...
   )
 }
 
-posterior_predict_discrete_weibull <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "discrete_weibull",
-    mu = get_dpar(prep, "mu", i = i),
-    shape = get_dpar(prep, "shape", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_discrete_weibull <- function(i, prep, output = "random",
+                                               ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  shape <- get_dpar(prep, "shape", i = i)
+  
+  predict_discrete_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "discrete_weibull", mu = mu, shape = shape, ...
   )
 }
 
@@ -608,12 +610,14 @@ posterior_predict_com_poisson <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
-posterior_predict_exponential <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "exp",
-    rate = 1 / get_dpar(prep, "mu", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_exponential <- function(i, prep, output = "random",
+                                          ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  rate <- 1 / mu
+  
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "exp", rate = rate, ...
   )
 }
 
@@ -639,25 +643,27 @@ posterior_predict_weibull <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_frechet <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_frechet <- function(i, prep, output = "random",
+                                      ntrys = 5, ...) {
   nu <- get_dpar(prep, "nu", i = i)
-  scale <- get_dpar(prep, "mu", i = i) / gamma(1 - 1 / nu)
-  rcontinuous(
-    n = prep$ndraws, dist = "frechet",
-    scale = scale, shape = nu,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+  mu <- get_dpar(prep, "mu", i = i)
+  scale <- mu / gamma(1 - 1 / nu)
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "frechet", scale = scale, shape = nu, ...
   )
 }
 
-posterior_predict_gen_extreme_value <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "gen_extreme_value",
-    sigma = get_dpar(prep, "sigma", i = i),
-    xi = get_dpar(prep, "xi", i = i),
-    mu = get_dpar(prep, "mu", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_gen_extreme_value <- function(i, prep, output = "random",
+                                                ntrys = 5, ...) {
+  sigma <- get_dpar(prep, "sigma", i = i)
+  xi <- get_dpar(prep, "xi", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "gen_extreme_value", sigma = sigma, xi = xi, mu = mu, ...
   )
 }
 
@@ -711,16 +717,14 @@ posterior_predict_beta <- function(i, prep, output = "random", ntrys = 5, ...) {
   )
 }
 
-posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_xbeta <- function(i, prep, output = "random", ntrys = 5, ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
-  rcontinuous(
-    n = prep$ndraws,
-    dist = "xbeta",
-    mu = mu, phi = phi, nu = kappa,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "xbeta", mu = mu, phi = phi, nu = kappa, ...
   )
 }
 
@@ -734,14 +738,15 @@ posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
-posterior_predict_asym_laplace <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "asym_laplace",
-    mu = get_dpar(prep, "mu", i = i),
-    sigma = get_dpar(prep, "sigma", i = i),
-    quantile = get_dpar(prep, "quantile", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_asym_laplace <- function(i, prep, output = "random",
+                                           ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  quantile <- get_dpar(prep, "quantile", i = i)
+  
+  predict_continuous_helper(
+    i = i, prep = prep, output = output, ntrys = ntrys,
+    dist = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
   )
 }
 
