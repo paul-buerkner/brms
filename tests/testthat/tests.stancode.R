@@ -2194,7 +2194,7 @@ test_that("Stan code for missing value terms works correctly", {
 
 test_that("Stan code for overimputation works correctly", {
   dat = data.frame(y = rnorm(10), x_x = rnorm(10), g = 1:10, z = 1)
-  dat$x[c(1, 3, 9)] <- NA
+  dat$x_x[c(1, 3, 9)] <- NA
   bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(g) ~ 1) + set_rescor(FALSE)
   scode <- stancode(bform, dat, sample_prior = "yes")
   expect_match2(scode, "target += normal_lpdf(Yl_xx | mu_xx, sigma_xx)")
