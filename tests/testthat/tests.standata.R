@@ -1041,6 +1041,44 @@ test_that("standata handles cox models correctly", {
   expect_equivalent(sdata$con_sbhaz, con_mat)
 })
 
+test_that("cox baseline hazard knots are based on event times only", {
+  skip_if_not_installed("splines2")
+  set.seed(1234)
+  data <- data.frame(
+    y = c(rexp(80), rep(1000, 20)),
+    cens = c(rep(0, 80), rep(1, 20)),
+    x = rnorm(100)
+  )
+  bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
+
+  # the basis is still evaluated at all response times
+  sdata1 <- standata(bform, data)
+  expect_equal(nrow(sdata1$Zbhaz), 100)
+
+  # changing the (large) censoring times must not move the internal knots
+  data2 <- data
+  data2$y[data2$cens == 1] <- 2000
+  sdata2 <- standata(bform, data2)
+  expect_equal(attr(sdata1$Zbhaz, "knots"), attr(sdata2$Zbhaz, "knots"))
+
+  # boundary knots still span all times so censored times can be evaluated
+  expect_true(attr(sdata1$Zbhaz, "Boundary.knots")[2] > 1000)
+
+  # fall back to all times when there are no exact events (e.g. fully censored)
+  data_cens <- data
+  data_cens$cens <- 1
+  expect_silent(sdata4 <- standata(bform, data_cens))
+  expect_equal(nrow(sdata4$Zbhaz), 100)
+
+  # the old behavior (using all times) can be recovered via the global option
+  op <- options(brms.cox_bhaz_all_times = TRUE)
+  on.exit(options(op))
+  sdata3 <- standata(bform, data)
+  expect_false(isTRUE(all.equal(
+    attr(sdata1$Zbhaz, "knots"), attr(sdata3$Zbhaz, "knots")
+  )))
+})
+
 test_that("standata handles addition term 'rate' is correctly", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   sdata <- standata(y | rate(time) ~ x, data, poisson())

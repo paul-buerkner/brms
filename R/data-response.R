@@ -469,6 +469,9 @@ data_bhaz <- function(bframe, data, data2, prior) {
   }
   y <- bframe$frame$resp$values
   bhaz <- family_info(bframe, "bhaz")
+  # the basis (and thus the knots) is defined exactly once in 'frame_basis_bhaz'
+  # and only evaluated here; it must never be redefined based on the times seen
+  # in 'data_bhaz' (e.g. for newdata predictions)
   bs <- bframe$basis$bhaz$basis_matrix
   out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
@@ -504,9 +507,13 @@ data_bhaz <- function(bframe, data, data2, prior) {
 # @param args arguments passed to the spline generating functions
 # @param integrate compute the I-spline instead of the M-spline basis?
 # @param basis optional precomputed basis matrix
+# @param y_boundary values used to compute the default boundary knots;
+#   defaults to 'y' but may differ from it, for instance when the internal
+#   knots are based on event times only but the boundary knots should still
+#   span all observation times
 # @return the design matrix of the baseline hazard function
 bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
-                              basis = NULL) {
+                              basis = NULL, y_boundary = y) {
   # version check is required due to class name changes #1580
   require_package("splines2", version = "0.5.0")
   if (!is.null(basis)) {
@@ -525,8 +532,8 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
     # avoid 'knots' outside 'Boundary.knots' error (#1143)
     # we also need a smaller lower boundary knot to avoid lp = -Inf
     # the below choices are ad-hoc and may need further thought
-    min_y <- min(y, na.rm = TRUE)
-    max_y <- max(y, na.rm = TRUE)
+    min_y <- min(y_boundary, na.rm = TRUE)
+    max_y <- max(y_boundary, na.rm = TRUE)
     diff_y <- max_y - min_y
     lower_knot <- max(min_y - diff_y / 50, 0)
     upper_knot <- max_y + diff_y / 50
