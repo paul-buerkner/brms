@@ -1,0 +1,268 @@
+# Parameterization of Response Distributions in brms
+
+The purpose of this vignette is to discuss the parameterizations of the
+families (i.e., response distributions) used in brms. For a more general
+overview of the package see `vignette("brms_overview")`.
+
+## Notation
+
+Throughout this vignette, we denote values of the response variable as
+\\y\\, a density function as \\f\\, and use \\\mu\\ to refer to the main
+model parameter, which is usually the mean of the response distribution
+or some closely related quantity. In a regression framework, \\\mu\\ is
+not estimated directly but computed as \\\mu = g(\eta)\\, where \\\eta\\
+is a predictor term (see
+[`help(brmsformula)`](https://paulbuerkner.com/brms/reference/brmsformula.md)
+for details) and \\g\\ is the response function (i.e., inverse of the
+link function).
+
+## Location shift models
+
+The density of the **gaussian** family is given by \\ f(y) =
+\frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y -
+\mu}{\sigma}\right)^2\right) \\
+
+where \\\sigma\\ is the residual standard deviation. The density of the
+**student** family is given by \\ f(y) = \frac{\Gamma((\nu +
+1)/2)}{\Gamma(\nu/2)} \frac{1}{\sqrt{\nu\pi}\sigma}\left(1 +
+\frac{1}{\nu} \left(\frac{y - \mu}{\sigma}\right)^2\right)^{-(\nu+1)/2}
+\\
+
+\\\Gamma\\ denotes the gamma function and \\\nu \> 1\\ are the degrees
+of freedom. As \\\nu \rightarrow \infty\\, the student distribution
+becomes the gaussian distribution. The density of the **skew_normal**
+family is given by \\ f(y) = \frac{1}{\sqrt{2\pi}\omega}
+\exp\left(-\frac{1}{2} \left(\frac{y - \xi}{\omega}\right)^2 \right)
+\left(1 + \text{erf} \left( \alpha \left(\frac{y - \xi}{\omega \sqrt{2}}
+\right) \right) \right) \\
+
+where \\\xi\\ is the location parameter, \\\omega\\ is the positive
+scale parameter, \\\alpha\\ the skewness parameter, and \\\text{erf}\\
+denotes the error function of the gaussian distribution. To parameterize
+the skew-normal distribution in terms of the mean \\\mu\\ and standard
+deviation \\\sigma\\, \\\omega\\ and \\\xi\\ are computed as \\ \omega =
+\frac{\sigma}{\sqrt{1 - \frac{2}{\pi} \frac{\alpha^2}{1 + \alpha^2}}} \\
+
+\\ \xi = \mu - \omega \frac{\alpha}{\sqrt{1 + \alpha^2}}
+\sqrt{\frac{2}{\pi}} \\
+
+If \\\alpha = 0\\, the skew-normal distribution becomes the gaussian
+distribution. For location shift models, \\y\\ can be any real value.
+
+## Binary and count data models
+
+The density of the **binomial** family is given by \\ f(y) = {N \choose
+y} \mu^{y} (1-\mu)^{N - y} \\ where \\N\\ is the number of trials and
+\\y \in \\0, ... , N\\\\. When all \\N\\ are \\1\\ (i.e., \\y \in
+\\0,1\\\\), the **bernoulli** distribution for binary data arises.
+
+For \\y \in \mathbb{N}\_0\\, the density of the **poisson** family is
+given by \\ f(y) = \frac{\mu^{y}}{y!} \exp(-\mu) \\ The density of the
+**negbinomial** (negative binomial) family is \\ f(y) = {y + \phi - 1
+\choose y} \left(\frac{\mu}{\mu + \phi}\right)^{y}
+\left(\frac{\phi}{\mu + \phi}\right)^\phi \\ where \\\phi\\ is a
+positive precision parameter. For \\\phi \rightarrow \infty\\, the
+negative binomial distribution becomes the poisson distribution. The
+density of the **geometric** family arises if \\\phi\\ is set to \\1\\.
+
+## Time-to-event models
+
+With time-to-event models we mean all models that are defined on the
+positive reals only, that is \\y \in \mathbb{R}^+\\. The density of the
+**lognormal** family is given by \\ f(y) = \frac{1}{\sqrt{2\pi}\sigma y}
+\exp\left(-\frac{1}{2}\left(\frac{\log(y) - \mu}{\sigma}\right)^2\right)
+\\ where \\\sigma\\ is the residual standard deviation on the log-scale.
+The density of the **Gamma** family is given by \\ f(y) = \frac{(\alpha
+/ \mu)^\alpha}{\Gamma(\alpha)} y^{\alpha-1} \exp\left(-\frac{\alpha
+y}{\mu}\right) \\ where \\\alpha\\ is a positive shape parameter. The
+density of the **weibull** family is given by \\ f(y) = \frac{\alpha}{s}
+\left(\frac{y}{s}\right)^{\alpha-1}
+\exp\left(-\left(\frac{y}{s}\right)^\alpha\right) \\ where \\\alpha\\ is
+again a positive shape parameter and \\s = \mu / \Gamma(1 + 1 /
+\alpha)\\ is the scale parameter to that \\\mu\\ is the mean of the
+distribution. The **exponential** family arises if \\\alpha\\ is set to
+\\1\\ for either the gamma or Weibull distribution. The density of the
+**inverse.gaussian** family is given by \\ f(y) = \left(\frac{\alpha}{2
+\pi y^3}\right)^{1/2} \exp \left(\frac{-\alpha (y - \mu)^2}{2 \mu^2 y}
+\right) \\ where \\\alpha\\ is a positive shape parameter. The **cox**
+family implements Cox proportional hazards model which assumes a hazard
+function of the form \\h(y) = h_0(y) \mu\\ with baseline hazard
+\\h_0(y)\\ expressed via M-splines (which integrate to I-splines) in
+order to ensure monotonicity. The density of the cox model is then given
+by \\ f(y) = h(y) S(y) \\ where \\S(y)\\ is the survival function
+implied by \\h(y)\\.
+
+## Extreme value models
+
+Modeling extremes requires special distributions. One may use the
+**weibull** distribution (see above) or the **frechet** distribution
+with density \\ f(y) = \frac{\nu}{s} \left(\frac{y}{s}\right)^{-1-\nu}
+\exp\left(-\left(\frac{y}{s}\right)^{-\nu}\right) \\ where \\s = \mu /
+\Gamma(1 - 1 / \nu)\\ is a positive scale parameter and \\\nu \> 1\\ is
+a shape parameter so that \\\mu\\ predicts the mean of the Frechet
+distribution. A generalization of both distributions is the generalized
+extreme value distribution (family **gen_extreme_value**) with density
+\\ f(y) = \frac{1}{\sigma} t(y)^{\xi + 1} \exp(-t(y)) \\ where \\ t(y) =
+\left(1 + \xi \left(\frac{y - \mu}{\sigma} \right)\right)^{-1 / \xi} \\
+with positive scale parameter \\\sigma\\ and shape parameter \\\xi\\.
+
+## Response time models
+
+One family that is especially suited to model reaction times is the
+**exgaussian** (‘exponentially modified Gaussian’) family. Its density
+is given by
+
+\\ f(y) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi +
+\sigma^2 / \beta - 2 y \right) \right) \text{erfc}\left(\frac{\xi +
+\sigma^2 / \beta - y}{\sqrt{2} \sigma} \right) \\ where \\\beta\\ is the
+scale (inverse rate) of the exponential component, \\\xi\\ is the mean
+of the Gaussian component, \\\sigma\\ is the standard deviation of the
+Gaussian component, and \\\text{erfc}\\ is the complementary error
+function. We parameterize \\\mu = \xi + \beta\\ so that the main
+predictor term equals the mean of the distribution.
+
+Another family well suited for modeling response times is the
+**shifted_lognormal** distribution. It’s density equals that of the
+**lognormal** distribution except that the whole distribution is shifted
+to the right by a positive parameter called *ndt* (for consistency with
+the **wiener** diffusion model explained below).
+
+A family concerned with the combined modeling of reaction times and
+corresponding binary responses is the **wiener** diffusion model. It has
+four model parameters each with a natural interpretation. The parameter
+\\\alpha \> 0\\ describes the separation between two boundaries of the
+diffusion process, \\\tau \> 0\\ describes the non-decision time (e.g.,
+due to image or motor processing), \\\beta \in \[0, 1\]\\ describes the
+initial bias in favor of the upper alternative, and \\\delta \in
+\mathbb{R}\\ describes the drift rate to the boundaries (a positive
+value indicates a drift towards to upper boundary). The density for the
+reaction time at the upper boundary is given by
+
+\\ f(y) = \frac{\alpha}{(y-\tau)^3/2} \exp \\ \left(- \delta \alpha
+\beta - \frac{\delta^2(y-\tau)}{2}\right) \sum\_{k = - \infty}^{\infty}
+(2k + \beta) \phi \\ \left(\frac{2k + \alpha \beta}{\sqrt{y -
+\tau}}\right) \\
+
+where \\\phi(x)\\ denotes the standard normal density function. The
+density at the lower boundary can be obtained by substituting \\1 -
+\beta\\ for \\\beta\\ and \\-\delta\\ for \\\delta\\ in the above
+equation. In brms the parameters \\\alpha\\, \\\tau\\, and \\\beta\\ are
+modeled as auxiliary parameters named *bs* (‘boundary separation’),
+*ndt* (‘non-decision time’), and *bias* respectively, whereas the drift
+rate \\\delta\\ is modeled via the ordinary model formula that is as
+\\\delta = \mu\\.
+
+## Quantile regression
+
+Quantile regression is implemented via family **asym_laplace**
+(asymmetric Laplace distribution) with density
+
+\\ f(y) = \frac{p (1 - p)}{\sigma} \exp\left(-\rho_p\left(\frac{y -
+\mu}{\sigma}\right)\right) \\ where \\\rho_p\\ is given by \\\rho_p(x) =
+x (p - I\_{x \< 0})\\ and \\I_A\\ is the indicator function of set
+\\A\\. The parameter \\\sigma\\ is a positive scale parameter and \\p\\
+is the *quantile* parameter taking on values in \\(0, 1)\\. For this
+distribution, we have \\P(Y \< g(\eta)) = p\\. Thus, quantile regression
+can be performed by fixing \\p\\ to the quantile to interest.
+
+## Probability models
+
+The density of the **Beta** family for \\y \in (0,1)\\ is given by \\
+f(y) = \frac{y^{\mu \phi - 1} (1-y)^{(1-\mu) \phi-1}}{B(\mu \phi,
+(1-\mu) \phi)} \\ where \\B\\ is the beta function and \\\phi\\ is a
+positive precision parameter. A multivariate generalization of the
+**Beta** family is the **dirichlet** family with density \\ f(y) =
+\frac{1}{B((\mu\_{1}, \ldots, \mu\_{K}) \phi)} \prod\_{k=1}^K
+y\_{k}^{\mu\_{k} \phi - 1}. \\ The **dirichlet** family is implemented
+with the multivariate logit link function so that \\ \mu\_{j} =
+\frac{\exp(\eta\_{j})}{\sum\_{k = 1}^{K} \exp(\eta\_{k})} \\ For reasons
+of identifiability, \\\eta\_{\rm ref}\\ is set to \\0\\, where \\{\rm
+ref}\\ is one of the response categories chosen as reference.
+
+An alternative to the **dirichlet** family is the **logistic_normal**
+family with density \\ f(y) = \frac{1}{\prod\_{k=1}^K y_k} \times
+\text{multivariate_normal}(\tilde{y} \\ \| \\ \mu, \sigma, \Omega) \\
+where \\\tilde{y}\\ is the multivariate logit transformed response \\
+\tilde{y} = (\log(y_1 / y\_{\rm ref}), \ldots, \log(y\_{\rm ref-1} /
+y\_{\rm ref}), \log(y\_{\rm ref+1} / y\_{\rm ref}), \ldots, \log(y_K /
+y\_{\rm ref})) \\ of dimension \\K-1\\ (excluding the reference
+category), which is modeled as multivariate normally distributed with
+latent mean and standard deviation vectors \\\mu\\ and \\\sigma\\, as
+well as correlation matrix \\\Omega\\.
+
+## Circular models
+
+The density of the **von_mises** family for \\y \in (-\pi,\pi)\\ is
+given by \\ f(y) = \frac{\exp(\kappa \cos(y - \mu))}{2\pi I_0(\kappa)}
+\\ where \\I_0\\ is the modified Bessel function of order 0 and
+\\\kappa\\ is a positive precision parameter.
+
+## Ordinal and categorical models
+
+For ordinal and categorical models, \\y\\ is one of the categories \\1,
+..., K\\. The intercepts of ordinal models are called thresholds and are
+denoted as \\\tau_k\\, with \\k \in \\1, ..., K-1\\\\, whereas \\\eta\\
+does not contain a fixed effects intercept. Note that the applied link
+functions \\h\\ are technically distribution functions \\\mathbb{R}
+\rightarrow \[0,1\]\\. The density of the **cumulative** family
+(implementing the most basic ordinal model) is given by \\ f(y) =
+g(\tau\_{y + 1} - \eta) - g(\tau\_{y} - \eta) \\
+
+The densities of the **sratio** (stopping ratio) and **cratio**
+(continuation ratio) families are given by \\ f(y) = g(\tau\_{y + 1} -
+\eta) \prod\_{k = 1}^{y} (1 - g(\tau\_{k} - \eta)) \\ and \\ f(y) = (1 -
+g(\eta - \tau\_{y + 1})) \prod\_{k = 1}^{y} g(\eta - \tau\_{k}) \\
+
+respectively. Note that both families are equivalent for symmetric link
+functions such as logit or probit. The density of the **acat** (adjacent
+category) family is given by \\ f(y) = \frac{\prod\_{k=1}^{y} g(\eta -
+\tau\_{k}) \prod\_{k=y+1}^K(1-g(\eta -
+\tau\_{k}))}{\sum\_{k=0}^K\prod\_{j=1}^k g(\eta-\tau\_{j})
+\prod\_{j=k+1}^K(1-g(\eta - \tau\_{j}))} \\ For the logit link, this can
+be simplified to \\ f(y) = \frac{\exp \left(\sum\_{k=1}^{y} (\eta -
+\tau\_{k}) \right)} {\sum\_{k=0}^K \exp\left(\sum\_{j=1}^k (\eta -
+\tau\_{j}) \right)} \\ The linear predictor \\\eta\\ can be generalized
+to also depend on the category \\k\\ for a subset of predictors. This
+leads to category specific effects (for details on how to specify them
+see [`help(brm)`](https://paulbuerkner.com/brms/reference/brm.md)). Note
+that **cumulative** and **sratio** models use \\\tau - \eta\\, whereas
+**cratio** and **acat** use \\\eta - \tau\\. This is done to ensure that
+larger values of \\\eta\\ increase the probability of *higher* response
+categories.
+
+The **categorical** family is currently only implemented with the
+multivariate logit link function and has density \\ f(y) = \mu\_{y} =
+\frac{\exp(\eta\_{y})}{\sum\_{k = 1}^{K} \exp(\eta\_{k})} \\ Note that
+\\\eta\\ does also depend on the category \\k\\. For reasons of
+identifiability, \\\eta\_{1}\\ is set to \\0\\. A generalization of the
+**categorical** family to more than one trial is the **multinomial**
+family with density \\ f(y) = {N \choose y\_{1}, y\_{2}, \ldots, y\_{K}}
+\prod\_{k=1}^K \mu\_{k}^{y\_{k}} \\ where, for each category,
+\\\mu\_{k}\\ is estimated via the multivariate logit link function shown
+above.
+
+## Zero-inflated and hurdle models
+
+**Zero-inflated** and **hurdle** families extend existing families by
+adding special processes for responses that are zero. The density of a
+**zero-inflated** family is given by \\ f_z(y) = z + (1 - z) f(0) \quad
+\text{if } y = 0 \\ f_z(y) = (1 - z) f(y) \quad \text{if } y \> 0 \\
+where \\z\\ denotes the zero-inflation probability. Currently
+implemented families are **zero_inflated_poisson**,
+**zero_inflated_binomial**, **zero_inflated_negbinomial**, and
+**zero_inflated_beta**.
+
+The density of a **hurdle** family is given by \\ f_z(y) = z \quad
+\text{if } y = 0 \\ f_z(y) = (1 - z) f(y) / (1 - f(0)) \quad \text{if }
+y \> 0 \\ Currently implemented families are **hurdle_poisson**,
+**hurdle_negbinomial**, **hurdle_gamma**, and **hurdle_lognormal**.
+
+The density of a **zero-one-inflated** family is given by \\ f\_{\alpha,
+\gamma}(y) = \alpha (1 - \gamma) \quad \text{if } y = 0 \\ f\_{\alpha,
+\gamma}(y) = \alpha \gamma \quad \text{if } y = 1 \\ f\_{\alpha,
+\gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \\0, 1\\ \\
+where \\\alpha\\ is the zero-one-inflation probability (i.e. the
+probability that zero or one occurs) and \\\gamma\\ is the conditional
+one-inflation probability (i.e. the probability that one occurs rather
+than zero). Currently implemented families are
+**zero_one_inflated_beta**.

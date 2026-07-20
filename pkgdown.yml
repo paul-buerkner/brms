@@ -1,5 +1,5 @@
-pandoc: 3.1.1
-pkgdown: 2.0.7
+pandoc: 3.8.3
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   brms_customfamilies: brms_customfamilies.html
@@ -11,5 +11,7 @@ articles:
   brms_nonlinear: brms_nonlinear.html
   brms_phylogenetics: brms_phylogenetics.html
   brms_threading: brms_threading.html
-last_built: 2024-03-19T12:56Z
-
+last_built: 2026-07-20T15:51Z
+urls:
+  reference: https://paulbuerkner.com/brms/reference
+  article: https://paulbuerkner.com/brms/articles

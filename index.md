@@ -1,76 +1,53 @@
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)[![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
+# brms
 
+[![R-CMD-check](https://github.com/paul-buerkner/brms/workflows/R-CMD-check/badge.svg)](https://github.com/paul-buerkner/brms/actions)
+[![Coverage
+Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://app.codecov.io/github/paul-buerkner/brms?branch=master)
+[![CRAN
+Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+[![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
-<br><br><br>
-
-<div style="text-align:left; padding:-40px;">
-<a href="http://mc-stan.org">
-<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=100 alt="Stan Logo"/>
-<img src="https://raw.githubusercontent.com/paul-buerkner/brms/master/man/figures/brms.png" width = 100 alt="brms Logo"/>
-</a><h2><strong>brms</strong></h2>
-<h4>Bayesian regression models using Stan</h4>
-</div>
-
-****
+## Overview
 
 The **brms** package provides an interface to fit Bayesian generalized
-(non-)linear multivariate multilevel models using Stan. The formula syntax is
-very similar to that of the package lme4 to provide a familiar and simple
-interface for performing regression analyses.
+(non-)linear multivariate multilevel models using Stan, which is a C++
+package for performing full Bayesian inference (see
+<https://mc-stan.org/>). The formula syntax is very similar to that of
+the package lme4 to provide a familiar and simple interface for
+performing regression analyses. A wide range of response distributions
+are supported, allowing users to fit – among others – linear, robust
+linear, count data, survival, response times, ordinal, zero-inflated,
+and even self-defined mixture models all in a multilevel context.
+Further modeling options include non-linear and smooth terms,
+auto-correlation structures, censored data, missing value imputation,
+and quite a few more. In addition, all parameters of the response
+distribution can be predicted in order to perform distributional
+regression. Multivariate models (i.e., models with multiple response
+variables) can be fit, as well. Prior specifications are flexible and
+explicitly encourage users to apply prior distributions that actually
+reflect their beliefs. Model fit can easily be assessed and compared
+with posterior predictive checks, cross-validation, and Bayes factors.
 
-A wide range of distributions and link functions are supported, allowing users
-to fit -- among others -- linear, robust linear, count data, survival, response
-times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all
-in a multilevel context. Further modeling options include non-linear and smooth
-terms, auto-correlation structures, censored data, meta-analytic standard
-errors, and quite a few more. In addition, all parameters of the response
-distribution can be predicted in order to perform distributional regression.
-Prior specifications are flexible and explicitly encourage users to apply prior
-distributions that actually reflect their beliefs. Model fit can easily be
-assessed and compared with posterior predictive checks and leave-one-out
-cross-validation.
+## Resources
 
-## Getting Started
-
-If you are new to **brms** we recommend starting with the [vignettes](https://paul-buerkner.github.io/brms/articles/) and these 
-other resources:
-
-* [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) 
-(Journal of Statistical Software)
-* [Advanced multilevel modeling with brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html) 
-(The R Journal)
-* [Blog posts](https://paul-buerkner.github.io/software/brms-blogposts.html) 
-(List of blog posts about brms)
-* [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
-
-
-## Installation
-
-
-Install the latest release from **CRAN**
-
-```r
-install.packages("brms")
-```
-
-Install the latest development version from **GitHub**
-
-```r
-if (!requireNamespace("remotes")) {
-  install.packages("remotes")
-}
-remotes::install_github("paul-buerkner/brms")
-```
-
-You can also set `build_vignettes=TRUE` but this will slow down the installation
-drastically (the vignettes can always be accessed online anytime at
-[paul-buerkner.github.io/brms/articles](https://paul-buerkner.github.io/brms/articles/)).
-
-
+- [Introduction to brms](https://doi.org/10.18637/jss.v080.i01) (Journal
+  of Statistical Software)
+- [Advanced multilevel modeling with
+  brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html)
+  (The R Journal)
+- [Website](https://paulbuerkner.com/brms/) (Website of brms with
+  documentation and vignettes)
+- [Blog posts](http://paulbuerkner.com/software/brms-blogposts.md) (List
+  of blog posts about brms)
+- [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
+  Discourse)
+- [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub
+  issues for bug reports and feature requests)
 
 ## How to use brms
 
 ``` r
+
 library(brms)
 ```
 
@@ -84,6 +61,7 @@ intercept is incorporated to account for the resulting dependency in the
 data.
 
 ``` r
+
 fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson())
 ```
@@ -91,6 +69,7 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 The results (i.e., posterior draws) can be investigated using
 
 ``` r
+
 summary(fit1)
 #>  Family: poisson 
 #>   Links: mu = log 
@@ -99,18 +78,18 @@ summary(fit1)
 #>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup draws = 4000
 #> 
-#> Group-Level Effects: 
+#> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.58      0.07     0.46     0.73 1.01      768     1579
+#> sd(Intercept)     0.59      0.07     0.46     0.74 1.01      566     1356
 #> 
-#> Population-Level Effects: 
+#> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.77      0.11     1.54     1.99 1.00      753     1511
-#> zAge           0.09      0.08    -0.07     0.26 1.00      830     1429
-#> zBase          0.70      0.12     0.47     0.95 1.00      678     1389
-#> Trt1          -0.26      0.16    -0.59     0.05 1.01      709     1356
-#> zBase:Trt1     0.05      0.17    -0.29     0.37 1.01      721     1404
+#> Intercept      1.78      0.12     1.55     2.01 1.00      771     1595
+#> zAge           0.09      0.09    -0.08     0.27 1.00      590     1302
+#> zBase          0.71      0.12     0.47     0.96 1.00      848     1258
+#> Trt1          -0.27      0.16    -0.60     0.05 1.01      749     1172
+#> zBase:Trt1     0.05      0.17    -0.30     0.38 1.00      833     1335
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -149,10 +128,11 @@ distributions, we can use the `plot` method. If we just want to see
 results of the regression coefficients of `Trt` and `zBase`, we go for
 
 ``` r
+
 plot(fit1, variable = c("b_Trt1", "b_zBase"))
 ```
 
-<img src="man/figures/README-plot-1.png" width="60%" style="display: block; margin: auto;" />
+![](reference/figures/README-plot-1.png)
 
 A more detailed investigation can be performed by running
 `launch_shinystan(fit1)`. To better understand the relationship of the
@@ -160,10 +140,11 @@ predictors with the response, I recommend the `conditional_effects`
 method:
 
 ``` r
+
 plot(conditional_effects(fit1, effects = "zBase:Trt"))
 ```
 
-<img src="man/figures/README-conditional_effects-1.png" width="60%" style="display: block; margin: auto;" />
+![](reference/figures/README-conditional_effects-1.png)
 
 This method uses some prediction functionality behind the scenes, which
 can also be called directly. Suppose that we want to predict responses
@@ -172,11 +153,12 @@ in the control group (`Trt = 0`) with average age and average number of
 previous seizures. Than we can use
 
 ``` r
+
 newdata <- data.frame(Trt = c(0, 1), zAge = 0, zBase = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error Q2.5 Q97.5
-#> [1,]  5.90325  2.486249    2    11
-#> [2,]  4.59025  2.180262    1     9
+#> [1,]  5.91200  2.494857    2    11
+#> [2,]  4.57325  2.166058    1     9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the
@@ -185,10 +167,11 @@ the responses, the `fitted` method returns predictions of the regression
 line.
 
 ``` r
+
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error     Q2.5    Q97.5
-#> [1,] 5.918847 0.6762827 4.666180 7.308699
-#> [2,] 4.554778 0.5144053 3.630642 5.659664
+#> [1,] 5.945276 0.7075160 4.696257 7.450011
+#> [2,] 4.540081 0.5343471 3.579757 5.665132
 ```
 
 Both methods return the same estimate (up to random error), while the
@@ -203,6 +186,7 @@ distribution. For this purpose, we include a second group-level
 intercept that captures possible overdispersion.
 
 ``` r
+
 fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
             data = epilepsy, family = poisson())
 ```
@@ -211,49 +195,50 @@ We can then go ahead and compare both models via approximate
 leave-one-out (LOO) cross-validation.
 
 ``` r
+
 loo(fit1, fit2)
 #> Output of model 'fit1':
 #> 
-#> Computed from 4000 by 236 log-likelihood matrix
+#> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -671.6 35.8
-#> p_loo        94.6 13.6
-#> looic      1343.3 71.6
+#> elpd_loo   -671.7 36.6
+#> p_loo        94.3 14.2
+#> looic      1343.4 73.2
 #> ------
-#> Monte Carlo SE of elpd_loo is NA.
+#> MCSE of elpd_loo is NA.
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.0]).
 #> 
 #> Pareto k diagnostic values:
-#>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     209   88.6%   546       
-#>  (0.5, 0.7]   (ok)        18    7.6%   125       
-#>    (0.7, 1]   (bad)        7    3.0%   23        
-#>    (1, Inf)   (very bad)   2    0.8%   12        
+#>                          Count Pct.    Min. ESS
+#> (-Inf, 0.7]   (good)     228   96.6%   157     
+#>    (0.7, 1]   (bad)        7    3.0%   <NA>    
+#>    (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Output of model 'fit2':
 #> 
-#> Computed from 4000 by 236 log-likelihood matrix
+#> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -596.2 14.1
-#> p_loo       108.5  7.3
-#> looic      1192.3 28.3
+#> elpd_loo   -596.8 14.0
+#> p_loo       109.7  7.2
+#> looic      1193.6 28.1
 #> ------
-#> Monte Carlo SE of elpd_loo is NA.
+#> MCSE of elpd_loo is NA.
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.7]).
 #> 
 #> Pareto k diagnostic values:
-#>                          Count Pct.    Min. n_eff
-#> (-Inf, 0.5]   (good)     84    35.6%   755       
-#>  (0.5, 0.7]   (ok)       96    40.7%   171       
-#>    (0.7, 1]   (bad)      50    21.2%   25        
-#>    (1, Inf)   (very bad)  6     2.5%   10        
+#>                          Count Pct.    Min. ESS
+#> (-Inf, 0.7]   (good)     172   72.9%   83      
+#>    (0.7, 1]   (bad)       56   23.7%   <NA>    
+#>    (1, Inf)   (very bad)   8    3.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Model comparisons:
 #>      elpd_diff se_diff
 #> fit2   0.0       0.0  
-#> fit1 -75.5      26.3
+#> fit1 -74.9      27.2
 ```
 
 The `loo` output when comparing models is a little verbose. We first see
@@ -280,25 +265,25 @@ for their work.
 
 When using brms, please cite one or more of the following publications:
 
--   Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
-    Models using Stan. *Journal of Statistical Software*. 80(1), 1-28.
-    doi.org/10.18637/jss.v080.i01
--   Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the
-    R Package brms. *The R Journal*. 10(1), 395-411.
-    doi.org/10.32614/RJ-2018-017
--   Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms
-    and Stan. *Journal of Statistical Software*, 100(5), 1-54.
-    doi.org/10.18637/jss.v100.i05
+- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
+  Models using Stan. *Journal of Statistical Software*. 80(1), 1-28.
+  doi.org/10.18637/jss.v080.i01
+- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
+  Package brms. *The R Journal*. 10(1), 395-411.
+  doi.org/10.32614/RJ-2018-017
+- Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms
+  and Stan. *Journal of Statistical Software*, 100(5), 1-54.
+  doi.org/10.18637/jss.v100.i05
 
 As brms is a high-level interface to Stan, please additionally cite Stan
 (see also <https://mc-stan.org/users/citations/>):
 
--   Stan Development Team. YEAR. Stan Modeling Language Users Guide and
-    Reference Manual, VERSION. <https://mc-stan.org>
--   Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B.,
-    Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017).
-    Stan: A probabilistic programming language. *Journal of Statistical
-    Software*. 76(1). doi.org/10.18637/jss.v076.i01
+- Stan Development Team. YEAR. Stan Modeling Language Users Guide and
+  Reference Manual, VERSION. <https://mc-stan.org>
+- Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B.,
+  Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017).
+  Stan: A probabilistic programming language. *Journal of Statistical
+  Software*. 76(1). doi.org/10.18637/jss.v076.i01
 
 Further, brms relies on several other R packages and, of course, on R
 itself. To find out how to cite R and its packages, use the `citation`
@@ -313,3 +298,71 @@ methods such as `bayes_factor` are realized by means of the
 functions rely on **mgcv**. If you use some of these features, please
 also consider citing the related packages.
 
+## FAQ
+
+### How do I install brms?
+
+To install the latest release version from CRAN use
+
+``` r
+
+install.packages("brms")
+```
+
+The current developmental version can be downloaded from GitHub via
+
+``` r
+
+if (!requireNamespace("remotes")) {
+  install.packages("remotes")
+}
+remotes::install_github("paul-buerkner/brms")
+```
+
+Because brms is based on Stan, a C++ compiler is required. The program
+Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>)
+comes with a C++ compiler for Windows. On Mac, you should install Xcode.
+For further instructions on how to get the compilers running, see the
+prerequisites section on
+<https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+
+### I am new to brms. Where can I start?
+
+Detailed instructions and case studies are given in the package’s
+extensive vignettes. See `vignette(package = "brms")` for an overview.
+For documentation on formula syntax, families, and prior distributions
+see [`help("brm")`](https://paulbuerkner.com/brms/reference/brm.md).
+
+### Where do I ask questions, propose a new feature, or report a bug?
+
+Questions can be asked on the [Stan
+forums](https://discourse.mc-stan.org/) on Discourse. To propose a new
+feature or report a bug, please open an issue on
+[GitHub](https://github.com/paul-buerkner/brms).
+
+### How can I extract the generated Stan code?
+
+If you have already fitted a model, apply the `stancode` method on the
+fitted model object. If you just want to generate the Stan code without
+any model fitting, use the `stancode` method on your model formula.
+
+### Can I avoid compiling models?
+
+When you fit your model for the first time with brms, there is currently
+no way to avoid compilation. However, if you have already fitted your
+model and want to run it again, for instance with more draws, you can do
+this without recompilation by using the `update` method. For more
+details see
+[`help("update.brmsfit")`](https://paulbuerkner.com/brms/reference/update.brmsfit.md).
+
+### What is the difference between brms and rstanarm?
+
+The rstanarm package is similar to brms in that it also allows to fit
+regression models using Stan for the backend estimation. Contrary to
+brms, rstanarm comes with precompiled code to save the compilation time
+(and the need for a C++ compiler) when fitting a model. However, as brms
+generates its Stan code on the fly, it offers much more flexibility in
+model specification than rstanarm. Also, multilevel models are currently
+fitted a bit more efficiently in brms. For detailed comparisons of brms
+with other common R packages implementing multilevel models, see
+`vignette("brms_multilevel")` and `vignette("brms_overview")`.
