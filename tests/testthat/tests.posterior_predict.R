@@ -618,12 +618,12 @@ test_that("PP respects lower.tail, log.p, and log flags", {
 test_that("randomized PIT is reproducible with the same seed", {
   entry <- dist_registry_get("pois")[[1]]
   prep <- entry$prep_builder(ns = 50, nobs = 3, seed = 1)
-  withr::local_seed(123)
+  set.seed(123)
   pit1 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
-  withr::local_seed(123)
+  set.seed(123)
   pit2 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
   expect_equal(pit1, pit2)
-  withr::local_seed(456)
+  set.seed(456)
   pit3 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
   expect_true(any(pit1 != pit3))
 })

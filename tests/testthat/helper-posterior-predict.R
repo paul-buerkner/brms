@@ -64,7 +64,7 @@ expect_pp_output_matches_dist <- function(entry, i = 1L, tol = 1e-7,
   }
 
   if (has_output(entry, "random")) {
-    withr::local_seed(seed)
+    set.seed(seed)
     got <- pp(i, prep = prep, output = "random")
     testthat::expect_length(got, prep$ndraws)
     testthat::expect_true(all(is.finite(got)))
@@ -209,9 +209,9 @@ expect_pp_pit_contract <- function(entry, i = 1L, seed = 99, tol = 1e-8) {
                            info = paste(entry$name, "PIT ≡ probability"))
   } else {
     # discrete / ordinal: randomized PIT = F(q-1) + V*(F(q)-F(q-1))
-    withr::local_seed(seed)
+    set.seed(seed)
     pit <- pp(i, prep = prep, output = "pit", q = q)
-    withr::local_seed(seed)
+    set.seed(seed)
     args <- get_pp_dist_args(entry, prep, i)
     expected <- do.call(
       brms:::compute_cdf,

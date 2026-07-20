@@ -105,7 +105,7 @@ test_that("qzero_inflated_asym_laplace matches mixture CDF regions", {
 })
 
 test_that("qordinal matches the ordinal CDF", {
-  withr::local_seed(11)
+  set.seed(11)
   ns <- 7
   nthres <- 3
   eta <- rnorm(ns)
@@ -133,7 +133,7 @@ test_that("qordinal matches the ordinal CDF", {
 })
 
 test_that("qcategorical matches the categorical CDF", {
-  withr::local_seed(12)
+  set.seed(12)
   ns <- 7
   ncat <- 4
   eta <- matrix(rnorm(ns * ncat), nrow = ns)
@@ -151,7 +151,7 @@ test_that("qcategorical matches the categorical CDF", {
 })
 
 test_that("qhurdle_cumulative matches the mixture CDF", {
-  withr::local_seed(13)
+  set.seed(13)
   ns <- 7
   nthres <- 3
   ncat <- nthres + 1

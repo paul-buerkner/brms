@@ -199,7 +199,7 @@ call_dist <- function(fun, x, params, ...) {
 
 make_prep_location <- function(ns = 25, nobs = 4, mu = 0, sigma = 1,
                                extra = list(), Y = NULL, seed = NULL) {
-  if (!is.null(seed)) withr::local_seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- c(
     list(
@@ -215,7 +215,7 @@ make_prep_location <- function(ns = 25, nobs = 4, mu = 0, sigma = 1,
 
 make_prep_positive <- function(ns = 25, nobs = 4, mu = 1, shape = 2,
                                extra = list(), Y = NULL, seed = NULL) {
-  if (!is.null(seed)) withr::local_seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- c(
     list(
@@ -234,7 +234,7 @@ make_prep_positive <- function(ns = 25, nobs = 4, mu = 1, shape = 2,
 make_prep_count <- function(ns = 25, nobs = 4, mu = 3, shape = 2,
                             trials = 10, zi = 0.2, hu = 0.2,
                             extra = list(), Y = NULL, seed = NULL) {
-  if (!is.null(seed)) withr::local_seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- c(
     list(
@@ -256,7 +256,7 @@ make_prep_count <- function(ns = 25, nobs = 4, mu = 3, shape = 2,
 
 make_prep_beta_mix <- function(ns = 25, nobs = 4, mu = 0.4, phi = 5,
                                zoi = 0.2, coi = 0.4, Y = NULL, seed = NULL) {
-  if (!is.null(seed)) withr::local_seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
     mu = matrix(mu, nrow = ns, ncol = nobs),
@@ -272,7 +272,7 @@ make_prep_beta_mix <- function(ns = 25, nobs = 4, mu = 0.4, phi = 5,
 make_prep_ordinal <- function(ns = 25, nobs = 4, nthres = 3,
                               family = "cumulative", link = "logit",
                               hu = NULL, Y = NULL, seed = NULL) {
-  if (!is.null(seed)) withr::local_seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   ncat <- nthres + 1L
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   prep$dpars <- list(
@@ -299,7 +299,7 @@ make_prep_ordinal <- function(ns = 25, nobs = 4, nthres = 3,
 
 make_prep_categorical <- function(ns = 25, nobs = 4, ncat = 3,
                                   Y = NULL, seed = NULL) {
-  if (!is.null(seed)) withr::local_seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
   # reference category inserted by posterior_predict_categorical
   mu_names <- paste0("mu", seq_len(ncat - 1L))
@@ -1622,7 +1622,7 @@ expect_moments_match <- function(entry, n = 8000, tol = 0.15, seed = 1) {
   if (!has_fun(entry, "r") || isTRUE(entry$flags$skip_moments)) {
     return(invisible(TRUE))
   }
-  withr::local_seed(seed)
+  set.seed(seed)
   draws <- as.numeric(do.call(entry$r, c(list(n), entry$params)))
   # approximate mean via quantile grid when closed form unknown
   ps <- seq(0.001, 0.999, length.out = 500)
@@ -1638,7 +1638,7 @@ expect_rng_fits_cdf <- function(entry, n = 4000, tol = 0.08, seed = 2) {
       isTRUE(entry$flags$skip_rng_cdf)) {
     return(invisible(TRUE))
   }
-  withr::local_seed(seed)
+  set.seed(seed)
   draws <- as.numeric(do.call(entry$r, c(list(n), entry$params)))
   u <- as.numeric(call_dist(entry$p, draws, entry$params))
   # continuous: PIT ~ U(0,1); discrete: not uniform — compare ECDF at probes
