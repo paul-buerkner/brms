@@ -774,6 +774,39 @@ test_that("posterior_predict output argument works for categorical", {
   )
 })
 
+test_that("posterior_predict output argument works for hurdle_cumulative", {
+  set.seed(1012)
+  ns <- 80
+  nobs <- 6
+  nthres <- 3
+  ncat <- nthres + 1
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    disc = rexp(ns),
+    hu = rbeta(ns, 1.5, 5)
+  )
+  prep$thres$thres <- matrix(rep(c(-1, 0, 1), each = ns), nrow = ns)
+  prep$data <- list(
+    Y = rep(0:ncat, length.out = nobs),
+    ncat = ncat,
+    lb = rep(NULL, nobs),
+    ub = rep(NULL, nobs)
+  )
+  prep$family <- hurdle_cumulative()
+  i <- 2
+
+  expect_outcome_modes(
+    family_fun = brms:::posterior_predict_hurdle_cumulative,
+    prep = prep,
+    i = i,
+    q_ref = 2,
+    p_ref = 0.7,
+    support = c(0, ncat),
+    check_integer = TRUE
+  )
+})
+
 test_that("compute_cdf returns correct CDF for non-truncated distributions", {
   # Non-truncated, non-randomized: raw CDF F(q)
   q <- 3

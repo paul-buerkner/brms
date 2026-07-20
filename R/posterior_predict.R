@@ -869,25 +869,17 @@ posterior_predict_hurdle_lognormal <- function(i, prep, output = "random",
   }
 }
 
-posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
-  mu <- get_dpar(prep, "mu", i = i)
-  hu <- get_dpar(prep, "hu", i = i)
-  disc <- get_dpar(prep, "disc", i = i)
-  thres <- subset_thres(prep)
-  nthres <- NCOL(thres)
-  ndraws <- prep$ndraws
-  p <- pordinal(
-    seq_len(nthres + 1L),
-    eta = mu,
-    disc = disc,
-    thres = thres,
-    family = "cumulative",
-    link = prep$family$link
-  )
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(
-    tmp < hu, 0L,
-    first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
+posterior_predict_hurdle_cumulative <- function(i, prep, output = "random",
+                                                ...) {
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    dist = "hurdle_cumulative",
+    eta = get_dpar(prep, "mu", i = i),
+    disc = get_dpar(prep, "disc", i = i),
+    hu = get_dpar(prep, "hu", i = i),
+    thres = subset_thres(prep, i),
+    link = prep$family$link,
+    ...
   )
 }
 

@@ -2437,6 +2437,112 @@ qhurdle_lognormal <- function(p, mu, sigma, hu, lower.tail = TRUE,
   .qhurdle(p, "lnorm", hu, pars, lower.tail, log.p, type = "real")
 }
 
+# density of the hurdle-cumulative distribution
+# categories: 0 = hurdle, 1..ncat = cumulative ordinal categories
+# @param x category indices
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param hu hurdle probability
+# @param disc discrimination parameter
+# @param link link function of the ordinal part
+# @param log return values on the log scale?
+dhurdle_cumulative <- function(x, eta, thres, hu, disc = 1, link = "logit",
+                               log = FALSE) {
+  log <- as_one_logical(log)
+  link <- as_one_character(link)
+  ncat <- NCOL(thres) + 1L
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  if (length(hu) == 1L) {
+    hu <- rep(hu, ndraws)
+  }
+  out <- matrix(0, nrow = ndraws, ncol = length(x))
+  for (j in seq_along(x)) {
+    xj <- x[j]
+    if (xj == 0) {
+      out[, j] <- hu
+    } else if (xj >= 1 && xj <= ncat) {
+      out[, j] <- (1 - hu) * as.vector(
+        dcumulative(xj, eta = eta, thres = thres, disc = disc, link = link)
+      )
+    }
+  }
+  if (length(x) == 1L) {
+    out <- as.vector(out)
+  }
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+# CDF of the hurdle-cumulative distribution
+# @return a vector (if length(q) == 1) or matrix of probabilities P(X <= q)
+phurdle_cumulative <- function(q, eta, thres, hu, disc = 1, link = "logit") {
+  link <- as_one_character(link)
+  ncat <- NCOL(thres) + 1L
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  if (length(hu) == 1L) {
+    hu <- rep(hu, ndraws)
+  }
+  .fun <- function(j) {
+    if (j < 0) {
+      return(rep(0, ndraws))
+    }
+    if (j == 0) {
+      return(hu)
+    }
+    if (j >= ncat) {
+      return(rep(1, ndraws))
+    }
+    F_ord <- pordinal(
+      j, eta = eta, thres = thres, disc = disc,
+      family = "cumulative", link = link
+    )
+    hu + (1 - hu) * F_ord
+  }
+  out <- cblapply(q, .fun)
+  if (length(q) == 1L) {
+    out <- as.vector(out)
+  }
+  out
+}
+
+# quantile function of the hurdle-cumulative distribution
+qhurdle_cumulative <- function(p, eta, thres, hu, disc = 1, link = "logit",
+                               lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  link <- as_one_character(link)
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  if (length(hu) == 1L) {
+    hu <- rep(hu, ndraws)
+  }
+  if (length(p) == 1L) {
+    p <- rep(p, ndraws)
+  }
+  if (length(disc) == 1L) {
+    disc <- rep(disc, ndraws)
+  }
+  out <- rep(0L, ndraws)
+  idx <- which(p > hu & hu < 1)
+  if (length(idx)) {
+    out[idx] <- qordinal(
+      (p[idx] - hu[idx]) / (1 - hu[idx]),
+      eta = eta[idx], thres = thres[idx, , drop = FALSE], disc = disc[idx],
+      family = "cumulative", link = link
+    )
+  }
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  out
+}
+
+# random generation for the hurdle-cumulative distribution
+rhurdle_cumulative <- function(n, eta, thres, hu, disc = 1, link = "logit") {
+  n <- check_n_rdist(n, eta, hu, disc)
+  qhurdle_cumulative(
+    runif(n), eta = eta, thres = thres, hu = hu, disc = disc, link = link
+  )
+}
+
 # density of a hurdle distribution
 # @param dist name of the distribution
 # @param hu bernoulli hurdle parameter

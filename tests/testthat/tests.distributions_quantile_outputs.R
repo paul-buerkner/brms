@@ -117,6 +117,39 @@ test_that("qcategorical matches the categorical CDF", {
   }
 })
 
+test_that("qhurdle_cumulative matches the mixture CDF", {
+  set.seed(13)
+  ns <- 7
+  nthres <- 3
+  ncat <- nthres + 1
+  eta <- rnorm(ns)
+  thres <- matrix(rep(c(-1, 0, 1), each = ns), nrow = ns)
+  disc <- rep(1, ns)
+  hu <- rep(0.25, ns)
+  p <- c(0.05, 0.2, 0.25, 0.5, 0.9, 0.99)
+
+  for (pj in p) {
+    qj <- brms:::qhurdle_cumulative(
+      pj, eta = eta, thres = thres, hu = hu, disc = disc, link = "logit"
+    )
+    expect_length(qj, ns)
+    expect_true(all(qj >= 0 & qj <= ncat))
+    F_q <- vapply(seq_len(ns), function(s) {
+      brms:::phurdle_cumulative(
+        qj[s], eta = eta[s], thres = thres[s, , drop = FALSE],
+        hu = hu[s], disc = disc[s], link = "logit"
+      )
+    }, numeric(1))
+    expect_true(all(F_q + 1e-10 >= pj))
+  }
+  expect_equal(
+    brms:::qhurdle_cumulative(
+      0.1, eta = eta, thres = thres, hu = hu, disc = disc, link = "logit"
+    ),
+    rep(0, ns)
+  )
+})
+
 test_that("qzero_one_inflated_beta matches the mixture CDF", {
   shape1 <- 2
   shape2 <- 3
