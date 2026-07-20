@@ -30,6 +30,8 @@
 #'   \code{"probability"}, \code{"pit"}, \code{"density"}, or
 #'   \code{"quantile"}. Defaults to \code{"random"}. In case of continuous
 #'   distributions, \code{"probability"} is equivalent to \code{"pit"}.
+#'   Not all families support outputs other than \code{"random"} yet;
+#'   requesting an unsupported combination raises an error.
 #' @param q Custom quantile for computing probability, PIT, or density values.
 #'   It defaults to NULL in which case \code{prep$data$Y[i]} is used.
 #' @param p Custom probability for computing quantile values.
@@ -138,6 +140,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   output <- rlang::arg_match(
     output, values = c("random", "probability", "pit", "density", "quantile")
   )
+  validate_pp_output_support(object$family$fun, output)
 
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
@@ -391,7 +394,8 @@ posterior_predict_skew_normal <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_gaussian_mv <- function(i, prep, ...) {
+posterior_predict_gaussian_mv <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_mv", output)
   Mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i)
   .predict <- function(s) {
@@ -400,7 +404,8 @@ posterior_predict_gaussian_mv <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_mv <- function(i, prep, ...) {
+posterior_predict_student_mv <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_mv", output)
   nu <- get_dpar(prep, "nu", i = i)
   Mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i)
@@ -410,7 +415,8 @@ posterior_predict_student_mv <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_time <- function(i, prep, ...) {
+posterior_predict_gaussian_time <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_time", output)
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
   Jtime <- prep$ac$Jtime_tg[i, ]
   mu <- as.matrix(get_dpar(prep, "mu", i = obs))
@@ -421,7 +427,8 @@ posterior_predict_gaussian_time <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_time <- function(i, prep, ...) {
+posterior_predict_student_time <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_time", output)
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
   Jtime <- prep$ac$Jtime_tg[i, ]
   nu <- as.matrix(get_dpar(prep, "nu", i = obs))
@@ -433,7 +440,8 @@ posterior_predict_student_time <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_lagsar <- function(i, prep, ...) {
+posterior_predict_gaussian_lagsar <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_lagsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$lagsar[s] * ac$Msar)
@@ -446,7 +454,8 @@ posterior_predict_gaussian_lagsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_lagsar <- function(i, prep, ...) {
+posterior_predict_student_lagsar <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_lagsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$lagsar[s] * ac$Msar)
@@ -460,7 +469,9 @@ posterior_predict_student_lagsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_errorsar <- function(i, prep, ...) {
+posterior_predict_gaussian_errorsar <- function(i, prep, output = "random",
+                                                ...) {
+  validate_pp_output_support("gaussian_errorsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$errorsar[s] * ac$Msar)
@@ -472,7 +483,9 @@ posterior_predict_gaussian_errorsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_errorsar <- function(i, prep, ...) {
+posterior_predict_student_errorsar <- function(i, prep, output = "random",
+                                               ...) {
+  validate_pp_output_support("student_errorsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$errorsar[s] * ac$Msar)
@@ -485,7 +498,8 @@ posterior_predict_student_errorsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_fcor <- function(i, prep, ...) {
+posterior_predict_gaussian_fcor <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_fcor", output)
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(prep, "mu"))
   Sigma <- get_cov_matrix_ac(prep)
@@ -495,7 +509,8 @@ posterior_predict_gaussian_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_fcor <- function(i, prep, ...) {
+posterior_predict_student_fcor <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_fcor", output)
   stopifnot(i == 1)
   nu <- as.matrix(get_dpar(prep, "nu"))
   mu <- as.matrix(get_dpar(prep, "mu"))
@@ -691,8 +706,9 @@ posterior_predict_exgaussian <- function(i, prep, output = "random", ntrys = 5,
   )
 }
 
-posterior_predict_wiener <- function(i, prep, negative_rt = FALSE, ntrys = 5,
-                                     ...) {
+posterior_predict_wiener <- function(i, prep, output = "random",
+                                     negative_rt = FALSE, ntrys = 5, ...) {
+  validate_pp_output_support("wiener", output)
   out <- rcontinuous(
     n = 1, dist = "wiener",
     delta = get_dpar(prep, "mu", i = i),
@@ -779,7 +795,7 @@ posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
   out
 }
 
-posterior_predict_cox <- function(i, prep, ...) {
+posterior_predict_cox <- function(i, prep, output = "random", ...) {
   stop2("Cannot sample from the posterior predictive ",
         "distribution for family 'cox'.")
 }
@@ -1033,7 +1049,8 @@ posterior_predict_categorical <- function(i, prep, output = "random", ...) {
   )
 }
 
-posterior_predict_multinomial <- function(i, prep, ...) {
+posterior_predict_multinomial <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("multinomial", output)
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
@@ -1041,7 +1058,9 @@ posterior_predict_multinomial <- function(i, prep, ...) {
   rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
-posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
+posterior_predict_dirichlet_multinomial <- function(i, prep, output = "random",
+                                                    ...) {
+  validate_pp_output_support("dirichlet_multinomial", output)
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
@@ -1051,7 +1070,8 @@ posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
   rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
-posterior_predict_dirichlet <- function(i, prep, ...) {
+posterior_predict_dirichlet <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("dirichlet", output)
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
@@ -1060,12 +1080,14 @@ posterior_predict_dirichlet <- function(i, prep, ...) {
   rdirichlet(prep$ndraws, alpha = alpha)
 }
 
-posterior_predict_dirichlet2 <- function(i, prep, ...) {
+posterior_predict_dirichlet2 <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("dirichlet2", output)
   mu <- get_Mu(prep, i = i)
   rdirichlet(prep$ndraws, alpha = mu)
 }
 
-posterior_predict_logistic_normal <- function(i, prep, ...) {
+posterior_predict_logistic_normal <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("logistic_normal", output)
   mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   .predict <- function(s) {
@@ -1075,20 +1097,20 @@ posterior_predict_logistic_normal <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_cumulative <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep, ...)
+posterior_predict_cumulative <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_sratio <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep, ...)
+posterior_predict_sratio <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_cratio <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep, ...)
+posterior_predict_cratio <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_acat <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep, ...)
+posterior_predict_acat <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
 posterior_predict_ordinal <- function(i, prep, output = "random", ...) {
@@ -1108,11 +1130,25 @@ posterior_predict_ordinal <- function(i, prep, output = "random", ...) {
   )
 }
 
-posterior_predict_custom <- function(i, prep, ...) {
-  custom_family_method(prep$family, "posterior_predict")(i, prep, ...)
+posterior_predict_custom <- function(i, prep, output = "random", ...) {
+  fun <- custom_family_method(prep$family, "posterior_predict")
+  args <- names(formals(fun))
+  if ("output" %in% args || "..." %in% args) {
+    fun(i, prep, output = output, ...)
+  } else {
+    # older custom methods may not accept output yet
+    if (!identical(output, "random")) {
+      stop2(
+        "Output '", output, "' is not yet implemented for this custom family. ",
+        "Only output = 'random' is currently supported."
+      )
+    }
+    fun(i, prep, ...)
+  }
 }
 
-posterior_predict_mixture <- function(i, prep, ...) {
+posterior_predict_mixture <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("mixture", output)
   families <- family_names(prep$family)
   theta <- get_theta(prep, i = i)
   smix <- sample_mixture_ids(theta)
@@ -1123,13 +1159,46 @@ posterior_predict_mixture <- function(i, prep, ...) {
       pp_fun <- paste0("posterior_predict_", families[j])
       pp_fun <- get(pp_fun, asNamespace("brms"))
       tmp_prep <- pseudo_prep_for_mixture(prep, j, draw_ids)
-      out[draw_ids] <- pp_fun(i, tmp_prep, ...)
+      out[draw_ids] <- pp_fun(i, tmp_prep, output = output, ...)
     }
   }
   out
 }
 
 # ------------ predict helper-functions ----------------------
+
+# families that currently only support output = "random"
+# (multivariate, time-series, compositional, and diffusion models)
+pp_output_random_only_families <- c(
+  "gaussian_mv", "student_mv",
+  "gaussian_time", "student_time",
+  "gaussian_lagsar", "student_lagsar",
+  "gaussian_errorsar", "student_errorsar",
+  "gaussian_fcor", "student_fcor",
+  "wiener",
+  "multinomial", "dirichlet_multinomial",
+  "dirichlet", "dirichlet2", "logistic_normal",
+  "mixture"
+)
+
+# error if a non-random output is requested for an unsupported family
+# @param family_fun name of the family method suffix (object$family$fun)
+# @param output validated output type
+# @noRd
+validate_pp_output_support <- function(family_fun, output) {
+  if (output == "random") {
+    return(invisible(NULL))
+  }
+  family_fun <- as_one_character(family_fun)
+  if (family_fun %in% pp_output_random_only_families) {
+    stop2(
+      "Output '", output, "' is not yet implemented for family '",
+      family_fun, "'. Only output = 'random' is currently supported."
+    )
+  }
+  invisible(NULL)
+}
+
 # random numbers from (possibly truncated) continuous distributions
 # @param n number of random values to generate
 # @param distribution name of a distribution for which the functions
