@@ -3019,6 +3019,33 @@ link_acat <- function(x, link) {
   out
 }
 
+# density for ordinal distributions
+# @param x positive integers not greater than ncat
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @param log return values on the log scale?
+# @return a vector (if length(x) == 1) or matrix of probabilities P(X = x)
+dordinal <- function(x, eta, thres, disc = 1, family = NULL, link = "logit",
+                     log = FALSE) {
+  family <- as_one_character(family)
+  link <- as_one_character(link)
+  log <- as_one_logical(log)
+  out <- do_call(
+    paste0("d", family),
+    nlist(x, eta, thres, disc, link)
+  )
+  if (length(x) == 1L) {
+    out <- as.vector(out)
+  }
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
 # CDF for ordinal distributions
 # @param q positive integers not greater than ncat
 # @param eta draws of the linear predictor
@@ -3026,14 +3053,72 @@ link_acat <- function(x, link) {
 # @param disc draws of the discrimination parameter
 # @param family a character string naming the family
 # @param link a character string naming the link
-# @return a matrix of probabilities P(x <= q)
+# @return a vector (if length(q) == 1) or matrix of probabilities P(x <= q)
 pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   family <- as_one_character(family)
   link <- as_one_character(link)
-  args <- nlist(x = seq_len(max(q)), eta, thres, disc, link)
-  p <- do_call(paste0("d", family), args)
-  .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
-  cblapply(q, .fun)
+  ncat <- NCOL(thres) + 1L
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  q_max <- max(q)
+  if (q_max > 0) {
+    args <- nlist(x = seq_len(min(q_max, ncat)), eta, thres, disc, link)
+    p <- do_call(paste0("d", family), args)
+  } else {
+    p <- matrix(0, nrow = ndraws, ncol = 0)
+  }
+  .fun <- function(j) {
+    if (j <= 0) {
+      return(rep(0, ndraws))
+    }
+    if (j >= ncat) {
+      return(rep(1, ndraws))
+    }
+    rowSums(as.matrix(p[, 1:j, drop = FALSE]))
+  }
+  out <- cblapply(q, .fun)
+  if (length(q) == 1L) {
+    out <- as.vector(out)
+  }
+  out
+}
+
+# quantile function for ordinal distributions
+# @param p vector of probabilities
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @return a vector of category indices
+qordinal <- function(p, eta, thres, disc = 1, family = NULL, link = "logit",
+                     lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  ncat <- NCOL(thres) + 1L
+  F_all <- pordinal(
+    seq_len(ncat), eta = eta, thres = thres, disc = disc,
+    family = family, link = link
+  )
+  ndraws <- NROW(F_all)
+  if (length(p) == 1L) {
+    p <- rep(p, ndraws)
+  }
+  first_greater(F_all, target = p)
+}
+
+# random generation for ordinal distributions
+# @param n number of observations
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @return a vector of category indices
+rordinal <- function(n, eta, thres, disc = 1, family = NULL, link = "logit") {
+  n <- check_n_rdist(n, eta, disc)
+  qordinal(
+    runif(n), eta = eta, thres = thres, disc = disc,
+    family = family, link = link
+  )
 }
 
 # helper functions to shift arbitrary distributions

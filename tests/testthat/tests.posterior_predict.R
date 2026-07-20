@@ -708,6 +708,41 @@ test_that("posterior_predict outcome argument works for discrete families", {
   }
 })
 
+test_that("posterior_predict output argument works for ordinal families", {
+  ns <- 80
+  nobs <- 6
+  nthres <- 3
+  ncat <- nthres + 1
+  set.seed(1010)
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rnorm(ns * nobs), ncol = nobs),
+    disc = rexp(ns)
+  )
+  prep$thres$thres <- matrix(rep(c(-1, 0, 1), each = ns), nrow = ns)
+  prep$data <- list(
+    Y = rep(1:ncat, length.out = nobs),
+    ncat = ncat,
+    lb = rep(NULL, nobs),
+    ub = rep(NULL, nobs)
+  )
+  prep$family$link <- "logit"
+  i <- 2
+
+  for (fam in c("cumulative", "sratio", "cratio", "acat")) {
+    prep$family$family <- fam
+    expect_outcome_modes(
+      family_fun = brms:::posterior_predict_ordinal,
+      prep = prep,
+      i = i,
+      q_ref = 2,
+      p_ref = 0.7,
+      support = c(1, ncat),
+      check_integer = TRUE
+    )
+  }
+})
+
 test_that("compute_cdf returns correct CDF for non-truncated distributions", {
   # Non-truncated, non-randomized: raw CDF F(q)
   q <- 3

@@ -1080,33 +1080,36 @@ posterior_predict_logistic_normal <- function(i, prep, ...) {
 }
 
 posterior_predict_cumulative <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+  posterior_predict_ordinal(i = i, prep = prep, ...)
 }
 
 posterior_predict_sratio <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+  posterior_predict_ordinal(i = i, prep = prep, ...)
 }
 
 posterior_predict_cratio <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+  posterior_predict_ordinal(i = i, prep = prep, ...)
 }
 
 posterior_predict_acat <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+  posterior_predict_ordinal(i = i, prep = prep, ...)
 }
 
-posterior_predict_ordinal <- function(i, prep, ...) {
+posterior_predict_ordinal <- function(i, prep, output = "random", ...) {
   thres <- subset_thres(prep, i)
-  nthres <- NCOL(thres)
-  p <- pordinal(
-    seq_len(nthres + 1),
-    eta = get_dpar(prep, "mu", i = i),
-    disc = get_dpar(prep, "disc", i = i),
+  eta <- get_dpar(prep, "mu", i = i)
+  disc <- get_dpar(prep, "disc", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    dist = "ordinal",
+    eta = eta,
+    disc = disc,
     thres = thres,
     family = prep$family$family,
-    link = prep$family$link
+    link = prep$family$link,
+    ...
   )
-  first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
 }
 
 posterior_predict_custom <- function(i, prep, ...) {

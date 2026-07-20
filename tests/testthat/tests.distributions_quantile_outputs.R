@@ -69,6 +69,35 @@ test_that("qzero_inflated_negbinomial satisfies the discrete quantile definition
   expect_true(all(q >= 0))
 })
 
+test_that("qordinal matches the ordinal CDF", {
+  set.seed(11)
+  ns <- 7
+  nthres <- 3
+  eta <- rnorm(ns)
+  thres <- matrix(rep(c(-1, 0, 1), each = ns), nrow = ns)
+  disc <- rep(1, ns)
+  p <- c(0.05, 0.25, 0.5, 0.75, 0.95)
+
+  for (fam in c("cumulative", "sratio", "cratio", "acat")) {
+    F_mat <- brms:::pordinal(
+      seq_len(nthres + 1), eta = eta, thres = thres, disc = disc,
+      family = fam, link = "logit"
+    )
+    for (pj in p) {
+      qj <- brms:::qordinal(
+        pj, eta = eta, thres = thres, disc = disc,
+        family = fam, link = "logit"
+      )
+      expect_length(qj, ns)
+      expect_true(all(qj >= 1 & qj <= nthres + 1))
+      expect_true(all(F_mat[cbind(seq_len(ns), qj)] + 1e-10 >= pj))
+      expect_true(all(
+        ifelse(qj > 1, F_mat[cbind(seq_len(ns), qj - 1)] < pj + 1e-10, TRUE)
+      ))
+    }
+  }
+})
+
 test_that("qzero_one_inflated_beta matches the mixture CDF", {
   shape1 <- 2
   shape2 <- 3
