@@ -84,7 +84,9 @@ function. Only used if \code{summary} is \code{TRUE}.}
 \item{output}{The type of output to return. Can be \code{"random"},
 \code{"probability"}, \code{"pit"}, \code{"density"}, or
 \code{"quantile"}. Defaults to \code{"random"}. In case of continuous
-distributions, \code{"probability"} is equivalent to \code{"pit"}.}
+distributions, \code{"probability"} is equivalent to \code{"pit"}.
+Not all families support outputs other than \code{"random"} yet;
+requesting an unsupported combination raises an error.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

@@ -75,7 +75,9 @@ for truncated discrete models only
 \item{output}{The type of output to return. Can be \code{"random"},
 \code{"probability"}, \code{"pit"}, \code{"density"}, or
 \code{"quantile"}. Defaults to \code{"random"}. In case of continuous
-distributions, \code{"probability"} is equivalent to \code{"pit"}.}
+distributions, \code{"probability"} is equivalent to \code{"pit"}.
+Not all families support outputs other than \code{"random"} yet;
+requesting an unsupported combination raises an error.}
 
 \item{q}{Custom quantile for computing probability, PIT, or density values.
 It defaults to NULL in which case \code{prep$data$Y[i]} is used.}

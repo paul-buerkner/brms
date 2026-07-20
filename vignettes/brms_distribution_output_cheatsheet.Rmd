@@ -292,7 +292,7 @@ specs <- list(
     d = function(x) dhurdle_poisson(x, lambda = 5, hu = 0.25),
     cdf = function(q) phurdle_poisson(q, lambda = 5, hu = 0.25),
     qf = function(p) qhurdle_poisson(p, lambda = 5, hu = 0.25),
-    r = function(n) r_from_q(qhurdle_poisson, n, lambda = 5, hu = 0.25)
+    r = function(n) rhurdle_poisson(n, lambda = 5, hu = 0.25)
   ),
   list(
     family = "hurdle_negbinomial", type = "discrete", x = 0:24,
@@ -300,9 +300,7 @@ specs <- list(
     d = function(x) dhurdle_negbinomial(x, mu = 5, shape = 2, hu = 0.25),
     cdf = function(q) phurdle_negbinomial(q, mu = 5, shape = 2, hu = 0.25),
     qf = function(p) qhurdle_negbinomial(p, mu = 5, shape = 2, hu = 0.25),
-    r = function(n) {
-      r_from_q(qhurdle_negbinomial, n, mu = 5, shape = 2, hu = 0.25)
-    }
+    r = function(n) rhurdle_negbinomial(n, mu = 5, shape = 2, hu = 0.25)
   ),
   list(
     family = "hurdle_gamma", type = "mixture", x = seq(0, 10, length.out = 200),
@@ -310,7 +308,7 @@ specs <- list(
     d = function(x) dhurdle_gamma(x, shape = 2, scale = 1, hu = 0.25),
     cdf = function(q) phurdle_gamma(q, shape = 2, scale = 1, hu = 0.25),
     qf = function(p) qhurdle_gamma(p, shape = 2, scale = 1, hu = 0.25),
-    r = function(n) r_from_q(qhurdle_gamma, n, shape = 2, scale = 1, hu = 0.25)
+    r = function(n) rhurdle_gamma(n, shape = 2, scale = 1, hu = 0.25)
   ),
   list(
     family = "hurdle_lognormal", type = "mixture",
@@ -319,7 +317,7 @@ specs <- list(
     d = function(x) dhurdle_lognormal(x, mu = 0, sigma = 1, hu = 0.25),
     cdf = function(q) phurdle_lognormal(q, mu = 0, sigma = 1, hu = 0.25),
     qf = function(p) qhurdle_lognormal(p, mu = 0, sigma = 1, hu = 0.25),
-    r = function(n) r_from_q(qhurdle_lognormal, n, mu = 0, sigma = 1, hu = 0.25)
+    r = function(n) rhurdle_lognormal(n, mu = 0, sigma = 1, hu = 0.25)
   ),
   list(
     family = "hurdle_cumulative", type = "discrete", x = 0:4,
@@ -701,9 +699,9 @@ output modes (or cannot draw from the predictive at all):
 | Survival (no predictive draws) | `cox` | none (`posterior_predict()` errors) |
 | User-defined | `custom` | `random` by default; other modes only if the custom family implements them |
 
-Truncation note: even among fully supported families, truncated **random**
-sampling is not implemented for several hurdle families (they warn and ignore
-bounds for `output = "random"`).
+Truncation is handled via the shared continuous (inverse-CDF) and discrete
+(rejection sampling) helpers for all fully supported families, including the
+hurdle families.
 
 ## Mathematical details
 

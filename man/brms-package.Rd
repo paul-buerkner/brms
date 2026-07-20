@@ -85,6 +85,11 @@ version 2.21.2. \url{https://mc-stan.org/}
 \author{
 \strong{Maintainer}: Paul-Christian Bürkner \email{paul.buerkner@gmail.com}
 
+Authors:
+\itemize{
+  \item Paul-Christian Bürkner \email{paul.buerkner@gmail.com}
+}
+
 Other contributors:
 \itemize{
   \item Jonah Gabry [contributor]

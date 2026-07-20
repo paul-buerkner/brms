@@ -2327,7 +2327,8 @@ qzero_one_inflated_beta <- function(p, shape1, shape2, zoi, coi,
 
 #' Hurdle Distributions
 #'
-#' Density and distribution functions for hurdle distributions.
+#' Density, distribution function, quantile function and random generation
+#' for hurdle distributions.
 #'
 #' @name Hurdle
 #'
@@ -2370,6 +2371,13 @@ qhurdle_poisson <- function(p, lambda, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+rhurdle_poisson <- function(n, lambda, hu) {
+  n <- check_n_rdist(n, lambda, hu)
+  qhurdle_poisson(runif(n), lambda = lambda, hu = hu)
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_negbinomial <- function(x, mu, shape, hu, log = FALSE) {
   pars <- nlist(mu, size = shape)
   .dhurdle(x, "nbinom", hu, pars, log, type = "int")
@@ -2389,6 +2397,13 @@ qhurdle_negbinomial <- function(p, mu, shape, hu, lower.tail = TRUE,
                                 log.p = FALSE) {
   pars <- nlist(mu, size = shape)
   .qhurdle(p, "nbinom", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+rhurdle_negbinomial <- function(n, mu, shape, hu) {
+  n <- check_n_rdist(n, mu, shape, hu)
+  qhurdle_negbinomial(runif(n), mu = mu, shape = shape, hu = hu)
 }
 
 #' @rdname Hurdle
@@ -2416,6 +2431,13 @@ qhurdle_gamma <- function(p, shape, scale, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+rhurdle_gamma <- function(n, shape, scale, hu) {
+  n <- check_n_rdist(n, shape, scale, hu)
+  qhurdle_gamma(runif(n), shape = shape, scale = scale, hu = hu)
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_lognormal <- function(x, mu, sigma, hu, log = FALSE) {
   pars <- list(meanlog = mu, sdlog = sigma)
   .dhurdle(x, "lnorm", hu, pars, log, type = "real")
@@ -2435,6 +2457,13 @@ qhurdle_lognormal <- function(p, mu, sigma, hu, lower.tail = TRUE,
                               log.p = FALSE) {
   pars <- list(meanlog = mu, sdlog = sigma)
   .qhurdle(p, "lnorm", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+rhurdle_lognormal <- function(n, mu, sigma, hu) {
+  n <- check_n_rdist(n, mu, sigma, hu)
+  qhurdle_lognormal(runif(n), mu = mu, sigma = sigma, hu = hu)
 }
 
 # density of the hurdle-cumulative distribution

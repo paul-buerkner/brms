@@ -15,7 +15,8 @@
 # 5. Flags (logical list), common ones:
 #      truncation          - exercise truncated CDF/PDF/quantile
 #      numeric_q           - quantile solved numerically
-#      no_random_truncation- random sampling ignores truncation (warns)
+#      no_random_truncation- truncated random draws may leave [lb, ub]
+#                            (e.g. ZI overlay of zeros after truncated sampling)
 #      zi / hurdle         - mixture formulas vs a baseline d/p
 #      skip_integrate      - skip integrate-to-one (e.g. circular, heavy tails)
 #      skip_moments        - skip moment checks
@@ -568,7 +569,7 @@ dist_registry_populate <- function(reset = TRUE) {
     d = brms:::dhurdle_poisson,
     p = brms:::phurdle_poisson,
     q = brms:::qhurdle_poisson,
-    r = NULL,
+    r = brms:::rhurdle_poisson,
     params = list(lambda = 2, hu = 0.2),
     support = c(0, Inf),
     pp_fun = brms:::posterior_predict_hurdle_poisson,
@@ -588,7 +589,6 @@ dist_registry_populate <- function(reset = TRUE) {
     flags = list(
       truncation = TRUE,
       hurdle = TRUE,
-      no_random_truncation = TRUE,
       skip_moments = TRUE
     )
   ))
@@ -620,6 +620,7 @@ dist_registry_populate <- function(reset = TRUE) {
     flags = list(
       truncation = TRUE,
       zi = TRUE,
+      no_random_truncation = TRUE,
       skip_moments = TRUE
     )
   ))
@@ -1093,7 +1094,7 @@ dist_registry_populate <- function(reset = TRUE) {
     d = dhurdle_negbinomial,
     p = phurdle_negbinomial,
     q = qhurdle_negbinomial,
-    r = NULL,
+    r = rhurdle_negbinomial,
     params = list(mu = 4, shape = 2.5, hu = 0.2),
     support = c(0, Inf),
     pp_fun = brms:::posterior_predict_hurdle_negbinomial,
@@ -1113,7 +1114,6 @@ dist_registry_populate <- function(reset = TRUE) {
     flags = list(
       truncation = TRUE,
       hurdle = TRUE,
-      no_random_truncation = TRUE,
       skip_moments = TRUE
     )
   ))
@@ -1125,7 +1125,7 @@ dist_registry_populate <- function(reset = TRUE) {
     d = dhurdle_gamma,
     p = phurdle_gamma,
     q = qhurdle_gamma,
-    r = NULL,
+    r = rhurdle_gamma,
     params = list(shape = 2, scale = 1, hu = 0.2),
     support = c(0, Inf),
     pp_fun = brms:::posterior_predict_hurdle_gamma,
@@ -1144,9 +1144,8 @@ dist_registry_populate <- function(reset = TRUE) {
       mix = "hu"
     ),
     flags = list(
-      truncation = FALSE,
+      truncation = TRUE,
       hurdle = TRUE,
-      no_random_truncation = TRUE,
       skip_integrate = TRUE,
       skip_moments = TRUE,
       skip_pdf_fd = TRUE,
@@ -1161,7 +1160,7 @@ dist_registry_populate <- function(reset = TRUE) {
     d = dhurdle_lognormal,
     p = phurdle_lognormal,
     q = qhurdle_lognormal,
-    r = NULL,
+    r = rhurdle_lognormal,
     params = list(mu = 0, sigma = 1, hu = 0.2),
     support = c(0, Inf),
     pp_fun = brms:::posterior_predict_hurdle_lognormal,
@@ -1180,9 +1179,8 @@ dist_registry_populate <- function(reset = TRUE) {
       mix = "hu"
     ),
     flags = list(
-      truncation = FALSE,
+      truncation = TRUE,
       hurdle = TRUE,
-      no_random_truncation = TRUE,
       skip_integrate = TRUE,
       skip_moments = TRUE,
       skip_pdf_fd = TRUE,
@@ -1217,6 +1215,7 @@ dist_registry_populate <- function(reset = TRUE) {
     flags = list(
       truncation = TRUE,
       zi = TRUE,
+      no_random_truncation = TRUE,
       skip_moments = TRUE
     )
   ))
@@ -1248,6 +1247,7 @@ dist_registry_populate <- function(reset = TRUE) {
     flags = list(
       truncation = TRUE,
       zi = TRUE,
+      no_random_truncation = TRUE,
       skip_moments = TRUE
     )
   ))
@@ -1282,6 +1282,7 @@ dist_registry_populate <- function(reset = TRUE) {
     flags = list(
       truncation = TRUE,
       zi = TRUE,
+      no_random_truncation = TRUE,
       skip_moments = TRUE
     )
   ))

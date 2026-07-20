@@ -291,6 +291,16 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
                            tolerance = 1e-5,
                            info = paste(entry$name, "PP trunc quantile"))
   }
+
+  if (has_output(entry, "random") &&
+      !isTRUE(entry$flags$no_random_truncation)) {
+    set.seed(seed)
+    got_r <- entry$pp_fun(i, prep = prep, output = "random", ntrys = 20)
+    testthat::expect_true(
+      all(got_r >= lb - 1e-8 & got_r <= ub + 1e-8, na.rm = TRUE),
+      info = paste(entry$name, "PP trunc random in [lb, ub]")
+    )
+  }
   invisible(TRUE)
 }
 
