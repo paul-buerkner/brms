@@ -376,7 +376,7 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
           warn_me <- warn_me || !new
           sdy <- data2draws(sdy, dim)
           out$Yl[[i]] <- rcontinuous(
-            n = prod(dim), dist = "norm",
+            n = prod(dim), distribution = "norm",
             mean = Y, sd = sdy,
             lb = sdata[[paste0("lbmi_", vmi)]],
             ub = sdata[[paste0("ubmi_", vmi)]]

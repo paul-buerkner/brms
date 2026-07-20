@@ -2566,7 +2566,7 @@ qhurdle_cumulative <- function(p, eta, thres, hu, disc = 1, link = "logit",
 
 # random generation for the hurdle-cumulative distribution
 rhurdle_cumulative <- function(n, eta, thres, hu, disc = 1, link = "logit") {
-  n <- check_n_rdist(n, eta, hu, disc)
+  n <- check_n_rdist(n, eta, thres, hu, disc)
   qhurdle_cumulative(
     runif(n), eta = eta, thres = thres, hu = hu, disc = disc, link = link
   )
@@ -3308,7 +3308,7 @@ qordinal <- function(p, eta, thres, disc = 1, family = NULL, link = "logit",
 # @param link a character string naming the link
 # @return a vector of category indices
 rordinal <- function(n, eta, thres, disc = 1, family = NULL, link = "logit") {
-  n <- check_n_rdist(n, eta, disc)
+  n <- check_n_rdist(n, eta, thres, disc)
   qordinal(
     runif(n), eta = eta, thres = thres, disc = disc,
     family = family, link = link
@@ -3349,11 +3349,14 @@ validate_p_dist <- function(p, lower.tail = TRUE, log.p = FALSE) {
 
 # check if 'n' in r<dist> functions is valid
 # @param n number of desired random draws
-# @param .. parameter vectors
+# @param .. parameter vectors or matrices (draws in rows)
 # @return validated 'n'
 check_n_rdist <- function(n, ...) {
   n <- as.integer(as_one_numeric(n))
-  max_len <- max(lengths(list(...)))
+  # matrices use NROW (number of draws), not length (nrow * ncol)
+  max_len <- max(vapply(list(...), function(x) {
+    if (!is.null(dim(x))) NROW(x) else length(x)
+  }, integer(1)))
   if (max_len > 1L) {
     if (!n %in% c(1, max_len)) {
       stop2("'n' must match the maximum length of the parameter vectors.")

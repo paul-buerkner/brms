@@ -341,7 +341,7 @@ posterior_predict_gaussian <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "norm", mean = mu, sd = sigma, ...
+    distribution = "norm", mean = mu, sd = sigma, ...
   )
 }
 
@@ -354,7 +354,7 @@ posterior_predict_student <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "student_t", df = nu, mu = mu, sigma = sigma, ...
+    distribution = "student_t", df = nu, mu = mu, sigma = sigma, ...
   )
 }
 
@@ -365,7 +365,7 @@ posterior_predict_lognormal <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "lnorm", meanlog = mu, sdlog = sigma, ...
+    distribution = "lnorm", meanlog = mu, sdlog = sigma, ...
   )
 }
 
@@ -377,7 +377,7 @@ posterior_predict_shifted_lognormal <- function(i, prep, output = "random",
   
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "shifted_lnorm", meanlog = mu, sdlog = sigma, shift = ndt, ...
+    distribution = "shifted_lnorm", meanlog = mu, sdlog = sigma, shift = ndt, ...
   )
 }
 
@@ -390,7 +390,7 @@ posterior_predict_skew_normal <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "skew_normal", mu = mu, sigma = sigma, alpha = alpha, ...
+    distribution = "skew_normal", mu = mu, sigma = sigma, alpha = alpha, ...
   )
 }
 
@@ -528,7 +528,7 @@ posterior_predict_binomial <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "binom", prob = mu, size = size, ...
+    distribution = "binom", prob = mu, size = size, ...
   )
 }
 
@@ -540,7 +540,7 @@ posterior_predict_beta_binomial <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "beta_binomial", size = size, mu = mu, phi = phi, ...
+    distribution = "beta_binomial", size = size, mu = mu, phi = phi, ...
   )
 }
 
@@ -550,7 +550,7 @@ posterior_predict_bernoulli <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "binom", prob = mu, size = 1, ...
+    distribution = "binom", prob = mu, size = 1, ...
   )
 }
 
@@ -561,7 +561,7 @@ posterior_predict_poisson <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "pois", lambda = mu, ...
+    distribution = "pois", lambda = mu, ...
   )
 }
 
@@ -574,7 +574,7 @@ posterior_predict_negbinomial <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "nbinom", mu = mu, size = shape, ...
+    distribution = "nbinom", mu = mu, size = shape, ...
   )
 }
 
@@ -587,7 +587,7 @@ posterior_predict_negbinomial2 <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "nbinom", mu = mu, size = shape, ...
+    distribution = "nbinom", mu = mu, size = shape, ...
   )
 }
 
@@ -600,7 +600,7 @@ posterior_predict_geometric <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "nbinom", mu = mu, size = shape, ...
+    distribution = "nbinom", mu = mu, size = shape, ...
   )
 }
 
@@ -611,7 +611,7 @@ posterior_predict_discrete_weibull <- function(i, prep, output = "random",
   
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "discrete_weibull", mu = mu, shape = shape, ...
+    distribution = "discrete_weibull", mu = mu, shape = shape, ...
   )
 }
 
@@ -622,7 +622,7 @@ posterior_predict_com_poisson <- function(i, prep, output = "random",
 
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "com_poisson", mu = mu, shape = shape, ...
+    distribution = "com_poisson", mu = mu, shape = shape, ...
   )
 }
 
@@ -633,7 +633,7 @@ posterior_predict_exponential <- function(i, prep, output = "random",
   
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "exp", rate = rate, ...
+    distribution = "exp", rate = rate, ...
   )
 }
 
@@ -644,7 +644,7 @@ posterior_predict_gamma <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "gamma", shape = shape, scale = scale, ...
+    distribution = "gamma", shape = shape, scale = scale, ...
   )
 }
 
@@ -655,7 +655,7 @@ posterior_predict_weibull <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "weibull", shape = shape, scale = scale, ...
+    distribution = "weibull", shape = shape, scale = scale, ...
   )
 }
 
@@ -667,7 +667,7 @@ posterior_predict_frechet <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "frechet", scale = scale, shape = nu, ...
+    distribution = "frechet", scale = scale, shape = nu, ...
   )
 }
 
@@ -679,7 +679,7 @@ posterior_predict_gen_extreme_value <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "gen_extreme_value", sigma = sigma, xi = xi, mu = mu, ...
+    distribution = "gen_extreme_value", sigma = sigma, xi = xi, mu = mu, ...
   )
 }
 
@@ -690,7 +690,7 @@ posterior_predict_inverse.gaussian <- function(i, prep, output = "random",
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "inv_gaussian", mu = mu, shape = shape, ...
+    distribution = "inv_gaussian", mu = mu, shape = shape, ...
   )
 }
 
@@ -702,7 +702,7 @@ posterior_predict_exgaussian <- function(i, prep, output = "random", ntrys = 5,
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "exgaussian", mu = mu, sigma = sigma, beta = beta, ...
+    distribution = "exgaussian", mu = mu, sigma = sigma, beta = beta, ...
   )
 }
 
@@ -710,7 +710,7 @@ posterior_predict_wiener <- function(i, prep, output = "random",
                                      negative_rt = FALSE, ntrys = 5, ...) {
   validate_pp_output_support("wiener", output)
   out <- rcontinuous(
-    n = 1, dist = "wiener",
+    n = 1, distribution = "wiener",
     delta = get_dpar(prep, "mu", i = i),
     alpha = get_dpar(prep, "bs", i = i),
     tau = get_dpar(prep, "ndt", i = i),
@@ -732,7 +732,7 @@ posterior_predict_beta <- function(i, prep, output = "random", ntrys = 5, ...) {
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "beta", shape1 = mu * phi, shape2 = (1 - mu) * phi, ...
+    distribution = "beta", shape1 = mu * phi, shape2 = (1 - mu) * phi, ...
   )
 }
 
@@ -743,7 +743,7 @@ posterior_predict_xbeta <- function(i, prep, output = "random", ntrys = 5, ...) 
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "xbeta", mu = mu, phi = phi, nu = kappa, ...
+    distribution = "xbeta", mu = mu, phi = phi, nu = kappa, ...
   )
 }
 
@@ -754,7 +754,7 @@ posterior_predict_von_mises <- function(i, prep, output = "random", ntrys = 5,
 
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "von_mises", mu = mu, kappa = kappa, ...
+    distribution = "von_mises", mu = mu, kappa = kappa, ...
   )
 }
 
@@ -766,7 +766,7 @@ posterior_predict_asym_laplace <- function(i, prep, output = "random",
   
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
+    distribution = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
   )
 }
 
@@ -781,14 +781,14 @@ posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
   if (output == "random") {
     out <- predict_continuous_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
+      distribution = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
     )
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0, out)
   } else {
     out <- predict_continuous_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "zero_inflated_asym_laplace",
+      distribution = "zero_inflated_asym_laplace",
       mu = mu, sigma = sigma, quantile = quantile, zi = zi, ...
     )
   }
@@ -807,7 +807,7 @@ posterior_predict_hurdle_poisson <- function(i, prep, output = "random",
   lambda <- multiply_dpar_rate_denom(lambda, prep, i = i)
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "hurdle_poisson", lambda = lambda, hu = hu, ...
+    distribution = "hurdle_poisson", lambda = lambda, hu = hu, ...
   )
 }
 
@@ -819,7 +819,7 @@ posterior_predict_hurdle_negbinomial <- function(i, prep, output = "random",
   shape <- get_dpar(prep, "shape", i = i)
   predict_discrete_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "hurdle_negbinomial", mu = mu, shape = shape, hu = hu, ...
+    distribution = "hurdle_negbinomial", mu = mu, shape = shape, hu = hu, ...
   )
 }
 
@@ -830,7 +830,7 @@ posterior_predict_hurdle_gamma <- function(i, prep, output = "random",
   scale <- get_dpar(prep, "mu", i = i) / shape
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "hurdle_gamma", shape = shape, scale = scale, hu = hu, ...
+    distribution = "hurdle_gamma", shape = shape, scale = scale, hu = hu, ...
   )
 }
 
@@ -841,7 +841,7 @@ posterior_predict_hurdle_lognormal <- function(i, prep, output = "random",
   sigma <- get_dpar(prep, "sigma", i = i)
   predict_continuous_helper(
     i = i, prep = prep, output = output, ntrys = ntrys,
-    dist = "hurdle_lognormal", mu = mu, sigma = sigma, hu = hu, ...
+    distribution = "hurdle_lognormal", mu = mu, sigma = sigma, hu = hu, ...
   )
 }
 
@@ -849,7 +849,7 @@ posterior_predict_hurdle_cumulative <- function(i, prep, output = "random",
                                                 ...) {
   predict_discrete_helper(
     i = i, prep = prep, output = output,
-    dist = "hurdle_cumulative",
+    distribution = "hurdle_cumulative",
     eta = get_dpar(prep, "mu", i = i),
     disc = get_dpar(prep, "disc", i = i),
     hu = get_dpar(prep, "hu", i = i),
@@ -870,14 +870,14 @@ posterior_predict_zero_inflated_beta <- function(i, prep, output = "random",
   if (output == "random") {
     out <- predict_continuous_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "beta", shape1 = shape1, shape2 = shape2, ...
+      distribution = "beta", shape1 = shape1, shape2 = shape2, ...
     )
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0, out)
   } else {
     out <- predict_continuous_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "zero_inflated_beta", shape1 = shape1, shape2 = shape2, zi = zi, ...
+      distribution = "zero_inflated_beta", shape1 = shape1, shape2 = shape2, zi = zi, ...
     )
   }
   out
@@ -903,7 +903,7 @@ posterior_predict_zero_one_inflated_beta <- function(i, prep, output = "random",
   } else {
     out <- predict_continuous_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "zero_one_inflated_beta",
+      distribution = "zero_one_inflated_beta",
       shape1 = shape1, shape2 = shape2, zoi = zoi, coi = coi, ...
     )
   }
@@ -920,14 +920,14 @@ posterior_predict_zero_inflated_poisson <- function(i, prep, output = "random",
   if (output == "random") {
     out <- predict_discrete_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "pois", lambda = lambda, ...
+      distribution = "pois", lambda = lambda, ...
     )
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0L, out)
   } else {
     out <- predict_discrete_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "zero_inflated_poisson", lambda = lambda, zi = zi, ...
+      distribution = "zero_inflated_poisson", lambda = lambda, zi = zi, ...
     )
   }
   out
@@ -941,12 +941,12 @@ posterior_predict_zero_inflated_negbinomial <- function(i, prep,
 
   if (output == "random") {
     out <- predict_discrete_helper(i = i, prep = prep, output = output,
-      dist = "nbinom", mu = mu, size = shape, ...)
+      distribution = "nbinom", mu = mu, size = shape, ...)
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0L, out)
   } else {
     out <- predict_discrete_helper(i = i, prep = prep, output = output,
-      dist = "zero_inflated_negbinomial", mu = mu, shape = shape, zi = zi, ...)
+      distribution = "zero_inflated_negbinomial", mu = mu, shape = shape, zi = zi, ...)
   }
   out
 }
@@ -960,14 +960,14 @@ posterior_predict_zero_inflated_binomial <- function(i, prep, output = "random",
   if (output == "random") {
     out <- predict_discrete_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "binom", size = trials, prob = prob, ...
+      distribution = "binom", size = trials, prob = prob, ...
     )
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0L, out)
   } else {
     out <- predict_discrete_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "zero_inflated_binomial", size = trials, prob = prob, zi = zi, ...
+      distribution = "zero_inflated_binomial", size = trials, prob = prob, zi = zi, ...
     )
   }
   out
@@ -984,14 +984,14 @@ posterior_predict_zero_inflated_beta_binomial <- function(i, prep,
   if (output == "random") {
     out <- predict_discrete_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "beta_binomial", size = trials, mu = mu, phi = phi, ...
+      distribution = "beta_binomial", size = trials, mu = mu, phi = phi, ...
     )
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0L, out)
   } else {
     out <- predict_discrete_helper(
       i = i, prep = prep, output = output, ntrys = ntrys,
-      dist = "zero_inflated_beta_binomial",
+      distribution = "zero_inflated_beta_binomial",
       size = trials, mu = mu, phi = phi, zi = zi, ...
     )
   }
@@ -1003,7 +1003,7 @@ posterior_predict_categorical <- function(i, prep, output = "random", ...) {
   eta <- insert_refcat(eta, refcat = prep$refcat)
   predict_discrete_helper(
     i = i, prep = prep, output = output,
-    dist = "categorical",
+    distribution = "categorical",
     eta = eta,
     ...
   )
@@ -1080,7 +1080,7 @@ posterior_predict_ordinal <- function(i, prep, output = "random", ...) {
 
   predict_discrete_helper(
     i = i, prep = prep, output = output,
-    dist = "ordinal",
+    distribution = "ordinal",
     eta = eta,
     disc = disc,
     thres = thres,
