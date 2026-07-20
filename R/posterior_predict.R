@@ -1030,11 +1030,15 @@ posterior_predict_zero_inflated_beta_binomial <- function(i, prep,
   out
 }
 
-posterior_predict_categorical <- function(i, prep, ...) {
+posterior_predict_categorical <- function(i, prep, output = "random", ...) {
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
-  p <- pcategorical(seq_len(prep$data$ncat), eta = eta)
-  first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    dist = "categorical",
+    eta = eta,
+    ...
+  )
 }
 
 posterior_predict_multinomial <- function(i, prep, ...) {

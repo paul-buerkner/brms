@@ -2626,13 +2626,72 @@ link_categorical <- function(x, refcat = 1, return_refcat = FALSE) {
 # @param q positive integers not greater than ncat
 # @param eta the linear predictor (of length or ncol ncat)
 # @param log.p return values on the log scale?
+# @return a vector (if length(q) == 1) or matrix of probabilities P(X <= q)
 pcategorical <- function(q, eta, log.p = FALSE) {
-  p <- dcategorical(seq_len(max(q)), eta = eta)
-  out <- cblapply(q, function(j) rowSums(p[, 1:j, drop = FALSE]))
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  if (length(dim(eta)) != 2L) {
+    stop2("eta must be a numeric vector or matrix.")
+  }
+  ncat <- NCOL(eta)
+  ndraws <- NROW(eta)
+  q_max <- max(q)
+  if (q_max > 0) {
+    p <- dcategorical(seq_len(min(q_max, ncat)), eta = eta)
+  } else {
+    p <- matrix(0, nrow = ndraws, ncol = 0)
+  }
+  .fun <- function(j) {
+    if (j <= 0) {
+      return(rep(0, ndraws))
+    }
+    if (j >= ncat) {
+      return(rep(1, ndraws))
+    }
+    rowSums(as.matrix(p[, 1:j, drop = FALSE]))
+  }
+  out <- cblapply(q, .fun)
   if (log.p) {
     out <- log(out)
   }
+  if (length(q) == 1L) {
+    out <- as.vector(out)
+  }
   out
+}
+
+# quantile function of the categorical distribution
+# @param p vector of probabilities
+# @param eta the linear predictor (of length or ncol ncat)
+# @return a vector of category indices
+qcategorical <- function(p, eta, lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  ncat <- NCOL(eta)
+  F_all <- pcategorical(seq_len(ncat), eta = eta)
+  ndraws <- NROW(F_all)
+  if (length(p) == 1L) {
+    p <- rep(p, ndraws)
+  }
+  first_greater(F_all, target = p)
+}
+
+# random generation for the categorical distribution
+# @param n number of observations
+# @param eta the linear predictor (of length or ncol ncat)
+# @return a vector of category indices
+rcategorical <- function(n, eta) {
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  n <- as.integer(as_one_numeric(n))
+  if (!n %in% c(1L, NROW(eta))) {
+    stop2("'n' must match the number of rows of 'eta'.")
+  }
+  qcategorical(runif(NROW(eta)), eta = eta)
 }
 
 # density of the multinomial distribution with the softmax transform

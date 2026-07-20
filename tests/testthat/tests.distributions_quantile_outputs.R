@@ -98,6 +98,25 @@ test_that("qordinal matches the ordinal CDF", {
   }
 })
 
+test_that("qcategorical matches the categorical CDF", {
+  set.seed(12)
+  ns <- 7
+  ncat <- 4
+  eta <- matrix(rnorm(ns * ncat), nrow = ns)
+  p <- c(0.05, 0.25, 0.5, 0.75, 0.95)
+  F_mat <- brms:::pcategorical(seq_len(ncat), eta = eta)
+
+  for (pj in p) {
+    qj <- brms:::qcategorical(pj, eta = eta)
+    expect_length(qj, ns)
+    expect_true(all(qj >= 1 & qj <= ncat))
+    expect_true(all(F_mat[cbind(seq_len(ns), qj)] + 1e-10 >= pj))
+    expect_true(all(
+      ifelse(qj > 1, F_mat[cbind(seq_len(ns), qj - 1)] < pj + 1e-10, TRUE)
+    ))
+  }
+})
+
 test_that("qzero_one_inflated_beta matches the mixture CDF", {
   shape1 <- 2
   shape2 <- 3

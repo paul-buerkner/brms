@@ -743,6 +743,37 @@ test_that("posterior_predict output argument works for ordinal families", {
   }
 })
 
+test_that("posterior_predict output argument works for categorical", {
+  set.seed(1011)
+  ns <- 80
+  nobs <- 6
+  ncat <- 3
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu1 = matrix(rnorm(ns * nobs, 0, 0.1), ncol = nobs),
+    mu2 = matrix(rnorm(ns * nobs, 0, 0.1), ncol = nobs)
+  )
+  prep$data <- list(
+    Y = rep(1:ncat, length.out = nobs),
+    ncat = ncat,
+    lb = rep(NULL, nobs),
+    ub = rep(NULL, nobs)
+  )
+  prep$family <- categorical()
+  prep$refcat <- 1
+  i <- 2
+
+  expect_outcome_modes(
+    family_fun = brms:::posterior_predict_categorical,
+    prep = prep,
+    i = i,
+    q_ref = 2,
+    p_ref = 0.7,
+    support = c(1, ncat),
+    check_integer = TRUE
+  )
+})
+
 test_that("compute_cdf returns correct CDF for non-truncated distributions", {
   # Non-truncated, non-randomized: raw CDF F(q)
   q <- 3
