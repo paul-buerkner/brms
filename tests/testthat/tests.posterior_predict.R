@@ -440,382 +440,20 @@ test_that("posterior_predict_custom runs without errors", {
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
 
-make_prep_outcome <- function(
-    ns = 120, nobs = 8, seed = 1001, dpars = list(), data = list()) {
-  set.seed(seed)
-  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
-  prep$dpars <- dpars
-  prep$data <- modifyList(
-    list(Y = rnorm(nobs), lb = rep(NULL, nobs), ub = rep(NULL, nobs)),
-    data
-  )
-  prep
-}
-
-make_prep_gaussian_outcome <- function(ns = 120, nobs = 8) {
-  make_prep_outcome(
-    ns = ns, nobs = nobs, seed = 1001,
-    dpars = list(
-      mu = matrix(rnorm(ns * nobs), ncol = nobs),
-      sigma = rgamma(ns, shape = 4, rate = 3)
-    )
-  )
-}
-
-make_prep_student_outcome <- function(ns = 120, nobs = 8) {
-  make_prep_outcome(
-    ns = ns, nobs = nobs, seed = 1002,
-    dpars = list(
-      mu = matrix(rnorm(ns * nobs), ncol = nobs),
-      sigma = rgamma(ns, shape = 4, rate = 3),
-      nu = rgamma(ns, shape = 6, rate = 1) + 2
-    )
-  )
-}
-
-make_prep_positive_outcome <- function(ns = 120, nobs = 8) {
-  make_prep_outcome(
-    ns = ns, nobs = nobs, seed = 1003,
-    dpars = list(
-      mu = matrix(exp(rnorm(ns * nobs, mean = 0.2, sd = 0.4)), ncol = nobs),
-      sigma = rgamma(ns, shape = 4, rate = 3),
-      beta = rgamma(ns, shape = 4, rate = 3),
-      shape = rgamma(ns, shape = 6, rate = 2) + 0.5,
-      ndt = runif(ns, min = 0, max = 0.5),
-      alpha = rnorm(ns),
-      nu = rgamma(ns, shape = 4, rate = 1) + 2,
-      xi = rnorm(ns, sd = 0.3),
-      quantile = runif(ns, min = 0.2, max = 0.8),
-      phi = rgamma(ns, shape = 5, rate = 1),
-      kappa = rgamma(ns, shape = 2, rate = 1),
-      zi = rbeta(ns, 1.5, 5)
-    ),
-    data = list(Y = rgamma(nobs, shape = 2, rate = 1))
-  )
-}
-
-make_prep_beta_outcome <- function(ns = 140, nobs = 9) {
-  make_prep_outcome(
-    ns = ns, nobs = nobs, seed = 1004,
-    dpars = list(
-      mu = matrix(plogis(rnorm(ns * nobs)), ncol = nobs),
-      phi = rgamma(ns, shape = 5, rate = 1),
-      kappa = rgamma(ns, shape = 2, rate = 1),
-      zi = rbeta(ns, 1.5, 5),
-      zoi = rbeta(ns, 1.5, 5),
-      coi = rbeta(ns, 2, 6)
-    ),
-    data = list(Y = rbeta(nobs, shape1 = 2, shape2 = 3))
-  )
-}
-
-make_prep_outcome_discrete <- function(ns = 160, nobs = 12, seed = 1005) {
-  set.seed(seed)
-  trials <- sample(10:30, nobs, replace = TRUE)
-  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
-  prep$dpars <- list(
-    mu = matrix(plogis(rnorm(ns * nobs)), ncol = nobs),
-    phi = rgamma(ns, shape = 5, rate = 1),
-    shape = rgamma(ns, shape = 4, rate = 1),
-    sigma = rgamma(ns, shape = 3, rate = 2),
-    zi = rbeta(ns, 1.5, 5)
-  )
-  prep$data <- list(
-    Y = rpois(nobs, lambda = 5),
-    trials = trials,
-    lb = rep(NULL, nobs),
-    ub = rep(NULL, nobs)
-  )
-  prep
-}
-
-expect_outcome_random <- function(family_fun, prep, i, support = c(-Inf, Inf), 
-                                  check_integer = FALSE, seed = 1234) {
-  set.seed(seed)
-  random_outcome <- family_fun(i, prep = prep)
-
-  testthat::expect_length(random_outcome, prep$ndraws)
-  testthat::expect_true(all(is.finite(random_outcome)))
-
-  if (is.finite(support[1])) {
-    testthat::expect_true(all(random_outcome >= support[1]))
-  }
-  if (is.finite(support[2])) {
-    testthat::expect_true(all(random_outcome <= support[2]))
-  }
-  if (isTRUE(check_integer)) {
-    testthat::expect_true(all(abs(random_outcome - round(random_outcome)) < 1e-8))
-  }
-}
-
-expect_outcome_modes <- function(family_fun, prep, i, q_ref, p_ref, 
-                                 support = c(-Inf, Inf), 
-                                 check_integer = FALSE) {
-  expect_outcome_random(
-    family_fun = family_fun, prep = prep, i = i, support = support,
-    check_integer = check_integer
-  )
-
-  prob <- family_fun(i, prep = prep, output = "probability", q = q_ref)
-  pit <- family_fun(i, prep = prep, output = "pit", q = q_ref)
-  dens <- family_fun(i, prep = prep, output = "density", q = q_ref)
-  q <- family_fun(i, prep = prep, output = "quantile", p = p_ref)
-
-  for (x in list(prob, pit, dens, q)) {
-    testthat::expect_type(x, "double")
-    testthat::expect_length(x, prep$ndraws)
-    testthat::expect_true(all(is.finite(x) | is.na(x)))
-  }
-}
-
-test_that("posterior_predict outcome argument works for continuous families", {
-  i <- 3
-
-  family_specs <- list(
-    gaussian = list(
-      fun = brms:::posterior_predict_gaussian, q_ref = 0.25, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_gaussian_outcome()
-    ),
-    student = list(
-      fun = brms:::posterior_predict_student, q_ref = 0.25, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_student_outcome()
-    ),
-    lognormal = list(
-      fun = brms:::posterior_predict_lognormal, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    gamma = list(
-      fun = brms:::posterior_predict_gamma, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    weibull = list(
-      fun = brms:::posterior_predict_weibull, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    exponential = list(
-      fun = brms:::posterior_predict_exponential, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    shifted_lognormal = list(
-      fun = brms:::posterior_predict_shifted_lognormal, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    skew_normal = list(
-      fun = brms:::posterior_predict_skew_normal, q_ref = 0.25, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
-    ),
-    frechet = list(
-      fun = brms:::posterior_predict_frechet, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    exgaussian = list(
-      fun = brms:::posterior_predict_exgaussian, q_ref = 1.2, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
-    ),
-    inverse_gaussian = list(
-      fun = brms:::posterior_predict_inverse.gaussian, q_ref = 1.2, p_ref = 0.73,
-      support = c(0, Inf), prep = make_prep_positive_outcome()
-    ),
-    gen_extreme_value = list(
-      fun = brms:::posterior_predict_gen_extreme_value, q_ref = 0.25, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
-    ),
-    asym_laplace = list(
-      fun = brms:::posterior_predict_asym_laplace, q_ref = 0.25, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
-    ),
-    zero_inflated_asym_laplace = list(
-      fun = brms:::posterior_predict_zero_inflated_asym_laplace,
-      q_ref = 0.25, p_ref = 0.73,
-      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
-    ),
-    xbeta = list(
-      fun = brms:::posterior_predict_xbeta, q_ref = 0.4, p_ref = 0.73,
-      support = c(0, 1), prep = make_prep_beta_outcome(), requires = "betareg"
-    ),
-    beta = list(
-      fun = brms:::posterior_predict_beta, q_ref = 0.4, p_ref = 0.73,
-      support = c(0, 1), prep = make_prep_beta_outcome()
-    ),
-    zero_inflated_beta = list(
-      fun = brms:::posterior_predict_zero_inflated_beta, q_ref = 0.4, p_ref = 0.8,
-      support = c(0, 1), prep = make_prep_beta_outcome()
-    ),
-    zero_one_inflated_beta = list(
-      fun = brms:::posterior_predict_zero_one_inflated_beta, q_ref = 0.4, p_ref = 0.8,
-      support = c(0, 1), prep = make_prep_beta_outcome()
-    )
-  )
-
-  for (spec in family_specs) {
-    if (!is.null(spec$requires)) {
-      skip_if_not_installed(spec$requires)
-    }
-    expect_outcome_modes(
-      family_fun = spec$fun,
-      prep = spec$prep,
-      i = i,
-      q_ref = spec$q_ref,
-      p_ref = spec$p_ref,
-      support = spec$support
-    )
-  }
-})
-
-test_that("posterior_predict outcome argument works for discrete families", {
-  i <- 4
-  prep <- make_prep_outcome_discrete()
-
-  family_specs <- list(
-    bernoulli = list(fun = brms:::posterior_predict_bernoulli, q_ref = 1),
-    binomial = list(fun = brms:::posterior_predict_binomial, q_ref = 3),
-    beta_binomial = list(fun = brms:::posterior_predict_beta_binomial, q_ref = 3),
-    poisson = list(fun = brms:::posterior_predict_poisson, q_ref = 3),
-    negbinomial = list(fun = brms:::posterior_predict_negbinomial, q_ref = 3),
-    negbinomial2 = list(fun = brms:::posterior_predict_negbinomial2, q_ref = 3),
-    geometric = list(fun = brms:::posterior_predict_geometric, q_ref = 3),
-    discrete_weibull = list(
-      fun = brms:::posterior_predict_discrete_weibull, q_ref = 3
-    ),
-    com_poisson = list(fun = brms:::posterior_predict_com_poisson, q_ref = 3),
-    zero_inflated_poisson = list(
-      fun = brms:::posterior_predict_zero_inflated_poisson, q_ref = 3
-    ),
-    zero_inflated_binomial = list(
-      fun = brms:::posterior_predict_zero_inflated_binomial, q_ref = 3
-    ),
-    zero_inflated_beta_binomial = list(
-      fun = brms:::posterior_predict_zero_inflated_beta_binomial, q_ref = 3
-    ),
-    zero_inflated_negbinomial = list(
-      fun = brms:::posterior_predict_zero_inflated_negbinomial, q_ref = 3
-    )
-  )
-
-  for (spec in family_specs) {
-    if (!is.null(spec$requires)) {
-      skip_if_not_installed(spec$requires)
-    }
-    expect_outcome_modes(
-      family_fun = spec$fun,
-      prep = prep,
-      i = i,
-      q_ref = spec$q_ref,
-      p_ref = 0.81,
-      support = c(0, Inf),
-      check_integer = TRUE
-    )
-  }
-})
-
-test_that("posterior_predict output argument works for ordinal families", {
-  ns <- 80
-  nobs <- 6
-  nthres <- 3
-  ncat <- nthres + 1
-  set.seed(1010)
-  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
-  prep$dpars <- list(
-    mu = matrix(rnorm(ns * nobs), ncol = nobs),
-    disc = rexp(ns)
-  )
-  prep$thres$thres <- matrix(rep(c(-1, 0, 1), each = ns), nrow = ns)
-  prep$data <- list(
-    Y = rep(1:ncat, length.out = nobs),
-    ncat = ncat,
-    lb = rep(NULL, nobs),
-    ub = rep(NULL, nobs)
-  )
-  prep$family$link <- "logit"
-  i <- 2
-
-  for (fam in c("cumulative", "sratio", "cratio", "acat")) {
-    prep$family$family <- fam
-    expect_outcome_modes(
-      family_fun = brms:::posterior_predict_ordinal,
-      prep = prep,
-      i = i,
-      q_ref = 2,
-      p_ref = 0.7,
-      support = c(1, ncat),
-      check_integer = TRUE
-    )
-  }
-})
-
-test_that("posterior_predict output argument works for categorical", {
-  set.seed(1011)
-  ns <- 80
-  nobs <- 6
-  ncat <- 3
-  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
-  prep$dpars <- list(
-    mu1 = matrix(rnorm(ns * nobs, 0, 0.1), ncol = nobs),
-    mu2 = matrix(rnorm(ns * nobs, 0, 0.1), ncol = nobs)
-  )
-  prep$data <- list(
-    Y = rep(1:ncat, length.out = nobs),
-    ncat = ncat,
-    lb = rep(NULL, nobs),
-    ub = rep(NULL, nobs)
-  )
-  prep$family <- categorical()
-  prep$refcat <- 1
-  i <- 2
-
-  expect_outcome_modes(
-    family_fun = brms:::posterior_predict_categorical,
-    prep = prep,
-    i = i,
-    q_ref = 2,
-    p_ref = 0.7,
-    support = c(1, ncat),
-    check_integer = TRUE
-  )
-})
-
-test_that("posterior_predict output argument works for hurdle_cumulative", {
-  set.seed(1012)
-  ns <- 80
-  nobs <- 6
-  nthres <- 3
-  ncat <- nthres + 1
-  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
-  prep$dpars <- list(
-    mu = matrix(rnorm(ns * nobs), ncol = nobs),
-    disc = rexp(ns),
-    hu = rbeta(ns, 1.5, 5)
-  )
-  prep$thres$thres <- matrix(rep(c(-1, 0, 1), each = ns), nrow = ns)
-  prep$data <- list(
-    Y = rep(0:ncat, length.out = nobs),
-    ncat = ncat,
-    lb = rep(NULL, nobs),
-    ub = rep(NULL, nobs)
-  )
-  prep$family <- hurdle_cumulative()
-  i <- 2
-
-  expect_outcome_modes(
-    family_fun = brms:::posterior_predict_hurdle_cumulative,
-    prep = prep,
-    i = i,
-    q_ref = 2,
-    p_ref = 0.7,
-    support = c(0, ncat),
-    check_integer = TRUE
-  )
-})
+# ---------------------------------------------------------------------------
+# Tests for the posterior_predict() output API
+# (probability / pit / density / quantile, plus compute_cdf helpers)
+# ---------------------------------------------------------------------------
 
 test_that("compute_cdf returns correct CDF for non-truncated distributions", {
   # Non-truncated, non-randomized: raw CDF F(q)
   q <- 3
-  out <- brms:::compute_cdf(q = q, dist = "pois", lb = NULL, ub = NULL,
+  out <- brms:::compute_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL,
   randomized = FALSE, lambda = 5)
   expect_equal(out, ppois(q, lambda = 5))
 
   q <- 2
-  out <- brms:::compute_cdf(q = q, dist = "binom", lb = NULL, ub = NULL,
+  out <- brms:::compute_cdf(q = q, distribution = "binom", lb = NULL, ub = NULL,
   randomized = FALSE, size = 10, prob = 0.5)
   expect_equal(out, pbinom(q, size = 10, prob = 0.5))
 })
@@ -827,7 +465,7 @@ test_that("compute_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", 
   Fq <- ppois(q, lambda = 3)
   Fqm1 <- ppois(q - 1, lambda = 3)
 
-  out <- brms:::compute_cdf(q = q, dist = "pois", lb = NULL, ub = NULL, 
+  out <- brms:::compute_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL, 
                             randomized = TRUE, lambda = 3)
   expect_true(out >= Fqm1)
   expect_true(out <= Fq)
@@ -843,30 +481,21 @@ valid range", {
   Fq <- (ppois(q, lambda = 5) - ppois(lb, lambda = 5)) / denom
   Fqm1 <- (ppois(q - 1, lambda = 5) - ppois(lb, lambda = 5)) / denom
 
-  out <- brms:::compute_cdf(q = q, dist = "pois", lb = lb, ub = ub, 
+  out <- brms:::compute_cdf(q = q, distribution = "pois", lb = lb, ub = ub, 
                             randomized = TRUE, lambda = 5)
   expect_true(out >= Fqm1)
   expect_true(out <= Fq)
   expect_true(out >= 0 && out <= 1)
 })
 
-test_that("compute_cdf handles zero denominator (lb == ub) without unexpected 
-behaviour", {
-  q <- 3
-  lb <- 1
-  ub <- 1
-
-  out <- tryCatch(
-    brms:::compute_cdf(q = q, dist = "pois", lb = lb, ub = ub, 
-                       randomized = FALSE, lambda = 2),
-    error = function(e) structure(list(error = TRUE, message = e$message))
+test_that("compute_cdf errors when truncation bounds yield a zero denominator", {
+  expect_error(
+    brms:::compute_cdf(
+      q = 3, distribution = "pois", lb = 1, ub = 1,
+      randomized = FALSE, lambda = 2
+    ),
+    "Division by zero"
   )
-
-  if (is.list(out) && isTRUE(out$error)) {
-    expect_true(grepl("zero|denom|divide|trunc", out$message, ignore.case = TRUE))
-  } else {
-    expect_true(is.nan(out) || is.na(out))
-  }
 })
 
 
@@ -927,4 +556,74 @@ test_that("posterior_predict forwards lower.tail and log.p correctly", {
   expect_equal(p_upper, 1 - p_lower)
   expect_equal(log_lower, log(p_lower))
   expect_equal(log_upper, log(p_upper))
+})
+
+
+test_that("posterior_predict errors for unsupported non-random outputs", {
+  # helper rejects random-only families; random and supported families are allowed
+  expect_error(
+    brms:::validate_pp_output_support("wiener", "probability"),
+    "not yet implemented for family 'wiener'"
+  )
+  expect_silent(brms:::validate_pp_output_support("wiener", "random"))
+  expect_silent(brms:::validate_pp_output_support("gaussian", "probability"))
+
+  # public path errors before silently returning random draws
+  prep <- structure(
+    list(
+      family = list(fun = "wiener", family = "wiener"),
+      ndraws = 2, nobs = 1,
+      dpars = list(), data = list()
+    ),
+    class = "brmsprep"
+  )
+  expect_error(
+    posterior_predict(prep, output = "probability"),
+    "not yet implemented for family 'wiener'"
+  )
+})
+
+test_that("posterior_predict outputs match analytical d/p/q for registered families", {
+  entries <- pp_test_entries()
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_output_matches_dist(entry, i = 1L)
+  }
+})
+
+test_that("PP PIT contract: continuous identity, discrete randomized", {
+  entries <- pp_test_entries()
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_pit_contract(entry, i = 1L, seed = 99)
+  }
+})
+
+test_that("PP truncation matches truncated d/p/q formulas", {
+  entries <- pp_test_entries(truncation = TRUE)
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_truncation(entry, i = 1L)
+  }
+})
+
+test_that("PP respects lower.tail, log.p, and log flags", {
+  entries <- pp_test_entries()
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_log_tail_flags(entry, i = 1L)
+  }
+})
+
+test_that("randomized PIT is reproducible with the same seed", {
+  entry <- dist_registry_get("pois")[[1]]
+  prep <- entry$prep_builder(ns = 50, nobs = 3, seed = 1)
+  withr::local_seed(123)
+  pit1 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
+  withr::local_seed(123)
+  pit2 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
+  expect_equal(pit1, pit2)
+  withr::local_seed(456)
+  pit3 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
+  expect_true(any(pit1 != pit3))
 })
