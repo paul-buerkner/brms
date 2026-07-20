@@ -69,6 +69,29 @@ test_that("qzero_inflated_negbinomial satisfies the discrete quantile definition
   expect_true(all(q >= 0))
 })
 
+test_that("qzero_one_inflated_beta matches the mixture CDF", {
+  shape1 <- 2
+  shape2 <- 3
+  zoi <- 0.25
+  coi <- 0.4
+  p <- c(0.01, 0.1, 0.2, 0.5, 0.9, 0.95, 0.99)
+  p0 <- zoi * (1 - coi)
+  p1 <- zoi * coi
+
+  q <- brms:::qzero_one_inflated_beta(
+    p, shape1 = shape1, shape2 = shape2, zoi = zoi, coi = coi
+  )
+  expect_equal(q[p <= p0], rep(0, sum(p <= p0)))
+  expect_equal(q[p >= 1 - p1], rep(1, sum(p >= 1 - p1)))
+  expect_true(all(q[p > p0 & p < 1 - p1] > 0 & q[p > p0 & p < 1 - p1] < 1))
+  expect_true(all(diff(q) >= 0))
+
+  F_q <- brms:::pzero_one_inflated_beta(
+    q, shape1 = shape1, shape2 = shape2, zoi = zoi, coi = coi
+  )
+  expect_true(all(F_q + 1e-8 >= p))
+})
+
 test_that("qzero_inflated_asym_laplace matches the mixture CDF", {
   mu <- 0
   sigma <- 1

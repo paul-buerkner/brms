@@ -915,17 +915,31 @@ posterior_predict_zero_inflated_beta <- function(i, prep, output = "random",
   out
 }
 
-posterior_predict_zero_one_inflated_beta <- function(i, prep, ...) {
-  zoi <- get_dpar(prep, "zoi", i)
-  coi <- get_dpar(prep, "coi", i)
+posterior_predict_zero_one_inflated_beta <- function(i, prep, output = "random",
+                                                     ntrys = 5, ...) {
+  zoi <- get_dpar(prep, "zoi", i = i)
+  coi <- get_dpar(prep, "coi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  tmp <- runif(prep$ndraws, 0, 1)
-  one_or_zero <- runif(prep$ndraws, 0, 1)
-  ifelse(tmp < zoi,
-    ifelse(one_or_zero < coi, 1, 0),
-    rbeta(prep$ndraws, shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  )
+  shape1 <- mu * phi
+  shape2 <- (1 - mu) * phi
+
+  if (output == "random") {
+    tmp <- runif(prep$ndraws, 0, 1)
+    one_or_zero <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(
+      tmp < zoi,
+      ifelse(one_or_zero < coi, 1, 0),
+      rbeta(prep$ndraws, shape1 = shape1, shape2 = shape2)
+    )
+  } else {
+    out <- predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "zero_one_inflated_beta",
+      shape1 = shape1, shape2 = shape2, zoi = zoi, coi = coi, ...
+    )
+  }
+  out
 }
 
 posterior_predict_zero_inflated_poisson <- function(i, prep, output = "random",

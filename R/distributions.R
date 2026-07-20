@@ -2138,6 +2138,109 @@ qzero_inflated_asym_laplace <- function(p, mu, sigma, quantile, zi,
   out
 }
 
+#' Zero-One-Inflated Beta Distribution
+#'
+#' Density, distribution function and quantile function for the
+#' zero-one-inflated beta distribution.
+#'
+#' @name ZeroOneInflated
+#'
+#' @inheritParams StudentT
+#' @param shape1,shape2 shape parameters of the beta component
+#' @param zoi zero-one-inflation probability
+#' @param coi conditional one-inflation probability
+#'
+#' @details
+#' With probability \eqn{\zeta}{zoi} the response is 0 or 1, and conditionally
+#' on inflation it is 1 with probability \eqn{\gamma}{coi}. With probability
+#' \eqn{1 - \zeta}{1 - zoi} the response follows a beta distribution.
+NULL
+
+#' @rdname ZeroOneInflated
+#' @export
+dzero_one_inflated_beta <- function(x, shape1, shape2, zoi, coi, log = FALSE) {
+  log <- as_one_logical(log)
+  args <- expand(dots = nlist(x, shape1, shape2, zoi, coi))
+  x <- args$x
+  shape1 <- args$shape1
+  shape2 <- args$shape2
+  zoi <- args$zoi
+  coi <- args$coi
+  out <- ifelse(
+    x == 0,
+    dbinom(1, size = 1, prob = zoi, log = TRUE) +
+      dbinom(0, size = 1, prob = coi, log = TRUE),
+    ifelse(
+      x == 1,
+      dbinom(1, size = 1, prob = zoi, log = TRUE) +
+        dbinom(1, size = 1, prob = coi, log = TRUE),
+      dbinom(0, size = 1, prob = zoi, log = TRUE) +
+        dbeta(x, shape1 = shape1, shape2 = shape2, log = TRUE)
+    )
+  )
+  out[x < 0 | x > 1] <- -Inf
+  if (!log) {
+    out <- exp(out)
+  }
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' @rdname ZeroOneInflated
+#' @export
+pzero_one_inflated_beta <- function(q, shape1, shape2, zoi, coi,
+                                    lower.tail = TRUE, log.p = FALSE) {
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  args <- expand(dots = nlist(q, shape1, shape2, zoi, coi))
+  q <- args$q
+  shape1 <- args$shape1
+  shape2 <- args$shape2
+  zoi <- args$zoi
+  coi <- args$coi
+  # F(q) = zoi * (1 - coi) + (1 - zoi) * F_beta(q) for q in [0, 1)
+  # and F(q) = 1 for q >= 1
+  out <- zoi * (1 - coi) + (1 - zoi) * pbeta(q, shape1 = shape1, shape2 = shape2)
+  out[q < 0] <- 0
+  out[q >= 1] <- 1
+  if (!lower.tail) {
+    out <- 1 - out
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' @rdname ZeroOneInflated
+#' @export
+qzero_one_inflated_beta <- function(p, shape1, shape2, zoi, coi,
+                                    lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = nlist(p, shape1, shape2, zoi, coi))
+  p <- args$p
+  shape1 <- args$shape1
+  shape2 <- args$shape2
+  zoi <- args$zoi
+  coi <- args$coi
+  p0 <- zoi * (1 - coi)
+  p1 <- zoi * coi
+  out <- rep(0, length(p))
+  idx_mid <- which(p > p0 & p < (1 - p1) & zoi < 1)
+  idx_one <- which(p >= (1 - p1))
+  if (length(idx_mid)) {
+    out[idx_mid] <- qbeta(
+      (p[idx_mid] - p0[idx_mid]) / (1 - zoi[idx_mid]),
+      shape1 = shape1[idx_mid], shape2 = shape2[idx_mid]
+    )
+  }
+  out[idx_one] <- 1
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
 # density of a zero-inflated distribution
 # @param dist name of the distribution
 # @param zi bernoulli zero-inflated parameter
