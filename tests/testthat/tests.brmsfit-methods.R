@@ -474,7 +474,7 @@ test_that("loo has reasonable outputs", {
   loo6_2 <- SW(loo(fit6, cores = 1, newdata = fit6$data))
   expect_true(is.numeric(loo6_2$estimates))
   loo_compare <- loo_compare(loo6_1, loo6_2)
-  expect_range(loo_compare[2, 1], -1, 1)
+  expect_range(loo_compare$elpd_diff[2], -1, 1)
 })
 
 test_that("loo_subsample has reasonable outputs", {
