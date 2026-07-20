@@ -2102,6 +2102,42 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
            type = "real", lb = -Inf, ub = Inf)
 }
 
+# @rdname ZeroInflated
+# @export
+qzero_inflated_asym_laplace <- function(p, mu, sigma, quantile, zi,
+                                        lower.tail = TRUE, log.p = FALSE) {
+  # mixture: zi at 0 and (1 - zi) * asym_laplace on (-Inf, Inf)
+  # so the quantile is not a standard positive-support hurdle quantile
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = nlist(p, mu, sigma, quantile, zi))
+  p <- args$p
+  mu <- args$mu
+  sigma <- args$sigma
+  quantile <- args$quantile
+  zi <- args$zi
+  F0_base <- pasym_laplace(0, mu = mu, sigma = sigma, quantile = quantile)
+  F0_minus <- (1 - zi) * F0_base
+  F0 <- zi + (1 - zi) * F0_base
+  out <- rep(0, length(p))
+  idx_lo <- which(p < F0_minus & zi < 1)
+  idx_hi <- which(p > F0 & zi < 1)
+  if (length(idx_lo)) {
+    out[idx_lo] <- qasym_laplace(
+      p[idx_lo] / (1 - zi[idx_lo]),
+      mu = mu[idx_lo], sigma = sigma[idx_lo], quantile = quantile[idx_lo]
+    )
+  }
+  if (length(idx_hi)) {
+    out[idx_hi] <- qasym_laplace(
+      (p[idx_hi] - zi[idx_hi]) / (1 - zi[idx_hi]),
+      mu = mu[idx_hi], sigma = sigma[idx_hi], quantile = quantile[idx_hi]
+    )
+  }
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
 # density of a zero-inflated distribution
 # @param dist name of the distribution
 # @param zi bernoulli zero-inflated parameter
@@ -2400,6 +2436,8 @@ qhurdle_lognormal <- function(p, mu, sigma, hu, lower.tail = TRUE,
   p_dist <- ifelse(hu == 1, 0, p_dist)
   p_dist <- pmin(1, pmax(0, p_dist))
   out <- do_call(qfun, c(list(p_dist), pars))
+  # point mass at zero for p in [0, hu]
+  out[p <= hu] <- 0
   out[!is.finite(p)] <- p[!is.finite(p)]
   dim(out) <- attributes(args)$max_dim
   out

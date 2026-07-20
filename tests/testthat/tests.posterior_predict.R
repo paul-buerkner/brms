@@ -487,7 +487,8 @@ make_prep_positive_outcome <- function(ns = 120, nobs = 8) {
       xi = rnorm(ns, sd = 0.3),
       quantile = runif(ns, min = 0.2, max = 0.8),
       phi = rgamma(ns, shape = 5, rate = 1),
-      kappa = rgamma(ns, shape = 2, rate = 1)
+      kappa = rgamma(ns, shape = 2, rate = 1),
+      zi = rbeta(ns, 1.5, 5)
     ),
     data = list(Y = rgamma(nobs, shape = 2, rate = 1))
   )
@@ -621,6 +622,11 @@ test_that("posterior_predict outcome argument works for continuous families", {
     ),
     asym_laplace = list(
       fun = brms:::posterior_predict_asym_laplace, q_ref = 0.25, p_ref = 0.73,
+      support = c(-Inf, Inf), prep = make_prep_positive_outcome()
+    ),
+    zero_inflated_asym_laplace = list(
+      fun = brms:::posterior_predict_zero_inflated_asym_laplace,
+      q_ref = 0.25, p_ref = 0.73,
       support = c(-Inf, Inf), prep = make_prep_positive_outcome()
     ),
     xbeta = list(

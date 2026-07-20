@@ -69,6 +69,31 @@ test_that("qzero_inflated_negbinomial satisfies the discrete quantile definition
   expect_true(all(q >= 0))
 })
 
+test_that("qzero_inflated_asym_laplace matches the mixture CDF", {
+  mu <- 0
+  sigma <- 1
+  quantile <- 0.5
+  zi <- 0.3
+  p <- c(0.01, 0.1, 0.3, 0.5, 0.65, 0.85, 0.99)
+
+  q <- brms:::qzero_inflated_asym_laplace(
+    p, mu = mu, sigma = sigma, quantile = quantile, zi = zi
+  )
+  F0_base <- brms:::pasym_laplace(0, mu = mu, sigma = sigma, quantile = quantile)
+  F0_minus <- (1 - zi) * F0_base
+  F0 <- zi + (1 - zi) * F0_base
+
+  expect_true(all(q[p < F0_minus] < 0))
+  expect_equal(q[p >= F0_minus & p <= F0], rep(0, sum(p >= F0_minus & p <= F0)))
+  expect_true(all(q[p > F0] > 0))
+  expect_true(all(diff(q) >= 0))
+
+  F_q <- brms:::pzero_inflated_asym_laplace(
+    q, mu = mu, sigma = sigma, quantile = quantile, zi = zi
+  )
+  expect_true(all(F_q + 1e-8 >= p))
+})
+
 test_that("quantile functions are monotone in probability", {
   p <- seq(0.01, 0.99, length.out = 50)
 

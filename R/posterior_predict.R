@@ -754,21 +754,29 @@ posterior_predict_asym_laplace <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
-                                                         ...) {
+posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
+                                                         output = "random",
+                                                         ntrys = 5, ...) {
   zi <- get_dpar(prep, "zi", i = i)
-  tmp <- runif(prep$ndraws, 0, 1)
-  ifelse(
-    tmp < zi, 0,
-    rcontinuous(
-      n = prep$ndraws, dist = "asym_laplace",
-      mu = get_dpar(prep, "mu", i = i),
-      sigma = get_dpar(prep, "sigma", i = i),
-      quantile = get_dpar(prep, "quantile", i = i),
-      lb = prep$data$lb[i], ub = prep$data$ub[i],
-      ntrys = ntrys
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  quantile <- get_dpar(prep, "quantile", i = i)
+
+  if (output == "random") {
+    out <- predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
     )
-  )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0, out)
+  } else {
+    out <- predict_continuous_helper(
+      i = i, prep = prep, output = output, ntrys = ntrys,
+      dist = "zero_inflated_asym_laplace",
+      mu = mu, sigma = sigma, quantile = quantile, zi = zi, ...
+    )
+  }
+  out
 }
 
 posterior_predict_cox <- function(i, prep, ...) {
