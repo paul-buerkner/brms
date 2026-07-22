@@ -111,8 +111,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
+#> Chain 1: Gradient evaluation took 3.4e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -129,15 +129,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.293 seconds (Warm-up)
-#> Chain 1:                1.642 seconds (Sampling)
-#> Chain 1:                3.935 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.176 seconds (Warm-up)
+#> Chain 1:                1.564 seconds (Sampling)
+#> Chain 1:                3.74 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 2: Gradient evaluation took 2.7e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -154,15 +154,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.058 seconds (Warm-up)
-#> Chain 2:                1.556 seconds (Sampling)
-#> Chain 2:                3.614 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.09 seconds (Warm-up)
+#> Chain 2:                1.52 seconds (Sampling)
+#> Chain 2:                3.61 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.8e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 3: Gradient evaluation took 2.7e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -179,15 +179,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.152 seconds (Warm-up)
-#> Chain 3:                1.641 seconds (Sampling)
-#> Chain 3:                3.793 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.096 seconds (Warm-up)
+#> Chain 3:                1.498 seconds (Sampling)
+#> Chain 3:                3.594 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.7e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+#> Chain 4: Gradient evaluation took 2.8e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -204,30 +204,30 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.119 seconds (Warm-up)
-#> Chain 4:                1.506 seconds (Sampling)
-#> Chain 4:                3.625 seconds (Total)
+#> Chain 4:  Elapsed Time: 2.219 seconds (Warm-up)
+#> Chain 4:                1.662 seconds (Sampling)
+#> Chain 4:                3.881 seconds (Total)
 #> Chain 4: 
 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
-#> Warning: Found 8 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
+#> Warning: Found 9 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
 #> 
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -672.8 37.0
-#> p_loo        95.5 14.9
-#> looic      1345.6 74.0
+#> elpd_loo   -672.1 36.6
+#> p_loo        94.6 14.2
+#> looic      1344.2 73.3
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.2]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.1]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     228   96.6%   152     
-#>    (0.7, 1]   (bad)        6    2.5%   <NA>    
-#>    (1, Inf)   (very bad)   2    0.8%   <NA>    
+#> (-Inf, 0.7]   (good)     227   96.2%   335     
+#>    (0.7, 1]   (bad)        8    3.4%   <NA>    
+#>    (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 
 # no more warnings after moment matching
@@ -237,18 +237,18 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -672.7 37.0
-#> p_loo        95.4 14.9
-#> looic      1345.5 74.0
+#> elpd_loo   -672.0 36.6
+#> p_loo        94.5 14.2
+#> looic      1344.0 73.3
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.2]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.1]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     234   99.2%   152     
-#>    (0.7, 1]   (bad)        0    0.0%   <NA>    
-#>    (1, Inf)   (very bad)   2    0.8%   <NA>    
+#> (-Inf, 0.7]   (good)     234   99.2%   270     
+#>    (0.7, 1]   (bad)        1    0.4%   <NA>    
+#>    (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 # }
 ```

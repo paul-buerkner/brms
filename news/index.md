@@ -25,6 +25,10 @@
   define a default directory for saving and loading cached brmsfit
   objects. Thanks to Sermet Pekin.
   ([\#1790](https://github.com/paul-buerkner/brms/issues/1790))
+- Predict all mixing proportions of a `mixture` family without a
+  reference category via `refcat = NA`, analogous to `refcat = NA` in
+  categorical models. Thanks to Gidon Frischkorn.
+  ([\#1450](https://github.com/paul-buerkner/brms/issues/1450))
 
 #### Bug Fixes
 

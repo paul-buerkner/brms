@@ -600,7 +600,12 @@ if those variables are required for post-processing the model.</p></dd>
   one of the them has to be predicted, while the remaining one is used
   as the reference category to identify the model. The so-called 'softmax'
   transformation is applied on the linear predictor terms to form a
-  probability vector.</p>
+  probability vector. Alternatively, by setting <code>refcat = NA</code> in
+  <code><a href="mixture.html">mixture</a></code>, all mixing proportions can be predicted without a
+  reference category. In this case, the 'softmax' transformation is applied
+  to all linear predictor terms. As the resulting model is only weakly
+  identified, informative priors on the <code>theta</code> parameters are strongly
+  recommended.</p>
 <p>For more information on mixture models, see
   the documentation of <code><a href="mixture.html">mixture</a></code>.</p>
 <p><b>Formula syntax for multivariate models</b></p>

@@ -58,9 +58,9 @@ fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.046 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.047 seconds (Warm-up)
 #> Chain 1:                0.044 seconds (Sampling)
-#> Chain 1:                0.09 seconds (Total)
+#> Chain 1:                0.091 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -84,8 +84,8 @@ fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
 #> Chain 2:  Elapsed Time: 0.045 seconds (Warm-up)
-#> Chain 2:                0.044 seconds (Sampling)
-#> Chain 2:                0.089 seconds (Total)
+#> Chain 2:                0.043 seconds (Sampling)
+#> Chain 2:                0.088 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -109,8 +109,8 @@ fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
 #> Chain 3:  Elapsed Time: 0.045 seconds (Warm-up)
-#> Chain 3:                0.045 seconds (Sampling)
-#> Chain 3:                0.09 seconds (Total)
+#> Chain 3:                0.047 seconds (Sampling)
+#> Chain 3:                0.092 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).

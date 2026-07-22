@@ -52,8 +52,8 @@ fit1 <- brm(bform1, data = nhanes)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
+#> Chain 1: Gradient evaluation took 1.5e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.15 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -70,15 +70,15 @@ fit1 <- brm(bform1, data = nhanes)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.543 seconds (Warm-up)
-#> Chain 1:                1.063 seconds (Sampling)
-#> Chain 1:                2.606 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.389 seconds (Warm-up)
+#> Chain 1:                0.839 seconds (Sampling)
+#> Chain 1:                2.228 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.1e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.11 seconds.
+#> Chain 2: Gradient evaluation took 1.2e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -95,9 +95,9 @@ fit1 <- brm(bform1, data = nhanes)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.499 seconds (Warm-up)
-#> Chain 2:                0.906 seconds (Sampling)
-#> Chain 2:                2.405 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.605 seconds (Warm-up)
+#> Chain 2:                0.943 seconds (Sampling)
+#> Chain 2:                2.548 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -120,15 +120,15 @@ fit1 <- brm(bform1, data = nhanes)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.544 seconds (Warm-up)
-#> Chain 3:                0.918 seconds (Sampling)
-#> Chain 3:                2.462 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.527 seconds (Warm-up)
+#> Chain 3:                1.049 seconds (Sampling)
+#> Chain 3:                2.576 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.5e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.15 seconds.
+#> Chain 4: Gradient evaluation took 1.2e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -145,9 +145,9 @@ fit1 <- brm(bform1, data = nhanes)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.58 seconds (Warm-up)
-#> Chain 4:                0.963 seconds (Sampling)
-#> Chain 4:                2.543 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.661 seconds (Warm-up)
+#> Chain 4:                0.946 seconds (Sampling)
+#> Chain 4:                2.607 seconds (Total)
 #> Chain 4: 
 
 summary(fit1)
@@ -162,17 +162,17 @@ summary(fit1)
 #> 
 #> Regression Coefficients:
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> bmi_Intercept    13.33      8.92    -4.69    31.12 1.00     2015     1752
-#> chl_Intercept   137.33     21.72    93.66   179.72 1.00     3501     2834
-#> bmi_age          -4.40      5.70   -16.17     6.86 1.00     1653     1704
-#> chl_age          31.31     11.09     9.35    53.56 1.00     3330     2646
-#> bmi_michl         0.12      0.05     0.03     0.21 1.00     2209     1805
-#> bmi_michl:age    -0.01      0.03    -0.06     0.04 1.00     1739     1670
+#> bmi_Intercept    13.45      9.03    -3.98    31.45 1.00     1898     2162
+#> chl_Intercept   136.50     22.24    91.67   180.58 1.00     3128     2917
+#> bmi_age          -4.47      5.86   -16.50     6.89 1.00     1518     1869
+#> chl_age          31.62     11.47     8.85    54.58 1.00     3241     3097
+#> bmi_michl         0.12      0.05     0.03     0.21 1.00     2133     2491
+#> bmi_michl:age    -0.01      0.03    -0.06     0.05 1.00     1617     1903
 #> 
 #> Further Distributional Parameters:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma_bmi     3.27      0.72     2.18     4.96 1.00     1827     2086
-#> sigma_chl    36.67      6.65    26.61    52.33 1.00     2307     2061
+#> sigma_bmi     3.28      0.74     2.17     5.05 1.00     1796     2037
+#> sigma_chl    36.88      6.86    26.15    53.42 1.00     2295     2803
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -187,16 +187,16 @@ loo(fit1, newdata = na.omit(fit1$data))
 #> Computed from 4000 by 13 log-likelihood matrix.
 #> 
 #>          Estimate  SE
-#> elpd_loo   -105.4 4.8
-#> p_loo         6.9 2.0
-#> looic       210.9 9.6
+#> elpd_loo   -105.5 4.8
+#> p_loo         6.9 1.9
+#> looic       210.9 9.5
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 0.9]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 0.8]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     11    84.6%   819     
+#> (-Inf, 0.7]   (good)     11    84.6%   747     
 #>    (0.7, 1]   (bad)       2    15.4%   <NA>    
 #>    (1, Inf)   (very bad)  0     0.0%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
@@ -216,8 +216,8 @@ fit2 <- brm(bform2, data = nhanes)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.7e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
+#> Chain 1: Gradient evaluation took 1.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -234,15 +234,15 @@ fit2 <- brm(bform2, data = nhanes)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.039 seconds (Warm-up)
-#> Chain 1:                1.066 seconds (Sampling)
-#> Chain 1:                3.105 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.416 seconds (Warm-up)
+#> Chain 1:                1.064 seconds (Sampling)
+#> Chain 1:                2.48 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.7e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
+#> Chain 2: Gradient evaluation took 4.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.43 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -259,9 +259,9 @@ fit2 <- brm(bform2, data = nhanes)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.801 seconds (Warm-up)
-#> Chain 2:                1.075 seconds (Sampling)
-#> Chain 2:                2.876 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.834 seconds (Warm-up)
+#> Chain 2:                1.102 seconds (Sampling)
+#> Chain 2:                2.936 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -284,15 +284,15 @@ fit2 <- brm(bform2, data = nhanes)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.537 seconds (Warm-up)
-#> Chain 3:                1.117 seconds (Sampling)
-#> Chain 3:                2.654 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.668 seconds (Warm-up)
+#> Chain 3:                0.761 seconds (Sampling)
+#> Chain 3:                2.429 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.4e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
+#> Chain 4: Gradient evaluation took 1.3e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.13 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -309,29 +309,17 @@ fit2 <- brm(bform2, data = nhanes)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.829 seconds (Warm-up)
-#> Chain 4:                1.092 seconds (Sampling)
-#> Chain 4:                2.921 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.696 seconds (Warm-up)
+#> Chain 4:                1.087 seconds (Sampling)
+#> Chain 4:                2.783 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 3 divergent transitions after warmup. See
+#> Warning: There were 6 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
-#> Warning: There were 1 chains where the estimated Bayesian Fraction of Missing Information was low. See
-#> https://mc-stan.org/misc/warnings.html#bfmi-low
 #> Warning: Examine the pairs() plot to diagnose sampling problems
-#> Warning: The largest R-hat is 1.13, indicating chains have not mixed.
-#> Running the chains for more iterations may help. See
-#> https://mc-stan.org/misc/warnings.html#r-hat
-#> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
-#> Running the chains for more iterations may help. See
-#> https://mc-stan.org/misc/warnings.html#bulk-ess
-#> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
-#> Running the chains for more iterations may help. See
-#> https://mc-stan.org/misc/warnings.html#tail-ess
 
 summary(fit2)
-#> Warning: Inference for the model posterior has not converged (some Rhats are > 1.05). Be careful when analysing the results! We recommend running more iterations or setting stronger priors.
-#> Warning: There were 3 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 6 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: MV(gaussian, gaussian) 
 #>   Links: mu = identity
 #>          mu = identity 
@@ -343,17 +331,17 @@ summary(fit2)
 #> 
 #> Regression Coefficients:
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> bmi_Intercept    13.52      9.04    -4.55    31.20 1.01      776     1777
-#> chl_Intercept   122.61     64.24  -116.56   182.31 1.11       29       11
-#> bmi_age          -4.46      5.99   -16.32     7.53 1.03      127      123
-#> chl_age          31.74     20.45     1.07    70.66 1.06     3503       42
-#> bmi_michl         0.12      0.05     0.03     0.21 1.01     2634     2421
-#> bmi_michl:age    -0.01      0.03    -0.06     0.05 1.02      167      148
+#> bmi_Intercept    13.48      9.04    -4.31    31.41 1.00     2293     2045
+#> chl_Intercept   137.46     22.50    91.23   180.96 1.00     3154     2853
+#> bmi_age          -4.57      5.73   -16.17     6.50 1.00     1984     2299
+#> chl_age          31.29     11.57     9.00    55.20 1.00     3214     2846
+#> bmi_michl         0.12      0.05     0.03     0.21 1.00     2312     1650
+#> bmi_michl:age    -0.01      0.03    -0.06     0.05 1.00     2027     2244
 #> 
 #> Further Distributional Parameters:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma_bmi     3.29      0.72     2.20     5.01 1.00     1759     2211
-#> sigma_chl    48.28     42.11    26.64   201.74 1.12       22       11
+#> sigma_bmi     3.30      0.75     2.19     5.07 1.00     1615     2494
+#> sigma_chl    36.85      6.55    26.42    52.21 1.00     2828     2360
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -399,15 +387,15 @@ fit3 <- brm(bform3, data = nhanes)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.604 seconds (Warm-up)
-#> Chain 1:                1.114 seconds (Sampling)
-#> Chain 1:                2.718 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.8 seconds (Warm-up)
+#> Chain 1:                1.386 seconds (Sampling)
+#> Chain 1:                3.186 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+#> Chain 2: Gradient evaluation took 1.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.13 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -424,15 +412,15 @@ fit3 <- brm(bform3, data = nhanes)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.546 seconds (Warm-up)
-#> Chain 2:                1.124 seconds (Sampling)
-#> Chain 2:                2.67 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.895 seconds (Warm-up)
+#> Chain 2:                1.164 seconds (Sampling)
+#> Chain 2:                3.059 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.2 seconds.
+#> Chain 3: Gradient evaluation took 1.2e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -449,15 +437,15 @@ fit3 <- brm(bform3, data = nhanes)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.612 seconds (Warm-up)
-#> Chain 3:                1.223 seconds (Sampling)
-#> Chain 3:                2.835 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.096 seconds (Warm-up)
+#> Chain 3:                1.359 seconds (Sampling)
+#> Chain 3:                3.455 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.2e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+#> Chain 4: Gradient evaluation took 1.3e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.13 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -474,17 +462,27 @@ fit3 <- brm(bform3, data = nhanes)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.711 seconds (Warm-up)
-#> Chain 4:                1.141 seconds (Sampling)
-#> Chain 4:                2.852 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.863 seconds (Warm-up)
+#> Chain 4:                1.168 seconds (Sampling)
+#> Chain 4:                3.031 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 1 divergent transitions after warmup. See
+#> Warning: There were 2 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: Examine the pairs() plot to diagnose sampling problems
+#> Warning: The largest R-hat is 1.53, indicating chains have not mixed.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#r-hat
+#> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#bulk-ess
+#> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#tail-ess
 
 summary(fit3)
-#> Warning: There were 1 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: Inference for the model posterior has not converged (some Rhats are > 1.05). Be careful when analysing the results! We recommend running more iterations or setting stronger priors.
+#> Warning: There were 2 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: MV(gaussian, gaussian) 
 #>   Links: mu = identity
 #>          mu = identity 
@@ -496,17 +494,17 @@ summary(fit3)
 #> 
 #> Regression Coefficients:
 #>                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> bmi_Intercept       15.08     20.61   -23.91    56.79 1.01      679     1408
-#> chl_Intercept      148.58     24.22    99.77   196.70 1.00     3314     2881
-#> bmi_age             -1.71      9.32   -21.41    15.51 1.00      896     1264
-#> chl_age             23.51     12.72    -1.61    49.52 1.00     2886     2510
-#> bmi_michlidx         0.09      0.11    -0.13     0.31 1.01      658     1387
-#> bmi_michlidx:age    -0.01      0.05    -0.10     0.09 1.00      839     1294
+#> bmi_Intercept       19.71     17.80   -17.06    54.62 1.03      365     1085
+#> chl_Intercept      112.63     82.81  -118.55   196.65 1.38       11       30
+#> bmi_age             -7.77     10.89   -30.00    12.52 1.01      691     1095
+#> chl_age             15.96     32.92   -73.98    67.69 1.24      105       30
+#> bmi_michlidx         0.07      0.10    -0.13     0.27 1.03      484      951
+#> bmi_michlidx:age     0.03      0.06    -0.08     0.15 1.01      668     1093
 #> 
 #> Further Distributional Parameters:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma_bmi     4.77      1.20     3.01     7.51 1.00     1139     1554
-#> sigma_chl    39.21      7.69    27.60    57.19 1.00     2083     1819
+#> sigma_bmi     3.75      0.92     2.40     5.82 1.01     1164     1664
+#> sigma_chl    75.96     65.64    29.15   229.88 1.53        7       31
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

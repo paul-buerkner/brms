@@ -566,7 +566,13 @@ to form a probability vector. If one seeks to predict the mixing
 proportions, all but one of the them has to be predicted, while the
 remaining one is used as the reference category to identify the model.
 The so-called 'softmax' transformation is applied on the linear
-predictor terms to form a probability vector.
+predictor terms to form a probability vector. Alternatively, by setting
+`refcat = NA` in
+[`mixture`](https://paulbuerkner.com/brms/reference/mixture.md), all
+mixing proportions can be predicted without a reference category. In
+this case, the 'softmax' transformation is applied to all linear
+predictor terms. As the resulting model is only weakly identified,
+informative priors on the `theta` parameters are strongly recommended.
 
 For more information on mixture models, see the documentation of
 [`mixture`](https://paulbuerkner.com/brms/reference/mixture.md).

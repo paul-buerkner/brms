@@ -223,8 +223,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
+#> Chain 1: Gradient evaluation took 4.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.48 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -241,9 +241,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 4.201 seconds (Warm-up)
-#> Chain 1:                2.541 seconds (Sampling)
-#> Chain 1:                6.742 seconds (Total)
+#> Chain 1:  Elapsed Time: 4.27 seconds (Warm-up)
+#> Chain 1:                2.574 seconds (Sampling)
+#> Chain 1:                6.844 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -266,15 +266,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 4.605 seconds (Warm-up)
-#> Chain 2:                2.49 seconds (Sampling)
-#> Chain 2:                7.095 seconds (Total)
+#> Chain 2:  Elapsed Time: 4.693 seconds (Warm-up)
+#> Chain 2:                2.522 seconds (Sampling)
+#> Chain 2:                7.215 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.4 seconds.
+#> Chain 3: Gradient evaluation took 4.1e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.41 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -291,9 +291,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 4.564 seconds (Warm-up)
-#> Chain 3:                4.271 seconds (Sampling)
-#> Chain 3:                8.835 seconds (Total)
+#> Chain 3:  Elapsed Time: 4.672 seconds (Warm-up)
+#> Chain 3:                4.459 seconds (Sampling)
+#> Chain 3:                9.131 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -316,9 +316,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 4.519 seconds (Warm-up)
-#> Chain 4:                2.457 seconds (Sampling)
-#> Chain 4:                6.976 seconds (Total)
+#> Chain 4:  Elapsed Time: 4.52 seconds (Warm-up)
+#> Chain 4:                2.463 seconds (Sampling)
+#> Chain 4:                6.983 seconds (Total)
 #> Chain 4: 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
@@ -342,18 +342,123 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> See help('pareto-k-diagnostic') for details.
 # perform 10-fold cross validation
 (kfold1 <- kfold(fit1, chains = 1))
-#> Error in getGlobalsAndPackages(expr, envir = envir, globals = globals): The total size of the 17 globals exported for future expression (‘FUN()’) is 749.75 MiB. This exceeds the maximum allowed size 500.00 MiB per plan() argument 'maxSizeOfObjects'. This limit is set to protect against transfering too large objects to parallel workers by mistake, which may not be intended and could be costly. See help("future.globals.maxSize", package = "future") for how to adjust or remove the default threshold via an R option The three largest globals are ‘FUN’ (307.58 MiB of class ‘function’), ‘up_args’ (230.68 MiB of class ‘list’) and ‘newdata’ (211.48 MiB of class ‘list’)
+#> Fitting model 1 out of 10
+#> Start sampling
+#> Fitting model 2 out of 10
+#> Start sampling
+#> Fitting model 3 out of 10
+#> Start sampling
+#> Fitting model 4 out of 10
+#> Start sampling
+#> Fitting model 5 out of 10
+#> Start sampling
+#> Fitting model 6 out of 10
+#> Start sampling
+#> Fitting model 7 out of 10
+#> Start sampling
+#> Fitting model 8 out of 10
+#> Start sampling
+#> Fitting model 9 out of 10
+#> Start sampling
+#> Fitting model 10 out of 10
+#> Start sampling
+#> Warning: Found 3 observations with a pareto_k > 0.666666666666667 in model 'fit1'.
+#> 
+#> Based on 10-fold cross-validation.
+#> 
+#>            Estimate   SE
+#> elpd_kfold   -618.4 16.9
+#> p_kfold       131.0 10.4
+#> kfoldic      1236.7 33.9
+#> ------
+#> 
+#> Pareto k diagnostic values:
+#>                           Count Pct.    Min. ESS
+#> (-Inf, 0.67]   (good)     233   98.7%   556     
+#>    (0.67, 1]   (bad)        0    0.0%   <NA>    
+#>     (1, Inf)   (very bad)   3    1.3%   <NA>    
+#> See help('pareto-k-diagnostic') for details.
 
 # use joint likelihoods per fold for ELPD evaluation
 kfold(fit1, chains = 1, joint = "fold")
-#> Error in getGlobalsAndPackages(expr, envir = envir, globals = globals): The total size of the 17 globals exported for future expression (‘FUN()’) is 749.75 MiB. This exceeds the maximum allowed size 500.00 MiB per plan() argument 'maxSizeOfObjects'. This limit is set to protect against transfering too large objects to parallel workers by mistake, which may not be intended and could be costly. See help("future.globals.maxSize", package = "future") for how to adjust or remove the default threshold via an R option The three largest globals are ‘FUN’ (307.58 MiB of class ‘function’), ‘up_args’ (230.68 MiB of class ‘list’) and ‘newdata’ (211.48 MiB of class ‘list’)
+#> Fitting model 1 out of 10
+#> Start sampling
+#> Fitting model 2 out of 10
+#> Start sampling
+#> Fitting model 3 out of 10
+#> Start sampling
+#> Fitting model 4 out of 10
+#> Start sampling
+#> Fitting model 5 out of 10
+#> Start sampling
+#> Fitting model 6 out of 10
+#> Start sampling
+#> Fitting model 7 out of 10
+#> Start sampling
+#> Fitting model 8 out of 10
+#> Start sampling
+#> Fitting model 9 out of 10
+#> Start sampling
+#> Fitting model 10 out of 10
+#> Start sampling
+#> Warning: Found 10 observations with a pareto_k > 0.666666666666667 in model 'fit1'.
+#> 
+#> Based on 10-fold cross-validation.
+#> 
+#>            Estimate   SE
+#> elpd_kfold   -656.0 22.4
+#> p_kfold       169.3 18.1
+#> kfoldic      1312.0 44.8
+#> ------
+#> 
+#> Pareto k diagnostic values:
+#>                           Count Pct.    Min. ESS
+#> (-Inf, 0.67]   (good)      0      0.0%  <NA>    
+#>    (0.67, 1]   (bad)       0      0.0%  <NA>    
+#>     (1, Inf)   (very bad) 10    100.0%  <NA>    
+#> See help('pareto-k-diagnostic') for details.
 
 # use the future package for parallelization of models
 # that is to fit models belonging to different folds in parallel
 library(future)
 plan(multisession, workers = 4)
 kfold(fit1, chains = 1)
-#> Error in getGlobalsAndPackages(expr, envir = envir, globals = globals): The total size of the 17 globals exported for future expression (‘FUN()’) is 749.75 MiB. This exceeds the maximum allowed size 500.00 MiB per plan() argument 'maxSizeOfObjects'. This limit is set to protect against transfering too large objects to parallel workers by mistake, which may not be intended and could be costly. See help("future.globals.maxSize", package = "future") for how to adjust or remove the default threshold via an R option The three largest globals are ‘FUN’ (307.58 MiB of class ‘function’), ‘up_args’ (230.68 MiB of class ‘list’) and ‘newdata’ (211.48 MiB of class ‘list’)
+#> Fitting model 1 out of 10
+#> Start sampling
+#> Fitting model 2 out of 10
+#> Start sampling
+#> Fitting model 3 out of 10
+#> Start sampling
+#> Fitting model 4 out of 10
+#> Start sampling
+#> Fitting model 5 out of 10
+#> Start sampling
+#> Fitting model 6 out of 10
+#> Start sampling
+#> Fitting model 7 out of 10
+#> Start sampling
+#> Fitting model 8 out of 10
+#> Start sampling
+#> Fitting model 9 out of 10
+#> Start sampling
+#> Fitting model 10 out of 10
+#> Start sampling
+#> Warning: Found 2 observations with a pareto_k > 0.666666666666667 in model 'fit1'.
+#> 
+#> Based on 10-fold cross-validation.
+#> 
+#>            Estimate   SE
+#> elpd_kfold   -616.1 16.8
+#> p_kfold       128.8 10.2
+#> kfoldic      1232.2 33.6
+#> ------
+#> 
+#> Pareto k diagnostic values:
+#>                           Count Pct.    Min. ESS
+#> (-Inf, 0.67]   (good)     234   99.2%   599     
+#>    (0.67, 1]   (bad)        0    0.0%   <NA>    
+#>     (1, Inf)   (very bad)   2    0.8%   <NA>    
+#> See help('pareto-k-diagnostic') for details.
 plan(sequential)
 
 ## to avoid recompilations when running kfold() on a 'cmdstanr'-backend fit
@@ -476,6 +581,31 @@ fit_cmdstanr <- brm(rate ~ conc + state,
                     backend = "cmdstanr",
                     file = fname)
 kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
-#> Error in getGlobalsAndPackages(expr, envir = envir, globals = globals): The total size of the 17 globals exported for future expression (‘FUN()’) is 637.34 MiB. This exceeds the maximum allowed size 500.00 MiB per plan() argument 'maxSizeOfObjects'. This limit is set to protect against transfering too large objects to parallel workers by mistake, which may not be intended and could be costly. See help("future.globals.maxSize", package = "future") for how to adjust or remove the default threshold via an R option The three largest globals are ‘FUN’ (213.83 MiB of class ‘function’), ‘up_args’ (212.02 MiB of class ‘list’) and ‘newdata’ (211.47 MiB of class ‘list’)
+#> Running MCMC with 4 sequential chains...
+#> 
+#> Chain 1 finished in 0.0 seconds.
+#> Chain 2 finished in 0.0 seconds.
+#> Chain 3 finished in 0.0 seconds.
+#> Chain 4 finished in 0.0 seconds.
+#> 
+#> All 4 chains finished successfully.
+#> Mean chain execution time: 0.0 seconds.
+#> Total execution time: 0.8 seconds.
+#> 
+#> Running MCMC with 4 sequential chains...
+#> 
+#> Chain 1 finished in 0.0 seconds.
+#> Chain 2 finished in 0.1 seconds.
+#> Chain 3 finished in 0.0 seconds.
+#> Chain 4 finished in 0.0 seconds.
+#> 
+#> All 4 chains finished successfully.
+#> Mean chain execution time: 0.0 seconds.
+#> Total execution time: 0.8 seconds.
+#> 
+#> Fitting model 1 out of 2
+#> Start sampling
+#> Fitting model 2 out of 2
+#> Start sampling
 # }
 ```

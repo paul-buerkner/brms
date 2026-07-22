@@ -65,15 +65,15 @@ fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.766 seconds (Warm-up)
-#> Chain 1:                0.691 seconds (Sampling)
-#> Chain 1:                1.457 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.711 seconds (Warm-up)
+#> Chain 1:                0.474 seconds (Sampling)
+#> Chain 1:                1.185 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.5e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
+#> Chain 2: Gradient evaluation took 3.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.36 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -90,9 +90,9 @@ fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.73 seconds (Warm-up)
-#> Chain 2:                0.48 seconds (Sampling)
-#> Chain 2:                1.21 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.75 seconds (Warm-up)
+#> Chain 2:                0.479 seconds (Sampling)
+#> Chain 2:                1.229 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -115,9 +115,9 @@ fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.703 seconds (Warm-up)
-#> Chain 3:                0.494 seconds (Sampling)
-#> Chain 3:                1.197 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.762 seconds (Warm-up)
+#> Chain 3:                0.876 seconds (Sampling)
+#> Chain 3:                1.638 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -140,9 +140,9 @@ fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.69 seconds (Warm-up)
-#> Chain 4:                0.476 seconds (Sampling)
-#> Chain 4:                1.166 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.724 seconds (Warm-up)
+#> Chain 4:                0.582 seconds (Sampling)
+#> Chain 4:                1.306 seconds (Total)
 #> Chain 4: 
 #> Warning: There were 1 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
@@ -160,22 +160,22 @@ summary(fit)
 #> Multilevel Hyperparameters:
 #> ~mmg1g2 (Number of levels: 10) 
 #>                        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-#> sd(Intercept)              0.35      0.23     0.02     0.88 1.00     1448
-#> sd(mmcx1x2)                0.26      0.20     0.01     0.77 1.00     1439
-#> cor(Intercept,mmcx1x2)     0.24      0.55    -0.88     0.97 1.00     2516
+#> sd(Intercept)              0.19      0.15     0.01     0.55 1.00     1841
+#> sd(mmcx1x2)                0.33      0.24     0.02     0.91 1.00     1306
+#> cor(Intercept,mmcx1x2)     0.04      0.57    -0.93     0.94 1.00     2003
 #>                        Tail_ESS
-#> sd(Intercept)              1775
-#> sd(mmcx1x2)                1578
-#> cor(Intercept,mmcx1x2)     2643
+#> sd(Intercept)              1779
+#> sd(mmcx1x2)                2045
+#> cor(Intercept,mmcx1x2)     2465
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    -0.10      0.16    -0.42     0.23 1.00     1703     1566
-#> xc           -0.13      0.19    -0.50     0.23 1.00     2807     2190
+#> Intercept     0.20      0.13    -0.05     0.45 1.00     2919     1995
+#> xc            0.00      0.20    -0.38     0.39 1.00     2902     2197
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.01      0.08     0.88     1.18 1.00     3869     2615
+#> sigma     0.95      0.07     0.82     1.09 1.00     4748     2897
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

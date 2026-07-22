@@ -5,7 +5,7 @@ Set up a finite mixture family for use in brms.
 ## Usage
 
 ``` r
-mixture(..., flist = NULL, nmix = 1, order = NULL)
+mixture(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL)
 ```
 
 ## Arguments
@@ -38,6 +38,21 @@ mixture(..., flist = NULL, nmix = 1, order = NULL)
   applied. If `NULL` (the default), `order` is set to `'mu'` if all
   families are the same and `'none'` otherwise. Other ordering
   constraints may be implemented in the future.
+
+- refcat:
+
+  Optional reference category for the mixing proportions. By default
+  (`NULL`), when the mixing proportions are predicted, all but one of
+  them have to be modeled while the remaining one serves as the
+  reference category (its linear predictor is fixed to zero) to identify
+  the model. If `refcat = NA`, no reference category is used and all
+  mixing proportions are predicted via a 'softmax' transformation. This
+  is analogous to `refcat = NA` in
+  [`categorical`](https://paulbuerkner.com/brms/reference/brmsfamily.md)
+  models. As the resulting model is only weakly identified, informative
+  priors on the `theta` parameters are strongly recommended (see the
+  examples in
+  [`brmsformula`](https://paulbuerkner.com/brms/reference/brmsformula.md)).
 
 ## Value
 
@@ -94,8 +109,8 @@ fit1 <- brm(bf(y ~ x + z), dat, family = mix,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000196 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.96 seconds.
+#> Chain 1: Gradient evaluation took 0.00019 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.9 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -112,15 +127,15 @@ fit1 <- brm(bf(y ~ x + z), dat, family = mix,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.432 seconds (Warm-up)
-#> Chain 1:                1.058 seconds (Sampling)
-#> Chain 1:                2.49 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.458 seconds (Warm-up)
+#> Chain 1:                1.076 seconds (Sampling)
+#> Chain 1:                2.534 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000137 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.37 seconds.
+#> Chain 2: Gradient evaluation took 0.000136 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.36 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -137,9 +152,9 @@ fit1 <- brm(bf(y ~ x + z), dat, family = mix,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.46 seconds (Warm-up)
-#> Chain 2:                1.032 seconds (Sampling)
-#> Chain 2:                2.492 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.478 seconds (Warm-up)
+#> Chain 2:                1.046 seconds (Sampling)
+#> Chain 2:                2.524 seconds (Total)
 #> Chain 2: 
 summary(fit1)
 #>  Family: mixture(gaussian, gaussian) 
@@ -180,8 +195,8 @@ fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000154 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.54 seconds.
+#> Chain 1: Gradient evaluation took 0.000151 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.51 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -198,15 +213,15 @@ fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.273 seconds (Warm-up)
-#> Chain 1:                1.039 seconds (Sampling)
-#> Chain 1:                2.312 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.284 seconds (Warm-up)
+#> Chain 1:                1.046 seconds (Sampling)
+#> Chain 1:                2.33 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000141 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.41 seconds.
+#> Chain 2: Gradient evaluation took 0.000164 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.64 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -223,9 +238,9 @@ fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.452 seconds (Warm-up)
-#> Chain 2:                1.092 seconds (Sampling)
-#> Chain 2:                2.544 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.461 seconds (Warm-up)
+#> Chain 2:                1.097 seconds (Sampling)
+#> Chain 2:                2.558 seconds (Total)
 #> Chain 2: 
 #> Warning: The largest R-hat is 1.83, indicating chains have not mixed.
 #> Running the chains for more iterations may help. See
@@ -274,8 +289,8 @@ fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000138 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.38 seconds.
+#> Chain 1: Gradient evaluation took 0.000139 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.39 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -292,15 +307,15 @@ fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.092 seconds (Warm-up)
-#> Chain 1:                0.98 seconds (Sampling)
-#> Chain 1:                2.072 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.089 seconds (Warm-up)
+#> Chain 1:                0.971 seconds (Sampling)
+#> Chain 1:                2.06 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000125 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.25 seconds.
+#> Chain 2: Gradient evaluation took 0.000124 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.24 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -317,9 +332,9 @@ fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.075 seconds (Warm-up)
-#> Chain 2:                0.913 seconds (Sampling)
-#> Chain 2:                1.988 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.068 seconds (Warm-up)
+#> Chain 2:                0.905 seconds (Sampling)
+#> Chain 2:                1.973 seconds (Total)
 #> Chain 2: 
 summary(fit3)
 #>  Family: mixture(gaussian, gaussian) 
@@ -361,8 +376,8 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000217 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.17 seconds.
+#> Chain 1: Gradient evaluation took 0.000238 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.38 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -379,15 +394,15 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.087 seconds (Warm-up)
-#> Chain 1:                1.551 seconds (Sampling)
-#> Chain 1:                3.638 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.089 seconds (Warm-up)
+#> Chain 1:                1.56 seconds (Sampling)
+#> Chain 1:                3.649 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000205 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.05 seconds.
+#> Chain 2: Gradient evaluation took 0.000226 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.26 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -404,9 +419,9 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.129 seconds (Warm-up)
-#> Chain 2:                1.582 seconds (Sampling)
-#> Chain 2:                3.711 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.144 seconds (Warm-up)
+#> Chain 2:                1.592 seconds (Sampling)
+#> Chain 2:                3.736 seconds (Total)
 #> Chain 2: 
 summary(fit4)
 #>  Family: mixture(gaussian, gaussian) 
@@ -437,6 +452,115 @@ summary(fit4)
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 pp_check(fit4)
+#> Using 10 posterior draws for ppc type 'dens_overlay' by default.
+
+
+## predict all mixing proportions without a reference category
+## (requires informative priors on the theta parameters)
+mix_na <- mixture(gaussian, gaussian, refcat = NA)
+#> Setting order = 'mu' for mixtures of the same family.
+theta_prior <- c(prior, prior(normal(0, 1), Intercept, dpar = theta1),
+                  prior(normal(0, 1), Intercept, dpar = theta2))
+fit5 <- brm(bf(y ~ x + z, theta1 ~ x, theta2 ~ x),
+            dat, family = mix_na, prior = theta_prior,
+            init = 0, chains = 2)
+#> Compiling Stan program...
+#> Start sampling
+#> 
+#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
+#> Chain 1: 
+#> Chain 1: Gradient evaluation took 0.000237 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.37 seconds.
+#> Chain 1: Adjust your expectations accordingly!
+#> Chain 1: 
+#> Chain 1: 
+#> Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+#> Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
+#> Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
+#> Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
+#> Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
+#> Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+#> Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+#> Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 1: 
+#> Chain 1:  Elapsed Time: 170.097 seconds (Warm-up)
+#> Chain 1:                201.184 seconds (Sampling)
+#> Chain 1:                371.281 seconds (Total)
+#> Chain 1: 
+#> 
+#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
+#> Chain 2: 
+#> Chain 2: Gradient evaluation took 0.000242 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.42 seconds.
+#> Chain 2: Adjust your expectations accordingly!
+#> Chain 2: 
+#> Chain 2: 
+#> Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+#> Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
+#> Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
+#> Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
+#> Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
+#> Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+#> Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+#> Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 2: 
+#> Chain 2:  Elapsed Time: 168.53 seconds (Warm-up)
+#> Chain 2:                205.895 seconds (Sampling)
+#> Chain 2:                374.425 seconds (Total)
+#> Chain 2: 
+#> Warning: There were 222 divergent transitions after warmup. See
+#> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> to find out why this is a problem and how to eliminate them.
+#> Warning: There were 1776 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+#> https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded
+#> Warning: Examine the pairs() plot to diagnose sampling problems
+#> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#bulk-ess
+#> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#tail-ess
+summary(fit5)
+#> Warning: There were 222 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#>  Family: mixture(gaussian, gaussian) 
+#>   Links: mu1 = identity; mu2 = identity; theta1 = identity; theta2 = identity 
+#> Formula: y ~ x + z 
+#>          theta1 ~ x
+#>          theta2 ~ x
+#>    Data: dat (Number of observations: 300) 
+#>   Draws: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
+#>          total post-warmup draws = 2000
+#> 
+#> Regression Coefficients:
+#>                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> mu1_Intercept        0.06      0.12    -0.16     0.29 1.03       50      165
+#> mu2_Intercept        6.21      0.12     5.95     6.45 1.01       88      231
+#> theta1_Intercept     1.38      6.62   -10.98    11.58 1.04       32       75
+#> theta2_Intercept     0.67      6.62   -11.78    10.88 1.04       32       75
+#> mu1_x                0.07      0.07    -0.07     0.21 1.01      105      146
+#> mu1_z               -0.17      0.15    -0.48     0.12 1.01       97      122
+#> mu2_x               -0.08      0.10    -0.28     0.12 1.01       83      258
+#> mu2_z               -0.10      0.18    -0.43     0.26 1.02       91      206
+#> theta1_x            16.64    117.47  -202.95   205.84 1.05       32       90
+#> theta2_x            16.53    117.48  -202.88   205.84 1.05       32       93
+#> 
+#> Further Distributional Parameters:
+#>        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> sigma1     1.04      0.05     0.95     1.14 1.01       98      212
+#> sigma2     0.93      0.09     0.80     1.12 1.02       72       73
+#> 
+#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+#> and Tail_ESS are effective sample size measures, and Rhat is the potential
+#> scale reduction factor on split chains (at convergence, Rhat = 1).
+pp_check(fit5)
 #> Using 10 posterior draws for ppc type 'dens_overlay' by default.
 
 

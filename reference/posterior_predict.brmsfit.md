@@ -152,8 +152,8 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.8e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 1: Gradient evaluation took 2.7e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -170,15 +170,15 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.338 seconds (Warm-up)
-#> Chain 1:                0.65 seconds (Sampling)
-#> Chain 1:                1.988 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.397 seconds (Warm-up)
+#> Chain 1:                0.528 seconds (Sampling)
+#> Chain 1:                1.925 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 2: Gradient evaluation took 2.2e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -195,9 +195,9 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.353 seconds (Warm-up)
-#> Chain 2:                0.65 seconds (Sampling)
-#> Chain 2:                2.003 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.363 seconds (Warm-up)
+#> Chain 2:                0.659 seconds (Sampling)
+#> Chain 2:                2.022 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -220,9 +220,9 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.356 seconds (Warm-up)
-#> Chain 3:                0.649 seconds (Sampling)
-#> Chain 3:                2.005 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.402 seconds (Warm-up)
+#> Chain 3:                0.658 seconds (Sampling)
+#> Chain 3:                2.06 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -245,19 +245,15 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.438 seconds (Warm-up)
-#> Chain 4:                0.65 seconds (Sampling)
-#> Chain 4:                2.088 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.412 seconds (Warm-up)
+#> Chain 4:                0.659 seconds (Sampling)
+#> Chain 4:                2.071 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 2 divergent transitions after warmup. See
-#> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
-#> to find out why this is a problem and how to eliminate them.
-#> Warning: Examine the pairs() plot to diagnose sampling problems
 
 ## predicted responses
 pp <- posterior_predict(fit)
 str(pp)
-#>  num [1:4000, 1:76] 52.14 9.78 48.23 35.29 72.24 ...
+#>  num [1:4000, 1:76] 1 72.63 4.04 25.86 133.72 ...
 #>  - attr(*, "dimnames")=List of 2
 #>   ..$ : NULL
 #>   ..$ : NULL
@@ -265,7 +261,7 @@ str(pp)
 ## predicted responses excluding the group-level effect of age
 pp <- posterior_predict(fit, re_formula = ~ (1 | patient))
 str(pp)
-#>  num [1:4000, 1:76] 24.77 48.74 71.14 79.14 5.81 ...
+#>  num [1:4000, 1:76] 12.698 90.363 0.398 106.435 165.407 ...
 #>  - attr(*, "dimnames")=List of 2
 #>   ..$ : NULL
 #>   ..$ : NULL
@@ -278,7 +274,7 @@ newdata <- data.frame(
 )
 pp <- posterior_predict(fit, newdata = newdata)
 str(pp)
-#>  num [1:4000, 1:2] 7.97 18.74 9.04 26.79 23.15 ...
+#>  num [1:4000, 1:2] 21.7 28.8 1.7 2.6 73.4 ...
 #>  - attr(*, "dimnames")=List of 2
 #>   ..$ : NULL
 #>   ..$ : NULL

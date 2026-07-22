@@ -118,9 +118,9 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.022 seconds (Warm-up)
-#> Chain 1:                0.021 seconds (Sampling)
-#> Chain 1:                0.043 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.02 seconds (Warm-up)
+#> Chain 1:                0.022 seconds (Sampling)
+#> Chain 1:                0.042 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -143,9 +143,9 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.021 seconds (Warm-up)
+#> Chain 2:  Elapsed Time: 0.02 seconds (Warm-up)
 #> Chain 2:                0.018 seconds (Sampling)
-#> Chain 2:                0.039 seconds (Total)
+#> Chain 2:                0.038 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -168,9 +168,9 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.021 seconds (Warm-up)
-#> Chain 3:                0.018 seconds (Sampling)
-#> Chain 3:                0.039 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.022 seconds (Warm-up)
+#> Chain 3:                0.019 seconds (Sampling)
+#> Chain 3:                0.041 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -193,9 +193,9 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.021 seconds (Warm-up)
+#> Chain 4:  Elapsed Time: 0.02 seconds (Warm-up)
 #> Chain 4:                0.017 seconds (Sampling)
-#> Chain 4:                0.038 seconds (Total)
+#> Chain 4:                0.037 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: gaussian 
@@ -207,25 +207,25 @@ summary(fit)
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    39.67      1.76    36.30    43.20 1.00     4766     2850
-#> wt           -3.19      0.79    -4.74    -1.71 1.00     1909     2193
-#> cyl          -1.51      0.43    -2.38    -0.64 1.00     1954     2082
+#> Intercept    39.68      1.76    36.15    43.12 1.00     4976     3155
+#> wt           -3.21      0.80    -4.79    -1.65 1.00     1988     2316
+#> cyl          -1.50      0.43    -2.34    -0.64 1.00     2049     2147
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     2.66      0.36     2.07     3.51 1.00     2632     2341
+#> sigma     2.67      0.38     2.06     3.53 1.00     2892     2395
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 loo_R2(fit)
-#>     Estimate  Est.Error      Q2.5     Q97.5
-#> R2 0.7854705 0.05390696 0.6605627 0.8764997
+#>     Estimate  Est.Error      Q2.5    Q97.5
+#> R2 0.7874155 0.05415555 0.6633882 0.876111
 
 # compute R2 with new data
 nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
 loo_R2(fit, newdata = nd)
 #>     Estimate    Est.Error      Q2.5     Q97.5
-#> R2 0.8331886 3.595031e-05 0.8331055 0.8332681
+#> R2 0.8326837 9.412796e-05 0.8324707 0.8328943
 # }
 ```

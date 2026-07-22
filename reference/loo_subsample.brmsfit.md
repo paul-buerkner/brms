@@ -56,8 +56,8 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.13 seconds.
+#> Chain 1: Gradient evaluation took 1.4e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -74,15 +74,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.041 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.033 seconds (Warm-up)
 #> Chain 1:                0.034 seconds (Sampling)
-#> Chain 1:                0.075 seconds (Total)
+#> Chain 1:                0.067 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 5e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
+#> Chain 2: Gradient evaluation took 6e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.06 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -99,9 +99,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.038 seconds (Warm-up)
-#> Chain 2:                0.031 seconds (Sampling)
-#> Chain 2:                0.069 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.033 seconds (Warm-up)
+#> Chain 2:                0.03 seconds (Sampling)
+#> Chain 2:                0.063 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -124,9 +124,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.037 seconds (Warm-up)
-#> Chain 3:                0.035 seconds (Sampling)
-#> Chain 3:                0.072 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.034 seconds (Warm-up)
+#> Chain 3:                0.034 seconds (Sampling)
+#> Chain 3:                0.068 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -149,9 +149,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.037 seconds (Warm-up)
-#> Chain 4:                0.035 seconds (Sampling)
-#> Chain 4:                0.072 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.033 seconds (Warm-up)
+#> Chain 4:                0.032 seconds (Sampling)
+#> Chain 4:                0.065 seconds (Total)
 #> Chain 4: 
 (loo1 <- loo_subsample(fit1))
 #> 
@@ -159,9 +159,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> values from 572 total observations.
 #> 
 #>          Estimate   SE subsampling SE
-#> elpd_loo   -529.6 25.9            0.4
-#> p_loo         6.3  1.0            0.7
-#> looic      1059.1 51.7            0.7
+#> elpd_loo   -529.4 25.9            0.4
+#> p_loo         6.0  1.0            0.6
+#> looic      1058.7 51.8            0.7
 #> ------
 #> MCSE of elpd_loo is 0.0.
 #> MCSE and ESS estimates assume MCMC draws (r_eff in [0.8, 1.2]).
@@ -177,8 +177,8 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7.8e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.78 seconds.
+#> Chain 1: Gradient evaluation took 8.1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.81 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -195,15 +195,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.497 seconds (Warm-up)
-#> Chain 1:                0.772 seconds (Sampling)
-#> Chain 1:                2.269 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.638 seconds (Warm-up)
+#> Chain 1:                0.787 seconds (Sampling)
+#> Chain 1:                2.425 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 6.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.63 seconds.
+#> Chain 2: Gradient evaluation took 4.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -220,9 +220,9 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.851 seconds (Warm-up)
+#> Chain 2:  Elapsed Time: 1.594 seconds (Warm-up)
 #> Chain 2:                0.789 seconds (Sampling)
-#> Chain 2:                2.64 seconds (Total)
+#> Chain 2:                2.383 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -245,15 +245,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.703 seconds (Warm-up)
-#> Chain 3:                0.768 seconds (Sampling)
-#> Chain 3:                2.471 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.569 seconds (Warm-up)
+#> Chain 3:                0.788 seconds (Sampling)
+#> Chain 3:                2.357 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 6.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.66 seconds.
+#> Chain 4: Gradient evaluation took 4.6e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -270,10 +270,16 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.794 seconds (Warm-up)
-#> Chain 4:                0.797 seconds (Sampling)
-#> Chain 4:                2.591 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.618 seconds (Warm-up)
+#> Chain 4:                0.79 seconds (Sampling)
+#> Chain 4:                2.408 seconds (Total)
 #> Chain 4: 
+#> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#bulk-ess
+#> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#tail-ess
 (loo2 <- loo_subsample(fit2))
 #> Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 #> Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
@@ -283,18 +289,18 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> values from 572 total observations.
 #> 
 #>          Estimate   SE subsampling SE
-#> elpd_loo   -524.1 26.8            2.9
-#> p_loo        89.9  8.2            5.4
-#> looic      1048.2 53.6            5.8
+#> elpd_loo   -524.1 27.0            2.9
+#> p_loo        89.0  8.3            5.5
+#> looic      1048.1 54.0            5.7
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.3, 1.9]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.2, 2.3]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     397   99.2%   146     
-#>    (0.7, 1]   (bad)        2    0.5%   <NA>    
-#>    (1, Inf)   (very bad)   1    0.2%   <NA>    
+#> (-Inf, 0.7]   (good)     397   99.2%   104     
+#>    (0.7, 1]   (bad)        3    0.8%   <NA>    
+#>    (1, Inf)   (very bad)   0    0.0%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 
 # compare both models
@@ -302,6 +308,6 @@ loo_compare(loo1, loo2)
 #> Warning: Different subsamples in 'fit2' and 'fit1'. Naive diff SE is used.
 #>      elpd_diff se_diff subsampling_se_diff
 #> fit2  0.0       0.0     0.0               
-#> fit1  5.4      37.2     2.9               
+#> fit1  5.3      37.4     2.9               
 # }
 ```

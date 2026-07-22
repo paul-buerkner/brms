@@ -62,8 +62,8 @@ fit <- brm(count ~ zBase * Trt + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.8e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.48 seconds.
+#> Chain 1: Gradient evaluation took 5.1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.51 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -80,15 +80,15 @@ fit <- brm(count ~ zBase * Trt + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.087 seconds (Warm-up)
-#> Chain 1:                2.057 seconds (Sampling)
-#> Chain 1:                4.144 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.063 seconds (Warm-up)
+#> Chain 1:                2.036 seconds (Sampling)
+#> Chain 1:                4.099 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.7e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+#> Chain 2: Gradient evaluation took 2.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -105,9 +105,9 @@ fit <- brm(count ~ zBase * Trt + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.192 seconds (Warm-up)
-#> Chain 2:                1.519 seconds (Sampling)
-#> Chain 2:                3.711 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.165 seconds (Warm-up)
+#> Chain 2:                1.506 seconds (Sampling)
+#> Chain 2:                3.671 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -130,15 +130,15 @@ fit <- brm(count ~ zBase * Trt + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.204 seconds (Warm-up)
-#> Chain 3:                1.579 seconds (Sampling)
-#> Chain 3:                3.783 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.18 seconds (Warm-up)
+#> Chain 3:                1.568 seconds (Sampling)
+#> Chain 3:                3.748 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 4: Gradient evaluation took 2.7e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -155,14 +155,49 @@ fit <- brm(count ~ zBase * Trt + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.127 seconds (Warm-up)
-#> Chain 4:                1.601 seconds (Sampling)
-#> Chain 4:                3.728 seconds (Total)
+#> Chain 4:  Elapsed Time: 2.109 seconds (Warm-up)
+#> Chain 4:                1.585 seconds (Sampling)
+#> Chain 4:                3.694 seconds (Total)
 #> Chain 4: 
 
 # perform k-fold cross validation
 (kf <- kfold(fit, save_fits = TRUE, chains = 1))
-#> Error in getGlobalsAndPackages(expr, envir = envir, globals = globals): The total size of the 17 globals exported for future expression (‘FUN()’) is 617.46 MiB. This exceeds the maximum allowed size 500.00 MiB per plan() argument 'maxSizeOfObjects'. This limit is set to protect against transfering too large objects to parallel workers by mistake, which may not be intended and could be costly. See help("future.globals.maxSize", package = "future") for how to adjust or remove the default threshold via an R option The three largest globals are ‘FUN’ (219.54 MiB of class ‘function’), ‘up_args’ (201.23 MiB of class ‘list’) and ‘newdata’ (196.68 MiB of class ‘list’)
+#> Fitting model 1 out of 10
+#> Start sampling
+#> Fitting model 2 out of 10
+#> Start sampling
+#> Fitting model 3 out of 10
+#> Start sampling
+#> Fitting model 4 out of 10
+#> Start sampling
+#> Fitting model 5 out of 10
+#> Start sampling
+#> Fitting model 6 out of 10
+#> Start sampling
+#> Fitting model 7 out of 10
+#> Start sampling
+#> Fitting model 8 out of 10
+#> Start sampling
+#> Fitting model 9 out of 10
+#> Start sampling
+#> Fitting model 10 out of 10
+#> Start sampling
+#> Warning: Found 4 observations with a pareto_k > 0.666666666666667 in model 'fit'.
+#> 
+#> Based on 10-fold cross-validation.
+#> 
+#>            Estimate   SE
+#> elpd_kfold   -653.2 33.8
+#> p_kfold        75.5 13.5
+#> kfoldic      1306.4 67.6
+#> ------
+#> 
+#> Pareto k diagnostic values:
+#>                           Count Pct.    Min. ESS
+#> (-Inf, 0.67]   (good)     232   98.3%   290     
+#>    (0.67, 1]   (bad)        3    1.3%   <NA>    
+#>     (1, Inf)   (very bad)   1    0.4%   <NA>    
+#> See help('pareto-k-diagnostic') for details.
 
 # define a loss function
 rmse <- function(y, yrep) {
@@ -172,8 +207,7 @@ rmse <- function(y, yrep) {
 
 # predict responses and evaluate the loss
 kfp <- kfold_predict(kf)
-#> Error: object 'kf' not found
 rmse(y = kfp$y, yrep = kfp$yrep)
-#> Error: object 'kfp' not found
+#> [1] 6.240098
 # }
 ```

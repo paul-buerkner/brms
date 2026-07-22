@@ -84,9 +84,9 @@ fit <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.133 seconds (Warm-up)
-#> Chain 1:                0.084 seconds (Sampling)
-#> Chain 1:                0.217 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.13 seconds (Warm-up)
+#> Chain 1:                0.081 seconds (Sampling)
+#> Chain 1:                0.211 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -109,9 +109,9 @@ fit <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.126 seconds (Warm-up)
-#> Chain 2:                0.081 seconds (Sampling)
-#> Chain 2:                0.207 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.124 seconds (Warm-up)
+#> Chain 2:                0.078 seconds (Sampling)
+#> Chain 2:                0.202 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -134,9 +134,9 @@ fit <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.107 seconds (Warm-up)
-#> Chain 3:                0.09 seconds (Sampling)
-#> Chain 3:                0.197 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.105 seconds (Warm-up)
+#> Chain 3:                0.087 seconds (Sampling)
+#> Chain 3:                0.192 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -159,9 +159,9 @@ fit <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.164 seconds (Warm-up)
-#> Chain 4:                0.079 seconds (Sampling)
-#> Chain 4:                0.243 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.16 seconds (Warm-up)
+#> Chain 4:                0.076 seconds (Sampling)
+#> Chain 4:                0.236 seconds (Total)
 #> Chain 4: 
 fixef(fit)
 #>                Estimate  Est.Error        Q2.5      Q97.5

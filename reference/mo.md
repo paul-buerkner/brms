@@ -62,8 +62,8 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.9e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.29 seconds.
+#> Chain 1: Gradient evaluation took 2.6e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -80,15 +80,15 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.206 seconds (Warm-up)
-#> Chain 1:                0.161 seconds (Sampling)
-#> Chain 1:                0.367 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.209 seconds (Warm-up)
+#> Chain 1:                0.174 seconds (Sampling)
+#> Chain 1:                0.383 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 2: Gradient evaluation took 1.9e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.19 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -105,15 +105,15 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.206 seconds (Warm-up)
-#> Chain 2:                0.188 seconds (Sampling)
-#> Chain 2:                0.394 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.207 seconds (Warm-up)
+#> Chain 2:                0.181 seconds (Sampling)
+#> Chain 2:                0.388 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4.5e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
+#> Chain 3: Gradient evaluation took 1.8e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -130,15 +130,15 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.207 seconds (Warm-up)
-#> Chain 3:                0.186 seconds (Sampling)
-#> Chain 3:                0.393 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.204 seconds (Warm-up)
+#> Chain 3:                0.194 seconds (Sampling)
+#> Chain 3:                0.398 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.8e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 4: Gradient evaluation took 1.9e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.19 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -155,9 +155,9 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.191 seconds (Warm-up)
-#> Chain 4:                0.183 seconds (Sampling)
-#> Chain 4:                0.374 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.205 seconds (Warm-up)
+#> Chain 4:                0.184 seconds (Sampling)
+#> Chain 4:                0.389 seconds (Total)
 #> Chain 4: 
 summary(fit1)
 #>  Family: gaussian 
@@ -169,18 +169,18 @@ summary(fit1)
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    31.08      1.56    27.98    34.10 1.00     2509     2123
-#> moincome     15.26      0.73    13.86    16.73 1.00     2431     2314
+#> Intercept    29.41      1.47    26.50    32.31 1.00     2609     2083
+#> moincome     15.09      0.68    13.78    16.40 1.00     2420     2137
 #> 
 #> Monotonic Simplex Parameters:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> moincome1[1]     0.59      0.04     0.52     0.67 1.00     2760     2384
-#> moincome1[2]     0.30      0.05     0.22     0.39 1.00     3638     2770
-#> moincome1[3]     0.10      0.04     0.02     0.19 1.00     2893     1480
+#> moincome1[1]     0.64      0.04     0.57     0.71 1.00     3150     2489
+#> moincome1[2]     0.28      0.04     0.20     0.37 1.00     3851     2229
+#> moincome1[3]     0.08      0.04     0.01     0.15 1.00     2605     1540
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     7.28      0.53     6.32     8.41 1.00     3151     2302
+#> sigma     7.04      0.51     6.12     8.14 1.00     2876     2192
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

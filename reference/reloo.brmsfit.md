@@ -158,8 +158,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
+#> Chain 1: Gradient evaluation took 4.9e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.49 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -176,15 +176,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.235 seconds (Warm-up)
-#> Chain 1:                2.018 seconds (Sampling)
-#> Chain 1:                4.253 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.209 seconds (Warm-up)
+#> Chain 1:                2.016 seconds (Sampling)
+#> Chain 1:                4.225 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
+#> Chain 2: Gradient evaluation took 2.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -201,15 +201,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.015 seconds (Warm-up)
-#> Chain 2:                1.51 seconds (Sampling)
-#> Chain 2:                3.525 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.005 seconds (Warm-up)
+#> Chain 2:                1.507 seconds (Sampling)
+#> Chain 2:                3.512 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 5.7e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.57 seconds.
+#> Chain 3: Gradient evaluation took 2.8e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -226,15 +226,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.145 seconds (Warm-up)
-#> Chain 3:                1.726 seconds (Sampling)
-#> Chain 3:                3.871 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.138 seconds (Warm-up)
+#> Chain 3:                1.721 seconds (Sampling)
+#> Chain 3:                3.859 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.7e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+#> Chain 4: Gradient evaluation took 2.6e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -251,9 +251,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.067 seconds (Warm-up)
-#> Chain 4:                1.511 seconds (Sampling)
-#> Chain 4:                3.578 seconds (Total)
+#> Chain 4:  Elapsed Time: 2.059 seconds (Warm-up)
+#> Chain 4:                1.51 seconds (Sampling)
+#> Chain 4:                3.569 seconds (Total)
 #> Chain 4: 
 
 # throws warning about some pareto k estimates being too high
@@ -281,6 +281,39 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
 #> 7 problematic observation(s) found.
 #> The model will be refit 7 times.
-#> Error in getGlobalsAndPackages(expr, envir = envir, globals = globals): The total size of the 11 globals exported for future expression (‘FUN()’) is 780.78 MiB. This exceeds the maximum allowed size 500.00 MiB per plan() argument 'maxSizeOfObjects'. This limit is set to protect against transfering too large objects to parallel workers by mistake, which may not be intended and could be costly. See help("future.globals.maxSize", package = "future") for how to adjust or remove the default threshold via an R option The three largest globals are ‘FUN’ (263.37 MiB of class ‘function’), ‘up_args’ (258.70 MiB of class ‘list’) and ‘x’ (258.70 MiB of class ‘list’)
+#> 
+#> Fitting model 1 out of 7 (leaving out observation 8)
+#> Start sampling
+#> 
+#> Fitting model 2 out of 7 (leaving out observation 10)
+#> Start sampling
+#> 
+#> Fitting model 3 out of 7 (leaving out observation 16)
+#> Start sampling
+#> 
+#> Fitting model 4 out of 7 (leaving out observation 74)
+#> Start sampling
+#> 
+#> Fitting model 5 out of 7 (leaving out observation 98)
+#> Start sampling
+#> 
+#> Fitting model 6 out of 7 (leaving out observation 115)
+#> Start sampling
+#> 
+#> Fitting model 7 out of 7 (leaving out observation 143)
+#> Start sampling
+#> 
+#> Computed from 4000 by 236 log-likelihood matrix.
+#> 
+#>          Estimate   SE
+#> elpd_loo   -672.8 37.3
+#> p_loo        95.8 15.6
+#> looic      1345.7 74.6
+#> ------
+#> MCSE of elpd_loo is 0.6.
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.3]).
+#> 
+#> All Pareto k estimates are good (k < 0.7).
+#> See help('pareto-k-diagnostic') for details.
 # }
 ```
