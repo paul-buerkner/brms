@@ -442,36 +442,36 @@ test_that("posterior_predict_custom runs without errors", {
 
 # ---------------------------------------------------------------------------
 # Tests for the posterior_predict() output API
-# (probability / pit / density / quantile, plus compute_cdf helpers)
+# (probability / pit / density / quantile, plus pp_cdf helpers)
 # ---------------------------------------------------------------------------
 
-test_that("compute_cdf returns correct CDF for non-truncated distributions", {
+test_that("pp_cdf returns correct CDF for non-truncated distributions", {
   # Non-truncated, non-randomized: raw CDF F(q)
   q <- 3
-  out <- brms:::compute_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL,
+  out <- brms:::pp_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL,
   randomized = FALSE, lambda = 5)
   expect_equal(out, ppois(q, lambda = 5))
 
   q <- 2
-  out <- brms:::compute_cdf(q = q, distribution = "binom", lb = NULL, ub = NULL,
+  out <- brms:::pp_cdf(q = q, distribution = "binom", lb = NULL, ub = NULL,
   randomized = FALSE, size = 10, prob = 0.5)
   expect_equal(out, pbinom(q, size = 10, prob = 0.5))
 })
 
-test_that("compute_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", {
+test_that("pp_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", {
   # Randomized PIT: F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
   set.seed(42)
   q <- 5
   Fq <- ppois(q, lambda = 3)
   Fqm1 <- ppois(q - 1, lambda = 3)
 
-  out <- brms:::compute_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL, 
+  out <- brms:::pp_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL, 
                             randomized = TRUE, lambda = 3)
   expect_true(out >= Fqm1)
   expect_true(out <= Fq)
 })
 
-test_that("compute_cdf with randomized = TRUE and truncation returns value in 
+test_that("pp_cdf with randomized = TRUE and truncation returns value in 
 valid range", {
   set.seed(123)
   q <- 4
@@ -481,16 +481,16 @@ valid range", {
   Fq <- (ppois(q, lambda = 5) - ppois(lb, lambda = 5)) / denom
   Fqm1 <- (ppois(q - 1, lambda = 5) - ppois(lb, lambda = 5)) / denom
 
-  out <- brms:::compute_cdf(q = q, distribution = "pois", lb = lb, ub = ub, 
+  out <- brms:::pp_cdf(q = q, distribution = "pois", lb = lb, ub = ub, 
                             randomized = TRUE, lambda = 5)
   expect_true(out >= Fqm1)
   expect_true(out <= Fq)
   expect_true(out >= 0 && out <= 1)
 })
 
-test_that("compute_cdf errors when truncation bounds yield a zero denominator", {
+test_that("pp_cdf errors when truncation bounds yield a zero denominator", {
   expect_error(
-    brms:::compute_cdf(
+    brms:::pp_cdf(
       q = 3, distribution = "pois", lb = 1, ub = 1,
       randomized = FALSE, lambda = 2
     ),
@@ -499,30 +499,30 @@ test_that("compute_cdf errors when truncation bounds yield a zero denominator", 
 })
 
 
-test_that("compute_cdf respects lower.tail and log.p", {
+test_that("pp_cdf respects lower.tail and log.p", {
   q <- 0.4
   mu <- 0.1
   sd <- 1.7
 
-  base <- brms:::compute_cdf(
+  base <- brms:::pp_cdf(
     q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
     lower.tail = TRUE, log.p = FALSE,
     mean = mu, sd = sd
   )
 
-  upper <- brms:::compute_cdf(
+  upper <- brms:::pp_cdf(
     q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
     lower.tail = FALSE, log.p = FALSE,
     mean = mu, sd = sd
   )
 
-  log_base <- brms:::compute_cdf(
+  log_base <- brms:::pp_cdf(
     q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
     lower.tail = TRUE, log.p = TRUE,
     mean = mu, sd = sd
   )
 
-  log_upper <- brms:::compute_cdf(
+  log_upper <- brms:::pp_cdf(
     q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
     lower.tail = FALSE, log.p = TRUE,
     mean = mu, sd = sd

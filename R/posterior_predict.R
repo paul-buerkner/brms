@@ -736,7 +736,7 @@ posterior_predict_exgaussian <- function(i, prep, output = "random", ...) {
 posterior_predict_wiener <- function(i, prep, output = "random",
                                      negative_rt = FALSE, ntrys = 5, ...) {
   validate_pp_output_support("wiener", output)
-  out <- rcontinuous(
+  out <- pp_random(
     n = 1, distribution = "wiener",
     delta = get_dpar(prep, "mu", i = i),
     alpha = get_dpar(prep, "bs", i = i),
@@ -1176,11 +1176,16 @@ validate_pp_output_support <- function(family_fun, output) {
 # @param n number of random values to generate
 # @param distribution name of a distribution for which the functions
 #   p<distribution>, q<distribution>, and r<distribution> are available
-# @param ... additional arguments passed to the distribution functions
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
 # @param ntrys number of trys in rejection sampling for truncated models
-# @return vector of random values prep from the distribution
-rcontinuous <- function(n, distribution, ..., lb = NULL, ub = NULL, ntrys = 5) {
+# @param ... additional arguments passed to the distribution functions
+# @return vector of random values drawn from the distribution
+# @noRd
+pp_random <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
+  # drop args that are only relevant for CDF/density/quantile output
   args <- validate_distribution_args(distribution, ...)
+  args[c("log.p", "lower.tail", "log", "p")] <- NULL
 
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
@@ -1192,7 +1197,8 @@ rcontinuous <- function(n, distribution, ..., lb = NULL, ub = NULL, ntrys = 5) {
     qdist <- paste0("q", distribution)
     if (!exists(pdist, mode = "function") || !exists(qdist, mode = "function")) {
       # use rejection sampling as CDF or quantile function are not available
-      out <- rdiscrete(n, distribution, ..., lb = lb, ub = ub, ntrys = ntrys)
+      out <- pp_random_discrete(n = n, distribution = distribution,
+                                 lb = lb, ub = ub, ntrys = ntrys, ...)
     } else {
       if (is.null(lb)) lb <- -Inf
       if (is.null(ub)) ub <- Inf
@@ -1212,13 +1218,16 @@ rcontinuous <- function(n, distribution, ..., lb = NULL, ub = NULL, ntrys = 5) {
 # @param n number of random values to generate
 # @param distribution name of a distribution for which the functions
 #   p<distribution>, q<distribution>, and r<distribution> are available
-# @param ... additional arguments passed to the distribution functions
 # @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
 # @param ntrys number of trys in rejection sampling for truncated models
-# @return a vector of random values draws from the distribution
-rdiscrete <- function(n, distribution, ..., lb = NULL, ub = NULL, ntrys = 5) {
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of random values drawn from the distribution
+# @noRd
+pp_random_discrete <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
+  # drop args that are only relevant for CDF/density/quantile output
   args <- validate_distribution_args(distribution, ...)
+  args[c("log.p", "lower.tail", "log", "p")] <- NULL
   rdist <- paste0("r", distribution)
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
@@ -1312,26 +1321,25 @@ predict_continuous_helper <- function(i, prep, output, distribution, ntrys = 5,
   if (output == "quantile" && is.null(p)) {
     stop2("Argument 'p' must be specified when output = 'quantile'.")
   }
+  # for continuous distributions, probability and PIT are the same
+  if (output == "probability") {
+    output <- "pit"
+  }
 
   switch(output,
     "random" = {
-      dots <- list(...)
-      dots[c("log.p", "lower.tail", "log", "p")] <- NULL
-      do.call(rcontinuous, c(list(n = prep$ndraws, distribution = distribution,
-                             lb = lb, ub = ub, ntrys = ntrys), dots))
+      pp_random(n = prep$ndraws, distribution = distribution,
+                lb = lb, ub = ub, ntrys = ntrys, ...)
     },
-    # empty "probability" = , is a "fall-through", it means if the value is
-    # "probability", do nothing and execute the next case's code block instead.
-    "probability" = ,
     "pit" = {
-      compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
-                  randomized = FALSE, ...)
+      pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
+             randomized = FALSE, ...)
     },
     "density" = {
-      compute_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+      pp_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
     },
     "quantile" = {
-      compute_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
+      pp_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
     }
   )
 }
@@ -1359,24 +1367,22 @@ predict_discrete_helper <- function(i, prep, output, distribution, ntrys = NULL,
 
   switch(output,
     "random" = {
-      dots <- list(...)
-      dots[c("log.p", "lower.tail", "log", "p")] <- NULL
-      do.call(rdiscrete, c(list(n = prep$ndraws, distribution = distribution,
-                                lb = lb, ub = ub, ntrys = ntrys), dots))
+      pp_random_discrete(n = prep$ndraws, distribution = distribution,
+                         lb = lb, ub = ub, ntrys = ntrys, ...)
     },
     "probability" = {
-      compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
-                  randomized = FALSE, ...)
+      pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
+             randomized = FALSE, ...)
     },
     "pit" = {
-      compute_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
-                  randomized = TRUE, ...)
+      pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
+             randomized = TRUE, ...)
     },
     "density" = {
-      compute_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+      pp_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
     },
     "quantile" = {
-      compute_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
+      pp_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
     }
   )
 }
@@ -1394,8 +1400,8 @@ predict_discrete_helper <- function(i, prep, output, distribution, ntrys = NULL,
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of probability values
 # @noRd
-compute_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
-                        log.p = FALSE, ...) {
+pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
+                   log.p = FALSE, ...) {
   args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   pdist <- paste0("p", distribution)
   # prepare computation of (non-)truncated cdf
@@ -1432,7 +1438,7 @@ compute_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of density values
 # @noRd
-compute_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
+pp_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
   dargs <- validate_distribution_args(distribution, fun_prefix = "d", ...)
   pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   ddist <- paste0("d", distribution)
@@ -1470,8 +1476,8 @@ compute_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of quantile values
 # @noRd
-compute_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
-                             log.p = FALSE, ...) {
+pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
+                        log.p = FALSE, ...) {
   qargs <- validate_distribution_args(distribution, fun_prefix = "q", ...)
   pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   qdist <- paste0("q", distribution)

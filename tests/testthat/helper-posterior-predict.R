@@ -76,7 +76,7 @@ expect_pp_output_matches_dist <- function(entry, i = 1L, tol = 1e-7,
   invisible(TRUE)
 }
 
-# Map prep dpars to compute_cdf / backend args for randomized PIT checks.
+# Map prep dpars to pp_cdf / backend args for randomized PIT checks.
 # Keyed by registry entry$name; ordinal_* share the "ordinal" builder.
 .pp_dist_args_from_prep <- list(
   ordinal = function(prep, i) {
@@ -214,19 +214,19 @@ expect_pp_pit_contract <- function(entry, i = 1L, seed = 99, tol = 1e-8) {
     set.seed(seed)
     args <- get_pp_dist_args(entry, prep, i)
     expected <- do.call(
-      brms:::compute_cdf,
+      brms:::pp_cdf,
       c(list(q = q, distribution = entry$backend, lb = NULL, ub = NULL,
              randomized = TRUE), args)
     )
     testthat::expect_equal(pit, expected, tolerance = tol,
                            info = paste(entry$name, "randomized PIT"))
     Fq <- do.call(
-      brms:::compute_cdf,
+      brms:::pp_cdf,
       c(list(q = q, distribution = entry$backend, lb = NULL, ub = NULL,
              randomized = FALSE), args)
     )
     Fqm1 <- do.call(
-      brms:::compute_cdf,
+      brms:::pp_cdf,
       c(list(q = q - 1, distribution = entry$backend, lb = NULL, ub = NULL,
              randomized = FALSE), args)
     )
@@ -260,7 +260,7 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
 
   got_p <- entry$pp_fun(i, prep = prep, output = "probability", q = q_in)
   exp_p <- do.call(
-    brms:::compute_cdf,
+    brms:::pp_cdf,
     c(list(q = q_in, distribution = entry$backend, lb = lb, ub = ub,
            randomized = FALSE), entry$params)
   )
@@ -271,7 +271,7 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
   if (has_output(entry, "density")) {
     got_d <- entry$pp_fun(i, prep = prep, output = "density", q = q_in)
     exp_d <- do.call(
-      brms:::compute_density,
+      brms:::pp_density,
       c(list(q = q_in, distribution = entry$backend, lb = lb, ub = ub),
         entry$params)
     )
@@ -283,7 +283,7 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
   if (has_output(entry, "quantile")) {
     got_q <- entry$pp_fun(i, prep = prep, output = "quantile", p = 0.4)
     exp_q <- do.call(
-      brms:::compute_quantile,
+      brms:::pp_quantile,
       c(list(p = 0.4, distribution = entry$backend, lb = lb, ub = ub),
         entry$params)
     )

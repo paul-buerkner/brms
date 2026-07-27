@@ -1676,7 +1676,7 @@ expect_truncated_cdf_density_quantile <- function(entry, lb, ub,
   # truncated CDF (cheatsheet)
   F_tr <- (F(q) - F(lb)) / denom
   F_tr_pp <- do.call(
-    brms:::compute_cdf,
+    brms:::pp_cdf,
     c(list(q = q, distribution = entry$backend, lb = lb, ub = ub,
            randomized = FALSE), entry$params)
   )
@@ -1687,7 +1687,7 @@ expect_truncated_cdf_density_quantile <- function(entry, lb, ub,
     dens <- as.numeric(call_dist(entry$d, q, entry$params))
     dens_tr <- if (q < lb || q > ub) 0 else dens / denom
     dens_pp <- do.call(
-      brms:::compute_density,
+      brms:::pp_density,
       c(list(q = q, distribution = entry$backend, lb = lb, ub = ub),
         entry$params)
     )
@@ -1699,7 +1699,7 @@ expect_truncated_cdf_density_quantile <- function(entry, lb, ub,
     p_star <- p * denom + F(lb)
     q_tr <- as.numeric(call_dist(entry$q, p_star, entry$params))
     q_pp <- do.call(
-      brms:::compute_quantile,
+      brms:::pp_quantile,
       c(list(p = p, distribution = entry$backend, lb = lb, ub = ub),
         entry$params)
     )
