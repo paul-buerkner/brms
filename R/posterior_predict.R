@@ -187,9 +187,8 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
                                        cores = NULL, output = "random", ...) {
-  output <- as_one_character(output)
-  output <- rlang::arg_match(
-    output, values = c("random", "probability", "pit", "density", "quantile")
+  output <- match.arg(
+    output, c("random", "probability", "pit", "density", "quantile")
   )
   validate_pp_output_support(object$family$fun, output)
 
