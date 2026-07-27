@@ -186,7 +186,9 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
-                                       cores = NULL, output = "random", ...) {
+                                       cores = NULL, output = "random",
+                                       p = NULL, ...) {
+  # pass p = NULL explicitly to avoid partial arg matching problem with probs
   output <- match.arg(
     output, c("random", "probability", "pit", "density", "quantile")
   )
@@ -209,7 +211,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
   out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object,
-    output = output, ...)
+    output = output, p = p, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -1103,11 +1105,15 @@ posterior_predict_ordinal <- function(i, prep, output = "random", ...) {
   )
 }
 
-posterior_predict_custom <- function(i, prep, output = "random", ...) {
+posterior_predict_custom <- function(i, prep, output = "random",
+                                     p = NULL, ...) {
+  # Capture p here so it is not forwarded via ... into custom methods.
+  # Otherwise p partially matches the prep formal before positional
+  # matching runs (prep becomes NULL).
   fun <- custom_family_method(prep$family, "posterior_predict")
   args <- names(formals(fun))
-  if ("output" %in% args || "..." %in% args) {
-    fun(i, prep, output = output, ...)
+  if ("output" %in% args) {
+    fun(i = i, prep = prep, output = output, p = p, ...)
   } else {
     # older custom methods may not accept output yet
     if (!identical(output, "random")) {
@@ -1116,7 +1122,7 @@ posterior_predict_custom <- function(i, prep, output = "random", ...) {
         "Only output = 'random' is currently supported."
       )
     }
-    fun(i, prep, ...)
+    fun(i = i, prep = prep, ...)
   }
 }
 
