@@ -271,9 +271,12 @@ Since larger `ELPD` values indicate better fit, we see that the beta-binomial
 model fits somewhat better, although the corresponding standard error reveals
 that the difference is not that substantial.
 
-Next, we will define the function necessary for the `posterior_predict` method:
+Next, we will define the function necessary for the `posterior_predict` method.
+Historically, custom `posterior_predict` methods only needed to draw random
+responses. That style remains supported for the default
+`output = "random"` and is enough for posterior-predictive checks:
 
-```{r posterior_predict}
+```{r posterior_predict_old}
 posterior_predict_beta_binomial2 <- function(i, prep, ...) {
   mu <- brms::get_dpar(prep, "mu", i = i)
   phi <- brms::get_dpar(prep, "phi", i = i)
@@ -282,16 +285,99 @@ posterior_predict_beta_binomial2 <- function(i, prep, ...) {
 }
 ```
 
-The `posterior_predict` function looks pretty similar to the corresponding
-`log_lik` function, except that we are now creating random draws of the
-response instead of log-likelihood values. Again, we are using an exposed
-**Stan** function for convenience. Make sure to add a `...` argument to your
-`posterior_predict` function even if you are not using it, since some families
-require additional arguments. With `posterior_predict` to be working, we can
-engage for instance in posterior-predictive checking:
-
 ```{r pp_check}
 pp_check(fit2)
+```
+
+Besides random draws, `posterior_predict` can also return related quantities
+such as CDF values (`"probability"`), randomized PIT values (`"pit"`),
+densities (`"density"`), or quantiles (`"quantile"`). See the *Details*
+section of `help("posterior_predict.brmsfit")` for a full description of
+these output types. Custom families only support these modes if their
+`posterior_predict` method implements them; otherwise only `"random"` is
+available. Methods that do not accept an `output` argument will error when
+another mode is requested.
+
+To support the additional modes, accept an `output` argument along with the
+usual options such as `q`, `p`, `lower.tail`, `log.p`, and `log` (See the 
+*Details* section of `help("posterior_predict.brmsfit")`). For
+`beta_binomial2`, the R-side distribution functions of the built-in
+`beta_binomial` family apply directly, since both use the same
+parameterization:
+
+```{r posterior_predict}
+posterior_predict_beta_binomial2 <- function(i, prep, ..., output = "random",
+                                             q = NULL, p = NULL,
+                                             lower.tail = TRUE, log.p = FALSE,
+                                             log = FALSE) {
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  phi <- brms::get_dpar(prep, "phi", i = i)
+  trials <- prep$data$vint1[i]
+  if (is.null(q)) {
+    q <- prep$data$Y[i]
+  }
+  switch(
+    output,
+    "random" = rbeta_binomial(
+      n = prep$ndraws, size = trials, mu = mu, phi = phi
+    ),
+    "probability" = pbeta_binomial(
+      q = q, size = trials, mu = mu, phi = phi,
+      lower.tail = lower.tail, log.p = log.p
+    ),
+    "pit" = {
+      # randomized PIT for discrete data:
+      # F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
+      Fy <- pbeta_binomial(q = q, size = trials, mu = mu, phi = phi)
+      Fym1 <- pbeta_binomial(q = q - 1, size = trials, mu = mu, phi = phi)
+      out <- Fym1 + runif(length(Fy)) * (Fy - Fym1)
+      if (!lower.tail) {
+        out <- 1 - out
+      }
+      if (log.p) {
+        out <- log(out)
+      }
+      out
+    },
+    "density" = dbeta_binomial(
+      x = q, size = trials, mu = mu, phi = phi, log = log
+    ),
+    "quantile" = {
+      if (is.null(p)) {
+        stop("'p' must be specified when output = 'quantile'.")
+      }
+      qbeta_binomial(
+        p = p, size = trials, mu = mu, phi = phi,
+        lower.tail = lower.tail, log.p = log.p
+      )
+    },
+    stop("Unsupported output '", output, "'.")
+  )
+}
+```
+
+The signature places `...` before `output` so that the same function can also
+be passed directly to `custom_family(posterior_predict = ...)`, which requires
+the first three arguments to be `i`, `prep`, and `...`. With the extended
+method in place, we can evaluate the predictive CDF, randomized PIT values,
+or extract predictive quantiles:
+
+```{r pp_output_examples}
+# predictive CDF at the observed responses
+pp_cdf <- posterior_predict(fit2, output = "probability")
+
+# posterior predictive median per observation
+pp_median <- posterior_predict(fit2, output = "quantile", p = 0.5)
+```
+
+```{r pp_pit_ecdf}
+# randomized PIT values (preferred for discrete calibration checks)
+pp_pit <- posterior_predict(fit2, output = "pit")
+
+plot(ecdf(colMeans(pp_pit)), 
+     xlab = "PIT", ylab = "ECDF", 
+     main = NULL, xlim = c(0, 1))
+abline(0, 1, lty = 2)
 ```
 
 When defining the `posterior_epred` function, you have to keep in mind that it
