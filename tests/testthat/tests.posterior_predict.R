@@ -467,6 +467,16 @@ test_that("posterior_predict_custom does not let p partially match prep", {
   expect_equal(length(out), ns)
 })
 
+test_that("posterior_predict_mixture does not let p partially match prep", {
+  # Regression: p = NULL forwarded via ... used to partially match the prep
+  # formal of component methods when called as pp_fun(i, tmp_prep, ...).
+  fit <- brms:::rename_pars(brms:::brmsfit_example5)
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4))
+  draws <- posterior_predict(fit, ndraws = 10)
+  expect_equal(dim(draws), c(10, nobs(fit)))
+})
+
 # ---------------------------------------------------------------------------
 # Tests for the posterior_predict() output API
 # (probability / pit / density / quantile, plus pp_cdf helpers)
