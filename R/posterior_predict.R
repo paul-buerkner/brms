@@ -383,65 +383,55 @@ validate_pp_method <- function(method) {
 # @param ... ignored arguments
 # @param A vector of length prep$ndraws containing draws
 #   from the posterior predictive distribution
-posterior_predict_gaussian <- function(i, prep, output = "random", 
-                                       ntrys = 5, ...) {
+posterior_predict_gaussian <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "norm", mean = mu, sd = sigma, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "norm", mean = mu, sd = sigma, ...)
 }
 
-posterior_predict_student <- function(i, prep, output = "random", 
-                                      ntrys = 5, ...) {
+posterior_predict_student <- function(i, prep, output = "random", ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "student_t", df = nu, mu = mu, sigma = sigma, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "student_t", df = nu, mu = mu,
+                            sigma = sigma, ...)
 }
 
-posterior_predict_lognormal <- function(i, prep, output = "random", 
-                                        ntrys = 5, ...) {
+posterior_predict_lognormal <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "lnorm", meanlog = mu, sdlog = sigma, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "lnorm", meanlog = mu,
+                            sdlog = sigma, ...)
 }
 
 posterior_predict_shifted_lognormal <- function(i, prep, output = "random",
-                                                ntrys = 5, ...) {
+                                                ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   ndt <- get_dpar(prep, "ndt", i = i)
   
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "shifted_lnorm", meanlog = mu, sdlog = sigma, shift = ndt, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "shifted_lnorm", meanlog = mu,
+                            sdlog = sigma, shift = ndt, ...)
 }
 
-posterior_predict_skew_normal <- function(i, prep, output = "random",
-                                          ntrys = 5, ...) {
+posterior_predict_skew_normal <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
   alpha <- get_dpar(prep, "alpha", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "skew_normal", mu = mu, sigma = sigma, alpha = alpha, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "skew_normal", mu = mu,
+                            sigma = sigma, alpha = alpha, ...)
 }
 
 posterior_predict_gaussian_mv <- function(i, prep, output = "random", ...) {
@@ -676,84 +666,71 @@ posterior_predict_com_poisson <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_exponential <- function(i, prep, output = "random",
-                                          ntrys = 5, ...) {
+posterior_predict_exponential <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   rate <- 1 / mu
   
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "exp", rate = rate, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "exp", rate = rate, ...)
 }
 
-posterior_predict_gamma <- function(i, prep, output = "random", 
-                                    ntrys = 5, ...) {
+posterior_predict_gamma <- function(i, prep, output = "random", ...) {
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "gamma", shape = shape, scale = scale, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "gamma", shape = shape,
+                            scale = scale, ...)
 }
 
-posterior_predict_weibull <- function(i, prep, output = "random", 
-                                      ntrys = 5, ...) {
+posterior_predict_weibull <- function(i, prep, output = "random", ...) {
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "weibull", shape = shape, scale = scale, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "weibull", shape = shape,
+                            scale = scale, ...)
 }
 
-posterior_predict_frechet <- function(i, prep, output = "random",
-                                      ntrys = 5, ...) {
+posterior_predict_frechet <- function(i, prep, output = "random", ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   scale <- mu / gamma(1 - 1 / nu)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "frechet", scale = scale, shape = nu, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "frechet", scale = scale,
+                            shape = nu, ...)
 }
 
 posterior_predict_gen_extreme_value <- function(i, prep, output = "random",
-                                                ntrys = 5, ...) {
+                                                ...) {
   sigma <- get_dpar(prep, "sigma", i = i)
   xi <- get_dpar(prep, "xi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "gen_extreme_value", sigma = sigma, xi = xi, mu = mu, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "gen_extreme_value", sigma = sigma,
+                            xi = xi, mu = mu, ...)
 }
 
 posterior_predict_inverse.gaussian <- function(i, prep, output = "random",
-                                               ntrys = 5, ...) {
+                                               ...) {
   mu <- get_dpar(prep, "mu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "inv_gaussian", mu = mu, shape = shape, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "inv_gaussian", mu = mu,
+                            shape = shape, ...)
 }
 
-posterior_predict_exgaussian <- function(i, prep, output = "random", ntrys = 5,
-                                         ...) {
+posterior_predict_exgaussian <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   beta <- get_dpar(prep, "beta", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "exgaussian", mu = mu, sigma = sigma, beta = beta, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "exgaussian", mu = mu, sigma = sigma,
+                            beta = beta, ...)
 }
 
 posterior_predict_wiener <- function(i, prep, output = "random",
@@ -776,71 +753,62 @@ posterior_predict_wiener <- function(i, prep, output = "random",
   out
 }
 
-posterior_predict_beta <- function(i, prep, output = "random", ntrys = 5, ...) {
+posterior_predict_beta <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "beta", shape1 = mu * phi, shape2 = (1 - mu) * phi, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "beta", shape1 = mu * phi,
+                            shape2 = (1 - mu) * phi, ...)
 }
 
-posterior_predict_xbeta <- function(i, prep, output = "random", ntrys = 5, ...) {
+posterior_predict_xbeta <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "xbeta", mu = mu, phi = phi, nu = kappa, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "xbeta", mu = mu, phi = phi,
+                            nu = kappa, ...)
 }
 
-posterior_predict_von_mises <- function(i, prep, output = "random", ntrys = 5,
-                                        ...) {
+posterior_predict_von_mises <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
 
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "von_mises", mu = mu, kappa = kappa, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "von_mises", mu = mu,
+                            kappa = kappa, ...)
 }
 
-posterior_predict_asym_laplace <- function(i, prep, output = "random",
-                                           ntrys = 5, ...) {
+posterior_predict_asym_laplace <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   quantile <- get_dpar(prep, "quantile", i = i)
   
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "asym_laplace", mu = mu,
+                            sigma = sigma, quantile = quantile, ...)
 }
 
 posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
-                                                         output = "random",
-                                                         ntrys = 5, ...) {
+                                                         output = "random", ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   quantile <- get_dpar(prep, "quantile", i = i)
 
   if (output == "random") {
-    out <- predict_continuous_helper(
-      i = i, prep = prep, output = output, ntrys = ntrys,
-      distribution = "asym_laplace", mu = mu, sigma = sigma, quantile = quantile, ...
-    )
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "asym_laplace", mu = mu,
+                                     sigma = sigma, quantile = quantile, ...)
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0, out)
   } else {
-    out <- predict_continuous_helper(
-      i = i, prep = prep, output = output, ntrys = ntrys,
-      distribution = "zero_inflated_asym_laplace",
-      mu = mu, sigma = sigma, quantile = quantile, zi = zi, ...
-    )
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "zero_inflated_asym_laplace",
+                                     mu = mu, sigma = sigma,
+                                     quantile = quantile, zi = zi, ...)
   }
   out
 }
@@ -873,26 +841,23 @@ posterior_predict_hurdle_negbinomial <- function(i, prep, output = "random",
   )
 }
 
-posterior_predict_hurdle_gamma <- function(i, prep, output = "random",
-                                           ntrys = 5, ...) {
+posterior_predict_hurdle_gamma <- function(i, prep, output = "random", ...) {
   hu <- get_dpar(prep, "hu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "hurdle_gamma", shape = shape, scale = scale, hu = hu, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "hurdle_gamma", shape = shape,
+                            scale = scale, hu = hu, ...)
 }
 
 posterior_predict_hurdle_lognormal <- function(i, prep, output = "random",
-                                               ntrys = 5, ...) {
+                                               ...) {
   hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
-  predict_continuous_helper(
-    i = i, prep = prep, output = output, ntrys = ntrys,
-    distribution = "hurdle_lognormal", mu = mu, sigma = sigma, hu = hu, ...
-  )
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "hurdle_lognormal", mu = mu,
+                            sigma = sigma, hu = hu, ...)
 }
 
 posterior_predict_hurdle_cumulative <- function(i, prep, output = "random",
@@ -910,7 +875,7 @@ posterior_predict_hurdle_cumulative <- function(i, prep, output = "random",
 }
 
 posterior_predict_zero_inflated_beta <- function(i, prep, output = "random",
-                                                 ntrys = 5, ...) {
+                                                 ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
@@ -918,23 +883,22 @@ posterior_predict_zero_inflated_beta <- function(i, prep, output = "random",
   shape2 <- (1 - mu) * phi
 
   if (output == "random") {
-    out <- predict_continuous_helper(
-      i = i, prep = prep, output = output, ntrys = ntrys,
-      distribution = "beta", shape1 = shape1, shape2 = shape2, ...
-    )
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "beta", shape1 = shape1,
+                                     shape2 = shape2, ...)
     tmp <- runif(prep$ndraws, 0, 1)
     out <- ifelse(tmp < zi, 0, out)
   } else {
-    out <- predict_continuous_helper(
-      i = i, prep = prep, output = output, ntrys = ntrys,
-      distribution = "zero_inflated_beta", shape1 = shape1, shape2 = shape2, zi = zi, ...
-    )
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "zero_inflated_beta",
+                                     shape1 = shape1, shape2 = shape2,
+                                     zi = zi, ...)
   }
   out
 }
 
-posterior_predict_zero_one_inflated_beta <- function(i, prep, output = "random",
-                                                     ntrys = 5, ...) {
+posterior_predict_zero_one_inflated_beta <- function(i, prep,
+                                                     output = "random", ...) {
   zoi <- get_dpar(prep, "zoi", i = i)
   coi <- get_dpar(prep, "coi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
@@ -951,11 +915,10 @@ posterior_predict_zero_one_inflated_beta <- function(i, prep, output = "random",
       rbeta(prep$ndraws, shape1 = shape1, shape2 = shape2)
     )
   } else {
-    out <- predict_continuous_helper(
-      i = i, prep = prep, output = output, ntrys = ntrys,
-      distribution = "zero_one_inflated_beta",
-      shape1 = shape1, shape2 = shape2, zoi = zoi, coi = coi, ...
-    )
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "zero_one_inflated_beta",
+                                     shape1 = shape1, shape2 = shape2,
+                                     zoi = zoi, coi = coi, ...)
   }
   out
 }
@@ -1341,9 +1304,8 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
 # @param p optional custom probability value for quantile output
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of draws
-predict_continuous_helper <- function(
-  i, prep, output, distribution, ntrys, q = NULL, p = NULL, ...
-) {
+predict_continuous_helper <- function(i, prep, output, distribution, ntrys = 5,
+                                      q = NULL, p = NULL, ...) {
   lb <- prep$data$lb[i]
   ub <- prep$data$ub[i]
   if (output %in% c("probability", "pit", "density") && is.null(q)) q <- prep$data$Y[i]
