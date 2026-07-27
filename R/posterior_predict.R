@@ -1530,10 +1530,8 @@ validate_distribution_args <- function(distribution, fun_prefix = "p", ...) {
   rdist <- paste0(fun_prefix, distribution)
   rdist_fun <- match.fun(rdist)
   rdist_formals <- names(formals(rdist_fun))
-
   if (!is.null(rdist_formals) && !("..." %in% rdist_formals)) {
     args <- args[names(args) %in% rdist_formals]
   }
-
   args
 }
