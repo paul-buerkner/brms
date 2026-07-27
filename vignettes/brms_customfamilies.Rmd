@@ -370,14 +370,9 @@ pp_cdf <- posterior_predict(fit2, output = "probability")
 pp_median <- posterior_predict(fit2, output = "quantile", p = 0.5)
 ```
 
-```{r pp_pit_ecdf}
-# randomized PIT values (preferred for discrete calibration checks)
+```{r pp_check_pit_ecdf_model}
 pp_pit <- posterior_predict(fit2, output = "pit")
-
-plot(ecdf(colMeans(pp_pit)), 
-     xlab = "PIT", ylab = "ECDF", 
-     main = NULL, xlim = c(0, 1))
-abline(0, 1, lty = 2)
+pp_check(fit2, type = "pit_ecdf", pit = colMeans(pp_pit))
 ```
 
 When defining the `posterior_epred` function, you have to keep in mind that it
