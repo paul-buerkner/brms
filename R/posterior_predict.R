@@ -26,34 +26,68 @@
 #' @param ntrys Parameter used in rejection sampling
 #'   for truncated discrete models only
 #'   (defaults to \code{5}). See Details for more information.
-#' @param output The type of output to return. Can be \code{"random"},
-#'   \code{"probability"}, \code{"pit"}, \code{"density"}, or
-#'   \code{"quantile"}. Defaults to \code{"random"}. In case of continuous
-#'   distributions, \code{"probability"} is equivalent to \code{"pit"}.
-#'   Not all families support outputs other than \code{"random"} yet;
-#'   requesting an unsupported combination raises an error.
-#' @param q Custom quantile for computing probability, PIT, or density values.
-#'   It defaults to NULL in which case \code{prep$data$Y[i]} is used.
-#' @param p Custom probability for computing quantile values.
-#' @param lower.tail logical for computing probability or quantile values. It
-#'   defaults to TRUE in which case probabilities are P(X < x) otherwise P(X > x).
-#' @param log.p logical for computing probability or quantile values. It
-#'   defaults to FALSE, if TRUE probabilities p are given as log(p).
-#' @param log logical for computing density values. It defaults to FALSE.
+#' @param output Type of predictive quantity to return. Either
+#'   \code{"random"} (the default), \code{"probability"}, \code{"pit"},
+#'   \code{"density"}, or \code{"quantile"}. See Details for more
+#'   information.
+#' @param q Optional values at which to evaluate probabilities, PIT
+#'   values, or densities. Only used if \code{output} is
+#'   \code{"probability"}, \code{"pit"}, or \code{"density"}.
+#'   Defaults to the observed responses. See Details.
+#' @param p Probabilities at which to evaluate quantiles. Only used
+#'   and required if \code{output = "quantile"}.
+#' @param lower.tail Logical; If \code{TRUE} (default), return
+#'   \eqn{P(X \le x)} or the corresponding lower-tail quantiles.
+#'   Else, return \eqn{P(X > x)} or upper-tail quantiles.
+#'   Only used if \code{output} is \code{"probability"}, \code{"pit"},
+#'   or \code{"quantile"}.
+#' @param log.p Logical; If \code{TRUE}, probabilities are given and
+#'   returned on the log scale. Only used if \code{output} is
+#'   \code{"probability"}, \code{"pit"}, or \code{"quantile"}.
+#' @param log Logical; If \code{TRUE}, densities are returned on the
+#'   log scale. Only used if \code{output = "density"}.
 #' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
 #'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.
 #'
-#' @return An \code{array} of draws. In univariate models,
-#'   the output is as an S x N matrix, where S is the number of posterior
+#' @return An \code{array} of posterior predictive draws or related
+#'   quantities (see argument \code{output}). In univariate models,
+#'   the output is an S x N matrix, where S is the number of posterior
 #'   draws and N is the number of observations. In multivariate models, an
 #'   additional dimension is added to the output which indexes along the
 #'   different response variables.
 #'
-#' @template details-newdata-na
-#' @template details-allow_new_levels
-#' @details For truncated discrete models only: In the absence of any general
+#' @details Besides random draws, related quantities such as CDF or PIT
+#'   values, densities, or quantiles can be returned via argument
+#'   \code{output}. This argument controls which predictive quantity is
+#'   returned for each posterior draw and observation:
+#'   \itemize{
+#'   \item \code{"random"}: Draws from the posterior predictive
+#'     distribution. This is the default and reproduces the historical
+#'     behavior of \code{posterior_predict}.
+#'   \item \code{"probability"}: Values of the posterior predictive CDF
+#'     evaluated at \code{q}.
+#'   \item \code{"pit"}: Probability integral transform (PIT) values
+#'     evaluated at \code{q}. For continuous distributions, this is
+#'     identical to \code{"probability"}. For discrete distributions, a
+#'     randomized PIT is used to avoid point masses at the CDF jumps
+#'     (Czado et al., 2009). See Säilynoja et al. (2022) and
+#'     Tesso and Vehtari (2026) for using PIT values in predictive
+#'     model checking.
+#'   \item \code{"density"}: Values of the posterior predictive density
+#'     or probability mass function evaluated at \code{q}.
+#'   \item \code{"quantile"}: Quantiles of the posterior predictive
+#'     distribution at probabilities \code{p}.
+#'   }
+#'
+#'   If \code{q} is \code{NULL}, the observed response values are used.
+#'   Argument \code{p} must be supplied when
+#'   \code{output = "quantile"}. Not all response families support
+#'   outputs other than \code{"random"} yet; requesting an unsupported
+#'   combination raises an error.
+#'
+#'   For truncated discrete models only: In the absence of any general
 #'   algorithm to sample from truncated discrete distributions, rejection
 #'   sampling is applied in this special case. This means that values are
 #'   sampled until a value lies within the defined truncation boundaries. In
@@ -63,6 +97,23 @@
 #'   invalid, the closest boundary is used, instead. If there are more than a
 #'   few of these pathological cases, a warning will occur suggesting to
 #'   increase argument \code{ntrys}.
+#'
+#' @template details-newdata-na
+#' @template details-allow_new_levels
+#'
+#' @references
+#' Czado, C., Gneiting, T., & Held, L. (2009). Predictive model
+#' assessment for count data. \emph{Biometrics}, 65(4), 1254-1261.
+#' \doi{10.1111/j.1541-0420.2009.01191.x}
+#'
+#' Säilynoja, T., Bürkner, P.-C., & Vehtari, A. (2022). Graphical
+#' test for discrete uniformity and its applications in
+#' goodness-of-fit evaluation and multiple sample comparison.
+#' \emph{Statistics and Computing}, 32, 32.
+#' \doi{10.1007/s11222-022-10090-6}
+#'
+#' Tesso, H., & Vehtari, A. (2026). LOO-PIT predictive model checking.
+#' \emph{arXiv preprint}. \doi{10.48550/arXiv.2603.02928}
 #'
 #' @examples
 #' \dontrun{
