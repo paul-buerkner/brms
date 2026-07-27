@@ -293,7 +293,8 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     gr <- usc(seq_along(groups))
     grb <- paste0("[", seq_along(groups), "]")
   }
-  if (!is.customfamily(bterms$family)) {
+  if (!is.customfamily(bterms$family) && !is_ordbeta(bterms$family)) {
+    # ordbeta has its own Stan functions in fun_ordbeta.stan
     family_name <- bterms$family$family
     link <- bterms$family$link
     if (has_extra_cat(bterms)) {

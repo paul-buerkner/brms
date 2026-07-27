@@ -723,6 +723,11 @@ stan_log_lik_xbeta <- function(bterms, ...) {
   sdist("xbeta", p$mu, p$phi, p$kappa)
 }
 
+stan_log_lik_ordbeta <- function(bterms, ...) {
+  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  sdist("ordbeta", p$mu, p$phi, p$xi, p$kappa, vec = FALSE)
+}
+
 stan_log_lik_von_mises <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   sdist("von_mises", p$mu, p$kappa)

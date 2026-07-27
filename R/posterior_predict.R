@@ -695,6 +695,20 @@ posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
   )
 }
 
+posterior_predict_ordbeta <- function(i, prep, ...) {
+  # mu is already on response scale (0-1) after brms applies link function
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  xi <- get_dpar(prep, "xi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  # coi = xi + kappa (ensures ordering)
+  coi <- xi + kappa
+  rordbeta(
+    n = prep$ndraws,
+    mu = mu, phi = phi, xi = xi, coi = coi
+  )
+}
+
 posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
   rcontinuous(
     n = prep$ndraws, dist = "von_mises",
