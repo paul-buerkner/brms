@@ -494,7 +494,7 @@ test_that("pp_cdf errors when truncation bounds yield a zero denominator", {
       q = 3, distribution = "pois", lb = 1, ub = 1,
       randomized = FALSE, lambda = 2
     ),
-    "Division by zero"
+    "Invalid truncation bounds"
   )
 })
 

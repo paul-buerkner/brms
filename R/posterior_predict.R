@@ -1413,7 +1413,12 @@ pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
       out <- do_call(pdist, c(list(q), args))
     } else {
       denom <- do_call(pdist, c(list(ub), args)) - do_call(pdist, c(list(lb), args))
-      if (any(denom == 0)) stop("Division by zero")
+      if (any(denom == 0)) {
+        stop2("Invalid truncation bounds: no probability mass ",
+              "between 'lb' and 'ub'. Please check that the ",
+              "truncation interval is valid for the response ",
+              "distribution.")
+      }
       out <- (do_call(pdist, c(list(q), args)) - do_call(pdist, c(list(lb), args))) / denom
     }
     out
@@ -1461,7 +1466,12 @@ pp_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
     cdf_ub <- do_call(pdist, c(list(ub), pargs))
   }
   denom <- cdf_ub - cdf_lb
-  if (any(denom == 0)) stop("Division by zero")
+  if (any(denom == 0)) {
+    stop2("Invalid truncation bounds: no probability mass ",
+          "between 'lb' and 'ub'. Please check that the ",
+          "truncation interval is valid for the response ",
+          "distribution.")
+  }
   dens <- do_call(ddist, c(list(q), dargs, log = FALSE)) / denom
   if (!is.null(lb)) dens[q < lb] <- 0
   if (!is.null(ub)) dens[q > ub] <- 0
@@ -1503,7 +1513,12 @@ pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
     cdf_ub <- do_call(pdist, c(list(ub), pargs))
   }
   denom <- cdf_ub - cdf_lb
-  if (any(denom == 0)) stop("Division by zero")
+  if (any(denom == 0)) {
+    stop2("Invalid truncation bounds: no probability mass ",
+          "between 'lb' and 'ub'. Please check that the ",
+          "truncation interval is valid for the response ",
+          "distribution.")
+  }
   p_internal <- p * denom + cdf_lb
   do_call(qdist, c(list(p_internal), qargs))
 }
