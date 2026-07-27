@@ -440,6 +440,33 @@ test_that("posterior_predict_custom runs without errors", {
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
 
+test_that("posterior_predict_custom does not let p partially match prep", {
+  # Regression: p = NULL forwarded via ... used to partially match the prep
+  # formal of old-style custom methods (function(i, prep, ...)), so prep
+  # became NULL before positional matching ran.
+  ns <- 15
+  nobs <- 8
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rbeta(ns * nobs, 1, 1), ncol = nobs)
+  )
+  prep$data <- list(trials = rep(1, nobs))
+  prep$family <- custom_family(
+    "beta_binomial2", dpars = c("mu", "tau"),
+    links = c("logit", "log"), lb = c(NA, 0),
+    type = "int", vars = "trials[n]"
+  )
+  posterior_predict_beta_binomial2 <- function(i, prep, ...) {
+    stopifnot(is.brmsprep(prep))
+    mu <- prep$dpars$mu[, i]
+    rbinom(prep$ndraws, size = prep$data$trials[i], prob = mu)
+  }
+  out <- brms:::posterior_predict_custom(
+    1L, prep, output = "random", p = NULL, ntrys = 5
+  )
+  expect_equal(length(out), ns)
+})
+
 # ---------------------------------------------------------------------------
 # Tests for the posterior_predict() output API
 # (probability / pit / density / quantile, plus pp_cdf helpers)
@@ -556,6 +583,31 @@ test_that("posterior_predict forwards lower.tail and log.p correctly", {
   expect_equal(p_upper, 1 - p_lower)
   expect_equal(log_lower, log(p_lower))
   expect_equal(log_upper, log(p_upper))
+})
+
+test_that("posterior_predict forwards p for quantile output without matching probs", {
+  # Regression: argument p used to be partially matched to probs in
+  # posterior_predict.brmsprep, so output = "quantile" always saw p = NULL.
+  fit <- brms:::rename_pars(brms:::brmsfit_example3)
+
+  expect_error(
+    posterior_predict(fit, output = "quantile", ndraws = 5),
+    "p' must be specified when output = 'quantile'"
+  )
+
+  qs <- posterior_predict(fit, output = "quantile", p = 0.5, ndraws = 5)
+  expect_equal(dim(qs), c(5, nobs(fit)))
+  expect_true(all(is.finite(qs)))
+
+  # same draws: lower quantile should not exceed upper quantile
+  draw_ids <- seq_len(5)
+  qs_lo <- posterior_predict(
+    fit, output = "quantile", p = 0.25, draw_ids = draw_ids
+  )
+  qs_hi <- posterior_predict(
+    fit, output = "quantile", p = 0.75, draw_ids = draw_ids
+  )
+  expect_true(all(qs_lo <= qs_hi))
 })
 
 
