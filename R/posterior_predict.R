@@ -1402,31 +1402,35 @@ predict_discrete_helper <- function(i, prep, output, distribution, ntrys = NULL,
 # @noRd
 pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
                    log.p = FALSE, ...) {
+  randomized <- as_one_logical(randomized)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
   args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   pdist <- paste0("p", distribution)
   # prepare computation of (non-)truncated cdf
   F_internal <- function(q) {
     if (is.null(lb) && is.null(ub)) {
-      do_call(pdist, c(list(q), args))
+      out <- do_call(pdist, c(list(q), args))
     } else {
       denom <- do_call(pdist, c(list(ub), args)) - do_call(pdist, c(list(lb), args))
       if (any(denom == 0)) stop("Division by zero")
-      (do_call(pdist, c(list(q), args)) - do_call(pdist, c(list(lb), args))) / denom
+      out <- (do_call(pdist, c(list(q), args)) - do_call(pdist, c(list(lb), args))) / denom
     }
+    out
   }
   # randomized PIT specifically for discrete data (see, e.g.,
   # Czado, C., Gneiting, T., Held, L.: Predictive model
   # assessment for count data. Biometrics 65(4), 1254–1261 (2009).)
   # F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
-  if (isTRUE(randomized)) {
+  if (randomized) {
     v <- runif(length(q))
-    probs <- F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
-  } else if (isFALSE(randomized)) {
-    probs <- F_internal(q)
+    out <- F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
+  } else {
+    out <- F_internal(q)
   }
-  if (isFALSE(lower.tail)) probs <- 1 - probs
-  if (isTRUE(log.p)) probs <- log(probs)
-  return(probs)
+  if (!lower.tail) out <- 1 - out
+  if (log.p) out <- log(out)
+  out
 }
 
 # compute density dependent on whether the distribution is truncated or not
