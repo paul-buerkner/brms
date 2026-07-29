@@ -79,7 +79,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          data2 = NULL, autocor = NULL, cov_ranef = NULL,
                          sample_prior = c("no", "yes", "only"),
                          sparse = NULL, knots = NULL, stanvars = NULL,
-                         stan_funs = NULL, silent = 1, recompile = FALSE,
+                         stan_funs = NULL, silent = getOption("brms.silent", 1),
+                         recompile = FALSE,
                          combine = TRUE, fit = NA,
                          algorithm = getOption("brms.algorithm", "sampling"),
                          seed = NA, file = NULL, file_compress = TRUE,
@@ -150,8 +151,11 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     if (silent < 2) {
       message("Fitting imputed model ", i)
     }
-    update(fit, newdata = data[[i]], data2 = data2[[i]],
-           recompile = recompile, silent = silent, ...)
+    update(
+      fit, newdata = data[[i]], data2 = data2[[i]],
+      recompile = recompile, silent = silent, seed = seed,
+      ...
+    )
   }
 
   fits <- future.apply::future_lapply(

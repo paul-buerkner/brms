@@ -1834,6 +1834,29 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
   expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
 
+  # predict all mixing proportions without a reference category
+  fam_na <- mixture(gaussian, student, exgaussian, refcat = NA)
+  scode <- stancode(bf(y ~ x, theta1 ~ x, theta2 ~ x, theta3 ~ x),
+                         data = data, family = fam_na)
+  expect_match2(scode, "log_sum_exp_theta = log(exp(theta1[n]) + exp(theta2[n]) + exp(theta3[n]));")
+  expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
+  expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
+  # all components are predicted; none is fixed as a reference category
+  # (the default 'theta2 = rep_vector(0.0, N);' followed by no linear predictor)
+  expect_match2(scode, "theta2 += Intercept_theta2 + Xc_theta2 * b_theta2;")
+
+  # errors when the number of predicted proportions is inconsistent
+  expect_error(
+    stancode(bf(y ~ x, theta1 ~ x, theta2 ~ x, theta3 ~ x),
+             data = data, family = fam),
+    "Can only predict all but one mixing proportion"
+  )
+  expect_error(
+    stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x),
+             data = data, family = fam_na),
+    "all mixing proportions must be predicted"
+  )
+  
   fam <- mixture(cumulative, sratio)
   scode <- stancode(y ~ x, data, family = fam)
   expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], Intercept_mu1);")
@@ -2194,7 +2217,7 @@ test_that("Stan code for missing value terms works correctly", {
 
 test_that("Stan code for overimputation works correctly", {
   dat = data.frame(y = rnorm(10), x_x = rnorm(10), g = 1:10, z = 1)
-  dat$x[c(1, 3, 9)] <- NA
+  dat$x_x[c(1, 3, 9)] <- NA
   bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(g) ~ 1) + set_rescor(FALSE)
   scode <- stancode(bform, dat, sample_prior = "yes")
   expect_match2(scode, "target += normal_lpdf(Yl_xx | mu_xx, sigma_xx)")
@@ -2433,6 +2456,61 @@ test_that("custom families are handled correctly", {
   )
   expect_match2(scode,
     "target += beta_binomial2_vec_lpmf(Y | mu, tau, vint1, vreal1);"
+  )
+
+  # check grouped thresholds with custom families
+  custom_thres_family <- custom_family(
+    "custom_thres_family",
+    dpar = c("mu", "disc"),
+    links = c("identity", "log"),
+    type = "int",
+    specials = "ordinal",
+    threshold = "flexible"
+  )
+  stan_funs <- "
+    real custom_thres_family_merged_lpmf(int y, real mu, real disc, vector thres, array[] int j) {
+      return y;
+    }
+  "
+  stanvars <- stanvar(scode = stan_funs, block = "functions")
+  dat <- data.frame(
+    response = rep(1:3, times = 2),
+    gr = rep(factor(1:3), each = 2)
+  )
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family,
+    stanvar = stanvars,
+  )
+  expect_match2(
+    scode,
+    "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept, Jthres[n]);"
+  )
+  # check sum-to-zero grouped thresholds
+  custom_thres_family_stz <- custom_thres_family
+  custom_thres_family_stz$threshold <- "sum_to_zero"
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family_stz,
+    stanvar = stanvars,
+  )
+  expect_match2(
+    scode,
+    "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept_stz, Jthres[n]);"
+  )
+  # threaded variants: Jthres must be indexed with the global nn,
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family,
+    stanvar = stanvars,
+    threads = threading(2)
+  )
+  expect_match2(
+    scode,
+    "ptarget += custom_thres_family_merged_lpmf(Y[nn] | mu[n], disc, merged_Intercept, Jthres[nn]);"
   )
 })
 
@@ -2674,6 +2752,8 @@ test_that("Un-normalized Stan code is correct", {
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
 })
+
+
 
 # the new array syntax is now used throughout brms
 # test_that("Canonicalizing Stan code is correct", {

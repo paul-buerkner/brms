@@ -21,9 +21,17 @@ which can be `"random"` (the default), `"probability"`, `"pit"`,
 `"density"`, or `"quantile"`, with supporting arguments `q`, `p`,
 `lower.tail`, `log.p`, and `log` thanks to Aki Vehtari and
 Florence Bockting. (#1857)
+* Predict all mixing proportions of a `mixture` family without a reference
+category via `refcat = NA`, analogous to `refcat = NA` in categorical models.
+Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* `kfold_predict()` supports now families whose predictions are not draws x 
+observations matrices (e.g. categorical models). (#1889)
+* `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 
+models and falls back to residual-based computation for other families. This 
+change may lead to changes in plotting results. (#1815)
 * Avoid the creation of zombie workers when executing `log_lik`
 in parallel thanks to Aki Vehtari and Noa Kallioinen. 
 For now, `log_lik` will use PSOCK clusters if run

@@ -504,14 +504,26 @@ stan_mixture <- function(bterms, prior, threads, normalize, ...) {
     "  real<lower=0,upper=1> theta{1:nmix}{p};  // mixing proportion\n"
   )
   if (length(theta_pred)) {
-    if (length(theta_pred) != nmix - 1) {
-      stop2("Can only predict all but one mixing proportion.")
+    if (isNA(bterms$family$refcat)) {
+      # predict all mixing proportions without a reference category
+      if (length(theta_pred) != nmix) {
+        stop2("When 'refcat = NA', all mixing proportions must be predicted.")
+      }
+      str_add(out$model_def) <- glue(
+        "  real log_sum_exp_theta{p};\n"
+      )
+    } else {
+      # predict all but one mixing proportion; the remaining one is the
+      # reference category with its linear predictor fixed to zero
+      if (length(theta_pred) != nmix - 1) {
+        stop2("Can only predict all but one mixing proportion.")
+      }
+      missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
+      str_add(out$model_def) <- glue(
+        "  vector[N{p}] theta{missing_id}{p} = rep_vector(0.0, N{p});\n",
+        "  real log_sum_exp_theta{p};\n"
+      )
     }
-    missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
-    str_add(out$model_def) <- glue(
-      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0.0, N{p});\n",
-      "  real log_sum_exp_theta{p};\n"
-    )
     sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
     str_add(out$model_comp_mix) <- glue(
       "  for (n in 1:N{p}) {{\n",

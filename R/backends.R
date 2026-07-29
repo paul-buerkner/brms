@@ -767,7 +767,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   names(par_dims) <- model_pars
   par_dims <- lapply(par_dims, function(x) integer(0))
   pdims_num <- ulapply(model_pars, function(x)
-    sum(grepl(paste0("^", x, "\\[.*\\]$"), csfit$metadata$model_params))
+    sum(grepl(paste0("^", x, "\\[.*\\]$"), csfit$metadata$variables))
   )
   par_dims[pdims_num != 0] <-
     csfit$metadata$stan_variable_sizes[model_pars][pdims_num != 0]
