@@ -1117,11 +1117,7 @@ posterior_predict_custom <- function(i, prep, output = "random",
   }
 }
 
-posterior_predict_mixture <- function(i, prep, output = "random",
-                                      p = NULL, ...) {
-  # Capture p here so it is not forwarded via ... into component methods.
-  # Otherwise p partially matches the prep formal before positional
-  # matching runs (prep becomes NULL).
+posterior_predict_mixture <- function(i, prep, output = "random", ...) {
   validate_pp_output_support("mixture", output)
   families <- family_names(prep$family)
   theta <- get_theta(prep, i = i)
@@ -1133,9 +1129,7 @@ posterior_predict_mixture <- function(i, prep, output = "random",
       pp_fun <- paste0("posterior_predict_", families[j])
       pp_fun <- get(pp_fun, asNamespace("brms"))
       tmp_prep <- pseudo_prep_for_mixture(prep, j, draw_ids)
-      out[draw_ids] <- pp_fun(
-        i = i, prep = tmp_prep, output = output, p = p, ...
-      )
+      out[draw_ids] <- pp_fun(i = i, prep = tmp_prep, output = output, ...)
     }
   }
   out
