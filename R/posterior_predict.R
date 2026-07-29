@@ -26,20 +26,68 @@
 #' @param ntrys Parameter used in rejection sampling
 #'   for truncated discrete models only
 #'   (defaults to \code{5}). See Details for more information.
+#' @param output Type of predictive quantity to return. Either
+#'   \code{"random"} (the default), \code{"probability"}, \code{"pit"},
+#'   \code{"density"}, or \code{"quantile"}. See Details for more
+#'   information.
+#' @param q Optional values at which to evaluate probabilities, PIT
+#'   values, or densities. Only used if \code{output} is
+#'   \code{"probability"}, \code{"pit"}, or \code{"density"}.
+#'   Defaults to the observed responses. See Details.
+#' @param p Probabilities at which to evaluate quantiles. Only used
+#'   and required if \code{output = "quantile"}.
+#' @param lower.tail Logical; If \code{TRUE} (default), return
+#'   \eqn{P(X \le x)} or the corresponding lower-tail quantiles.
+#'   Else, return \eqn{P(X > x)} or upper-tail quantiles.
+#'   Only used if \code{output} is \code{"probability"}, \code{"pit"},
+#'   or \code{"quantile"}.
+#' @param log.p Logical; If \code{TRUE}, probabilities are given and
+#'   returned on the log scale. Only used if \code{output} is
+#'   \code{"probability"}, \code{"pit"}, or \code{"quantile"}.
+#' @param log Logical; If \code{TRUE}, densities are returned on the
+#'   log scale. Only used if \code{output = "density"}.
 #' @param cores Number of cores (defaults to \code{1}). On non-Windows systems,
 #'   this argument can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.
 #'
-#' @return An \code{array} of draws. In univariate models,
-#'   the output is as an S x N matrix, where S is the number of posterior
+#' @return An \code{array} of posterior predictive draws or related
+#'   quantities (see argument \code{output}). In univariate models,
+#'   the output is an S x N matrix, where S is the number of posterior
 #'   draws and N is the number of observations. In multivariate models, an
 #'   additional dimension is added to the output which indexes along the
 #'   different response variables.
 #'
-#' @template details-newdata-na
-#' @template details-allow_new_levels
-#' @details For truncated discrete models only: In the absence of any general
+#' @details Besides random draws, related quantities such as CDF or PIT
+#'   values, densities, or quantiles can be returned via argument
+#'   \code{output}. This argument controls which predictive quantity is
+#'   returned for each posterior draw and observation:
+#'   \itemize{
+#'   \item \code{"random"}: Draws from the posterior predictive
+#'     distribution. This is the default and reproduces the historical
+#'     behavior of \code{posterior_predict}.
+#'   \item \code{"probability"}: Values of the posterior predictive CDF
+#'     evaluated at \code{q}.
+#'   \item \code{"pit"}: Probability integral transform (PIT) values
+#'     evaluated at \code{q}. For continuous distributions, this is
+#'     identical to \code{"probability"}. For discrete distributions, a
+#'     randomized PIT is used to avoid point masses at the CDF jumps
+#'     (Czado et al., 2009). See Säilynoja et al. (2022) and
+#'     Tesso and Vehtari (2026) for using PIT values in predictive
+#'     model checking.
+#'   \item \code{"density"}: Values of the posterior predictive density
+#'     or probability mass function evaluated at \code{q}.
+#'   \item \code{"quantile"}: Quantiles of the posterior predictive
+#'     distribution at probabilities \code{p}.
+#'   }
+#'
+#'   If \code{q} is \code{NULL}, the observed response values are used.
+#'   Argument \code{p} must be supplied when
+#'   \code{output = "quantile"}. Not all response families support
+#'   outputs other than \code{"random"} yet; requesting an unsupported
+#'   combination raises an error.
+#'
+#'   For truncated discrete models only: In the absence of any general
 #'   algorithm to sample from truncated discrete distributions, rejection
 #'   sampling is applied in this special case. This means that values are
 #'   sampled until a value lies within the defined truncation boundaries. In
@@ -49,6 +97,23 @@
 #'   invalid, the closest boundary is used, instead. If there are more than a
 #'   few of these pathological cases, a warning will occur suggesting to
 #'   increase argument \code{ntrys}.
+#'
+#' @template details-newdata-na
+#' @template details-allow_new_levels
+#'
+#' @references
+#' Czado, C., Gneiting, T., & Held, L. (2009). Predictive model
+#' assessment for count data. \emph{Biometrics}, 65(4), 1254-1261.
+#' \doi{10.1111/j.1541-0420.2009.01191.x}
+#'
+#' Säilynoja, T., Bürkner, P.-C., & Vehtari, A. (2022). Graphical
+#' test for discrete uniformity and its applications in
+#' goodness-of-fit evaluation and multiple sample comparison.
+#' \emph{Statistics and Computing}, 32, 32.
+#' \doi{10.1007/s11222-022-10090-6}
+#'
+#' Tesso, H., & Vehtari, A. (2026). LOO-PIT predictive model checking.
+#' \emph{arXiv preprint}. \doi{10.48550/arXiv.2603.02928}
 #'
 #' @examples
 #' \dontrun{
@@ -83,7 +148,8 @@ posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL,
   transform = NULL, resp = NULL, negative_rt = FALSE,
   ndraws = NULL, draw_ids = NULL, sort = FALSE, ntrys = 5,
-  cores = NULL, ...
+  output = "random", q = NULL, p = NULL, cores = NULL, lower.tail = TRUE,
+  log.p = FALSE, log = FALSE, ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
@@ -97,7 +163,8 @@ posterior_predict.brmsfit <- function(
   )
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys,
-    negative_rt = negative_rt, cores = cores, summary = FALSE
+    negative_rt = negative_rt, cores = cores, summary = FALSE, output = output,
+    q = q, p = p, lower.tail = lower.tail, log.p = log.p, log = log
   )
 }
 
@@ -119,7 +186,14 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE,
                                        probs = c(0.025, 0.975),
-                                       cores = NULL, ...) {
+                                       cores = NULL, output = "random",
+                                       p = NULL, ...) {
+  # pass p = NULL explicitly to avoid partial arg matching problem with probs
+  output <- match.arg(
+    output, c("random", "probability", "pit", "density", "quantile")
+  )
+  validate_pp_output_support(object$family$fun, output)
+
   summary <- as_one_logical(summary)
   cores <- validate_cores_post_processing(cores)
   if (is.customfamily(object$family)) {
@@ -136,7 +210,8 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object, ...)
+  out <- plapply(seq_len(N), pp_fun, .cores = cores, prep = object,
+    output = output, p = p, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -240,7 +315,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, resp = NULL,
                             negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
                             sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
-                            robust = FALSE, probs = c(0.025, 0.975), ...) {
+                            robust = FALSE, probs = c(0.025, 0.975),
+                            output = "random", ...) {
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
@@ -250,7 +326,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   posterior_predict(
     prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
-    probs = probs
+    probs = probs, output = output
   )
 }
 
@@ -303,72 +379,65 @@ validate_pp_method <- function(method) {
 
 # ------------------- family specific posterior_predict methods ---------------------
 # All posterior_predict_<family> functions have the same arguments structure
-# @param i index of the observatio for which to compute pp values
+# @param i index of the observation for which to compute pp values
 # @param prep A named list returned by prepare_predictions containing
 #   all required data and posterior draws
 # @param ... ignored arguments
 # @param A vector of length prep$ndraws containing draws
 #   from the posterior predictive distribution
-posterior_predict_gaussian <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_gaussian <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "norm",
-    mean = mu, sd = sigma,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "norm", mean = mu, sd = sigma, ...)
 }
 
-posterior_predict_student <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_student <- function(i, prep, output = "random", ...) {
   nu <- get_dpar(prep, "nu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "student_t",
-    df = nu, mu = mu, sigma = sigma,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "student_t", df = nu, mu = mu,
+                            sigma = sigma, ...)
 }
 
-posterior_predict_lognormal <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "lnorm",
-    meanlog = get_dpar(prep, "mu", i = i),
-    sdlog = get_dpar(prep, "sigma", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_lognormal <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "lnorm", meanlog = mu,
+                            sdlog = sigma, ...)
 }
 
-posterior_predict_shifted_lognormal <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "shifted_lnorm",
-    meanlog = get_dpar(prep, "mu", i = i),
-    sdlog = get_dpar(prep, "sigma", i = i),
-    shift = get_dpar(prep, "ndt", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_shifted_lognormal <- function(i, prep, output = "random",
+                                                ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  ndt <- get_dpar(prep, "ndt", i = i)
+  
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "shifted_lnorm", meanlog = mu,
+                            sdlog = sigma, shift = ndt, ...)
 }
 
-posterior_predict_skew_normal <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_skew_normal <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   sigma <- add_sigma_se(sigma, prep, i = i)
   alpha <- get_dpar(prep, "alpha", i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "skew_normal",
-    mu = mu, sigma = sigma, alpha = alpha,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "skew_normal", mu = mu,
+                            sigma = sigma, alpha = alpha, ...)
 }
 
-posterior_predict_gaussian_mv <- function(i, prep, ...) {
+posterior_predict_gaussian_mv <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_mv", output)
   Mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i)
   .predict <- function(s) {
@@ -377,7 +446,8 @@ posterior_predict_gaussian_mv <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_mv <- function(i, prep, ...) {
+posterior_predict_student_mv <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_mv", output)
   nu <- get_dpar(prep, "nu", i = i)
   Mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i)
@@ -387,7 +457,8 @@ posterior_predict_student_mv <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_time <- function(i, prep, ...) {
+posterior_predict_gaussian_time <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_time", output)
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
   Jtime <- prep$ac$Jtime_tg[i, ]
   mu <- as.matrix(get_dpar(prep, "mu", i = obs))
@@ -398,7 +469,8 @@ posterior_predict_gaussian_time <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_time <- function(i, prep, ...) {
+posterior_predict_student_time <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_time", output)
   obs <- with(prep$ac, begin_tg[i]:end_tg[i])
   Jtime <- prep$ac$Jtime_tg[i, ]
   nu <- as.matrix(get_dpar(prep, "nu", i = obs))
@@ -410,7 +482,8 @@ posterior_predict_student_time <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_lagsar <- function(i, prep, ...) {
+posterior_predict_gaussian_lagsar <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_lagsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$lagsar[s] * ac$Msar)
@@ -423,7 +496,8 @@ posterior_predict_gaussian_lagsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_lagsar <- function(i, prep, ...) {
+posterior_predict_student_lagsar <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_lagsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$lagsar[s] * ac$Msar)
@@ -437,7 +511,9 @@ posterior_predict_student_lagsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_errorsar <- function(i, prep, ...) {
+posterior_predict_gaussian_errorsar <- function(i, prep, output = "random",
+                                                ...) {
+  validate_pp_output_support("gaussian_errorsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$errorsar[s] * ac$Msar)
@@ -449,7 +525,9 @@ posterior_predict_gaussian_errorsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_errorsar <- function(i, prep, ...) {
+posterior_predict_student_errorsar <- function(i, prep, output = "random",
+                                               ...) {
+  validate_pp_output_support("student_errorsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
     M_new <- with(prep, diag(nobs) - ac$errorsar[s] * ac$Msar)
@@ -462,7 +540,8 @@ posterior_predict_student_errorsar <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_gaussian_fcor <- function(i, prep, ...) {
+posterior_predict_gaussian_fcor <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("gaussian_fcor", output)
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(prep, "mu"))
   Sigma <- get_cov_matrix_ac(prep)
@@ -472,7 +551,8 @@ posterior_predict_gaussian_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_student_fcor <- function(i, prep, ...) {
+posterior_predict_student_fcor <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("student_fcor", output)
   stopifnot(i == 1)
   nu <- as.matrix(get_dpar(prep, "nu"))
   mu <- as.matrix(get_dpar(prep, "mu"))
@@ -483,186 +563,182 @@ posterior_predict_student_fcor <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_binomial <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "binom",
-    size = prep$data$trials[i],
-    prob = get_dpar(prep, "mu", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
-}
-
-posterior_predict_beta_binomial <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "beta_binomial",
-    size = prep$data$trials[i],
-    mu = get_dpar(prep, "mu", i = i),
-    phi = get_dpar(prep, "phi", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
-}
-
-posterior_predict_bernoulli <- function(i, prep, ...) {
+posterior_predict_binomial <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
-  rbinom(length(mu), size = 1, prob = mu)
+  size <- prep$data$trials[i]
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "binom", prob = mu, size = size, ...
+  )
 }
 
-posterior_predict_poisson <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_beta_binomial <- function(i, prep, output = "random", ...) {
+  size <- prep$data$trials[i]
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "beta_binomial", size = size, mu = mu, phi = phi, ...
+  )
+}
+
+posterior_predict_bernoulli <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "binom", prob = mu, size = 1, ...
+  )
+}
+
+posterior_predict_poisson <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "pois", lambda = mu,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "pois", lambda = mu, ...
   )
 }
 
-posterior_predict_negbinomial <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_negbinomial <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- get_dpar(prep, "shape", i)
   shape <- multiply_dpar_rate_denom(shape, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "nbinom",
-    mu = mu, size = shape,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "nbinom", mu = mu, size = shape, ...
   )
 }
 
-posterior_predict_negbinomial2 <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_negbinomial2 <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   sigma <- get_dpar(prep, "sigma", i)
   shape <- multiply_dpar_rate_denom(1 / sigma, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "nbinom",
-    mu = mu, size = shape,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "nbinom", mu = mu, size = shape, ...
   )
 }
 
-posterior_predict_geometric <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_geometric <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i)
   mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- 1
   shape <- multiply_dpar_rate_denom(shape, prep, i = i)
-  rdiscrete(
-    n = prep$ndraws, dist = "nbinom",
-    mu = mu, size = shape,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "nbinom", mu = mu, size = shape, ...
   )
 }
 
-posterior_predict_discrete_weibull <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "discrete_weibull",
-    mu = get_dpar(prep, "mu", i = i),
-    shape = get_dpar(prep, "shape", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_discrete_weibull <- function(i, prep, output = "random",
+                                               ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  shape <- get_dpar(prep, "shape", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "discrete_weibull", mu = mu, shape = shape, ...
   )
 }
 
-posterior_predict_com_poisson <- function(i, prep, ntrys = 5, ...) {
-  rdiscrete(
-    n = prep$ndraws, dist = "com_poisson",
-    mu = get_dpar(prep, "mu", i = i),
-    shape = get_dpar(prep, "shape", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+posterior_predict_com_poisson <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  shape <- get_dpar(prep, "shape", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "com_poisson", mu = mu, shape = shape, ...
   )
 }
 
-posterior_predict_exponential <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "exp",
-    rate = 1 / get_dpar(prep, "mu", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_exponential <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  rate <- 1 / mu
+  
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "exp", rate = rate, ...)
 }
 
-posterior_predict_gamma <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_gamma <- function(i, prep, output = "random", ...) {
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
-  rcontinuous(
-    n = prep$ndraws, dist = "gamma",
-    shape = shape, scale = scale,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "gamma", shape = shape,
+                            scale = scale, ...)
 }
 
-posterior_predict_weibull <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_weibull <- function(i, prep, output = "random", ...) {
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
-  rcontinuous(
-    n = prep$ndraws, dist = "weibull",
-    shape = shape, scale = scale,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "weibull", shape = shape,
+                            scale = scale, ...)
 }
 
-posterior_predict_frechet <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_frechet <- function(i, prep, output = "random", ...) {
   nu <- get_dpar(prep, "nu", i = i)
-  scale <- get_dpar(prep, "mu", i = i) / gamma(1 - 1 / nu)
-  rcontinuous(
-    n = prep$ndraws, dist = "frechet",
-    scale = scale, shape = nu,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+  mu <- get_dpar(prep, "mu", i = i)
+  scale <- mu / gamma(1 - 1 / nu)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "frechet", scale = scale,
+                            shape = nu, ...)
 }
 
-posterior_predict_gen_extreme_value <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "gen_extreme_value",
-    sigma = get_dpar(prep, "sigma", i = i),
-    xi = get_dpar(prep, "xi", i = i),
-    mu = get_dpar(prep, "mu", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_gen_extreme_value <- function(i, prep, output = "random",
+                                                ...) {
+  sigma <- get_dpar(prep, "sigma", i = i)
+  xi <- get_dpar(prep, "xi", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "gen_extreme_value", sigma = sigma,
+                            xi = xi, mu = mu, ...)
 }
 
-posterior_predict_inverse.gaussian <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "inv_gaussian",
-    mu = get_dpar(prep, "mu", i = i),
-    shape = get_dpar(prep, "shape", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_inverse.gaussian <- function(i, prep, output = "random",
+                                               ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  shape <- get_dpar(prep, "shape", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "inv_gaussian", mu = mu,
+                            shape = shape, ...)
 }
 
-posterior_predict_exgaussian <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "exgaussian",
-    mu = get_dpar(prep, "mu", i = i),
-    sigma = get_dpar(prep, "sigma", i = i),
-    beta = get_dpar(prep, "beta", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_exgaussian <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  beta <- get_dpar(prep, "beta", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "exgaussian", mu = mu, sigma = sigma,
+                            beta = beta, ...)
 }
 
-posterior_predict_wiener <- function(i, prep, negative_rt = FALSE, ntrys = 5,
-                                     ...) {
-  out <- rcontinuous(
-    n = 1, dist = "wiener",
+posterior_predict_wiener <- function(i, prep, output = "random",
+                                     negative_rt = FALSE, ...) {
+  validate_pp_output_support("wiener", output)
+  out <- pp_random(
+    n = 1, distribution = "wiener",
     delta = get_dpar(prep, "mu", i = i),
     alpha = get_dpar(prep, "bs", i = i),
     tau = get_dpar(prep, "ndt", i = i),
     beta = get_dpar(prep, "bias", i = i),
     types = if (negative_rt) c("q", "resp") else "q",
     lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
+    ...
   )
   if (negative_rt) {
     # code lower bound responses as negative RTs
@@ -671,210 +747,276 @@ posterior_predict_wiener <- function(i, prep, negative_rt = FALSE, ntrys = 5,
   out
 }
 
-posterior_predict_beta <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_beta <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  rcontinuous(
-    n = prep$ndraws, dist = "beta",
-    shape1 = mu * phi, shape2 = (1 - mu) * phi,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "beta", shape1 = mu * phi,
+                            shape2 = (1 - mu) * phi, ...)
 }
 
-posterior_predict_xbeta <- function(i, prep, ntrys = 5, ...) {
+posterior_predict_xbeta <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
-  rcontinuous(
-    n = prep$ndraws,
-    dist = "xbeta",
-    mu = mu, phi = phi, nu = kappa,
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "xbeta", mu = mu, phi = phi,
+                            nu = kappa, ...)
 }
 
-posterior_predict_von_mises <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "von_mises",
-    mu = get_dpar(prep, "mu", i = i),
-    kappa = get_dpar(prep, "kappa", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_von_mises <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "von_mises", mu = mu,
+                            kappa = kappa, ...)
 }
 
-posterior_predict_asym_laplace <- function(i, prep, ntrys = 5, ...) {
-  rcontinuous(
-    n = prep$ndraws, dist = "asym_laplace",
-    mu = get_dpar(prep, "mu", i = i),
-    sigma = get_dpar(prep, "sigma", i = i),
-    quantile = get_dpar(prep, "quantile", i = i),
-    lb = prep$data$lb[i], ub = prep$data$ub[i],
-    ntrys = ntrys
-  )
+posterior_predict_asym_laplace <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  quantile <- get_dpar(prep, "quantile", i = i)
+  
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "asym_laplace", mu = mu,
+                            sigma = sigma, quantile = quantile, ...)
 }
 
-posterior_predict_zero_inflated_asym_laplace <- function(i, prep, ntrys = 5,
-                                                         ...) {
+posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
+                                                         output = "random", ...) {
   zi <- get_dpar(prep, "zi", i = i)
-  tmp <- runif(prep$ndraws, 0, 1)
-  ifelse(
-    tmp < zi, 0,
-    rcontinuous(
-      n = prep$ndraws, dist = "asym_laplace",
-      mu = get_dpar(prep, "mu", i = i),
-      sigma = get_dpar(prep, "sigma", i = i),
-      quantile = get_dpar(prep, "quantile", i = i),
-      lb = prep$data$lb[i], ub = prep$data$ub[i],
-      ntrys = ntrys
-    )
-  )
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  quantile <- get_dpar(prep, "quantile", i = i)
+
+  if (output == "random") {
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "asym_laplace", mu = mu,
+                                     sigma = sigma, quantile = quantile, ...)
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0, out)
+  } else {
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "zero_inflated_asym_laplace",
+                                     mu = mu, sigma = sigma,
+                                     quantile = quantile, zi = zi, ...)
+  }
+  out
 }
 
-posterior_predict_cox <- function(i, prep, ...) {
+posterior_predict_cox <- function(i, prep, output = "random", ...) {
   stop2("Cannot sample from the posterior predictive ",
         "distribution for family 'cox'.")
 }
 
-posterior_predict_hurdle_poisson <- function(i, prep, ...) {
-  # hu is the bernoulli hurdle parameter
+posterior_predict_hurdle_poisson <- function(i, prep, output = "random", ...) {
   hu <- get_dpar(prep, "hu", i = i)
   lambda <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  # compare with hu to incorporate the hurdle process
-  tmp <- runif(ndraws, 0, 1)
-  # sample from a truncated poisson distribution
-  # by adjusting lambda and adding 1
-  t = -log(1 - runif(ndraws) * (1 - exp(-lambda)))
-  ifelse(tmp < hu, 0, rpois(ndraws, lambda = lambda - t) + 1)
+  lambda <- multiply_dpar_rate_denom(lambda, prep, i = i)
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "hurdle_poisson", lambda = lambda, hu = hu, ...
+  )
 }
 
-posterior_predict_hurdle_negbinomial <- function(i, prep, ...) {
+posterior_predict_hurdle_negbinomial <- function(i, prep, output = "random",
+                                                 ...) {
   hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  # sample from an approximate(!) truncated negbinomial distribution
-  # by adjusting mu and adding 1
-  t = -log(1 - runif(ndraws) * (1 - exp(-mu)))
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   shape <- get_dpar(prep, "shape", i = i)
-  ifelse(tmp < hu, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "hurdle_negbinomial", mu = mu, shape = shape, hu = hu, ...
+  )
 }
 
-posterior_predict_hurdle_gamma <- function(i, prep, ...) {
+posterior_predict_hurdle_gamma <- function(i, prep, output = "random", ...) {
   hu <- get_dpar(prep, "hu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
   scale <- get_dpar(prep, "mu", i = i) / shape
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < hu, 0, rgamma(ndraws, shape = shape, scale = scale))
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "hurdle_gamma", shape = shape,
+                            scale = scale, hu = hu, ...)
 }
 
-posterior_predict_hurdle_lognormal <- function(i, prep, ...) {
+posterior_predict_hurdle_lognormal <- function(i, prep, output = "random",
+                                               ...) {
   hu <- get_dpar(prep, "hu", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < hu, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "hurdle_lognormal", mu = mu,
+                            sigma = sigma, hu = hu, ...)
 }
 
-posterior_predict_hurdle_cumulative <- function(i, prep, ...) {
-  mu <- get_dpar(prep, "mu", i = i)
-  hu <- get_dpar(prep, "hu", i = i)
-  disc <- get_dpar(prep, "disc", i = i)
-  thres <- subset_thres(prep)
-  nthres <- NCOL(thres)
-  ndraws <- prep$ndraws
-  p <- pordinal(
-    seq_len(nthres + 1L),
-    eta = mu,
-    disc = disc,
-    thres = thres,
-    family = "cumulative",
-    link = prep$family$link
-  )
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(
-    tmp < hu, 0L,
-    first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
+posterior_predict_hurdle_cumulative <- function(i, prep, output = "random",
+                                                ...) {
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "hurdle_cumulative",
+    eta = get_dpar(prep, "mu", i = i),
+    disc = get_dpar(prep, "disc", i = i),
+    hu = get_dpar(prep, "hu", i = i),
+    thres = subset_thres(prep, i),
+    link = prep$family$link,
+    ...
   )
 }
 
-posterior_predict_zero_inflated_beta <- function(i, prep, ...) {
+posterior_predict_zero_inflated_beta <- function(i, prep, output = "random",
+                                                 ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  tmp <- runif(prep$ndraws, 0, 1)
-  ifelse(
-    tmp < zi, 0,
-    rbeta(prep$ndraws, shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  )
+  shape1 <- mu * phi
+  shape2 <- (1 - mu) * phi
+
+  if (output == "random") {
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "beta", shape1 = shape1,
+                                     shape2 = shape2, ...)
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0, out)
+  } else {
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "zero_inflated_beta",
+                                     shape1 = shape1, shape2 = shape2,
+                                     zi = zi, ...)
+  }
+  out
 }
 
-posterior_predict_zero_one_inflated_beta <- function(i, prep, ...) {
-  zoi <- get_dpar(prep, "zoi", i)
-  coi <- get_dpar(prep, "coi", i)
+posterior_predict_zero_one_inflated_beta <- function(i, prep,
+                                                     output = "random", ...) {
+  zoi <- get_dpar(prep, "zoi", i = i)
+  coi <- get_dpar(prep, "coi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  tmp <- runif(prep$ndraws, 0, 1)
-  one_or_zero <- runif(prep$ndraws, 0, 1)
-  ifelse(tmp < zoi,
-    ifelse(one_or_zero < coi, 1, 0),
-    rbeta(prep$ndraws, shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  )
+  shape1 <- mu * phi
+  shape2 <- (1 - mu) * phi
+
+  if (output == "random") {
+    tmp <- runif(prep$ndraws, 0, 1)
+    one_or_zero <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(
+      tmp < zoi,
+      ifelse(one_or_zero < coi, 1, 0),
+      rbeta(prep$ndraws, shape1 = shape1, shape2 = shape2)
+    )
+  } else {
+    out <- predict_continuous_helper(i = i, prep = prep, output = output,
+                                     distribution = "zero_one_inflated_beta",
+                                     shape1 = shape1, shape2 = shape2,
+                                     zoi = zoi, coi = coi, ...)
+  }
+  out
 }
 
-posterior_predict_zero_inflated_poisson <- function(i, prep, ...) {
+posterior_predict_zero_inflated_poisson <- function(i, prep, output = "random",
+                                                    ...) {
   # zi is the bernoulli zero-inflation parameter
   zi <- get_dpar(prep, "zi", i = i)
   lambda <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  # compare with zi to incorporate the zero-inflation process
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < zi, 0L, rpois(ndraws, lambda = lambda))
+  lambda <- multiply_dpar_rate_denom(lambda, prep, i = i)
+
+  if (output == "random") {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output,
+      distribution = "pois", lambda = lambda, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output,
+      distribution = "zero_inflated_poisson", lambda = lambda, zi = zi, ...
+    )
+  }
+  out
 }
 
-posterior_predict_zero_inflated_negbinomial <- function(i, prep, ...) {
+posterior_predict_zero_inflated_negbinomial <- function(i, prep,
+                                                        output = "random", ...) {
   zi <- get_dpar(prep, "zi", i = i)
   mu <- get_dpar(prep, "mu", i = i)
   shape <- get_dpar(prep, "shape", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < zi, 0L, rnbinom(ndraws, mu = mu, size = shape))
+
+  if (output == "random") {
+    out <- predict_discrete_helper(i = i, prep = prep, output = output,
+      distribution = "nbinom", mu = mu, size = shape, ...)
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(i = i, prep = prep, output = output,
+      distribution = "zero_inflated_negbinomial", mu = mu, shape = shape, zi = zi, ...)
+  }
+  out
 }
 
-posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
+posterior_predict_zero_inflated_binomial <- function(i, prep, output = "random",
+                                                     ...) {
   zi <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   prob <- get_dpar(prep, "mu", i = i)
-  ndraws <- prep$ndraws
-  tmp <- runif(ndraws, 0, 1)
-  ifelse(tmp < zi, 0L, rbinom(ndraws, size = trials, prob = prob))
+
+  if (output == "random") {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output,
+      distribution = "binom", size = trials, prob = prob, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output,
+      distribution = "zero_inflated_binomial", size = trials, prob = prob, zi = zi, ...
+    )
+  }
+  out
 }
 
-posterior_predict_zero_inflated_beta_binomial <- function(i, prep, ...) {
+posterior_predict_zero_inflated_beta_binomial <- function(i, prep,
+                                                          output = "random",
+                                                          ...) {
   zi <- get_dpar(prep, "zi", i = i)
   trials <- prep$data$trials[i]
   mu <- get_dpar(prep, "mu", i = i)
   phi <- get_dpar(prep, "phi", i = i)
-  ndraws <- prep$ndraws
-  draws <- rbeta_binomial(ndraws, size = trials, mu = mu, phi = phi)
-  tmp <- runif(ndraws, 0, 1)
-  draws[tmp < zi] <- 0L
-  draws
+
+  if (output == "random") {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output,
+      distribution = "beta_binomial", size = trials, mu = mu, phi = phi, ...
+    )
+    tmp <- runif(prep$ndraws, 0, 1)
+    out <- ifelse(tmp < zi, 0L, out)
+  } else {
+    out <- predict_discrete_helper(
+      i = i, prep = prep, output = output,
+      distribution = "zero_inflated_beta_binomial",
+      size = trials, mu = mu, phi = phi, zi = zi, ...
+    )
+  }
+  out
 }
 
-posterior_predict_categorical <- function(i, prep, ...) {
+posterior_predict_categorical <- function(i, prep, output = "random", ...) {
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
-  p <- pcategorical(seq_len(prep$data$ncat), eta = eta)
-  first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "categorical",
+    eta = eta,
+    ...
+  )
 }
 
-posterior_predict_multinomial <- function(i, prep, ...) {
+posterior_predict_multinomial <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("multinomial", output)
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
@@ -882,7 +1024,9 @@ posterior_predict_multinomial <- function(i, prep, ...) {
   rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
-posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
+posterior_predict_dirichlet_multinomial <- function(i, prep, output = "random",
+                                                    ...) {
+  validate_pp_output_support("dirichlet_multinomial", output)
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
@@ -892,7 +1036,8 @@ posterior_predict_dirichlet_multinomial <- function(i, prep, ...) {
   rblapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
 }
 
-posterior_predict_dirichlet <- function(i, prep, ...) {
+posterior_predict_dirichlet <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("dirichlet", output)
   eta <- get_Mu(prep, i = i)
   eta <- insert_refcat(eta, refcat = prep$refcat)
   phi <- get_dpar(prep, "phi", i = i)
@@ -901,12 +1046,14 @@ posterior_predict_dirichlet <- function(i, prep, ...) {
   rdirichlet(prep$ndraws, alpha = alpha)
 }
 
-posterior_predict_dirichlet2 <- function(i, prep, ...) {
+posterior_predict_dirichlet2 <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("dirichlet2", output)
   mu <- get_Mu(prep, i = i)
   rdirichlet(prep$ndraws, alpha = mu)
 }
 
-posterior_predict_logistic_normal <- function(i, prep, ...) {
+posterior_predict_logistic_normal <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("logistic_normal", output)
   mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i, cor_name = "lncor")
   .predict <- function(s) {
@@ -916,41 +1063,62 @@ posterior_predict_logistic_normal <- function(i, prep, ...) {
   rblapply(seq_len(prep$ndraws), .predict)
 }
 
-posterior_predict_cumulative <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+posterior_predict_cumulative <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_sratio <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+posterior_predict_sratio <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_cratio <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+posterior_predict_cratio <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_acat <- function(i, prep, ...) {
-  posterior_predict_ordinal(i = i, prep = prep)
+posterior_predict_acat <- function(i, prep, output = "random", ...) {
+  posterior_predict_ordinal(i = i, prep = prep, output = output, ...)
 }
 
-posterior_predict_ordinal <- function(i, prep, ...) {
+posterior_predict_ordinal <- function(i, prep, output = "random", ...) {
   thres <- subset_thres(prep, i)
-  nthres <- NCOL(thres)
-  p <- pordinal(
-    seq_len(nthres + 1),
-    eta = get_dpar(prep, "mu", i = i),
-    disc = get_dpar(prep, "disc", i = i),
+  eta <- get_dpar(prep, "mu", i = i)
+  disc <- get_dpar(prep, "disc", i = i)
+
+  predict_discrete_helper(
+    i = i, prep = prep, output = output,
+    distribution = "ordinal",
+    eta = eta,
+    disc = disc,
     thres = thres,
     family = prep$family$family,
-    link = prep$family$link
+    link = prep$family$link,
+    ...
   )
-  first_greater(p, target = runif(prep$ndraws, min = 0, max = 1))
 }
 
-posterior_predict_custom <- function(i, prep, ...) {
-  custom_family_method(prep$family, "posterior_predict")(i, prep, ...)
+posterior_predict_custom <- function(i, prep, output = "random",
+                                     p = NULL, ...) {
+  # Capture p here so it is not forwarded via ... into custom methods.
+  # Otherwise p partially matches the prep formal before positional
+  # matching runs (prep becomes NULL).
+  fun <- custom_family_method(prep$family, "posterior_predict")
+  args <- names(formals(fun))
+  if ("output" %in% args) {
+    fun(i = i, prep = prep, output = output, p = p, ...)
+  } else {
+    # older custom methods may not accept output yet
+    if (!identical(output, "random")) {
+      stop2(
+        "Output '", output, "' is not yet implemented for this custom family. ",
+        "Only output = 'random' is currently supported."
+      )
+    }
+    fun(i = i, prep = prep, ...)
+  }
 }
 
-posterior_predict_mixture <- function(i, prep, ...) {
+posterior_predict_mixture <- function(i, prep, output = "random", ...) {
+  validate_pp_output_support("mixture", output)
   families <- family_names(prep$family)
   theta <- get_theta(prep, i = i)
   smix <- sample_mixture_ids(theta)
@@ -961,33 +1129,73 @@ posterior_predict_mixture <- function(i, prep, ...) {
       pp_fun <- paste0("posterior_predict_", families[j])
       pp_fun <- get(pp_fun, asNamespace("brms"))
       tmp_prep <- pseudo_prep_for_mixture(prep, j, draw_ids)
-      out[draw_ids] <- pp_fun(i, tmp_prep, ...)
+      out[draw_ids] <- pp_fun(i = i, prep = tmp_prep, output = output, ...)
     }
   }
   out
 }
 
 # ------------ predict helper-functions ----------------------
+
+# families that currently only support output = "random"
+# (multivariate, time-series, compositional, and diffusion models)
+pp_output_random_only_families <- c(
+  "gaussian_mv", "student_mv",
+  "gaussian_time", "student_time",
+  "gaussian_lagsar", "student_lagsar",
+  "gaussian_errorsar", "student_errorsar",
+  "gaussian_fcor", "student_fcor",
+  "wiener",
+  "multinomial", "dirichlet_multinomial",
+  "dirichlet", "dirichlet2", "logistic_normal",
+  "mixture"
+)
+
+# error if a non-random output is requested for an unsupported family
+# @param family_fun name of the family method suffix (object$family$fun)
+# @param output validated output type
+# @noRd
+validate_pp_output_support <- function(family_fun, output) {
+  if (output == "random") {
+    return(invisible(NULL))
+  }
+  family_fun <- as_one_character(family_fun)
+  if (family_fun %in% pp_output_random_only_families) {
+    stop2(
+      "Output '", output, "' is not yet implemented for family '",
+      family_fun, "'. Only output = 'random' is currently supported."
+    )
+  }
+  invisible(NULL)
+}
+
 # random numbers from (possibly truncated) continuous distributions
 # @param n number of random values to generate
-# @param dist name of a distribution for which the functions
-#   p<dist>, q<dist>, and r<dist> are available
-# @param ... additional arguments passed to the distribution functions
+# @param distribution name of a distribution for which the functions
+#   p<distribution>, q<distribution>, and r<distribution> are available
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
 # @param ntrys number of trys in rejection sampling for truncated models
-# @return vector of random values prep from the distribution
-rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
-  args <- list(...)
+# @param ... additional arguments passed to the distribution functions
+# @return vector of random values drawn from the distribution
+# @noRd
+pp_random <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
+  # drop args that are only relevant for CDF/density/quantile output
+  args <- validate_distribution_args(distribution, ...)
+  args[c("log.p", "lower.tail", "log", "p")] <- NULL
+
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
-    rdist <- paste0("r", dist)
+    rdist <- paste0("r", distribution)
     out <- do_call(rdist, c(list(n), args))
   } else {
     # sample from truncated distribution
-    pdist <- paste0("p", dist)
-    qdist <- paste0("q", dist)
+    pdist <- paste0("p", distribution)
+    qdist <- paste0("q", distribution)
     if (!exists(pdist, mode = "function") || !exists(qdist, mode = "function")) {
       # use rejection sampling as CDF or quantile function are not available
-      out <- rdiscrete(n, dist, ..., lb = lb, ub = ub, ntrys = ntrys)
+      out <- pp_random_discrete(n = n, distribution = distribution,
+                                 lb = lb, ub = ub, ntrys = ntrys, ...)
     } else {
       if (is.null(lb)) lb <- -Inf
       if (is.null(ub)) ub <- Inf
@@ -1005,16 +1213,19 @@ rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
 # random numbers from (possibly truncated) discrete distributions
 # currently rejection sampling is used for truncated distributions
 # @param n number of random values to generate
-# @param dist name of a distribution for which the functions
-#   p<dist>, q<dist>, and r<dist> are available
-# @param ... additional arguments passed to the distribution functions
+# @param distribution name of a distribution for which the functions
+#   p<distribution>, q<distribution>, and r<distribution> are available
 # @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
 # @param ntrys number of trys in rejection sampling for truncated models
-# @return a vector of random values draws from the distribution
-rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
-  args <- list(...)
-  rdist <- paste0("r", dist)
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of random values drawn from the distribution
+# @noRd
+pp_random_discrete <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
+  # drop args that are only relevant for CDF/density/quantile output
+  args <- validate_distribution_args(distribution, ...)
+  args[c("log.p", "lower.tail", "log", "p")] <- NULL
+  rdist <- paste0("r", distribution)
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     out <- do_call(rdist, c(list(n), args))
@@ -1084,4 +1295,240 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
     )
   }
   round(x)
+}
+
+# predict random numbers, CDF/PIT, density, or quantiles from
+# continuous distributions
+# @param i index of the observation for which to compute pp values
+# @param prep A named list returned by prepare_predictions containing
+#   all required data and posterior draws
+# @param output "random", "probability", "pit", "density", or "quantile"
+# @param distribution name of the distribution
+# @param ntrys number of trys in rejection sampling for truncated models
+# @param q optional custom quantile value; if NULL, the default is
+#   prep$data$Y[i]
+# @param p optional custom probability value for quantile output
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of draws
+predict_continuous_helper <- function(i, prep, output, distribution, ntrys = 5,
+                                      q = NULL, p = NULL, ...) {
+  lb <- prep$data$lb[i]
+  ub <- prep$data$ub[i]
+  if (output %in% c("probability", "pit", "density") && is.null(q)) q <- prep$data$Y[i]
+  if (output == "quantile" && is.null(p)) {
+    stop2("Argument 'p' must be specified when output = 'quantile'.")
+  }
+  # for continuous distributions, probability and PIT are the same
+  if (output == "probability") {
+    output <- "pit"
+  }
+
+  switch(output,
+    "random" = {
+      pp_random(n = prep$ndraws, distribution = distribution,
+                lb = lb, ub = ub, ntrys = ntrys, ...)
+    },
+    "pit" = {
+      pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
+             randomized = FALSE, ...)
+    },
+    "density" = {
+      pp_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+    },
+    "quantile" = {
+      pp_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
+    }
+  )
+}
+
+# predict random numbers, CDF/PIT, density, or quantiles from discrete distributions
+# @param i index of the observation for which to compute pp values
+# @param prep A named list returned by prepare_predictions containing
+#   all required data and posterior draws
+# @param output "random", "probability", "pit", "density", or "quantile"
+# @param distribution name of the distribution
+# @param ntrys number of trys in rejection sampling for truncated models
+# @param q optional custom quantile value; if NULL, the default is
+#   prep$data$Y[i]
+# @param p optional custom probability value for quantile output
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of draws
+predict_discrete_helper <- function(i, prep, output, distribution, ntrys = 5,
+                                    q = NULL, p = NULL, ...) {
+  lb <- prep$data$lb[i]
+  ub <- prep$data$ub[i]
+  if (output %in% c("probability", "pit", "density") && is.null(q)) q <- prep$data$Y[i]
+  if (output == "quantile" && is.null(p)) {
+    stop2("Argument 'p' must be specified when output = 'quantile'.")
+  }
+
+  switch(output,
+    "random" = {
+      pp_random_discrete(n = prep$ndraws, distribution = distribution,
+                         lb = lb, ub = ub, ntrys = ntrys, ...)
+    },
+    "probability" = {
+      pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
+             randomized = FALSE, ...)
+    },
+    "pit" = {
+      pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
+             randomized = TRUE, ...)
+    },
+    "density" = {
+      pp_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+    },
+    "quantile" = {
+      pp_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
+    }
+  )
+}
+
+# compute cdf dependent on whether the distribution is truncated or not
+# and whether to use the randomized PIT
+# @param q quantile value(s) for which to compute the CDF
+# @param distribution name of a distribution for which the functions
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param randomized logical indicating whether to use the randomized PIT
+# @param lower.tail logical; if TRUE (default) probabilities are P(X < x)
+# otherwise, P(X > x)
+# @param log.p logical; if TRUE probabilities p are given as log(p)
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of probability values
+# @noRd
+pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
+                   log.p = FALSE, ...) {
+  randomized <- as_one_logical(randomized)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
+  pdist <- paste0("p", distribution)
+  # prepare computation of (non-)truncated cdf
+  F_internal <- function(q) {
+    if (is.null(lb) && is.null(ub)) {
+      out <- do_call(pdist, c(list(q), args))
+    } else {
+      denom <- do_call(pdist, c(list(ub), args)) - do_call(pdist, c(list(lb), args))
+      if (any(denom == 0)) {
+        stop2("Invalid truncation bounds: no probability mass ",
+              "between 'lb' and 'ub'. Please check that the ",
+              "truncation interval is valid for the response ",
+              "distribution.")
+      }
+      out <- (do_call(pdist, c(list(q), args)) - do_call(pdist, c(list(lb), args))) / denom
+    }
+    out
+  }
+  # randomized PIT specifically for discrete data (see, e.g.,
+  # Czado, C., Gneiting, T., Held, L.: Predictive model
+  # assessment for count data. Biometrics 65(4), 1254–1261 (2009).)
+  # F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
+  if (randomized) {
+    v <- runif(length(q))
+    out <- F_internal(q - 1) + v * (F_internal(q) - F_internal(q - 1))
+  } else {
+    out <- F_internal(q)
+  }
+  if (!lower.tail) out <- 1 - out
+  if (log.p) out <- log(out)
+  out
+}
+
+# compute density dependent on whether the distribution is truncated or not
+# @param q quantile value(s) for which to compute the density
+# @param distribution name of a distribution
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param log logical; if TRUE densities are given as log(d)
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of density values
+# @noRd
+pp_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
+  dargs <- validate_distribution_args(distribution, fun_prefix = "d", ...)
+  pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
+  ddist <- paste0("d", distribution)
+  pdist <- paste0("p", distribution)
+  if (is.null(lb) && is.null(ub)) {
+    return(do_call(ddist, c(list(q), dargs, log = log)))
+  }
+  if (is.null(lb)) {
+    cdf_lb <- rep(0, length(q))
+  } else {
+    cdf_lb <- do_call(pdist, c(list(lb), pargs))
+  }
+  if (is.null(ub)) {
+    cdf_ub <- rep(1, length(q))
+  } else {
+    cdf_ub <- do_call(pdist, c(list(ub), pargs))
+  }
+  denom <- cdf_ub - cdf_lb
+  if (any(denom == 0)) {
+    stop2("Invalid truncation bounds: no probability mass ",
+          "between 'lb' and 'ub'. Please check that the ",
+          "truncation interval is valid for the response ",
+          "distribution.")
+  }
+  dens <- do_call(ddist, c(list(q), dargs, log = FALSE)) / denom
+  if (!is.null(lb)) dens[q < lb] <- 0
+  if (!is.null(ub)) dens[q > ub] <- 0
+  if (isTRUE(log)) dens <- log(dens)
+  dens
+}
+
+# compute quantile dependent on whether the distribution is truncated or not
+# @param p probability value(s) for which to compute the quantile
+# @param distribution name of a distribution
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param lower.tail logical; if TRUE (default) probabilities are P(X < x)
+# otherwise, P(X > x)
+# @param log.p logical; if TRUE probabilities p are given as log(p)
+# @param ... additional arguments passed to the distribution functions
+# @return a vector of quantile values
+# @noRd
+pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
+                        log.p = FALSE, ...) {
+  qargs <- validate_distribution_args(distribution, fun_prefix = "q", ...)
+  pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
+  qdist <- paste0("q", distribution)
+  pdist <- paste0("p", distribution)
+  if (is.null(lb) && is.null(ub)) {
+    return(do_call(
+      qdist, c(list(p), qargs, lower.tail = lower.tail, log.p = log.p)
+    ))
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  if (is.null(lb)) {
+    cdf_lb <- rep(0, length(p))
+  } else {
+    cdf_lb <- do_call(pdist, c(list(lb), pargs))
+  }
+  if (is.null(ub)) {
+    cdf_ub <- rep(1, length(p))
+  } else {
+    cdf_ub <- do_call(pdist, c(list(ub), pargs))
+  }
+  denom <- cdf_ub - cdf_lb
+  if (any(denom == 0)) {
+    stop2("Invalid truncation bounds: no probability mass ",
+          "between 'lb' and 'ub'. Please check that the ",
+          "truncation interval is valid for the response ",
+          "distribution.")
+  }
+  p_internal <- p * denom + cdf_lb
+  do_call(qdist, c(list(p_internal), qargs))
+}
+
+# ensure that only arguments that are accepted by distribution functions are passed
+validate_distribution_args <- function(distribution, fun_prefix = "p", ...) {
+  args <- list(...)
+  fun_prefix <- as_one_character(fun_prefix)
+  rdist <- paste0(fun_prefix, distribution)
+  rdist_fun <- match.fun(rdist)
+  rdist_formals <- names(formals(rdist_fun))
+  if (!is.null(rdist_formals) && !("..." %in% rdist_formals)) {
+    args <- args[names(args) %in% rdist_formals]
+  }
+  args
 }

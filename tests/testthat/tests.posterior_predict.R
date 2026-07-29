@@ -439,3 +439,253 @@ test_that("posterior_predict_custom runs without errors", {
   }
   expect_equal(length(brms:::posterior_predict_custom(sample(1:nobs, 1), prep)), ns)
 })
+
+test_that("posterior_predict_custom does not let p partially match prep", {
+  # Regression: p = NULL forwarded via ... used to partially match the prep
+  # formal of old-style custom methods (function(i, prep, ...)), so prep
+  # became NULL before positional matching ran.
+  ns <- 15
+  nobs <- 8
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  prep$dpars <- list(
+    mu = matrix(rbeta(ns * nobs, 1, 1), ncol = nobs)
+  )
+  prep$data <- list(trials = rep(1, nobs))
+  prep$family <- custom_family(
+    "beta_binomial2", dpars = c("mu", "tau"),
+    links = c("logit", "log"), lb = c(NA, 0),
+    type = "int", vars = "trials[n]"
+  )
+  posterior_predict_beta_binomial2 <- function(i, prep, ...) {
+    stopifnot(is.brmsprep(prep))
+    mu <- prep$dpars$mu[, i]
+    rbinom(prep$ndraws, size = prep$data$trials[i], prob = mu)
+  }
+  out <- brms:::posterior_predict_custom(
+    1L, prep, output = "random", p = NULL, ntrys = 5
+  )
+  expect_equal(length(out), ns)
+})
+
+test_that("posterior_predict_mixture does not let p partially match prep", {
+  # Regression: p = NULL forwarded via ... used to partially match the prep
+  # formal of component methods when called as pp_fun(i, tmp_prep, ...).
+  fit <- brms:::rename_pars(brms:::brmsfit_example5)
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4))
+  draws <- posterior_predict(fit, ndraws = 10)
+  expect_equal(dim(draws), c(10, nobs(fit)))
+})
+
+# ---------------------------------------------------------------------------
+# Tests for the posterior_predict() output API
+# (probability / pit / density / quantile, plus pp_cdf helpers)
+# ---------------------------------------------------------------------------
+
+test_that("pp_cdf returns correct CDF for non-truncated distributions", {
+  # Non-truncated, non-randomized: raw CDF F(q)
+  q <- 3
+  out <- brms:::pp_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL,
+  randomized = FALSE, lambda = 5)
+  expect_equal(out, ppois(q, lambda = 5))
+
+  q <- 2
+  out <- brms:::pp_cdf(q = q, distribution = "binom", lb = NULL, ub = NULL,
+  randomized = FALSE, size = 10, prob = 0.5)
+  expect_equal(out, pbinom(q, size = 10, prob = 0.5))
+})
+
+test_that("pp_cdf with randomized = TRUE returns value in [F(q-1), F(q)]", {
+  # Randomized PIT: F(y-1) + V * [F(y) - F(y-1)] with V ~ Unif(0,1)
+  set.seed(42)
+  q <- 5
+  Fq <- ppois(q, lambda = 3)
+  Fqm1 <- ppois(q - 1, lambda = 3)
+
+  out <- brms:::pp_cdf(q = q, distribution = "pois", lb = NULL, ub = NULL, 
+                            randomized = TRUE, lambda = 3)
+  expect_true(out >= Fqm1)
+  expect_true(out <= Fq)
+})
+
+test_that("pp_cdf with randomized = TRUE and truncation returns value in 
+valid range", {
+  set.seed(123)
+  q <- 4
+  lb <- 2
+  ub <- 7
+  denom <- ppois(ub, lambda = 5) - ppois(lb, lambda = 5)
+  Fq <- (ppois(q, lambda = 5) - ppois(lb, lambda = 5)) / denom
+  Fqm1 <- (ppois(q - 1, lambda = 5) - ppois(lb, lambda = 5)) / denom
+
+  out <- brms:::pp_cdf(q = q, distribution = "pois", lb = lb, ub = ub, 
+                            randomized = TRUE, lambda = 5)
+  expect_true(out >= Fqm1)
+  expect_true(out <= Fq)
+  expect_true(out >= 0 && out <= 1)
+})
+
+test_that("pp_cdf errors when truncation bounds yield a zero denominator", {
+  expect_error(
+    brms:::pp_cdf(
+      q = 3, distribution = "pois", lb = 1, ub = 1,
+      randomized = FALSE, lambda = 2
+    ),
+    "Invalid truncation bounds"
+  )
+})
+
+
+test_that("pp_cdf respects lower.tail and log.p", {
+  q <- 0.4
+  mu <- 0.1
+  sd <- 1.7
+
+  base <- brms:::pp_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = TRUE, log.p = FALSE,
+    mean = mu, sd = sd
+  )
+
+  upper <- brms:::pp_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = FALSE, log.p = FALSE,
+    mean = mu, sd = sd
+  )
+
+  log_base <- brms:::pp_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = TRUE, log.p = TRUE,
+    mean = mu, sd = sd
+  )
+
+  log_upper <- brms:::pp_cdf(
+    q = q, distribution = "norm", lb = NULL, ub = NULL, randomized = FALSE,
+    lower.tail = FALSE, log.p = TRUE,
+    mean = mu, sd = sd
+  )
+
+  expected <- pnorm(q, mean = mu, sd = sd)
+
+  expect_equal(base, expected)
+  expect_equal(upper, 1 - expected)
+  expect_equal(log_base, log(expected))
+  expect_equal(log_upper, log(1 - expected))
+})
+
+test_that("posterior_predict forwards lower.tail and log.p correctly", {
+  fit <- brms:::rename_pars(brms:::brmsfit_example3)
+  q_ref <- 15
+
+  p_lower <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = TRUE, log.p = FALSE)
+
+  p_upper <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = FALSE, log.p = FALSE)
+
+  log_lower <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = TRUE, log.p = TRUE)
+
+  log_upper <- posterior_predict(fit, output = "probability", q = q_ref,
+    lower.tail = FALSE, log.p = TRUE)
+  
+  expect_equal(dim(p_lower), dim(p_upper))
+  expect_equal(p_upper, 1 - p_lower)
+  expect_equal(log_lower, log(p_lower))
+  expect_equal(log_upper, log(p_upper))
+})
+
+test_that("posterior_predict forwards p for quantile output without matching probs", {
+  # Regression: argument p used to be partially matched to probs in
+  # posterior_predict.brmsprep, so output = "quantile" always saw p = NULL.
+  fit <- brms:::rename_pars(brms:::brmsfit_example3)
+
+  expect_error(
+    posterior_predict(fit, output = "quantile", ndraws = 5),
+    "p' must be specified when output = 'quantile'"
+  )
+
+  qs <- posterior_predict(fit, output = "quantile", p = 0.5, ndraws = 5)
+  expect_equal(dim(qs), c(5, nobs(fit)))
+  expect_true(all(is.finite(qs)))
+
+  # same draws: lower quantile should not exceed upper quantile
+  draw_ids <- seq_len(5)
+  qs_lo <- posterior_predict(
+    fit, output = "quantile", p = 0.25, draw_ids = draw_ids
+  )
+  qs_hi <- posterior_predict(
+    fit, output = "quantile", p = 0.75, draw_ids = draw_ids
+  )
+  expect_true(all(qs_lo <= qs_hi))
+})
+
+
+test_that("posterior_predict errors for unsupported non-random outputs", {
+  # helper rejects random-only families; random and supported families are allowed
+  expect_error(
+    brms:::validate_pp_output_support("wiener", "probability"),
+    "not yet implemented for family 'wiener'"
+  )
+  expect_silent(brms:::validate_pp_output_support("wiener", "random"))
+  expect_silent(brms:::validate_pp_output_support("gaussian", "probability"))
+
+  # public path errors before silently returning random draws
+  prep <- structure(
+    list(
+      family = list(fun = "wiener", family = "wiener"),
+      ndraws = 2, nobs = 1,
+      dpars = list(), data = list()
+    ),
+    class = "brmsprep"
+  )
+  expect_error(
+    posterior_predict(prep, output = "probability"),
+    "not yet implemented for family 'wiener'"
+  )
+})
+
+test_that("posterior_predict outputs match analytical d/p/q for registered families", {
+  entries <- pp_test_entries()
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_output_matches_dist(entry, i = 1L)
+  }
+})
+
+test_that("PP PIT contract: continuous identity, discrete randomized", {
+  entries <- pp_test_entries()
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_pit_contract(entry, i = 1L, seed = 99)
+  }
+})
+
+test_that("PP truncation matches truncated d/p/q formulas", {
+  entries <- pp_test_entries(truncation = TRUE)
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_truncation(entry, i = 1L)
+  }
+})
+
+test_that("PP respects lower.tail, log.p, and log flags", {
+  entries <- pp_test_entries()
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    expect_pp_log_tail_flags(entry, i = 1L)
+  }
+})
+
+test_that("randomized PIT is reproducible with the same seed", {
+  entry <- dist_registry_get("pois")[[1]]
+  prep <- entry$prep_builder(ns = 50, nobs = 3, seed = 1)
+  set.seed(123)
+  pit1 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
+  set.seed(123)
+  pit2 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
+  expect_equal(pit1, pit2)
+  set.seed(456)
+  pit3 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
+  expect_true(any(pit1 != pit3))
+})
