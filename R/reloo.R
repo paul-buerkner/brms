@@ -65,6 +65,10 @@ reloo.brmsfit <- function(x, loo = NULL, k_threshold = 0.7, newdata = NULL,
                           resp = NULL, check = TRUE, recompile = NULL,
                           future_args = list(), ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
+  if (has_mix_groups(x$family)) {
+    stop2("'reloo' is not supported for group-level mixture models ",
+          "(specified via 'gr' in mixture()).")
+  }
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"

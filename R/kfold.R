@@ -150,6 +150,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
                           group = NULL, joint = FALSE, compare = TRUE,
                           resp = NULL, model_names = NULL, save_fits = FALSE,
                           recompile = NULL, future_args = list()) {
+  if (has_mix_groups(x$family)) {
+    # the fold and observation bookkeeping assumes one log_lik column per
+    # observation, while group-level mixtures return one column per group
+    stop2("'kfold' is not supported for group-level mixture ",
+          "models (specified via 'gr' in mixture()).")
+  }
   args <- split_dots(x, ..., model_names = model_names)
   if (!"use_stored" %in% names(args)) {
     further_arg_names <- c(

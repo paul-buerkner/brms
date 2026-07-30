@@ -156,6 +156,12 @@ log_sum_exp <- function(x, y) {
   max + log(exp(x - max) + exp(y - max))
 }
 
+# stable row-wise log(sum(exp(x))) of a matrix
+# (or of an array slice coercible to a matrix)
+log_sum_exp_rows <- function(x) {
+  matrixStats::rowLogSumExps(matrix(x, nrow = dim(x)[1]))
+}
+
 log_mean_exp <- function(x) {
   max_x <- max(x)
   max_x + log(sum(exp(x - max_x))) - log(length(x))

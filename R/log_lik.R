@@ -63,8 +63,10 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     stopifnot(combine)
     log_lik <- log_lik_pointwise
+    # for group-level mixtures, the likelihood is pointwise per group
+    N <- if (!is.null(prep$mixgr)) prep$mixgr$ngroups else choose_N(prep)
     # names need to be 'data' and 'draws' as per ?loo::loo.function
-    attr(log_lik, "data") <- data.frame(i = seq_len(choose_N(prep)))
+    attr(log_lik, "data") <- data.frame(i = seq_len(N))
     attr(log_lik, "draws") <- prep
   } else {
     log_lik <- log_lik(prep, combine = combine, cores = cores)
@@ -123,6 +125,11 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
   for (dp in names(object$dpars)) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
+  if (!is.null(object$mixgr)) {
+    # group-level (over-group) mixture: the likelihood factorizes over groups
+    # rather than observations, hence return one column per group
+    return(log_lik_mixture_grouped(object))
+  }
   N <- choose_N(object)
   out <- plapply(seq_len(N), log_lik_fun, .cores = cores, prep = object)
   out <- do_call(cbind, out)
@@ -140,6 +147,9 @@ log_lik_pointwise <- function(data_i, draws, ...) {
   if (is.mvbrmsprep(draws) && !length(draws$mvpars$rescor)) {
     out <- lapply(draws$resps, log_lik_pointwise, i = i)
     out <- Reduce("+", out)
+  } else if (!is.null(draws$mixgr)) {
+    # group-level mixture: 'i' indexes groups rather than observations
+    out <- log_lik_mixture_grouped_i(i, draws)
   } else {
     log_lik_fun <- paste0("log_lik_", draws$family$fun)
     log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
@@ -994,6 +1004,63 @@ log_lik_mixture <- function(i, prep) {
     out <- log(rowSums(out))
   }
   log_lik_weight(out, i = i, prep = prep)
+}
+
+# per-group, per-component log-weights of a group-level mixture
+# computes log(theta_k^g) + sum_{i in group g} log f_k(y_i)
+# @return a draws x ngroups x components array
+mixture_group_ps <- function(prep) {
+  families <- family_names(prep$family)
+  J <- prep$mixgr$J
+  ngroups <- prep$mixgr$ngroups
+  ndraws <- prep$ndraws
+  nmix <- length(families)
+  # accumulate each component's per-observation log density within its group
+  ps <- array(0, dim = c(ndraws, ngroups, nmix))
+  for (k in seq_len(nmix)) {
+    log_lik_fun <- get(paste0("log_lik_", families[k]), asNamespace("brms"))
+    tmp_prep <- pseudo_prep_for_mixture(prep, k)
+    for (i in seq_len(prep$nobs)) {
+      ps[, J[i], k] <- ps[, J[i], k] + log_lik_fun(i, tmp_prep)
+    }
+  }
+  # add the (group-constant) log mixing weights
+  for (g in seq_len(ngroups)) {
+    ps[, g, ] <- ps[, g, ] + log(get_theta(prep, i = prep$mixgr$rep[g]))
+  }
+  ps
+}
+
+# log-likelihood of a group-level (over-group) mixture model
+# the mixture is marginalized once per group, hence one column per group is
+# returned, enabling leave-one-group-out cross-validation via loo/waic
+# @return a draws x ngroups matrix
+log_lik_mixture_grouped <- function(prep) {
+  ps <- mixture_group_ps(prep)
+  ngroups <- dim(ps)[2]
+  out <- matrix(NA_real_, nrow = dim(ps)[1], ncol = ngroups)
+  for (g in seq_len(ngroups)) {
+    out[, g] <- log_sum_exp_rows(ps[, g, , drop = FALSE])
+  }
+  out
+}
+
+# log-likelihood of a single group of a group-level mixture model
+# used for pointwise evaluation in loo and waic
+# @param g index of the group for which to compute log-lik values
+# @return a vector of length prep$ndraws
+log_lik_mixture_grouped_i <- function(g, prep) {
+  families <- family_names(prep$family)
+  obs <- which(prep$mixgr$J == g)
+  ps <- log(get_theta(prep, i = prep$mixgr$rep[g]))
+  for (k in seq_along(families)) {
+    log_lik_fun <- get(paste0("log_lik_", families[k]), asNamespace("brms"))
+    tmp_prep <- pseudo_prep_for_mixture(prep, k)
+    for (i in obs) {
+      ps[, k] <- ps[, k] + log_lik_fun(i, tmp_prep)
+    }
+  }
+  log_sum_exp_rows(ps)
 }
 
 # ----------- log_lik helper-functions -----------

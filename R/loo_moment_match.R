@@ -61,6 +61,10 @@ loo_moment_match.brmsfit <- function(x, loo = NULL, k_threshold = 0.7,
                                      newdata = NULL, resp = NULL, check = TRUE,
                                      recompile = FALSE, ...) {
   stopifnot(is.brmsfit(x))
+  if (has_mix_groups(x$family)) {
+    stop2("'loo_moment_match' is not supported for group-level mixture ",
+          "models (specified via 'gr' in mixture()).")
+  }
   loo <- loo %||% x$criteria[["loo"]]
   if (is.null(loo)) {
     stop2("No 'loo' object was provided and none is stored within the model.")

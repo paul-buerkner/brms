@@ -2,6 +2,10 @@
 
 ### New Features
 
+* Compute `mixture` models over the levels of a grouping variable (e.g.
+participants) rather than over individual observations via the new `gr`
+argument of `mixture`, so that whole groups are assigned to the same mixture
+component. (#1659)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

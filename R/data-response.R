@@ -434,6 +434,37 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     }
     c(out) <- vint
   }
+  if (has_mix_groups(x$family)) {
+    # group-level (over-group) mixture: the whole group belongs to one component
+    if (has_ad_terms(x, c("cens", "trunc", "weights"))) {
+      stop2("Group-level mixtures (via 'gr' in mixture()) are not supported ",
+            "in combination with 'cens', 'trunc', or 'weights'.")
+    }
+    # group indices are defined by the data at hand; they only relate
+    # observations within one data set to each other, so new data may
+    # contain a subset of the original groups or even new groups
+    grmix <- factor(eval2(get_mix_var(x$family), data))
+    Jmix <- as.integer(grmix)
+    out$Ngrmix <- nlevels(grmix)
+    out$Jmix <- as.array(Jmix)
+    # predicted mixing proportions must be constant within each group
+    pred_theta <- any(dpar_class(names(x$dpars)) %in% "theta")
+    if (pred_theta) {
+      theta_dpars <- names(x$dpars)[dpar_class(names(x$dpars)) %in% "theta"]
+      theta_vars <- unique(ulapply(x$dpars[theta_dpars], function(p)
+        all_vars(p$allvars)))
+      for (v in theta_vars) {
+        vals <- eval2(v, data)
+        n_unique <- tapply(vals, Jmix, function(z) length(unique(z)))
+        if (any(n_unique > 1L)) {
+          stop2("Predicted mixing proportions ('theta') must be constant ",
+                "within each group defined by 'gr' in mixture().")
+        }
+      }
+      # one representative observation per group to read theta from
+      out$Jmixrep <- as.array(match(seq_len(out$Ngrmix), Jmix))
+    }
+  }
   if (length(out)) {
     resp <- usc(combine_prefix(x))
     out <- setNames(out, paste0(names(out), resp))

@@ -103,6 +103,22 @@ stan_response <- function(bframe, threads, normalize, ...) {
       str_add(out$pll_args) <- glue(", data int nthres{resp}")
     }
   }
+  if (has_mix_groups(family)) {
+    # group-level (over-group) mixture indexing; threading is disabled for
+    # these models, so no partial-log-likelihood arguments are required
+    str_add(out$data) <- glue(
+      "  int<lower=1> Ngrmix{resp};  // number of mixture groups\n",
+      "  array[N{resp}] int<lower=1> Jmix{resp};",
+      "  // mixture group per observation\n"
+    )
+    pred_mix_prob <- any(dpar_class(names(bframe$dpars)) %in% "theta")
+    if (pred_mix_prob) {
+      str_add(out$data) <- glue(
+        "  // representative observation per mixture group\n",
+        "  array[Ngrmix{resp}] int<lower=1> Jmixrep{resp};\n"
+      )
+    }
+  }
   if (is.formula(bframe$adforms$se)) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] se{resp};  // known sampling error\n"

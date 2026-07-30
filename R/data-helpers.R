@@ -485,7 +485,10 @@ validate_newdata <- function(
   do_check <- union(get_pred_vars(bterms), get_int_vars(bterms))
   # do not check variables from the 'unused' argument #1238
   unused_arg_vars <- get_unused_arg_vars(bterms)
-  dont_check <- unique(c(group_vars, cens_vars, unused_arg_vars))
+  # the grouping variable of a group-level mixture defines group indices
+  # only within the data at hand, so new levels are allowed
+  mixgr_vars <- get_mix_var(object$family)
+  dont_check <- unique(c(group_vars, cens_vars, unused_arg_vars, mixgr_vars))
   dont_check <- setdiff(dont_check, do_check)
   dont_check <- names(mf) %in% dont_check
   is_factor <- ulapply(mf, is.factor)
