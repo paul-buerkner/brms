@@ -682,7 +682,7 @@ test_that("log_lik of interval-censored observations is stable in the tails", {
 })
 
 test_that("cdfs used for truncation accept 'lower.tail'", {
-  # log_diff_cdf() switches to the survival function in the upper tail, so
+  # log_prob_interval() switches to the survival function in the upper tail, so
   # every cdf reaching it must accept lower.tail, as log_lik_censor() has
   # already assumed for right-censored observations
   ns <- asNamespace("brms")
@@ -692,7 +692,7 @@ test_that("cdfs used for truncation accept 'lower.tail'", {
   }
   cdfs <- Filter(is_cdf, ls(ns, pattern = "^p[a-z_0-9]+$"))
   # pcategorical is parameterized by an eta matrix and no categorical family
-  # is truncatable, so it never reaches log_diff_cdf()
+  # is truncatable, so it never reaches log_prob_interval()
   cdfs <- setdiff(cdfs, "pcategorical")
   expect_true(length(cdfs) > 10)
   for (f in cdfs) {
@@ -707,7 +707,7 @@ test_that("cdfs used for truncation accept 'lower.tail'", {
 
 test_that("truncated log_lik is still Inf for cdfs that are not tail-safe", {
   # These families compute the survival function as 1 - F and only then take
-  # the log, so log_diff_cdf() receives -Inf and cannot recover the tail.
+  # the log, so log_prob_interval() receives -Inf and cannot recover the tail.
   # The truncation fix does not reach them; see #1899. This test pins the
   # current behaviour so that fixing the cdfs is a visible change.
   naive_upper <- c(

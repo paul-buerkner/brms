@@ -29,12 +29,13 @@ Thanks to Gidon Frischkorn. (#1450)
 
 * Improve the numerical stability of `log_lik` for truncated and 
 interval-censored models, which previously returned `Inf` or `NaN` whenever 
-both bounds fell far into the same tail of the distribution. Families whose 
-CDF is not itself accurate on the log scale in the relevant tail are not yet 
-covered. `log_lik` now also warns when the returned values contain `Inf`, 
-which the existing `NA` check did not catch. The R functions `log1m_exp()` 
-and `log_diff_exp()` are now aligned with their Stan definitions. 
+both bounds fell far into the same tail. Families whose CDF is not itself 
+accurate on the log scale are not yet covered. 
 Thanks to Florence Bockting. (#1899)
+* Warn when `log_lik` returns infinite values, which the existing check for 
+`NA` values did not catch. (#1899)
+* Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
+definitions in Stan. (#1899)
 * `kfold_predict()` supports now families whose predictions are not draws x 
 observations matrices (e.g. categorical models). (#1889)
 * `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 

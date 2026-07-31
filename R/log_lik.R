@@ -76,13 +76,12 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         "Alternatively, use 'newdata' to predict only complete cases."
       )
     }
-    if (any(log_lik == Inf, na.rm = TRUE)) {
+    if (any(is.infinite(log_lik))) {
       warning2(
-        "Infinite values were found in the log-likelihood. In truncated or ",
-        "censored models this happens when the bounds contain no probability ",
-        "mass that is representable in double precision under some posterior ",
-        "draws. Check that the bounds are compatible with the fitted ",
-        "distribution, as 'loo' and 'waic' cannot be trusted otherwise."
+        "Infinite values were found in the log-likelihood. Most commonly ",
+        "this happens in truncated or censored models when the bounds ",
+        "contain no probability mass under some posterior draws. ",
+        "See ?log_lik for more details."
       )
     }
   }
@@ -1026,56 +1025,56 @@ log_lik_censor <- function(dist, args, i, prep) {
   } else if (cens == 2) {
     rcens <- prep$data$rcens[i]
     # interval censoring needs log[F(rcens) - F(y)], which cancels in the
-    # tails for the same reason truncation does; see log_diff_cdf()
-    x <- log_diff_cdf(cdf, args, lower = y, upper = rcens)
+    # tails for the same reason truncation does; see log_prob_interval()
+    x <- log_prob_interval(cdf, args, lower = y, upper = rcens)
   }
   x
 }
 
 # log of the probability mass between two bounds, log[F(upper) - F(lower)],
-# evaluated so that it stays accurate when both bounds lie far out in the
-# same tail. With S = 1 - F the quantity has two identical forms,
-#   (A) F(upper) - F(lower)      and      (B) S(lower) - S(upper),
-# and only one is usable in a given tail, because a probability near 1
-# carries no relative precision in double precision while its complement
-# does. (A) is well conditioned when F(lower) <= 1/2 and (B) when
-# S(lower) < 1/2, so switching on F(lower) > 1/2 always selects a usable
-# form. The switch is per draw. Accuracy additionally requires cdf itself
-# to be exact on the log scale in the selected tail, which several brms
-# cdfs are not; see #1899.
+# taken as F(upper) - F(lower) when F(lower) <= 1/2 and as S(lower) - S(upper)
+# otherwise, where S = 1 - F. Only one form is usable in a given tail, since a
+# probability near 1 carries no relative precision while its complement does;
+# the two conditions are exhaustive so the per-draw switch always finds one.
+# Accuracy also needs cdf itself to be exact on the log scale there (#1899).
 # @param cdf a cumulative distribution function accepting `log.p` and
 #   `lower.tail`, as log_lik_censor() already assumes
 # @param args arguments passed to cdf
-# @param lower,upper bounds; NULL means unbounded on that side and at
-#   least one of the two must be supplied. The caller owns the bound
-#   convention for discrete responses; see #1903.
+# @param lower,upper bounds; NULL means unbounded on that side and at least
+#   one of the two must be supplied. The caller owns the bound convention
+#   for discrete responses; see #1903.
 # @return vector of log probabilities
-log_diff_cdf <- function(cdf, args, lower = NULL, upper = NULL) {
+log_prob_interval <- function(cdf, args, lower = NULL, upper = NULL) {
   stopifnot(!is.null(lower) || !is.null(upper))
-  log_cdf <- function(q) do_call(cdf, c(q, args, log.p = TRUE))
-  log_sf <- function(q) do_call(cdf, c(q, args, log.p = TRUE, lower.tail = FALSE))
-  # F(-Inf) = 0, so an absent lower bound always selects form (A)
-  if (is.null(lower)) {
-    log_cdf_upper <- log_cdf(upper)
-    return(log_diff_exp(log_cdf_upper, rep(-Inf, length(log_cdf_upper))))
+  lcdf <- function(q) do_call(cdf, c(q, args, log.p = TRUE))
+  lccdf <- function(q) {
+    do_call(cdf, c(q, args, log.p = TRUE, lower.tail = FALSE))
   }
-  log_cdf_lower <- log_cdf(lower)
-  n <- length(log_cdf_lower)
-  # which() drops NA draws, which then take form (A) and stay NA
-  upper_tail <- which(log_cdf_lower > -log(2))
-  out <- rep(NA_real_, n)
+  # F(-Inf) = 0, so an absent lower bound always selects the lower-tail form
+  if (is.null(lower)) {
+    lcdf_upper <- lcdf(upper)
+    return(log_diff_exp(lcdf_upper, rep(-Inf, length(lcdf_upper))))
+  }
+  lcdf_lower <- lcdf(lower)
+  n <- length(lcdf_lower)
+  # which() drops NA draws, which then take the lower-tail form and stay NA
+  upper_tail <- which(lcdf_lower > -log(2))
+  # seeded from a cdf value so that names and dim are carried through
+  out <- lcdf_lower
+  out[] <- NA_real_
   if (length(upper_tail) < n) {
     lower_tail <- setdiff(seq_len(n), upper_tail)
     # F(Inf) = 1 for an absent upper bound
-    log_cdf_upper <- if (is.null(upper)) rep(0, n) else log_cdf(upper)
+    lcdf_upper <- if (is.null(upper)) rep(0, n) else lcdf(upper)
+    stopifnot(length(lcdf_upper) == n)
     out[lower_tail] <-
-      log_diff_exp(log_cdf_upper[lower_tail], log_cdf_lower[lower_tail])
+      log_diff_exp(lcdf_upper[lower_tail], lcdf_lower[lower_tail])
   }
   if (length(upper_tail)) {
     # S(Inf) = 0 for an absent upper bound
-    log_sf_upper <- if (is.null(upper)) rep(-Inf, n) else log_sf(upper)
+    lccdf_upper <- if (is.null(upper)) rep(-Inf, n) else lccdf(upper)
     out[upper_tail] <-
-      log_diff_exp(log_sf(lower)[upper_tail], log_sf_upper[upper_tail])
+      log_diff_exp(lccdf(lower)[upper_tail], lccdf_upper[upper_tail])
   }
   out
 }
@@ -1093,7 +1092,7 @@ log_lik_truncate <- function(x, cdf, args, i, prep) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
-  x - log_diff_cdf(cdf, args, lower = lb, upper = ub)
+  x - log_prob_interval(cdf, args, lower = lb, upper = ub)
 }
 
 # weight log_lik values according to defined weights
