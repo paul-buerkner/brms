@@ -142,13 +142,39 @@ log1p_exp <- function(x) {
   ifelse(out < Inf, out, x)
 }
 
+# log(1 - exp(x)) for x < 0, following Stan's log1m_exp
+# Uses the two-branch algorithm of Maechler (2012), "Accurately Computing
+# log(1 - exp(-|a|))": the naive log1p(-exp(x)) loses all precision as x
+# approaches 0 from below, because exp(x) then rounds to exactly 1 and
+# log1p(-1) evaluates to -Inf. Near 0 we use expm1 instead, which keeps
+# full relative precision there.
 log1m_exp <- function(x) {
-  ifelse(x < 0, log1p(-exp(x)), NaN)
+  out <- x
+  out[] <- NaN
+  na <- is.na(x)
+  out[na] <- x[na]
+  # log(2) is the crossover point used by Stan; on either side of it the
+  # branch that is selected is the one that avoids cancellation
+  near_zero <- !na & x < 0 & x > -log(2)
+  far <- !na & x <= -log(2)
+  out[near_zero] <- log(-expm1(x[near_zero]))
+  out[far] <- log1p(-exp(x[far]))
+  out
 }
 
+# log(exp(x) - exp(y)) for x >= y, following Stan's log_diff_exp
+# Evaluated as x + log1m_exp(y - x). Factoring out the larger term is what
+# keeps the result usable when exp(x) and exp(y) both underflow to 0, or
+# both round to the same double -- exactly what happens for truncation
+# bounds lying far in the same tail (#1899).
 log_diff_exp <- function(x, y) {
   stopifnot(length(x) == length(y))
-  ifelse(x > y, log(exp(x) - exp(y)), NaN)
+  out <- x + log1m_exp(y - x)
+  # as in Stan, equal arguments give log(0) = -Inf rather than NaN,
+  # while x < y remains NaN because the difference is negative
+  eq <- !is.na(x) & !is.na(y) & x == y & x < Inf
+  out[eq] <- -Inf
+  out
 }
 
 log_sum_exp <- function(x, y) {

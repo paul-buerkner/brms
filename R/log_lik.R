@@ -76,6 +76,15 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         "Alternatively, use 'newdata' to predict only complete cases."
       )
     }
+    if (any(log_lik == Inf, na.rm = TRUE)) {
+      warning2(
+        "Infinite values were found in the log-likelihood. In truncated or ",
+        "censored models this happens when the bounds contain no probability ",
+        "mass that is representable in double precision under some posterior ",
+        "draws. Check that the bounds are compatible with the fitted ",
+        "distribution, as 'loo' and 'waic' cannot be trusted otherwise."
+      )
+    }
   }
   log_lik
 }
@@ -1016,9 +1025,59 @@ log_lik_censor <- function(dist, args, i, prep) {
     x <- do_call(cdf, c(y, args, log.p = TRUE))
   } else if (cens == 2) {
     rcens <- prep$data$rcens[i]
-    x <- log(do_call(cdf, c(rcens, args)) - do_call(cdf, c(y, args)))
+    # interval censoring needs log[F(rcens) - F(y)], which cancels in the
+    # tails for the same reason truncation does; see log_diff_cdf()
+    x <- log_diff_cdf(cdf, args, lower = y, upper = rcens)
   }
   x
+}
+
+# log of the probability mass between two bounds, log[F(upper) - F(lower)],
+# evaluated so that it stays accurate when both bounds lie far out in the
+# same tail. With S = 1 - F the quantity has two identical forms,
+#   (A) F(upper) - F(lower)      and      (B) S(lower) - S(upper),
+# and only one is usable in a given tail, because a probability near 1
+# carries no relative precision in double precision while its complement
+# does. (A) is well conditioned when F(lower) <= 1/2 and (B) when
+# S(lower) < 1/2, so switching on F(lower) > 1/2 always selects a usable
+# form. The switch is per draw. Accuracy additionally requires cdf itself
+# to be exact on the log scale in the selected tail, which several brms
+# cdfs are not; see #1899.
+# @param cdf a cumulative distribution function accepting `log.p` and
+#   `lower.tail`, as log_lik_censor() already assumes
+# @param args arguments passed to cdf
+# @param lower,upper bounds; NULL means unbounded on that side and at
+#   least one of the two must be supplied. The caller owns the bound
+#   convention for discrete responses; see #1903.
+# @return vector of log probabilities
+log_diff_cdf <- function(cdf, args, lower = NULL, upper = NULL) {
+  stopifnot(!is.null(lower) || !is.null(upper))
+  log_cdf <- function(q) do_call(cdf, c(q, args, log.p = TRUE))
+  log_sf <- function(q) do_call(cdf, c(q, args, log.p = TRUE, lower.tail = FALSE))
+  # F(-Inf) = 0, so an absent lower bound always selects form (A)
+  if (is.null(lower)) {
+    log_cdf_upper <- log_cdf(upper)
+    return(log_diff_exp(log_cdf_upper, rep(-Inf, length(log_cdf_upper))))
+  }
+  log_cdf_lower <- log_cdf(lower)
+  n <- length(log_cdf_lower)
+  # which() drops NA draws, which then take form (A) and stay NA
+  upper_tail <- which(log_cdf_lower > -log(2))
+  out <- rep(NA_real_, n)
+  if (length(upper_tail) < n) {
+    lower_tail <- setdiff(seq_len(n), upper_tail)
+    # F(Inf) = 1 for an absent upper bound
+    log_cdf_upper <- if (is.null(upper)) rep(0, n) else log_cdf(upper)
+    out[lower_tail] <-
+      log_diff_exp(log_cdf_upper[lower_tail], log_cdf_lower[lower_tail])
+  }
+  if (length(upper_tail)) {
+    # S(Inf) = 0 for an absent upper bound
+    log_sf_upper <- if (is.null(upper)) rep(-Inf, n) else log_sf(upper)
+    out[upper_tail] <-
+      log_diff_exp(log_sf(lower)[upper_tail], log_sf_upper[upper_tail])
+  }
+  out
 }
 
 # adjust log_lik in truncated models
@@ -1034,17 +1093,7 @@ log_lik_truncate <- function(x, cdf, args, i, prep) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
-  if (!is.null(lb)) {
-    log_cdf_lb <- do_call(cdf, c(lb, args, log.p = TRUE))
-  } else {
-    log_cdf_lb <- rep(-Inf, length(x))
-  }
-  if (!is.null(ub)) {
-    log_cdf_ub <- do_call(cdf, c(ub, args, log.p = TRUE))
-  } else {
-    log_cdf_ub <- rep(0, length(x))
-  }
-  x - log_diff_exp(log_cdf_ub, log_cdf_lb)
+  x - log_diff_cdf(cdf, args, lower = lb, upper = ub)
 }
 
 # weight log_lik values according to defined weights
