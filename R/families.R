@@ -931,12 +931,13 @@ acat <- function(link = "logit", link_disc = "log",
 #' fixed, or predicted by covariates that are constant within each group. They
 #' are not supported in combination with within-chain threading, censoring,
 #' truncation, observation weights, or multivariate models. For group-level
-#' mixtures, \code{log_lik}, \code{loo}, and \code{waic} are computed per group
-#' (i.e. leave-one-group-out cross-validation), while \code{kfold} and the
+#' mixtures, cross-validation is performed with the group as the unit
+#' (leave-one-group-out): \code{log_lik}, \code{loo}, and \code{waic} return one
+#' value per group, and \code{kfold} (folding over whole groups) as well as the
 #' refinements \code{reloo}, \code{loo_moment_match}, and \code{loo_subsample}
-#' are not available. When predicting from new data, the groups are defined by the
-#' grouping variable within that data set and need not match the groups of the
-#' original data.
+#' operate on these per-group terms. When predicting from new data, the groups are
+#' defined by the grouping variable within that data set and need not match the
+#' groups of the original data.
 #'
 #' For more details on the specification of mixture
 #' models, see \code{\link{brmsformula}}.
@@ -1900,6 +1901,24 @@ get_mix_var <- function(family) {
 # is the mixture computed over a grouping variable rather than observations?
 has_mix_groups <- function(family) {
   length(get_mix_var(family)) > 0L
+}
+
+# grouping factor of a group-level (over-group) mixture; its level order
+# defines the group indices and hence the per-group columns of 'log_lik'
+mixgr_factor <- function(family, data) {
+  factor(eval2(get_mix_var(family), data))
+}
+
+# row indices of each group in a group-level (over-group) mixture,
+# in the order of the per-group columns of 'log_lik'
+# @param x a 'brmsfit' with a group-level mixture family
+# @param newdata data defining the groups (defaults to the model frame)
+mixgr_row_ids <- function(x, newdata = NULL) {
+  stopifnot(is.brmsfit(x), has_mix_groups(x$family))
+  if (is.null(newdata)) {
+    newdata <- model.frame(x)
+  }
+  unname(split(seq_rows(newdata), mixgr_factor(x$family, newdata)))
 }
 
 # does the family-link combination have a built-in Stan function?

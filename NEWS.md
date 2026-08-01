@@ -5,7 +5,9 @@
 * Compute `mixture` models over the levels of a grouping variable (e.g.
 participants) rather than over individual observations via the new `gr`
 argument of `mixture`, so that whole groups are assigned to the same mixture
-component. (#1659)
+component. Cross-validation for these models is performed with the group as the
+unit (leave-one-group-out), including `kfold`, `reloo`, `loo_moment_match`, and
+`loo_subsample`. (#1659)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

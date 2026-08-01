@@ -28,10 +28,7 @@
 #' @export
 loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                                   model_names = NULL) {
-  if (has_mix_groups(x$family)) {
-    stop2("'loo_subsample' is not supported for group-level mixture ",
-          "models (specified via 'gr' in mixture()).")
-  }
+  # group-level mixtures need no special handling: pointwise log_lik is per group
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo_subsample", compare, resp,

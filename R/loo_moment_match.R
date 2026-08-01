@@ -61,10 +61,6 @@ loo_moment_match.brmsfit <- function(x, loo = NULL, k_threshold = 0.7,
                                      newdata = NULL, resp = NULL, check = TRUE,
                                      recompile = FALSE, ...) {
   stopifnot(is.brmsfit(x))
-  if (has_mix_groups(x$family)) {
-    stop2("'loo_moment_match' is not supported for group-level mixture ",
-          "models (specified via 'gr' in mixture()).")
-  }
   loo <- loo %||% x$criteria[["loo"]]
   if (is.null(loo)) {
     stop2("No 'loo' object was provided and none is stored within the model.")
@@ -117,8 +113,13 @@ loo_moment_match.loo <- function(x, fit, ...) {
   loo_moment_match(fit, loo = x, ...)
 }
 
-# compute a vector of log-likelihood values for the ith observation
+# compute a vector of log-likelihood values for the ith pointwise unit
+# (a single observation, or a whole group for group-level mixtures)
 .log_lik_i <- function(x, i, newdata, ...) {
+  if (has_mix_groups(x$family)) {
+    # 'i' indexes a mixture group; predict all of its observations jointly
+    i <- mixgr_row_ids(x, newdata)[[i]]
+  }
   as.vector(log_lik(x, newdata = newdata[i, , drop = FALSE], ...))
 }
 

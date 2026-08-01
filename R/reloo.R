@@ -65,10 +65,6 @@ reloo.brmsfit <- function(x, loo = NULL, k_threshold = 0.7, newdata = NULL,
                           resp = NULL, check = TRUE, recompile = NULL,
                           future_args = list(), ...) {
   stopifnot(is.brmsfit(x), is.list(future_args))
-  if (has_mix_groups(x$family)) {
-    stop2("'reloo' is not supported for group-level mixture models ",
-          "(specified via 'gr' in mixture()).")
-  }
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"
@@ -85,8 +81,17 @@ reloo.brmsfit <- function(x, loo = NULL, k_threshold = 0.7, newdata = NULL,
     mf <- as.data.frame(newdata)
   }
   mf <- rm_attr(mf, c("terms", "brmsframe"))
-  if (NROW(mf) != NROW(loo$pointwise)) {
-    stop2("Number of observations in 'loo' and 'x' do not match.")
+  # for group-level mixtures, 'reloo' is leave-one-group-out
+  grouped <- has_mix_groups(x$family)
+  if (grouped) {
+    grmix_rows <- mixgr_row_ids(x, mf)
+    nunits <- length(grmix_rows)
+  } else {
+    nunits <- NROW(mf)
+  }
+  if (nunits != NROW(loo$pointwise)) {
+    stop2("Number of ", if (grouped) "groups" else "observations",
+          " in 'loo' and 'x' do not match.")
   }
   check <- as_one_logical(check)
   if (check) {
@@ -134,9 +139,9 @@ reloo.brmsfit <- function(x, loo = NULL, k_threshold = 0.7, newdata = NULL,
   .reloo <- function(j) {
     message(
       "\nFitting model ", j, " out of ", J,
-      " (leaving out observation ", obs[j], ")"
+      " (leaving out ", if (grouped) "group " else "observation ", obs[j], ")"
     )
-    omitted <- obs[j]
+    omitted <- if (grouped) grmix_rows[[obs[j]]] else obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
     up_args$newdata <- mf_omitted
     up_args$data2 <- subset_data2(x$data2, -omitted)
@@ -160,12 +165,22 @@ reloo.brmsfit <- function(x, loo = NULL, k_threshold = 0.7, newdata = NULL,
   # most of the following code is taken from rstanarm:::reloo
   # compute elpd_{loo,j} for each of the held out observations
   elpd_loo <- ulapply(lls, log_mean_exp)
-  # compute \hat{lpd}_j for each of the held out observations (using log-lik
+  # compute \hat{lpd}_j for each of the held out units (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
-  mf_obs <- mf[obs, , drop = FALSE]
-  data2_obs <- subset_data2(x$data2, obs)
-  ll_x <- log_lik(x, newdata = mf_obs, newdata2 = data2_obs)
-  hat_lpd <- apply(ll_x, 2, log_mean_exp)
+  if (grouped) {
+    # one column per group; compute group by group to keep alignment with 'obs'
+    hat_lpd <- ulapply(obs, function(g) {
+      rows <- grmix_rows[[g]]
+      ll_g <- log_lik(x, newdata = mf[rows, , drop = FALSE],
+                      newdata2 = subset_data2(x$data2, rows))
+      log_mean_exp(as.vector(ll_g))
+    })
+  } else {
+    mf_obs <- mf[obs, , drop = FALSE]
+    data2_obs <- subset_data2(x$data2, obs)
+    ll_x <- log_lik(x, newdata = mf_obs, newdata2 = data2_obs)
+    hat_lpd <- apply(ll_x, 2, log_mean_exp)
+  }
   # compute effective number of parameters
   p_loo <- hat_lpd - elpd_loo
   # replace parts of the loo object with these computed quantities

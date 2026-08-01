@@ -443,7 +443,7 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     # group indices are defined by the data at hand; they only relate
     # observations within one data set to each other, so new data may
     # contain a subset of the original groups or even new groups
-    grmix <- factor(eval2(get_mix_var(x$family), data))
+    grmix <- mixgr_factor(x$family, data)
     Jmix <- as.integer(grmix)
     out$Ngrmix <- nlevels(grmix)
     out$Jmix <- as.array(Jmix)

@@ -236,7 +236,8 @@ test_that("group-level mixture models work correctly", suppressWarnings({
     family = mixture(gaussian, gaussian, gr = "g"),
     prior = c(prior(normal(0, 5), Intercept, dpar = mu1),
               prior(normal(6, 5), Intercept, dpar = mu2)),
-    chains = 2, init = 0, refresh = 0, seed = 1234
+    chains = 2, init = 0, refresh = 0, seed = 1234,
+    save_pars = save_pars(all = TRUE)  # required for loo_moment_match
   )
   print(fit)
   # the mixing proportions and component means are recovered
@@ -254,10 +255,33 @@ test_that("group-level mixture models work correctly", suppressWarnings({
     loo(fit)$pointwise[, "elpd_loo"]
   )
   expect_equal(dim(pp_mixture(fit)), c(ng, 4, 2))
-  # kfold and loo refinements are not available for group-level mixtures
-  expect_error(kfold(fit), "not supported for group-level")
-  expect_error(reloo(fit, loo(fit)), "not supported for group-level")
-  expect_error(loo_subsample(fit), "not supported for group-level")
+  # kfold and the loo refinements operate per group (leave-one-group-out)
+  loo1 <- loo(fit)
+  # exact leave-one-group-out kfold tracks PSIS-loo
+  kf <- kfold(fit, folds = "loo", chains = 1, refresh = 0)
+  expect_equal(nrow(kf$pointwise), ng)
+  expect_equal(
+    kf$estimates["elpd_kfold", "Estimate"],
+    loo1$estimates["elpd_loo", "Estimate"], tolerance = 2
+  )
+  # K-fold over groups keeps whole groups within a fold
+  kf5 <- kfold(fit, K = 5, chains = 1, refresh = 0, save_fits = TRUE)
+  expect_equal(nrow(kf5$pointwise), ng)
+  # predictions from the saved fits are per observation
+  kfp <- kfold_predict(kf5)
+  expect_equal(length(kfp$y), nobs(fit))
+  # a single integer 'Ksub' selects that many random folds
+  kf2 <- kfold(fit, K = 5, Ksub = 2, chains = 1, refresh = 0)
+  expect_lt(nrow(kf2$pointwise), ng)
+  # reloo refits problematic groups and preserves the per-group unit
+  rl <- reloo(fit, loo1, k_threshold = 0.5, chains = 1, refresh = 0)
+  expect_equal(nrow(rl$pointwise), ng)
+  expect_true(all(is.finite(rl$pointwise[, "elpd_loo"])))
+  # subsampling and moment matching operate on the per-group pointwise term
+  expect_equal(nrow(loo_subsample(fit, observations = 20)$pointwise), 20)
+  expect_s3_class(loo_moment_match(fit, loo1, k_threshold = 0.5), "loo")
+  # 'group' is redundant with the mixture grouping and is rejected
+  expect_error(kfold(fit, group = "g"), "not supported for group-level")
   # newdata may contain a subset of the original groups or new groups
   nd <- dat[dat$g %in% c("1", "2"), ]
   nd$g <- factor(rep(c("1", "new"), each = npg))
