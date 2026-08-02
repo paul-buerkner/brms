@@ -1945,12 +1945,33 @@ test_that("Stan code of group-level mixture model is correct", {
              family = mixture(gaussian, gaussian, gr = "g")),
     "not supported in combination with"
   )
-  # group-level mixtures are not yet supported in multivariate models
+  # multivariate: only symmetric grouped mixtures on the same 'gr' are allowed
   expect_error(
     stancode(bf(y ~ x) + bf(x ~ 1, family = gaussian()), data,
              family = mixture(gaussian, gaussian, gr = "g")),
     "not yet supported in multivariate models"
   )
+  data$y2 <- rnorm(nrow(data))
+  data$g2 <- data$g
+  mixfam <- mixture(gaussian, gaussian, gr = "g")
+  expect_error(
+    stancode(bf(y ~ x, family = mixfam) +
+               bf(y2 ~ x, family = mixture(gaussian, gaussian, gr = "g2")) +
+               set_rescor(FALSE), data),
+    "require the same 'gr' variable"
+  )
+  expect_error(
+    stancode(bf(y ~ x, family = mixfam) + bf(y2 ~ x, family = mixfam) +
+               set_rescor(TRUE), data),
+    "only possible in multivariate gaussian or student models"
+  )
+  scode <- stancode(
+    bf(y ~ x, family = mixfam) + bf(y2 ~ x, family = mixfam) +
+      set_rescor(FALSE), data
+  )
+  expect_match2(scode, "matrix[Ngrmix_y, 2] Lmix_y = rep_matrix(0.0, Ngrmix_y, 2);")
+  expect_match2(scode, "matrix[Ngrmix_y2, 2] Lmix_y2 = rep_matrix(0.0, Ngrmix_y2, 2);")
+  expect_match2(scode, "ps[1] = log(theta1_y2) + Lmix_y2[j, 1];")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

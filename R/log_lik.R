@@ -64,7 +64,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     stopifnot(combine)
     log_lik <- log_lik_pointwise
     # for group-level mixtures, the likelihood is pointwise per group
-    N <- if (!is.null(prep$mixgr)) prep$mixgr$ngroups else choose_N(prep)
+    N <- mixgr_ngroups(prep) %||% choose_N(prep)
     # names need to be 'data' and 'draws' as per ?loo::loo.function
     attr(log_lik, "data") <- data.frame(i = seq_len(N))
     attr(log_lik, "draws") <- prep
@@ -139,13 +139,23 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
   reorder_obs(out, old_order, sort = sort)
 }
 
+# number of groups of a group-level mixture, or NULL if the model has none;
+# in multivariate models, all responses share the same grouping variable
+# (enforced during formula validation), so the number of groups is unique
+mixgr_ngroups <- function(prep) {
+  if (is.mvbrmsprep(prep)) {
+    prep <- prep$resps[[1]]
+  }
+  prep$mixgr$ngroups
+}
+
 # evaluate log_lik in a pointwise manner
 # cannot be an S3 method since 'data_i' must be the first argument
 # names must be 'data_i' and 'draws' as per ?loo::loo.function
 log_lik_pointwise <- function(data_i, draws, ...) {
   i <- data_i$i
   if (is.mvbrmsprep(draws) && !length(draws$mvpars$rescor)) {
-    out <- lapply(draws$resps, log_lik_pointwise, i = i)
+    out <- lapply(draws$resps, function(resp) log_lik_pointwise(data_i, resp, ...))
     out <- Reduce("+", out)
   } else if (!is.null(draws$mixgr)) {
     # group-level mixture: 'i' indexes groups rather than observations

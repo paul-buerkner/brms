@@ -930,7 +930,14 @@ acat <- function(link = "logit", link_disc = "log",
 #' mixtures currently require the mixing proportions to be either estimated,
 #' fixed, or predicted by covariates that are constant within each group. They
 #' are not supported in combination with within-chain threading, censoring,
-#' truncation, observation weights, or multivariate models. For group-level
+#' truncation, or observation weights. In multivariate models, group-level
+#' mixtures are supported only if every response is a grouped mixture over the
+#' same grouping variable and \code{rescor = FALSE}: each response then
+#' contributes its own independent per-group mixture, and the joint
+#' log-likelihood of a group is the sum of the per-response terms. Other
+#' multivariate combinations are not supported, as they would leave the
+#' pointwise unit of the likelihood — and thus \code{log_lik}, \code{loo}, and
+#' related methods — undefined. For group-level
 #' mixtures, cross-validation is performed with the group as the unit
 #' (leave-one-group-out): \code{log_lik}, \code{loo}, and \code{waic} return one
 #' value per group, and \code{kfold} (folding over whole groups) as well as the
@@ -1894,8 +1901,16 @@ get_mix_id <- function(family) {
 }
 
 # get the grouping variable name of a group-level (over-group) mixture
+# multivariate models store one family per response; formula validation
+# enforces a single shared grouping variable across all responses
 get_mix_var <- function(family) {
-  if (is.list(family)) family[["mixgr_var"]] else NULL
+  if (is.family(family)) {
+    return(family[["mixgr_var"]])
+  }
+  if (is.list(family)) {
+    return(unique(ulapply(family, get_mix_var)))
+  }
+  NULL
 }
 
 # is the mixture computed over a grouping variable rather than observations?
