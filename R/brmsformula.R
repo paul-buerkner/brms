@@ -1449,9 +1449,9 @@ validate_formula.mvbrmsformula <- function(
   # symmetric case: every response is a grouped mixture over the same
   # grouping variable, without residual correlations ('rescor' is already
   # excluded for mixture families via 'allow_rescor' above). This guarantees
-  # a single well-defined pointwise unit for posterior inference — the group,
+  # a single well-defined pointwise unit for posterior inference: the group,
   # whose joint log-likelihood is the sum of the per-response per-group
-  # contributions — on which 'log_lik', 'loo', and the leave-one-group-out
+  # contributions, on which 'log_lik', 'loo', and the leave-one-group-out
   # refinements ('reloo', 'kfold', 'loo_moment_match', 'loo_subsample')
   # rely. Mixing grouped-mixture responses with per-observation responses
   # (or with different grouping variables) leaves no common pointwise unit,

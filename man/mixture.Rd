@@ -88,8 +88,8 @@ same grouping variable and \code{rescor = FALSE}: each response then
 contributes its own independent per-group mixture, and the joint
 log-likelihood of a group is the sum of the per-response terms. Other
 multivariate combinations are not supported, as they would leave the
-pointwise unit of the likelihood — and thus \code{log_lik}, \code{loo}, and
-related methods — undefined. For group-level
+pointwise unit of the likelihood, and thus \code{log_lik}, \code{loo}, and
+related methods, undefined. For group-level
 mixtures, cross-validation is performed with the group as the unit
 (leave-one-group-out): \code{log_lik}, \code{loo}, and \code{waic} return one
 value per group, and \code{kfold} (folding over whole groups) as well as the

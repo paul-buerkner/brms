@@ -1927,6 +1927,25 @@ test_that("Stan code of group-level mixture model is correct", {
   )
   expect_match2(scode, "Lmix[Jmix[n], 1] += poisson_log_lpmf(Y[n] | mu1[n]);")
 
+  # the normalized lpdf is required even with normalize = FALSE, because
+  # normalization constants do not cancel from the group-level log_sum_exp
+  scode <- stancode(
+    bf(y ~ x), data,
+    family = mixture(gaussian, gaussian, gr = "g"),
+    normalize = FALSE
+  )
+  expect_match2(scode, "Lmix[Jmix[n], 1] += normal_lpdf(Y[n] | mu1[n], sigma1);")
+  expect_match2(scode, "Lmix[Jmix[n], 2] += normal_lpdf(Y[n] | mu2[n], sigma2);")
+
+  # 'gr' composes with 'refcat = NA': all proportions predicted, per group
+  scode <- stancode(
+    bf(y ~ x, theta1 ~ gc, theta2 ~ gc), data,
+    family = mixture(gaussian, gaussian, gr = "g", refcat = NA)
+  )
+  expect_match2(scode, "theta1 += Intercept_theta1 + Xc_theta1 * b_theta1;")
+  expect_match2(scode, "theta2 += Intercept_theta2 + Xc_theta2 * b_theta2;")
+  expect_match2(scode, "ps[1] = theta1[Jmixrep[j]] + Lmix[j, 1];")
+
   # predicted proportions varying within group are not allowed
   expect_error(
     standata(bf(y ~ x, theta1 ~ x), data,

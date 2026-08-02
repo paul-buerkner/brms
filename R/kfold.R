@@ -90,6 +90,13 @@
 #'   \link[loo:kfold-helpers]{kfold-helpers} page).
 #'   }
 #'
+#'   For group-level mixture models (argument \code{gr} of
+#'   \code{\link{mixture}}), the pointwise unit of the likelihood is the
+#'   mixture group rather than the observation: folds are always formed over
+#'   whole groups, arguments \code{group} and \code{joint} are not supported,
+#'   \code{folds = "loo"} performs exact leave-one-group-out cross-validation,
+#'   and a numeric \code{folds} vector must be constant within each group.
+#'
 #'   When running \code{kfold} on a \code{brmsfit} created with the
 #'   \pkg{cmdstanr} backend in a different \R session, several recompilations
 #'   will be triggered because by default, \pkg{cmdstanr} writes the model
@@ -194,6 +201,11 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       stop2("Argument 'group' is not supported for group-level mixture ",
             "models; folds are formed over the mixture grouping variable ",
             "('gr' in mixture()) automatically.")
+    }
+    if (!isFALSE(joint)) {
+      stop2("Argument 'joint' is not supported for group-level mixture ",
+            "models; log likelihoods are always evaluated jointly per ",
+            "group defined by 'gr' in mixture().")
     }
     return(.kfold_grouped(
       x, K = K, Ksub = Ksub, folds = folds, save_fits = save_fits,
@@ -404,8 +416,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   if (is.null(folds)) {
     fold_type <- "random"
     gfolds <- loo::kfold_split_random(K, ngroups)
-  } else if (is.character(folds) && length(folds) == 1L) {
-    fold_type <- match.arg(folds, "loo")
+  } else if (identical(folds, "loo")) {
+    fold_type <- "loo"
     gfolds <- seq_len(ngroups)
     K <- ngroups
     message("Setting 'K' to the number of groups (", K, ")")

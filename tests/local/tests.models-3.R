@@ -282,6 +282,10 @@ test_that("group-level mixture models work correctly", suppressWarnings({
   expect_s3_class(loo_moment_match(fit, loo1, k_threshold = 0.5), "loo")
   # 'group' is redundant with the mixture grouping and is rejected
   expect_error(kfold(fit, group = "g"), "not supported for group-level")
+  # 'joint' has no meaning when the group is the pointwise unit
+  expect_error(kfold(fit, joint = "obs"), "not supported for group-level")
+  # only the default, folds = 'loo', or group-constant numeric folds work
+  expect_error(kfold(fit, folds = "stratified"), "Unsupported 'folds'")
   # newdata may contain a subset of the original groups or new groups
   nd <- dat[dat$g %in% c("1", "2"), ]
   nd$g <- factor(rep(c("1", "new"), each = npg))
