@@ -154,13 +154,12 @@ prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
       }
     }
     if (has_mix_groups(x$family)) {
-      # group-level (over-group) mixture: the whole group shares one component
+      # group-level mixture: the whole group shares one component
       J <- as.integer(sdata[[paste0("Jmix", resp)]])
       out$mixgr <- list(
         J = J,
         ngroups = as.integer(sdata[[paste0("Ngrmix", resp)]]),
-        # one representative observation per group to read theta from
-        # (mixing proportions are validated to be constant within groups)
+        # representative observation per group to read theta from
         rep = match(seq_len(sdata[[paste0("Ngrmix", resp)]]), J)
       )
     }

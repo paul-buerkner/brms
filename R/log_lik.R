@@ -126,8 +126,7 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   if (!is.null(object$mixgr)) {
-    # group-level (over-group) mixture: the likelihood factorizes over groups
-    # rather than observations, hence return one column per group
+    # group-level mixture: one log_lik column per group
     return(log_lik_mixture_grouped(object))
   }
   N <- choose_N(object)
@@ -139,9 +138,7 @@ log_lik.brmsprep <- function(object, cores = NULL, ...) {
   reorder_obs(out, old_order, sort = sort)
 }
 
-# number of groups of a group-level mixture, or NULL if the model has none;
-# in multivariate models, all responses share the same grouping variable
-# (enforced during formula validation), so the number of groups is unique
+# number of groups of a group-level mixture, or NULL if the model has none
 mixgr_ngroups <- function(prep) {
   if (is.mvbrmsprep(prep)) {
     prep <- prep$resps[[1]]
@@ -1041,9 +1038,8 @@ mixture_group_ps <- function(prep) {
   ps
 }
 
-# log-likelihood of a group-level (over-group) mixture model
-# the mixture is marginalized once per group, hence one column per group is
-# returned, enabling leave-one-group-out cross-validation via loo/waic
+# log-likelihood of a group-level mixture model
+# the mixture is marginalized once per group, hence one column per group
 # @return a draws x ngroups matrix
 log_lik_mixture_grouped <- function(prep) {
   ps <- mixture_group_ps(prep)
@@ -1056,7 +1052,6 @@ log_lik_mixture_grouped <- function(prep) {
 }
 
 # log-likelihood of a single group of a group-level mixture model
-# used for pointwise evaluation in loo and waic
 # @param g index of the group for which to compute log-lik values
 # @return a vector of length prep$ndraws
 log_lik_mixture_grouped_i <- function(g, prep) {

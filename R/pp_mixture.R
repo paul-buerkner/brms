@@ -92,7 +92,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     prep$dpars[[dp]] <- get_dpar(prep, dpar = dp)
   }
   if (!is.null(prep$mixgr)) {
-    # group-level mixture: component responsibilities are defined per group
+    # group-level mixture: responsibilities are defined per group
     ps <- mixture_group_ps(prep)
     ngroups <- dim(ps)[2]
     out <- ps

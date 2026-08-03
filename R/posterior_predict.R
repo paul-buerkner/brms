@@ -210,9 +210,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   if (!is.null(object$mixgr)) {
-    # sample one mixture component per group (shared across its observations)
-    # before dispatching, so the assignment is consistent across observations
-    # (also under parallel execution)
+    # sample one mixture component per group, shared across its observations
     object$mixgr$ids <- sample_mixture_group_ids(object)
   }
   N <- choose_N(object)
@@ -1127,8 +1125,7 @@ posterior_predict_mixture <- function(i, prep, output = "random", ...) {
   validate_pp_output_support("mixture", output)
   families <- family_names(prep$family)
   if (!is.null(prep$mixgr)) {
-    # group-level mixture: reuse the component sampled for this observation's
-    # group (precomputed in posterior_predict.brmsprep)
+    # reuse the component sampled for this observation's group
     smix <- prep$mixgr$ids[, prep$mixgr$J[i]]
   } else {
     theta <- get_theta(prep, i = i)
@@ -1267,9 +1264,6 @@ sample_mixture_ids <- function(theta) {
 }
 
 # sample one mixture component id per group for group-level mixtures
-# the mixing proportions are constant within a group, hence sampling is based
-# on the group's representative observation
-# @param prep a 'brmsprep' object carrying a 'mixgr' list
 # @return a draws x ngroups matrix of sampled component ids
 sample_mixture_group_ids <- function(prep) {
   ngroups <- prep$mixgr$ngroups

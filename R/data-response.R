@@ -435,14 +435,12 @@ data_response.brmsframe <- function(x, data, check_response = TRUE,
     c(out) <- vint
   }
   if (has_mix_groups(x$family)) {
-    # group-level (over-group) mixture: the whole group belongs to one component
+    # group-level mixture: the whole group belongs to one component
     if (has_ad_terms(x, c("cens", "trunc", "weights"))) {
       stop2("Group-level mixtures (via 'gr' in mixture()) are not supported ",
             "in combination with 'cens', 'trunc', or 'weights'.")
     }
-    # group indices are defined by the data at hand; they only relate
-    # observations within one data set to each other, so new data may
-    # contain a subset of the original groups or even new groups
+    # group indices are defined by the data at hand
     grmix <- mixgr_factor(x$family, data)
     Jmix <- as.integer(grmix)
     out$Ngrmix <- nlevels(grmix)

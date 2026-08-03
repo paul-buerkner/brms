@@ -199,13 +199,11 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     # group-level mixtures use whole groups as the pointwise unit
     if (!is.null(group)) {
       stop2("Argument 'group' is not supported for group-level mixture ",
-            "models; folds are formed over the mixture grouping variable ",
-            "('gr' in mixture()) automatically.")
+            "models; folds are always formed over the mixture groups.")
     }
     if (!isFALSE(joint)) {
       stop2("Argument 'joint' is not supported for group-level mixture ",
-            "models; log likelihoods are always evaluated jointly per ",
-            "group defined by 'gr' in mixture().")
+            "models; log likelihoods are always joint per group.")
     }
     return(.kfold_grouped(
       x, K = K, Ksub = Ksub, folds = folds, save_fits = save_fits,
@@ -400,9 +398,8 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   )
 }
 
-# K-fold cross-validation for group-level (over-group) mixtures, where the
-# pointwise unit is a whole group: folds are formed over groups and
-# 'log_lik' returns one column per group
+# K-fold cross-validation for group-level mixtures: folds are formed
+# over groups and 'log_lik' returns one column per group
 # @inheritParams .kfold
 .kfold_grouped <- function(x, K, Ksub, folds, save_fits, newdata, newdata2,
                            resp, model_name, recompile = NULL,

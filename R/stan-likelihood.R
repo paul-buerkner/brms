@@ -64,8 +64,7 @@ stan_log_lik_mixfamily <- function(bterms, threads, ...) {
   stopifnot(is.brmsterms(bterms), is.mixfamily(bterms$family))
   grouped <- has_mix_groups(bterms$family)
   if (grouped && use_threading(threads)) {
-    stop2("Threading is not supported for group-level mixture models ",
-          "specified via 'gr' in mixture().")
+    stop2("Threading is not supported for group-level mixture models.")
   }
   dp_ids <- dpar_id(names(bterms$dpars))
   fdp_ids <- dpar_id(names(bterms$fdpars))
@@ -101,9 +100,8 @@ stan_log_lik_mixfamily <- function(bterms, threads, ...) {
   out
 }
 
-# Stan code for a group-level (over-group) mixture likelihood
-# accumulates each component's log density per group, then marginalizes
-# the mixture once per group via log_sum_exp
+# Stan code for a group-level mixture likelihood: accumulate each component's
+# log density per group, then marginalize the mixture once per group
 # @param ll character vector of per-component accumulation statements
 # @param resp optional response prefix
 # @param pred_mix_prob are mixing proportions predicted (per group)?
@@ -235,10 +233,8 @@ stan_log_lik_mix <- function(ll, bterms, pred_mix_prob, threads,
   Y <- stan_log_lik_Y_name(bterms)
   n <- stan_nn(threads)
   if (has_mix_groups(bterms$family)) {
-    # group-level (over-group) mixture: accumulate this component's log
-    # density into a per-group vector; the mixing weight is added later,
-    # once per group. Always use the normalized lpdf/lpmf because
-    # normalization constants do not factor out of the group-level log_sum_exp.
+    # always use the normalized lpdf: normalization constants do not
+    # cancel from the group-level log_sum_exp
     lpdf <- stan_log_lik_lpdf_name(bterms, normalize = TRUE)
     return(glue(
       "Lmix{resp}[Jmix{resp}{n}, {mix}] += ",

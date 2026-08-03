@@ -104,8 +104,7 @@ stan_response <- function(bframe, threads, normalize, ...) {
     }
   }
   if (has_mix_groups(family)) {
-    # group-level (over-group) mixture indexing; threading is disabled for
-    # these models, so no partial-log-likelihood arguments are required
+    # group-level mixture indexing (threading is disabled for these models)
     str_add(out$data) <- glue(
       "  int<lower=1> Ngrmix{resp};  // number of mixture groups\n",
       "  array[N{resp}] int<lower=1> Jmix{resp};",

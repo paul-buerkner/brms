@@ -1445,30 +1445,20 @@ validate_formula.mvbrmsformula <- function(
             "in multivariate gaussian or student models.")
     }
   }
-  # In multivariate models, group-level mixtures are only supported in the
-  # symmetric case: every response is a grouped mixture over the same
-  # grouping variable, without residual correlations ('rescor' is already
-  # excluded for mixture families via 'allow_rescor' above). This guarantees
-  # a single well-defined pointwise unit for posterior inference: the group,
-  # whose joint log-likelihood is the sum of the per-response per-group
-  # contributions, on which 'log_lik', 'loo', and the leave-one-group-out
-  # refinements ('reloo', 'kfold', 'loo_moment_match', 'loo_subsample')
-  # rely. Mixing grouped-mixture responses with per-observation responses
-  # (or with different grouping variables) leaves no common pointwise unit,
-  # so these models remain unsupported until that is resolved.
+  # multivariate group-level mixtures require all responses to be grouped
+  # mixtures over the same variable so that the group remains the pointwise
+  # unit of 'log_lik'
   has_grmix <- ulapply(formula$forms, function(f) has_mix_groups(f$family))
   if (any(has_grmix)) {
     if (!all(has_grmix)) {
       stop2("Group-level mixtures (via 'gr' in mixture()) are not yet ",
-            "supported in multivariate models unless all responses are ",
-            "grouped mixtures, as the pointwise unit of the likelihood ",
-            "required for 'log_lik' and 'loo' would be undefined otherwise.")
+            "supported in multivariate models unless all responses ",
+            "are grouped mixtures.")
     }
     grvars <- ulapply(formula$forms, function(f) get_mix_var(f$family))
     if (length(unique(grvars)) > 1L) {
       stop2("Group-level mixtures in multivariate models require the same ",
-            "'gr' variable for all responses, so that leave-one-group-out ",
-            "methods ('loo', 'kfold', 'reloo') have a well-defined unit.")
+            "'gr' variable for all responses.")
     }
   }
   # handle default of correlations between 'me' terms

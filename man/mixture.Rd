@@ -40,14 +40,12 @@ models. As the resulting model is only weakly identified, informative
 priors on the \code{theta} parameters are strongly recommended (see the
 examples in \code{\link{brmsformula}}).}
 
-\item{gr}{Optional name (as a character string) of a grouping variable in the
-data. If specified, the mixture is computed over the levels of that variable
-rather than over individual observations, that is, all observations that
-belong to the same group are assumed to stem from the same (unknown) mixture
-component. This is useful, for example, when entire participants (rather than
-single trials) are thought to belong to different latent classes. By default
-(\code{NULL}), the mixture is computed at the observation level as usual.
-See Details for restrictions of group-level mixtures.}
+\item{gr}{Optional name of a grouping variable in the data. If specified,
+the mixture is computed over the levels of that variable rather than over
+individual observations, that is, all observations within a group are
+assumed to stem from the same mixture component. By default (\code{NULL}),
+the mixture is computed at the observation level. See Details for
+restrictions of group-level mixtures.}
 }
 \value{
 An object of class \code{mixfamily}.
@@ -73,30 +71,20 @@ population-level intercepts via \code{\link{set_prior}} to improve
 posterior inference. In addition, it is sometimes necessary to set \code{init = 0}
 in the call to \code{\link{brm}} to allow chains to initialize properly.
 
-By default, the mixture is computed at the level of individual observations,
-that is, each observation may stem from a different mixture component. Via
-argument \code{gr}, the mixture can instead be computed over the levels of a
-grouping variable so that all observations within a group share the same
-(unknown) component. This yields a different likelihood in which the mixing
-is marginalized once per group rather than once per observation. Group-level
-mixtures currently require the mixing proportions to be either estimated,
-fixed, or predicted by covariates that are constant within each group. They
-are not supported in combination with within-chain threading, censoring,
-truncation, or observation weights. In multivariate models, group-level
-mixtures are supported only if every response is a grouped mixture over the
-same grouping variable and \code{rescor = FALSE}: each response then
-contributes its own independent per-group mixture, and the joint
-log-likelihood of a group is the sum of the per-response terms. Other
-multivariate combinations are not supported, as they would leave the
-pointwise unit of the likelihood, and thus \code{log_lik}, \code{loo}, and
-related methods, undefined. For group-level
-mixtures, cross-validation is performed with the group as the unit
-(leave-one-group-out): \code{log_lik}, \code{loo}, and \code{waic} return one
-value per group, and \code{kfold} (folding over whole groups) as well as the
-refinements \code{reloo}, \code{loo_moment_match}, and \code{loo_subsample}
-operate on these per-group terms. When predicting from new data, the groups are
-defined by the grouping variable within that data set and need not match the
-groups of the original data.
+Via argument \code{gr}, the mixture can be computed over the levels of a
+grouping variable instead of over individual observations, so that all
+observations within a group share the same (unknown) component. The mixture
+is then marginalized once per group rather than once per observation.
+Group-level mixtures require the mixing proportions to be constant within
+each group and do not support within-chain threading, censoring, truncation,
+or observation weights. In multivariate models, they are supported only if
+all responses are grouped mixtures over the same grouping variable (with
+\code{rescor = FALSE}). Cross-validation is performed with the group as the
+pointwise unit (leave-one-group-out): \code{log_lik}, \code{loo}, and
+\code{waic} return one value per group, and \code{kfold}, \code{reloo},
+\code{loo_moment_match}, and \code{loo_subsample} operate on these per-group
+terms. When predicting from new data, the groups are defined by the grouping
+variable within that data set and need not match the original groups.
 
 For more details on the specification of mixture
 models, see \code{\link{brmsformula}}.
