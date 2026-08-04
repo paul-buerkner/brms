@@ -445,6 +445,13 @@ frame_basis_bhaz <- function(x, data, ...) {
         # interval- or left-censored data)
         if (length(y_events)) {
           y_knots <- y_events
+        } else {
+          warning2(
+            "No exact events were found to define the baseline hazard knots. ",
+            "Placing the knots at quantiles of all (censored) times instead. ",
+            "Consider setting a smaller 'df' in 'bhaz()' if the baseline ",
+            "hazard is poorly identified."
+          )
         }
       }
     }
