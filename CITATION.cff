@@ -1,0 +1,49 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  brms: An R Package for Bayesian Multilevel Models using
+  Stan
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Paul-Christian
+    family-names: Bürkner
+    email: paul.buerkner@gmail.com
+    affiliation: TU Dortmund University
+    orcid: 'https://orcid.org/0000-0001-5765-8995'
+identifiers:
+  - type: doi
+    value: 10.18637/jss.v080.i01
+repository-code: 'https://github.com/paul-buerkner/brms'
+url: 'https://paulbuerkner.com/brms/'
+abstract: >-
+  The brms package implements Bayesian multilevel models in
+  R using the probabilistic programming language Stan. A
+  wide range of distributions and link functions are
+  supported, allowing users to fit - among others - linear,
+  robust linear, binomial, Poisson, survival, ordinal,
+  zero-inflated, hurdle, and even non-linear models all in a
+  multilevel context. Further modeling options include
+  autocorrelation of the response variable, user defined
+  covariance structures, censored data, as well as
+  meta-analytic standard errors. Prior specifications are
+  flexible and explicitly encourage users to apply prior
+  distributions that actually reflect their beliefs. In
+  addition, model fit can easily be assessed and compared
+  with the Watanabe-Akaike information criterion and
+  leave-one-out cross-validation.
+keywords:
+  - Bayesian inference
+  - multilevel model
+  - ordinal data
+  - MCMC
+  - Stan
+  - R
+license: GPL-2.0
+commit: 7838419adee48971e35bdc3f27148ad21739ec3e
+version: 2.22.0
+date-released: '2024-10-01'
