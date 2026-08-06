@@ -727,3 +727,25 @@ test_that("truncated log_lik is still Inf for cdfs that are not tail-safe", {
     brms:::pzero_inflated_poisson(0, 500, 1e-300, log.p = TRUE), -Inf
   )
 })
+
+test_that("infinite log_lik values are warned about", {
+  # log_lik.brmsfit() routes its infinite-value check through this helper;
+  # a cancelled truncation normalizer is +Inf and a cancelled censoring one
+  # is -Inf, so both signs have to be caught
+  expect_warning(
+    brms:::warn_infinite_log_lik(matrix(c(-1, Inf, -2, -3), nrow = 2)),
+    "Infinite values were found"
+  )
+  expect_warning(
+    brms:::warn_infinite_log_lik(matrix(c(-1, -Inf, -2, -3), nrow = 2)),
+    "Infinite values were found"
+  )
+  expect_true(
+    suppressWarnings(brms:::warn_infinite_log_lik(matrix(c(-1, Inf), nrow = 1)))
+  )
+  expect_silent(brms:::warn_infinite_log_lik(matrix(-1:-4, nrow = 2)))
+  # NA and NaN are covered by the adjacent check in log_lik.brmsfit()
+  expect_silent(
+    brms:::warn_infinite_log_lik(matrix(c(-1, NaN, NA, -3), nrow = 2))
+  )
+})

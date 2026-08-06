@@ -76,14 +76,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         "Alternatively, use 'newdata' to predict only complete cases."
       )
     }
-    if (any(is.infinite(log_lik))) {
-      warning2(
-        "Infinite values were found in the log-likelihood. Most commonly ",
-        "this happens in truncated or censored models when the bounds ",
-        "contain no probability mass under some posterior draws. ",
-        "See ?log_lik for more details."
-      )
-    }
+    warn_infinite_log_lik(log_lik)
   }
   log_lik
 }
@@ -1034,8 +1027,7 @@ log_lik_censor <- function(dist, args, i, prep) {
 # log of the probability mass between two bounds, log[F(upper) - F(lower)],
 # taken as F(upper) - F(lower) when F(lower) <= 1/2 and as S(lower) - S(upper)
 # otherwise, where S = 1 - F. Only one form is usable in a given tail, since a
-# probability near 1 carries no relative precision while its complement does;
-# the two conditions are exhaustive so the per-draw switch always finds one.
+# probability near 1 carries no relative precision while its complement does.
 # Accuracy also needs cdf itself to be exact on the log scale there (#1899).
 # @param cdf a cumulative distribution function accepting `log.p` and
 #   `lower.tail`, as log_lik_censor() already assumes
@@ -1050,33 +1042,44 @@ log_prob_interval <- function(cdf, args, lower = NULL, upper = NULL) {
   lccdf <- function(q) {
     do_call(cdf, c(q, args, log.p = TRUE, lower.tail = FALSE))
   }
-  # F(-Inf) = 0, so an absent lower bound always selects the lower-tail form
+  # one-sided intervals are just a CDF or CCDF evaluation
   if (is.null(lower)) {
-    lcdf_upper <- lcdf(upper)
-    return(log_diff_exp(lcdf_upper, rep(-Inf, length(lcdf_upper))))
+    return(lcdf(upper))
+  }
+  if (is.null(upper)) {
+    return(lccdf(lower))
   }
   lcdf_lower <- lcdf(lower)
-  n <- length(lcdf_lower)
-  # which() drops NA draws, which then take the lower-tail form and stay NA
-  upper_tail <- which(lcdf_lower > -log(2))
-  # seeded from a cdf value so that names and dim are carried through
   out <- lcdf_lower
   out[] <- NA_real_
-  if (length(upper_tail) < n) {
-    lower_tail <- setdiff(seq_len(n), upper_tail)
-    # F(Inf) = 1 for an absent upper bound
-    lcdf_upper <- if (is.null(upper)) rep(0, n) else lcdf(upper)
-    stopifnot(length(lcdf_upper) == n)
-    out[lower_tail] <-
-      log_diff_exp(lcdf_upper[lower_tail], lcdf_lower[lower_tail])
+  upper_tail <- which(lcdf_lower > -log(2))
+  lower_tail <- which(lcdf_lower <= -log(2))
+  if (length(lower_tail)) {
+    out[lower_tail] <- log_diff_exp(
+      lcdf(upper)[lower_tail], lcdf_lower[lower_tail]
+    )
   }
   if (length(upper_tail)) {
-    # S(Inf) = 0 for an absent upper bound
-    lccdf_upper <- if (is.null(upper)) rep(-Inf, n) else lccdf(upper)
-    out[upper_tail] <-
-      log_diff_exp(lccdf(lower)[upper_tail], lccdf_upper[upper_tail])
+    out[upper_tail] <- log_diff_exp(
+      lccdf(lower)[upper_tail], lccdf(upper)[upper_tail]
+    )
   }
   out
+}
+
+# warn about infinite log_lik values
+# @param x matrix or array of log_lik values
+# @return TRUE if a warning was issued, invisibly
+warn_infinite_log_lik <- function(x) {
+  out <- any(is.infinite(x))
+  if (out) {
+    warning2(
+      "Infinite values were found in the log-likelihood. Most commonly ",
+      "this happens in truncated or censored models when the bounds ",
+      "contain no probability mass under some posterior draws."
+    )
+  }
+  invisible(out)
 }
 
 # adjust log_lik in truncated models

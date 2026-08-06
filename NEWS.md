@@ -31,7 +31,7 @@ Thanks to Gidon Frischkorn. (#1450)
 interval-censored models, which previously returned `Inf` or `NaN` whenever 
 both bounds fell far into the same tail. Families whose CDF is not itself 
 accurate on the log scale are not yet covered. 
-Thanks to Florence Bockting. (#1899)
+Thanks to Ahmed Eldeeb. (#1899)
 * Warn when `log_lik` returns infinite values, which the existing check for 
 `NA` values did not catch. (#1899)
 * Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
