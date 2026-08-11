@@ -59,6 +59,10 @@ jobs:
               run_dont_run = TRUE,
               new_process = TRUE
             )
+            # overwrite references/index.html so it points to all functions instead of addition terms page
+            pkgdown::build_reference_index(
+              override = list(destination = "docs")
+            )
         shell: Rscript {0}
 
       - name: Deploy to GitHub pages 🚀
