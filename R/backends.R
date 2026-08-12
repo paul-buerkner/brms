@@ -54,8 +54,6 @@ parse_model <- function(model, backend, ...) {
   .parse_model_stanr_impl(model, silent = silent, stanr_backend = "compiled", ...)
 }
 
-# parse Stan model code with stanr's 'stanli' (interpreted, no compilation)
-# backend -- identical to the 'stanr' backend in every other respect
 .parse_model_stanli <- function(model, silent = 1, ...) {
   .parse_model_stanr_impl(model, silent = silent, stanr_backend = "stanli", ...)
 }
@@ -152,8 +150,7 @@ compile_model <- function(model, backend, ...) {
   args <- list(...)
   args$code <- model
   args$backend <- stanr_backend
-  # unlike cmdstanr, stanr always compiles with threading support built in
-  # (it bundles its own TBB), so there is no separate compile-time flag
+  # stanr always compiles with threading support built in, so there is no separate compile-time flag
   if (use_opencl(opencl)) {
     args$use_opencl <- TRUE
   }
@@ -168,10 +165,6 @@ compile_model <- function(model, backend, ...) {
                             silent = silent, stanr_backend = "compiled", ...)
 }
 
-# compile Stan model with stanr's 'stanli' (interpreted, no compilation)
-# backend -- identical to the 'stanr' backend in every other respect. Note
-# that stanli does not support use_opencl (stanr::stan_model() will error if
-# both are requested together)
 .compile_model_stanli <- function(model, threads, opencl, silent = 1, ...) {
   .compile_model_stanr_impl(model, threads = threads, opencl = opencl,
                             silent = silent, stanr_backend = "stanli", ...)
@@ -620,8 +613,7 @@ elapsed_time <- function(x) {
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$metadata$time$chains
   } else if (is_stanr_backend(backend)) {
-    # stanr only reports one aggregate wall-clock total for the whole fit,
-    # not a per-chain warmup/sampling breakdown, so those columns are NA
+    # stanr only reports one aggregate wall-clock total for the whole fit
     csfit <- attributes(x$fit)$metadata
     n_chains <- csfit$metadata$num_chains %||% 1
     out <- data.frame(
@@ -916,7 +908,6 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
                                 model = NULL, exclude = "", algorithm = "sampling") {
   require_package("cmdstanr")
 
-  # ensure that only relevant variables are read from CSV
   variables <- .prep_stanfit_variables(
     variables, exclude, algorithm, cmdstan_quirk = TRUE
   )
@@ -932,15 +923,6 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
                       sampler_diagnostics = sampler_diagnostics)
 }
 
-# repair, deduplicate, and exclude variable names before constructing a
-# stanfit object; shared by read_csv_as_stanfit() and read_stanr_fit_as_stanfit()
-# @param variables Character vector of variable names, or NULL
-# @param exclude Character vector of variables to exclude
-# @param algorithm The algorithm with which the model was fitted
-# @param cmdstan_quirk Apply the naming workaround for cmdstanr not
-#   recognizing the variable names it produces for meanfield/fullrank
-#   (#1473)? Only applicable to CmdStan CSV output; stanr's own output
-#   does not have this quirk.
 .prep_stanfit_variables <- function(variables, exclude, algorithm,
                                     cmdstan_quirk = FALSE) {
   if (is.null(variables)) {
@@ -960,18 +942,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
 }
 
 # build a brms-formatted stanfit object from a parsed fit
-# shared by read_csv_as_stanfit() (backend 'cmdstanr') and
-# read_stanr_fit_as_stanfit() (backend 'stanr'), which each assemble a
-# cmdstanr::read_cmdstan_csv()-shaped list from their own backend's output
-# @param csfit see cmdstanr::read_cmdstan_csv() for the expected structure
-# @param files Character vector of CSV file names, or NULL/character(0) if
-#   the fit did not originate from CSV files (backend 'stanr')
-# @param model A compiled model object (optional). Provide this argument
-#  if you want to allow updating the model without recompilation.
-# @param exclude Character vector of variables to exclude from the stanfit. Only
-#  used when 'variables' is also specified.
-# @param algorithm The algorithm with which the model was fitted.
-# @param sampler_diagnostics Character vector of sampler diagnostics to extract.
+# shared by read_csv_as_stanfit() and read_stanr_fit_as_stanfit()
 .stanfit_from_csfit <- function(csfit, files = NULL, model = NULL, exclude = "",
                                 algorithm = "sampling", variables = NULL,
                                 sampler_diagnostics = NULL,
@@ -1335,16 +1306,12 @@ read_stanr_fit_as_stanfit <- function(fit, model = NULL, exclude = "",
   fargs <- meta$arguments %||% list()
   n_chains <- as_one_numeric(meta$chains %||% 1)
 
-  # stanr draws already use bracket notation and rstan-style diagnostic
-  # names, so unlike the CmdStan CSV path, nothing needs to be read twice
+  # stanr draws already use bracket notation and rstan-style names
   all_draws <- fit$draws(format = "draws_df")
   flat_names <- posterior::variables(all_draws)
   stan_variables <- unique(sub("\\[.+", "", flat_names))
   variables <- .prep_stanfit_variables(flat_names, exclude, algorithm)
 
-  # stanr has no separate 'metric_file' / disk artifacts, and does not
-  # expose the bundled Stan/stanc versions in a parsable form; these are
-  # simply left blank rather than approximated
   csmeta <- list(
     model_name = meta$model_name %||% "model",
     stan_variables = stan_variables,
@@ -1379,14 +1346,11 @@ read_stanr_fit_as_stanfit <- function(fit, model = NULL, exclude = "",
     threads_per_chain = fargs$num_threads,
     step_size = meta$step_size_adaptation %||% rep(NA_real_, n_chains),
     init = rep(NA_character_, n_chains),
-    # stanr reports only the total elapsed time for the whole fit, not a
-    # per-chain warmup/sampling breakdown; leave the per-chain table empty
-    # (see elapsed_time_total below for the one number stanr does give us)
+    # stanr reports only the total elapsed time for the whole fit
     time = data.frame(warmup = numeric(0), sampling = numeric(0), total = numeric(0))
   )
 
-  # only StanMCMC objects have an adapted metric; matrix form is required
-  # for a dense metric and unavailable (errors) for a diagonal one
+  # only StanMCMC objects have an adapted metric
   inv_metric <- tryCatch(
     fit$inv_metric(matrix = isTRUE(csmeta$metric == "dense_e")),
     error = function(e) NULL
@@ -1436,9 +1400,6 @@ read_stanr_fit_as_stanfit <- function(fit, model = NULL, exclude = "",
 }
 
 # infer per-parameter array dimensions from flattened bracket-indexed names
-# (e.g. "beta[1,2]" implies beta has dims c(<max row>, <max col>)); stanr's
-# own draws already use this bracket convention (see stanr:::.stanr_bracket_names)
-# so, unlike cmdstanr, no dimension metadata needs to be requested separately
 .stanr_par_dims <- function(flat_names, model_pars) {
   par_dims <- vector("list", length(model_pars))
   names(par_dims) <- model_pars
