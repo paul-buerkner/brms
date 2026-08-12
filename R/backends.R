@@ -35,6 +35,31 @@ parse_model <- function(model, backend, ...) {
   collapse(out$code(), "\n")
 }
 
+# parse Stan model code with stanr
+# @param model Stan model code
+# @param stanr_backend stanr's own 'compiled' or 'stanli' backend (see
+#   stanr::stan_model), not to be confused with brms' 'backend' argument
+# @return validated Stan model code
+.parse_model_stanr_impl <- function(model, silent = 1, stanr_backend = "compiled", ...) {
+  require_package("stanr")
+  out <- eval_silent(
+    stanr::stan_model(code = model, compile = FALSE, backend = stanr_backend, ...),
+    type = "message", try = TRUE, silent = silent
+  )
+  out$check_syntax(quiet = TRUE)
+  collapse(out$code(), "\n")
+}
+
+.parse_model_stanr <- function(model, silent = 1, ...) {
+  .parse_model_stanr_impl(model, silent = silent, stanr_backend = "compiled", ...)
+}
+
+# parse Stan model code with stanr's 'stanli' (interpreted, no compilation)
+# backend -- identical to the 'stanr' backend in every other respect
+.parse_model_stanli <- function(model, silent = 1, ...) {
+  .parse_model_stanr_impl(model, silent = silent, stanr_backend = "stanli", ...)
+}
+
 # parse model with a mock backend for testing
 .parse_model_mock <- function(model, silent = TRUE, parse_error = NULL,
                               parse_check = "rstan", ...) {
@@ -44,6 +69,10 @@ parse_model <- function(model, backend, ...) {
     out <- .parse_model_rstan(model, silent = silent, ...)
   } else if (parse_check == "cmdstanr") {
     out <- .parse_model_cmdstanr(model, silent = silent, ...)
+  } else if (parse_check == "stanr") {
+    out <- .parse_model_stanr(model, silent = silent, ...)
+  } else if (parse_check == "stanli") {
+    out <- .parse_model_stanli(model, silent = silent, ...)
   } else if (is.null(parse_check)) {
     out <- "mock_code"
   } else {
@@ -112,6 +141,42 @@ compile_model <- function(model, backend, ...) {
   )
 }
 
+# compile Stan model with stanr
+# @param model Stan model code
+# @param stanr_backend stanr's own 'compiled' or 'stanli' backend (see
+#   stanr::stan_model), not to be confused with brms' 'backend' argument
+# @return model compiled with stanr
+.compile_model_stanr_impl <- function(model, threads, opencl, silent = 1,
+                                      stanr_backend = "compiled", ...) {
+  require_package("stanr")
+  args <- list(...)
+  args$code <- model
+  args$backend <- stanr_backend
+  # unlike cmdstanr, stanr always compiles with threading support built in
+  # (it bundles its own TBB), so there is no separate compile-time flag
+  if (use_opencl(opencl)) {
+    args$use_opencl <- TRUE
+  }
+  eval_silent(
+    do_call(stanr::stan_model, args),
+    type = "message", try = TRUE, silent = silent >= 2
+  )
+}
+
+.compile_model_stanr <- function(model, threads, opencl, silent = 1, ...) {
+  .compile_model_stanr_impl(model, threads = threads, opencl = opencl,
+                            silent = silent, stanr_backend = "compiled", ...)
+}
+
+# compile Stan model with stanr's 'stanli' (interpreted, no compilation)
+# backend -- identical to the 'stanr' backend in every other respect. Note
+# that stanli does not support use_opencl (stanr::stan_model() will error if
+# both are requested together)
+.compile_model_stanli <- function(model, threads, opencl, silent = 1, ...) {
+  .compile_model_stanr_impl(model, threads = threads, opencl = opencl,
+                            silent = silent, stanr_backend = "stanli", ...)
+}
+
 # compile model with a mock backend for testing
 .compile_model_mock <- function(model, threads, opencl, compile_check = "rstan",
                                 compile_error = NULL, silent = 1, ...) {
@@ -121,6 +186,10 @@ compile_model <- function(model, backend, ...) {
     out <- .parse_model_rstan(model, silent = silent, ...)
   } else if (compile_check == "cmdstanr") {
     out <- .parse_model_cmdstanr(model, silent = silent, ...)
+  } else if (compile_check == "stanr") {
+    out <- .parse_model_stanr(model, silent = silent, ...)
+  } else if (compile_check == "stanli") {
+    out <- .parse_model_stanli(model, silent = silent, ...)
   } else if (is.null(compile_check)) {
     out <- list()
   } else {
@@ -343,6 +412,101 @@ fit_model <- function(model, backend, ...) {
   out
 }
 
+# fit Stan model with stanr
+# @param model a compiled Stan model
+# @param sdata named list to be passed to Stan as data
+# @return a fitted Stan model
+.fit_model_stanr <- function(model, sdata, algorithm, iter, warmup, thin,
+                             chains, cores, threads, opencl, init, exclude,
+                             seed, control, silent, future, ...) {
+
+  require_package("stanr")
+  # some input checks and housekeeping
+  class(sdata) <- "list"
+  if (isNA(seed)) {
+    seed <- NULL
+  }
+  if (is_equal(init, "random")) {
+    init <- NULL
+  } else if (is_equal(init, "0")) {
+    init <- 0
+  }
+  if (future) {
+    # stanr runs all chains within a single process (parallelized via its
+    # own 'num_threads' TBB pool rather than separate R processes),
+    warning2(
+      "Argument 'future' is ignored by backend 'stanr': chains always run ",
+      "within a single process, parallelized via 'cores' and 'threads'."
+    )
+  }
+  args <- nlist(data = sdata, seed, init)
+  if (use_opencl(opencl)) {
+    args$opencl_ids <- opencl$ids
+  }
+  dots <- list(...)
+  args[names(dots)] <- dots
+  args[names(control)] <- control
+
+  chains <- as_one_numeric(chains)
+  empty_model <- chains <= 0
+  if (empty_model) {
+    # fit the model with minimal amount of draws
+    # TODO: replace with a better solution
+    chains <- 1
+    iter <- 2
+    warmup <- 1
+    thin <- 1
+    cores <- 1
+  }
+
+  # stanr has a single 'num_threads' pool shared by concurrent chains and
+  # within-chain (reduce_sum) parallelism
+  num_threads <- cores
+  if (use_threading(threads, force = TRUE)) {
+    num_threads <- cores * threads$threads
+  }
+  args$num_threads <- num_threads
+
+  # do the actual sampling
+  if (silent < 2) {
+    message("Start sampling")
+  }
+  if (algorithm %in% c("sampling", "fixed_param")) {
+    c(args) <- list(
+      iter_sampling = iter - warmup,
+      iter_warmup = warmup,
+      chains = chains,
+      thin = thin,
+      show_messages = silent < 2,
+      show_exceptions = silent == 0,
+      fixed_param = algorithm == "fixed_param"
+    )
+    out <- do_call(model$sample, args)
+  } else if (algorithm %in% c("fullrank", "meanfield")) {
+    c(args) <- nlist(iter, algorithm)
+    out <- do_call(model$variational, args)
+  } else if (algorithm %in% c("pathfinder")) {
+    c(args) <- list(num_paths = chains)
+    out <- do_call(model$pathfinder, args)
+  } else if (algorithm %in% c("laplace")) {
+    out <- do_call(model$laplace, args)
+  } else {
+    stop2("Algorithm '", algorithm, "' is not supported.")
+  }
+
+  out <- read_stanr_fit_as_stanfit(
+    out, model = model, exclude = exclude, algorithm = algorithm
+  )
+
+  if (empty_model) {
+    # allow correct updating of an 'empty' model
+    out@sim <- list()
+  }
+  out
+}
+
+.fit_model_stanli <- .fit_model_stanr
+
 # fit model with a mock backend for testing
 .fit_model_mock <- function(model, sdata, algorithm, iter, warmup, thin,
                             chains, cores, threads, opencl, init, exclude,
@@ -355,6 +519,10 @@ fit_model <- function(model, backend, ...) {
   out
 }
 
+is_stanr_backend <- function(backend) {
+  isTRUE(backend %in% c("stanr", "stanli"))
+}
+
 # extract the compiled stan model
 # @param x brmsfit object
 compiled_model <- function(x) {
@@ -364,6 +532,8 @@ compiled_model <- function(x) {
     out <- rstan::get_stanmodel(x$fit)
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$CmdStanModel
+  } else if (is_stanr_backend(backend)) {
+    out <- attributes(x$fit)$StanModel
   } else if (backend == "mock") {
     stop2("'compiled_model' is not supported in the mock backend.")
   }
@@ -380,6 +550,10 @@ needs_recompilation <- function(x) {
   } else if (backend == "cmdstanr") {
     exe_file <- attributes(x$fit)$CmdStanModel$exe_file()
     out <- !is.character(exe_file) || !file.exists(exe_file)
+  } else if (is_stanr_backend(backend)) {
+    # Always recompiling is fine: stanr's own $compile()
+    # hits an on-disk hash cache and is a fast no-op when nothing changed
+    out <- TRUE
   } else if (backend == "mock") {
     out <- FALSE
   }
@@ -421,6 +595,8 @@ recompile_model <- function(x, recompile = NULL) {
     x$fit@stanmodel <- new_model
   } else if (backend == "cmdstanr") {
     attributes(x)$CmdStanModel <- new_model
+  } else if (is_stanr_backend(backend)) {
+    attributes(x$fit)$StanModel <- new_model
   } else if (backend == "mock") {
     stop2("'recompile_model' is not supported in the mock backend.")
   }
@@ -443,6 +619,17 @@ elapsed_time <- function(x) {
     rownames(out) <- NULL
   } else if (backend == "cmdstanr") {
     out <- attributes(x$fit)$metadata$time$chains
+  } else if (is_stanr_backend(backend)) {
+    # stanr only reports one aggregate wall-clock total for the whole fit,
+    # not a per-chain warmup/sampling breakdown, so those columns are NA
+    csfit <- attributes(x$fit)$metadata
+    n_chains <- csfit$metadata$num_chains %||% 1
+    out <- data.frame(
+      chain_id = seq_len(n_chains),
+      warmup = NA_real_,
+      sampling = NA_real_,
+      total = csfit$elapsed_total %||% NA_real_
+    )
   } else if (backend == "mock") {
     stop2("'elapsed_time' not supported in the mock backend.")
   }
@@ -451,7 +638,7 @@ elapsed_time <- function(x) {
 
 # supported Stan backends
 backend_choices <- function() {
-  c("rstan", "cmdstanr", "mock")
+  c("rstan", "cmdstanr", "stanr", "stanli", "mock")
 }
 
 # supported Stan algorithms
@@ -729,20 +916,10 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
                                 model = NULL, exclude = "", algorithm = "sampling") {
   require_package("cmdstanr")
 
-  if (!is.null(variables)) {
-    # ensure that only relevant variables are read from CSV
-    variables <- repair_variable_names(variables)
-    variables <- unique(sub("\\[.+", "", variables))
-    variables <- setdiff(variables, exclude)
-    # temp fix for cmdstanr not recognizing the variable names it produces #1473
-    if (algorithm %in% c("meanfield", "fullrank")) {
-      variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
-    } else if (algorithm %in% "pathfinder") {
-      variables <- setdiff(variables, c("lp_approx__", "path__"))
-    } else if (algorithm %in% "laplace") {
-      variables <- setdiff(variables, c("lp__", "lp_approx__"))
-    }
-  }
+  # ensure that only relevant variables are read from CSV
+  variables <- .prep_stanfit_variables(
+    variables, exclude, algorithm, cmdstan_quirk = TRUE
+  )
 
   csfit <- cmdstanr::read_cmdstan_csv(
     files = files, variables = variables,
@@ -750,8 +927,61 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     format = NULL
   )
 
+  .stanfit_from_csfit(csfit, files = files, model = model, exclude = exclude,
+                      algorithm = algorithm, variables = variables,
+                      sampler_diagnostics = sampler_diagnostics)
+}
+
+# repair, deduplicate, and exclude variable names before constructing a
+# stanfit object; shared by read_csv_as_stanfit() and read_stanr_fit_as_stanfit()
+# @param variables Character vector of variable names, or NULL
+# @param exclude Character vector of variables to exclude
+# @param algorithm The algorithm with which the model was fitted
+# @param cmdstan_quirk Apply the naming workaround for cmdstanr not
+#   recognizing the variable names it produces for meanfield/fullrank
+#   (#1473)? Only applicable to CmdStan CSV output; stanr's own output
+#   does not have this quirk.
+.prep_stanfit_variables <- function(variables, exclude, algorithm,
+                                    cmdstan_quirk = FALSE) {
+  if (is.null(variables)) {
+    return(variables)
+  }
+  variables <- repair_variable_names(variables)
+  variables <- unique(sub("\\[.+", "", variables))
+  variables <- setdiff(variables, exclude)
+  if (cmdstan_quirk && algorithm %in% c("meanfield", "fullrank")) {
+    variables <- ifelse(variables == "lp_approx__", "log_g__", variables)
+  } else if (algorithm %in% "pathfinder") {
+    variables <- setdiff(variables, c("lp_approx__", "path__"))
+  } else if (algorithm %in% "laplace") {
+    variables <- setdiff(variables, c("lp__", "lp_approx__"))
+  }
+  variables
+}
+
+# build a brms-formatted stanfit object from a parsed fit
+# shared by read_csv_as_stanfit() (backend 'cmdstanr') and
+# read_stanr_fit_as_stanfit() (backend 'stanr'), which each assemble a
+# cmdstanr::read_cmdstan_csv()-shaped list from their own backend's output
+# @param csfit see cmdstanr::read_cmdstan_csv() for the expected structure
+# @param files Character vector of CSV file names, or NULL/character(0) if
+#   the fit did not originate from CSV files (backend 'stanr')
+# @param model A compiled model object (optional). Provide this argument
+#  if you want to allow updating the model without recompilation.
+# @param exclude Character vector of variables to exclude from the stanfit. Only
+#  used when 'variables' is also specified.
+# @param algorithm The algorithm with which the model was fitted.
+# @param sampler_diagnostics Character vector of sampler diagnostics to extract.
+.stanfit_from_csfit <- function(csfit, files = NULL, model = NULL, exclude = "",
+                                algorithm = "sampling", variables = NULL,
+                                sampler_diagnostics = NULL,
+                                model_attr = "CmdStanModel") {
   # @model_name
-  model_name <- gsub(".csv", "", basename(files[[1]]))
+  model_name <- if (length(files)) {
+    gsub(".csv", "", basename(files[[1]]))
+  } else {
+    csfit$metadata$model_name %||% "model"
+  }
 
   # @model_pars
   model_pars <- csfit$metadata$stan_variables
@@ -1013,7 +1243,9 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
     sargs_rep[[i]]$init <- as.character(csfit$metadata$init[i])
     # two 'file' elements: select the second
     file_idx <- which(names(sargs_rep[[i]]) == "file")
-    sargs_rep[[i]][[file_idx[2]]] <- files[[i]]
+    if (length(files) >= i) {
+      sargs_rep[[i]][[file_idx[2]]] <- files[[i]]
+    }
 
     sargs_rep[[i]]$adaptation_info <- adapt_info[[i]]
 
@@ -1041,7 +1273,11 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   )
 
   # @date
-  sdate <- do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
+  sdate <- if (length(files)) {
+    do.call(max, lapply(files, function(csv) file.info(csv)$mtime))
+  } else {
+    Sys.time()
+  }
   sdate <- format(sdate, "%a %b %d %X %Y")
 
   out <- new(
@@ -1059,6 +1295,162 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   )
 
   attributes(out)$metadata <- csfit
-  attributes(out)$CmdStanModel <- model
+  attributes(out)[[model_attr]] <- model
   out
+}
+
+#' Read a stanr fit as a brms-formatted stanfit object
+#'
+#' \code{read_stanr_fit_as_stanfit} is used internally to convert the in-memory
+#' fit object returned by a \pkg{stanr} model-fitting method (\code{$sample()},
+#' \code{$variational()}, \code{$pathfinder()}, or \code{$laplace()}) into a
+#' \code{stanfit} object that is consistent with the structure of the fit slot of
+#' a brmsfit object.
+#'
+#' @param fit A stanr fit object (\code{StanMCMC}, \code{StanVB},
+#'   \code{StanPathfinder}, or \code{StanLaplace}).
+#' @param model The stanr \code{StanModel} object the fit was generated from
+#'   (optional). Provide this argument if you want to allow updating the model
+#'   without recompilation.
+#' @param exclude Character vector of variables to exclude from the stanfit.
+#' @param algorithm The algorithm with which the model was fitted.
+#'   See \code{\link{brm}} for details.
+#'
+#' @return A stanfit object consistent with the structure of the \code{fit}
+#'  slot of a brmsfit object.
+#'
+#' @export
+read_stanr_fit_as_stanfit <- function(fit, model = NULL, exclude = "",
+                                      algorithm = "sampling") {
+  require_package("stanr")
+
+  if (any(fit$return_codes() != 0)) {
+    stop2(
+      "Fitting the Stan model via the 'stanr' backend failed.\n",
+      collapse(fit$output(), "\n")
+    )
+  }
+
+  meta <- fit$metadata()
+  fargs <- meta$arguments %||% list()
+  n_chains <- as_one_numeric(meta$chains %||% 1)
+
+  # stanr draws already use bracket notation and rstan-style diagnostic
+  # names, so unlike the CmdStan CSV path, nothing needs to be read twice
+  all_draws <- fit$draws(format = "draws_df")
+  flat_names <- posterior::variables(all_draws)
+  stan_variables <- unique(sub("\\[.+", "", flat_names))
+  variables <- .prep_stanfit_variables(flat_names, exclude, algorithm)
+
+  # stanr has no separate 'metric_file' / disk artifacts, and does not
+  # expose the bundled Stan/stanc versions in a parsable form; these are
+  # simply left blank rather than approximated
+  csmeta <- list(
+    model_name = meta$model_name %||% "model",
+    stan_variables = stan_variables,
+    variables = flat_names,
+    stan_variable_sizes = .stanr_par_dims(flat_names, stan_variables),
+    method = fargs$method,
+    algorithm = fargs$algorithm,
+    engine = fargs$engine,
+    metric = fargs$metric,
+    adapt_engaged = isTRUE(fargs$adapt_engaged),
+    adapt_delta = fargs$delta,
+    gamma = fargs$gamma,
+    kappa = fargs$kappa,
+    t0 = fargs$t0,
+    init_buffer = fargs$init_buffer,
+    term_buffer = fargs$term_buffer,
+    window = fargs$window,
+    max_treedepth = fargs$max_depth,
+    iter_warmup = fargs$num_warmup %||% 0L,
+    iter_sampling = fargs$num_samples %||% posterior::niterations(all_draws),
+    thin = fargs$thin %||% 1L,
+    save_warmup = isTRUE(meta$save_warmup),
+    num_chains = n_chains,
+    seed = meta$seed,
+    refresh = fargs$refresh,
+    stan_version_major = NA_character_,
+    stan_version_minor = NA_character_,
+    stan_version_patch = NA_character_,
+    stanc_version = NA_character_,
+    sig_figs = NA_character_,
+    profile_file = character(0),
+    threads_per_chain = fargs$num_threads,
+    step_size = meta$step_size_adaptation %||% rep(NA_real_, n_chains),
+    init = rep(NA_character_, n_chains),
+    # stanr reports only the total elapsed time for the whole fit, not a
+    # per-chain warmup/sampling breakdown; leave the per-chain table empty
+    # (see elapsed_time_total below for the one number stanr does give us)
+    time = data.frame(warmup = numeric(0), sampling = numeric(0), total = numeric(0))
+  )
+
+  # only StanMCMC objects have an adapted metric; matrix form is required
+  # for a dense metric and unavailable (errors) for a diagonal one
+  inv_metric <- tryCatch(
+    fit$inv_metric(matrix = isTRUE(csmeta$metric == "dense_e")),
+    error = function(e) NULL
+  )
+
+  csfit <- list(
+    metadata = csmeta,
+    inv_metric = inv_metric,
+    step_size = as.list(csmeta$step_size),
+    elapsed_total = fit$time()$total
+  )
+
+  if (inherits(fit, "StanMCMC")) {
+    n_warmup <- as.integer(fargs$num_warmup %||% 0L)
+    n_sample <- posterior::niterations(all_draws)
+    if (csmeta$save_warmup && n_warmup > 0) {
+      combined <- fit$draws(inc_warmup = TRUE, format = "draws_df")
+      combined_diag <- fit$sampler_diagnostics(inc_warmup = TRUE, format = "draws_df")
+      csfit$warmup_draws <-
+        posterior::subset_draws(combined, iteration = seq_len(n_warmup))
+      csfit$post_warmup_draws <-
+        posterior::subset_draws(combined, iteration = n_warmup + seq_len(n_sample))
+      csfit$warmup_sampler_diagnostics <-
+        posterior::subset_draws(combined_diag, iteration = seq_len(n_warmup))
+      csfit$post_warmup_sampler_diagnostics <-
+        posterior::subset_draws(combined_diag, iteration = n_warmup + seq_len(n_sample))
+    } else {
+      # no warmup draws were saved (or none were run); use a valid,
+      # correctly-shaped but empty object rather than NULL so that
+      # niterations()/nchains() below keep working
+      csfit$warmup_draws <- posterior::subset_draws(all_draws, iteration = integer(0))
+      csfit$post_warmup_draws <- all_draws
+      diagn <- fit$sampler_diagnostics(format = "draws_df")
+      csfit$warmup_sampler_diagnostics <-
+        posterior::subset_draws(diagn, iteration = integer(0))
+      csfit$post_warmup_sampler_diagnostics <- diagn
+    }
+  } else {
+    # variational / pathfinder / laplace
+    csfit$draws <- all_draws
+  }
+
+  .stanfit_from_csfit(
+    csfit, files = NULL, model = model, exclude = exclude,
+    algorithm = algorithm, variables = variables, model_attr = "StanModel"
+  )
+}
+
+# infer per-parameter array dimensions from flattened bracket-indexed names
+# (e.g. "beta[1,2]" implies beta has dims c(<max row>, <max col>)); stanr's
+# own draws already use this bracket convention (see stanr:::.stanr_bracket_names)
+# so, unlike cmdstanr, no dimension metadata needs to be requested separately
+.stanr_par_dims <- function(flat_names, model_pars) {
+  par_dims <- vector("list", length(model_pars))
+  names(par_dims) <- model_pars
+  for (p in model_pars) {
+    idx_names <- flat_names[grepl(paste0("^", p, "\\[.*\\]$"), flat_names)]
+    if (!length(idx_names)) {
+      par_dims[[p]] <- integer(0)
+      next
+    }
+    idx_str <- sub("\\]$", "", sub(paste0("^", p, "\\["), "", idx_names))
+    idx_mat <- do.call(rbind, lapply(strsplit(idx_str, ",", fixed = TRUE), as.integer))
+    par_dims[[p]] <- unname(apply(idx_mat, 2, max))
+  }
+  par_dims
 }

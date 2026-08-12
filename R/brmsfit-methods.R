@@ -558,6 +558,10 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
         stanmodel, vectorize = vectorize, env = env, ...
       )
     }
+  } else if (is_stanr_backend(x$backend)) {
+    funs <- .expose_functions_cmdstanr(
+      stanmodel, vectorize = vectorize, env = env, ...
+    )
   } else {
     funs <- .expose_functions_rstan(
       stanmodel, vectorize = vectorize, env = env, ...

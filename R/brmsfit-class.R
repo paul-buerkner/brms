@@ -72,6 +72,9 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
     require_package("cmdstanr")
     version$cmdstanr <- utils::packageVersion("cmdstanr")
     version$cmdstan <- as.package_version(cmdstanr::cmdstan_version())
+  } else if (is_stanr_backend(backend)) {
+    require_package("stanr")
+    version$stanr <- utils::packageVersion("stanr")
   }
   x <- nlist(
     formula, data, prior, data2, stanvars, model, save_pars, algorithm,
@@ -103,4 +106,3 @@ is.brmsfit_multiple <- function(x) {
 is.stanfit <- function(x) {
   inherits(x, "stanfit")
 }
-
