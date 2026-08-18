@@ -60,6 +60,7 @@ jobs:
               new_process = TRUE
             )
             # overwrite references/index.html so it points to all functions instead of addition terms page
+            unlink("docs/reference/index.html")
             pkgdown::build_reference_index(
               override = list(destination = "docs")
             )
