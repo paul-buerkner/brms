@@ -223,6 +223,80 @@ test_that("Mixture models work correctly", suppressWarnings({
   # expect_equal(dim(pp_mixture(fit3)), c(nobs(fit3), 4, 3))
 }))
 
+test_that("group-level mixture models work correctly", suppressWarnings({
+  set.seed(1234)
+  ng <- 40
+  npg <- 6
+  comp <- rbinom(ng, 1, 0.4)
+  dat <- do.call(rbind, lapply(seq_len(ng), function(g) {
+    data.frame(g = factor(g), y = rnorm(npg, c(0, 6)[comp[g] + 1], 1))
+  }))
+  fit <- brm(
+    bf(y ~ 1), data = dat,
+    family = mixture(gaussian, gaussian, gr = "g"),
+    prior = c(prior(normal(0, 5), Intercept, dpar = mu1),
+              prior(normal(6, 5), Intercept, dpar = mu2)),
+    chains = 2, init = 0, refresh = 0, seed = 1234,
+    save_pars = save_pars(all = TRUE)  # required for loo_moment_match
+  )
+  print(fit)
+  # the mixing proportions and component means are recovered
+  ps <- posterior_summary(fit, variable = c("b_mu1_Intercept", "b_mu2_Intercept"))
+  expect_range(ps["b_mu1_Intercept", "Estimate"], -1, 1)
+  expect_range(ps["b_mu2_Intercept", "Estimate"], 5, 7)
+  # predictions are per observation, but log_lik / loo are per group
+  expect_equal(dim(posterior_predict(fit)), c(ndraws(fit), nobs(fit)))
+  expect_equal(dim(posterior_epred(fit)), c(ndraws(fit), nobs(fit)))
+  expect_equal(ncol(log_lik(fit)), ng)
+  expect_equal(nrow(loo(fit)$pointwise), ng)
+  # pointwise evaluation is also computed per group
+  expect_equal(
+    loo(fit, pointwise = TRUE)$pointwise[, "elpd_loo"],
+    loo(fit)$pointwise[, "elpd_loo"]
+  )
+  expect_equal(dim(pp_mixture(fit)), c(ng, 4, 2))
+  # kfold and the loo refinements operate per group (leave-one-group-out)
+  loo1 <- loo(fit)
+  # exact leave-one-group-out kfold tracks PSIS-loo
+  kf <- kfold(fit, folds = "loo", chains = 1, refresh = 0)
+  expect_equal(nrow(kf$pointwise), ng)
+  expect_equal(
+    kf$estimates["elpd_kfold", "Estimate"],
+    loo1$estimates["elpd_loo", "Estimate"], tolerance = 2
+  )
+  # K-fold over groups keeps whole groups within a fold
+  kf5 <- kfold(fit, K = 5, chains = 1, refresh = 0, save_fits = TRUE)
+  expect_equal(nrow(kf5$pointwise), ng)
+  # predictions from the saved fits are per observation
+  kfp <- kfold_predict(kf5)
+  expect_equal(length(kfp$y), nobs(fit))
+  # a single integer 'Ksub' selects that many random folds
+  kf2 <- kfold(fit, K = 5, Ksub = 2, chains = 1, refresh = 0)
+  expect_lt(nrow(kf2$pointwise), ng)
+  # reloo refits problematic groups and preserves the per-group unit
+  rl <- reloo(fit, loo1, k_threshold = 0.5, chains = 1, refresh = 0)
+  expect_equal(nrow(rl$pointwise), ng)
+  expect_true(all(is.finite(rl$pointwise[, "elpd_loo"])))
+  # subsampling and moment matching operate on the per-group pointwise term
+  expect_equal(nrow(loo_subsample(fit, observations = 20)$pointwise), 20)
+  expect_s3_class(loo_moment_match(fit, loo1, k_threshold = 0.5), "loo")
+  # 'group' is redundant with the mixture grouping and is rejected
+  expect_error(kfold(fit, group = "g"), "not supported for group-level")
+  # 'joint' has no meaning when the group is the pointwise unit
+  expect_error(kfold(fit, joint = "obs"), "not supported for group-level")
+  # only the default, folds = 'loo', or group-constant numeric folds work
+  expect_error(kfold(fit, folds = "stratified"), "Unsupported 'folds'")
+  # newdata may contain a subset of the original groups or new groups
+  nd <- dat[dat$g %in% c("1", "2"), ]
+  nd$g <- factor(rep(c("1", "new"), each = npg))
+  expect_equal(ncol(log_lik(fit, newdata = nd)), 2)
+  expect_equal(
+    dim(posterior_predict(fit, newdata = nd)),
+    c(ndraws(fit), nrow(nd))
+  )
+  expect_equal(dim(pp_mixture(fit, newdata = nd)), c(2, 4, 2))
+}))
+
 test_that("Gaussian processes work correctly", suppressWarnings({
   ## Basic GPs
   set.seed(1112)

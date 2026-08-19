@@ -891,6 +891,12 @@ acat <- function(link = "logit", link_disc = "log",
 #'   models. As the resulting model is only weakly identified, informative
 #'   priors on the \code{theta} parameters are strongly recommended (see the
 #'   examples in \code{\link{brmsformula}}).
+#' @param gr Optional name of a grouping variable in the data. If specified,
+#'   the mixture is computed over the levels of that variable rather than over
+#'   individual observations, that is, all observations within a group are
+#'   assumed to stem from the same mixture component. By default (\code{NULL}),
+#'   the mixture is computed at the observation level. See Details for
+#'   restrictions of group-level mixtures.
 #'
 #' @return An object of class \code{mixfamily}.
 #'
@@ -912,6 +918,21 @@ acat <- function(link = "logit", link_disc = "log",
 #' population-level intercepts via \code{\link{set_prior}} to improve
 #' posterior inference. In addition, it is sometimes necessary to set \code{init = 0}
 #' in the call to \code{\link{brm}} to allow chains to initialize properly.
+#'
+#' Via argument \code{gr}, the mixture can be computed over the levels of a
+#' grouping variable instead of over individual observations, so that all
+#' observations within a group share the same (unknown) component. The mixture
+#' is then marginalized once per group rather than once per observation.
+#' Group-level mixtures require the mixing proportions to be constant within
+#' each group and do not support within-chain threading, censoring, truncation,
+#' or observation weights. In multivariate models, they are supported only if
+#' all responses are grouped mixtures over the same grouping variable (with
+#' \code{rescor = FALSE}). Cross-validation is performed with the group as the
+#' pointwise unit (leave-one-group-out): \code{log_lik}, \code{loo}, and
+#' \code{waic} return one value per group, and \code{kfold}, \code{reloo},
+#' \code{loo_moment_match}, and \code{loo_subsample} operate on these per-group
+#' terms. When predicting from new data, the groups are defined by the grouping
+#' variable within that data set and need not match the original groups.
 #'
 #' For more details on the specification of mixture
 #' models, see \code{\link{brmsformula}}.
@@ -969,10 +990,17 @@ acat <- function(link = "logit", link_disc = "log",
 #'
 #' ## compare model fit
 #' loo(fit1, fit2, fit3, fit4)
+#'
+#' ## group-level mixture: whole groups belong to the same component
+#' dat$g <- rep(1:60, each = 5)
+#' fit6 <- brm(bf(y ~ 1), dat, family = mixture(gaussian, gaussian, gr = "g"),
+#'             prior = prior, init = 0, chains = 2)
+#' summary(fit6)
 #' }
 #'
 #' @export
-mixture <- function(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL) {
+mixture <- function(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL,
+                    gr = NULL) {
   dots <- c(list(...), flist)
   if (length(nmix) == 1L) {
     nmix <- rep(nmix, length(dots))
@@ -984,12 +1012,19 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL) {
   if (!is.null(refcat) && !isNA(refcat)) {
     stop2("For mixture models, 'refcat' can only be NULL or NA.")
   }
+  # optional grouping variable for group-level mixtures
+  if (!is.null(gr) && !isNA(gr)) {
+    gr <- as_one_character(gr)
+  } else {
+    gr <- NULL
+  }
   dots <- dots[rep(seq_along(dots), nmix)]
   family <- list(
     family = "mixture",
     link = "identity",
     mix = lapply(dots, validate_family),
-    refcat = refcat
+    refcat = refcat,
+    mixgr_var = gr
   )
   class(family) <- c("mixfamily", "brmsfamily", "family")
   # validity checks
@@ -1851,6 +1886,40 @@ no_nu <- function(bterms) {
 # get mixture index if specified
 get_mix_id <- function(family) {
   family_info(family, "mix") %||% ""
+}
+
+# get the grouping variable name of a group-level mixture
+get_mix_var <- function(family) {
+  if (is.family(family)) {
+    return(family[["mixgr_var"]])
+  }
+  if (is.list(family)) {
+    return(unique(ulapply(family, get_mix_var)))
+  }
+  NULL
+}
+
+# is the mixture computed over a grouping variable rather than observations?
+has_mix_groups <- function(family) {
+  length(get_mix_var(family)) > 0L
+}
+
+# grouping factor of a group-level mixture; its level order defines
+# the group indices and hence the per-group columns of 'log_lik'
+mixgr_factor <- function(family, data) {
+  factor(eval2(get_mix_var(family), data))
+}
+
+# row indices of each group in a group-level mixture,
+# in the order of the per-group columns of 'log_lik'
+# @param x a 'brmsfit' with a group-level mixture family
+# @param newdata data defining the groups (defaults to the model frame)
+mixgr_row_ids <- function(x, newdata = NULL) {
+  stopifnot(is.brmsfit(x), has_mix_groups(x$family))
+  if (is.null(newdata)) {
+    newdata <- model.frame(x)
+  }
+  unname(split(seq_rows(newdata), mixgr_factor(x$family, newdata)))
 }
 
 # does the family-link combination have a built-in Stan function?
