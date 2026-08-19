@@ -26,7 +26,13 @@ posterior_predict(
   draw_ids = NULL,
   sort = FALSE,
   ntrys = 5,
+  output = "random",
+  q = NULL,
+  p = NULL,
   cores = NULL,
+  lower.tail = TRUE,
+  log.p = FALSE,
+  log = FALSE,
   ...
 )
 ```
@@ -96,10 +102,45 @@ posterior_predict(
   Parameter used in rejection sampling for truncated discrete models
   only (defaults to `5`). See Details for more information.
 
+- output:
+
+  Type of predictive quantity to return. Either `"random"` (the
+  default), `"probability"`, `"pit"`, `"density"`, or `"quantile"`. See
+  Details for more information.
+
+- q:
+
+  Optional values at which to evaluate probabilities, PIT values, or
+  densities. Only used if `output` is `"probability"`, `"pit"`, or
+  `"density"`. Defaults to the observed responses. See Details.
+
+- p:
+
+  Probabilities at which to evaluate quantiles. Only used and required
+  if `output = "quantile"`.
+
 - cores:
 
   Number of cores (defaults to `1`). On non-Windows systems, this
   argument can be set globally via the `mc.cores` option.
+
+- lower.tail:
+
+  Logical; If `TRUE` (default), return \\P(X \le x)\\ or the
+  corresponding lower-tail quantiles. Else, return \\P(X \> x)\\ or
+  upper-tail quantiles. Only used if `output` is `"probability"`,
+  `"pit"`, or `"quantile"`.
+
+- log.p:
+
+  Logical; If `TRUE`, probabilities are given and returned on the log
+  scale. Only used if `output` is `"probability"`, `"pit"`, or
+  `"quantile"`.
+
+- log:
+
+  Logical; If `TRUE`, densities are returned on the log scale. Only used
+  if `output = "density"`.
 
 - ...:
 
@@ -109,12 +150,54 @@ posterior_predict(
 
 ## Value
 
-An `array` of draws. In univariate models, the output is as an S x N
-matrix, where S is the number of posterior draws and N is the number of
+An `array` of posterior predictive draws or related quantities (see
+argument `output`). In univariate models, the output is an S x N matrix,
+where S is the number of posterior draws and N is the number of
 observations. In multivariate models, an additional dimension is added
 to the output which indexes along the different response variables.
 
 ## Details
+
+Besides random draws, related quantities such as CDF or PIT values,
+densities, or quantiles can be returned via argument `output`. This
+argument controls which predictive quantity is returned for each
+posterior draw and observation:
+
+- `"random"`: Draws from the posterior predictive distribution. This is
+  the default and reproduces the historical behavior of
+  `posterior_predict`.
+
+- `"probability"`: Values of the posterior predictive CDF evaluated at
+  `q`.
+
+- `"pit"`: Probability integral transform (PIT) values evaluated at `q`.
+  For continuous distributions, this is identical to `"probability"`.
+  For discrete distributions, a randomized PIT is used to avoid point
+  masses at the CDF jumps (Czado et al., 2009). See Säilynoja et
+  al. (2022) and Tesso and Vehtari (2026) for using PIT values in
+  predictive model checking.
+
+- `"density"`: Values of the posterior predictive density or probability
+  mass function evaluated at `q`.
+
+- `"quantile"`: Quantiles of the posterior predictive distribution at
+  probabilities `p`.
+
+If `q` is `NULL`, the observed response values are used. Argument `p`
+must be supplied when `output = "quantile"`. Not all response families
+support outputs other than `"random"` yet; requesting an unsupported
+combination raises an error.
+
+For truncated discrete models only: In the absence of any general
+algorithm to sample from truncated discrete distributions, rejection
+sampling is applied in this special case. This means that values are
+sampled until a value lies within the defined truncation boundaries. In
+practice, this procedure may be rather slow (especially in R). Thus, we
+try to do approximate rejection sampling by sampling each value `ntrys`
+times and then select a valid value. If all values are invalid, the
+closest boundary is used, instead. If there are more than a few of these
+pathological cases, a warning will occur suggesting to increase argument
+`ntrys`.
 
 `NA` values within factors in `newdata`, are interpreted as if all dummy
 variables of this factor are zero. This allows, for instance, to make
@@ -129,16 +212,20 @@ arguments are documented in
 along with several other useful arguments to control specific aspects of
 the predictions.
 
-For truncated discrete models only: In the absence of any general
-algorithm to sample from truncated discrete distributions, rejection
-sampling is applied in this special case. This means that values are
-sampled until a value lies within the defined truncation boundaries. In
-practice, this procedure may be rather slow (especially in R). Thus, we
-try to do approximate rejection sampling by sampling each value `ntrys`
-times and then select a valid value. If all values are invalid, the
-closest boundary is used, instead. If there are more than a few of these
-pathological cases, a warning will occur suggesting to increase argument
-`ntrys`.
+## References
+
+Czado, C., Gneiting, T., & Held, L. (2009). Predictive model assessment
+for count data. *Biometrics*, 65(4), 1254-1261.
+[doi:10.1111/j.1541-0420.2009.01191.x](https://doi.org/10.1111/j.1541-0420.2009.01191.x)
+
+Säilynoja, T., Bürkner, P.-C., & Vehtari, A. (2022). Graphical test for
+discrete uniformity and its applications in goodness-of-fit evaluation
+and multiple sample comparison. *Statistics and Computing*, 32, 32.
+[doi:10.1007/s11222-022-10090-6](https://doi.org/10.1007/s11222-022-10090-6)
+
+Tesso, H., & Vehtari, A. (2026). LOO-PIT predictive model checking.
+*arXiv preprint*.
+[doi:10.48550/arXiv.2603.02928](https://doi.org/10.48550/arXiv.2603.02928)
 
 ## Examples
 
@@ -152,8 +239,8 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.7e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+#> Chain 1: Gradient evaluation took 3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.3 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -170,15 +257,15 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.397 seconds (Warm-up)
-#> Chain 1:                0.528 seconds (Sampling)
-#> Chain 1:                1.925 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.338 seconds (Warm-up)
+#> Chain 1:                0.644 seconds (Sampling)
+#> Chain 1:                1.982 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
+#> Chain 2: Gradient evaluation took 2.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -195,15 +282,15 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.363 seconds (Warm-up)
-#> Chain 2:                0.659 seconds (Sampling)
-#> Chain 2:                2.022 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.326 seconds (Warm-up)
+#> Chain 2:                0.465 seconds (Sampling)
+#> Chain 2:                1.791 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.2e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
+#> Chain 3: Gradient evaluation took 2.3e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -220,15 +307,15 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.402 seconds (Warm-up)
-#> Chain 3:                0.658 seconds (Sampling)
-#> Chain 3:                2.06 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.311 seconds (Warm-up)
+#> Chain 3:                0.638 seconds (Sampling)
+#> Chain 3:                1.949 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.2e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
+#> Chain 4: Gradient evaluation took 2.3e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -245,15 +332,15 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.412 seconds (Warm-up)
-#> Chain 4:                0.659 seconds (Sampling)
-#> Chain 4:                2.071 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.463 seconds (Warm-up)
+#> Chain 4:                0.649 seconds (Sampling)
+#> Chain 4:                2.112 seconds (Total)
 #> Chain 4: 
 
 ## predicted responses
 pp <- posterior_predict(fit)
 str(pp)
-#>  num [1:4000, 1:76] 1 72.63 4.04 25.86 133.72 ...
+#>  num [1:4000, 1:76] 161.24 4.56 20.58 2.71 20.54 ...
 #>  - attr(*, "dimnames")=List of 2
 #>   ..$ : NULL
 #>   ..$ : NULL
@@ -261,7 +348,7 @@ str(pp)
 ## predicted responses excluding the group-level effect of age
 pp <- posterior_predict(fit, re_formula = ~ (1 | patient))
 str(pp)
-#>  num [1:4000, 1:76] 12.698 90.363 0.398 106.435 165.407 ...
+#>  num [1:4000, 1:76] 93.79 14.89 34.25 19.37 3.91 ...
 #>  - attr(*, "dimnames")=List of 2
 #>   ..$ : NULL
 #>   ..$ : NULL
@@ -274,7 +361,7 @@ newdata <- data.frame(
 )
 pp <- posterior_predict(fit, newdata = newdata)
 str(pp)
-#>  num [1:4000, 1:2] 21.7 28.8 1.7 2.6 73.4 ...
+#>  num [1:4000, 1:2] 315.39 7.98 31.82 10.96 73.23 ...
 #>  - attr(*, "dimnames")=List of 2
 #>   ..$ : NULL
 #>   ..$ : NULL

@@ -1,6 +1,7 @@
 # Hurdle Distributions
 
-Density and distribution functions for hurdle distributions.
+Density, distribution function, quantile function and random generation
+for hurdle distributions.
 
 ## Usage
 
@@ -9,17 +10,33 @@ dhurdle_poisson(x, lambda, hu, log = FALSE)
 
 phurdle_poisson(q, lambda, hu, lower.tail = TRUE, log.p = FALSE)
 
+qhurdle_poisson(p, lambda, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_poisson(n, lambda, hu)
+
 dhurdle_negbinomial(x, mu, shape, hu, log = FALSE)
 
 phurdle_negbinomial(q, mu, shape, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_negbinomial(p, mu, shape, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_negbinomial(n, mu, shape, hu)
 
 dhurdle_gamma(x, shape, scale, hu, log = FALSE)
 
 phurdle_gamma(q, shape, scale, hu, lower.tail = TRUE, log.p = FALSE)
 
+qhurdle_gamma(p, shape, scale, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_gamma(n, shape, scale, hu)
+
 dhurdle_lognormal(x, mu, sigma, hu, log = FALSE)
 
 phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_lognormal(p, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_lognormal(n, mu, sigma, hu)
 ```
 
 ## Arguments
@@ -48,6 +65,14 @@ phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
 - log.p:
 
   Logical; If `TRUE`, values are returned on the log scale.
+
+- p:
+
+  Vector of probabilities.
+
+- n:
+
+  Number of draws to sample from the distribution.
 
 - mu, lambda:
 

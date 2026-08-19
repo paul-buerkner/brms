@@ -1,7 +1,8 @@
 # The von Mises Distribution
 
-Density, distribution function, and random generation for the von Mises
-distribution with location `mu`, and precision `kappa`.
+Density, distribution function, quantile function and random generation
+for the von Mises distribution with location `mu`, and precision
+`kappa`.
 
 ## Usage
 
@@ -9,6 +10,16 @@ distribution with location `mu`, and precision `kappa`.
 dvon_mises(x, mu, kappa, log = FALSE)
 
 pvon_mises(q, mu, kappa, lower.tail = TRUE, log.p = FALSE, acc = 1e-20)
+
+qvon_mises(
+  p,
+  mu,
+  kappa,
+  lower.tail = TRUE,
+  log.p = FALSE,
+  acc = 1e-20,
+  tol = 1e-08
+)
 
 rvon_mises(n, mu, kappa)
 ```
@@ -43,6 +54,14 @@ rvon_mises(n, mu, kappa)
 - acc:
 
   Accuracy of numerical approximations.
+
+- p:
+
+  Vector of probabilities.
+
+- tol:
+
+  Tolerance of the approximation used in the quantile function.
 
 - n:
 

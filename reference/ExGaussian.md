@@ -1,9 +1,9 @@
 # The Exponentially Modified Gaussian Distribution
 
-Density, distribution function, and random generation for the
-exponentially modified Gaussian distribution with mean `mu` and standard
-deviation `sigma` of the gaussian component, as well as scale `beta` of
-the exponential component.
+Density, distribution function, quantile function, and random generation
+for the exponentially modified Gaussian distribution with mean `mu` and
+standard deviation `sigma` of the gaussian component, as well as scale
+`beta` of the exponential component.
 
 ## Usage
 
@@ -11,6 +11,8 @@ the exponential component.
 dexgaussian(x, mu, sigma, beta, log = FALSE)
 
 pexgaussian(q, mu, sigma, beta, lower.tail = TRUE, log.p = FALSE)
+
+qexgaussian(p, mu, sigma, beta, lower.tail = TRUE, log.p = FALSE, tol = 1e-08)
 
 rexgaussian(n, mu, sigma, beta)
 ```
@@ -45,6 +47,15 @@ rexgaussian(n, mu, sigma, beta)
 - log.p:
 
   Logical; If `TRUE`, values are returned on the log scale.
+
+- p:
+
+  Vector of probabilities.
+
+- tol:
+
+  Tolerance of the approximation used in the quantile function. Default
+  1e-8.
 
 - n:
 

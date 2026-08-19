@@ -11,7 +11,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">
       <!-- Add Stan logo -->
-      <picture><source type="image/svg+xml" srcset="../logo.svg"><img src="../logo.png" class="stan-logo" alt="Stan blue hex logo"></source></picture>
+      <img src="../reference/figures/logo.svg" class="stan-logo" alt="Stan blue hex logo">
       brms
     </a>
 
@@ -72,6 +72,7 @@
 <li>Add family <code>dirichlet_multinomial</code> to fit overdispersed multinomial data thanks to Tom Peatman. (<a href="https://github.com/paul-buerkner/brms/issues/1729" class="external-link">#1729</a>)</li>
 <li>Add the <code>int_step</code> R function to match the corresponding Stan function thanks to Daniel Sabanes Bove. (<a href="https://github.com/paul-buerkner/brms/issues/1734" class="external-link">#1734</a>)</li>
 <li>Add a new global option <code>brms.cache_folder</code>, which allows users to define a default directory for saving and loading cached brmsfit objects. Thanks to Sermet Pekin. (<a href="https://github.com/paul-buerkner/brms/issues/1790" class="external-link">#1790</a>)</li>
+<li>Extend <code>posterior_predict</code> beyond random draws via argument <code>output</code>, which can be <code>"random"</code> (the default), <code>"probability"</code>, <code>"pit"</code>, <code>"density"</code>, or <code>"quantile"</code>, with supporting arguments <code>q</code>, <code>p</code>, <code>lower.tail</code>, <code>log.p</code>, and <code>log</code> thanks to Aki Vehtari and Florence Bockting. (<a href="https://github.com/paul-buerkner/brms/issues/1857" class="external-link">#1857</a>)</li>
 <li>Predict all mixing proportions of a <code>mixture</code> family without a reference category via <code>refcat = NA</code>, analogous to <code>refcat = NA</code> in categorical models. Thanks to Gidon Frischkorn. (<a href="https://github.com/paul-buerkner/brms/issues/1450" class="external-link">#1450</a>)</li>
 </ul></div>
 <div class="section level4">

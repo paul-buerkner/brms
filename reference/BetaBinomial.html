@@ -25,7 +25,7 @@ phi = (1 - mu) * beta precision or over-dispersion, component.
 
     <a class="navbar-brand me-2" href="../index.html">
       <!-- Add Stan logo -->
-      <picture><source type="image/svg+xml" srcset="../logo.svg"><img src="../logo.png" class="stan-logo" alt="Stan blue hex logo"></source></picture>
+      <img src="../reference/figures/logo.svg" class="stan-logo" alt="Stan blue hex logo">
       brms
     </a>
 
@@ -90,6 +90,8 @@ Beta-binomial definition</a>:</p><ul><li><p><code>mu = alpha * beta</code> mean 
 <span></span>
 <span><span class="fu">pbeta_binomial</span><span class="op">(</span><span class="va">q</span>, <span class="va">size</span>, <span class="va">mu</span>, <span class="va">phi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">qbeta_binomial</span><span class="op">(</span><span class="va">p</span>, <span class="va">size</span>, <span class="va">mu</span>, <span class="va">phi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">rbeta_binomial</span><span class="op">(</span><span class="va">n</span>, <span class="va">size</span>, <span class="va">mu</span>, <span class="va">phi</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -126,10 +128,20 @@ Else, return P(X &gt; x) .</p></dd>
 <dd><p>Logical; If <code>TRUE</code>, values are returned on the log scale.</p></dd>
 
 
+<dt id="arg-p">p<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
+<dd><p>Vector of probabilities.</p></dd>
+
+
 <dt id="arg-n">n<a class="anchor" aria-label="anchor" href="#arg-n"></a></dt>
 <dd><p>Number of draws to sample from the distribution.</p></dd>
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The quantile function has no known closed form for this parameterization and
+is therefore computed numerically via inversion of the cumulative
+distribution function over the finite support <code>0:size</code>.</p>
+    </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

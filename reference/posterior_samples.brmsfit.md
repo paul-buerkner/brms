@@ -87,8 +87,8 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000258 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.58 seconds.
+#> Chain 1: Gradient evaluation took 0.000269 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.69 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -105,15 +105,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 5.736 seconds (Warm-up)
-#> Chain 1:                4.023 seconds (Sampling)
-#> Chain 1:                9.759 seconds (Total)
+#> Chain 1:  Elapsed Time: 5.487 seconds (Warm-up)
+#> Chain 1:                3.955 seconds (Sampling)
+#> Chain 1:                9.442 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000246 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.46 seconds.
+#> Chain 2: Gradient evaluation took 0.000244 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.44 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -130,15 +130,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 5.823 seconds (Warm-up)
-#> Chain 2:                4.026 seconds (Sampling)
-#> Chain 2:                9.849 seconds (Total)
+#> Chain 2:  Elapsed Time: 5.578 seconds (Warm-up)
+#> Chain 2:                3.946 seconds (Sampling)
+#> Chain 2:                9.524 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 0.000249 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 2.49 seconds.
+#> Chain 3: Gradient evaluation took 0.000242 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 2.42 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -155,15 +155,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 5.75 seconds (Warm-up)
-#> Chain 3:                4.043 seconds (Sampling)
-#> Chain 3:                9.793 seconds (Total)
+#> Chain 3:  Elapsed Time: 5.662 seconds (Warm-up)
+#> Chain 3:                3.943 seconds (Sampling)
+#> Chain 3:                9.605 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 0.000249 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 2.49 seconds.
+#> Chain 4: Gradient evaluation took 0.000237 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 2.37 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -180,33 +180,40 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 5.709 seconds (Warm-up)
-#> Chain 4:                4.029 seconds (Sampling)
-#> Chain 4:                9.738 seconds (Total)
+#> Chain 4:  Elapsed Time: 5.909 seconds (Warm-up)
+#> Chain 4:                3.935 seconds (Sampling)
+#> Chain 4:                9.844 seconds (Total)
 #> Chain 4: 
 
 # extract posterior samples of population-level effects
 samples1 <- posterior_samples(fit, pars = "^b")
 #> Warning: Method 'posterior_samples' is deprecated. Please see ?as_draws for recommended alternatives.
 head(samples1)
-#>   b_Intercept[1] b_Intercept[2] b_Intercept[3]    b_treat  b_period    b_carry
-#> 1      0.8198606       3.939656       5.140543 -0.9602062 0.4819665 -0.4547403
-#> 2      0.7909925       3.585550       5.719107 -0.6058937 0.3850753 -0.5284080
-#> 3      0.4665873       4.265965       5.209711 -1.2353026 0.0429138 -0.1605685
-#> 4      0.6634417       3.721982       5.405851 -0.9516327 0.3804130 -0.3182677
-#> 5      1.0271149       4.549710       5.717646 -1.0292334 0.3223812 -0.2853782
-#> 6      0.8868743       4.506237       5.517634 -1.2265462 0.4039052 -0.1269694
+#>   b_Intercept[1] b_Intercept[2] b_Intercept[3]    b_treat   b_period
+#> 1      0.6597909       4.049887       5.129223 -1.4129508 0.17261708
+#> 2      0.7894877       3.763109       5.339839 -0.9981397 0.38029214
+#> 3      0.7792166       4.146578       5.317411 -0.9564157 0.50993634
+#> 4      0.6732261       3.988528       5.475101 -0.4825884 0.07534019
+#> 5      0.7056669       4.340685       5.499632 -1.5816312 0.44556879
+#> 6      0.4940245       3.781961       5.445265 -0.9741098 0.10051181
+#>       b_carry
+#> 1 -0.12440360
+#> 2 -0.49657015
+#> 3 -0.28599545
+#> 4 -0.57014270
+#> 5 -0.03337895
+#> 6 -0.50983136
 
 # extract posterior samples of group-level standard deviations
 samples2 <- posterior_samples(fit, pars = "^sd_")
 #> Warning: Method 'posterior_samples' is deprecated. Please see ?as_draws for recommended alternatives.
 head(samples2)
 #>   sd_subject__Intercept
-#> 1              1.196121
-#> 2              1.133190
-#> 3              1.708739
-#> 4              1.535925
-#> 5              1.782294
-#> 6              1.560718
+#> 1              1.419671
+#> 2              1.111153
+#> 3              1.796667
+#> 4              1.470518
+#> 5              1.738034
+#> 6              1.273054
 # }
 ```

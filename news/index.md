@@ -25,6 +25,12 @@
   define a default directory for saving and loading cached brmsfit
   objects. Thanks to Sermet Pekin.
   ([\#1790](https://github.com/paul-buerkner/brms/issues/1790))
+- Extend `posterior_predict` beyond random draws via argument `output`,
+  which can be `"random"` (the default), `"probability"`, `"pit"`,
+  `"density"`, or `"quantile"`, with supporting arguments `q`, `p`,
+  `lower.tail`, `log.p`, and `log` thanks to Aki Vehtari and Florence
+  Bockting.
+  ([\#1857](https://github.com/paul-buerkner/brms/issues/1857))
 - Predict all mixing proportions of a `mixture` family without a
   reference category via `refcat = NA`, analogous to `refcat = NA` in
   categorical models. Thanks to Gidon Frischkorn.

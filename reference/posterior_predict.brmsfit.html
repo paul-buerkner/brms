@@ -23,7 +23,7 @@ both methods averaged across draws should be very similar."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">
       <!-- Add Stan logo -->
-      <picture><source type="image/svg+xml" srcset="../logo.svg"><img src="../logo.png" class="stan-logo" alt="Stan blue hex logo"></source></picture>
+      <img src="../reference/figures/logo.svg" class="stan-logo" alt="Stan blue hex logo">
       brms
     </a>
 
@@ -99,7 +99,13 @@ both methods averaged across draws should be very similar.</p>
 <span>  draw_ids <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sort <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ntrys <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  output <span class="op">=</span> <span class="st">"random"</span>,</span>
+<span>  q <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  p <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cores <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  lower.tail <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  log.p <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  log <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -174,9 +180,47 @@ for truncated discrete models only
 (defaults to <code>5</code>). See Details for more information.</p></dd>
 
 
+<dt id="arg-output">output<a class="anchor" aria-label="anchor" href="#arg-output"></a></dt>
+<dd><p>Type of predictive quantity to return. Either
+<code>"random"</code> (the default), <code>"probability"</code>, <code>"pit"</code>,
+<code>"density"</code>, or <code>"quantile"</code>. See Details for more
+information.</p></dd>
+
+
+<dt id="arg-q">q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
+<dd><p>Optional values at which to evaluate probabilities, PIT
+values, or densities. Only used if <code>output</code> is
+<code>"probability"</code>, <code>"pit"</code>, or <code>"density"</code>.
+Defaults to the observed responses. See Details.</p></dd>
+
+
+<dt id="arg-p">p<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
+<dd><p>Probabilities at which to evaluate quantiles. Only used
+and required if <code>output = "quantile"</code>.</p></dd>
+
+
 <dt id="arg-cores">cores<a class="anchor" aria-label="anchor" href="#arg-cores"></a></dt>
 <dd><p>Number of cores (defaults to <code>1</code>). On non-Windows systems,
 this argument can be set globally via the <code>mc.cores</code> option.</p></dd>
+
+
+<dt id="arg-lower-tail">lower.tail<a class="anchor" aria-label="anchor" href="#arg-lower-tail"></a></dt>
+<dd><p>Logical; If <code>TRUE</code> (default), return
+\(P(X \le x)\) or the corresponding lower-tail quantiles.
+Else, return \(P(X &gt; x)\) or upper-tail quantiles.
+Only used if <code>output</code> is <code>"probability"</code>, <code>"pit"</code>,
+or <code>"quantile"</code>.</p></dd>
+
+
+<dt id="arg-log-p">log.p<a class="anchor" aria-label="anchor" href="#arg-log-p"></a></dt>
+<dd><p>Logical; If <code>TRUE</code>, probabilities are given and
+returned on the log scale. Only used if <code>output</code> is
+<code>"probability"</code>, <code>"pit"</code>, or <code>"quantile"</code>.</p></dd>
+
+
+<dt id="arg-log">log<a class="anchor" aria-label="anchor" href="#arg-log"></a></dt>
+<dd><p>Logical; If <code>TRUE</code>, densities are returned on the
+log scale. Only used if <code>output = "density"</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -186,25 +230,39 @@ that control several aspects of data validation and prediction.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An <code>array</code> of draws. In univariate models,
-  the output is as an S x N matrix, where S is the number of posterior
+    <p>An <code>array</code> of posterior predictive draws or related
+  quantities (see argument <code>output</code>). In univariate models,
+  the output is an S x N matrix, where S is the number of posterior
   draws and N is the number of observations. In multivariate models, an
   additional dimension is added to the output which indexes along the
   different response variables.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>NA</code> values within factors in <code>newdata</code>,
-  are interpreted as if all dummy variables of this factor are
-  zero. This allows, for instance, to make predictions of the grand mean
-  when using sum coding.</p>
-<p>In multilevel models, it is possible to
-allow new levels of grouping factors to be used in the predictions.
-This can be controlled via argument <code>allow_new_levels</code>.
-New levels can be sampled in multiple ways, which can be controlled
-via argument <code>sample_new_levels</code>. Both of these arguments are
-documented in <code><a href="prepare_predictions.html">prepare_predictions</a></code> along with several
-other useful arguments to control specific aspects of the predictions.</p>
+    <p>Besides random draws, related quantities such as CDF or PIT
+  values, densities, or quantiles can be returned via argument
+  <code>output</code>. This argument controls which predictive quantity is
+  returned for each posterior draw and observation:</p><ul><li><p><code>"random"</code>: Draws from the posterior predictive
+    distribution. This is the default and reproduces the historical
+    behavior of <code>posterior_predict</code>.</p></li>
+<li><p><code>"probability"</code>: Values of the posterior predictive CDF
+    evaluated at <code>q</code>.</p></li>
+<li><p><code>"pit"</code>: Probability integral transform (PIT) values
+    evaluated at <code>q</code>. For continuous distributions, this is
+    identical to <code>"probability"</code>. For discrete distributions, a
+    randomized PIT is used to avoid point masses at the CDF jumps
+    (Czado et al., 2009). See Säilynoja et al. (2022) and
+    Tesso and Vehtari (2026) for using PIT values in predictive
+    model checking.</p></li>
+<li><p><code>"density"</code>: Values of the posterior predictive density
+    or probability mass function evaluated at <code>q</code>.</p></li>
+<li><p><code>"quantile"</code>: Quantiles of the posterior predictive
+    distribution at probabilities <code>p</code>.</p></li>
+</ul><p>If <code>q</code> is <code>NULL</code>, the observed response values are used.
+  Argument <code>p</code> must be supplied when
+  <code>output = "quantile"</code>. Not all response families support
+  outputs other than <code>"random"</code> yet; requesting an unsupported
+  combination raises an error.</p>
 <p>For truncated discrete models only: In the absence of any general
   algorithm to sample from truncated discrete distributions, rejection
   sampling is applied in this special case. This means that values are
@@ -215,6 +273,30 @@ other useful arguments to control specific aspects of the predictions.</p>
   invalid, the closest boundary is used, instead. If there are more than a
   few of these pathological cases, a warning will occur suggesting to
   increase argument <code>ntrys</code>.</p>
+<p><code>NA</code> values within factors in <code>newdata</code>,
+  are interpreted as if all dummy variables of this factor are
+  zero. This allows, for instance, to make predictions of the grand mean
+  when using sum coding.</p>
+<p>In multilevel models, it is possible to
+allow new levels of grouping factors to be used in the predictions.
+This can be controlled via argument <code>allow_new_levels</code>.
+New levels can be sampled in multiple ways, which can be controlled
+via argument <code>sample_new_levels</code>. Both of these arguments are
+documented in <code><a href="prepare_predictions.html">prepare_predictions</a></code> along with several
+other useful arguments to control specific aspects of the predictions.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Czado, C., Gneiting, T., &amp; Held, L. (2009). Predictive model
+assessment for count data. <em>Biometrics</em>, 65(4), 1254-1261.
+<a href="https://doi.org/10.1111/j.1541-0420.2009.01191.x" class="external-link">doi:10.1111/j.1541-0420.2009.01191.x</a></p>
+<p>Säilynoja, T., Bürkner, P.-C., &amp; Vehtari, A. (2022). Graphical
+test for discrete uniformity and its applications in
+goodness-of-fit evaluation and multiple sample comparison.
+<em>Statistics and Computing</em>, 32, 32.
+<a href="https://doi.org/10.1007/s11222-022-10090-6" class="external-link">doi:10.1007/s11222-022-10090-6</a></p>
+<p>Tesso, H., &amp; Vehtari, A. (2026). LOO-PIT predictive model checking.
+<em>arXiv preprint</em>. <a href="https://doi.org/10.48550/arXiv.2603.02928" class="external-link">doi:10.48550/arXiv.2603.02928</a></p>
     </div>
 
     <div class="section level2">
@@ -228,8 +310,8 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 2.7e-05 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 3e-05 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.3 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -246,15 +328,15 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.397 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                0.528 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.925 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.338 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                0.644 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.982 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 2.2e-05 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 2.3e-05 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -271,15 +353,15 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.363 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                0.659 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                2.022 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.326 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                0.465 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.791 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Gradient evaluation took 2.2e-05 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Gradient evaluation took 2.3e-05 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
@@ -296,15 +378,15 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:  Elapsed Time: 1.402 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                0.658 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                2.06 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:  Elapsed Time: 1.311 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                0.638 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                1.949 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Gradient evaluation took 2.2e-05 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Gradient evaluation took 2.3e-05 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
@@ -321,15 +403,15 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:  Elapsed Time: 1.412 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                0.659 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                2.071 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:  Elapsed Time: 1.463 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                0.649 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                2.112 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## predicted responses</span></span></span>
 <span class="r-in"><span><span class="va">pp</span> <span class="op">&lt;-</span> <span class="fu">posterior_predict</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pp</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:4000, 1:76] 1 72.63 4.04 25.86 133.72 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:4000, 1:76] 161.24 4.56 20.58 2.71 20.54 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "dimnames")=List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ : NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ : NULL</span>
@@ -337,7 +419,7 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-in"><span><span class="co">## predicted responses excluding the group-level effect of age</span></span></span>
 <span class="r-in"><span><span class="va">pp</span> <span class="op">&lt;-</span> <span class="fu">posterior_predict</span><span class="op">(</span><span class="va">fit</span>, re_formula <span class="op">=</span> <span class="op">~</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">patient</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pp</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:4000, 1:76] 12.698 90.363 0.398 106.435 165.407 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:4000, 1:76] 93.79 14.89 34.25 19.37 3.91 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "dimnames")=List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ : NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ : NULL</span>
@@ -350,7 +432,7 @@ other useful arguments to control specific aspects of the predictions.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pp</span> <span class="op">&lt;-</span> <span class="fu">posterior_predict</span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">newdata</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pp</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:4000, 1:2] 21.7 28.8 1.7 2.6 73.4 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:4000, 1:2] 315.39 7.98 31.82 10.96 73.23 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "dimnames")=List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ : NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ : NULL</span>

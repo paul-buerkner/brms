@@ -9,13 +9,19 @@ dzero_inflated_poisson(x, lambda, zi, log = FALSE)
 
 pzero_inflated_poisson(q, lambda, zi, lower.tail = TRUE, log.p = FALSE)
 
+qzero_inflated_poisson(p, lambda, zi, lower.tail = TRUE, log.p = FALSE)
+
 dzero_inflated_negbinomial(x, mu, shape, zi, log = FALSE)
 
 pzero_inflated_negbinomial(q, mu, shape, zi, lower.tail = TRUE, log.p = FALSE)
 
+qzero_inflated_negbinomial(p, mu, shape, zi, lower.tail = TRUE, log.p = FALSE)
+
 dzero_inflated_binomial(x, size, prob, zi, log = FALSE)
 
 pzero_inflated_binomial(q, size, prob, zi, lower.tail = TRUE, log.p = FALSE)
+
+qzero_inflated_binomial(p, size, prob, zi, lower.tail = TRUE, log.p = FALSE)
 
 dzero_inflated_beta_binomial(x, size, mu, phi, zi, log = FALSE)
 
@@ -29,9 +35,21 @@ pzero_inflated_beta_binomial(
   log.p = FALSE
 )
 
+qzero_inflated_beta_binomial(
+  p,
+  size,
+  mu,
+  phi,
+  zi,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
+
 dzero_inflated_beta(x, shape1, shape2, zi, log = FALSE)
 
 pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
+
+qzero_inflated_beta(p, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
 ```
 
 ## Arguments
@@ -61,6 +79,10 @@ pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
 
   Logical; If `TRUE`, values are returned on the log scale.
 
+- p:
+
+  Vector of probabilities.
+
 - mu, lambda:
 
   location parameter
@@ -86,4 +108,6 @@ pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
 The density of a zero-inflated distribution can be specified as follows.
 If \\x = 0\\ set \\f(x) = \theta + (1 - \theta) \* g(0)\\. Else set
 \\f(x) = (1 - \theta) \* g(x)\\, where \\g(x)\\ is the density of the
-non-zero-inflated part.
+non-zero-inflated part. For the zero-inflated negative binomial
+distribution, the quantile function has no known closed form and is
+therefore computed numerically.

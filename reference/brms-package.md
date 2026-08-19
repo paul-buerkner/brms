@@ -95,6 +95,10 @@ version 2.21.2. <https://mc-stan.org/>
 
 **Maintainer**: Paul-Christian Bürkner <paul.buerkner@gmail.com>
 
+Authors:
+
+- Paul-Christian Bürkner <paul.buerkner@gmail.com>
+
 Other contributors:
 
 - Jonah Gabry \[contributor\]

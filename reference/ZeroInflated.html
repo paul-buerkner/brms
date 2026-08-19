@@ -11,7 +11,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">
       <!-- Add Stan logo -->
-      <picture><source type="image/svg+xml" srcset="../logo.svg"><img src="../logo.png" class="stan-logo" alt="Stan blue hex logo"></source></picture>
+      <img src="../reference/figures/logo.svg" class="stan-logo" alt="Stan blue hex logo">
       brms
     </a>
 
@@ -72,13 +72,19 @@
 <span></span>
 <span><span class="fu">pzero_inflated_poisson</span><span class="op">(</span><span class="va">q</span>, <span class="va">lambda</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">qzero_inflated_poisson</span><span class="op">(</span><span class="va">p</span>, <span class="va">lambda</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">dzero_inflated_negbinomial</span><span class="op">(</span><span class="va">x</span>, <span class="va">mu</span>, <span class="va">shape</span>, <span class="va">zi</span>, log <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pzero_inflated_negbinomial</span><span class="op">(</span><span class="va">q</span>, <span class="va">mu</span>, <span class="va">shape</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">qzero_inflated_negbinomial</span><span class="op">(</span><span class="va">p</span>, <span class="va">mu</span>, <span class="va">shape</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">dzero_inflated_binomial</span><span class="op">(</span><span class="va">x</span>, <span class="va">size</span>, <span class="va">prob</span>, <span class="va">zi</span>, log <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pzero_inflated_binomial</span><span class="op">(</span><span class="va">q</span>, <span class="va">size</span>, <span class="va">prob</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">qzero_inflated_binomial</span><span class="op">(</span><span class="va">p</span>, <span class="va">size</span>, <span class="va">prob</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">dzero_inflated_beta_binomial</span><span class="op">(</span><span class="va">x</span>, <span class="va">size</span>, <span class="va">mu</span>, <span class="va">phi</span>, <span class="va">zi</span>, log <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
@@ -92,9 +98,21 @@
 <span>  log.p <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">qzero_inflated_beta_binomial</span><span class="op">(</span></span>
+<span>  <span class="va">p</span>,</span>
+<span>  <span class="va">size</span>,</span>
+<span>  <span class="va">mu</span>,</span>
+<span>  <span class="va">phi</span>,</span>
+<span>  <span class="va">zi</span>,</span>
+<span>  lower.tail <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  log.p <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">dzero_inflated_beta</span><span class="op">(</span><span class="va">x</span>, <span class="va">shape1</span>, <span class="va">shape2</span>, <span class="va">zi</span>, log <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">pzero_inflated_beta</span><span class="op">(</span><span class="va">q</span>, <span class="va">shape1</span>, <span class="va">shape2</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pzero_inflated_beta</span><span class="op">(</span><span class="va">q</span>, <span class="va">shape1</span>, <span class="va">shape2</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">qzero_inflated_beta</span><span class="op">(</span><span class="va">p</span>, <span class="va">shape1</span>, <span class="va">shape2</span>, <span class="va">zi</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -126,6 +144,10 @@ Else, return P(X &gt; x) .</p></dd>
 <dd><p>Logical; If <code>TRUE</code>, values are returned on the log scale.</p></dd>
 
 
+<dt id="arg-p">p<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
+<dd><p>Vector of probabilities.</p></dd>
+
+
 <dt id="arg-mu-lambda">mu, lambda<a class="anchor" aria-label="anchor" href="#arg-mu-lambda"></a></dt>
 <dd><p>location parameter</p></dd>
 
@@ -151,7 +173,9 @@ Else, return P(X &gt; x) .</p></dd>
     <p>The density of a zero-inflated distribution can be specified as follows.
 If \(x = 0\) set \(f(x) = \theta + (1 - \theta) * g(0)\).
 Else set \(f(x) = (1 - \theta) * g(x)\),
-where \(g(x)\) is the density of the non-zero-inflated part.</p>
+where \(g(x)\) is the density of the non-zero-inflated part.
+For the zero-inflated negative binomial distribution, the quantile function
+has no known closed form and is therefore computed numerically.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

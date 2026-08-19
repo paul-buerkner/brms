@@ -412,16 +412,16 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
 #> Chain 1:  Elapsed Time: 0.071 seconds (Warm-up)
-#> Chain 1:                0.018 seconds (Sampling)
-#> Chain 1:                0.089 seconds (Total)
+#> Chain 1:                0.017 seconds (Sampling)
+#> Chain 1:                0.088 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 1
 #> Start sampling
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.11 seconds.
+#> Chain 1: Gradient evaluation took 1.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -438,9 +438,9 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.056 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.055 seconds (Warm-up)
 #> Chain 1:                0.017 seconds (Sampling)
-#> Chain 1:                0.073 seconds (Total)
+#> Chain 1:                0.072 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 2
 #> Start sampling
@@ -465,15 +465,15 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.054 seconds (Warm-up)
-#> Chain 1:                0.015 seconds (Sampling)
-#> Chain 1:                0.069 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.055 seconds (Warm-up)
+#> Chain 1:                0.016 seconds (Sampling)
+#> Chain 1:                0.071 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 1: Gradient evaluation took 8e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -490,9 +490,9 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.061 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.062 seconds (Warm-up)
 #> Chain 1:                0.017 seconds (Sampling)
-#> Chain 1:                0.078 seconds (Total)
+#> Chain 1:                0.079 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 3
 #> Start sampling
@@ -501,8 +501,8 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.11 seconds.
+#> Chain 1: Gradient evaluation took 1.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -519,9 +519,9 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.054 seconds (Warm-up)
-#> Chain 1:                0.015 seconds (Sampling)
-#> Chain 1:                0.069 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.092 seconds (Warm-up)
+#> Chain 1:                0.027 seconds (Sampling)
+#> Chain 1:                0.119 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 5
 #> Start sampling
