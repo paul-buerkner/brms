@@ -127,7 +127,7 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, cores = 2)
 #> Compiling Stan program...
 #> Start sampling
-#> : 
+#> 
 
 ## extract residuals/predictive errors
 res <- residuals(fit)

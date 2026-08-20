@@ -37,14 +37,14 @@ An object of class `formula`.
 form <- y | trials(size) ~ x
 update_adterms(form, ~ trials(10))
 #> y | trials(10) ~ x
-#> <environment: 0x55c0e08951d8>
+#> <environment: 0x559e120ccb50>
 update_adterms(form, ~ weights(w))
 #> y | trials(size) + weights(w) ~ x
-#> <environment: 0x55c0e08951d8>
+#> <environment: 0x559e120ccb50>
 update_adterms(form, ~ weights(w), action = "replace")
 #> y | weights(w) ~ x
-#> <environment: 0x55c0e08951d8>
+#> <environment: 0x559e120ccb50>
 update_adterms(y ~ x, ~ trials(10))
 #> y | trials(10) ~ x
-#> <environment: 0x55c0e08951d8>
+#> <environment: 0x559e120ccb50>
 ```
