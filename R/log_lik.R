@@ -1074,8 +1074,8 @@ warn_infinite_log_lik <- function(x) {
   out <- any(is.infinite(x))
   if (out) {
     warning2(
-      "Infinite values were found in the log-likelihood. Most commonly ",
-      "this happens in truncated or censored models when the bounds ",
+      "Infinite values were found in the log-likelihood. Most commonly\n",
+      "this happens in truncated or censored models when the bounds\n",
       "contain no probability mass under some posterior draws."
     )
   }
