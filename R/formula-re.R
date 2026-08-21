@@ -25,6 +25,10 @@
 #'   design column must have an identical population-level design column.
 #'   Blocks with one varying coefficient use a dedicated scalar
 #'   implementation.
+#'   Usual priors on group-level standard deviations, correlations, and
+#'   Student degrees of freedom remain available, including separate
+#'   standard-deviation priors for varying intercepts, slopes, and
+#'   interactions.
 #'   The physical coordinates are intended for well-informed group
 #'   coefficients and may be slower than the default non-centered
 #'   parameterization when those coefficients are weakly informed.
@@ -75,9 +79,13 @@
 #' summary(fit4)
 #'
 #' # marginalized sum-to-zero varying intercepts, slopes, and interactions
+#' s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
+#'                    coef = "Intercept") +
+#'   prior(exponential(3), class = "sd", group = "patient", coef = "zAge") +
+#'   prior(lkj(2), class = "cor", group = "patient")
 #' fit5 <- brm(count ~ zAge * Trt +
 #'               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
-#'             data = epilepsy, family = poisson())
+#'             data = epilepsy, family = poisson(), prior = s2z_prior)
 #' }
 #'
 #' @export
