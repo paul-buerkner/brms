@@ -602,3 +602,150 @@ test_that("log_lik_custom runs without errors", {
   }
   expect_equal(length(brms:::log_lik_custom(sample(1:nobs, 1), prep)), ns)
 })
+
+test_that("log_lik of truncated models is stable far in the tails (#1899)", {
+  trunc_prep <- function(mu, sigma, lb = NULL, ub = NULL, Y) {
+    prep <- structure(list(ndraws = length(mu), nobs = 1L), class = "brmsprep")
+    prep$dpars <- list(mu = matrix(mu, ncol = 1), sigma = sigma)
+    prep$data <- list(Y = Y, lb = lb, ub = ub)
+    prep
+  }
+
+  # the case reported in #1899: [0, 1] holds about 1e-85 of the mass, so
+  # both CDFs round to exactly 1 and their difference cancels to zero
+  ll <- brms:::log_lik_gaussian(1, trunc_prep(-0.39, 0.02, 0, 1, Y = 0.01))
+  expect_true(is.finite(ll))
+  # S(1) is of order exp(-2420) and so negligible against S(0); the
+  # normalizer is therefore S(0), which pnorm() returns exactly without log.p
+  expect_equal(
+    ll,
+    dnorm(0.01, -0.39, 0.02, log = TRUE) -
+      log(pnorm(0, -0.39, 0.02, lower.tail = FALSE))
+  )
+
+  # the mirrored failure in the lower tail, where both CDFs underflow to 0
+  ll <- brms:::log_lik_gaussian(1, trunc_prep(5, 0.1, 0, 1, Y = 0.5))
+  expect_true(is.finite(ll))
+  # here F(0) is negligible against F(1), so the normalizer is F(1)
+  expect_equal(
+    ll,
+    dnorm(0.5, 5, 0.1, log = TRUE) - pnorm(1, 5, 0.1, log.p = TRUE)
+  )
+
+  # far enough into the upper tail that log(CDF) itself underflows to 0,
+  # which a stabler log_diff_exp alone cannot recover from
+  ll <- brms:::log_lik_gaussian(1, trunc_prep(-100, 1, 0, 50, Y = 25))
+  expect_true(is.finite(ll))
+  # a bound that far out is indistinguishable from an absent bound
+  expect_equal(ll, brms:::log_lik_gaussian(1, trunc_prep(-100, 1, 0, Y = 25)))
+
+  # draws needing either branch may be mixed within a single observation
+  prep <- trunc_prep(c(-0.39, 5, 0.2), c(0.02, 0.1, 0.3), 0, 1, Y = 0.5)
+  expect_true(all(is.finite(brms:::log_lik_gaussian(1, prep))))
+})
+
+test_that("truncated log_lik matches the exponential's analytic normalizer", {
+  # For rate lambda the exponential CDF is F(x) = 1 - exp(-lambda * x), so
+  #   log[F(ub) - F(lb)] = -lambda * lb + log1p(-exp(-lambda * (ub - lb)))
+  # holds exactly in double precision at every scale, including bounds so
+  # far into the upper tail that F(lb) and F(ub) both round to 1. This gives
+  # a reference that is independent of how brms evaluates the normalizer.
+  lambda <- 1.3
+  bounds <- list(
+    c(0, 1), c(0.5, 2), c(5, 6), c(20, 21),
+    c(50, 60), c(100, 120), c(300, 400), c(700, 800)
+  )
+  for (b in bounds) {
+    lb <- b[1]
+    ub <- b[2]
+    y <- (lb + ub) / 2
+    prep <- structure(list(ndraws = 1L, nobs = 1L), class = "brmsprep")
+    prep$dpars <- list(mu = matrix(1 / lambda, ncol = 1))
+    prep$data <- list(Y = y, lb = lb, ub = ub)
+    lognorm <- -lambda * lb + log1p(-exp(-lambda * (ub - lb)))
+    expect_equal(
+      brms:::log_lik_exponential(1, prep),
+      dexp(y, lambda, log = TRUE) - lognorm,
+      info = paste0("bounds [", lb, ", ", ub, "]")
+    )
+  }
+})
+
+test_that("log_lik of interval-censored observations is stable in the tails", {
+  prep <- structure(list(ndraws = 1L, nobs = 1L), class = "brmsprep")
+  prep$dpars <- list(mu = matrix(-0.39, ncol = 1), sigma = 0.02)
+  prep$data <- list(Y = 0, cens = 2, rcens = 1)
+  ll <- brms:::log_lik_gaussian(1, prep)
+  # log P(0 < Y <= 1) cancels to -Inf when computed as log(F(1) - F(0))
+  expect_true(is.finite(ll))
+  expect_equal(ll, log(pnorm(0, -0.39, 0.02, lower.tail = FALSE)))
+})
+
+test_that("cdfs used for truncation accept 'lower.tail'", {
+  # log_prob_interval() switches to the survival function in the upper tail, so
+  # every cdf reaching it must accept lower.tail, as log_lik_censor() has
+  # already assumed for right-censored observations
+  ns <- asNamespace("brms")
+  fmls <- function(f) names(formals(get(f, ns)))
+  is_cdf <- function(f) {
+    is.function(get(f, ns)) && "log.p" %in% fmls(f)
+  }
+  cdfs <- Filter(is_cdf, ls(ns, pattern = "^p[a-z_0-9]+$"))
+  # pcategorical is parameterized by an eta matrix and no categorical family
+  # is truncatable, so it never reaches log_prob_interval()
+  cdfs <- setdiff(cdfs, "pcategorical")
+  expect_true(length(cdfs) > 10)
+  for (f in cdfs) {
+    expect_true("lower.tail" %in% fmls(f), info = f)
+  }
+  # pxbeta declares only `...` and so is invisible to the check above; it
+  # forwards to betareg, which is where lower.tail has to be accepted
+  expect_identical(fmls("pxbeta"), "...")
+  skip_if_not_installed("betareg")
+  expect_true("lower.tail" %in% names(formals(betareg::pxbeta)))
+})
+
+test_that("truncated log_lik is still Inf for cdfs that are not tail-safe", {
+  # These families compute the survival function as 1 - F and only then take
+  # the log, so log_prob_interval() receives -Inf and cannot recover the tail.
+  # The truncation fix does not reach them; see #1899. This test pins the
+  # current behaviour so that fixing the cdfs is a visible change.
+  naive_upper <- c(
+    "pasym_laplace", "pgen_extreme_value", "pinv_gaussian",
+    "pexgaussian", "pfrechet", "pdiscrete_weibull"
+  )
+  ns <- asNamespace("brms")
+  for (f in naive_upper) {
+    expect_true(exists(f, ns), info = f)
+  }
+  expect_equal(
+    brms:::pinv_gaussian(20, 1, 50, lower.tail = FALSE, log.p = TRUE), -Inf
+  )
+  # the mirrored gap for zero-inflated and hurdle families, whose cdf is
+  # derived from a naive 1 - exp(log_ccdf) and so loses the lower tail
+  expect_equal(
+    brms:::pzero_inflated_poisson(0, 500, 1e-300, log.p = TRUE), -Inf
+  )
+})
+
+test_that("infinite log_lik values are warned about", {
+  # log_lik.brmsfit() routes its infinite-value check through this helper;
+  # a cancelled truncation normalizer is +Inf and a cancelled censoring one
+  # is -Inf, so both signs have to be caught
+  expect_warning(
+    brms:::warn_infinite_log_lik(matrix(c(-1, Inf, -2, -3), nrow = 2)),
+    "Infinite values were found"
+  )
+  expect_warning(
+    brms:::warn_infinite_log_lik(matrix(c(-1, -Inf, -2, -3), nrow = 2)),
+    "Infinite values were found"
+  )
+  expect_true(
+    suppressWarnings(brms:::warn_infinite_log_lik(matrix(c(-1, Inf), nrow = 1)))
+  )
+  expect_silent(brms:::warn_infinite_log_lik(matrix(-1:-4, nrow = 2)))
+  # NA and NaN are covered by the adjacent check in log_lik.brmsfit()
+  expect_silent(
+    brms:::warn_infinite_log_lik(matrix(c(-1, NaN, NA, -3), nrow = 2))
+  )
+})
