@@ -1,4 +1,4 @@
-# Helpers for the marginalized sum-to-zero parameterization of group effects
+# Helpers for the physical sum-to-zero parameterization of group effects
 
 # Does a local linear predictor contain a sum-to-zero group-level block?
 has_re_s2z <- function(x) {
@@ -64,12 +64,12 @@ re_s2z_prior <- function(prior, bframe, class, coef = "") {
     }
   }
   if (nrow(ans) && (nzchar(ans$lb) || nzchar(ans$ub))) {
-    stop2("The marginalized sum-to-zero parameterization does not yet ",
+    stop2("The sum-to-zero parameterization does not yet ",
           "support bounded population-level priors (coefficient '", coef,
           "').")
   }
   if (nrow(ans) && nzchar(ans$tag)) {
-    stop2("The marginalized sum-to-zero parameterization does not yet ",
+    stop2("The sum-to-zero parameterization does not yet ",
           "support tagged population-level priors (coefficient '", coef,
           "').")
   }
@@ -85,7 +85,7 @@ parse_re_s2z_prior <- function(prior, coef = "") {
   }
   call <- try(str2lang(prior), silent = TRUE)
   if (inherits(call, "try-error") || !is.call(call)) {
-    stop2("Prior '", prior, "' is not supported by the marginalized ",
+    stop2("Prior '", prior, "' is not supported by the ",
           "sum-to-zero parameterization (coefficient '", coef, "').")
   }
   dist <- as.character(call[[1]])
@@ -94,7 +94,7 @@ parse_re_s2z_prior <- function(prior, coef = "") {
     out <- suppressWarnings(as.numeric(deparse0(x)))
     if (length(out) != 1L || !is.finite(out)) {
       stop2("All arguments of population-level priors used with the ",
-            "marginalized sum-to-zero parameterization must currently be ",
+            "sum-to-zero parameterization must currently be ",
             "numeric constants (coefficient '", coef, "').")
     }
     out
@@ -118,14 +118,14 @@ parse_re_s2z_prior <- function(prior, coef = "") {
     )
   } else {
     stop2(
-      "Prior '", prior, "' is not supported by the marginalized ",
+      "Prior '", prior, "' is not supported by the ",
       "sum-to-zero parameterization. Supported population-level priors ",
       "are flat, normal, student_t, and cauchy (coefficient '", coef, "')."
     )
   }
   if (!(out$scale > 0) || out$dist == "student" && !(out$df > 0)) {
     stop2("Scale and degrees-of-freedom arguments must be positive in ",
-          "population-level priors used with the marginalized sum-to-zero ",
+          "population-level priors used with the sum-to-zero ",
           "parameterization (coefficient '", coef, "').")
   }
   out
@@ -176,7 +176,7 @@ re_s2z_info <- function(bframe, prior = NULL) {
   r <- bframe$frame$re[bframe$frame$re$s2z, , drop = FALSE]
   ids <- unique(r$id)
   if (length(ids) != 1L) {
-    stop2("Only one marginalized sum-to-zero group-level block is currently ",
+    stop2("Only one sum-to-zero group-level block is currently ",
           "supported per linear predictor.")
   }
   r_id <- subset2(bframe$frame$re, id = ids)
@@ -230,12 +230,12 @@ validate_re_s2z <- function(bframe, prior) {
     info <- re_s2z_info(x, prior = prior)
     r <- info$r
     if (info$id %in% ids) {
-      stop2("A marginalized sum-to-zero group-level ID cannot span multiple ",
+      stop2("A sum-to-zero group-level ID cannot span multiple ",
             "linear predictors.")
     }
     ids <- c(ids, info$id)
     if (r$gtype[1] != "" || any(nzchar(r$type))) {
-      stop2("The marginalized sum-to-zero parameterization currently ",
+      stop2("The sum-to-zero parameterization currently ",
             "supports only ordinary 'gr' terms.")
     }
     if (nzchar(r$by[1]) || nzchar(r$cov[1]) ||
@@ -244,11 +244,11 @@ validate_re_s2z <- function(bframe, prior) {
             "with gr(..., s2z = TRUE).")
     }
     if (length(unique(r$gn)) != 1L) {
-      stop2("A marginalized sum-to-zero covariance block must be specified ",
+      stop2("A sum-to-zero covariance block must be specified ",
             "in one group-level term.")
     }
     if (length(get_levels(r)[[r$group[1]]]) < 2L) {
-      stop2("The marginalized sum-to-zero parameterization requires at ",
+      stop2("The sum-to-zero parameterization requires at ",
             "least two observed grouping levels.")
     }
     if (is_ordinal(x$family)) {

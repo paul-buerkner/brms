@@ -1,4 +1,4 @@
-context("Tests for marginalized sum-to-zero group-level effects")
+context("Tests for physical sum-to-zero group-level effects")
 
 # R mirror of inst/chunks/fun_sum_to_zero.stan. Keeping this small reference
 # implementation in the tests makes the geometry checks independent of Stan.

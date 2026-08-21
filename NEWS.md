@@ -2,12 +2,15 @@
 
 ### New Features
 
-* Add an experimental marginalized physical sum-to-zero parameterization via
+* Add an experimental physical sum-to-zero parameterization via
 `gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
-and interactions. Gaussian and Student-t group effects are supported, with
-the latter handled exactly as a conditional Gaussian scale mixture. Blocks
-with one varying coefficient and blocks with any number of independent
-coefficients use dedicated component-wise scalar implementations. (#1916)
+and interactions. It analytically integrates out the omitted common
+group-effect mean vector and reconstructs conventional Bayesian coefficients
+and effects in generated quantities. Gaussian and Student-t group effects are
+supported, with the latter handled exactly as a conditional Gaussian scale
+mixture. Blocks with one varying coefficient and blocks with any number of
+independent coefficients use dedicated component-wise scalar implementations.
+(#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

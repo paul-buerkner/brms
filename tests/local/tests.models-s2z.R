@@ -1,4 +1,4 @@
-# Sampling validation for marginalized sum-to-zero group-level effects.
+# Sampling validation for physical sum-to-zero group-level effects.
 #
 # This is intentionally a local test: it compiles and samples twelve Stan
 # models, including literal-scalar, independent-component, and correlated
