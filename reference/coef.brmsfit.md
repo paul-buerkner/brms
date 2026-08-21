@@ -80,15 +80,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.617 seconds (Warm-up)
-#> Chain 1:                0.34 seconds (Sampling)
-#> Chain 1:                0.957 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.72 seconds (Warm-up)
+#> Chain 1:                0.398 seconds (Sampling)
+#> Chain 1:                1.118 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.1e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.31 seconds.
+#> Chain 2: Gradient evaluation took 3.2e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -105,9 +105,9 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.644 seconds (Warm-up)
-#> Chain 2:                0.485 seconds (Sampling)
-#> Chain 2:                1.129 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.753 seconds (Warm-up)
+#> Chain 2:                0.569 seconds (Sampling)
+#> Chain 2:                1.322 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 8 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup

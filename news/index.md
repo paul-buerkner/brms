@@ -38,6 +38,18 @@
 
 #### Bug Fixes
 
+- Improve the numerical stability of `log_lik` for truncated and
+  interval-censored models, which previously returned `Inf` or `NaN`
+  whenever both bounds fell far into the same tail. Families whose CDF
+  is not itself accurate on the log scale are not yet covered. Thanks to
+  Ahmed Eldeeb.
+  ([\#1899](https://github.com/paul-buerkner/brms/issues/1899))
+- Warn when `log_lik` returns infinite values, which the existing check
+  for `NA` values did not catch.
+  ([\#1899](https://github.com/paul-buerkner/brms/issues/1899))
+- Align the R functions `log1m_exp()` and `log_diff_exp()` with their
+  definitions in Stan.
+  ([\#1899](https://github.com/paul-buerkner/brms/issues/1899))
 - [`kfold_predict()`](https://paulbuerkner.com/brms/reference/kfold_predict.md)
   supports now families whose predictions are not draws x observations
   matrices (e.g. categorical models).

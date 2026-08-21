@@ -104,16 +104,16 @@ have no corresponding term in <code>adform</code> will be kept. If
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">form</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">|</span> <span class="fu"><a href="addition-terms.html">trials</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span></span></span>
 <span class="r-in"><span><span class="fu">update_adterms</span><span class="op">(</span><span class="va">form</span>, <span class="op">~</span> <span class="fu"><a href="addition-terms.html">trials</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y | trials(10) ~ x</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x559e120ccb50&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55d77c9bde20&gt;</span>
 <span class="r-in"><span><span class="fu">update_adterms</span><span class="op">(</span><span class="va">form</span>, <span class="op">~</span> <span class="fu"><a href="addition-terms.html">weights</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y | trials(size) + weights(w) ~ x</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x559e120ccb50&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55d77c9bde20&gt;</span>
 <span class="r-in"><span><span class="fu">update_adterms</span><span class="op">(</span><span class="va">form</span>, <span class="op">~</span> <span class="fu"><a href="addition-terms.html">weights</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span>, action <span class="op">=</span> <span class="st">"replace"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y | weights(w) ~ x</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x559e120ccb50&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55d77c9bde20&gt;</span>
 <span class="r-in"><span><span class="fu">update_adterms</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, <span class="op">~</span> <span class="fu"><a href="addition-terms.html">trials</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y | trials(10) ~ x</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x559e120ccb50&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55d77c9bde20&gt;</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

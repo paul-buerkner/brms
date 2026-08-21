@@ -60,8 +60,8 @@ fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000109 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.09 seconds.
+#> Chain 1: Gradient evaluation took 9e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.9 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -78,15 +78,15 @@ fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 5.559 seconds (Warm-up)
-#> Chain 1:                4.683 seconds (Sampling)
-#> Chain 1:                10.242 seconds (Total)
+#> Chain 1:  Elapsed Time: 6.636 seconds (Warm-up)
+#> Chain 1:                5.608 seconds (Sampling)
+#> Chain 1:                12.244 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4.7e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.47 seconds.
+#> Chain 2: Gradient evaluation took 4.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -103,9 +103,9 @@ fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 5.258 seconds (Warm-up)
-#> Chain 2:                4.468 seconds (Sampling)
-#> Chain 2:                9.726 seconds (Total)
+#> Chain 2:  Elapsed Time: 6.269 seconds (Warm-up)
+#> Chain 2:                5.331 seconds (Sampling)
+#> Chain 2:                11.6 seconds (Total)
 #> Chain 2: 
 summary(fit1)
 #>  Family: gaussian 
@@ -151,8 +151,8 @@ fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 5.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.54 seconds.
+#> Chain 1: Gradient evaluation took 8.3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.83 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -169,15 +169,15 @@ fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 7.002 seconds (Warm-up)
-#> Chain 1:                9.043 seconds (Sampling)
-#> Chain 1:                16.045 seconds (Total)
+#> Chain 1:  Elapsed Time: 8.118 seconds (Warm-up)
+#> Chain 1:                10.511 seconds (Sampling)
+#> Chain 1:                18.629 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 7.6e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.76 seconds.
+#> Chain 2: Gradient evaluation took 4.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -194,9 +194,9 @@ fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 7.64 seconds (Warm-up)
-#> Chain 2:                8.565 seconds (Sampling)
-#> Chain 2:                16.205 seconds (Total)
+#> Chain 2:  Elapsed Time: 8.916 seconds (Warm-up)
+#> Chain 2:                9.948 seconds (Sampling)
+#> Chain 2:                18.864 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 14 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
