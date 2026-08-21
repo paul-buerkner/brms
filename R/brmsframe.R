@@ -85,6 +85,7 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # only store the ranefs of this specific linear formula
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
+  validate_re_s2z_design(x, data = data)
   # these data_ functions may require the outputs of the corresponding
   # frame_ functions (but not vice versa) and are thus evaluated last
   x$sdata$gp <- data_gp(x, data, internal = TRUE)

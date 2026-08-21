@@ -118,6 +118,7 @@ stancode.default <- function(object, data, family = gaussian(),
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
+  validate_re_s2z(bterms, prior = prior)
   scode_predictor <- stan_predictor(
     bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
