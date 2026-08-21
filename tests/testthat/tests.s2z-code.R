@@ -264,6 +264,45 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
   expect_match2(sc_diag, "L_Sigma_s2z_1 = diag_matrix(sd_1);")
 })
 
+test_that("S2Z preserves ordinary priors on every varying effect", {
+  form <- y ~ x * z + (1 + x * z | gr(g, s2z = TRUE))
+  varying_priors <- c(
+    prior(exponential(2), class = "sd", group = "g", coef = "Intercept"),
+    prior(normal(0, 0.4), class = "sd", group = "g", coef = "x"),
+    prior(student_t(4, 0, 0.3), class = "sd", group = "g", coef = "z"),
+    prior(exponential(3), class = "sd", group = "g", coef = "x:z"),
+    prior(lkj(4), class = "cor", group = "g")
+  )
+  available <- as.data.frame(get_prior(form, data = s2z_dat))
+  group_sd <- subset(
+    available, class == "sd" & group == "g" & nzchar(coef)
+  )
+  expect_setequal(
+    group_sd$coef, c("Intercept", "x", "z", "x:z")
+  )
+
+  scode <- stancode(form, data = s2z_dat, prior = varying_priors)
+  expect_match2(scode, "exponential_lpdf(sd_1[1] | 2)")
+  expect_match2(scode, "normal_lpdf(sd_1[2] | 0, 0.4)")
+  expect_match2(scode, "student_t_lpdf(sd_1[3] | 4, 0, 0.3)")
+  expect_match2(scode, "exponential_lpdf(sd_1[4] | 3)")
+  expect_match2(scode, "lkj_corr_cholesky_lpdf(L_1 | 4)")
+
+  scalar_code <- stancode(
+    y ~ 0 + x + (0 + x | gr(g, s2z = TRUE)), data = s2z_dat,
+    prior = prior(exponential(7), class = "sd", group = "g", coef = "x")
+  )
+  expect_match2(scalar_code, "exponential_lpdf(sd_1[1] | 7)")
+
+  student_code <- stancode(
+    y ~ x + (1 + x | gr(g, dist = "student", s2z = TRUE)),
+    data = s2z_dat,
+    prior = prior(gamma(3, 0.25), class = "df", group = "g")
+  )
+  expect_match2(student_code, "gamma_lpdf(df_1 | 3, 0.25)")
+  expect_match2(student_code, "inv_chi_square_lpdf(udf_1 | df_1)")
+})
+
 test_that("S2Z handles Student-t effects by conditional marginalization", {
   scode <- stancode(
     y ~ x + (1 + x | gr(g, dist = "student", s2z = TRUE)),
