@@ -288,7 +288,7 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
     K_s2z <- length(bframe$frame$fe$vars)
     str_add(out$par) <- glue(
       "  vector[{K_s2z}] theta_s2z{p};",
-      "  // finite-population coefficients for marginalized S2Z effects\n"
+      "  // finite-population coefficients for physical S2Z effects\n"
     )
     str_add(out$pll_args) <- glue(", vector theta_s2z{p}")
   }
@@ -807,9 +807,10 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
-# Stan code for one marginalized physical sum-to-zero group-level block.
-# Conditional Gaussian scale mixtures are handled by a group-specific scale,
-# which makes this exact for both Gaussian and Student-t group effects.
+# Stan code for one physical sum-to-zero group-level block. The omitted common
+# group-effect mean vector is integrated out analytically. Conditional
+# Gaussian scale mixtures are handled by a group-specific scale, which makes
+# this exact for both Gaussian and Student-t group effects.
 .stan_re_s2z <- function(id, bframe, prior, threads, normalize, out = list()) {
   lpdf <- stan_lpdf_name(normalize)
   # Avoid partial matching of $tpar_prior to $tpar_prior_const when a group
@@ -879,7 +880,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
 
   str_add(out$tpar_def) <- glue(
-    "  // marginalized physical sum-to-zero group-level effects of ID {id}\n",
+    "  // physical sum-to-zero group-level effects of ID {id}\n",
     "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
     "  matrix[{q}, M_{id}] H_s2z_{id};\n",
     "  vector[{q}] prior_mean_s2z_{id};\n",
@@ -1130,7 +1131,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
 
   str_add(out$tpar_def) <- glue(
-    "  // component-wise marginalized independent S2Z effects of ID {id}\n",
+    "  // component-wise physical S2Z effects of ID {id}\n",
     cglue("  vector[N_{id}] {r_s2z};\n"),
     "  vector[{q}] prior_mean_s2z_{id};\n",
     "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
@@ -1412,7 +1413,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
-# Scalar specialization of the marginalized physical sum-to-zero block.
+# Scalar specialization of the physical sum-to-zero block.
 # In addition to avoiding all 1 x 1 matrix algebra, the Gaussian branch uses
 # the exact zero sum of the orthonormal contrasts to remove a weighted dot
 # product and the group-scale vectors altogether.
@@ -1450,7 +1451,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
 
   str_add(out$tpar_def) <- glue(
-    "  // specialized scalar marginalized S2Z effects of ID {id}\n",
+    "  // specialized scalar physical S2Z effects of ID {id}\n",
     "  vector[N_{id}] {r_s2z};\n",
     "  vector[{q}] H_s2z_{id};\n",
     "  vector[{q}] prior_mean_s2z_{id};\n",

@@ -1,4 +1,4 @@
-# Reproducible benchmark for marginalized sum-to-zero group-level effects.
+# Reproducible benchmark for physical sum-to-zero group-level effects.
 #
 # This script compiles the conventional and S2Z programs once, then times only
 # refits that reuse those compiled programs. It does not run as part of the
@@ -39,7 +39,7 @@
 #   BRMS_S2Z_BENCH_MAX_TREEDEPTH=12
 #
 # The orthogonal/independent setting exercises the component-wise (scalar)
-# marginal algebra with any K; "scalar" does not imply K = 1.
+# component-wise S2Z algebra with any K; "scalar" does not imply K = 1.
 #
 # `gradient_evals` counts post-warmup leapfrog gradients plus one initial
 # gradient per transition. ESS/gradient is calculated on the same post-warmup

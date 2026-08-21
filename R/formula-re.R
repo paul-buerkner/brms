@@ -17,10 +17,10 @@
 #' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
 #'   modelled as correlated.
 #' @param s2z Logical. If \code{TRUE}, use a physical sum-to-zero
-#'   parameterization and analytically marginalize the common group-effect
-#'   mean. This experimental option preserves the usual population- and
-#'   group-level parameter semantics by reconstructing them in generated
-#'   quantities. It is exact for \code{dist = "gaussian"} and for
+#'   parameterization and analytically integrate out the omitted common
+#'   group-effect mean vector. This experimental option preserves the usual
+#'   population- and group-level parameter semantics by reconstructing them in
+#'   generated quantities. It is exact for \code{dist = "gaussian"} and for
 #'   \code{dist = "student"} through a Gaussian scale mixture. Every varying
 #'   design column must have an identical population-level design column.
 #'   Blocks with one varying coefficient use a dedicated scalar
@@ -29,7 +29,7 @@
 #'   implementation that also accounts exactly for the shared centered
 #'   intercept prior.
 #'   Usual priors on group-level standard deviations, correlations, and
-#'   Student degrees of freedom remain available, including separate
+#'   Student-t degrees of freedom remain available, including separate
 #'   standard-deviation priors for varying intercepts, slopes, and
 #'   interactions.
 #'   The physical coordinates are intended for well-informed group
@@ -81,7 +81,7 @@
 #'             data = epilepsy)
 #' summary(fit4)
 #'
-#' # marginalized sum-to-zero varying intercepts, slopes, and interactions
+#' # physical sum-to-zero varying intercepts, slopes, and interactions
 #' s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
 #'                    coef = "Intercept") +
 #'   prior(exponential(3), class = "sd", group = "patient", coef = "zAge") +

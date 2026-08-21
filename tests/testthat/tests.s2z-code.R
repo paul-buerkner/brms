@@ -1,4 +1,4 @@
-context("Tests for marginalized sum-to-zero group-level effects")
+context("Tests for physical sum-to-zero group-level effects")
 
 expect_match2 <- brms:::expect_match2
 
@@ -473,7 +473,7 @@ test_that("S2Z preserves ordinary priors on every varying effect", {
   expect_match2(student_code, "inv_chi_square_lpdf(udf_1 | df_1)")
 })
 
-test_that("S2Z handles Student-t effects by conditional marginalization", {
+test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
   scode <- stancode(
     y ~ x + (1 + x | gr(g, dist = "student", s2z = TRUE)),
     data = s2z_dat
@@ -575,7 +575,7 @@ test_that("unsupported S2Z structures fail clearly", {
         (1 + x | gr(h, s2z = TRUE)),
       s2z_dat
     ),
-    "Only one marginalized sum-to-zero"
+    "Only one sum-to-zero"
   )
   by_dat <- transform(
     s2z_dat, f_by = factor(rep(c("a", "b"), each = nrow(s2z_dat) / 2))
@@ -600,7 +600,7 @@ test_that("unsupported S2Z structures fail clearly", {
       y ~ x + (1 + x | gr(g, s2z = TRUE)), s2z_dat,
       prior = prior(laplace(0, 1), class = b, coef = x)
     ),
-    "not supported by the marginalized"
+    "not supported by the sum-to-zero"
   )
   expect_error(
     stancode(
