@@ -160,6 +160,298 @@ context("Tests for physical sum-to-zero group-level effects")
   )
 }
 
+# Compare the Cholesky-whitened correlated implementation with the dense
+# complete square. This is an independent R implementation of both forms:
+# it deliberately does not call any generated Stan code or brms internals.
+.s2z_correlated_whitened_case <- function(student = FALSE) {
+  n <- 7L
+  m <- 3L
+  q <- 5L
+  basis <- .s2z_basis(n)
+  contrast <- matrix(
+    sin(seq_len((n - 1L) * m) * 0.47) +
+      cos(seq_len((n - 1L) * m) * 0.83),
+    nrow = n - 1L, ncol = m
+  ) / 2.5
+  r_s2z <- basis %*% contrast
+
+  # This rectangular H includes centered-intercept coupling, two matched
+  # slopes, and population coefficients outside this varying-effect block.
+  H <- matrix(0, nrow = q, ncol = m)
+  H[1L, ] <- c(1, 0.37, -0.29)
+  H[2L, 2L] <- 1
+  H[4L, 3L] <- 1
+  prior_mean <- c(-0.4, 0.25, 0.8, -0.55, 0.1)
+  prior_prec <- c(0.55, 1.7, 0.35, 2.4, 0.9)
+  prior_cov <- diag(1 / prior_prec, q)
+  theta <- c(0.9, -0.65, 0.45, 1.15, -0.2)
+
+  # A genuinely correlated, non-unit-scale lower Cholesky factor.
+  L_group <- matrix(
+    c(0.8, 0, 0, 0.22, 1.05, 0, -0.17, 0.28, 0.7),
+    nrow = m, byrow = TRUE
+  )
+  Sigma <- tcrossprod(L_group)
+  Q_group <- solve(Sigma)
+  group_scale <- if (student) {
+    sqrt(c(0.14, 0.31, 0.72, 1.45, 0.24, 2.1, 0.48))
+  } else {
+    rep(1, n)
+  }
+  group_prec <- 1 / group_scale^2
+
+  # Dense complete square in the physical omitted-mean coordinates m.
+  Q_prior <- diag(prior_prec, q)
+  P <- crossprod(H, Q_prior %*% H) + sum(group_prec) * Q_group
+  h <- drop(crossprod(H, Q_prior %*% (theta - prior_mean))) -
+    drop(Q_group %*% crossprod(r_s2z, group_prec))
+  dense_mode <- drop(solve(P, h))
+  dense_cov <- solve(P)
+
+  # Whiten m = L_group r. The target calculation below forms no covariance
+  # or precision and does not invert L_group; every whitening operation is
+  # triangular.
+  L_prior <- diag(1 / sqrt(prior_prec), q)
+  A <- forwardsolve(L_prior, H %*% L_group)
+  Z <- forwardsolve(L_group, t(r_s2z))
+  d0 <- forwardsolve(L_prior, theta - prior_mean)
+  P_r <- crossprod(A) + sum(group_prec) * diag(m)
+  h_r <- drop(crossprod(A, d0) - Z %*% group_prec)
+  L_P_r <- t(chol(P_r))
+  whitened_h <- forwardsolve(L_P_r, h_r)
+  rhat <- backsolve(t(L_P_r), whitened_h)
+  whitened_mode <- drop(L_group %*% rhat)
+
+  # This is the same factor used by recovery: if z ~ N(0, I), then
+  # L_group L_P_r^{-T} z has covariance P^{-1}.
+  recovery_factor <- L_group %*% solve(t(L_P_r))
+  whitened_cov <- tcrossprod(recovery_factor)
+  recovery_map <- rbind(
+    -H,
+    kronecker(matrix(1, nrow = n, ncol = 1L), diag(m))
+  )
+  dense_recovered_cov <- recovery_map %*% dense_cov %*%
+    t(recovery_map)
+  whitened_recovered_cov <- tcrossprod(recovery_map %*% recovery_factor)
+
+  base_log <- .s2z_log_mvn(theta, prior_mean, prior_cov) +
+    sum(vapply(
+      seq_len(n),
+      function(j) {
+        .s2z_log_mvn(
+          r_s2z[j, ], numeric(m), group_scale[j]^2 * Sigma
+        )
+      },
+      numeric(1)
+    ))
+  dense_log <- base_log + 0.5 * drop(crossprod(h, dense_mode)) +
+    0.5 * m * log(2 * pi) - sum(log(diag(chol(P)))) +
+    0.5 * m * log(n)
+  whitened_base_log <- sum(stats::dnorm(
+    theta, prior_mean, 1 / sqrt(prior_prec), log = TRUE
+  )) - 0.5 * sum(group_prec * colSums(Z^2)) -
+    n * sum(log(diag(L_group))) - m * sum(log(group_scale)) -
+    0.5 * n * m * log(2 * pi)
+  whitened_log <- whitened_base_log + 0.5 * sum(whitened_h^2) +
+    0.5 * m * log(2 * pi) + sum(log(diag(L_group))) -
+    sum(log(diag(L_P_r))) + 0.5 * m * log(n)
+
+  list(
+    r_s2z = r_s2z,
+    group_prec = group_prec,
+    P = P,
+    P_r = P_r,
+    expected_P_r = t(L_group) %*% P %*% L_group,
+    h = h,
+    h_r = h_r,
+    expected_h_r = drop(crossprod(L_group, h)),
+    dense_mode = dense_mode,
+    whitened_mode = whitened_mode,
+    dense_q = drop(theta - H %*% dense_mode),
+    whitened_q = drop(theta - H %*% whitened_mode),
+    dense_effects = sweep(r_s2z, 2L, dense_mode, "+"),
+    whitened_effects = sweep(r_s2z, 2L, whitened_mode, "+"),
+    dense_cov = dense_cov,
+    whitened_cov = whitened_cov,
+    dense_recovered_cov = dense_recovered_cov,
+    whitened_recovered_cov = whitened_recovered_cov,
+    dense_log = dense_log,
+    whitened_log = whitened_log
+  )
+}
+
+# Independent reference for the group-varying scale hierarchy. It compares
+# the heterogeneous-covariance complete square with the reference-Cholesky
+# coordinates used by the generated Stan kernel.
+.s2z_varying_scale_case <- function(k = 3L, student = FALSE,
+                                    correlated = TRUE, center = TRUE) {
+  n <- 7L
+  q <- k + 2L
+  basis <- .s2z_basis(n)
+  contrast <- matrix(
+    sin(seq_len((n - 1L) * k) * 0.43) +
+      cos(seq_len((n - 1L) * k) * 0.79),
+    nrow = n - 1L, ncol = k
+  ) / 2.7
+  r_s2z <- basis %*% contrast
+  scale_contrast <- matrix(
+    cos(seq_len((n - 1L) * k) * 0.31) -
+      sin(seq_len((n - 1L) * k) * 0.67),
+    nrow = n - 1L, ncol = k
+  ) / 2.4
+  z_sd_centered <- basis %*% scale_contrast
+  z_sd_mean <- seq(-0.75, 0.65, length.out = k)
+  z_sd <- sweep(z_sd_centered, 2L, z_sd_mean / sqrt(n), "+")
+  baseline_sd <- seq(0.45, 1.1, length.out = k)
+  sdlog <- seq(0.08, 0.62, length.out = k)
+  reference_sd <- baseline_sd * exp(sdlog * z_sd_mean / sqrt(n))
+  relative_sd <- exp(sweep(z_sd_centered, 2L, sdlog, "*"))
+  sd_level <- sweep(relative_sd, 2L, reference_sd, "*")
+
+  intercept_map <- if (center) {
+    c(1, seq(-0.45, 0.55, length.out = k - 1L))
+  } else {
+    numeric(k)
+  }
+  H <- matrix(0, nrow = q, ncol = k)
+  match_q <- seq_len(k)
+  H[cbind(match_q, seq_len(k))] <- 1
+  if (center) {
+    H[1L, ] <- intercept_map
+  }
+  theta <- seq(-0.9, 1.2, length.out = q)
+  prior_mean <- seq(0.35, -0.55, length.out = q)
+  prior_sd <- seq(0.7, 1.6, length.out = q)
+  prior_prec <- 1 / prior_sd^2
+
+  if (correlated) {
+    raw_cor <- outer(seq_len(k), seq_len(k), function(i, j) {
+      0.28^abs(i - j)
+    })
+    L_cor <- t(chol(raw_cor))
+  } else {
+    L_cor <- diag(k)
+  }
+  group_scale <- if (student) {
+    sqrt(c(0.16, 0.43, 1.2, 0.27, 2.1, 0.61, 1.55))
+  } else {
+    rep(1, n)
+  }
+  group_prec <- 1 / group_scale^2
+
+  # Dense complete square in the omitted physical mean m.
+  W <- diag(prior_prec, q)
+  P <- crossprod(H, W %*% H)
+  h <- drop(crossprod(H, W %*% (theta - prior_mean)))
+  base_group_log <- 0
+  for (j in seq_len(n)) {
+    L_j <- diag(sd_level[j, ], k) %*% L_cor
+    Q_j <- chol2inv(t(L_j))
+    P <- P + group_prec[j] * Q_j
+    h <- h - group_prec[j] * drop(Q_j %*% r_s2z[j, ])
+    base_group_log <- base_group_log -
+      0.5 * group_prec[j] * sum(forwardsolve(L_j, r_s2z[j, ])^2) -
+      sum(log(diag(L_j))) - k * log(group_scale[j]) -
+      0.5 * k * log(2 * pi)
+  }
+  dense_mode <- drop(solve(P, h))
+  dense_cov <- solve(P)
+  dense_log <- sum(stats::dnorm(
+    theta, prior_mean, prior_sd, log = TRUE
+  )) + base_group_log + 0.5 * drop(crossprod(h, dense_mode)) +
+    0.5 * k * log(2 * pi) -
+    0.5 * as.numeric(determinant(P, logarithm = TRUE)$modulus) +
+    0.5 * k * log(n)
+
+  # Cholesky-only reference coordinates m = L_star r. The observed-group
+  # geometric mean scales define L_star; relative scales have product one.
+  L_star <- diag(reference_sd, k) %*% L_cor
+  A0 <- diag(sqrt(prior_prec), q) %*% H %*% L_star
+  d0 <- sqrt(prior_prec) * (theta - prior_mean)
+  P_r <- crossprod(A0)
+  h_r <- drop(crossprod(A0, d0))
+  group_quad <- 0
+  for (j in seq_len(n)) {
+    L_j <- diag(sd_level[j, ], k) %*% L_cor
+    A_j <- forwardsolve(L_j, L_star)
+    e_j <- forwardsolve(L_j, r_s2z[j, ])
+    P_r <- P_r + group_prec[j] * crossprod(A_j)
+    h_r <- h_r - group_prec[j] * drop(crossprod(A_j, e_j))
+    group_quad <- group_quad + group_prec[j] * sum(e_j^2)
+  }
+  r_mode <- drop(solve(P_r, h_r))
+  whitened_mode <- drop(L_star %*% r_mode)
+  recovery_factor <- L_star %*% chol2inv(chol(P_r)) %*% t(L_star)
+  whitened_log <- sum(stats::dnorm(
+    theta, prior_mean, prior_sd, log = TRUE
+  )) - 0.5 * group_quad - (n - 1L) * sum(log(diag(L_star))) -
+    k * sum(log(group_scale)) +
+    0.5 * drop(crossprod(h_r, r_mode)) -
+    0.5 * as.numeric(determinant(P_r, logarithm = TRUE)$modulus) -
+    0.5 * n * k * log(2 * pi) + 0.5 * k * log(2 * pi) +
+    0.5 * k * log(n)
+
+  fast_mode <- fast_log <- fast_cov <- NULL
+  if (!correlated) {
+    base_info <- prior_prec[match_q]
+    base_score <- prior_prec[match_q] *
+      (theta[match_q] - prior_mean[match_q])
+    coupling_prec <- 0
+    coupling_resid <- 0
+    if (center) {
+      base_info[1L] <- 0
+      base_score[1L] <- 0
+      coupling_prec <- prior_prec[1L]
+      coupling_resid <- theta[1L] - prior_mean[1L]
+    }
+    relative_prec <- sweep(relative_sd, 1L, group_prec, function(x, y) {
+      y / x^2
+    })
+    group_info <- colSums(relative_prec)
+    group_score <- colSums(
+      relative_prec * sweep(r_s2z, 2L, reference_sd, "/")
+    )
+    D <- group_info + reference_sd^2 * base_info
+    vstar <- reference_sd * intercept_map
+    rhs <- reference_sd * base_score - group_score +
+      coupling_prec * vstar * coupling_resid
+    rank1_info <- coupling_prec * sum(vstar^2 / D)
+    independent_mode <- rhs / D
+    r_mode_fast <- independent_mode -
+      coupling_prec * vstar / D * sum(vstar * independent_mode) /
+      (1 + rank1_info)
+    fast_mode <- reference_sd * r_mode_fast
+    fast_cov_r <- diag(1 / D, k) -
+      coupling_prec / (1 + rank1_info) *
+      outer(vstar / D, vstar / D)
+    fast_cov <- diag(reference_sd, k) %*% fast_cov_r %*%
+      diag(reference_sd, k)
+    fast_log <- sum(stats::dnorm(
+      theta, prior_mean, prior_sd, log = TRUE
+    )) - 0.5 * group_quad +
+      0.5 * sum(rhs * r_mode_fast) -
+      (n - 1L) * sum(log(reference_sd)) -
+      k * sum(log(group_scale)) - 0.5 * sum(log(D)) -
+      0.5 * log1p(rank1_info) -
+      0.5 * n * k * log(2 * pi) + 0.5 * k * log(2 * pi) +
+      0.5 * k * log(n)
+  }
+
+  list(
+    basis = basis, z_sd_centered = z_sd_centered, z_sd_mean = z_sd_mean,
+    z_sd = z_sd, baseline_sd = baseline_sd, sdlog = sdlog,
+    reference_sd = reference_sd, relative_sd = relative_sd,
+    sd_level = sd_level, r_s2z = r_s2z, P = P, P_r = P_r,
+    expected_P_r = t(L_star) %*% P %*% L_star,
+    h = h, h_r = h_r, expected_h_r = drop(crossprod(L_star, h)),
+    dense_mode = dense_mode, whitened_mode = whitened_mode,
+    fast_mode = fast_mode, dense_cov = dense_cov,
+    whitened_cov = recovery_factor, fast_cov = fast_cov,
+    dense_log = dense_log, whitened_log = whitened_log,
+    fast_log = fast_log
+  )
+}
+
 test_that("the physical sum-to-zero transform is orthonormal", {
   for (n in c(2L, 3L, 7L)) {
     basis <- .s2z_basis(n)
@@ -295,6 +587,141 @@ test_that("independent no-intercept effects reduce to diagonal solves", {
       )
     }
   }
+})
+
+test_that("correlated Gaussian whitening matches the dense complete square", {
+  ans <- .s2z_correlated_whitened_case(student = FALSE)
+
+  expect_equal(colSums(ans$r_s2z), numeric(3), tolerance = 2e-14)
+  expect_equal(ans$P_r, ans$expected_P_r, tolerance = 2e-13)
+  expect_equal(ans$h_r, ans$expected_h_r, tolerance = 2e-13)
+  expect_equal(ans$whitened_mode, ans$dense_mode, tolerance = 2e-13)
+  expect_equal(ans$whitened_q, ans$dense_q, tolerance = 2e-13)
+  expect_equal(ans$whitened_effects, ans$dense_effects,
+               tolerance = 2e-13)
+  expect_equal(ans$whitened_log, ans$dense_log, tolerance = 2e-11)
+})
+
+test_that("correlated Student whitening handles heterogeneous scales", {
+  ans <- .s2z_correlated_whitened_case(student = TRUE)
+
+  # Physical zero sums do not make this precision-weighted contrast vanish.
+  expect_gt(diff(range(ans$group_prec)), 5)
+  expect_gt(max(abs(crossprod(ans$r_s2z, ans$group_prec))), 0.1)
+  expect_equal(ans$P_r, ans$expected_P_r, tolerance = 2e-13)
+  expect_equal(ans$h_r, ans$expected_h_r, tolerance = 2e-13)
+  expect_equal(ans$whitened_mode, ans$dense_mode, tolerance = 2e-13)
+  expect_equal(ans$whitened_q, ans$dense_q, tolerance = 2e-13)
+  expect_equal(ans$whitened_effects, ans$dense_effects,
+               tolerance = 2e-13)
+  expect_equal(ans$whitened_log, ans$dense_log, tolerance = 2e-11)
+})
+
+test_that("correlated Cholesky recovery covariance is exact", {
+  for (student in c(FALSE, TRUE)) {
+    ans <- .s2z_correlated_whitened_case(student = student)
+    expect_equal(ans$whitened_cov, ans$dense_cov,
+                 tolerance = 3e-13, scale = 1)
+    expect_equal(
+      ans$whitened_recovered_cov, ans$dense_recovered_cov,
+      tolerance = 5e-13, scale = 1
+    )
+    expect_gt(
+      min(eigen(ans$whitened_cov, symmetric = TRUE)$values), 0
+    )
+  }
+})
+
+test_that("group-varying log scales are an orthonormal reparameterization", {
+  for (n in c(2L, 7L)) {
+    basis <- .s2z_basis(n)
+    rotation <- cbind(basis, rep(1 / sqrt(n), n))
+    expect_equal(crossprod(rotation), diag(n), tolerance = 3e-14)
+    expect_equal(abs(det(rotation)), 1, tolerance = 3e-14)
+    for (k in c(1L, 4L, 10L)) {
+      y <- matrix(
+        sin(seq_len((n - 1L) * k) * 0.37),
+        nrow = n - 1L, ncol = k
+      )
+      z_mean <- seq(-0.8, 0.6, length.out = k)
+      z_centered <- basis %*% y
+      z <- sweep(z_centered, 2L, z_mean / sqrt(n), "+")
+      expect_equal(colSums(z_centered), numeric(k), tolerance = 2e-14)
+      expect_equal(colSums(z), sqrt(n) * z_mean, tolerance = 2e-14)
+      expect_equal(
+        colSums(z^2), colSums(y^2) + z_mean^2,
+        tolerance = 3e-14
+      )
+      expect_equal(
+        sum(stats::dnorm(z, log = TRUE)),
+        sum(stats::dnorm(y, log = TRUE)) +
+          sum(stats::dnorm(z_mean, log = TRUE)),
+        tolerance = 3e-13
+      )
+      baseline_sd <- seq(0.4, 1.2, length.out = k)
+      sdlog <- seq(0, 0.7, length.out = k)
+      sd_level <- sweep(
+        exp(sweep(z, 2L, sdlog, "*")),
+        2L, baseline_sd, "*"
+      )
+      expect_equal(
+        sd_level[, 1L], rep(baseline_sd[1L], n), tolerance = 1e-15
+      )
+    }
+  }
+})
+
+test_that("heterogeneous correlated S2Z kernel matches the dense integral", {
+  for (student in c(FALSE, TRUE)) {
+    for (center in c(FALSE, TRUE)) {
+      ans <- .s2z_varying_scale_case(
+        k = 3L, student = student, correlated = TRUE, center = center
+      )
+      expect_equal(colSums(ans$r_s2z), numeric(3), tolerance = 2e-14)
+      expect_equal(
+        colSums(log(ans$relative_sd)), numeric(3), tolerance = 3e-14
+      )
+      expect_equal(ans$P_r, ans$expected_P_r, tolerance = 4e-12)
+      expect_equal(ans$h_r, ans$expected_h_r, tolerance = 4e-12)
+      expect_equal(ans$whitened_mode, ans$dense_mode, tolerance = 4e-12)
+      expect_equal(ans$whitened_cov, ans$dense_cov,
+                   tolerance = 7e-12, scale = 1)
+      expect_equal(ans$whitened_log, ans$dense_log, tolerance = 3e-10)
+    }
+  }
+})
+
+test_that("heterogeneous diagonal S2Z kernel remains component-wise", {
+  for (k in c(1L, 4L, 10L)) {
+    for (student in c(FALSE, TRUE)) {
+      for (center in c(FALSE, TRUE)) {
+        ans <- .s2z_varying_scale_case(
+          k = k, student = student, correlated = FALSE, center = center
+        )
+        expect_equal(ans$whitened_mode, ans$dense_mode, tolerance = 5e-12)
+        expect_equal(ans$fast_mode, ans$dense_mode, tolerance = 5e-12)
+        expect_equal(ans$whitened_cov, ans$dense_cov,
+                     tolerance = 8e-12, scale = 1)
+        expect_equal(ans$fast_cov, ans$dense_cov,
+                     tolerance = 8e-12, scale = 1)
+        expect_equal(ans$whitened_log, ans$dense_log, tolerance = 4e-10)
+        expect_equal(ans$fast_log, ans$dense_log, tolerance = 4e-10)
+      }
+    }
+  }
+})
+
+test_that("heterogeneous group precisions do not inherit zero-sum shortcuts", {
+  ans <- .s2z_varying_scale_case(
+    k = 3L, student = FALSE, correlated = TRUE, center = TRUE
+  )
+  weighted <- numeric(3)
+  for (j in seq_len(nrow(ans$r_s2z))) {
+    L_j <- diag(ans$sd_level[j, ], 3L)
+    weighted <- weighted + chol2inv(t(L_j)) %*% ans$r_s2z[j, ]
+  }
+  expect_equal(colSums(ans$r_s2z), numeric(3), tolerance = 2e-14)
+  expect_gt(max(abs(weighted)), 0.1)
 })
 
 test_that("scalar completed-square density is normalized exactly", {
@@ -552,7 +979,24 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   expect_match2(gaussian_code, "H_s2z_1[1, 4] = means_X[3];")
   expect_match2(
     gaussian_code,
-    "P_s2z_1 = crossprod(diag_pre_multiply(sqrt(prior_prec_s2z_1), H_s2z_1)) + sum(group_prec_s2z_1) * Q_Sigma_s2z_1;"
+    paste0(
+      "prior_factor_s2z = diag_pre_multiply(",
+      "sqrt(prior_prec_s2z_1), H_s2z_1) * L_Sigma_s2z_1;"
+    )
+  )
+  expect_match2(
+    gaussian_code,
+    paste0(
+      "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+      "1.0 * N_1);"
+    )
+  )
+  expect_match2(
+    gaussian_code,
+    paste0(
+      "whitened_h_s2z = mdivide_left_tri_low(",
+      "L_P_s2z_1, h_s2z);"
+    )
   )
   expect_match2(
     gaussian_code,
@@ -575,12 +1019,21 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   )
   expect_match2(
     student_code,
-    "r_s2z_1' * group_prec_s2z_1"
+    "white_s2z_1 * group_prec_s2z_1"
   )
   expect_match2(
     student_code,
     "- M_1 * sum(log(group_scale_s2z_1))"
   )
+  for (code in list(gaussian_code, student_code)) {
+    for (term in c(
+      "Q_Sigma_s2z_1", "L_inv_s2z", "mdivide_left_spd(",
+      "mdivide_left_tri_low(L_Sigma_s2z_1, diag_matrix",
+      "qhat_s2z_1"
+    )) {
+      expect_false(grepl(term, code, fixed = TRUE), info = term)
+    }
+  }
 })
 
 test_that("save_pars(all = TRUE) keeps S2Z internals extractor-safe", {

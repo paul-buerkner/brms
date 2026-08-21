@@ -164,6 +164,18 @@
 #'   To define a prior distribution only for a specific standard deviation
 #'   of a specific grouping factor, you may write \cr
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
+#'   Physical sum-to-zero terms specified with
+#'   \code{gr(..., s2z = TRUE, scale = "varying")} additionally have a
+#'   non-negative log-scale standard deviation for every group-level
+#'   coefficient. These parameters have class \code{sdlog} and may be assigned
+#'   coefficient-specific priors in the same way, for example
+#'   \code{set_prior("normal(0, 0.2)", class = "sdlog", group = "g",
+#'   coef = "x1")}. The ordinary class \code{sd} remains the baseline
+#'   (conditional median) scale. Class \code{sdlog} has a half-normal
+#'   \code{normal(0, 0.25)} default; fixing it to zero with
+#'   \code{constant(0)} gives the shared-scale model. Realized per-level scales
+#'   are deterministic hierarchy draws named \code{sd_level}; priors cannot be
+#'   assigned directly to individual \code{sd_level} values.
 #'
 #'   If there is more than one group-level effect per grouping factor,
 #'   the correlations between those effects have to be estimated.
@@ -951,6 +963,14 @@ prior_re <- function(bframe, internal = FALSE, ...) {
     lb = "0", ls = px
   )
   prior <- prior + global_sd_prior
+  varying_re <- reframe[reframe$scale == "varying", , drop = FALSE]
+  if (has_rows(varying_re)) {
+    varying_px <- unique(check_prefix(varying_re))
+    prior <- prior + brmsprior(
+      class = "sdlog", prior = "normal(0, 0.25)",
+      lb = "0", ls = varying_px
+    )
+  }
   for (id in unique(reframe$id)) {
     r <- subset2(reframe, id = id)
     group <- r$group[1]
@@ -961,11 +981,21 @@ prior_re <- function(bframe, internal = FALSE, ...) {
       # don't specify lb as we already have it above
       brmsprior(class = "sd", group = group, ls = urpx) +
       brmsprior(class = "sd", coef = r$coef, group = group, ls = rpx)
+    if (identical(r$scale[1], "varying")) {
+      prior <- prior +
+        brmsprior(class = "sdlog", group = group, ls = urpx) +
+        brmsprior(class = "sdlog", coef = r$coef, group = group, ls = rpx)
+    }
     # detect duplicated group-level effects
     J <- with(prior, class == "sd" & nzchar(coef))
     dupli <- duplicated(prior[J, ])
     if (any(dupli)) {
       stop2("Duplicated group-level effects detected for group ", group)
+    }
+    J <- with(prior, class == "sdlog" & nzchar(coef))
+    dupli <- duplicated(prior[J, ])
+    if (any(dupli)) {
+      stop2("Duplicated group-level log-scale effects detected for group ", group)
     }
     # include correlation parameters
     if (isTRUE(r$cor[1]) && nrow(r) > 1L) {

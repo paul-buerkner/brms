@@ -260,6 +260,55 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
   expect_match2(sc_cor, "cholesky_factor_corr[M_1] L_1;")
   expect_match2(sc_cor, "diag_pre_multiply(sd_1, L_1)")
   expect_match2(sc_cor, "corr_matrix[M_1] Cor_1")
+  expect_match2(
+    sc_cor,
+    paste0(
+      "prior_factor_s2z = diag_pre_multiply(",
+      "sqrt(prior_prec_s2z_1), H_s2z_1) * L_Sigma_s2z_1;"
+    )
+  )
+  expect_match2(
+    sc_cor,
+    paste0(
+      "white_s2z_1 = mdivide_left_tri_low(",
+      "L_Sigma_s2z_1, r_s2z_1');"
+    )
+  )
+  expect_match2(
+    sc_cor,
+    paste0(
+      "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+      "1.0 * N_1);"
+    )
+  )
+  expect_match2(sc_cor, "L_P_s2z_1 = cholesky_decompose(P_s2z_1);")
+  expect_match2(
+    sc_cor,
+    paste0(
+      "whitened_h_s2z = mdivide_left_tri_low(",
+      "L_P_s2z_1, h_s2z);"
+    )
+  )
+  expect_match2(
+    sc_cor, "group_quad_s2z_1 = -dot_self(whitened_h_s2z);"
+  )
+  expect_match2(sc_cor, "lprior += -0.5 * group_quad_s2z_1")
+  expect_match2(
+    sc_cor,
+    paste0(
+      "mean_r_s2z_1 = L_Sigma_s2z_1 * (r_mean_s2z + ",
+      "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_1))');"
+    )
+  )
+  for (term in c(
+    "Q_Sigma_s2z_1",
+    "L_inv_s2z",
+    "mdivide_left_spd(",
+    "mdivide_left_tri_low(L_Sigma_s2z_1, diag_matrix",
+    "qhat_s2z_1"
+  )) {
+    expect_false(grepl(term, sc_cor, fixed = TRUE), info = term)
+  }
   expect_false(grepl("cholesky_factor_corr[M_1] L_1;", sc_diag, fixed = TRUE))
   expect_match2(sc_diag, "D_diag_s2z_1")
   expect_match2(sc_diag, "rank1_info_s2z_1")
@@ -473,6 +522,357 @@ test_that("S2Z preserves ordinary priors on every varying effect", {
   expect_match2(student_code, "inv_chi_square_lpdf(udf_1 | df_1)")
 })
 
+test_that("group-varying scales preserve baseline priors and add sdlog", {
+  form <- y ~ x * z +
+    (1 + x * z | gr(g, s2z = TRUE, scale = "varying"))
+  available <- as.data.frame(get_prior(form, data = s2z_dat))
+  group_sd <- subset(
+    available, class == "sd" & group == "g" & nzchar(coef)
+  )
+  group_sdlog <- subset(
+    available, class == "sdlog" & group == "g" & nzchar(coef)
+  )
+  default_sdlog <- subset(
+    available, class == "sdlog" & !nzchar(group) & !nzchar(coef)
+  )
+
+  expect_setequal(group_sd$coef, c("Intercept", "x", "z", "x:z"))
+  expect_setequal(group_sdlog$coef, group_sd$coef)
+  expect_identical(default_sdlog$prior, "normal(0, 0.25)")
+  expect_identical(default_sdlog$lb, "0")
+
+  varying_priors <- c(
+    prior(exponential(2), class = "sd", group = "g",
+          coef = "Intercept"),
+    prior(lognormal(-1, 0.4), class = "sd", group = "g", coef = "x"),
+    prior(normal(0, 0.1), class = "sdlog", group = "g",
+          coef = "Intercept"),
+    prior(exponential(5), class = "sdlog", group = "g", coef = "x"),
+    prior(normal(0, 0.3), class = "sdlog", group = "g", coef = "z"),
+    prior(student_t(4, 0, 0.2), class = "sdlog", group = "g",
+          coef = "x:z"),
+    prior(lkj(3), class = "cor", group = "g")
+  )
+  scode <- stancode(form, data = s2z_dat, prior = varying_priors)
+
+  expect_match2(scode, "vector<lower=0>[M_1] sd_1;")
+  expect_match2(scode, "vector<lower=0>[M_1] sdlog_1;")
+  expect_match2(scode, "exponential_lpdf(sd_1[1] | 2)")
+  expect_match2(scode, "lognormal_lpdf(sd_1[2] | -1, 0.4)")
+  expect_match2(scode, "normal_lpdf(sdlog_1[1] | 0, 0.1)")
+  expect_match2(scode, "exponential_lpdf(sdlog_1[2] | 5)")
+  expect_match2(scode, "normal_lpdf(sdlog_1[3] | 0, 0.3)")
+  expect_match2(scode, "student_t_lpdf(sdlog_1[4] | 4, 0, 0.2)")
+  expect_match2(scode, "lkj_corr_cholesky_lpdf(L_1 | 3)")
+
+  implicit_shared <- stancode(y ~ x + (1 + x | g), data = s2z_dat)
+  explicit_shared <- stancode(
+    y ~ x + (1 + x | gr(g, scale = "shared")), data = s2z_dat
+  )
+  expect_identical(explicit_shared, implicit_shared)
+  expect_error(
+    stancode(
+      y ~ x + (1 + x | gr(g, scale = "varying")), data = s2z_dat
+    ),
+    "require 's2z = TRUE'"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = prior(constant(-0.1), class = "sdlog")
+    ),
+    "must be non-negative"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = prior(normal(0, 0.2), class = "sdlog", lb = -1)
+    ),
+    "finite non-negative lower bound"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = prior(normal(0, 0.2), class = "sdlog", lb = 0, ub = 0)
+    ),
+    "finite positive upper bound"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = prior(normal(1, 0.2), class = "sd", lb = -1)
+    ),
+    "finite non-negative lower bound"
+  )
+
+  zero_code <- stancode(
+    form, data = s2z_dat,
+    prior = prior(constant(0), class = "sdlog")
+  )
+  expect_match2(zero_code, "sdlog_1 = rep_vector(0, rows(sdlog_1));")
+  expect_match2(
+    zero_code,
+    paste0(
+      "reference_sd_s2z_1[k] = sd_1[k] * exp(sdlog_1[k] * ",
+      "z_sd_mean_s2z_1[k] / sqrt(1.0 * N_1));"
+    )
+  )
+
+  mixed_code <- stancode(
+    form, data = s2z_dat, normalize = FALSE,
+    prior = c(
+      prior(constant(0), class = "sdlog", group = "g",
+            coef = "Intercept"),
+      prior(normal(0, 0.3), class = "sdlog", group = "g", coef = "x")
+    )
+  )
+  mixed_lines <- strsplit(mixed_code, "\n", fixed = TRUE)[[1]]
+  expect_equal(sum(grepl("sdlog_1[1] = 0;", mixed_lines, fixed = TRUE)), 1)
+  expect_match2(mixed_code, "normal_lupdf(sdlog_1[2] | 0, 0.3)")
+})
+
+test_that("correlated group-varying scales use the heterogeneous kernel", {
+  scode <- stancode(
+    y ~ x * z +
+      (1 + x * z | gr(g, s2z = TRUE, scale = "varying")),
+    data = s2z_dat,
+    prior = prior(normal(0, 1), class = b) +
+      prior(normal(0, 1.5), class = Intercept)
+  )
+
+  for (term in c(
+    "array[M_1] vector[N_1 - 1] z_sd_s2z_1;",
+    "vector[M_1] z_sd_mean_s2z_1;",
+    "matrix<lower=0>[N_1, M_1] relative_sd_s2z_1;",
+    "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
+    "vector<lower=0>[M_1] reference_sd_s2z_1;"
+  )) {
+    expect_match2(scode, term)
+  }
+  expect_match2(
+    scode,
+    paste0(
+      "relative_sd_s2z_1[, k] = exp(sdlog_1[k] * ",
+      "z_sd_centered_s2z);"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "reference_sd_s2z_1[k] = sd_1[k] * exp(sdlog_1[k] * ",
+      "z_sd_mean_s2z_1[k] / sqrt(1.0 * N_1));"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "sd_level_s2z_1[, k] = reference_sd_s2z_1[k] * ",
+      "relative_sd_s2z_1[, k];"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "L_level_s2z = diag_pre_multiply(",
+      "sd_level_s2z_1[j]', L_1);"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "relative_precision_s2z = mdivide_left_tri_low(",
+      "L_level_s2z, L_Sigma_s2z_1);"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "P_s2z_1 += group_prec_s2z_1[j] * ",
+      "crossprod(relative_precision_s2z);"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "h_s2z -= group_prec_s2z_1[j] * ",
+      "relative_precision_s2z' * white_level_s2z;"
+    )
+  )
+  expect_match2(scode, "group_quad_s2z_1 -= dot_self(forward_solve_s2z)")
+  expect_match2(
+    scode,
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))"
+  )
+  expect_match2(scode, "- sum(log(diagonal(L_P_s2z_1)))")
+  expect_match2(scode, "+ 0.5 * M_1 * log(1.0 * N_1)")
+  expect_match2(scode, "sd_level_1 = sd_level_s2z_1;")
+  expect_match2(scode, "target += std_normal_lpdf(z_sd_mean_s2z_1);")
+  expect_match2(scode, "target += std_normal_lpdf(z_sd_s2z_1[k]);")
+  expect_false(grepl("jacobian", scode, ignore.case = TRUE))
+  expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
+})
+
+test_that("independent varying scales retain the O(K) specialization", {
+  ten_dat <- data.frame(
+    y = seq(-1, 1, length.out = 80),
+    ten = factor(rep(letters[1:10], 8)),
+    g = factor(rep(seq_len(8), each = 10))
+  )
+  scode <- stancode(
+    y ~ 0 + ten +
+      (0 + ten || gr(g, s2z = TRUE, scale = "varying")),
+    data = ten_dat, prior = prior(normal(0, 2), class = b),
+    normalize = FALSE
+  )
+
+  expect_match2(
+    scode,
+    paste0(
+      "group_info_s2z[1] = dot_product(group_prec_s2z_1, ",
+      "inv_square(relative_sd_s2z_1[, 1]));"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "D_diag_s2z_1 = group_info_s2z + ",
+      "square(reference_sd_s2z_1) .* base_info_s2z;"
+    )
+  )
+  expect_match2(
+    scode,
+    "- (N_1 - 1) * sum(log(reference_sd_s2z_1))"
+  )
+  expect_match2(scode, "- 0.5 * sum(log(D_diag_s2z_1))")
+  expect_match2(scode, "- 0.5 * log1p(rank1_info_s2z_1)")
+  expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
+  for (term in c(
+    "matrix[M_1, M_1]", "cholesky_decompose(",
+    "mdivide_left_spd(", "mdivide_left_tri_low(",
+    "mdivide_right_tri_low("
+  )) {
+    expect_false(grepl(term, scode, fixed = TRUE), info = term)
+  }
+
+  student_code <- stancode(
+    y ~ x * z +
+      (1 + x * z || gr(
+        g, dist = "student", s2z = TRUE, scale = "varying"
+      )),
+    data = s2z_dat, normalize = FALSE
+  )
+  expect_match2(student_code, "group_scale_s2z_1 = dfm_1;")
+  expect_match2(
+    student_code,
+    "group_prec_s2z_1 = inv_square(group_scale_s2z_1);"
+  )
+  expect_match2(
+    student_code,
+    paste0(
+      "group_score_s2z[1] = dot_product(r_s2z_1_1, ",
+      "group_prec_s2z_1 .* inv_square(relative_sd_s2z_1[, 1]));"
+    )
+  )
+  expect_match2(student_code, "- M_1 * sum(log(group_scale_s2z_1))")
+})
+
+test_that("varying-scale public names stay separate from kernel internals", {
+  form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, scale = "varying"))
+  fit <- brm(form, data = s2z_dat, empty = TRUE)
+  excluded <- unlist(brms:::exclude_pars(fit), use.names = FALSE)
+
+  for (name in c(
+    "z_sd_s2z_1", "z_sd_mean_s2z_1", "relative_sd_s2z_1",
+    "reference_sd_s2z_1", "sd_level_s2z_1"
+  )) {
+    expect_true(name %in% excluded, info = name)
+  }
+  expect_false("sdlog_1" %in% excluded)
+  expect_false("sd_level_1" %in% excluded)
+
+  fit_no_group <- brm(
+    form, data = s2z_dat, empty = TRUE,
+    save_pars = save_pars(group = FALSE)
+  )
+  excluded_no_group <- unlist(
+    brms:::exclude_pars(fit_no_group), use.names = FALSE
+  )
+  expect_true("sd_level_1" %in% excluded_no_group)
+  expect_false("sdlog_1" %in% excluded_no_group)
+
+  bframe <- brms:::brmsframe(brmsterms(form), s2z_dat)
+  raw_names <- c(
+    "sdlog_1[1]", "sdlog_1[2]",
+    sprintf("sd_level_1[%d,1]", seq_len(6)),
+    sprintf("sd_level_1[%d,2]", seq_len(6))
+  )
+  rename_map <- brms:::rename_re(bframe, pars = raw_names)
+  renamed <- unlist(lapply(rename_map, `[[`, "fnames"), use.names = FALSE)
+  expect_true(all(c(
+    "sdlog_g__Intercept", "sdlog_g__x",
+    "sd_level_g[1,Intercept]", "sd_level_g[6,Intercept]",
+    "sd_level_g[1,x]", "sd_level_g[6,x]"
+  ) %in% renamed))
+
+  candidates <- c(
+    "b_Intercept", "sd_g__Intercept", "sdlog_g__Intercept",
+    "sd_level_g[1,Intercept]", "sd_level_s2z_1[1,1]"
+  )
+  plot_regex <- brms:::default_plot_variables(gaussian())
+  selected <- candidates[vapply(candidates, function(x) {
+    any(vapply(plot_regex, grepl, logical(1), x = x))
+  }, logical(1))]
+  expect_setequal(
+    selected, c("b_Intercept", "sd_g__Intercept", "sdlog_g__Intercept")
+  )
+})
+
+test_that("new Gaussian levels draw fresh group scales", {
+  form <- y ~ 1 +
+    (1 | gr(g, s2z = TRUE, scale = "varying"))
+  bframe <- brms:::brmsframe(brmsterms(form), s2z_dat)
+  reframe <- bframe$frame$re
+  old_levels <- levels(s2z_dat$g)
+  used_levels <- c(old_levels, "new")
+  ndraws <- 8L
+  baseline_sd <- seq(0.7, 1.4, length.out = ndraws)
+  sdlog <- seq(0.1, 0.55, length.out = ndraws)
+  draws <- posterior::as_draws_matrix(cbind(
+    sd_g__Intercept = baseline_sd,
+    sdlog_g__Intercept = sdlog
+  ))
+  rdraws <- matrix(0, nrow = ndraws, ncol = length(old_levels))
+
+  set.seed(1916)
+  scale_z <- rnorm(ndraws)
+  effect_z <- rnorm(ndraws)
+  expected <- baseline_sd * exp(sdlog * scale_z) * effect_z
+  set.seed(1916)
+  actual <- brms:::get_new_rdraws(
+    reframe = reframe, gf = list(length(old_levels) + 1L),
+    rdraws = rdraws, used_levels = used_levels,
+    old_levels = old_levels, sample_new_levels = "gaussian",
+    draws = draws
+  )
+  expect_equal(dim(actual), c(ndraws, 1L))
+  expect_equal(as.numeric(actual[, 1]), expected, tolerance = 1e-14)
+
+  student_form <- y ~ 1 + (1 | gr(
+    g, dist = "student", s2z = TRUE, scale = "varying"
+  ))
+  student_frame <- brms:::brmsframe(brmsterms(student_form), s2z_dat)
+  expect_error(
+    brms:::get_new_rdraws(
+      reframe = student_frame$frame$re,
+      gf = list(length(old_levels) + 1L), rdraws = rdraws,
+      used_levels = used_levels, old_levels = old_levels,
+      sample_new_levels = "gaussian", draws = draws
+    ),
+    "not available for non-gaussian"
+  )
+})
+
 test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
   scode <- stancode(
     y ~ x + (1 + x | gr(g, dist = "student", s2z = TRUE)),
@@ -482,9 +882,46 @@ test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
   expect_match2(scode, "dfm_1 = sqrt(df_1 * udf_1);")
   expect_match2(scode, "group_scale_s2z_1 = dfm_1;")
   expect_match2(scode, "group_prec_s2z_1 = inv_square(group_scale_s2z_1)")
-  expect_match2(scode, "r_s2z_1' * group_prec_s2z_1")
+  expect_match2(
+    scode,
+    paste0(
+      "white_s2z_1 = mdivide_left_tri_low(",
+      "L_Sigma_s2z_1, r_s2z_1');"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+      "sum(group_prec_s2z_1));"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "h_s2z = prior_factor_s2z' * prior_difference_s2z - ",
+      "white_s2z_1 * group_prec_s2z_1;"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "group_quad_s2z_1 += group_prec_s2z_1[j] * ",
+      "dot_self(white_s2z_1[, j]);"
+    )
+  )
+  expect_match2(scode, "lprior += -0.5 * group_quad_s2z_1")
   expect_match2(scode, "M_1 * sum(log(group_scale_s2z_1))")
   expect_match2(scode, "inv_chi_square_lpdf(udf_1 | df_1)")
+  for (term in c(
+    "Q_Sigma_s2z_1",
+    "L_inv_s2z",
+    "mdivide_left_spd(",
+    "mdivide_left_tri_low(L_Sigma_s2z_1, diag_matrix",
+    "qhat_s2z_1"
+  )) {
+    expect_false(grepl(term, scode, fixed = TRUE), info = term)
+  }
 })
 
 test_that("S2Z supports Gaussian scale-mixture population priors", {
@@ -500,8 +937,9 @@ test_that("S2Z supports Gaussian scale-mixture population priors", {
   expect_match2(scode, "udf_b_s2z_2;")
   expect_match2(scode, "inv_chi_square_lpdf(udf_b_s2z_1 | 7)")
   expect_match2(scode, "inv_chi_square_lpdf(udf_b_s2z_2 | 1)")
-  expect_match2(scode, "normal_lpdf(qhat_s2z_1[1]")
-  expect_match2(scode, "normal_lpdf(qhat_s2z_1[2]")
+  expect_match2(scode, "normal_lpdf(theta_s2z[1]")
+  expect_match2(scode, "normal_lpdf(theta_s2z[2]")
+  expect_false(grepl("qhat_s2z_1", scode, fixed = TRUE))
 
   scode_normal <- stancode(
     y ~ x + (1 + x | gr(g, s2z = TRUE)), data = s2z_dat,
@@ -526,8 +964,7 @@ test_that("S2Z keeps all parameter-dependent normalizers", {
   )
 
   for (term in c(
-    "N_1 * sum(log(diagonal(L_Sigma_s2z_1)))",
-    "M_1 * sum(log(group_scale_s2z_1))",
+    "(N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
     "sum(log(diagonal(L_P_s2z_1)))"
   )) {
     expect_true(grepl(term, sc_norm, fixed = TRUE))

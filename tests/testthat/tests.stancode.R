@@ -269,6 +269,14 @@ test_that("priors can be fixed to constants", {
   expect_match2(scode, "lprior += normal_lpdf(sd_1[4] | 0, 5)")
   expect_match2(scode, "sigma = 0.3;")
 
+  scode_kernel <- stancode(
+    y ~ x1*x2 + (x1*x2 | g), dat, prior = prior, normalize = FALSE
+  )
+  kernel_lines <- strsplit(scode_kernel, "\n", fixed = TRUE)[[1]]
+  expect_equal(sum(grepl("sd_1[3] = 1;", kernel_lines, fixed = TRUE)), 1)
+  expect_equal(sum(grepl("sd_1[2] = 2;", kernel_lines, fixed = TRUE)), 1)
+  expect_match2(scode_kernel, "normal_lupdf(sd_1[4] | 0, 5)")
+
   prior <- prior(constant(3))
   scode <- stancode(y ~ x2 + x1 + cs(g), dat, family = sratio(),
                          prior = prior)

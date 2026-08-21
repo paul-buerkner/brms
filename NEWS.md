@@ -9,7 +9,12 @@ group-effect mean vector and reconstructs conventional Bayesian coefficients
 and effects in generated quantities. Gaussian and Student-t group effects are
 supported, with the latter handled exactly as a conditional Gaussian scale
 mixture. Blocks with one varying coefficient and blocks with any number of
-independent coefficients use dedicated component-wise scalar implementations.
+coefficients in diagonal covariance blocks use dedicated component-wise scalar
+implementations. Setting `scale = "varying"` adds coefficient-specific
+log-normal scale hierarchies across grouping levels while retaining the usual
+baseline `sd` parameters and priors; class `sdlog` controls log-scale
+heterogeneity. The resulting group effects are conditionally elliptical given
+their scales, but generally not marginally elliptical.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

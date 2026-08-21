@@ -415,6 +415,28 @@ rename_re <- function(bframe, pars, ...) {
       paste0("sd_", id), pars, new_class = paste0("sd_", g),
       names = paste0("_", as.vector(rnames))
     )
+    if (identical(r$scale[1], "varying")) {
+      sdlog_names <- paste0("sdlog_", g, "__", as.vector(rnames))
+      sdlog_pos <- grepl(paste0("^sdlog_", id, "(\\[|$)"), pars)
+      lc(out) <- rlist(sdlog_pos, sdlog_names)
+      c(out) <- rename_prior(
+        paste0("sdlog_", id), pars,
+        new_class = paste0("sdlog_", g),
+        names = paste0("_", as.vector(rnames))
+      )
+      sd_level_regex <- paste0("^sd_level_", id, "\\[")
+      sd_level_pos <- grepl(sd_level_regex, pars)
+      levels <- gsub(
+        "[ \t\r\n]", ".", attr(reframe, "levels")[[r$group[1]]]
+      )
+      if (any(sd_level_pos)) {
+        sd_level_names <- paste0(
+          "sd_level_", g,
+          make_index_names(levels, as.vector(rnames), dim = 2)
+        )
+        lc(out) <- rlist(sd_level_pos, sd_level_names)
+      }
+    }
     # rename group-level correlations
     if (nrow(r) > 1L && isTRUE(r$cor[1])) {
       type <- paste0("cor_", g)

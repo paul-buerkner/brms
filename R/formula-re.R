@@ -20,18 +20,25 @@
 #'   parameterization and analytically integrate out the omitted common
 #'   group-effect mean vector. This experimental option preserves the usual
 #'   population- and group-level parameter semantics by reconstructing them in
-#'   generated quantities. It is exact for \code{dist = "gaussian"} and for
+#'   generated quantities. The sampled finite-population coefficient is the
+#'   arithmetic mean of the observed groups' coefficient vectors, whose
+#'   likelihood-scale values are unchanged by the reconstruction. It is exact
+#'   for \code{dist = "gaussian"} and for
 #'   \code{dist = "student"} through a Gaussian scale mixture. Every varying
 #'   design column must have an identical population-level design column.
 #'   Blocks with one varying coefficient use a dedicated scalar
-#'   implementation. Blocks with any number of independent coefficients
-#'   (\code{cor = FALSE} or \code{||} syntax) use a component-wise scalar
-#'   implementation that also accounts exactly for the shared centered
-#'   intercept prior.
-#'   Usual priors on group-level standard deviations, correlations, and
+#'   implementation. Blocks with any number of coefficients and a diagonal
+#'   scale matrix (\code{cor = FALSE} or \code{||} syntax) use a component-wise
+#'   scalar implementation that also accounts exactly for the shared centered
+#'   intercept prior. With Student-t effects, those coefficients share the
+#'   existing group-specific mixing scale and can therefore remain dependent
+#'   in their tails despite the diagonal scale matrix.
+#'   Usual priors on group-level scale parameters, correlations, and
 #'   Student-t degrees of freedom remain available, including separate
-#'   standard-deviation priors for varying intercepts, slopes, and
-#'   interactions.
+#'   \code{sd} priors for varying intercepts, slopes, and interactions. For
+#'   \code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
+#'   Student-t scale semantics and is not rescaled to a marginal standard
+#'   deviation.
 #'   The physical coordinates are intended for well-informed group
 #'   coefficients and may be slower than the default non-centered
 #'   parameterization when those coefficients are weakly informed.
@@ -43,6 +50,25 @@
 #'   non-positive fixed group-level standard deviations are not supported.
 #'   Custom Stan code must not use the conventional population- or group-level
 #'   coefficients before they are reconstructed in generated quantities.
+#' @param scale Character. The default \code{"shared"} uses one scale per
+#'   coefficient for all grouping levels. With \code{"varying"}, each
+#'   coefficient instead has log-normal scale variation across grouping levels,
+#'   \code{sd_level = sd * exp(sdlog * z)}, where \code{z} is standard normal.
+#'   This option requires \code{s2z = TRUE}. The ordinary \code{sd} parameter
+#'   and its prior are retained as the baseline (conditional median) scale, and
+#'   class \code{sdlog} controls the standard deviation of the log-scale
+#'   variation. Thus, coefficient-specific priors of both classes are available
+#'   for varying intercepts, slopes, and interactions. Realized scales are
+#'   returned as \code{sd_level}; they are deterministic hierarchy draws and do
+#'   not have separate direct priors. The baseline \code{sd} is a conditional
+#'   median, not the root-mean-square group scale: conditionally on the
+#'   hyperparameters, the mean squared scale is
+#'   \code{sd^2 * exp(2 * sdlog^2)}. A common conditional correlation matrix is
+#'   still shared
+#'   across grouping levels. Coefficient-specific
+#'   log-scale variation is conditionally elliptical given the scales but is
+#'   generally not marginally elliptical after those scales are integrated out.
+#'   This is a new statistical model rather than only a change of coordinates.
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
@@ -89,11 +115,20 @@
 #' fit5 <- brm(count ~ zAge * Trt +
 #'               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
 #'             data = epilepsy, family = poisson(), prior = s2z_prior)
+#'
+#' # allow the intercept, slope, and interaction scales to vary by patient
+#' scale_prior <- s2z_prior +
+#'   prior(normal(0, 0.25), class = "sdlog", group = "patient")
+#' fit6 <- brm(count ~ zAge * Trt +
+#'               (1 + zAge * Trt |
+#'                 gr(patient, s2z = TRUE, scale = "varying")),
+#'             data = epilepsy, family = poisson(), prior = scale_prior)
 #' }
 #'
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
-               cov = NULL, dist = "gaussian", s2z = FALSE) {
+               cov = NULL, dist = "gaussian", s2z = FALSE,
+               scale = "shared") {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -125,10 +160,17 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
     cov <- ""
   }
   dist <- match.arg(dist, c("gaussian", "student"))
+  scale <- match.arg(scale, c("shared", "varying"))
+  if (scale == "varying" && !s2z) {
+    stop2("Group-varying scales currently require 's2z = TRUE'.")
+  }
   byvars <- all_vars(by)
   pwvars <- all_vars(pw)
   allvars <- str2formula(c(groups, byvars, pwvars))
-  nlist(groups, allvars, label, by, cor, s2z, id, pw, cov, dist, type = "")
+  nlist(
+    groups, allvars, label, by, cor, s2z, id, pw, cov, dist, scale,
+    type = ""
+  )
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -598,6 +640,7 @@ get_re.btl <- function(x, ...) {
 #   nlpar: name of the non-linear parameter
 #   cor: are correlations modeled for this effect?
 #   s2z: use a sum-to-zero parameterization for this effect?
+#   scale: are group-effect scales shared or group-varying?
 #   ggn: global number of the grouping factor
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
@@ -648,6 +691,11 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       by = re$gcall[[i]]$by,
       cov = re$gcall[[i]]$cov,
       dist = re$gcall[[i]]$dist,
+      scale = if (nzchar(re$gcall[[i]]$type)) {
+        "shared"
+      } else {
+        re$gcall[[i]]$scale %||% "shared"
+      },
       stringsAsFactors = FALSE
     )
     bylevels <- NULL
@@ -803,6 +851,7 @@ empty_reframe <- function() {
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
     cor = logical(0), s2z = logical(0), type = character(0),
+    scale = character(0),
     form = character(0),
     stringsAsFactors = FALSE
   )

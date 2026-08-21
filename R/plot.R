@@ -102,7 +102,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("hist", "trace"),
 
 # list all parameter classes to be included in plots by default
 default_plot_variables <- function(family) {
-  c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_",
+  c(fixef_pars(), "^sd_.*__", "^sdlog_.*__", "^cor_", "^sigma_", "^rescor_",
     paste0("^", valid_dpars(family), "$"), "^delta$", "^theta",
     "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", "^car", "^sdcar",
     "^sdb_", "^sdbsp_", "^sdbs_", "^sds_", "^sdgp_", "^lscale_")
@@ -286,4 +286,3 @@ pairs.brmsfit <- function(x, pars = NA, variable = NULL, regex = FALSE,
 #' @importFrom bayesplot theme_default
 #' @export theme_default
 NULL
-

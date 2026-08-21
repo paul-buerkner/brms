@@ -114,7 +114,8 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
         "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
         "rank1_info_s2z", "group_quad_s2z",
         "mhat_s2z", "qhat_s2z", "white_s2z", "mean_r_s2z",
-        "q_recovered_s2z"
+        "q_recovered_s2z", "z_sd_s2z", "z_sd_mean_s2z",
+        "relative_sd_s2z", "reference_sd_s2z", "sd_level_s2z"
       )
       c(out) <- paste0(s2z_classes, "_", id)
       rp <- usc(combine_prefix(r))
@@ -124,11 +125,15 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
   if (isFALSE(save_pars$group)) {
     p <- usc(combine_prefix(reframe))
     c(out) <- paste0("r_", reframe$id, p, "_", reframe$cn)
+    varying_ids <- unique(reframe$id[reframe$scale == "varying"])
+    c(out) <- paste0("sd_level_", varying_ids)
   } else if (is.character(save_pars$group)) {
     sub_reframe <- reframe[!reframe$group %in% save_pars$group, ]
     if (has_rows(sub_reframe)) {
       sub_p <- usc(combine_prefix(sub_reframe))
       c(out) <- paste0("r_", sub_reframe$id, sub_p, "_", sub_reframe$cn)
+      varying_ids <- unique(sub_reframe$id[sub_reframe$scale == "varying"])
+      c(out) <- paste0("sd_level_", varying_ids)
     }
   }
   reframe_t <- subset_reframe_dist(reframe, "student")

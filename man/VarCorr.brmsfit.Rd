@@ -35,10 +35,22 @@ function. Only used if \code{summary} is \code{TRUE}.}
 \item{...}{Currently ignored.}
 }
 \value{
-A list of lists (one per grouping factor), each with
-three elements: a matrix containing the standard deviations,
-an array containing the correlation matrix, and an array
-containing the covariance matrix with variances on the diagonal.
+A list of lists (one per grouping factor), with a matrix containing
+the standard deviations and, when correlations are present, arrays
+containing the correlation and covariance matrices. For
+group-varying scale models, these three elements describe the baseline
+covariance obtained when the log-scale deviation is zero. Such models also
+return \code{sdlog}, containing the log-scale standard deviations,
+\code{sd_level}, containing the realized scales by grouping level, and
+\code{cov_level}, a named list of covariance matrices by grouping level.
+With \code{summary = FALSE}, their respective shapes are draws by
+coefficients, draws by levels by coefficients, and (for each level) draws
+by coefficients by coefficients. With \code{summary = TRUE}, their shapes
+are coefficients by statistics, levels by statistics by coefficients, and
+(for each level) coefficients by statistics by coefficients.
+For Student-t group effects, \code{sd}, \code{cov}, \code{sd_level}, and
+\code{cov_level} retain the existing Student-t scale-matrix semantics; they
+are not marginal standard deviations or covariance matrices.
 }
 \description{
 This function calculates the estimated standard deviations,

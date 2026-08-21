@@ -207,6 +207,18 @@ Define priors for specific parameters or classes of parameters.
   To define a prior distribution only for a specific standard deviation
   of a specific grouping factor, you may write \cr
   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
+  Physical sum-to-zero terms specified with
+  \code{gr(..., s2z = TRUE, scale = "varying")} additionally have a
+  non-negative log-scale standard deviation for every group-level
+  coefficient. These parameters have class \code{sdlog} and may be assigned
+  coefficient-specific priors in the same way, for example
+  \code{set_prior("normal(0, 0.2)", class = "sdlog", group = "g",
+  coef = "x1")}. The ordinary class \code{sd} remains the baseline
+(conditional median) scale. Class \code{sdlog} has a half-normal
+\code{normal(0, 0.25)} default; fixing it to zero with
+\code{constant(0)} gives the shared-scale model. Realized per-level scales
+are deterministic hierarchy draws named \code{sd_level}; priors cannot be
+assigned directly to individual \code{sd_level} values.
 
   If there is more than one group-level effect per grouping factor,
   the correlations between those effects have to be estimated.

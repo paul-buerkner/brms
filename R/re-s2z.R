@@ -131,6 +131,33 @@ parse_re_s2z_prior <- function(prior, coef = "") {
   out
 }
 
+# Check that an estimated scale parameter retains its required support.
+validate_re_s2z_scale_bounds <- function(prior, class) {
+  stopifnot(is.brmsprior(prior), length(class) == 1L)
+  bounds <- stan_base_prior(prior, col = c("lb", "ub"))
+  lb <- bounds[["lb"]][1L]
+  ub <- bounds[["ub"]][1L]
+  numeric_bound <- function(x) {
+    suppressWarnings(as.numeric(x))
+  }
+  lb_num <- numeric_bound(lb)
+  if (!nzchar(lb) || length(lb_num) != 1L || !is.finite(lb_num) ||
+      lb_num < 0) {
+    stop2("Class '", class, "' must have a finite non-negative lower ",
+          "bound for gr(..., s2z = TRUE).")
+  }
+  if (nzchar(ub)) {
+    ub_num <- numeric_bound(ub)
+    if (length(ub_num) != 1L || !is.finite(ub_num) || ub_num <= 0 ||
+        ub_num <= lb_num) {
+      stop2("Class '", class, "' must have a finite positive upper bound ",
+            "greater than its lower bound when one is specified for ",
+            "gr(..., s2z = TRUE).")
+    }
+  }
+  invisible(NULL)
+}
+
 # Check fixed group scales before the Gaussian precision is constructed.
 validate_re_s2z_sd_prior <- function(prior, r) {
   stopifnot(is.brmsprior(prior), is.reframe(r), has_rows(r))
@@ -139,6 +166,7 @@ validate_re_s2z_sd_prior <- function(prior, r) {
     prior, class = "sd", coef = c(r$coef, ""),
     group = c(r$group[1], ""), ls = px
   )
+  validate_re_s2z_scale_bounds(p, class = "sd")
   base_prior <- stan_base_prior(p)
   for (coef in r$coef) {
     pcoef <- subset2(p, coef = coef)
@@ -162,6 +190,43 @@ validate_re_s2z_sd_prior <- function(prior, r) {
       stop2("Group-level standard deviations fixed with 'constant' must ",
             "be positive numeric scalars for gr(..., s2z = TRUE) ",
             "(coefficient '", coef, "').")
+    }
+  }
+  invisible(NULL)
+}
+
+# Check fixed log-scale heterogeneity parameters. Zero is the exact
+# shared-scale limit, so it is intentionally allowed here.
+validate_re_s2z_sdlog_prior <- function(prior, r) {
+  stopifnot(is.brmsprior(prior), is.reframe(r), has_rows(r))
+  if (!identical(r$scale[1], "varying")) {
+    return(invisible(NULL))
+  }
+  px <- check_prefix(r)
+  p <- subset2(
+    prior, class = "sdlog", coef = c(r$coef, ""),
+    group = c(r$group[1], ""), ls = px
+  )
+  validate_re_s2z_scale_bounds(p, class = "sdlog")
+  base_prior <- stan_base_prior(p)
+  for (coef in r$coef) {
+    pcoef <- subset2(p, coef = coef)
+    coef_prior <- pcoef$prior[nzchar(pcoef$prior)]
+    stopifnot(length(coef_prior) <= 1L)
+    value <- if (length(coef_prior)) coef_prior[[1]] else base_prior
+    if (!stan_is_constant_prior(value)) {
+      next
+    }
+    call <- try(str2lang(value), silent = TRUE)
+    fixed <- if (inherits(call, "try-error") || length(call) < 2L) {
+      NA_real_
+    } else {
+      suppressWarnings(as.numeric(deparse0(call[[2]])))
+    }
+    if (length(fixed) != 1L || !is.finite(fixed) || fixed < 0) {
+      stop2("Log-scale standard deviations fixed with 'constant' must ",
+            "be non-negative numeric scalars for gr(..., scale = ",
+            "\"varying\") (coefficient '", coef, "').")
     }
   }
   invisible(NULL)
@@ -217,7 +282,19 @@ re_s2z_info <- function(bframe, prior = NULL) {
 # Validate S2Z structure after formulas, data, and priors have been resolved.
 validate_re_s2z <- function(bframe, prior) {
   stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
-  frames <- Filter(has_re_s2z, all_bframel(bframe))
+  all_frames <- all_bframel(bframe)
+  for (x in all_frames) {
+    r <- x$frame$re
+    varying <- rep(FALSE, nrow(r))
+    if (has_rows(r) && "scale" %in% names(r)) {
+      varying <- r$scale == "varying"
+    }
+    if (any(varying & !r$s2z)) {
+      stop2("Group-varying scales currently require ",
+            "gr(..., s2z = TRUE, scale = \"varying\").")
+    }
+  }
+  frames <- Filter(has_re_s2z, all_frames)
   if (!length(frames)) {
     return(invisible(NULL))
   }
@@ -234,6 +311,10 @@ validate_re_s2z <- function(bframe, prior) {
             "linear predictors.")
     }
     ids <- c(ids, info$id)
+    if (length(unique(r$scale)) != 1L) {
+      stop2("All coefficients sharing a group-level ID must use the same ",
+            "'scale' setting.")
+    }
     if (r$gtype[1] != "" || any(nzchar(r$type))) {
       stop2("The sum-to-zero parameterization currently ",
             "supports only ordinary 'gr' terms.")
@@ -264,11 +345,13 @@ validate_re_s2z <- function(bframe, prior) {
             "not yet supported together with gr(..., s2z = TRUE).")
     }
     if (has_special_prior(prior, check_prefix(r), class = "sd") ||
+        has_special_prior(prior, check_prefix(r), class = "sdlog") ||
         has_special_prior(prior, x, class = "b")) {
       stop2("Special priors are not yet supported together with ",
             "gr(..., s2z = TRUE).")
     }
     validate_re_s2z_sd_prior(prior, r)
+    validate_re_s2z_sdlog_prior(prior, r)
   }
   invisible(NULL)
 }

@@ -61,10 +61,12 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     "b", "bs", "bcs", "bsp", "bmo", "bme", "bmi", "bm",
     valid_dpars(object), "delta", "lncor", "rescor", "ar", "ma", "sderr",
     "cosy", "cortime", "lagsar", "errorsar", "car", "sdcar", "rhocar",
-    "sd", "cor", "df", "sds", "sdgp", "lscale", "simo"
+    "sd", "sdlog", "cor", "df", "sds", "sdgp", "lscale", "simo"
   )
   incl_regex <- paste0("^", regex_or(incl_classes), "(_|$|\\[)")
   variables <- variables[grepl(incl_regex, variables)]
+  # Per-level scales are intentionally omitted from compact summaries.
+  variables <- variables[!grepl("^sd_level_", variables)]
   draws <- as_draws_array(object, variable = variables)
 
   out$total_ndraws <- ndraws(draws)
@@ -190,18 +192,23 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     gregex <- escape_dot(g)
     sd_prefix <- paste0("^sd_", gregex, "__")
     sd_pars <- variables[grepl(sd_prefix, variables)]
+    sdlog_prefix <- paste0("^sdlog_", gregex, "__")
+    sdlog_pars <- variables[grepl(sdlog_prefix, variables)]
     cor_prefix <- paste0("^cor_", gregex, "__")
     cor_pars <- variables[grepl(cor_prefix, variables)]
     df_prefix <- paste0("^df_", gregex, "$")
     df_pars <- variables[grepl(df_prefix, variables)]
-    gpars <- c(df_pars, sd_pars, cor_pars)
+    gpars <- c(df_pars, sd_pars, sdlog_pars, cor_pars)
     out$random[[g]] <- full_summary[gpars, , drop = FALSE]
     if (has_rows(out$random[[g]])) {
       sd_names <- sub(sd_prefix, "sd(", sd_pars)
+      sdlog_names <- sub(sdlog_prefix, "sdlog(", sdlog_pars)
       cor_names <- sub(cor_prefix, "cor(", cor_pars)
       cor_names <- sub("__", ",", cor_names)
       df_names <- sub(df_prefix, "df", df_pars)
-      gnames <- c(df_names, paste0(c(sd_names, cor_names), ")"))
+      gnames <- c(
+        df_names, paste0(c(sd_names, sdlog_names, cor_names), ")")
+      )
       rownames(out$random[[g]]) <- gnames
     }
   }

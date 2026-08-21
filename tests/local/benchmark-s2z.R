@@ -39,7 +39,7 @@
 #   BRMS_S2Z_BENCH_MAX_TREEDEPTH=12
 #
 # The orthogonal/independent setting exercises the component-wise (scalar)
-# component-wise S2Z algebra with any K; "scalar" does not imply K = 1.
+# S2Z algebra with any K; "scalar" does not imply K = 1.
 #
 # `gradient_evals` counts post-warmup leapfrog gradients plus one initial
 # gradient per transition. ESS/gradient is calculated on the same post-warmup
@@ -202,6 +202,8 @@ configuration <- data.frame(
   weak_n = weak_n,
   orthogonal_sigma = orthogonal_sigma,
   reps = reps,
+  seed = base_seed,
+  cores = cores,
   adapt_delta = adapt_delta,
   max_treedepth = max_treedepth,
   stringsAsFactors = FALSE
@@ -668,13 +670,22 @@ if (nzchar(output_file)) {
   if (!identical(output_dir, ".")) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
-  utils::write.csv(benchmark_results, output_file, row.names = FALSE)
-  paired_file <- if (grepl("\\.csv$", output_file, ignore.case = TRUE)) {
-    sub("\\.csv$", "-paired.csv", output_file, ignore.case = TRUE)
-  } else {
-    paste0(output_file, "-paired.csv")
+  companion_csv <- function(path, suffix) {
+    if (grepl("\\.csv$", path, ignore.case = TRUE)) {
+      sub("\\.csv$", paste0(suffix, ".csv"), path, ignore.case = TRUE)
+    } else {
+      paste0(path, suffix, ".csv")
+    }
   }
+  utils::write.csv(benchmark_results, output_file, row.names = FALSE)
+  paired_file <- companion_csv(output_file, "-paired")
+  settings_file <- companion_csv(output_file, "-settings")
   utils::write.csv(paired_results, paired_file, row.names = FALSE)
-  cat("\nWrote ", normalizePath(output_file, mustWork = FALSE),
-      " and ", normalizePath(paired_file, mustWork = FALSE), ".\n", sep = "")
+  utils::write.csv(configuration, settings_file, row.names = FALSE)
+  cat(
+    "\nWrote ", normalizePath(output_file, mustWork = FALSE),
+    ", ", normalizePath(paired_file, mustWork = FALSE),
+    ", and ", normalizePath(settings_file, mustWork = FALSE), ".\n",
+    sep = ""
+  )
 }
