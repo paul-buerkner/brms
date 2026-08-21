@@ -11,7 +11,8 @@ gr(
   id = NA,
   pw = NULL,
   cov = NULL,
-  dist = "gaussian"
+  dist = "gaussian",
+  s2z = FALSE
 )
 }
 \arguments{
@@ -24,6 +25,25 @@ must be nested in levels of the \code{by} variable.}
 
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
+
+\item{s2z}{Logical. If \code{TRUE}, use a physical sum-to-zero
+parameterization and analytically marginalize the common group-effect
+mean. This experimental option preserves the usual population- and
+group-level parameter semantics by reconstructing them in generated
+quantities. It is exact for \code{dist = "gaussian"} and for
+\code{dist = "student"} through a Gaussian scale mixture. Every varying
+design column must have an identical population-level design column.
+The physical coordinates are intended for well-informed group
+coefficients and may be slower than the default non-centered
+parameterization when those coefficients are weakly informed.
+Currently, only one such grouping term per linear predictor is supported,
+without the \code{by}, \code{cov}, or \code{pw} arguments.
+Population-level priors must currently be flat, normal, Student-t, or
+Cauchy with numeric constant arguments. Bounds, tags, special priors,
+prior-only sampling, ordinal thresholds, sparse and QR designs, and
+non-positive fixed group-level standard deviations are not supported.
+Custom Stan code must not use the conventional population- or group-level
+coefficients before they are reconstructed in generated quantities.}
 
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
@@ -41,8 +61,8 @@ can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
 of the same grouping factor are modeled as independent of each other.}
 
-\item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"gaussian"} is the only option.}
+\item{dist}{Name of the distribution of the group-level effects. Supported
+options are \code{"gaussian"} and \code{"student"}.}
 }
 \description{
 Function used to set up a basic grouping term in \pkg{brms}.
@@ -70,6 +90,11 @@ epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
 fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
             data = epilepsy)
 summary(fit4)
+
+# marginalized sum-to-zero varying intercepts, slopes, and interactions
+fit5 <- brm(count ~ zAge * Trt +
+              (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+            data = epilepsy, family = poisson())
 }
 
 }

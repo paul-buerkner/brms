@@ -16,6 +16,24 @@
 #'   must be nested in levels of the \code{by} variable.
 #' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
 #'   modelled as correlated.
+#' @param s2z Logical. If \code{TRUE}, use a physical sum-to-zero
+#'   parameterization and analytically marginalize the common group-effect
+#'   mean. This experimental option preserves the usual population- and
+#'   group-level parameter semantics by reconstructing them in generated
+#'   quantities. It is exact for \code{dist = "gaussian"} and for
+#'   \code{dist = "student"} through a Gaussian scale mixture. Every varying
+#'   design column must have an identical population-level design column.
+#'   The physical coordinates are intended for well-informed group
+#'   coefficients and may be slower than the default non-centered
+#'   parameterization when those coefficients are weakly informed.
+#'   Currently, only one such grouping term per linear predictor is supported,
+#'   without the \code{by}, \code{cov}, or \code{pw} arguments.
+#'   Population-level priors must currently be flat, normal, Student-t, or
+#'   Cauchy with numeric constant arguments. Bounds, tags, special priors,
+#'   prior-only sampling, ordinal thresholds, sparse and QR designs, and
+#'   non-positive fixed group-level standard deviations are not supported.
+#'   Custom Stan code must not use the conventional population- or group-level
+#'   coefficients before they are reconstructed in generated quantities.
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
@@ -29,8 +47,8 @@
 #'   can be used, among others, to model pedigrees and phylogenetic effects. See
 #'   \code{vignette("brms_phylogenetics")} for more details. By default, levels
 #'   of the same grouping factor are modeled as independent of each other.
-#' @param dist Name of the distribution of the group-level effects.
-#' Currently \code{"gaussian"} is the only option.
+#' @param dist Name of the distribution of the group-level effects. Supported
+#'   options are \code{"gaussian"} and \code{"student"}.
 #'
 #' @seealso \code{\link{brmsformula}}
 #'
@@ -53,11 +71,16 @@
 #' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
 #'             data = epilepsy)
 #' summary(fit4)
+#'
+#' # marginalized sum-to-zero varying intercepts, slopes, and interactions
+#' fit5 <- brm(count ~ zAge * Trt +
+#'               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+#'             data = epilepsy, family = poisson())
 #' }
 #'
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
-               cov = NULL, dist = "gaussian") {
+               cov = NULL, dist = "gaussian", s2z = FALSE) {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -65,6 +88,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   }
   stopif_illegal_group(groups[1])
   cor <- as_one_logical(cor)
+  s2z <- as_one_logical(s2z)
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
@@ -91,7 +115,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   byvars <- all_vars(by)
   pwvars <- all_vars(pw)
   allvars <- str2formula(c(groups, byvars, pwvars))
-  nlist(groups, allvars, label, by, cor, id, pw, cov, dist, type = "")
+  nlist(groups, allvars, label, by, cor, s2z, id, pw, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -560,6 +584,7 @@ get_re.btl <- function(x, ...) {
 #   dpar: name of the distributional parameter
 #   nlpar: name of the non-linear parameter
 #   cor: are correlations modeled for this effect?
+#   s2z: use a sum-to-zero parameterization for this effect?
 #   ggn: global number of the grouping factor
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
@@ -605,6 +630,7 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       nlpar = re$nlpar[[i]],
       ggn = NA,
       cor = re$cor[[i]],
+      s2z = re$gcall[[i]]$s2z %||% FALSE,
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
       cov = re$gcall[[i]]$cov,
@@ -763,7 +789,8 @@ empty_reframe <- function() {
     id = numeric(0), group = character(0), gn = numeric(0),
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
-    cor = logical(0), type = character(0), form = character(0),
+    cor = logical(0), s2z = logical(0), type = character(0),
+    form = character(0),
     stringsAsFactors = FALSE
   )
   class(out) <- reframe_class()

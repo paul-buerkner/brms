@@ -282,6 +282,16 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   lpdf <- stan_lpdf_name(normalize)
+  s2z <- has_re_s2z(bframe)
+
+  if (s2z) {
+    K_s2z <- length(bframe$frame$fe$vars)
+    str_add(out$par) <- glue(
+      "  vector[{K_s2z}] theta_s2z{p};",
+      "  // finite-population coefficients for marginalized S2Z effects\n"
+    )
+    str_add(out$pll_args) <- glue(", vector theta_s2z{p}")
+  }
 
   if (length(fixef)) {
     str_add(out$data) <- glue(
@@ -310,41 +320,43 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         " = csr_extract_u(X{p});\n"
       )
     }
-    # prepare population-level coefficients
-    b_type <- glue("vector[K{ct}{p}]")
-    has_special_prior <- has_special_prior(prior, bframe, class = "b")
-    if (decomp == "none") {
-      if (has_special_prior) {
-        str_add_list(out) <- stan_prior_non_centered(
-          suffix = p, suffix_K = ct, normalize = normalize
-        )
+    if (!s2z) {
+      # prepare population-level coefficients
+      b_type <- glue("vector[K{ct}{p}]")
+      has_special_prior <- has_special_prior(prior, bframe, class = "b")
+      if (decomp == "none") {
+        if (has_special_prior) {
+          str_add_list(out) <- stan_prior_non_centered(
+            suffix = p, suffix_K = ct, normalize = normalize
+          )
+        } else {
+          str_add_list(out) <- stan_prior(
+            prior, class = "b", coef = fixef, type = b_type,
+            px = px, suffix = p, header_type = "vector",
+            comment = "regression coefficients", normalize = normalize
+          )
+        }
       } else {
-        str_add_list(out) <- stan_prior(
-          prior, class = "b", coef = fixef, type = b_type,
-          px = px, suffix = p, header_type = "vector",
-          comment = "regression coefficients", normalize = normalize
+        stopifnot(decomp == "QR")
+        stopif_prior_bound(prior, class = "b", ls = px)
+        if (has_special_prior) {
+          str_add_list(out) <- stan_prior_non_centered(
+            suffix = p, suffix_class = "Q", suffix_K = ct,
+            normalize = normalize
+          )
+        } else {
+          str_add_list(out) <- stan_prior(
+            prior, class = "b", coef = fixef, type = b_type,
+            px = px, suffix = glue("Q{p}"), header_type = "vector",
+            comment = "regression coefficients on QR scale",
+            normalize = normalize
+          )
+        }
+        str_add(out$gen_def) <- glue(
+          "  // obtain the actual coefficients\n",
+          "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
         )
       }
-    } else {
-      stopifnot(decomp == "QR")
-      stopif_prior_bound(prior, class = "b", ls = px)
-      if (has_special_prior) {
-        str_add_list(out) <- stan_prior_non_centered(
-          suffix = p, suffix_class = "Q", suffix_K = ct,
-          normalize = normalize
-        )
-      } else {
-        str_add_list(out) <- stan_prior(
-          prior, class = "b", coef = fixef, type = b_type,
-          px = px, suffix = glue("Q{p}"), header_type = "vector",
-          comment = "regression coefficients on QR scale",
-          normalize = normalize
-        )
-      }
-      str_add(out$gen_def) <- glue(
-        "  // obtain the actual coefficients\n",
-        "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
-      )
     }
   }
 
@@ -393,7 +405,9 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         )
       }
     }
-    if (!is_ordinal(family)) {
+    if (!is_ordinal(family) && s2z) {
+      str_add(out$eta) <- glue(" + theta_s2z{p}[1]")
+    } else if (!is_ordinal(family)) {
       # intercepts of ordinal models are handled in 'stan_thres'
       intercept_type <- "real"
       if (order_intercepts) {
@@ -440,7 +454,16 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   }
   if (length(fixef) && !primitive) {
     # added in the end such that the intercept comes first in out$eta
-    if (sparse) {
+    if (s2z) {
+      slice <- stan_slice(threads)
+      if (center) {
+        eta_fe <- glue(
+          " + Xc{p}{slice} * tail(theta_s2z{p}, {length(fixef)})"
+        )
+      } else {
+        eta_fe <- glue(" + X{p}{slice} * theta_s2z{p}")
+      }
+    } else if (sparse) {
       stopifnot(!center && decomp == "none")
       csr_args <- sargs(
         paste0(c("rows", "cols"), "(X", p, ")"),
@@ -624,6 +647,13 @@ stan_re <- function(bframe, prior, normalize, ...) {
     }
   }
 
+  if (isTRUE(r$s2z[1])) {
+    return(.stan_re_s2z(
+      id, bframe = bframe, prior = prior, threads = threads,
+      normalize = normalize, out = out
+    ))
+  }
+
   # define group-level coefficients
   dfm <- ""
   tr <- subset_reframe_dist(r, "student")
@@ -775,6 +805,276 @@ stan_re <- function(bframe, prior, normalize, ...) {
     )
   }
   out
+}
+
+# Stan code for one marginalized physical sum-to-zero group-level block.
+# Conditional Gaussian scale mixtures are handled by a group-specific scale,
+# which makes this exact for both Gaussian and Student-t group effects.
+.stan_re_s2z <- function(id, bframe, prior, threads, normalize, out = list()) {
+  lpdf <- stan_lpdf_name(normalize)
+  r <- subset2(bframe$frame$re, id = id)
+  stopifnot(is.reframe(r), has_rows(r), all(r$s2z))
+  bfl <- re_s2z_bframel(bframe, r)
+  info <- re_s2z_info(bfl, prior = prior)
+  q <- length(info$qnames)
+  M <- nrow(r)
+  J <- seq_rows(r)
+  p <- info$p
+  idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
+  is_cor <- M > 1L && isTRUE(r$cor[1])
+  is_student <- identical(r$dist[1], "student")
+
+  # Keep brms's existing covariance parameters and priors. Only the
+  # group-effect coordinates and their joint prior are replaced.
+  if (is_cor) {
+    str_add(out$data) <- glue(
+      "  int<lower=1> NC_{id};  // number of group-level correlations\n"
+    )
+    str_add_list(out) <- stan_prior(
+      prior, class = "L", group = r$group[1], suffix = usc(id),
+      type = glue("cholesky_factor_corr[M_{id}]"),
+      comment = "cholesky factor of correlation matrix",
+      normalize = normalize
+    )
+  }
+
+  str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
+  str_add(out$par) <- glue(
+    "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
+    "  // physical orthonormal S2Z coordinates\n"
+  )
+
+  # Independent Student-t and Cauchy population priors are represented as
+  # Gaussian scale mixtures, so the omitted group mean remains analytic.
+  for (k in seq_len(q)) {
+    spec <- info$prior[[k]]
+    if (spec$dist == "student") {
+      str_add(out$par) <- glue(
+        "  real<lower=0> udf_b_s2z{p}_{k};",
+        "  // mixing variable for population coefficient {k}\n"
+      )
+      str_add(out$tpar_prior) <- glue(
+        "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
+        "{stan_s2z_number(spec$df)});\n"
+      )
+    }
+  }
+
+  str_add(out$tpar_def) <- glue(
+    "  // marginalized physical sum-to-zero group-level effects of ID {id}\n",
+    "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
+    "  matrix[{q}, M_{id}] H_s2z_{id};\n",
+    "  vector[{q}] prior_mean_s2z_{id};\n",
+    "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
+    "  vector<lower=0>[N_{id}] group_scale_s2z_{id};\n",
+    "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n",
+    "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
+    "  matrix[M_{id}, M_{id}] Q_Sigma_s2z_{id};\n",
+    "  matrix[M_{id}, M_{id}] P_s2z_{id};\n",
+    "  matrix[M_{id}, M_{id}] L_P_s2z_{id};\n",
+    "  vector[M_{id}] mhat_s2z_{id};\n",
+    "  vector[{q}] qhat_s2z_{id};\n",
+    "  matrix[M_{id}, N_{id}] white_s2z_{id};\n",
+    "  // using vectors speeds up indexing in loops\n",
+    cglue("  vector[N_{id}] r_s2z_{idp}_{r$cn};\n")
+  )
+
+  # The mapping H absorbs the omitted raw group mean into brms's population
+  # coordinates. For centered predictors its first row contains the actual
+  # means of every matching raw design column, including interactions.
+  str_add(out$tpar_comp) <- glue(
+    "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
+  )
+  for (j in seq_len(M)) {
+    qi <- info$match_q[j]
+    str_add(out$tpar_comp) <- glue(
+      "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
+    )
+    if (info$center && info$r$coef[j] != "Intercept") {
+      str_add(out$tpar_comp) <- glue(
+        "  H_s2z_{id}[1, {j}] = means_X{p}[{qi - 1L}];\n"
+      )
+    }
+  }
+  if (is_cor) {
+    str_add(out$tpar_comp) <- glue(
+      "  L_Sigma_s2z_{id} = diag_pre_multiply(sd_{id}, L_{id});\n"
+    )
+  } else {
+    str_add(out$tpar_comp) <- glue(
+      "  L_Sigma_s2z_{id} = diag_matrix(sd_{id});\n"
+    )
+  }
+  str_add(out$tpar_comp) <- glue(
+    "  for (k in 1:M_{id}) {{\n",
+    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(z_s2z_{id}[k]);\n",
+    "  }}\n"
+  )
+
+  for (k in seq_len(q)) {
+    spec <- info$prior[[k]]
+    loc <- stan_s2z_number(spec$location)
+    str_add(out$tpar_comp) <- glue(
+      "  prior_mean_s2z_{id}[{k}] = {loc};\n"
+    )
+    if (spec$dist == "flat") {
+      prec <- "0.0"
+    } else if (spec$dist == "normal") {
+      prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+    } else {
+      prec <- glue(
+        "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
+        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+      )
+    }
+    str_add(out$tpar_comp) <- glue(
+      "  prior_prec_s2z_{id}[{k}] = {prec};\n"
+    )
+  }
+
+  if (is_student) {
+    tr <- subset_reframe_dist(r, "student")
+    g <- usc(tr$ggn[1])
+    str_add(out$tpar_comp) <- glue(
+      "  group_scale_s2z_{id} = dfm{g};\n"
+    )
+  } else {
+    str_add(out$tpar_comp) <- glue(
+      "  group_scale_s2z_{id} = rep_vector(1.0, N_{id});\n"
+    )
+  }
+  str_add(out$tpar_comp) <- glue(
+    "  group_prec_s2z_{id} = inv_square(group_scale_s2z_{id});\n",
+    "  {{\n",
+    "    matrix[M_{id}, M_{id}] L_inv_s2z = mdivide_left_tri_low(",
+    "L_Sigma_s2z_{id}, diag_matrix(rep_vector(1.0, M_{id})));\n",
+    "    vector[M_{id}] h_s2z;\n",
+    "    Q_Sigma_s2z_{id} = crossprod(L_inv_s2z);\n",
+    "    P_s2z_{id} = crossprod(diag_pre_multiply(",
+    "sqrt(prior_prec_s2z_{id}), H_s2z_{id}))",
+    " + sum(group_prec_s2z_{id}) * Q_Sigma_s2z_{id};\n",
+    "    h_s2z = H_s2z_{id}' * (prior_prec_s2z_{id} .* ",
+    "(theta_s2z{p} - prior_mean_s2z_{id})) - Q_Sigma_s2z_{id} * ",
+    "(r_s2z_{id}' * group_prec_s2z_{id});\n",
+    "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
+    "    mhat_s2z_{id} = mdivide_left_spd(P_s2z_{id}, h_s2z);\n",
+    "    qhat_s2z_{id} = theta_s2z{p} - H_s2z_{id} * mhat_s2z_{id};\n",
+    "    white_s2z_{id} = mdivide_left_tri_low(L_Sigma_s2z_{id}, ",
+    "(r_s2z_{id} + rep_matrix(mhat_s2z_{id}', N_{id}))');\n",
+    "    white_s2z_{id} = white_s2z_{id} .* rep_matrix(",
+    "(1.0 ./ group_scale_s2z_{id})', M_{id});\n",
+    "  }}\n",
+    cglue("  r_s2z_{idp}_{r$cn} = r_s2z_{id}[, {J}];\n")
+  )
+  str_add(out$pll_args) <- cglue(
+    ", vector r_s2z_{idp}_{r$cn}"
+  )
+
+  # Score the original conditional Gaussian hierarchy at its completed-square
+  # mode, followed by the exact Gaussian integration factor. The final log(N)
+  # is the measure correction for the orthonormal contrast coordinates.
+  for (k in seq_len(q)) {
+    spec <- info$prior[[k]]
+    if (spec$dist == "flat") {
+      next
+    }
+    if (spec$dist == "normal") {
+      cond_scale <- stan_s2z_number(spec$scale)
+    } else {
+      cond_scale <- glue(
+        "{stan_s2z_number(spec$scale)} * sqrt(",
+        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+      )
+    }
+    str_add(out$tpar_prior) <- glue(
+      "  lprior += normal_{lpdf}(qhat_s2z_{id}[{k}] | ",
+      "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+    )
+  }
+  str_add(out$tpar_prior) <- glue(
+    "  lprior += -0.5 * dot_self(to_vector(white_s2z_{id}))\n",
+    "    - N_{id} * sum(log(diagonal(L_Sigma_s2z_{id})))\n",
+    "    - M_{id} * sum(log(group_scale_s2z_{id}))\n",
+    "    - sum(log(diagonal(L_P_s2z_{id})))",
+    str_if(
+      normalize,
+      glue(" - 0.5 * N_{id} * M_{id} * log(2 * pi())",
+           " + 0.5 * M_{id} * log(2 * pi())",
+           " + 0.5 * M_{id} * log(1.0 * N_{id})")
+    ),
+    ";\n"
+  )
+
+  # Recover conventional super-population coefficients and deviations using
+  # one shared conditional draw of the analytically omitted group mean.
+  str_add(out$gen_def) <- glue(
+    "  vector[M_{id}] mean_r_s2z_{id};\n",
+    "  vector[{q}] q_recovered_s2z_{id};\n",
+    "  matrix[N_{id}, M_{id}] r_{id};\n"
+  )
+  if (info$center) {
+    str_add(out$gen_def) <- glue(
+      "  real Intercept{p};\n",
+      str_if(length(info$fixef), glue("  vector[Kc{p}] b{p};\n")),
+      "  real b{p}_Intercept;\n"
+    )
+  } else {
+    str_add(out$gen_def) <- glue("  vector[{q}] b{p};\n")
+  }
+  str_add(out$gen_def) <- cglue(
+    "  vector[N_{id}] r_{idp}_{r$cn};\n"
+  )
+  if (is_cor) {
+    str_add(out$gen_def) <- glue(
+      "  // compute group-level correlations\n",
+      "  corr_matrix[M_{id}] Cor_{id}",
+      " = multiply_lower_tri_self_transpose(L_{id});\n",
+      "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
+    )
+  }
+
+  str_add(out$gen_comp) <- glue(
+    "  {{\n",
+    "    vector[M_{id}] z_mean_s2z;\n",
+    "    for (k in 1:M_{id}) z_mean_s2z[k] = std_normal_rng();\n",
+    "    mean_r_s2z_{id} = mhat_s2z_{id} + ",
+    "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{id}))';\n",
+    "  }}\n",
+    "  q_recovered_s2z_{id} = theta_s2z{p} - H_s2z_{id} * mean_r_s2z_{id};\n",
+    "  r_{id} = r_s2z_{id} + rep_matrix(mean_r_s2z_{id}', N_{id});\n"
+  )
+  if (info$center) {
+    str_add(out$gen_comp) <- glue(
+      "  Intercept{p} = q_recovered_s2z_{id}[1];\n",
+      str_if(
+        length(info$fixef),
+        glue("  b{p} = tail(q_recovered_s2z_{id}, Kc{p});\n",
+             "  b{p}_Intercept = Intercept{p} - dot_product(",
+             "means_X{p}, b{p});\n")
+      ),
+      str_if(
+        !length(info$fixef),
+        glue("  b{p}_Intercept = Intercept{p};\n")
+      )
+    )
+  } else {
+    str_add(out$gen_comp) <- glue("  b{p} = q_recovered_s2z_{id};\n")
+  }
+  str_add(out$gen_comp) <- cglue(
+    "  r_{idp}_{r$cn} = r_{id}[, {J}];\n"
+  )
+  if (is_cor) {
+    str_add(out$gen_comp) <- stan_cor_gen_comp(
+      cor = glue("cor_{id}"), ncol = glue("M_{id}")
+    )
+  }
+  out
+}
+
+# Stable formatting for numeric constants inserted into generated Stan code.
+stan_s2z_number <- function(x) {
+  stopifnot(length(x) == 1L, is.finite(x))
+  trimws(formatC(x, digits = 17, format = "g"))
 }
 
 # Stan code of smooth terms
@@ -2092,18 +2392,19 @@ stan_eta_re <- function(bframe, threads) {
     rpx <- check_prefix(r)
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
     idresp <- paste0(r$id, usc(rpx$resp))
+    rprefix <- str_if(isTRUE(r$s2z[1]), "r_s2z_", "r_")
     if (r$gtype[1] == "mm") {
       ng <- seq_along(r$gcall[[1]]$groups)
       for (i in seq_rows(r)) {
         str_add(eta_re) <- cglue(
           " + W_{idresp[i]}_{ng}{n}",
-          " * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}{n}]",
+          " * {rprefix}{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}{n}]",
           " * Z_{idp[i]}_{r$cn[i]}_{ng}{n}"
         )
       }
     } else {
       str_add(eta_re) <- cglue(
-        " + r_{idp}_{r$cn}[J_{idresp}{n}] * Z_{idp}_{r$cn}{n}"
+        " + {rprefix}{idp}_{r$cn}[J_{idresp}{n}] * Z_{idp}_{r$cn}{n}"
       )
     }
   }
