@@ -261,7 +261,177 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
   expect_match2(sc_cor, "diag_pre_multiply(sd_1, L_1)")
   expect_match2(sc_cor, "corr_matrix[M_1] Cor_1")
   expect_false(grepl("cholesky_factor_corr[M_1] L_1;", sc_diag, fixed = TRUE))
-  expect_match2(sc_diag, "L_Sigma_s2z_1 = diag_matrix(sd_1);")
+  expect_match2(sc_diag, "D_diag_s2z_1")
+  expect_match2(sc_diag, "rank1_info_s2z_1")
+  expect_false(grepl("L_Sigma_s2z_1", sc_diag, fixed = TRUE))
+})
+
+test_that("independent S2Z specializes centered slopes and interactions", {
+  form <- y ~ x * z + (1 + x * z || gr(g, s2z = TRUE))
+  scode <- stancode(
+    form, data = s2z_dat,
+    prior = prior(normal(0, 2), class = Intercept) +
+      prior(normal(0, 1.5), class = b)
+  )
+  sdata <- standata(form, data = s2z_dat)
+
+  expect_equal(sdata$M_1, 4)
+  expect_match2(scode, "array[M_1] vector[N_1 - 1] z_s2z_1;")
+  for (k in seq_len(sdata$M_1)) {
+    expect_match2(scode, sprintf("vector[N_1] r_s2z_1_%s;", k))
+    expect_match2(
+      scode,
+      sprintf(
+        "r_s2z_1_%1$s = sum_to_zero_constrain_brms(z_s2z_1[%1$s]);",
+        k
+      )
+    )
+  }
+  expect_match2(scode, "intercept_map_s2z_1[1] = 1.0;")
+  expect_match2(scode, "intercept_map_s2z_1[2] = means_X[1];")
+  expect_match2(scode, "intercept_map_s2z_1[3] = means_X[2];")
+  expect_match2(scode, "intercept_map_s2z_1[4] = means_X[3];")
+  expect_match2(
+    scode,
+    "D_diag_s2z_1 = group_info_s2z + square(sd_1) .* base_info_s2z;"
+  )
+  expect_match2(scode, "real group_info_s2z = N_1;")
+  expect_false(grepl("group_scale_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
+  expect_match2(
+    scode,
+    "rank1_info_s2z_1 = prior_prec_s2z_1[1] * dot_product("
+  )
+  expect_match2(scode, "- 0.5 * sum(log(D_diag_s2z_1))")
+  expect_match2(scode, "- 0.5 * log1p(rank1_info_s2z_1)")
+  expect_match2(scode, "+ 0.5 * M_1 * log(1.0 * N_1)")
+  expect_match2(scode, "real sqrt_rank1_s2z")
+  expect_match2(scode, "real rank1_adjust_s2z;")
+  expect_match2(
+    scode,
+    "q_recovered_s2z_1[1] -= dot_product(intercept_map_s2z_1"
+  )
+  expect_match2(scode, "r_1_4 = r_s2z_1_4 + mean_r_s2z_1[4];")
+  expect_false(grepl("corr_matrix[M_1] Cor_1", scode, fixed = TRUE))
+
+  # The independent specialization must be O(K): no dense K by K storage,
+  # factorization, or positive-definite solve is emitted anywhere in the block.
+  for (term in c(
+    "matrix[N_1, M_1] r_s2z_1;",
+    "matrix[M_1, M_1]",
+    "L_Sigma_s2z_1",
+    "Q_Sigma_s2z_1",
+    "P_s2z_1",
+    "L_P_s2z_1",
+    "cholesky_decompose(",
+    "mdivide_left_spd(",
+    "mdivide_left_tri_low(",
+    "mdivide_right_tri_low("
+  )) {
+    expect_false(grepl(term, scode, fixed = TRUE), info = term)
+  }
+})
+
+test_that("independent S2Z uses H identity for ten no-intercept effects", {
+  ten_dat <- data.frame(
+    y = seq(-1, 1, length.out = 80),
+    ten = factor(rep(letters[1:10], 8)),
+    g = factor(rep(seq_len(8), each = 10))
+  )
+  form <- y ~ 0 + ten + (0 + ten || gr(g, s2z = TRUE))
+  scode <- stancode(
+    form, data = ten_dat,
+    prior = prior(normal(0, 2), class = b), normalize = FALSE
+  )
+  sdata <- standata(form, data = ten_dat)
+
+  expect_equal(sdata$M_1, 10)
+  expect_equal(sdata$K, 10)
+  expect_match2(scode, "vector[10] theta_s2z;")
+  expect_match2(scode, "intercept_map_s2z_1 = rep_vector(0.0, M_1);")
+  expect_false(grepl("intercept_map_s2z_1[1] =", scode, fixed = TRUE))
+  expect_match2(scode, "rank1_info_s2z_1 = 0.0 * dot_product(")
+  for (k in seq_len(10L)) {
+    expect_match2(
+      scode,
+      sprintf("base_info_s2z[%1$s] = prior_prec_s2z_1[%1$s];", k)
+    )
+    expect_match2(
+      scode,
+      sprintf("qhat_s2z_1[%1$s] -= mhat_s2z_1[%1$s];", k)
+    )
+    expect_match2(
+      scode,
+      sprintf(
+        "q_recovered_s2z_1[%1$s] -= mean_r_s2z_1[%1$s];", k
+      )
+    )
+  }
+  expect_match2(scode, "b = q_recovered_s2z_1;")
+  expect_false(grepl("real b_Intercept;", scode, fixed = TRUE))
+  expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
+  expect_false(grepl("cholesky_decompose(", scode, fixed = TRUE))
+  expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
+  expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
+})
+
+test_that("independent Student S2Z retains weighted scales unnormalized", {
+  scode <- stancode(
+    y ~ x * z +
+      (1 + x * z || gr(g, dist = "student", s2z = TRUE)),
+    data = s2z_dat, normalize = FALSE
+  )
+
+  expect_match2(scode, "group_scale_s2z_1 = dfm_1;")
+  expect_match2(
+    scode,
+    "group_prec_s2z_1 = inv_square(group_scale_s2z_1);"
+  )
+  expect_match2(scode, "real group_info_s2z = sum(group_prec_s2z_1);")
+  for (k in seq_len(4L)) {
+    expect_match2(
+      scode,
+      sprintf(
+        "dot_product(r_s2z_1_%s, group_prec_s2z_1)", k
+      )
+    )
+  }
+  expect_match2(scode, "- M_1 * sum(log(group_scale_s2z_1))")
+  expect_match2(scode, "- (N_1 - 1) * sum(log(sd_1))")
+  expect_match2(scode, "- 0.5 * sum(log(D_diag_s2z_1))")
+  expect_match2(scode, "- 0.5 * log1p(rank1_info_s2z_1)")
+  expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
+  expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
+  expect_false(grepl("cholesky_decompose(", scode, fixed = TRUE))
+  expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
+  expect_false(grepl("mdivide_left_tri_low(", scode, fixed = TRUE))
+  expect_false(grepl("mdivide_right_tri_low(", scode, fixed = TRUE))
+})
+
+test_that("independent S2Z handles slope subsets and heavy-tailed priors", {
+  form <- y ~ x * z + (0 + x + x:z || gr(g, s2z = TRUE))
+  bprior <- c(
+    prior(cauchy(0, 1), class = Intercept),
+    prior(student_t(5, 0, 1.5), class = b, coef = x),
+    prior(normal(0, 2), class = b, coef = "x:z"),
+    prior(constant(0.4), class = sd, group = g, coef = x),
+    prior(constant(0.7), class = sd, group = g, coef = "x:z")
+  )
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+  sdata <- standata(form, data = s2z_dat, prior = bprior)
+
+  expect_equal(sdata$M_1, 2)
+  expect_equal(sdata$Kc, 3)
+  expect_match2(scode, "intercept_map_s2z_1[1] = means_X[1];")
+  expect_match2(scode, "intercept_map_s2z_1[2] = means_X[3];")
+  expect_match2(scode, "base_info_s2z[1] = prior_prec_s2z_1[2];")
+  expect_match2(scode, "base_info_s2z[2] = prior_prec_s2z_1[4];")
+  expect_match2(scode, "qhat_s2z_1[2] -= mhat_s2z_1[1];")
+  expect_match2(scode, "qhat_s2z_1[4] -= mhat_s2z_1[2];")
+  expect_false(grepl("qhat_s2z_1[3] -=", scode, fixed = TRUE))
+  expect_match2(scode, "inv_chi_square_lpdf(udf_b_s2z_1 | 1)")
+  expect_match2(scode, "inv_chi_square_lpdf(udf_b_s2z_2 | 5)")
+  expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
 })
 
 test_that("S2Z preserves ordinary priors on every varying effect", {

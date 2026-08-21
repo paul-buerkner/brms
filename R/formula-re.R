@@ -24,7 +24,10 @@
 #'   \code{dist = "student"} through a Gaussian scale mixture. Every varying
 #'   design column must have an identical population-level design column.
 #'   Blocks with one varying coefficient use a dedicated scalar
-#'   implementation.
+#'   implementation. Blocks with any number of independent coefficients
+#'   (\code{cor = FALSE} or \code{||} syntax) use a component-wise scalar
+#'   implementation that also accounts exactly for the shared centered
+#'   intercept prior.
 #'   Usual priors on group-level standard deviations, correlations, and
 #'   Student degrees of freedom remain available, including separate
 #'   standard-deviation priors for varying intercepts, slopes, and

@@ -6,7 +6,8 @@
 `gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
 and interactions. Gaussian and Student-t group effects are supported, with
 the latter handled exactly as a conditional Gaussian scale mixture. Blocks
-with one varying coefficient use a dedicated scalar implementation. (#1916)
+with one varying coefficient and blocks with any number of independent
+coefficients use dedicated component-wise scalar implementations. (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
