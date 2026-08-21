@@ -1095,6 +1095,13 @@ log_lik_truncate <- function(x, cdf, args, i, prep) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
+  if (!is.null(lb) && use_int(prep$family)) {
+    # the lower bound is inclusive for integer responses, so the normalizer
+    # is P(lb <= Y <= ub). This mirrors the 'lb - 1' that
+    # stan_log_lik_trunc() emits, without which log_lik disagrees with the
+    # model that was fitted; see #1903
+    lb <- lb - 1
+  }
   x - log_prob_interval(cdf, args, lower = lb, upper = ub)
 }
 
