@@ -33,6 +33,8 @@ group-level parameter semantics by reconstructing them in generated
 quantities. It is exact for \code{dist = "gaussian"} and for
 \code{dist = "student"} through a Gaussian scale mixture. Every varying
 design column must have an identical population-level design column.
+Blocks with one varying coefficient use a dedicated scalar
+implementation.
 The physical coordinates are intended for well-informed group
 coefficients and may be slower than the default non-centered
 parameterization when those coefficients are weakly informed.

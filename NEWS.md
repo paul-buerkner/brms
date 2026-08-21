@@ -5,7 +5,8 @@
 * Add an experimental marginalized physical sum-to-zero parameterization via
 `gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
 and interactions. Gaussian and Student-t group effects are supported, with
-the latter handled exactly as a conditional Gaussian scale mixture. (#1916)
+the latter handled exactly as a conditional Gaussian scale mixture. Blocks
+with one varying coefficient use a dedicated scalar implementation. (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
@@ -2296,4 +2297,3 @@ have proper priors by default.
 # brms 0.1.0
 
 * Initial release version
-

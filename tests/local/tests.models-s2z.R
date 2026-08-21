@@ -1,6 +1,7 @@
 # Sampling validation for marginalized sum-to-zero group-level effects.
 #
-# This is intentionally a local test: it compiles and samples four Stan models.
+# This is intentionally a local test: it compiles and samples eight Stan
+# models, including both dedicated scalar paths.
 # Run it against an installed development build of brms, for example with
 #
 #   Rscript tests/local/tests.models-s2z.R
@@ -177,11 +178,61 @@ simulate_student_group <- function(seed = 4102L, groups = 12L,
   dat
 }
 
+simulate_scalar_intercept <- function(seed = 4103L, groups = 14L,
+                                      per_group = 10L) {
+  set.seed(seed)
+  g_levels <- sprintf("g%02d", seq_len(groups))
+  dat <- data.frame(
+    g = factor(
+      rep(g_levels, each = per_group), levels = g_levels
+    )
+  )
+  group_effect <- stats::rnorm(groups, sd = 0.75)
+  eta <- 0.4 + group_effect[as.integer(dat$g)]
+  dat$y <- stats::rnorm(nrow(dat), eta, 0.45)
+  dat
+}
+
+simulate_scalar_student_slope <- function(seed = 4104L, groups = 14L,
+                                          per_group = 10L,
+                                          group_df = 5) {
+  set.seed(seed)
+  g_levels <- sprintf("g%02d", seq_len(groups))
+  dat <- do.call(rbind, lapply(seq_len(groups), function(j) {
+    data.frame(
+      g = g_levels[j],
+      x = seq(-1.5, 1.5, length.out = per_group) +
+        stats::rnorm(per_group, sd = 0.08)
+    )
+  }))
+  rownames(dat) <- NULL
+  dat$g <- factor(dat$g, levels = g_levels)
+  group_effect <- stats::rnorm(groups, sd = 0.55) *
+    sqrt(group_df / stats::rchisq(groups, df = group_df))
+  eta <- dat$x * (0.8 + group_effect[as.integer(dat$g)])
+  dat$y <- stats::rnorm(nrow(dat), eta, 0.5)
+  dat
+}
+
 model_prior <- function(student_group = FALSE) {
   out <- prior(normal(0, 1.5), class = "b") +
     prior(normal(0, 1.5), class = "Intercept") +
     prior(exponential(1), class = "sd") +
     prior(lkj(2), class = "cor") +
+    prior(exponential(1), class = "sigma")
+  if (student_group) {
+    out <- out + prior(gamma(2, 0.2), class = "df", group = "g")
+  }
+  out
+}
+
+scalar_prior <- function(intercept = TRUE, student_group = FALSE) {
+  out <- if (intercept) {
+    prior(normal(0, 1.5), class = "Intercept")
+  } else {
+    prior(normal(0, 1.5), class = "b", coef = "x")
+  }
+  out <- out + prior(exponential(1), class = "sd") +
     prior(exponential(1), class = "sigma")
   if (student_group) {
     out <- out + prior(gamma(2, 0.2), class = "df", group = "g")
@@ -362,7 +413,11 @@ s2z_coordinate_invariants <- function(fit, formula, data, prior,
   n_draw <- nrow(b_s2z)
   r_s2z <- array(NA_real_, dim = c(n_draw, n_group, n_coef))
   for (k in seq_len(n_coef)) {
-    r_names <- sprintf("r_s2z_1[%d,%d]", seq_len(n_group), k)
+    r_names <- if (n_coef == 1L) {
+      sprintf("r_s2z_1_1[%d]", seq_len(n_group))
+    } else {
+      sprintf("r_s2z_1[%d,%d]", seq_len(n_group), k)
+    }
     r_s2z[, , k] <- exact_draw_matrix(fit, r_names)
   }
 
@@ -539,17 +594,50 @@ student_result <- run_case(
   seed = 5102L
 )
 
+scalar_intercept_data <- simulate_scalar_intercept()
+scalar_intercept_result <- run_case(
+  case = "scalar-gaussian-intercept",
+  data = scalar_intercept_data,
+  conventional_formula = bf(y ~ 1 + (1 | g)),
+  s2z_formula = bf(y ~ 1 + (1 | gr(g, s2z = TRUE))),
+  prior = scalar_prior(intercept = TRUE),
+  fixed_formula = ~ 1,
+  seed = 5103L
+)
+
+scalar_student_data <- simulate_scalar_student_slope()
+scalar_student_result <- run_case(
+  case = "scalar-student-slope-no-intercept",
+  data = scalar_student_data,
+  conventional_formula = bf(
+    y ~ 0 + x + (0 + x | gr(g, dist = "student"))
+  ),
+  s2z_formula = bf(
+    y ~ 0 + x +
+      (0 + x | gr(g, dist = "student", s2z = TRUE))
+  ),
+  prior = scalar_prior(intercept = FALSE, student_group = TRUE),
+  fixed_formula = ~ 0 + x,
+  seed = 5104L
+)
+
 comparison_results <- rbind(
   gaussian_result$comparison,
-  student_result$comparison
+  student_result$comparison,
+  scalar_intercept_result$comparison,
+  scalar_student_result$comparison
 )
 invariant_results <- rbind(
   gaussian_result$invariants,
-  student_result$invariants
+  student_result$invariants,
+  scalar_intercept_result$invariants,
+  scalar_student_result$invariants
 )
 quality_results <- rbind(
   gaussian_result$quality,
-  student_result$quality
+  student_result$quality,
+  scalar_intercept_result$quality,
+  scalar_student_result$quality
 )
 
 cat("\nMCSE-aware conventional-vs-S2Z comparisons (largest z-scores first)\n")
