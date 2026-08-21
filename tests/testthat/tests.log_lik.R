@@ -752,12 +752,11 @@ test_that("infinite log_lik values are warned about", {
 
 test_that("truncated log_lik uses inclusive lower bounds for integers", {
   # the generated Stan code evaluates the normalizer at lb - 1 for integer
-  # responses, so the truncated distribution is supported on lb:ub. Without
-  # the same convention here, log_lik normalizes by P(lb < Y <= ub) and
-  # disagrees with the model that was fitted; see #1903
-  int_prep <- function(mu, lb = NULL, ub = NULL, Y, family = poisson()) {
+  # responses, so the truncated distribution is supported on lb:ub; see #1903
+  trunc_int_prep <- function(mu, lb = NULL, ub = NULL, Y,
+                             family = poisson(), ...) {
     prep <- structure(list(ndraws = 1L, nobs = 1L), class = "brmsprep")
-    prep$dpars <- list(mu = matrix(mu, ncol = 1))
+    prep$dpars <- c(list(mu = matrix(mu, ncol = 1)), list(...))
     prep$family <- family
     prep$data <- list(Y = Y, lb = lb, ub = ub)
     prep
@@ -766,34 +765,53 @@ test_that("truncated log_lik uses inclusive lower bounds for integers", {
   # the truncated pmf sums to one over its support
   lambda <- 3
   probs <- sapply(2:6, function(y) {
-    exp(brms:::log_lik_poisson(1, int_prep(lambda, 2, 6, Y = y)))
+    exp(brms:::log_lik_poisson(1, trunc_int_prep(lambda, 2, 6, Y = y)))
   })
   expect_equal(sum(probs), 1)
 
   # and matches the normalizer the fitted model uses, F(ub) - F(lb - 1)
   expect_equal(
-    brms:::log_lik_poisson(1, int_prep(lambda, 2, 6, Y = 2)),
+    brms:::log_lik_poisson(1, trunc_int_prep(lambda, 2, 6, Y = 2)),
     dpois(2, lambda, log = TRUE) - log(ppois(6, lambda) - ppois(1, lambda))
   )
   # one-sided lower truncation keeps lb in the support
   expect_equal(
-    brms:::log_lik_poisson(1, int_prep(lambda, 2, Y = 2)),
+    brms:::log_lik_poisson(1, trunc_int_prep(lambda, 2, Y = 2)),
     dpois(2, lambda, log = TRUE) -
       ppois(1, lambda, lower.tail = FALSE, log.p = TRUE)
   )
   # an upper bound alone is unaffected, as it is already inclusive
   expect_equal(
-    brms:::log_lik_poisson(1, int_prep(lambda, ub = 6, Y = 2)),
+    brms:::log_lik_poisson(1, trunc_int_prep(lambda, ub = 6, Y = 2)),
     dpois(2, lambda, log = TRUE) - ppois(6, lambda, log.p = TRUE)
+  )
+  # lb at the lower end of the support sends lb - 1 outside it
+  expect_equal(
+    brms:::log_lik_poisson(1, trunc_int_prep(lambda, 0, Y = 2)),
+    dpois(2, lambda, log = TRUE)
+  )
+
+  # negbinomial covers the pnbinom-backed families
+  expect_equal(
+    brms:::log_lik_negbinomial(
+      1, trunc_int_prep(lambda, 2, 6, Y = 2, family = negbinomial(), shape = 2)
+    ),
+    dnbinom(2, size = 2, mu = lambda, log = TRUE) -
+      log(pnbinom(6, size = 2, mu = lambda) - pnbinom(1, size = 2, mu = lambda))
+  )
+
+  # a non-integer bound, which newdata can introduce, keeps the support it
+  # admits: Y >= 3 rather than Y >= 2
+  expect_equal(
+    brms:::log_lik_poisson(1, trunc_int_prep(lambda, 2.5, 6, Y = 3)),
+    dpois(3, lambda, log = TRUE) - log(ppois(6, lambda) - ppois(2, lambda))
   )
 
   # continuous responses keep the exclusive lower bound
-  cont <- structure(list(ndraws = 1L, nobs = 1L), class = "brmsprep")
-  cont$dpars <- list(mu = matrix(0, ncol = 1), sigma = 1)
-  cont$family <- gaussian()
-  cont$data <- list(Y = 0.5, lb = 0, ub = 1)
   expect_equal(
-    brms:::log_lik_gaussian(1, cont),
+    brms:::log_lik_gaussian(
+      1, trunc_int_prep(0, 0, 1, Y = 0.5, family = gaussian(), sigma = 1)
+    ),
     dnorm(0.5, 0, 1, log = TRUE) - log(pnorm(1) - pnorm(0))
   )
 })
