@@ -59,6 +59,7 @@ data_predictor.btl <- function(x, data, data2 = list(), prior = brmsprior(),
     data_fe(x, data),
     data_sp(x, data, data2 = data2, prior = prior),
     data_re(x, data),
+    data_re_s2z_center(x, data),
     data_cs(x, data),
     data_sm(x, data),
     data_gp(x, data),
@@ -232,6 +233,78 @@ data_re <- function(bframe, data) {
       }
     }
   }
+  out
+}
+
+# Prepare fixed partial-centering fractions for S2Z group effects. Endpoint
+# parameterizations deliberately receive no extra Stan data so their generated
+# code and data contracts remain unchanged.
+data_re_s2z_center <- function(bframe, data) {
+  stopifnot(is.bframel(bframe))
+  if (!has_re_s2z(bframe)) {
+    return(list())
+  }
+  info <- re_s2z_info(bframe)
+  r <- info$r
+  if (re_s2z_center_mode(r) != "partial") {
+    return(list())
+  }
+  levels <- get_levels(r)[[r$group[1]]]
+  rho_value <- re_s2z_center_values(r)
+  rho <- matrix(
+    rep(rho_value, each = length(levels)),
+    nrow = length(levels), ncol = nrow(r),
+    dimnames = list(levels, r$coef)
+  )
+  data_name <- paste0("rho_s2z_", info$id)
+  cached <- bframe$sdata[["re_s2z_center"]]
+  if (!is.null(cached)) {
+    cached_rho <- cached[[data_name]]
+    if (is.null(cached_rho) && length(cached) == 1L) {
+      cached_rho <- cached[[1]]
+    }
+    if (!is.null(cached_rho)) {
+      if (!is.matrix(cached_rho)) {
+        stop2("Invalid stored sum-to-zero partial-centering data.")
+      }
+      if (!is.numeric(cached_rho) || anyNA(cached_rho) ||
+          any(!is.finite(cached_rho)) ||
+          any(cached_rho < 0 | cached_rho > 1)) {
+        stop2("Stored sum-to-zero centering fractions must be in [0, 1].")
+      }
+      old_levels <- rownames(cached_rho)
+      old_coef <- colnames(cached_rho)
+      if (!is.null(old_levels) && !is.null(old_coef)) {
+        old_row <- match(levels, old_levels)
+        old_col <- match(r$coef, old_coef)
+        # The coordinate map belongs to every fitted grouping level. New
+        # prediction levels are handled outside this fitted-level Stan block;
+        # a missing cached row or coefficient would instead reinterpret saved
+        # latent coordinates and therefore indicates an incompatible basis.
+        if (anyNA(old_row) || anyNA(old_col)) {
+          stop2("Stored sum-to-zero partial-centering data do not match the ",
+                "fitted grouping levels and coefficients.")
+        }
+        rho[,] <- cached_rho[old_row, old_col, drop = FALSE]
+      } else if (identical(dim(cached_rho), dim(rho))) {
+        rho[,] <- cached_rho
+      } else {
+        stop2("Stored sum-to-zero partial-centering data do not match the ",
+              "fitted grouping levels and coefficients.")
+      }
+      # Stan does not need the fitted labels; keep them only in the basis cache.
+      out <- list(unname(rho))
+      names(out) <- data_name
+      return(out)
+    }
+  }
+  auto <- re_s2z_center_auto(r)
+  if (any(auto)) {
+    auto_rho <- re_s2z_auto_rho(bframe, data = data)
+    rho[, auto] <- auto_rho[, auto, drop = FALSE]
+  }
+  out <- list(rho)
+  names(out) <- data_name
   out
 }
 

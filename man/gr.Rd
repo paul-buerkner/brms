@@ -13,7 +13,8 @@ gr(
   cov = NULL,
   dist = "gaussian",
   s2z = FALSE,
-  scale = "shared"
+  scale = "shared",
+  center = NULL
 )
 }
 \arguments{
@@ -27,8 +28,8 @@ must be nested in levels of the \code{by} variable.}
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
 
-\item{s2z}{Logical. If \code{TRUE}, use a physical sum-to-zero
-parameterization and analytically integrate out the omitted common
+\item{s2z}{Logical. If \code{TRUE}, use a sum-to-zero parameterization and
+analytically integrate out the omitted common
 group-effect mean vector. This experimental option preserves the usual
 population- and group-level parameter semantics by reconstructing them in
 generated quantities. The sampled finite-population coefficient is the
@@ -50,10 +51,11 @@ Student-t degrees of freedom remain available, including separate
 \code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
 Student-t scale semantics and is not rescaled to a marginal standard
 deviation.
-The physical coordinates are intended for well-informed group
-coefficients and may be slower than the default non-centered
-parameterization when those coefficients are weakly informed.
-Currently, only one such grouping term per linear predictor is supported,
+The centered physical parameterization (\code{center = TRUE}) is intended
+for well-informed group coefficients. The non-centered sum-to-zero
+parameterization (\code{center = FALSE}) may be preferable when those
+coefficients are weakly informed.
+Currently, only one such covariance block per linear predictor is supported,
 without the \code{by}, \code{cov}, or \code{pw} arguments.
 Population-level priors must currently be flat, normal, Student-t, or
 Cauchy with numeric constant arguments. Bounds, tags, special priors,
@@ -81,6 +83,41 @@ across grouping levels. Coefficient-specific
 log-scale variation is conditionally elliptical given the scales but is
 generally not marginally elliptical after those scales are integrated out.
 This is a new statistical model rather than only a change of coordinates.}
+
+\item{center}{Logical, a single number in \code{[0, 1]}, \code{"auto"}, or
+\code{NULL}. Controls the parameterization of the sum-to-zero group
+effects. With \code{s2z = TRUE}, the default \code{NULL} is equivalent to
+\code{TRUE} (or numeric \code{1}) and samples physical
+constrained coordinates. \code{FALSE} (or numeric \code{0}) instead uses
+a sum-to-zero parameterization non-centered with respect to the
+baseline/reference covariance. Numeric values strictly between zero and one
+continuously partially non-center the effects, with larger values closer to
+the centered parameterization. Terms joined by a common \code{id} may supply
+different numeric fractions for different coefficients, but must use the same
+grouping factor, distribution, correlation, and scale settings.
+\code{center = "auto"} computes a fixed centering fraction separately for
+every grouping level and coefficient from the fitted-data group-level
+design matrix. It uses a scale-invariant, within-group residual design
+exposure and maps exposure \code{I} to \code{I / (I + 25)}. Thus absent or
+locally unidentified slopes and interactions are fully non-centered,
+while directions with greater residual design exposure are increasingly
+centered. This is an experimental design heuristic, not outcome-family Fisher
+information; it does not use the response, residual scale, or priors. The
+heuristic can therefore be poorly matched to the actual likelihood
+information. Inspect sampling diagnostics or supply a numeric or endpoint
+choice when needed. The fraction calculation is invariant to rescaling design
+columns, but the partially centered coordinates themselves depend on
+coefficient and response units. The resulting fractions are fixed data and do
+not change the statistical model. In correlated blocks, coefficient-specific
+fractions operate on rows of the common Cholesky factor, so sampling geometry
+can depend on coefficient order even though the posterior remains exact. With Student-t
+effects or \code{scale = "varying"}, centering is defined relative to the
+baseline/reference covariance; the group mixture and relative level scales
+remain in the conditional hierarchy. With
+\code{s2z = FALSE}, only \code{NULL}, \code{FALSE}, and numeric
+\code{0} are allowed and retain the ordinary non-centered parameterization.
+This argument does not control centering of the population-level design
+matrix.}
 
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
@@ -136,6 +173,14 @@ s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
 fit5 <- brm(count ~ zAge * Trt +
               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
             data = epilepsy, family = poisson(), prior = s2z_prior)
+
+# use standardized sum-to-zero coordinates for weakly informed effects
+form5_nc <- count ~ zAge * Trt +
+  (1 + zAge * Trt | gr(patient, s2z = TRUE, center = FALSE))
+
+# choose partial centering fractions from each patient's design exposure
+form5_auto <- count ~ zAge * Trt +
+  (1 + zAge * Trt | gr(patient, s2z = TRUE, center = "auto"))
 
 # allow the intercept, slope, and interaction scales to vary by patient
 scale_prior <- s2z_prior +

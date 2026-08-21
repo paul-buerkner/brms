@@ -113,6 +113,7 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
         "L_Sigma_s2z", "Q_Sigma_s2z", "P_s2z", "L_P_s2z",
         "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
         "rank1_info_s2z", "group_quad_s2z",
+        "log_det_partial_s2z",
         "mhat_s2z", "qhat_s2z", "white_s2z", "mean_r_s2z",
         "q_recovered_s2z", "z_sd_s2z", "z_sd_mean_s2z",
         "relative_sd_s2z", "reference_sd_s2z", "sd_level_s2z"

@@ -32,6 +32,183 @@ context("Tests for physical sum-to-zero group-level effects")
     0.5 * sum(z^2)
 }
 
+# Compute a dense log absolute determinant after row and column equilibration.
+# This keeps the numerical check useful when the map contains scales many
+# orders of magnitude apart. QR is the primary result and singular values are
+# retained as an independent stability check.
+.s2z_balanced_logabsdet <- function(x) {
+  stopifnot(is.matrix(x), nrow(x) == ncol(x), all(is.finite(x)))
+  row_scale <- apply(abs(x), 1L, max)
+  stopifnot(all(is.finite(row_scale)), all(row_scale > 0))
+  balanced <- sweep(x, 1L, row_scale, "/")
+  col_scale <- apply(abs(balanced), 2L, max)
+  stopifnot(all(is.finite(col_scale)), all(col_scale > 0))
+  balanced <- sweep(balanced, 2L, col_scale, "/")
+  adjustment <- sum(log(row_scale)) + sum(log(col_scale))
+
+  R <- qr.R(qr(balanced, LAPACK = TRUE))
+  qr_value <- sum(log(abs(diag(R)))) + adjustment
+  singular_values <- svd(balanced, nu = 0L, nv = 0L)$d
+  svd_value <- sum(log(singular_values)) + adjustment
+  list(
+    qr = qr_value,
+    svd = svd_value,
+    balanced_condition = max(singular_values) / min(singular_values)
+  )
+}
+
+# Independent reference for the direct non-centered S2Z coordinates.  The
+# centered coordinates are physical contrasts X = Z L', while the direct
+# non-centered form samples Z and applies L after the orthonormal group
+# rotation.  This helper deliberately constructs the full Jacobian rather
+# than assuming its determinant.
+.s2z_noncentered_change_case <- function(scales) {
+  n <- 7L
+  k <- length(scales)
+  basis <- .s2z_basis(n)
+  z <- matrix(
+    sin(seq_len((n - 1L) * k) * 0.41) +
+      cos(seq_len((n - 1L) * k) * 0.73),
+    nrow = n - 1L, ncol = k
+  ) / 2.3
+  correlation <- outer(seq_len(k), seq_len(k), function(i, j) {
+    0.23^abs(i - j)
+  })
+  L_cor <- t(chol(correlation))
+  L_base <- diag(scales, nrow = k) %*% L_cor
+
+  centered_coordinates <- z %*% t(L_base)
+  centered_effects <- basis %*% centered_coordinates
+  noncentered_effects <- (basis %*% z) %*% t(L_base)
+  whitened_effects <- t(forwardsolve(L_base, t(centered_effects)))
+
+  log_centered <- -0.5 * sum(whitened_effects^2) -
+    (n - 1L) * sum(log(diag(L_base))) -
+    0.5 * (n - 1L) * k * log(2 * pi)
+  log_noncentered <- sum(stats::dnorm(z, log = TRUE))
+  coordinate_map <- kronecker(L_base, diag(n - 1L))
+  log_jacobian <- as.numeric(
+    determinant(coordinate_map, logarithm = TRUE)$modulus
+  )
+
+  # Use the same columns as population and group-level predictors.  Shifting
+  # a conventional common group mean into the population coefficients must
+  # leave the likelihood-scale predictor unchanged in either S2Z form.
+  group <- rep(seq_len(n), each = 3L)
+  design <- matrix(
+    sin(seq_len(length(group) * k) * 0.29) -
+      cos(seq_len(length(group) * k) * 0.17),
+    nrow = length(group), ncol = k
+  )
+  group_mean <- seq(-0.45, 0.65, length.out = k)
+  population <- seq(0.8, -0.55, length.out = k)
+  conventional_effects <- sweep(
+    centered_effects, 2L, group_mean, "+"
+  )
+  finite_population <- population + group_mean
+  eta_conventional <- drop(design %*% population) + rowSums(
+    design * conventional_effects[group, , drop = FALSE]
+  )
+  eta_centered <- drop(design %*% finite_population) + rowSums(
+    design * centered_effects[group, , drop = FALSE]
+  )
+  eta_noncentered <- drop(design %*% finite_population) + rowSums(
+    design * noncentered_effects[group, , drop = FALSE]
+  )
+
+  list(
+    n = n, k = k, L_base = L_base,
+    centered_effects = centered_effects,
+    noncentered_effects = noncentered_effects,
+    log_centered = log_centered,
+    log_noncentered = log_noncentered,
+    log_jacobian = log_jacobian,
+    eta_conventional = eta_conventional,
+    eta_centered = eta_centered,
+    eta_noncentered = eta_noncentered
+  )
+}
+
+# Independent reference for the group-specific partially centered change of
+# variables.  Each row uses D_j = diag(rho_j) L + diag(1 - rho_j), followed
+# by A_j = L D_j^-1, and is projected back onto the physical zero-sum
+# subspace.  The dense restricted Jacobian is constructed explicitly rather
+# than using the determinant formula exercised by the generated Stan code.
+.s2z_partial_change_case <- function(L, rho) {
+  n <- nrow(rho)
+  k <- ncol(rho)
+  stopifnot(
+    n >= 2L, nrow(L) == k, ncol(L) == k,
+    all(rho >= 0), all(rho <= 1)
+  )
+  basis <- .s2z_basis(n)
+  z <- matrix(
+    sin(seq_len((n - 1L) * k) * 0.53) -
+      cos(seq_len((n - 1L) * k) * 0.31),
+    nrow = n - 1L, ncol = k
+  ) / 2.1
+
+  transform <- function(z) {
+    raw <- basis %*% z
+    transformed <- matrix(NA_real_, nrow = n, ncol = k)
+    for (j in seq_len(n)) {
+      D_j <- diag(rho[j, ], nrow = k) %*% L +
+        diag(1 - rho[j, ], nrow = k)
+      transformed[j, ] <- drop(
+        L %*% forwardsolve(D_j, raw[j, ], upper.tri = FALSE)
+      )
+    }
+    sweep(transformed, 2L, colMeans(transformed), "-")
+  }
+
+  effects <- transform(z)
+  dimensions <- (n - 1L) * k
+  restricted_map <- vapply(
+    seq_len(dimensions),
+    function(i) {
+      unit <- numeric(dimensions)
+      unit[i] <- 1
+      as.vector(crossprod(
+        basis,
+        transform(matrix(unit, nrow = n - 1L, ncol = k))
+      ))
+    },
+    numeric(dimensions)
+  )
+  dense_log_jacobian <- .s2z_balanced_logabsdet(restricted_map)
+  numeric_log_jacobian <- dense_log_jacobian$qr
+
+  D <- lapply(seq_len(n), function(j) {
+    diag(rho[j, ], nrow = k) %*% L +
+      diag(1 - rho[j, ], nrow = k)
+  })
+  D_bar <- Reduce("+", D) / n
+  formula_log_jacobian <- (n - 1L) * sum(log(diag(L))) -
+    sum(vapply(D, function(x) sum(log(diag(x))), numeric(1))) +
+    sum(log(diag(D_bar)))
+  determinant_correction <-
+    -sum(vapply(D, function(x) sum(log(diag(x))), numeric(1))) +
+    sum(log(diag(D_bar)))
+
+  whitened <- t(forwardsolve(L, t(effects)))
+  physical_log_kernel <- -0.5 * sum(whitened^2) -
+    (n - 1L) * sum(log(diag(L)))
+
+  list(
+    n = n, k = k, basis = basis, z = z, rho = rho, L = L,
+    effects = effects, restricted_map = restricted_map,
+    numeric_log_jacobian = numeric_log_jacobian,
+    numeric_log_jacobian_svd = dense_log_jacobian$svd,
+    balanced_condition = dense_log_jacobian$balanced_condition,
+    formula_log_jacobian = formula_log_jacobian,
+    determinant_correction = determinant_correction,
+    physical_log_kernel = physical_log_kernel,
+    transformed_log_kernel = physical_log_kernel + numeric_log_jacobian,
+    expected_transformed_log_kernel =
+      -0.5 * sum(whitened^2) + determinant_correction
+  )
+}
+
 # Compare the component-wise diagonal-plus-rank-one implementation with the
 # dense complete square it replaces.  This deliberately mirrors the scaled
 # equations in .stan_re_s2z_independent without calling code under test.
@@ -467,6 +644,207 @@ test_that("the physical sum-to-zero transform is orthonormal", {
     expect_equal(sum(z), 0, tolerance = 1e-14)
     expect_equal(sum(z^2), sum(y^2), tolerance = 1e-14)
   }
+})
+
+test_that("direct non-centered S2Z is an exact scaled change of variables", {
+  scale_cases <- c(
+    lapply(c(1e-5, 1e-3, 0.1, 1, 5), c),
+    list(c(1e-5, 1e-3, 0.1, 1, 5))
+  )
+  for (scales in scale_cases) {
+    ans <- .s2z_noncentered_change_case(scales)
+    expected_log_jacobian <-
+      (ans$n - 1L) * sum(log(diag(ans$L_base)))
+
+    expect_equal(
+      ans$noncentered_effects, ans$centered_effects,
+      tolerance = 2e-13, scale = 1
+    )
+    expect_equal(
+      ans$log_jacobian, expected_log_jacobian,
+      tolerance = 2e-12, scale = 1
+    )
+    expect_equal(
+      ans$log_centered + ans$log_jacobian,
+      ans$log_noncentered, tolerance = 3e-11, scale = 1
+    )
+    expect_equal(
+      -(ans$n - 1L) * sum(log(diag(ans$L_base))) +
+        ans$log_jacobian,
+      0, tolerance = 2e-12, scale = 1
+    )
+    expect_equal(
+      ans$eta_centered, ans$eta_conventional,
+      tolerance = 3e-13, scale = 1
+    )
+    expect_equal(
+      ans$eta_noncentered, ans$eta_conventional,
+      tolerance = 3e-13, scale = 1
+    )
+  }
+})
+
+test_that("scalar partial S2Z uses the exact restricted Jacobian", {
+  n <- 7L
+  rho_cases <- list(
+    rep(1, n),
+    rep(0, n),
+    rep(0.37, n),
+    c(0, 0.08, 0.21, 0.46, 0.7, 0.91, 1)
+  )
+  for (scale in c(0.03, 0.4, 1, 3.7)) {
+    for (rho in rho_cases) {
+      ans <- .s2z_partial_change_case(
+        matrix(scale, nrow = 1L), matrix(rho, ncol = 1L)
+      )
+      d <- rho * scale + 1 - rho
+      expected_correction <- -sum(log(d)) + log(mean(d))
+
+      expect_equal(colSums(ans$effects), 0, tolerance = 3e-14)
+      expect_equal(
+        ans$numeric_log_jacobian, ans$formula_log_jacobian,
+        tolerance = 2e-12, scale = 1
+      )
+      expect_equal(
+        ans$determinant_correction, expected_correction,
+        tolerance = 2e-14, scale = 1
+      )
+      expect_equal(
+        ans$transformed_log_kernel,
+        ans$expected_transformed_log_kernel,
+        tolerance = 3e-12, scale = 1
+      )
+    }
+  }
+
+  centered <- .s2z_partial_change_case(
+    matrix(2.3, nrow = 1L), matrix(1, nrow = n, ncol = 1L)
+  )
+  noncentered <- .s2z_partial_change_case(
+    matrix(2.3, nrow = 1L), matrix(0, nrow = n, ncol = 1L)
+  )
+  expect_equal(
+    centered$effects, centered$basis %*% centered$z,
+    tolerance = 3e-14
+  )
+  expect_equal(
+    noncentered$effects, 2.3 * noncentered$basis %*% noncentered$z,
+    tolerance = 3e-14
+  )
+})
+
+test_that("correlated partial S2Z uses the exact restricted Jacobian", {
+  n <- 6L
+  k <- 4L
+  L <- matrix(
+    c(
+      0.55, 0, 0, 0,
+      0.17, 1.2, 0, 0,
+      -0.11, 0.28, 0.8, 0,
+      0.21, -0.16, 0.19, 1.6
+    ),
+    nrow = k, byrow = TRUE
+  )
+  rho <- matrix(
+    c(
+      0, 0.15, 0.4, 1,
+      0.08, 0.3, 0.65, 0.92,
+      0.2, 0.45, 0.78, 0.83,
+      0.37, 0.62, 0.91, 0.71,
+      0.73, 0.86, 0.22, 0.58,
+      1, 0.04, 0.53, 0
+    ),
+    nrow = n, byrow = TRUE
+  )
+  partial <- .s2z_partial_change_case(L, rho)
+
+  expect_equal(colSums(partial$effects), numeric(k), tolerance = 4e-14)
+  expect_equal(
+    partial$numeric_log_jacobian, partial$formula_log_jacobian,
+    tolerance = 2e-11, scale = 1
+  )
+  expect_equal(
+    partial$transformed_log_kernel,
+    partial$expected_transformed_log_kernel,
+    tolerance = 2e-11, scale = 1
+  )
+
+  centered <- .s2z_partial_change_case(
+    L, matrix(1, nrow = n, ncol = k)
+  )
+  noncentered <- .s2z_partial_change_case(
+    L, matrix(0, nrow = n, ncol = k)
+  )
+  expect_equal(
+    centered$effects, centered$basis %*% centered$z,
+    tolerance = 3e-14
+  )
+  expect_equal(
+    noncentered$effects,
+    (noncentered$basis %*% noncentered$z) %*% t(L),
+    tolerance = 3e-14
+  )
+  expect_equal(
+    centered$determinant_correction,
+    -(n - 1L) * sum(log(diag(L))), tolerance = 2e-14
+  )
+  expect_equal(noncentered$determinant_correction, 0, tolerance = 2e-14)
+})
+
+test_that("correlated partial Jacobian is stable under extreme Cholesky scales", {
+  n <- 6L
+  k <- 4L
+  # Any lower-triangular matrix with positive diagonal is a valid covariance
+  # Cholesky factor. Here the diagonal spans more than 1e16, while large
+  # off-diagonal entries imply correlations as high as 0.99995 in magnitude.
+  L <- matrix(
+    c(
+      1e-8, 0, 0, 0,
+      2e-1, 2e-3, 0, 0,
+      -4e3, 2e3, 5e2, 0,
+      2e10, -1.2e10, 4e9, 2e8
+    ),
+    nrow = k, byrow = TRUE
+  )
+  rho <- matrix(
+    c(
+      0, 1, 0.2, 0.999999,
+      1, 0, 0.8, 0.000001,
+      0.00001, 0.99999, 0.5, 0.35,
+      0.65, 0.15, 1, 0,
+      0.93, 0.42, 0, 0.77,
+      0.31, 0.58, 0.999999, 0.000001
+    ),
+    nrow = n, byrow = TRUE
+  )
+  ans <- .s2z_partial_change_case(L, rho)
+  implied_cor <- cov2cor(tcrossprod(L))
+  relative_zero_sum <- abs(colSums(ans$effects)) /
+    pmax(1, apply(abs(ans$effects), 2L, max))
+
+  expect_equal(range(diag(L)), c(1e-8, 2e8))
+  expect_gt(max(abs(implied_cor[lower.tri(implied_cor)])), 0.9999)
+  expect_true(all(c(0, 1) %in% rho))
+  expect_true(any(rho > 0 & rho < 1))
+  expect_true(all(is.finite(c(
+    ans$effects, ans$restricted_map,
+    ans$numeric_log_jacobian, ans$numeric_log_jacobian_svd,
+    ans$formula_log_jacobian, ans$determinant_correction
+  ))))
+  expect_lt(max(relative_zero_sum), 5e-15)
+  expect_gt(ans$balanced_condition, 1e7)
+  expect_equal(
+    ans$numeric_log_jacobian, ans$formula_log_jacobian,
+    tolerance = 5e-8, scale = 1
+  )
+  expect_equal(
+    ans$numeric_log_jacobian_svd, ans$formula_log_jacobian,
+    tolerance = 5e-8, scale = 1
+  )
+  expect_equal(
+    ans$numeric_log_jacobian, ans$numeric_log_jacobian_svd,
+    tolerance = 2e-8, scale = 1
+  )
 })
 
 test_that("Gaussian completed-square density is normalized in S2Z coordinates", {

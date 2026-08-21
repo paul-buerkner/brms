@@ -16,8 +16,8 @@
 #'   must be nested in levels of the \code{by} variable.
 #' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
 #'   modelled as correlated.
-#' @param s2z Logical. If \code{TRUE}, use a physical sum-to-zero
-#'   parameterization and analytically integrate out the omitted common
+#' @param s2z Logical. If \code{TRUE}, use a sum-to-zero parameterization and
+#'   analytically integrate out the omitted common
 #'   group-effect mean vector. This experimental option preserves the usual
 #'   population- and group-level parameter semantics by reconstructing them in
 #'   generated quantities. The sampled finite-population coefficient is the
@@ -39,10 +39,11 @@
 #'   \code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
 #'   Student-t scale semantics and is not rescaled to a marginal standard
 #'   deviation.
-#'   The physical coordinates are intended for well-informed group
-#'   coefficients and may be slower than the default non-centered
-#'   parameterization when those coefficients are weakly informed.
-#'   Currently, only one such grouping term per linear predictor is supported,
+#'   The centered physical parameterization (\code{center = TRUE}) is intended
+#'   for well-informed group coefficients. The non-centered sum-to-zero
+#'   parameterization (\code{center = FALSE}) may be preferable when those
+#'   coefficients are weakly informed.
+#'   Currently, only one such covariance block per linear predictor is supported,
 #'   without the \code{by}, \code{cov}, or \code{pw} arguments.
 #'   Population-level priors must currently be flat, normal, Student-t, or
 #'   Cauchy with numeric constant arguments. Bounds, tags, special priors,
@@ -69,6 +70,42 @@
 #'   log-scale variation is conditionally elliptical given the scales but is
 #'   generally not marginally elliptical after those scales are integrated out.
 #'   This is a new statistical model rather than only a change of coordinates.
+#' @param center Logical, a single number in \code{[0, 1]}, \code{"auto"}, or
+#'   \code{NULL}. Controls the parameterization of the sum-to-zero group
+#'   effects. With \code{s2z = TRUE}, the default \code{NULL} is equivalent to
+#'   \code{TRUE} (or numeric \code{1}) and samples physical
+#'   constrained coordinates. \code{FALSE} (or numeric \code{0}) instead uses
+#'   a sum-to-zero parameterization non-centered with respect to the
+#'   baseline/reference covariance. Numeric values strictly between zero and
+#'   one continuously partially non-center the effects, with larger values
+#'   closer to the centered parameterization. Terms joined by a common
+#'   \code{id} may supply different numeric fractions for different
+#'   coefficients, but must use the same grouping factor, distribution,
+#'   correlation, and scale settings.
+#'   \code{center = "auto"} computes a fixed centering fraction separately for
+#'   every grouping level and coefficient from the fitted-data group-level
+#'   design matrix. It uses a scale-invariant, within-group residual design
+#'   exposure and maps exposure \code{I} to \code{I / (I + 25)}. Thus absent or
+#'   locally unidentified slopes and interactions are fully non-centered,
+#'   while directions with greater residual design exposure are increasingly
+#'   centered. This is an experimental design heuristic, not outcome-family
+#'   Fisher information; it does not use the response, residual scale, or
+#'   priors, so it can be poorly matched to the actual likelihood information.
+#'   Inspect sampling diagnostics or supply a numeric or endpoint choice when
+#'   needed. The fraction calculation is invariant to rescaling design columns,
+#'   but the partially centered coordinates themselves depend on coefficient
+#'   and response units. The resulting fractions are fixed data and do not
+#'   change the statistical model. In correlated blocks, coefficient-specific
+#'   fractions operate on rows of the common Cholesky factor, so sampling
+#'   geometry can depend on coefficient order even though the posterior remains
+#'   exact. With
+#'   Student-t effects or \code{scale = "varying"}, centering is defined
+#'   relative to the baseline/reference covariance; the group mixture and
+#'   relative level scales remain in the conditional hierarchy. With
+#'   \code{s2z = FALSE}, only \code{NULL}, \code{FALSE}, and numeric
+#'   \code{0} are allowed and retain the ordinary non-centered parameterization.
+#'   This argument does not control centering of the population-level design
+#'   matrix.
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
@@ -116,6 +153,14 @@
 #'               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
 #'             data = epilepsy, family = poisson(), prior = s2z_prior)
 #'
+#' # use standardized sum-to-zero coordinates for weakly informed effects
+#' form5_nc <- count ~ zAge * Trt +
+#'   (1 + zAge * Trt | gr(patient, s2z = TRUE, center = FALSE))
+#'
+#' # choose partial centering fractions from each patient's design exposure
+#' form5_auto <- count ~ zAge * Trt +
+#'   (1 + zAge * Trt | gr(patient, s2z = TRUE, center = "auto"))
+#'
 #' # allow the intercept, slope, and interaction scales to vary by patient
 #' scale_prior <- s2z_prior +
 #'   prior(normal(0, 0.25), class = "sdlog", group = "patient")
@@ -128,7 +173,7 @@
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
                cov = NULL, dist = "gaussian", s2z = FALSE,
-               scale = "shared") {
+               scale = "shared", center = NULL) {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -137,6 +182,38 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   stopif_illegal_group(groups[1])
   cor <- as_one_logical(cor)
   s2z <- as_one_logical(s2z)
+  s2z_center_auto <- FALSE
+  if (is.null(center)) {
+    s2z_center <- as.numeric(s2z)
+  } else if (is.character(center)) {
+    center <- as_one_character(center)
+    if (!identical(center, "auto")) {
+      stop2("Argument 'center' must be NULL, logical, a number in [0, 1], ",
+            "or \"auto\".")
+    }
+    if (!s2z) {
+      stop2("Argument 'center = \"auto\"' is not supported for ordinary ",
+            "group-level effects and requires 's2z = TRUE'.")
+    }
+    # The numeric value is an internal placeholder. The auto flag ensures it
+    # is never used as the actual group- and coefficient-specific fraction.
+    s2z_center <- 0.5
+    s2z_center_auto <- TRUE
+  } else if (is.logical(center)) {
+    s2z_center <- as.numeric(as_one_logical(center))
+  } else if (is.numeric(center)) {
+    s2z_center <- as_one_numeric(center)
+    if (!is.finite(s2z_center) || s2z_center < 0 || s2z_center > 1) {
+      stop2("Argument 'center' must be a single number in [0, 1].")
+    }
+  } else {
+    stop2("Argument 'center' must be NULL, logical, a number in [0, 1], ",
+          "or \"auto\".")
+  }
+  if (!s2z && s2z_center != 0) {
+    stop2("Nonzero values of argument 'center' are not yet supported for ",
+          "ordinary group-level effects. Use 's2z = TRUE' or 'center = 0'.")
+  }
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
@@ -168,8 +245,8 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   pwvars <- all_vars(pw)
   allvars <- str2formula(c(groups, byvars, pwvars))
   nlist(
-    groups, allvars, label, by, cor, s2z, id, pw, cov, dist, scale,
-    type = ""
+    groups, allvars, label, by, cor, s2z, s2z_center, s2z_center_auto,
+    id, pw, cov, dist, scale, type = ""
   )
 }
 
@@ -640,6 +717,8 @@ get_re.btl <- function(x, ...) {
 #   nlpar: name of the non-linear parameter
 #   cor: are correlations modeled for this effect?
 #   s2z: use a sum-to-zero parameterization for this effect?
+#   s2z_center: numeric centering fraction for this effect
+#   s2z_center_auto: derive centering fractions from the fitted design?
 #   scale: are group-effect scales shared or group-varying?
 #   ggn: global number of the grouping factor
 #   type: special effects type; can be 'sp' or 'cs'
@@ -687,6 +766,9 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       ggn = NA,
       cor = re$cor[[i]],
       s2z = re$gcall[[i]]$s2z %||% FALSE,
+      s2z_center = re$gcall[[i]]$s2z_center %||%
+        as.numeric(re$gcall[[i]]$s2z %||% FALSE),
+      s2z_center_auto = re$gcall[[i]]$s2z_center_auto %||% FALSE,
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
       cov = re$gcall[[i]]$cov,
@@ -850,7 +932,8 @@ empty_reframe <- function() {
     id = numeric(0), group = character(0), gn = numeric(0),
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
-    cor = logical(0), s2z = logical(0), type = character(0),
+    cor = logical(0), s2z = logical(0), s2z_center = numeric(0),
+    s2z_center_auto = logical(0), type = character(0),
     scale = character(0),
     form = character(0),
     stringsAsFactors = FALSE

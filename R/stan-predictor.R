@@ -814,6 +814,62 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
+# Transform orthonormal S2Z coordinates with level- and coefficient-specific
+# centering fractions.  Each local Cholesky interpolation is lower triangular
+# with a positive diagonal for rho in [0, 1].  Projecting the transformed rows
+# back onto the zero-sum subspace preserves the identifying constraint. After
+# cancellation with the physical-coordinate scale determinant, the net
+# determinant contribution is accumulated in log_det_partial_s2z_ID.
+stan_re_s2z_partial_cor_transform <- function(id) {
+  glue(
+    "  {{\n",
+    "    matrix[N_{id}, M_{id}] raw_partial_s2z;\n",
+    "    row_vector[M_{id}] mean_partial_s2z = ",
+    "rep_row_vector(0.0, M_{id});\n",
+    "    matrix[M_{id}, M_{id}] L_partial_mean_s2z = ",
+    "rep_matrix(0.0, M_{id}, M_{id});\n",
+    "    log_det_partial_s2z_{id} = 0.0;\n",
+    "    for (j in 1:N_{id}) {{\n",
+    "      matrix[M_{id}, M_{id}] L_partial_s2z = ",
+    "diag_pre_multiply(rho_s2z_{id}[j]', L_Sigma_s2z_{id});\n",
+    "      for (k in 1:M_{id}) {{\n",
+    "        L_partial_s2z[k, k] += 1.0 - rho_s2z_{id}[j, k];\n",
+    "      }}\n",
+    "      raw_partial_s2z[j] = (L_Sigma_s2z_{id} * ",
+    "mdivide_left_tri_low(L_partial_s2z, r_s2z_{id}[j]'))';\n",
+    "      mean_partial_s2z += raw_partial_s2z[j] / N_{id};\n",
+    "      L_partial_mean_s2z += L_partial_s2z / N_{id};\n",
+    "      log_det_partial_s2z_{id} -= ",
+    "sum(log(diagonal(L_partial_s2z)));\n",
+    "    }}\n",
+    "    r_s2z_{id} = raw_partial_s2z - ",
+    "rep_matrix(mean_partial_s2z, N_{id});\n",
+    "    log_det_partial_s2z_{id} += ",
+    "sum(log(diagonal(L_partial_mean_s2z)));\n",
+    "  }}\n"
+  )
+}
+
+# Diagonal specialization of the same restricted transform.  This is used by
+# scalar and independent blocks and avoids all per-level matrix operations.
+stan_re_s2z_partial_independent_transform <- function(
+    id, k, r_s2z, scale, z_s2z = glue("z_s2z_{id}[{k}]")) {
+  glue(
+    "  {{\n",
+    "    vector[N_{id}] centered_partial_s2z = ",
+    "sum_to_zero_constrain_brms({z_s2z});\n",
+    "    vector[N_{id}] scale_partial_s2z = rep_vector(1.0, N_{id}) - ",
+    "rho_s2z_{id}[, {k}] + rho_s2z_{id}[, {k}] * {scale};\n",
+    "    vector[N_{id}] raw_partial_s2z = {scale} * ",
+    "centered_partial_s2z ./ scale_partial_s2z;\n",
+    "    {r_s2z} = raw_partial_s2z - ",
+    "rep_vector(mean(raw_partial_s2z), N_{id});\n",
+    "    log_det_partial_s2z_{id} += -sum(log(scale_partial_s2z)) + ",
+    "log(mean(scale_partial_s2z));\n",
+    "  }}\n"
+  )
+}
+
 # Stan code for physical S2Z effects with coefficient- and group-specific
 # scales. The standardized log-scale coordinates are only rotated into an
 # orthonormal zero-sum part and a standardized mean; they are not marginalized.
@@ -843,8 +899,18 @@ stan_re <- function(bframe, prior, normalize, ...) {
   idp <- paste0(r$id, usc(combine_prefix(px)))
   is_cor <- M > 1L && isTRUE(r$cor[1])
   is_student <- identical(r$dist[1], "student")
+  s2z_mode <- re_s2z_center_mode(r)
+  s2z_center <- identical(s2z_mode, "centered")
+  s2z_partial <- identical(s2z_mode, "partial")
   r_s2z <- glue("r_s2z_{idp}_{r$cn}")
   r_public <- glue("r_{idp}_{r$cn}")
+
+  if (s2z_partial) {
+    str_add(out$data) <- glue(
+      "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
+      "  // data-driven or user-supplied centering fractions\n"
+    )
+  }
 
   # sd remains brms's ordinary baseline group-level scale. sdlog controls
   # coefficient-specific variation of the log scale across observed groups.
@@ -870,7 +936,13 @@ stan_re <- function(bframe, prior, normalize, ...) {
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
     "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
-    "  // physical orthonormal S2Z effect coordinates\n",
+    if (s2z_partial) {
+      "  // partially centered orthonormal S2Z effect coordinates\n"
+    } else if (s2z_center) {
+      "  // physical orthonormal S2Z effect coordinates\n"
+    } else {
+      "  // standardized orthonormal S2Z effect coordinates\n"
+    },
     "  array[M_{id}] vector[N_{id} - 1] z_sd_s2z_{id};",
     "  // orthonormal centered log-scale coordinates\n",
     "  vector[M_{id}] z_sd_mean_s2z_{id};",
@@ -970,6 +1042,10 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  matrix[M_{id}, M_{id}] L_P_s2z_{id};\n",
       "  vector[M_{id}] mhat_s2z_{id};\n",
       "  real group_quad_s2z_{id};\n",
+      str_if(
+        s2z_partial,
+        glue("  real log_det_partial_s2z_{id};\n")
+      ),
       "  // using vectors speeds up likelihood indexing\n",
       cglue("  vector[N_{id}] {r_s2z};\n")
     )
@@ -987,6 +1063,14 @@ stan_re <- function(bframe, prior, normalize, ...) {
         )
       }
     }
+    partial_transform <- if (s2z_partial) {
+      stan_re_s2z_partial_cor_transform(id)
+    } else {
+      str_if(
+        !s2z_center,
+        glue("  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n")
+      )
+    }
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
       "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
@@ -994,6 +1078,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  }}\n",
       "  L_Sigma_s2z_{id} = diag_pre_multiply(",
       "reference_sd_s2z_{id}, L_{id});\n",
+      "{partial_transform}",
       "  {{\n",
       "    matrix[{q}, M_{id}] prior_factor_s2z = diag_pre_multiply(",
       "sqrt(prior_prec_s2z_{id}), H_s2z_{id}) * L_Sigma_s2z_{id};\n",
@@ -1050,7 +1135,17 @@ stan_re <- function(bframe, prior, normalize, ...) {
     }
     str_add(out$tpar_prior) <- glue(
       "  lprior += -0.5 * group_quad_s2z_{id}\n",
-      "    - (N_{id} - 1) * sum(log(diagonal(L_Sigma_s2z_{id})))\n",
+      str_if(
+        s2z_center,
+        glue(
+          "    - (N_{id} - 1) * ",
+          "sum(log(diagonal(L_Sigma_s2z_{id})))\n"
+        )
+      ),
+      str_if(
+        s2z_partial,
+        glue("    + log_det_partial_s2z_{id}\n")
+      ),
       str_if(
         is_student,
         glue("    - M_{id} * sum(log(group_scale_s2z_{id}))\n")
@@ -1078,12 +1173,32 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  real<lower=0> rank1_info_s2z_{id};\n",
       "  vector[M_{id}] mhat_s2z_{id};\n",
       "  vector[{q}] qhat_s2z_{id};\n",
-      "  real<lower=0> group_quad_s2z_{id};\n"
-    )
-    for (j in seq_len(M)) {
-      str_add(out$tpar_comp) <- glue(
-        "  {r_s2z[j]} = sum_to_zero_constrain_brms(z_s2z_{id}[{j}]);\n"
+      "  real<lower=0> group_quad_s2z_{id};\n",
+      str_if(
+        s2z_partial,
+        glue("  real log_det_partial_s2z_{id};\n")
       )
+    )
+    if (s2z_partial) {
+      str_add(out$tpar_comp) <- glue(
+        "  log_det_partial_s2z_{id} = 0.0;\n"
+      )
+    }
+    for (j in seq_len(M)) {
+      if (s2z_partial) {
+        str_add(out$tpar_comp) <- stan_re_s2z_partial_independent_transform(
+          id, j, r_s2z[j], glue("reference_sd_s2z_{id}[{j}]")
+        )
+      } else {
+        str_add(out$tpar_comp) <- glue(
+          "  {r_s2z[j]} = sum_to_zero_constrain_brms(",
+          str_if(
+            !s2z_center,
+            glue("reference_sd_s2z_{id}[{j}] * ")
+          ),
+          "z_s2z_{id}[{j}]);\n"
+        )
+      }
     }
     str_add(out$tpar_comp) <- glue(
       "  intercept_map_s2z_{id} = rep_vector(0.0, M_{id});\n"
@@ -1211,7 +1326,17 @@ stan_re <- function(bframe, prior, normalize, ...) {
     }
     str_add(out$tpar_prior) <- glue(
       "  lprior += -0.5 * group_quad_s2z_{id}\n",
-      "    - (N_{id} - 1) * sum(log(reference_sd_s2z_{id}))\n",
+      str_if(
+        s2z_center,
+        glue(
+          "    - (N_{id} - 1) * ",
+          "sum(log(reference_sd_s2z_{id}))\n"
+        )
+      ),
+      str_if(
+        s2z_partial,
+        glue("    + log_det_partial_s2z_{id}\n")
+      ),
       str_if(
         is_student,
         glue("    - M_{id} * sum(log(group_scale_s2z_{id}))\n")
@@ -1370,6 +1495,9 @@ stan_re <- function(bframe, prior, normalize, ...) {
   idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
   is_cor <- M > 1L && isTRUE(r$cor[1])
   is_student <- identical(r$dist[1], "student")
+  s2z_mode <- re_s2z_center_mode(r)
+  s2z_center <- identical(s2z_mode, "centered")
+  s2z_partial <- identical(s2z_mode, "partial")
 
   if (M == 1L) {
     return(.stan_re_s2z_scalar(
@@ -1381,6 +1509,13 @@ stan_re <- function(bframe, prior, normalize, ...) {
     return(.stan_re_s2z_independent(
       id, r = r, info = info, normalize = normalize, out = out
     ))
+  }
+
+  if (s2z_partial) {
+    str_add(out$data) <- glue(
+      "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
+      "  // data-driven or user-supplied centering fractions\n"
+    )
   }
 
   # Keep brms's existing covariance parameters and priors. Only the
@@ -1400,7 +1535,13 @@ stan_re <- function(bframe, prior, normalize, ...) {
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
     "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
-    "  // physical orthonormal S2Z coordinates\n"
+    if (s2z_partial) {
+      "  // partially centered orthonormal S2Z coordinates\n"
+    } else if (s2z_center) {
+      "  // physical orthonormal S2Z coordinates\n"
+    } else {
+      "  // standardized orthonormal S2Z coordinates\n"
+    }
   )
 
   # Independent Student-t and Cauchy population priors are represented as
@@ -1438,6 +1579,10 @@ stan_re <- function(bframe, prior, normalize, ...) {
     "  matrix[M_{id}, M_{id}] L_P_s2z_{id};\n",
     "  matrix[M_{id}, N_{id}] white_s2z_{id};\n",
     "  real group_quad_s2z_{id};\n",
+    str_if(
+      s2z_partial,
+      glue("  real log_det_partial_s2z_{id};\n")
+    ),
     "  // using vectors speeds up indexing in loops\n",
     cglue("  vector[N_{id}] r_s2z_{idp}_{r$cn};\n")
   )
@@ -1468,10 +1613,19 @@ stan_re <- function(bframe, prior, normalize, ...) {
       "  L_Sigma_s2z_{id} = diag_matrix(sd_{id});\n"
     )
   }
+  partial_transform <- if (s2z_partial) {
+    stan_re_s2z_partial_cor_transform(id)
+  } else {
+    str_if(
+      !s2z_center,
+      glue("  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n")
+    )
+  }
   str_add(out$tpar_comp) <- glue(
     "  for (k in 1:M_{id}) {{\n",
     "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(z_s2z_{id}[k]);\n",
-    "  }}\n"
+    "  }}\n",
+    "{partial_transform}"
   )
 
   for (k in seq_len(q)) {
@@ -1571,7 +1725,17 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
   str_add(out$tpar_prior) <- glue(
     "  lprior += -0.5 * group_quad_s2z_{id}\n",
-    "    - (N_{id} - 1) * sum(log(diagonal(L_Sigma_s2z_{id})))\n",
+    str_if(
+      s2z_center,
+      glue(
+        "    - (N_{id} - 1) * ",
+        "sum(log(diagonal(L_Sigma_s2z_{id})))\n"
+      )
+    ),
+    str_if(
+      s2z_partial,
+      glue("    + log_det_partial_s2z_{id}\n")
+    ),
     str_if(
       is_student,
       glue("    - M_{id} * sum(log(group_scale_s2z_{id}))\n")
@@ -1677,13 +1841,29 @@ stan_re <- function(bframe, prior, normalize, ...) {
   p <- info$p
   idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
   is_student <- identical(r$dist[1], "student")
+  s2z_mode <- re_s2z_center_mode(r)
+  s2z_center <- identical(s2z_mode, "centered")
+  s2z_partial <- identical(s2z_mode, "partial")
   r_s2z <- glue("r_s2z_{idp}_{r$cn}")
   r_public <- glue("r_{idp}_{r$cn}")
+
+  if (s2z_partial) {
+    str_add(out$data) <- glue(
+      "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
+      "  // data-driven or user-supplied centering fractions\n"
+    )
+  }
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
     "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
-    "  // physical orthonormal independent S2Z coordinates\n"
+    if (s2z_partial) {
+      "  // partially centered orthonormal independent S2Z coordinates\n"
+    } else if (s2z_center) {
+      "  // physical orthonormal independent S2Z coordinates\n"
+    } else {
+      "  // standardized orthonormal independent S2Z coordinates\n"
+    }
   )
 
   # Independent Student-t and Cauchy population priors remain conditionally
@@ -1719,13 +1899,30 @@ stan_re <- function(bframe, prior, normalize, ...) {
     "  real<lower=0> rank1_info_s2z_{id};\n",
     "  vector[M_{id}] mhat_s2z_{id};\n",
     "  vector[{q}] qhat_s2z_{id};\n",
-    "  real<lower=0> group_quad_s2z_{id};\n"
+    "  real<lower=0> group_quad_s2z_{id};\n",
+    str_if(
+      s2z_partial,
+      glue("  real log_det_partial_s2z_{id};\n")
+    )
   )
 
-  for (j in seq_len(M)) {
+  if (s2z_partial) {
     str_add(out$tpar_comp) <- glue(
-      "  {r_s2z[j]} = sum_to_zero_constrain_brms(z_s2z_{id}[{j}]);\n"
+      "  log_det_partial_s2z_{id} = 0.0;\n"
     )
+  }
+  for (j in seq_len(M)) {
+    if (s2z_partial) {
+      str_add(out$tpar_comp) <- stan_re_s2z_partial_independent_transform(
+        id, j, r_s2z[j], glue("sd_{id}[{j}]")
+      )
+    } else {
+      str_add(out$tpar_comp) <- glue(
+        "  {r_s2z[j]} = sum_to_zero_constrain_brms(",
+        str_if(!s2z_center, glue("sd_{id}[{j}] * ")),
+        "z_s2z_{id}[{j}]);\n"
+      )
+    }
   }
   str_add(out$tpar_comp) <- glue(
     "  intercept_map_s2z_{id} = rep_vector(0.0, M_{id});\n"
@@ -1888,7 +2085,14 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
   str_add(out$tpar_prior) <- glue(
     "  lprior += -0.5 * group_quad_s2z_{id}\n",
-    "    - (N_{id} - 1) * sum(log(sd_{id}))\n",
+    str_if(
+      s2z_center,
+      glue("    - (N_{id} - 1) * sum(log(sd_{id}))\n")
+    ),
+    str_if(
+      s2z_partial,
+      glue("    + log_det_partial_s2z_{id}\n")
+    ),
     str_if(
       is_student,
       glue("    - M_{id} * sum(log(group_scale_s2z_{id}))\n")
@@ -1997,13 +2201,29 @@ stan_re <- function(bframe, prior, normalize, ...) {
   idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
   cn <- r$cn[1]
   is_student <- identical(r$dist[1], "student")
+  s2z_mode <- re_s2z_center_mode(r)
+  s2z_center <- identical(s2z_mode, "centered")
+  s2z_partial <- identical(s2z_mode, "partial")
   r_s2z <- glue("r_s2z_{idp}_{cn}")
   r_public <- glue("r_{idp}_{cn}")
+
+  if (s2z_partial) {
+    str_add(out$data) <- glue(
+      "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
+      "  // data-driven or user-supplied centering fractions\n"
+    )
+  }
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
     "  vector[N_{id} - 1] z_s2z_{id};",
-    "  // physical orthonormal scalar S2Z coordinates\n"
+    if (s2z_partial) {
+      "  // partially centered orthonormal scalar S2Z coordinates\n"
+    } else if (s2z_center) {
+      "  // physical orthonormal scalar S2Z coordinates\n"
+    } else {
+      "  // standardized orthonormal scalar S2Z coordinates\n"
+    }
   )
 
   # Independent Student-t and Cauchy population priors remain conditionally
@@ -2039,15 +2259,32 @@ stan_re <- function(bframe, prior, normalize, ...) {
     "  real<lower=0> sqrt_D_s2z_{id};\n",
     "  real mhat_s2z_{id};\n",
     "  vector[{q}] qhat_s2z_{id};\n",
-    "  vector[N_{id}] white_s2z_{id};\n"
+    "  vector[N_{id}] white_s2z_{id};\n",
+    str_if(
+      s2z_partial,
+      glue("  real log_det_partial_s2z_{id};\n")
+    )
   )
 
   # H maps the omitted scalar group mean into all matching population
   # coordinates. A centered varying slope also shifts brms's temporary
   # centered intercept by the mean of its raw design column.
   qi <- info$match_q[1]
+  if (s2z_partial) {
+    str_add(out$tpar_comp) <- glue(
+      "  log_det_partial_s2z_{id} = 0.0;\n"
+    )
+    str_add(out$tpar_comp) <- stan_re_s2z_partial_independent_transform(
+      id, 1, r_s2z, glue("sd_{id}[1]"), glue("z_s2z_{id}")
+    )
+  } else {
+    str_add(out$tpar_comp) <- glue(
+      "  {r_s2z} = sum_to_zero_constrain_brms(",
+      str_if(!s2z_center, glue("sd_{id}[1] * ")),
+      "z_s2z_{id});\n"
+    )
+  }
   str_add(out$tpar_comp) <- glue(
-    "  {r_s2z} = sum_to_zero_constrain_brms(z_s2z_{id});\n",
     "  H_s2z_{id} = rep_vector(0.0, {q});\n",
     "  H_s2z_{id}[{qi}] = 1.0;\n",
     str_if(
@@ -2144,7 +2381,14 @@ stan_re <- function(bframe, prior, normalize, ...) {
   }
   str_add(out$tpar_prior) <- glue(
     "  lprior += -0.5 * dot_self(white_s2z_{id})\n",
-    "    - (N_{id} - 1) * log(sd_{id}[1])\n",
+    str_if(
+      s2z_center,
+      glue("    - (N_{id} - 1) * log(sd_{id}[1])\n")
+    ),
+    str_if(
+      s2z_partial,
+      glue("    + log_det_partial_s2z_{id}\n")
+    ),
     str_if(
       is_student,
       glue("    - sum(log(group_scale_s2z_{id}))\n")

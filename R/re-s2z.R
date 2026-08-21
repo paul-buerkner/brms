@@ -6,6 +6,48 @@ has_re_s2z <- function(x) {
     "s2z" %in% names(x$frame$re) && any(x$frame$re$s2z)
 }
 
+# Return validated centering fractions for one S2Z block. Logical values from
+# reframes created before partial centering was added remain valid endpoints.
+re_s2z_center_values <- function(r) {
+  stopifnot(is.reframe(r), has_rows(r))
+  value <- r[["s2z_center"]]
+  if (is.null(value)) {
+    return(rep(1, nrow(r)))
+  }
+  if (!is.numeric(value) && !is.logical(value)) {
+    stop2("Internal error: invalid sum-to-zero centering fractions.")
+  }
+  value <- as.numeric(value)
+  if (length(value) != nrow(r) || anyNA(value) ||
+      any(!is.finite(value)) || any(value < 0 | value > 1)) {
+    stop2("Internal error: sum-to-zero centering fractions must be in [0, 1].")
+  }
+  value
+}
+
+# Return the per-coefficient auto flags, defaulting to FALSE for old reframes.
+re_s2z_center_auto <- function(r) {
+  stopifnot(is.reframe(r), has_rows(r))
+  value <- r[["s2z_center_auto"]]
+  if (is.null(value)) {
+    return(rep(FALSE, nrow(r)))
+  }
+  if (!is.logical(value) || length(value) != nrow(r) || anyNA(value)) {
+    stop2("Internal error: invalid automatic sum-to-zero centering flags.")
+  }
+  value
+}
+
+# Classify an S2Z block without changing the legacy endpoint code paths.
+re_s2z_center_mode <- function(r) {
+  rho <- re_s2z_center_values(r)
+  if (any(re_s2z_center_auto(r)) || any(rho > 0 & rho < 1) ||
+      length(unique(rho)) > 1L) {
+    return("partial")
+  }
+  if (all(rho == 1)) "centered" else "noncentered"
+}
+
 # Return all local linear predictor frames contained in a brms frame.
 all_bframel <- function(x) {
   if (is.bframel(x)) {
@@ -249,6 +291,8 @@ re_s2z_info <- function(bframe, prior = NULL) {
     stop2("All coefficients sharing a group-level ID must use the same ",
           "'s2z' setting.")
   }
+  re_s2z_center_values(r_id)
+  re_s2z_center_auto(r_id)
   r <- r_id
   qnames <- bframe$frame$fe$vars
   match_q <- match(r$coef, qnames)
@@ -277,6 +321,95 @@ re_s2z_info <- function(bframe, prior = NULL) {
     out$prior <- specs
   }
   out
+}
+
+# Construct an S2Z design matrix in covariance-block coefficient order. A
+# block may be assembled from multiple grouping terms that share an ID.
+re_s2z_design_matrix <- function(bframe, data) {
+  stopifnot(is.bframel(bframe))
+  info <- re_s2z_info(bframe)
+  if (is.null(info)) {
+    return(matrix(numeric(), nrow = nrow(data), ncol = 0L))
+  }
+  r <- info$r
+  out <- matrix(NA_real_, nrow = nrow(data), ncol = nrow(r))
+  for (gn in unique(r$gn)) {
+    take <- which(r$gn == gn)
+    rg <- r[take, , drop = FALSE]
+    Zg <- get_model_matrix(rg$form[[1]], data = data, rename = FALSE)
+    if (ncol(Zg) != length(take)) {
+      stop2("Internal mismatch in the sum-to-zero group-level design matrix.")
+    }
+    out[, take] <- Zg
+  }
+  colnames(out) <- r$coef
+  out
+}
+
+# Data-driven centering fractions for one S2Z block. Each column is normalized
+# by its global nonzero RMS. Within a group, pivoted QR removes the span of all
+# other varying columns before squared residual exposure is accumulated. This
+# makes the rule invariant to coefficient rescaling and conservative for
+# locally unidentified slopes and interactions.
+re_s2z_auto_rho <- function(bframe, data, threshold = 25) {
+  stopifnot(is.bframel(bframe), is.numeric(threshold), length(threshold) == 1L,
+            is.finite(threshold), threshold > 0)
+  info <- re_s2z_info(bframe)
+  if (is.null(info)) {
+    return(matrix(numeric(), nrow = 0L, ncol = 0L))
+  }
+  r <- info$r
+  Z <- re_s2z_design_matrix(bframe, data = data)
+  M <- ncol(Z)
+  levels <- get_levels(r)[[r$group[1]]]
+  J <- length(levels)
+  group_var <- r$gcall[[1]]$groups
+  if (length(group_var) != 1L) {
+    stop2("Automatic sum-to-zero centering requires one grouping variable.")
+  }
+  group_index <- match(get(group_var, data), levels)
+  if (anyNA(group_index)) {
+    stop2("Internal mismatch while computing automatic sum-to-zero centering.")
+  }
+
+  nonzero_rms <- vapply(seq_len(M), function(k) {
+    zk <- Z[, k]
+    keep <- is.finite(zk) & zk != 0
+    if (!any(keep)) 1 else sqrt(mean(zk[keep]^2))
+  }, numeric(1))
+  Z <- sweep(Z, 2L, nonzero_rms, "/")
+  exposure <- matrix(0, nrow = J, ncol = M)
+  qr_tol <- sqrt(.Machine$double.eps)
+  for (j in seq_len(J)) {
+    rows <- which(group_index == j)
+    if (!length(rows)) {
+      next
+    }
+    Zj <- Z[rows, , drop = FALSE]
+    for (k in seq_len(M)) {
+      residual <- Zj[, k]
+      if (M > 1L) {
+        others <- Zj[, -k, drop = FALSE]
+        keep <- colSums(abs(others)) > 0
+        others <- others[, keep, drop = FALSE]
+        if (ncol(others)) {
+          residual <- lm.fit(
+            x = others, y = residual, tol = qr_tol
+          )$residuals
+        }
+      }
+      value <- sum(residual^2)
+      zero_tol <- qr_tol * max(1, sum(Zj[, k]^2))
+      if (value < zero_tol) {
+        value <- 0
+      }
+      exposure[j, k] <- value
+    }
+  }
+  rho <- exposure / (exposure + threshold)
+  colnames(rho) <- r$coef
+  rownames(rho) <- levels
+  rho
 }
 
 # Validate S2Z structure after formulas, data, and priors have been resolved.
@@ -311,22 +444,33 @@ validate_re_s2z <- function(bframe, prior) {
             "linear predictors.")
     }
     ids <- c(ids, info$id)
+    if (length(unique(r$group)) != 1L) {
+      stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
+            "the same grouping factor.")
+    }
     if (length(unique(r$scale)) != 1L) {
       stop2("All coefficients sharing a group-level ID must use the same ",
             "'scale' setting.")
     }
-    if (r$gtype[1] != "" || any(nzchar(r$type))) {
+    if (length(unique(r$dist)) != 1L) {
+      stop2("All coefficients sharing a group-level ID must use the same ",
+            "group-level distribution.")
+    }
+    if (length(unique(r$cor)) != 1L) {
+      stop2("All coefficients sharing a group-level ID must use the same ",
+            "'cor' setting.")
+    }
+    if (any(nzchar(r$gtype)) || any(nzchar(r$type))) {
       stop2("The sum-to-zero parameterization currently ",
             "supports only ordinary 'gr' terms.")
     }
-    if (nzchar(r$by[1]) || nzchar(r$cov[1]) ||
-        isTRUE(nzchar(r$gcall[[1]]$pw))) {
+    has_pw <- any(vapply(r$gcall, function(gcall) {
+      isTRUE(nzchar(gcall$pw))
+    }, logical(1)))
+    if (any(nzchar(r$by), na.rm = TRUE) ||
+        any(nzchar(r$cov), na.rm = TRUE) || has_pw) {
       stop2("Arguments 'by', 'cov', and 'pw' are not yet supported together ",
             "with gr(..., s2z = TRUE).")
-    }
-    if (length(unique(r$gn)) != 1L) {
-      stop2("A sum-to-zero covariance block must be specified ",
-            "in one group-level term.")
     }
     if (length(get_levels(r)[[r$group[1]]]) < 2L) {
       stop2("The sum-to-zero parameterization requires at ",
@@ -363,7 +507,7 @@ validate_re_s2z_design <- function(bframe, data) {
     return(invisible(NULL))
   }
   info <- re_s2z_info(bframe)
-  Z <- get_model_matrix(info$r$form[[1]], data = data, rename = FALSE)
+  Z <- re_s2z_design_matrix(bframe, data = data)
   X <- bframe$sdata$fe$X
   if (ncol(Z) != nrow(info$r)) {
     stop2("Internal mismatch in the sum-to-zero group-level design matrix.")
