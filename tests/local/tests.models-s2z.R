@@ -1,7 +1,8 @@
 # Sampling validation for marginalized sum-to-zero group-level effects.
 #
-# This is intentionally a local test: it compiles and samples eight Stan
-# models, including both dedicated scalar paths.
+# This is intentionally a local test: it compiles and samples twelve Stan
+# models, including literal-scalar, independent-component, and correlated
+# paths.
 # Run it against an installed development build of brms, for example with
 #
 #   Rscript tests/local/tests.models-s2z.R
@@ -214,12 +215,14 @@ simulate_scalar_student_slope <- function(seed = 4104L, groups = 14L,
   dat
 }
 
-model_prior <- function(student_group = FALSE) {
+model_prior <- function(student_group = FALSE, correlated = TRUE) {
   out <- prior(normal(0, 1.5), class = "b") +
     prior(normal(0, 1.5), class = "Intercept") +
     prior(exponential(1), class = "sd") +
-    prior(lkj(2), class = "cor") +
     prior(exponential(1), class = "sigma")
+  if (correlated) {
+    out <- out + prior(lkj(2), class = "cor")
+  }
   if (student_group) {
     out <- out + prior(gamma(2, 0.2), class = "df", group = "g")
   }
@@ -415,8 +418,10 @@ s2z_coordinate_invariants <- function(fit, formula, data, prior,
   for (k in seq_len(n_coef)) {
     r_names <- if (n_coef == 1L) {
       sprintf("r_s2z_1_1[%d]", seq_len(n_group))
-    } else {
+    } else if (sprintf("r_s2z_1[1,%d]", k) %in% variables(fit)) {
       sprintf("r_s2z_1[%d,%d]", seq_len(n_group), k)
+    } else {
+      sprintf("r_s2z_1_%d[%d]", k, seq_len(n_group))
     }
     r_s2z[, , k] <- exact_draw_matrix(fit, r_names)
   }
@@ -594,6 +599,33 @@ student_result <- run_case(
   seed = 5102L
 )
 
+diagonal_gaussian_result <- run_case(
+  case = "independent-gaussian-interaction",
+  data = gaussian_data,
+  conventional_formula = bf(y ~ x * z + (1 + x * z || g)),
+  s2z_formula = bf(
+    y ~ x * z + (1 + x * z || gr(g, s2z = TRUE))
+  ),
+  prior = model_prior(correlated = FALSE),
+  fixed_formula = ~ x * z,
+  seed = 5105L
+)
+
+diagonal_student_result <- run_case(
+  case = "independent-student-intercept-slope",
+  data = student_data,
+  conventional_formula = bf(
+    y ~ x + (1 + x || gr(g, dist = "student"))
+  ),
+  s2z_formula = bf(
+    y ~ x +
+      (1 + x || gr(g, dist = "student", s2z = TRUE))
+  ),
+  prior = model_prior(student_group = TRUE, correlated = FALSE),
+  fixed_formula = ~ x,
+  seed = 5106L
+)
+
 scalar_intercept_data <- simulate_scalar_intercept()
 scalar_intercept_result <- run_case(
   case = "scalar-gaussian-intercept",
@@ -624,18 +656,24 @@ scalar_student_result <- run_case(
 comparison_results <- rbind(
   gaussian_result$comparison,
   student_result$comparison,
+  diagonal_gaussian_result$comparison,
+  diagonal_student_result$comparison,
   scalar_intercept_result$comparison,
   scalar_student_result$comparison
 )
 invariant_results <- rbind(
   gaussian_result$invariants,
   student_result$invariants,
+  diagonal_gaussian_result$invariants,
+  diagonal_student_result$invariants,
   scalar_intercept_result$invariants,
   scalar_student_result$invariants
 )
 quality_results <- rbind(
   gaussian_result$quality,
   student_result$quality,
+  diagonal_gaussian_result$quality,
+  diagonal_student_result$quality,
   scalar_intercept_result$quality,
   scalar_student_result$quality
 )

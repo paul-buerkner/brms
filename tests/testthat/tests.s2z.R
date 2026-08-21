@@ -32,6 +32,134 @@ context("Tests for marginalized sum-to-zero group-level effects")
     0.5 * sum(z^2)
 }
 
+# Compare the component-wise diagonal-plus-rank-one implementation with the
+# dense complete square it replaces.  This deliberately mirrors the scaled
+# equations in .stan_re_s2z_independent without calling code under test.
+.s2z_independent_case <- function(k, student = FALSE, center = TRUE) {
+  n <- 11L
+  basis <- .s2z_basis(n)
+  contrast <- matrix(
+    sin(seq_len((n - 1L) * k) * 0.71) +
+      cos(seq_len((n - 1L) * k) * 0.19),
+    nrow = n - 1L, ncol = k
+  ) / 3
+  r_s2z <- basis %*% contrast
+  theta <- seq(-0.8, 1.1, length.out = k)
+  prior_mean <- seq(0.45, -0.35, length.out = k)
+  prior_sd <- seq(0.65, 1.55, length.out = k)
+  prior_prec <- 1 / prior_sd^2
+  group_sd <- seq(0.4, 1.25, length.out = k)
+  intercept_map <- if (center) {
+    c(1, seq(-0.55, 0.65, length.out = k - 1L))
+  } else {
+    numeric(k)
+  }
+  H <- diag(k)
+  if (center) {
+    H[1L, ] <- intercept_map
+  }
+  group_scale <- if (student) {
+    sqrt(4.25 * seq(0.09, 1.37, length.out = n)^1.35)
+  } else {
+    rep(1, n)
+  }
+  group_prec <- 1 / group_scale^2
+  weighted_contrast <- drop(crossprod(r_s2z, group_prec))
+
+  # Dense K-dimensional complete square.
+  Q_group <- diag(1 / group_sd^2, k)
+  P <- crossprod(H, prior_prec * H) + sum(group_prec) * Q_group
+  h <- drop(crossprod(H, prior_prec * (theta - prior_mean))) -
+    drop(Q_group %*% weighted_contrast)
+  dense_mode <- drop(solve(P, h))
+  dense_qhat <- drop(theta - H %*% dense_mode)
+
+  # Scaled diagonal-plus-rank-one equations used by the specialization.
+  base_info <- prior_prec
+  base_score <- prior_prec * (theta - prior_mean)
+  coupling_prec <- 0
+  coupling_resid <- 0
+  if (center) {
+    base_info[1L] <- 0
+    base_score[1L] <- 0
+    coupling_prec <- prior_prec[1L]
+    coupling_resid <- theta[1L] - prior_mean[1L]
+  }
+  D <- sum(group_prec) + group_sd^2 * base_info
+  scaled_score <- group_sd^2 * base_score
+  if (student) {
+    scaled_score <- scaled_score - weighted_contrast
+  }
+  independent_mode <- scaled_score / D
+  rank1_info <- coupling_prec * sum(
+    group_sd^2 * intercept_map^2 / D
+  )
+  fast_mode <- independent_mode +
+    coupling_prec * group_sd^2 * intercept_map / D *
+    (coupling_resid - sum(intercept_map * independent_mode)) /
+    (1 + rank1_info)
+  fast_qhat <- theta - H %*% fast_mode
+
+  log_joint_measure <- function(group_mean) {
+    q <- drop(theta - H %*% group_mean)
+    group_log <- sum(vapply(
+      seq_len(n),
+      function(i) {
+        sum(stats::dnorm(
+          r_s2z[i, ] + group_mean, 0,
+          group_sd * group_scale[i], log = TRUE
+        ))
+      },
+      numeric(1)
+    ))
+    sum(stats::dnorm(q, prior_mean, prior_sd, log = TRUE)) +
+      group_log + 0.5 * k * log(n)
+  }
+  dense_log <- log_joint_measure(dense_mode) +
+    0.5 * k * log(2 * pi) -
+    0.5 * as.numeric(determinant(P, logarithm = TRUE)$modulus)
+  group_quad <- sum(vapply(
+    seq_len(k),
+    function(j) {
+      sum(((r_s2z[, j] + fast_mode[j]) /
+             (group_sd[j] * group_scale))^2)
+    },
+    numeric(1)
+  ))
+  fast_log <- sum(stats::dnorm(
+    fast_qhat, prior_mean, prior_sd, log = TRUE
+  )) - 0.5 * group_quad - (n - 1L) * sum(log(group_sd)) -
+    ifelse(student, k * sum(log(group_scale)), 0) -
+    0.5 * sum(log(D)) - 0.5 * log1p(rank1_info) -
+    0.5 * n * k * log(2 * pi) + 0.5 * k * log(2 * pi) +
+    0.5 * k * log(n)
+
+  # The generated-quantities draw is a square-root rank-one downdate of the
+  # independent covariance diag(group_sd^2 / D).
+  independent_cov <- diag(group_sd^2 / D, k)
+  sqrt_rank1 <- sqrt(1 + rank1_info)
+  rank1_coef <- coupling_prec /
+    (sqrt_rank1 * (1 + sqrt_rank1))
+  adjustment <- diag(k) - rank1_coef * outer(
+    group_sd^2 * intercept_map / D, intercept_map
+  )
+  gq_cov <- adjustment %*% independent_cov %*% t(adjustment)
+
+  list(
+    r_s2z = r_s2z,
+    weighted_contrast = weighted_contrast,
+    dense_mode = dense_mode,
+    fast_mode = fast_mode,
+    dense_qhat = dense_qhat,
+    fast_qhat = drop(fast_qhat),
+    dense_log = dense_log,
+    fast_log = fast_log,
+    conditional_cov = solve(P),
+    gq_cov = gq_cov,
+    rank1_info = rank1_info
+  )
+}
+
 test_that("the physical sum-to-zero transform is orthonormal", {
   for (n in c(2L, 3L, 7L)) {
     basis <- .s2z_basis(n)
@@ -114,6 +242,59 @@ test_that("Gaussian completed-square density is normalized in S2Z coordinates", 
     log_direct - (log_complete - 0.5 * m * log(n)),
     0.5 * m * log(n), tolerance = 1e-12
   )
+})
+
+test_that("independent Gaussian effects match the dense complete square", {
+  for (k in c(2L, 5L, 10L)) {
+    ans <- .s2z_independent_case(k, student = FALSE, center = TRUE)
+
+    expect_equal(colSums(ans$r_s2z), numeric(k), tolerance = 2e-14)
+    expect_equal(ans$dense_mode, ans$fast_mode, tolerance = 2e-13)
+    expect_equal(ans$dense_qhat, ans$fast_qhat, tolerance = 2e-13)
+    expect_equal(ans$dense_log, ans$fast_log, tolerance = 2e-10)
+    expect_gt(ans$rank1_info, 0)
+  }
+})
+
+test_that("independent Student effects match the weighted dense square", {
+  for (k in c(2L, 5L, 10L)) {
+    ans <- .s2z_independent_case(k, student = TRUE, center = TRUE)
+
+    # Unequal group scales make a physical zero-sum contrast have a nonzero
+    # precision-weighted sum; this is the term the Gaussian shortcut omits.
+    expect_gt(max(abs(ans$weighted_contrast)), 0.05)
+    expect_equal(ans$dense_mode, ans$fast_mode, tolerance = 2e-13)
+    expect_equal(ans$dense_qhat, ans$fast_qhat, tolerance = 2e-13)
+    expect_equal(ans$dense_log, ans$fast_log, tolerance = 2e-10)
+  }
+})
+
+test_that("rank-one generated-quantities covariance is exact", {
+  for (k in c(2L, 5L, 10L)) {
+    for (student in c(FALSE, TRUE)) {
+      ans <- .s2z_independent_case(k, student = student, center = TRUE)
+      expect_equal(
+        ans$gq_cov, ans$conditional_cov,
+        tolerance = 3e-14, scale = 1
+      )
+      expect_gt(min(eigen(ans$gq_cov, symmetric = TRUE)$values), 0)
+    }
+  }
+})
+
+test_that("independent no-intercept effects reduce to diagonal solves", {
+  for (k in c(2L, 5L, 10L)) {
+    for (student in c(FALSE, TRUE)) {
+      ans <- .s2z_independent_case(k, student = student, center = FALSE)
+      expect_equal(ans$rank1_info, 0)
+      expect_equal(ans$dense_mode, ans$fast_mode, tolerance = 2e-13)
+      expect_equal(ans$dense_log, ans$fast_log, tolerance = 2e-10)
+      expect_equal(
+        ans$gq_cov, ans$conditional_cov,
+        tolerance = 3e-14, scale = 1
+      )
+    }
+  }
 })
 
 test_that("scalar completed-square density is normalized exactly", {

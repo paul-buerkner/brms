@@ -12,7 +12,9 @@
 #   BRMS_S2Z_BENCH_WARMUP=1000 \
 #   BRMS_S2Z_BENCH_SAMPLING=1000 \
 #   BRMS_S2Z_BENCH_GROUPS=80 \
-#   BRMS_S2Z_BENCH_MODEL=scalar-intercept \
+#   BRMS_S2Z_BENCH_MODEL=orthogonal \
+#   BRMS_S2Z_BENCH_K=10 \
+#   BRMS_S2Z_BENCH_COVARIANCE=independent \
 #   BRMS_S2Z_BENCH_REPS=3 \
 #   BRMS_S2Z_BENCH_OUT=s2z-benchmark.csv \
 #   Rscript tests/local/benchmark-s2z.R
@@ -23,7 +25,12 @@
 #   BRMS_S2Z_BENCH_WARMUP=400
 #   BRMS_S2Z_BENCH_SAMPLING=400
 #   BRMS_S2Z_BENCH_GROUPS=24
-#   BRMS_S2Z_BENCH_MODEL=interaction  # or scalar-intercept/scalar-slope
+#   BRMS_S2Z_BENCH_MODEL=interaction  # also scalar-*, orthogonal
+#   BRMS_S2Z_BENCH_K=10               # orthogonal model only
+#   BRMS_S2Z_BENCH_COVARIANCE=independent  # or correlated; orthogonal only
+#   BRMS_S2Z_BENCH_GROUP_DIST=gaussian     # or student
+#   BRMS_S2Z_BENCH_IDENTIFICATION=both     # or strong/weak
+#   BRMS_S2Z_BENCH_SIGMA=0.08         # orthogonal residual SD
 #   BRMS_S2Z_BENCH_STRONG_N=24       # observations per group
 #   BRMS_S2Z_BENCH_WEAK_N=6
 #   BRMS_S2Z_BENCH_REPS=1
@@ -31,10 +38,14 @@
 #   BRMS_S2Z_BENCH_ADAPT_DELTA=0.95
 #   BRMS_S2Z_BENCH_MAX_TREEDEPTH=12
 #
+# The orthogonal/independent setting exercises the component-wise (scalar)
+# marginal algebra with any K; "scalar" does not imply K = 1.
+#
 # `gradient_evals` counts post-warmup leapfrog gradients plus one initial
 # gradient per transition. ESS/gradient is calculated on the same post-warmup
-# transitions. Wall time is elapsed sampling time and excludes the separately
-# reported compile-and-smoke time.
+# transitions. Wall time is end-to-end refit time: it includes warmup,
+# sampling, process/CSV overhead, and brms fit construction, but excludes the
+# separately reported compile-and-smoke time.
 
 suppressPackageStartupMessages({
   library(brms)
@@ -107,7 +118,33 @@ sampling <- env_integer("BRMS_S2Z_BENCH_SAMPLING", 400L)
 groups <- env_integer("BRMS_S2Z_BENCH_GROUPS", 24L, minimum = 3L)
 benchmark_model <- env_choice(
   "BRMS_S2Z_BENCH_MODEL", "interaction",
-  c("interaction", "scalar-intercept", "scalar-slope")
+  c("interaction", "scalar-intercept", "scalar-slope", "orthogonal")
+)
+orthogonal_k <- env_integer("BRMS_S2Z_BENCH_K", 10L)
+benchmark_covariance <- if (benchmark_model == "orthogonal") {
+  env_choice(
+    "BRMS_S2Z_BENCH_COVARIANCE", "independent",
+    c("independent", "correlated")
+  )
+} else if (benchmark_model == "interaction") {
+  "correlated"
+} else {
+  "independent"
+}
+group_dist <- env_choice(
+  "BRMS_S2Z_BENCH_GROUP_DIST", "gaussian", c("gaussian", "student")
+)
+identification <- env_choice(
+  "BRMS_S2Z_BENCH_IDENTIFICATION", "both",
+  c("strong", "weak", "both")
+)
+identification_levels <- if (identification == "both") {
+  c("strong", "weak")
+} else {
+  identification
+}
+orthogonal_sigma <- env_number(
+  "BRMS_S2Z_BENCH_SIGMA", 0.08, minimum = .Machine$double.eps
 )
 strong_n <- env_integer("BRMS_S2Z_BENCH_STRONG_N", 24L, minimum = 4L)
 weak_n <- env_integer("BRMS_S2Z_BENCH_WEAK_N", 6L, minimum = 4L)
@@ -128,6 +165,21 @@ backend <- choose_backend()
 output_file <- Sys.getenv("BRMS_S2Z_BENCH_OUT", unset = "")
 options(mc.cores = cores, width = 180)
 
+benchmark_k <- switch(
+  benchmark_model,
+  interaction = 4L,
+  `scalar-intercept` = 1L,
+  `scalar-slope` = 1L,
+  orthogonal = orthogonal_k
+)
+if (benchmark_model == "orthogonal" &&
+    "strong" %in% identification_levels && strong_n < benchmark_k) {
+  stop(
+    "BRMS_S2Z_BENCH_STRONG_N must be at least BRMS_S2Z_BENCH_K ",
+    "for the exact orthogonal design.", call. = FALSE
+  )
+}
+
 backend_version <- if (backend == "cmdstanr") {
   paste(cmdstanr::cmdstan_version(), collapse = ".")
 } else {
@@ -141,9 +193,14 @@ configuration <- data.frame(
   warmup = warmup,
   sampling = sampling,
   model = benchmark_model,
+  k = benchmark_k,
+  covariance = benchmark_covariance,
+  group_dist = group_dist,
+  identification = identification,
   groups = groups,
   strong_n = strong_n,
   weak_n = weak_n,
+  orthogonal_sigma = orthogonal_sigma,
   reps = reps,
   adapt_delta = adapt_delta,
   max_treedepth = max_treedepth,
@@ -156,14 +213,51 @@ rmvn_rows <- function(n, sigma) {
   matrix(stats::rnorm(n * nrow(sigma)), nrow = n) %*% chol(sigma)
 }
 
+draw_group_effects <- function(n, sigma, dist, df = 5) {
+  out <- rmvn_rows(n, sigma)
+  if (dist == "student") {
+    # One scale per group gives an elliptically symmetric multivariate t.
+    out <- out * sqrt(df / stats::rchisq(n, df = df))
+  }
+  out
+}
+
+dense_benchmark_design <- function(n, k, identification) {
+  if (identification == "strong") {
+    if (n < k) {
+      stop("The strong orthogonal design requires n >= k.", call. = FALSE)
+    }
+    q <- qr.Q(qr(matrix(stats::rnorm(n * k), nrow = n)))
+    out <- sqrt(n) * q[, seq_len(k), drop = FALSE]
+    target <- diag(n, nrow = k, ncol = k)
+    if (max(abs(crossprod(out) - target)) > 1e-8 * n) {
+      stop("Failed to construct an orthogonal benchmark design.",
+           call. = FALSE)
+    }
+  } else {
+    weak_cor <- outer(seq_len(k), seq_len(k), function(i, j) {
+      0.97^abs(i - j)
+    })
+    out <- matrix(stats::rnorm(n * k), nrow = n) %*% chol(weak_cor)
+    out <- sweep(out, 2, sqrt(colMeans(out^2)), "/")
+  }
+  colnames(out) <- paste0("x", seq_len(k))
+  out
+}
+
 simulate_benchmark_data <- function(identification, seed, groups,
-                                    observations_per_group, model) {
+                                    observations_per_group, model, k,
+                                    covariance, group_dist,
+                                    orthogonal_sigma) {
   identification <- match.arg(identification, c("strong", "weak"))
   set.seed(seed)
   g_levels <- sprintf("g%03d", seq_len(groups))
   pieces <- lapply(seq_len(groups), function(j) {
     n <- observations_per_group
-    if (identification == "strong") {
+    if (model == "orthogonal") {
+      design <- dense_benchmark_design(n, k, identification)
+      return(data.frame(g = g_levels[j], design, check.names = FALSE))
+    } else if (identification == "strong") {
       grid <- expand.grid(x = c(-1, 1), z = c(-1, 1))
       grid <- grid[rep(seq_len(nrow(grid)), length.out = n), ]
       x <- grid$x + stats::rnorm(n, sd = 0.08)
@@ -181,12 +275,25 @@ simulate_benchmark_data <- function(identification, seed, groups,
 
   if (model == "scalar-intercept") {
     beta <- 0.35
-    u <- stats::rnorm(groups, sd = 0.75)
-    eta <- beta + u[as.integer(dat$g)]
+    u <- draw_group_effects(groups, matrix(0.75^2), group_dist)
+    eta <- beta + u[as.integer(dat$g), 1]
   } else if (model == "scalar-slope") {
     beta <- 0.70
-    u <- stats::rnorm(groups, sd = 0.50)
-    eta <- dat$x * (beta + u[as.integer(dat$g)])
+    u <- draw_group_effects(groups, matrix(0.50^2), group_dist)
+    eta <- dat$x * (beta + u[as.integer(dat$g), 1])
+  } else if (model == "orthogonal") {
+    x_names <- paste0("x", seq_len(k))
+    X <- as.matrix(dat[x_names])
+    beta <- seq(0.20, 0.80, length.out = k) * (-1)^(seq_len(k) - 1L)
+    re_sd <- seq(0.35, 0.80, length.out = k)
+    re_cor <- if (covariance == "independent") {
+      diag(k)
+    } else {
+      outer(seq_len(k), seq_len(k), function(i, j) 0.25^abs(i - j))
+    }
+    sigma_re <- diag(re_sd) %*% re_cor %*% diag(re_sd)
+    u <- draw_group_effects(groups, sigma_re, group_dist)
+    eta <- drop(X %*% beta) + rowSums(X * u[as.integer(dat$g), ])
   } else {
     X <- stats::model.matrix(~ x * z, dat)
     beta <- c(0.35, 0.70, -0.45, 0.30)
@@ -195,58 +302,122 @@ simulate_benchmark_data <- function(identification, seed, groups,
       0.25^abs(i - j)
     })
     sigma_re <- diag(re_sd) %*% re_cor %*% diag(re_sd)
-    u <- rmvn_rows(groups, sigma_re)
+    u <- draw_group_effects(groups, sigma_re, group_dist)
     eta <- drop(X %*% beta) + rowSums(X * u[as.integer(dat$g), ])
   }
-  residual_sd <- if (identification == "strong") 0.35 else 1.40
+  residual_sd <- if (model == "orthogonal") {
+    orthogonal_sigma
+  } else if (identification == "strong") {
+    0.35
+  } else {
+    1.40
+  }
   dat$y <- stats::rnorm(nrow(dat), eta, residual_sd)
   dat
 }
 
-benchmark_data <- list(
-  strong = simulate_benchmark_data(
-    "strong", seed = base_seed + 10L, groups = groups,
-    observations_per_group = strong_n, model = benchmark_model
-  ),
-  weak = simulate_benchmark_data(
-    "weak", seed = base_seed + 20L, groups = groups,
-    observations_per_group = weak_n, model = benchmark_model
+benchmark_data <- lapply(identification_levels, function(level) {
+  simulate_benchmark_data(
+    level,
+    seed = base_seed + if (level == "strong") 10L else 20L,
+    groups = groups,
+    observations_per_group = if (level == "strong") strong_n else weak_n,
+    model = benchmark_model,
+    k = benchmark_k,
+    covariance = benchmark_covariance,
+    group_dist = group_dist,
+    orthogonal_sigma = orthogonal_sigma
   )
-)
+})
+names(benchmark_data) <- identification_levels
 
 benchmark_prior <- if (benchmark_model == "scalar-intercept") {
-  prior(normal(0, 2), class = "Intercept") +
-    prior(exponential(1), class = "sd") +
-    prior(exponential(1), class = "sigma")
-} else if (benchmark_model == "scalar-slope") {
-  prior(normal(0, 2), class = "b") +
-    prior(exponential(1), class = "sd") +
-    prior(exponential(1), class = "sigma")
+  prior(normal(0, 2), class = "Intercept")
+} else if (benchmark_model %in% c("scalar-slope", "orthogonal")) {
+  prior(normal(0, 2), class = "b")
 } else {
   prior(normal(0, 2), class = "b") +
-    prior(normal(0, 2), class = "Intercept") +
-    prior(exponential(1), class = "sd") +
-    prior(lkj(2), class = "cor") +
-    prior(exponential(1), class = "sigma")
+    prior(normal(0, 2), class = "Intercept")
 }
+benchmark_prior <- benchmark_prior +
+  prior(exponential(1), class = "sd") +
+  prior(exponential(1), class = "sigma")
+if (benchmark_covariance == "correlated" && benchmark_k > 1L) {
+  benchmark_prior <- benchmark_prior + prior(lkj(2), class = "cor")
+}
+if (group_dist == "student") {
+  benchmark_prior <- benchmark_prior +
+    prior(gamma(2, 0.2), class = "df", group = "g")
+}
+
+group_expression <- function(s2z, explicit_cor = NULL) {
+  args <- "g"
+  if (!is.null(explicit_cor)) {
+    args <- c(args, paste0("cor = ", as.character(explicit_cor)))
+  }
+  if (group_dist == "student") {
+    args <- c(args, 'dist = "student"')
+  }
+  if (s2z) {
+    args <- c(args, "s2z = TRUE")
+  }
+  if (length(args) == 1L) {
+    return(args)
+  }
+  paste0("gr(", paste(args, collapse = ", "), ")")
+}
+
+orthogonal_cor <- identical(benchmark_covariance, "correlated")
+conventional_group <- group_expression(
+  FALSE,
+  explicit_cor = if (benchmark_model == "orthogonal") orthogonal_cor else NULL
+)
+s2z_group <- group_expression(
+  TRUE,
+  explicit_cor = if (benchmark_model == "orthogonal") orthogonal_cor else NULL
+)
 
 benchmark_formula <- if (benchmark_model == "scalar-intercept") {
   list(
-    conventional = bf(y ~ 1 + (1 | g)),
-    s2z = bf(y ~ 1 + (1 | gr(g, s2z = TRUE)))
+    conventional = bf(stats::as.formula(paste0(
+      "y ~ 1 + (1 | ", conventional_group, ")"
+    ))),
+    s2z = bf(stats::as.formula(paste0(
+      "y ~ 1 + (1 | ", s2z_group, ")"
+    )))
   )
 } else if (benchmark_model == "scalar-slope") {
   list(
-    conventional = bf(y ~ 0 + x + (0 + x | g)),
-    s2z = bf(y ~ 0 + x + (0 + x | gr(g, s2z = TRUE)))
+    conventional = bf(stats::as.formula(paste0(
+      "y ~ 0 + x + (0 + x | ", conventional_group, ")"
+    ))),
+    s2z = bf(stats::as.formula(paste0(
+      "y ~ 0 + x + (0 + x | ", s2z_group, ")"
+    )))
+  )
+} else if (benchmark_model == "orthogonal") {
+  x_terms <- paste0("x", seq_len(benchmark_k), collapse = " + ")
+  list(
+    conventional = bf(stats::as.formula(paste0(
+      "y ~ 0 + ", x_terms, " + (0 + ", x_terms, " | ",
+      conventional_group, ")"
+    ))),
+    s2z = bf(stats::as.formula(paste0(
+      "y ~ 0 + ", x_terms, " + (0 + ", x_terms, " | ",
+      s2z_group, ")"
+    )))
   )
 } else {
   list(
-    conventional = bf(y ~ x * z + (1 + x * z | g)),
-    s2z = bf(y ~ x * z + (1 + x * z | gr(g, s2z = TRUE)))
+    conventional = bf(stats::as.formula(paste0(
+      "y ~ x * z + (1 + x * z | ", conventional_group, ")"
+    ))),
+    s2z = bf(stats::as.formula(paste0(
+      "y ~ x * z + (1 + x * z | ", s2z_group, ")"
+    )))
   )
 }
-coefficients_per_group <- if (benchmark_model == "interaction") 4L else 1L
+coefficients_per_group <- benchmark_k
 
 compile_template <- function(formula, data, parameterization) {
   cat("Compiling and smoke-running ", parameterization, " model ...\n",
@@ -274,7 +445,7 @@ compile_template <- function(formula, data, parameterization) {
 
 templates <- lapply(names(benchmark_formula), function(parameterization) {
   compile_template(
-    benchmark_formula[[parameterization]], benchmark_data$strong,
+    benchmark_formula[[parameterization]], benchmark_data[[1]],
     parameterization
   )
 })
@@ -282,7 +453,7 @@ names(templates) <- names(benchmark_formula)
 
 public_benchmark_variables <- function(fit) {
   out <- grep(
-    "^(b_|sd_g__|cor_g__|sigma$|r_g\\[)",
+    "^(b_|sd_g__|cor_g__|df_g($|__)|sigma$|r_g\\[)",
     variables(fit), value = TRUE
   )
   out[!grepl("^theta_s2z(\\[|$)", out)]
@@ -414,6 +585,9 @@ for (i in seq_len(nrow(jobs))) {
     data.frame(
       identification = job$identification,
       model = benchmark_model,
+      k = benchmark_k,
+      covariance = benchmark_covariance,
+      group_dist = group_dist,
       parameterization = job$parameterization,
       replicate = job$replicate,
       seed = job_seed,
@@ -451,14 +625,17 @@ s2z <- subset(
 paired <- merge(
   conventional, s2z,
   by = c(
-    "identification", "model", "replicate", "observations", "groups",
-    "coefficients_per_group"
+    "identification", "model", "k", "covariance", "group_dist",
+    "replicate", "observations", "groups", "coefficients_per_group"
   ),
   suffixes = c("_conventional", "_s2z"), sort = FALSE
 )
 paired_results <- data.frame(
   identification = paired$identification,
   model = paired$model,
+  k = paired$k,
+  covariance = paired$covariance,
+  group_dist = paired$group_dist,
   replicate = paired$replicate,
   wall_time_speedup_conventional_over_s2z =
     paired$wall_seconds_conventional / paired$wall_seconds_s2z,
