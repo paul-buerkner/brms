@@ -116,6 +116,122 @@ test_that("Gaussian completed-square density is normalized in S2Z coordinates", 
   )
 })
 
+test_that("scalar completed-square density is normalized exactly", {
+  n <- 6L
+  basis <- .s2z_basis(n)
+  prior_mean <- -0.35
+  prior_sd <- 1.4
+  group_sd <- 0.65
+  H <- 0.8
+  theta <- 1.15
+  contrast <- c(-0.6, 0.2, 0.75, -0.1, 0.45)
+  r_s2z <- drop(basis %*% contrast)
+
+  prior_prec <- 1 / prior_sd^2
+  group_prec <- rep(1, n)
+  Q_sigma <- 1 / group_sd^2
+  P <- H^2 * prior_prec + sum(group_prec) * Q_sigma
+  h <- H * prior_prec * (theta - prior_mean) -
+    Q_sigma * sum(r_s2z * group_prec)
+  mhat <- h / P
+  A <- H^2 * prior_prec
+  a <- H * prior_prec * (theta - prior_mean)
+  D <- group_sd^2 * A + n
+  mhat_scaled <- group_sd^2 * a / D
+  qhat <- theta - H * mhat
+
+  log_complete <- stats::dnorm(
+    qhat, prior_mean, prior_sd, log = TRUE
+  ) + sum(stats::dnorm(
+    r_s2z + mhat, 0, group_sd, log = TRUE
+  )) + 0.5 * log(2 * pi) - 0.5 * log(P) + 0.5 * log(n)
+
+  # Independently transform (q, u_1, ..., u_n) to the finite-population
+  # coefficient theta = q + H * mean(u) and orthonormal contrasts B' u.
+  transform <- rbind(
+    c(1, rep(H / n, n)),
+    cbind(0, t(basis))
+  )
+  conventional_cov <- diag(c(prior_sd^2, rep(group_sd^2, n)))
+  transformed_cov <- transform %*% conventional_cov %*% t(transform)
+  transformed_value <- c(theta, drop(crossprod(basis, r_s2z)))
+  transformed_mean <- c(prior_mean, numeric(n - 1L))
+  log_direct <- .s2z_log_mvn(
+    transformed_value, transformed_mean, transformed_cov
+  )
+  log_scaled <- stats::dnorm(
+    qhat, prior_mean, prior_sd, log = TRUE
+  ) - 0.5 * sum(((r_s2z + mhat_scaled) / group_sd)^2) -
+    (n - 1) * log(group_sd) - 0.5 * log(D) -
+    0.5 * (n - 1) * log(2 * pi) + 0.5 * log(n)
+
+  expect_equal(mhat_scaled, mhat, tolerance = 1e-14)
+  expect_equal(log_complete, log_direct, tolerance = 1e-11)
+  expect_equal(log_scaled, log_direct, tolerance = 1e-11)
+  expect_equal(sum(r_s2z), 0, tolerance = 1e-14)
+})
+
+test_that("scalar Student mixture uses the exact heterogeneous complete square", {
+  n <- 6L
+  basis <- .s2z_basis(n)
+  prior_mean <- 0.25
+  prior_sd <- 1.1
+  group_sd <- 0.7
+  H <- -0.45
+  theta <- -0.8
+  r_s2z <- drop(basis %*% c(0.4, -0.7, 0.15, 0.9, -0.2))
+
+  # Conditional on these scales this is the scalar Student-t group model.
+  df <- 4.25
+  udf <- c(0.11, 0.35, 0.8, 1.6, 0.27, 0.52)
+  group_scale <- sqrt(df * udf)
+  group_prec <- 1 / group_scale^2
+  prior_prec <- 1 / prior_sd^2
+  Q_sigma <- 1 / group_sd^2
+  P <- H^2 * prior_prec + sum(group_prec) * Q_sigma
+  h <- H * prior_prec * (theta - prior_mean) -
+    Q_sigma * sum(r_s2z * group_prec)
+  mhat <- h / P
+  A <- H^2 * prior_prec
+  a <- H * prior_prec * (theta - prior_mean)
+  D <- group_sd^2 * A + sum(group_prec)
+  mhat_scaled <- (
+    group_sd^2 * a - sum(r_s2z * group_prec)
+  ) / D
+
+  log_joint_measure <- function(group_mean) {
+    q <- theta - H * group_mean
+    stats::dnorm(q, prior_mean, prior_sd, log = TRUE) +
+      sum(stats::dnorm(
+        r_s2z + group_mean, 0, group_sd * group_scale, log = TRUE
+      )) + 0.5 * log(n)
+  }
+  log_marginal <- log_joint_measure(mhat) +
+    0.5 * log(2 * pi) - 0.5 * log(P)
+  qhat <- theta - H * mhat_scaled
+  log_marginal_scaled <- stats::dnorm(
+    qhat, prior_mean, prior_sd, log = TRUE
+  ) - 0.5 * sum(
+    ((r_s2z + mhat_scaled) / (group_sd * group_scale))^2
+  ) - (n - 1) * log(group_sd) - sum(log(group_scale)) -
+    0.5 * log(D) - 0.5 * (n - 1) * log(2 * pi) + 0.5 * log(n)
+
+  expect_equal(mhat_scaled, mhat, tolerance = 1e-14)
+  expect_equal(log_marginal_scaled, log_marginal, tolerance = 1e-11)
+  expect_gt(diff(range(group_prec)), 1)
+  expect_gt(abs(sum(r_s2z * group_prec)), 0.1)
+  for (group_mean in c(mhat, mhat + 0.55, -1.2)) {
+    log_conditional <- stats::dnorm(
+      group_mean, mhat, sqrt(1 / P), log = TRUE
+    )
+    expect_equal(
+      log_joint_measure(group_mean) - log_conditional,
+      log_marginal,
+      tolerance = 1e-11
+    )
+  }
+})
+
 test_that("heterogeneous Student mixture scales obey the complete square", {
   n <- 5L
   m <- 2L

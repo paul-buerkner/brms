@@ -12,6 +12,7 @@
 #   BRMS_S2Z_BENCH_WARMUP=1000 \
 #   BRMS_S2Z_BENCH_SAMPLING=1000 \
 #   BRMS_S2Z_BENCH_GROUPS=80 \
+#   BRMS_S2Z_BENCH_MODEL=scalar-intercept \
 #   BRMS_S2Z_BENCH_REPS=3 \
 #   BRMS_S2Z_BENCH_OUT=s2z-benchmark.csv \
 #   Rscript tests/local/benchmark-s2z.R
@@ -22,6 +23,7 @@
 #   BRMS_S2Z_BENCH_WARMUP=400
 #   BRMS_S2Z_BENCH_SAMPLING=400
 #   BRMS_S2Z_BENCH_GROUPS=24
+#   BRMS_S2Z_BENCH_MODEL=interaction  # or scalar-intercept/scalar-slope
 #   BRMS_S2Z_BENCH_STRONG_N=24       # observations per group
 #   BRMS_S2Z_BENCH_WEAK_N=6
 #   BRMS_S2Z_BENCH_REPS=1
@@ -63,6 +65,15 @@ env_number <- function(name, default, minimum = -Inf) {
   out
 }
 
+env_choice <- function(name, default, choices) {
+  value <- Sys.getenv(name, unset = default)
+  if (!value %in% choices) {
+    stop(name, " must be one of: ", paste(choices, collapse = ", "), ".",
+         call. = FALSE)
+  }
+  value
+}
+
 choose_backend <- function() {
   requested <- tolower(Sys.getenv(
     "BRMS_S2Z_BENCH_BACKEND",
@@ -94,6 +105,10 @@ chains <- env_integer("BRMS_S2Z_BENCH_CHAINS", 2L, minimum = 2L)
 warmup <- env_integer("BRMS_S2Z_BENCH_WARMUP", 400L)
 sampling <- env_integer("BRMS_S2Z_BENCH_SAMPLING", 400L)
 groups <- env_integer("BRMS_S2Z_BENCH_GROUPS", 24L, minimum = 3L)
+benchmark_model <- env_choice(
+  "BRMS_S2Z_BENCH_MODEL", "interaction",
+  c("interaction", "scalar-intercept", "scalar-slope")
+)
 strong_n <- env_integer("BRMS_S2Z_BENCH_STRONG_N", 24L, minimum = 4L)
 weak_n <- env_integer("BRMS_S2Z_BENCH_WEAK_N", 6L, minimum = 4L)
 reps <- env_integer("BRMS_S2Z_BENCH_REPS", 1L)
@@ -125,6 +140,7 @@ configuration <- data.frame(
   chains = chains,
   warmup = warmup,
   sampling = sampling,
+  model = benchmark_model,
   groups = groups,
   strong_n = strong_n,
   weak_n = weak_n,
@@ -141,7 +157,7 @@ rmvn_rows <- function(n, sigma) {
 }
 
 simulate_benchmark_data <- function(identification, seed, groups,
-                                    observations_per_group) {
+                                    observations_per_group, model) {
   identification <- match.arg(identification, c("strong", "weak"))
   set.seed(seed)
   g_levels <- sprintf("g%03d", seq_len(groups))
@@ -163,15 +179,25 @@ simulate_benchmark_data <- function(identification, seed, groups,
   rownames(dat) <- NULL
   dat$g <- factor(dat$g, levels = g_levels)
 
-  X <- stats::model.matrix(~ x * z, dat)
-  beta <- c(0.35, 0.70, -0.45, 0.30)
-  re_sd <- c(0.75, 0.50, 0.45, 0.35)
-  re_cor <- outer(seq_along(re_sd), seq_along(re_sd), function(i, j) {
-    0.25^abs(i - j)
-  })
-  sigma_re <- diag(re_sd) %*% re_cor %*% diag(re_sd)
-  u <- rmvn_rows(groups, sigma_re)
-  eta <- drop(X %*% beta) + rowSums(X * u[as.integer(dat$g), ])
+  if (model == "scalar-intercept") {
+    beta <- 0.35
+    u <- stats::rnorm(groups, sd = 0.75)
+    eta <- beta + u[as.integer(dat$g)]
+  } else if (model == "scalar-slope") {
+    beta <- 0.70
+    u <- stats::rnorm(groups, sd = 0.50)
+    eta <- dat$x * (beta + u[as.integer(dat$g)])
+  } else {
+    X <- stats::model.matrix(~ x * z, dat)
+    beta <- c(0.35, 0.70, -0.45, 0.30)
+    re_sd <- c(0.75, 0.50, 0.45, 0.35)
+    re_cor <- outer(seq_along(re_sd), seq_along(re_sd), function(i, j) {
+      0.25^abs(i - j)
+    })
+    sigma_re <- diag(re_sd) %*% re_cor %*% diag(re_sd)
+    u <- rmvn_rows(groups, sigma_re)
+    eta <- drop(X %*% beta) + rowSums(X * u[as.integer(dat$g), ])
+  }
   residual_sd <- if (identification == "strong") 0.35 else 1.40
   dat$y <- stats::rnorm(nrow(dat), eta, residual_sd)
   dat
@@ -180,24 +206,47 @@ simulate_benchmark_data <- function(identification, seed, groups,
 benchmark_data <- list(
   strong = simulate_benchmark_data(
     "strong", seed = base_seed + 10L, groups = groups,
-    observations_per_group = strong_n
+    observations_per_group = strong_n, model = benchmark_model
   ),
   weak = simulate_benchmark_data(
     "weak", seed = base_seed + 20L, groups = groups,
-    observations_per_group = weak_n
+    observations_per_group = weak_n, model = benchmark_model
   )
 )
 
-benchmark_prior <- prior(normal(0, 2), class = "b") +
+benchmark_prior <- if (benchmark_model == "scalar-intercept") {
   prior(normal(0, 2), class = "Intercept") +
-  prior(exponential(1), class = "sd") +
-  prior(lkj(2), class = "cor") +
-  prior(exponential(1), class = "sigma")
+    prior(exponential(1), class = "sd") +
+    prior(exponential(1), class = "sigma")
+} else if (benchmark_model == "scalar-slope") {
+  prior(normal(0, 2), class = "b") +
+    prior(exponential(1), class = "sd") +
+    prior(exponential(1), class = "sigma")
+} else {
+  prior(normal(0, 2), class = "b") +
+    prior(normal(0, 2), class = "Intercept") +
+    prior(exponential(1), class = "sd") +
+    prior(lkj(2), class = "cor") +
+    prior(exponential(1), class = "sigma")
+}
 
-benchmark_formula <- list(
-  conventional = bf(y ~ x * z + (1 + x * z | g)),
-  s2z = bf(y ~ x * z + (1 + x * z | gr(g, s2z = TRUE)))
-)
+benchmark_formula <- if (benchmark_model == "scalar-intercept") {
+  list(
+    conventional = bf(y ~ 1 + (1 | g)),
+    s2z = bf(y ~ 1 + (1 | gr(g, s2z = TRUE)))
+  )
+} else if (benchmark_model == "scalar-slope") {
+  list(
+    conventional = bf(y ~ 0 + x + (0 + x | g)),
+    s2z = bf(y ~ 0 + x + (0 + x | gr(g, s2z = TRUE)))
+  )
+} else {
+  list(
+    conventional = bf(y ~ x * z + (1 + x * z | g)),
+    s2z = bf(y ~ x * z + (1 + x * z | gr(g, s2z = TRUE)))
+  )
+}
+coefficients_per_group <- if (benchmark_model == "interaction") 4L else 1L
 
 compile_template <- function(formula, data, parameterization) {
   cat("Compiling and smoke-running ", parameterization, " model ...\n",
@@ -364,12 +413,13 @@ for (i in seq_len(nrow(jobs))) {
   rows[[i]] <- cbind(
     data.frame(
       identification = job$identification,
+      model = benchmark_model,
       parameterization = job$parameterization,
       replicate = job$replicate,
       seed = job_seed,
       observations = nrow(benchmark_data[[job$identification]]),
       groups = groups,
-      coefficients_per_group = 4L,
+      coefficients_per_group = coefficients_per_group,
       compile_and_smoke_seconds =
         templates[[job$parameterization]]$seconds,
       stringsAsFactors = FALSE
@@ -400,12 +450,15 @@ s2z <- subset(
 )
 paired <- merge(
   conventional, s2z,
-  by = c("identification", "replicate", "observations", "groups",
-         "coefficients_per_group"),
+  by = c(
+    "identification", "model", "replicate", "observations", "groups",
+    "coefficients_per_group"
+  ),
   suffixes = c("_conventional", "_s2z"), sort = FALSE
 )
 paired_results <- data.frame(
   identification = paired$identification,
+  model = paired$model,
   replicate = paired$replicate,
   wall_time_speedup_conventional_over_s2z =
     paired$wall_seconds_conventional / paired$wall_seconds_s2z,
