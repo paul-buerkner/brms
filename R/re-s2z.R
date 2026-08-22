@@ -275,16 +275,22 @@ validate_re_s2z_sdlog_prior <- function(prior, r) {
 }
 
 # Describe one local S2Z block, including the fixed/group design mapping.
-re_s2z_info <- function(bframe, prior = NULL) {
+re_s2z_info <- function(bframe, prior = NULL, id = NULL) {
   stopifnot(is.bframel(bframe))
   if (!has_re_s2z(bframe)) {
     return(NULL)
   }
   r <- bframe$frame$re[bframe$frame$re$s2z, , drop = FALSE]
   ids <- unique(r$id)
-  if (length(ids) != 1L) {
-    stop2("Only one sum-to-zero group-level block is currently ",
-          "supported per linear predictor.")
+  if (is.null(id) && length(ids) != 1L) {
+    stop2("An explicit group-level ID is required when describing multiple ",
+          "sum-to-zero blocks.")
+  }
+  if (!is.null(id)) {
+    if (length(id) != 1L || !id %in% ids) {
+      stop2("Invalid sum-to-zero group-level ID.")
+    }
+    ids <- id
   }
   r_id <- subset2(bframe$frame$re, id = ids)
   if (!all(r_id$s2z)) {
@@ -323,11 +329,22 @@ re_s2z_info <- function(bframe, prior = NULL) {
   out
 }
 
+# Describe all local S2Z blocks in one linear predictor. Blocks retain their
+# own covariance models but share one joint omitted-mean system.
+re_s2z_infos <- function(bframe, prior = NULL) {
+  stopifnot(is.bframel(bframe))
+  if (!has_re_s2z(bframe)) {
+    return(list())
+  }
+  ids <- unique(bframe$frame$re$id[bframe$frame$re$s2z])
+  lapply(ids, function(id) re_s2z_info(bframe, prior = prior, id = id))
+}
+
 # Construct an S2Z design matrix in covariance-block coefficient order. A
 # block may be assembled from multiple grouping terms that share an ID.
-re_s2z_design_matrix <- function(bframe, data) {
+re_s2z_design_matrix <- function(bframe, data, id = NULL) {
   stopifnot(is.bframel(bframe))
-  info <- re_s2z_info(bframe)
+  info <- re_s2z_info(bframe, id = id)
   if (is.null(info)) {
     return(matrix(numeric(), nrow = nrow(data), ncol = 0L))
   }
@@ -351,15 +368,15 @@ re_s2z_design_matrix <- function(bframe, data) {
 # other varying columns before squared residual exposure is accumulated. This
 # makes the rule invariant to coefficient rescaling and conservative for
 # locally unidentified slopes and interactions.
-re_s2z_auto_rho <- function(bframe, data, threshold = 25) {
+re_s2z_auto_rho <- function(bframe, data, threshold = 25, id = NULL) {
   stopifnot(is.bframel(bframe), is.numeric(threshold), length(threshold) == 1L,
             is.finite(threshold), threshold > 0)
-  info <- re_s2z_info(bframe)
+  info <- re_s2z_info(bframe, id = id)
   if (is.null(info)) {
     return(matrix(numeric(), nrow = 0L, ncol = 0L))
   }
   r <- info$r
-  Z <- re_s2z_design_matrix(bframe, data = data)
+  Z <- re_s2z_design_matrix(bframe, data = data, id = info$id)
   M <- ncol(Z)
   levels <- get_levels(r)[[r$group[1]]]
   J <- length(levels)
@@ -427,6 +444,28 @@ validate_re_s2z <- function(bframe, prior) {
             "gr(..., s2z = TRUE, scale = \"varying\").")
     }
   }
+  # IDs may couple ordinary group effects across linear predictors. Such a
+  # coupling is not compatible with the local S2Z omitted-mean systems, even
+  # if only one occurrence of the shared ID requests S2Z. Check all terms
+  # before filtering to S2Z-containing predictors so mixed conventional/S2Z
+  # uses fail with the same clear error in either predictor order.
+  s2z_ids <- unique(unlist(lapply(all_frames, function(x) {
+    r <- x$frame$re
+    if (!has_rows(r)) {
+      return(integer())
+    }
+    r$id[r$s2z]
+  }), use.names = FALSE))
+  for (id in s2z_ids) {
+    n_frames <- sum(vapply(all_frames, function(x) {
+      r <- x$frame$re
+      has_rows(r) && id %in% r$id
+    }, logical(1)))
+    if (n_frames > 1L) {
+      stop2("A sum-to-zero group-level ID cannot span multiple ",
+            "linear predictors.")
+    }
+  }
   frames <- Filter(has_re_s2z, all_frames)
   if (!length(frames)) {
     return(invisible(NULL))
@@ -437,65 +476,67 @@ validate_re_s2z <- function(bframe, prior) {
   }
   ids <- integer()
   for (x in frames) {
-    info <- re_s2z_info(x, prior = prior)
-    r <- info$r
-    if (info$id %in% ids) {
-      stop2("A sum-to-zero group-level ID cannot span multiple ",
-            "linear predictors.")
+    infos <- re_s2z_infos(x, prior = prior)
+    for (info in infos) {
+      r <- info$r
+      if (info$id %in% ids) {
+        stop2("A sum-to-zero group-level ID cannot span multiple ",
+              "linear predictors.")
+      }
+      ids <- c(ids, info$id)
+      if (length(unique(r$group)) != 1L) {
+        stop2("All coefficients sharing a sum-to-zero group-level ID must ",
+              "use the same grouping factor.")
+      }
+      if (length(unique(r$scale)) != 1L) {
+        stop2("All coefficients sharing a group-level ID must use the same ",
+              "'scale' setting.")
+      }
+      if (length(unique(r$dist)) != 1L) {
+        stop2("All coefficients sharing a group-level ID must use the same ",
+              "group-level distribution.")
+      }
+      if (length(unique(r$cor)) != 1L) {
+        stop2("All coefficients sharing a group-level ID must use the same ",
+              "'cor' setting.")
+      }
+      if (any(nzchar(r$gtype)) || any(nzchar(r$type))) {
+        stop2("The sum-to-zero parameterization currently ",
+              "supports only ordinary 'gr' terms.")
+      }
+      has_pw <- any(vapply(r$gcall, function(gcall) {
+        isTRUE(nzchar(gcall$pw))
+      }, logical(1)))
+      if (any(nzchar(r$by), na.rm = TRUE) ||
+          any(nzchar(r$cov), na.rm = TRUE) || has_pw) {
+        stop2("Arguments 'by', 'cov', and 'pw' are not yet supported ",
+              "together with gr(..., s2z = TRUE).")
+      }
+      if (length(get_levels(r)[[r$group[1]]]) < 2L) {
+        stop2("The sum-to-zero parameterization requires at ",
+              "least two observed grouping levels.")
+      }
+      if (is_ordinal(x$family)) {
+        stop2("Ordinal thresholds are not yet supported together with ",
+              "gr(..., s2z = TRUE).")
+      }
+      if (order_intercepts(x)) {
+        stop2("Ordered mixture intercepts are not yet supported together ",
+              "with gr(..., s2z = TRUE).")
+      }
+      if (x$frame$fe$sparse || x$frame$fe$decomp != "none") {
+        stop2("Sparse and QR-decomposed population-level design matrices ",
+              "are not yet supported together with gr(..., s2z = TRUE).")
+      }
+      if (has_special_prior(prior, check_prefix(r), class = "sd") ||
+          has_special_prior(prior, check_prefix(r), class = "sdlog") ||
+          has_special_prior(prior, x, class = "b")) {
+        stop2("Special priors are not yet supported together with ",
+              "gr(..., s2z = TRUE).")
+      }
+      validate_re_s2z_sd_prior(prior, r)
+      validate_re_s2z_sdlog_prior(prior, r)
     }
-    ids <- c(ids, info$id)
-    if (length(unique(r$group)) != 1L) {
-      stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
-            "the same grouping factor.")
-    }
-    if (length(unique(r$scale)) != 1L) {
-      stop2("All coefficients sharing a group-level ID must use the same ",
-            "'scale' setting.")
-    }
-    if (length(unique(r$dist)) != 1L) {
-      stop2("All coefficients sharing a group-level ID must use the same ",
-            "group-level distribution.")
-    }
-    if (length(unique(r$cor)) != 1L) {
-      stop2("All coefficients sharing a group-level ID must use the same ",
-            "'cor' setting.")
-    }
-    if (any(nzchar(r$gtype)) || any(nzchar(r$type))) {
-      stop2("The sum-to-zero parameterization currently ",
-            "supports only ordinary 'gr' terms.")
-    }
-    has_pw <- any(vapply(r$gcall, function(gcall) {
-      isTRUE(nzchar(gcall$pw))
-    }, logical(1)))
-    if (any(nzchar(r$by), na.rm = TRUE) ||
-        any(nzchar(r$cov), na.rm = TRUE) || has_pw) {
-      stop2("Arguments 'by', 'cov', and 'pw' are not yet supported together ",
-            "with gr(..., s2z = TRUE).")
-    }
-    if (length(get_levels(r)[[r$group[1]]]) < 2L) {
-      stop2("The sum-to-zero parameterization requires at ",
-            "least two observed grouping levels.")
-    }
-    if (is_ordinal(x$family)) {
-      stop2("Ordinal thresholds are not yet supported together with ",
-            "gr(..., s2z = TRUE).")
-    }
-    if (order_intercepts(x)) {
-      stop2("Ordered mixture intercepts are not yet supported together with ",
-            "gr(..., s2z = TRUE).")
-    }
-    if (x$frame$fe$sparse || x$frame$fe$decomp != "none") {
-      stop2("Sparse and QR-decomposed population-level design matrices are ",
-            "not yet supported together with gr(..., s2z = TRUE).")
-    }
-    if (has_special_prior(prior, check_prefix(r), class = "sd") ||
-        has_special_prior(prior, check_prefix(r), class = "sdlog") ||
-        has_special_prior(prior, x, class = "b")) {
-      stop2("Special priors are not yet supported together with ",
-            "gr(..., s2z = TRUE).")
-    }
-    validate_re_s2z_sd_prior(prior, r)
-    validate_re_s2z_sdlog_prior(prior, r)
   }
   invisible(NULL)
 }
@@ -506,21 +547,22 @@ validate_re_s2z_design <- function(bframe, data) {
   if (!has_re_s2z(bframe)) {
     return(invisible(NULL))
   }
-  info <- re_s2z_info(bframe)
-  Z <- re_s2z_design_matrix(bframe, data = data)
   X <- bframe$sdata$fe$X
-  if (ncol(Z) != nrow(info$r)) {
-    stop2("Internal mismatch in the sum-to-zero group-level design matrix.")
-  }
-  for (j in seq_len(ncol(Z))) {
-    same <- isTRUE(all.equal(
-      unname(Z[, j]), unname(X[, info$match_q[j]]),
-      tolerance = sqrt(.Machine$double.eps), check.attributes = FALSE
-    ))
-    if (!same) {
-      stop2("Population- and group-level design columns must be identical ",
-            "for gr(..., s2z = TRUE). Mismatch for coefficient '",
-            info$r$coef[j], "'.")
+  for (info in re_s2z_infos(bframe)) {
+    Z <- re_s2z_design_matrix(bframe, data = data, id = info$id)
+    if (ncol(Z) != nrow(info$r)) {
+      stop2("Internal mismatch in the sum-to-zero group-level design matrix.")
+    }
+    for (j in seq_len(ncol(Z))) {
+      same <- isTRUE(all.equal(
+        unname(Z[, j]), unname(X[, info$match_q[j]]),
+        tolerance = sqrt(.Machine$double.eps), check.attributes = FALSE
+      ))
+      if (!same) {
+        stop2("Population- and group-level design columns must be identical ",
+              "for gr(..., s2z = TRUE). Mismatch for coefficient '",
+              info$r$coef[j], "'.")
+      }
     }
   }
   invisible(NULL)

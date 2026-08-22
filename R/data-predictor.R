@@ -244,24 +244,29 @@ data_re_s2z_center <- function(bframe, data) {
   if (!has_re_s2z(bframe)) {
     return(list())
   }
-  info <- re_s2z_info(bframe)
-  r <- info$r
-  if (re_s2z_center_mode(r) != "partial") {
-    return(list())
-  }
-  levels <- get_levels(r)[[r$group[1]]]
-  rho_value <- re_s2z_center_values(r)
-  rho <- matrix(
-    rep(rho_value, each = length(levels)),
-    nrow = length(levels), ncol = nrow(r),
-    dimnames = list(levels, r$coef)
-  )
-  data_name <- paste0("rho_s2z_", info$id)
+  infos <- re_s2z_infos(bframe)
   cached <- bframe$sdata[["re_s2z_center"]]
-  if (!is.null(cached)) {
+  out <- list()
+  for (info in infos) {
+    r <- info$r
+    if (re_s2z_center_mode(r) != "partial") {
+      next
+    }
+    levels <- get_levels(r)[[r$group[1]]]
+    rho_value <- re_s2z_center_values(r)
+    rho <- matrix(
+      rep(rho_value, each = length(levels)),
+      nrow = length(levels), ncol = nrow(r),
+      dimnames = list(levels, r$coef)
+    )
+    data_name <- paste0("rho_s2z_", info$id)
     cached_rho <- cached[[data_name]]
-    if (is.null(cached_rho) && length(cached) == 1L) {
+    if (is.null(cached_rho) && length(infos) == 1L && length(cached) == 1L) {
       cached_rho <- cached[[1]]
+    }
+    if (is.null(cached_rho) && length(cached)) {
+      stop2("Stored sum-to-zero partial-centering data do not contain ",
+            "the fitted coordinate map for group-level ID ", info$id, ".")
     }
     if (!is.null(cached_rho)) {
       if (!is.matrix(cached_rho)) {
@@ -293,18 +298,16 @@ data_re_s2z_center <- function(bframe, data) {
               "fitted grouping levels and coefficients.")
       }
       # Stan does not need the fitted labels; keep them only in the basis cache.
-      out <- list(unname(rho))
-      names(out) <- data_name
-      return(out)
+      out[[data_name]] <- unname(rho)
+      next
     }
+    auto <- re_s2z_center_auto(r)
+    if (any(auto)) {
+      auto_rho <- re_s2z_auto_rho(bframe, data = data, id = info$id)
+      rho[, auto] <- auto_rho[, auto, drop = FALSE]
+    }
+    out[[data_name]] <- rho
   }
-  auto <- re_s2z_center_auto(r)
-  if (any(auto)) {
-    auto_rho <- re_s2z_auto_rho(bframe, data = data)
-    rho[, auto] <- auto_rho[, auto, drop = FALSE]
-  }
-  out <- list(rho)
-  names(out) <- data_name
   out
 }
 

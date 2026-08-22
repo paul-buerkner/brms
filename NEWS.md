@@ -22,6 +22,9 @@ coefficient-specific log-normal scale hierarchies across grouping levels,
 retaining the usual baseline `sd` parameters and priors; class `sdlog` controls
 log-scale heterogeneity. The resulting group effects are conditionally
 elliptical given their scales, but generally not marginally elliptical.
+Multiple S2Z grouping factors may occur in one linear predictor; their omitted
+mean vectors are integrated and recovered jointly while retaining separate
+scale and correlation structures for each factor.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

@@ -32,6 +32,90 @@ context("Tests for physical sum-to-zero group-level effects")
     0.5 * sum(z^2)
 }
 
+# Small dense-matrix helpers for multiblock reference calculations. These
+# deliberately do not call the production S2Z code.
+.s2z_block_diag <- function(blocks) {
+  stopifnot(length(blocks) >= 1L)
+  nr <- vapply(blocks, nrow, integer(1))
+  nc <- vapply(blocks, ncol, integer(1))
+  out <- matrix(0, nrow = sum(nr), ncol = sum(nc))
+  row_offset <- 0L
+  col_offset <- 0L
+  for (i in seq_along(blocks)) {
+    rows <- row_offset + seq_len(nr[i])
+    cols <- col_offset + seq_len(nc[i])
+    out[rows, cols] <- blocks[[i]]
+    row_offset <- row_offset + nr[i]
+    col_offset <- col_offset + nc[i]
+  }
+  out
+}
+
+# Arrange level-specific coefficient covariance matrices in the column-major
+# order of an N by M group-effect matrix.
+.s2z_level_covariance <- function(covariance) {
+  stopifnot(length(covariance) >= 2L)
+  n <- length(covariance)
+  m <- nrow(covariance[[1L]])
+  stopifnot(all(vapply(
+    covariance,
+    function(x) is.matrix(x) && all(dim(x) == m),
+    logical(1)
+  )))
+  out <- matrix(0, nrow = n * m, ncol = n * m)
+  for (j in seq_len(n)) {
+    index <- j + (seq_len(m) - 1L) * n
+    out[index, index] <- covariance[[j]]
+  }
+  out
+}
+
+# Dense transformation from conventional population and group effects to one
+# finite-population coefficient vector and orthonormal contrasts for every
+# independent grouping factor.
+.s2z_multiblock_dense_map <- function(prior_cov, H, groups, effect_cov) {
+  stopifnot(
+    is.matrix(prior_cov), nrow(prior_cov) == ncol(prior_cov),
+    length(H) == length(groups), length(H) == length(effect_cov)
+  )
+  q <- nrow(prior_cov)
+  m <- vapply(H, ncol, integer(1))
+  stopifnot(
+    all(vapply(H, nrow, integer(1)) == q),
+    all(groups >= 2L),
+    all(vapply(seq_along(H), function(i) {
+      all(dim(effect_cov[[i]]) == groups[i] * m[i])
+    }, logical(1)))
+  )
+  n_conventional <- q + sum(groups * m)
+  n_transformed <- q + sum((groups - 1L) * m)
+  transform <- matrix(
+    0, nrow = n_transformed, ncol = n_conventional
+  )
+  transform[seq_len(q), seq_len(q)] <- diag(q)
+  bases <- lapply(groups, .s2z_basis)
+  col_offset <- q
+  row_offset <- q
+  for (i in seq_along(H)) {
+    effect_columns <- col_offset + seq_len(groups[i] * m[i])
+    contrast_rows <- row_offset + seq_len((groups[i] - 1L) * m[i])
+    mean_map <- kronecker(
+      diag(m[i]), matrix(rep(1 / groups[i], groups[i]), nrow = 1L)
+    )
+    contrast_map <- kronecker(diag(m[i]), t(bases[[i]]))
+    transform[seq_len(q), effect_columns] <- H[[i]] %*% mean_map
+    transform[contrast_rows, effect_columns] <- contrast_map
+    col_offset <- col_offset + groups[i] * m[i]
+    row_offset <- row_offset + (groups[i] - 1L) * m[i]
+  }
+  conventional_cov <- .s2z_block_diag(c(list(prior_cov), effect_cov))
+  list(
+    transform = transform,
+    covariance = transform %*% conventional_cov %*% t(transform),
+    bases = bases
+  )
+}
+
 # Compute a dense log absolute determinant after row and column equilibration.
 # This keeps the numerical check useful when the map contains scales many
 # orders of magnitude apart. QR is the primary result and singular values are
@@ -1283,6 +1367,299 @@ test_that("heterogeneous Student mixture scales obey the complete square", {
       .s2z_log_mvn(group_mean, mhat, conditional_cov)
     expect_equal(by_identity, log_marginal, tolerance = 1e-10)
   }
+})
+
+test_that("multiple scalar factor means match the closed-form recovery law", {
+  groups <- c(3L, 5L, 8L)
+  tau <- c(0.45, 1.10, 0.72)
+  n_block <- length(groups)
+  v <- tau^2 / groups
+  total_v <- sum(v)
+  alpha <- v / (1 + total_v)
+  expected_conditional_cov <- diag(v) - tcrossprod(v) / (1 + total_v)
+
+  # This is exactly the scalar formula in the multifactored derivation:
+  # theta = mu_pop + sum(m), mu_pop ~ N(0, 1), and m_k ~ N(0, v_k).
+  P <- diag(1 / v) + matrix(1, nrow = n_block, ncol = n_block)
+  conditional_cov <- solve(P)
+  theta <- 0.83
+  conditional_mean <- drop(conditional_cov %*% rep(theta, n_block))
+  expect_equal(conditional_mean, alpha * theta, tolerance = 2e-14)
+  expect_equal(
+    conditional_cov, expected_conditional_cov, tolerance = 2e-14
+  )
+  expect_true(all(conditional_cov[row(conditional_cov) !=
+                                   col(conditional_cov)] < 0))
+
+  # Jointly drawing theta and then the conditional means must recover the
+  # original mutually independent population mean and factor means.
+  joint_cov <- rbind(
+    c(1 + total_v, v),
+    cbind(v, diag(v))
+  )
+  recovery_map <- rbind(
+    c(1, rep(-1, n_block)),
+    cbind(rep(0, n_block), diag(n_block))
+  )
+  recovered_cov <- recovery_map %*% joint_cov %*% t(recovery_map)
+  expect_equal(recovered_cov, diag(c(1, v)), tolerance = 2e-14)
+
+  # Independently compare the integrated density with a dense transformation
+  # of all conventional raw effects. This also checks every sqrt(G_k) measure
+  # correction rather than only the conditional moments above.
+  H <- replicate(n_block, matrix(1, nrow = 1L), simplify = FALSE)
+  effect_cov <- Map(
+    function(n, scale) diag(scale^2, nrow = n), groups, tau
+  )
+  dense <- .s2z_multiblock_dense_map(
+    matrix(1, nrow = 1L), H, groups, effect_cov
+  )
+  r_s2z <- lapply(seq_along(groups), function(i) {
+    z <- matrix(
+      sin(seq_len(groups[i] - 1L) * (0.31 + 0.07 * i)),
+      ncol = 1L
+    )
+    dense$bases[[i]] %*% z
+  })
+  transformed_value <- c(
+    theta,
+    unlist(Map(
+      function(basis, r) as.vector(crossprod(basis, r)),
+      dense$bases, r_s2z
+    ))
+  )
+  transformed_mean <- drop(dense$transform %*% numeric(1L + sum(groups)))
+  log_direct <- .s2z_log_mvn(
+    transformed_value, transformed_mean, dense$covariance
+  )
+  mhat <- conditional_mean
+  log_joint_at_mode <- stats::dnorm(
+    theta - sum(mhat), 0, 1, log = TRUE
+  ) + sum(vapply(seq_along(groups), function(i) {
+    sum(stats::dnorm(
+      r_s2z[[i]][, 1L] + mhat[i], 0, tau[i], log = TRUE
+    ))
+  }, numeric(1))) + 0.5 * sum(log(groups))
+  log_integrated <- log_joint_at_mode +
+    0.5 * n_block * log(2 * pi) - sum(log(diag(chol(P))))
+  expect_equal(log_integrated, log_direct, tolerance = 2e-11)
+})
+
+test_that("multiple vector blocks use one overlapping completed square", {
+  q <- 4L
+  groups <- c(3L, 5L, 4L)
+  dimensions <- c(2L, 1L, 3L)
+  H <- list(
+    matrix(0, nrow = q, ncol = dimensions[1L]),
+    matrix(0, nrow = q, ncol = dimensions[2L]),
+    matrix(0, nrow = q, ncol = dimensions[3L])
+  )
+  H[[1L]][1L, 1L] <- 1
+  H[[1L]][c(1L, 2L), 2L] <- c(0.35, 1)
+  H[[2L]][c(1L, 2L), 1L] <- c(-0.20, 1)
+  H[[3L]][1L, 1L] <- 1
+  H[[3L]][c(1L, 2L), 2L] <- c(0.10, 1)
+  H[[3L]][c(1L, 4L), 3L] <- c(-0.30, 1)
+  A <- do.call(cbind, H)
+  expect_gte(sum(A[2L, ] != 0), 3L)
+
+  prior_mean <- c(0.30, -0.45, 0.15, 0.70)
+  prior_cov <- diag(c(0.75, 1.10, 0.90, 1.35)^2)
+  prior_prec <- solve(prior_cov)
+  L3 <- rbind(
+    c(0.80, 0, 0),
+    c(0.15, 0.65, 0),
+    c(-0.10, 0.12, 0.55)
+  )
+  Sigma <- list(
+    matrix(c(0.81, 0.18, 0.18, 0.49), nrow = 2L),
+    matrix(0.64, nrow = 1L),
+    tcrossprod(L3)
+  )
+  effect_cov <- Map(
+    function(n, sigma) kronecker(sigma, diag(n)), groups, Sigma
+  )
+  dense <- .s2z_multiblock_dense_map(
+    prior_cov, H, groups, effect_cov
+  )
+  r_s2z <- lapply(seq_along(groups), function(i) {
+    z <- matrix(
+      sin(seq_len((groups[i] - 1L) * dimensions[i]) *
+            (0.21 + 0.08 * i)) +
+        cos(seq_len((groups[i] - 1L) * dimensions[i]) * 0.17),
+      nrow = groups[i] - 1L, ncol = dimensions[i]
+    ) / 2
+    dense$bases[[i]] %*% z
+  })
+  expect_equal(
+    unlist(lapply(r_s2z, colSums)), numeric(sum(dimensions)),
+    tolerance = 2e-14
+  )
+  theta <- c(0.95, -0.20, 0.55, -0.65)
+
+  group_information <- Map(
+    function(n, sigma) n * solve(sigma), groups, Sigma
+  )
+  group_score <- Map(
+    function(r, sigma) solve(sigma, colSums(r)), r_s2z, Sigma
+  )
+  P <- crossprod(A, prior_prec %*% A) +
+    .s2z_block_diag(group_information)
+  h <- drop(crossprod(A, prior_prec %*% (theta - prior_mean))) -
+    unlist(group_score)
+  mhat <- drop(solve(P, h))
+
+  block_id <- rep(seq_along(dimensions), dimensions)
+  cross_block <- outer(block_id, block_id, `!=`)
+  expect_gt(max(abs(P[cross_block])), 0.1)
+
+  offsets <- cumsum(c(0L, dimensions))
+  log_joint_at_mode <- .s2z_log_mvn(
+    theta - A %*% mhat, prior_mean, prior_cov
+  )
+  for (i in seq_along(groups)) {
+    mi <- mhat[offsets[i] + seq_len(dimensions[i])]
+    log_joint_at_mode <- log_joint_at_mode + sum(vapply(
+      seq_len(groups[i]),
+      function(j) .s2z_log_mvn(
+        r_s2z[[i]][j, ] + mi, numeric(dimensions[i]), Sigma[[i]]
+      ),
+      numeric(1)
+    ))
+  }
+  log_integrated <- log_joint_at_mode +
+    0.5 * sum(dimensions * log(groups)) +
+    0.5 * sum(dimensions) * log(2 * pi) -
+    sum(log(diag(chol(P))))
+
+  transformed_value <- c(
+    theta,
+    unlist(Map(
+      function(basis, r) as.vector(crossprod(basis, r)),
+      dense$bases, r_s2z
+    ))
+  )
+  conventional_mean <- c(
+    prior_mean, numeric(sum(groups * dimensions))
+  )
+  transformed_mean <- drop(dense$transform %*% conventional_mean)
+  log_direct <- .s2z_log_mvn(
+    transformed_value, transformed_mean, dense$covariance
+  )
+  expect_equal(log_integrated, log_direct, tolerance = 3e-10)
+})
+
+test_that("heterogeneous multiblock covariances share one exact integral", {
+  q <- 3L
+  groups <- c(4L, 3L, 5L)
+  dimensions <- c(2L, 1L, 2L)
+  H <- list(
+    matrix(c(1, 0, 0, 0.25, 1, 0), nrow = q),
+    matrix(c(-0.15, 1, 0), nrow = q),
+    matrix(c(1, 0, 0, -0.30, 0, 1), nrow = q)
+  )
+  A <- do.call(cbind, H)
+  prior_mean <- c(-0.20, 0.55, 0.10)
+  prior_cov <- diag(c(0.65, 1.20, 0.85)^2)
+  prior_prec <- solve(prior_cov)
+
+  cor_1 <- matrix(c(1, 0.35, 0.35, 1), nrow = 2L)
+  cor_3 <- matrix(c(1, -0.28, -0.28, 1), nrow = 2L)
+  covariance <- list(
+    lapply(seq_len(groups[1L]), function(j) {
+      scale <- c(0.42 + 0.11 * j, 0.92 - 0.07 * j)
+      diag(scale) %*% cor_1 %*% diag(scale)
+    }),
+    lapply(seq_len(groups[2L]), function(j) {
+      matrix((0.38 + 0.13 * j)^2, nrow = 1L)
+    }),
+    lapply(seq_len(groups[3L]), function(j) {
+      scale <- c(0.60 + 0.06 * j, 0.48 + 0.05 * j)
+      diag(scale) %*% cor_3 %*% diag(scale)
+    })
+  )
+  effect_cov <- lapply(covariance, .s2z_level_covariance)
+  dense <- .s2z_multiblock_dense_map(
+    prior_cov, H, groups, effect_cov
+  )
+  r_s2z <- lapply(seq_along(groups), function(i) {
+    z <- matrix(
+      sin(seq_len((groups[i] - 1L) * dimensions[i]) *
+            (0.34 + 0.05 * i)) -
+        cos(seq_len((groups[i] - 1L) * dimensions[i]) * 0.29),
+      nrow = groups[i] - 1L, ncol = dimensions[i]
+    ) / 1.7
+    dense$bases[[i]] %*% z
+  })
+  expect_equal(
+    unlist(lapply(r_s2z, colSums)), numeric(sum(dimensions)),
+    tolerance = 2e-14
+  )
+
+  group_information <- vector("list", length(groups))
+  group_score <- vector("list", length(groups))
+  for (i in seq_along(groups)) {
+    precision <- lapply(covariance[[i]], solve)
+    group_information[[i]] <- Reduce("+", precision)
+    group_score[[i]] <- Reduce("+", lapply(seq_len(groups[i]), function(j) {
+      precision[[j]] %*% r_s2z[[i]][j, ]
+    }))
+  }
+  expect_gt(max(abs(unlist(group_score))), 0.1)
+
+  theta <- c(0.85, -0.35, 0.62)
+  P <- crossprod(A, prior_prec %*% A) +
+    .s2z_block_diag(group_information)
+  h <- drop(crossprod(A, prior_prec %*% (theta - prior_mean))) -
+    unlist(group_score)
+  mhat <- drop(solve(P, h))
+  conditional_cov <- solve(P)
+  offsets <- cumsum(c(0L, dimensions))
+  log_joint_measure <- function(group_mean) {
+    out <- .s2z_log_mvn(
+      theta - A %*% group_mean, prior_mean, prior_cov
+    )
+    for (i in seq_along(groups)) {
+      mi <- group_mean[offsets[i] + seq_len(dimensions[i])]
+      out <- out + sum(vapply(seq_len(groups[i]), function(j) {
+        .s2z_log_mvn(
+          r_s2z[[i]][j, ] + mi, numeric(dimensions[i]),
+          covariance[[i]][[j]]
+        )
+      }, numeric(1)))
+    }
+    out + 0.5 * sum(dimensions * log(groups))
+  }
+  log_marginal <- log_joint_measure(mhat) +
+    0.5 * sum(dimensions) * log(2 * pi) -
+    sum(log(diag(chol(P))))
+
+  candidate_means <- list(
+    mhat,
+    mhat + seq(-0.30, 0.25, length.out = sum(dimensions)),
+    c(-0.80, 0.35, 0.20, -0.45, 0.70)
+  )
+  for (group_mean in candidate_means) {
+    by_identity <- log_joint_measure(group_mean) -
+      .s2z_log_mvn(group_mean, mhat, conditional_cov)
+    expect_equal(by_identity, log_marginal, tolerance = 3e-10)
+  }
+
+  transformed_value <- c(
+    theta,
+    unlist(Map(
+      function(basis, r) as.vector(crossprod(basis, r)),
+      dense$bases, r_s2z
+    ))
+  )
+  conventional_mean <- c(
+    prior_mean, numeric(sum(groups * dimensions))
+  )
+  transformed_mean <- drop(dense$transform %*% conventional_mean)
+  log_direct <- .s2z_log_mvn(
+    transformed_value, transformed_mean, dense$covariance
+  )
+  expect_equal(log_marginal, log_direct, tolerance = 4e-10)
 })
 
 test_that("centering preserves numeric and mixed-interaction predictors", {

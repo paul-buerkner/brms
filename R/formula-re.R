@@ -17,8 +17,9 @@
 #' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
 #'   modelled as correlated.
 #' @param s2z Logical. If \code{TRUE}, use a sum-to-zero parameterization and
-#'   analytically integrate out the omitted common
-#'   group-effect mean vector. This experimental option preserves the usual
+#'   analytically integrate out the omitted common group-effect mean vector of
+#'   each S2Z block, jointly when multiple blocks share a linear predictor.
+#'   This experimental option preserves the usual
 #'   population- and group-level parameter semantics by reconstructing them in
 #'   generated quantities. The sampled finite-population coefficient is the
 #'   arithmetic mean of the observed groups' coefficient vectors, whose
@@ -43,8 +44,10 @@
 #'   for well-informed group coefficients. The non-centered sum-to-zero
 #'   parameterization (\code{center = FALSE}) may be preferable when those
 #'   coefficients are weakly informed.
-#'   Currently, only one such covariance block per linear predictor is supported,
-#'   without the \code{by}, \code{cov}, or \code{pw} arguments.
+#'   Multiple S2Z covariance blocks may be used in the same linear predictor.
+#'   Their omitted group means are integrated and recovered jointly, while each
+#'   block retains its own grouping factor, scales, and correlation structure.
+#'   The \code{by}, \code{cov}, and \code{pw} arguments remain unsupported.
 #'   Population-level priors must currently be flat, normal, Student-t, or
 #'   Cauchy with numeric constant arguments. Bounds, tags, special priors,
 #'   prior-only sampling, ordinal thresholds, sparse and QR designs, and
