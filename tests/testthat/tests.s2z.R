@@ -116,6 +116,65 @@ context("Tests for physical sum-to-zero group-level effects")
   )
 }
 
+# Independent reference for the Gaussian Matheron shortcut with arbitrary
+# rectangular loading maps.  The implementation below deliberately forms the
+# full omitted-mean precision as a check on the lower-dimensional update; the
+# production fast path must not need this matrix.
+.s2z_matheron_case <- function(
+    theta, prior_mean, prior_cov, H, groups, covariance,
+    prior_draw = NULL) {
+  stopifnot(
+    length(H) == length(groups), length(H) == length(covariance),
+    length(theta) == length(prior_mean),
+    all(dim(prior_cov) == length(theta))
+  )
+  q <- length(theta)
+  dimensions <- vapply(H, ncol, integer(1))
+  stopifnot(
+    all(vapply(H, nrow, integer(1)) == q),
+    all(vapply(seq_along(H), function(i) {
+      all(dim(covariance[[i]]) == dimensions[i])
+    }, logical(1)))
+  )
+  A <- do.call(cbind, H)
+  S <- lapply(seq_along(H), function(i) covariance[[i]] / groups[i])
+  S_stack <- .s2z_block_diag(S)
+  W <- prior_cov + A %*% S_stack %*% t(A)
+  W_inv <- solve(W)
+  difference <- theta - prior_mean
+
+  # Dense completed-square reference in the stacked omitted means.
+  prior_prec <- solve(prior_cov)
+  P <- solve(S_stack) + crossprod(A, prior_prec %*% A)
+  h <- drop(crossprod(A, prior_prec %*% difference))
+  dense_mean <- drop(solve(P, h))
+  dense_cov <- solve(P)
+
+  # Matheron conditional moments use only the q by q induced covariance W.
+  fast_mean <- drop(S_stack %*% t(A) %*% W_inv %*% difference)
+  fast_cov <- S_stack -
+    S_stack %*% t(A) %*% W_inv %*% A %*% S_stack
+
+  out <- list(
+    A = A, S = S, S_stack = S_stack, W = W,
+    dense_mean = dense_mean, dense_cov = dense_cov,
+    fast_mean = fast_mean, fast_cov = fast_cov
+  )
+  if (!is.null(prior_draw)) {
+    stopifnot(length(prior_draw) == q + sum(dimensions))
+    beta_star <- prior_draw[seq_len(q)]
+    m_star <- prior_draw[q + seq_len(sum(dimensions))]
+    theta_star <- drop(beta_star + A %*% m_star)
+    delta <- drop(W_inv %*% (theta - theta_star))
+    beta_recovered <- drop(beta_star + prior_cov %*% delta)
+    m_recovered <- drop(m_star + S_stack %*% t(A) %*% delta)
+    out$beta_recovered <- beta_recovered
+    out$m_recovered <- m_recovered
+    out$theta_recovered <- drop(beta_recovered + A %*% m_recovered)
+  }
+  out
+}
+
 # Compute a dense log absolute determinant after row and column equilibration.
 # This keeps the numerical check useful when the map contains scales many
 # orders of magnitude apart. QR is the primary result and singular values are
@@ -1443,6 +1502,253 @@ test_that("multiple scalar factor means match the closed-form recovery law", {
   log_integrated <- log_joint_at_mode +
     0.5 * n_block * log(2 * pi) - sum(log(diag(chol(P))))
   expect_equal(log_integrated, log_direct, tolerance = 2e-11)
+})
+
+test_that("large scalar Gaussian systems have exact Matheron recovery", {
+  n_factor <- 31L
+  groups <- 2L + (seq_len(n_factor) %% 13L)
+  tau <- 0.25 + (seq_len(n_factor) %% 9L) / 8
+  H <- replicate(n_factor, matrix(1, nrow = 1L), simplify = FALSE)
+  covariance <- lapply(tau, function(x) matrix(x^2, nrow = 1L))
+  theta <- 0.87
+  prior_mean <- -0.23
+  prior_cov <- matrix(1.7^2, nrow = 1L)
+  v <- tau^2 / groups
+
+  beta_star <- 0.41
+  m_star <- sin(seq_len(n_factor) * 0.37) * sqrt(v)
+  ans <- .s2z_matheron_case(
+    theta, prior_mean, prior_cov, H, groups, covariance,
+    prior_draw = c(beta_star, m_star)
+  )
+  W <- drop(prior_cov) + sum(v)
+  expected_mean <- v / W * (theta - prior_mean)
+  expected_cov <- diag(v) - tcrossprod(v) / W
+
+  expect_equal(ans$W, matrix(W, nrow = 1L), tolerance = 2e-14)
+  expect_equal(ans$fast_mean, expected_mean, tolerance = 2e-13)
+  expect_equal(ans$dense_mean, expected_mean, tolerance = 2e-13)
+  expect_equal(ans$fast_cov, expected_cov, tolerance = 3e-13)
+  expect_equal(ans$dense_cov, expected_cov, tolerance = 3e-13)
+  expect_true(all(ans$fast_cov[row(ans$fast_cov) !=
+                                 col(ans$fast_cov)] < 0))
+  expect_equal(ans$theta_recovered, theta, tolerance = 3e-14)
+
+  # This explicit update is the scalar Matheron algorithm.  It needs only W,
+  # even though the omitted means have dimension 31.
+  theta_star <- beta_star + sum(m_star)
+  delta <- (theta - theta_star) / W
+  expect_equal(
+    ans$beta_recovered, beta_star + drop(prior_cov) * delta,
+    tolerance = 2e-14
+  )
+  expect_equal(ans$m_recovered, m_star + v * delta, tolerance = 2e-14)
+})
+
+test_that("rectangular overlapping blocks use exact Matheron moments and density", {
+  q <- 5L
+  groups <- c(3L, 8L, 5L, 11L)
+  dimensions <- c(2L, 1L, 3L, 2L)
+  H <- lapply(dimensions, function(m) matrix(0, nrow = q, ncol = m))
+  H[[1L]][cbind(c(1L, 2L, 1L), c(1L, 1L, 2L))] <- c(1, 1, 0.31)
+  H[[1L]][3L, 2L] <- 1
+  H[[2L]][c(1L, 2L), 1L] <- c(-0.27, 1)
+  H[[3L]][1L, ] <- c(1, 0.18, -0.22)
+  H[[3L]][cbind(c(2L, 4L, 5L), seq_len(3L))] <- 1
+  H[[4L]][1L, ] <- c(1, 0.36)
+  H[[4L]][cbind(c(3L, 5L), seq_len(2L))] <- 1
+  A <- do.call(cbind, H)
+  expect_gt(sum(rowSums(A != 0) > 1L), 2L)
+
+  prior_mean <- c(-0.4, 0.25, 0.15, -0.6, 0.75)
+  prior_cov <- diag(c(0.8, 1.1, 0.65, 1.35, 0.9)^2)
+  L <- list(
+    matrix(c(0.62, 0, 0.17, 0.91), nrow = 2L, byrow = TRUE),
+    matrix(0.73, nrow = 1L),
+    matrix(c(
+      0.55, 0, 0, -0.12, 0.84, 0, 0.20, 0.09, 0.68
+    ), nrow = 3L, byrow = TRUE),
+    matrix(c(1.02, 0, -0.23, 0.59), nrow = 2L, byrow = TRUE)
+  )
+  covariance <- lapply(L, tcrossprod)
+  theta <- c(0.95, -0.35, 0.57, 0.12, -0.81)
+  prior_draw <- c(
+    prior_mean + c(0.14, -0.31, 0.22, 0.17, -0.08),
+    sin(seq_len(sum(dimensions)) * 0.43) / 3
+  )
+  ans <- .s2z_matheron_case(
+    theta, prior_mean, prior_cov, H, groups, covariance,
+    prior_draw = prior_draw
+  )
+
+  expect_equal(ans$fast_mean, ans$dense_mean, tolerance = 3e-13)
+  expect_equal(ans$fast_cov, ans$dense_cov, tolerance = 4e-13)
+  expect_equal(ans$theta_recovered, theta, tolerance = 3e-14)
+
+  # Independently construct the covariance of the shared Matheron update.
+  C <- .s2z_block_diag(list(prior_cov, ans$S_stack))
+  B <- cbind(diag(q), A)
+  update <- diag(nrow(C)) - C %*% t(B) %*% solve(ans$W, B)
+  recovered_cov <- update %*% C %*% t(update)
+  expected_cov <- C - C %*% t(B) %*% solve(ans$W, B %*% C)
+  expect_equal(recovered_cov, expected_cov, tolerance = 5e-13)
+  expect_equal(
+    recovered_cov[q + seq_len(sum(dimensions)),
+                  q + seq_len(sum(dimensions))],
+    ans$dense_cov, tolerance = 5e-13
+  )
+  expect_equal(B %*% update, matrix(0, nrow = q, ncol = nrow(C)),
+               tolerance = 3e-14)
+
+  # The separated Matheron density equals the dense pushforward of ordinary
+  # Gaussian population and level effects, including unequal group sizes.
+  effect_cov <- Map(
+    function(n, sigma) kronecker(sigma, diag(n)), groups, covariance
+  )
+  dense <- .s2z_multiblock_dense_map(prior_cov, H, groups, effect_cov)
+  contrast <- lapply(seq_along(groups), function(i) {
+    matrix(
+      sin(seq_len((groups[i] - 1L) * dimensions[i]) *
+            (0.19 + 0.03 * i)),
+      nrow = groups[i] - 1L, ncol = dimensions[i]
+    ) / 2
+  })
+  transformed_value <- c(theta, unlist(contrast))
+  transformed_mean <- drop(dense$transform %*%
+    c(prior_mean, numeric(sum(groups * dimensions))))
+  log_dense <- .s2z_log_mvn(
+    transformed_value, transformed_mean, dense$covariance
+  )
+  log_fast <- .s2z_log_mvn(theta, prior_mean, ans$W) +
+    sum(vapply(seq_along(groups), function(i) {
+      .s2z_log_mvn(
+        as.vector(contrast[[i]]), numeric((groups[i] - 1L) * dimensions[i]),
+        kronecker(covariance[[i]], diag(groups[i] - 1L))
+      )
+    }, numeric(1)))
+  expect_equal(log_fast, log_dense, tolerance = 5e-10)
+})
+
+test_that("Matheron conditions only proper active population coordinates", {
+  groups <- c(4L, 7L, 5L)
+  dimensions <- c(2L, 1L, 2L)
+  H <- list(
+    matrix(c(1, 0.25, 1, 0, 0, 0, 0, -0.3, 0, 1), nrow = 5L),
+    matrix(c(-0.2, 1, 0, 0, 0), nrow = 5L),
+    matrix(c(0.4, 0, 0, 0, 1, -0.1, 0, 0, 0, 0.7), nrow = 5L)
+  )
+  A <- do.call(cbind, H)
+  covariance <- list(
+    matrix(c(0.64, 0.12, 0.12, 0.49), nrow = 2L),
+    matrix(0.81, nrow = 1L),
+    matrix(c(0.36, -0.08, -0.08, 0.72), nrow = 2L)
+  )
+  S <- .s2z_block_diag(Map(
+    function(sigma, n) sigma / n, covariance, groups
+  ))
+  # Rows 1 and 4 have proper priors, but row 4 is inactive. Rows 2 and 5
+  # are active and flat. Thus the shared conditioning system has rank one.
+  proper <- c(TRUE, FALSE, FALSE, TRUE, FALSE)
+  active_proper <- which(proper & rowSums(A != 0) > 0)
+  inactive_proper <- which(proper & rowSums(A != 0) == 0)
+  expect_identical(active_proper, 1L)
+  expect_identical(inactive_proper, 4L)
+  prior_mean <- c(-0.35, NA, NA, 0.42, NA)
+  prior_var <- c(1.3^2, NA, NA, 0.75^2, NA)
+  theta <- c(0.8, -0.2, 0.55, 0.1, -0.65)
+
+  A_active <- A[active_proper, , drop = FALSE]
+  W <- prior_var[active_proper] +
+    drop(A_active %*% S %*% t(A_active))
+  expected_mean <- drop(
+    S %*% t(A_active) / W *
+      (theta[active_proper] - prior_mean[active_proper])
+  )
+  expected_cov <- S -
+    S %*% t(A_active) %*% A_active %*% S / W
+
+  # Dense conditional reference excludes flat and proper-inactive rows.
+  P <- solve(S) + crossprod(A_active) / prior_var[active_proper]
+  h <- drop(t(A_active) *
+    (theta[active_proper] - prior_mean[active_proper]) /
+    prior_var[active_proper])
+  expect_equal(drop(solve(P, h)), expected_mean, tolerance = 2e-13)
+  expect_equal(solve(P), expected_cov, tolerance = 3e-13)
+
+  # The normalized density on the proper theta coordinates and every
+  # contrast agrees with direct integration over the omitted means. Flat
+  # active theta rows correctly contribute only their Lebesgue constant.
+  bases <- lapply(groups, .s2z_basis)
+  contrast <- lapply(seq_along(groups), function(i) {
+    matrix(
+      cos(seq_len((groups[i] - 1L) * dimensions[i]) *
+            (0.22 + 0.04 * i)),
+      nrow = groups[i] - 1L, ncol = dimensions[i]
+    ) / 2.4
+  })
+  r_s2z <- Map(`%*%`, bases, contrast)
+  mhat <- expected_mean
+  offsets <- cumsum(c(0L, dimensions))
+  log_joint_mode <- sum(stats::dnorm(
+    (theta - A %*% mhat)[proper], prior_mean[proper],
+    sqrt(prior_var[proper]), log = TRUE
+  ))
+  for (i in seq_along(groups)) {
+    mi <- mhat[offsets[i] + seq_len(dimensions[i])]
+    log_joint_mode <- log_joint_mode + sum(vapply(
+      seq_len(groups[i]),
+      function(j) .s2z_log_mvn(
+        r_s2z[[i]][j, ] + mi, numeric(dimensions[i]), covariance[[i]]
+      ),
+      numeric(1)
+    )) + 0.5 * dimensions[i] * log(groups[i])
+  }
+  log_integrated <- log_joint_mode +
+    0.5 * sum(dimensions) * log(2 * pi) -
+    0.5 * as.numeric(determinant(P, logarithm = TRUE)$modulus)
+  log_fast <- stats::dnorm(
+    theta[active_proper], prior_mean[active_proper], sqrt(W), log = TRUE
+  ) + stats::dnorm(
+    theta[inactive_proper], prior_mean[inactive_proper],
+    sqrt(prior_var[inactive_proper]), log = TRUE
+  ) + sum(vapply(seq_along(groups), function(i) {
+    .s2z_log_mvn(
+      as.vector(contrast[[i]]),
+      numeric((groups[i] - 1L) * dimensions[i]),
+      kronecker(covariance[[i]], diag(groups[i] - 1L))
+    )
+  }, numeric(1)))
+  expect_equal(log_fast, log_integrated, tolerance = 4e-10)
+
+  beta_star <- prior_mean[active_proper] + 0.27
+  m_star <- cos(seq_len(sum(dimensions)) * 0.31) / 4
+  theta_star <- beta_star + drop(A_active %*% m_star)
+  delta <- (theta[active_proper] - theta_star) / W
+  m_recovered <- drop(m_star + S %*% t(A_active) * delta)
+  beta_recovered <- theta - drop(A %*% m_recovered)
+  beta_recovered[active_proper] <- beta_star +
+    prior_var[active_proper] * delta
+  beta_recovered[inactive_proper] <- theta[inactive_proper]
+  expect_equal(
+    beta_recovered + drop(A %*% m_recovered), theta,
+    tolerance = 3e-14
+  )
+
+  # With no proper active coordinate, theta supplies no information about the
+  # omitted means: draw them directly and recover every active flat beta.
+  proper_r0 <- c(FALSE, FALSE, FALSE, TRUE, FALSE)
+  expect_length(which(proper_r0 & rowSums(A != 0) > 0), 0L)
+  no_active_proper <- which(proper_r0 & rowSums(A != 0) == 0)
+  expect_identical(no_active_proper, 4L)
+  P_r0 <- solve(S)
+  expect_equal(
+    drop(solve(P_r0, numeric(sum(dimensions)))),
+    numeric(sum(dimensions)), tolerance = 2e-14
+  )
+  expect_equal(solve(P_r0), S, tolerance = 2e-14)
+  beta_r0 <- theta - drop(A %*% m_star)
+  beta_r0[no_active_proper] <- theta[no_active_proper]
+  expect_equal(beta_r0 + drop(A %*% m_star), theta, tolerance = 3e-14)
 })
 
 test_that("multiple vector blocks use one overlapping completed square", {

@@ -59,6 +59,12 @@ coefficients are weakly informed.
 Multiple S2Z covariance blocks may be used in the same linear predictor.
 Their omitted group means are integrated and recovered jointly, while each
 block retains its own grouping factor, scales, and correlation structure.
+When all such blocks are Gaussian with shared scales, \pkg{brms} uses an
+induced population-coordinate covariance and joint Matheron recovery if
+that system is smaller than the stacked omitted-mean system. Crossed
+varying-intercept models then require only a scalar update, regardless of
+the number of grouping factors. Flat population-level prior coordinates
+are handled exactly rather than approximated by a large finite variance.
 The \code{by}, \code{cov}, and \code{pw} arguments remain unsupported.
 Population-level priors must currently be flat, normal, Student-t, or
 Cauchy with numeric constant arguments. Bounds, tags, special priors,
