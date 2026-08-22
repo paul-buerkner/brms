@@ -11,7 +11,10 @@ gr(
   id = NA,
   pw = NULL,
   cov = NULL,
-  dist = "gaussian"
+  dist = "gaussian",
+  s2z = FALSE,
+  scale = "shared",
+  center = NULL
 )
 }
 \arguments{
@@ -24,6 +27,106 @@ must be nested in levels of the \code{by} variable.}
 
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
+
+\item{s2z}{Logical. If \code{TRUE}, use a sum-to-zero parameterization and
+analytically integrate out the omitted common group-effect mean vector of
+each S2Z block, jointly when multiple blocks share a linear predictor.
+This experimental option preserves the usual
+population- and group-level parameter semantics by reconstructing them in
+generated quantities. The sampled finite-population coefficient is the
+arithmetic mean of the observed groups' coefficient vectors, whose
+likelihood-scale values are unchanged by the reconstruction. It is exact
+for \code{dist = "gaussian"} and for
+\code{dist = "student"} through a Gaussian scale mixture. Every varying
+design column must have an identical population-level design column.
+Blocks with one varying coefficient use a dedicated scalar
+implementation. Blocks with any number of coefficients and a diagonal
+scale matrix (\code{cor = FALSE} or \code{||} syntax) use a component-wise
+scalar implementation that also accounts exactly for the shared centered
+intercept prior. With Student-t effects, those coefficients share the
+existing group-specific mixing scale and can therefore remain dependent
+in their tails despite the diagonal scale matrix.
+Usual priors on group-level scale parameters, correlations, and
+Student-t degrees of freedom remain available, including separate
+\code{sd} priors for varying intercepts, slopes, and interactions. For
+\code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
+Student-t scale semantics and is not rescaled to a marginal standard
+deviation.
+The centered physical parameterization (\code{center = TRUE}) is intended
+for well-informed group coefficients. The non-centered sum-to-zero
+parameterization (\code{center = FALSE}) may be preferable when those
+coefficients are weakly informed.
+Multiple S2Z covariance blocks may be used in the same linear predictor.
+Their omitted group means are integrated and recovered jointly, while each
+block retains its own grouping factor, scales, and correlation structure.
+When all such blocks are Gaussian with shared scales, \pkg{brms} uses an
+induced population-coordinate covariance and joint Matheron recovery if
+that system is smaller than the stacked omitted-mean system. Crossed
+varying-intercept models then require only a scalar update, regardless of
+the number of grouping factors. Flat population-level prior coordinates
+are handled exactly rather than approximated by a large finite variance.
+The \code{by}, \code{cov}, and \code{pw} arguments remain unsupported.
+Population-level priors must currently be flat, normal, Student-t, or
+Cauchy with numeric constant arguments. Bounds, tags, special priors,
+prior-only sampling, ordinal thresholds, sparse and QR designs, and
+non-positive fixed group-level standard deviations are not supported.
+Custom Stan code must not use the conventional population- or group-level
+coefficients before they are reconstructed in generated quantities.}
+
+\item{scale}{Character. The default \code{"shared"} uses one scale per
+coefficient for all grouping levels. With \code{"varying"}, each
+coefficient instead has log-normal scale variation across grouping levels,
+\code{sd_level = sd * exp(sdlog * z)}, where \code{z} is standard normal.
+This option requires \code{s2z = TRUE}. The ordinary \code{sd} parameter
+and its prior are retained as the baseline (conditional median) scale, and
+class \code{sdlog} controls the standard deviation of the log-scale
+variation. Thus, coefficient-specific priors of both classes are available
+for varying intercepts, slopes, and interactions. Realized scales are
+returned as \code{sd_level}; they are deterministic hierarchy draws and do
+not have separate direct priors. The baseline \code{sd} is a conditional
+median, not the root-mean-square group scale: conditionally on the
+hyperparameters, the mean squared scale is
+\code{sd^2 * exp(2 * sdlog^2)}. A common conditional correlation matrix is
+still shared
+across grouping levels. Coefficient-specific
+log-scale variation is conditionally elliptical given the scales but is
+generally not marginally elliptical after those scales are integrated out.
+This is a new statistical model rather than only a change of coordinates.}
+
+\item{center}{Logical, a single number in \code{[0, 1]}, \code{"auto"}, or
+\code{NULL}. Controls the parameterization of the sum-to-zero group
+effects. With \code{s2z = TRUE}, the default \code{NULL} is equivalent to
+\code{TRUE} (or numeric \code{1}) and samples physical
+constrained coordinates. \code{FALSE} (or numeric \code{0}) instead uses
+a sum-to-zero parameterization non-centered with respect to the
+baseline/reference covariance. Numeric values strictly between zero and one
+continuously partially non-center the effects, with larger values closer to
+the centered parameterization. Terms joined by a common \code{id} may supply
+different numeric fractions for different coefficients, but must use the same
+grouping factor, distribution, correlation, and scale settings.
+\code{center = "auto"} computes a fixed centering fraction separately for
+every grouping level and coefficient from the fitted-data group-level
+design matrix. It uses a scale-invariant, within-group residual design
+exposure and maps exposure \code{I} to \code{I / (I + 25)}. Thus absent or
+locally unidentified slopes and interactions are fully non-centered,
+while directions with greater residual design exposure are increasingly
+centered. This is an experimental design heuristic, not outcome-family Fisher
+information; it does not use the response, residual scale, or priors. The
+heuristic can therefore be poorly matched to the actual likelihood
+information. Inspect sampling diagnostics or supply a numeric or endpoint
+choice when needed. The fraction calculation is invariant to rescaling design
+columns, but the partially centered coordinates themselves depend on
+coefficient and response units. The resulting fractions are fixed data and do
+not change the statistical model. In correlated blocks, coefficient-specific
+fractions operate on rows of the common Cholesky factor, so sampling geometry
+can depend on coefficient order even though the posterior remains exact. With Student-t
+effects or \code{scale = "varying"}, centering is defined relative to the
+baseline/reference covariance; the group mixture and relative level scales
+remain in the conditional hierarchy. With
+\code{s2z = FALSE}, only \code{NULL}, \code{FALSE}, and numeric
+\code{0} are allowed and retain the ordinary non-centered parameterization.
+This argument does not control centering of the population-level design
+matrix.}
 
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
@@ -41,8 +144,8 @@ can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
 of the same grouping factor are modeled as independent of each other.}
 
-\item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"gaussian"} is the only option.}
+\item{dist}{Name of the distribution of the group-level effects. Supported
+options are \code{"gaussian"} and \code{"student"}.}
 }
 \description{
 Function used to set up a basic grouping term in \pkg{brms}.
@@ -70,6 +173,31 @@ epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
 fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
             data = epilepsy)
 summary(fit4)
+
+# physical sum-to-zero varying intercepts, slopes, and interactions
+s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
+                   coef = "Intercept") +
+  prior(exponential(3), class = "sd", group = "patient", coef = "zAge") +
+  prior(lkj(2), class = "cor", group = "patient")
+fit5 <- brm(count ~ zAge * Trt +
+              (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+            data = epilepsy, family = poisson(), prior = s2z_prior)
+
+# use standardized sum-to-zero coordinates for weakly informed effects
+form5_nc <- count ~ zAge * Trt +
+  (1 + zAge * Trt | gr(patient, s2z = TRUE, center = FALSE))
+
+# choose partial centering fractions from each patient's design exposure
+form5_auto <- count ~ zAge * Trt +
+  (1 + zAge * Trt | gr(patient, s2z = TRUE, center = "auto"))
+
+# allow the intercept, slope, and interaction scales to vary by patient
+scale_prior <- s2z_prior +
+  prior(normal(0, 0.25), class = "sdlog", group = "patient")
+fit6 <- brm(count ~ zAge * Trt +
+              (1 + zAge * Trt |
+                gr(patient, s2z = TRUE, scale = "varying")),
+            data = epilepsy, family = poisson(), prior = scale_prior)
 }
 
 }

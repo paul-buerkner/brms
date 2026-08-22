@@ -594,8 +594,9 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
     }
     # only prepare predictions of effects specified in the new formula
     cols_match <- c("coef", "resp", "dpar", "nlpar")
-    used_rpars <- which(find_rows(old_reframe_g, ls = reframe_g[cols_match]))
-    used_rpars <- outer(seq_len(nlevels), (used_rpars - 1) * nlevels, "+")
+    used_ranef <- which(find_rows(old_reframe_g, ls = reframe_g[cols_match]))
+    used_old_reframe_g <- old_reframe_g[used_ranef, , drop = FALSE]
+    used_rpars <- outer(seq_len(nlevels), (used_ranef - 1) * nlevels, "+")
     used_rpars <- as.vector(used_rpars)
     rdraws <- rdraws[, used_rpars, drop = FALSE]
     rdraws <- column_to_row_major_order(rdraws, nranef)
@@ -615,7 +616,9 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
     }
     # generate draws for new levels
     args_new_rdraws <- nlist(
-      reframe = reframe_g, gf, used_levels = used_levels_g,
+      # Use metadata from the fitted model. A reduced user-supplied re_formula
+      # need not repeat distribution or scale options from the original call.
+      reframe = used_old_reframe_g, gf, used_levels = used_levels_g,
       old_levels = old_levels_g, rdraws = rdraws, draws, sample_new_levels
     )
     new_rdraws <- do_call(get_new_rdraws, args_new_rdraws)
@@ -1098,6 +1101,24 @@ get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
           }
           sd_pars <- paste0("sd_", g, "__", rnames)
           sd_draws <- prepare_draws(draws, sd_pars)
+          varying <- reframe$scale == "varying"
+          if (any(varying)) {
+            varying_rnames <- as.vector(get_rnames(
+              reframe[varying, , drop = FALSE]
+            ))
+            sdlog_pars <- paste0("sdlog_", g, "__", varying_rnames)
+            sdlog_draws <- as.matrix(prepare_draws(draws, sdlog_pars))
+            if (ncol(sdlog_draws) != length(varying_rnames)) {
+              stop2("Log-scale parameters of group '", g, "' not found.")
+            }
+            scale_innovations <- matrix(
+              rnorm(length(sdlog_draws)), nrow = nrow(sdlog_draws)
+            )
+            varying_match <- match(varying_rnames, rnames)
+            sd_draws[, varying_match] <-
+              sd_draws[, varying_match, drop = FALSE] *
+              exp(sdlog_draws * scale_innovations)
+          }
           cor_type <- paste0("cor_", g)
           cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
           cor_draws <- matrix(0, nrow(sd_draws), length(cor_pars))

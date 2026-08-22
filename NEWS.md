@@ -2,6 +2,35 @@
 
 ### New Features
 
+* Add experimental sum-to-zero parameterizations via
+`gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
+and interactions. It analytically integrates out the omitted common
+group-effect mean vector and reconstructs conventional Bayesian coefficients
+and effects in generated quantities. Gaussian and Student-t group effects are
+supported, with the latter handled exactly as a conditional Gaussian scale
+mixture. Blocks with one varying coefficient and blocks with any number of
+coefficients in diagonal covariance blocks use dedicated component-wise scalar
+implementations. The default `center = NULL` samples the physical constrained
+effects directly for backward compatibility, while `center = FALSE` selects a
+non-centered sum-to-zero parameterization. Numeric `center` values between zero
+and one provide exact partial non-centering. With `center = "auto"`, brms fixes
+a separate centering fraction for every grouping level and coefficient from a
+scale-invariant, within-group residual design-exposure heuristic; sparse or
+locally unidentified varying slopes and interactions are consequently shifted
+toward non-centering. Setting `scale = "varying"` adds
+coefficient-specific log-normal scale hierarchies across grouping levels,
+retaining the usual baseline `sd` parameters and priors; class `sdlog` controls
+log-scale heterogeneity. The resulting group effects are conditionally
+elliptical given their scales, but generally not marginally elliptical.
+Multiple S2Z grouping factors may occur in one linear predictor; their omitted
+mean vectors are integrated and recovered jointly while retaining separate
+scale and correlation structures for each factor. For Gaussian blocks with
+shared scales, brms uses a lower-dimensional induced-covariance calculation
+and joint Matheron recovery whenever that system is smaller than the stacked
+omitted-mean system. In the common crossed-intercept case this reduces to a
+scalar update with no matrix factorization, irrespective of the number of
+grouping factors.
+(#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
@@ -2292,5 +2321,3 @@ have proper priors by default.
 # brms 0.1.0
 
 * Initial release version
-
-
