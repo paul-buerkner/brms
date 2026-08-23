@@ -950,6 +950,52 @@ stan_re_s2z_partial_independent_transform <- function(
   !is.null(.stan_re_s2z_joint_matheron_info(set))
 }
 
+# Add optional prior factors to selected realized group-level scales. These
+# scales remain deterministic functions of the baseline scale, log-scale
+# heterogeneity, and standardized level innovations, so evaluating a density
+# at sd_level does not require a change-of-variables Jacobian. The factors are
+# additive to (rather than replacements for) the exchangeable scale hierarchy.
+.stan_re_s2z_sd_level_prior <- function(id, r, prior, normalize) {
+  if (!"level" %in% names(prior)) {
+    # Backward compatibility for serialized brmsprior objects created before
+    # level-addressable priors were introduced.
+    return("")
+  }
+  px <- check_prefix(r)
+  level_prior <- subset2(
+    prior, class = "sd_level", group = r$group[1],
+    coef = r$coef, level = get_levels(r)[[r$group[1]]], ls = px
+  )
+  level_prior <- level_prior[nzchar(level_prior$prior), , drop = FALSE]
+  if (!nrow(level_prior)) {
+    return("")
+  }
+  levels <- get_levels(r)[[r$group[1]]]
+  level_index <- match(level_prior$level, levels)
+  coef_index <- match(level_prior$coef, r$coef)
+  if (anyNA(level_index) || anyNA(coef_index)) {
+    stop2("Internal mismatch in a group-level scale prior.")
+  }
+  selector <- paste(level_index, coef_index, sep = "\r")
+  if (anyDuplicated(selector)) {
+    stop2("Duplicated priors on a realized group-level scale are not allowed.")
+  }
+  out <- paste0(
+    "  // additional priors on realized group-level standard deviations\n"
+  )
+  for (i in seq_rows(level_prior)) {
+    par <- glue(
+      "sd_level_s2z_{id}[{level_index[i]}, {coef_index[i]}]"
+    )
+    target <- stan_target_prior(
+      level_prior$prior[i], par = par, bound = "<lower=0>",
+      resp = level_prior$resp[i], normalize = normalize
+    )
+    str_add(out) <- paste0(lpp(), target, ";\n")
+  }
+  out
+}
+
 # Stan code local to one covariance block participating in a joint S2Z
 # omitted-mean system. The block contributes its physical zero-sum effects and
 # the Gaussian normal equations for its omitted mean in reference-whitened
@@ -1102,6 +1148,11 @@ stan_re_s2z_partial_independent_transform <- function(
     str_add(out$tpar_comp) <- glue(
       "  group_scale_s2z_{id} = dfm{g};\n",
       "  group_prec_s2z_{id} = inv_square(group_scale_s2z_{id});\n"
+    )
+  }
+  if (varying) {
+    str_add(out$tpar_prior) <- .stan_re_s2z_sd_level_prior(
+      id, r = r, prior = prior, normalize = normalize
     )
   }
 
@@ -2119,6 +2170,9 @@ stan_re_s2z_partial_independent_transform <- function(
       "  group_prec_s2z_{id} = rep_vector(1.0, N_{id});\n"
     )
   }
+  str_add(out$tpar_prior) <- .stan_re_s2z_sd_level_prior(
+    id, r = r, prior = prior, normalize = normalize
+  )
 
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]

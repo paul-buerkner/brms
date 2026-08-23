@@ -1630,6 +1630,396 @@ test_that("group-varying scales preserve baseline priors and add sdlog", {
   expect_match2(mixed_code, "normal_lupdf(sdlog_1[2] | 0, 0.3)")
 })
 
+test_that("realized scale priors are compactly discoverable and additive", {
+  form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, scale = "varying"))
+  available <- as.data.frame(get_prior(form, data = s2z_dat))
+  level_rows <- subset(
+    available, class == "sd_level" & group == "g"
+  )
+
+  # Availability stays O(M), not O(N * M). Users select fitted-data levels
+  # explicitly when constructing an additional prior.
+  expect_equal(nrow(level_rows), 2L)
+  expect_setequal(level_rows$coef, c("Intercept", "x"))
+  expect_identical(level_rows$level, rep("", 2L))
+  expect_identical(level_rows$prior, rep("", 2L))
+  expect_false(any(get_prior(
+    y ~ x + (1 + x | gr(g, s2z = TRUE, scale = "shared")),
+    data = s2z_dat
+  )$class == "sd_level"))
+
+  one_prior <- prior(
+    normal(0.4, 0.2), class = "sd_level", group = "g",
+    coef = "Intercept", level = "2"
+  )
+  expect_identical(one_prior$level, "2")
+  validated <- validate_prior(one_prior, form, data = s2z_dat)
+  selected <- subset(validated, class == "sd_level" & nzchar(prior))
+  expect_equal(nrow(selected), 1L)
+  expect_identical(selected$level, "2")
+
+  base_code <- stancode(form, data = s2z_dat)
+  one_code <- stancode(form, data = s2z_dat, prior = one_prior)
+  target <- "normal_lpdf(sd_level_s2z_1[2, 1] | 0.4, 0.2)"
+  truncation <- "- 1 * normal_lccdf(0 | 0.4, 0.2)"
+  expect_equal(s2z_count_fixed(one_code, target), 1L)
+  expect_equal(s2z_count_fixed(one_code, truncation), 1L)
+  expect_false(grepl(target, base_code, fixed = TRUE))
+  expect_false(grepl(
+    "_lpdf(sd_level_s2z_", base_code, fixed = TRUE
+  ))
+
+  # Adding the factor must not alter parameter declarations, hierarchy terms,
+  # or add a change-of-variables Jacobian. Apart from the explanatory comment,
+  # the lpdf and its positive-support normalizer are the entire code delta.
+  base_lines <- strsplit(base_code, "\n", fixed = TRUE)[[1]]
+  one_lines <- strsplit(one_code, "\n", fixed = TRUE)[[1]]
+  added <- setdiff(one_lines, base_lines)
+  expect_length(setdiff(base_lines, one_lines), 0L)
+  expect_equal(length(added), 3L)
+  expect_true(any(grepl(
+    "additional priors on realized group-level standard deviations",
+    added, fixed = TRUE
+  )))
+  expect_true(any(grepl(target, added, fixed = TRUE)))
+  expect_true(any(grepl(truncation, added, fixed = TRUE)))
+  expect_false(any(grepl("jacobian", added, ignore.case = TRUE)))
+
+  many_prior <- set_prior(
+    c("lognormal(-1, 0.3)", "exponential(4)"),
+    class = "sd_level", group = "g", coef = "x",
+    level = c("1", "6")
+  )
+  many_code <- stancode(
+    form, data = s2z_dat, prior = many_prior, normalize = FALSE
+  )
+  expect_match2(
+    many_code,
+    "lognormal_lupdf(sd_level_s2z_1[1, 2] | -1, 0.3)"
+  )
+  expect_match2(
+    many_code,
+    "exponential_lupdf(sd_level_s2z_1[6, 2] | 4)"
+  )
+  expect_false(grepl("_lccdf(", many_code, fixed = TRUE))
+  expect_equal(
+    s2z_count_fixed(
+      many_code,
+      "additional priors on realized group-level standard deviations"
+    ),
+    1L
+  )
+
+  named_dat <- transform(
+    s2z_dat,
+    surgeon = factor(g, labels = paste("Mr", LETTERS[seq_len(6L)]))
+  )
+  named_code <- stancode(
+    y ~ 1 +
+      (1 | gr(surgeon, s2z = TRUE, scale = "varying")),
+    data = named_dat,
+    prior = prior(
+      lognormal(-1, 0.2), class = "sd_level", group = "surgeon",
+      coef = "Intercept", level = "Mr B"
+    )
+  )
+  expect_match2(
+    named_code,
+    "lognormal_lpdf(sd_level_s2z_1[2, 1] | -1, 0.2)"
+  )
+})
+
+test_that("realized scale priors target coefficients, blocks, and dpars", {
+  interaction_form <- y ~ x * z +
+    (1 + x * z | gr(g, s2z = TRUE, scale = "varying"))
+  interaction_prior <- c(
+    prior(
+      lognormal(-0.5, 0.25), class = "sd_level", group = "g",
+      coef = "Intercept", level = "1"
+    ),
+    prior(
+      gamma(3, 4), class = "sd_level", group = "g",
+      coef = "x", level = "3"
+    ),
+    prior(
+      exponential(5), class = "sd_level", group = "g",
+      coef = "x:z", level = "6"
+    )
+  )
+  interaction_code <- stancode(
+    interaction_form, data = s2z_dat, prior = interaction_prior
+  )
+  for (term in c(
+    "lognormal_lpdf(sd_level_s2z_1[1, 1] | -0.5, 0.25)",
+    "gamma_lpdf(sd_level_s2z_1[3, 2] | 3, 4)",
+    "exponential_lpdf(sd_level_s2z_1[6, 4] | 5)",
+    "cholesky_factor_corr[M_1] L_1;"
+  )) {
+    expect_true(grepl(term, interaction_code, fixed = TRUE), info = term)
+  }
+
+  independent_form <- y ~ x +
+    (1 + x || gr(g, s2z = TRUE, scale = "varying"))
+  independent_code <- stancode(
+    independent_form, data = s2z_dat,
+    prior = prior(
+      lognormal(-1, 0.2), class = "sd_level", group = "g",
+      coef = "x", level = "4"
+    )
+  )
+  expect_match2(
+    independent_code,
+    "lognormal_lpdf(sd_level_s2z_1[4, 2] | -1, 0.2)"
+  )
+  expect_false(grepl(
+    "cholesky_factor_corr[M_1] L_1;", independent_code, fixed = TRUE
+  ))
+
+  multiblock_form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, scale = "varying")) +
+    (1 + x || gr(h, s2z = TRUE, scale = "varying"))
+  multiblock_prior <- c(
+    prior(
+      lognormal(-1, 0.2), class = "sd_level", group = "g",
+      coef = "Intercept", level = "2"
+    ),
+    prior(
+      exponential(3), class = "sd_level", group = "h",
+      coef = "x", level = "8"
+    )
+  )
+  multiblock_code <- stancode(
+    multiblock_form, data = s2z_dat, prior = multiblock_prior
+  )
+  expect_match2(
+    multiblock_code,
+    "lognormal_lpdf(sd_level_s2z_1[2, 1] | -1, 0.2)"
+  )
+  expect_match2(
+    multiblock_code,
+    "exponential_lpdf(sd_level_s2z_2[8, 2] | 3)"
+  )
+
+  dpar_form <- bf(
+    y ~ x +
+      (1 + x | gr(g, s2z = TRUE, scale = "varying")),
+    sigma ~ z +
+      (1 + z | gr(h, s2z = TRUE, scale = "varying"))
+  )
+  dpar_available <- as.data.frame(get_prior(dpar_form, data = s2z_dat))
+  sigma_level_rows <- subset(
+    dpar_available,
+    class == "sd_level" & group == "h" & dpar == "sigma"
+  )
+  expect_equal(nrow(sigma_level_rows), 2L)
+  expect_setequal(sigma_level_rows$coef, c("Intercept", "z"))
+  dpar_code <- stancode(
+    dpar_form, data = s2z_dat,
+    prior = prior(
+      lognormal(-0.7, 0.15), class = "sd_level", group = "h",
+      coef = "z", level = "8", dpar = "sigma"
+    )
+  )
+  expect_match2(
+    dpar_code,
+    "lognormal_lpdf(sd_level_s2z_2[8, 2] | -0.7, 0.15)"
+  )
+})
+
+test_that("realized scale prior selectors and densities validate strictly", {
+  form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, scale = "varying"))
+  selected <- function(..., prior = "normal(0, 1)") {
+    set_prior(
+      prior, class = "sd_level", group = "g", coef = "Intercept",
+      level = "1", ...
+    )
+  }
+
+  missing_selectors <- list(
+    set_prior(
+      "normal(0, 1)", class = "sd_level", coef = "Intercept", level = "1"
+    ),
+    set_prior(
+      "normal(0, 1)", class = "sd_level", group = "g", level = "1"
+    ),
+    set_prior(
+      "normal(0, 1)", class = "sd_level", group = "g",
+      coef = "Intercept"
+    )
+  )
+  for (bad_prior in missing_selectors) {
+    expect_error(
+      stancode(form, data = s2z_dat, prior = bad_prior),
+      "require nonempty 'group', 'coef', and 'level'"
+    )
+  }
+  for (bad_prior in list(
+    set_prior(
+      "normal(0, 1)", class = "sd_level", group = "unknown",
+      coef = "Intercept", level = "1"
+    ),
+    set_prior(
+      "normal(0, 1)", class = "sd_level", group = "g",
+      coef = "unknown", level = "1"
+    )
+  )) {
+    expect_error(
+      stancode(form, data = s2z_dat, prior = bad_prior),
+      "does not correspond to a coefficient"
+    )
+  }
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = set_prior(
+        "normal(0, 1)", class = "sd_level", group = "g",
+        coef = "Intercept", level = "unknown"
+      )
+    ),
+    "not found in grouping factor"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = set_prior(
+        "", class = "sd_level", group = "g",
+        coef = "Intercept", level = "1"
+      )
+    ),
+    "must specify a nonempty distribution"
+  )
+
+  expect_error(
+    stancode(
+      y ~ x + (1 + x | gr(g, s2z = TRUE, scale = "shared")),
+      data = s2z_dat, prior = selected()
+    ),
+    "does not correspond to a coefficient"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = set_prior(
+        "normal(0, 1)", class = "sd", group = "g",
+        coef = "Intercept", level = "1"
+      )
+    ),
+    "Argument 'level' is only supported for class 'sd_level'"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = selected(prior = "constant(0.7)")
+    ),
+    "Constant priors are not supported for class 'sd_level'"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = selected(prior = "horseshoe(1)")
+    ),
+    "Special shrinkage priors are not supported for class 'sd_level'"
+  )
+  for (discrete in c(
+    "bernoulli(0.5)", "poisson(2)", "yule_simon(2)",
+    "dirichlet_multinomial(rep_vector(1, 2))"
+  )) {
+    expect_error(
+      stancode(
+        form, data = s2z_dat, prior = selected(prior = discrete)
+      ),
+      "Discrete distributions are not supported for class 'sd_level'"
+    )
+  }
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = selected(tag = "level_scale")
+    ),
+    "Prior argument 'tag' is not supported for class 'sd_level'"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = selected(lb = 0)
+    ),
+    "Prior bounds are not supported for class 'sd_level'"
+  )
+  expect_error(
+    stancode(
+      form, data = s2z_dat,
+      prior = selected(ub = 3)
+    ),
+    "Prior bounds are not supported for class 'sd_level'"
+  )
+
+  dpar_form <- bf(
+    y ~ x,
+    sigma ~ z +
+      (1 + z | gr(h, s2z = TRUE, scale = "varying"))
+  )
+  expect_error(
+    stancode(
+      dpar_form, data = s2z_dat,
+      prior = prior(
+        normal(0, 1), class = "sd_level", group = "h",
+        coef = "z", level = "1"
+      )
+    ),
+    "does not correspond to a coefficient"
+  )
+})
+
+test_that("legacy prior objects need no level column", {
+  form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, scale = "varying"))
+  current <- prior(
+    exponential(2), class = "sd", group = "g", coef = "Intercept"
+  )
+  legacy <- current
+  legacy$level <- NULL
+  expect_false("level" %in% names(legacy))
+
+  current_code <- stancode(form, data = s2z_dat, prior = current)
+  legacy_code <- stancode(form, data = s2z_dat, prior = legacy)
+  expect_identical(legacy_code, current_code)
+  validated <- validate_prior(legacy, form, data = s2z_dat)
+  expect_true("level" %in% names(validated))
+  expect_true(all(!nzchar(validated$level)))
+
+  combined <- c(
+    legacy,
+    prior(
+      normal(0.5, 0.2), class = "sd_level", group = "g",
+      coef = "Intercept", level = "1"
+    )
+  )
+  expect_true("level" %in% names(combined))
+  expect_equal(nrow(combined), 2L)
+
+  obsolete <- prior(
+    normal(0.5, 0.2), class = "sd_level", group = "g",
+    coef = "Intercept", level = "removed level"
+  )
+  attr(obsolete, "allow_invalid_prior") <- TRUE
+  updated <- validate_prior(obsolete, form, data = s2z_dat)
+  expect_false(any(
+    updated$class == "sd_level" & nzchar(updated$level)
+  ))
+
+  malformed <- set_prior(
+    "normal(0.5, 0.2)", class = "sd_level", group = "g",
+    coef = "Intercept"
+  )
+  attr(malformed, "allow_invalid_prior") <- TRUE
+  updated <- validate_prior(malformed, form, data = s2z_dat)
+  expect_false(any(
+    updated$class == "sd_level" & updated$source == "user"
+  ))
+})
+
 test_that("correlated group-varying scales use the heterogeneous kernel", {
   scode <- stancode(
     y ~ x * z +

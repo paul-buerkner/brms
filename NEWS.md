@@ -20,7 +20,10 @@ locally unidentified varying slopes and interactions are consequently shifted
 toward non-centering. Setting `scale = "varying"` adds
 coefficient-specific log-normal scale hierarchies across grouping levels,
 retaining the usual baseline `sd` parameters and priors; class `sdlog` controls
-log-scale heterogeneity. The resulting group effects are conditionally
+log-scale heterogeneity. Proper continuous prior factors can additionally be
+placed on selected realized scales through class `sd_level` and its `group`,
+`coef`, and `level` selectors while retaining the exchangeable hierarchy. The
+resulting group effects are conditionally
 elliptical given their scales, but generally not marginally elliptical.
 Multiple S2Z grouping factors may occur in one linear predictor; their omitted
 mean vectors are integrated and recovered jointly while retaining separate

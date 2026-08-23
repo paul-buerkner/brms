@@ -67,10 +67,12 @@ decreased. It is now recommended to use the \code{sparse} argument of
 }
 \value{
 A \code{brmsprior} object. That is, a data.frame with specific
-  columns including \code{prior}, \code{class}, \code{coef}, and \code{group}
-  and several rows, each providing information on a parameter (or parameter
-  class) on which priors can be specified. The prior column is empty except
-  for internal default priors.
+  columns including \code{prior}, \code{class}, \code{coef}, \code{group},
+  and \code{level}, and several rows, each providing information on a
+  parameter (or parameter class) on which priors can be specified. The
+  \code{level} column selects grouping-factor levels for parameter classes
+  that support level-specific priors and is otherwise empty. The prior column
+  is empty except for internal default priors.
 }
 \description{
 Get information on all parameters (and parameter classes) for which priors

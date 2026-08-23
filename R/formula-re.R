@@ -69,8 +69,11 @@
 #'   class \code{sdlog} controls the standard deviation of the log-scale
 #'   variation. Thus, coefficient-specific priors of both classes are available
 #'   for varying intercepts, slopes, and interactions. Realized scales are
-#'   returned as \code{sd_level}; they are deterministic hierarchy draws and do
-#'   not have separate direct priors. The baseline \code{sd} is a conditional
+#'   returned as \code{sd_level}. Proper continuous prior factors may be added
+#'   to selected realized scales with class \code{sd_level} and the
+#'   \code{group}, \code{coef}, and \code{level} selectors. These factors retain
+#'   and multiply the exchangeable log-scale hierarchy; they do not replace a
+#'   selected level's hierarchical prior. The baseline \code{sd} is a conditional
 #'   median, not the root-mean-square group scale: conditionally on the
 #'   hyperparameters, the mean squared scale is
 #'   \code{sd^2 * exp(2 * sdlog^2)}. A common conditional correlation matrix is
