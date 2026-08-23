@@ -850,6 +850,20 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
+# Precompute the column means of fixed centering fractions once. They enter
+# the restricted-transform determinant but do not depend on model parameters.
+stan_re_s2z_partial_tdata <- function(out, id) {
+  str_add(out$tdata_def) <- glue(
+    "  vector[M_{id}] mean_rho_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  for (k in 1:M_{id}) {{\n",
+    "    mean_rho_s2z_{id}[k] = mean(rho_s2z_{id}[, k]);\n",
+    "  }}\n"
+  )
+  out
+}
+
 # Transform orthonormal S2Z coordinates with level- and coefficient-specific
 # centering fractions.  Each local Cholesky interpolation is lower triangular
 # with a positive diagonal for rho in [0, 1].  Projecting the transformed rows
@@ -859,11 +873,8 @@ stan_re <- function(bframe, prior, normalize, ...) {
 stan_re_s2z_partial_cor_transform <- function(id) {
   glue(
     "  {{\n",
-    "    matrix[N_{id}, M_{id}] raw_partial_s2z;\n",
     "    row_vector[M_{id}] mean_partial_s2z = ",
-    "rep_row_vector(0.0, M_{id});\n",
-    "    matrix[M_{id}, M_{id}] L_partial_mean_s2z = ",
-    "rep_matrix(0.0, M_{id}, M_{id});\n",
+    "zeros_row_vector(M_{id});\n",
     "    log_det_partial_s2z_{id} = 0.0;\n",
     "    for (j in 1:N_{id}) {{\n",
     "      matrix[M_{id}, M_{id}] L_partial_s2z = ",
@@ -871,17 +882,18 @@ stan_re_s2z_partial_cor_transform <- function(id) {
     "      for (k in 1:M_{id}) {{\n",
     "        L_partial_s2z[k, k] += 1.0 - rho_s2z_{id}[j, k];\n",
     "      }}\n",
-    "      raw_partial_s2z[j] = (L_Sigma_s2z_{id} * ",
+    "      r_s2z_{id}[j] = (L_Sigma_s2z_{id} * ",
     "mdivide_left_tri_low(L_partial_s2z, r_s2z_{id}[j]'))';\n",
-    "      mean_partial_s2z += raw_partial_s2z[j] / N_{id};\n",
-    "      L_partial_mean_s2z += L_partial_s2z / N_{id};\n",
+    "      mean_partial_s2z += r_s2z_{id}[j];\n",
     "      log_det_partial_s2z_{id} -= ",
     "sum(log(diagonal(L_partial_s2z)));\n",
     "    }}\n",
-    "    r_s2z_{id} = raw_partial_s2z - ",
-    "rep_matrix(mean_partial_s2z, N_{id});\n",
-    "    log_det_partial_s2z_{id} += ",
-    "sum(log(diagonal(L_partial_mean_s2z)));\n",
+    "    mean_partial_s2z /= N_{id};\n",
+    "    for (j in 1:N_{id}) {{\n",
+    "      r_s2z_{id}[j] -= mean_partial_s2z;\n",
+    "    }}\n",
+    "    log_det_partial_s2z_{id} += sum(log(1.0 - mean_rho_s2z_{id} + ",
+    "mean_rho_s2z_{id} .* diagonal(L_Sigma_s2z_{id})));\n",
     "  }}\n"
   )
 }
@@ -894,14 +906,14 @@ stan_re_s2z_partial_independent_transform <- function(
     "  {{\n",
     "    vector[N_{id}] centered_partial_s2z = ",
     "sum_to_zero_constrain_brms({z_s2z});\n",
-    "    vector[N_{id}] scale_partial_s2z = rep_vector(1.0, N_{id}) - ",
+    "    vector[N_{id}] scale_partial_s2z = 1.0 - ",
     "rho_s2z_{id}[, {k}] + rho_s2z_{id}[, {k}] * {scale};\n",
-    "    vector[N_{id}] raw_partial_s2z = {scale} * ",
-    "centered_partial_s2z ./ scale_partial_s2z;\n",
-    "    {r_s2z} = raw_partial_s2z - ",
-    "rep_vector(mean(raw_partial_s2z), N_{id});\n",
+    "    centered_partial_s2z = {scale} * centered_partial_s2z ./ ",
+    "scale_partial_s2z;\n",
+    "    {r_s2z} = centered_partial_s2z - mean(centered_partial_s2z);\n",
     "    log_det_partial_s2z_{id} += -sum(log(scale_partial_s2z)) + ",
-    "log(mean(scale_partial_s2z));\n",
+    "log(1.0 - mean_rho_s2z_{id}[{k}] + ",
+    "mean_rho_s2z_{id}[{k}] * {scale});\n",
     "  }}\n"
   )
 }
@@ -1030,6 +1042,7 @@ stan_re_s2z_partial_independent_transform <- function(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
       "  // data-driven or user-supplied centering fractions\n"
     )
+    out <- stan_re_s2z_partial_tdata(out, id)
   }
   if (varying) {
     str_add_list(out) <- stan_prior(
@@ -1082,7 +1095,6 @@ stan_re_s2z_partial_independent_transform <- function(
   str_add(out$tpar_def) <- glue(
     "  // S2Z block {id} in a joint omitted-mean system\n",
     "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
-    "  matrix[{q}, M_{id}] H_s2z_{id};\n",
     "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
     str_if(
       !use_matheron,
@@ -1103,13 +1115,14 @@ stan_re_s2z_partial_independent_transform <- function(
     str_if(
       varying,
       glue(
-        "  matrix<lower=0>[N_{id}, M_{id}] relative_sd_s2z_{id};\n",
         "  matrix<lower=0>[N_{id}, M_{id}] sd_level_s2z_{id};\n",
         "  vector<lower=0>[M_{id}] reference_sd_s2z_{id};\n",
-        "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n",
         str_if(
           is_student,
-          glue("  vector<lower=0>[N_{id}] group_scale_s2z_{id};\n")
+          glue(
+            "  vector<lower=0>[N_{id}] group_scale_s2z_{id};\n",
+            "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n"
+          )
         )
       )
     ),
@@ -1117,17 +1130,36 @@ stan_re_s2z_partial_independent_transform <- function(
     cglue("  vector[N_{id}] {r_s2z};\n")
   )
 
+  # H depends only on the formula mapping and centered design-column means.
+  # Keeping it in transformed data avoids rebuilding an autodiff matrix at
+  # every gradient evaluation.
+  str_add(out$tdata_def) <- glue(
+    "  matrix[{q}, M_{id}] H_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
+  )
+  for (j in seq_len(M)) {
+    qi <- info$match_q[j]
+    str_add(out$tdata_comp) <- glue(
+      "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
+    )
+    if (info$center && info$r$coef[j] != "Intercept") {
+      str_add(out$tdata_comp) <- glue(
+        "  H_s2z_{id}[1, {j}] = means_X{info$p}[{qi - 1L}];\n"
+      )
+    }
+  }
+
   if (varying) {
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
       "    vector[N_{id}] z_sd_centered_s2z = ",
       "sum_to_zero_constrain_brms(z_sd_s2z_{id}[k]);\n",
-      "    relative_sd_s2z_{id}[, k] = exp(sdlog_{id}[k] * ",
-      "z_sd_centered_s2z);\n",
       "    reference_sd_s2z_{id}[k] = sd_{id}[k] * exp(sdlog_{id}[k] * ",
       "z_sd_mean_s2z_{id}[k] / sqrt(1.0 * N_{id}));\n",
       "    sd_level_s2z_{id}[, k] = reference_sd_s2z_{id}[k] * ",
-      "relative_sd_s2z_{id}[, k];\n",
+      "exp(sdlog_{id}[k] * z_sd_centered_s2z);\n",
       "  }}\n"
     )
     if (is_student) {
@@ -1136,10 +1168,6 @@ stan_re_s2z_partial_independent_transform <- function(
       str_add(out$tpar_comp) <- glue(
         "  group_scale_s2z_{id} = dfm{g};\n",
         "  group_prec_s2z_{id} = inv_square(group_scale_s2z_{id});\n"
-      )
-    } else {
-      str_add(out$tpar_comp) <- glue(
-        "  group_prec_s2z_{id} = rep_vector(1.0, N_{id});\n"
       )
     }
   } else if (is_student) {
@@ -1156,20 +1184,6 @@ stan_re_s2z_partial_independent_transform <- function(
     )
   }
 
-  str_add(out$tpar_comp) <- glue(
-    "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
-  )
-  for (j in seq_len(M)) {
-    qi <- info$match_q[j]
-    str_add(out$tpar_comp) <- glue(
-      "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
-    )
-    if (info$center && info$r$coef[j] != "Intercept") {
-      str_add(out$tpar_comp) <- glue(
-        "  H_s2z_{id}[1, {j}] = means_X{info$p}[{qi - 1L}];\n"
-      )
-    }
-  }
   scale <- if (varying) glue("reference_sd_s2z_{id}") else glue("sd_{id}")
   if (is_cor) {
     str_add(out$tpar_comp) <- glue(
@@ -1244,15 +1258,21 @@ stan_re_s2z_partial_independent_transform <- function(
   } else if (use_matheron) {
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
-      "    matrix[N_{id}, M_{id}] white_group_s2z = r_s2z_{id} ./ ",
-      "rep_matrix(sd_{id}', N_{id});\n",
-      "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z));\n",
+      "    group_quad_s2z_{id} = 0.0;\n",
+      "    for (k in 1:M_{id}) {{\n",
+      "      vector[N_{id}] white_group_s2z = ",
+      "r_s2z_{id}[, k] / sd_{id}[k];\n",
+      "      group_quad_s2z_{id} += dot_self(white_group_s2z);\n",
+      "    }}\n",
       "  }}\n"
     )
   } else if (varying && is_cor) {
+    level_weight <- str_if(
+      is_student, glue("group_prec_s2z_{id}[j] * ")
+    )
     str_add(out$tpar_comp) <- glue(
       "  P_group_s2z_{id} = rep_matrix(0.0, M_{id}, M_{id});\n",
-      "  h_group_s2z_{id} = rep_vector(0.0, M_{id});\n",
+      "  h_group_s2z_{id} = zeros_vector(M_{id});\n",
       "  group_quad_s2z_{id} = 0.0;\n",
       "  for (j in 1:N_{id}) {{\n",
       "    matrix[M_{id}, M_{id}] L_level_s2z = ",
@@ -1261,32 +1281,35 @@ stan_re_s2z_partial_independent_transform <- function(
       "mdivide_left_tri_low(L_level_s2z, L_Sigma_s2z_{id});\n",
       "    vector[M_{id}] white_level_s2z = ",
       "mdivide_left_tri_low(L_level_s2z, r_s2z_{id}[j]');\n",
-      "    P_group_s2z_{id} += group_prec_s2z_{id}[j] * ",
+      "    P_group_s2z_{id} += {level_weight}",
       "crossprod(relative_precision_s2z);\n",
-      "    h_group_s2z_{id} -= group_prec_s2z_{id}[j] * ",
+      "    h_group_s2z_{id} -= {level_weight}",
       "relative_precision_s2z' * white_level_s2z;\n",
-      "    group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
+      "    group_quad_s2z_{id} += {level_weight}",
       "dot_self(white_level_s2z);\n",
       "  }}\n"
     )
   } else if (varying) {
     # A diagonal block requires only elementwise work at each level. This is
     # important when several high-dimensional independent blocks are combined.
+    level_weight <- str_if(
+      is_student, glue("group_prec_s2z_{id}[j] * ")
+    )
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
-      "    vector[M_{id}] group_info_s2z = rep_vector(0.0, M_{id});\n",
-      "    h_group_s2z_{id} = rep_vector(0.0, M_{id});\n",
+      "    vector[M_{id}] group_info_s2z = zeros_vector(M_{id});\n",
+      "    h_group_s2z_{id} = zeros_vector(M_{id});\n",
       "    group_quad_s2z_{id} = 0.0;\n",
       "    for (j in 1:N_{id}) {{\n",
       "      vector[M_{id}] relative_precision_s2z = ",
       "reference_sd_s2z_{id} ./ sd_level_s2z_{id}[j]';\n",
       "      vector[M_{id}] white_level_s2z = ",
       "r_s2z_{id}[j]' ./ sd_level_s2z_{id}[j]';\n",
-      "      group_info_s2z += group_prec_s2z_{id}[j] * ",
+      "      group_info_s2z += {level_weight}",
       "square(relative_precision_s2z);\n",
-      "      h_group_s2z_{id} -= group_prec_s2z_{id}[j] * ",
+      "      h_group_s2z_{id} -= {level_weight}",
       "relative_precision_s2z .* white_level_s2z;\n",
-      "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
+      "      group_quad_s2z_{id} += {level_weight}",
       "dot_self(white_level_s2z);\n",
       "    }}\n",
       "    P_group_s2z_{id} = diag_matrix(group_info_s2z);\n",
@@ -1310,7 +1333,7 @@ stan_re_s2z_partial_independent_transform <- function(
       )
     } else {
       glue(
-        "    h_group_s2z_{id} = rep_vector(0.0, M_{id});\n",
+        "    h_group_s2z_{id} = zeros_vector(M_{id});\n",
         "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z));\n"
       )
     }
@@ -1330,24 +1353,30 @@ stan_re_s2z_partial_independent_transform <- function(
     }
     group_score_code <- if (is_student) {
       glue(
-        "    h_group_s2z_{id} = -(white_group_s2z' * ",
-        "group_prec_s2z_{id});\n",
+        "    h_group_s2z_{id} = zeros_vector(M_{id});\n",
         "    group_quad_s2z_{id} = 0.0;\n",
-        "    for (j in 1:N_{id}) {{\n",
-        "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
-        "dot_self(white_group_s2z[j]');\n",
+        "    for (k in 1:M_{id}) {{\n",
+        "      vector[N_{id}] white_group_s2z = r_s2z_{id}[, k] / ",
+        "{scale}[k];\n",
+        "      h_group_s2z_{id}[k] = -dot_product(",
+        "white_group_s2z, group_prec_s2z_{id});\n",
+        "      group_quad_s2z_{id} += dot_product(",
+        "group_prec_s2z_{id}, square(white_group_s2z));\n",
         "    }}\n"
       )
     } else {
       glue(
-        "    h_group_s2z_{id} = rep_vector(0.0, M_{id});\n",
-        "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z));\n"
+        "    h_group_s2z_{id} = zeros_vector(M_{id});\n",
+        "    group_quad_s2z_{id} = 0.0;\n",
+        "    for (k in 1:M_{id}) {{\n",
+        "      vector[N_{id}] white_group_s2z = r_s2z_{id}[, k] / ",
+        "{scale}[k];\n",
+        "      group_quad_s2z_{id} += dot_self(white_group_s2z);\n",
+        "    }}\n"
       )
     }
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
-      "    matrix[N_{id}, M_{id}] white_group_s2z = r_s2z_{id} ./ ",
-      "rep_matrix({scale}', N_{id});\n",
       "    P_group_s2z_{id} = diag_matrix(rep_vector({group_info}, M_{id}));\n",
       "{group_score_code}",
       "  }}\n"
@@ -1673,8 +1702,8 @@ stan_re_s2z_partial_independent_transform <- function(
     if (rdim > 0L) {
       str_add(out$gen_comp) <- glue(
         "    {{\n",
-        "      vector[M_{id}] active_score_s2z = ",
-        "rep_vector(0.0, M_{id});\n"
+      "      vector[M_{id}] active_score_s2z = ",
+        "zeros_vector(M_{id});\n"
       )
       for (a in seq_len(rdim)) {
         str_add(out$gen_comp) <- glue(
@@ -1693,8 +1722,8 @@ stan_re_s2z_partial_independent_transform <- function(
     )
     if (is_cor) {
       str_add(out$gen_comp) <- glue(
-        "    r_{id} = r_s2z_{id} + ",
-        "rep_matrix(mean_r_s2z_{id}', N_{id});\n",
+        "    r_{id} = r_s2z_{id};\n",
+        "    for (j in 1:N_{id}) r_{id}[j] += mean_r_s2z_{id}';\n",
         cglue("    {r_public} = r_{id}[, {J}];\n")
       )
     } else {
@@ -1782,7 +1811,6 @@ stan_re_s2z_partial_independent_transform <- function(
     "{paste(set$ids, collapse = ', ')}\n",
     "  vector[{q}] prior_mean_s2z_{set_id};\n",
     "  vector<lower=0>[{q}] prior_prec_s2z_{set_id};\n",
-    "  matrix[{q}, {total_M}] H_joint_s2z_{set_id};\n",
     "  matrix[{total_M}, {total_M}] P_s2z_{set_id};\n",
     "  matrix[{total_M}, {total_M}] L_P_s2z_{set_id};\n",
     "  vector[{total_M}] h_joint_s2z_{set_id};\n",
@@ -1811,31 +1839,38 @@ stan_re_s2z_partial_independent_transform <- function(
   }
 
   str_add(out$tpar_comp) <- glue(
-    "  H_joint_s2z_{set_id} = rep_matrix(0.0, {q}, {total_M});\n",
-    "  P_s2z_{set_id} = rep_matrix(0.0, {total_M}, {total_M});\n",
-    "  h_joint_s2z_{set_id} = rep_vector(0.0, {total_M});\n",
     "  joint_quad_s2z_{set_id} = 0.0;\n"
+  )
+  str_add(out$tpar_comp) <- glue(
+    "  {{\n",
+    "    matrix[{q}, {total_M}] prior_factor_s2z;\n",
+    "    vector[{q}] prior_difference_s2z = ",
+    "sqrt(prior_prec_s2z_{set_id}) .* (theta_s2z{p} - ",
+    "prior_mean_s2z_{set_id});\n",
+    "    vector[{total_M}] forward_solve_s2z;\n"
   )
   for (b in seq_along(infos)) {
     id <- infos[[b]]$id
     take <- glue("{starts[b]}:{ends[b]}")
     str_add(out$tpar_comp) <- glue(
-      "  H_joint_s2z_{set_id}[, {take}] = ",
-      "H_s2z_{id} * L_Sigma_s2z_{id};\n",
-      "  P_s2z_{set_id}[{take}, {take}] = P_group_s2z_{id};\n",
-      "  h_joint_s2z_{set_id}[{take}] = h_group_s2z_{id};\n",
-      "  joint_quad_s2z_{set_id} += group_quad_s2z_{id};\n"
+      "    prior_factor_s2z[, {take}] = diag_pre_multiply(",
+      "sqrt(prior_prec_s2z_{set_id}), H_s2z_{id} * ",
+      "L_Sigma_s2z_{id});\n"
     )
   }
   str_add(out$tpar_comp) <- glue(
-    "  {{\n",
-    "    matrix[{q}, {total_M}] prior_factor_s2z = diag_pre_multiply(",
-    "sqrt(prior_prec_s2z_{set_id}), H_joint_s2z_{set_id});\n",
-    "    vector[{q}] prior_difference_s2z = ",
-    "sqrt(prior_prec_s2z_{set_id}) .* (theta_s2z{p} - ",
-    "prior_mean_s2z_{set_id});\n",
-    "    vector[{total_M}] forward_solve_s2z;\n",
-    "    P_s2z_{set_id} += crossprod(prior_factor_s2z);\n",
+    "    P_s2z_{set_id} = crossprod(prior_factor_s2z);\n"
+  )
+  for (b in seq_along(infos)) {
+    id <- infos[[b]]$id
+    take <- glue("{starts[b]}:{ends[b]}")
+    str_add(out$tpar_comp) <- glue(
+      "    P_s2z_{set_id}[{take}, {take}] += P_group_s2z_{id};\n",
+      "    h_joint_s2z_{set_id}[{take}] = h_group_s2z_{id};\n",
+      "    joint_quad_s2z_{set_id} += group_quad_s2z_{id};\n"
+    )
+  }
+  str_add(out$tpar_comp) <- glue(
     "    h_joint_s2z_{set_id} += prior_factor_s2z' * ",
     "prior_difference_s2z;\n",
     "    L_P_s2z_{set_id} = cholesky_decompose(P_s2z_{set_id});\n",
@@ -1955,8 +1990,7 @@ stan_re_s2z_partial_independent_transform <- function(
     "    for (k in 1:{total_M}) z_mean_s2z[k] = std_normal_rng();\n",
     "    mean_white_s2z = mhat_s2z_{set_id} + ",
     "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{set_id}))';\n",
-    "    q_recovered_s2z_{set_id} = theta_s2z{p} - ",
-    "H_joint_s2z_{set_id} * mean_white_s2z;\n"
+    "    q_recovered_s2z_{set_id} = theta_s2z{p};\n"
   )
   for (b in seq_along(infos)) {
     r <- infos[[b]]$r
@@ -1979,12 +2013,14 @@ stan_re_s2z_partial_independent_transform <- function(
       glue("{scale} .* mean_white_s2z[{take}]")
     }
     str_add(out$gen_comp) <- glue(
-      "    mean_r_s2z_{id} = {mean_transform};\n"
+      "    mean_r_s2z_{id} = {mean_transform};\n",
+      "    q_recovered_s2z_{set_id} -= H_s2z_{id} * ",
+      "mean_r_s2z_{id};\n"
     )
     if (is_cor) {
       str_add(out$gen_comp) <- glue(
-        "    r_{id} = r_s2z_{id} + ",
-        "rep_matrix(mean_r_s2z_{id}', N_{id});\n",
+        "    r_{id} = r_s2z_{id};\n",
+        "    for (j in 1:N_{id}) r_{id}[j] += mean_r_s2z_{id}';\n",
         cglue("    {r_public} = r_{id}[, {J}];\n")
       )
     } else {
@@ -2072,6 +2108,7 @@ stan_re_s2z_partial_independent_transform <- function(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
       "  // data-driven or user-supplied centering fractions\n"
     )
+    out <- stan_re_s2z_partial_tdata(out, id)
   }
 
   # sd remains brms's ordinary baseline group-level scale. sdlog controls
@@ -2137,25 +2174,24 @@ stan_re_s2z_partial_independent_transform <- function(
   # z_level = B z_centered + z_mean / sqrt(N). Relative scales have geometric
   # mean one, while sd_ref is the observed-group geometric mean scale.
   str_add(out$tpar_def) <- glue(
-    "  matrix<lower=0>[N_{id}, M_{id}] relative_sd_s2z_{id};\n",
     "  matrix<lower=0>[N_{id}, M_{id}] sd_level_s2z_{id};\n",
     "  vector<lower=0>[M_{id}] reference_sd_s2z_{id};\n",
-    "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n",
     str_if(
       is_student,
-      glue("  vector<lower=0>[N_{id}] group_scale_s2z_{id};\n")
+      glue(
+        "  vector<lower=0>[N_{id}] group_scale_s2z_{id};\n",
+        "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n"
+      )
     )
   )
   str_add(out$tpar_comp) <- glue(
     "  for (k in 1:M_{id}) {{\n",
     "    vector[N_{id}] z_sd_centered_s2z = ",
     "sum_to_zero_constrain_brms(z_sd_s2z_{id}[k]);\n",
-    "    relative_sd_s2z_{id}[, k] = exp(sdlog_{id}[k] * ",
-    "z_sd_centered_s2z);\n",
     "    reference_sd_s2z_{id}[k] = sd_{id}[k] * exp(sdlog_{id}[k] * ",
     "z_sd_mean_s2z_{id}[k] / sqrt(1.0 * N_{id}));\n",
     "    sd_level_s2z_{id}[, k] = reference_sd_s2z_{id}[k] * ",
-    "relative_sd_s2z_{id}[, k];\n",
+    "exp(sdlog_{id}[k] * z_sd_centered_s2z);\n",
     "  }}\n"
   )
   if (is_student) {
@@ -2164,10 +2200,6 @@ stan_re_s2z_partial_independent_transform <- function(
     str_add(out$tpar_comp) <- glue(
       "  group_scale_s2z_{id} = dfm{g};\n",
       "  group_prec_s2z_{id} = inv_square(group_scale_s2z_{id});\n"
-    )
-  } else {
-    str_add(out$tpar_comp) <- glue(
-      "  group_prec_s2z_{id} = rep_vector(1.0, N_{id});\n"
     )
   }
   str_add(out$tpar_prior) <- .stan_re_s2z_sd_level_prior(
@@ -2196,10 +2228,26 @@ stan_re_s2z_partial_independent_transform <- function(
   }
 
   if (is_cor) {
+    str_add(out$tdata_def) <- glue(
+      "  matrix[{q}, M_{id}] H_s2z_{id};\n"
+    )
+    str_add(out$tdata_comp) <- glue(
+      "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
+    )
+    for (j in seq_len(M)) {
+      qi <- info$match_q[j]
+      str_add(out$tdata_comp) <- glue(
+        "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
+      )
+      if (info$center && info$r$coef[j] != "Intercept") {
+        str_add(out$tdata_comp) <- glue(
+          "  H_s2z_{id}[1, {j}] = means_X{p}[{qi - 1L}];\n"
+        )
+      }
+    }
     str_add(out$tpar_def) <- glue(
       "  // correlated physical S2Z effects with heterogeneous scales\n",
       "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
-      "  matrix[{q}, M_{id}] H_s2z_{id};\n",
       "  vector[{q}] prior_mean_s2z_{id};\n",
       "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
       "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
@@ -2214,20 +2262,6 @@ stan_re_s2z_partial_independent_transform <- function(
       "  // using vectors speeds up likelihood indexing\n",
       cglue("  vector[N_{id}] {r_s2z};\n")
     )
-    str_add(out$tpar_comp) <- glue(
-      "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
-    )
-    for (j in seq_len(M)) {
-      qi <- info$match_q[j]
-      str_add(out$tpar_comp) <- glue(
-        "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
-      )
-      if (info$center && info$r$coef[j] != "Intercept") {
-        str_add(out$tpar_comp) <- glue(
-          "  H_s2z_{id}[1, {j}] = means_X{p}[{qi - 1L}];\n"
-        )
-      }
-    }
     partial_transform <- if (s2z_partial) {
       stan_re_s2z_partial_cor_transform(id)
     } else {
@@ -2236,6 +2270,9 @@ stan_re_s2z_partial_independent_transform <- function(
         glue("  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n")
       )
     }
+    level_weight <- str_if(
+      is_student, glue("group_prec_s2z_{id}[j] * ")
+    )
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
       "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
@@ -2262,11 +2299,11 @@ stan_re_s2z_partial_independent_transform <- function(
       "mdivide_left_tri_low(L_level_s2z, L_Sigma_s2z_{id});\n",
       "      vector[M_{id}] white_level_s2z = ",
       "mdivide_left_tri_low(L_level_s2z, r_s2z_{id}[j]');\n",
-      "      P_s2z_{id} += group_prec_s2z_{id}[j] * ",
+      "      P_s2z_{id} += {level_weight}",
       "crossprod(relative_precision_s2z);\n",
-      "      h_s2z -= group_prec_s2z_{id}[j] * ",
+      "      h_s2z -= {level_weight}",
       "relative_precision_s2z' * white_level_s2z;\n",
-      "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
+      "      group_quad_s2z_{id} += {level_weight}",
       "dot_self(white_level_s2z);\n",
       "    }}\n",
       "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
@@ -2333,7 +2370,6 @@ stan_re_s2z_partial_independent_transform <- function(
       cglue("  vector[N_{id}] {r_s2z};\n"),
       "  vector[{q}] prior_mean_s2z_{id};\n",
       "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
-      "  vector[M_{id}] intercept_map_s2z_{id};\n",
       "  vector<lower=0>[M_{id}] D_diag_s2z_{id};\n",
       "  real<lower=0> rank1_info_s2z_{id};\n",
       "  vector[M_{id}] mhat_s2z_{id};\n",
@@ -2344,6 +2380,25 @@ stan_re_s2z_partial_independent_transform <- function(
         glue("  real log_det_partial_s2z_{id};\n")
       )
     )
+    str_add(out$tdata_def) <- glue(
+      "  vector[M_{id}] intercept_map_s2z_{id};\n"
+    )
+    str_add(out$tdata_comp) <- glue(
+      "  intercept_map_s2z_{id} = zeros_vector(M_{id});\n"
+    )
+    if (info$center) {
+      for (j in seq_len(M)) {
+        qi <- info$match_q[j]
+        value <- if (info$r$coef[j] == "Intercept") {
+          "1.0"
+        } else {
+          glue("means_X{p}[{qi - 1L}]")
+        }
+        str_add(out$tdata_comp) <- glue(
+          "  intercept_map_s2z_{id}[{j}] = {value};\n"
+        )
+      }
+    }
     if (s2z_partial) {
       str_add(out$tpar_comp) <- glue(
         "  log_det_partial_s2z_{id} = 0.0;\n"
@@ -2366,25 +2421,9 @@ stan_re_s2z_partial_independent_transform <- function(
       }
     }
     str_add(out$tpar_comp) <- glue(
-      "  intercept_map_s2z_{id} = rep_vector(0.0, M_{id});\n"
-    )
-    if (info$center) {
-      for (j in seq_len(M)) {
-        qi <- info$match_q[j]
-        value <- if (info$r$coef[j] == "Intercept") {
-          "1.0"
-        } else {
-          glue("means_X{p}[{qi - 1L}]")
-        }
-        str_add(out$tpar_comp) <- glue(
-          "  intercept_map_s2z_{id}[{j}] = {value};\n"
-        )
-      }
-    }
-    str_add(out$tpar_comp) <- glue(
       "  {{\n",
-      "    vector[M_{id}] base_info_s2z = rep_vector(0.0, M_{id});\n",
-      "    vector[M_{id}] base_score_s2z = rep_vector(0.0, M_{id});\n",
+      "    vector[M_{id}] base_info_s2z = zeros_vector(M_{id});\n",
+      "    vector[M_{id}] base_score_s2z = zeros_vector(M_{id});\n",
       "    vector[M_{id}] group_info_s2z;\n",
       "    vector[M_{id}] group_score_s2z;\n",
       "    vector[M_{id}] scaled_score_s2z;\n",
@@ -2399,12 +2438,21 @@ stan_re_s2z_partial_independent_transform <- function(
           "(theta_s2z{p}[{qi}] - prior_mean_s2z_{id}[{qi}]);\n"
         )
       }
+      level_weight <- str_if(
+        is_student, glue("group_prec_s2z_{id}[n] * ")
+      )
       str_add(out$tpar_comp) <- glue(
-        "    group_info_s2z[{j}] = dot_product(group_prec_s2z_{id}, ",
-        "inv_square(relative_sd_s2z_{id}[, {j}]));\n",
-        "    group_score_s2z[{j}] = dot_product({r_s2z[j]}, ",
-        "group_prec_s2z_{id} .* inv_square(",
-        "relative_sd_s2z_{id}[, {j}]));\n"
+        "    group_info_s2z[{j}] = 0.0;\n",
+        "    group_score_s2z[{j}] = 0.0;\n",
+        "    for (n in 1:N_{id}) {{\n",
+        "      real relative_precision_s2z = reference_sd_s2z_{id}[{j}] / ",
+        "sd_level_s2z_{id}[n, {j}];\n",
+        "      real weighted_precision_s2z = {level_weight}",
+        "square(relative_precision_s2z);\n",
+        "      group_info_s2z[{j}] += weighted_precision_s2z;\n",
+        "      group_score_s2z[{j}] += {r_s2z[j]}[n] * ",
+        "weighted_precision_s2z;\n",
+        "    }}\n"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -2462,11 +2510,17 @@ stan_re_s2z_partial_independent_transform <- function(
     str_add(out$tpar_comp) <- glue(
       "  group_quad_s2z_{id} = 0.0;\n"
     )
+    level_weight <- str_if(
+      is_student, glue("group_prec_s2z_{id}[n] * ")
+    )
     for (j in seq_len(M)) {
       str_add(out$tpar_comp) <- glue(
-        "  group_quad_s2z_{id} += dot_product(group_prec_s2z_{id}, ",
-        "square(({r_s2z[j]} + mhat_s2z_{id}[{j}]) ./ ",
-        "sd_level_s2z_{id}[, {j}]));\n"
+        "  for (n in 1:N_{id}) {{\n",
+        "    real white_level_s2z = ({r_s2z[j]}[n] + ",
+        "mhat_s2z_{id}[{j}]) / sd_level_s2z_{id}[n, {j}];\n",
+        "    group_quad_s2z_{id} += {level_weight}",
+        "square(white_level_s2z);\n",
+        "  }}\n"
       )
     }
     str_add(out$pll_args) <- cglue(", vector {r_s2z}")
@@ -2554,8 +2608,8 @@ stan_re_s2z_partial_independent_transform <- function(
       "  }}\n",
       "  q_recovered_s2z_{id} = theta_s2z{p} - ",
       "H_s2z_{id} * mean_r_s2z_{id};\n",
-      "  r_{id} = r_s2z_{id} + rep_matrix(",
-      "mean_r_s2z_{id}', N_{id});\n",
+      "  r_{id} = r_s2z_{id};\n",
+      "  for (j in 1:N_{id}) r_{id}[j] += mean_r_s2z_{id}';\n",
       cglue("  {r_public} = r_{id}[, {J}];\n")
     )
   } else {
@@ -2681,6 +2735,7 @@ stan_re_s2z_partial_independent_transform <- function(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
       "  // data-driven or user-supplied centering fractions\n"
     )
+    out <- stan_re_s2z_partial_tdata(out, id)
   }
 
   # Keep brms's existing covariance parameters and priors. Only the
@@ -2728,7 +2783,6 @@ stan_re_s2z_partial_independent_transform <- function(
   str_add(out$tpar_def) <- glue(
     "  // physical sum-to-zero group-level effects of ID {id}\n",
     "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
-    "  matrix[{q}, M_{id}] H_s2z_{id};\n",
     "  vector[{q}] prior_mean_s2z_{id};\n",
     "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
     str_if(
@@ -2742,7 +2796,10 @@ stan_re_s2z_partial_independent_transform <- function(
     "  // precision of the omitted mean in L_Sigma-whitened coordinates\n",
     "  matrix[M_{id}, M_{id}] P_s2z_{id};\n",
     "  matrix[M_{id}, M_{id}] L_P_s2z_{id};\n",
-    "  matrix[M_{id}, N_{id}] white_s2z_{id};\n",
+    str_if(
+      is_student,
+      glue("  vector[M_{id}] contrast_score_s2z_{id};\n")
+    ),
     "  real group_quad_s2z_{id};\n",
     str_if(
       s2z_partial,
@@ -2754,17 +2811,21 @@ stan_re_s2z_partial_independent_transform <- function(
 
   # The mapping H absorbs the omitted raw group mean into brms's population
   # coordinates. For centered predictors its first row contains the actual
-  # means of every matching raw design column, including interactions.
-  str_add(out$tpar_comp) <- glue(
+  # means of every matching raw design column, including interactions. It is
+  # fixed by the data and belongs outside the autodiff graph.
+  str_add(out$tdata_def) <- glue(
+    "  matrix[{q}, M_{id}] H_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
     "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
   )
   for (j in seq_len(M)) {
     qi <- info$match_q[j]
-    str_add(out$tpar_comp) <- glue(
+    str_add(out$tdata_comp) <- glue(
       "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
     )
     if (info$center && info$r$coef[j] != "Intercept") {
-      str_add(out$tpar_comp) <- glue(
+      str_add(out$tdata_comp) <- glue(
         "  H_s2z_{id}[1, {j}] = means_X{p}[{qi - 1L}];\n"
       )
     }
@@ -2826,18 +2887,25 @@ stan_re_s2z_partial_independent_transform <- function(
     is_student, glue("sum(group_prec_s2z_{id})"), glue("1.0 * N_{id}")
   )
   contrast_score <- str_if(
-    is_student, glue(" - white_s2z_{id} * group_prec_s2z_{id}")
+    is_student, glue(" - contrast_score_s2z_{id}")
+  )
+  contrast_score_code <- str_if(
+    is_student,
+    glue(
+      "    contrast_score_s2z_{id} = white_s2z * ",
+      "group_prec_s2z_{id};\n"
+    )
   )
   group_quad_code <- if (is_student) {
     glue(
       "    for (j in 1:N_{id}) {{\n",
       "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
-      "dot_self(white_s2z_{id}[, j]);\n",
+      "dot_self(white_s2z[, j]);\n",
       "    }}\n"
     )
   } else {
     glue(
-      "    group_quad_s2z_{id} += dot_self(to_vector(white_s2z_{id}));\n"
+      "    group_quad_s2z_{id} += dot_self(to_vector(white_s2z));\n"
     )
   }
   str_add(out$tpar_comp) <- glue(
@@ -2846,10 +2914,11 @@ stan_re_s2z_partial_independent_transform <- function(
     "sqrt(prior_prec_s2z_{id}), H_s2z_{id}) * L_Sigma_s2z_{id};\n",
     "    vector[{q}] prior_difference_s2z = sqrt(prior_prec_s2z_{id}) .* ",
     "(theta_s2z{p} - prior_mean_s2z_{id});\n",
+    "    matrix[M_{id}, N_{id}] white_s2z = ",
+    "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
     "    vector[M_{id}] h_s2z;\n",
     "    vector[M_{id}] whitened_h_s2z;\n",
-    "    white_s2z_{id} = mdivide_left_tri_low(L_Sigma_s2z_{id}, ",
-    "r_s2z_{id}');\n",
+    "{contrast_score_code}",
     "    P_s2z_{id} = add_diag(crossprod(prior_factor_s2z), ",
     "{group_info});\n",
     "    h_s2z = prior_factor_s2z' * prior_difference_s2z",
@@ -2961,7 +3030,8 @@ stan_re_s2z_partial_independent_transform <- function(
     "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{id}))');\n",
     "  }}\n",
     "  q_recovered_s2z_{id} = theta_s2z{p} - H_s2z_{id} * mean_r_s2z_{id};\n",
-    "  r_{id} = r_s2z_{id} + rep_matrix(mean_r_s2z_{id}', N_{id});\n"
+    "  r_{id} = r_s2z_{id};\n",
+    "  for (j in 1:N_{id}) r_{id}[j] += mean_r_s2z_{id}';\n"
   )
   if (info$center) {
     str_add(out$gen_comp) <- glue(
@@ -3017,6 +3087,7 @@ stan_re_s2z_partial_independent_transform <- function(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
       "  // data-driven or user-supplied centering fractions\n"
     )
+    out <- stan_re_s2z_partial_tdata(out, id)
   }
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
@@ -3052,7 +3123,6 @@ stan_re_s2z_partial_independent_transform <- function(
     cglue("  vector[N_{id}] {r_s2z};\n"),
     "  vector[{q}] prior_mean_s2z_{id};\n",
     "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
-    "  vector[M_{id}] intercept_map_s2z_{id};\n",
     str_if(
       is_student,
       glue(
@@ -3070,6 +3140,26 @@ stan_re_s2z_partial_independent_transform <- function(
       glue("  real log_det_partial_s2z_{id};\n")
     )
   )
+
+  str_add(out$tdata_def) <- glue(
+    "  vector[M_{id}] intercept_map_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  intercept_map_s2z_{id} = zeros_vector(M_{id});\n"
+  )
+  if (info$center) {
+    for (j in seq_len(M)) {
+      qi <- info$match_q[j]
+      value <- if (info$r$coef[j] == "Intercept") {
+        "1.0"
+      } else {
+        glue("means_X{p}[{qi - 1L}]")
+      }
+      str_add(out$tdata_comp) <- glue(
+        "  intercept_map_s2z_{id}[{j}] = {value};\n"
+      )
+    }
+  }
 
   if (s2z_partial) {
     str_add(out$tpar_comp) <- glue(
@@ -3089,23 +3179,6 @@ stan_re_s2z_partial_independent_transform <- function(
       )
     }
   }
-  str_add(out$tpar_comp) <- glue(
-    "  intercept_map_s2z_{id} = rep_vector(0.0, M_{id});\n"
-  )
-  if (info$center) {
-    for (j in seq_len(M)) {
-      qi <- info$match_q[j]
-      value <- if (info$r$coef[j] == "Intercept") {
-        "1.0"
-      } else {
-        glue("means_X{p}[{qi - 1L}]")
-      }
-      str_add(out$tpar_comp) <- glue(
-        "  intercept_map_s2z_{id}[{j}] = {value};\n"
-      )
-    }
-  }
-
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
     loc <- stan_s2z_number(spec$location)
@@ -3143,8 +3216,8 @@ stan_re_s2z_partial_independent_transform <- function(
   # inverse-square group SDs during warmup.
   str_add(out$tpar_comp) <- glue(
     "  {{\n",
-    "    vector[M_{id}] base_info_s2z = rep_vector(0.0, M_{id});\n",
-    "    vector[M_{id}] base_score_s2z = rep_vector(0.0, M_{id});\n",
+    "    vector[M_{id}] base_info_s2z = zeros_vector(M_{id});\n",
+    "    vector[M_{id}] base_score_s2z = zeros_vector(M_{id});\n",
     "    vector[M_{id}] scaled_score_s2z;\n",
     "    vector[M_{id}] independent_mode_s2z;\n",
     "    real group_info_s2z = ",
@@ -3377,6 +3450,7 @@ stan_re_s2z_partial_independent_transform <- function(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
       "  // data-driven or user-supplied centering fractions\n"
     )
+    out <- stan_re_s2z_partial_tdata(out, id)
   }
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
@@ -3410,7 +3484,6 @@ stan_re_s2z_partial_independent_transform <- function(
   str_add(out$tpar_def) <- glue(
     "  // specialized scalar physical S2Z effects of ID {id}\n",
     "  vector[N_{id}] {r_s2z};\n",
-    "  vector[{q}] H_s2z_{id};\n",
     "  vector[{q}] prior_mean_s2z_{id};\n",
     "  vector<lower=0>[{q}] prior_prec_s2z_{id};\n",
     str_if(
@@ -3424,7 +3497,7 @@ stan_re_s2z_partial_independent_transform <- function(
     "  real<lower=0> sqrt_D_s2z_{id};\n",
     "  real mhat_s2z_{id};\n",
     "  vector[{q}] qhat_s2z_{id};\n",
-    "  vector[N_{id}] white_s2z_{id};\n",
+    "  real<lower=0> group_quad_s2z_{id};\n",
     str_if(
       s2z_partial,
       glue("  real log_det_partial_s2z_{id};\n")
@@ -3435,6 +3508,17 @@ stan_re_s2z_partial_independent_transform <- function(
   # coordinates. A centered varying slope also shifts brms's temporary
   # centered intercept by the mean of its raw design column.
   qi <- info$match_q[1]
+  str_add(out$tdata_def) <- glue(
+    "  vector[{q}] H_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  H_s2z_{id} = zeros_vector({q});\n",
+    "  H_s2z_{id}[{qi}] = 1.0;\n",
+    str_if(
+      info$center && info$r$coef[1] != "Intercept",
+      glue("  H_s2z_{id}[1] = means_X{p}[{qi - 1L}];\n")
+    )
+  )
   if (s2z_partial) {
     str_add(out$tpar_comp) <- glue(
       "  log_det_partial_s2z_{id} = 0.0;\n"
@@ -3449,15 +3533,6 @@ stan_re_s2z_partial_independent_transform <- function(
       "z_s2z_{id});\n"
     )
   }
-  str_add(out$tpar_comp) <- glue(
-    "  H_s2z_{id} = rep_vector(0.0, {q});\n",
-    "  H_s2z_{id}[{qi}] = 1.0;\n",
-    str_if(
-      info$center && info$r$coef[1] != "Intercept",
-      glue("  H_s2z_{id}[1] = means_X{p}[{qi - 1L}];\n")
-    )
-  )
-
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
     loc <- stan_s2z_number(spec$location)
@@ -3520,9 +3595,13 @@ stan_re_s2z_partial_independent_transform <- function(
     "  sqrt_D_s2z_{id} = sqrt(D_s2z_{id});\n",
     "  qhat_s2z_{id} = theta_s2z{p} - H_s2z_{id} * ",
     "mhat_s2z_{id};\n",
-    "  white_s2z_{id} = ({r_s2z} + mhat_s2z_{id}) / sd_{id}[1]",
-    str_if(is_student, " ./ group_scale_s2z_{id}"),
-    ";\n"
+    "  {{\n",
+    "    vector[N_{id}] white_s2z = ({r_s2z} + mhat_s2z_{id}) / ",
+    "sd_{id}[1]",
+    str_if(is_student, glue(" ./ group_scale_s2z_{id}")),
+    ";\n",
+    "    group_quad_s2z_{id} = dot_self(white_s2z);\n",
+    "  }}\n"
   )
   str_add(out$pll_args) <- glue(", vector {r_s2z}")
 
@@ -3545,7 +3624,7 @@ stan_re_s2z_partial_independent_transform <- function(
     )
   }
   str_add(out$tpar_prior) <- glue(
-    "  lprior += -0.5 * dot_self(white_s2z_{id})\n",
+    "  lprior += -0.5 * group_quad_s2z_{id}\n",
     str_if(
       s2z_center,
       glue("    - (N_{id} - 1) * log(sd_{id}[1])\n")

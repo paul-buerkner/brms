@@ -2080,7 +2080,7 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   )
   expect_match2(
     student_code,
-    "white_s2z_1 * group_prec_s2z_1"
+    "contrast_score_s2z_1 = white_s2z * group_prec_s2z_1;"
   )
   expect_match2(
     student_code,

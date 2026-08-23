@@ -373,22 +373,21 @@ test_that("partial S2Z code covers every specialized covariance path", {
   )
   for (term in c(
     "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;",
+    "vector[M_1] mean_rho_s2z_1;",
+    "mean_rho_s2z_1[k] = mean(rho_s2z_1[, k]);",
     "real log_det_partial_s2z_1;",
     paste0(
-      "vector[N_1] scale_partial_s2z = rep_vector(1.0, N_1) - ",
-      "rho_s2z_1[, 1] + rho_s2z_1[, 1] * sd_1[1];"
+      "vector[N_1] scale_partial_s2z = 1.0 - rho_s2z_1[, 1] + ",
+      "rho_s2z_1[, 1] * sd_1[1];"
     ),
     paste0(
-      "vector[N_1] raw_partial_s2z = sd_1[1] * ",
-      "centered_partial_s2z ./ scale_partial_s2z;"
+      "centered_partial_s2z = sd_1[1] * centered_partial_s2z ./ ",
+      "scale_partial_s2z;"
     ),
-    paste0(
-      "r_s2z_1_1 = raw_partial_s2z - ",
-      "rep_vector(mean(raw_partial_s2z), N_1);"
-    ),
+    "r_s2z_1_1 = centered_partial_s2z - mean(centered_partial_s2z);",
     paste0(
       "log_det_partial_s2z_1 += -sum(log(scale_partial_s2z)) + ",
-      "log(mean(scale_partial_s2z));"
+      "log(1.0 - mean_rho_s2z_1[1] + "
     ),
     "+ log_det_partial_s2z_1"
   )) {
@@ -423,7 +422,10 @@ test_that("partial S2Z code covers every specialized covariance path", {
     )
     expect_match2(
       independent_ten,
-      sprintf("r_s2z_1_%s = raw_partial_s2z", k)
+      sprintf(
+        "r_s2z_1_%s = centered_partial_s2z - mean(centered_partial_s2z)",
+        k
+      )
     )
   }
   expect_match2(independent_ten, "+ log_det_partial_s2z_1")
@@ -444,14 +446,17 @@ test_that("partial S2Z code covers every specialized covariance path", {
     ),
     "L_partial_s2z[k, k] += 1.0 - rho_s2z_1[j, k];",
     paste0(
-      "raw_partial_s2z[j] = (L_Sigma_s2z_1 * ",
+      "r_s2z_1[j] = (L_Sigma_s2z_1 * ",
       "mdivide_left_tri_low(L_partial_s2z, r_s2z_1[j]'))';"
     ),
-    "r_s2z_1 = raw_partial_s2z - rep_matrix(mean_partial_s2z, N_1);",
+    "mean_partial_s2z += r_s2z_1[j];",
+    "mean_partial_s2z /= N_1;",
+    "r_s2z_1[j] -= mean_partial_s2z;",
     "log_det_partial_s2z_1 -= sum(log(diagonal(L_partial_s2z)));",
     paste0(
       "log_det_partial_s2z_1 += ",
-      "sum(log(diagonal(L_partial_mean_s2z)));"
+      "sum(log(1.0 - mean_rho_s2z_1 + ",
+      "mean_rho_s2z_1 .* diagonal(L_Sigma_s2z_1)));"
     ),
     "+ log_det_partial_s2z_1"
   )) {
@@ -481,7 +486,10 @@ test_that("partial S2Z code covers every specialized covariance path", {
   )
   for (term in c(
     "rho_s2z_1[, 10] * reference_sd_s2z_1[10]",
-    "relative_sd_s2z_1[, k] = exp(sdlog_1[k]",
+    paste0(
+      "sd_level_s2z_1[, k] = reference_sd_s2z_1[k] * ",
+      "exp(sdlog_1[k] * z_sd_centered_s2z);"
+    ),
     "+ log_det_partial_s2z_1"
   )) {
     expect_true(grepl(term, varying, fixed = TRUE), info = term)
@@ -524,12 +532,8 @@ test_that("partial varying-scale Student kernels retain every measure term", {
         "z_sd_mean_s2z_1[k] / sqrt(1.0 * N_1));"
       ),
       paste0(
-        "relative_sd_s2z_1[, k] = exp(sdlog_1[k] * ",
-        "z_sd_centered_s2z);"
-      ),
-      paste0(
         "sd_level_s2z_1[, k] = reference_sd_s2z_1[k] * ",
-        "relative_sd_s2z_1[, k];"
+        "exp(sdlog_1[k] * z_sd_centered_s2z);"
       ),
       "group_prec_s2z_1 = inv_square(group_scale_s2z_1);",
       "+ log_det_partial_s2z_1",
@@ -573,22 +577,21 @@ test_that("partial varying-scale Student kernels retain every measure term", {
 
     for (term in c(
       paste0(
-        "scale_partial_s2z = rep_vector(1.0, N_1) - ",
+        "scale_partial_s2z = 1.0 - ",
         "rho_s2z_1[, 1] + rho_s2z_1[, 1] * ",
         "reference_sd_s2z_1[1];"
       ),
       paste0(
-        "raw_partial_s2z = reference_sd_s2z_1[1] * ",
+        "centered_partial_s2z = reference_sd_s2z_1[1] * ",
         "centered_partial_s2z ./ scale_partial_s2z;"
       ),
       paste0(
-        "group_info_s2z[1] = dot_product(group_prec_s2z_1, ",
-        "inv_square(relative_sd_s2z_1[, 1]));"
+        "real weighted_precision_s2z = group_prec_s2z_1[n] * ",
+        "square(relative_precision_s2z);"
       ),
       paste0(
-        "group_quad_s2z_1 += dot_product(group_prec_s2z_1, ",
-        "square((r_s2z_1_1 + mhat_s2z_1[1]) ./ ",
-        "sd_level_s2z_1[, 1]));"
+        "group_quad_s2z_1 += group_prec_s2z_1[n] * ",
+        "square(white_level_s2z);"
       )
     )) {
       expect_true(grepl(term, scalar, fixed = TRUE), info = term)
@@ -641,7 +644,7 @@ test_that("direct non-centered scalar S2Z scales contrasts exactly", {
     "- (N_1 - 1) * log(sd_1[1])", direct, fixed = TRUE
   ))
   for (term in c(
-    "-0.5 * dot_self(white_s2z_1)",
+    "-0.5 * group_quad_s2z_1",
     "- 0.5 * log(D_s2z_1)",
     "+ 0.5 * log(1.0 * N_1)",
     "mean_r_s2z_1 = mhat_s2z_1 + sd_1[1] * std_normal_rng()",
@@ -782,7 +785,8 @@ test_that("direct correlated S2Z applies the reference Cholesky", {
     "- sum(log(diagonal(L_P_s2z_1)))",
     "+ 0.5 * M_1 * log(1.0 * N_1)",
     "q_recovered_s2z_1 = theta_s2z - H_s2z_1 * mean_r_s2z_1",
-    "r_1 = r_s2z_1 + rep_matrix(mean_r_s2z_1', N_1)"
+    "r_1 = r_s2z_1;",
+    "for (j in 1:N_1) r_1[j] += mean_r_s2z_1';"
   )) {
     expect_true(grepl(term, direct, fixed = TRUE), info = term)
   }
@@ -799,7 +803,7 @@ test_that("direct correlated S2Z applies the reference Cholesky", {
     student, fixed = TRUE
   ))
   for (term in c(
-    "white_s2z_1 * group_prec_s2z_1",
+    "contrast_score_s2z_1 = white_s2z * group_prec_s2z_1",
     "- M_1 * sum(log(group_scale_s2z_1))",
     "- sum(log(diagonal(L_P_s2z_1)))",
     "+ 0.5 * M_1 * log(1.0 * N_1)"
@@ -837,7 +841,10 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
     scalar_direct, fixed = TRUE
   ))
   for (term in c(
-    "relative_sd_s2z_1[, k] = exp(sdlog_1[k]",
+    paste0(
+      "sd_level_s2z_1[, k] = reference_sd_s2z_1[k] * ",
+      "exp(sdlog_1[k] * z_sd_centered_s2z);"
+    ),
     "- 0.5 * sum(log(D_diag_s2z_1))",
     "- 0.5 * log1p(rank1_info_s2z_1)",
     "+ 0.5 * M_1 * log(1.0 * N_1)"
@@ -880,7 +887,10 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
     ten_direct, fixed = TRUE
   ))
   for (term in c(
-    "group_info_s2z[1] = dot_product(group_prec_s2z_1",
+    paste0(
+      "real relative_precision_s2z = reference_sd_s2z_1[1] / ",
+      "sd_level_s2z_1[n, 1];"
+    ),
     "- 0.5 * sum(log(D_diag_s2z_1))",
     "- 0.5 * log1p(rank1_info_s2z_1)"
   )) {
@@ -913,7 +923,7 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
   ))
   for (term in c(
     "relative_precision_s2z = mdivide_left_tri_low(",
-    "P_s2z_1 += group_prec_s2z_1[j] *",
+    "P_s2z_1 += crossprod(relative_precision_s2z);",
     "group_quad_s2z_1 -= dot_self(forward_solve_s2z)",
     "- sum(log(diagonal(L_P_s2z_1)))",
     "+ 0.5 * M_1 * log(1.0 * N_1)"
@@ -1030,7 +1040,8 @@ test_that("S2Z uses the dedicated Gaussian scalar kernel", {
   expect_match2(scode, "real<lower=0> D_s2z_1;")
   expect_match2(scode, "real<lower=0> sqrt_D_s2z_1;")
   expect_match2(scode, "real mhat_s2z_1;")
-  expect_match2(scode, "vector[N_1] white_s2z_1;")
+  expect_match2(scode, "real<lower=0> group_quad_s2z_1;")
+  expect_match2(scode, "vector[N_1] white_s2z =")
   expect_match2(
     scode,
     "r_s2z_1_1 = sum_to_zero_constrain_brms(z_s2z_1);"
@@ -1220,7 +1231,8 @@ test_that("S2Z Stan code covers intercepts, slopes, and interactions", {
     "normal_id_glm_lpdf(Y | Xc, mu, tail(theta_s2z, 3), sigma)"
   )
   expect_match2(scode, "q_recovered_s2z_1 = theta_s2z")
-  expect_match2(scode, "r_1 = r_s2z_1 + rep_matrix(mean_r_s2z_1'")
+  expect_match2(scode, "r_1 = r_s2z_1;")
+  expect_match2(scode, "for (j in 1:N_1) r_1[j] += mean_r_s2z_1';")
   expect_match2(scode, "b_Intercept = Intercept - dot_product(means_X, b)")
   expect_true(grepl("normal_id_glm", scode, fixed = TRUE))
 })
@@ -1269,7 +1281,7 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
   expect_match2(
     sc_cor,
     paste0(
-      "white_s2z_1 = mdivide_left_tri_low(",
+      "matrix[M_1, N_1] white_s2z = mdivide_left_tri_low(",
       "L_Sigma_s2z_1, r_s2z_1');"
     )
   )
@@ -1396,7 +1408,7 @@ test_that("independent S2Z uses H identity for ten no-intercept effects", {
   expect_equal(sdata$M_1, 10)
   expect_equal(sdata$K, 10)
   expect_match2(scode, "vector[10] theta_s2z;")
-  expect_match2(scode, "intercept_map_s2z_1 = rep_vector(0.0, M_1);")
+  expect_match2(scode, "intercept_map_s2z_1 = zeros_vector(M_1);")
   expect_false(grepl("intercept_map_s2z_1[1] =", scode, fixed = TRUE))
   expect_match2(scode, "rank1_info_s2z_1 = 0.0 * dot_product(")
   for (k in seq_len(10L)) {
@@ -2032,19 +2044,11 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   for (term in c(
     "array[M_1] vector[N_1 - 1] z_sd_s2z_1;",
     "vector[M_1] z_sd_mean_s2z_1;",
-    "matrix<lower=0>[N_1, M_1] relative_sd_s2z_1;",
     "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
     "vector<lower=0>[M_1] reference_sd_s2z_1;"
   )) {
     expect_match2(scode, term)
   }
-  expect_match2(
-    scode,
-    paste0(
-      "relative_sd_s2z_1[, k] = exp(sdlog_1[k] * ",
-      "z_sd_centered_s2z);"
-    )
-  )
   expect_match2(
     scode,
     paste0(
@@ -2056,7 +2060,7 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
     scode,
     paste0(
       "sd_level_s2z_1[, k] = reference_sd_s2z_1[k] * ",
-      "relative_sd_s2z_1[, k];"
+      "exp(sdlog_1[k] * z_sd_centered_s2z);"
     )
   )
   expect_match2(
@@ -2076,15 +2080,13 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_match2(
     scode,
     paste0(
-      "P_s2z_1 += group_prec_s2z_1[j] * ",
-      "crossprod(relative_precision_s2z);"
+      "P_s2z_1 += crossprod(relative_precision_s2z);"
     )
   )
   expect_match2(
     scode,
     paste0(
-      "h_s2z -= group_prec_s2z_1[j] * ",
-      "relative_precision_s2z' * white_level_s2z;"
+      "h_s2z -= relative_precision_s2z' * white_level_s2z;"
     )
   )
   expect_match2(scode, "group_quad_s2z_1 -= dot_self(forward_solve_s2z)")
@@ -2097,6 +2099,8 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_match2(scode, "sd_level_1 = sd_level_s2z_1;")
   expect_match2(scode, "target += std_normal_lpdf(z_sd_mean_s2z_1);")
   expect_match2(scode, "target += std_normal_lpdf(z_sd_s2z_1[k]);")
+  expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("relative_sd_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("jacobian", scode, ignore.case = TRUE))
   expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
 })
@@ -2117,8 +2121,8 @@ test_that("independent varying scales retain the O(K) specialization", {
   expect_match2(
     scode,
     paste0(
-      "group_info_s2z[1] = dot_product(group_prec_s2z_1, ",
-      "inv_square(relative_sd_s2z_1[, 1]));"
+      "real relative_precision_s2z = reference_sd_s2z_1[1] / ",
+      "sd_level_s2z_1[n, 1];"
     )
   )
   expect_match2(
@@ -2135,6 +2139,8 @@ test_that("independent varying scales retain the O(K) specialization", {
   expect_match2(scode, "- 0.5 * sum(log(D_diag_s2z_1))")
   expect_match2(scode, "- 0.5 * log1p(rank1_info_s2z_1)")
   expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
+  expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("relative_sd_s2z_1", scode, fixed = TRUE))
   for (term in c(
     "matrix[M_1, M_1]", "cholesky_decompose(",
     "mdivide_left_spd(", "mdivide_left_tri_low(",
@@ -2158,8 +2164,8 @@ test_that("independent varying scales retain the O(K) specialization", {
   expect_match2(
     student_code,
     paste0(
-      "group_score_s2z[1] = dot_product(r_s2z_1_1, ",
-      "group_prec_s2z_1 .* inv_square(relative_sd_s2z_1[, 1]));"
+      "real weighted_precision_s2z = group_prec_s2z_1[n] * ",
+      "square(relative_precision_s2z);"
     )
   )
   expect_match2(student_code, "- M_1 * sum(log(group_scale_s2z_1))")
@@ -2172,11 +2178,13 @@ test_that("varying-scale public names stay separate from kernel internals", {
   excluded <- unlist(brms:::exclude_pars(fit), use.names = FALSE)
 
   for (name in c(
-    "z_sd_s2z_1", "z_sd_mean_s2z_1", "relative_sd_s2z_1",
+    "z_sd_s2z_1", "z_sd_mean_s2z_1",
     "reference_sd_s2z_1", "sd_level_s2z_1"
   )) {
     expect_true(name %in% excluded, info = name)
   }
+  # Retain the obsolete internal name for old serialized varying-scale fits.
+  expect_true("relative_sd_s2z_1" %in% excluded)
   expect_false("sdlog_1" %in% excluded)
   expect_false("sd_level_1" %in% excluded)
 
@@ -2274,7 +2282,7 @@ test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
   expect_match2(
     scode,
     paste0(
-      "white_s2z_1 = mdivide_left_tri_low(",
+      "matrix[M_1, N_1] white_s2z = mdivide_left_tri_low(",
       "L_Sigma_s2z_1, r_s2z_1');"
     )
   )
@@ -2289,14 +2297,14 @@ test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
     scode,
     paste0(
       "h_s2z = prior_factor_s2z' * prior_difference_s2z - ",
-      "white_s2z_1 * group_prec_s2z_1;"
+      "contrast_score_s2z_1;"
     )
   )
   expect_match2(
     scode,
     paste0(
       "group_quad_s2z_1 += group_prec_s2z_1[j] * ",
-      "dot_self(white_s2z_1[, j]);"
+      "dot_self(white_s2z[, j]);"
     )
   )
   expect_match2(scode, "lprior += -0.5 * group_quad_s2z_1")
@@ -2619,6 +2627,98 @@ test_that("nonseparable or nonbeneficial multiblock models keep dense fallback",
   }
 })
 
+test_that("joint Student varying scales retain precision weights", {
+  form <- y ~ x +
+    (1 + x || gr(
+      g, s2z = TRUE, scale = "varying", dist = "student"
+    )) +
+    (1 + x | gr(h, s2z = TRUE))
+  bprior <- prior(normal(0, 2), class = Intercept) +
+    prior(normal(0, 1), class = b)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+
+  for (term in c(
+    "group_prec_s2z_1 = inv_square(group_scale_s2z_1);",
+    paste0(
+      "group_info_s2z += group_prec_s2z_1[j] * ",
+      "square(relative_precision_s2z);"
+    ),
+    paste0(
+      "h_group_s2z_1 -= group_prec_s2z_1[j] * ",
+      "relative_precision_s2z .* white_level_s2z;"
+    ),
+    paste0(
+      "group_quad_s2z_1 += group_prec_s2z_1[j] * ",
+      "dot_self(white_level_s2z);"
+    ),
+    "L_P_s2z_1 = cholesky_decompose(P_s2z_1);"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+  expect_false(grepl("fast Gaussian Matheron system", scode, fixed = TRUE))
+  expect_false(grepl("H_joint_s2z_1", scode, fixed = TRUE))
+  expect_match2(
+    scode,
+    paste0(
+      "prior_factor_s2z[, 1:2] = diag_pre_multiply(",
+      "sqrt(prior_prec_s2z_1), H_s2z_1 * L_Sigma_s2z_1);"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "prior_factor_s2z[, 3:4] = diag_pre_multiply(",
+      "sqrt(prior_prec_s2z_1), H_s2z_2 * L_Sigma_s2z_2);"
+    )
+  )
+  expect_match2(scode, "P_s2z_1 = crossprod(prior_factor_s2z);")
+  expect_false(grepl(
+    "prior_factor_s2z = rep_matrix", scode, fixed = TRUE
+  ))
+  expect_match2(
+    scode,
+    paste0(
+      "mean_r_s2z_1 = reference_sd_s2z_1 .* ",
+      "mean_white_s2z[1:2];"
+    )
+  )
+  expect_match2(
+    scode,
+    "mean_r_s2z_2 = L_Sigma_s2z_2 * mean_white_s2z[3:4];"
+  )
+  expect_match2(
+    scode, "q_recovered_s2z_1 -= H_s2z_1 * mean_r_s2z_1;"
+  )
+  expect_match2(
+    scode, "q_recovered_s2z_1 -= H_s2z_2 * mean_r_s2z_2;"
+  )
+
+  correlated_code <- stancode(
+    y ~ x +
+      (1 + x | gr(
+        g, s2z = TRUE, scale = "varying", dist = "student"
+      )) +
+      (1 + x | gr(h, s2z = TRUE)),
+    data = s2z_dat, prior = bprior
+  )
+  for (term in c(
+    paste0(
+      "P_group_s2z_1 += group_prec_s2z_1[j] * ",
+      "crossprod(relative_precision_s2z);"
+    ),
+    paste0(
+      "h_group_s2z_1 -= group_prec_s2z_1[j] * ",
+      "relative_precision_s2z' * white_level_s2z;"
+    ),
+    paste0(
+      "group_quad_s2z_1 += group_prec_s2z_1[j] * ",
+      "dot_self(white_level_s2z);"
+    )
+  )) {
+    expect_true(grepl(term, correlated_code, fixed = TRUE), info = term)
+  }
+})
+
 test_that("crossed scalar S2Z factors share one omitted-mean system", {
   form <- y ~ 1 +
     (1 | gr(g, s2z = TRUE, center = 0.25)) +
@@ -2712,7 +2812,8 @@ test_that("independent and correlated interaction blocks stay specialized", {
     "+ log_det_partial_s2z_2",
     "r_1_1 = r_s2z_1_1 + mean_r_s2z_1[1];",
     "r_1_4 = r_s2z_1_4 + mean_r_s2z_1[4];",
-    "r_2 = r_s2z_2 + rep_matrix(mean_r_s2z_2', N_2);",
+    "r_2 = r_s2z_2;",
+    "for (j in 1:N_2) r_2[j] += mean_r_s2z_2';",
     "vector[Kc] b;",
     "b = tail(q_recovered_s2z_1, Kc);"
   )) {
@@ -2728,10 +2829,10 @@ test_that("independent and correlated interaction blocks stay specialized", {
   ))
   expect_match2(
     scode,
-    paste0(
-      "matrix[N_1, M_1] white_group_s2z = r_s2z_1 ./ ",
-      "rep_matrix(sd_1', N_1);"
-    )
+    "vector[N_1] white_group_s2z = r_s2z_1[, k] / sd_1[k];"
+  )
+  expect_match2(
+    scode, "group_quad_s2z_1 += dot_self(white_group_s2z);"
   )
   expect_false(grepl("corr_matrix[M_1] Cor_1", scode, fixed = TRUE))
   expect_match2(scode, "corr_matrix[M_2] Cor_2")
@@ -2778,8 +2879,8 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
     "sum(group_prec_s2z_2), M_2));",
     "h_group_s2z_2 = -white_group_s2z * group_prec_s2z_2;",
     "- M_2 * sum(log(group_scale_s2z_2))",
-    "P_s2z_1[1:2, 1:2] = P_group_s2z_1;",
-    "P_s2z_1[3:4, 3:4] = P_group_s2z_2;"
+    "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
+    "P_s2z_1[3:4, 3:4] += P_group_s2z_2;"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
@@ -2817,8 +2918,8 @@ test_that("shared and varying scales compose in a joint S2Z model", {
     ),
     "P_group_s2z_1 = diag_matrix(group_info_s2z);",
     "L_Sigma_s2z_2 = diag_pre_multiply(sd_2, L_2);",
-    "P_s2z_1[1:2, 1:2] = P_group_s2z_1;",
-    "P_s2z_1[3:4, 3:4] = P_group_s2z_2;",
+    "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
+    "P_s2z_1[3:4, 3:4] += P_group_s2z_2;",
     "matrix<lower=0>[N_1, M_1] sd_level_1;",
     "sd_level_1 = sd_level_s2z_1;"
   )) {
