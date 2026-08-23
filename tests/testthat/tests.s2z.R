@@ -2030,11 +2030,14 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   )
   expect_match2(
     gaussian_code,
-    "array[M_1] vector[N_1 - 1] z_s2z_1;"
+    "vector[M_1 * (N_1 - 1)] z_s2z_1;"
   )
   expect_match2(
     gaussian_code,
-    "r_s2z_1[, k] = sum_to_zero_constrain_brms(z_s2z_1[k]);"
+    paste0(
+      "r_s2z_1[, k] = sum_to_zero_constrain_brms(segment(z_s2z_1, ",
+      "(k - 1) * (N_1 - 1) + 1, N_1 - 1));"
+    )
   )
   expect_match2(gaussian_code, "H_s2z_1[1, 2] = means_X[1];")
   expect_match2(gaussian_code, "H_s2z_1[1, 4] = means_X[3];")

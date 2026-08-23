@@ -909,7 +909,10 @@ stan_re_s2z_partial_cor_transform <- function(id) {
 # Diagonal specialization of the same restricted transform.  This is used by
 # scalar and independent blocks and avoids all per-level matrix operations.
 stan_re_s2z_partial_independent_transform <- function(
-    id, k, r_s2z, scale, z_s2z = glue("z_s2z_{id}[{k}]")) {
+    id, k, r_s2z, scale,
+    z_s2z = glue(
+      "segment(z_s2z_{id}, ({k} - 1) * (N_{id} - 1) + 1, N_{id} - 1)"
+    )) {
   glue(
     "  {{\n",
     "    vector[N_{id}] centered_partial_s2z = ",
@@ -1080,7 +1083,7 @@ stan_re_s2z_partial_independent_transform <- function(
   }
 
   str_add(out$par) <- glue(
-    "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
+    "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
     if (s2z_partial) {
       "  // partially centered orthonormal S2Z coordinates\n"
     } else if (s2z_center) {
@@ -1091,13 +1094,10 @@ stan_re_s2z_partial_independent_transform <- function(
   )
   if (varying) {
     str_add(out$par) <- glue(
-      "  vector[M_{id} * (N_{id} - 1)] z_sd_s2z_{id};",
-      "  // flattened orthonormal centered log-scale coordinates\n",
-      "  vector[M_{id}] z_sd_mean_s2z_{id};",
-      "  // standardized log-scale mean coordinates\n"
+      "  vector[M_{id} * N_{id}] z_sd_s2z_{id};",
+      "  // flattened orthonormal log-scale coordinates: contrasts, then means\n"
     )
     str_add(out$model_prior) <- glue(
-      "  target += std_normal_{lpdf}(z_sd_mean_s2z_{id});\n",
       "  target += std_normal_{lpdf}(z_sd_s2z_{id});\n"
     )
   }
@@ -1163,12 +1163,12 @@ stan_re_s2z_partial_independent_transform <- function(
 
   if (varying) {
     str_add(out$tpar_comp) <- glue(
+      "  reference_sd_s2z_{id} = sd_{id} .* exp(sdlog_{id} .* ",
+      "tail(z_sd_s2z_{id}, M_{id}) / sqrt(1.0 * N_{id}));\n",
       "  for (k in 1:M_{id}) {{\n",
       "    vector[N_{id}] z_sd_centered_s2z = ",
       "sum_to_zero_constrain_brms(segment(z_sd_s2z_{id}, ",
       "(k - 1) * (N_{id} - 1) + 1, N_{id} - 1));\n",
-      "    reference_sd_s2z_{id}[k] = sd_{id}[k] * exp(sdlog_{id}[k] * ",
-      "z_sd_mean_s2z_{id}[k] / sqrt(1.0 * N_{id}));\n",
       "    sd_level_s2z_{id}[, k] = reference_sd_s2z_{id}[k] * ",
       "exp(sdlog_{id}[k] * z_sd_centered_s2z);\n",
       "  }}\n"
@@ -1210,7 +1210,9 @@ stan_re_s2z_partial_independent_transform <- function(
     partial_transform <- stan_re_s2z_partial_cor_transform(id)
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
-      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(z_s2z_{id}[k]);\n",
+      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+      "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+      "N_{id} - 1));\n",
       "  }}\n",
       "{partial_transform}"
     )
@@ -1231,7 +1233,9 @@ stan_re_s2z_partial_independent_transform <- function(
   } else {
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
-      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(z_s2z_{id}[k]);\n",
+      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+      "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+      "N_{id} - 1));\n",
       "  }}\n"
     )
     if (!s2z_center) {
@@ -1253,10 +1257,7 @@ stan_re_s2z_partial_independent_transform <- function(
     # In non-centered coordinates the S2Z basis and coefficient transform are
     # already orthonormal/whitened, so no N by M solve or division is needed.
     str_add(out$tpar_comp) <- glue(
-      "  group_quad_s2z_{id} = 0.0;\n",
-      "  for (k in 1:M_{id}) {{\n",
-      "    group_quad_s2z_{id} += dot_self(z_s2z_{id}[k]);\n",
-      "  }}\n"
+      "  group_quad_s2z_{id} = dot_self(z_s2z_{id});\n"
     )
   } else if (use_matheron && is_cor) {
     str_add(out$tpar_comp) <- glue(
@@ -1336,11 +1337,8 @@ stan_re_s2z_partial_independent_transform <- function(
       glue(
         "    h_group_s2z_{id} = -white_group_s2z * ",
         "group_prec_s2z_{id};\n",
-        "    group_quad_s2z_{id} = 0.0;\n",
-        "    for (j in 1:N_{id}) {{\n",
-        "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
-        "dot_self(white_group_s2z[, j]);\n",
-        "    }}\n"
+        "    group_quad_s2z_{id} = columns_dot_self(white_group_s2z) * ",
+        "group_prec_s2z_{id};\n"
       )
     } else {
       glue(
@@ -1414,6 +1412,7 @@ stan_re_s2z_partial_independent_transform <- function(
   P <- matheron$P
   inactive <- matheron$inactive
   rdim <- length(P)
+  P_index <- paste0("{", paste(P, collapse = ", "), "}")
   set_id <- set$set_id
   p <- info$p
   lpdf <- stan_lpdf_name(normalize)
@@ -1484,14 +1483,9 @@ stan_re_s2z_partial_independent_transform <- function(
     )
   } else if (rdim > 1L) {
     str_add(out$tpar_comp) <- glue(
-      "  W_matheron_s2z_{set_id} = rep_matrix(0.0, {rdim}, {rdim});\n"
+      "  W_matheron_s2z_{set_id} = diag_matrix(square(",
+      "prior_scale_s2z_{set_id}[{P_index}]));\n"
     )
-    for (a in seq_len(rdim)) {
-      str_add(out$tpar_comp) <- glue(
-        "  W_matheron_s2z_{set_id}[{a}, {a}] = ",
-        "square(prior_scale_s2z_{set_id}[{P[a]}]);\n"
-      )
-    }
   }
   str_add(out$tpar_comp) <- glue(
     "  joint_quad_s2z_{set_id} = 0.0;\n"
@@ -1506,14 +1500,8 @@ stan_re_s2z_partial_independent_transform <- function(
     } else if (rdim > 1L) {
       str_add(out$tpar_comp) <- glue(
         "  {{\n",
-        "    matrix[{rdim}, M_{id}] H_active_s2z;\n"
-      )
-      for (a in seq_len(rdim)) {
-        str_add(out$tpar_comp) <- glue(
-          "    H_active_s2z[{a}, ] = H_s2z_{id}[{P[a]}, ];\n"
-        )
-      }
-      str_add(out$tpar_comp) <- glue(
+        "    matrix[{rdim}, M_{id}] H_active_s2z = ",
+        "H_s2z_{id}[{P_index}, ];\n",
         "    W_matheron_s2z_{set_id} += tcrossprod(",
         "H_active_s2z * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n",
         "  }}\n"
@@ -1535,15 +1523,8 @@ stan_re_s2z_partial_independent_transform <- function(
       "  L_W_matheron_s2z_{set_id} = ",
       "cholesky_decompose(W_matheron_s2z_{set_id});\n",
       "  {{\n",
-      "    vector[{rdim}] theta_difference_s2z;\n"
-    )
-    for (a in seq_len(rdim)) {
-      str_add(out$tpar_comp) <- glue(
-        "    theta_difference_s2z[{a}] = theta_s2z{p}[{P[a]}] - ",
-        "prior_mean_s2z_{set_id}[{P[a]}];\n"
-      )
-    }
-    str_add(out$tpar_comp) <- glue(
+      "    vector[{rdim}] theta_difference_s2z = ",
+      "theta_s2z{p}[{P_index}] - prior_mean_s2z_{set_id}[{P_index}];\n",
       "    theta_white_matheron_s2z_{set_id} = mdivide_left_tri_low(",
       "L_W_matheron_s2z_{set_id}, theta_difference_s2z);\n",
       "  }}\n"
@@ -2145,7 +2126,7 @@ stan_re_s2z_partial_independent_transform <- function(
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
-    "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
+    "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
     if (s2z_partial) {
       "  // partially centered orthonormal S2Z effect coordinates\n"
     } else if (s2z_center) {
@@ -2153,13 +2134,10 @@ stan_re_s2z_partial_independent_transform <- function(
     } else {
       "  // standardized orthonormal S2Z effect coordinates\n"
     },
-    "  vector[M_{id} * (N_{id} - 1)] z_sd_s2z_{id};",
-    "  // flattened orthonormal centered log-scale coordinates\n",
-    "  vector[M_{id}] z_sd_mean_s2z_{id};",
-    "  // standardized log-scale mean coordinates\n"
+    "  vector[M_{id} * N_{id}] z_sd_s2z_{id};",
+    "  // flattened orthonormal log-scale coordinates: contrasts, then means\n"
   )
   str_add(out$model_prior) <- glue(
-    "  target += std_normal_{lpdf}(z_sd_mean_s2z_{id});\n",
     "  target += std_normal_{lpdf}(z_sd_s2z_{id});\n"
   )
 
@@ -2194,12 +2172,12 @@ stan_re_s2z_partial_independent_transform <- function(
     )
   )
   str_add(out$tpar_comp) <- glue(
+    "  reference_sd_s2z_{id} = sd_{id} .* exp(sdlog_{id} .* ",
+    "tail(z_sd_s2z_{id}, M_{id}) / sqrt(1.0 * N_{id}));\n",
     "  for (k in 1:M_{id}) {{\n",
     "    vector[N_{id}] z_sd_centered_s2z = ",
     "sum_to_zero_constrain_brms(segment(z_sd_s2z_{id}, ",
     "(k - 1) * (N_{id} - 1) + 1, N_{id} - 1));\n",
-    "    reference_sd_s2z_{id}[k] = sd_{id}[k] * exp(sdlog_{id}[k] * ",
-    "z_sd_mean_s2z_{id}[k] / sqrt(1.0 * N_{id}));\n",
     "    sd_level_s2z_{id}[, k] = reference_sd_s2z_{id}[k] * ",
     "exp(sdlog_{id}[k] * z_sd_centered_s2z);\n",
     "  }}\n"
@@ -2286,7 +2264,8 @@ stan_re_s2z_partial_independent_transform <- function(
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
       "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
-      "z_s2z_{id}[k]);\n",
+      "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+      "N_{id} - 1));\n",
       "  }}\n",
       "  L_Sigma_s2z_{id} = diag_pre_multiply(",
       "reference_sd_s2z_{id}, L_{id});\n",
@@ -2426,7 +2405,8 @@ stan_re_s2z_partial_independent_transform <- function(
             !s2z_center,
             glue("reference_sd_s2z_{id}[{j}] * ")
           ),
-          "z_s2z_{id}[{j}]);\n"
+          "segment(z_s2z_{id}, ({j} - 1) * (N_{id} - 1) + 1, ",
+          "N_{id} - 1));\n"
         )
       }
     }
@@ -2764,7 +2744,7 @@ stan_re_s2z_partial_independent_transform <- function(
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
-    "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
+    "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
     if (s2z_partial) {
       "  // partially centered orthonormal S2Z coordinates\n"
     } else if (s2z_center) {
@@ -2859,7 +2839,9 @@ stan_re_s2z_partial_independent_transform <- function(
   }
   str_add(out$tpar_comp) <- glue(
     "  for (k in 1:M_{id}) {{\n",
-    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(z_s2z_{id}[k]);\n",
+    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+    "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+    "N_{id} - 1));\n",
     "  }}\n",
     "{partial_transform}"
   )
@@ -2908,10 +2890,8 @@ stan_re_s2z_partial_independent_transform <- function(
   )
   group_quad_code <- if (is_student) {
     glue(
-      "    for (j in 1:N_{id}) {{\n",
-      "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
-      "dot_self(white_s2z[, j]);\n",
-      "    }}\n"
+      "    group_quad_s2z_{id} += columns_dot_self(white_s2z) * ",
+      "group_prec_s2z_{id};\n"
     )
   } else {
     glue(
@@ -3102,7 +3082,7 @@ stan_re_s2z_partial_independent_transform <- function(
 
   str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
   str_add(out$par) <- glue(
-    "  array[M_{id}] vector[N_{id} - 1] z_s2z_{id};",
+    "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
     if (s2z_partial) {
       "  // partially centered orthonormal independent S2Z coordinates\n"
     } else if (s2z_center) {
@@ -3185,7 +3165,8 @@ stan_re_s2z_partial_independent_transform <- function(
       str_add(out$tpar_comp) <- glue(
         "  {r_s2z[j]} = sum_to_zero_constrain_brms(",
         str_if(!s2z_center, glue("sd_{id}[{j}] * ")),
-        "z_s2z_{id}[{j}]);\n"
+        "segment(z_s2z_{id}, ({j} - 1) * (N_{id} - 1) + 1, ",
+        "N_{id} - 1));\n"
       )
     }
   }

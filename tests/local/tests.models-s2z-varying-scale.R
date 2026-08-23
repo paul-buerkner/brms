@@ -742,12 +742,12 @@ s2z_invariants <- function(fit, case, sdata, canonical) {
   for (k in seq_len(M)) {
     raw_scale <- do.call(cbind, lapply(seq_len(J - 1L), function(j) {
       c(draw_matrix(
-        draws, sprintf("z_sd_s2z_1[%d,%d]", k, j)
+        draws, sprintf("z_sd_s2z_1[%d]", (k - 1L) * (J - 1L) + j)
       ))
     }))
     z_centered <- raw_scale %*% t(B)
     z_mean <- draw_matrix(
-      draws, sprintf("z_sd_mean_s2z_1[%d]", k)
+      draws, sprintf("z_sd_s2z_1[%d]", M * (J - 1L) + k)
     )
     baseline_sd <- canonical[[paste0("sd:", coefs[k])]]
     sdlog <- canonical[[paste0("sdlog:", coefs[k])]]

@@ -550,8 +550,8 @@ test_that("partial varying-scale Student kernels retain every measure term", {
     for (term in c(
       "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;",
       paste0(
-        "reference_sd_s2z_1[k] = sd_1[k] * exp(sdlog_1[k] * ",
-        "z_sd_mean_s2z_1[k] / sqrt(1.0 * N_1));"
+        "reference_sd_s2z_1 = sd_1 .* exp(sdlog_1 .* ",
+        "tail(z_sd_s2z_1, M_1) / sqrt(1.0 * N_1));"
       ),
       paste0(
         "sd_level_s2z_1[, k] = reference_sd_s2z_1[k] * ",
@@ -736,7 +736,8 @@ test_that("direct independent S2Z scales K4 and K10 component-wise", {
         sprintf(
           paste0(
             "r_s2z_1_%1$s = sum_to_zero_constrain_brms(",
-            "sd_1[%1$s] * z_s2z_1[%1$s]);"
+            "sd_1[%1$s] * segment(z_s2z_1, ",
+            "(%1$s - 1) * (N_1 - 1) + 1, N_1 - 1));"
           ),
           j
         )
@@ -763,7 +764,10 @@ test_that("direct independent S2Z scales K4 and K10 component-wise", {
     "- (N_1 - 1) * sum(log(sd_1))", student_direct, fixed = TRUE
   ))
   for (term in c(
-    "sd_1[4] * z_s2z_1[4]",
+    paste0(
+      "sd_1[4] * segment(z_s2z_1, ",
+      "(4 - 1) * (N_1 - 1) + 1, N_1 - 1)"
+    ),
     "- M_1 * sum(log(group_scale_s2z_1))",
     "- 0.5 * sum(log(D_diag_s2z_1))",
     "- 0.5 * log1p(rank1_info_s2z_1)"
@@ -785,7 +789,10 @@ test_that("direct correlated S2Z applies the reference Cholesky", {
 
   expect_match2(
     centered,
-    "r_s2z_1[, k] = sum_to_zero_constrain_brms(z_s2z_1[k]);"
+    paste0(
+      "r_s2z_1[, k] = sum_to_zero_constrain_brms(segment(z_s2z_1, ",
+      "(k - 1) * (N_1 - 1) + 1, N_1 - 1));"
+    )
   )
   expect_false(grepl(
     "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';",
@@ -851,7 +858,8 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
     scalar_direct,
     paste0(
       "r_s2z_1_1 = sum_to_zero_constrain_brms(",
-      "reference_sd_s2z_1[1] * z_s2z_1[1]);"
+      "reference_sd_s2z_1[1] * segment(z_s2z_1, ",
+      "(1 - 1) * (N_1 - 1) + 1, N_1 - 1));"
     )
   )
   expect_match2(
@@ -894,7 +902,8 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
       sprintf(
         paste0(
           "r_s2z_1_%1$s = sum_to_zero_constrain_brms(",
-          "reference_sd_s2z_1[%1$s] * z_s2z_1[%1$s]);"
+          "reference_sd_s2z_1[%1$s] * segment(z_s2z_1, ",
+          "(%1$s - 1) * (N_1 - 1) + 1, N_1 - 1));"
         ),
         j
       )
@@ -1084,6 +1093,7 @@ test_that("S2Z uses the dedicated Gaussian scalar kernel", {
   # The scalar branch must not instantiate one-by-one matrix factorizations.
   for (term in c(
     "array[M_1] vector[N_1 - 1] z_s2z_1;",
+    "vector[M_1 * (N_1 - 1)] z_s2z_1;",
     "matrix[N_1, M_1] r_s2z_1;",
     "matrix[M_1, M_1] Q_Sigma_s2z_1;",
     "cholesky_decompose(P_s2z_1)",
@@ -1241,7 +1251,7 @@ test_that("S2Z Stan code covers intercepts, slopes, and interactions", {
 
   expect_equal(sdata$M_1, 4)
   expect_equal(sdata$NC_1, 6)
-  expect_match2(scode, "array[M_1] vector[N_1 - 1] z_s2z_1;")
+  expect_match2(scode, "vector[M_1 * (N_1 - 1)] z_s2z_1;")
   expect_match2(scode, "matrix[N_1, M_1] r_s2z_1;")
   expect_match2(scode, "H_s2z_1[1, 2] = means_X[1];")
   expect_match2(scode, "H_s2z_1[1, 3] = means_X[2];")
@@ -1358,13 +1368,16 @@ test_that("independent S2Z specializes centered slopes and interactions", {
   sdata <- standata(form, data = s2z_dat)
 
   expect_equal(sdata$M_1, 4)
-  expect_match2(scode, "array[M_1] vector[N_1 - 1] z_s2z_1;")
+  expect_match2(scode, "vector[M_1 * (N_1 - 1)] z_s2z_1;")
   for (k in seq_len(sdata$M_1)) {
     expect_match2(scode, sprintf("vector[N_1] r_s2z_1_%s;", k))
     expect_match2(
       scode,
       sprintf(
-        "r_s2z_1_%1$s = sum_to_zero_constrain_brms(z_s2z_1[%1$s]);",
+        paste0(
+          "r_s2z_1_%1$s = sum_to_zero_constrain_brms(",
+          "segment(z_s2z_1, (%1$s - 1) * (N_1 - 1) + 1, N_1 - 1));"
+        ),
         k
       )
     )
@@ -1646,8 +1659,8 @@ test_that("group-varying scales preserve baseline priors and add sdlog", {
   expect_match2(
     zero_code,
     paste0(
-      "reference_sd_s2z_1[k] = sd_1[k] * exp(sdlog_1[k] * ",
-      "z_sd_mean_s2z_1[k] / sqrt(1.0 * N_1));"
+      "reference_sd_s2z_1 = sd_1 .* exp(sdlog_1 .* ",
+      "tail(z_sd_s2z_1, M_1) / sqrt(1.0 * N_1));"
     )
   )
 
@@ -2064,8 +2077,7 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   )
 
   for (term in c(
-    "vector[M_1 * (N_1 - 1)] z_sd_s2z_1;",
-    "vector[M_1] z_sd_mean_s2z_1;",
+    "vector[M_1 * N_1] z_sd_s2z_1;",
     "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
     "vector<lower=0>[M_1] reference_sd_s2z_1;"
   )) {
@@ -2074,8 +2086,8 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_match2(
     scode,
     paste0(
-      "reference_sd_s2z_1[k] = sd_1[k] * exp(sdlog_1[k] * ",
-      "z_sd_mean_s2z_1[k] / sqrt(1.0 * N_1));"
+      "reference_sd_s2z_1 = sd_1 .* exp(sdlog_1 .* ",
+      "tail(z_sd_s2z_1, M_1) / sqrt(1.0 * N_1));"
     )
   )
   expect_match2(
@@ -2119,8 +2131,13 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_match2(scode, "- sum(log(diagonal(L_P_s2z_1)))")
   expect_match2(scode, "+ 0.5 * M_1 * log(1.0 * N_1)")
   expect_match2(scode, "sd_level_1 = sd_level_s2z_1;")
-  expect_match2(scode, "target += std_normal_lpdf(z_sd_mean_s2z_1);")
   expect_match2(scode, "target += std_normal_lpdf(z_sd_s2z_1);")
+  expect_equal(
+    s2z_count_fixed(
+      scode, "target += std_normal_lpdf(z_sd_s2z_1);"
+    ),
+    1L
+  )
   expect_match2(
     scode,
     paste0(
@@ -2131,6 +2148,7 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_false(grepl(
     "std_normal_lpdf(z_sd_s2z_1[k])", scode, fixed = TRUE
   ))
+  expect_false(grepl("z_sd_mean_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("relative_sd_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("jacobian", scode, ignore.case = TRUE))
@@ -2210,13 +2228,14 @@ test_that("varying-scale public names stay separate from kernel internals", {
   excluded <- unlist(brms:::exclude_pars(fit), use.names = FALSE)
 
   for (name in c(
-    "z_sd_s2z_1", "z_sd_mean_s2z_1",
-    "reference_sd_s2z_1", "sd_level_s2z_1"
+    "z_sd_s2z_1", "reference_sd_s2z_1", "sd_level_s2z_1"
   )) {
     expect_true(name %in% excluded, info = name)
   }
-  # Retain the obsolete internal name for old serialized varying-scale fits.
-  expect_true("relative_sd_s2z_1" %in% excluded)
+  # Retain obsolete internal names for old serialized varying-scale fits.
+  for (name in c("z_sd_mean_s2z_1", "relative_sd_s2z_1")) {
+    expect_true(name %in% excluded, info = name)
+  }
   expect_false("sdlog_1" %in% excluded)
   expect_false("sd_level_1" %in% excluded)
 
@@ -2335,8 +2354,8 @@ test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
   expect_match2(
     scode,
     paste0(
-      "group_quad_s2z_1 += group_prec_s2z_1[j] * ",
-      "dot_self(white_s2z[, j]);"
+      "group_quad_s2z_1 += columns_dot_self(white_s2z) * ",
+      "group_prec_s2z_1;"
     )
   )
   expect_match2(scode, "lprior += -0.5 * group_quad_s2z_1")
@@ -2507,6 +2526,15 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
     "// fast Gaussian Matheron system for S2Z blocks 1, 2, 3",
     "matrix[4, 4] W_matheron_s2z_1;",
     "matrix[4, 4] L_W_matheron_s2z_1;",
+    paste0(
+      "W_matheron_s2z_1 = diag_matrix(square(",
+      "prior_scale_s2z_1[{1, 2, 3, 4}]));"
+    ),
+    "H_active_s2z = H_s2z_1[{1, 2, 3, 4}, ];",
+    paste0(
+      "theta_difference_s2z = theta_s2z[{1, 2, 3, 4}] - ",
+      "prior_mean_s2z_1[{1, 2, 3, 4}];"
+    ),
     "- (N_2 - 1) * sum(log(diagonal(L_Sigma_s2z_2)))",
     "+ log_det_partial_s2z_1",
     "- 0.5 * (N_1 - 1) * M_1 * log(2 * pi())",
@@ -2516,7 +2544,7 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
     "mean_r_s2z_1 += L_Sigma_s2z_1 *",
     "mean_r_s2z_2 += L_Sigma_s2z_2 *",
     "mean_r_s2z_3 += L_Sigma_s2z_3 *",
-    "group_quad_s2z_3 += dot_self(z_s2z_3[k]);",
+    "group_quad_s2z_3 = dot_self(z_s2z_3);",
     "q_recovered_s2z_1 = theta_s2z;"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
@@ -2535,6 +2563,9 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
   expect_false(grepl("matrix[7, 7] P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("L_P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("H_joint_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl(
+    "W_matheron_s2z_1 = rep_matrix", scode, fixed = TRUE
+  ))
   expect_equal(
     s2z_count_fixed(
       scode,
@@ -2543,6 +2574,23 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
     3L
   )
   expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+
+  selective_prior <- prior(normal(0, 2), class = Intercept) +
+    prior(normal(0, 1), class = b, coef = "x:z")
+  selective_code <- stancode(form, data = s2z_dat, prior = selective_prior)
+  for (term in c(
+    paste0(
+      "W_matheron_s2z_1 = diag_matrix(square(",
+      "prior_scale_s2z_1[{1, 4}]));"
+    ),
+    "H_active_s2z = H_s2z_1[{1, 4}, ];",
+    paste0(
+      "theta_difference_s2z = theta_s2z[{1, 4}] - ",
+      "prior_mean_s2z_1[{1, 4}];"
+    )
+  )) {
+    expect_true(grepl(term, selective_code, fixed = TRUE), info = term)
+  }
 })
 
 test_that("conditional Student and Cauchy population priors use Matheron", {
@@ -2910,6 +2958,10 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
     "P_group_s2z_2 = diag_matrix(rep_vector(",
     "sum(group_prec_s2z_2), M_2));",
     "h_group_s2z_2 = -white_group_s2z * group_prec_s2z_2;",
+    paste0(
+      "group_quad_s2z_2 = columns_dot_self(white_group_s2z) * ",
+      "group_prec_s2z_2;"
+    ),
     "- M_2 * sum(log(group_scale_s2z_2))",
     "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
     "P_s2z_1[3:4, 3:4] += P_group_s2z_2;"
@@ -2942,11 +2994,15 @@ test_that("shared and varying scales compose in a joint S2Z model", {
   expect_null(sdata$rho_s2z_2)
   for (term in c(
     "vector<lower=0>[M_1] sdlog_1;",
-    "vector[M_1 * (N_1 - 1)] z_sd_s2z_1;",
+    "vector[M_1 * N_1] z_sd_s2z_1;",
     "target += std_normal_lpdf(z_sd_s2z_1);",
     paste0(
       "sum_to_zero_constrain_brms(segment(z_sd_s2z_1, ",
       "(k - 1) * (N_1 - 1) + 1, N_1 - 1));"
+    ),
+    paste0(
+      "reference_sd_s2z_1 = sd_1 .* exp(sdlog_1 .* ",
+      "tail(z_sd_s2z_1, M_1) / sqrt(1.0 * N_1));"
     ),
     "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
     "L_Sigma_s2z_1 = diag_matrix(reference_sd_s2z_1);",
@@ -2972,6 +3028,13 @@ test_that("shared and varying scales compose in a joint S2Z model", {
   expect_false(grepl(
     "std_normal_lpdf(z_sd_s2z_1[k])", scode, fixed = TRUE
   ))
+  expect_false(grepl("z_sd_mean_s2z_1", scode, fixed = TRUE))
+  expect_equal(
+    s2z_count_fixed(
+      scode, "target += std_normal_lpdf(z_sd_s2z_1);"
+    ),
+    1L
+  )
   expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
 })
 
