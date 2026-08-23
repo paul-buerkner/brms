@@ -385,9 +385,12 @@ test_that("partial S2Z code covers every specialized covariance path", {
       "scale_partial_s2z;"
     ),
     "r_s2z_1_1 = centered_partial_s2z - mean(centered_partial_s2z);",
+    "log_det_partial_s2z_1 += -sum(log(scale_partial_s2z));",
+    "if (mean_rho_s2z_1[1] == 1.0) {",
+    "log_det_partial_s2z_1 += log(sd_1[1]);",
     paste0(
-      "log_det_partial_s2z_1 += -sum(log(scale_partial_s2z)) + ",
-      "log(1.0 - mean_rho_s2z_1[1] + "
+      "log_det_partial_s2z_1 += ",
+      "log1m(mean_rho_s2z_1[1] * (1.0 - sd_1[1]));"
     ),
     "+ log_det_partial_s2z_1"
   )) {
@@ -453,10 +456,12 @@ test_that("partial S2Z code covers every specialized covariance path", {
     "mean_partial_s2z /= N_1;",
     "r_s2z_1[j] -= mean_partial_s2z;",
     "log_det_partial_s2z_1 -= sum(log(diagonal(L_partial_s2z)));",
+    "if (mean_rho_s2z_1[k] == 1.0) {",
+    "log_det_partial_s2z_1 += log(L_Sigma_s2z_1[k, k]);",
     paste0(
       "log_det_partial_s2z_1 += ",
-      "sum(log(1.0 - mean_rho_s2z_1 + ",
-      "mean_rho_s2z_1 .* diagonal(L_Sigma_s2z_1)));"
+      "log1m(mean_rho_s2z_1[k] * ",
+      "(1.0 - L_Sigma_s2z_1[k, k]));"
     ),
     "+ log_det_partial_s2z_1"
   )) {
@@ -505,6 +510,23 @@ test_that("partial S2Z code covers every specialized covariance path", {
   )
   expect_match2(unnormalized, "+ log_det_partial_s2z_1")
   expect_false(grepl("log(2 * pi())", unnormalized, fixed = TRUE))
+})
+
+test_that("partial S2Z log determinants are stable at centering endpoints", {
+  rho <- c(0, 1 - 1e-8, 1)
+  scale <- rep(1e-20, length(rho))
+  stable_log_term <- vapply(seq_along(rho), function(i) {
+    if (rho[i] == 1) {
+      log(scale[i])
+    } else {
+      log1p(-rho[i] * (1 - scale[i]))
+    }
+  }, numeric(1))
+  reference <- log((1 - rho) + rho * scale)
+
+  expect_equal(stable_log_term, reference, tolerance = 1e-10)
+  expect_true(all(is.finite(stable_log_term)))
+  expect_identical(log1p(-(1 - 1e-20)), -Inf)
 })
 
 test_that("partial varying-scale Student kernels retain every measure term", {
@@ -2042,7 +2064,7 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   )
 
   for (term in c(
-    "array[M_1] vector[N_1 - 1] z_sd_s2z_1;",
+    "vector[M_1 * (N_1 - 1)] z_sd_s2z_1;",
     "vector[M_1] z_sd_mean_s2z_1;",
     "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
     "vector<lower=0>[M_1] reference_sd_s2z_1;"
@@ -2098,7 +2120,17 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_match2(scode, "+ 0.5 * M_1 * log(1.0 * N_1)")
   expect_match2(scode, "sd_level_1 = sd_level_s2z_1;")
   expect_match2(scode, "target += std_normal_lpdf(z_sd_mean_s2z_1);")
-  expect_match2(scode, "target += std_normal_lpdf(z_sd_s2z_1[k]);")
+  expect_match2(scode, "target += std_normal_lpdf(z_sd_s2z_1);")
+  expect_match2(
+    scode,
+    paste0(
+      "sum_to_zero_constrain_brms(segment(z_sd_s2z_1, ",
+      "(k - 1) * (N_1 - 1) + 1, N_1 - 1));"
+    )
+  )
+  expect_false(grepl(
+    "std_normal_lpdf(z_sd_s2z_1[k])", scode, fixed = TRUE
+  ))
   expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("relative_sd_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("jacobian", scode, ignore.case = TRUE))
@@ -2910,6 +2942,12 @@ test_that("shared and varying scales compose in a joint S2Z model", {
   expect_null(sdata$rho_s2z_2)
   for (term in c(
     "vector<lower=0>[M_1] sdlog_1;",
+    "vector[M_1 * (N_1 - 1)] z_sd_s2z_1;",
+    "target += std_normal_lpdf(z_sd_s2z_1);",
+    paste0(
+      "sum_to_zero_constrain_brms(segment(z_sd_s2z_1, ",
+      "(k - 1) * (N_1 - 1) + 1, N_1 - 1));"
+    ),
     "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
     "L_Sigma_s2z_1 = diag_matrix(reference_sd_s2z_1);",
     paste0(
@@ -2930,6 +2968,9 @@ test_that("shared and varying scales compose in a joint S2Z model", {
   ))
   expect_false(grepl(
     "mdivide_left_tri_low(L_level_s2z", scode, fixed = TRUE
+  ))
+  expect_false(grepl(
+    "std_normal_lpdf(z_sd_s2z_1[k])", scode, fixed = TRUE
   ))
   expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
 })

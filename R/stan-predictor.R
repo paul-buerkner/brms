@@ -892,8 +892,16 @@ stan_re_s2z_partial_cor_transform <- function(id) {
     "    for (j in 1:N_{id}) {{\n",
     "      r_s2z_{id}[j] -= mean_partial_s2z;\n",
     "    }}\n",
-    "    log_det_partial_s2z_{id} += sum(log(1.0 - mean_rho_s2z_{id} + ",
-    "mean_rho_s2z_{id} .* diagonal(L_Sigma_s2z_{id})));\n",
+    "    for (k in 1:M_{id}) {{\n",
+    "      if (mean_rho_s2z_{id}[k] == 1.0) {{\n",
+    "        log_det_partial_s2z_{id} += ",
+    "log(L_Sigma_s2z_{id}[k, k]);\n",
+    "      }} else {{\n",
+    "        log_det_partial_s2z_{id} += ",
+    "log1m(mean_rho_s2z_{id}[k] * ",
+    "(1.0 - L_Sigma_s2z_{id}[k, k]));\n",
+    "      }}\n",
+    "    }}\n",
     "  }}\n"
   )
 }
@@ -911,9 +919,13 @@ stan_re_s2z_partial_independent_transform <- function(
     "    centered_partial_s2z = {scale} * centered_partial_s2z ./ ",
     "scale_partial_s2z;\n",
     "    {r_s2z} = centered_partial_s2z - mean(centered_partial_s2z);\n",
-    "    log_det_partial_s2z_{id} += -sum(log(scale_partial_s2z)) + ",
-    "log(1.0 - mean_rho_s2z_{id}[{k}] + ",
-    "mean_rho_s2z_{id}[{k}] * {scale});\n",
+    "    log_det_partial_s2z_{id} += -sum(log(scale_partial_s2z));\n",
+    "    if (mean_rho_s2z_{id}[{k}] == 1.0) {{\n",
+    "      log_det_partial_s2z_{id} += log({scale});\n",
+    "    }} else {{\n",
+    "      log_det_partial_s2z_{id} += ",
+    "log1m(mean_rho_s2z_{id}[{k}] * (1.0 - {scale}));\n",
+    "    }}\n",
     "  }}\n"
   )
 }
@@ -1079,16 +1091,14 @@ stan_re_s2z_partial_independent_transform <- function(
   )
   if (varying) {
     str_add(out$par) <- glue(
-      "  array[M_{id}] vector[N_{id} - 1] z_sd_s2z_{id};",
-      "  // orthonormal centered log-scale coordinates\n",
+      "  vector[M_{id} * (N_{id} - 1)] z_sd_s2z_{id};",
+      "  // flattened orthonormal centered log-scale coordinates\n",
       "  vector[M_{id}] z_sd_mean_s2z_{id};",
       "  // standardized log-scale mean coordinates\n"
     )
     str_add(out$model_prior) <- glue(
       "  target += std_normal_{lpdf}(z_sd_mean_s2z_{id});\n",
-      "  for (k in 1:M_{id}) {{\n",
-      "    target += std_normal_{lpdf}(z_sd_s2z_{id}[k]);\n",
-      "  }}\n"
+      "  target += std_normal_{lpdf}(z_sd_s2z_{id});\n"
     )
   }
 
@@ -1155,7 +1165,8 @@ stan_re_s2z_partial_independent_transform <- function(
     str_add(out$tpar_comp) <- glue(
       "  for (k in 1:M_{id}) {{\n",
       "    vector[N_{id}] z_sd_centered_s2z = ",
-      "sum_to_zero_constrain_brms(z_sd_s2z_{id}[k]);\n",
+      "sum_to_zero_constrain_brms(segment(z_sd_s2z_{id}, ",
+      "(k - 1) * (N_{id} - 1) + 1, N_{id} - 1));\n",
       "    reference_sd_s2z_{id}[k] = sd_{id}[k] * exp(sdlog_{id}[k] * ",
       "z_sd_mean_s2z_{id}[k] / sqrt(1.0 * N_{id}));\n",
       "    sd_level_s2z_{id}[, k] = reference_sd_s2z_{id}[k] * ",
@@ -2142,16 +2153,14 @@ stan_re_s2z_partial_independent_transform <- function(
     } else {
       "  // standardized orthonormal S2Z effect coordinates\n"
     },
-    "  array[M_{id}] vector[N_{id} - 1] z_sd_s2z_{id};",
-    "  // orthonormal centered log-scale coordinates\n",
+    "  vector[M_{id} * (N_{id} - 1)] z_sd_s2z_{id};",
+    "  // flattened orthonormal centered log-scale coordinates\n",
     "  vector[M_{id}] z_sd_mean_s2z_{id};",
     "  // standardized log-scale mean coordinates\n"
   )
   str_add(out$model_prior) <- glue(
     "  target += std_normal_{lpdf}(z_sd_mean_s2z_{id});\n",
-    "  for (k in 1:M_{id}) {{\n",
-    "    target += std_normal_{lpdf}(z_sd_s2z_{id}[k]);\n",
-    "  }}\n"
+    "  target += std_normal_{lpdf}(z_sd_s2z_{id});\n"
   )
 
   # Independent Student-t and Cauchy population priors are represented as
@@ -2187,7 +2196,8 @@ stan_re_s2z_partial_independent_transform <- function(
   str_add(out$tpar_comp) <- glue(
     "  for (k in 1:M_{id}) {{\n",
     "    vector[N_{id}] z_sd_centered_s2z = ",
-    "sum_to_zero_constrain_brms(z_sd_s2z_{id}[k]);\n",
+    "sum_to_zero_constrain_brms(segment(z_sd_s2z_{id}, ",
+    "(k - 1) * (N_{id} - 1) + 1, N_{id} - 1));\n",
     "    reference_sd_s2z_{id}[k] = sd_{id}[k] * exp(sdlog_{id}[k] * ",
     "z_sd_mean_s2z_{id}[k] / sqrt(1.0 * N_{id}));\n",
     "    sd_level_s2z_{id}[, k] = reference_sd_s2z_{id}[k] * ",
