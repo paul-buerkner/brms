@@ -1095,6 +1095,12 @@ log_lik_truncate <- function(x, cdf, args, i, prep) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
+  if (!is.null(lb) && use_int(prep$family)) {
+    # inclusive lower bound, mirroring the 'lb - 1' of stan_log_lik_trunc().
+    # ceiling() additionally keeps a non-integer bound, which newdata can
+    # introduce, on the support it actually admits
+    lb <- ceiling(lb) - 1
+  }
   x - log_prob_interval(cdf, args, lower = lb, upper = ub)
 }
 
