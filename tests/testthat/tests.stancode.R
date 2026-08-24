@@ -1856,7 +1856,7 @@ test_that("Stan code of mixture model is correct", {
              data = data, family = fam_na),
     "all mixing proportions must be predicted"
   )
-  
+
   fam <- mixture(cumulative, sratio)
   scode <- stancode(y ~ x, data, family = fam)
   expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], Intercept_mu1);")
@@ -1891,6 +1891,106 @@ test_that("Stan code of mixture model is correct", {
   scode <- stancode(bform, data = data, prior = bprior)
   expect_match2(scode, "mu1[n] = (nlp_eta[n] ^ 2);")
   expect_match2(scode, "mu2[n] = (log(nlp_eta[n]) + nlp_a[n]);")
+})
+
+test_that("Stan code of group-level mixture model is correct", {
+  data <- data.frame(y = 1:10, x = rnorm(10), g = rep(1:5, each = 2))
+
+  # estimated (joint) mixing proportions
+  scode <- stancode(
+    bf(y ~ x, sigma2 ~ x), data,
+    family = mixture(gaussian, gaussian, gr = "g")
+  )
+  expect_match2(scode, "int<lower=1> Ngrmix;  // number of mixture groups")
+  expect_match2(scode, "array[N] int<lower=1> Jmix;")
+  expect_match2(scode, "matrix[Ngrmix, 2] Lmix = rep_matrix(0.0, Ngrmix, 2);")
+  expect_match2(scode, "Lmix[Jmix[n], 1] += normal_lpdf(Y[n] | mu1[n], sigma1);")
+  expect_match2(scode, "Lmix[Jmix[n], 2] += normal_lpdf(Y[n] | mu2[n], sigma2[n]);")
+  expect_match2(scode, "for (j in 1:Ngrmix) {")
+  expect_match2(scode, "ps[1] = log(theta1) + Lmix[j, 1];")
+  expect_match2(scode, "ps[2] = log(theta2) + Lmix[j, 2];")
+  expect_match2(scode, "target += log_sum_exp(ps);")
+
+  # predicted mixing proportions that are constant within each group
+  data$gc <- factor(rep(c("a", "b"), each = 5))
+  scode <- stancode(
+    bf(y ~ x, theta1 ~ gc), data,
+    family = mixture(gaussian, gaussian, gr = "g")
+  )
+  expect_match2(scode, "array[Ngrmix] int<lower=1> Jmixrep;")
+  expect_match2(scode, "ps[1] = theta1[Jmixrep[j]] + Lmix[j, 1];")
+
+  # discrete component families use the normalized lpmf
+  scode <- stancode(
+    bf(y ~ x), data,
+    family = mixture(poisson, poisson, gr = "g")
+  )
+  expect_match2(scode, "Lmix[Jmix[n], 1] += poisson_log_lpmf(Y[n] | mu1[n]);")
+
+  # the normalized lpdf is required even with normalize = FALSE, because
+  # normalization constants do not cancel from the group-level log_sum_exp
+  scode <- stancode(
+    bf(y ~ x), data,
+    family = mixture(gaussian, gaussian, gr = "g"),
+    normalize = FALSE
+  )
+  expect_match2(scode, "Lmix[Jmix[n], 1] += normal_lpdf(Y[n] | mu1[n], sigma1);")
+  expect_match2(scode, "Lmix[Jmix[n], 2] += normal_lpdf(Y[n] | mu2[n], sigma2);")
+
+  # 'gr' composes with 'refcat = NA': all proportions predicted, per group
+  scode <- stancode(
+    bf(y ~ x, theta1 ~ gc, theta2 ~ gc), data,
+    family = mixture(gaussian, gaussian, gr = "g", refcat = NA)
+  )
+  expect_match2(scode, "theta1 += Intercept_theta1 + Xc_theta1 * b_theta1;")
+  expect_match2(scode, "theta2 += Intercept_theta2 + Xc_theta2 * b_theta2;")
+  expect_match2(scode, "ps[1] = theta1[Jmixrep[j]] + Lmix[j, 1];")
+
+  # predicted proportions varying within group are not allowed
+  expect_error(
+    standata(bf(y ~ x, theta1 ~ x), data,
+             family = mixture(gaussian, gaussian, gr = "g")),
+    "must be constant within each group"
+  )
+  # threading is not supported for group-level mixtures
+  expect_error(
+    stancode(bf(y ~ x), data, family = mixture(gaussian, gaussian, gr = "g"),
+             threads = threading(2)),
+    "Threading is not supported"
+  )
+  # censoring/truncation/weights are not supported
+  expect_error(
+    standata(bf(y | trunc(0) ~ x), data,
+             family = mixture(gaussian, gaussian, gr = "g")),
+    "not supported in combination with"
+  )
+  # multivariate: only symmetric grouped mixtures on the same 'gr' are allowed
+  expect_error(
+    stancode(bf(y ~ x) + bf(x ~ 1, family = gaussian()), data,
+             family = mixture(gaussian, gaussian, gr = "g")),
+    "not yet supported in multivariate models"
+  )
+  data$y2 <- rnorm(nrow(data))
+  data$g2 <- data$g
+  mixfam <- mixture(gaussian, gaussian, gr = "g")
+  expect_error(
+    stancode(bf(y ~ x, family = mixfam) +
+               bf(y2 ~ x, family = mixture(gaussian, gaussian, gr = "g2")) +
+               set_rescor(FALSE), data),
+    "require the same 'gr' variable"
+  )
+  expect_error(
+    stancode(bf(y ~ x, family = mixfam) + bf(y2 ~ x, family = mixfam) +
+               set_rescor(TRUE), data),
+    "only possible in multivariate gaussian or student models"
+  )
+  scode <- stancode(
+    bf(y ~ x, family = mixfam) + bf(y2 ~ x, family = mixfam) +
+      set_rescor(FALSE), data
+  )
+  expect_match2(scode, "matrix[Ngrmix_y, 2] Lmix_y = rep_matrix(0.0, Ngrmix_y, 2);")
+  expect_match2(scode, "matrix[Ngrmix_y2, 2] Lmix_y2 = rep_matrix(0.0, Ngrmix_y2, 2);")
+  expect_match2(scode, "ps[1] = log(theta1_y2) + Lmix_y2[j, 1];")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

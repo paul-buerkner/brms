@@ -4,7 +4,7 @@
 \alias{mixture}
 \title{Finite Mixture Families in \pkg{brms}}
 \usage{
-mixture(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL)
+mixture(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL, gr = NULL)
 }
 \arguments{
 \item{...}{One or more objects providing a description of the
@@ -39,6 +39,13 @@ This is analogous to \code{refcat = NA} in \code{\link{categorical}}
 models. As the resulting model is only weakly identified, informative
 priors on the \code{theta} parameters are strongly recommended (see the
 examples in \code{\link{brmsformula}}).}
+
+\item{gr}{Optional name of a grouping variable in the data. If specified,
+the mixture is computed over the levels of that variable rather than over
+individual observations, that is, all observations within a group are
+assumed to stem from the same mixture component. By default (\code{NULL}),
+the mixture is computed at the observation level. See Details for
+restrictions of group-level mixtures.}
 }
 \value{
 An object of class \code{mixfamily}.
@@ -63,6 +70,21 @@ For most mixture models, you may want to specify priors on the
 population-level intercepts via \code{\link{set_prior}} to improve
 posterior inference. In addition, it is sometimes necessary to set \code{init = 0}
 in the call to \code{\link{brm}} to allow chains to initialize properly.
+
+Via argument \code{gr}, the mixture can be computed over the levels of a
+grouping variable instead of over individual observations, so that all
+observations within a group share the same (unknown) component. The mixture
+is then marginalized once per group rather than once per observation.
+Group-level mixtures require the mixing proportions to be constant within
+each group and do not support within-chain threading, censoring, truncation,
+or observation weights. In multivariate models, they are supported only if
+all responses are grouped mixtures over the same grouping variable (with
+\code{rescor = FALSE}). Cross-validation is performed with the group as the
+pointwise unit (leave-one-group-out): \code{log_lik}, \code{loo}, and
+\code{waic} return one value per group, and \code{kfold}, \code{reloo},
+\code{loo_moment_match}, and \code{loo_subsample} operate on these per-group
+terms. When predicting from new data, the groups are defined by the grouping
+variable within that data set and need not match the original groups.
 
 For more details on the specification of mixture
 models, see \code{\link{brmsformula}}.
@@ -120,6 +142,12 @@ pp_check(fit5)
 
 ## compare model fit
 loo(fit1, fit2, fit3, fit4)
+
+## group-level mixture: whole groups belong to the same component
+dat$g <- rep(1:60, each = 5)
+fit6 <- brm(bf(y ~ 1), dat, family = mixture(gaussian, gaussian, gr = "g"),
+            prior = prior, init = 0, chains = 2)
+summary(fit6)
 }
 
 }
