@@ -38,6 +38,10 @@
 
 #### Bug Fixes
 
+- Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
+  responses, matching the generated Stan code, so that `loo` and `waic`
+  agree with the model that was fitted. Thanks to Ahmed Eldeeb.
+  ([\#1903](https://github.com/paul-buerkner/brms/issues/1903))
 - Improve the numerical stability of `log_lik` for truncated and
   interval-censored models, which previously returned `Inf` or `NaN`
   whenever both bounds fell far into the same tail. Families whose CDF

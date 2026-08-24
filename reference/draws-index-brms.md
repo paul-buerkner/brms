@@ -1,6 +1,6 @@
 # Index `brmsfit` objects
 
-Index `brmsfit` objects
+Index variables, iterations, chains, and draws.
 
 ## Usage
 

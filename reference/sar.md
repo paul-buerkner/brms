@@ -62,32 +62,32 @@ fit2 <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"),
 #> Compiling Stan program...
 #> Start sampling
 summary(fit2)
-#>   1385     1248
-#> HOVAL        -0.30      0.10    -0.51    -0.11 1.00     1408     1120
+#>  1726     1416
+#> HOVAL        -0.31      0.10    -0.49    -0.12 1.00     1829     1584
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma    10.33      1.14     8.47    12.77 1.00     2219     1200
+#> sigma    10.35      1.14     8.41    12.83 1.00     1616     1199
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> ng)
-#> Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.449 seconds (Warm-up)
-#> Chain 1:                0.309 seconds (Sampling)
-#> Chain 1:                0.758 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.379 seconds (Warm-up)
+#> Chain 1:                0.26 seconds (Sampling)
+#> Chain 1:                0.639 seconds (Total)
 #> Chain 1: 
-#> Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.602 seconds (Warm-up)
-#> Chain 2:                0.388 seconds (Sampling)
-#> Chain 2:                0.99 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.372 seconds (Warm-up)
+#> Chain 2:                0.255 seconds (Sampling)
+#> Chain 2:                0.627 seconds (Total)
 #> Chain 2: 
 plot(fit2)
 

@@ -40,8 +40,8 @@ fit <- brm(rating ~ period + carry + cs(treat),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000943 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 9.43 seconds.
+#> Chain 1: Gradient evaluation took 0.00079 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 7.9 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -58,15 +58,15 @@ fit <- brm(rating ~ period + carry + cs(treat),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.687 seconds (Warm-up)
-#> Chain 1:                2.705 seconds (Sampling)
-#> Chain 1:                5.392 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.544 seconds (Warm-up)
+#> Chain 1:                2.567 seconds (Sampling)
+#> Chain 1:                5.111 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.00031 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 3.1 seconds.
+#> Chain 2: Gradient evaluation took 0.000221 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.21 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -83,9 +83,9 @@ fit <- brm(rating ~ period + carry + cs(treat),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.745 seconds (Warm-up)
-#> Chain 2:                2.144 seconds (Sampling)
-#> Chain 2:                4.889 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.583 seconds (Warm-up)
+#> Chain 2:                2.042 seconds (Sampling)
+#> Chain 2:                4.625 seconds (Total)
 #> Chain 2: 
 summary(fit)
 #>  Family: sratio 

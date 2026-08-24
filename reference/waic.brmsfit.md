@@ -97,8 +97,8 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.13 seconds.
+#> Chain 1: Gradient evaluation took 1.4e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -115,15 +115,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.039 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.035 seconds (Warm-up)
 #> Chain 1:                0.035 seconds (Sampling)
-#> Chain 1:                0.074 seconds (Total)
+#> Chain 1:                0.07 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 5e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
+#> Chain 2: Gradient evaluation took 7e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -140,15 +140,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.038 seconds (Warm-up)
-#> Chain 2:                0.042 seconds (Sampling)
-#> Chain 2:                0.08 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.034 seconds (Warm-up)
+#> Chain 2:                0.031 seconds (Sampling)
+#> Chain 2:                0.065 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 6e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.06 seconds.
+#> Chain 3: Gradient evaluation took 7e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -165,15 +165,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.038 seconds (Warm-up)
-#> Chain 3:                0.034 seconds (Sampling)
-#> Chain 3:                0.072 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.034 seconds (Warm-up)
+#> Chain 3:                0.032 seconds (Sampling)
+#> Chain 3:                0.066 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 5e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
+#> Chain 4: Gradient evaluation took 7e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -190,9 +190,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.038 seconds (Warm-up)
-#> Chain 4:                0.035 seconds (Sampling)
-#> Chain 4:                0.073 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.034 seconds (Warm-up)
+#> Chain 4:                0.033 seconds (Sampling)
+#> Chain 4:                0.067 seconds (Total)
 #> Chain 4: 
 (waic1 <- waic(fit1))
 #> Warning: 
@@ -201,9 +201,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Computed from 4000 by 572 log-likelihood matrix.
 #> 
 #>           Estimate   SE
-#> elpd_waic   -529.6 25.9
+#> elpd_waic   -529.5 25.9
 #> p_waic         6.3  1.0
-#> waic        1059.1 51.7
+#> waic        1059.0 51.8
 #> 
 #> 2 (0.3%) p_waic estimates greater than 0.4. We recommend trying loo instead. 
 
@@ -215,8 +215,8 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7.1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.71 seconds.
+#> Chain 1: Gradient evaluation took 9.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.98 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -233,15 +233,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.711 seconds (Warm-up)
-#> Chain 1:                0.784 seconds (Sampling)
-#> Chain 1:                2.495 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.329 seconds (Warm-up)
+#> Chain 1:                0.69 seconds (Sampling)
+#> Chain 1:                2.019 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4.5e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
+#> Chain 2: Gradient evaluation took 4.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -258,9 +258,9 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.691 seconds (Warm-up)
-#> Chain 2:                0.794 seconds (Sampling)
-#> Chain 2:                2.485 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.503 seconds (Warm-up)
+#> Chain 2:                1.947 seconds (Sampling)
+#> Chain 2:                3.45 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -283,15 +283,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.66 seconds (Warm-up)
-#> Chain 3:                0.791 seconds (Sampling)
-#> Chain 3:                2.451 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.489 seconds (Warm-up)
+#> Chain 3:                0.69 seconds (Sampling)
+#> Chain 3:                2.179 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 4.9e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.49 seconds.
+#> Chain 4: Gradient evaluation took 4.5e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -308,9 +308,9 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.615 seconds (Warm-up)
-#> Chain 4:                0.78 seconds (Sampling)
-#> Chain 4:                2.395 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.548 seconds (Warm-up)
+#> Chain 4:                0.693 seconds (Sampling)
+#> Chain 4:                2.241 seconds (Total)
 #> Chain 4: 
 (waic2 <- waic(fit2))
 #> Warning: 
@@ -319,9 +319,9 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Computed from 4000 by 572 log-likelihood matrix.
 #> 
 #>           Estimate   SE
-#> elpd_waic   -519.5 26.1
-#> p_waic        83.6  7.4
-#> waic        1039.1 52.2
+#> elpd_waic   -520.6 26.1
+#> p_waic        83.4  7.5
+#> waic        1041.1 52.3
 #> 
 #> 26 (4.5%) p_waic estimates greater than 0.4. We recommend trying loo instead. 
 
@@ -329,6 +329,6 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 loo_compare(waic1, waic2)
 #>  model elpd_diff se_diff p_worse diag_diff diag_elpd
 #>   fit2       0.0     0.0      NA                    
-#>   fit1     -10.0     4.4    0.99                    
+#>   fit1      -8.9     4.3    0.98                    
 # }
 ```
