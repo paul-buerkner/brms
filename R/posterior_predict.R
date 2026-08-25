@@ -224,7 +224,10 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
     out <- do_call(cbind, out)
   }
   colnames(out) <- rownames(out) <- NULL
-  if (use_int(object$family)) {
+  if (use_int(object$family) && output == "random") {
+    # the other outputs are probabilities, densities or quantiles rather
+    # than predicted responses, so neither the bounds check nor the
+    # rounding applies to them; see #1923
     out <- check_discrete_trunc_bounds(
       out, lb = object$data$lb, ub = object$data$ub
     )
@@ -1407,8 +1410,9 @@ pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
   int_response <- as_one_logical(int_response)
   args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   pdist <- paste0("p", distribution)
-  # the lower bound is inclusive for integer responses; see #1923
-  lb_internal <- if (int_response && !is.null(lb)) lb - 1 else lb
+  # the lower bound is inclusive for integer responses, and ceiling() keeps
+  # a non-integer bound on the support it admits, as log_lik does; see #1923
+  lb_internal <- if (int_response && !is.null(lb)) ceiling(lb) - 1 else lb
   # prepare computation of (non-)truncated cdf
   F_internal <- function(q) {
     if (is.null(lb) && is.null(ub)) {
@@ -1463,8 +1467,8 @@ pp_density <- function(q, distribution, lb, ub, log = FALSE,
   if (is.null(lb)) {
     cdf_lb <- rep(0, length(q))
   } else {
-    # the lower bound is inclusive for integer responses; see #1923
-    lb_internal <- if (int_response) lb - 1 else lb
+    # see the note in pp_cdf() on ceiling(); #1923
+    lb_internal <- if (int_response) ceiling(lb) - 1 else lb
     cdf_lb <- do_call(pdist, c(list(lb_internal), pargs))
   }
   if (is.null(ub)) {
@@ -1512,8 +1516,8 @@ pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
   if (is.null(lb)) {
     cdf_lb <- rep(0, length(p))
   } else {
-    # the lower bound is inclusive for integer responses; see #1923
-    lb_internal <- if (int_response) lb - 1 else lb
+    # see the note in pp_cdf() on ceiling(); #1923
+    lb_internal <- if (int_response) ceiling(lb) - 1 else lb
     cdf_lb <- do_call(pdist, c(list(lb_internal), pargs))
   }
   if (is.null(ub)) {
@@ -1529,7 +1533,12 @@ pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
           "distribution.")
   }
   p_internal <- p * denom + cdf_lb
-  do_call(qdist, c(list(p_internal), qargs))
+  out <- do_call(qdist, c(list(p_internal), qargs))
+  if (int_response && !is.null(lb)) {
+    # p = 0 inverts to the bound below the support, as F(lb - 1) is attained
+    out <- pmax(out, ceiling(lb))
+  }
+  out
 }
 
 # ensure that only arguments that are accepted by distribution functions are passed
