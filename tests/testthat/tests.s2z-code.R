@@ -593,6 +593,198 @@ test_that("an S2Z ID cannot span linear predictors in either term order", {
   }
 })
 
+test_that("large crossed scalar Gaussian systems use one-dimensional Matheron work", {
+  n <- 120L
+  many_data <- data.frame(y = sin(seq_len(n) * 0.07))
+  n_factor <- 10L
+  for (k in seq_len(n_factor)) {
+    many_data[[paste0("g", k)]] <- factor(
+      (seq_len(n) - 1L) %% (k + 1L) + 1L
+    )
+  }
+  terms <- sprintf(
+    "(1 | gr(g%s, s2z = TRUE))",
+    seq_len(n_factor)
+  )
+  form <- stats::as.formula(paste("y ~ 1 +", paste(terms, collapse = "+")))
+  scode <- stancode(
+    form, data = many_data,
+    prior = prior(normal(0, 1.4), class = Intercept)
+  )
+
+  expect_match2(scode, "// fast Gaussian Matheron system for S2Z blocks")
+  expect_match2(scode, "real<lower=0> W_matheron_s2z_1;")
+  expect_match2(scode, "real<lower=0> sqrt_W_matheron_s2z_1;")
+  expect_equal(
+    s2z_count_fixed(scode, "W_matheron_s2z_1 += dot_self("),
+    n_factor
+  )
+  expect_equal(
+    s2z_count_fixed(scode, "theta_star_s2z[1] += dot_product("),
+    n_factor
+  )
+  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 0L)
+  expect_false(grepl("matrix[10, 10] P_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("L_P_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("P_group_s2z_", scode, fixed = TRUE))
+  expect_match2(
+    scode,
+    "delta_s2z[1] = (theta_s2z[1] - theta_star_s2z[1]) / "
+  )
+  expect_match2(scode, "q_recovered_s2z_1 = theta_s2z;")
+})
+
+test_that("Matheron supports overlapping physical S2Z blocks", {
+  form <- y ~ x * z +
+    (1 + x | gr(g, s2z = TRUE)) +
+    (1 + x * z || gr(h, s2z = TRUE)) +
+    (1 | gr(f, s2z = TRUE))
+  bprior <- prior(normal(0, 2), class = Intercept) +
+    prior(normal(0, 1), class = b)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+
+  for (term in c(
+    "// fast Gaussian Matheron system for S2Z blocks 1, 2, 3",
+    "matrix[4, 4] W_matheron_s2z_1;",
+    "matrix[4, 4] L_W_matheron_s2z_1;",
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    "- (N_2 - 1) * sum(log(diagonal(L_Sigma_s2z_2)))",
+    "- (N_3 - 1) * sum(log(diagonal(L_Sigma_s2z_3)))",
+    "- 0.5 * (N_1 - 1) * M_1 * log(2 * pi())",
+    "- 0.5 * (N_2 - 1) * M_2 * log(2 * pi())",
+    "- 0.5 * (N_3 - 1) * M_3 * log(2 * pi())",
+    "- 0.5 * 4 * log(2 * pi())",
+    "mean_r_s2z_1 += L_Sigma_s2z_1 *",
+    "mean_r_s2z_2 += L_Sigma_s2z_2 *",
+    "mean_r_s2z_3 += L_Sigma_s2z_3 *",
+    "r_s2z_3 ./ rep_matrix(sd_3', N_3)",
+    "q_recovered_s2z_1 = theta_s2z;"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+  expect_false(grepl(
+    "L_Sigma_s2z_3, r_s2z_3", scode, fixed = TRUE
+  ))
+  expect_false(grepl("matrix[7, 7] P_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("L_P_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("H_joint_s2z_1", scode, fixed = TRUE))
+  expect_equal(
+    s2z_count_fixed(
+      scode,
+      "W_matheron_s2z_1 += tcrossprod(H_active_s2z * "
+    ),
+    3L
+  )
+  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+})
+
+test_that("conditional Student and Cauchy population priors use Matheron", {
+  form <- y ~ x +
+    (1 + x || gr(g, s2z = TRUE)) +
+    (1 + x | gr(h, s2z = TRUE))
+  bprior <- prior(student_t(5, 0.2, 1.7), class = Intercept) +
+    prior(cauchy(-0.1, 0.8), class = b)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+
+  expect_match2(scode, "// fast Gaussian Matheron system")
+  expect_match2(scode, "real<lower=0> udf_b_s2z_1;")
+  expect_match2(scode, "real<lower=0> udf_b_s2z_2;")
+  expect_match2(scode, "inv_chi_square_lpdf(udf_b_s2z_1 | 5)")
+  expect_match2(scode, "inv_chi_square_lpdf(udf_b_s2z_2 | 1)")
+  expect_match2(scode, "prior_scale_s2z_1[1] = 1.7 * sqrt(5 *")
+  expect_match2(scode, "prior_scale_s2z_1[2] = ")
+  expect_match2(scode, "sqrt(1 * udf_b_s2z_2)")
+  expect_match2(scode, "matrix[2, 2] W_matheron_s2z_1;")
+  expect_match2(scode, "matrix[2, 2] L_W_matheron_s2z_1;")
+  expect_false(grepl("matrix[4, 4] P_s2z_1", scode, fixed = TRUE))
+})
+
+test_that("proper population coordinates outside group maps score independently", {
+  form <- y ~ x + z +
+    (1 | gr(g, s2z = TRUE)) +
+    (1 | gr(h, s2z = TRUE))
+  bprior <- prior(normal(0.2, 1.5), class = Intercept) +
+    prior(normal(-0.1, 0.7), class = b)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+
+  expect_match2(scode, "// fast Gaussian Matheron system")
+  expect_match2(scode, "real<lower=0> W_matheron_s2z_1;")
+  expect_false(grepl("matrix[2, 2] P_s2z_1", scode, fixed = TRUE))
+  expect_equal(
+    s2z_count_fixed(
+      scode,
+      paste0(
+        "normal_lpdf(theta_s2z[2] | prior_mean_s2z_1[2], ",
+        "prior_scale_s2z_1[2])"
+      )
+    ),
+    1L
+  )
+  expect_equal(
+    s2z_count_fixed(
+      scode,
+      paste0(
+        "normal_lpdf(theta_s2z[3] | prior_mean_s2z_1[3], ",
+        "prior_scale_s2z_1[3])"
+      )
+    ),
+    1L
+  )
+  expect_false(grepl("normal_lpdf(theta_s2z[1]", scode, fixed = TRUE))
+  expect_match2(scode, "theta_s2z[1] - prior_mean_s2z_1[1]")
+})
+
+test_that("flat active population coordinates use the zero-rank fast path", {
+  form <- y ~ 0 + x +
+    (0 + x | gr(g, s2z = TRUE)) +
+    (0 + x | gr(h, s2z = TRUE))
+  scode <- stancode(form, data = s2z_dat)
+
+  expect_match2(scode, "// fast Gaussian Matheron system")
+  expect_false(grepl("W_matheron_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("theta_star_s2z", scode, fixed = TRUE))
+  expect_false(grepl("delta_s2z", scode, fixed = TRUE))
+  expect_false(grepl("P_s2z_1", scode, fixed = TRUE))
+  expect_match2(scode, "q_recovered_s2z_1 = theta_s2z;")
+  expect_match2(
+    scode,
+    "q_recovered_s2z_1 -= H_s2z_1 * mean_r_s2z_1;"
+  )
+  expect_match2(
+    scode,
+    "q_recovered_s2z_1 -= H_s2z_2 * mean_r_s2z_2;"
+  )
+})
+
+test_that("nonseparable or nonbeneficial multiblock models keep dense fallback", {
+  cases <- list(
+    list(
+      form = y ~ 0 + x + z +
+        (0 + x | gr(g, s2z = TRUE)) +
+        (0 + z | gr(h, s2z = TRUE)),
+      prior = prior(normal(0, 1), class = b), total = 2L
+    ),
+    list(
+      form = y ~ x +
+        (1 + x | gr(g, s2z = TRUE, dist = "student")) +
+        (1 + x | gr(h, s2z = TRUE)),
+      prior = prior(normal(0, 2), class = Intercept) +
+        prior(normal(0, 1), class = b), total = 4L
+    )
+  )
+  for (case in cases) {
+    scode <- stancode(case$form, data = s2z_dat, prior = case$prior)
+    expect_false(
+      grepl("fast Gaussian Matheron system", scode, fixed = TRUE),
+      info = deparse0(case$form)
+    )
+    expect_match2(
+      scode, sprintf("matrix[%s, %s] P_s2z_1;", case$total, case$total)
+    )
+    expect_match2(scode, "L_P_s2z_1 = cholesky_decompose(P_s2z_1);")
+  }
+})
+
 test_that("crossed scalar S2Z factors share one omitted-mean system", {
   form <- y ~ 1 +
     (1 | gr(g, s2z = TRUE)) +
@@ -600,38 +792,35 @@ test_that("crossed scalar S2Z factors share one omitted-mean system", {
   bprior <- prior(normal(0, 2), class = Intercept)
   scode <- stancode(form, data = s2z_dat, prior = bprior)
   for (term in c(
-    "matrix[M_1, M_1] P_group_s2z_1;",
-    "matrix[M_2, M_2] P_group_s2z_2;",
-    "matrix[1, 2] H_joint_s2z_1;",
-    "matrix[2, 2] P_s2z_1;",
-    "matrix[2, 2] L_P_s2z_1;",
-    "vector[2] h_joint_s2z_1;",
-    "vector[2] mhat_s2z_1;",
-    "H_joint_s2z_1[, 1:1] = H_s2z_1 * L_Sigma_s2z_1;",
-    "H_joint_s2z_1[, 2:2] = H_s2z_2 * L_Sigma_s2z_2;",
-    "P_s2z_1[1:1, 1:1] = P_group_s2z_1;",
-    "P_s2z_1[2:2, 2:2] = P_group_s2z_2;",
+    "// fast Gaussian Matheron system for S2Z blocks 1, 2",
+    "real<lower=0> W_matheron_s2z_1;",
+    "real<lower=0> sqrt_W_matheron_s2z_1;",
+    "W_matheron_s2z_1 += dot_self(H_s2z_1[1, ] * L_Sigma_s2z_1)",
+    "W_matheron_s2z_1 += dot_self(H_s2z_2[1, ] * L_Sigma_s2z_2)",
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    "- (N_2 - 1) * sum(log(diagonal(L_Sigma_s2z_2)))",
+    "mean_r_s2z_1 += L_Sigma_s2z_1 *",
+    "mean_r_s2z_2 += L_Sigma_s2z_2 *",
+    "q_recovered_s2z_1 = theta_s2z;",
     "r_1_1 = r_s2z_1_1 + mean_r_s2z_1[1];",
     "r_2_1 = r_s2z_2_1 + mean_r_s2z_2[1];"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
   expect_equal(
-    s2z_count_fixed(scode, "cholesky_decompose(P_s2z_1)"), 1L
+    s2z_count_fixed(scode, "cholesky_decompose("), 0L
   )
   expect_equal(
     s2z_count_fixed(
       scode,
-      paste0(
-        "q_recovered_s2z_1 = theta_s2z - ",
-        "H_joint_s2z_1 * mean_white_s2z;"
-      )
+      "q_recovered_s2z_1 -= H_s2z_"
     ),
-    1L
+    2L
   )
-  expect_equal(
-    s2z_count_fixed(scode, "normal_lpdf(theta_s2z[1] | 0, 2)"), 1L
-  )
+  expect_match2(scode, "prior_mean_s2z_1[1] = 0;")
+  expect_match2(scode, "prior_scale_s2z_1[1] = 2;")
+  expect_false(grepl("P_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("H_joint_s2z_1", scode, fixed = TRUE))
   expect_equal(s2z_count_fixed(scode, "real Intercept;"), 1L)
   expect_equal(s2z_count_fixed(scode, "real b_Intercept;"), 1L)
 
@@ -645,16 +834,14 @@ test_that("independent and correlated interaction blocks stay specialized", {
     prior(normal(0, 1), class = b)
   scode <- stancode(form, data = s2z_dat, prior = bprior)
   for (term in c(
-    "matrix[4, 8] H_joint_s2z_1;",
-    "matrix[8, 8] P_s2z_1;",
-    "H_joint_s2z_1[, 1:4] = H_s2z_1 * L_Sigma_s2z_1;",
-    "H_joint_s2z_1[, 5:8] = H_s2z_2 * L_Sigma_s2z_2;",
-    "P_s2z_1[1:4, 1:4] = P_group_s2z_1;",
-    "P_s2z_1[5:8, 5:8] = P_group_s2z_2;",
+    "// fast Gaussian Matheron system for S2Z blocks 1, 2",
+    "matrix[4, 4] W_matheron_s2z_1;",
+    "matrix[4, 4] L_W_matheron_s2z_1;",
+    "W_matheron_s2z_1 += tcrossprod(H_active_s2z *",
     "L_Sigma_s2z_1 = diag_matrix(sd_1);",
     "L_Sigma_s2z_2 = diag_pre_multiply(sd_2, L_2);",
-    "P_group_s2z_1 = diag_matrix(rep_vector(1.0 * N_1, M_1));",
-    "P_group_s2z_2 = diag_matrix(rep_vector(1.0 * N_2, M_2));",
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    "- (N_2 - 1) * sum(log(diagonal(L_Sigma_s2z_2)))",
     "r_1_1 = r_s2z_1_1 + mean_r_s2z_1[1];",
     "r_1_4 = r_s2z_1_4 + mean_r_s2z_1[4];",
     "r_2 = r_s2z_2 + rep_matrix(mean_r_s2z_2', N_2);",
@@ -664,7 +851,7 @@ test_that("independent and correlated interaction blocks stay specialized", {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
   # The K=4 independent block remains elementwise. Only the correlated block
-  # may perform coefficient-space triangular work before the joint solve.
+  # may perform coefficient-space triangular work before the Matheron update.
   expect_false(grepl(
     "mdivide_left_tri_low(L_Sigma_s2z_1", scode, fixed = TRUE
   ))
@@ -681,20 +868,22 @@ test_that("independent and correlated interaction blocks stay specialized", {
   expect_equal(
     s2z_count_fixed(
       scode,
-      paste0(
-        "q_recovered_s2z_1 = theta_s2z - ",
-        "H_joint_s2z_1 * mean_white_s2z;"
-      )
+      "q_recovered_s2z_1 -= H_s2z_"
     ),
-    1L
+    2L
   )
+  expect_match2(scode, "q_recovered_s2z_1 = theta_s2z;")
+  expect_false(grepl("matrix[8, 8] P_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("H_joint_s2z_1", scode, fixed = TRUE))
   expect_equal(s2z_count_fixed(scode, "vector[Kc] b;"), 1L)
   expect_equal(
     s2z_count_fixed(scode, "b = tail(q_recovered_s2z_1, Kc);"), 1L
   )
   for (k in seq_len(4L)) {
     expect_equal(
-      s2z_count_fixed(scode, sprintf("normal_lpdf(theta_s2z[%s]", k)),
+      s2z_count_fixed(
+        scode, sprintf("prior_scale_s2z_1[%s] =", k)
+      ),
       1L
     )
   }
@@ -732,7 +921,7 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
   )
 })
 
-test_that("joint S2Z code supports threading without normalizing constants", {
+test_that("Matheron S2Z supports threading without normalizing constants", {
   form <- y ~ 1 +
     (1 | gr(g, s2z = TRUE)) +
     (1 | gr(h, s2z = TRUE))
@@ -757,21 +946,25 @@ test_that("joint S2Z code supports threading without normalizing constants", {
       "r_s2z_2_1);"
     )
   )
-  expect_match2(scode, "normal_lupdf(theta_s2z[1] | 0, 2)")
+  expect_match2(scode, "// fast Gaussian Matheron system")
+  expect_match2(
+    scode, "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))"
+  )
+  expect_match2(
+    scode, "- (N_2 - 1) * sum(log(diagonal(L_Sigma_s2z_2)))"
+  )
   expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
   expect_false(grepl("log(1.0 * N_2)", scode, fixed = TRUE))
+  expect_false(grepl("log(2 * pi())", scode, fixed = TRUE))
   expect_equal(
-    s2z_count_fixed(scode, "cholesky_decompose(P_s2z_1)"), 1L
+    s2z_count_fixed(scode, "cholesky_decompose("), 0L
   )
   expect_equal(
     s2z_count_fixed(
       scode,
-      paste0(
-        "q_recovered_s2z_1 = theta_s2z - ",
-        "H_joint_s2z_1 * mean_white_s2z;"
-      )
+      "q_recovered_s2z_1 -= H_s2z_"
     ),
-    1L
+    2L
   )
 })
 
@@ -792,11 +985,12 @@ test_that("joint S2Z implementation details follow save_pars", {
   )
 
   internal <- c(
-    "P_group_s2z_1", "h_group_s2z_1", "H_s2z_1",
-    "L_Sigma_s2z_1", "P_group_s2z_2", "h_group_s2z_2",
-    "H_s2z_2", "L_Sigma_s2z_2", "P_s2z_1", "L_P_s2z_1",
-    "H_joint_s2z_1", "h_joint_s2z_1", "mhat_s2z_1",
-    "joint_quad_s2z_1", "q_recovered_s2z_1"
+    "H_s2z_1", "L_Sigma_s2z_1", "group_quad_s2z_1",
+    "H_s2z_2", "L_Sigma_s2z_2", "group_quad_s2z_2",
+    "prior_mean_s2z_1", "prior_scale_s2z_1",
+    "W_matheron_s2z_1", "L_W_matheron_s2z_1",
+    "theta_white_matheron_s2z_1", "joint_quad_s2z_1",
+    "mean_r_s2z_1", "mean_r_s2z_2", "q_recovered_s2z_1"
   )
   for (name in internal) {
     expect_true(name %in% default_excluded, info = name)

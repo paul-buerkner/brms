@@ -843,6 +843,49 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
+# The separated Gaussian mean/contrast law permits a Matheron update in the
+# population-coordinate dimension instead of a complete square in the sum of
+# all block dimensions. Conditional Student-t population priors remain
+# eligible because their scale-mixture variables make them proper Gaussians.
+# Student-t group effects do not separate their omitted means from their
+# contrasts and therefore use the general joint system.
+.stan_re_s2z_joint_matheron_info <- function(set) {
+  infos <- set$infos
+  if (length(infos) <= 1L) {
+    return(NULL)
+  }
+  separated <- all(vapply(infos, function(info) {
+    all(info$r$dist == "gaussian")
+  }, logical(1)))
+  if (!separated) {
+    return(NULL)
+  }
+  # Only rows reached by an omitted group mean can couple blocks. A flat
+  # population prior removes its row from that conditioning system, while a
+  # proper row outside the group design remains an ordinary independent prior.
+  active <- unique(unlist(lapply(infos, function(info) {
+    rows <- info$match_q
+    if (info$center && any(info$r$coef != "Intercept")) {
+      rows <- c(rows, 1L)
+    }
+    rows
+  }), use.names = FALSE))
+  proper <- which(vapply(infos[[1L]]$prior, function(spec) {
+    spec$dist %in% c("normal", "student")
+  }, logical(1)))
+  P <- sort(intersect(active, proper))
+  total_M <- sum(vapply(infos, function(info) nrow(info$r), integer(1)))
+  # The general complete square is already preferable at equal or lower
+  # dimension. Strict inequality makes this dispatch a genuine fast path.
+  if (length(P) >= total_M) {
+    return(NULL)
+  }
+  list(P = P, inactive = setdiff(proper, P), total_M = total_M)
+}
+
+.stan_re_s2z_joint_uses_matheron <- function(set) {
+  !is.null(.stan_re_s2z_joint_matheron_info(set))
+}
 # Stan code local to one covariance block participating in a joint S2Z
 # omitted-mean system. The block contributes its physical zero-sum effects and
 # the Gaussian normal equations for its omitted mean in reference-whitened
@@ -866,6 +909,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   r_s2z <- glue("r_s2z_{idp}_{r$cn}")
   is_cor <- M > 1L && isTRUE(r$cor[1])
   is_student <- identical(r$dist[1], "student")
+  use_matheron <- .stan_re_s2z_joint_uses_matheron(set)
   if (is_cor) {
     str_add(out$data) <- glue(
       "  int<lower=1> NC_{id};  // number of group-level correlations\n"
@@ -891,8 +935,13 @@ stan_re <- function(bframe, prior, normalize, ...) {
     "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
     "  matrix[{q}, M_{id}] H_s2z_{id};\n",
     "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
-    "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
-    "  vector[M_{id}] h_group_s2z_{id};\n",
+    str_if(
+      !use_matheron,
+      glue(
+        "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
+        "  vector[M_{id}] h_group_s2z_{id};\n"
+      )
+    ),
     "  real<lower=0> group_quad_s2z_{id};\n",
     str_if(
       is_student,
@@ -945,7 +994,23 @@ stan_re <- function(bframe, prior, normalize, ...) {
     "  }}\n"
   )
 
-  if (is_cor) {
+  if (use_matheron && is_cor) {
+    str_add(out$tpar_comp) <- glue(
+      "  {{\n",
+      "    matrix[M_{id}, N_{id}] white_group_s2z = ",
+      "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+      "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z));\n",
+      "  }}\n"
+    )
+  } else if (use_matheron) {
+    str_add(out$tpar_comp) <- glue(
+      "  {{\n",
+      "    matrix[N_{id}, M_{id}] white_group_s2z = r_s2z_{id} ./ ",
+      "rep_matrix(sd_{id}', N_{id});\n",
+      "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z));\n",
+      "  }}\n"
+    )
+  } else if (is_cor) {
     group_info <- if (is_student) {
       glue("sum(group_prec_s2z_{id})")
     } else {
@@ -1013,6 +1078,375 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
+# Fast separated Gaussian path for multiple S2Z blocks. Rather than factoring
+# the covariance of every omitted block mean, it factors only the induced
+# covariance of theta and uses one Matheron update to recover all conventional
+# means and population coefficients jointly.
+.stan_re_s2z_joint_matheron <- function(set, prior, threads, normalize, ...) {
+  out <- list(tpar_prior = "")
+  infos <- set$infos
+  matheron <- .stan_re_s2z_joint_matheron_info(set)
+  stopifnot(!is.null(matheron))
+  info <- infos[[1L]]
+  q <- length(info$qnames)
+  P <- matheron$P
+  inactive <- matheron$inactive
+  rdim <- length(P)
+  set_id <- set$set_id
+  p <- info$p
+  lpdf <- stan_lpdf_name(normalize)
+
+  # A Student-t population prior is conditionally Gaussian, so the same
+  # update applies after drawing its usual inverse-chi-square mixture scale.
+  for (k in seq_len(q)) {
+    spec <- info$prior[[k]]
+    if (spec$dist == "student") {
+      str_add(out$par) <- glue(
+        "  real<lower=0> udf_b_s2z{p}_{k};",
+        "  // mixing variable for population coefficient {k}\n"
+      )
+      str_add(out$tpar_prior) <- glue(
+        "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
+        "{stan_s2z_number(spec$df)});\n"
+      )
+    }
+  }
+
+  str_add(out$tpar_def) <- glue(
+    "  // fast Gaussian Matheron system for S2Z blocks ",
+    "{paste(set$ids, collapse = ', ')}\n",
+    "  vector[{q}] prior_mean_s2z_{set_id};\n",
+    "  vector<lower=0>[{q}] prior_scale_s2z_{set_id};\n",
+    str_if(
+      rdim == 1L,
+      glue(
+        "  real<lower=0> W_matheron_s2z_{set_id};\n",
+        "  real<lower=0> sqrt_W_matheron_s2z_{set_id};\n",
+        "  real theta_white_matheron_s2z_{set_id};\n"
+      )
+    ),
+    str_if(
+      rdim > 1L,
+      glue(
+        "  matrix[{rdim}, {rdim}] W_matheron_s2z_{set_id};\n",
+        "  matrix[{rdim}, {rdim}] L_W_matheron_s2z_{set_id};\n",
+        "  vector[{rdim}] theta_white_matheron_s2z_{set_id};\n"
+      )
+    ),
+    "  real joint_quad_s2z_{set_id};\n"
+  )
+  for (k in seq_len(q)) {
+    spec <- info$prior[[k]]
+    str_add(out$tpar_comp) <- glue(
+      "  prior_mean_s2z_{set_id}[{k}] = ",
+      "{stan_s2z_number(spec$location)};\n"
+    )
+    cond_scale <- if (spec$dist == "flat") {
+      "1.0"
+    } else if (spec$dist == "normal") {
+      stan_s2z_number(spec$scale)
+    } else {
+      glue(
+        "{stan_s2z_number(spec$scale)} * sqrt(",
+        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+      )
+    }
+    str_add(out$tpar_comp) <- glue(
+      "  prior_scale_s2z_{set_id}[{k}] = {cond_scale};\n"
+    )
+  }
+  if (rdim == 1L) {
+    str_add(out$tpar_comp) <- glue(
+      "  W_matheron_s2z_{set_id} = ",
+      "square(prior_scale_s2z_{set_id}[{P}]);\n"
+    )
+  } else if (rdim > 1L) {
+    str_add(out$tpar_comp) <- glue(
+      "  W_matheron_s2z_{set_id} = rep_matrix(0.0, {rdim}, {rdim});\n"
+    )
+    for (a in seq_len(rdim)) {
+      str_add(out$tpar_comp) <- glue(
+        "  W_matheron_s2z_{set_id}[{a}, {a}] = ",
+        "square(prior_scale_s2z_{set_id}[{P[a]}]);\n"
+      )
+    }
+  }
+  str_add(out$tpar_comp) <- glue(
+    "  joint_quad_s2z_{set_id} = 0.0;\n"
+  )
+  for (b in seq_along(infos)) {
+    id <- infos[[b]]$id
+    if (rdim == 1L) {
+      str_add(out$tpar_comp) <- glue(
+        "  W_matheron_s2z_{set_id} += dot_self(",
+        "H_s2z_{id}[{P}, ] * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n"
+      )
+    } else if (rdim > 1L) {
+      str_add(out$tpar_comp) <- glue(
+        "  {{\n",
+        "    matrix[{rdim}, M_{id}] H_active_s2z;\n"
+      )
+      for (a in seq_len(rdim)) {
+        str_add(out$tpar_comp) <- glue(
+          "    H_active_s2z[{a}, ] = H_s2z_{id}[{P[a]}, ];\n"
+        )
+      }
+      str_add(out$tpar_comp) <- glue(
+        "    W_matheron_s2z_{set_id} += tcrossprod(",
+        "H_active_s2z * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n",
+        "  }}\n"
+      )
+    }
+    str_add(out$tpar_comp) <- glue(
+      "  joint_quad_s2z_{set_id} += group_quad_s2z_{id};\n"
+    )
+  }
+  if (rdim == 1L) {
+    str_add(out$tpar_comp) <- glue(
+      "  sqrt_W_matheron_s2z_{set_id} = sqrt(W_matheron_s2z_{set_id});\n",
+      "  theta_white_matheron_s2z_{set_id} = ",
+      "(theta_s2z{p}[{P}] - prior_mean_s2z_{set_id}[{P}]) / ",
+      "sqrt_W_matheron_s2z_{set_id};\n"
+    )
+  } else if (rdim > 1L) {
+    str_add(out$tpar_comp) <- glue(
+      "  L_W_matheron_s2z_{set_id} = ",
+      "cholesky_decompose(W_matheron_s2z_{set_id});\n",
+      "  {{\n",
+      "    vector[{rdim}] theta_difference_s2z;\n"
+    )
+    for (a in seq_len(rdim)) {
+      str_add(out$tpar_comp) <- glue(
+        "    theta_difference_s2z[{a}] = theta_s2z{p}[{P[a]}] - ",
+        "prior_mean_s2z_{set_id}[{P[a]}];\n"
+      )
+    }
+    str_add(out$tpar_comp) <- glue(
+      "    theta_white_matheron_s2z_{set_id} = mdivide_left_tri_low(",
+      "L_W_matheron_s2z_{set_id}, theta_difference_s2z);\n",
+      "  }}\n"
+    )
+  }
+
+  for (k in inactive) {
+    str_add(out$tpar_prior) <- glue(
+      "  lprior += normal_{lpdf}(theta_s2z{p}[{k}] | ",
+      "prior_mean_s2z_{set_id}[{k}], prior_scale_s2z_{set_id}[{k}]);\n"
+    )
+  }
+  str_add(out$tpar_prior) <- glue(
+    "  lprior += -0.5 * joint_quad_s2z_{set_id}\n"
+  )
+  if (rdim == 1L) {
+    str_add(out$tpar_prior) <- glue(
+      "    - 0.5 * square(theta_white_matheron_s2z_{set_id})\n",
+      "    - log(sqrt_W_matheron_s2z_{set_id})\n"
+    )
+  } else if (rdim > 1L) {
+    str_add(out$tpar_prior) <- glue(
+      "    - 0.5 * dot_self(theta_white_matheron_s2z_{set_id})\n",
+      "    - sum(log(diagonal(L_W_matheron_s2z_{set_id})))\n"
+    )
+  }
+  for (b in seq_along(infos)) {
+    id <- infos[[b]]$id
+    str_add(out$tpar_prior) <- glue(
+      "    - (N_{id} - 1) * ",
+      "sum(log(diagonal(L_Sigma_s2z_{id})))\n"
+    )
+    if (normalize) {
+      str_add(out$tpar_prior) <- glue(
+        "    - 0.5 * (N_{id} - 1) * M_{id} * log(2 * pi())\n"
+      )
+    }
+  }
+  if (normalize && rdim > 0L) {
+    str_add(out$tpar_prior) <- glue(
+      "    - 0.5 * {rdim} * log(2 * pi())\n"
+    )
+  }
+  str_add(out$tpar_prior) <- "  ;\n"
+
+  str_add(out$gen_def) <- glue(
+    "  vector[{q}] q_recovered_s2z_{set_id};\n"
+  )
+  if (info$center) {
+    str_add(out$gen_def) <- glue(
+      "  real Intercept{p};\n",
+      str_if(length(info$fixef), glue("  vector[Kc{p}] b{p};\n")),
+      "  real b{p}_Intercept;\n"
+    )
+  } else {
+    str_add(out$gen_def) <- glue("  vector[{q}] b{p};\n")
+  }
+  for (b in seq_along(infos)) {
+    r <- infos[[b]]$r
+    id <- infos[[b]]$id
+    idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
+    r_public <- glue("r_{idp}_{r$cn}")
+    is_cor <- nrow(r) > 1L && isTRUE(r$cor[1])
+    str_add(out$gen_def) <- glue(
+      "  vector[M_{id}] mean_r_s2z_{id};\n"
+    )
+    if (is_cor) {
+      str_add(out$gen_def) <- glue(
+        "  matrix[N_{id}, M_{id}] r_{id};\n"
+      )
+    }
+    str_add(out$gen_def) <- cglue(
+      "  vector[N_{id}] {r_public};\n"
+    )
+    if (is_cor) {
+      str_add(out$gen_def) <- glue(
+        "  // compute group-level correlations\n",
+        "  corr_matrix[M_{id}] Cor_{id}",
+        " = multiply_lower_tri_self_transpose(L_{id});\n",
+        "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
+      )
+    }
+  }
+
+  # Draw every m_f* and, when needed, the proper active part of beta*. One
+  # shared innovation conditions them on theta. Flat active coordinates do not
+  # enter W; beta is recovered as theta - sum(H_f m_f), which also enforces the
+  # predictor identity to floating-point precision.
+  str_add(out$gen_comp) <- glue(
+    "  {{\n"
+  )
+  if (rdim > 0L) {
+    str_add(out$gen_comp) <- glue(
+      "    vector[{rdim}] theta_star_s2z;\n",
+      "    vector[{rdim}] delta_s2z;\n"
+    )
+    for (a in seq_len(rdim)) {
+      str_add(out$gen_comp) <- glue(
+        "    theta_star_s2z[{a}] = prior_mean_s2z_{set_id}[{P[a]}] + ",
+        "prior_scale_s2z_{set_id}[{P[a]}] * std_normal_rng();\n"
+      )
+    }
+  }
+  for (b in seq_along(infos)) {
+    id <- infos[[b]]$id
+    str_add(out$gen_comp) <- glue(
+      "    {{\n",
+      "      vector[M_{id}] z_mean_s2z;\n",
+      "      for (k in 1:M_{id}) z_mean_s2z[k] = std_normal_rng();\n",
+      "      mean_r_s2z_{id} = L_Sigma_s2z_{id} * z_mean_s2z / ",
+      "sqrt(1.0 * N_{id});\n",
+      "    }}\n"
+    )
+    if (rdim > 0L) {
+      for (a in seq_len(rdim)) {
+        str_add(out$gen_comp) <- glue(
+          "    theta_star_s2z[{a}] += dot_product(",
+          "H_s2z_{id}[{P[a]}, ], mean_r_s2z_{id}');\n"
+        )
+      }
+    }
+  }
+  if (rdim == 1L) {
+    str_add(out$gen_comp) <- glue(
+      "    delta_s2z[1] = (theta_s2z{p}[{P}] - theta_star_s2z[1]) / ",
+      "W_matheron_s2z_{set_id};\n"
+    )
+  } else if (rdim > 1L) {
+    str_add(out$gen_comp) <- glue(
+      "    {{\n",
+      "      vector[{rdim}] theta_innovation_s2z;\n",
+      "      vector[{rdim}] forward_solve_s2z;\n"
+    )
+    for (a in seq_len(rdim)) {
+      str_add(out$gen_comp) <- glue(
+        "      theta_innovation_s2z[{a}] = theta_s2z{p}[{P[a]}] - ",
+        "theta_star_s2z[{a}];\n"
+      )
+    }
+    str_add(out$gen_comp) <- glue(
+      "      forward_solve_s2z = mdivide_left_tri_low(",
+      "L_W_matheron_s2z_{set_id}, theta_innovation_s2z);\n",
+      "      delta_s2z = (mdivide_right_tri_low(",
+      "forward_solve_s2z', L_W_matheron_s2z_{set_id}))';\n",
+      "    }}\n"
+    )
+  }
+  str_add(out$gen_comp) <- glue(
+    "    q_recovered_s2z_{set_id} = theta_s2z{p};\n"
+  )
+  for (b in seq_along(infos)) {
+    r <- infos[[b]]$r
+    id <- infos[[b]]$id
+    J <- seq_rows(r)
+    idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
+    r_s2z <- glue("r_s2z_{idp}_{r$cn}")
+    r_public <- glue("r_{idp}_{r$cn}")
+    is_cor <- nrow(r) > 1L && isTRUE(r$cor[1])
+    if (rdim > 0L) {
+      str_add(out$gen_comp) <- glue(
+        "    {{\n",
+        "      vector[M_{id}] active_score_s2z = ",
+        "rep_vector(0.0, M_{id});\n"
+      )
+      for (a in seq_len(rdim)) {
+        str_add(out$gen_comp) <- glue(
+          "      active_score_s2z += H_s2z_{id}[{P[a]}, ]' * ",
+          "delta_s2z[{a}];\n"
+        )
+      }
+      str_add(out$gen_comp) <- glue(
+        "      mean_r_s2z_{id} += L_Sigma_s2z_{id} * ",
+        "(L_Sigma_s2z_{id}' * active_score_s2z) / (1.0 * N_{id});\n",
+        "    }}\n"
+      )
+    }
+    str_add(out$gen_comp) <- glue(
+      "    q_recovered_s2z_{set_id} -= H_s2z_{id} * mean_r_s2z_{id};\n"
+    )
+    if (is_cor) {
+      str_add(out$gen_comp) <- glue(
+        "    r_{id} = r_s2z_{id} + ",
+        "rep_matrix(mean_r_s2z_{id}', N_{id});\n",
+        cglue("    {r_public} = r_{id}[, {J}];\n")
+      )
+    } else {
+      str_add(out$gen_comp) <- cglue(
+        "    {r_public} = {r_s2z} + mean_r_s2z_{id}[{J}];\n"
+      )
+    }
+  }
+  str_add(out$gen_comp) <- "  }\n"
+  for (b in seq_along(infos)) {
+    r <- infos[[b]]$r
+    id <- infos[[b]]$id
+    if (nrow(r) > 1L && isTRUE(r$cor[1])) {
+      str_add(out$gen_comp) <- stan_cor_gen_comp(
+        cor = glue("cor_{id}"), ncol = glue("M_{id}")
+      )
+    }
+  }
+  if (info$center) {
+    str_add(out$gen_comp) <- glue(
+      "  Intercept{p} = q_recovered_s2z_{set_id}[1];\n",
+      str_if(
+        length(info$fixef),
+        glue(
+          "  b{p} = tail(q_recovered_s2z_{set_id}, Kc{p});\n",
+          "  b{p}_Intercept = Intercept{p} - dot_product(",
+          "means_X{p}, b{p});\n"
+        )
+      ),
+      str_if(
+        !length(info$fixef),
+        glue("  b{p}_Intercept = Intercept{p};\n")
+      )
+    )
+  } else {
+    str_add(out$gen_comp) <- glue(
+      "  b{p} = q_recovered_s2z_{set_id};\n"
+    )
+  }
+  out
+}
+
 # Jointly integrate the omitted group-effect means of all physical S2Z blocks
 # in one linear predictor. Block means are represented in their own reference-
 # whitened coordinates, so the independent group hierarchies contribute a
@@ -1022,6 +1456,11 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out <- list(tpar_prior = "")
   infos <- set$infos
   stopifnot(length(infos) > 1L)
+  if (.stan_re_s2z_joint_uses_matheron(set)) {
+    return(.stan_re_s2z_joint_matheron(
+      set, prior = prior, threads = threads, normalize = normalize, ...
+    ))
+  }
   info <- infos[[1L]]
   q <- length(info$qnames)
   Ms <- vapply(infos, function(x) nrow(x$r), integer(1))

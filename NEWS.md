@@ -13,7 +13,12 @@ coefficients in diagonal covariance blocks use dedicated component-wise scalar
 implementations.
 Multiple S2Z grouping factors may occur in one linear predictor; their omitted
 mean vectors are integrated and recovered jointly while retaining separate
-shared scales and correlation structures for each factor.
+shared scales and correlation structures for each factor. For Gaussian
+blocks, brms uses a lower-dimensional induced-covariance calculation
+and joint Matheron recovery whenever that system is smaller than the stacked
+omitted-mean system. In the common crossed-intercept case this reduces to a
+scalar update with no matrix factorization, irrespective of the number of
+grouping factors.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

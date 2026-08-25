@@ -109,7 +109,10 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
     if (!save_pars$all && isTRUE(r$s2z[1])) {
       s2z_classes <- c(
         "z_s2z", "r_s2z", "H_s2z", "prior_mean_s2z",
-        "prior_prec_s2z", "group_scale_s2z", "group_prec_s2z",
+        "prior_prec_s2z", "prior_scale_s2z",
+        "W_matheron_s2z", "sqrt_W_matheron_s2z",
+        "L_W_matheron_s2z", "theta_white_matheron_s2z",
+        "group_scale_s2z", "group_prec_s2z",
         "L_Sigma_s2z", "Q_Sigma_s2z", "P_group_s2z", "h_group_s2z",
         "P_s2z", "L_P_s2z", "H_joint_s2z", "h_joint_s2z",
         "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
