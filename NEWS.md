@@ -3,22 +3,29 @@
 ### New Features
 
 * Add an experimental physical sum-to-zero parameterization via
-`gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
-and interactions. It analytically integrates out the omitted common
-group-effect mean vector and reconstructs conventional Bayesian coefficients
-and effects in generated quantities. Gaussian and Student-t group effects are
-supported, with the latter handled exactly as a conditional Gaussian scale
-mixture. Blocks with one varying coefficient and blocks with any number of
-coefficients in diagonal covariance blocks use dedicated component-wise scalar
-implementations.
-Multiple S2Z grouping factors may occur in one linear predictor; their omitted
-mean vectors are integrated and recovered jointly while retaining separate
-shared scales and correlation structures for each factor. For Gaussian
-blocks, brms uses a lower-dimensional induced-covariance calculation
-and joint Matheron recovery whenever that system is smaller than the stacked
-omitted-mean system. In the common crossed-intercept case this reduces to a
-scalar update with no matrix factorization, irrespective of the number of
-grouping factors.
+`gr(..., s2z = TRUE)` for ordinary matched varying intercepts, numeric and
+factor slopes, and interactions. The likelihood uses group deviations that
+sum exactly to zero over observed levels, while conventional population
+coefficients and group effects are reconstructed for the public output.
+Gaussian and Student-t group effects, correlated and independent blocks,
+coefficient-specific scales shared across levels, and multiple local S2Z
+blocks are supported. Separate S2Z IDs may be used in otherwise eligible
+location, distributional, nonlinear, categorical, multinomial, and
+multivariate predictors.
+
+Population coordinates touched by an S2Z omitted-mean map support exact flat,
+normal, Student-t, Cauchy, and logistic priors with numeric constant arguments.
+Logistic priors use explicitly sampled standardized omitted means with their
+exact target density and Jacobian; this includes the default `logistic(0, 1)`
+intercept prior of auxiliary probability predictors. Fixed-only population
+coordinates retain ordinary brms prior handling. The omitted means of multiple
+local blocks are handled jointly, with specialized scalar, diagonal, and
+Gaussian Matheron paths where applicable.
+
+This foundation deliberately excludes ordinal location predictors, centered,
+partially centered, or automatically centered modes, group scales varying by
+level, and structural extensions such as `by`, `cov`, `pw`, multi-membership,
+special group coefficients, cross-predictor IDs, and sparse or QR designs.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

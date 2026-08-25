@@ -26,44 +26,9 @@ must be nested in levels of the \code{by} variable.}
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
 
-\item{s2z}{Logical. If \code{TRUE}, use a physical sum-to-zero
-analytically integrate out the omitted common group-effect mean vector of
-each S2Z block, jointly when multiple blocks share a linear predictor.
-This experimental option preserves the usual
-population- and group-level parameter semantics by reconstructing them in
-generated quantities. It is exact for \code{dist = "gaussian"} and for
-\code{dist = "student"} through a Gaussian scale mixture. Every varying
-design column must have an identical population-level design column.
-Blocks with one varying coefficient use a dedicated scalar
-implementation. Blocks with any number of independent coefficients
-(\code{cor = FALSE} or \code{||} syntax) use a component-wise scalar
-implementation that also accounts exactly for the shared centered
-intercept prior.
-Usual priors on group-level standard deviations, correlations, and
-Student-t degrees of freedom remain available, including separate
-\code{sd} priors for varying intercepts, slopes, and interactions. For
-\code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
-Student-t scale semantics and is not rescaled to a marginal standard
-deviation.
-The physical coordinates are intended for well-informed group
-coefficients and may be slower than the default non-centered
-parameterization when those coefficients are weakly informed.
-Multiple S2Z covariance blocks may be used in the same linear predictor.
-Their omitted group means are integrated and recovered jointly, while each
-block retains its own grouping factor, shared scales, and correlation
-structure. When all such blocks are Gaussian, \pkg{brms} uses an
-induced population-coordinate covariance and joint Matheron recovery if
-that system is smaller than the stacked omitted-mean system. Crossed
-varying-intercept models then require only a scalar update, regardless of
-the number of grouping factors. Flat population-level prior coordinates
-are handled exactly rather than approximated by a large finite variance.
-The \code{by}, \code{cov}, and \code{pw} arguments remain unsupported.
-Population-level priors must currently be flat, normal, Student-t, or
-Cauchy with numeric constant arguments. Bounds, tags, special priors,
-prior-only sampling, ordinal thresholds, sparse and QR designs, and
-non-positive fixed group-level standard deviations are not supported.
-Custom Stan code must not use the conventional population- or group-level
-coefficients before they are reconstructed in generated quantities.}
+\item{s2z}{Logical. If \code{TRUE}, use the experimental physical
+sum-to-zero parameterization described in the section
+\dQuote{Physical sum-to-zero effects}. The default is \code{FALSE}.}
 
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
@@ -90,6 +55,83 @@ The function does not evaluate its arguments --
 it exists purely to help set up a model with grouping terms.
 \code{gr} is called implicitly inside the package
 and there is usually no need to call it directly.
+}
+\section{Physical sum-to-zero effects}{
+
+Setting \code{s2z = TRUE} expresses every coefficient vector in the
+grouping block as a physical deviation whose entries sum exactly to zero
+over the observed grouping levels. The likelihood is evaluated in these
+constrained coordinates. The omitted common group-effect mean is handled
+jointly with the matching population coefficients, and conventional
+population- and group-level draws are reconstructed in generated
+quantities. Thus functions such as \code{fixef}, \code{ranef}, and
+\code{coef} retain their usual interpretation.
+
+Every S2Z varying design column must have a population-level column with the
+same coefficient name and numerically identical values. This applies to
+varying intercepts, numeric and factor slopes, and interaction columns,
+including their contrasts. For example, \code{x * f} must appear on both
+sides of the grouping bar when all of its expanded columns vary. At least
+two grouping levels must be observed.
+
+The current support matrix is:
+
+\tabular{ll}{
+Design \tab Ordinary matched intercepts, slopes, factors, and interactions.\cr
+Group distribution \tab Gaussian or Student-t.\cr
+Covariance \tab Correlated or independent coefficients; one or multiple
+local S2Z blocks.\cr
+Group scales \tab Coefficient-specific \code{sd} parameters shared across
+observed grouping levels.\cr
+Active population priors \tab Flat, \code{normal}, \code{student_t},
+\code{cauchy}, or \code{logistic}, with numeric constant arguments.\cr
+Fixed-only population priors \tab Any otherwise valid \pkg{brms} prior.\cr
+Predictors \tab Separate local S2Z IDs in otherwise eligible location,
+distributional, nonlinear, categorical, multinomial, and multivariate
+predictors.\cr
+Public output \tab Conventional population coefficients and group effects
+reconstructed exactly.\cr
+}
+
+A population coordinate is \emph{S2Z-active} when it is touched by an
+omitted-mean map from at least one local S2Z block. Only active coordinates
+enter the S2Z prior calculation and are subject to the active-prior row of
+the table. Other population coordinates are fixed-only: they retain the
+ordinary \pkg{brms} declaration and prior handling. The \code{logistic}
+case is exact, not a Gaussian approximation. Generated Stan explicitly
+samples standardized omitted block means for a logistic-active system and
+includes their exact density and Jacobian. This supports, among others, the
+default \code{logistic(0, 1)} intercept prior in auxiliary probability
+predictors such as \code{zi}, \code{hu}, \code{zoi}, \code{coi}, mixture
+weights, Wiener \code{bias}, and asym-Laplace \code{quantile}.
+
+Usual priors on shared group-level standard deviations, correlations, and
+Student-t degrees of freedom remain available, including separate
+\code{sd} priors for varying intercepts, slopes, factors, and interactions.
+For \code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
+Student-t scale semantics and is not rescaled to a marginal standard
+deviation. Multiple S2Z blocks in one linear predictor retain separate
+grouping factors, scales, and correlation structures while their omitted
+means are handled jointly. An S2Z \code{id} cannot span linear predictors.
+For categorical, multinomial, and simplex families, omit \code{id} in a
+shared shorthand term so that the generated category predictors receive
+separate internal IDs, or specify the eligible non-reference category
+predictors explicitly and give each a distinct ID. A user-supplied ID that
+spans categories is a cross-predictor ID and is rejected.
+
+This foundation intentionally provides physical S2Z coordinates only.
+Centered, partially centered, and automatically centered modes are deferred;
+there is no S2Z \code{center} argument. Group-level scales that vary across
+grouping levels and priors on realized level-specific scales are also
+deferred. Ordinal location predictors and ordered mixture intercepts are not
+supported. Structural extensions including \code{by}, \code{cov},
+\code{pw}, multi-membership, category-specific or other special group
+coefficients, cross-predictor IDs, and sparse or QR population designs are
+deferred as well. Bounds, tags, and special priors on S2Z-active
+population coordinates, prior-only sampling, and non-positive fixed
+group-level standard deviations are unsupported. Custom Stan code must not
+use conventional population- or group-level coefficients before they are
+reconstructed in generated quantities.
 }
 \examples{
 \dontrun{
