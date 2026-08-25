@@ -2,6 +2,12 @@ context("Tests for physical sum-to-zero group-level effects")
 
 expect_match2 <- brms:::expect_match2
 
+s2z_count_fixed <- function(x, pattern) {
+  unname(lengths(regmatches(
+    x, gregexpr(pattern, x, fixed = TRUE)
+  )))
+}
+
 s2z_dat <- local({
   set.seed(1916)
   n <- 72
@@ -564,18 +570,334 @@ test_that("S2Z blocks can belong to distinct distributional predictors", {
   )
 })
 
+test_that("an S2Z ID cannot span linear predictors in either term order", {
+  mixed_ids <- list(
+    bf(
+      y ~ 1 + (1 | gr(g, id = "across", s2z = TRUE)),
+      sigma ~ 1 + (1 | gr(g, id = "across", s2z = FALSE))
+    ),
+    bf(
+      y ~ 1 + (1 | gr(g, id = "across", s2z = FALSE)),
+      sigma ~ 1 + (1 | gr(g, id = "across", s2z = TRUE))
+    ),
+    bf(
+      y ~ 1 + (1 | gr(g, id = "across", s2z = TRUE)),
+      sigma ~ 1 + (1 | gr(g, id = "across", s2z = TRUE))
+    )
+  )
+  for (form in mixed_ids) {
+    expect_error(
+      stancode(form, data = s2z_dat),
+      "cannot span multiple linear predictors"
+    )
+  }
+})
+
+test_that("crossed scalar S2Z factors share one omitted-mean system", {
+  form <- y ~ 1 +
+    (1 | gr(g, s2z = TRUE)) +
+    (1 | gr(h, s2z = TRUE))
+  bprior <- prior(normal(0, 2), class = Intercept)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+  for (term in c(
+    "matrix[M_1, M_1] P_group_s2z_1;",
+    "matrix[M_2, M_2] P_group_s2z_2;",
+    "matrix[1, 2] H_joint_s2z_1;",
+    "matrix[2, 2] P_s2z_1;",
+    "matrix[2, 2] L_P_s2z_1;",
+    "vector[2] h_joint_s2z_1;",
+    "vector[2] mhat_s2z_1;",
+    "H_joint_s2z_1[, 1:1] = H_s2z_1 * L_Sigma_s2z_1;",
+    "H_joint_s2z_1[, 2:2] = H_s2z_2 * L_Sigma_s2z_2;",
+    "P_s2z_1[1:1, 1:1] = P_group_s2z_1;",
+    "P_s2z_1[2:2, 2:2] = P_group_s2z_2;",
+    "r_1_1 = r_s2z_1_1 + mean_r_s2z_1[1];",
+    "r_2_1 = r_s2z_2_1 + mean_r_s2z_2[1];"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+  expect_equal(
+    s2z_count_fixed(scode, "cholesky_decompose(P_s2z_1)"), 1L
+  )
+  expect_equal(
+    s2z_count_fixed(
+      scode,
+      paste0(
+        "q_recovered_s2z_1 = theta_s2z - ",
+        "H_joint_s2z_1 * mean_white_s2z;"
+      )
+    ),
+    1L
+  )
+  expect_equal(
+    s2z_count_fixed(scode, "normal_lpdf(theta_s2z[1] | 0, 2)"), 1L
+  )
+  expect_equal(s2z_count_fixed(scode, "real Intercept;"), 1L)
+  expect_equal(s2z_count_fixed(scode, "real b_Intercept;"), 1L)
+
+})
+
+test_that("independent and correlated interaction blocks stay specialized", {
+  form <- y ~ x * z +
+    (1 + x * z || gr(g, s2z = TRUE)) +
+    (1 + x * z | gr(h, s2z = TRUE))
+  bprior <- prior(normal(0, 2), class = Intercept) +
+    prior(normal(0, 1), class = b)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+  for (term in c(
+    "matrix[4, 8] H_joint_s2z_1;",
+    "matrix[8, 8] P_s2z_1;",
+    "H_joint_s2z_1[, 1:4] = H_s2z_1 * L_Sigma_s2z_1;",
+    "H_joint_s2z_1[, 5:8] = H_s2z_2 * L_Sigma_s2z_2;",
+    "P_s2z_1[1:4, 1:4] = P_group_s2z_1;",
+    "P_s2z_1[5:8, 5:8] = P_group_s2z_2;",
+    "L_Sigma_s2z_1 = diag_matrix(sd_1);",
+    "L_Sigma_s2z_2 = diag_pre_multiply(sd_2, L_2);",
+    "P_group_s2z_1 = diag_matrix(rep_vector(1.0 * N_1, M_1));",
+    "P_group_s2z_2 = diag_matrix(rep_vector(1.0 * N_2, M_2));",
+    "r_1_1 = r_s2z_1_1 + mean_r_s2z_1[1];",
+    "r_1_4 = r_s2z_1_4 + mean_r_s2z_1[4];",
+    "r_2 = r_s2z_2 + rep_matrix(mean_r_s2z_2', N_2);",
+    "vector[Kc] b;",
+    "b = tail(q_recovered_s2z_1, Kc);"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+  # The K=4 independent block remains elementwise. Only the correlated block
+  # may perform coefficient-space triangular work before the joint solve.
+  expect_false(grepl(
+    "mdivide_left_tri_low(L_Sigma_s2z_1", scode, fixed = TRUE
+  ))
+  expect_match2(
+    scode,
+    paste0(
+      "matrix[N_1, M_1] white_group_s2z = r_s2z_1 ./ ",
+      "rep_matrix(sd_1', N_1);"
+    )
+  )
+  expect_false(grepl("corr_matrix[M_1] Cor_1", scode, fixed = TRUE))
+  expect_match2(scode, "corr_matrix[M_2] Cor_2")
+  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(
+      scode,
+      paste0(
+        "q_recovered_s2z_1 = theta_s2z - ",
+        "H_joint_s2z_1 * mean_white_s2z;"
+      )
+    ),
+    1L
+  )
+  expect_equal(s2z_count_fixed(scode, "vector[Kc] b;"), 1L)
+  expect_equal(
+    s2z_count_fixed(scode, "b = tail(q_recovered_s2z_1, Kc);"), 1L
+  )
+  for (k in seq_len(4L)) {
+    expect_equal(
+      s2z_count_fixed(scode, sprintf("normal_lpdf(theta_s2z[%s]", k)),
+      1L
+    )
+  }
+})
+
+test_that("Gaussian and Student blocks contribute separately to one solve", {
+  form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, dist = "gaussian")) +
+    (1 + x | gr(h, s2z = TRUE, dist = "student"))
+  bprior <- prior(normal(0, 2), class = Intercept) +
+    prior(normal(0, 1), class = b)
+  scode <- stancode(form, data = s2z_dat, prior = bprior)
+
+  for (term in c(
+    "P_group_s2z_1 = diag_matrix(rep_vector(1.0 * N_1, M_1));",
+    "group_scale_s2z_2 = dfm_2;",
+    "group_prec_s2z_2 = inv_square(group_scale_s2z_2);",
+    "P_group_s2z_2 = diag_matrix(rep_vector(",
+    "sum(group_prec_s2z_2), M_2));",
+    "h_group_s2z_2 = -white_group_s2z * group_prec_s2z_2;",
+    "- M_2 * sum(log(group_scale_s2z_2))",
+    "P_s2z_1[1:2, 1:2] = P_group_s2z_1;",
+    "P_s2z_1[3:4, 3:4] = P_group_s2z_2;"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+  expect_false(grepl("group_scale_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
+  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(scode, "normal_lpdf(theta_s2z[1]"), 1L
+  )
+  expect_equal(
+    s2z_count_fixed(scode, "normal_lpdf(theta_s2z[2]"), 1L
+  )
+})
+
+test_that("joint S2Z code supports threading without normalizing constants", {
+  form <- y ~ 1 +
+    (1 | gr(g, s2z = TRUE)) +
+    (1 | gr(h, s2z = TRUE))
+  scode <- stancode(
+    form, data = s2z_dat,
+    prior = prior(normal(0, 2), class = Intercept),
+    threads = threading(2), normalize = FALSE, parse = FALSE
+  )
+
+  expect_match2(
+    scode,
+    paste0(
+      "data vector Z_1_1, vector r_s2z_1_1, data array[] int J_2, ",
+      "data vector Z_2_1, vector r_s2z_2_1"
+    )
+  )
+  expect_match2(
+    scode,
+    paste0(
+      "target += reduce_sum(partial_log_lik_lpmf, seq, grainsize, Y, ",
+      "theta_s2z, sigma, J_1, Z_1_1, r_s2z_1_1, J_2, Z_2_1, ",
+      "r_s2z_2_1);"
+    )
+  )
+  expect_match2(scode, "normal_lupdf(theta_s2z[1] | 0, 2)")
+  expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
+  expect_false(grepl("log(1.0 * N_2)", scode, fixed = TRUE))
+  expect_equal(
+    s2z_count_fixed(scode, "cholesky_decompose(P_s2z_1)"), 1L
+  )
+  expect_equal(
+    s2z_count_fixed(
+      scode,
+      paste0(
+        "q_recovered_s2z_1 = theta_s2z - ",
+        "H_joint_s2z_1 * mean_white_s2z;"
+      )
+    ),
+    1L
+  )
+})
+
+test_that("joint S2Z implementation details follow save_pars", {
+  form <- y ~ x * z +
+    (1 + x * z || gr(g, s2z = TRUE)) +
+    (1 + x * z | gr(h, s2z = TRUE))
+  default_fit <- brm(form, data = s2z_dat, empty = TRUE)
+  saved_fit <- brm(
+    form, data = s2z_dat, empty = TRUE,
+    save_pars = save_pars(all = TRUE)
+  )
+  default_excluded <- unlist(
+    brms:::exclude_pars(default_fit), use.names = FALSE
+  )
+  saved_excluded <- unlist(
+    brms:::exclude_pars(saved_fit), use.names = FALSE
+  )
+
+  internal <- c(
+    "P_group_s2z_1", "h_group_s2z_1", "H_s2z_1",
+    "L_Sigma_s2z_1", "P_group_s2z_2", "h_group_s2z_2",
+    "H_s2z_2", "L_Sigma_s2z_2", "P_s2z_1", "L_P_s2z_1",
+    "H_joint_s2z_1", "h_joint_s2z_1", "mhat_s2z_1",
+    "joint_quad_s2z_1", "q_recovered_s2z_1"
+  )
+  for (name in internal) {
+    expect_true(name %in% default_excluded, info = name)
+    expect_false(name %in% saved_excluded, info = name)
+  }
+})
+
+test_that("split same-ID S2Z terms validate every constituent", {
+  split_dist <- list(
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE, dist = "gaussian")) +
+      (0 + x | gr(g, id = "split", s2z = TRUE, dist = "student")),
+    y ~ x +
+      (0 + x | gr(g, id = "split", s2z = TRUE, dist = "student")) +
+      (1 | gr(g, id = "split", s2z = TRUE, dist = "gaussian"))
+  )
+  for (form in split_dist) {
+    expect_error(
+      stancode(form, data = s2z_dat),
+      "same group-level distribution"
+    )
+  }
+
+  split_cor <- list(
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE)) +
+      (0 + x || gr(g, id = "split", s2z = TRUE)),
+    y ~ x +
+      (0 + x || gr(g, id = "split", s2z = TRUE)) +
+      (1 | gr(g, id = "split", s2z = TRUE))
+  )
+  for (form in split_cor) {
+    expect_error(stancode(form, data = s2z_dat), "same 'cor' setting")
+  }
+
+  by_dat <- transform(
+    s2z_dat, f_by = factor(rep(c("a", "b"), each = nrow(s2z_dat) / 2))
+  )
+  split_by <- list(
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE, by = f_by)) +
+      (0 + x | gr(g, id = "split", s2z = TRUE)),
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE)) +
+      (0 + x | gr(g, id = "split", s2z = TRUE, by = f_by))
+  )
+  for (form in split_by) {
+    expect_error(stancode(form, data = by_dat), "'by', 'cov', and 'pw'")
+  }
+
+  split_pw <- list(
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE, pw = w)) +
+      (0 + x | gr(g, id = "split", s2z = TRUE)),
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE)) +
+      (0 + x | gr(g, id = "split", s2z = TRUE, pw = w))
+  )
+  for (form in split_pw) {
+    expect_error(stancode(form, data = s2z_dat), "'by', 'cov', and 'pw'")
+  }
+
+  covariance <- diag(nlevels(s2z_dat$g))
+  dimnames(covariance) <- list(levels(s2z_dat$g), levels(s2z_dat$g))
+  split_cov <- list(
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE, cov = covariance)) +
+      (0 + x | gr(g, id = "split", s2z = TRUE)),
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE)) +
+      (0 + x | gr(g, id = "split", s2z = TRUE, cov = covariance))
+  )
+  for (form in split_cov) {
+    expect_error(
+      stancode(
+        form, data = s2z_dat, data2 = list(covariance = covariance)
+      ),
+      "'by', 'cov', and 'pw'"
+    )
+  }
+
+  split_group <- list(
+    y ~ x +
+      (1 | gr(g, id = "split", s2z = TRUE)) +
+      (0 + x | gr(h, id = "split", s2z = TRUE)),
+    y ~ x +
+      (0 + x | gr(h, id = "split", s2z = TRUE)) +
+      (1 | gr(g, id = "split", s2z = TRUE))
+  )
+  for (form in split_group) {
+    expect_error(
+      stancode(form, data = s2z_dat),
+      "same grouping factor"
+    )
+  }
+})
+
 test_that("unsupported S2Z structures fail clearly", {
   expect_error(
     stancode(y ~ x + (1 + x + z | gr(g, s2z = TRUE)), s2z_dat),
     "matching population-level design column"
-  )
-  expect_error(
-    stancode(
-      y ~ x + (1 + x | gr(g, s2z = TRUE)) +
-        (1 + x | gr(h, s2z = TRUE)),
-      s2z_dat
-    ),
-    "Only one sum-to-zero"
   )
   by_dat <- transform(
     s2z_dat, f_by = factor(rep(c("a", "b"), each = nrow(s2z_dat) / 2))

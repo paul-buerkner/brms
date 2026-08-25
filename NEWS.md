@@ -9,7 +9,11 @@ group-effect mean vector and reconstructs conventional Bayesian coefficients
 and effects in generated quantities. Gaussian and Student-t group effects are
 supported, with the latter handled exactly as a conditional Gaussian scale
 mixture. Blocks with one varying coefficient and blocks with any number of
-independent coefficients use dedicated component-wise scalar implementations.
+coefficients in diagonal covariance blocks use dedicated component-wise scalar
+implementations.
+Multiple S2Z grouping factors may occur in one linear predictor; their omitted
+mean vectors are integrated and recovered jointly while retaining separate
+shared scales and correlation structures for each factor.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

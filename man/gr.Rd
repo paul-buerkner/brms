@@ -27,8 +27,9 @@ must be nested in levels of the \code{by} variable.}
 modelled as correlated.}
 
 \item{s2z}{Logical. If \code{TRUE}, use a physical sum-to-zero
-parameterization and analytically integrate out the omitted common
-group-effect mean vector. This experimental option preserves the usual
+analytically integrate out the omitted common group-effect mean vector of
+each S2Z block, jointly when multiple blocks share a linear predictor.
+This experimental option preserves the usual
 population- and group-level parameter semantics by reconstructing them in
 generated quantities. It is exact for \code{dist = "gaussian"} and for
 \code{dist = "student"} through a Gaussian scale mixture. Every varying
@@ -40,13 +41,18 @@ implementation that also accounts exactly for the shared centered
 intercept prior.
 Usual priors on group-level standard deviations, correlations, and
 Student-t degrees of freedom remain available, including separate
-standard-deviation priors for varying intercepts, slopes, and
-interactions.
+\code{sd} priors for varying intercepts, slopes, and interactions. For
+\code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
+Student-t scale semantics and is not rescaled to a marginal standard
+deviation.
 The physical coordinates are intended for well-informed group
 coefficients and may be slower than the default non-centered
 parameterization when those coefficients are weakly informed.
-Currently, only one such grouping term per linear predictor is supported,
-without the \code{by}, \code{cov}, or \code{pw} arguments.
+Multiple S2Z covariance blocks may be used in the same linear predictor.
+Their omitted group means are integrated and recovered jointly, while each
+block retains its own grouping factor, shared scales, and correlation
+structure.
+The \code{by}, \code{cov}, and \code{pw} arguments remain unsupported.
 Population-level priors must currently be flat, normal, Student-t, or
 Cauchy with numeric constant arguments. Bounds, tags, special priors,
 prior-only sampling, ordinal thresholds, sparse and QR designs, and
