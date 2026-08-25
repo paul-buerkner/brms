@@ -68,9 +68,12 @@ re_s2z_context <- function(bframe, r = NULL, coef = NULL, prior = NULL) {
       group <- paste(groups, collapse = ", ")
     }
     public_id <- r$gcall[[1L]]$id %||% NA
+    if (length(public_id) == 1L && !is.na(public_id)) {
+      public_id <- trimws(as.character(public_id))
+    }
     if (length(public_id) == 1L && !is.na(public_id) &&
-        nzchar(as.character(public_id))) {
-      id <- as.character(public_id)
+        nzchar(public_id)) {
+      id <- public_id
     } else {
       ids <- unique(r$id)
       if (length(ids)) {
@@ -105,6 +108,25 @@ format_re_s2z_context <- function(context) {
     out <- paste0(out, ", prior '", as.character(context$prior), "'")
   }
   out
+}
+
+# Suggest stable, predictor-local IDs when one public ID was reused across
+# linear predictors. These labels are diagnostic examples only; they do not
+# affect the generated model.
+re_s2z_local_id_examples <- function(contexts) {
+  stopifnot(is.list(contexts), length(contexts) > 1L)
+  labels <- vapply(contexts, function(context) {
+    predictor <- if (context$nlpar != "<none>") {
+      context$nlpar
+    } else {
+      context$dpar
+    }
+    label <- paste(context$response, predictor, "s2z", sep = "_")
+    label <- gsub("[^[:alnum:]_]+", "_", label)
+    gsub("^_+|_+$", "", label)
+  }, character(1))
+  labels <- make.unique(labels, sep = "_")
+  paste0('`id = "', labels, '"`', collapse = ", ")
 }
 
 stop_re_s2z <- function(context, capability, problem, remedy) {
@@ -560,13 +582,28 @@ validate_re_s2z_structure <- function(bframe, data) {
     has_cov <- any(nzchar(r$cov), na.rm = TRUE)
     if (has_by || has_cov || has_pw) {
       capability <- if (has_by) "by" else if (has_cov) "cov" else "pw"
+      remedy <- switch(
+        capability,
+        by = paste0(
+          "remove 'by' or use s2z = FALSE to retain separate ",
+          "variance-covariance matrices for its levels."
+        ),
+        cov = paste0(
+          "remove 'cov' to use independent grouping levels, or use ",
+          "s2z = FALSE to retain the supplied group covariance matrix."
+        ),
+        pw = paste0(
+          "remove 'pw' or use s2z = FALSE to retain the group-level ",
+          "prior weights."
+        )
+      )
       stop_re_s2z(
         context, capability,
         paste0(
-          "Arguments 'by', 'cov', and 'pw' are not yet supported together ",
+          "Argument '", capability, "' is not yet supported together ",
           "with gr(..., s2z = TRUE)."
         ),
-        "remove the unsupported argument or use s2z = FALSE for this term."
+        remedy
       )
     }
     if (isTRUE(bframe$frame$fe$sparse)) {
@@ -719,15 +756,33 @@ validate_re_s2z_prior_global <- function(bframe, prior) {
       has_rows(r) && id %in% r$id
     }, all_frames)
     if (length(occurrences) > 1L) {
-      first <- occurrences[[1L]]
-      r <- subset2(first$frame$re, id = id)
+      contexts <- lapply(occurrences, function(x) {
+        re_s2z_context(x, r = subset2(x$frame$re, id = id))
+      })
+      affected <- paste0(
+        "Affected linear predictors:\n  - ",
+        paste(
+          vapply(contexts, format_re_s2z_context, character(1)),
+          collapse = "\n  - "
+        )
+      )
+      public_id <- contexts[[1L]]$id
       stop_re_s2z(
-        re_s2z_context(first, r = r), "cross_predictor_id",
+        contexts[[1L]], "cross_predictor_id",
         paste0(
           "A sum-to-zero group-level ID cannot span multiple linear ",
-          "predictors."
+          "predictors.\n", affected
         ),
-        "assign a distinct group-level ID within each linear predictor."
+        paste0(
+          "use a distinct ID in every listed linear predictor (for example, ",
+          re_s2z_local_id_examples(contexts), "). For `mvbind(...)` or ",
+          "category shorthand, omit the shared `| ", public_id,
+          " |` tag or `id = \"", public_id, "\"` so brms allocates ",
+          "predictor-local IDs; alternatively, expand the model into ",
+          "separate `bf()` response formulas with those distinct IDs. ",
+          "These rewrites do not retain cross-predictor group-effect ",
+          "correlations; use s2z = FALSE if those correlations are required."
+        )
       )
     }
   }

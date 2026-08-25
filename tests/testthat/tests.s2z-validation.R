@@ -197,5 +197,66 @@ test_that("S2Z design and prior/global phases use capability diagnostics", {
   ))
   expect_match(msg, "S2Z capability 'cross_predictor_id'", fixed = TRUE)
   expect_match(msg, "ID 'across'", fixed = TRUE)
+  expect_match(msg, "Affected linear predictors:", fixed = TRUE)
+  expect_match(msg, "dpar 'mu'", fixed = TRUE)
+  expect_match(msg, "dpar 'sigma'", fixed = TRUE)
+  expect_match(msg, '`id = "y_mu_s2z"`', fixed = TRUE)
+  expect_match(msg, '`id = "y_sigma_s2z"`', fixed = TRUE)
   expect_match(msg, "Remedy:", fixed = TRUE)
+})
+
+test_that("cross-predictor diagnostics enumerate mvbind responses", {
+  form <- bf(
+    mvbind(y, z) ~ 1 + (1 | shared | gr(g, s2z = TRUE))
+  ) + set_rescor(FALSE)
+  msg <- s2z_error_message(stancode(
+    form, data = s2z_validation_dat
+  ))
+
+  expect_match(msg, "Affected linear predictors:", fixed = TRUE)
+  expect_match(msg, "response 'y'", fixed = TRUE)
+  expect_match(msg, "response 'z'", fixed = TRUE)
+  expect_match(msg, "ID 'shared'", fixed = TRUE)
+  expect_match(msg, '`id = "y_mu_s2z"`', fixed = TRUE)
+  expect_match(msg, '`id = "z_mu_s2z"`', fixed = TRUE)
+  expect_match(msg, "For `mvbind(...)` or category shorthand", fixed = TRUE)
+  expect_match(msg, "omit the shared `| shared |` tag", fixed = TRUE)
+  expect_match(msg, "separate `bf()` response formulas", fixed = TRUE)
+  expect_match(msg, "do not retain cross-predictor group-effect", fixed = TRUE)
+  expect_match(msg, "use s2z = FALSE", fixed = TRUE)
+})
+
+test_that("mvbind shorthand without a shared ID uses local S2Z blocks", {
+  form <- bf(
+    mvbind(y, z) ~ 1 + (1 | gr(g, s2z = TRUE))
+  ) + set_rescor(FALSE)
+  code <- stancode(form, data = s2z_validation_dat)
+  bframe <- brmsframe(brmsterms(form), data = s2z_validation_dat)
+  local_re <- lapply(bframe$terms, function(x) x$frame$re)
+
+  expect_s3_class(code, "brmsmodel")
+  expect_true(all(vapply(local_re, function(x) any(x$s2z), logical(1))))
+  expect_length(unique(unlist(lapply(local_re, `[[`, "id"))), 2L)
+})
+
+test_that("cov diagnostics identify the unsupported phylogenetic argument", {
+  phylo_dat <- data.frame(
+    phen = seq(-1, 1, length.out = 12),
+    cofactor = rep(c(-0.5, 0.5), 6),
+    phylo = factor(rep(letters[1:4], each = 3))
+  )
+  A <- diag(4)
+  dimnames(A) <- list(levels(phylo_dat$phylo), levels(phylo_dat$phylo))
+  msg <- s2z_error_message(stancode(
+    phen ~ cofactor + (1 | gr(phylo, cov = A, s2z = TRUE)),
+    data = phylo_dat, data2 = list(A = A)
+  ))
+
+  expect_match(msg, "Argument 'cov' is not yet supported", fixed = TRUE)
+  expect_match(msg, "S2Z capability 'cov'", fixed = TRUE)
+  expect_match(msg, "response 'phen'", fixed = TRUE)
+  expect_match(msg, "group 'phylo'", fixed = TRUE)
+  expect_match(msg, "use s2z = FALSE", fixed = TRUE)
+  expect_match(msg, "supplied group covariance matrix", fixed = TRUE)
+  expect_false(grepl("Arguments 'by', 'cov', and 'pw'", msg, fixed = TRUE))
 })

@@ -21,7 +21,8 @@ gr(
 \item{by}{An optional factor variable, specifying sub-populations of the
 groups. For each level of the \code{by} variable, a separate
 variance-covariance matrix will be fitted. Levels of the grouping factor
-must be nested in levels of the \code{by} variable.}
+must be nested in levels of the \code{by} variable. This argument is not
+currently supported with \code{s2z = TRUE}.}
 
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
@@ -32,19 +33,24 @@ sum-to-zero parameterization described in the section
 
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
-\code{TRUE}). See \code{\link{brmsformula}} for more details.}
+\code{TRUE}). With \code{s2z = TRUE}, this sharing is limited to terms in
+one linear predictor: an ID cannot span responses, categories, or
+distributional or nonlinear predictors. See \code{\link{brmsformula}}
+for more details.}
 
 \item{pw}{Optional numeric variable specifying prior weights. They weight the
 contribution of each group to the log-prior of the group-level
 coefficients. Should have one distinct value for each level of the
-grouping variable.}
+grouping variable. This argument is not currently supported with
+\code{s2z = TRUE}.}
 
 \item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping
 factor should appear as rownames of the corresponding matrix. This argument
 can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
-of the same grouping factor are modeled as independent of each other.}
+of the same grouping factor are modeled as independent of each other.
+This argument is not currently supported with \code{s2z = TRUE}.}
 
 \item{dist}{Name of the distribution of the group-level effects. Supported
 options are \code{"gaussian"} and \code{"student"}.}
@@ -58,14 +64,15 @@ and there is usually no need to call it directly.
 }
 \section{Physical sum-to-zero effects}{
 
-Setting \code{s2z = TRUE} expresses every coefficient vector in the
-grouping block as a physical deviation whose entries sum exactly to zero
-over the observed grouping levels. The likelihood is evaluated in these
-constrained coordinates. The omitted common group-effect mean is handled
-jointly with the matching population coefficients, and conventional
-population- and group-level draws are reconstructed in generated
-quantities. Thus functions such as \code{fixef}, \code{ranef}, and
-\code{coef} retain their usual interpretation.
+With \code{s2z = TRUE}, \pkg{brms} samples each varying coefficient as
+deviations whose sum is exactly zero over the grouping levels observed in
+the model data. For
+\code{1 + x + (1 + x | gr(g, s2z = TRUE))}, the constraint is applied
+separately to the varying intercepts and the varying \code{x} slopes.
+\pkg{brms} handles each omitted group-effect mean jointly with its matching
+population coefficient, then reconstructs conventional population and
+group effects. Thus \code{fixef}, \code{ranef}, \code{coef}, and prediction
+retain their usual interpretation.
 
 Every S2Z varying design column must have a population-level column with the
 same coefficient name and numerically identical values. This applies to
@@ -74,24 +81,59 @@ including their contrasts. For example, \code{x * f} must appear on both
 sides of the grouping bar when all of its expanded columns vary. At least
 two grouping levels must be observed.
 
-The current support matrix is:
+The main support boundaries are:
 
-\tabular{ll}{
-Design \tab Ordinary matched intercepts, slopes, factors, and interactions.\cr
-Group distribution \tab Gaussian or Student-t.\cr
-Covariance \tab Correlated or independent coefficients; one or multiple
-local S2Z blocks.\cr
-Group scales \tab Coefficient-specific \code{sd} parameters shared across
-observed grouping levels.\cr
-Active population priors \tab Flat, \code{normal}, \code{student_t},
-\code{cauchy}, or \code{logistic}, with numeric constant arguments.\cr
-Fixed-only population priors \tab Any otherwise valid \pkg{brms} prior.\cr
-Predictors \tab Separate local S2Z IDs in otherwise eligible location,
-distributional, nonlinear, categorical, multinomial, and multivariate
-predictors.\cr
-Public output \tab Conventional population coefficients and group effects
-reconstructed exactly.\cr
+\tabular{lll}{
+Feature \tab Supported? \tab Details\cr
+Ordinary designs \tab Yes \tab Matched intercepts, numeric or factor slopes,
+and interactions.\cr
+Group distribution \tab Yes \tab Gaussian or Student-t.\cr
+Coefficient correlation \tab Yes \tab \code{cor = TRUE} or \code{FALSE}
+within one predictor-local ID.\cr
+Multiple blocks \tab Yes \tab One or more local S2Z IDs in a linear
+predictor.\cr
+Multiple predictors \tab Yes \tab Separate S2Z IDs in otherwise eligible
+response, distributional, nonlinear, or category predictors.\cr
+Shared cross-predictor ID \tab No \tab Includes \code{| q |} shared by
+responses in \code{mvbind(...)}.\cr
+Known level covariance \tab No \tab Includes \code{cov = A} for
+phylogenetic or pedigree models.\cr
+Structural extensions \tab No \tab \code{by}, \code{pw},
+multi-membership, and special group coefficients.\cr
+Group scales \tab Yes \tab Coefficient-specific \code{sd} parameters shared
+across observed grouping levels.\cr
+Active population priors \tab Limited \tab Flat, \code{normal},
+\code{student_t}, \code{cauchy}, or \code{logistic}, with numeric constant
+arguments.\cr
+Public output \tab Yes \tab Conventional population coefficients and group
+effects are reconstructed exactly.\cr
 }
+
+A phylogenetic or pedigree covariance supplied through \code{cov} is a
+covariance among grouping levels, not the coefficient correlation selected
+by \code{cor}. It is not yet available with S2Z. In particular,
+\code{gr(phylo, s2z = TRUE)} without \code{cov = A} is an ordinary
+exchangeable grouping effect and does not use \code{A}; it is not a
+substitute for \code{gr(phylo, cov = A)}.
+
+In a multivariate shorthand formula, an ID between the bars is not merely a
+label. For example,
+\code{(1 | q | gr(phylo, s2z = TRUE))} inside
+\code{mvbind(phen, cofactor)} requests one group-effect covariance block
+with ID \code{q} spanning both response predictors. Cross-predictor S2Z IDs
+are not yet supported. Omit \code{q} to request separate response-local S2Z
+blocks:
+\preformatted{
+bf(mvbind(phen, cofactor) ~ 1 +
+     (1 | gr(phylo, s2z = TRUE)))
+}
+Alternatively, write a separate \code{bf()} formula for each response and
+give each block a distinct ID. These response-local blocks do not model a
+cross-response covariance among their group effects. Residual response
+correlation, when supported by the response families, is separate and may
+still be selected with \code{set_rescor(TRUE)}. If cross-response
+group-effect correlation is required, use conventional group effects with
+\code{s2z = FALSE}.
 
 A population coordinate is \emph{S2Z-active} when it is touched by an
 omitted-mean map from at least one local S2Z block. Only active coordinates
@@ -112,12 +154,11 @@ For \code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
 Student-t scale semantics and is not rescaled to a marginal standard
 deviation. Multiple S2Z blocks in one linear predictor retain separate
 grouping factors, scales, and correlation structures while their omitted
-means are handled jointly. An S2Z \code{id} cannot span linear predictors.
-For categorical, multinomial, and simplex families, omit \code{id} in a
-shared shorthand term so that the generated category predictors receive
-separate internal IDs, or specify the eligible non-reference category
-predictors explicitly and give each a distinct ID. A user-supplied ID that
-spans categories is a cross-predictor ID and is rejected.
+means are handled jointly. The same predictor-local ID rule applies to
+categorical, multinomial, and simplex families: omit \code{id} in a shared
+shorthand term so that generated category predictors receive separate
+internal IDs, or specify eligible non-reference category predictors with a
+distinct ID for each one.
 
 This foundation intentionally provides physical S2Z coordinates only.
 Centered, partially centered, and automatically centered modes are deferred;

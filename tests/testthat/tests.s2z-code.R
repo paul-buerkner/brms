@@ -1069,7 +1069,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       (0 + x | gr(g, id = "split", s2z = TRUE, by = f_by))
   )
   for (form in split_by) {
-    expect_error(stancode(form, data = by_dat), "'by', 'cov', and 'pw'")
+    expect_error(stancode(form, data = by_dat), "Argument 'by'")
   }
 
   split_pw <- list(
@@ -1081,7 +1081,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       (0 + x | gr(g, id = "split", s2z = TRUE, pw = w))
   )
   for (form in split_pw) {
-    expect_error(stancode(form, data = s2z_dat), "'by', 'cov', and 'pw'")
+    expect_error(stancode(form, data = s2z_dat), "Argument 'pw'")
   }
 
   covariance <- diag(nlevels(s2z_dat$g))
@@ -1099,7 +1099,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       stancode(
         form, data = s2z_dat, data2 = list(covariance = covariance)
       ),
-      "'by', 'cov', and 'pw'"
+      "Argument 'cov'"
     )
   }
 
