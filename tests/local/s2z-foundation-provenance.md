@@ -2,20 +2,22 @@
 
 This manifest records how the combined development branch preserved at
 `archive/s2z-combined-20260825` was reduced to the physical/shared-scale
-foundation on `feature/s2z-foundation`. The extraction base is
-`29ccd2384776b2bfc13bf749659528911743a92b`.
+foundation on `feature/s2z-foundation`. The original extraction base was
+`29ccd2384776b2bfc13bf749659528911743a92b`; the resulting series was then
+rebased onto `origin/master` at
+`4f91054353436f5814cd4ccf6da61f14b2d0e45d`.
 
 | Combined commit | Foundation treatment |
 |---|---|
-| `112e2fce` Add marginalized sum-to-zero group effects | Replayed as `85ce52c8`. |
-| `fd3b08b3` Specialize scalar sum-to-zero effects | Replayed as `aff8582c`. |
-| `1835a8a5` Document varying-effect prior support | Replayed as `79de4c28`; this describes coefficient-specific scales shared across levels. |
-| `4b36a563` Specialize independent sum-to-zero effects | Replayed as `e4acf030`. |
-| `601e792c` Clarify physical sum-to-zero terminology | Replayed as `b946ebfa`. |
+| `112e2fce` Add marginalized sum-to-zero group effects | Replayed as `562a969f`. |
+| `fd3b08b3` Specialize scalar sum-to-zero effects | Replayed as `a7449e20`. |
+| `1835a8a5` Document varying-effect prior support | Replayed as `003ea1e4`; this describes coefficient-specific scales shared across levels. |
+| `4b36a563` Specialize independent sum-to-zero effects | Replayed as `c1afad55`. |
+| `601e792c` Clarify physical sum-to-zero terminology | Replayed as `2a99dc40`. |
 | `5f692168` Add group-varying S2Z scales | Deferred to PLAN-04; no public API or state retained. |
 | `2a4eeb11` Add partial centering for sum-to-zero effects | Deferred to PLAN-03; no `center`, `rho_s2z`, or automatic-centering state retained. |
-| `ca59f007` Support multiple sum-to-zero grouping blocks | Replayed as `aa1f6d40` after removing dependencies on deferred modes. |
-| `4c95250a` Add fast Matheron path for Gaussian S2Z blocks | Replayed as `92561314` after removing dependencies on deferred modes. |
+| `ca59f007` Support multiple sum-to-zero grouping blocks | Replayed as `48169204` after removing dependencies on deferred modes. |
+| `4c95250a` Add fast Matheron path for Gaussian S2Z blocks | Replayed as `e1381595` after removing dependencies on deferred modes. |
 | `50ec7242` Allow priors on realized group-level scales | Deferred to PLAN-04; no realized-scale API or level-specific scale state retained. |
 | `ddf913c5` Reduce Stan allocations for S2Z effects | PR-1-safe allocation changes were rewritten onto the reduced physical paths. |
 | `ce57b03b` Vectorize S2Z scale priors | Shared-scale vectorization was rewritten where applicable; varying-level-scale hunks were deferred to PLAN-04. |
