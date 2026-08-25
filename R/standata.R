@@ -111,7 +111,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
                       only_response = FALSE, internal = FALSE, ...) {
 
   stopifnot(is.anybrmsframe(bframe))
-  validate_re_s2z(bframe, prior = prior)
+  validate_re_s2z_prior_global(bframe, prior = prior)
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   internal <- as_one_logical(internal)

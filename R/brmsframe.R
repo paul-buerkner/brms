@@ -42,6 +42,20 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
+  # Keep top-level response and family labels available to local predictor
+  # validation. Category and mixture predictors otherwise carry only their
+  # dpar prefix, even though the enclosing model context is known here.
+  s2z_response <- x$resp %||% ""
+  if (!length(s2z_response) || !nzchar(s2z_response)) {
+    response_vars <- all.vars(x$respform)
+    if (length(response_vars)) {
+      s2z_response <- response_vars[1L]
+    }
+  }
+  x$frame$s2z_context <- list(
+    response = s2z_response,
+    family = x$family$family %||% ""
+  )
   for (dp in names(x$dpars)) {
     x$dpars[[dp]] <- brmsframe(
       x$dpars[[dp]], data, frame = x$frame,
@@ -85,7 +99,11 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # only store the ranefs of this specific linear formula
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
+  validate_re_s2z_structure(x, data = data)
   validate_re_s2z_design(x, data = data)
+  if (has_re_s2z(x)) {
+    x$frame$re_s2z <- re_s2z_infos(x)
+  }
   # these data_ functions may require the outputs of the corresponding
   # frame_ functions (but not vice versa) and are thus evaluated last
   x$sdata$gp <- data_gp(x, data, internal = TRUE)

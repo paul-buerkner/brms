@@ -81,7 +81,20 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
     )
     c(out) <- paste0(par_classes, p)
     if (has_re_s2z(x)) {
-      c(out) <- paste0("theta_s2z", p)
+      c(out) <- paste0(
+        c(
+          "theta_s2z", "theta_s2z_active", "fixed_s2z",
+          "zfixed_s2z", "sdfixed_s2z"
+        ),
+        p
+      )
+      infos_s2z <- re_s2z_infos(x)
+      if (length(infos_s2z)) {
+        n_inactive_s2z <- length(infos_s2z[[1L]]$inactive_q)
+        c(out) <- paste0(
+          "par_fixed_s2z", p, "_", seq_len(n_inactive_s2z)
+        )
+      }
       q <- length(x$frame$fe$vars)
       c(out) <- paste0("udf_b_s2z", p, "_", seq_len(q))
     }
@@ -108,7 +121,8 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
     r <- subset2(reframe, id = id)
     if (!save_pars$all && isTRUE(r$s2z[1])) {
       s2z_classes <- c(
-        "z_s2z", "r_s2z", "H_s2z", "prior_mean_s2z",
+        "z_s2z", "z_mean_s2z", "r_s2z", "H_s2z",
+        "q_explicit_s2z", "prior_mean_s2z",
         "prior_prec_s2z", "prior_scale_s2z",
         "W_matheron_s2z", "sqrt_W_matheron_s2z",
         "L_W_matheron_s2z", "theta_white_matheron_s2z",
