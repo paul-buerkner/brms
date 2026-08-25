@@ -245,7 +245,6 @@ test_that("posterior_epred can be reproduced by using d<family>()", {
   expect_equivalent(epred4, epred4_ch)
 })
 
-
 test_that("truncated discrete posterior_epred keeps the lower bound", {
   # the mean is taken over lb:ub and normalized by F(ub) - F(lb - 1), as in
   # the generated Stan code and in log_lik; see #1923
