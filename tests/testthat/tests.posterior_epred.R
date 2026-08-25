@@ -276,6 +276,18 @@ test_that("truncated discrete posterior_epred keeps the lower bound", {
     sum((0:6) * dpois(0:6, lambda)) / ppois(6, lambda)
   )
 
+  # a non-integer bound rounds to the support it admits, as in log_lik.
+  # min_lb is a grid origin shared by all observations, so one fractional
+  # bound would otherwise zero every column
+  got <- suppressMessages(brms:::posterior_epred_trunc_poisson(
+    epred_prep(lambda, poisson()), lb = bnd(2.5), ub = bnd(6)
+  ))
+  expect_equal(
+    got[1],
+    sum((3:6) * dpois(3:6, lambda)) /
+      (ppois(6, lambda) - ppois(2, lambda))
+  )
+
   # negbinomial covers the other cdf shape in the affected set
   got <- suppressMessages(brms:::posterior_epred_trunc_negbinomial(
     epred_prep(lambda, negbinomial(), shape = matrix(2, nrow = 2, ncol = 1)),

@@ -901,6 +901,11 @@ posterior_epred_trunc_discrete <- function(dist, args, lb, ub) {
   if (any(is.infinite(c(lb, ub)))) {
     stop("lb and ub must be finite")
   }
+  # integer responses admit ceiling(lb):floor(ub), and log_lik_truncate()
+  # rounds the same way; without this a single non-integer bound turns the
+  # whole kernel grid fractional and zeroes every observation
+  lb <- ceiling(lb)
+  ub <- floor(ub)
   # simplify lb and ub back to vector format
   vec_lb <- lb[1, ]
   vec_ub <- ub[1, ]
