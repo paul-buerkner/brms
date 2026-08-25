@@ -1369,17 +1369,19 @@ predict_discrete_helper <- function(i, prep, output, distribution, ntrys = 5,
     },
     "probability" = {
       pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
-             randomized = FALSE, ...)
+             randomized = FALSE, int_response = TRUE, ...)
     },
     "pit" = {
       pp_cdf(q = q, distribution = distribution, lb = lb, ub = ub,
-             randomized = TRUE, ...)
+             randomized = TRUE, int_response = TRUE, ...)
     },
     "density" = {
-      pp_density(q = q, distribution = distribution, lb = lb, ub = ub, ...)
+      pp_density(q = q, distribution = distribution, lb = lb, ub = ub,
+                 int_response = TRUE, ...)
     },
     "quantile" = {
-      pp_quantile(p = p, distribution = distribution, lb = lb, ub = ub, ...)
+      pp_quantile(p = p, distribution = distribution, lb = lb, ub = ub,
+                  int_response = TRUE, ...)
     }
   )
 }
@@ -1398,25 +1400,30 @@ predict_discrete_helper <- function(i, prep, output, distribution, ntrys = 5,
 # @return a vector of probability values
 # @noRd
 pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
-                   log.p = FALSE, ...) {
+                   log.p = FALSE, int_response = FALSE, ...) {
   randomized <- as_one_logical(randomized)
   lower.tail <- as_one_logical(lower.tail)
   log.p <- as_one_logical(log.p)
+  int_response <- as_one_logical(int_response)
   args <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   pdist <- paste0("p", distribution)
+  # the lower bound is inclusive for integer responses; see #1923
+  lb_internal <- if (int_response && !is.null(lb)) lb - 1 else lb
   # prepare computation of (non-)truncated cdf
   F_internal <- function(q) {
     if (is.null(lb) && is.null(ub)) {
       out <- do_call(pdist, c(list(q), args))
     } else {
-      denom <- do_call(pdist, c(list(ub), args)) - do_call(pdist, c(list(lb), args))
+      denom <- do_call(pdist, c(list(ub), args)) -
+        do_call(pdist, c(list(lb_internal), args))
       if (any(denom == 0)) {
         stop2("Invalid truncation bounds: no probability mass ",
               "between 'lb' and 'ub'. Please check that the ",
               "truncation interval is valid for the response ",
               "distribution.")
       }
-      out <- (do_call(pdist, c(list(q), args)) - do_call(pdist, c(list(lb), args))) / denom
+      out <- (do_call(pdist, c(list(q), args)) -
+        do_call(pdist, c(list(lb_internal), args))) / denom
     }
     out
   }
@@ -1444,7 +1451,8 @@ pp_cdf <- function(q, distribution, lb, ub, randomized, lower.tail = TRUE,
 # @param ... additional arguments passed to the distribution functions
 # @return a vector of density values
 # @noRd
-pp_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
+pp_density <- function(q, distribution, lb, ub, log = FALSE,
+                       int_response = FALSE, ...) {
   dargs <- validate_distribution_args(distribution, fun_prefix = "d", ...)
   pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   ddist <- paste0("d", distribution)
@@ -1455,7 +1463,9 @@ pp_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
   if (is.null(lb)) {
     cdf_lb <- rep(0, length(q))
   } else {
-    cdf_lb <- do_call(pdist, c(list(lb), pargs))
+    # the lower bound is inclusive for integer responses; see #1923
+    lb_internal <- if (int_response) lb - 1 else lb
+    cdf_lb <- do_call(pdist, c(list(lb_internal), pargs))
   }
   if (is.null(ub)) {
     cdf_ub <- rep(1, length(q))
@@ -1488,7 +1498,7 @@ pp_density <- function(q, distribution, lb, ub, log = FALSE, ...) {
 # @return a vector of quantile values
 # @noRd
 pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
-                        log.p = FALSE, ...) {
+                        log.p = FALSE, int_response = FALSE, ...) {
   qargs <- validate_distribution_args(distribution, fun_prefix = "q", ...)
   pargs <- validate_distribution_args(distribution, fun_prefix = "p", ...)
   qdist <- paste0("q", distribution)
@@ -1502,7 +1512,9 @@ pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
   if (is.null(lb)) {
     cdf_lb <- rep(0, length(p))
   } else {
-    cdf_lb <- do_call(pdist, c(list(lb), pargs))
+    # the lower bound is inclusive for integer responses; see #1923
+    lb_internal <- if (int_response) lb - 1 else lb
+    cdf_lb <- do_call(pdist, c(list(lb_internal), pargs))
   }
   if (is.null(ub)) {
     cdf_ub <- rep(1, length(p))

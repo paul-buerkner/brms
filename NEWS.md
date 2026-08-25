@@ -27,6 +27,9 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Include the lower bound in `posterior_predict` outputs `"probability"`,
+`"pit"`, `"density"` and `"quantile"` for truncated discrete models,
+matching the other post-processing methods. Thanks to Ahmed Eldeeb. (#1923)
 * Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
 responses, matching the generated Stan code, so that `loo` and `waic`
 agree with the model that was fitted. Thanks to Ahmed Eldeeb. (#1903)

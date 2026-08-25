@@ -689,3 +689,41 @@ test_that("randomized PIT is reproducible with the same seed", {
   pit3 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
   expect_true(any(pit1 != pit3))
 })
+
+test_that("truncated discrete pp_* helpers keep the lower bound", {
+  # lb is inclusive for integer responses, as in the Stan code, log_lik and
+  # posterior_epred; the references below come from stats:: rather than from
+  # brms, so the convention is pinned rather than merely self-consistent.
+  # See #1923
+  lam <- 3
+  lb <- 2
+  ub <- 6
+  Z <- ppois(ub, lam) - ppois(lb - 1, lam)
+
+  dens <- sapply(lb:ub, function(y) {
+    brms:::pp_density(y, "pois", lb = lb, ub = ub,
+                      int_response = TRUE, lambda = lam)
+  })
+  expect_equal(sum(dens), 1)
+  expect_equal(dens, dpois(lb:ub, lam) / Z)
+
+  cdf <- sapply(lb:ub, function(y) {
+    brms:::pp_cdf(y, "pois", lb = lb, ub = ub, randomized = FALSE,
+                  int_response = TRUE, lambda = lam)
+  })
+  expect_equal(cdf, (ppois(lb:ub, lam) - ppois(lb - 1, lam)) / Z)
+  expect_equal(cdf[length(cdf)], 1)
+
+  # lb must be attainable, which it is not under the exclusive convention
+  expect_equal(
+    brms:::pp_quantile(0.001, "pois", lb = lb, ub = ub,
+                       int_response = TRUE, lambda = lam),
+    lb
+  )
+
+  # continuous responses are untouched
+  expect_equal(
+    brms:::pp_density(0.5, "norm", lb = 0, ub = 1, mean = 0, sd = 1),
+    dnorm(0.5) / (pnorm(1) - pnorm(0))
+  )
+})
