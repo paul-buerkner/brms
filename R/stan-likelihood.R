@@ -1367,6 +1367,15 @@ args_glm_primitive <- function(bterms, threads = NULL, ...) {
   }
   x <- glue("X{sfx_X}{resp}{slice}")
   beta <- glue("b{sfx_b}{resp}")
+  if (has_re_s2z(bterms)) {
+    if (center_X) {
+      beta <- glue(
+        "tail(theta_s2z{resp}, {length(bterms$frame$fe$vars_stan)})"
+      )
+    } else {
+      beta <- glue("theta_s2z{resp}")
+    }
+  }
   if (has_special_terms(bterms)) {
     # the intercept vector will contain all the remaining terms
     alpha <- glue("mu{resp}")

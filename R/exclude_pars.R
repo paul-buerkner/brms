@@ -80,6 +80,24 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
       "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
+    if (has_re_s2z(x)) {
+      c(out) <- paste0(
+        c(
+          "theta_s2z", "theta_s2z_active", "fixed_s2z",
+          "zfixed_s2z", "sdfixed_s2z"
+        ),
+        p
+      )
+      infos_s2z <- re_s2z_infos(x)
+      if (length(infos_s2z)) {
+        n_inactive_s2z <- length(infos_s2z[[1L]]$inactive_q)
+        c(out) <- paste0(
+          "par_fixed_s2z", p, "_", seq_len(n_inactive_s2z)
+        )
+      }
+      q <- length(x$frame$fe$vars)
+      c(out) <- paste0("udf_b_s2z", p, "_", seq_len(q))
+    }
     smframe <- x$frame$sm
     for (i in seq_rows(smframe)) {
       nb <- seq_len(smframe$nbases[i])
@@ -100,6 +118,26 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
   rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
   for (id in unique(reframe$id)) {
     c(out) <- paste0(rm_re_pars, "_", id)
+    r <- subset2(reframe, id = id)
+    if (!save_pars$all && isTRUE(r$s2z[1])) {
+      s2z_classes <- c(
+        "z_s2z", "z_mean_s2z", "r_s2z", "H_s2z",
+        "q_explicit_s2z", "prior_mean_s2z",
+        "prior_prec_s2z", "prior_scale_s2z",
+        "W_matheron_s2z", "sqrt_W_matheron_s2z",
+        "L_W_matheron_s2z", "theta_white_matheron_s2z",
+        "group_scale_s2z", "group_prec_s2z",
+        "L_Sigma_s2z", "Q_Sigma_s2z", "P_group_s2z", "h_group_s2z",
+        "P_s2z", "L_P_s2z", "H_joint_s2z", "h_joint_s2z",
+        "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
+        "rank1_info_s2z", "group_quad_s2z", "joint_quad_s2z",
+        "mhat_s2z", "qhat_s2z", "white_s2z", "mean_r_s2z",
+        "q_recovered_s2z"
+      )
+      c(out) <- paste0(s2z_classes, "_", id)
+      rp <- usc(combine_prefix(r))
+      c(out) <- paste0("r_s2z_", r$id, rp, "_", r$cn)
+    }
   }
   if (isFALSE(save_pars$group)) {
     p <- usc(combine_prefix(reframe))

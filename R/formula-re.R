@@ -13,24 +13,144 @@
 #' @param by An optional factor variable, specifying sub-populations of the
 #'   groups. For each level of the \code{by} variable, a separate
 #'   variance-covariance matrix will be fitted. Levels of the grouping factor
-#'   must be nested in levels of the \code{by} variable.
+#'   must be nested in levels of the \code{by} variable. This argument is not
+#'   currently supported with \code{s2z = TRUE}.
 #' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
 #'   modelled as correlated.
+#' @param s2z Logical. If \code{TRUE}, use the experimental physical
+#'   sum-to-zero parameterization described in the section
+#'   \dQuote{Physical sum-to-zero effects}. The default is \code{FALSE}.
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
-#'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
+#'   \code{TRUE}). With \code{s2z = TRUE}, this sharing is limited to terms in
+#'   one linear predictor: an ID cannot span responses, categories, or
+#'   distributional or nonlinear predictors. See \code{\link{brmsformula}}
+#'   for more details.
 #' @param pw Optional numeric variable specifying prior weights. They weight the
 #'   contribution of each group to the log-prior of the group-level
 #'   coefficients. Should have one distinct value for each level of the
-#'   grouping variable.
+#'   grouping variable. This argument is not currently supported with
+#'   \code{s2z = TRUE}.
 #' @param cov An optional matrix which is proportional to the within-group
 #'   covariance matrix of the group-level effects. All levels of the grouping
 #'   factor should appear as rownames of the corresponding matrix. This argument
 #'   can be used, among others, to model pedigrees and phylogenetic effects. See
 #'   \code{vignette("brms_phylogenetics")} for more details. By default, levels
 #'   of the same grouping factor are modeled as independent of each other.
-#' @param dist Name of the distribution of the group-level effects.
-#' Currently \code{"gaussian"} is the only option.
+#'   This argument is not currently supported with \code{s2z = TRUE}.
+#' @param dist Name of the distribution of the group-level effects. Supported
+#'   options are \code{"gaussian"} and \code{"student"}.
+#'
+#' @section Physical sum-to-zero effects:
+#' With \code{s2z = TRUE}, \pkg{brms} samples each varying coefficient as
+#' deviations whose sum is exactly zero over the grouping levels observed in
+#' the model data. For
+#' \code{1 + x + (1 + x | gr(g, s2z = TRUE))}, the constraint is applied
+#' separately to the varying intercepts and the varying \code{x} slopes.
+#' \pkg{brms} handles each omitted group-effect mean jointly with its matching
+#' population coefficient, then reconstructs conventional population and
+#' group effects. Thus \code{fixef}, \code{ranef}, \code{coef}, and prediction
+#' retain their usual interpretation.
+#'
+#' Every S2Z varying design column must have a population-level column with the
+#' same coefficient name and numerically identical values. This applies to
+#' varying intercepts, numeric and factor slopes, and interaction columns,
+#' including their contrasts. For example, \code{x * f} must appear on both
+#' sides of the grouping bar when all of its expanded columns vary. At least
+#' two grouping levels must be observed.
+#'
+#' The main support boundaries are:
+#'
+#' \tabular{lll}{
+#' Feature \tab Supported? \tab Details\cr
+#' Ordinary designs \tab Yes \tab Matched intercepts, numeric or factor slopes,
+#' and interactions.\cr
+#' Group distribution \tab Yes \tab Gaussian or Student-t.\cr
+#' Coefficient correlation \tab Yes \tab \code{cor = TRUE} or \code{FALSE}
+#' within one predictor-local ID.\cr
+#' Multiple blocks \tab Yes \tab One or more local S2Z IDs in a linear
+#' predictor.\cr
+#' Multiple predictors \tab Yes \tab Separate S2Z IDs in otherwise eligible
+#' response, distributional, nonlinear, or category predictors.\cr
+#' Shared cross-predictor ID \tab No \tab Includes \code{| q |} shared by
+#' responses in \code{mvbind(...)}.\cr
+#' Known level covariance \tab No \tab Includes \code{cov = A} for
+#' phylogenetic or pedigree models.\cr
+#' Structural extensions \tab No \tab \code{by}, \code{pw},
+#' multi-membership, and special group coefficients.\cr
+#' Group scales \tab Yes \tab Coefficient-specific \code{sd} parameters shared
+#' across observed grouping levels.\cr
+#' Active population priors \tab Limited \tab Flat, \code{normal},
+#' \code{student_t}, \code{cauchy}, or \code{logistic}, with numeric constant
+#' arguments.\cr
+#' Public output \tab Yes \tab Conventional population coefficients and group
+#' effects are reconstructed exactly.\cr
+#' }
+#'
+#' A phylogenetic or pedigree covariance supplied through \code{cov} is a
+#' covariance among grouping levels, not the coefficient correlation selected
+#' by \code{cor}. It is not yet available with S2Z. In particular,
+#' \code{gr(phylo, s2z = TRUE)} without \code{cov = A} is an ordinary
+#' exchangeable grouping effect and does not use \code{A}; it is not a
+#' substitute for \code{gr(phylo, cov = A)}.
+#'
+#' In a multivariate shorthand formula, an ID between the bars is not merely a
+#' label. For example,
+#' \code{(1 | q | gr(phylo, s2z = TRUE))} inside
+#' \code{mvbind(phen, cofactor)} requests one group-effect covariance block
+#' with ID \code{q} spanning both response predictors. Cross-predictor S2Z IDs
+#' are not yet supported. Omit \code{q} to request separate response-local S2Z
+#' blocks:
+#' \preformatted{
+#' bf(mvbind(phen, cofactor) ~ 1 +
+#'      (1 | gr(phylo, s2z = TRUE)))
+#' }
+#' Alternatively, write a separate \code{bf()} formula for each response and
+#' give each block a distinct ID. These response-local blocks do not model a
+#' cross-response covariance among their group effects. Residual response
+#' correlation, when supported by the response families, is separate and may
+#' still be selected with \code{set_rescor(TRUE)}. If cross-response
+#' group-effect correlation is required, use conventional group effects with
+#' \code{s2z = FALSE}.
+#'
+#' A population coordinate is \emph{S2Z-active} when it is touched by an
+#' omitted-mean map from at least one local S2Z block. Only active coordinates
+#' enter the S2Z prior calculation and are subject to the active-prior row of
+#' the table. Other population coordinates are fixed-only: they retain the
+#' ordinary \pkg{brms} declaration and prior handling. The \code{logistic}
+#' case is exact, not a Gaussian approximation. Generated Stan explicitly
+#' samples standardized omitted block means for a logistic-active system and
+#' includes their exact density and Jacobian. This supports, among others, the
+#' default \code{logistic(0, 1)} intercept prior in auxiliary probability
+#' predictors such as \code{zi}, \code{hu}, \code{zoi}, \code{coi}, mixture
+#' weights, Wiener \code{bias}, and asym-Laplace \code{quantile}.
+#'
+#' Usual priors on shared group-level standard deviations, correlations, and
+#' Student-t degrees of freedom remain available, including separate
+#' \code{sd} priors for varying intercepts, slopes, factors, and interactions.
+#' For \code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
+#' Student-t scale semantics and is not rescaled to a marginal standard
+#' deviation. Multiple S2Z blocks in one linear predictor retain separate
+#' grouping factors, scales, and correlation structures while their omitted
+#' means are handled jointly. The same predictor-local ID rule applies to
+#' categorical, multinomial, and simplex families: omit \code{id} in a shared
+#' shorthand term so that generated category predictors receive separate
+#' internal IDs, or specify eligible non-reference category predictors with a
+#' distinct ID for each one.
+#'
+#' This foundation intentionally provides physical S2Z coordinates only.
+#' Centered, partially centered, and automatically centered modes are deferred;
+#' there is no S2Z \code{center} argument. Group-level scales that vary across
+#' grouping levels and priors on realized level-specific scales are also
+#' deferred. Ordinal location predictors and ordered mixture intercepts are not
+#' supported. Structural extensions including \code{by}, \code{cov},
+#' \code{pw}, multi-membership, category-specific or other special group
+#' coefficients, cross-predictor IDs, and sparse or QR population designs are
+#' deferred as well. Bounds, tags, and special priors on S2Z-active
+#' population coordinates, prior-only sampling, and non-positive fixed
+#' group-level standard deviations are unsupported. Custom Stan code must not
+#' use conventional population- or group-level coefficients before they are
+#' reconstructed in generated quantities.
 #'
 #' @seealso \code{\link{brmsformula}}
 #'
@@ -53,11 +173,20 @@
 #' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
 #'             data = epilepsy)
 #' summary(fit4)
+#'
+#' # physical sum-to-zero varying intercepts, slopes, and interactions
+#' s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
+#'                    coef = "Intercept") +
+#'   prior(exponential(3), class = "sd", group = "patient", coef = "zAge") +
+#'   prior(lkj(2), class = "cor", group = "patient")
+#' fit5 <- brm(count ~ zAge * Trt +
+#'               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+#'             data = epilepsy, family = poisson(), prior = s2z_prior)
 #' }
 #'
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
-               cov = NULL, dist = "gaussian") {
+               cov = NULL, dist = "gaussian", s2z = FALSE) {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -65,6 +194,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   }
   stopif_illegal_group(groups[1])
   cor <- as_one_logical(cor)
+  s2z <- as_one_logical(s2z)
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
@@ -91,7 +221,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   byvars <- all_vars(by)
   pwvars <- all_vars(pw)
   allvars <- str2formula(c(groups, byvars, pwvars))
-  nlist(groups, allvars, label, by, cor, id, pw, cov, dist, type = "")
+  nlist(groups, allvars, label, by, cor, s2z, id, pw, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -560,6 +690,7 @@ get_re.btl <- function(x, ...) {
 #   dpar: name of the distributional parameter
 #   nlpar: name of the non-linear parameter
 #   cor: are correlations modeled for this effect?
+#   s2z: use a sum-to-zero parameterization for this effect?
 #   ggn: global number of the grouping factor
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
@@ -605,6 +736,7 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       nlpar = re$nlpar[[i]],
       ggn = NA,
       cor = re$cor[[i]],
+      s2z = re$gcall[[i]]$s2z %||% FALSE,
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
       cov = re$gcall[[i]]$cov,
@@ -763,7 +895,8 @@ empty_reframe <- function() {
     id = numeric(0), group = character(0), gn = numeric(0),
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
-    cor = logical(0), type = character(0), form = character(0),
+    cor = logical(0), s2z = logical(0), type = character(0),
+    form = character(0),
     stringsAsFactors = FALSE
   )
   class(out) <- reframe_class()

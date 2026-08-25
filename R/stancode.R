@@ -118,6 +118,7 @@ stancode.default <- function(object, data, family = gaussian(),
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
+  validate_re_s2z_prior_global(bterms, prior = prior)
   scode_predictor <- stan_predictor(
     bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
@@ -248,8 +249,10 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_transformed_data <- paste0(
     "transformed data {\n",
        scode_predictor[["tdata_def"]],
+       scode_re[["tdata_def"]],
        collapse_stanvars(stanvars, "tdata", "start"),
        scode_predictor[["tdata_comp"]],
+       scode_re[["tdata_comp"]],
        collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
