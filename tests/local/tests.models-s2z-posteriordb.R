@@ -60,7 +60,7 @@
 #
 # The default keeps the original centered-S2Z validation and runtime. To run
 # the brms-only four-way Radon comparison (conventional noncentered, centered
-# S2Z, noncentered S2Z, and data-driven partial S2Z), use:
+# S2Z, noncentered S2Z, and automatic expected-Fisher S2Z), use:
 #
 #   BRMS_S2Z_PDB_CASES=radon \
 #   BRMS_S2Z_PDB_S2Z_MODES=centered,noncentered,auto \
@@ -603,9 +603,11 @@ make_case <- function(name) {
         y | se(sei, sigma = FALSE) ~ 0 + one +
           (0 + one | gr(school, s2z = TRUE, center = FALSE))
       ),
-      s2z_auto_formula = bf(
-        y | se(sei, sigma = FALSE) ~ 0 + one +
-          (0 + one | gr(school, s2z = TRUE, center = "auto"))
+      s2z_auto_formula = NULL,
+      auto_supported = FALSE,
+      auto_skip_reason = paste0(
+        "the known-standard-error response addition is not yet included ",
+        "in the automatic expected-Fisher target"
       ),
       prior = prior(normal(0, 5), class = "b", coef = "one") +
         prior(cauchy(0, 5), class = "sd", group = "school"),
@@ -633,9 +635,11 @@ make_case <- function(name) {
         obs ~ 0 + one +
           (0 + one | gr(site, s2z = TRUE, center = FALSE))
       ),
-      s2z_auto_formula = bf(
-        obs ~ 0 + one +
-          (0 + one | gr(site, s2z = TRUE, center = "auto"))
+      s2z_auto_formula = NULL,
+      auto_supported = FALSE,
+      auto_skip_reason = paste0(
+        "automatic expected-Fisher centering currently requires a ",
+        "Gaussian or Student-t identity likelihood"
       ),
       prior = prior(normal(0, 10), class = "b", coef = "one") +
         prior(uniform(0, 5), class = "sd", group = "site", ub = 5),
@@ -672,6 +676,8 @@ make_case <- function(name) {
           (0 + one + floor ||
             gr(county, s2z = TRUE, center = "auto"))
       ),
+      auto_supported = TRUE,
+      auto_skip_reason = NA_character_,
       prior = prior(normal(0, 10), class = "b") +
         prior(normal(0, 1), class = "sd", group = "county") +
         prior(normal(0, 1), class = "sigma"),
@@ -704,6 +710,8 @@ make_case <- function(name) {
         y ~ 0 + one + xc +
           (0 + one + xc || gr(rat, s2z = TRUE, center = "auto"))
       ),
+      auto_supported = TRUE,
+      auto_skip_reason = NA_character_,
       prior = prior(normal(0, 100), class = "b") +
         # A global empty sd prior suppresses the brms default and reproduces
         # PosteriorDB's improper flat priors on the two positive group scales.
@@ -745,6 +753,8 @@ make_case <- function(name) {
         weight ~ age +
           (age | gr(rat, s2z = TRUE, center = "auto"))
       ),
+      auto_supported = TRUE,
+      auto_skip_reason = NA_character_,
       prior = NULL,
       fixed_formula = ~ age,
       group = "rat",
@@ -760,6 +770,13 @@ make_case <- function(name) {
 cases <- setNames(lapply(requested_cases, make_case), requested_cases)
 
 case_formula <- function(case, parameterization) {
+  if (identical(parameterization, "s2z-auto") &&
+      !isTRUE(case$auto_supported)) {
+    stop(
+      "Automatic expected-Fisher S2Z is unavailable for ", case$name,
+      ": ", case$auto_skip_reason, ".", call. = FALSE
+    )
+  }
   switch(
     parameterization,
     conventional = case$conventional_formula,
@@ -767,6 +784,59 @@ case_formula <- function(case, parameterization) {
     `s2z-noncentered` = case$s2z_noncentered_formula,
     `s2z-auto` = case$s2z_auto_formula,
     stop("Unknown parameterization: ", parameterization, call. = FALSE)
+  )
+}
+
+selected_parameterizations_for_case <- function(case) {
+  if (isTRUE(case$auto_supported)) {
+    return(parameterizations)
+  }
+  setdiff(parameterizations, "s2z-auto")
+}
+
+parameterizations_by_case <- lapply(
+  cases, selected_parameterizations_for_case
+)
+selected_s2z_by_case <- lapply(
+  parameterizations_by_case, setdiff, y = "conventional"
+)
+if (!length(unique(unlist(selected_s2z_by_case, use.names = FALSE)))) {
+  stop(
+    "No requested S2Z parameterization is supported by the selected cases. ",
+    "In particular, center = \"auto\" is skipped for eight-schools and ",
+    "glmm1; select radon or a rats case to test automatic expected-Fisher ",
+    "centering.", call. = FALSE
+  )
+}
+
+auto_eligibility <- do.call(rbind, lapply(cases, function(case) {
+  requested <- "s2z-auto" %in% parameterizations
+  supported <- isTRUE(case$auto_supported)
+  data.frame(
+    case = case$name,
+    auto_requested = requested,
+    auto_supported = supported,
+    action = if (!requested) {
+      "not requested"
+    } else if (supported) {
+      "run"
+    } else {
+      "skip"
+    },
+    reason = if (supported) NA_character_ else case$auto_skip_reason,
+    stringsAsFactors = FALSE
+  )
+}))
+utils::write.csv(
+  auto_eligibility,
+  file.path(output_dir, "s2z-posteriordb-auto-eligibility.csv"),
+  row.names = FALSE
+)
+if (any(auto_eligibility$action == "skip")) {
+  cat("\nSkipping unsupported automatic expected-Fisher jobs\n")
+  print(
+    auto_eligibility[auto_eligibility$action == "skip", ],
+    row.names = FALSE
   )
 }
 
@@ -783,6 +853,11 @@ case_manifest <- do.call(rbind, lapply(cases, function(case) {
     } else {
       NA_character_
     },
+    auto_supported = isTRUE(case$auto_supported),
+    auto_skip_reason = case$auto_skip_reason,
+    selected_parameterizations = paste(
+      parameterizations_by_case[[case$name]], collapse = ","
+    ),
     pdb_data_url = paste0(
       "https://github.com/stan-dev/posteriordb/blob/", pdb_commit,
       "/posterior_database/", artifact_paths[[case$name]][["data"]]
@@ -815,7 +890,8 @@ validate_case_design <- function(case) {
   }
   # Each selected S2Z code-generation call runs the production validation,
   # including exact equality of the fixed and group design columns.
-  codes <- setNames(lapply(parameterizations, function(parameterization) {
+  case_parameterizations <- parameterizations_by_case[[case$name]]
+  codes <- setNames(lapply(case_parameterizations, function(parameterization) {
     formula <- case_formula(case, parameterization)
     invisible(standata(
       formula, data = case$data, family = case$family, prior = case$prior
@@ -823,7 +899,7 @@ validate_case_design <- function(case) {
     stancode(
       formula, data = case$data, family = case$family, prior = case$prior
     )
-  }), parameterizations)
+  }), case_parameterizations)
   if (case$name == "rats") {
     scale_prior_pattern <- "_lpdf(sd_1 |"
     sigma_prior_pattern <- "_lpdf(sigma |"
@@ -846,77 +922,38 @@ validate_case_design <- function(case) {
 invisible(lapply(cases, validate_case_design))
 
 if ("s2z-auto" %in% parameterizations) {
-  auto_weight_rows <- list()
-  auto_weight_summary_rows <- list()
-  row <- 0L
-  summary_row <- 0L
-  for (case_name in requested_cases) {
+  for (case_name in names(cases)[vapply(
+    cases, function(case) isTRUE(case$auto_supported), logical(1)
+  )]) {
     case <- cases[[case_name]]
     sdata <- standata(
       case$s2z_auto_formula, data = case$data, family = case$family,
       prior = case$prior
     )
-    rho_name <- grep("^rho_s2z_", names(sdata), value = TRUE)
-    if (length(rho_name) != 1L) {
+    if (any(grepl("^rho_s2z_", names(sdata)))) {
       stop(
-        "Expected one automatic S2Z weight matrix for ", case_name,
-        "; found ", length(rho_name), ".", call. = FALSE
+        "Automatic expected-Fisher weights for ", case_name,
+        " were unexpectedly supplied as data.", call. = FALSE
       )
     }
-    rho <- sdata[[rho_name]]
-    group_levels <- levels(case$data[[case$group]])
-    if (!identical(dim(rho), c(length(group_levels), length(case$group_coef)))) {
-      stop("Unexpected automatic S2Z weight dimensions for ", case_name,
-           ".", call. = FALSE)
-    }
-    row <- row + 1L
-    auto_weight_rows[[row]] <- data.frame(
-      case = case_name,
-      group = case$group,
-      group_level = rep(group_levels, times = ncol(rho)),
-      coefficient = rep(case$group_coef, each = nrow(rho)),
-      rho = as.vector(rho),
-      stringsAsFactors = FALSE
+    code <- stancode(
+      case$s2z_auto_formula, data = case$data, family = case$family,
+      prior = case$prior
     )
-    for (k in seq_along(case$group_coef)) {
-      x <- rho[, k]
-      quantiles <- stats::quantile(
-        x, probs = c(0, 0.1, 0.25, 0.5, 0.75, 0.9, 1), names = FALSE
-      )
-      summary_row <- summary_row + 1L
-      auto_weight_summary_rows[[summary_row]] <- data.frame(
-        case = case_name,
-        group = case$group,
-        coefficient = case$group_coef[k],
-        groups = length(x),
-        minimum = quantiles[1L],
-        q10 = quantiles[2L],
-        q25 = quantiles[3L],
-        median = quantiles[4L],
-        mean = mean(x),
-        q75 = quantiles[5L],
-        q90 = quantiles[6L],
-        maximum = quantiles[7L],
-        zero_weight_groups = sum(x == 0),
-        fully_centered_groups = sum(x == 1),
-        stringsAsFactors = FALSE
+    if (!grepl("marginal Fisher centering fractions", code, fixed = TRUE) ||
+        !grepl("rho_s2z_", code, fixed = TRUE)) {
+      stop(
+        "Generated code for ", case_name,
+        " did not contain Stan-side expected-Fisher weights.",
+        call. = FALSE
       )
     }
   }
-  auto_weights <- do.call(rbind, auto_weight_rows)
-  auto_weight_summary <- do.call(rbind, auto_weight_summary_rows)
-  utils::write.csv(
-    auto_weights,
-    file.path(output_dir, "s2z-posteriordb-auto-weights.csv"),
-    row.names = FALSE
+  cat(
+    "\nAutomatic S2Z weights are computed in Stan from expected Fisher ",
+    "information; no rho_s2z_* values are supplied as data.\n",
+    sep = ""
   )
-  utils::write.csv(
-    auto_weight_summary,
-    file.path(output_dir, "s2z-posteriordb-auto-weight-summary.csv"),
-    row.names = FALSE
-  )
-  cat("\nData-derived automatic S2Z centering weights\n")
-  print(auto_weight_summary, row.names = FALSE, digits = 5)
 }
 
 template_path <- function(case_name, parameterization) {
@@ -971,7 +1008,7 @@ compile_rows <- list()
 row <- 0L
 for (case_name in requested_cases) {
   templates[[case_name]] <- list()
-  for (parameterization in parameterizations) {
+  for (parameterization in parameterizations_by_case[[case_name]]) {
     result <- compile_template(cases[[case_name]], parameterization)
     templates[[case_name]][[parameterization]] <- result$fit
     row <- row + 1L
@@ -1565,7 +1602,8 @@ if ("eight-schools" %in% requested_cases) {
 for (i in seq_len(nrow(jobs))) {
   case <- cases[[jobs$case[i]]]
   replicate <- jobs$replicate[i]
-  parameterization_order <- sample(parameterizations)
+  case_parameterizations <- parameterizations_by_case[[case$name]]
+  parameterization_order <- sample(case_parameterizations)
   results <- list()
   for (parameterization in parameterization_order) {
     seed <- base_seed + 1000L * replicate +
@@ -1579,12 +1617,14 @@ for (i in seq_len(nrow(jobs))) {
     quality_rows[[quality_row]] <- results[[parameterization]]$report
   }
 
-  public <- setNames(lapply(parameterizations, function(parameterization) {
+  public <- setNames(lapply(case_parameterizations, function(parameterization) {
     public_quantities(results[[parameterization]]$fit, case)
-  }), parameterizations)
-  comparison_pairs <- utils::combn(
-    parameterizations, 2L, simplify = FALSE
-  )
+  }), case_parameterizations)
+  comparison_pairs <- if (length(case_parameterizations) >= 2L) {
+    utils::combn(case_parameterizations, 2L, simplify = FALSE)
+  } else {
+    list()
+  }
   for (pair in comparison_pairs) {
     comparison_row <- comparison_row + 1L
     comparison_rows[[comparison_row]] <- compare_quantity_sets(
@@ -1592,7 +1632,9 @@ for (i in seq_len(nrow(jobs))) {
       paste(pair, collapse = "-vs-"), replicate
     )
   }
-  for (parameterization in s2z_parameterizations) {
+  for (parameterization in intersect(
+    s2z_parameterizations, case_parameterizations
+  )) {
     invariant_row <- invariant_row + 1L
     invariant_rows[[invariant_row]] <- s2z_invariants(
       results[[parameterization]]$fit, case, parameterization, replicate
@@ -1600,7 +1642,7 @@ for (i in seq_len(nrow(jobs))) {
   }
 
   if (case$name == "eight-schools") {
-    for (parameterization in parameterizations) {
+    for (parameterization in case_parameterizations) {
       comparison_row <- comparison_row + 1L
       comparison_rows[[comparison_row]] <- compare_quantity_sets(
         reference_quantities, public[[parameterization]], case$name,

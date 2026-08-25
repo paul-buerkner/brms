@@ -6,6 +6,96 @@ has_re_s2z <- function(x) {
     "s2z" %in% names(x$frame$re) && any(x$frame$re$s2z)
 }
 
+# Return the strict-latent flags, defaulting to FALSE for old reframes.
+re_s2z_latent <- function(r) {
+  stopifnot(is.reframe(r), has_rows(r))
+  value <- r[["latent"]]
+  if (is.null(value)) {
+    return(rep(FALSE, nrow(r)))
+  }
+  if (!is.logical(value) || length(value) != nrow(r) || anyNA(value)) {
+    stop2("Internal error: invalid strict-latent sum-to-zero flags.")
+  }
+  value
+}
+
+# Strict latent-score occurrences with the same nonlinear-parameter and
+# coefficient names denote one shared score dimension, even when they appear
+# in several response predictors. This is deliberately different from the
+# usual same-ID semantics, which create distinct correlated group effects.
+# Distinct nonlinear parameter names (eta1, eta2, ...) define the columns of a
+# multivariate latent score.
+re_s2z_latent_key <- function(r) {
+  stopifnot(is.reframe(r), has_rows(r), all(re_s2z_latent(r)))
+  paste(r$nlpar, r$coef, sep = "\r")
+}
+
+# Map every response-local occurrence to its shared covariance column.
+re_s2z_latent_dimension <- function(r) {
+  key <- re_s2z_latent_key(r)
+  match(key, unique(key))
+}
+
+# One representative row per strict latent covariance dimension.
+re_s2z_latent_dimensions <- function(r) {
+  key <- re_s2z_latent_key(r)
+  r[!duplicated(key), , drop = FALSE]
+}
+
+# Identify the covariance coordinates represented by a possibly mixed
+# reframe. Ordinary group-level occurrences each retain their own coordinate.
+# Strict latent occurrences sharing an ID and a nonlinear-parameter/
+# coefficient key instead alias one coordinate across response predictors.
+# The keys are stable under subsetting so prediction code can map a
+# response-local occurrence back to the covariance parameter named from the
+# full fitted reframe.
+re_s2z_covariance_key <- function(r) {
+  stopifnot(is.reframe(r))
+  if (!has_rows(r)) {
+    return(character())
+  }
+  key <- paste(
+    "occurrence", r$id, r$resp, r$dpar, r$nlpar, r$cn, r$coef,
+    sep = "\r"
+  )
+  for (id in unique(r$id)) {
+    rows <- which(r$id == id)
+    r_id <- r[rows, , drop = FALSE]
+    if (all(r_id$s2z) && all(re_s2z_latent(r_id))) {
+      key[rows] <- paste(
+        "strict", id, re_s2z_latent_key(r_id), sep = "\r"
+      )
+    }
+  }
+  key
+}
+
+# Map every occurrence to the corresponding covariance coordinate.
+re_s2z_covariance_dimension <- function(r, covariance_r = r) {
+  stopifnot(is.reframe(r), is.reframe(covariance_r))
+  key <- re_s2z_covariance_key(r)
+  covariance_key <- re_s2z_covariance_key(
+    re_s2z_covariance_dimensions(covariance_r)
+  )
+  match(key, covariance_key)
+}
+
+# Keep one representative row for each actual covariance coordinate while
+# preserving the order in which those coordinates first occur.
+re_s2z_covariance_dimensions <- function(r) {
+  key <- re_s2z_covariance_key(r)
+  r[!duplicated(key), , drop = FALSE]
+}
+
+# Does a local predictor contain conventional (omitted-mean) S2Z effects?
+has_re_s2z_conventional <- function(x) {
+  if (!has_re_s2z(x)) {
+    return(FALSE)
+  }
+  r <- x$frame$re
+  any(r$s2z & !re_s2z_latent(r))
+}
+
 # Return validated centering fractions for one S2Z block. Logical values from
 # reframes created before partial centering was added remain valid endpoints.
 re_s2z_center_values <- function(r) {
@@ -25,7 +115,8 @@ re_s2z_center_values <- function(r) {
   value
 }
 
-# Return the per-coefficient auto flags, defaulting to FALSE for old reframes.
+# Return the per-coefficient automatic-Fisher flags, defaulting to FALSE for
+# old reframes.
 re_s2z_center_auto <- function(r) {
   stopifnot(is.reframe(r), has_rows(r))
   value <- r[["s2z_center_auto"]]
@@ -41,8 +132,15 @@ re_s2z_center_auto <- function(r) {
 # Classify an S2Z block without changing the legacy endpoint code paths.
 re_s2z_center_mode <- function(r) {
   rho <- re_s2z_center_values(r)
-  if (any(re_s2z_center_auto(r)) || any(rho > 0 & rho < 1) ||
-      length(unique(rho)) > 1L) {
+  auto <- re_s2z_center_auto(r)
+  if (any(auto)) {
+    if (!all(auto)) {
+      stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
+            "center = \"auto\" if any coefficient does.")
+    }
+    return("auto")
+  }
+  if (any(rho > 0 & rho < 1) || length(unique(rho)) > 1L) {
     return("partial")
   }
   if (all(rho == 1)) "centered" else "noncentered"
@@ -237,6 +335,41 @@ validate_re_s2z_sd_prior <- function(prior, r) {
   invisible(NULL)
 }
 
+# Resolve the scalar SD prior attached to one strict latent-score occurrence.
+# Shared wide-response scores have only one covariance scale, so all aliases
+# must imply the same prior even though brms's multivariate prior table is
+# response-qualified.
+re_s2z_effective_sd_prior <- function(prior, r) {
+  stopifnot(
+    is.brmsprior(prior), is.reframe(r), nrow(r) == 1L,
+    isTRUE(r$s2z), isTRUE(re_s2z_latent(r))
+  )
+  px <- check_prefix(r)
+  selected <- subset2(
+    prior, class = "sd", coef = c(r$coef, ""),
+    group = c(r$group, ""), ls = px
+  )
+  coefficient <- subset2(selected, coef = r$coef)
+  coefficient <- coefficient[nzchar(coefficient$prior) |
+    nzchar(coefficient$tag), , drop = FALSE]
+  stopifnot(nrow(coefficient) <= 1L)
+  value <- if (nrow(coefficient) && nzchar(coefficient$prior)) {
+    coefficient$prior
+  } else {
+    stan_base_prior(selected)
+  }
+  tag <- if (nrow(coefficient) && nzchar(coefficient$tag)) {
+    coefficient$tag
+  } else {
+    stan_base_prior(selected, col = "tag")
+  }
+  bounds <- stan_base_prior(selected, col = c("lb", "ub"))
+  list(
+    prior = as.character(value), tag = as.character(tag),
+    lb = as.character(bounds$lb), ub = as.character(bounds$ub)
+  )
+}
+
 # Check fixed log-scale heterogeneity parameters. Zero is the exact
 # shared-scale limit, so it is intentionally allowed here.
 validate_re_s2z_sdlog_prior <- function(prior, r) {
@@ -297,6 +430,10 @@ re_s2z_info <- function(bframe, prior = NULL, id = NULL) {
     stop2("All coefficients sharing a group-level ID must use the same ",
           "'s2z' setting.")
   }
+  if (any(re_s2z_latent(r_id))) {
+    stop2("Internal error: strict latent-score blocks do not have an ",
+          "omitted-mean descriptor.")
+  }
   re_s2z_center_values(r_id)
   re_s2z_center_auto(r_id)
   r <- r_id
@@ -336,7 +473,8 @@ re_s2z_infos <- function(bframe, prior = NULL) {
   if (!has_re_s2z(bframe)) {
     return(list())
   }
-  ids <- unique(bframe$frame$re$id[bframe$frame$re$s2z])
+  r <- bframe$frame$re
+  ids <- unique(r$id[r$s2z & !re_s2z_latent(r)])
   lapply(ids, function(id) re_s2z_info(bframe, prior = prior, id = id))
 }
 
@@ -363,72 +501,6 @@ re_s2z_design_matrix <- function(bframe, data, id = NULL) {
   out
 }
 
-# Data-driven centering fractions for one S2Z block. Each column is normalized
-# by its global nonzero RMS. Within a group, pivoted QR removes the span of all
-# other varying columns before squared residual exposure is accumulated. This
-# makes the rule invariant to coefficient rescaling and conservative for
-# locally unidentified slopes and interactions.
-re_s2z_auto_rho <- function(bframe, data, threshold = 25, id = NULL) {
-  stopifnot(is.bframel(bframe), is.numeric(threshold), length(threshold) == 1L,
-            is.finite(threshold), threshold > 0)
-  info <- re_s2z_info(bframe, id = id)
-  if (is.null(info)) {
-    return(matrix(numeric(), nrow = 0L, ncol = 0L))
-  }
-  r <- info$r
-  Z <- re_s2z_design_matrix(bframe, data = data, id = info$id)
-  M <- ncol(Z)
-  levels <- get_levels(r)[[r$group[1]]]
-  J <- length(levels)
-  group_var <- r$gcall[[1]]$groups
-  if (length(group_var) != 1L) {
-    stop2("Automatic sum-to-zero centering requires one grouping variable.")
-  }
-  group_index <- match(get(group_var, data), levels)
-  if (anyNA(group_index)) {
-    stop2("Internal mismatch while computing automatic sum-to-zero centering.")
-  }
-
-  nonzero_rms <- vapply(seq_len(M), function(k) {
-    zk <- Z[, k]
-    keep <- is.finite(zk) & zk != 0
-    if (!any(keep)) 1 else sqrt(mean(zk[keep]^2))
-  }, numeric(1))
-  Z <- sweep(Z, 2L, nonzero_rms, "/")
-  exposure <- matrix(0, nrow = J, ncol = M)
-  qr_tol <- sqrt(.Machine$double.eps)
-  for (j in seq_len(J)) {
-    rows <- which(group_index == j)
-    if (!length(rows)) {
-      next
-    }
-    Zj <- Z[rows, , drop = FALSE]
-    for (k in seq_len(M)) {
-      residual <- Zj[, k]
-      if (M > 1L) {
-        others <- Zj[, -k, drop = FALSE]
-        keep <- colSums(abs(others)) > 0
-        others <- others[, keep, drop = FALSE]
-        if (ncol(others)) {
-          residual <- lm.fit(
-            x = others, y = residual, tol = qr_tol
-          )$residuals
-        }
-      }
-      value <- sum(residual^2)
-      zero_tol <- qr_tol * max(1, sum(Zj[, k]^2))
-      if (value < zero_tol) {
-        value <- 0
-      }
-      exposure[j, k] <- value
-    }
-  }
-  rho <- exposure / (exposure + threshold)
-  colnames(rho) <- r$coef
-  rownames(rho) <- levels
-  rho
-}
-
 # Validate S2Z structure after formulas, data, and priors have been resolved.
 validate_re_s2z <- function(bframe, prior) {
   stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
@@ -444,26 +516,113 @@ validate_re_s2z <- function(bframe, prior) {
             "gr(..., s2z = TRUE, scale = \"varying\").")
     }
   }
-  # IDs may couple ordinary group effects across linear predictors. Such a
-  # coupling is not compatible with the local S2Z omitted-mean systems, even
-  # if only one occurrence of the shared ID requests S2Z. Check all terms
-  # before filtering to S2Z-containing predictors so mixed conventional/S2Z
-  # uses fail with the same clear error in either predictor order.
-  s2z_ids <- unique(unlist(lapply(all_frames, function(x) {
-    r <- x$frame$re
-    if (!has_rows(r)) {
-      return(integer())
-    }
-    r$id[r$s2z]
-  }), use.names = FALSE))
+  # Conventional S2Z blocks have one omitted-mean system per linear predictor
+  # and therefore cannot share an ID across predictors. Strict latent-score
+  # blocks omit that mean entirely, so one covariance block may supply columns
+  # to several nonlinear predictors. Validate the distinction globally before
+  # any local omitted-mean descriptors are constructed.
+  r_global <- bframe$frame$re
+  stopifnot(is.reframe(r_global))
+  s2z_ids <- unique(r_global$id[r_global$s2z])
   for (id in s2z_ids) {
+    r_id <- subset2(r_global, id = id)
+    latent <- re_s2z_latent(r_id)
+    if (any(latent) && !all(latent)) {
+      stop2("All coefficients sharing a group-level ID must use the same ",
+            "'latent' setting.")
+    }
     n_frames <- sum(vapply(all_frames, function(x) {
       r <- x$frame$re
       has_rows(r) && id %in% r$id
     }, logical(1)))
-    if (n_frames > 1L) {
+    if (!all(latent) && n_frames > 1L) {
       stop2("A sum-to-zero group-level ID cannot span multiple ",
             "linear predictors.")
+    }
+    if (!all(r_id$s2z)) {
+      stop2("All coefficients sharing a strict or conventional sum-to-zero ",
+            "group-level ID must use 's2z = TRUE'.")
+    }
+    if (!all(latent)) {
+      next
+    }
+    if (n_frames > 1L && any(!nzchar(r_id$nlpar))) {
+      stop2("A strict latent-score ID may span only nonlinear predictors.")
+    }
+    if (length(unique(r_id$group)) != 1L) {
+      stop2("All coefficients sharing a strict latent-score ID must use ",
+            "the same grouping factor.")
+    }
+    if (length(unique(r_id$scale)) != 1L ||
+        !identical(r_id$scale[1], "shared")) {
+      stop2("Strict latent-score S2Z blocks currently require ",
+            "scale = \"shared\".")
+    }
+    if (length(unique(r_id$dist)) != 1L ||
+        !identical(r_id$dist[1], "gaussian")) {
+      stop2("Strict latent-score S2Z blocks currently require Gaussian ",
+            "group effects.")
+    }
+    if (length(unique(r_id$cor)) != 1L) {
+      stop2("All coefficients sharing a strict latent-score ID must use ",
+            "the same 'cor' setting.")
+    }
+    mode <- re_s2z_center_mode(r_id)
+    if (!mode %in% c("centered", "noncentered", "auto")) {
+      stop2("Strict latent-score S2Z blocks currently support only ",
+            "centered, noncentered, and automatic centering modes.")
+    }
+    if (any(nzchar(r_id$gtype)) || any(nzchar(r_id$type))) {
+      stop2("Strict latent-score S2Z blocks currently support only ",
+            "ordinary 'gr' terms.")
+    }
+    has_pw <- any(vapply(r_id$gcall, function(gcall) {
+      isTRUE(nzchar(gcall$pw))
+    }, logical(1)))
+    if (any(nzchar(r_id$by), na.rm = TRUE) ||
+        any(nzchar(r_id$cov), na.rm = TRUE) || has_pw) {
+      stop2("Arguments 'by', 'cov', and 'pw' are not yet supported with ",
+            "strict latent-score S2Z blocks.")
+    }
+    if (length(get_levels(r_id)[[r_id$group[1]]]) < 2L) {
+      stop2("A strict latent-score S2Z block requires at least two ",
+            "observed grouping levels.")
+    }
+    if (has_special_prior(prior, check_prefix(r_id), class = "sd")) {
+      stop2("Special priors on group-level scales are not yet supported ",
+            "with strict latent-score S2Z blocks.")
+    }
+    # Scale priors retain the nonlinear-parameter prefix of each occurrence.
+    # The legacy validator expects one local prefix at a time, whereas a
+    # strict score covariance block is intentionally allowed to span them.
+    prefix_key <- combine_prefix(check_prefix(r_id))
+    for (key in unique(prefix_key)) {
+      validate_re_s2z_sd_prior(
+        prior, r_id[prefix_key == key, , drop = FALSE]
+      )
+    }
+    latent_key <- re_s2z_latent_key(r_id)
+    for (key in unique(latent_key)) {
+      rows <- which(latent_key == key)
+      if (length(rows) < 2L) {
+        next
+      }
+      specs <- lapply(rows, function(row) {
+        re_s2z_effective_sd_prior(
+          prior, r_id[row, , drop = FALSE]
+        )
+      })
+      signatures <- vapply(
+        specs, function(x) paste(unlist(x), collapse = "\r"), character(1)
+      )
+      if (length(unique(signatures)) != 1L) {
+        stop2(
+          "A strict latent score shared across responses has one covariance ",
+          "scale and therefore requires identical 'sd' priors for nonlinear ",
+          "parameter '", r_id$nlpar[rows[1L]], "' and coefficient '",
+          r_id$coef[rows[1L]], "' in every response."
+        )
+      }
     }
   }
   frames <- Filter(has_re_s2z, all_frames)
@@ -499,6 +658,11 @@ validate_re_s2z <- function(bframe, prior) {
       if (length(unique(r$cor)) != 1L) {
         stop2("All coefficients sharing a group-level ID must use the same ",
               "'cor' setting.")
+      }
+      auto <- re_s2z_center_auto(r)
+      if (any(auto) && !all(auto)) {
+        stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
+              "center = \"auto\" if any coefficient does.")
       }
       if (any(nzchar(r$gtype)) || any(nzchar(r$type))) {
         stop2("The sum-to-zero parameterization currently ",

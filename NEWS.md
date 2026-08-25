@@ -13,11 +13,14 @@ coefficients in diagonal covariance blocks use dedicated component-wise scalar
 implementations. The default `center = NULL` samples the physical constrained
 effects directly for backward compatibility, while `center = FALSE` selects a
 non-centered sum-to-zero parameterization. Numeric `center` values between zero
-and one provide exact partial non-centering. With `center = "auto"`, brms fixes
-a separate centering fraction for every grouping level and coefficient from a
-scale-invariant, within-group residual design-exposure heuristic; sparse or
-locally unidentified varying slopes and interactions are consequently shifted
-toward non-centering. Setting `scale = "varying"` adds
+and one provide exact partial non-centering. With `center = "auto"`, brms
+computes parameter-dependent expected-Fisher reliability fractions inside the
+generated Stan model. The response values are integrated out, while the
+likelihood, residual scale, group design, group covariance, missingness, and
+supported sampled loadings determine the automatic coordinates. Strict latent
+score blocks may span nonlinear response predictors via `latent = TRUE`, so a
+shared score can accumulate Fisher information from multiple outcomes.
+Setting `scale = "varying"` adds
 coefficient-specific log-normal scale hierarchies across grouping levels,
 retaining the usual baseline `sd` parameters and priors; class `sdlog` controls
 log-scale heterogeneity. Proper continuous prior factors can additionally be

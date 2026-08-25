@@ -236,9 +236,9 @@ data_re <- function(bframe, data) {
   out
 }
 
-# Prepare fixed partial-centering fractions for S2Z group effects. Endpoint
-# parameterizations deliberately receive no extra Stan data so their generated
-# code and data contracts remain unchanged.
+# Prepare fixed numeric partial-centering fractions for S2Z group effects.
+# Endpoint and automatic expected-Fisher parameterizations deliberately receive
+# no extra Stan data.
 data_re_s2z_center <- function(bframe, data) {
   stopifnot(is.bframel(bframe))
   if (!has_re_s2z(bframe)) {
@@ -300,11 +300,6 @@ data_re_s2z_center <- function(bframe, data) {
       # Stan does not need the fitted labels; keep them only in the basis cache.
       out[[data_name]] <- unname(rho)
       next
-    }
-    auto <- re_s2z_center_auto(r)
-    if (any(auto)) {
-      auto_rho <- re_s2z_auto_rho(bframe, data = data, id = info$id)
-      rho[, auto] <- auto_rho[, auto, drop = FALSE]
     }
     out[[data_name]] <- rho
   }
@@ -413,7 +408,11 @@ data_gr_global <- function(bframe, data2) {
   for (id in unique(reframe$id)) {
     tmp <- list()
     id_reframe <- subset2(reframe, id = id)
-    nranef <- nrow(id_reframe)
+    nranef <- if (all(id_reframe$s2z) && all(re_s2z_latent(id_reframe))) {
+      nrow(re_s2z_latent_dimensions(id_reframe))
+    } else {
+      nrow(id_reframe)
+    }
     group <- id_reframe$group[1]
     levels <- attr(reframe, "levels")[[group]]
     tmp$N <- length(levels)

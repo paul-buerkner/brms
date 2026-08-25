@@ -282,7 +282,9 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   lpdf <- stan_lpdf_name(normalize)
-  s2z <- has_re_s2z(bframe)
+  # Strict latent-score blocks have no omitted mean and therefore do not
+  # replace this predictor's ordinary population coefficients by theta_s2z.
+  s2z <- has_re_s2z_conventional(bframe)
 
   if (s2z) {
     K_s2z <- length(bframe$frame$fe$vars)
@@ -554,6 +556,24 @@ stan_re <- function(bframe, prior, normalize, ...) {
     )
   })
   out <- collapse_lists(ls = c(list(out), tmp, joint))
+  # Several independent S2Z IDs can require the same Stan helper. Includes
+  # define functions in place, so retaining more than one copy would produce
+  # duplicate function definitions. Keep the first occurrence after all
+  # per-ID snippets have been combined.
+  sum_to_zero_include <- "  #include 'fun_sum_to_zero.stan'\n"
+  if (!is.null(out$fun)) {
+    include_at <- regexpr(sum_to_zero_include, out$fun, fixed = TRUE)
+    if (include_at[1] > 0L) {
+      include_end <- include_at[1] + attr(include_at, "match.length") - 1L
+      include_tail <- substring(out$fun, include_end + 1L)
+      include_tail <- gsub(
+        sum_to_zero_include, "", include_tail, fixed = TRUE
+      )
+      out$fun <- paste0(
+        substr(out$fun, 1L, include_end), include_tail
+      )
+    }
+  }
   out
 }
 
@@ -573,6 +593,27 @@ stan_re <- function(bframe, prior, normalize, ...) {
   px <- check_prefix(r)
   uresp <- usc(unique(px$resp))
   idp <- paste0(r$id, usc(combine_prefix(px)))
+  s2z_latent <- isTRUE(r$s2z[1]) && all(re_s2z_latent(r))
+  r_cov <- if (s2z_latent) re_s2z_latent_dimensions(r) else r
+  px_cov <- check_prefix(r_cov)
+  s2z_fisher <- isTRUE(r$s2z[1]) &&
+    identical(re_s2z_center_mode(r), "auto")
+  fisher_info <- NULL
+  if (s2z_fisher) {
+    if (!is.null(joint_s2z)) {
+      stop2("Fisher centering is not yet supported for multiple S2Z blocks ",
+            "sharing one linear predictor.")
+    }
+    fisher_info <- if (s2z_latent) {
+      stan_re_s2z_latent_fisher_info(
+        id, r = r, bframe = bframe, threads = threads
+      )
+    } else {
+      stan_re_s2z_fisher_info(
+        id, r = r, bframe = bframe, threads = threads
+      )
+    }
+  }
   # define data needed for group-level effects
   str_add(out$data) <- glue(
     "  // data for group-level effects of ID {id}\n",
@@ -650,10 +691,10 @@ stan_re <- function(bframe, prior, normalize, ...) {
             "with the 'by' argument.")
     }
     str_add_list(out) <- stan_prior(
-      prior, class = "sd", group = r$group[1], coef = r$coef,
+      prior, class = "sd", group = r$group[1], coef = r_cov$coef,
       type = glue("matrix[M_{id}, Nby_{id}]"),
       coef_type = glue("row_vector[Nby_{id}]"),
-      suffix = glue("_{id}"), px = px, broadcast = "matrix",
+      suffix = glue("_{id}"), px = px_cov, broadcast = "matrix",
       comment = "group-level standard deviations",
       normalize = normalize
     )
@@ -668,12 +709,19 @@ stan_re <- function(bframe, prior, normalize, ...) {
       )
     } else {
       str_add_list(out) <- stan_prior(
-        prior, class = "sd", group = r$group[1], coef = r$coef,
-        type = glue("vector[M_{id}]"), suffix = glue("_{id}"), px = px,
+        prior, class = "sd", group = r$group[1], coef = r_cov$coef,
+        type = glue("vector[M_{id}]"), suffix = glue("_{id}"), px = px_cov,
         comment = "group-level standard deviations",
         normalize = normalize
       )
     }
+  }
+
+  if (s2z_latent) {
+    return(.stan_re_s2z_latent(
+      id, r = r, bframe = bframe, prior = prior,
+      normalize = normalize, out = out, fisher_info = fisher_info
+    ))
   }
 
   if (isTRUE(r$s2z[1]) && !is.null(joint_s2z)) {
@@ -693,7 +741,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
   if (isTRUE(r$s2z[1])) {
     return(.stan_re_s2z(
       id, bframe = bframe, prior = prior, threads = threads,
-      normalize = normalize, out = out
+      normalize = normalize, out = out, fisher_info = fisher_info
     ))
   }
 
@@ -850,6 +898,456 @@ stan_re <- function(bframe, prior, normalize, ...) {
   out
 }
 
+# Validate the narrow Stan-side Fisher path and return the names of the
+# observation-level quantities needed to construct its information matrices.
+# In particular, a nonlinear predictor cannot use the ordinary group design Z
+# as d mu / d r: sampled loadings require a symbolic derivative that is not yet
+# available to this generator.
+stan_re_s2z_fisher_info <- function(id, r, bframe, threads) {
+  stopifnot(is.reframe(r), has_rows(r), all(r$s2z))
+  unsupported <- function(detail) {
+    stop2("Fisher centering for S2Z group-level effects ", detail, ".")
+  }
+  if (any(nzchar(r$nlpar))) {
+    unsupported(paste0(
+      "does not yet support nonlinear predictors; the derivative of the ",
+      "response mean with respect to the latent score must be represented ",
+      "explicitly"
+    ))
+  }
+  if (any(nzchar(r$dpar))) {
+    unsupported("is currently restricted to the response mean predictor")
+  }
+  if (any(r$dist != "gaussian") || any(r$scale != "shared")) {
+    unsupported(paste0(
+      "currently requires Gaussian group effects with a shared covariance"
+    ))
+  }
+  if (any(nzchar(r$gtype)) || any(nzchar(r$type)) ||
+      any(nzchar(r$by)) || any(nzchar(r$cov)) ||
+      isTRUE(nzchar(r$gcall[[1]]$pw))) {
+    unsupported(paste0(
+      "currently requires an ordinary gr() block without by, cov, pw, ",
+      "multi-membership, or special-effect structure"
+    ))
+  }
+  if (!is.brmsframe(bframe)) {
+    unsupported("is not yet supported for multivariate response models")
+  }
+  bfl <- re_s2z_bframel(bframe, r)
+  response_family <- bfl$family$family
+  if (!response_family %in% c("gaussian", "student") ||
+      !identical(bfl$family$link, "identity") ||
+      !identical(bfl$dpar, "mu")) {
+    unsupported(paste0(
+      "currently requires a univariate Gaussian or Student-t identity ",
+      "likelihood"
+    ))
+  }
+  if (has_rows(bfl$frame$ac)) {
+    unsupported("does not yet support residual autocorrelation structures")
+  }
+  if (any(vapply(bfl$adforms, is.formula, logical(1)))) {
+    unsupported("does not yet support response addition terms")
+  }
+  sigma <- stan_sigma_transform(bframe, threads = threads)
+  resp <- usc(unique(r$resp))
+  expected_sigma <- glue("sigma{resp}")
+  if (!identical(as.character(sigma), as.character(expected_sigma))) {
+    unsupported(paste0(
+      "currently requires one scalar residual sigma rather than an ",
+      "observation-specific residual scale"
+    ))
+  }
+  if (identical(response_family, "student") &&
+      "nu" %in% names(bframe$dpars)) {
+    unsupported(paste0(
+      "currently requires one scalar Student-t degrees of freedom rather ",
+      "than an observation-specific parameter"
+    ))
+  }
+  nu <- glue("nu{resp}")
+  obs_prec <- if (identical(response_family, "gaussian")) {
+    glue("inv_square({sigma})")
+  } else {
+    # Expected Fisher information for the location of Student-t(nu, mu, sigma).
+    glue("({nu} + 1.0) / ({nu} + 3.0) * inv_square({sigma})")
+  }
+  idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
+  design <- glue("Z_{idp}_{r$cn}")
+  M <- nrow(r)
+  fixed_design <- TRUE
+  nlist(
+    M, fixed_design, N = glue("N{resp}"),
+    group = glue("J_{id}{resp}"),
+    design,
+    design_at_n = paste0(design, "[n]"),
+    sigma, obs_prec, response_family
+  )
+}
+
+# Describe nonlinear Fisher information for a strict latent-score block.  The
+# effective design is Z_nk * d mu_n / d eta_k.  Population-only nonlinear
+# dependencies of that derivative (sampled loadings in particular) are
+# hoisted into transformed parameters so that rho remains in the autodiff
+# graph.  Dependence on the latent scores themselves is rejected by the
+# symbolic analyzer: conditional on the remaining parameters, the coordinate
+# map then has the block-triangular Jacobian used below.
+stan_re_s2z_latent_fisher_info <- function(id, r, bframe, threads) {
+  stopifnot(is.reframe(r), has_rows(r), all(r$s2z), all(re_s2z_latent(r)))
+  unsupported <- function(detail) {
+    stop2("Fisher centering for strict latent-score S2Z blocks ", detail, ".")
+  }
+  if (is.mvbrmsframe(bframe) && isTRUE(bframe$rescor)) {
+    unsupported(paste0(
+      "currently requires set_rescor(FALSE); residual cross-response ",
+      "precision is not yet included in the Fisher target"
+    ))
+  }
+  responses <- unique(r$resp)
+  dimension <- re_s2z_latent_dimension(r)
+  M <- max(dimension)
+  term_for_response <- function(resp) {
+    if (is.brmsframe(bframe)) {
+      if (length(responses) != 1L) {
+        unsupported("could not match response-local nonlinear predictors")
+      }
+      return(bframe)
+    }
+    if (!is.mvbrmsframe(bframe) || !resp %in% names(bframe$terms)) {
+      unsupported("could not match response-local nonlinear predictors")
+    }
+    bframe$terms[[resp]]
+  }
+
+  sources <- vector("list", length(responses))
+  dependency_records <- list()
+  for (s in seq_along(responses)) {
+    response <- responses[s]
+    rows <- which(r$resp == response)
+    r_source <- r[rows, , drop = FALSE]
+    term <- term_for_response(response)
+    target_nlpars <- unique(r_source$nlpar)
+    if (!length(target_nlpars) || any(!nzchar(target_nlpars)) ||
+        any(!target_nlpars %in% names(term$nlpars))) {
+      unsupported("must belong to explicit nonlinear score predictors")
+    }
+    if (has_rows(term$frame$ac)) {
+      unsupported("does not yet support residual autocorrelation structures")
+    }
+    analyses <- lapply(target_nlpars, function(nlpar) {
+      re_s2z_fisher_nl_info(
+        term, term$nlpars[[nlpar]], id = id, strict = TRUE
+      )
+    })
+    names(analyses) <- target_nlpars
+    if (any(vapply(
+      analyses, function(x) isTRUE(x$has_response_addition_terms), logical(1)
+    ))) {
+      unsupported("does not yet support response addition terms")
+    }
+    if (any(!vapply(
+      analyses, function(x) isTRUE(x$sigma_is_scalar), logical(1)
+    ))) {
+      unsupported("currently requires one scalar residual scale per response")
+    }
+    response_family <- unique(vapply(
+      analyses, function(x) x$response_family %||% "gaussian", character(1)
+    ))
+    if (length(response_family) != 1L ||
+        !response_family %in% c("gaussian", "student")) {
+      unsupported("currently requires Gaussian or Student-t identity responses")
+    }
+    resp <- usc(response)
+    sigma <- stan_sigma_transform(term, threads = threads)
+    expected_sigma <- glue("sigma{resp}")
+    if (!identical(as.character(sigma), as.character(expected_sigma))) {
+      unsupported("currently requires one scalar residual scale per response")
+    }
+    nu <- glue("nu{resp}")
+    if (identical(response_family, "student") &&
+        "nu" %in% names(term$dpars)) {
+      unsupported(paste0(
+        "currently requires scalar Student-t degrees of freedom rather ",
+        "than an observation-specific parameter"
+      ))
+    }
+    obs_prec <- if (identical(response_family, "gaussian")) {
+      glue("inv_square({sigma})")
+    } else {
+      glue("({nu} + 1.0) / ({nu} + 3.0) * inv_square({sigma})")
+    }
+    derivatives <- vapply(r_source$nlpar, function(nlpar) {
+      analyses[[nlpar]]$obs_derivative_stan
+    }, character(1))
+    idp <- paste0(
+      r_source$id, usc(combine_prefix(check_prefix(r_source)))
+    )
+    group_design <- glue("Z_{idp}_{r_source$cn}[n]")
+    columns <- dimension[rows]
+    if (anyDuplicated(columns)) {
+      stop2("A strict latent-score dimension may occur only once in each ",
+            "response predictor.")
+    }
+    sources[[s]] <- nlist(
+      response, N = glue("N{resp}"), group = glue("J_{id}{resp}"),
+      columns,
+      design_at_n = paste0("(", derivatives, ") * ", group_design),
+      sigma, obs_prec, response_family
+    )
+    for (analysis in analyses) {
+      for (dependency in unname(analysis$dependency_info)) {
+        dependency_records[[length(dependency_records) + 1L]] <- list(
+          dependency = dependency, N = glue("N{resp}")
+        )
+      }
+    }
+  }
+
+  dependency_info <- lapply(dependency_records, `[[`, "dependency")
+  dependency_tpar_def <- dependency_tpar_comp <- ""
+  if (length(dependency_info)) {
+    dependency_names <- vapply(
+      dependency_info, function(x) x$vector_name, character(1)
+    )
+    keep <- !duplicated(dependency_names)
+    duplicates <- unique(dependency_names[duplicated(dependency_names)])
+    for (name in duplicates) {
+      expressions <- unique(vapply(
+        dependency_info[dependency_names == name],
+        function(x) x$vector_expression, character(1)
+      ))
+      if (length(expressions) != 1L) {
+        stop2("Internal mismatch while hoisting nonlinear Fisher dependency '",
+              name, "'.")
+      }
+    }
+    dependency_records <- dependency_records[keep]
+    dependency_info <- dependency_info[keep]
+    dependency_tpar_def <- paste0(vapply(
+      dependency_records,
+      function(x) glue(
+        "  vector[{x$N}] {x$dependency$vector_name};\n"
+      ),
+      character(1)
+    ), collapse = "")
+    dependency_tpar_comp <- paste0(vapply(
+      dependency_info,
+      function(x) glue(
+        "  {x$vector_name} = {x$vector_expression};\n"
+      ),
+      character(1)
+    ), collapse = "")
+  }
+
+  fixed_design <- FALSE
+  nlist(
+    M, fixed_design, sources, dependency_info,
+    dependency_tpar_def, dependency_tpar_comp
+  )
+}
+
+# Stan declarations for parameter-dependent marginal Fisher reliabilities.
+# Unlike fixed partial centering, these quantities are transformed parameters
+# and therefore must remain in the autodiff graph.
+stan_re_s2z_fisher_def <- function(out, id) {
+  str_add(out$tpar_def) <- glue(
+    "  // marginal Fisher centering fractions in physical coefficient axes\n",
+    "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};\n",
+    "  vector<lower=0,upper=1>[M_{id}] mean_rho_s2z_{id};\n"
+  )
+  out
+}
+
+# Ordinary group-level designs and indices are fixed data. Precompute their
+# unweighted within-level Gram matrices once so only the scalar expected
+# observation precision and covariance parameters remain in autodiff. Strict
+# latent-score designs may contain sampled loadings and deliberately bypass
+# this path.
+stan_re_s2z_fisher_tdata <- function(out, id, r, fisher_info) {
+  stopifnot(
+    is.reframe(r), has_rows(r), isTRUE(fisher_info$fixed_design),
+    identical(fisher_info$M, nrow(r))
+  )
+  M <- fisher_info$M
+  design_at_n <- fisher_info$design_at_n
+  if (is.null(design_at_n)) {
+    design_at_n <- paste0(fisher_info$design, "[n]")
+  }
+  stopifnot(length(design_at_n) == M)
+  if (M == 1L) {
+    str_add(out$tdata_def) <- glue(
+      "  vector<lower=0>[N_{id}] exposure_fisher_s2z_{id};\n"
+    )
+    str_add(out$tdata_comp) <- glue(
+      "  exposure_fisher_s2z_{id} = zeros_vector(N_{id});\n",
+      "  for (n in 1:{fisher_info$N}) {{\n",
+      "    exposure_fisher_s2z_{id}[{fisher_info$group}[n]] += ",
+      "square({design_at_n[1]});\n",
+      "  }}\n"
+    )
+    return(out)
+  }
+
+  design_assign <- cglue(
+    "    design_fisher_s2z[{seq_len(M)}] = {design_at_n};\n"
+  )
+  str_add(out$tdata_def) <- glue(
+    "  array[N_{id}] matrix[M_{id}, M_{id}] gram_fisher_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  for (j in 1:N_{id}) {{\n",
+    "    gram_fisher_s2z_{id}[j] = rep_matrix(0.0, M_{id}, M_{id});\n",
+    "  }}\n",
+    "  for (n in 1:{fisher_info$N}) {{\n",
+    "    vector[M_{id}] design_fisher_s2z;\n",
+    "{design_assign}",
+    "    gram_fisher_s2z_{id}[{fisher_info$group}[n]] += ",
+    "design_fisher_s2z * design_fisher_s2z';\n",
+    "  }}\n"
+  )
+  out
+}
+
+# Compute Eq. (33) without an eigendecomposition or explicit inverse. For
+# J_j = sum_n w_F z_n z_n' and Sigma = L L', the posterior covariance is
+# V_j = L (I + L' J_j L)^-1 L'. Its marginal variance contractions are valid
+# diagonal fractions for the existing exact restricted S2Z transform.
+stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L, scale = NULL) {
+  fixed_design <- isTRUE(fisher_info$fixed_design)
+  sources <- fisher_info$sources
+  M <- fisher_info$M
+  stopifnot(length(M) == 1L, M >= 1L)
+
+  # For one coefficient, posterior variance contraction is the scalar
+  # reliability I * tau^2 / (1 + I * tau^2). Ordinary designs use the
+  # transformed-data exposure; sampled-loading latent designs retain only
+  # their necessarily dynamic scalar information accumulation here.
+  if (M == 1L) {
+    stopifnot(length(scale) == 1L)
+    if (fixed_design) {
+      info_def <- glue(
+        "    real obs_prec_fisher_s2z = {fisher_info$obs_prec};\n"
+      )
+      accumulation <- ""
+      information_j <- glue(
+        "obs_prec_fisher_s2z * exposure_fisher_s2z_{id}[j]"
+      )
+    } else {
+      stopifnot(length(sources) >= 1L)
+      info_def <- glue(
+        "    vector[N_{id}] info_fisher_s2z = zeros_vector(N_{id});\n"
+      )
+      accumulation <- paste0(vapply(sources, function(source) {
+        stopifnot(
+          identical(source$columns, 1L),
+          length(source$design_at_n) == 1L
+        )
+        glue(
+          "    {{\n",
+          "      real obs_prec_fisher_s2z = {source$obs_prec};\n",
+          "      for (n in 1:{source$N}) {{\n",
+          "        info_fisher_s2z[{source$group}[n]] += ",
+          "obs_prec_fisher_s2z * square({source$design_at_n});\n",
+          "      }}\n",
+          "    }}\n"
+        )
+      }, character(1)), collapse = "")
+      information_j <- "info_fisher_s2z[j]"
+    }
+    return(glue(
+      "  {{\n",
+      "{info_def}",
+      "{accumulation}",
+      "    for (j in 1:N_{id}) {{\n",
+      "      real scaled_info_fisher_s2z = square({scale}) * ",
+      "{information_j};\n",
+      "      rho_s2z_{id}[j, 1] = 1.0 - ",
+      "inv(1.0 + scaled_info_fisher_s2z);\n",
+      "    }}\n",
+      "    mean_rho_s2z_{id}[1] = mean(rho_s2z_{id}[, 1]);\n",
+      "  }}\n"
+    ))
+  }
+
+  if (fixed_design) {
+    info_def <- glue(
+      "    real obs_prec_fisher_s2z = {fisher_info$obs_prec};\n"
+    )
+    initialization <- accumulation <- ""
+    K_j <- glue(
+      "obs_prec_fisher_s2z * quad_form(",
+      "gram_fisher_s2z_{id}[j], {L})"
+    )
+  } else {
+    stopifnot(length(sources) >= 1L)
+    info_def <- glue(
+      "    array[N_{id}] matrix[M_{id}, M_{id}] info_fisher_s2z;\n"
+    )
+    initialization <- glue(
+      "    for (j in 1:N_{id}) {{\n",
+      "      info_fisher_s2z[j] = rep_matrix(0.0, M_{id}, M_{id});\n",
+      "    }}\n"
+    )
+    accumulation <- paste0(vapply(sources, function(source) {
+      stopifnot(
+        length(source$columns) == length(source$design_at_n),
+        all(source$columns >= 1L & source$columns <= M)
+      )
+      design_assign <- cglue(
+        "        design_fisher_s2z[{source$columns}] = ",
+        "{source$design_at_n};\n"
+      )
+      glue(
+        "    {{\n",
+        "      real obs_prec_fisher_s2z = {source$obs_prec};\n",
+        "      for (n in 1:{source$N}) {{\n",
+        "        vector[M_{id}] design_fisher_s2z = ",
+        "zeros_vector(M_{id});\n",
+        "{design_assign}",
+        "        info_fisher_s2z[{source$group}[n]] += ",
+        "obs_prec_fisher_s2z * design_fisher_s2z * ",
+        "design_fisher_s2z';\n",
+        "      }}\n",
+        "    }}\n"
+      )
+    }, character(1)), collapse = "")
+    K_j <- glue("quad_form(info_fisher_s2z[j], {L})")
+  }
+
+  glue(
+    "  {{\n",
+    "{info_def}",
+    "    vector[M_{id}] prior_var_fisher_s2z = rows_dot_self({L});\n",
+    "{initialization}",
+    "{accumulation}",
+    "    for (j in 1:N_{id}) {{\n",
+    "      matrix[M_{id}, M_{id}] K_fisher_s2z = {K_j};\n",
+    "      matrix[M_{id}, M_{id}] L_post_precision_fisher_s2z;\n",
+    "      matrix[M_{id}, M_{id}] white_factor_fisher_s2z;\n",
+    "      row_vector[M_{id}] post_var_fisher_s2z;\n",
+    "      K_fisher_s2z = 0.5 * (K_fisher_s2z + K_fisher_s2z');\n",
+    "      L_post_precision_fisher_s2z = cholesky_decompose(\n",
+    "        add_diag(K_fisher_s2z, 1.0)\n",
+    "      );\n",
+    "      white_factor_fisher_s2z = mdivide_left_tri_low(\n",
+    "        L_post_precision_fisher_s2z, ({L})'\n",
+    "      );\n",
+    "      post_var_fisher_s2z = columns_dot_self(",
+    "white_factor_fisher_s2z);\n",
+    "      for (k in 1:M_{id}) {{\n",
+    "        // The exact ratio is in [0, 1]; clamp roundoff at its endpoints.\n",
+    "        rho_s2z_{id}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
+    "          post_var_fisher_s2z[k] / prior_var_fisher_s2z[k]));\n",
+    "      }}\n",
+    "    }}\n",
+    "    for (k in 1:M_{id}) {{\n",
+    "      mean_rho_s2z_{id}[k] = mean(rho_s2z_{id}[, k]);\n",
+    "    }}\n",
+    "  }}\n"
+  )
+}
+
 # Precompute the column means of fixed centering fractions once. They enter
 # the restricted-transform determinant but do not depend on model parameters.
 stan_re_s2z_partial_tdata <- function(out, id) {
@@ -893,14 +1391,10 @@ stan_re_s2z_partial_cor_transform <- function(id) {
     "      r_s2z_{id}[j] -= mean_partial_s2z;\n",
     "    }}\n",
     "    for (k in 1:M_{id}) {{\n",
-    "      if (mean_rho_s2z_{id}[k] == 1.0) {{\n",
-    "        log_det_partial_s2z_{id} += ",
-    "log(L_Sigma_s2z_{id}[k, k]);\n",
-    "      }} else {{\n",
-    "        log_det_partial_s2z_{id} += ",
-    "log1m(mean_rho_s2z_{id}[k] * ",
-    "(1.0 - L_Sigma_s2z_{id}[k, k]));\n",
-    "      }}\n",
+    "      log_det_partial_s2z_{id} += log(\n",
+    "        (1.0 - mean_rho_s2z_{id}[k]) + ",
+    "mean_rho_s2z_{id}[k] * L_Sigma_s2z_{id}[k, k]\n",
+    "      );\n",
     "    }}\n",
     "  }}\n"
   )
@@ -923,12 +1417,10 @@ stan_re_s2z_partial_independent_transform <- function(
     "scale_partial_s2z;\n",
     "    {r_s2z} = centered_partial_s2z - mean(centered_partial_s2z);\n",
     "    log_det_partial_s2z_{id} += -sum(log(scale_partial_s2z));\n",
-    "    if (mean_rho_s2z_{id}[{k}] == 1.0) {{\n",
-    "      log_det_partial_s2z_{id} += log({scale});\n",
-    "    }} else {{\n",
-    "      log_det_partial_s2z_{id} += ",
-    "log1m(mean_rho_s2z_{id}[{k}] * (1.0 - {scale}));\n",
-    "    }}\n",
+    "    log_det_partial_s2z_{id} += log(\n",
+    "      (1.0 - mean_rho_s2z_{id}[{k}]) + ",
+    "mean_rho_s2z_{id}[{k}] * {scale}\n",
+    "    );\n",
     "  }}\n"
   )
 }
@@ -1055,7 +1547,7 @@ stan_re_s2z_partial_independent_transform <- function(
   if (s2z_partial) {
     str_add(out$data) <- glue(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
-      "  // data-driven or user-supplied centering fractions\n"
+      "  // fixed numeric centering fractions\n"
     )
     out <- stan_re_s2z_partial_tdata(out, id)
   }
@@ -2098,7 +2590,7 @@ stan_re_s2z_partial_independent_transform <- function(
   if (s2z_partial) {
     str_add(out$data) <- glue(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
-      "  // data-driven or user-supplied centering fractions\n"
+      "  // fixed numeric centering fractions\n"
     )
     out <- stan_re_s2z_partial_tdata(out, id)
   }
@@ -2681,11 +3173,174 @@ stan_re_s2z_partial_independent_transform <- function(
   out
 }
 
+# Stan code for a strict Gaussian latent-score block. Unlike conventional S2Z
+# group effects, these scores are defined directly on the componentwise
+# zero-sum subspace: there is no omitted group mean, no theta_s2z replacement,
+# and no generated-quantities mean recovery. A single global ID can therefore
+# provide correlated score columns to several nonlinear predictors.
+.stan_re_s2z_latent <- function(id, r, bframe, prior, normalize,
+                                out = list(), fisher_info = NULL) {
+  stopifnot(
+    is.anybrmsframe(bframe), is.reframe(r), has_rows(r), all(r$s2z),
+    all(re_s2z_latent(r)), all(r$dist == "gaussian"),
+    all(r$scale == "shared")
+  )
+  if (is.null(out[["tpar_prior"]])) {
+    out[["tpar_prior"]] <- ""
+  }
+  lpdf <- stan_lpdf_name(normalize)
+  r_dim <- re_s2z_latent_dimensions(r)
+  M <- nrow(r_dim)
+  J <- re_s2z_latent_dimension(r)
+  idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
+  r_s2z <- glue("r_s2z_{idp}_{r$cn}")
+  r_public <- glue("r_{idp}_{r$cn}")
+  is_cor <- M > 1L && isTRUE(r$cor[1])
+  mode <- re_s2z_center_mode(r)
+  s2z_center <- identical(mode, "centered")
+  s2z_fisher <- identical(mode, "auto")
+  s2z_partial <- s2z_fisher
+  stopifnot(
+    mode %in% c("centered", "noncentered", "auto"),
+    identical(s2z_fisher, !is.null(fisher_info))
+  )
+
+  if (s2z_fisher) {
+    out <- stan_re_s2z_fisher_def(out, id)
+    str_add(out$tpar_def) <- fisher_info$dependency_tpar_def %||% ""
+  }
+  if (is_cor) {
+    str_add(out$data) <- glue(
+      "  int<lower=1> NC_{id};  // number of group-level correlations\n"
+    )
+    str_add_list(out) <- stan_prior(
+      prior, class = "L", group = r$group[1], suffix = usc(id),
+      type = glue("cholesky_factor_corr[M_{id}]"),
+      comment = "cholesky factor of latent-score correlation matrix",
+      normalize = normalize
+    )
+  }
+
+  str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
+  str_add(out$par) <- glue(
+    "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
+    if (s2z_partial) {
+      "  // partially centered strict latent-score coordinates\n"
+    } else if (s2z_center) {
+      "  // physical strict latent-score coordinates\n"
+    } else {
+      "  // standardized strict latent-score coordinates\n"
+    }
+  )
+  str_add(out$tpar_def) <- glue(
+    "  // strict componentwise sum-to-zero latent-score block {id}\n",
+    "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
+    "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
+    str_if(
+      s2z_center || s2z_partial,
+      glue("  real<lower=0> group_quad_s2z_{id};\n")
+    ),
+    str_if(s2z_partial, glue("  real log_det_partial_s2z_{id};\n")),
+    "  // vectors used by the observation-level nonlinear predictors\n",
+    cglue("  vector[N_{id}] {r_s2z};\n")
+  )
+
+  if (is_cor) {
+    str_add(out$tpar_comp) <- glue(
+      "  L_Sigma_s2z_{id} = diag_pre_multiply(sd_{id}, L_{id});\n"
+    )
+  } else {
+    str_add(out$tpar_comp) <- glue(
+      "  L_Sigma_s2z_{id} = diag_matrix(sd_{id});\n"
+    )
+  }
+  if (s2z_fisher) {
+    str_add(out$tpar_comp) <- fisher_info$dependency_tpar_comp %||% ""
+  }
+  str_add(out$tpar_comp) <- glue(
+    "  for (k in 1:M_{id}) {{\n",
+    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+    "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+    "N_{id} - 1));\n",
+    "  }}\n"
+  )
+  if (s2z_fisher) {
+    str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+      id, r = r, fisher_info = fisher_info, L = glue("L_Sigma_s2z_{id}"),
+      scale = if (M == 1L) glue("sd_{id}[1]") else NULL
+    )
+    str_add(out$tpar_comp) <- stan_re_s2z_partial_cor_transform(id)
+  } else if (!s2z_center) {
+    str_add(out$tpar_comp) <- glue(
+      "  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n"
+    )
+  }
+  if (s2z_center || s2z_partial) {
+    str_add(out$tpar_comp) <- glue(
+      "  {{\n",
+      "    matrix[M_{id}, N_{id}] white_latent_s2z = ",
+      "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+      "    group_quad_s2z_{id} = dot_self(to_vector(white_latent_s2z));\n",
+      "  }}\n"
+    )
+  }
+  str_add(out$tpar_comp) <- cglue(
+    "  {r_s2z} = r_s2z_{id}[, {J}];\n"
+  )
+  str_add(out$pll_args) <- cglue(", vector {r_s2z}")
+
+  if (identical(mode, "noncentered")) {
+    str_add(out$tpar_prior) <- glue(
+      "  lprior += std_normal_{lpdf}(z_s2z_{id});\n"
+    )
+  } else {
+    str_add(out$tpar_prior) <- glue(
+      "  lprior += -0.5 * group_quad_s2z_{id}\n",
+      str_if(
+        s2z_center,
+        glue(
+          "    - (N_{id} - 1) * ",
+          "sum(log(diagonal(L_Sigma_s2z_{id})))\n"
+        )
+      ),
+      str_if(s2z_partial, glue("    + log_det_partial_s2z_{id}\n")),
+      str_if(
+        normalize,
+        glue("    - 0.5 * (N_{id} - 1) * M_{id} * log(2 * pi())\n")
+      ),
+      "  ;\n"
+    )
+  }
+
+  if (is_cor) {
+    str_add(out$gen_def) <- glue(
+      "  matrix[N_{id}, M_{id}] r_{id};\n",
+      cglue("  vector[N_{id}] {r_public};\n"),
+      "  // compute latent-score correlations\n",
+      "  corr_matrix[M_{id}] Cor_{id}",
+      " = multiply_lower_tri_self_transpose(L_{id});\n",
+      "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
+    )
+    str_add(out$gen_comp) <- glue(
+      "  r_{id} = r_s2z_{id};\n",
+      cglue("  {r_public} = r_{id}[, {J}];\n")
+    )
+    str_add(out$gen_comp) <- stan_cor_gen_comp(
+      cor = glue("cor_{id}"), ncol = glue("M_{id}")
+    )
+  } else {
+    str_add(out$gen_def) <- cglue("  vector[N_{id}] {r_public};\n")
+    str_add(out$gen_comp) <- cglue("  {r_public} = {r_s2z};\n")
+  }
+  out
+}
+
 # Stan code for one physical sum-to-zero group-level block. The omitted common
 # group-effect mean vector is integrated out analytically. Conditional
 # Gaussian scale mixtures are handled by a group-specific scale, which makes
 # this exact for both Gaussian and Student-t group effects.
-.stan_re_s2z <- function(id, bframe, prior, threads, normalize, out = list()) {
+.stan_re_s2z <- function(id, bframe, prior, threads, normalize, out = list(),
+                         fisher_info = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   # Avoid partial matching of $tpar_prior to $tpar_prior_const when a group
   # scale is fixed. Otherwise the constant assignment is appended to the
@@ -2706,24 +3361,33 @@ stan_re_s2z_partial_independent_transform <- function(
   is_student <- identical(r$dist[1], "student")
   s2z_mode <- re_s2z_center_mode(r)
   s2z_center <- identical(s2z_mode, "centered")
-  s2z_partial <- identical(s2z_mode, "partial")
+  s2z_fisher <- identical(s2z_mode, "auto")
+  s2z_partial <- s2z_mode %in% c("partial", "auto")
+  stopifnot(identical(s2z_fisher, !is.null(fisher_info)))
+
+  if (s2z_fisher) {
+    out <- stan_re_s2z_fisher_def(out, id)
+    out <- stan_re_s2z_fisher_tdata(out, id, r, fisher_info)
+  }
 
   if (M == 1L) {
     return(.stan_re_s2z_scalar(
-      id, r = r, info = info, normalize = normalize, out = out
+      id, r = r, info = info, normalize = normalize, out = out,
+      fisher_info = fisher_info
     ))
   }
 
   if (!is_cor) {
     return(.stan_re_s2z_independent(
-      id, r = r, info = info, normalize = normalize, out = out
+      id, r = r, info = info, normalize = normalize, out = out,
+      fisher_info = fisher_info
     ))
   }
 
-  if (s2z_partial) {
+  if (s2z_partial && !s2z_fisher) {
     str_add(out$data) <- glue(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
-      "  // data-driven or user-supplied centering fractions\n"
+      "  // fixed numeric centering fractions\n"
     )
     out <- stan_re_s2z_partial_tdata(out, id)
   }
@@ -2827,6 +3491,12 @@ stan_re_s2z_partial_independent_transform <- function(
   } else {
     str_add(out$tpar_comp) <- glue(
       "  L_Sigma_s2z_{id} = diag_matrix(sd_{id});\n"
+    )
+  }
+  if (s2z_fisher) {
+    str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+      id, r = r, fisher_info = fisher_info, L = glue("L_Sigma_s2z_{id}"),
+      scale = if (M == 1L) glue("sd_{id}[1]") else NULL
     )
   }
   partial_transform <- if (s2z_partial) {
@@ -3055,7 +3725,8 @@ stan_re_s2z_partial_independent_transform <- function(
 # The omitted means are conditionally independent except for the single
 # rank-one coupling induced by brms's centered population intercept.  A
 # diagonal-plus-rank-one solve therefore replaces all M x M factorizations.
-.stan_re_s2z_independent <- function(id, r, info, normalize, out = list()) {
+.stan_re_s2z_independent <- function(id, r, info, normalize, out = list(),
+                                     fisher_info = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   stopifnot(
     is.reframe(r), nrow(r) > 1L, !isTRUE(r$cor[1]), all(r$s2z)
@@ -3068,14 +3739,16 @@ stan_re_s2z_partial_independent_transform <- function(
   is_student <- identical(r$dist[1], "student")
   s2z_mode <- re_s2z_center_mode(r)
   s2z_center <- identical(s2z_mode, "centered")
-  s2z_partial <- identical(s2z_mode, "partial")
+  s2z_fisher <- identical(s2z_mode, "auto")
+  s2z_partial <- s2z_mode %in% c("partial", "auto")
+  stopifnot(identical(s2z_fisher, !is.null(fisher_info)))
   r_s2z <- glue("r_s2z_{idp}_{r$cn}")
   r_public <- glue("r_{idp}_{r$cn}")
 
-  if (s2z_partial) {
+  if (s2z_partial && !s2z_fisher) {
     str_add(out$data) <- glue(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
-      "  // data-driven or user-supplied centering fractions\n"
+      "  // fixed numeric centering fractions\n"
     )
     out <- stan_re_s2z_partial_tdata(out, id)
   }
@@ -3151,6 +3824,12 @@ stan_re_s2z_partial_independent_transform <- function(
     }
   }
 
+  if (s2z_fisher) {
+    str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+      id, r = r, fisher_info = fisher_info,
+      L = glue("diag_matrix(sd_{id})")
+    )
+  }
   if (s2z_partial) {
     str_add(out$tpar_comp) <- glue(
       "  log_det_partial_s2z_{id} = 0.0;\n"
@@ -3422,7 +4101,8 @@ stan_re_s2z_partial_independent_transform <- function(
 # In addition to avoiding all 1 x 1 matrix algebra, the Gaussian branch uses
 # the exact zero sum of the orthonormal contrasts to remove a weighted dot
 # product and the group-scale vectors altogether.
-.stan_re_s2z_scalar <- function(id, r, info, normalize, out = list()) {
+.stan_re_s2z_scalar <- function(id, r, info, normalize, out = list(),
+                                fisher_info = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   stopifnot(is.reframe(r), nrow(r) == 1L, all(r$s2z))
   q <- length(info$qnames)
@@ -3432,14 +4112,16 @@ stan_re_s2z_partial_independent_transform <- function(
   is_student <- identical(r$dist[1], "student")
   s2z_mode <- re_s2z_center_mode(r)
   s2z_center <- identical(s2z_mode, "centered")
-  s2z_partial <- identical(s2z_mode, "partial")
+  s2z_fisher <- identical(s2z_mode, "auto")
+  s2z_partial <- s2z_mode %in% c("partial", "auto")
+  stopifnot(identical(s2z_fisher, !is.null(fisher_info)))
   r_s2z <- glue("r_s2z_{idp}_{cn}")
   r_public <- glue("r_{idp}_{cn}")
 
-  if (s2z_partial) {
+  if (s2z_partial && !s2z_fisher) {
     str_add(out$data) <- glue(
       "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
-      "  // data-driven or user-supplied centering fractions\n"
+      "  // fixed numeric centering fractions\n"
     )
     out <- stan_re_s2z_partial_tdata(out, id)
   }
@@ -3510,6 +4192,12 @@ stan_re_s2z_partial_independent_transform <- function(
       glue("  H_s2z_{id}[1] = means_X{p}[{qi - 1L}];\n")
     )
   )
+  if (s2z_fisher) {
+    str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+      id, r = r, fisher_info = fisher_info,
+      L = glue("diag_matrix(sd_{id})"), scale = glue("sd_{id}[1]")
+    )
+  }
   if (s2z_partial) {
     str_add(out$tpar_comp) <- glue(
       "  log_det_partial_s2z_{id} = 0.0;\n"

@@ -621,6 +621,10 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
       reframe = used_old_reframe_g, gf, used_levels = used_levels_g,
       old_levels = old_levels_g, rdraws = rdraws, draws, sample_new_levels
     )
+    # Covariance parameter names are determined by the complete fitted block.
+    # This matters when a response-local strict latent occurrence aliases a
+    # representative dimension named from another response.
+    args_new_rdraws$covariance_reframe <- old_reframe_g
     new_rdraws <- do_call(get_new_rdraws, args_new_rdraws)
     max_level <- attr(new_rdraws, "max_level")
     gf <- attr(new_rdraws, "gf")
@@ -1026,13 +1030,20 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
 # @param old_levels names of levels used in the original data
 # @param sample_new_levels specifies the way in which new draws are generated
 # @param draws optional matrix of draws from all model parameters
+# @param covariance_reframe complete fitted covariance metadata; unlike
+#   'reframe', this is not reduced to response-local prediction occurrences
 # @return a matrix of draws for new group levels
 get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
-                             sample_new_levels, draws = NULL) {
+                           sample_new_levels, draws = NULL,
+                           covariance_reframe = reframe) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   g <- unique(reframe$group)
   stopifnot(length(g) == 1L)
+  stopifnot(
+    is.reframe(covariance_reframe),
+    identical(unique(covariance_reframe$group), g)
+  )
   stopifnot(is.list(gf))
   used_by_per_level <- attr(used_levels, "by")
   old_by_per_level <- attr(old_levels, "by")
@@ -1091,20 +1102,33 @@ get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
           stop2("Option sample_new_levels = 'gaussian' is not ",
                 "available for non-gaussian group-level effects.")
         }
+        covariance_reframe <- re_s2z_covariance_dimensions(
+          covariance_reframe
+        )
+        covariance_dimension <- re_s2z_covariance_dimension(
+          reframe, covariance_r = covariance_reframe
+        )
+        if (anyNA(covariance_dimension)) {
+          stop2("Internal mismatch between group-level occurrences and ",
+                "their fitted covariance dimensions.")
+        }
+        nranef_cov <- nrow(covariance_reframe)
         for (j in seq_along(new_indices)) {
           # extract hyperparameters used to compute the covariance matrix
           if (length(old_by_per_level)) {
             new_by <- used_by_per_level[used_levels == new_levels[j]]
-            rnames <- as.vector(get_rnames(reframe, bylevels = new_by))
+            rnames <- as.vector(get_rnames(
+              covariance_reframe, bylevels = new_by
+            ))
           } else {
-            rnames <- get_rnames(reframe)
+            rnames <- get_rnames(covariance_reframe)
           }
           sd_pars <- paste0("sd_", g, "__", rnames)
           sd_draws <- prepare_draws(draws, sd_pars)
-          varying <- reframe$scale == "varying"
+          varying <- covariance_reframe$scale == "varying"
           if (any(varying)) {
             varying_rnames <- as.vector(get_rnames(
-              reframe[varying, , drop = FALSE]
+              covariance_reframe[varying, , drop = FALSE]
             ))
             sdlog_pars <- paste0("sdlog_", g, "__", varying_rnames)
             sdlog_draws <- as.matrix(prepare_draws(draws, sdlog_pars))
@@ -1131,10 +1155,16 @@ get_new_rdraws <- function(reframe, gf, rdraws, used_levels, old_levels,
           # sample new levels from the normal distribution
           # implied by the covariance matrix
           indices <- ((j - 1) * nranef + 1):(j * nranef)
-          out[[i]][, indices] <- t(apply(
+          covariance_draw <- t(apply(
             cov_matrix, 1, rmulti_normal,
-            n = 1, mu = rep(0, length(sd_pars))
+            n = 1, mu = rep(0, nranef_cov)
           ))
+          covariance_draw <- matrix(
+            covariance_draw, nrow = nrow(rdraws), ncol = nranef_cov
+          )
+          out[[i]][, indices] <- covariance_draw[
+            , covariance_dimension, drop = FALSE
+          ]
         }
       }
       max_level <- max_level + length(new_indices)

@@ -8,6 +8,19 @@ s2z_count_fixed <- function(x, pattern) {
   )))
 }
 
+s2z_stan_between <- function(x, start, end) {
+  start_at <- regexpr(start, x, fixed = TRUE)[1L]
+  expect_gt(start_at, 0L)
+  end_at <- regexpr(
+    end, substring(x, start_at + nchar(start)), fixed = TRUE
+  )[1L]
+  expect_gt(end_at, 0L)
+  substring(
+    x, start_at + nchar(start),
+    start_at + nchar(start) + end_at - 2L
+  )
+}
+
 s2z_dat <- local({
   set.seed(1916)
   n <- 72
@@ -27,25 +40,6 @@ s2z_ten_dat <- local({
     y = seq(-1, 1, length.out = 80),
     ten = factor(rep(letters[1:10], 8)),
     g = factor(rep(seq_len(8), each = 10))
-  )
-})
-
-s2z_auto_dat <- local({
-  counts <- c(5L, 7L, 10L, 15L, 25L)
-  g_index <- rep(seq_along(counts), counts)
-  within <- unlist(lapply(counts, seq_len), use.names = FALSE)
-  centered_within <- unlist(lapply(counts, function(n) {
-    seq_len(n) - mean(seq_len(n))
-  }), use.names = FALSE)
-  x <- centered_within + 0.17 * g_index
-  z <- sin(0.61 * within + 0.23 * g_index) +
-    0.08 * centered_within^2
-  z[g_index == 1L] <- 2 * x[g_index == 1L]
-  w <- cos(0.43 * within - 0.19 * g_index) + 0.6
-  w[g_index == 2L] <- 0
-  data.frame(
-    y = sin(seq_along(g_index) * 0.17), x = x, z = z, w = w,
-    g = factor(g_index, levels = seq_along(counts))
   )
 })
 
@@ -83,6 +77,8 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   expect_true(all(
     brms:::frame_re(auto_terms, s2z_dat)$s2z_center_auto
   ))
+  auto_reframe <- brms:::frame_re(auto_terms, s2z_dat)
+  expect_identical(brms:::re_s2z_center_mode(auto_reframe), "auto")
 
   default_code <- stancode(default_form, data = s2z_dat)
   centered_code <- stancode(centered_form, data = s2z_dat)
@@ -105,6 +101,7 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   )
   expect_null(standata(centered_form, data = s2z_dat)$rho_s2z_1)
   expect_null(standata(noncentered_form, data = s2z_dat)$rho_s2z_1)
+  expect_null(standata(auto_form, data = s2z_dat)$rho_s2z_1)
 
   # Reframes made from the original S2Z formula representation did not carry
   # s2z_center. They must retain the original centered behavior.
@@ -137,6 +134,10 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   )
   expect_error(gr(g, center = 0.01), "ordinary group-level effects")
   expect_error(gr(g, center = "auto"), "ordinary group-level effects")
+  expect_error(
+    gr(g, s2z = TRUE, center = "fisher"),
+    "or \"auto\"", fixed = TRUE
+  )
   expect_error(gr(g, s2z = TRUE, center = NA), "center")
   expect_error(
     gr(g, s2z = TRUE, center = c(TRUE, FALSE)), "center"
@@ -153,136 +154,246 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   )
   expect_equal(unname(mixed_data$rho_s2z_1[, 1]), rep(0.2, 6))
   expect_equal(unname(mixed_data$rho_s2z_1[, 2]), rep(0.8, 6))
+
+  expect_error(
+    standata(
+      y ~ x +
+        (1 | gr(g, id = "mixed-auto", s2z = TRUE,
+                center = "auto")) +
+        (0 + x | gr(g, id = "mixed-auto", s2z = TRUE,
+                    center = 0.8)),
+      data = s2z_dat
+    ),
+    "must use center = \"auto\" if any coefficient does",
+    fixed = TRUE
+  )
 })
 
-test_that("automatic S2Z weights reflect groupwise design exposure", {
-  intercept_form <- y ~ 1 +
+test_that("scalar Fisher S2Z hoists exposure and uses closed-form rho", {
+  form <- y ~ 1 +
     (1 | gr(g, s2z = TRUE, center = "auto"))
-  intercept_data <- standata(intercept_form, data = s2z_auto_dat)
-  counts <- as.numeric(table(s2z_auto_dat$g))
-  expect_equal(dim(intercept_data$rho_s2z_1), c(5L, 1L))
-  expect_equal(
-    unname(drop(intercept_data$rho_s2z_1)), counts / (counts + 25),
-    tolerance = 2e-14
+  scode <- stancode(form, data = s2z_dat)
+  tdata <- s2z_stan_between(
+    scode, "transformed data {", "\nparameters {"
   )
-  expect_true(all(diff(drop(intercept_data$rho_s2z_1)) > 0))
-
-  design_form <- y ~ 0 + x + z + x:w +
-    (0 + x + z + x:w || gr(g, s2z = TRUE, center = "auto"))
-  design_data <- standata(design_form, data = s2z_auto_dat)
-  expect_equal(dim(design_data$rho_s2z_1), c(5L, 3L))
-  expect_true(all(design_data$rho_s2z_1 >= 0))
-  expect_true(all(design_data$rho_s2z_1 <= 1))
-  # In group 1, z is exactly twice x. Residualizing either column against
-  # the other must therefore report no independent local exposure.
-  expect_lt(max(design_data$rho_s2z_1[1L, 1:2]), 1e-20)
-  # The interaction is structurally zero throughout group 2.
-  expect_equal(design_data$rho_s2z_1[2L, 3L], 0)
-  expect_gt(max(design_data$rho_s2z_1[-2L, 3L]), 0)
-
-  rescaled <- s2z_auto_dat
-  rescaled$x <- -37 * rescaled$x
-  rescaled$z <- 0.021 * rescaled$z
-  rescaled$w <- 4.7 * rescaled$w
-  rescaled_data <- standata(design_form, data = rescaled)
-  expect_equal(
-    rescaled_data$rho_s2z_1, design_data$rho_s2z_1,
-    tolerance = 2e-13
+  tpar <- s2z_stan_between(
+    scode, "transformed parameters {", "\nmodel {"
   )
 
-  permutation <- c(seq(2L, nrow(s2z_auto_dat), by = 2L),
-                   seq(1L, nrow(s2z_auto_dat), by = 2L))
-  permuted_data <- standata(
-    design_form, data = s2z_auto_dat[permutation, , drop = FALSE]
+  expect_match2(
+    scode, "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;"
   )
-  expect_equal(
-    permuted_data$rho_s2z_1, design_data$rho_s2z_1,
-    tolerance = 2e-13
+  expect_match2(
+    scode, "vector<lower=0,upper=1>[M_1] mean_rho_s2z_1;"
   )
-  releveled <- s2z_auto_dat
-  releveled$g <- factor(
-    releveled$g, levels = rev(levels(s2z_auto_dat$g))
+  expect_match2(
+    tdata, "vector<lower=0>[N_1] exposure_fisher_s2z_1;"
   )
-  releveled_data <- standata(design_form, data = releveled)
-  expect_equal(
-    unname(releveled_data$rho_s2z_1),
-    unname(design_data$rho_s2z_1[5:1, , drop = FALSE]),
-    tolerance = 2e-13
+  expect_match2(tdata, "exposure_fisher_s2z_1 = zeros_vector(N_1);")
+  expect_match2(
+    tdata,
+    "exposure_fisher_s2z_1[J_1[n]] += square(Z_1_1[n]);"
+  )
+  expect_match2(tpar, "inv_square(sigma)")
+  expect_match2(tpar, "rho_s2z_1[j, 1]")
+  expect_match2(tpar, "exposure_fisher_s2z_1[j]")
+  expect_match2(
+    tpar,
+    paste0(
+      "real scaled_info_fisher_s2z = square(sd_1[1]) * ",
+      "obs_prec_fisher_s2z * exposure_fisher_s2z_1[j];"
+    )
+  )
+  expect_match2(
+    tpar,
+    "rho_s2z_1[j, 1] = 1.0 - inv(1.0 + scaled_info_fisher_s2z);"
+  )
+  expect_false(grepl("J_1[n]", tpar, fixed = TRUE))
+  expect_false(grepl("mdivide_left_spd", scode, fixed = TRUE))
+  expect_false(grepl("quad_form(", scode, fixed = TRUE))
+  expect_match2(scode, "scale_partial_s2z = 1.0 - rho_s2z_1[, 1]")
+  expect_match2(scode, "+ log_det_partial_s2z_1")
+  expect_false(grepl("eigenvectors_sym", scode, fixed = TRUE))
+  expect_false(grepl("inverse_spd", scode, fixed = TRUE))
+  expect_false(grepl("if (mean_rho_s2z_1", scode, fixed = TRUE))
+
+  student_code <- stancode(form, data = s2z_dat, family = student())
+  student_tpar <- s2z_stan_between(
+    student_code, "transformed parameters {", "\nmodel {"
+  )
+  expect_match2(
+    student_tpar,
+    "(nu + 1.0) / (nu + 3.0) * inv_square(sigma)"
+  )
+  expect_match2(student_code, "+ log_det_partial_s2z_1")
+})
+
+test_that("multivariate Fisher S2Z hoists Gram matrices and solves diagonals", {
+  form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, center = "auto"))
+  scode <- stancode(form, data = s2z_dat)
+  tdata <- s2z_stan_between(
+    scode, "transformed data {", "\nparameters {"
+  )
+  tpar <- s2z_stan_between(
+    scode, "transformed parameters {", "\nmodel {"
   )
 
-  both_auto <- standata(
-    y ~ x +
-      (1 | gr(g, id = "mixed-auto", s2z = TRUE, center = "auto")) +
-      (0 + x | gr(
-        g, id = "mixed-auto", s2z = TRUE, center = "auto"
-      )),
-    data = s2z_auto_dat
+  expect_match2(tdata, "array[N_1] matrix[M_1, M_1]")
+  expect_match2(tdata, "J_1[n]")
+  expect_match2(tdata, "Z_1_1[n]")
+  expect_match2(tdata, "Z_1_2[n]")
+  expect_false(grepl("J_1[n]", tpar, fixed = TRUE))
+  expect_false(grepl("design_fisher_s2z", tpar, fixed = TRUE))
+  expect_match2(tpar, "inv_square(sigma)")
+  expect_match2(tpar, "cholesky_decompose(")
+  expect_match2(tpar, "mdivide_left_tri_low(")
+  expect_match2(tpar, "L_post_precision_fisher_s2z")
+  expect_match2(tpar, "white_factor_fisher_s2z")
+  expect_match2(tpar, "post_var_fisher_s2z = columns_dot_self(")
+  expect_false(grepl("mdivide_left_spd", scode, fixed = TRUE))
+  expect_equal(s2z_count_fixed(tpar, "quad_form("), 1L)
+  expect_false(grepl("identity_matrix(M_1)", scode, fixed = TRUE))
+  expect_false(grepl("white_cov_fisher_s2z", scode, fixed = TRUE))
+  expect_false(grepl("post_cov_fisher_s2z", scode, fixed = TRUE))
+  expect_match2(
+    scode, "diag_pre_multiply(rho_s2z_1[j]', L_Sigma_s2z_1);"
   )
-  mixed_auto <- standata(
-    y ~ x +
-      (1 | gr(g, id = "mixed-auto", s2z = TRUE, center = "auto")) +
-      (0 + x | gr(g, id = "mixed-auto", s2z = TRUE, center = 0.8)),
-    data = s2z_auto_dat
+  expect_match2(scode, "+ log_det_partial_s2z_1")
+  expect_null(standata(form, data = s2z_dat)$rho_s2z_1)
+
+  independent_form <- y ~ x +
+    (1 + x || gr(g, s2z = TRUE, center = "auto"))
+  independent_code <- stancode(independent_form, data = s2z_dat)
+  independent_tdata <- s2z_stan_between(
+    independent_code, "transformed data {", "\nparameters {"
+  )
+  independent_tpar <- s2z_stan_between(
+    independent_code, "transformed parameters {", "\nmodel {"
+  )
+  expect_match2(
+    independent_tdata,
+    "array[N_1] matrix[M_1, M_1] gram_fisher_s2z_1;"
+  )
+  expect_false(grepl("J_1[n]", independent_tpar, fixed = TRUE))
+  expect_match2(
+    independent_tpar, "post_var_fisher_s2z = columns_dot_self("
   )
   expect_equal(
-    mixed_auto$rho_s2z_1[, 1L], both_auto$rho_s2z_1[, 1L],
-    tolerance = 2e-14
+    s2z_count_fixed(independent_tpar, "quad_form("), 1L
   )
-  expect_equal(unname(mixed_auto$rho_s2z_1[, 2L]), rep(0.8, 5L))
+  expect_false(grepl(
+    "mdivide_left_spd", independent_code, fixed = TRUE
+  ))
+  expect_false(grepl(
+    "post_cov_fisher_s2z", independent_code, fixed = TRUE
+  ))
+})
 
-  # Once a model is fitted, newdata must not reinterpret its latent
-  # coordinates by recomputing the automatic fractions from new predictors.
-  fit <- brm(design_form, data = s2z_auto_dat, empty = TRUE)
-  shifted <- s2z_auto_dat
-  shifted$x <- shifted$x^2 + 3
-  shifted$z <- cos(shifted$x)
-  shifted$w <- seq_len(nrow(shifted)) / 7
-  fitted_data <- standata(fit)
-  prediction_data <- standata(fit, newdata = shifted)
-  expect_equal(
-    prediction_data$rho_s2z_1, fitted_data$rho_s2z_1,
-    tolerance = 0
+test_that("sampled-loading Fisher S2Z information remains dynamic", {
+  dat <- expand.grid(
+    person = factor(seq_len(8)),
+    item = factor(letters[1:4])
   )
-
-  releveled_prediction <- standata(fit, newdata = releveled)
-  expect_equal(
-    releveled_prediction$rho_s2z_1, fitted_data$rho_s2z_1,
-    tolerance = 0
+  dat$y <- seq_len(nrow(dat)) / 10
+  form <- bf(
+    y ~ alpha + loading * eta,
+    alpha ~ 0 + item,
+    loading ~ 0 + item,
+    eta ~ 0 + (1 | gr(
+      person, s2z = TRUE, latent = TRUE, center = "auto"
+    )),
+    nl = TRUE
   )
-
-  new_level_data <- s2z_auto_dat[seq_len(6L), , drop = FALSE]
-  new_level_data$g <- factor(
-    c(as.character(new_level_data$g[-6L]), "6"),
-    levels = as.character(seq_len(6L))
+  scode <- stancode(form, data = dat)
+  tdata <- s2z_stan_between(
+    scode, "transformed data {", "\nparameters {"
   )
-  new_level_prediction <- standata(
-    fit, newdata = new_level_data, allow_new_levels = TRUE
-  )
-  expect_equal(new_level_prediction$N_1, fitted_data$N_1)
-  expect_equal(
-    new_level_prediction$rho_s2z_1, fitted_data$rho_s2z_1,
-    tolerance = 0
-  )
-  expect_equal(dim(new_level_prediction$rho_s2z_1), c(5L, 3L))
-  expect_true(any(new_level_prediction$J_1 > fitted_data$N_1))
-
-  slope_only <- standata(
-    fit,
-    re_formula = ~ (0 + x | gr(g, s2z = TRUE, center = "auto"))
-  )
-  expect_equal(slope_only$M_1, 1L)
-  expect_equal(
-    slope_only$rho_s2z_1[, 1L], fitted_data$rho_s2z_1[, 1L],
-    tolerance = 0
+  tpar <- s2z_stan_between(
+    scode, "transformed parameters {", "\nmodel {"
   )
 
-  corrupt_fit <- fit
-  cached_rho <- corrupt_fit$basis$dpars$mu$re_s2z_center$rho_s2z_1
-  corrupt_fit$basis$dpars$mu$re_s2z_center$rho_s2z_1 <-
-    cached_rho[-1L, , drop = FALSE]
+  expect_false(grepl("fisher_s2z_1_nlp_loading", tdata, fixed = TRUE))
+  expect_false(grepl("info_fisher_s2z", tdata, fixed = TRUE))
+  expect_false(grepl("gram_fisher_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("exposure_fisher_s2z_1", scode, fixed = TRUE))
+  expect_match2(tpar, "vector[N] fisher_s2z_1_nlp_loading;")
+  expect_match2(
+    tpar, "fisher_s2z_1_nlp_loading = X_loading * b_loading;"
+  )
+  expect_match2(tpar, "for (n in 1:N)")
+  expect_match2(tpar, "fisher_s2z_1_nlp_loading[n]")
+  expect_match2(tpar, "J_1[n]")
+  expect_match2(tpar, "vector[N_1] info_fisher_s2z = zeros_vector(N_1);")
+  expect_match2(tpar, "info_fisher_s2z[J_1[n]] +=")
+  expect_match2(tpar, "rho_s2z_1[j, 1]")
+  expect_match2(scode, "+ log_det_partial_s2z_1")
+  expect_null(standata(form, data = dat)$rho_s2z_1)
+})
+
+test_that("Fisher S2Z rejects likelihood derivatives it cannot represent", {
   expect_error(
-    standata(corrupt_fit),
-    "do not match the fitted grouping levels and coefficients"
+    stancode(
+      y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
+      data = s2z_dat, family = poisson()
+    ),
+    "requires a univariate Gaussian or Student-t identity likelihood"
+  )
+  expect_error(
+    stancode(
+      bf(
+        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
+        sigma ~ x
+      ),
+      data = s2z_dat
+    ),
+    "requires one scalar residual sigma"
+  )
+  expect_error(
+    stancode(
+      bf(
+        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
+        nu ~ x,
+        family = student()
+      ),
+      data = s2z_dat
+    ),
+    "requires one scalar Student-t degrees of freedom"
+  )
+  expect_error(
+    stancode(
+      y | weights(w) ~ 1 +
+        (1 | gr(g, s2z = TRUE, center = "auto")),
+      data = s2z_dat
+    ),
+    "does not yet support response addition terms"
+  )
+
+  latent_data <- expand.grid(
+    person = factor(seq_len(5)), item = factor(seq_len(3))
+  )
+  latent_data$y <- seq_len(nrow(latent_data)) / 10
+  latent_formula <- bf(
+    y ~ alpha + loading * eta,
+    alpha ~ 0 + item,
+    loading ~ 0 + item,
+    eta ~ 1 +
+      (1 | gr(person, s2z = TRUE, center = "auto")),
+    nl = TRUE
+  )
+  latent_prior <- c(
+    prior(normal(0, 1), nlpar = "alpha"),
+    prior(normal(0, 1), nlpar = "loading"),
+    prior(normal(0, 1), nlpar = "eta")
+  )
+  expect_error(
+    stancode(latent_formula, data = latent_data, prior = latent_prior),
+    paste0(
+      "does not yet support nonlinear predictors; the derivative of the ",
+      "response mean with respect to the latent score must be represented ",
+      "explicitly"
+    ),
+    fixed = TRUE
   )
 })
 
@@ -386,11 +497,10 @@ test_that("partial S2Z code covers every specialized covariance path", {
     ),
     "r_s2z_1_1 = centered_partial_s2z - mean(centered_partial_s2z);",
     "log_det_partial_s2z_1 += -sum(log(scale_partial_s2z));",
-    "if (mean_rho_s2z_1[1] == 1.0) {",
-    "log_det_partial_s2z_1 += log(sd_1[1]);",
+    "log_det_partial_s2z_1 += log(",
     paste0(
-      "log_det_partial_s2z_1 += ",
-      "log1m(mean_rho_s2z_1[1] * (1.0 - sd_1[1]));"
+      "(1.0 - mean_rho_s2z_1[1]) + ",
+      "mean_rho_s2z_1[1] * sd_1[1]"
     ),
     "+ log_det_partial_s2z_1"
   )) {
@@ -456,12 +566,10 @@ test_that("partial S2Z code covers every specialized covariance path", {
     "mean_partial_s2z /= N_1;",
     "r_s2z_1[j] -= mean_partial_s2z;",
     "log_det_partial_s2z_1 -= sum(log(diagonal(L_partial_s2z)));",
-    "if (mean_rho_s2z_1[k] == 1.0) {",
-    "log_det_partial_s2z_1 += log(L_Sigma_s2z_1[k, k]);",
+    "log_det_partial_s2z_1 += log(",
     paste0(
-      "log_det_partial_s2z_1 += ",
-      "log1m(mean_rho_s2z_1[k] * ",
-      "(1.0 - L_Sigma_s2z_1[k, k]));"
+      "(1.0 - mean_rho_s2z_1[k]) + ",
+      "mean_rho_s2z_1[k] * L_Sigma_s2z_1[k, k]"
     ),
     "+ log_det_partial_s2z_1"
   )) {
@@ -986,7 +1094,7 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
   }
 })
 
-test_that("all S2Z centering modes keep recovery and public names", {
+test_that("endpoint and fixed-partial S2Z keep recovery and public names", {
   centered_form <- y ~ x * z +
     (1 + x * z | gr(g, s2z = TRUE, scale = "varying"))
   direct_form <- y ~ x * z +
@@ -997,9 +1105,9 @@ test_that("all S2Z centering modes keep recovery and public names", {
     (1 + x * z | gr(
       g, s2z = TRUE, scale = "varying", center = 0.4
     ))
-  auto_form <- y ~ x * z +
+  second_partial_form <- y ~ x * z +
     (1 + x * z | gr(
-      g, s2z = TRUE, scale = "varying", center = "auto"
+      g, s2z = TRUE, scale = "varying", center = 0.65
     ))
   centered_fit <- brm(centered_form, data = s2z_dat, empty = TRUE)
   centered_excluded <- unlist(
@@ -1014,7 +1122,7 @@ test_that("all S2Z centering modes keep recovery and public names", {
     centered_form, data = s2z_dat
   ))[, prior_columns]
 
-  for (form in list(direct_form, partial_form, auto_form)) {
+  for (form in list(direct_form, partial_form, second_partial_form)) {
     fit <- brm(form, data = s2z_dat, empty = TRUE)
     expect_identical(
       unlist(brms:::exclude_pars(fit), use.names = FALSE),
@@ -1039,7 +1147,7 @@ test_that("all S2Z centering modes keep recovery and public names", {
 
 test_that("partial S2Z Jacobian state follows save_pars", {
   form <- y ~ x +
-    (1 + x | gr(g, s2z = TRUE, center = "auto"))
+    (1 + x | gr(g, s2z = TRUE, center = 0.4))
   default_fit <- brm(form, data = s2z_dat, empty = TRUE)
   saved_fit <- brm(
     form, data = s2z_dat, empty = TRUE,
@@ -2802,7 +2910,7 @@ test_that("joint Student varying scales retain precision weights", {
 test_that("crossed scalar S2Z factors share one omitted-mean system", {
   form <- y ~ 1 +
     (1 | gr(g, s2z = TRUE, center = 0.25)) +
-    (1 | gr(h, s2z = TRUE, center = "auto"))
+    (1 | gr(h, s2z = TRUE, center = 9 / 34))
   bprior <- prior(normal(0, 2), class = Intercept)
   scode <- stancode(form, data = s2z_dat, prior = bprior)
   sdata <- standata(form, data = s2z_dat, prior = bprior)
@@ -2847,12 +2955,12 @@ test_that("crossed scalar S2Z factors share one omitted-mean system", {
   expect_equal(s2z_count_fixed(scode, "real Intercept;"), 1L)
   expect_equal(s2z_count_fixed(scode, "real b_Intercept;"), 1L)
 
-  # Every fitted automatic coordinate map must remain available. Silently
+  # Every fitted fixed-partial coordinate map must remain available. Silently
   # recomputing just one block would reinterpret its saved latent variables.
-  auto_form <- y ~ 1 +
-    (1 | gr(g, s2z = TRUE, center = "auto")) +
-    (1 | gr(h, s2z = TRUE, center = "auto"))
-  fit <- brm(auto_form, data = s2z_dat, empty = TRUE)
+  partial_form <- y ~ 1 +
+    (1 | gr(g, s2z = TRUE, center = 0.3)) +
+    (1 | gr(h, s2z = TRUE, center = 0.6))
+  fit <- brm(partial_form, data = s2z_dat, empty = TRUE)
   expect_setequal(
     names(fit$basis$dpars$mu$re_s2z_center),
     c("rho_s2z_1", "rho_s2z_2")
@@ -2982,7 +3090,7 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
 test_that("shared and varying scales compose in a joint S2Z model", {
   form <- y ~ x +
     (1 + x || gr(
-      g, s2z = TRUE, center = "auto", scale = "varying"
+      g, s2z = TRUE, center = 0.4, scale = "varying"
     )) +
     (1 + x | gr(h, s2z = TRUE, center = FALSE))
   bprior <- prior(normal(0, 2), class = Intercept) +
@@ -3258,4 +3366,473 @@ test_that("unsupported S2Z structures fail clearly", {
     stancode(y ~ x + (1 + x | gr(g, s2z = TRUE)), one_group),
     "at least two observed grouping levels"
   )
+})
+
+test_that("strict latent S2Z blocks span nonlinear score predictors", {
+  expect_false(gr(g, s2z = TRUE)$latent)
+  expect_true(gr(g, s2z = TRUE, latent = TRUE)$latent)
+  expect_error(
+    gr(g, latent = TRUE),
+    "latent = TRUE.*requires.*s2z = TRUE"
+  )
+
+  dat <- expand.grid(
+    person = factor(seq_len(8)),
+    item = factor(letters[1:4])
+  )
+  dat$y <- seq_len(nrow(dat)) / 10
+  centered_form <- bf(
+    y ~ alpha + loading1 * eta1 + loading2 * eta2,
+    alpha ~ 0 + item,
+    loading1 ~ 0 + item,
+    loading2 ~ 0 + item,
+    eta1 ~ 0 +
+      (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE, center = TRUE
+      )),
+    eta2 ~ 0 +
+      (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE, center = TRUE
+      )),
+    nl = TRUE
+  )
+  noncentered_form <- bf(
+    y ~ alpha + loading1 * eta1 + loading2 * eta2,
+    alpha ~ 0 + item,
+    loading1 ~ 0 + item,
+    loading2 ~ 0 + item,
+    eta1 ~ 0 +
+      (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE, center = FALSE
+      )),
+    eta2 ~ 0 +
+      (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE, center = FALSE
+      )),
+    nl = TRUE
+  )
+
+  centered_code <- stancode(
+    centered_form, data = dat, normalize = TRUE
+  )
+  expect_match2(
+    centered_code,
+    "vector[M_1 * (N_1 - 1)] z_s2z_1;"
+  )
+  expect_match2(centered_code, "matrix[N_1, M_1] r_s2z_1;")
+  expect_match2(centered_code, "vector[N_1] r_s2z_1_eta1_1;")
+  expect_match2(centered_code, "vector[N_1] r_s2z_1_eta2_2;")
+  expect_match2(
+    centered_code,
+    "white_latent_s2z = mdivide_left_tri_low("
+  )
+  expect_match2(
+    centered_code,
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))"
+  )
+  expect_match2(
+    centered_code,
+    "- 0.5 * (N_1 - 1) * M_1 * log(2 * pi())"
+  )
+  for (term in c("theta_s2z_eta", "H_s2z_1", "mean_r_s2z_1")) {
+    expect_false(grepl(term, centered_code, fixed = TRUE), info = term)
+  }
+
+  noncentered_code <- stancode(
+    noncentered_form, data = dat, normalize = TRUE
+  )
+  expect_match2(
+    noncentered_code,
+    "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';"
+  )
+  expect_match2(noncentered_code, "std_normal_lpdf(z_s2z_1)")
+  expect_false(grepl(
+    "group_quad_s2z_1", noncentered_code, fixed = TRUE
+  ))
+  expect_false(grepl(
+    "sum(log(diagonal(L_Sigma_s2z_1)))",
+    noncentered_code, fixed = TRUE
+  ))
+  expect_equal(
+    s2z_count_fixed(
+      centered_code, "vector sum_to_zero_constrain_brms(vector y)"
+    ),
+    1L
+  )
+  expect_equal(
+    s2z_count_fixed(
+      noncentered_code, "vector sum_to_zero_constrain_brms(vector y)"
+    ),
+    1L
+  )
+
+  fisher_form <- bf(
+    y ~ alpha + loading1 * eta1 + loading2 * eta2,
+    alpha ~ 0 + item,
+    loading1 ~ 0 + item,
+    loading2 ~ 0 + item,
+    eta1 ~ 0 +
+      (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "auto"
+      )),
+    eta2 ~ 0 +
+      (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "auto"
+      )),
+    nl = TRUE
+  )
+  fisher_code <- stancode(fisher_form, data = dat)
+  for (term in c(
+    "cholesky_factor_corr[M_1] L_1;",
+    "fisher_s2z_1_nlp_loading1 = X_loading1 * b_loading1;",
+    "fisher_s2z_1_nlp_loading2 = X_loading2 * b_loading2;",
+    paste0(
+      "design_fisher_s2z[1] = ",
+      "(fisher_s2z_1_nlp_loading1[n]) * Z_1_eta1_1[n];"
+    ),
+    paste0(
+      "design_fisher_s2z[2] = ",
+      "(fisher_s2z_1_nlp_loading2[n]) * Z_1_eta2_2[n];"
+    ),
+    "K_fisher_s2z = quad_form(info_fisher_s2z[j], L_Sigma_s2z_1);"
+  )) {
+    expect_true(grepl(term, fisher_code, fixed = TRUE), info = term)
+  }
+})
+
+test_that("strict latent S2Z validation stays narrow and explicit", {
+  dat <- expand.grid(
+    person = factor(seq_len(5)),
+    item = factor(letters[1:3])
+  )
+  dat$y <- seq_len(nrow(dat)) / 10
+  mismatch_form <- bf(
+    y ~ loading1 * eta1 + loading2 * eta2,
+    loading1 ~ 0 + item,
+    loading2 ~ 0 + item,
+    eta1 ~ 0 +
+      (1 | gr(person, id = "score", s2z = TRUE, latent = TRUE)),
+    eta2 ~ 0 + (1 | gr(person, id = "score", s2z = TRUE)),
+    nl = TRUE
+  )
+  expect_error(
+    stancode(mismatch_form, data = dat),
+    "same 'latent' setting"
+  )
+
+  partial_form <- bf(
+    y ~ loading1 * eta1 + loading2 * eta2,
+    loading1 ~ 0 + item,
+    loading2 ~ 0 + item,
+    eta1 ~ 0 + (1 | gr(
+      person, id = "score", s2z = TRUE, latent = TRUE, center = 0.3
+    )),
+    eta2 ~ 0 + (1 | gr(
+      person, id = "score", s2z = TRUE, latent = TRUE, center = 0.7
+    )),
+    nl = TRUE
+  )
+  expect_error(
+    stancode(partial_form, data = dat),
+    "support only centered, noncentered, and automatic centering modes"
+  )
+
+  fisher_form <- bf(
+    y ~ loading * eta,
+    loading ~ 0 + item,
+    eta ~ 0 + (1 | gr(
+      person, id = "score", s2z = TRUE, latent = TRUE, center = "auto"
+    )),
+    nl = TRUE
+  )
+  fisher_code <- stancode(fisher_form, data = dat)
+  for (term in c(
+    "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;",
+    "vector[N] fisher_s2z_1_nlp_loading;",
+    "fisher_s2z_1_nlp_loading = X_loading * b_loading;",
+    paste0(
+      "info_fisher_s2z[J_1[n]] += obs_prec_fisher_s2z * square(",
+      "(fisher_s2z_1_nlp_loading[n]) * Z_1_eta_1[n]);"
+    ),
+    "rho_s2z_1[j, 1] = 1.0 - inv(1.0 + scaled_info_fisher_s2z);",
+    "+ log_det_partial_s2z_1"
+  )) {
+    expect_true(grepl(term, fisher_code, fixed = TRUE), info = term)
+  }
+  expect_null(
+    standata(fisher_form, data = dat)$rho_s2z_1
+  )
+  fisher_student_code <- stancode(
+    fisher_form, data = dat, family = student()
+  )
+  expect_match2(
+    fisher_student_code,
+    "(nu + 1.0) / (nu + 3.0) * inv_square(sigma)"
+  )
+  expect_error(
+    suppressWarnings(stancode(
+      fisher_form + cor_ar(~ 1 | person), data = dat
+    )),
+    "does not yet support residual autocorrelation structures"
+  )
+
+  student_form <- bf(
+    y ~ loading * eta,
+    loading ~ 0 + item,
+    eta ~ 0 + (1 | gr(
+      person, id = "score", s2z = TRUE, latent = TRUE, dist = "student"
+    )),
+    nl = TRUE
+  )
+  expect_error(
+    stancode(student_form, data = dat),
+    "currently require Gaussian group effects"
+  )
+})
+
+test_that("strict Fisher scores are shared across wide response predictors", {
+  dat <- data.frame(
+    person = factor(seq_len(7)),
+    y1 = sin(seq_len(7) / 3),
+    y2 = cos(seq_len(7) / 4)
+  )
+  response_factor <- function(response) {
+    bf(
+      as.formula(paste0(response, " ~ loading * eta")),
+      lf(loading ~ 1, center = FALSE),
+      eta ~ 0 + (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "auto"
+      )),
+      nl = TRUE
+    )
+  }
+  form <- response_factor("y1") + response_factor("y2") +
+    set_rescor(FALSE)
+  sdata <- standata(form, data = dat)
+  scode <- stancode(form, data = dat)
+
+  expect_equal(sdata$M_1, 1L)
+  expect_equal(sdata$NC_1, 0L)
+  available <- as.data.frame(get_prior(form, data = dat))
+  dimension_sd <- subset(
+    available, class == "sd" & group == "person" & nzchar(coef)
+  )
+  # Every response alias is an available prior scope even though the fitted
+  # covariance contains only one dimension. Validation below requires aliases
+  # to imply the same prior.
+  expect_equal(nrow(dimension_sd), 2L)
+  expect_setequal(dimension_sd$resp, c("y1", "y2"))
+  expect_false(any(available$class == "cor" & available$group == "person"))
+  expect_error(
+    stancode(
+      form, data = dat,
+      prior = prior(lkj(2), class = cor, group = person)
+    ),
+    "do not correspond to any model parameter"
+  )
+  for (term in c(
+    "vector[N_y1] fisher_s2z_1_nlp_y1_loading;",
+    "vector[N_y2] fisher_s2z_1_nlp_y2_loading;",
+    "info_fisher_s2z[J_1_y1[n]] += obs_prec_fisher_s2z",
+    "info_fisher_s2z[J_1_y2[n]] += obs_prec_fisher_s2z",
+    "r_s2z_1_y1_eta_1 = r_s2z_1[, 1];",
+    "r_s2z_1_y2_eta_2 = r_s2z_1[, 1];"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+
+  bframe <- brms:::brmsframe(brmsterms(form), dat)
+  covariance_reframe <- brms:::re_s2z_covariance_dimensions(
+    bframe$frame$re
+  )
+  expect_equal(nrow(covariance_reframe), 1L)
+  expect_identical(
+    brms:::re_s2z_covariance_dimension(
+      bframe$frame$re, covariance_r = covariance_reframe
+    ),
+    c(1L, 1L)
+  )
+  raw_names <- c(
+    "sd_1[1]",
+    paste0("r_1_y1_eta_1[", seq_len(7), "]"),
+    paste0("r_1_y2_eta_2[", seq_len(7), "]")
+  )
+  rename_map <- brms:::rename_re(bframe, pars = raw_names)
+  sd_map <- Filter(function(x) {
+    brms:::is.rlist(x) && any(startsWith(x$fnames, "sd_person__"))
+  }, rename_map)
+  expect_length(sd_map, 1L)
+  expect_equal(sum(sd_map[[1]]$pos), 1L)
+  expect_identical(sd_map[[1]]$fnames, "sd_person__y1_eta_Intercept")
+  expect_false(any(vapply(rename_map, function(x) {
+    brms:::is.rlist(x) && any(startsWith(x$fnames, "cor_person__"))
+  }, logical(1))))
+
+  # Strict score defaults are response-scale independent so a wide factor is
+  # usable without first overriding response-specific automatic sd priors.
+  scaled_dat <- dat
+  scaled_dat$y1 <- scaled_dat$y1 / 1000
+  scaled_dat$y2 <- scaled_dat$y2 * 1000
+  scaled_available <- as.data.frame(get_prior(form, data = scaled_dat))
+  scaled_defaults <- subset(
+    scaled_available,
+    class == "sd" & !nzchar(group) & nlpar == "eta"
+  )
+  expect_equal(nrow(scaled_defaults), 2L)
+  expect_identical(
+    unique(scaled_defaults$prior), "student_t(3, 0, 2.5)"
+  )
+  expect_silent(stancode(form, data = scaled_dat))
+
+  conflicting_sd <- c(
+    prior(
+      normal(0, 0.7), class = sd, group = person,
+      resp = y1, nlpar = eta
+    ),
+    prior(
+      normal(0, 1.4), class = sd, group = person,
+      resp = y2, nlpar = eta
+    )
+  )
+  expect_error(
+    stancode(form, data = dat, prior = conflicting_sd),
+    "shared across responses.*requires identical 'sd' priors"
+  )
+  expect_error(
+    suppressWarnings(stancode(
+      response_factor("y1") + response_factor("y2"), data = dat
+    )),
+    "requires set_rescor\\(FALSE\\)"
+  )
+
+  response_two_factor <- function(response) {
+    bf(
+      as.formula(paste0(
+        response, " ~ loading1 * eta1 + loading2 * eta2"
+      )),
+      lf(loading1 ~ 1, center = FALSE),
+      lf(loading2 ~ 1, center = FALSE),
+      eta1 ~ 0 + (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "auto"
+      )),
+      eta2 ~ 0 + (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "auto"
+      )),
+      nl = TRUE
+    )
+  }
+  two_factor <- response_two_factor("y1") +
+    response_two_factor("y2") + set_rescor(FALSE)
+  two_data <- standata(two_factor, data = dat)
+  two_code <- stancode(two_factor, data = dat)
+  expect_equal(two_data$M_1, 2L)
+  expect_equal(two_data$NC_1, 1L)
+  two_available <- as.data.frame(get_prior(two_factor, data = dat))
+  two_dimension_sd <- subset(
+    two_available, class == "sd" & group == "person" & nzchar(coef)
+  )
+  expect_equal(nrow(two_dimension_sd), 4L)
+  expect_equal(sum(
+    two_available$class == "cor" & two_available$group == "person"
+  ), 1L)
+  for (term in c(
+    "cholesky_factor_corr[M_1] L_1;",
+    "design_fisher_s2z[1] = (fisher_s2z_1_nlp_y2_loading1[n]",
+    "design_fisher_s2z[2] = (fisher_s2z_1_nlp_y2_loading2[n]",
+    "r_s2z_1_y2_eta1_3 = r_s2z_1[, 1];",
+    "r_s2z_1_y2_eta2_4 = r_s2z_1[, 2];"
+  )) {
+    expect_true(grepl(term, two_code, fixed = TRUE), info = term)
+  }
+  two_frame <- brms:::brmsframe(brmsterms(two_factor), dat)
+  expect_identical(
+    brms:::re_s2z_covariance_dimension(two_frame$frame$re),
+    c(1L, 2L, 1L, 2L)
+  )
+
+  # Coefficient-specific prior aliases remain expressible when one nonlinear
+  # score predictor contributes more than one covariance dimension.
+  dat$x <- seq(-1, 1, length.out = nrow(dat))
+  response_slope_factor <- function(response) {
+    bf(
+      as.formula(paste0(response, " ~ loading * eta")),
+      lf(loading ~ 1, center = FALSE),
+      eta ~ 0 + (1 + x | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "auto"
+      )),
+      nl = TRUE
+    )
+  }
+  slope_factor <- response_slope_factor("y1") +
+    response_slope_factor("y2") + set_rescor(FALSE)
+  shared_slope_prior <- c(
+    prior(
+      normal(0, 0.5), class = sd, coef = "Intercept", group = person,
+      resp = y1, nlpar = eta
+    ),
+    prior(
+      normal(0, 1.5), class = sd, coef = "x", group = person,
+      resp = y1, nlpar = eta
+    ),
+    prior(
+      normal(0, 0.5), class = sd, coef = "Intercept", group = person,
+      resp = y2, nlpar = eta
+    ),
+    prior(
+      normal(0, 1.5), class = sd, coef = "x", group = person,
+      resp = y2, nlpar = eta
+    )
+  )
+  expect_silent(stancode(
+    slope_factor, data = dat, prior = shared_slope_prior
+  ))
+
+  # Gaussian new-level simulation draws one covariance coordinate and expands
+  # it back to both public response aliases. A response-only prediction still
+  # finds the representative parameter named from the complete fitted frame.
+  ndraws <- 6L
+  old_levels <- levels(dat$person)
+  used_levels <- c(old_levels, "new")
+  covariance_draws <- posterior::as_draws_matrix(matrix(
+    1, nrow = ndraws, ncol = 1L,
+    dimnames = list(NULL, "sd_person__y1_eta_Intercept")
+  ))
+  full_reframe <- bframe$frame$re
+  full_rdraws <- matrix(
+    0, nrow = ndraws, ncol = length(old_levels) * nrow(full_reframe)
+  )
+  set.seed(90210)
+  new_full <- brms:::get_new_rdraws(
+    reframe = full_reframe, gf = list(length(old_levels) + 1L),
+    rdraws = full_rdraws, used_levels = used_levels,
+    old_levels = old_levels, sample_new_levels = "gaussian",
+    draws = covariance_draws, covariance_reframe = full_reframe
+  )
+  expect_equal(dim(new_full), c(ndraws, 2L))
+  expect_equal(new_full[, 1], new_full[, 2], tolerance = 0)
+
+  y2_reframe <- subset(full_reframe, resp == "y2")
+  y2_rdraws <- matrix(0, nrow = ndraws, ncol = length(old_levels))
+  expect_silent(brms:::get_new_rdraws(
+    reframe = y2_reframe, gf = list(length(old_levels) + 1L),
+    rdraws = y2_rdraws, used_levels = used_levels,
+    old_levels = old_levels, sample_new_levels = "gaussian",
+    draws = covariance_draws, covariance_reframe = full_reframe
+  ))
+
+  empty_fit <- brm(form, data = dat, empty = TRUE)
+  excluded <- unlist(
+    brms:::exclude_pars(empty_fit, bframe = bframe), use.names = FALSE
+  )
+  expect_true(all(c(
+    "rho_s2z_1", "mean_rho_s2z_1",
+    "fisher_s2z_1_nlp_y1_loading",
+    "fisher_s2z_1_nlp_y2_loading"
+  ) %in% excluded))
 })

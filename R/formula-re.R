@@ -60,6 +60,18 @@
 #'   non-positive fixed group-level standard deviations are not supported.
 #'   Custom Stan code must not use the conventional population- or group-level
 #'   coefficients before they are reconstructed in generated quantities.
+#' @param latent Logical. If \code{TRUE}, interpret an S2Z block as a strict
+#'   latent-score block rather than as a reparameterization of conventional
+#'   group effects. Strict latent scores have no omitted group mean and do not
+#'   require matching population-level coefficients. When a strict ID spans
+#'   response predictors, occurrences with the same nonlinear-parameter and
+#'   group-level coefficient names share one score vector; distinct nonlinear
+#'   parameter names define correlated latent-score dimensions. Thus sampled
+#'   response-specific loadings contribute information about the same scores
+#'   in a wide multivariate factor model. Shared occurrences must imply the
+#'   same \code{sd} prior. Their automatic \code{sd} prior is the common,
+#'   response-scale-independent \code{student_t(3, 0, 2.5)} prior. This option
+#'   requires \code{s2z = TRUE}.
 #' @param scale Character. The default \code{"shared"} uses one scale per
 #'   coefficient for all grouping levels. With \code{"varying"}, each
 #'   coefficient instead has log-normal scale variation across grouping levels,
@@ -94,26 +106,24 @@
 #'   \code{id} may supply different numeric fractions for different
 #'   coefficients, but must use the same grouping factor, distribution,
 #'   correlation, and scale settings.
-#'   \code{center = "auto"} computes a fixed centering fraction separately for
-#'   every grouping level and coefficient from the fitted-data group-level
-#'   design matrix. It uses a scale-invariant, within-group residual design
-#'   exposure and maps exposure \code{I} to \code{I / (I + 25)}. Thus absent or
-#'   locally unidentified slopes and interactions are fully non-centered,
-#'   while directions with greater residual design exposure are increasingly
-#'   centered. This is an experimental design heuristic, not outcome-family
-#'   Fisher information; it does not use the response, residual scale, or
-#'   priors, so it can be poorly matched to the actual likelihood information.
-#'   Inspect sampling diagnostics or supply a numeric or endpoint choice when
-#'   needed. The fraction calculation is invariant to rescaling design columns,
-#'   but the partially centered coordinates themselves depend on coefficient
-#'   and response units. The resulting fractions are fixed data and do not
-#'   change the statistical model. In correlated blocks, coefficient-specific
-#'   fractions operate on rows of the common Cholesky factor, so sampling
-#'   geometry can depend on coefficient order even though the posterior remains
-#'   exact. With
-#'   Student-t effects or \code{scale = "varying"}, centering is defined
-#'   relative to the baseline/reference covariance; the group mixture and
-#'   relative level scales remain in the conditional hierarchy. With
+#'   \code{center = "auto"} computes parameter-dependent expected-Fisher
+#'   reliability fractions in the generated Stan model. This mode is available
+#'   only for supported likelihood and predictor configurations and does not
+#'   create fixed \code{rho_s2z} data. For strict nonlinear latent scores, the
+#'   Fisher design multiplies each group design column by the symbolic
+#'   response-mean derivative with respect to that score; sampled
+#'   population-level loadings and all response-specific contributions
+#'   therefore remain in the autodiff calculation. The response values are
+#'   integrated out of the expected-information rule, while group membership,
+#'   missingness, design values, residual scales, group covariance parameters,
+#'   and supported sampled loadings determine the fractions. Every coefficient
+#'   sharing a group-level \code{id} must use \code{"auto"} if any coefficient
+#'   does. In correlated blocks, coefficient-specific fractions operate on
+#'   rows of the common Cholesky factor, so sampling geometry can depend on
+#'   coefficient order even though the posterior remains exact. Student-t
+#'   group effects and \code{scale = "varying"} currently support only numeric
+#'   fractions and endpoint choices; these are defined relative to the
+#'   baseline/reference covariance. With
 #'   \code{s2z = FALSE}, only \code{NULL}, \code{FALSE}, and numeric
 #'   \code{0} are allowed and retain the ordinary non-centered parameterization.
 #'   This argument does not control centering of the population-level design
@@ -169,9 +179,9 @@
 #' form5_nc <- count ~ zAge * Trt +
 #'   (1 + zAge * Trt | gr(patient, s2z = TRUE, center = FALSE))
 #'
-#' # choose partial centering fractions from each patient's design exposure
-#' form5_auto <- count ~ zAge * Trt +
-#'   (1 + zAge * Trt | gr(patient, s2z = TRUE, center = "auto"))
+#' # use a fixed intermediate fraction for partial centering
+#' form5_partial <- count ~ zAge * Trt +
+#'   (1 + zAge * Trt | gr(patient, s2z = TRUE, center = 0.5))
 #'
 #' # allow the intercept, slope, and interaction scales to vary by patient
 #' scale_prior <- s2z_prior +
@@ -185,7 +195,7 @@
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
                cov = NULL, dist = "gaussian", s2z = FALSE,
-               scale = "shared", center = NULL) {
+               scale = "shared", center = NULL, latent = FALSE) {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -194,6 +204,10 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   stopif_illegal_group(groups[1])
   cor <- as_one_logical(cor)
   s2z <- as_one_logical(s2z)
+  latent <- as_one_logical(latent)
+  if (latent && !s2z) {
+    stop2("Argument 'latent = TRUE' requires 's2z = TRUE'.")
+  }
   s2z_center_auto <- FALSE
   if (is.null(center)) {
     s2z_center <- as.numeric(s2z)
@@ -204,10 +218,11 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
             "or \"auto\".")
     }
     if (!s2z) {
-      stop2("Argument 'center = \"auto\"' is not supported for ordinary ",
+      stop2("Argument 'center = \"", center,
+            "\"' is not supported for ordinary ",
             "group-level effects and requires 's2z = TRUE'.")
     }
-    # The numeric value is an internal placeholder. The auto flag ensures it
+    # The numeric value is an internal placeholder. The mode flag ensures it
     # is never used as the actual group- and coefficient-specific fraction.
     s2z_center <- 0.5
     s2z_center_auto <- TRUE
@@ -258,7 +273,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   allvars <- str2formula(c(groups, byvars, pwvars))
   nlist(
     groups, allvars, label, by, cor, s2z, s2z_center, s2z_center_auto,
-    id, pw, cov, dist, scale, type = ""
+    latent, id, pw, cov, dist, scale, type = ""
   )
 }
 
@@ -730,7 +745,9 @@ get_re.btl <- function(x, ...) {
 #   cor: are correlations modeled for this effect?
 #   s2z: use a sum-to-zero parameterization for this effect?
 #   s2z_center: numeric centering fraction for this effect
-#   s2z_center_auto: derive centering fractions from the fitted design?
+#   s2z_center_auto: derive centering fractions from Stan-side expected Fisher
+#     information?
+#   latent: interpret this ID as a strict latent-score block?
 #   scale: are group-effect scales shared or group-varying?
 #   ggn: global number of the grouping factor
 #   type: special effects type; can be 'sp' or 'cs'
@@ -781,6 +798,7 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       s2z_center = re$gcall[[i]]$s2z_center %||%
         as.numeric(re$gcall[[i]]$s2z %||% FALSE),
       s2z_center_auto = re$gcall[[i]]$s2z_center_auto %||% FALSE,
+      latent = re$gcall[[i]]$latent %||% FALSE,
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
       cov = re$gcall[[i]]$cov,
@@ -825,6 +843,18 @@ frame_re <- function(bterms, data, old_levels = NULL) {
     out[[i]] <- rdat
   }
   out <- do_call(rbind, c(list(empty_reframe()), out))
+  # A shared ID is one covariance block, so it cannot be interpreted as a
+  # strict latent score in only some of its occurrences. Check this before
+  # predictor-local frames attempt conventional S2Z design matching.
+  if (has_rows(out)) {
+    for (id in unique(out$id)) {
+      latent_id <- out$latent[out$id == id]
+      if (any(latent_id) && !all(latent_id)) {
+        stop2("All coefficients sharing a group-level ID must use the same ",
+              "'latent' setting.")
+      }
+    }
+  }
   # check for overlap between different group types
   rsv_groups <- out[nzchar(out$gtype), "group"]
   other_groups <- out[!nzchar(out$gtype), "group"]
@@ -945,7 +975,7 @@ empty_reframe <- function() {
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
     cor = logical(0), s2z = logical(0), s2z_center = numeric(0),
-    s2z_center_auto = logical(0), type = character(0),
+    s2z_center_auto = logical(0), latent = logical(0), type = character(0),
     scale = character(0),
     form = character(0),
     stringsAsFactors = FALSE

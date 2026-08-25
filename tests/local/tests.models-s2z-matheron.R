@@ -190,8 +190,8 @@ scalar_formulas <- function(data) {
 vector_formulas <- list(
   conventional = y ~ x * z + (1 + x * z | g) + (1 + x * z || h),
   s2z = y ~ x * z +
-    (1 + x * z | gr(g, s2z = TRUE, center = "auto")) +
-    (1 + x * z || gr(h, s2z = TRUE, center = "auto"))
+    (1 + x * z | gr(g, s2z = TRUE, center = 0.5)) +
+    (1 + x * z || gr(h, s2z = TRUE, center = 0.5))
 )
 
 scalar_prior <- prior(normal(0, 1.5), class = "Intercept") +

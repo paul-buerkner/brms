@@ -657,12 +657,12 @@ three_conventional <- sample_model(
   y ~ 1 + (1 | g) + (1 | h) + (1 | site),
   three_data, three_prior, 8301L, "three-intercepts-conventional"
 )
-three_auto <- sample_model(
+three_partial <- sample_model(
   y ~ 1 +
-    (1 | gr(g, s2z = TRUE, center = "auto")) +
-    (1 | gr(h, s2z = TRUE, center = "auto")) +
-    (1 | gr(site, s2z = TRUE, center = "auto")),
-  three_data, three_prior, 8302L, "three-intercepts-s2z-auto"
+    (1 | gr(g, s2z = TRUE, center = 0.5)) +
+    (1 | gr(h, s2z = TRUE, center = 0.5)) +
+    (1 | gr(site, s2z = TRUE, center = 0.5)),
+  three_data, three_prior, 8302L, "three-intercepts-s2z-partial"
 )
 three_noncentered <- sample_model(
   y ~ 1 +
@@ -672,19 +672,19 @@ three_noncentered <- sample_model(
   three_data, three_prior, 8303L, "three-intercepts-s2z-noncentered"
 )
 three_groups <- c("g", "h", "site")
-comparison_results[["three-auto"]] <- compare_public_posteriors(
+comparison_results[["three-partial"]] <- compare_public_posteriors(
   public_samples(three_conventional$fit, three_groups),
-  public_samples(three_auto$fit, three_groups),
-  "three-intercepts-s2z-auto"
+  public_samples(three_partial$fit, three_groups),
+  "three-intercepts-s2z-partial"
 )
 comparison_results[["three-noncentered"]] <- compare_public_posteriors(
   public_samples(three_conventional$fit, three_groups),
   public_samples(three_noncentered$fit, three_groups),
   "three-intercepts-s2z-noncentered"
 )
-invariant_results[["three-auto"]] <- joint_coordinate_invariants(
-  three_auto$fit, three_data, ~ 1, three_groups, 1:3,
-  "three-intercepts-s2z-auto"
+invariant_results[["three-partial"]] <- joint_coordinate_invariants(
+  three_partial$fit, three_data, ~ 1, three_groups, 1:3,
+  "three-intercepts-s2z-partial"
 )
 invariant_results[["three-noncentered"]] <- joint_coordinate_invariants(
   three_noncentered$fit, three_data, ~ 1, three_groups, 1:3,
@@ -694,9 +694,9 @@ quality_results[["three-conventional"]] <- fit_quality(
   three_conventional$fit, three_groups, "three-intercepts", "conventional",
   three_conventional$elapsed
 )
-quality_results[["three-auto"]] <- fit_quality(
-  three_auto$fit, three_groups, "three-intercepts", "s2z-auto",
-  three_auto$elapsed
+quality_results[["three-partial"]] <- fit_quality(
+  three_partial$fit, three_groups, "three-intercepts", "s2z-partial",
+  three_partial$elapsed
 )
 quality_results[["three-noncentered"]] <- fit_quality(
   three_noncentered$fit, three_groups, "three-intercepts", "s2z-noncentered",
@@ -710,31 +710,31 @@ interaction_conventional <- sample_model(
   interaction_data, interaction_prior, 8401L,
   "overlapping-interactions-conventional"
 )
-interaction_auto <- sample_model(
+interaction_partial <- sample_model(
   y ~ x * z +
-    (1 + x * z || gr(g, s2z = TRUE, center = "auto")) +
-    (1 + x * z | gr(h, s2z = TRUE, center = "auto")),
+    (1 + x * z || gr(g, s2z = TRUE, center = 0.5)) +
+    (1 + x * z | gr(h, s2z = TRUE, center = 0.5)),
   interaction_data, interaction_prior, 8402L,
-  "overlapping-interactions-s2z-auto"
+  "overlapping-interactions-s2z-partial"
 )
 interaction_groups <- c("g", "h")
-comparison_results[["interaction-auto"]] <- compare_public_posteriors(
+comparison_results[["interaction-partial"]] <- compare_public_posteriors(
   public_samples(interaction_conventional$fit, interaction_groups),
-  public_samples(interaction_auto$fit, interaction_groups),
-  "overlapping-interactions-s2z-auto"
+  public_samples(interaction_partial$fit, interaction_groups),
+  "overlapping-interactions-s2z-partial"
 )
-invariant_results[["interaction-auto"]] <- joint_coordinate_invariants(
-  interaction_auto$fit, interaction_data, ~ x * z,
-  interaction_groups, 1:2, "overlapping-interactions-s2z-auto"
+invariant_results[["interaction-partial"]] <- joint_coordinate_invariants(
+  interaction_partial$fit, interaction_data, ~ x * z,
+  interaction_groups, 1:2, "overlapping-interactions-s2z-partial"
 )
 quality_results[["interaction-conventional"]] <- fit_quality(
   interaction_conventional$fit, interaction_groups,
   "overlapping-interactions", "conventional",
   interaction_conventional$elapsed
 )
-quality_results[["interaction-auto"]] <- fit_quality(
-  interaction_auto$fit, interaction_groups,
-  "overlapping-interactions", "s2z-auto", interaction_auto$elapsed
+quality_results[["interaction-partial"]] <- fit_quality(
+  interaction_partial$fit, interaction_groups,
+  "overlapping-interactions", "s2z-partial", interaction_partial$elapsed
 )
 
 if (run_mixed) {
@@ -747,33 +747,33 @@ if (run_mixed) {
       (1 + x || gr(h, dist = "student")),
     mixed_data, mixed_prior, 8501L, "gaussian-student-conventional"
   )
-  mixed_auto <- sample_model(
+  mixed_partial <- sample_model(
     y ~ x +
       (1 + x | gr(
-        g, dist = "gaussian", s2z = TRUE, center = "auto"
+        g, dist = "gaussian", s2z = TRUE, center = 0.5
       )) +
       (1 + x || gr(
-        h, dist = "student", s2z = TRUE, center = "auto"
+        h, dist = "student", s2z = TRUE, center = 0.5
       )),
-    mixed_data, mixed_prior, 8502L, "gaussian-student-s2z-auto"
+    mixed_data, mixed_prior, 8502L, "gaussian-student-s2z-partial"
   )
   mixed_groups <- c("g", "h")
-  comparison_results[["mixed-auto"]] <- compare_public_posteriors(
+  comparison_results[["mixed-partial"]] <- compare_public_posteriors(
     public_samples(mixed_conventional$fit, mixed_groups),
-    public_samples(mixed_auto$fit, mixed_groups),
-    "gaussian-student-s2z-auto"
+    public_samples(mixed_partial$fit, mixed_groups),
+    "gaussian-student-s2z-partial"
   )
-  invariant_results[["mixed-auto"]] <- joint_coordinate_invariants(
-    mixed_auto$fit, mixed_data, ~ x, mixed_groups, 1:2,
-    "gaussian-student-s2z-auto"
+  invariant_results[["mixed-partial"]] <- joint_coordinate_invariants(
+    mixed_partial$fit, mixed_data, ~ x, mixed_groups, 1:2,
+    "gaussian-student-s2z-partial"
   )
   quality_results[["mixed-conventional"]] <- fit_quality(
     mixed_conventional$fit, mixed_groups, "gaussian-student",
     "conventional", mixed_conventional$elapsed
   )
-  quality_results[["mixed-auto"]] <- fit_quality(
-    mixed_auto$fit, mixed_groups, "gaussian-student", "s2z-auto",
-    mixed_auto$elapsed
+  quality_results[["mixed-partial"]] <- fit_quality(
+    mixed_partial$fit, mixed_groups, "gaussian-student", "s2z-partial",
+    mixed_partial$elapsed
   )
 }
 

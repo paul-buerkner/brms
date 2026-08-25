@@ -405,7 +405,14 @@ rename_re <- function(bframe, pars, ...) {
   }
   stopifnot(is.reframe(reframe))
   for (id in unique(reframe$id)) {
-    r <- subset2(reframe, id = id)
+    r_occurrence <- subset2(reframe, id = id)
+    is_strict_latent <- all(r_occurrence$s2z) &&
+      all(re_s2z_latent(r_occurrence))
+    r <- if (is_strict_latent) {
+      re_s2z_latent_dimensions(r_occurrence)
+    } else {
+      r_occurrence
+    }
     g <- r$group[1]
     rnames <- get_rnames(r)
     sd_names <- paste0("sd_", g, "__", as.vector(rnames))

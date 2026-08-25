@@ -125,6 +125,20 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
       c(out) <- paste0(s2z_classes, "_", id)
       rp <- usc(combine_prefix(r))
       c(out) <- paste0("r_s2z_", r$id, rp, "_", r$cn)
+      if (identical(re_s2z_center_mode(r), "auto")) {
+        c(out) <- paste0(c("rho_s2z_", "mean_rho_s2z_"), id)
+        if (all(re_s2z_latent(r))) {
+          fisher_info <- stan_re_s2z_latent_fisher_info(
+            id, r = r, bframe = bframe, threads = NULL
+          )
+          dependency_names <- vapply(
+            fisher_info$dependency_info,
+            function(x) x$vector_name,
+            character(1)
+          )
+          c(out) <- dependency_names
+        }
+      }
     }
   }
   if (isFALSE(save_pars$group)) {

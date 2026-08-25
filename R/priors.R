@@ -992,6 +992,20 @@ prior_re <- function(bframe, internal = FALSE, ...) {
   if (length(def_scale_prior) > 1L) {
     def_scale_prior <- def_scale_prior[px$resp]
   }
+  strict_latent <- reframe$s2z & re_s2z_latent(reframe)
+  if (any(strict_latent)) {
+    # A strict score covariance is shared across response units. Response-
+    # scaled automatic priors would give aliases different priors merely
+    # because their observed outcomes have different scales, so use one
+    # scale-free default for every strict latent covariance occurrence.
+    if (length(def_scale_prior) == 1L) {
+      def_scale_prior <- rep(def_scale_prior, nrow(reframe))
+    }
+    prefix_key <- combine_prefix(px)
+    strict_prefix <- unique(prefix_key[strict_latent])
+    def_scale_prior[prefix_key %in% strict_prefix] <-
+      "student_t(3, 0, 2.5)"
+  }
   global_sd_prior <- brmsprior(
     class = "sd", prior = def_scale_prior,
     lb = "0", ls = px
@@ -1006,15 +1020,29 @@ prior_re <- function(bframe, internal = FALSE, ...) {
     )
   }
   for (id in unique(reframe$id)) {
-    r <- subset2(reframe, id = id)
+    r_occurrence <- subset2(reframe, id = id)
+    is_strict_latent <- all(r_occurrence$s2z) &&
+      all(re_s2z_latent(r_occurrence))
+    r <- if (is_strict_latent) {
+      re_s2z_latent_dimensions(r_occurrence)
+    } else {
+      r_occurrence
+    }
     group <- r$group[1]
     rpx <- check_prefix(r)
-    urpx <- unique(rpx)
+    r_coef <- if (is_strict_latent) r_occurrence else r
+    rpx_coef <- check_prefix(r_coef)
+    # Keep response-local base and coefficient prior scopes available for
+    # shared aliases. Covariance generation and correlation metadata still use
+    # only the representative rows in r.
+    urpx <- unique(check_prefix(r_occurrence))
     # include group-level standard deviations
     prior <- prior +
       # don't specify lb as we already have it above
       brmsprior(class = "sd", group = group, ls = urpx) +
-      brmsprior(class = "sd", coef = r$coef, group = group, ls = rpx)
+      brmsprior(
+        class = "sd", coef = r_coef$coef, group = group, ls = rpx_coef
+      )
     if (identical(r$scale[1], "varying")) {
       prior <- prior +
         brmsprior(class = "sdlog", group = group, ls = urpx) +

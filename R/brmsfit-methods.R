@@ -424,14 +424,21 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     get_names <- function(group) {
       # get names of group-level parameters
       r <- subset2(reframe, group = group)
-      rnames <- as.vector(get_rnames(r))
+      # Response-local strict latent-score occurrences may alias one fitted
+      # covariance coordinate. Public group effects retain every occurrence,
+      # but VarCorr must request only covariance parameters that actually
+      # exist in the posterior draws.
+      r_cov <- re_s2z_covariance_dimensions(r)
+      rnames <- as.vector(get_rnames(r_cov))
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
       cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
-      varying <- r$scale == "varying"
+      varying <- r_cov$scale == "varying"
       varying_rnames <- character()
       if (any(varying)) {
-        varying_rnames <- as.vector(get_rnames(r[varying, , drop = FALSE]))
+        varying_rnames <- as.vector(get_rnames(
+          r_cov[varying, , drop = FALSE]
+        ))
       }
       sdlog_pars <- paste0("sdlog_", group, "__", varying_rnames)
       levels <- gsub(
