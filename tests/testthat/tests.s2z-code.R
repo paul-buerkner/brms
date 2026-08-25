@@ -37,7 +37,8 @@ test_that("S2Z uses the dedicated Gaussian scalar kernel", {
   expect_match2(scode, "real<lower=0> D_s2z_1;")
   expect_match2(scode, "real<lower=0> sqrt_D_s2z_1;")
   expect_match2(scode, "real mhat_s2z_1;")
-  expect_match2(scode, "vector[N_1] white_s2z_1;")
+  expect_match2(scode, "real<lower=0> group_quad_s2z_1;")
+  expect_match2(scode, "vector[N_1] white_s2z =")
   expect_match2(
     scode,
     "r_s2z_1_1 = sum_to_zero_constrain_brms(z_s2z_1);"
@@ -215,7 +216,7 @@ test_that("S2Z Stan code covers intercepts, slopes, and interactions", {
 
   expect_equal(sdata$M_1, 4)
   expect_equal(sdata$NC_1, 6)
-  expect_match2(scode, "array[M_1] vector[N_1 - 1] z_s2z_1;")
+  expect_match2(scode, "vector[M_1 * (N_1 - 1)] z_s2z_1;")
   expect_match2(scode, "matrix[N_1, M_1] r_s2z_1;")
   expect_match2(scode, "H_s2z_1[1, 2] = means_X[1];")
   expect_match2(scode, "H_s2z_1[1, 3] = means_X[2];")
@@ -227,7 +228,8 @@ test_that("S2Z Stan code covers intercepts, slopes, and interactions", {
     "normal_id_glm_lpdf(Y | Xc, mu, tail(theta_s2z, 3), sigma)"
   )
   expect_match2(scode, "q_recovered_s2z_1 = theta_s2z")
-  expect_match2(scode, "r_1 = r_s2z_1 + rep_matrix(mean_r_s2z_1'")
+  expect_match2(scode, "r_1 = r_s2z_1;")
+  expect_match2(scode, "for (j in 1:N_1) r_1[j] += mean_r_s2z_1';")
   expect_match2(scode, "b_Intercept = Intercept - dot_product(means_X, b)")
   expect_true(grepl("normal_id_glm", scode, fixed = TRUE))
 })
@@ -282,13 +284,16 @@ test_that("independent S2Z specializes centered slopes and interactions", {
   sdata <- standata(form, data = s2z_dat)
 
   expect_equal(sdata$M_1, 4)
-  expect_match2(scode, "array[M_1] vector[N_1 - 1] z_s2z_1;")
+  expect_match2(scode, "vector[M_1 * (N_1 - 1)] z_s2z_1;")
   for (k in seq_len(sdata$M_1)) {
     expect_match2(scode, sprintf("vector[N_1] r_s2z_1_%s;", k))
     expect_match2(
       scode,
       sprintf(
-        "r_s2z_1_%1$s = sum_to_zero_constrain_brms(z_s2z_1[%1$s]);",
+        paste0(
+          "r_s2z_1_%1$s = sum_to_zero_constrain_brms(segment(z_s2z_1, ",
+          "(%1$s - 1) * (N_1 - 1) + 1, N_1 - 1));"
+        ),
         k
       )
     )
@@ -354,7 +359,7 @@ test_that("independent S2Z uses H identity for ten no-intercept effects", {
   expect_equal(sdata$M_1, 10)
   expect_equal(sdata$K, 10)
   expect_match2(scode, "vector[10] theta_s2z;")
-  expect_match2(scode, "intercept_map_s2z_1 = rep_vector(0.0, M_1);")
+  expect_match2(scode, "intercept_map_s2z_1 = zeros_vector(M_1);")
   expect_false(grepl("intercept_map_s2z_1[1] =", scode, fixed = TRUE))
   expect_match2(scode, "rank1_info_s2z_1 = 0.0 * dot_product(")
   for (k in seq_len(10L)) {
@@ -657,7 +662,7 @@ test_that("Matheron supports overlapping physical S2Z blocks", {
     "mean_r_s2z_1 += L_Sigma_s2z_1 *",
     "mean_r_s2z_2 += L_Sigma_s2z_2 *",
     "mean_r_s2z_3 += L_Sigma_s2z_3 *",
-    "r_s2z_3 ./ rep_matrix(sd_3', N_3)",
+    "r_s2z_3[, k] / sd_3[k]",
     "q_recovered_s2z_1 = theta_s2z;"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
@@ -710,26 +715,23 @@ test_that("proper population coordinates outside group maps score independently"
   expect_match2(scode, "// fast Gaussian Matheron system")
   expect_match2(scode, "real<lower=0> W_matheron_s2z_1;")
   expect_false(grepl("matrix[2, 2] P_s2z_1", scode, fixed = TRUE))
-  expect_equal(
-    s2z_count_fixed(
-      scode,
-      paste0(
-        "normal_lpdf(theta_s2z[2] | prior_mean_s2z_1[2], ",
-        "prior_scale_s2z_1[2])"
-      )
-    ),
-    1L
+  expect_match2(
+    scode,
+    "vector[1] theta_s2z_active;  // S2Z-active finite-population coefficients"
+  )
+  expect_match2(
+    scode,
+    "vector[2] fixed_s2z;  // S2Z-inactive regression coefficients"
   )
   expect_equal(
     s2z_count_fixed(
       scode,
-      paste0(
-        "normal_lpdf(theta_s2z[3] | prior_mean_s2z_1[3], ",
-        "prior_scale_s2z_1[3])"
-      )
+      "normal_lpdf(fixed_s2z | -0.1, 0.7)"
     ),
     1L
   )
+  expect_match2(scode, "theta_s2z[2] = fixed_s2z[1];")
+  expect_match2(scode, "theta_s2z[3] = fixed_s2z[2];")
   expect_false(grepl("normal_lpdf(theta_s2z[1]", scode, fixed = TRUE))
   expect_match2(scode, "theta_s2z[1] - prior_mean_s2z_1[1]")
 })
@@ -844,7 +846,8 @@ test_that("independent and correlated interaction blocks stay specialized", {
     "- (N_2 - 1) * sum(log(diagonal(L_Sigma_s2z_2)))",
     "r_1_1 = r_s2z_1_1 + mean_r_s2z_1[1];",
     "r_1_4 = r_s2z_1_4 + mean_r_s2z_1[4];",
-    "r_2 = r_s2z_2 + rep_matrix(mean_r_s2z_2', N_2);",
+    "r_2 = r_s2z_2;",
+    "for (j in 1:N_2) r_2[j] += mean_r_s2z_2';",
     "vector[Kc] b;",
     "b = tail(q_recovered_s2z_1, Kc);"
   )) {
@@ -857,10 +860,7 @@ test_that("independent and correlated interaction blocks stay specialized", {
   ))
   expect_match2(
     scode,
-    paste0(
-      "matrix[N_1, M_1] white_group_s2z = r_s2z_1 ./ ",
-      "rep_matrix(sd_1', N_1);"
-    )
+    "vector[N_1] white_group_s2z = r_s2z_1[, k] / sd_1[k];"
   )
   expect_false(grepl("corr_matrix[M_1] Cor_1", scode, fixed = TRUE))
   expect_match2(scode, "corr_matrix[M_2] Cor_2")
@@ -905,8 +905,8 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
     "sum(group_prec_s2z_2), M_2));",
     "h_group_s2z_2 = -white_group_s2z * group_prec_s2z_2;",
     "- M_2 * sum(log(group_scale_s2z_2))",
-    "P_s2z_1[1:2, 1:2] = P_group_s2z_1;",
-    "P_s2z_1[3:4, 3:4] = P_group_s2z_2;"
+    "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
+    "P_s2z_1[3:4, 3:4] += P_group_s2z_2;"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
@@ -996,6 +996,37 @@ test_that("joint S2Z implementation details follow save_pars", {
     expect_true(name %in% default_excluded, info = name)
     expect_false(name %in% saved_excluded, info = name)
   }
+})
+
+test_that("fixed-only S2Z internals stay out of public coefficient discovery", {
+  form <- y ~ x + z + (1 + x | gr(g, s2z = TRUE))
+  default_fit <- brm(form, data = s2z_dat, empty = TRUE)
+  saved_fit <- brm(
+    form, data = s2z_dat, empty = TRUE,
+    save_pars = save_pars(all = TRUE)
+  )
+  default_excluded <- unlist(
+    brms:::exclude_pars(default_fit), use.names = FALSE
+  )
+  saved_excluded <- unlist(
+    brms:::exclude_pars(saved_fit), use.names = FALSE
+  )
+
+  internal <- c(
+    "theta_s2z", "theta_s2z_active", "fixed_s2z",
+    "zfixed_s2z", "sdfixed_s2z", "par_fixed_s2z_1"
+  )
+  expect_true(all(internal %in% default_excluded))
+  expect_false(any(internal %in% saved_excluded))
+
+  draw_names <- c(
+    "b_Intercept", "b_x", "b_z", "fixed_s2z[1]",
+    "zfixed_s2z[1]", "sdfixed_s2z[1]", "par_fixed_s2z_1"
+  )
+  expect_identical(
+    draw_names[grepl(brms:::fixef_pars(), draw_names)],
+    c("b_Intercept", "b_x", "b_z")
+  )
 })
 
 test_that("split same-ID S2Z terms validate every constituent", {
@@ -1114,7 +1145,7 @@ test_that("unsupported S2Z structures fail clearly", {
   expect_error(
     stancode(
       y ~ x + (1 + x | gr(g, s2z = TRUE)), s2z_dat,
-      prior = prior(laplace(0, 1), class = b, coef = x)
+      prior = prior(double_exponential(0, 1), class = b, coef = x)
     ),
     "not supported by the sum-to-zero"
   )

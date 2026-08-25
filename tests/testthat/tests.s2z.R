@@ -156,6 +156,66 @@ context("Tests for physical sum-to-zero group-level effects")
   out
 }
 
+# Independent density/Jacobian reference for the standardized explicit mean
+# v = sqrt(N) L^-1 m used when an active population prior is non-Gaussian.
+.s2z_explicit_mean_case <- function(level_scale = NULL) {
+  n <- 6L
+  m <- 2L
+  basis <- .s2z_basis(n)
+  L <- matrix(c(0.72, 0, -0.18, 1.07), nrow = m, byrow = TRUE)
+  z <- matrix(
+    sin(seq_len((n - 1L) * m) * 0.37) +
+      cos(seq_len((n - 1L) * m) * 0.19),
+    nrow = n - 1L, ncol = m
+  ) / 2.4
+  v <- c(-0.43, 0.68)
+  contrast <- basis %*% z
+  mean_effect <- drop(L %*% v / sqrt(n))
+  effects <- sweep(contrast, 2L, mean_effect, "+")
+  if (is.null(level_scale)) {
+    level_scale <- rep(1, n)
+  }
+  stopifnot(length(level_scale) == n, all(level_scale > 0))
+
+  # Construct the full square map from (vec(z), v) to vec(effects). The
+  # determinant is checked directly rather than assumed from the derivation.
+  transform <- function(value) {
+    z_value <- matrix(value[seq_len((n - 1L) * m)], nrow = n - 1L)
+    v_value <- value[(n - 1L) * m + seq_len(m)]
+    as.vector(sweep(
+      basis %*% z_value, 2L, drop(L %*% v_value / sqrt(n)), "+"
+    ))
+  }
+  dimension <- n * m
+  map <- vapply(seq_len(dimension), function(i) {
+    unit <- numeric(dimension)
+    unit[i] <- 1
+    transform(unit)
+  }, numeric(dimension))
+  log_jacobian <- as.numeric(
+    determinant(map, logarithm = TRUE)$modulus
+  )
+
+  Sigma <- tcrossprod(L)
+  conventional_log <- sum(vapply(seq_len(n), function(j) {
+    .s2z_log_mvn(
+      effects[j, ], numeric(m), level_scale[j]^2 * Sigma
+    )
+  }, numeric(1))) + log_jacobian
+  white_contrast <- t(forwardsolve(L, t(contrast)))
+  white_full <- sweep(white_contrast, 2L, v / sqrt(n), "+")
+  explicit_log <- -0.5 * sum(
+    sweep(white_full, 1L, level_scale, "/")^2
+  ) - (n - 1L) * sum(log(diag(L))) -
+    m * sum(log(level_scale)) - 0.5 * n * m * log(2 * pi)
+
+  list(
+    n = n, m = m, L = L, z = z, v = v, contrast = contrast,
+    effects = effects, map = map, log_jacobian = log_jacobian,
+    conventional_log = conventional_log, explicit_log = explicit_log
+  )
+}
+
 # Compare the component-wise diagonal-plus-rank-one implementation with the
 # dense complete square it replaces.  This deliberately mirrors the scaled
 # equations in .stan_re_s2z_independent without calling code under test.
@@ -300,6 +360,103 @@ test_that("the physical sum-to-zero transform is orthonormal", {
     expect_equal(sum(z), 0, tolerance = 1e-14)
     expect_equal(sum(z^2), sum(y^2), tolerance = 1e-14)
   }
+})
+
+test_that("standardized explicit means have the exact restricted Jacobian", {
+  for (level_scale in list(NULL, seq(0.55, 1.45, length.out = 6L))) {
+    ans <- .s2z_explicit_mean_case(level_scale)
+    expect_equal(
+      ans$log_jacobian, sum(log(diag(ans$L))), tolerance = 3e-14
+    )
+    expect_equal(
+      ans$explicit_log, ans$conventional_log, tolerance = 3e-12
+    )
+    expect_equal(colSums(ans$contrast), numeric(ans$m), tolerance = 2e-14)
+  }
+})
+
+test_that("explicit S2Z means preserve exact logistic population priors", {
+  ans <- .s2z_explicit_mean_case()
+  q <- 3L
+  H <- matrix(c(1, 0.25, -0.4, 0.8, 0.15, 1), nrow = q)
+  theta <- c(0.7, -0.35, 0.2)
+  location <- c(-0.2, 0.1, 0.4)
+  scale <- c(0.8, 1.3, 0.65)
+  mean_effect <- drop(ans$L %*% ans$v / sqrt(ans$n))
+  beta <- drop(theta - H %*% mean_effect)
+
+  # The joint map (z, v, theta) -> (full effects, beta) is block
+  # triangular. Verify its determinant directly, including the dependence of
+  # the conventional coefficients on the omitted group mean.
+  dimension <- ans$n * ans$m + q
+  transform <- function(value) {
+    z <- matrix(
+      value[seq_len((ans$n - 1L) * ans$m)],
+      nrow = ans$n - 1L
+    )
+    v <- value[(ans$n - 1L) * ans$m + seq_len(ans$m)]
+    theta_value <- value[ans$n * ans$m + seq_len(q)]
+    mean_value <- drop(ans$L %*% v / sqrt(ans$n))
+    effects <- sweep(.s2z_basis(ans$n) %*% z, 2L, mean_value, "+")
+    c(as.vector(effects), drop(theta_value - H %*% mean_value))
+  }
+  map <- vapply(seq_len(dimension), function(i) {
+    unit <- numeric(dimension)
+    unit[i] <- 1
+    transform(unit)
+  }, numeric(dimension))
+  log_jacobian <- as.numeric(
+    determinant(map, logarithm = TRUE)$modulus
+  )
+
+  conventional <- ans$conventional_log +
+    sum(dlogis(beta, location = location, scale = scale, log = TRUE))
+  explicit <- ans$explicit_log +
+    sum(dlogis(beta, location = location, scale = scale, log = TRUE))
+  expect_equal(
+    log_jacobian, sum(log(diag(ans$L))), tolerance = 4e-14
+  )
+  expect_equal(explicit, conventional, tolerance = 3e-12)
+})
+
+test_that("explicit means preserve the likelihood under overlapping maps", {
+  n <- c(5L, 7L)
+  group <- list(
+    rep(seq_len(n[1L]), length.out = 35L),
+    rep(seq_len(n[2L]), each = 5L)
+  )
+  H <- list(
+    matrix(c(1, 0.3, 0, 1), nrow = 2L),
+    matrix(c(-0.2, 1), nrow = 2L)
+  )
+  design <- cbind(
+    sin(seq_len(35L) * 0.21), cos(seq_len(35L) * 0.17)
+  )
+  beta <- c(0.45, -0.72)
+  means <- list(c(0.31, -0.28), 0.53)
+  contrasts <- list(
+    .s2z_basis(n[1L]) %*% matrix(
+      sin(seq_len((n[1L] - 1L) * 2L) * 0.39), ncol = 2L
+    ),
+    .s2z_basis(n[2L]) %*% matrix(
+      cos(seq_len(n[2L] - 1L) * 0.27), ncol = 1L
+    )
+  )
+  theta <- beta + H[[1L]] %*% means[[1L]] + H[[2L]] %*% means[[2L]]
+  conventional <- drop(design %*% beta)
+  finite <- drop(design %*% theta)
+  for (b in seq_along(H)) {
+    block_design <- design %*% H[[b]]
+    conventional <- conventional + rowSums(
+      block_design * sweep(
+        contrasts[[b]][group[[b]], , drop = FALSE], 2L, means[[b]], "+"
+      )
+    )
+    finite <- finite + rowSums(
+      block_design * contrasts[[b]][group[[b]], , drop = FALSE]
+    )
+  }
+  expect_equal(finite, conventional, tolerance = 3e-14)
 })
 
 test_that("Gaussian completed-square density is normalized in S2Z coordinates", {
@@ -1209,11 +1366,14 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   )
   expect_match2(
     gaussian_code,
-    "array[M_1] vector[N_1 - 1] z_s2z_1;"
+    "vector[M_1 * (N_1 - 1)] z_s2z_1;"
   )
   expect_match2(
     gaussian_code,
-    "r_s2z_1[, k] = sum_to_zero_constrain_brms(z_s2z_1[k]);"
+    paste0(
+      "r_s2z_1[, k] = sum_to_zero_constrain_brms(segment(z_s2z_1, ",
+      "(k - 1) * (N_1 - 1) + 1, N_1 - 1));"
+    )
   )
   expect_match2(gaussian_code, "H_s2z_1[1, 2] = means_X[1];")
   expect_match2(gaussian_code, "H_s2z_1[1, 4] = means_X[3];")
