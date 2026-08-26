@@ -48,14 +48,22 @@
 #'   Their omitted group means are integrated and recovered jointly, while each
 #'   block retains its own grouping factor, scales, and correlation structure.
 #'   A correlated group-effect block may also use one ID across multivariate
-#'   response-location predictors. Fixed or Fisher centering, shared or varying
-#'   scales, Gaussian or Student-t effects, and a fixed \code{cov} matrix
-#'   compose on this path. The ordinary Bayesian
+#'   response-location predictors or across nonlinear parameters of one
+#'   response. Shared or varying scales, Gaussian or Student-t effects, and a
+#'   fixed \code{cov} matrix compose on both paths. The multivariate-response
+#'   path accepts fixed or Fisher centering; the nonlinear path currently
+#'   accepts only \code{center = TRUE} or \code{FALSE}. The ordinary Bayesian
 #'   \code{| id |} group model is sampled through zero-sum deviations and
 #'   finite-population coefficients, then conventional population coefficients
-#'   and group effects are recovered in generated quantities. Fisher information
-#'   is combined across conditionally independent responses. With residual
-#'   response correlation, Fisher centering currently requires Gaussian
+#'   and group effects are recovered in generated quantities. Non-centered,
+#'   correlated Gaussian nonlinear varying-intercept blocks with shared scales,
+#'   no fixed \code{cov}, and proper normal population priors use an exact
+#'   standardized finite-population mean with covariance
+#'   \eqn{S_\beta + \Sigma / G}, where \eqn{S_\beta} is the population-prior
+#'   covariance, \eqn{\Sigma} is the group-effect covariance, and \eqn{G} is the
+#'   number of observed grouping levels. Fisher
+#'   information is combined across conditionally independent responses. With
+#'   residual response correlation, Fisher centering currently requires Gaussian
 #'   identity-link responses with one observation-invariant residual scale per
 #'   response and uses the full current residual precision. For an eligible
 #'   shared-scale intercept block with fixed \code{cov}, the chart is computed

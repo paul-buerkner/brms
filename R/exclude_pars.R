@@ -82,6 +82,7 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
     c(out) <- paste0(par_classes, p)
     if (has_re_s2z(x)) {
       c(out) <- paste0("theta_s2z", p)
+      c(out) <- paste0("z_theta_s2z", p)
       q <- length(x$frame$fe$vars)
       c(out) <- paste0("udf_b_s2z", p, "_", seq_len(q))
     }
@@ -113,7 +114,8 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
         "W_matheron_s2z", "sqrt_W_matheron_s2z",
         "L_W_matheron_s2z", "theta_white_matheron_s2z",
         "group_scale_s2z", "group_prec_s2z",
-        "L_Sigma_s2z", "Q_Sigma_s2z", "P_group_s2z", "h_group_s2z",
+        "L_Sigma_s2z", "L_mean_s2z", "Q_Sigma_s2z",
+        "P_group_s2z", "h_group_s2z",
         "P_s2z", "L_P_s2z", "H_joint_s2z", "h_joint_s2z",
         "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
         "rank1_info_s2z", "group_quad_s2z", "joint_quad_s2z",

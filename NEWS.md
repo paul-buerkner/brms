@@ -68,10 +68,11 @@ omitted-mean system. In the common crossed-intercept case this reduces to a
 scalar update with no matrix factorization, irrespective of the number of
 grouping factors.
 Correlated group-effect S2Z blocks may use one ID across multivariate
-response-location predictors. This samples the ordinary correlated group model
-through zero-sum coordinates and reconstructs conventional population and
-group effects without changing the meaning of its scale, correlation, or
-Student-t parameters.
+response-location predictors or across nonlinear parameters of one response.
+The nonlinear path currently supports the centered and non-centered endpoints;
+eligible correlated Gaussian varying-intercept blocks use an exact standardized
+finite-population mean. Both paths reconstruct the ordinary population and group
+effects without changing the meaning of scale and correlation parameters.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

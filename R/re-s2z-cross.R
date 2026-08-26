@@ -1,4 +1,4 @@
-# Helpers for conventional S2Z IDs spanning response predictors
+# Helpers for conventional S2Z IDs spanning predictors
 
 # Does one conventional S2Z covariance ID occur in more than one linear
 # predictor? The ID remains one ordinary brms covariance block; only its
@@ -64,6 +64,59 @@ re_s2z_cross_info <- function(bframe, prior, id) {
     id, r, frames, infos, q, starts, ends,
     Q = sum(q), M = nrow(r)
   )
+}
+
+# Can a nonlinear cross-predictor block use an exact standardized chart for
+# its integrated finite-population mean? This first fast path deliberately
+# covers the common correlated varying-intercept model. More general H maps,
+# population priors, grouping covariances, and scale mixtures retain the
+# established physical-mean chart.
+re_s2z_cross_mean_noncenter_eligible <- function(bframe, prior, id,
+                                                  cross = NULL) {
+  stopifnot(
+    is.anybrmsframe(bframe), is.brmsprior(prior), length(id) == 1L
+  )
+  r <- subset2(bframe$frame$re, id = id)
+  if (!is.brmsframe(bframe) || !has_rows(r) ||
+      !all(nzchar(r$nlpar)) || any(nzchar(r$resp)) ||
+      any(nzchar(r$dpar)) || re_s2z_center_mode(r) != "noncentered" ||
+      any(r$dist != "gaussian") || any(r$scale != "shared") ||
+      any(nzchar(r$cov)) || !all(r$cor)) {
+    return(FALSE)
+  }
+  if (is.null(cross)) {
+    cross <- re_s2z_cross_info(bframe, prior = prior, id = id)
+  }
+  if (cross$Q != cross$M || any(cross$q != 1L)) {
+    return(FALSE)
+  }
+  local_ok <- vapply(cross$infos, function(info) {
+    nrow(info$r) == 1L && identical(info$r$coef, "Intercept") &&
+      identical(info$match_q, 1L) && length(info$prior) == 1L &&
+      identical(info$prior[[1L]]$dist, "normal") &&
+      is.finite(info$prior[[1L]]$scale) && info$prior[[1L]]$scale > 0
+  }, logical(1))
+  all(local_ok) && identical(as.integer(r$cn), seq_len(cross$M))
+}
+
+# Predictor prefixes whose physical finite-population coefficients are
+# supplied by the standardized nonlinear cross-ID chart.
+re_s2z_cross_mean_noncenter_prefixes <- function(bframe, prior) {
+  stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
+  r <- bframe$frame$re
+  if (!is.brmsframe(bframe) || !has_rows(r)) {
+    return(character())
+  }
+  ids <- unique(r$id[r$s2z & !re_s2z_latent(r)])
+  out <- unlist(lapply(ids, function(id) {
+    if (!is_re_s2z_cross_id(bframe, id) ||
+        !re_s2z_cross_mean_noncenter_eligible(bframe, prior, id)) {
+      return(character())
+    }
+    cross <- re_s2z_cross_info(bframe, prior = prior, id = id)
+    vapply(cross$infos, `[[`, character(1), "p")
+  }), use.names = FALSE)
+  unique(out)
 }
 
 # Assemble expected Fisher information for one conventional S2Z covariance ID
@@ -209,7 +262,8 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
   )
 }
 
-# Validate one conventional covariance block spanning response predictors.
+# Validate one conventional covariance block spanning response or nonlinear
+# predictors.
 # The coefficient covariance, group distribution, scales, and known grouping
 # covariance retain their ordinary meanings; only the sampling chart changes.
 validate_re_s2z_cross_id <- function(bframe, prior, id) {
@@ -218,10 +272,18 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
   )
   r <- subset2(bframe$frame$re, id = id)
   stopifnot(is.reframe(r), has_rows(r))
-  if (!is.mvbrmsframe(bframe) || any(!nzchar(r$resp)) ||
-      any(nzchar(r$dpar)) || any(nzchar(r$nlpar))) {
+  response_location <- is.mvbrmsframe(bframe) &&
+    all(nzchar(r$resp)) && !any(nzchar(r$dpar)) && !any(nzchar(r$nlpar))
+  nonlinear <- is.brmsframe(bframe) && !any(nzchar(r$resp)) &&
+    !any(nzchar(r$dpar)) && all(nzchar(r$nlpar))
+  if (!response_location && !nonlinear) {
     stop2("A cross-predictor sum-to-zero ID currently supports only ",
-          "multivariate response-location predictors.")
+          "multivariate response-location predictors or nonlinear ",
+          "parameters of one response.")
+  }
+  if (nonlinear && !re_s2z_center_mode(r) %in% c("centered", "noncentered")) {
+    stop2("A cross-predictor sum-to-zero ID spanning nonlinear parameters ",
+          "currently supports only center = TRUE or FALSE.")
   }
   if (length(unique(r$group)) != 1L) {
     stop2("All coefficients sharing a cross-predictor sum-to-zero ID must ",
@@ -286,6 +348,9 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
   s2z_center <- identical(s2z_mode, "centered")
   s2z_fisher <- !is.null(fisher_info)
   s2z_partial <- s2z_mode %in% c("partial", "auto")
+  mean_noncenter <- re_s2z_cross_mean_noncenter_eligible(
+    bframe, prior = prior, id = id, cross = cross
+  )
   spectral_fisher <- s2z_fisher && has_cov && !varying && !is_student &&
     !is.null(fisher_info$spectral)
   scale <- if (varying) {
@@ -391,13 +456,20 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
   }
 
   str_add(out$tpar_def) <- glue(
-    "  // conventional cross-response block in S2Z sampling coordinates\n",
+    "  // conventional cross-predictor block in S2Z sampling coordinates\n",
     "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
     "  vector[{Q}] prior_mean_s2z_{id};\n",
     "  vector<lower=0>[{Q}] prior_prec_s2z_{id};\n",
     "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
     "  matrix[M_{id}, M_{id}] P_s2z_{id};\n",
     "  matrix[M_{id}, M_{id}] L_P_s2z_{id};\n",
+    str_if(
+      mean_noncenter,
+      glue(
+        "  matrix[M_{id}, M_{id}] L_mean_s2z_{id};\n",
+        "  // Cholesky factor for the marginalized finite-population mean\n"
+      )
+    ),
     str_if(
       varying,
       glue(
@@ -492,6 +564,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
       )
     }
   }
+
   if (spectral_fisher) {
     str_add(out$tpar_comp) <- stan_re_s2z_modal_transform_group_comp(
       id, L = glue("L_Sigma_s2z_{id}"), M = M
@@ -529,6 +602,35 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
         "  prior_prec_s2z_{id}[{index}] = {prec};\n"
       )
     }
+  }
+
+  if (mean_noncenter) {
+    str_add(out$tpar_comp) <- glue(
+      "  L_mean_s2z_{id} = cholesky_decompose(diag_matrix(1.0 ./ ",
+      "prior_prec_s2z_{id}) + tcrossprod(L_Sigma_s2z_{id}) / N_{id});\n",
+      "  {{\n",
+      "    vector[M_{id}] z_mean_s2z;\n",
+      "    vector[M_{id}] theta_mean_s2z;\n"
+    )
+    for (a in seq_along(cross$infos)) {
+      info <- cross$infos[[a]]
+      str_add(out$tpar_comp) <- glue(
+        "    z_mean_s2z[{cross$starts[a]}] = ",
+        "z_theta_s2z{info$p}[1];\n"
+      )
+    }
+    str_add(out$tpar_comp) <- glue(
+      "    theta_mean_s2z = prior_mean_s2z_{id} + ",
+      "L_mean_s2z_{id} * z_mean_s2z;\n"
+    )
+    for (a in seq_along(cross$infos)) {
+      info <- cross$infos[[a]]
+      str_add(out$tpar_comp) <- glue(
+        "    theta_s2z{info$p}[1] = ",
+        "theta_mean_s2z[{cross$starts[a]}];\n"
+      )
+    }
+    str_add(out$tpar_comp) <- "  }\n"
   }
 
   if (!spectral_fisher) {
@@ -604,6 +706,10 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
     str_if(
       s2z_partial,
       glue("    + log_det_partial_s2z_{id}\n")
+    ),
+    str_if(
+      mean_noncenter,
+      glue("    + sum(log(diagonal(L_mean_s2z_{id})))\n")
     ),
     str_if(
       is_student,

@@ -48,7 +48,10 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   if (length(family_files)) {
     str_add(out$fun) <- cglue("  #include '{family_files}'\n")
   }
-  args <- nlist(prior, normalize, nlpars = names(x$nlpars), ...)
+  s2z_mean_noncenter <- re_s2z_cross_mean_noncenter_prefixes(x, prior)
+  args <- nlist(
+    prior, normalize, nlpars = names(x$nlpars), s2z_mean_noncenter, ...
+  )
   args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]])
@@ -269,7 +272,7 @@ stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
 
 # Stan code for population-level effects
 stan_fe <- function(bframe, prior, stanvars, threads, primitive,
-                    normalize, ...) {
+                    normalize, s2z_mean_noncenter = character(), ...) {
   stopifnot(is.bframel(bframe))
   out <- list()
   family <- bframe$family
@@ -285,13 +288,25 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   # Strict latent-score blocks have no omitted mean and therefore do not
   # replace this predictor's ordinary population coefficients by theta_s2z.
   s2z <- has_re_s2z_conventional(bframe)
+  mean_noncenter <- p %in% s2z_mean_noncenter
 
   if (s2z) {
     K_s2z <- length(bframe$frame$fe$vars)
-    str_add(out$par) <- glue(
-      "  vector[{K_s2z}] theta_s2z{p};",
-      "  // finite-population coefficients for physical S2Z effects\n"
-    )
+    if (mean_noncenter) {
+      str_add(out$par) <- glue(
+        "  vector[{K_s2z}] z_theta_s2z{p};",
+        "  // standardized finite-population coefficients for S2Z effects\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  vector[{K_s2z}] theta_s2z{p};",
+        "  // finite-population coefficients for physical S2Z effects\n"
+      )
+    } else {
+      str_add(out$par) <- glue(
+        "  vector[{K_s2z}] theta_s2z{p};",
+        "  // finite-population coefficients for physical S2Z effects\n"
+      )
+    }
     str_add(out$pll_args) <- glue(", vector theta_s2z{p}")
   }
 
