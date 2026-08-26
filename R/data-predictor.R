@@ -20,6 +20,15 @@ data_predictor.mvbrmsterms <- function(x, data, sdata = NULL, ...) {
   for (r in names(x$terms)) {
     c(out) <- data_predictor(x$terms[[r]], data = data, sdata = sdata, ...)
   }
+  # A conventional S2Z covariance block may span response predictors. Each
+  # response-local frame prepares its own columns, but Stan has one global
+  # covariance block and therefore needs one matrix in covariance-column
+  # order. Replace the duplicate response-local list entries accordingly.
+  cross_center <- data_re_s2z_cross_center(x, data = data)
+  if (length(cross_center)) {
+    out <- out[names(out) %notin% names(cross_center)]
+    c(out) <- cross_center
+  }
   out
 }
 
@@ -306,6 +315,75 @@ data_re_s2z_center <- function(bframe, data) {
   out
 }
 
+# Assemble fixed partial-centering fractions for conventional S2Z covariance
+# blocks spanning response predictors. Response-local coefficient names need
+# not be unique (varying intercepts are the usual example), so the cached
+# labels contain both the predictor prefix and the global covariance column.
+# The labels are not consumed by Stan but make fitted coordinate maps
+# unambiguous when they are reused for prediction.
+data_re_s2z_cross_center <- function(bframe, data) {
+  stopifnot(is.anybrmsframe(bframe))
+  if (!is.mvbrmsframe(bframe)) {
+    return(list())
+  }
+  r_global <- bframe$frame$re
+  if (!has_rows(r_global)) {
+    return(list())
+  }
+  ids <- unique(r_global$id[
+    r_global$s2z & !re_s2z_latent(r_global)
+  ])
+  out <- list()
+  for (id in ids) {
+    if (!is_re_s2z_cross_id(bframe, id)) {
+      next
+    }
+    r_id <- subset2(r_global, id = id)
+    if (re_s2z_center_mode(r_id) != "partial") {
+      next
+    }
+    M <- nrow(r_id)
+    cn <- as.integer(r_id$cn)
+    if (!identical(sort(cn), seq_len(M))) {
+      stop2("Internal mismatch in cross-predictor sum-to-zero covariance ",
+            "columns.")
+    }
+    group <- r_id$group[1]
+    levels <- get_levels(r_id)[[group]]
+    prefix <- combine_prefix(check_prefix(r_id))
+    labels <- paste0(prefix, ":", r_id$coef, "[", cn, "]")
+    labels <- labels[match(seq_len(M), cn)]
+    rho <- matrix(
+      NA_real_, nrow = length(levels), ncol = M,
+      dimnames = list(levels, labels)
+    )
+    data_name <- paste0("rho_s2z_", id)
+    frames <- re_s2z_cross_frames(bframe, r_id)
+    for (frame in frames) {
+      r_local <- subset2(frame$frame$re, id = id)
+      local_levels <- get_levels(r_local)[[group]]
+      level_index <- match(levels, local_levels)
+      if (anyNA(level_index)) {
+        stop2("Internal mismatch in cross-predictor sum-to-zero grouping ",
+              "levels.")
+      }
+      local <- data_re_s2z_center(frame, data = data)[[data_name]]
+      if (!is.matrix(local) || ncol(local) != nrow(r_local) ||
+          nrow(local) != length(local_levels)) {
+        stop2("Internal mismatch in cross-predictor sum-to-zero partial-",
+              "centering data.")
+      }
+      rho[, r_local$cn] <- local[level_index, , drop = FALSE]
+    }
+    if (anyNA(rho)) {
+      stop2("Internal mismatch in cross-predictor sum-to-zero partial-",
+            "centering columns.")
+    }
+    out[[data_name]] <- rho
+  }
+  out
+}
+
 # compute data for each group-level-ID per univariate model
 data_gr_local <- function(bframe, data) {
   stopifnot(is.brmsframe(bframe))
@@ -439,6 +517,43 @@ data_gr_global <- function(bframe, data2) {
       }
       cov_mat <- cov_mat[levels, levels, drop = FALSE]
       tmp$Lcov <- t(chol(cov_mat))
+      if (re_s2z_cov_eigen_eligible(id_reframe) &&
+          is_re_s2z_cross_spectral_candidate(bframe, id_reframe, id)) {
+        # Work in the exact orthonormal coordinate system used by the Stan
+        # sum-to-zero transform. If B spans 1^perp, diagonalizing B' A B
+        # yields the positive modes of the restricted covariance P A P while
+        # avoiding numerical identification of its structural zero mode.
+        B_s2z <- re_s2z_basis(length(levels))
+        restricted_cov <- crossprod(B_s2z, cov_mat %*% B_s2z)
+        restricted_cov <- 0.5 * (restricted_cov + t(restricted_cov))
+        eigen_cov <- eigen(restricted_cov, symmetric = TRUE)
+        if (any(eigen_cov$values <= 0)) {
+          stop2("The covariance restricted to the sum-to-zero space must ",
+                "be positive definite.")
+        }
+        # eigenvector signs are otherwise arbitrary. Fix each sign using its
+        # largest-magnitude entry so generated data and sampling coordinates
+        # are reproducible across LAPACK implementations.
+        eigen_sign <- vapply(seq_len(ncol(eigen_cov$vectors)), function(j) {
+          column <- eigen_cov$vectors[, j]
+          sign(column[which.max(abs(column))])
+        }, numeric(1))
+        eigen_cov$vectors <- sweep(
+          eigen_cov$vectors, 2L, eigen_sign, FUN = "*"
+        )
+        Ecov_s2z <- B_s2z %*% eigen_cov$vectors
+
+        # These contractions eliminate repeated Lcov^-1 1 calculations in
+        # the modal prior and omitted-mean system. Cholesky solves retain the
+        # same reordered covariance matrix used by the fallback path.
+        one_cov_solve <- backsolve(
+          t(tmp$Lcov), forwardsolve(tmp$Lcov, rep(1, length(levels)))
+        )
+        tmp$Ecov_s2z <- Ecov_s2z
+        tmp$lambda_cov_s2z <- eigen_cov$values
+        tmp$coupling_cov_s2z <- drop(crossprod(Ecov_s2z, one_cov_solve))
+        tmp$mean_prec_cov_s2z <- sum(one_cov_solve)
+      }
     }
     names(tmp) <- paste0(names(tmp), "_", id)
     c(out) <- tmp

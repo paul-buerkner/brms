@@ -136,7 +136,7 @@ re_s2z_center_mode <- function(r) {
   if (any(auto)) {
     if (!all(auto)) {
       stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
-            "center = \"auto\" if any coefficient does.")
+            "Fisher centering if any coefficient does.")
     }
     return("auto")
   }
@@ -144,6 +144,42 @@ re_s2z_center_mode <- function(r) {
     return("partial")
   }
   if (all(rho == 1)) "centered" else "noncentered"
+}
+
+# Construct the orthonormal basis used by sum_to_zero_constrain_brms(). Its
+# jth column has 1 / sqrt(j * (j + 1)) in rows 1 through j and the negative
+# balancing weight in row j + 1. Keeping the R and Stan bases identical lets
+# data-only covariance eigensystems replace the levelwise S2Z chart without a
+# second change of coordinates.
+re_s2z_basis <- function(n) {
+  n <- as_one_integer(n)
+  if (n < 2L) {
+    stop2("A sum-to-zero basis requires at least two levels.")
+  }
+  K <- n - 1L
+  out <- matrix(0, nrow = n, ncol = K)
+  for (j in seq_len(K)) {
+    weight <- 1 / sqrt(j * (j + 1))
+    out[seq_len(j), j] <- weight
+    out[j + 1L, j] <- -j * weight
+  }
+  out
+}
+
+# Is a conventional S2Z covariance block eligible to receive its restricted
+# covariance eigensystem as fixed Stan data? The subsequent generator may
+# impose narrower fast-path requirements (in particular shared Fisher
+# information), so preparing these small data objects does not itself select
+# the spectral chart.
+re_s2z_cov_eigen_eligible <- function(r) {
+  stopifnot(is.reframe(r))
+  if (!has_rows(r) || !all(r$s2z) || any(re_s2z_latent(r))) {
+    return(FALSE)
+  }
+  identical(re_s2z_center_mode(r), "auto") &&
+    length(unique(r$cov)) == 1L && isTRUE(nzchar(r$cov[1L])) &&
+    length(unique(r$scale)) == 1L && identical(r$scale[1L], "shared") &&
+    length(unique(r$dist)) == 1L && identical(r$dist[1L], "gaussian")
 }
 
 # Return all local linear predictor frames contained in a brms frame.
@@ -516,11 +552,12 @@ validate_re_s2z <- function(bframe, prior) {
             "gr(..., s2z = TRUE, scale = \"varying\").")
     }
   }
-  # Conventional S2Z blocks have one omitted-mean system per linear predictor
-  # and therefore cannot share an ID across predictors. Strict latent-score
-  # blocks omit that mean entirely, so one covariance block may supply columns
-  # to several nonlinear predictors. Validate the distinction globally before
-  # any local omitted-mean descriptors are constructed.
+  # Conventional S2Z blocks usually have one omitted-mean system per linear
+  # predictor. A supported multivariate-response block assembles those local
+  # population coordinates into one global system. Strict
+  # latent-score blocks omit that mean entirely, so one covariance block may
+  # supply columns to several nonlinear predictors. Validate the distinction
+  # globally before any local omitted-mean descriptors are constructed.
   r_global <- bframe$frame$re
   stopifnot(is.reframe(r_global))
   s2z_ids <- unique(r_global$id[r_global$s2z])
@@ -536,8 +573,12 @@ validate_re_s2z <- function(bframe, prior) {
       has_rows(r) && id %in% r$id
     }, logical(1)))
     if (!all(latent) && n_frames > 1L) {
-      stop2("A sum-to-zero group-level ID cannot span multiple ",
-            "linear predictors.")
+      if (!all(r_id$s2z)) {
+        # Retain the established diagnostic for mixed conventional/S2Z IDs.
+        stop2("A sum-to-zero group-level ID cannot span multiple ",
+              "linear predictors unless every occurrence uses s2z = TRUE.")
+      }
+      validate_re_s2z_cross_id(bframe, prior = prior, id = id)
     }
     if (!all(r_id$s2z)) {
       stop2("All coefficients sharing a strict or conventional sum-to-zero ",
@@ -552,6 +593,10 @@ validate_re_s2z <- function(bframe, prior) {
     if (length(unique(r_id$group)) != 1L) {
       stop2("All coefficients sharing a strict latent-score ID must use ",
             "the same grouping factor.")
+    }
+    if (length(unique(r_id$cov)) != 1L) {
+      stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
+            "the same 'cov' setting.")
     }
     if (length(unique(r_id$scale)) != 1L ||
         !identical(r_id$scale[1], "shared")) {
@@ -570,7 +615,7 @@ validate_re_s2z <- function(bframe, prior) {
     mode <- re_s2z_center_mode(r_id)
     if (!mode %in% c("centered", "noncentered", "auto")) {
       stop2("Strict latent-score S2Z blocks currently support only ",
-            "centered, noncentered, and automatic centering modes.")
+            "centered, noncentered, and Fisher centering modes.")
     }
     if (any(nzchar(r_id$gtype)) || any(nzchar(r_id$type))) {
       stop2("Strict latent-score S2Z blocks currently support only ",
@@ -638,14 +683,21 @@ validate_re_s2z <- function(bframe, prior) {
     infos <- re_s2z_infos(x, prior = prior)
     for (info in infos) {
       r <- info$r
-      if (info$id %in% ids) {
+      cross_id <- is_re_s2z_cross_id(bframe, info$id)
+      if (info$id %in% ids && !cross_id) {
         stop2("A sum-to-zero group-level ID cannot span multiple ",
               "linear predictors.")
       }
-      ids <- c(ids, info$id)
+      if (!info$id %in% ids) {
+        ids <- c(ids, info$id)
+      }
       if (length(unique(r$group)) != 1L) {
         stop2("All coefficients sharing a sum-to-zero group-level ID must ",
               "use the same grouping factor.")
+      }
+      if (length(unique(r$cov)) != 1L) {
+        stop2("All coefficients sharing a sum-to-zero group-level ID must ",
+              "use the same 'cov' setting.")
       }
       if (length(unique(r$scale)) != 1L) {
         stop2("All coefficients sharing a group-level ID must use the same ",
@@ -662,7 +714,7 @@ validate_re_s2z <- function(bframe, prior) {
       auto <- re_s2z_center_auto(r)
       if (any(auto) && !all(auto)) {
         stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
-              "center = \"auto\" if any coefficient does.")
+              "Fisher centering if any coefficient does.")
       }
       if (any(nzchar(r$gtype)) || any(nzchar(r$type))) {
         stop2("The sum-to-zero parameterization currently ",
@@ -671,9 +723,8 @@ validate_re_s2z <- function(bframe, prior) {
       has_pw <- any(vapply(r$gcall, function(gcall) {
         isTRUE(nzchar(gcall$pw))
       }, logical(1)))
-      if (any(nzchar(r$by), na.rm = TRUE) ||
-          any(nzchar(r$cov), na.rm = TRUE) || has_pw) {
-        stop2("Arguments 'by', 'cov', and 'pw' are not yet supported ",
+      if (any(nzchar(r$by), na.rm = TRUE) || has_pw) {
+        stop2("Arguments 'by' and 'pw' are not yet supported ",
               "together with gr(..., s2z = TRUE).")
       }
       if (length(get_levels(r)[[r$group[1]]]) < 2L) {

@@ -53,12 +53,15 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
     (1 + x | gr(g, s2z = TRUE, center = 0.35))
   auto_form <- y ~ x +
     (1 + x | gr(g, s2z = TRUE, center = "auto"))
+  fisher_form <- y ~ x +
+    (1 + x | gr(g, s2z = TRUE, center = "fisher"))
 
   default_terms <- brmsterms(default_form)
   centered_terms <- brmsterms(centered_form)
   noncentered_terms <- brmsterms(noncentered_form)
   partial_terms <- brmsterms(partial_form)
   auto_terms <- brmsterms(auto_form)
+  fisher_terms <- brmsterms(fisher_form)
   expect_equal(default_terms$dpars$mu$re$gcall[[1]]$s2z_center, 1)
   expect_equal(centered_terms$dpars$mu$re$gcall[[1]]$s2z_center, 1)
   expect_equal(noncentered_terms$dpars$mu$re$gcall[[1]]$s2z_center, 0)
@@ -66,6 +69,7 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   expect_equal(auto_terms$dpars$mu$re$gcall[[1]]$s2z_center, 0.5)
   expect_false(default_terms$dpars$mu$re$gcall[[1]]$s2z_center_auto)
   expect_true(auto_terms$dpars$mu$re$gcall[[1]]$s2z_center_auto)
+  expect_true(fisher_terms$dpars$mu$re$gcall[[1]]$s2z_center_auto)
   expect_equal(brms:::frame_re(default_terms, s2z_dat)$s2z_center, c(1, 1))
   expect_equal(brms:::frame_re(centered_terms, s2z_dat)$s2z_center, c(1, 1))
   expect_equal(
@@ -79,6 +83,10 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   ))
   auto_reframe <- brms:::frame_re(auto_terms, s2z_dat)
   expect_identical(brms:::re_s2z_center_mode(auto_reframe), "auto")
+  expect_identical(
+    stancode(fisher_form, data = s2z_dat),
+    stancode(auto_form, data = s2z_dat)
+  )
 
   default_code <- stancode(default_form, data = s2z_dat)
   centered_code <- stancode(centered_form, data = s2z_dat)
@@ -134,10 +142,7 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   )
   expect_error(gr(g, center = 0.01), "ordinary group-level effects")
   expect_error(gr(g, center = "auto"), "ordinary group-level effects")
-  expect_error(
-    gr(g, s2z = TRUE, center = "fisher"),
-    "or \"auto\"", fixed = TRUE
-  )
+  expect_error(gr(g, center = "fisher"), "ordinary group-level effects")
   expect_error(gr(g, s2z = TRUE, center = NA), "center")
   expect_error(
     gr(g, s2z = TRUE, center = c(TRUE, FALSE)), "center"
@@ -164,14 +169,14 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
                     center = 0.8)),
       data = s2z_dat
     ),
-    "must use center = \"auto\" if any coefficient does",
+    "must use Fisher centering if any coefficient does",
     fixed = TRUE
   )
 })
 
 test_that("scalar Fisher S2Z hoists exposure and uses closed-form rho", {
   form <- y ~ 1 +
-    (1 | gr(g, s2z = TRUE, center = "auto"))
+    (1 | gr(g, s2z = TRUE, center = "fisher"))
   scode <- stancode(form, data = s2z_dat)
   tdata <- s2z_stan_between(
     scode, "transformed data {", "\nparameters {"
@@ -200,7 +205,7 @@ test_that("scalar Fisher S2Z hoists exposure and uses closed-form rho", {
   expect_match2(
     tpar,
     paste0(
-      "real scaled_info_fisher_s2z = square(sd_1[1]) * ",
+      "real scaled_info_fisher_s2z = 1.0 * square(sd_1[1]) * ",
       "obs_prec_fisher_s2z * exposure_fisher_s2z_1[j];"
     )
   )
@@ -230,7 +235,7 @@ test_that("scalar Fisher S2Z hoists exposure and uses closed-form rho", {
 
 test_that("multivariate Fisher S2Z hoists Gram matrices and solves diagonals", {
   form <- y ~ x +
-    (1 + x | gr(g, s2z = TRUE, center = "auto"))
+    (1 + x | gr(g, s2z = TRUE, center = "fisher"))
   scode <- stancode(form, data = s2z_dat)
   tdata <- s2z_stan_between(
     scode, "transformed data {", "\nparameters {"
@@ -263,7 +268,7 @@ test_that("multivariate Fisher S2Z hoists Gram matrices and solves diagonals", {
   expect_null(standata(form, data = s2z_dat)$rho_s2z_1)
 
   independent_form <- y ~ x +
-    (1 + x || gr(g, s2z = TRUE, center = "auto"))
+    (1 + x || gr(g, s2z = TRUE, center = "fisher"))
   independent_code <- stancode(independent_form, data = s2z_dat)
   independent_tdata <- s2z_stan_between(
     independent_code, "transformed data {", "\nparameters {"
@@ -290,6 +295,448 @@ test_that("multivariate Fisher S2Z hoists Gram matrices and solves diagonals", {
   ))
 })
 
+test_that("Fisher S2Z supports Bernoulli joint blocks and NB2 varying scales", {
+  bern_dat <- data.frame(
+    y = rep(c(0L, 1L), 8),
+    x = seq(-1, 1, length.out = 16),
+    g = factor(rep(seq_len(4), each = 4)),
+    h = factor(rep(seq_len(8), each = 2))
+  )
+  bern_form <- y ~ x +
+    (1 | gr(g, s2z = TRUE, center = "fisher")) +
+    (1 | gr(h, s2z = TRUE, center = "fisher"))
+  bern_prior <-
+    prior(normal(0, 2), class = "b") +
+    prior(normal(0, 2), class = "Intercept") +
+    prior(exponential(1), class = "sd")
+  bern_code <- stancode(
+    bern_form, data = bern_dat, family = bernoulli(), prior = bern_prior
+  )
+  bern_tpar <- s2z_stan_between(
+    bern_code, "transformed parameters {", "\nmodel {"
+  )
+
+  expect_match2(
+    bern_tpar,
+    paste0(
+      "real eta_fisher_s2z_mu = theta_s2z[1] + ",
+      "dot_product(Xc[n], tail(theta_s2z, 1));"
+    )
+  )
+  expect_match2(
+    bern_tpar,
+    "real value_fisher_s2z_mu = inv_logit(eta_fisher_s2z_mu);"
+  )
+  expect_match2(bern_tpar, "info_fisher_s2z[J_1[n]] +=")
+  expect_match2(bern_tpar, "info_fisher_s2z[J_2[n]] +=")
+  expect_match2(
+    bern_tpar,
+    paste0(
+      "real obs_prec_fisher_s2z = 1.0 * ",
+      "((value_fisher_s2z_mu) * (1.0 - (value_fisher_s2z_mu)));"
+    )
+  )
+  expect_false(grepl(
+    "square(derivative_fisher_s2z_mu) /",
+    bern_tpar, fixed = TRUE
+  ))
+  expect_match2(bern_code, "+ log_det_partial_s2z_1")
+  expect_match2(bern_code, "+ log_det_partial_s2z_2")
+  expect_match2(bern_code, "fast Gaussian Matheron system")
+  expect_match2(bern_code, "real<lower=0> W_matheron_s2z_1;")
+  expect_false(grepl("exposure_fisher_s2z", bern_code, fixed = TRUE))
+  expect_null(standata(
+    bern_form, data = bern_dat, family = bernoulli(), prior = bern_prior
+  )$rho_s2z_1)
+
+  # This mirrors the nested factor-slope structure in test_model2.R. Locally
+  # absent surgeon columns remain exact structural zeros in the Fisher Gram.
+  nested_dat <- data.frame(
+    y = rep(c(0L, 1L), 8),
+    x = seq(-1, 1, length.out = 16),
+    hospital = factor(rep(c("a", "b"), each = 8)),
+    surgeon = factor(rep(letters[1:8], each = 2))
+  )
+  nested_form <-
+    y ~ surgeon + x +
+      (1 + surgeon | gr(
+        hospital, s2z = TRUE, center = "fisher"
+      )) +
+      (1 | gr(surgeon, s2z = TRUE, center = "fisher"))
+  nested_prior <-
+    prior(normal(0, 10), class = "b") +
+    prior(exponential(1), class = "sd")
+  nested_code <- stancode(
+    nested_form, data = nested_dat, family = bernoulli(),
+    prior = nested_prior
+  )
+  expect_match2(nested_code, "array[N_1] matrix[M_1, M_1] info_fisher_s2z")
+  expect_match2(nested_code, "design_fisher_s2z[8] = Z_1_8[n];")
+  expect_match2(nested_code, "+ log_det_partial_s2z_1")
+  expect_match2(nested_code, "+ log_det_partial_s2z_2")
+  expect_match2(nested_code, "matrix[8, 8] W_matheron_s2z_1;")
+  expect_match2(nested_code, "matrix[8, 8] L_W_matheron_s2z_1;")
+
+  nested_sdata <- standata(
+    nested_form, data = nested_dat, family = bernoulli(),
+    prior = nested_prior
+  )
+  nested_Z <- do.call(cbind, nested_sdata[paste0("Z_1_", seq_len(8))])
+  nested_grams <- lapply(seq_len(nested_sdata$N_1), function(j) {
+    crossprod(nested_Z[nested_sdata$J_1 == j, , drop = FALSE])
+  })
+  expect_true(all(vapply(
+    nested_grams, function(x) any(diag(x) == 0), logical(1)
+  )))
+
+  nb_dat <- data.frame(
+    y = c(2L, 8L, 3L, 7L, 12L, 6L, 10L, 5L),
+    x = seq(-1, 1, length.out = 8),
+    g = factor(rep(seq_len(2), each = 4))
+  )
+  nb_form <- bf(
+    y ~ x + (1 | gr(
+      g, s2z = TRUE, center = "fisher", scale = "varying"
+    )),
+    shape ~ (1 | gr(
+      g, s2z = TRUE, center = "fisher", scale = "varying"
+    ))
+  )
+  nb_code <- stancode(nb_form, data = nb_dat, family = negbinomial())
+  nb_tpar <- s2z_stan_between(
+    nb_code, "transformed parameters {", "\nmodel {"
+  )
+  expect_match2(nb_tpar, "real mean_fraction_fisher_s2z_nb =")
+  expect_match2(nb_tpar, "real log_p0_fisher_s2z_nb =")
+  expect_match2(nb_tpar, "real sparse_info_fisher_s2z_nb =")
+  expect_match2(nb_tpar, "real dense_info_fisher_s2z_nb =")
+  expect_match2(nb_tpar, "real log_shape_info_fisher_s2z_nb =")
+  expect_false(grepl("Y[n]", nb_tpar, fixed = TRUE))
+  expect_lt(
+    regexpr("reference_sd_s2z_1 =", nb_tpar, fixed = TRUE)[1],
+    regexpr("rho_s2z_1[j, 1] =", nb_tpar, fixed = TRUE)[1]
+  )
+  expect_lt(
+    regexpr("rho_s2z_1[j, 1] =", nb_tpar, fixed = TRUE)[1],
+    regexpr("scale_partial_s2z =", nb_tpar, fixed = TRUE)[1]
+  )
+  nb_data <- standata(nb_form, data = nb_dat, family = negbinomial())
+  expect_null(nb_data$rho_s2z_1)
+  expect_null(nb_data$rho_s2z_2)
+
+  # This is the mixed varying/shared scale configuration of test_model.R mod3.
+  nb_mixed_form <- bf(
+    y ~ x + (1 | gr(
+      g, s2z = TRUE, center = "fisher", scale = "varying"
+    )),
+    shape ~ (1 | gr(g, s2z = TRUE, center = "fisher"))
+  )
+  nb_mixed_code <- stancode(
+    nb_mixed_form, data = nb_dat, family = negbinomial()
+  )
+  expect_match2(nb_mixed_code, "reference_sd_s2z_1")
+  expect_false(grepl("reference_sd_s2z_2", nb_mixed_code, fixed = TRUE))
+  expect_match2(nb_mixed_code, "rho_s2z_1[j, 1]")
+  expect_match2(nb_mixed_code, "rho_s2z_2[j, 1]")
+})
+
+test_that("response-free Fisher rules cover representative likelihoods", {
+  dat <- data.frame(
+    y = c(0L, 1L, 2L, 4L, 3L, 5L, 1L, 2L, 0L, 4L, 2L, 3L),
+    trials = rep(6L, 12),
+    g = factor(rep(seq_len(3), each = 4)),
+    category = factor(rep(c("a", "b", "c"), 4)),
+    p1 = seq(0.15, 0.25, length.out = 12),
+    p2 = seq(0.25, 0.35, length.out = 12)
+  )
+  dat$p3 <- 1 - dat$p1 - dat$p2
+  dat$simplex <- I(as.matrix(dat[c("p1", "p2", "p3")]))
+
+  check_code <- function(form, family, markers, prior = empty_prior()) {
+    scode <- stancode(form, data = dat, family = family, prior = prior)
+    tpar <- s2z_stan_between(
+      scode, "transformed parameters {", "\nmodel {"
+    )
+    sdata <- standata(form, data = dat, family = family, prior = prior)
+    expect_false(any(startsWith(names(sdata), "rho_s2z_")))
+    expect_false(grepl("Y[n]", tpar, fixed = TRUE))
+    for (marker in markers) {
+      expect_match2(tpar, marker)
+    }
+    invisible(tpar)
+  }
+
+  # Exact conditional expected information.
+  check_code(
+    y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    poisson(), "real obs_prec_fisher_s2z = value_fisher_s2z_mu;"
+  )
+
+  # Three-bin coarsening: {0}, {trials}, and the interior counts.
+  check_code(
+    bf(
+      y | trials(trials) ~ 1 +
+        (1 | gr(g, s2z = TRUE, center = "fisher")),
+      phi ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+    ),
+    beta_binomial(),
+    c("pmid_fisher_s2z_bb", "dpmid_fisher_s2z_bb")
+  )
+
+  # Structural-atom decomposition for both the count and atom predictors.
+  zip_prior <-
+    prior(normal(0, 2), class = "Intercept") +
+    prior(normal(0, 2), class = "Intercept", dpar = "zi")
+  check_code(
+    bf(
+      y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+      zi ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+    ),
+    zero_inflated_poisson(),
+    c("q0_fisher_s2z_zi", "atom_derivative_fisher_s2z_zi"),
+    prior = zip_prior
+  )
+
+  # Marginal category information from the population-only softmax.
+  check_code(
+    category ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    categorical(), "prob_fisher_s2z_cat"
+  )
+
+  # Simplex-coordinate information from the Dirichlet trigamma identity.
+  check_code(
+    simplex ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    dirichlet(),
+    c(
+      "prob_fisher_s2z_dir",
+      "alpha_fisher_s2z_dir < 1e-6 ? 1.0 :",
+      "square(alpha_fisher_s2z_dir) * trigamma(alpha_fisher_s2z_dir)"
+    )
+  )
+
+  # COM-Poisson moment information; at shape one the location variance
+  # marker reduces to the Poisson mean information.
+  check_code(
+    bf(
+      y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+      shape ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+    ),
+    brmsfamily("com_poisson"),
+    c(
+      paste0(
+        "log(fmax(value_fisher_s2z_mu, 1e-12)) / ",
+        "fmax(value_fisher_s2z_shape, 1e-12);"
+      ),
+      paste0(
+        "mode_fisher_s2z_cmp / ",
+        "fmax(value_fisher_s2z_shape, 1e-12));"
+      ),
+      "real log_factorial_variance_fisher_s2z_cmp =",
+      "real obs_prec_fisher_s2z = variance_fisher_s2z_cmp;",
+      paste0(
+        "square(derivative_fisher_s2z_shape) * ",
+        "log_factorial_variance_fisher_s2z_cmp"
+      )
+    )
+  )
+})
+
+test_that("response-free Fisher rules guard zero-trial observations", {
+  dat <- data.frame(
+    y = c(0L, 0L, 1L, 2L, 0L, 4L),
+    trials = c(0L, 1L, 2L, 4L, 0L, 5L),
+    g = factor(rep(seq_len(2), each = 3))
+  )
+  beta_binomial_form <- bf(
+    y | trials(trials) ~ 1 +
+      (1 | gr(g, s2z = TRUE, center = "fisher")),
+    phi ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+  )
+  beta_binomial_code <- stancode(
+    beta_binomial_form, data = dat, family = beta_binomial()
+  )
+  beta_binomial_tpar <- s2z_stan_between(
+    beta_binomial_code, "transformed parameters {", "\nmodel {"
+  )
+  expect_match2(
+    beta_binomial_tpar,
+    "(trials[n] == 0 ? 0.0 : (trials[n] == 1 ?"
+  )
+  expect_match2(
+    beta_binomial_tpar,
+    "(trials[n] <= 1 ? 0.0 :"
+  )
+  expect_match2(
+    beta_binomial_tpar,
+    paste0(
+      "((value_fisher_s2z_mu) * ",
+      "(1.0 - (value_fisher_s2z_mu)))"
+    )
+  )
+  expect_match2(
+    beta_binomial_tpar,
+    paste0(
+      "prob_fisher_s2z_bb = fmin(1.0 - 1e-12, ",
+      "fmax(1e-12, value_fisher_s2z_mu));"
+    )
+  )
+  beta_binomial_data <- standata(
+    beta_binomial_form, data = dat, family = beta_binomial()
+  )
+  expect_equal(as.vector(beta_binomial_data$trials), dat$trials)
+  expect_false(any(startsWith(
+    names(beta_binomial_data), "rho_s2z_"
+  )))
+  expect_false(grepl("Y[n]", beta_binomial_tpar, fixed = TRUE))
+
+  dm_dat <- data.frame(
+    trials = c(0L, 3L, 4L, 0L, 5L, 2L),
+    g = factor(rep(seq_len(2), each = 3))
+  )
+  dm_dat$counts <- I(rbind(
+    c(0L, 0L, 0L), c(1L, 1L, 1L), c(1L, 2L, 1L),
+    c(0L, 0L, 0L), c(2L, 1L, 2L), c(1L, 0L, 1L)
+  ))
+  dm_form <- bf(
+    counts | trials(trials) ~ 1 +
+      (1 | gr(g, s2z = TRUE, center = "fisher")),
+    phi ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+  )
+  dm_code <- stancode(
+    dm_form, data = dm_dat, family = dirichlet_multinomial()
+  )
+  dm_tpar <- s2z_stan_between(
+    dm_code, "transformed parameters {", "\nmodel {"
+  )
+  expect_match2(
+    dm_tpar,
+    paste0(
+      "((trials[n]) * (1.0 + (value_fisher_s2z_phi)) / ",
+      "((trials[n]) + (value_fisher_s2z_phi)))"
+    )
+  )
+  expect_match2(dm_tpar, "(trials[n] == 0 ? 0.0 : 0.5 *")
+  dm_data <- standata(
+    dm_form, data = dm_dat, family = dirichlet_multinomial()
+  )
+  expect_equal(as.vector(dm_data$trials), dm_dat$trials)
+  expect_false(any(startsWith(names(dm_data), "rho_s2z_")))
+  expect_false(grepl("Y[n]", dm_tpar, fixed = TRUE))
+})
+
+test_that("Fisher link algebra is stable at parameter boundaries", {
+  dat <- data.frame(
+    y_unit = seq(0.1, 0.9, length.out = 8),
+    y_pos = seq(0.3, 2, length.out = 8),
+    y_bin = rep(0:1, 4),
+    g = factor(rep(seq_len(2), each = 4))
+  )
+
+  xbeta_code <- stancode(
+    y_unit ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    data = dat, family = xbeta()
+  )
+  for (marker in c(
+    paste0(
+      "prob_fisher_s2z_xbeta = fmin(1.0 - 1e-12, ",
+      "fmax(1e-12, value_fisher_s2z_mu));"
+    ),
+    paste0(
+      "(1.0 + (value_fisher_s2z_phi)) * (value_fisher_s2z_mu) * ",
+      "(1.0 - (value_fisher_s2z_mu))"
+    )
+  )) {
+    expect_match2(xbeta_code, marker)
+  }
+
+  frechet_code <- stancode(
+    bf(
+      y_pos ~ 1,
+      nu ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+    ),
+    data = dat, family = frechet()
+  )
+  for (marker in c(
+    "real boundary_fraction_fisher_s2z_frechet =",
+    "boundary_fraction_fisher_s2z_frechet < 1e-6 ?",
+    "real shape_info_fisher_s2z_frechet =",
+    "real obs_prec_fisher_s2z = shape_info_fisher_s2z_frechet;"
+  )) {
+    expect_match2(frechet_code, marker)
+  }
+
+  softit_code <- stancode(
+    y_bin ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    data = dat, family = bernoulli("softit")
+  )
+  expect_match2(softit_code, "return log(expm1(-p ./ (p - 1)));")
+  expect_match2(softit_code, "return log1p_exp(y) ./ (1 + log1p_exp(y));")
+})
+
+test_that("Wiener Fisher rules use exact decision coarsening", {
+  dat <- data.frame(
+    q = seq(0.5, 1.6, length.out = 12),
+    decision = rep(0:1, 6),
+    g = factor(rep(seq_len(3), each = 4))
+  )
+  form <- bf(
+    q | dec(decision) ~ 1,
+    bs ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    bias ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    ndt = 0.1
+  )
+  s2z_prior <-
+    prior(normal(0, 2), class = "Intercept", dpar = "bs") +
+    prior(normal(0, 2), class = "Intercept", dpar = "bias")
+  scode <- stancode(
+    form, data = dat, family = wiener(), prior = s2z_prior
+  )
+  tpar <- s2z_stan_between(
+    scode, "transformed parameters {", "\nmodel {"
+  )
+  for (marker in c(
+    "real choice_scale_fisher_s2z_wiener =",
+    "if (abs(choice_scale_fisher_s2z_wiener) < 1e-5)",
+    "real dp_dscale_fisher_s2z_wiener;",
+    "real dp_dbias_fisher_s2z_wiener;",
+    paste0(
+      "prob_safe_fisher_s2z_wiener = fmin(1.0 - 1e-12, ",
+      "fmax(1e-12, p_upper_fisher_s2z_wiener));"
+    ),
+    paste0(
+      "square((derivative_fisher_s2z_bs) * 2.0 * ",
+      "(value_fisher_s2z_mu) * dp_dscale_fisher_s2z_wiener)"
+    ),
+    paste0(
+      "square((derivative_fisher_s2z_bias) * ",
+      "dp_dbias_fisher_s2z_wiener)"
+    )
+  )) {
+    expect_match2(tpar, marker)
+  }
+  expect_false(grepl("Y[n]", tpar, fixed = TRUE))
+  expect_false(grepl("dec[n]", tpar, fixed = TRUE))
+  sdata <- standata(
+    form, data = dat, family = wiener(), prior = s2z_prior
+  )
+  expect_false(any(startsWith(names(sdata), "rho_s2z_")))
+
+  expect_error(
+    stancode(
+      bf(
+        q | dec(decision) ~ 1,
+        ndt ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher"))
+      ),
+      data = dat, family = wiener()
+    ),
+    paste0(
+      "has no response-free expected-information rule for family ",
+      "'wiener' and distributional parameter 'ndt'"
+    ),
+    fixed = TRUE
+  )
+})
+
 test_that("sampled-loading Fisher S2Z information remains dynamic", {
   dat <- expand.grid(
     person = factor(seq_len(8)),
@@ -301,7 +748,7 @@ test_that("sampled-loading Fisher S2Z information remains dynamic", {
     alpha ~ 0 + item,
     loading ~ 0 + item,
     eta ~ 0 + (1 | gr(
-      person, s2z = TRUE, latent = TRUE, center = "auto"
+      person, s2z = TRUE, latent = TRUE, center = "fisher"
     )),
     nl = TRUE
   )
@@ -331,42 +778,105 @@ test_that("sampled-loading Fisher S2Z information remains dynamic", {
   expect_null(standata(form, data = dat)$rho_s2z_1)
 })
 
-test_that("Fisher S2Z rejects likelihood derivatives it cannot represent", {
-  expect_error(
-    stancode(
-      y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
-      data = s2z_dat, family = poisson()
-    ),
-    "requires a univariate Gaussian or Student-t identity likelihood"
+test_that("strict latent Fisher uses every scalar native location rule", {
+  N <- 12L
+  dat <- data.frame(
+    person = factor(rep(letters[1:4], each = 3L)),
+    item = factor(rep(letters[1:3], 4L)),
+    y_real = seq(-1.2, 1.4, length.out = N),
+    y_pos = seq(0.5, 3, length.out = N),
+    y_unit = seq(0.05, 0.95, length.out = N),
+    y_count = rep(0:5, length.out = N),
+    y_bin = rep(0:1, length.out = N),
+    trials = rep(6L, N),
+    dec = rep(0:1, length.out = N)
   )
-  expect_error(
-    stancode(
-      bf(
-        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
-        sigma ~ x
-      ),
-      data = s2z_dat
+  cases <- list(
+    gaussian = list(gaussian(), "y_real"),
+    student = list(student(), "y_real"),
+    skew_normal = list(skew_normal(), "y_real"),
+    bernoulli = list(bernoulli(), "y_bin"),
+    binomial = list(binomial(), "y_bin | trials(trials)"),
+    xbeta = list(xbeta(), "y_unit"),
+    beta_binomial = list(
+      beta_binomial(), "y_count | trials(trials)"
     ),
-    "requires one scalar residual sigma"
-  )
-  expect_error(
-    stancode(
-      bf(
-        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
-        nu ~ x,
-        family = student()
-      ),
-      data = s2z_dat
+    beta = list(Beta(), "y_unit"),
+    poisson = list(poisson(), "y_count"),
+    negbinomial = list(negbinomial(), "y_count"),
+    negbinomial2 = list(negbinomial2(), "y_count"),
+    geometric = list(geometric(), "y_count"),
+    discrete_weibull = list(discrete_weibull(), "y_count"),
+    com_poisson = list(com_poisson(), "y_count"),
+    gamma = list(Gamma(), "y_pos"),
+    weibull = list(weibull(), "y_pos"),
+    exponential = list(exponential(), "y_pos"),
+    frechet = list(frechet(), "y_pos"),
+    inverse_gaussian = list(brmsfamily("inverse.gaussian"), "y_pos"),
+    lognormal = list(lognormal(), "y_pos"),
+    shifted_lognormal = list(shifted_lognormal(), "y_pos"),
+    exgaussian = list(exgaussian(), "y_real"),
+    von_mises = list(von_mises(), "y_real"),
+    asym_laplace = list(asym_laplace(), "y_real"),
+    hurdle_poisson = list(hurdle_poisson(), "y_count"),
+    hurdle_negbinomial = list(hurdle_negbinomial(), "y_count"),
+    hurdle_gamma = list(hurdle_gamma(), "y_pos"),
+    hurdle_lognormal = list(hurdle_lognormal(), "y_pos"),
+    zero_inflated_poisson = list(zero_inflated_poisson(), "y_count"),
+    zero_inflated_negbinomial = list(
+      zero_inflated_negbinomial(), "y_count"
     ),
-    "requires one scalar Student-t degrees of freedom"
+    zero_inflated_binomial = list(
+      zero_inflated_binomial(), "y_count | trials(trials)"
+    ),
+    zero_inflated_beta_binomial = list(
+      zero_inflated_beta_binomial(), "y_count | trials(trials)"
+    ),
+    zero_inflated_beta = list(zero_inflated_beta(), "y_unit"),
+    zero_one_inflated_beta = list(zero_one_inflated_beta(), "y_unit"),
+    zero_inflated_asym_laplace = list(
+      zero_inflated_asym_laplace(), "y_real"
+    ),
+    cox = list(cox(), "y_pos"),
+    wiener = list(wiener(), "y_pos | dec(dec)")
   )
+
+  for (name in names(cases)) {
+    case <- cases[[name]]
+    response <- as.formula(
+      paste(case[[2L]], "~ baseline + loading * eta")
+    )
+    form <- bf(
+      response,
+      baseline ~ 0 + item,
+      loading ~ 0 + item,
+      eta ~ 0 + (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "fisher"
+      )),
+      nl = TRUE,
+      family = case[[1L]]
+    )
+    scode <- stancode(form, data = dat)
+    tpar <- s2z_stan_between(
+      scode, "transformed parameters {", "\nmodel {"
+    )
+    expect_match2(tpar, "info_fisher_s2z")
+    expect_match2(tpar, "fisher_s2z_1_nlp_loading")
+    expect_false(grepl("Y[n]", tpar, fixed = TRUE), info = name)
+  }
+  expect_length(cases, 37L)
+})
+
+test_that("Fisher S2Z rejects nonlocal likelihood structures", {
   expect_error(
     stancode(
       y | weights(w) ~ 1 +
-        (1 | gr(g, s2z = TRUE, center = "auto")),
+        (1 | gr(g, s2z = TRUE, center = "fisher")),
       data = s2z_dat
     ),
-    "does not yet support response addition terms"
+    "does not yet support response addition term 'weights'",
+    fixed = TRUE
   )
 
   latent_data <- expand.grid(
@@ -378,7 +888,7 @@ test_that("Fisher S2Z rejects likelihood derivatives it cannot represent", {
     alpha ~ 0 + item,
     loading ~ 0 + item,
     eta ~ 1 +
-      (1 | gr(person, s2z = TRUE, center = "auto")),
+      (1 | gr(person, s2z = TRUE, center = "fisher")),
     nl = TRUE
   )
   latent_prior <- c(
@@ -393,6 +903,22 @@ test_that("Fisher S2Z rejects likelihood derivatives it cannot represent", {
       "response mean with respect to the latent score must be represented ",
       "explicitly"
     ),
+    fixed = TRUE
+  )
+
+  mv_data <- transform(s2z_dat, y2 = y + 0.2 * x)
+  mv_form <- bf(
+    y ~ 1 + (1 | gr(g, id = "y_block", s2z = TRUE,
+                    center = "fisher"))
+  ) +
+    bf(
+      y2 ~ 1 + (1 | gr(g, id = "y2_block", s2z = TRUE,
+                       center = "fisher"))
+    ) +
+    set_rescor(FALSE)
+  expect_error(
+    stancode(mv_form, data = mv_data),
+    "is not yet supported for multivariate response models",
     fixed = TRUE
   )
 })
@@ -2557,7 +3083,7 @@ test_that("S2Z blocks can belong to distinct distributional predictors", {
   )
 })
 
-test_that("an S2Z ID cannot span linear predictors in either term order", {
+test_that("mixed S2Z IDs cannot span linear predictors in either term order", {
   mixed_ids <- list(
     bf(
       y ~ 1 + (1 | gr(g, id = "across", s2z = TRUE)),
@@ -2566,10 +3092,6 @@ test_that("an S2Z ID cannot span linear predictors in either term order", {
     bf(
       y ~ 1 + (1 | gr(g, id = "across", s2z = FALSE)),
       sigma ~ 1 + (1 | gr(g, id = "across", s2z = TRUE))
-    ),
-    bf(
-      y ~ 1 + (1 | gr(g, id = "across", s2z = TRUE)),
-      sigma ~ 1 + (1 | gr(g, id = "across", s2z = TRUE))
     )
   )
   for (form in mixed_ids) {
@@ -2577,6 +3099,526 @@ test_that("an S2Z ID cannot span linear predictors in either term order", {
       stancode(form, data = s2z_dat),
       "cannot span multiple linear predictors"
     )
+  }
+})
+
+test_that("a conventional correlated S2Z ID spans response predictors", {
+  mv_data <- transform(
+    s2z_dat,
+    phen = y,
+    cofactor = 0.4 * y + sin(seq_len(nrow(s2z_dat)) * 0.31),
+    phylo = g
+  )
+  form <- bf(
+    mvbind(phen, cofactor) ~ 1 + (1 | q | gr(phylo, s2z = TRUE))
+  )
+  cross_prior <-
+    prior(normal(0, 1.25), class = "Intercept", resp = "phen") +
+    prior(normal(0.5, 2), class = "Intercept", resp = "cofactor") +
+    prior(exponential(2), class = "sd", group = "phylo", resp = "phen") +
+    prior(exponential(3), class = "sd", group = "phylo", resp = "cofactor") +
+    prior(lkj(3), class = "cor", group = "phylo")
+  scode <- stancode(form, data = mv_data, prior = cross_prior)
+
+  expect_match2(scode, "vector[1] theta_s2z_phen;")
+  expect_match2(scode, "vector[1] theta_s2z_cofactor;")
+  expect_match2(scode, "cholesky_factor_corr[M_1] L_1;")
+  expect_match2(
+    scode,
+    "L_Sigma_s2z_1 = diag_pre_multiply(sd_1, L_1);"
+  )
+  expect_match2(
+    scode,
+    "vector[M_1 * (N_1 - 1)] z_s2z_1;"
+  )
+  expect_match2(
+    scode,
+    "P_group_s2z_1 = diag_matrix(rep_vector("
+  )
+  expect_match2(scode, "dot_self(one_white_cov_s2z), M_1));")
+  expect_match2(
+    scode,
+    "P_s2z_1 = crossprod(prior_factor_s2z) + P_group_s2z_1;"
+  )
+  expect_match2(
+    scode, "group_quad_s2z_1 -= dot_self(whitened_h_s2z);"
+  )
+  expect_match2(
+    scode,
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))"
+  )
+  expect_match2(scode, "- sum(log(diagonal(L_P_s2z_1)))")
+  expect_match2(scode, "+ 0.5 * M_1 * log(1.0 * N_1)")
+  expect_match2(scode, "matrix[2, M_1] H_s2z_1;")
+  expect_match2(scode, "H_s2z_1[1, 1] = 1.0;")
+  expect_match2(scode, "H_s2z_1[2, 2] = 1.0;")
+  expect_match2(scode, "r_s2z_1_phen_1 = r_s2z_1[, 1];")
+  expect_match2(scode, "r_s2z_1_cofactor_2 = r_s2z_1[, 2];")
+  expect_match2(scode, "mu_phen += theta_s2z_phen[1];")
+  expect_match2(scode, "mu_cofactor += theta_s2z_cofactor[1];")
+  expect_match2(
+    scode,
+    "q_recovered_s2z_1 -= H_s2z_1 * mean_r_s2z_1;"
+  )
+  expect_match2(scode, "b_phen_Intercept = Intercept_phen;")
+  expect_match2(scode, "b_cofactor_Intercept = Intercept_cofactor;")
+  expect_match2(scode, "r_1_phen_1 = r_1[, 1];")
+  expect_match2(scode, "r_1_cofactor_2 = r_1[, 2];")
+  expect_match2(
+    scode,
+    "corr_matrix[M_1] Cor_1 = multiply_lower_tri_self_transpose(L_1);"
+  )
+  # Priors retain their conventional response-specific coefficient, scale,
+  # and cross-response correlation meanings under the coordinate map.
+  expect_match2(
+    scode, "lprior += normal_lpdf(theta_s2z_phen[1] | 0, 1.25);"
+  )
+  expect_match2(
+    scode, "lprior += normal_lpdf(theta_s2z_cofactor[1] | 0.5, 2);"
+  )
+  expect_match2(scode, "lprior += exponential_lpdf(sd_1[1] | 2);")
+  expect_match2(scode, "lprior += exponential_lpdf(sd_1[2] | 3);")
+  expect_match2(scode, "lprior += lkj_corr_cholesky_lpdf(L_1 | 3);")
+
+  mixture_code <- stancode(
+    form, data = mv_data,
+    prior =
+      prior(
+        student_t(7, 0.2, 1.3), class = "Intercept", resp = "phen"
+      ) +
+      prior(
+        cauchy(-0.1, 0.8), class = "Intercept", resp = "cofactor"
+      )
+  )
+  for (term in c(
+    "real<lower=0> udf_b_s2z_phen_1;",
+    "real<lower=0> udf_b_s2z_cofactor_1;",
+    "inv_chi_square_lpdf(udf_b_s2z_phen_1 | 7)",
+    "inv_chi_square_lpdf(udf_b_s2z_cofactor_1 | 1)",
+    "normal_lpdf(theta_s2z_phen[1]",
+    "normal_lpdf(theta_s2z_cofactor[1]"
+  )) {
+    expect_match2(mixture_code, term)
+  }
+
+  kernel_code <- stancode(
+    form, data = mv_data, prior = cross_prior, normalize = FALSE
+  )
+  for (term in c(
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    "- sum(log(diagonal(L_P_s2z_1)))",
+    "lkj_corr_cholesky_lupdf(L_1 | 3)"
+  )) {
+    expect_match2(kernel_code, term)
+  }
+  expect_false(grepl(
+    "0.5 * M_1 * log(1.0 * N_1)", kernel_code, fixed = TRUE
+  ))
+
+  sdata <- standata(form, data = mv_data, prior = cross_prior)
+  expect_equal(sdata$M_1, 2L)
+  expect_equal(sdata$NC_1, 1L)
+
+  noncentered_code <- stancode(
+    bf(
+      mvbind(phen, cofactor) ~ 1 +
+        (1 | q | gr(phylo, s2z = TRUE, center = FALSE))
+    ),
+    data = mv_data
+  )
+  expect_match2(
+    noncentered_code,
+    "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';"
+  )
+  expect_false(grepl(
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    noncentered_code, fixed = TRUE
+  ))
+  expect_error(
+    stancode(
+      bf(
+        y ~ 1 + (1 | gr(g, id = "across", s2z = TRUE)),
+        sigma ~ 1 + (1 | gr(g, id = "across", s2z = TRUE))
+      ),
+      data = s2z_dat
+    ),
+    "multivariate response-location predictors"
+  )
+})
+
+test_that("cross-response S2Z composes charts, scales, Student, and cov", {
+  mv_data <- transform(
+    s2z_dat,
+    phen = y,
+    cofactor = 0.4 * y + sin(seq_len(nrow(s2z_dat)) * 0.31),
+    phylo = g
+  )
+  levels_g <- levels(mv_data$phylo)
+  Omega <- outer(seq_along(levels_g), seq_along(levels_g), function(i, j) {
+    (-0.3)^abs(i - j)
+  })
+  dimnames(Omega) <- list(rev(levels_g), rev(levels_g))
+  form <-
+    bf(
+      phen ~ 1 + (1 | q | gr(
+        phylo, s2z = TRUE, center = 0.2, scale = "varying",
+        dist = "student", cov = Omega
+      ))
+    ) +
+    bf(
+      cofactor ~ 1 + (1 | q | gr(
+        phylo, s2z = TRUE, center = 0.8, scale = "varying",
+        dist = "student", cov = Omega
+      ))
+    ) +
+    set_rescor(FALSE)
+  cross_prior <-
+    prior(
+      normal(0.4, 0.2), class = "sd_level", group = "phylo",
+      coef = "Intercept", level = "1", resp = "phen"
+    ) +
+    prior(
+      normal(0.7, 0.2), class = "sd_level", group = "phylo",
+      coef = "Intercept", level = "1", resp = "cofactor"
+    )
+  scode <- stancode(
+    form, data = mv_data, data2 = list(Omega = Omega), prior = cross_prior
+  )
+
+  for (term in c(
+    "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;",
+    "vector[M_1 * N_1] z_sd_s2z_1;",
+    "reference_sd_s2z_1 = sd_1 .* exp(sdlog_1 .*",
+    "group_scale_s2z_1 = dfm_1;",
+    "L_Sigma_s2z_1 = diag_pre_multiply(reference_sd_s2z_1, L_1);",
+    "matrix[N_1 * M_1, M_1] mean_factor_cov_s2z;",
+    "P_group_s2z_1 = crossprod(mean_factor_cov_s2z);",
+    "+ log_det_partial_s2z_1",
+    "- M_1 * sum(log(group_scale_s2z_1))",
+    "- M_1 * sum(log(diagonal(Lcov_1)))",
+    "sd_level_1 = sd_level_s2z_1;",
+    "sd_level_s2z_1[1, 1] | 0.4, 0.2",
+    "sd_level_s2z_1[1, 2] | 0.7, 0.2"
+  )) {
+    expect_match2(scode, term)
+  }
+
+  sdata <- standata(
+    form, data = mv_data, data2 = list(Omega = Omega), prior = cross_prior
+  )
+  expect_equal(dim(sdata$rho_s2z_1), c(length(levels_g), 2L))
+  expect_equal(
+    unname(sdata$rho_s2z_1),
+    cbind(rep(0.2, length(levels_g)), rep(0.8, length(levels_g)))
+  )
+  expect_equal(
+    unname(sdata$Lcov_1),
+    unname(t(chol(Omega[levels_g, levels_g])))
+  )
+
+  noncentered_code <- stancode(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = FALSE, dist = "student", cov = Omega
+    ))) + set_rescor(FALSE),
+    data = mv_data, data2 = list(Omega = Omega)
+  )
+  expect_match2(
+    noncentered_code,
+    "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';"
+  )
+  expect_match2(noncentered_code, "one_white_cov_s2z")
+  expect_false(grepl(
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    noncentered_code, fixed = TRUE
+  ))
+
+  fisher_independent <- stancode(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = "fisher", scale = "varying",
+      dist = "student", cov = Omega
+    ))) + set_rescor(FALSE),
+    data = mv_data, data2 = list(Omega = Omega)
+  )
+  for (term in c(
+    "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;",
+    "info_fisher_s2z[J_1_phen[n]] += obs_prec_fisher_s2z",
+    "info_fisher_s2z[J_1_cofactor[n]] += obs_prec_fisher_s2z",
+    "row_var_fisher_s2z_1[j] * quad_form(info_fisher_s2z[j]",
+    "group_scale_s2z_1 = dfm_1;",
+    "+ log_det_partial_s2z_1",
+    "- M_1 * sum(log(diagonal(Lcov_1)))"
+  )) {
+    expect_match2(fisher_independent, term)
+  }
+
+  fisher_rescor <- stancode(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = "fisher", cov = Omega
+    ))) + set_rescor(TRUE),
+    data = mv_data, data2 = list(Omega = Omega)
+  )
+  for (term in c(
+    "matrix[N_1, N_1 - 1] Ecov_s2z_1;",
+    "vector<lower=0>[N_1 - 1] lambda_cov_s2z_1;",
+    "vector[N_1 - 1] coupling_cov_s2z_1;",
+    "real<lower=0> mean_prec_cov_s2z_1;",
+    "exposure_modal_fisher_s2z_1[ell] = dot_product(",
+    "L_residual_modal_fisher_s2z = diag_pre_multiply(",
+    "white_design_modal_fisher_s2z = mdivide_left_tri_low(",
+    "info_modal_fisher_s2z = crossprod(",
+    "unit_info_modal_fisher_s2z = quad_form(",
+    "conditional_precision_modal_fisher_s2z =",
+    "rho_s2z_1[ell, 1] = fmin(1.0, fmax(0.0,",
+    "denominator11_modal_s2z =",
+    "r_s2z_1 = Ecov_s2z_1 * effect_modal_s2z;",
+    "coupling_score_modal_s2z = coef_white_modal_s2z' *",
+    "group_quad_s2z_1 = dot_product(",
+    "+ log_det_partial_s2z_1"
+  )) {
+    expect_match2(fisher_rescor, term)
+  }
+  fisher_rescor_default <- suppressWarnings(stancode(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = "fisher", cov = Omega
+    ))),
+    data = mv_data, data2 = list(Omega = Omega)
+  ))
+  expect_identical(fisher_rescor_default, fisher_rescor)
+  expect_match2(
+    fisher_rescor_default,
+    "real conditional_unit_info_modal_fisher_s2z = fmax(0.0,"
+  )
+  for (term in c(
+    "info_fisher_s2z[J_1_phen[n]]",
+    "row_var_fisher_s2z_1",
+    "one_white_cov_s2z",
+    "mean_factor_cov_s2z",
+    "L_post_modal_fisher_s2z"
+  )) {
+    expect_false(grepl(term, fisher_rescor, fixed = TRUE))
+  }
+  fisher_data <- standata(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = "fisher", cov = Omega
+    ))) + set_rescor(TRUE),
+    data = mv_data, data2 = list(Omega = Omega)
+  )
+  expect_false("rho_s2z_1" %in% names(fisher_data))
+
+  G <- length(levels_g)
+  one <- rep(1, G)
+  P_s2z <- diag(G) - matrix(1 / G, G, G)
+  Omega_ordered <- Omega[levels_g, levels_g, drop = FALSE]
+  E <- unname(fisher_data$Ecov_s2z_1)
+  lambda <- unname(fisher_data$lambda_cov_s2z_1)
+  coupling <- unname(fisher_data$coupling_cov_s2z_1)
+  kappa <- unname(fisher_data$mean_prec_cov_s2z_1)
+  Omega_inv_one <- drop(solve(Omega_ordered, one))
+
+  expect_equal(dim(E), c(G, G - 1L))
+  expect_equal(length(lambda), G - 1L)
+  expect_equal(crossprod(E), diag(G - 1L), tolerance = 1e-13)
+  expect_equal(drop(crossprod(E, one)), numeric(G - 1L), tolerance = 1e-13)
+  expect_true(all(lambda > 0))
+  expect_equal(
+    E %*% diag(lambda) %*% t(E),
+    P_s2z %*% Omega_ordered %*% P_s2z,
+    tolerance = 2e-13
+  )
+  expect_equal(
+    coupling, drop(crossprod(E, Omega_inv_one)), tolerance = 2e-13
+  )
+  expect_equal(kappa, drop(crossprod(one, Omega_inv_one)), tolerance = 1e-13)
+  expect_equal(
+    crossprod(E, solve(Omega_ordered, E)),
+    diag(1 / lambda) + tcrossprod(coupling) / kappa,
+    tolerance = 3e-13
+  )
+
+  # Each condition excluded by the spectral dispatch retains the established
+  # levelwise Fisher path: independent residuals, varying scales, or Student-t
+  # group effects.
+  fisher_fallback <- list(
+    independent = stancode(
+      bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+        phylo, s2z = TRUE, center = "fisher", cov = Omega
+      ))) + set_rescor(FALSE),
+      data = mv_data, data2 = list(Omega = Omega)
+    ),
+    varying = stancode(
+      bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+        phylo, s2z = TRUE, center = "fisher", scale = "varying",
+        cov = Omega
+      ))) + set_rescor(TRUE),
+      data = mv_data, data2 = list(Omega = Omega)
+    ),
+    student = stancode(
+      bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+        phylo, s2z = TRUE, center = "fisher", dist = "student",
+        cov = Omega
+      ))) + set_rescor(TRUE),
+      data = mv_data, data2 = list(Omega = Omega)
+    )
+  )
+  for (fallback_code in fisher_fallback) {
+    expect_false(grepl("modal_fisher_s2z", fallback_code, fixed = TRUE))
+    expect_false(grepl("Ecov_s2z_1", fallback_code, fixed = TRUE))
+    expect_match2(fallback_code, "row_var_fisher_s2z_1[j] * quad_form(")
+    expect_match2(fallback_code, "+ log_det_partial_s2z_1")
+  }
+  independent_data <- standata(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = "fisher", cov = Omega
+    ))) + set_rescor(FALSE),
+    data = mv_data, data2 = list(Omega = Omega)
+  )
+  expect_false(any(c(
+    "Ecov_s2z_1", "lambda_cov_s2z_1", "coupling_cov_s2z_1",
+    "mean_prec_cov_s2z_1"
+  ) %in% names(independent_data)))
+
+  non_gaussian_data <- transform(
+    mv_data,
+    yb = as.integer(phen > median(phen)),
+    yp = as.integer(rank(cofactor) %% 5L)
+  )
+  fisher_non_gaussian <- stancode(
+    bf(yb ~ 1 + (1 | q | gr(
+      phylo, s2z = TRUE, center = "fisher", scale = "varying",
+      dist = "student", cov = Omega
+    )), family = bernoulli()) +
+      bf(yp ~ 1 + (1 | q | gr(
+        phylo, s2z = TRUE, center = "fisher", scale = "varying",
+        dist = "student", cov = Omega
+      )), family = poisson()) +
+      set_rescor(FALSE),
+    data = non_gaussian_data, data2 = list(Omega = Omega)
+  )
+  for (term in c(
+    "inv_logit(eta_fisher_s2z_mu)",
+    "exp(eta_fisher_s2z_mu)",
+    "info_fisher_s2z[J_1_yb[n]]",
+    "info_fisher_s2z[J_1_yp[n]]",
+    "group_scale_s2z_1 = dfm_1;",
+    "row_var_fisher_s2z_1"
+  )) {
+    expect_match2(fisher_non_gaussian, term)
+  }
+})
+
+test_that("known group covariance composes with conventional S2Z charts", {
+  levels_g <- levels(s2z_dat$g)
+  G <- length(levels_g)
+  P_s2z <- diag(G) - matrix(1 / G, G, G)
+  expect_equal(
+    diag(P_s2z %*% diag(G) %*% P_s2z) / (1 - 1 / G),
+    rep(1, G), tolerance = 1e-14
+  )
+  rho <- -0.35
+  Omega <- outer(seq_along(levels_g), seq_along(levels_g), function(i, j) {
+    rho^abs(i - j)
+  })
+  dimnames(Omega) <- list(rev(levels_g), rev(levels_g))
+  data2 <- list(Omega = Omega)
+
+  forms <- list(
+    centered = y ~ x + (1 | gr(g, s2z = TRUE, cov = Omega)),
+    noncentered = y ~ x + (1 | gr(
+      g, s2z = TRUE, center = FALSE, cov = Omega
+    )),
+    partial = y ~ x + (1 | gr(
+      g, s2z = TRUE, center = 0.4, cov = Omega
+    )),
+    fisher = y ~ x + (1 | gr(
+      g, s2z = TRUE, center = "fisher", cov = Omega
+    )),
+    student_partial = y ~ x + (1 + x | gr(
+      g, s2z = TRUE, center = 0.35, dist = "student", cov = Omega
+    )),
+    student_fisher = y ~ x + (1 + x | gr(
+      g, s2z = TRUE, center = "fisher", dist = "student", cov = Omega
+    )),
+    varying_fisher = y ~ x + (1 + x || gr(
+      g, s2z = TRUE, center = "fisher", scale = "varying", cov = Omega
+    )),
+    varying_student_fisher = y ~ x + (1 + x | gr(
+      g, s2z = TRUE, center = "fisher", scale = "varying",
+      dist = "student", cov = Omega
+    ))
+  )
+  for (i in seq_along(forms)) {
+    form <- forms[[i]]
+    scode <- stancode(form, data = s2z_dat, data2 = data2)
+    for (term in c(
+      "matrix[N_1, N_1] Lcov_1;",
+      "P_group_s2z_1",
+      "h_group_s2z_1",
+      "P_s2z_1 = crossprod(prior_factor_s2z) + P_group_s2z_1;",
+      "- M_1 * sum(log(diagonal(Lcov_1)))"
+    )) {
+      expect_match2(scode, term)
+    }
+    if (!startsWith(names(forms)[i], "varying")) {
+      expect_match2(scode, "one_white_cov_s2z")
+      expect_match2(scode, paste0(
+        "P_group_s2z_1 = diag_matrix(rep_vector(",
+        "dot_self(one_white_cov_s2z), M_1));"
+      ))
+    } else {
+      expect_match2(
+        scode, "matrix[N_1 * M_1, M_1] mean_factor_cov_s2z;"
+      )
+      expect_match2(
+        scode, "P_group_s2z_1 = crossprod(mean_factor_cov_s2z);"
+      )
+      expect_match2(scode, "h_group_s2z_1 = -mean_factor_cov_s2z'")
+    }
+  }
+
+  fisher_code <- stancode(forms[["fisher"]], data = s2z_dat, data2 = data2)
+  expect_match2(fisher_code, "row_var_fisher_s2z_1")
+  expect_match2(fisher_code, "rows_dot_self(centered_Lcov_s2z)")
+  expect_match2(fisher_code, "N_1 / (N_1 - 1.0)")
+  kernel_code <- stancode(
+    forms[["centered"]], data = s2z_dat, data2 = data2, normalize = FALSE
+  )
+  expect_false(grepl(
+    "sum(log(diagonal(Lcov_1)))", kernel_code, fixed = TRUE
+  ))
+
+  sdata <- standata(forms[["centered"]], data = s2z_dat, data2 = data2)
+  expect_equal(
+    unname(sdata$Lcov_1),
+    unname(t(chol(Omega[levels_g, levels_g])))
+  )
+
+  joint_form <- y ~ x +
+    (1 | gr(g, id = "a", s2z = TRUE, cov = Omega)) +
+    (0 + x | gr(g, id = "b", s2z = TRUE, cov = Omega))
+  joint_code <- stancode(joint_form, data = s2z_dat, data2 = data2)
+  expect_false(grepl("Matheron system", joint_code, fixed = TRUE))
+  expect_match2(joint_code, "P_group_s2z_1")
+  expect_match2(joint_code, "P_group_s2z_2")
+
+  mv_data <- transform(
+    s2z_dat, phen = y, cofactor = 0.4 * y + sin(seq_len(nrow(s2z_dat)))
+  )
+  mv_code <- stancode(
+    bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
+      g, s2z = TRUE, cov = Omega
+    ))),
+    data = mv_data, data2 = data2
+  )
+  expect_match2(mv_code, "one_white_cov_s2z")
+  expect_match2(mv_code, "h_group_s2z_1")
+  expect_match2(mv_code, "q_recovered_s2z_1 -= H_s2z_1")
+
+  for (chunk in c(
+    "fun_scale_r_cor_cov.stan", "fun_scale_r_cor_by_cov.stan"
+  )) {
+    source <- readLines(system.file("chunks", chunk, package = "brms"))
+    expect_true(any(grepl("Lcov[icov, jcov] != 0", source, fixed = TRUE)))
+    expect_false(any(grepl("Lcov[icov, jcov] > 1e-10", source, fixed = TRUE)))
   }
 })
 
@@ -3259,7 +4301,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       (0 + x | gr(g, id = "split", s2z = TRUE, by = f_by))
   )
   for (form in split_by) {
-    expect_error(stancode(form, data = by_dat), "'by', 'cov', and 'pw'")
+    expect_error(stancode(form, data = by_dat), "'by' and 'pw'")
   }
 
   split_pw <- list(
@@ -3271,7 +4313,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       (0 + x | gr(g, id = "split", s2z = TRUE, pw = w))
   )
   for (form in split_pw) {
-    expect_error(stancode(form, data = s2z_dat), "'by', 'cov', and 'pw'")
+    expect_error(stancode(form, data = s2z_dat), "'by' and 'pw'")
   }
 
   covariance <- diag(nlevels(s2z_dat$g))
@@ -3289,7 +4331,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       stancode(
         form, data = s2z_dat, data2 = list(covariance = covariance)
       ),
-      "'by', 'cov', and 'pw'"
+      "same 'cov' setting"
     )
   }
 
@@ -3360,6 +4402,14 @@ test_that("unsupported S2Z structures fail clearly", {
   expect_error(
     stancode(ordered_mix, s2z_dat),
     "Ordered mixture intercepts are not yet supported"
+  )
+  unordered_mix <- bf(
+    y ~ x + (1 + x | gr(g, s2z = TRUE, center = "fisher")),
+    family = mixture(gaussian, student, order = "none")
+  )
+  expect_error(
+    stancode(unordered_mix, s2z_dat),
+    "has no response-free expected-information rule for family 'mixture'"
   )
   one_group <- transform(s2z_dat, g = factor("only"))
   expect_error(
@@ -3474,12 +4524,12 @@ test_that("strict latent S2Z blocks span nonlinear score predictors", {
     eta1 ~ 0 +
       (1 | gr(
         person, id = "score", s2z = TRUE, latent = TRUE,
-        center = "auto"
+        center = "fisher"
       )),
     eta2 ~ 0 +
       (1 | gr(
         person, id = "score", s2z = TRUE, latent = TRUE,
-        center = "auto"
+        center = "fisher"
       )),
     nl = TRUE
   )
@@ -3496,7 +4546,10 @@ test_that("strict latent S2Z blocks span nonlinear score predictors", {
       "design_fisher_s2z[2] = ",
       "(fisher_s2z_1_nlp_loading2[n]) * Z_1_eta2_2[n];"
     ),
-    "K_fisher_s2z = quad_form(info_fisher_s2z[j], L_Sigma_s2z_1);"
+    paste0(
+      "K_fisher_s2z = 1.0 * quad_form(",
+      "info_fisher_s2z[j], L_Sigma_s2z_1);"
+    )
   )) {
     expect_true(grepl(term, fisher_code, fixed = TRUE), info = term)
   }
@@ -3536,14 +4589,14 @@ test_that("strict latent S2Z validation stays narrow and explicit", {
   )
   expect_error(
     stancode(partial_form, data = dat),
-    "support only centered, noncentered, and automatic centering modes"
+    "support only centered, noncentered, and Fisher centering modes"
   )
 
   fisher_form <- bf(
     y ~ loading * eta,
     loading ~ 0 + item,
     eta ~ 0 + (1 | gr(
-      person, id = "score", s2z = TRUE, latent = TRUE, center = "auto"
+      person, id = "score", s2z = TRUE, latent = TRUE, center = "fisher"
     )),
     nl = TRUE
   )
@@ -3569,8 +4622,34 @@ test_that("strict latent S2Z validation stays narrow and explicit", {
   )
   expect_match2(
     fisher_student_code,
-    "(nu + 1.0) / (nu + 3.0) * inv_square(sigma)"
+    paste0(
+      "(value_fisher_s2z_nu + 1.0) / ",
+      "(value_fisher_s2z_nu + 3.0) * ",
+      "inv_square(value_fisher_s2z_sigma)"
+    )
   )
+  bernoulli_dat <- dat
+  bernoulli_dat$y <- rep(0:1, length.out = nrow(bernoulli_dat))
+  fisher_bernoulli_code <- stancode(
+    fisher_form, data = bernoulli_dat, family = bernoulli()
+  )
+  for (term in c(
+    "real value_fisher_s2z_mu = inv_logit(eta_fisher_s2z_mu);",
+    paste0(
+      "real obs_prec_fisher_s2z = 1.0 * ",
+      "((value_fisher_s2z_mu) * (1.0 - (value_fisher_s2z_mu)));"
+    ),
+    paste0(
+      "info_fisher_s2z[J_1[n]] += obs_prec_fisher_s2z * square(",
+      "(fisher_s2z_1_nlp_loading[n]) * Z_1_eta_1[n]);"
+    )
+  )) {
+    expect_match2(fisher_bernoulli_code, term)
+  }
+  expect_false(grepl(
+    "Y[n]", strsplit(fisher_bernoulli_code, "model {", fixed = TRUE)[[1]][1],
+    fixed = TRUE
+  ))
   expect_error(
     suppressWarnings(stancode(
       fisher_form + cor_ar(~ 1 | person), data = dat
@@ -3604,7 +4683,7 @@ test_that("strict Fisher scores are shared across wide response predictors", {
       lf(loading ~ 1, center = FALSE),
       eta ~ 0 + (1 | gr(
         person, id = "score", s2z = TRUE, latent = TRUE,
-        center = "auto"
+        center = "fisher"
       )),
       nl = TRUE
     )
@@ -3717,11 +4796,11 @@ test_that("strict Fisher scores are shared across wide response predictors", {
       lf(loading2 ~ 1, center = FALSE),
       eta1 ~ 0 + (1 | gr(
         person, id = "score", s2z = TRUE, latent = TRUE,
-        center = "auto"
+        center = "fisher"
       )),
       eta2 ~ 0 + (1 | gr(
         person, id = "score", s2z = TRUE, latent = TRUE,
-        center = "auto"
+        center = "fisher"
       )),
       nl = TRUE
     )
@@ -3764,7 +4843,7 @@ test_that("strict Fisher scores are shared across wide response predictors", {
       lf(loading ~ 1, center = FALSE),
       eta ~ 0 + (1 + x | gr(
         person, id = "score", s2z = TRUE, latent = TRUE,
-        center = "auto"
+        center = "fisher"
       )),
       nl = TRUE
     )
@@ -3835,4 +4914,65 @@ test_that("strict Fisher scores are shared across wide response predictors", {
     "fisher_s2z_1_nlp_y1_loading",
     "fisher_s2z_1_nlp_y2_loading"
   ) %in% excluded))
+})
+
+test_that("strict Fisher scores combine heterogeneous wide families", {
+  dat <- data.frame(
+    person = factor(seq_len(8)),
+    yb = rep(0:1, 4),
+    yp = c(0L, 1L, 3L, 2L, 5L, 1L, 4L, 2L)
+  )
+  response_factor <- function(response, family) {
+    bf(
+      as.formula(paste0(response, " ~ loading * eta")),
+      lf(loading ~ 1, center = FALSE),
+      eta ~ 0 + (1 | gr(
+        person, id = "score", s2z = TRUE, latent = TRUE,
+        center = "fisher"
+      )),
+      nl = TRUE, family = family
+    )
+  }
+  form <- response_factor("yb", bernoulli()) +
+    response_factor("yp", poisson()) + set_rescor(FALSE)
+  scode <- stancode(form, data = dat)
+
+  for (term in c(
+    "real value_fisher_s2z_mu = inv_logit(eta_fisher_s2z_mu);",
+    "real value_fisher_s2z_mu = exp(eta_fisher_s2z_mu);",
+    "info_fisher_s2z[J_1_yb[n]] += obs_prec_fisher_s2z",
+    "info_fisher_s2z[J_1_yp[n]] += obs_prec_fisher_s2z"
+  )) {
+    expect_true(grepl(term, scode, fixed = TRUE), info = term)
+  }
+  transformed_code <- strsplit(scode, "model {", fixed = TRUE)[[1]][1]
+  expect_false(grepl("Y_yb[n]", transformed_code, fixed = TRUE))
+  expect_false(grepl("Y_yp[n]", transformed_code, fixed = TRUE))
+})
+
+test_that("strict Fisher loading references include nonlinear offsets", {
+  dat <- expand.grid(
+    person = factor(seq_len(4)), item = factor(letters[1:3]),
+    KEEP.OUT.ATTRS = FALSE
+  )
+  dat$x <- seq(0.1, 0.8, length.out = nrow(dat))
+  dat$y <- sin(seq_len(nrow(dat)))
+  form <- bf(
+    y ~ loading * eta,
+    loading ~ 0 + item + offset(x),
+    eta ~ 0 + (1 | gr(
+      person, id = "score", s2z = TRUE, latent = TRUE,
+      center = "fisher"
+    )),
+    nl = TRUE
+  )
+  scode <- stancode(form, data = dat)
+
+  expect_match2(
+    scode,
+    paste0(
+      "fisher_s2z_1_nlp_loading = ",
+      "(X_loading * b_loading) + offsets_loading;"
+    )
+  )
 })

@@ -13,13 +13,31 @@ coefficients in diagonal covariance blocks use dedicated component-wise scalar
 implementations. The default `center = NULL` samples the physical constrained
 effects directly for backward compatibility, while `center = FALSE` selects a
 non-centered sum-to-zero parameterization. Numeric `center` values between zero
-and one provide exact partial non-centering. With `center = "auto"`, brms
-computes parameter-dependent expected-Fisher reliability fractions inside the
-generated Stan model. The response values are integrated out, while the
-likelihood, residual scale, group design, group covariance, missingness, and
-supported sampled loadings determine the automatic coordinates. Strict latent
-score blocks may span nonlinear response predictors via `latent = TRUE`, so a
-shared score can accumulate Fisher information from multiple outcomes.
+and one provide exact partial non-centering. With `center = "fisher"`, brms
+combines the current Gaussian group-effect covariance with response-free
+likelihood information computed in Stan; observed response values are not
+used, and `center = "auto"` is an alias. Closed-form expected Fisher
+information is used when available. Other supported native likelihood
+coordinates use explicitly defined positive analytic, coarsened-outcome, or
+moment approximations. Most observation-local native families are supported;
+COM-Poisson uses asymptotic count variance for location and a second-order
+delta variance of `log(Y!)` for shape; its location rule is exactly Poisson at
+shape one. Ordinal, generalized-extreme-value, custom-family, finite-mixture,
+and Wiener
+non-decision-time coordinates remain excluded. The
+shifted-lognormal non-decision-time coordinate uses a nonregular working
+outer-product-of-score metric rather than an exact Fisher identity. Cox uses a
+unit log-rate working clock target and excludes censoring and truncation.
+Wiener drift uses exact first-passage
+information, while boundary separation and bias use exact Fisher information
+after coarsening to the recorded upper/lower decision. Supported auxiliary
+probability coordinates---atom probabilities, asymmetric-Laplace quantile, and
+Wiener bias---require an explicit compatible population `Intercept` prior when
+they contain an ordinary S2Z intercept, because their default logistic prior is
+not yet supported by the omitted-mean integration. Strict latent scores support
+symbolically analyzable scalar nonlinear location predictors for supported
+scalar response families, including sampled population-level loadings and
+wide models with conditionally independent responses.
 Setting `scale = "varying"` adds
 coefficient-specific log-normal scale hierarchies across grouping levels,
 retaining the usual baseline `sd` parameters and priors; class `sdlog` controls
@@ -28,6 +46,19 @@ placed on selected realized scales through class `sd_level` and its `group`,
 `coef`, and `level` selectors while retaining the exchangeable hierarchy. The
 resulting group effects are conditionally
 elliptical given their scales, but generally not marginally elliptical.
+Fixed `cov` matrices now compose with conventional S2Z `center` settings and
+both shared and varying scales. With varying scales, their conditional
+cross-level covariance is `Omega[g, h] * A_g %*% t(A_h)`, where
+`A_g = diag(sd_level[g, ]) %*% L` and `L` is the coefficient-correlation
+Cholesky factor. Correlated IDs spanning multivariate response-location
+predictors support fixed and Fisher centering, shared or varying scales,
+Gaussian or Student-t effects, and `cov`. Fisher information is combined across
+conditionally independent responses. With residual response correlation,
+Fisher centering currently requires Gaussian identity-link responses with one
+observation-invariant residual scale per response and includes the full current
+residual precision. Eligible shared-scale intercept blocks with fixed `cov`
+use its eigenmodes restricted to the S2Z space. Strict latent scores exclude
+`cov`, and `by` and `pw` remain unsupported for S2Z blocks.
 Multiple S2Z grouping factors may occur in one linear predictor; their omitted
 mean vectors are integrated and recovered jointly while retaining separate
 scale and correlation structures for each factor. For Gaussian blocks with
@@ -36,6 +67,11 @@ and joint Matheron recovery whenever that system is smaller than the stacked
 omitted-mean system. In the common crossed-intercept case this reduces to a
 scalar update with no matrix factorization, irrespective of the number of
 grouping factors.
+Correlated group-effect S2Z blocks may use one ID across multivariate
+response-location predictors. This samples the ordinary correlated group model
+through zero-sum coordinates and reconstructs conventional population and
+group effects without changing the meaning of its scale, correlation, or
+Student-t parameters.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

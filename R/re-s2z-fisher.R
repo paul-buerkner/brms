@@ -10,7 +10,11 @@
 # those latent coordinates.
 .re_s2z_fisher_nlpar_is_latent <- function(x) {
   stopifnot(is.bframel(x))
-  has_special_terms(x)
+  # Fixed offsets are population-only known quantities, not latent
+  # coordinates. Mirror has_special_terms() for every genuinely varying term
+  # while deliberately leaving offsets out of this classification.
+  varying_terms <- c("sp", "sm", "gp", "ac", "cs")
+  NROW(x[["re"]]) > 0L || any(lengths(x[varying_terms]))
 }
 
 # Validate the deliberately small expression language emitted by R's symbolic
@@ -84,10 +88,11 @@
       "dependency '", nlpar, "'."
     )
   }
-  if (!length(fe$vars_stan)) {
+  has_offset <- is.formula(dep$offset)
+  if (!length(fe$vars_stan) && !has_offset) {
     .stop_re_s2z_fisher_nl(
       "requires derivative dependency '", nlpar,
-      "' to contain population-level coefficients."
+      "' to contain population-level coefficients or a fixed offset."
     )
   }
   p <- usc(combine_prefix(check_prefix(dep)))
@@ -96,10 +101,20 @@
   vector_name <- paste0("fisher_s2z_", id, "_nlp", p)
   x_name <- paste0("X", p)
   coefficient_name <- paste0("b", p)
+  vector_expression <- if (length(fe$vars_stan)) {
+    paste(x_name, "*", coefficient_name)
+  } else {
+    paste0("offsets", p)
+  }
+  if (length(fe$vars_stan) && has_offset) {
+    vector_expression <- paste0(
+      "(", vector_expression, ") + offsets", p
+    )
+  }
   nlist(
     nlpar, prefix = p, frame = dep, x_name, coefficient_name,
     vector_name,
-    vector_expression = paste(x_name, "*", coefficient_name),
+    vector_expression,
     observation_expression = paste0(vector_name, "[n]")
   )
 }
@@ -121,7 +136,7 @@
     if (!length(strict_ids)) {
       .stop_re_s2z_fisher_nl(
         "requires gr(..., s2z = TRUE, latent = TRUE, ",
-        "center = \"auto\")."
+        "center = \"fisher\")."
       )
     }
     if (length(strict_ids) != 1L) {
@@ -137,14 +152,15 @@
       !identical(re_s2z_center_mode(r), "auto")) {
     .stop_re_s2z_fisher_nl(
       "requires gr(..., s2z = TRUE, latent = TRUE, ",
-      "center = \"auto\")."
+      "center = \"fisher\")."
     )
   }
   nlist(id = unique(r$id)[[1L]], r)
 }
 
 # Construct metadata for one Fisher-centered strict latent-score block living
-# in a nonlinear parameter of a Gaussian- or Student-t-identity location. Set
+# in a nonlinear response-location parameter. Both the outer derivative and
+# its likelihood reference are made independent of the latent contrasts. Set
 # strict = FALSE to obtain an unsupported-result object instead of throwing
 # the diagnostic.
 re_s2z_fisher_nl_info <- function(bframe, bfl, id = NULL, strict = TRUE) {
@@ -177,12 +193,6 @@ re_s2z_fisher_nl_info <- function(bframe, bfl, id = NULL, strict = TRUE) {
     is_student_identity <- identical(response_family, "student") &&
       identical(family$link, "identity")
     is_location_identity <- is_gaussian_identity || is_student_identity
-    if (!is_location_identity) {
-      .stop_re_s2z_fisher_nl(
-        "currently requires a Gaussian or Student-t response with ",
-        "identity link."
-      )
-    }
     outer <- bframe$dpars[["mu"]]
     if (!is.bframenl(outer) || !target_nlpar %in% outer$used_nlpars) {
       .stop_re_s2z_fisher_nl(
@@ -197,6 +207,7 @@ re_s2z_fisher_nl_info <- function(bframe, bfl, id = NULL, strict = TRUE) {
     }
 
     outer_expression <- outer$formula[[2L]]
+    .validate_re_s2z_fisher_derivative(outer_expression)
     derivative <- try(D(outer_expression, target_nlpar), silent = TRUE)
     if (inherits(derivative, "try-error")) {
       .stop_re_s2z_fisher_nl(
@@ -231,25 +242,71 @@ re_s2z_fisher_nl_info <- function(bframe, bfl, id = NULL, strict = TRUE) {
       )
     }
 
-    dependency_info <- lapply(nlpar_dependencies, function(nlpar) {
+    # The response-family information is evaluated at the population-only
+    # nonlinear predictor. Retain fixed effects and offsets of every nonlinear
+    # parameter, while removing all latent and group-varying contrasts. This
+    # reference may depend on sampled population parameters, but never on the
+    # strict score coordinates whose restricted Jacobian is used below.
+    outer_dependencies <- all.vars(outer_expression)
+    outer_nlpar_dependencies <- intersect(
+      outer_dependencies, names(bframe$nlpars)
+    )
+    outer_covariate_dependencies <- intersect(outer_dependencies, covariates)
+    outer_unknown <- setdiff(
+      outer_dependencies, c(names(bframe$nlpars), covariates)
+    )
+    if (length(outer_unknown)) {
+      .stop_re_s2z_fisher_nl(
+        "has unsupported outer-reference dependency '",
+        outer_unknown[1L], "'."
+      )
+    }
+    population_nlpar_dependencies <- setdiff(
+      outer_nlpar_dependencies, latent_nlpars
+    )
+    dependency_info <- lapply(population_nlpar_dependencies, function(nlpar) {
       .re_s2z_fisher_dependency_info(bframe, nlpar, id = info$id)
     })
-    names(dependency_info) <- nlpar_dependencies
-    replacements <- lapply(dependency_info, function(x) {
+    names(dependency_info) <- population_nlpar_dependencies
+    population_replacements <- lapply(dependency_info, function(x) {
       str2lang(x$observation_expression)
     })
     outer_p <- usc(combine_prefix(check_prefix(outer)))
-    covariate_dependencies <- intersect(dependencies, covariates)
-    for (covar in covariate_dependencies) {
+    covariate_replacements <- list()
+    for (covar in outer_covariate_dependencies) {
       covar_index <- match(covar, covariates)
-      replacements[[covar]] <- str2lang(
+      covariate_replacements[[covar]] <- str2lang(
         paste0("C", outer_p, "_", covar_index, "[n]")
       )
     }
+    derivative_replacements <- c(
+      population_replacements[nlpar_dependencies],
+      covariate_replacements[intersect(dependencies, covariates)]
+    )
     derivative_stan <- .replace_re_s2z_fisher_symbols(
-      derivative, replacements
+      derivative, derivative_replacements
     )
     derivative_stan <- deparse0(derivative_stan)
+    latent_replacements <- lapply(
+      intersect(outer_nlpar_dependencies, latent_nlpars),
+      function(nlpar) {
+        str2lang(stan_re_s2z_fisher_reference_eta(
+          bframe$nlpars[[nlpar]], n = "n"
+        ))
+      }
+    )
+    names(latent_replacements) <- intersect(
+      outer_nlpar_dependencies, latent_nlpars
+    )
+    outer_reference_replacements <- c(
+      population_replacements, latent_replacements,
+      covariate_replacements
+    )
+    outer_reference_stan <- .replace_re_s2z_fisher_symbols(
+      outer_expression, outer_reference_replacements
+    )
+    outer_reference_stan <- deparse0(outer_reference_stan)
+    covariate_dependencies <- intersect(dependencies, covariates)
     response_addition_terms <- names(Filter(is.formula, bframe$adforms))
     has_response_addition_terms <- length(response_addition_terms) > 0L
     sigma_dpar <- bframe$dpars[["sigma"]]
@@ -283,10 +340,12 @@ re_s2z_fisher_nl_info <- function(bframe, bfl, id = NULL, strict = TRUE) {
       nlist(
         supported = TRUE, reason_unsupported = NULL, id = info$id,
         target_nlpar, outer_expression, derivative,
+        outer_reference_stan, outer_dependencies,
+        outer_nlpar_dependencies, outer_covariate_dependencies,
         obs_derivative_expr = derivative,
         obs_derivative_stan = derivative_stan,
-        dmu_deta = rep(list(derivative), M),
-        dmu_deta_stan = rep(derivative_stan, M),
+        dzeta_dxi = rep(list(derivative), M),
+        dzeta_dxi_stan = rep(derivative_stan, M),
         dependencies, nlpar_dependencies, covariate_dependencies,
         dependency_info, latent_nlpars, response_family,
         is_gaussian_identity, is_student_identity, is_location_identity,

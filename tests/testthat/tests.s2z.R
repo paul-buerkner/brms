@@ -2228,3 +2228,163 @@ test_that("save_pars(all = TRUE) keeps S2Z internals extractor-safe", {
     c("b_Intercept", "b_x")
   )
 })
+
+test_that("cross-response S2Z coordinates preserve conventional draws", {
+  groups <- 5L
+  conventional_beta <- c(0.7, -0.4)
+  conventional_chol <- matrix(c(1.2, 0.35, 0, 0.8), nrow = 2L)
+  conventional_cov <- conventional_chol %*% t(conventional_chol)
+  standardized <- matrix(
+    sin(seq_len(groups * 2L) * 0.47) +
+      cos(seq_len(groups * 2L) * 0.19),
+    nrow = groups, ncol = 2L
+  )
+  conventional_b <- standardized %*% t(conventional_chol)
+
+  omitted_mean <- colMeans(conventional_b)
+  delta <- sweep(conventional_b, 2L, omitted_mean, "-")
+  q_internal <- conventional_beta + omitted_mean
+
+  expect_equal(colSums(delta), c(0, 0), tolerance = 1e-14)
+  expect_equal(
+    sweep(delta, 2L, q_internal, "+"),
+    sweep(conventional_b, 2L, conventional_beta, "+"),
+    tolerance = 1e-14
+  )
+
+  # The coordinate map leaves the modeled conventional covariance untouched:
+  # the omitted mean has covariance Sigma / G and q has covariance
+  # V_beta + Sigma / G, while sd and correlation still describe Sigma.
+  beta_cov <- diag(c(2.1^2, 1.4^2))
+  dense <- .s2z_multiblock_dense_map(
+    prior_cov = beta_cov,
+    H = list(diag(2L)),
+    groups = groups,
+    effect_cov = list(.s2z_level_covariance(
+      rep(list(conventional_cov), groups)
+    ))
+  )
+  expect_equal(
+    dense$covariance[seq_len(2L), seq_len(2L)],
+    beta_cov + conventional_cov / groups,
+    tolerance = 1e-12
+  )
+  conventional_sd <- sqrt(diag(conventional_cov))
+  conventional_cor <- conventional_cov / tcrossprod(conventional_sd)
+  expect_equal(conventional_sd, c(1.2, sqrt(0.35^2 + 0.8^2)))
+  expect_equal(diag(conventional_cor), c(1, 1))
+  expect_gt(conventional_cor[1, 2], 0)
+})
+
+.s2z_known_cov_case <- function(varying, student) {
+  set.seed(731 + 10L * varying + student)
+  G <- 5L
+  M <- 3L
+  Q <- 4L
+  B <- .s2z_basis(G)
+  delta <- B %*% matrix(rnorm((G - 1L) * M), G - 1L, M)
+
+  A <- matrix(rnorm(G * G), G, G)
+  Omega <- tcrossprod(A) + diag(G)
+  Lcov <- t(chol(Omega))
+  Acoef <- matrix(rnorm(M * M), M, M)
+  correlation <- cov2cor(tcrossprod(Acoef) + diag(M))
+  Lcoef <- t(chol(correlation))
+  reference_sd <- exp(rnorm(M, 0, 0.3))
+  if (varying) {
+    log_relative <- B %*% matrix(rnorm((G - 1L) * M), G - 1L, M)
+    scale_level <- exp(sweep(
+      log_relative, 2L, log(reference_sd), "+"
+    ))
+  } else {
+    scale_level <- matrix(reference_sd, G, M, byrow = TRUE)
+  }
+  group_scale <- if (student) exp(rnorm(G, 0, 0.2)) else rep(1, G)
+  scale_cov <- scale_level * group_scale
+  Lref <- diag(reference_sd) %*% Lcoef
+
+  H <- matrix(rnorm(Q * M), Q, M)
+  theta <- rnorm(Q)
+  prior_mean <- rnorm(Q)
+  prior_prec <- exp(rnorm(Q))
+  difference <- theta - prior_mean
+
+  # Structured solves emitted by stan_re_s2z_cov_group_comp().
+  coefficient_white <- forwardsolve(Lcoef, t(delta / scale_cov))
+  white_delta <- forwardsolve(Lcov, t(coefficient_white))
+  w <- as.vector(white_delta)
+  prior_factor <- diag(sqrt(prior_prec)) %*% H %*% Lref
+  prior_difference <- sqrt(prior_prec) * difference
+  if (varying) {
+    mean_factor <- matrix(NA_real_, G * M, M)
+    for (k in seq_len(M)) {
+      mean_basis <- matrix(Lref[, k], G, M, byrow = TRUE) / scale_cov
+      coefficient_basis <- forwardsolve(Lcoef, t(mean_basis))
+      white_basis <- forwardsolve(Lcov, t(coefficient_basis))
+      mean_factor[, k] <- as.vector(white_basis)
+    }
+    P_group <- crossprod(mean_factor)
+    h_group <- -drop(crossprod(mean_factor, w))
+  } else {
+    # With shared scales, whitening the reference mean cancels its coefficient
+    # covariance. Only one solve against the grouping covariance is needed.
+    one_white <- forwardsolve(Lcov, 1 / group_scale)
+    P_group <- diag(sum(one_white^2), M)
+    h_group <- -drop(crossprod(white_delta, one_white))
+  }
+  P_x <- crossprod(prior_factor) + P_group
+  h_x <- drop(crossprod(prior_factor, prior_difference)) + h_group
+  L_P_x <- t(chol(P_x))
+  correction <- sum(forwardsolve(L_P_x, h_x)^2)
+
+  structured <-
+    sum(dnorm(theta, prior_mean, 1 / sqrt(prior_prec), log = TRUE)) -
+    0.5 * sum(w^2) + 0.5 * correction -
+    (G - 1L) * sum(log(diag(Lref))) -
+    M * sum(log(diag(Lcov))) -
+    M * sum(log(group_scale)) -
+    sum(log(diag(L_P_x))) -
+    0.5 * G * M * log(2 * pi) +
+    0.5 * M * log(2 * pi) + 0.5 * M * log(G)
+
+  # Independent dense reference for vec(U) with
+  # Cov(U_g, U_h) = Omega[g,h] A_g A_h'.
+  L_full <- diag(as.vector(scale_cov)) %*% kronecker(Lcoef, Lcov)
+  covariance <- tcrossprod(L_full)
+  mean_map <- kronecker(diag(M), rep(1, G))
+  delta_vec <- as.vector(delta)
+  covariance_inv_delta <- solve(covariance, delta_vec)
+  Lambda <- diag(prior_prec)
+  P_m <- crossprod(mean_map, solve(covariance, mean_map)) +
+    crossprod(H, Lambda %*% H)
+  h_m <- drop(crossprod(H, Lambda %*% difference)) -
+    drop(crossprod(mean_map, covariance_inv_delta))
+  quadratic <- drop(crossprod(delta_vec, covariance_inv_delta)) +
+    drop(crossprod(difference, Lambda %*% difference)) -
+    drop(crossprod(h_m, solve(P_m, h_m)))
+  dense <-
+    -0.5 * quadratic +
+    0.5 * as.numeric(determinant(Lambda, logarithm = TRUE)$modulus) -
+    0.5 * as.numeric(determinant(covariance, logarithm = TRUE)$modulus) -
+    0.5 * as.numeric(determinant(P_m, logarithm = TRUE)$modulus) -
+    0.5 * (Q + G * M - M) * log(2 * pi) + 0.5 * M * log(G)
+
+  list(
+    structured = structured, dense = dense,
+    mean_contrast_score = -h_group,
+    conditional_mean_x = drop(solve(P_x, h_x)),
+    conditional_cov_x = solve(P_x)
+  )
+}
+
+test_that("known covariance S2Z kernels equal the dense conventional model", {
+  for (varying in c(FALSE, TRUE)) {
+    for (student in c(FALSE, TRUE)) {
+      case <- .s2z_known_cov_case(varying, student)
+      expect_equal(case$structured, case$dense, tolerance = 1e-10)
+      expect_gt(sum(abs(case$mean_contrast_score)), 1e-8)
+      expect_true(all(is.finite(case$conditional_mean_x)))
+      expect_true(all(eigen(case$conditional_cov_x, symmetric = TRUE)$values > 0))
+    }
+  }
+})
