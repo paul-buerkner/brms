@@ -828,7 +828,9 @@ stan_log_lik_ordinal <- function(bterms, ...) {
     p$Jthres <- stan_log_lik_advars(bterms, "Jthres", reqn = TRUE, ...)$Jthres
     p$thres <- "merged_Intercept"
   } else {
-    p$thres <- "Intercept"
+    p$thres <- str_if(
+      has_re_s2z_terms(bterms), "finite_Intercept", "Intercept"
+    )
   }
   resp <- usc(bterms$resp)
   mix <- get_mix_id(bterms)
@@ -890,7 +892,9 @@ stan_log_lik_hurdle_cumulative <- function(bterms, ...) {
     p$Jthres <- stan_log_lik_advars(bterms, "Jthres", reqn = TRUE, ...)$Jthres
     p$thres <- "merged_Intercept"
   } else {
-    p$thres <- "Intercept"
+    p$thres <- str_if(
+      has_re_s2z_terms(bterms), "finite_Intercept", "Intercept"
+    )
   }
   resp <- usc(bterms$resp)
   mix <- get_mix_id(bterms)
@@ -1299,6 +1303,11 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
 # use a Stan GLM primitive function?
 use_glm_primitive <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
+  # Ordinal S2Z thresholds are assembled separately from their slope
+  # coordinates; the ordered GLM primitive assumes one ordinary alpha vector.
+  if (is_ordinal(bterms) && has_re_s2z_terms(bterms)) {
+    return(FALSE)
+  }
   # the model can only have a single predicted parameter
   # and no additional residual or autocorrelation structure
   mu <- bterms$dpars[["mu"]]

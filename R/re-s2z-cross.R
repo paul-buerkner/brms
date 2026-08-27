@@ -276,10 +276,32 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
     all(nzchar(r$resp)) && !any(nzchar(r$dpar)) && !any(nzchar(r$nlpar))
   nonlinear <- is.brmsframe(bframe) && !any(nzchar(r$resp)) &&
     !any(nzchar(r$dpar)) && all(nzchar(r$nlpar))
+  frames <- re_s2z_cross_frames(bframe, r)
   if (!response_location && !nonlinear) {
-    stop2("A cross-predictor sum-to-zero ID currently supports only ",
-          "multivariate response-location predictors or nonlinear ",
-          "parameters of one response.")
+    contexts <- lapply(frames, function(x) {
+      re_s2z_context(x, r = subset2(x$frame$re, id = id))
+    })
+    affected <- paste0(
+      "Affected linear predictors:\n  - ",
+      paste(
+        vapply(contexts, format_re_s2z_context, character(1)),
+        collapse = "\n  - "
+      )
+    )
+    stop_re_s2z(
+      contexts[[1L]], "cross_predictor_id",
+      paste0(
+        "A cross-predictor sum-to-zero ID currently supports only ",
+        "multivariate response-location predictors or nonlinear parameters ",
+        "of one response.\n", affected
+      ),
+      paste0(
+        "use a distinct predictor-local ID in every listed linear ",
+        "predictor (for example, ", re_s2z_local_id_examples(contexts),
+        "), or use s2z = FALSE if cross-predictor correlations are required ",
+        "for this predictor shape."
+      )
+    )
   }
   if (nonlinear && !re_s2z_center_mode(r) %in% c("centered", "noncentered")) {
     stop2("A cross-predictor sum-to-zero ID spanning nonlinear parameters ",
@@ -305,7 +327,6 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
     stop2("A cross-predictor sum-to-zero ID currently requires correlated ",
           "group effects.")
   }
-  frames <- re_s2z_cross_frames(bframe, r)
   for (x in frames) {
     rx <- x$frame$re
     other <- unique(rx$id[

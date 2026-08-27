@@ -39,8 +39,13 @@ arithmetic mean of the observed groups' coefficient vectors, whose
 likelihood-scale values are unchanged by the reconstruction. It is exact
 for \code{dist = "gaussian"} and for
 \code{dist = "student"} through a Gaussian scale mixture. Every varying
-design column must have an identical population-level design column.
-Blocks with one varying coefficient use a dedicated scalar
+design column must have an identical population-level design column for
+nonordinal predictors. Supported ordinal location predictors use the more
+general checked identity \eqn{Z = 1 a^T + X C}: an omitted
+varying-intercept mean translates every threshold, while omitted slope
+means translate the matching population slopes and any constant threshold
+direction induced by design centering.
+Nonordinal blocks with one varying coefficient use a dedicated scalar
 implementation. Blocks with any number of coefficients and a diagonal
 scale matrix (\code{cor = FALSE} or \code{||} syntax) use a component-wise
 scalar implementation that also accounts exactly for the shared centered
@@ -91,12 +96,26 @@ the number of grouping factors. Flat population-level prior coordinates
 are handled exactly rather than approximated by a large finite variance.
 Conventional S2Z blocks may use a fixed \code{cov} matrix together with any
 otherwise supported \code{center} setting and either shared or varying scales.
+Supported local ordinal location blocks use the dense joint system for fixed
+centering fractions, shared or varying scales, and fixed \code{cov}; Fisher
+centering and IDs spanning ordinal and other predictors remain unsupported.
 The \code{by} and \code{pw} arguments remain unsupported, and \code{cov} is not
 supported for strict latent scores.
-Population-level priors must currently be flat, normal, Student-t, or
-Cauchy with numeric constant arguments. Bounds, tags, special priors,
-prior-only sampling, ordinal thresholds, sparse and QR designs, and
-non-positive fixed group-level standard deviations are not supported.
+Built-in ordinal location predictors for \code{cumulative}, \code{cratio},
+\code{sratio}, \code{acat}, and \code{hurdle_cumulative} support flexible,
+equidistant, and grouped thresholds. Conventional temporary and public
+raw-design thresholds, population slopes, and group effects are reconstructed
+in generated quantities. Sum-to-zero thresholds, fixed or shared
+ordinal-mixture thresholds, custom ordinal families, and category-specific S2Z
+group effects remain unsupported.
+Population-level priors must currently be flat, normal, Student-t, or Cauchy
+with numeric constant arguments. Physically centered, predictor-local blocks
+with shared scales and no fixed \code{cov} also support exact logistic
+active-coordinate priors through an explicit omitted-mean fallback. That
+fallback is not available for ordinal locations or other centering, scale,
+covariance, or cross-predictor charts. Bounds, tags, special priors, prior-only
+sampling, sparse and QR designs, and non-positive fixed group-level standard
+deviations are not supported.
 Custom Stan code must not use the conventional population- or group-level
 coefficients before they are reconstructed in generated quantities.}
 

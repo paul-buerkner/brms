@@ -77,13 +77,46 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
     # to reduce the number of models that need refitting for moment matching
     par_classes <- c(
       "bQ", "zb", "zbsp", "zbs", "zar", "zma", "hs_local", "R2D2_phi",
-      "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
+      "scales", "merged_Intercept", "finite_Intercept", "zcar", "nszcar",
+      "zerr"
     )
     c(out) <- paste0(par_classes, p)
-    if (has_re_s2z(x)) {
-      c(out) <- paste0("theta_s2z", p)
-      c(out) <- paste0("z_theta_s2z", p)
-      q <- length(x$frame$fe$vars)
+    if (has_re_s2z_conventional(x)) {
+      c(out) <- paste0(
+        c(
+          "theta_s2z", "z_theta_s2z", "theta_s2z_active", "fixed_s2z",
+          "zfixed_s2z", "sdfixed_s2z"
+        ),
+        p
+      )
+      infos_s2z <- re_s2z_infos(x)
+      if (length(infos_s2z)) {
+        info_s2z <- infos_s2z[[1L]]
+        inactive_q_s2z <- info_s2z$inactive_q
+        if (isTRUE(info_s2z$ordinal)) {
+          inactive_q_s2z <- intersect(inactive_q_s2z, info_s2z$slope_q)
+          threshold <- info_s2z$threshold
+          for (i in unique(threshold$group_index)) {
+            row <- threshold[match(i, threshold$group_index), , drop = FALSE]
+            threshold_class <- if (identical(row$kind, "first")) {
+              "first_theta_Intercept"
+            } else {
+              "theta_Intercept"
+            }
+            threshold_group <- str_if(has_thres_groups(x), usc(i))
+            c(out) <- paste0(threshold_class, p, threshold_group)
+          }
+        }
+        n_inactive_s2z <- length(inactive_q_s2z)
+        if (n_inactive_s2z) {
+          c(out) <- paste0(
+            "par_fixed_s2z", p, "_", seq_len(n_inactive_s2z)
+          )
+        }
+        q <- length(info_s2z$qnames)
+      } else {
+        q <- length(x$frame$fe$vars)
+      }
       c(out) <- paste0("udf_b_s2z", p, "_", seq_len(q))
     }
     smframe <- x$frame$sm
@@ -109,7 +142,8 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
     r <- subset2(reframe, id = id)
     if (!save_pars$all && isTRUE(r$s2z[1])) {
       s2z_classes <- c(
-        "z_s2z", "r_s2z", "H_s2z", "prior_mean_s2z",
+        "z_s2z", "z_mean_s2z", "r_s2z", "H_s2z",
+        "q_explicit_s2z", "prior_mean_s2z",
         "prior_prec_s2z", "prior_scale_s2z",
         "W_matheron_s2z", "sqrt_W_matheron_s2z",
         "L_W_matheron_s2z", "theta_white_matheron_s2z",

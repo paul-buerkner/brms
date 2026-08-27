@@ -42,6 +42,20 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
+  # Keep top-level response and family labels available to local predictor
+  # validation. Category and mixture predictors otherwise carry only their
+  # dpar prefix, even though the enclosing model context is known here.
+  s2z_response <- x$resp %||% ""
+  if (!length(s2z_response) || !nzchar(s2z_response)) {
+    response_vars <- all.vars(x$respform)
+    if (length(response_vars)) {
+      s2z_response <- response_vars[1L]
+    }
+  }
+  x$frame$s2z_context <- list(
+    response = s2z_response,
+    family = x$family$family %||% ""
+  )
   for (dp in names(x$dpars)) {
     x$dpars[[dp]] <- brmsframe(
       x$dpars[[dp]], data, frame = x$frame,
@@ -85,7 +99,19 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # only store the ranefs of this specific linear formula
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
-  validate_re_s2z_design(x, data = data)
+  validate_re_s2z_structure(x, data = data)
+  if (has_re_s2z_conventional(x) &&
+      is.list(basis[["re_s2z"]]) && length(basis[["re_s2z"]])) {
+    # The affine map is part of the fitted coordinate system. In prediction
+    # frames, reuse the map validated against the fitting design rather than
+    # recentering it on newdata.
+    x$frame$re_s2z <- basis[["re_s2z"]]
+  } else {
+    re_s2z <- validate_re_s2z_design(x, data = data)
+    if (has_re_s2z_conventional(x) && length(re_s2z)) {
+      x$frame$re_s2z <- re_s2z
+    }
+  }
   if (!is.null(basis[["re_s2z_center"]])) {
     # Partial-centering fractions are part of the fitted coordinate map. Reuse
     # them for new data rather than deriving a different map at prediction time.
@@ -363,6 +389,10 @@ frame_basis.btl <- function(x, data, ...) {
     }
     if (length(re_s2z_center)) {
       out$re_s2z_center <- re_s2z_center
+    }
+    if (has_re_s2z_conventional(x) &&
+        is.list(x$frame$re_s2z) && length(x$frame$re_s2z)) {
+      out$re_s2z <- x$frame$re_s2z
     }
   }
   out

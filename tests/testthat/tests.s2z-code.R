@@ -3778,23 +3778,12 @@ test_that("proper population coordinates outside group maps score independently"
   expect_equal(
     s2z_count_fixed(
       scode,
-      paste0(
-        "normal_lpdf(theta_s2z[2] | prior_mean_s2z_1[2], ",
-        "prior_scale_s2z_1[2])"
-      )
+      "normal_lpdf(fixed_s2z | -0.1, 0.7)"
     ),
     1L
   )
-  expect_equal(
-    s2z_count_fixed(
-      scode,
-      paste0(
-        "normal_lpdf(theta_s2z[3] | prior_mean_s2z_1[3], ",
-        "prior_scale_s2z_1[3])"
-      )
-    ),
-    1L
-  )
+  expect_match2(scode, "theta_s2z[2] = fixed_s2z[1];")
+  expect_match2(scode, "theta_s2z[3] = fixed_s2z[2];")
   expect_false(grepl("normal_lpdf(theta_s2z[1]", scode, fixed = TRUE))
   expect_match2(scode, "theta_s2z[1] - prior_mean_s2z_1[1]")
 })
@@ -4301,7 +4290,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       (0 + x | gr(g, id = "split", s2z = TRUE, by = f_by))
   )
   for (form in split_by) {
-    expect_error(stancode(form, data = by_dat), "'by' and 'pw'")
+    expect_error(stancode(form, data = by_dat), "Argument 'by'")
   }
 
   split_pw <- list(
@@ -4313,7 +4302,7 @@ test_that("split same-ID S2Z terms validate every constituent", {
       (0 + x | gr(g, id = "split", s2z = TRUE, pw = w))
   )
   for (form in split_pw) {
-    expect_error(stancode(form, data = s2z_dat), "'by' and 'pw'")
+    expect_error(stancode(form, data = s2z_dat), "Argument 'pw'")
   }
 
   covariance <- diag(nlevels(s2z_dat$g))

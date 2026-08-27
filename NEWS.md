@@ -32,9 +32,10 @@ Wiener drift uses exact first-passage
 information, while boundary separation and bias use exact Fisher information
 after coarsening to the recorded upper/lower decision. Supported auxiliary
 probability coordinates---atom probabilities, asymmetric-Laplace quantile, and
-Wiener bias---require an explicit compatible population `Intercept` prior when
-they contain an ordinary S2Z intercept, because their default logistic prior is
-not yet supported by the omitted-mean integration. Strict latent scores support
+Wiener bias---use an exact explicit omitted-mean fallback for their default
+logistic population `Intercept` prior in physically centered, predictor-local,
+shared-scale blocks without `cov`. Other charts require an explicit compatible
+population prior. Strict latent scores support
 symbolically analyzable scalar nonlinear location predictors for supported
 scalar response families, including sampled population-level loadings and
 wide models with conditionally independent responses.
@@ -67,6 +68,17 @@ and joint Matheron recovery whenever that system is smaller than the stacked
 omitted-mean system. In the common crossed-intercept case this reduces to a
 scalar update with no matrix factorization, irrespective of the number of
 grouping factors.
+Built-in ordinal location predictors for `cumulative`, `cratio`, `sratio`,
+`acat`, and `hurdle_cumulative` support local S2Z varying intercepts and slopes
+with flexible, equidistant, or grouped thresholds. The checked affine map
+`Z = 1 a^T + X C` translates temporary threshold primitives together with
+population slopes and reconstructs conventional public thresholds, slopes,
+and group effects. Ordinal systems use the dense joint omitted-mean kernel and
+compose with fixed centering fractions, shared or varying scales, Gaussian or
+Student-t effects, and fixed `cov`. Fisher centering and cross-predictor IDs
+touching an ordinal location remain gated, as do sum-to-zero thresholds, fixed
+or shared ordinal-mixture thresholds, category-specific S2Z effects, custom
+ordinal families, and non-Gaussian active-coordinate priors.
 Correlated group-effect S2Z blocks may use one ID across multivariate
 response-location predictors or across nonlinear parameters of one response.
 The nonlinear path currently supports the centered and non-centered endpoints;

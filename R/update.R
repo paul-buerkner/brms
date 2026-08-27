@@ -64,6 +64,17 @@
 #'                     file = fname)
 #' upd_cmdstanr <- update(fit_cmdstanr,
 #'                        formula. = rate ~ conc)
+#'
+#' # the updated fit will use a random seed unless specified, even if the
+#' # original fit had a seed argument. Use seed again for a reproducible fit
+#'
+#' fit_seed <- brm(rate ~ conc + state,
+#'                 data = Puromycin,
+#'                 seed = 1234)
+#'
+#' update_seed <- update(fit_seed,
+#'                       formula. = ~ . - state,
+#'                       seed = 1234)
 #' }
 #'
 #' @export
@@ -315,6 +326,18 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #' # update the model using fewer predictors
 #' fit_imp2 <- update(fit_imp1, formula. = . ~ hyp + chl, newdata = imp)
 #' summary(fit_imp2)
+#'
+#' # the updated fit will use a random seed unless specified, even if the
+#' # original fit had a seed argument. Use seed again for a reproducible fit
+#'
+#' fit_imp_seed <- brm_multiple(bmi ~ age + hyp + chl,
+#'                              data = imp,
+#'                              seed = 1234)
+#'
+#' update_imp_seed <- update(fit_imp_seed,
+#'                           formula. = . ~ hyp + chl,
+#'                           newdata = imp,
+#'                           seed = 1234)
 #' }
 #'
 #' @export

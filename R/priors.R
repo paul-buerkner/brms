@@ -1625,6 +1625,10 @@ validate_sd_level_prior <- function(prior, all_priors, bframe,
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
+  # S2Z prior and cross-predictor constraints depend on the complete effective
+  # prior table, so validate them only after ordinary and special priors have
+  # been resolved. This also makes public validate_prior() authoritative.
+  validate_re_s2z_prior_global(bframe, prior = prior)
   if (is_verbose()) {
     # show remaining default priors added to the model
     def_prior <- prepare_print_prior(prior)

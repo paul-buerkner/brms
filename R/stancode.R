@@ -347,6 +347,9 @@ stancode.default <- function(object, data, family = gaussian(),
       collapse_stanvars(stanvars, "genquant", "start"),
       scode_predictor[["gen_comp"]],
       scode_re[["gen_comp"]],
+      # Ordinal S2Z public thresholds depend on the conventional coefficients
+      # and omitted group means recovered immediately above.
+      scode_predictor[["gen_after_recovery"]],
       scode_rngprior[["gen_comp"]],
       scode_Xme[["gen_comp"]],
       collapse_stanvars(stanvars, "genquant", "end"),

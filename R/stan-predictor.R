@@ -289,10 +289,94 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   # replace this predictor's ordinary population coefficients by theta_s2z.
   s2z <- has_re_s2z_conventional(bframe)
   mean_noncenter <- p %in% s2z_mean_noncenter
+  info_s2z <- NULL
+  ordinal_s2z <- FALSE
+  if (s2z) {
+    infos_s2z <- re_s2z_infos(bframe)
+    stopifnot(length(infos_s2z) > 0L)
+    info_s2z <- infos_s2z[[1L]]
+    ordinal_s2z <- isTRUE(info_s2z$ordinal)
+  }
 
   if (s2z) {
-    K_s2z <- length(bframe$frame$fe$vars)
-    if (mean_noncenter) {
+    K_s2z <- length(info_s2z$qnames)
+    active_s2z <- info_s2z$active_q
+    if (is.null(active_s2z)) {
+      active_s2z <- sort(unique(unlist(lapply(infos_s2z, function(info) {
+        if (ordinal_s2z) {
+          which(rowSums(abs(info$H)) > 0)
+        } else {
+          rows <- info$match_q
+          if (info$center && any(info$r$coef != "Intercept")) {
+            rows <- c(rows, 1L)
+          }
+          rows
+        }
+      }), use.names = FALSE)))
+    }
+    coef_s2z <- if (ordinal_s2z) info_s2z$slope_q else seq_len(K_s2z)
+    active_coef_s2z <- intersect(coef_s2z, active_s2z)
+    inactive_coef_s2z <- setdiff(coef_s2z, active_coef_s2z)
+    split_fe_s2z <- ordinal_s2z || length(inactive_coef_s2z) > 0L
+    if (split_fe_s2z) {
+      # Threshold primitives are owned by stan_thres(), while fixed-only
+      # coefficients retain their ordinary brms priors under every physical
+      # omitted-mean kernel. Assemble just the FE-owned coordinates into one
+      # vector before the omitted-mean solve.
+      stopifnot(!mean_noncenter)
+      special_b_s2z <- has_special_prior(prior, bframe, class = "b")
+      if (length(active_coef_s2z)) {
+        str_add(out$par) <- glue(
+          "  vector[{length(active_coef_s2z)}] theta_s2z_active{p};",
+          "  // S2Z-active finite-population coefficients\n"
+        )
+      }
+      if (length(inactive_coef_s2z)) {
+        inactive_names <- info_s2z$qnames[inactive_coef_s2z]
+        stopifnot(!"Intercept" %in% inactive_names)
+        if (special_b_s2z) {
+          stopifnot(length(inactive_names) == length(fixef))
+          inactive_prior <- stan_prior_non_centered(
+            class = "fixed_s2z", suffix = p, suffix_K = ct,
+            normalize = normalize
+          )
+          inactive_prior$pll_args <- NULL
+          str_add_list(out) <- inactive_prior
+        } else {
+          inactive_prior <- stan_prior(
+            prior, class = "b", coef = inactive_names,
+            type = glue("vector[{length(inactive_coef_s2z)}]"),
+            suffix = glue("_s2z_inactive{p}"), px = px,
+            comment = "S2Z-inactive regression coefficients",
+            normalize = normalize
+          )
+          inactive_prior <- lapply(inactive_prior, function(code) {
+            gsub(
+              glue("b_s2z_inactive{p}"), glue("fixed_s2z{p}"), code,
+              fixed = TRUE
+            )
+          })
+          str_add_list(out) <- inactive_prior
+        }
+      }
+      str_add(out$tpar_def) <- glue(
+        "  vector[{K_s2z}] theta_s2z{p};",
+        "  // assembled finite-population coefficients\n"
+      )
+      theta_comp <- if (special_b_s2z) "tpar_special_prior" else "tpar_comp"
+      for (a in seq_along(active_coef_s2z)) {
+        str_add(out[[theta_comp]]) <- glue(
+          "  theta_s2z{p}[{active_coef_s2z[a]}] = ",
+          "theta_s2z_active{p}[{a}];\n"
+        )
+      }
+      for (a in seq_along(inactive_coef_s2z)) {
+        str_add(out[[theta_comp]]) <- glue(
+          "  theta_s2z{p}[{inactive_coef_s2z[a]}] = ",
+          "fixed_s2z{p}[{a}];\n"
+        )
+      }
+    } else if (mean_noncenter) {
       str_add(out$par) <- glue(
         "  vector[{K_s2z}] z_theta_s2z{p};",
         "  // standardized finite-population coefficients for S2Z effects\n"
@@ -473,7 +557,12 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
     # added in the end such that the intercept comes first in out$eta
     if (s2z) {
       slice <- stan_slice(threads)
-      if (center) {
+      if (ordinal_s2z) {
+        X_s2z <- str_if(center, "Xc", "X")
+        eta_fe <- glue(
+          " + {X_s2z}{p}{slice} * tail(theta_s2z{p}, {length(fixef)})"
+        )
+      } else if (center) {
         eta_fe <- glue(
           " + Xc{p}{slice} * tail(theta_s2z{p}, {length(fixef)})"
         )
@@ -512,12 +601,15 @@ stan_re <- function(bframe, prior, normalize, ...) {
   # Multiple S2Z covariance blocks in one linear predictor share the same
   # finite-population coefficients. Their omitted means must consequently be
   # integrated in one joint Gaussian system. Keep the established one-block
-  # generators entirely unchanged and only activate the joint path for sets
-  # with more than one local S2Z ID.
+  # generators entirely unchanged and activate the joint path for sets with
+  # more than one local S2Z ID. Ordinal thresholds also require this general
+  # path for a singleton because their H map is affine and may repeat rows.
   joint_s2z_sets <- list()
   for (bfl in Filter(has_re_s2z, all_bframel(bframe))) {
     infos <- re_s2z_infos(bfl, prior = prior)
-    if (length(infos) > 1L) {
+    ordinal <- length(infos) && isTRUE(infos[[1L]]$ordinal)
+    cross <- length(infos) && is_re_s2z_cross_id(bframe, infos[[1L]]$id)
+    if ((length(infos) > 1L || ordinal) && !cross) {
       set_id <- infos[[1L]]$id
       joint_s2z_sets[[as.character(set_id)]] <- nlist(
         set_id, ids = vapply(infos, `[[`, numeric(1), "id"), bfl, infos
@@ -618,6 +710,24 @@ stan_re <- function(bframe, prior, normalize, ...) {
     is_re_s2z_cross_id(bframe, id)
   s2z_fisher <- isTRUE(r$s2z[1]) &&
     identical(re_s2z_center_mode(r), "auto")
+  s2z_ordinal <- isTRUE(r$s2z[1]) && !s2z_latent && any(vapply(
+    all_bframel(bframe), function(bfl) {
+      r_local <- bfl$frame$re
+      if (!has_rows(r_local) || !id %in% r_local$id[r_local$s2z]) {
+        return(FALSE)
+      }
+      infos <- re_s2z_infos(bfl)
+      any(vapply(infos, function(info) {
+        identical(info$id, id) && isTRUE(info$ordinal)
+      }, logical(1)))
+    }, logical(1)
+  ))
+  if (s2z_ordinal && s2z_cross) {
+    stop2("An S2Z ID touching ordinal thresholds cannot yet span predictors.")
+  }
+  if (s2z_ordinal && s2z_fisher) {
+    stop2("Fisher centering is not yet supported for ordinal S2Z effects.")
+  }
   fisher_info <- NULL
   if (s2z_fisher) {
     fisher_info <- if (s2z_latent) {
@@ -3318,7 +3428,7 @@ stan_re_s2z_partial_independent_transform <- function(
 # omitted means from their contrasts and must use the general joint system.
 .stan_re_s2z_joint_matheron_info <- function(set) {
   infos <- set$infos
-  if (length(infos) <= 1L) {
+  if (length(infos) <= 1L || isTRUE(infos[[1L]]$ordinal)) {
     return(NULL)
   }
   separated <- all(vapply(infos, function(info) {
@@ -3419,6 +3529,343 @@ stan_re_s2z_partial_independent_transform <- function(
   out
 }
 
+# A logistic population prior cannot be integrated by the conditional
+# Gaussian omitted-mean kernels. Such systems retain the omitted means
+# explicitly in standardized coordinates and score the exact requested prior.
+.stan_re_s2z_uses_explicit_mean <- function(set) {
+  any(vapply(set$infos, function(info) {
+    !is.null(info$prior) && any(vapply(
+      info$prior, function(spec) identical(spec$dist, "logistic"), logical(1)
+    ))
+  }, logical(1)))
+}
+
+# Exact scalar population-prior statement for the explicit-mean path.
+stan_re_s2z_prior_target <- function(spec, par, normalize) {
+  stopifnot(is.list(spec), is.character(par), length(par) == 1L)
+  if (identical(spec$dist, "flat")) {
+    return("")
+  }
+  lpdf <- stan_lpdf_name(normalize)
+  location <- stan_s2z_number(spec$location)
+  scale <- stan_s2z_number(spec$scale)
+  if (identical(spec$dist, "normal")) {
+    glue("  lprior += normal_{lpdf}({par} | {location}, {scale});\n")
+  } else if (identical(spec$dist, "student")) {
+    df <- stan_s2z_number(spec$df)
+    glue(
+      "  lprior += student_t_{lpdf}({par} | {df}, {location}, {scale});\n"
+    )
+  } else if (identical(spec$dist, "logistic")) {
+    glue("  lprior += logistic_{lpdf}({par} | {location}, {scale});\n")
+  } else {
+    stop2("Internal error: unsupported explicit S2Z population prior.")
+  }
+}
+
+# One block in an exact explicit-mean system. The sampled mean coordinate is
+# v = sqrt(N) L^-1 m, so m = L v / sqrt(N). With orthonormal S2Z contrasts,
+# the Jacobian back to conventional group effects is |L|.
+.stan_re_s2z_explicit_block <- function(id, set, prior, normalize,
+                                        out = list()) {
+  if (is.null(out[["tpar_prior"]])) {
+    out[["tpar_prior"]] <- ""
+  }
+  take_info <- match(id, vapply(set$infos, `[[`, numeric(1), "id"))
+  stopifnot(!is.na(take_info))
+  info <- set$infos[[take_info]]
+  r <- info$r
+  q <- length(info$qnames)
+  M <- nrow(r)
+  J <- seq_rows(r)
+  p <- info$p
+  px <- check_prefix(r)
+  idp <- paste0(r$id, usc(combine_prefix(px)))
+  r_s2z <- glue("r_s2z_{idp}_{r$cn}")
+  is_cor <- M > 1L && isTRUE(r$cor[1])
+  is_student <- identical(r$dist[1], "student")
+
+  if (is_cor) {
+    str_add(out$data) <- glue(
+      "  int<lower=1> NC_{id};  // number of group-level correlations\n"
+    )
+    str_add_list(out) <- stan_prior(
+      prior, class = "L", group = r$group[1], suffix = usc(id),
+      type = glue("cholesky_factor_corr[M_{id}]"),
+      comment = "cholesky factor of correlation matrix",
+      normalize = normalize
+    )
+  }
+  if (identical(id, set$set_id)) {
+    str_add(out$fun) <- "  #include 'fun_sum_to_zero.stan'\n"
+  }
+
+  str_add(out$par) <- glue(
+    "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
+    "  // physical orthonormal S2Z coordinates\n",
+    "  vector[M_{id}] z_mean_s2z_{id};",
+    "  // standardized omitted group mean\n"
+  )
+  str_add(out$tpar_def) <- glue(
+    "  // exact explicit-mean S2Z block {id}\n",
+    "  matrix[N_{id}, M_{id}] r_s2z_{id};\n",
+    "  matrix[M_{id}, M_{id}] L_Sigma_s2z_{id};\n",
+    "  vector[M_{id}] mean_r_s2z_{id};\n",
+    "  real<lower=0> group_quad_s2z_{id};\n",
+    str_if(
+      is_student,
+      glue(
+        "  vector<lower=0>[N_{id}] group_scale_s2z_{id};\n",
+        "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n"
+      )
+    ),
+    cglue("  vector[N_{id}] {r_s2z};\n")
+  )
+
+  # H is fixed by the formula and centered predictor means. Build it once in
+  # transformed data so it never enters the reverse-mode expression graph.
+  str_add_list(out) <- stan_re_s2z_H_code(info)
+  if (is_cor) {
+    str_add(out$tpar_comp) <- glue(
+      "  L_Sigma_s2z_{id} = diag_pre_multiply(sd_{id}, L_{id});\n"
+    )
+  } else {
+    str_add(out$tpar_comp) <- glue(
+      "  L_Sigma_s2z_{id} = diag_matrix(sd_{id});\n"
+    )
+  }
+  str_add(out$tpar_comp) <- glue(
+    "  for (k in 1:M_{id}) {{\n",
+    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+    "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+    "N_{id} - 1));\n",
+    "  }}\n",
+    "  mean_r_s2z_{id} = L_Sigma_s2z_{id} * z_mean_s2z_{id} / ",
+    "sqrt(1.0 * N_{id});\n"
+  )
+  if (is_student) {
+    tr <- subset_reframe_dist(r, "student")
+    g <- usc(tr$ggn[1])
+    str_add(out$tpar_comp) <- glue(
+      "  group_scale_s2z_{id} = dfm{g};\n",
+      "  group_prec_s2z_{id} = inv_square(group_scale_s2z_{id});\n"
+    )
+  }
+  explicit_group_quad_code <- if (is_student) {
+    glue(
+      "    vector[M_{id}] mean_white_s2z = z_mean_s2z_{id} / ",
+      "sqrt(1.0 * N_{id});\n",
+      "    group_quad_s2z_{id} = 0.0;\n",
+      "    for (j in 1:N_{id}) {{\n",
+      "      vector[M_{id}] white_level_s2z = ",
+      "white_group_s2z[, j] + mean_white_s2z;\n",
+      "      group_quad_s2z_{id} += group_prec_s2z_{id}[j] * ",
+      "dot_self(white_level_s2z);\n",
+      "    }}\n"
+    )
+  } else {
+    glue(
+      "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z)) ",
+      "+ dot_self(z_mean_s2z_{id});\n"
+    )
+  }
+  str_add(out$tpar_comp) <- glue(
+    "  {{\n",
+    "    matrix[M_{id}, N_{id}] white_group_s2z = ",
+    "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+    "{explicit_group_quad_code}",
+    "  }}\n",
+    cglue("  {r_s2z} = r_s2z_{id}[, {J}];\n")
+  )
+  str_add(out$pll_args) <- cglue(", vector {r_s2z}")
+
+  str_add(out$tpar_prior) <- glue(
+    "  lprior += -0.5 * group_quad_s2z_{id}\n",
+    "    - (N_{id} - 1) * ",
+    "sum(log(diagonal(L_Sigma_s2z_{id})))\n",
+    str_if(
+      is_student,
+      glue("    - M_{id} * sum(log(group_scale_s2z_{id}))\n")
+    ),
+    str_if(
+      normalize,
+      glue("    - 0.5 * N_{id} * M_{id} * log(2 * pi())\n")
+    ),
+    "  ;\n"
+  )
+  out
+}
+
+# Score and reconstruct one complete explicit-mean system after its blocks
+# have been generated. This path is shared by singleton and multiblock models.
+.stan_re_s2z_explicit_system <- function(set, normalize, out = list()) {
+  infos <- set$infos
+  info <- infos[[1L]]
+  q <- length(info$qnames)
+  set_id <- set$set_id
+  p <- info$p
+  active_q <- info$active_q
+  if (is.null(active_q)) {
+    active_q <- which(vapply(
+      info$prior, function(spec) !identical(spec$dist, "flat"), logical(1)
+    ))
+  }
+
+  str_add(out$tpar_def) <- glue(
+    "  vector[{q}] q_explicit_s2z_{set_id};",
+    "  // conventional coefficients for exact explicit S2Z means\n"
+  )
+  str_add(out$tpar_comp) <- glue(
+    "  q_explicit_s2z_{set_id} = theta_s2z{p};\n"
+  )
+  for (block in infos) {
+    str_add(out$tpar_comp) <- glue(
+      "  q_explicit_s2z_{set_id} -= H_s2z_{block$id} * ",
+      "mean_r_s2z_{block$id};\n"
+    )
+  }
+  for (k in active_q) {
+    str_add(out$tpar_prior) <- stan_re_s2z_prior_target(
+      info$prior[[k]], glue("q_explicit_s2z_{set_id}[{k}]"), normalize
+    )
+  }
+
+  str_add(out$gen_def) <- glue(
+    "  vector[{q}] q_recovered_s2z_{set_id};\n"
+  )
+  if (info$center) {
+    str_add(out$gen_def) <- glue(
+      "  real Intercept{p};\n",
+      str_if(length(info$fixef), glue("  vector[Kc{p}] b{p};\n")),
+      "  real b{p}_Intercept;\n"
+    )
+  } else {
+    str_add(out$gen_def) <- glue("  vector[{q}] b{p};\n")
+  }
+  for (block in infos) {
+    r <- block$r
+    id <- block$id
+    J <- seq_rows(r)
+    idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
+    r_s2z <- glue("r_s2z_{idp}_{r$cn}")
+    r_public <- glue("r_{idp}_{r$cn}")
+    is_cor <- nrow(r) > 1L && isTRUE(r$cor[1])
+    if (is_cor) {
+      str_add(out$gen_def) <- glue(
+        "  matrix[N_{id}, M_{id}] r_{id};\n",
+        "  corr_matrix[M_{id}] Cor_{id}",
+        " = multiply_lower_tri_self_transpose(L_{id});\n",
+        "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
+      )
+    }
+    str_add(out$gen_def) <- cglue(
+      "  vector[N_{id}] {r_public};\n"
+    )
+    if (is_cor) {
+      str_add(out$gen_comp) <- glue(
+        "  r_{id} = r_s2z_{id};\n",
+        "  for (j in 1:N_{id}) r_{id}[j] += mean_r_s2z_{id}';\n",
+        cglue("  {r_public} = r_{id}[, {J}];\n")
+      )
+    } else {
+      str_add(out$gen_comp) <- cglue(
+        "  {r_public} = {r_s2z} + mean_r_s2z_{id}[{J}];\n"
+      )
+    }
+  }
+  str_add(out$gen_comp) <- glue(
+    "  q_recovered_s2z_{set_id} = q_explicit_s2z_{set_id};\n"
+  )
+  for (block in infos) {
+    r <- block$r
+    id <- block$id
+    if (nrow(r) > 1L && isTRUE(r$cor[1])) {
+      str_add(out$gen_comp) <- stan_cor_gen_comp(
+        cor = glue("cor_{id}"), ncol = glue("M_{id}")
+      )
+    }
+  }
+  if (info$center) {
+    str_add(out$gen_comp) <- glue(
+      "  Intercept{p} = q_recovered_s2z_{set_id}[1];\n",
+      str_if(
+        length(info$fixef),
+        glue(
+          "  b{p} = tail(q_recovered_s2z_{set_id}, Kc{p});\n",
+          "  b{p}_Intercept = Intercept{p} - dot_product(",
+          "means_X{p}, b{p});\n"
+        )
+      ),
+      str_if(
+        !length(info$fixef), glue("  b{p}_Intercept = Intercept{p};\n")
+      )
+    )
+  } else {
+    str_add(out$gen_comp) <- glue(
+      "  b{p} = q_recovered_s2z_{set_id};\n"
+    )
+  }
+  out
+}
+
+.stan_re_s2z_explicit <- function(id, bframe, prior, normalize,
+                                   out = list()) {
+  r <- subset2(bframe$frame$re, id = id)
+  bfl <- re_s2z_bframel(bframe, r)
+  infos <- re_s2z_infos(bfl, prior = prior)
+  stopifnot(length(infos) == 1L)
+  set <- nlist(set_id = id, ids = id, bfl, infos)
+  out <- .stan_re_s2z_explicit_block(
+    id, set = set, prior = prior, normalize = normalize, out = out
+  )
+  .stan_re_s2z_explicit_system(set, normalize = normalize, out = out)
+}
+
+# Emit the deterministic omitted-mean map for one covariance block. Ordinal
+# descriptors carry the fully validated affine map because their threshold
+# rows are not ordinary population-intercept rows. Legacy descriptors retain
+# the established name/centering construction.
+stan_re_s2z_H_code <- function(info) {
+  stopifnot(is.list(info), is.reframe(info$r), has_rows(info$r))
+  out <- list()
+  id <- info$id
+  q <- length(info$qnames)
+  M <- nrow(info$r)
+  str_add(out$tdata_def) <- glue(
+    "  matrix[{q}, M_{id}] H_s2z_{id};\n"
+  )
+  str_add(out$tdata_comp) <- glue(
+    "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
+  )
+  if (!is.null(info$H)) {
+    H <- as.matrix(info$H)
+    stopifnot(identical(dim(H), c(q, M)))
+    nonzero <- which(H != 0, arr.ind = TRUE)
+    if (nrow(nonzero)) {
+      for (k in seq_len(nrow(nonzero))) {
+        i <- nonzero[k, 1L]
+        j <- nonzero[k, 2L]
+        str_add(out$tdata_comp) <- glue(
+          "  H_s2z_{id}[{i}, {j}] = {stan_s2z_number(H[i, j])};\n"
+        )
+      }
+    }
+    return(out)
+  }
+  for (j in seq_len(M)) {
+    qi <- info$match_q[j]
+    str_add(out$tdata_comp) <- glue(
+      "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
+    )
+    if (info$center && info$r$coef[j] != "Intercept") {
+      str_add(out$tdata_comp) <- glue(
+        "  H_s2z_{id}[1, {j}] = means_X{info$p}[{qi - 1L}];\n"
+      )
+    }
+  }
+  out
+}
+
 # Stan code local to one covariance block participating in a joint S2Z
 # omitted-mean system. The block contributes its physical zero-sum effects and
 # the Gaussian normal equations for its omitted mean in reference-whitened
@@ -3430,6 +3877,11 @@ stan_re_s2z_partial_independent_transform <- function(
   lpdf <- stan_lpdf_name(normalize)
   if (is.null(out[["tpar_prior"]])) {
     out[["tpar_prior"]] <- ""
+  }
+  if (.stan_re_s2z_uses_explicit_mean(set)) {
+    return(.stan_re_s2z_explicit_block(
+      id, set = set, prior = prior, normalize = normalize, out = out
+    ))
   }
   r <- subset2(bframe$frame$re, id = id)
   stopifnot(is.reframe(r), has_rows(r), all(r$s2z), id %in% set$ids)
@@ -3548,26 +4000,9 @@ stan_re_s2z_partial_independent_transform <- function(
     cglue("  vector[N_{id}] {r_s2z};\n")
   )
 
-  # H depends only on the formula mapping and centered design-column means.
-  # Keeping it in transformed data avoids rebuilding an autodiff matrix at
-  # every gradient evaluation.
-  str_add(out$tdata_def) <- glue(
-    "  matrix[{q}, M_{id}] H_s2z_{id};\n"
-  )
-  str_add(out$tdata_comp) <- glue(
-    "  H_s2z_{id} = rep_matrix(0.0, {q}, M_{id});\n"
-  )
-  for (j in seq_len(M)) {
-    qi <- info$match_q[j]
-    str_add(out$tdata_comp) <- glue(
-      "  H_s2z_{id}[{qi}, {j}] = 1.0;\n"
-    )
-    if (info$center && info$r$coef[j] != "Intercept") {
-      str_add(out$tdata_comp) <- glue(
-        "  H_s2z_{id}[1, {j}] = means_X{info$p}[{qi - 1L}];\n"
-      )
-    }
-  }
+  # H depends only on the checked formula/design mapping. Keeping it in
+  # transformed data avoids rebuilding an autodiff matrix at every gradient.
+  str_add_list(out) <- stan_re_s2z_H_code(info)
 
   if (varying) {
     str_add(out$tpar_comp) <- glue(
@@ -4187,7 +4622,12 @@ stan_re_s2z_partial_independent_transform <- function(
 .stan_re_s2z_joint <- function(set, prior, threads, normalize, ...) {
   out <- list(tpar_prior = "")
   infos <- set$infos
-  stopifnot(length(infos) > 1L)
+  stopifnot(length(infos) > 1L || isTRUE(infos[[1L]]$ordinal))
+  if (.stan_re_s2z_uses_explicit_mean(set)) {
+    return(.stan_re_s2z_explicit_system(
+      set, normalize = normalize, out = out
+    ))
+  }
   if (.stan_re_s2z_joint_uses_matheron(set)) {
     return(.stan_re_s2z_joint_matheron(
       set, prior = prior, threads = threads, normalize = normalize, ...
@@ -4360,13 +4800,17 @@ stan_re_s2z_partial_independent_transform <- function(
   str_add(out$gen_def) <- glue(
     "  vector[{q}] q_recovered_s2z_{set_id};\n"
   )
-  if (info$center) {
+  if (isTRUE(info$ordinal) && length(info$slope_q)) {
+    str_add(out$gen_def) <- glue(
+      "  vector[{length(info$slope_q)}] b{p};\n"
+    )
+  } else if (info$center && !isTRUE(info$ordinal)) {
     str_add(out$gen_def) <- glue(
       "  real Intercept{p};\n",
       str_if(length(info$fixef), glue("  vector[Kc{p}] b{p};\n")),
       "  real b{p}_Intercept;\n"
     )
-  } else {
+  } else if (!isTRUE(info$ordinal)) {
     str_add(out$gen_def) <- glue("  vector[{q}] b{p};\n")
   }
   for (b in seq_along(infos)) {
@@ -4462,7 +4906,12 @@ stan_re_s2z_partial_independent_transform <- function(
       )
     }
   }
-  if (info$center) {
+  if (isTRUE(info$ordinal) && length(info$slope_q)) {
+    str_add(out$gen_comp) <- glue(
+      "  b{p} = tail(q_recovered_s2z_{set_id}, ",
+      "{length(info$slope_q)});\n"
+    )
+  } else if (info$center && !isTRUE(info$ordinal)) {
     str_add(out$gen_comp) <- glue(
       "  Intercept{p} = q_recovered_s2z_{set_id}[1];\n",
       str_if(
@@ -4478,7 +4927,7 @@ stan_re_s2z_partial_independent_transform <- function(
         glue("  b{p}_Intercept = Intercept{p};\n")
       )
     )
-  } else {
+  } else if (!isTRUE(info$ordinal)) {
     str_add(out$gen_comp) <- glue(
       "  b{p} = q_recovered_s2z_{set_id};\n"
     )
@@ -4507,6 +4956,7 @@ stan_re_s2z_partial_independent_transform <- function(
   )
   bfl <- re_s2z_bframel(bframe, r)
   info <- re_s2z_info(bfl, prior = prior)
+  stopifnot(!isTRUE(info$ordinal))
   q <- length(info$qnames)
   M <- nrow(r)
   J <- seq_rows(r)
@@ -5359,6 +5809,7 @@ stan_re_s2z_partial_independent_transform <- function(
   stopifnot(is.reframe(r), has_rows(r), all(r$s2z))
   bfl <- re_s2z_bframel(bframe, r)
   info <- re_s2z_info(bfl, prior = prior)
+  stopifnot(!isTRUE(info$ordinal))
   q <- length(info$qnames)
   M <- nrow(r)
   J <- seq_rows(r)
@@ -5372,6 +5823,14 @@ stan_re_s2z_partial_independent_transform <- function(
   s2z_fisher <- !is.null(fisher_info)
   s2z_partial <- s2z_mode %in% c("partial", "auto")
   stopifnot(!s2z_fisher || identical(s2z_mode, "auto"))
+
+  single_set <- nlist(set_id = id, ids = id, bfl, infos = list(info))
+  if (.stan_re_s2z_uses_explicit_mean(single_set)) {
+    return(.stan_re_s2z_explicit(
+      id, bframe = bframe, prior = prior,
+      normalize = normalize, out = out
+    ))
+  }
 
   if (s2z_fisher) {
     out <- stan_re_s2z_fisher_def(out, id)
@@ -5780,7 +6239,8 @@ stan_re_s2z_partial_independent_transform <- function(
                                      fisher_info = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   stopifnot(
-    is.reframe(r), nrow(r) > 1L, !isTRUE(r$cor[1]), all(r$s2z)
+    is.reframe(r), nrow(r) > 1L, !isTRUE(r$cor[1]), all(r$s2z),
+    !isTRUE(info$ordinal)
   )
   q <- length(info$qnames)
   M <- nrow(r)
@@ -6155,7 +6615,9 @@ stan_re_s2z_partial_independent_transform <- function(
 .stan_re_s2z_scalar <- function(id, r, info, normalize, out = list(),
                                 fisher_info = NULL) {
   lpdf <- stan_lpdf_name(normalize)
-  stopifnot(is.reframe(r), nrow(r) == 1L, all(r$s2z))
+  stopifnot(
+    is.reframe(r), nrow(r) == 1L, all(r$s2z), !isTRUE(info$ordinal)
+  )
   q <- length(info$qnames)
   p <- info$p
   idp <- paste0(r$id, usc(combine_prefix(check_prefix(r))))
