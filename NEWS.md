@@ -22,10 +22,23 @@ coordinates retain ordinary brms prior handling. The omitted means of multiple
 local blocks are handled jointly, with specialized scalar, diagonal, and
 Gaussian Matheron paths where applicable.
 
-This foundation deliberately excludes ordinal location predictors, centered,
-partially centered, or automatically centered modes, group scales varying by
-level, and structural extensions such as `by`, `cov`, `pw`, multi-membership,
-special group coefficients, cross-predictor IDs, and sparse or QR designs.
+Built-in ordinal location predictors for `cumulative`, `cratio`, `sratio`,
+`acat`, and `hurdle_cumulative` families support physical S2Z varying
+intercepts and slopes with flexible, equidistant, or grouped thresholds. The
+ordinal map validates the affine design identity `Z = 1 a^T + X C`, translates
+the temporary thresholds together with population slopes, and reconstructs
+conventional public thresholds, population slopes, and group intercepts and
+slopes. Flat, normal, Student-t, and Cauchy active-coordinate priors are
+supported through conditionally Gaussian machinery.
+
+Ordinal `threshold = "sum_to_zero"`, fixed or shared ordinal-mixture
+thresholds, category-specific S2Z group effects, and the non-Gaussian
+active-prior fallback (including logistic priors) remain unsupported. The S2Z
+implementation still has no public centering or scaling-mode API; centered,
+partially centered, or automatically centered modes and group scales varying
+by level remain deferred. Structural extensions such as `by`, `cov`, `pw`,
+multi-membership, other special group coefficients, cross-predictor IDs, and
+sparse or QR designs also remain unsupported.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

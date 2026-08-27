@@ -5,6 +5,7 @@ s2z_validation_dat <- local({
   data.frame(
     y = sin(seq_len(n) / 5),
     y_ord = ordered(rep(letters[1:3], length.out = n)),
+    y_ord4 = ordered(rep(letters[1:4], length.out = n)),
     x = seq(-1.5, 1.5, length.out = n),
     z = cos(seq_len(n) / 7),
     w = seq(0.2, 2.1, length.out = n),
@@ -18,6 +19,13 @@ s2z_error_message <- function(expr) {
   error <- tryCatch(expr, error = identity)
   expect_s3_class(error, "error")
   conditionMessage(error)
+}
+
+s2z_ordinal_frame <- function(formula, family, data = s2z_validation_dat) {
+  formula <- validate_formula(formula, family = family, data = data)
+  bterms <- brmsterms(formula)
+  data <- validate_data(data, bterms = bterms)
+  brmsframe(bterms, data = data)
 }
 
 test_that("S2Z logistic prior specifications are exact and validated", {
@@ -112,20 +120,6 @@ test_that("S2Z design matching is numerically exact", {
 })
 
 test_that("S2Z structure errors precede design errors and carry context", {
-  ordinal_form <- y_ord ~ x +
-    (1 | gr(g, id = "score", s2z = TRUE))
-  msg <- s2z_error_message(stancode(
-    ordinal_form, data = s2z_validation_dat, family = cumulative()
-  ))
-  expect_match(msg, "S2Z capability 'ordinal_location'", fixed = TRUE)
-  expect_match(msg, "response 'y_ord'", fixed = TRUE)
-  expect_match(msg, "family 'cumulative'", fixed = TRUE)
-  expect_match(msg, "dpar 'mu'", fixed = TRUE)
-  expect_match(msg, "group 'g'", fixed = TRUE)
-  expect_match(msg, "ID 'score'", fixed = TRUE)
-  expect_match(msg, "Remedy:", fixed = TRUE)
-  expect_false(grepl("matching population-level", msg, fixed = TRUE))
-
   special_form <- y ~ x +
     (1 + me(x, sx) | gr(g, id = "me-score", s2z = TRUE))
   msg <- s2z_error_message(stancode(
@@ -136,7 +130,7 @@ test_that("S2Z structure errors precede design errors and carry context", {
   expect_false(grepl("matching population-level", msg, fixed = TRUE))
 })
 
-test_that("the VerbAgg ordinal model reaches the intentional S2Z gate", {
+test_that("the VerbAgg ordinal model reaches threshold-aware descriptors", {
   skip_if_not_installed("lme4")
   data_env <- new.env(parent = emptyenv())
   utils::data("VerbAgg", package = "lme4", envir = data_env)
@@ -145,16 +139,286 @@ test_that("the VerbAgg ordinal model reaches the intentional S2Z gate", {
     (1 | gr(id, id = "person-s2z", s2z = TRUE)) +
     (1 | gr(item, id = "item-s2z", s2z = TRUE))
 
-  msg <- s2z_error_message(stancode(
-    form, data = verbagg, family = cumulative()
+  bframe <- s2z_ordinal_frame(form, cumulative(), data = verbagg)$dpars$mu
+  infos <- re_s2z_infos(bframe)
+  expect_length(infos, 2L)
+  expect_true(all(vapply(infos, `[[`, logical(1), "ordinal")))
+  expect_true(all(vapply(infos, function(x) {
+    identical(x$r$coef, "Intercept") &&
+      all(x$H[x$threshold_q, 1L] == -1) &&
+      all(x$H[x$slope_q, 1L] == 0)
+  }, logical(1))))
+})
+
+test_that("ordinal q coordinates put threshold primitives before slopes", {
+  form <- y_ord ~ w + z +
+    (1 + w | gr(g, id = "ordinal-map", s2z = TRUE))
+  bframe <- s2z_ordinal_frame(form, cumulative())$dpars$mu
+  info <- re_s2z_info(bframe)
+
+  expect_true(info$ordinal)
+  expect_equal(info$qtype, c("threshold", "threshold", "b", "b"))
+  expect_equal(info$threshold_q, 1:2)
+  expect_equal(info$slope_q, 3:4)
+  expect_equal(info$qnames, c("Intercept[1]", "Intercept[2]", "w", "z"))
+  expect_equal(
+    names(info$threshold),
+    c(
+      "q", "group", "group_index", "coef", "threshold_index", "kind",
+      "source", "qname"
+    )
+  )
+  expect_equal(info$threshold$coef, c("1", "2"))
+  expect_equal(info$threshold$kind, rep("flexible", 2L))
+  expect_equal(info$match_q, c(NA_integer_, 3L))
+
+  expect_equal(info$C, matrix(
+    c(0, 1, 0, 0), nrow = 2L, byrow = TRUE,
+    dimnames = list(c("w", "z"), c("Intercept", "w"))
   ))
-  expect_match(msg, "S2Z capability 'ordinal_location'", fixed = TRUE)
-  expect_match(msg, "response 'resp'", fixed = TRUE)
-  expect_match(msg, "family 'cumulative'", fixed = TRUE)
-  expect_match(msg, "group 'id'", fixed = TRUE)
-  expect_match(msg, "ID 'person-s2z'", fixed = TRUE)
-  expect_match(msg, "ordinal S2Z support", fixed = TRUE)
-  expect_false(grepl("matching population-level", msg, fixed = TRUE))
+  expect_equal(info$a, c(1, mean(s2z_validation_dat$w)))
+  expect_equal(
+    unname(info$H[info$threshold_q, , drop = FALSE]),
+    matrix(rep(-info$a, 2L), nrow = 2L, byrow = TRUE)
+  )
+  expect_equal(
+    unname(info$H[info$slope_q, , drop = FALSE]), unname(info$C)
+  )
+  expect_equal(info$active_q, 1:3)
+  expect_equal(info$inactive_q, 4L)
+
+  Z <- re_s2z_design_matrix(bframe, s2z_validation_dat)
+  Xc <- re_s2z_likelihood_design(bframe)
+  expect_equal(
+    unname(Z),
+    unname(matrix(1, nrow(Z), 1L) %*% t(info$a) + Xc %*% info$C),
+    tolerance = info$affine_tolerance
+  )
+})
+
+test_that("ordinal varying intercepts do not require a fixed Intercept", {
+  form <- y_ord ~ 1 + (1 | gr(g, id = "threshold-only", s2z = TRUE))
+  bframe <- s2z_ordinal_frame(form, cumulative())$dpars$mu
+  info <- re_s2z_info(bframe)
+
+  expect_false("Intercept" %in% info$fixef)
+  expect_equal(info$qnames, c("Intercept[1]", "Intercept[2]"))
+  expect_equal(dim(info$C), c(0L, 1L))
+  expect_equal(info$a, 1)
+  expect_equal(unname(info$H), matrix(-1, nrow = 2L, ncol = 1L))
+  expect_true(is.na(info$match_q))
+  expect_equal(info$active_q, info$threshold_q)
+})
+
+test_that("ordinal slope-only blocks carry centered means into thresholds", {
+  form <- y_ord ~ w + z +
+    (0 + w | gr(g, id = "slope-only", s2z = TRUE))
+  bframe <- s2z_ordinal_frame(form, sratio())$dpars$mu
+  info <- re_s2z_info(bframe)
+
+  expect_equal(info$r$coef, "w")
+  expect_equal(info$a, mean(s2z_validation_dat$w))
+  expect_equal(unname(info$H[info$threshold_q, 1L]), rep(-info$a, 2L))
+  expect_equal(unname(info$H[info$slope_q, 1L]), c(1, 0))
+})
+
+test_that("equidistant and grouped ordinal primitives are explicit", {
+  equidistant_form <- y_ord ~ w +
+    (1 + w | gr(g, id = "equidistant", s2z = TRUE))
+  equidistant_frame <- s2z_ordinal_frame(
+    equidistant_form, cumulative(threshold = "equidistant")
+  )$dpars$mu
+  equidistant <- re_s2z_info(equidistant_frame)
+  expect_equal(equidistant$threshold_q, 1L)
+  expect_equal(equidistant$threshold$kind, "first")
+  expect_equal(equidistant$threshold$coef, "")
+  expect_equal(equidistant$qnames, c("first_Intercept", "w"))
+  expect_equal(unname(equidistant$H[1L, ]), -equidistant$a)
+
+  grouped_form <- y_ord | thres(gr = h) ~ w +
+    (1 + w | gr(g, id = "grouped", s2z = TRUE))
+  grouped_frame <- s2z_ordinal_frame(
+    grouped_form, cumulative()
+  )$dpars$mu
+  grouped <- re_s2z_info(grouped_frame)
+  expect_equal(grouped$threshold_q, seq_len(8L))
+  expect_equal(grouped$threshold$group_index, rep(seq_len(4L), each = 2L))
+  expect_equal(grouped$threshold$threshold_index, rep(1:2, 4L))
+  expect_equal(
+    unname(grouped$H[grouped$threshold_q, , drop = FALSE]),
+    matrix(rep(-grouped$a, 8L), nrow = 8L, byrow = TRUE)
+  )
+})
+
+test_that("ordinal design errors distinguish names from affine identity", {
+  missing_form <- y_ord ~ w +
+    (1 + w + z | gr(g, id = "missing", s2z = TRUE))
+  msg <- s2z_error_message(s2z_ordinal_frame(missing_form, cumulative()))
+  expect_match(msg, "S2Z capability 'matching_name'", fixed = TRUE)
+  expect_match(msg, "coefficient(s) 'z'", fixed = TRUE)
+  expect_false(grepl("coefficient(s) 'Intercept'", msg, fixed = TRUE))
+
+  form <- y_ord ~ w +
+    (1 + w | gr(g, id = "affine", s2z = TRUE))
+  bframe <- s2z_ordinal_frame(form, cumulative())$dpars$mu
+  changed <- s2z_validation_dat
+  changed$w[1L] <- changed$w[1L] + 1e-10
+  msg <- s2z_error_message(validate_re_s2z_design(bframe, data = changed))
+  expect_match(msg, "S2Z capability 'affine_identity'", fixed = TRUE)
+  expect_match(msg, "coefficient(s) 'w'", fixed = TRUE)
+  expect_match(msg, "Z = 1 a^T + Xc C", fixed = TRUE)
+})
+
+test_that("ordinal affine validation accepts exact general maps", {
+  exact_form <- y_ord ~ I(2 * w + 3) +
+    (0 + I(2 * w + 3) | gr(g, id = "exact-affine", s2z = TRUE))
+  bframe <- s2z_ordinal_frame(exact_form, cumulative())$dpars$mu
+  info <- re_s2z_info(bframe)
+
+  expect_no_error(
+    validate_re_s2z_design(bframe, data = s2z_validation_dat)
+  )
+  expect_true(info$affine_ok)
+  expect_equal(unname(info$C), matrix(1, nrow = 1L, ncol = 1L))
+  expect_equal(info$a, mean(2 * s2z_validation_dat$w + 3))
+
+  renamed_form <- y_ord ~ I(2 * w + 3) +
+    (0 + w | gr(g, id = "renamed-affine", s2z = TRUE))
+  renamed_frame <- s2z_ordinal_frame(
+    renamed_form, cumulative()
+  )$dpars$mu
+  renamed <- re_s2z_info(renamed_frame)
+  expect_no_error(
+    validate_re_s2z_design(renamed_frame, data = s2z_validation_dat)
+  )
+  expect_true(renamed$affine_ok)
+  expect_true(is.na(renamed$match_slope))
+  expect_equal(unname(renamed$C), matrix(0.5, nrow = 1L, ncol = 1L))
+  expect_equal(renamed$a, mean(s2z_validation_dat$w))
+})
+
+test_that("ordinal threshold priors retain per-primitive metadata", {
+  form <- y_ord4 ~ w +
+    (1 + w | gr(g, id = "threshold-priors", s2z = TRUE))
+  bframe <- s2z_ordinal_frame(form, cumulative())
+  bprior <- prior(normal(0, 2), class = Intercept, coef = "1") +
+    prior(student_t(5, 1, 3), class = Intercept, coef = "2") +
+    prior(cauchy(-1, 4), class = Intercept, coef = "3")
+  effective_prior <- validate_prior(
+    bprior, formula = form, data = s2z_validation_dat,
+    family = cumulative()
+  )
+  specs <- re_s2z_infos(
+    bframe$dpars$mu, prior = effective_prior
+  )[[1L]]$threshold_prior
+
+  expect_equal(vapply(specs, `[[`, character(1), "dist"),
+               c("normal", "student", "student"))
+  expect_equal(vapply(specs, `[[`, character(1), "coef"), c("1", "2", "3"))
+  expect_equal(vapply(specs, `[[`, character(1), "group"), rep("", 3L))
+  expect_equal(vapply(specs, `[[`, numeric(1), "q"), 1:3)
+  expect_equal(vapply(specs, `[[`, numeric(1), "df"), c(NA, 5, 1))
+})
+
+test_that("ordinal active logistic priors are rejected contextually", {
+  form <- y_ord ~ w +
+    (1 + w | gr(g, id = "ordinal-logistic", s2z = TRUE))
+  msg <- s2z_error_message(stancode(
+    form, data = s2z_validation_dat, family = cumulative(),
+    prior = prior(logistic(0, 1), class = Intercept)
+  ))
+  expect_match(
+    msg, "S2Z capability 'ordinal_active_prior_distribution'", fixed = TRUE
+  )
+  expect_match(msg, "threshold", fixed = TRUE)
+  expect_match(msg, "prior 'logistic(0, 1)'", fixed = TRUE)
+
+  msg <- s2z_error_message(stancode(
+    form, data = s2z_validation_dat, family = cumulative(),
+    prior = prior(logistic(0, 1), class = b, coef = w)
+  ))
+  expect_match(
+    msg, "S2Z capability 'ordinal_active_prior_distribution'", fixed = TRUE
+  )
+  expect_match(msg, "coefficient(s) 'w'", fixed = TRUE)
+})
+
+test_that("bounded and tagged ordinal threshold priors stay gated", {
+  form <- y_ord ~ w +
+    (1 + w | gr(g, id = "threshold-prior-gate", s2z = TRUE))
+  cases <- list(
+    ordinal_threshold_prior_bounds = prior(
+      normal(0, 1), class = Intercept, lb = -5
+    ),
+    ordinal_threshold_prior_tag = prior(
+      normal(0, 1), class = Intercept, tag = "thresholds"
+    )
+  )
+
+  for (capability in names(cases)) {
+    msg <- s2z_error_message(stancode(
+      form, data = s2z_validation_dat, family = cumulative(),
+      prior = cases[[capability]]
+    ))
+    expect_match(
+      msg, paste0("S2Z capability '", capability, "'"), fixed = TRUE
+    )
+    expect_match(msg, "ID 'threshold-prior-gate'", fixed = TRUE)
+    expect_match(msg, "coefficient(s) 'threshold 1'", fixed = TRUE)
+    expect_match(msg, "Remedy:", fixed = TRUE)
+  }
+})
+
+test_that("unsupported ordinal threshold and category-specific maps stay gated", {
+  sum_to_zero_form <- y_ord ~ w +
+    (1 + w | gr(g, id = "threshold-stz", s2z = TRUE))
+  msg <- s2z_error_message(s2z_ordinal_frame(
+    sum_to_zero_form, cumulative(threshold = "sum_to_zero")
+  ))
+  expect_match(
+    msg, "S2Z capability 'ordinal_sum_to_zero_thresholds'", fixed = TRUE
+  )
+  expect_match(msg, "common location coordinate", fixed = TRUE)
+
+  cs_form <- y_ord ~ w +
+    (cs(1) | gr(g, id = "category-specific", s2z = TRUE))
+  msg <- s2z_error_message(s2z_ordinal_frame(cs_form, cumulative()))
+  expect_match(
+    msg, "S2Z capability 'ordinal_category_specific'", fixed = TRUE
+  )
+  expect_match(msg, "ID 'category-specific'", fixed = TRUE)
+})
+
+test_that("fixed mixture and custom ordinal thresholds stay gated", {
+  mixture_form <- bf(
+    y_ord ~ 1,
+    mu1 ~ w +
+      (1 + w | gr(g, id = "shared-thresholds", s2z = TRUE)),
+    mu2 ~ 1
+  )
+  msg <- s2z_error_message(s2z_ordinal_frame(
+    mixture_form, mixture(cumulative(), nmix = 2, order = "mu")
+  ))
+  expect_match(
+    msg, "S2Z capability 'ordinal_fixed_thresholds'", fixed = TRUE
+  )
+  expect_match(msg, "Fixed or shared ordinal-mixture thresholds", fixed = TRUE)
+  expect_match(msg, "ID 'shared-thresholds'", fixed = TRUE)
+  expect_match(msg, "Remedy:", fixed = TRUE)
+
+  custom_ordinal <- custom_family(
+    "s2z_custom_ordinal", dpars = "mu", links = "identity",
+    type = "int", specials = "ordinal", threshold = "flexible"
+  )
+  custom_form <- y_ord ~ w +
+    (1 + w | gr(g, id = "custom-ordinal", s2z = TRUE))
+  msg <- s2z_error_message(
+    s2z_ordinal_frame(custom_form, custom_ordinal)
+  )
+  expect_match(msg, "S2Z capability 'ordinal_custom_family'", fixed = TRUE)
+  expect_match(msg, "Custom ordinal likelihoods", fixed = TRUE)
+  expect_match(msg, "ID 'custom-ordinal'", fixed = TRUE)
+  expect_match(msg, "Remedy:", fixed = TRUE)
 })
 
 test_that("S2Z design and prior/global phases use capability diagnostics", {

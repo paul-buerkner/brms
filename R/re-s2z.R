@@ -6,6 +6,20 @@ has_re_s2z <- function(x) {
     "s2z" %in% names(x$frame$re) && any(x$frame$re$s2z)
 }
 
+# Does the ordinary location component of a brmsterms object contain an S2Z
+# group term? Likelihood generation works from terms rather than frames, where
+# the flag still lives in the parsed gr() calls.
+has_re_s2z_terms <- function(x) {
+  if (!is.brmsterms(x)) {
+    return(FALSE)
+  }
+  mu <- x$dpars[["mu"]]
+  re <- mu$re %||% NULL
+  has_rows(re) && any(vapply(re$gcall, function(gcall) {
+    isTRUE(gcall$s2z)
+  }, logical(1)))
+}
+
 # Return all local linear predictor frames contained in a brms frame.
 all_bframel <- function(x) {
   if (is.bframel(x)) {
@@ -345,14 +359,292 @@ validate_re_s2z_sd_prior <- function(prior, r, bframe = NULL) {
   invisible(NULL)
 }
 
+# Is this the location predictor of an ordinal response? Ordinal auxiliary
+# predictors keep the ordinary scalar-coordinate map used by PR 1.
+re_s2z_is_ordinal_location <- function(bframe) {
+  stopifnot(is.bframel(bframe))
+  if (!is_ordinal(bframe$family)) {
+    return(FALSE)
+  }
+  px <- check_prefix(bframe)
+  if (nzchar(px$nlpar %||% "")) {
+    return(FALSE)
+  }
+  dpar <- dpar_class(px$dpar %||% "")
+  !length(dpar) || !nzchar(dpar) || identical(dpar, "mu")
+}
+
+# Primitive ordinal threshold coordinates. Flexible thresholds retain one
+# primitive per threshold. Equidistant thresholds retain only their translated
+# first threshold; delta is a spacing and is not part of the omitted-location
+# map. Group-specific vectors are kept separate even when their lengths agree.
+re_s2z_threshold_frame <- function(bframe) {
+  stopifnot(is.bframel(bframe), re_s2z_is_ordinal_location(bframe))
+  groups <- as.character(get_thres_groups(bframe))
+  if (!length(groups)) {
+    groups <- ""
+  }
+  equidistant <- has_equidistant_thres(bframe)
+  out <- lapply(seq_along(groups), function(i) {
+    group <- groups[i]
+    if (equidistant) {
+      coef <- ""
+      threshold_index <- 1L
+      kind <- "first"
+    } else {
+      coef <- as.character(get_thres(bframe, group = group))
+      threshold_index <- seq_along(coef)
+      kind <- rep("flexible", length(coef))
+    }
+    data.frame(
+      q = NA_integer_, group = rep(group, length(threshold_index)),
+      group_index = rep.int(i, length(threshold_index)), coef = coef,
+      threshold_index = threshold_index, kind = kind,
+      stringsAsFactors = FALSE
+    )
+  })
+  out <- do_call(rbind, out)
+  out$q <- seq_rows(out)
+  out$source <- ifelse(out$kind == "first", "first_Intercept", "Intercept")
+  out$qname <- ifelse(
+    out$kind == "first",
+    ifelse(
+      nzchar(out$group), paste0("first_Intercept[", out$group, "]"),
+      "first_Intercept"
+    ),
+    ifelse(
+      nzchar(out$group),
+      paste0("Intercept[", out$group, ",", out$coef, "]"),
+      paste0("Intercept[", out$coef, "]")
+    )
+  )
+  out
+}
+
+# Center X exactly as the generated ordinal likelihood does. This R copy is
+# used only to validate and record the affine map; Stan recomputes Xc from X.
+re_s2z_likelihood_design <- function(bframe) {
+  stopifnot(is.bframel(bframe))
+  X <- bframe$sdata$fe$X
+  if (is.null(X)) {
+    n <- length(bframe$frame$resp$values %||% numeric())
+    X <- matrix(numeric(), nrow = n, ncol = 0L)
+  }
+  if (!is.matrix(X)) {
+    X <- as.matrix(X)
+  }
+  if (isTRUE(bframe$frame$fe$center) && ncol(X)) {
+    X <- sweep(X, 2L, colMeans(X), FUN = "-")
+  }
+  X
+}
+
+# Build a name-preserving candidate slope map. The exact affine solver below
+# keeps this selector when it already works, but may replace columns when a
+# different fixed-effect basis spans the same varying design (for example,
+# treatment-coded factors or algebraically rescaled terms). A varying
+# intercept deliberately has no matching population coordinate in an ordinal
+# model; its column is represented by a alone and shifts every threshold row.
+re_s2z_ordinal_C <- function(r, slope_names) {
+  stopifnot(is.reframe(r), is.character(slope_names))
+  C <- matrix(
+    0, nrow = length(slope_names), ncol = nrow(r),
+    dimnames = list(slope_names, r$coef)
+  )
+  slope <- r$coef != "Intercept"
+  matched <- match(r$coef[slope], slope_names)
+  present <- !is.na(matched)
+  if (any(present)) {
+    C[cbind(matched[present], which(slope)[present])] <- 1
+  }
+  C
+}
+
+# Construct the raw group design without consulting a descriptor. This avoids
+# a descriptor/design recursion while the exact affine map is being built.
+.re_s2z_design_matrix_r <- function(r, data) {
+  stopifnot(is.reframe(r), has_rows(r), is.data.frame(data))
+  out <- matrix(NA_real_, nrow = nrow(data), ncol = nrow(r))
+  for (gn in unique(r$gn)) {
+    take <- which(r$gn == gn)
+    rg <- r[take, , drop = FALSE]
+    Zg <- get_model_matrix(rg$form[[1]], data = data, rename = FALSE)
+    if (ncol(Zg) != length(take)) {
+      stop2("Internal mismatch in the sum-to-zero group-level design matrix.")
+    }
+    out[, take] <- Zg
+  }
+  colnames(out) <- r$coef
+  out
+}
+
+# Build ordinal block descriptors around the exact affine identity
+# Z = 1 a' + Xc C. q always consists of threshold primitives first and
+# population slopes second. H follows q = theta - H m, hence its threshold
+# rows are -a and its population-slope rows are +C.
+.re_s2z_ordinal_descriptors <- function(bframe, data = NULL) {
+  stopifnot(is.bframel(bframe), re_s2z_is_ordinal_location(bframe))
+  re <- bframe$frame$re
+  ids <- unique(re$id[re$s2z])
+  threshold <- re_s2z_threshold_frame(bframe)
+  threshold_q <- threshold$q
+  slope_names <- as.character(
+    bframe$frame$fe$vars_stan %||% character()
+  )
+  slope_q <- length(threshold_q) + seq_along(slope_names)
+  qnames <- c(threshold$qname, slope_names)
+  qtype <- c(rep("threshold", length(threshold_q)),
+             rep("b", length(slope_q)))
+  Xc <- re_s2z_likelihood_design(bframe)
+  stopifnot(ncol(Xc) == length(slope_names))
+  center <- bframe$frame$fe$center
+
+  out <- lapply(ids, function(id) {
+    r <- subset2(re, id = id)
+    C <- re_s2z_ordinal_C(r, slope_names)
+    match_slope <- match(r$coef, slope_names)
+    match_slope[r$coef == "Intercept"] <- NA_integer_
+    match_q <- ifelse(
+      is.na(match_slope), NA_integer_, length(threshold_q) + match_slope
+    )
+
+    if (!is.null(data)) {
+      Z <- .re_s2z_design_matrix_r(r, data = data)
+      residual <- Z - Xc %*% C
+      # Preserve exact name-matched selectors when possible. For every
+      # remaining column, solve the general affine system against [1, Xc].
+      # lm.fit() also supplies a deterministic estimable solution when the
+      # fixed design is rank deficient; aliased coefficients are set to zero.
+      candidate_a <- unname(residual[1L, ])
+      candidate_deviation <- sweep(residual, 2L, candidate_a, FUN = "-")
+      candidate_scale <- pmax(
+        1,
+        apply(abs(Z), 2L, max),
+        apply(abs(Xc %*% C), 2L, max)
+      )
+      candidate_tolerance <- 64 * .Machine$double.eps * candidate_scale
+      candidate_error <- apply(abs(candidate_deviation), 2L, max)
+      solve_columns <- which(
+        !is.finite(candidate_error) |
+          candidate_error > candidate_tolerance
+      )
+      if (length(solve_columns)) {
+        affine_design <- cbind(1, Xc)
+        fit <- lm.fit(
+          affine_design, Z[, solve_columns, drop = FALSE],
+          tol = sqrt(.Machine$double.eps), singular.ok = TRUE
+        )
+        affine_coef <- fit$coefficients
+        if (!is.matrix(affine_coef)) {
+          affine_coef <- matrix(affine_coef, ncol = 1L)
+        }
+        affine_coef[is.na(affine_coef)] <- 0
+        # Remove numerical dust so ordinary selectors retain literal 0/1
+        # entries in generated Stan while nontrivial maps remain unchanged.
+        for (value in c(-1, 0, 1)) {
+          close <- abs(affine_coef - value) <=
+            128 * .Machine$double.eps * pmax(1, abs(affine_coef))
+          affine_coef[close] <- value
+        }
+        candidate_a[solve_columns] <- affine_coef[1L, ]
+        if (nrow(C)) {
+          C[, solve_columns] <- affine_coef[-1L, , drop = FALSE]
+        }
+        residual <- Z - Xc %*% C
+      }
+      # The first row is the affine constant used in the checked identity.
+      # A scale-aware machine-precision envelope admits only arithmetic
+      # roundoff, not a substantively approximate design match.
+      a <- unname(residual[1L, ])
+      deviation <- sweep(residual, 2L, a, FUN = "-")
+      affine_error_by_coef <- if (ncol(deviation)) {
+        apply(abs(deviation), 2L, max)
+      } else {
+        numeric()
+      }
+      names(affine_error_by_coef) <- r$coef
+      affine_error <- if (length(affine_error_by_coef)) {
+        max(affine_error_by_coef)
+      } else {
+        0
+      }
+      affine_scale <- max(1, abs(Z), abs(Xc %*% C), na.rm = TRUE)
+      affine_tolerance <- 64 * .Machine$double.eps * affine_scale
+      affine_ok_by_coef <- is.finite(affine_error_by_coef) &
+        affine_error_by_coef <= affine_tolerance
+      affine_ok <- all(affine_ok_by_coef)
+    } else {
+      # Frames created without source data should normally carry the cached
+      # descriptor produced by validate_re_s2z_design(). This fallback is the
+      # ordinary named-design map and remains useful for legacy frames.
+      Xraw <- bframe$sdata$fe$X
+      means_X <- if (isTRUE(center) && !is.null(Xraw) && ncol(Xraw)) {
+        colMeans(Xraw)
+      } else {
+        rep(0, nrow(C))
+      }
+      a <- as.numeric(crossprod(means_X, C))
+      a[r$coef == "Intercept"] <- 1
+      affine_error <- NA_real_
+      affine_error_by_coef <- setNames(rep(NA_real_, nrow(r)), r$coef)
+      affine_tolerance <- NA_real_
+      affine_ok <- NA
+      affine_ok_by_coef <- setNames(rep(NA, nrow(r)), r$coef)
+    }
+
+    H <- matrix(
+      0, nrow = length(qnames), ncol = nrow(r),
+      dimnames = list(qnames, r$coef)
+    )
+    if (length(threshold_q)) {
+      H[threshold_q, ] <- matrix(
+        rep(-a, times = length(threshold_q)),
+        nrow = length(threshold_q), byrow = TRUE
+      )
+    }
+    if (length(slope_q)) {
+      H[slope_q, ] <- C
+    }
+    block_active_q <- which(rowSums(abs(H)) > 0)
+    nlist(
+      id, r, ordinal = TRUE, qnames, qtype, threshold_q, slope_q,
+      threshold, match_q, match_slope, center,
+      fixef = slope_names,
+      p = usc(combine_prefix(check_prefix(bframe))),
+      context = re_s2z_context(bframe, r = r),
+      a, C, H, block_active_q, affine_ok, affine_error,
+      affine_error_by_coef, affine_ok_by_coef, affine_tolerance
+    )
+  })
+
+  active_q <- sort(unique(unlist(lapply(out, `[[`, "block_active_q"),
+                                    use.names = FALSE)))
+  inactive_q <- setdiff(seq_along(qnames), active_q)
+  active_names <- qnames[active_q]
+  inactive_names <- qnames[inactive_q]
+  active_index <- match(seq_along(qnames), active_q)
+  lapply(out, function(info) {
+    info$active_q <- active_q
+    info$inactive_q <- inactive_q
+    info$active_names <- active_names
+    info$inactive_names <- inactive_names
+    info$active_index <- active_index
+    info$match_active <- match(info$match_q, active_q)
+    info
+  })
+}
+
 # Build validated-block descriptors without looking at priors. Active rows are
 # the union of all rows touched by the local omitted-mean maps. In a centered
 # fixed design, any matched non-intercept slope also structurally touches the
 # temporary intercept row, even when its realized column mean happens to be 0.
-.re_s2z_descriptors <- function(bframe) {
+.re_s2z_descriptors <- function(bframe, data = NULL) {
   stopifnot(is.bframel(bframe))
   if (!has_re_s2z(bframe)) {
     return(list())
+  }
+  if (re_s2z_is_ordinal_location(bframe)) {
+    return(.re_s2z_ordinal_descriptors(bframe, data = data))
   }
   re <- bframe$frame$re
   ids <- unique(re$id[re$s2z])
@@ -362,7 +654,8 @@ validate_re_s2z_sd_prior <- function(prior, r, bframe = NULL) {
     r <- subset2(re, id = id)
     match_q <- match(r$coef, qnames)
     nlist(
-      id, r, qnames, match_q, center,
+      id, r, ordinal = FALSE, qnames,
+      qtype = rep("b", length(qnames)), match_q, center,
       fixef = bframe$frame$fe$vars_stan,
       p = usc(combine_prefix(check_prefix(bframe))),
       context = re_s2z_context(bframe, r = r)
@@ -394,8 +687,107 @@ validate_re_s2z_sd_prior <- function(prior, r, bframe = NULL) {
   })
 }
 
-# Attach active-coordinate priors while leaving fixed-only slots as neutral
-# placeholders for q-length consumers in the existing Stan generators.
+# Extract and parse the ordinary prior for one primitive ordinal threshold.
+# Threshold metadata stays on the parsed specification so code generation can
+# retain distinct priors for grouped vectors and unequal threshold counts.
+re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
+  stopifnot(
+    is.brmsprior(prior), is.bframel(bframe), is.data.frame(threshold),
+    nrow(threshold) == 1L, is.reframe(r), has_rows(r)
+  )
+  px <- check_prefix(bframe)
+  group <- threshold$group[[1L]]
+  coef <- threshold$coef[[1L]]
+  p <- subset2(
+    prior, class = "Intercept", coef = c(coef, ""),
+    group = c(group, ""), ls = px
+  )
+  populated <- function(x) {
+    if (!nrow(x)) {
+      return(logical())
+    }
+    nzchar(x$prior) | nzchar(x$lb) | nzchar(x$ub) | nzchar(x$tag)
+  }
+  choose_most_specific <- function(x) {
+    if (nrow(x) <= 1L) {
+      return(x)
+    }
+    exact_group <- x$group == group
+    if (any(exact_group)) {
+      x <- x[exact_group, , drop = FALSE]
+    }
+    if (nrow(x) > 1L) {
+      prefix_vars <- intersect(vars_prefix(), names(x))
+      specificity <- rowSums(nzchar(x[, prefix_vars, drop = FALSE]))
+      x <- x[which.max(specificity), , drop = FALSE]
+    }
+    x
+  }
+
+  ans <- p[FALSE, , drop = FALSE]
+  if (nzchar(coef)) {
+    pcoef <- subset2(p, coef = coef)
+    pcoef <- pcoef[populated(pcoef), , drop = FALSE]
+    ans <- choose_most_specific(pcoef)
+  }
+  if (!nrow(ans)) {
+    pbase <- subset2(p, coef = "")
+    pbase <- pbase[populated(pbase), , drop = FALSE]
+    ans <- choose_most_specific(pbase)
+  }
+
+  label <- if (threshold$kind[[1L]] == "first") {
+    "first threshold"
+  } else {
+    paste0("threshold ", coef)
+  }
+  if (nzchar(group)) {
+    label <- paste0(label, " in threshold group '", group, "'")
+  }
+  context <- re_s2z_context(bframe, r = r, coef = label)
+  if (nrow(ans) && (nzchar(ans$lb) || nzchar(ans$ub))) {
+    stop_re_s2z(
+      context, "ordinal_threshold_prior_bounds",
+      paste0("Bounded ordinal threshold priors are not supported by the ",
+             "sum-to-zero parameterization (", label, ")."),
+      "remove the bound or use s2z = FALSE for this ordinal predictor."
+    )
+  }
+  if (nrow(ans) && nzchar(ans$tag)) {
+    stop_re_s2z(
+      context, "ordinal_threshold_prior_tag",
+      paste0("Tagged ordinal threshold priors are not supported by the ",
+             "sum-to-zero parameterization (", label, ")."),
+      "remove the tag or use s2z = FALSE for this ordinal predictor."
+    )
+  }
+  value <- if (nrow(ans)) ans$prior[[1L]] else ""
+  context$prior <- value
+  spec <- parse_re_s2z_prior(value, coef = label, context = context)
+  if (identical(spec$dist, "logistic")) {
+    stop_re_s2z(
+      context, "ordinal_active_prior_distribution",
+      paste0(
+        "Logistic priors on S2Z-active ordinal coordinates are not yet ",
+        "supported (", label, ")."
+      ),
+      "use a normal, student_t, or cauchy threshold prior."
+    )
+  }
+  spec$class <- "Intercept"
+  spec$group <- group
+  spec$coef <- coef
+  spec$q <- threshold$q[[1L]]
+  spec$kind <- threshold$kind[[1L]]
+  spec$threshold_index <- threshold$threshold_index[[1L]]
+  spec$prior <- value
+  spec
+}
+
+# Attach active-coordinate priors while leaving fixed-only slope slots as
+# neutral placeholders. Every ordinal threshold primitive receives its own
+# specification, including H=0 rows, so the joint dense system has one clear
+# owner for all threshold densities.
 .re_s2z_attach_priors <- function(infos, bframe, prior) {
   if (!length(infos)) {
     return(infos)
@@ -403,7 +795,20 @@ validate_re_s2z_sd_prior <- function(prior, r, bframe = NULL) {
   qnames <- infos[[1L]]$qnames
   active_q <- infos[[1L]]$active_q
   specs <- rep(list(re_s2z_flat_prior()), length(qnames))
-  for (i in active_q) {
+  if (isTRUE(infos[[1L]]$ordinal)) {
+    threshold <- infos[[1L]]$threshold
+    for (i in seq_rows(threshold)) {
+      qi <- threshold$q[i]
+      specs[[qi]] <- re_s2z_threshold_prior(
+        prior, bframe, threshold = threshold[i, , drop = FALSE],
+        r = infos[[1L]]$r
+      )
+    }
+    prior_q <- intersect(active_q, infos[[1L]]$slope_q)
+  } else {
+    prior_q <- active_q
+  }
+  for (i in prior_q) {
     # Attribute prior diagnostics to a block that actually touches this
     # population coordinate. In a multi-block predictor the first block need
     # not contain the failing coefficient.
@@ -411,7 +816,8 @@ validate_re_s2z_sd_prior <- function(prior, r, bframe = NULL) {
       i %in% info$block_active_q
     }, logical(1)))
     r_context <- infos[[touching[1L]]]$r
-    if (infos[[1L]]$center && qnames[i] == "Intercept") {
+    if (!isTRUE(infos[[1L]]$ordinal) &&
+        infos[[1L]]$center && qnames[i] == "Intercept") {
       specs[[i]] <- re_s2z_prior(
         prior, bframe, class = "Intercept", r = r_context
       )
@@ -420,24 +826,43 @@ validate_re_s2z_sd_prior <- function(prior, r, bframe = NULL) {
         prior, bframe, class = "b", coef = qnames[i], r = r_context
       )
     }
+    if (isTRUE(infos[[1L]]$ordinal) &&
+        identical(specs[[i]]$dist, "logistic")) {
+      context <- re_s2z_context(
+        bframe, r = r_context, coef = qnames[i],
+        prior = specs[[i]]$prior %||% "logistic"
+      )
+      stop_re_s2z(
+        context, "ordinal_active_prior_distribution",
+        paste0(
+          "Logistic priors on S2Z-active ordinal coordinates are not yet ",
+          "supported (coefficient '", qnames[i], "')."
+        ),
+        "use a normal, student_t, cauchy, or flat slope prior."
+      )
+    }
   }
   lapply(infos, function(info) {
     info$prior <- specs
+    if (isTRUE(info$ordinal)) {
+      info$threshold_prior <- unname(specs[info$threshold_q])
+    }
     info
   })
 }
 
 # Describe all local S2Z blocks in one linear predictor. Blocks retain their
 # own covariance models but share one active-coordinate omitted-mean system.
-re_s2z_infos <- function(bframe, prior = NULL) {
+re_s2z_infos <- function(bframe, prior = NULL, data = NULL) {
   stopifnot(is.bframel(bframe))
   if (!has_re_s2z(bframe)) {
     return(list())
   }
-  if (is.list(bframe$frame$re_s2z) && length(bframe$frame$re_s2z)) {
+  if (is.null(data) &&
+      is.list(bframe$frame$re_s2z) && length(bframe$frame$re_s2z)) {
     out <- bframe$frame$re_s2z
   } else {
-    out <- .re_s2z_descriptors(bframe)
+    out <- .re_s2z_descriptors(bframe, data = data)
   }
   if (!is.null(prior)) {
     out <- .re_s2z_attach_priors(out, bframe = bframe, prior = prior)
@@ -470,23 +895,22 @@ re_s2z_info <- function(bframe, prior = NULL, id = NULL) {
 # block may be assembled from multiple grouping terms that share an ID.
 re_s2z_design_matrix <- function(bframe, data, id = NULL) {
   stopifnot(is.bframel(bframe))
-  info <- re_s2z_info(bframe, id = id)
-  if (is.null(info)) {
+  re <- bframe$frame$re
+  ids <- unique(re$id[re$s2z])
+  if (!length(ids)) {
     return(matrix(numeric(), nrow = nrow(data), ncol = 0L))
   }
-  r <- info$r
-  out <- matrix(NA_real_, nrow = nrow(data), ncol = nrow(r))
-  for (gn in unique(r$gn)) {
-    take <- which(r$gn == gn)
-    rg <- r[take, , drop = FALSE]
-    Zg <- get_model_matrix(rg$form[[1]], data = data, rename = FALSE)
-    if (ncol(Zg) != length(take)) {
-      stop2("Internal mismatch in the sum-to-zero group-level design matrix.")
-    }
-    out[, take] <- Zg
+  if (is.null(id) && length(ids) != 1L) {
+    stop2("An explicit group-level ID is required when constructing a ",
+          "design for multiple sum-to-zero blocks.")
   }
-  colnames(out) <- r$coef
-  out
+  if (is.null(id)) {
+    id <- ids[[1L]]
+  }
+  if (length(id) != 1L || !id %in% ids) {
+    stop2("Invalid sum-to-zero group-level ID.")
+  }
+  .re_s2z_design_matrix_r(subset2(re, id = id), data = data)
 }
 
 # Validate local structural eligibility before any fixed/group design match is
@@ -501,15 +925,39 @@ validate_re_s2z_structure <- function(bframe, data) {
   re <- bframe$frame$re
   ids <- unique(re$id[re$s2z])
   first_r <- subset2(re, id = ids[1L])
-  if (is_ordinal(bframe$family)) {
-    stop_re_s2z(
-      re_s2z_context(bframe, r = first_r), "ordinal_location",
-      paste0(
-        "Ordinal thresholds are not yet supported together with ",
-        "gr(..., s2z = TRUE)."
-      ),
-      "use a conventional group-level term for this ordinal predictor, or wait for ordinal S2Z support."
-    )
+  ordinal_location <- re_s2z_is_ordinal_location(bframe)
+  if (ordinal_location) {
+    context <- re_s2z_context(bframe, r = first_r)
+    if (fix_intercepts(bframe)) {
+      stop_re_s2z(
+        context, "ordinal_fixed_thresholds",
+        paste0(
+          "Fixed or shared ordinal-mixture thresholds cannot absorb the ",
+          "omitted sum-to-zero group-effect mean."
+        ),
+        "use component-specific flexible thresholds or set s2z = FALSE for this ordinal location predictor."
+      )
+    }
+    if (has_sum_to_zero_thres(bframe)) {
+      stop_re_s2z(
+        context, "ordinal_sum_to_zero_thresholds",
+        paste0(
+          "Sum-to-zero ordinal thresholds do not retain the common ",
+          "location coordinate required by gr(..., s2z = TRUE)."
+        ),
+        "use flexible or equidistant thresholds, or set s2z = FALSE."
+      )
+    }
+    if (is.customfamily(bframe$family)) {
+      stop_re_s2z(
+        context, "ordinal_custom_family",
+        paste0(
+          "Custom ordinal likelihoods have not been validated for the ",
+          "sum-to-zero threshold-location map."
+        ),
+        "use a built-in ordinal family or set s2z = FALSE."
+      )
+    }
   }
   if (order_intercepts(bframe)) {
     stop_re_s2z(
@@ -524,6 +972,16 @@ validate_re_s2z_structure <- function(bframe, data) {
   for (id in ids) {
     r <- subset2(re, id = id)
     context <- re_s2z_context(bframe, r = r)
+    if (ordinal_location && any(r$type == "cs")) {
+      stop_re_s2z(
+        context, "ordinal_category_specific",
+        paste0(
+          "Category-specific sum-to-zero group effects require a ",
+          "category-specific omitted-mean map."
+        ),
+        "use ordinary category-specific group effects with s2z = FALSE, or use a non-category-specific S2Z block."
+      )
+    }
     if (!all(r$s2z)) {
       stop_re_s2z(
         context, "same_id_s2z",
@@ -675,27 +1133,73 @@ validate_re_s2z_structure <- function(bframe, data) {
 validate_re_s2z_design <- function(bframe, data) {
   stopifnot(is.bframel(bframe))
   if (!has_re_s2z(bframe)) {
-    return(invisible(NULL))
+    return(invisible(list()))
   }
   X <- bframe$sdata$fe$X
-  infos <- re_s2z_infos(bframe)
+  infos <- re_s2z_infos(bframe, data = data)
   missing <- unique(unlist(lapply(infos, function(info) {
-    info$r$coef[is.na(info$match_q)]
+    if (isTRUE(info$ordinal)) {
+      # A differently named varying column is valid when it lies in the
+      # affine span of the ordinal likelihood design. Diagnose it as missing
+      # only when both the name-based hint and the actual affine solve fail.
+      info$r$coef[
+        info$r$coef != "Intercept" & is.na(info$match_slope) &
+          !info$affine_ok_by_coef
+      ]
+    } else {
+      info$r$coef[is.na(info$match_q)]
+    }
   }), use.names = FALSE))
   if (length(missing)) {
     first <- which(vapply(infos, function(info) {
-      any(is.na(info$match_q))
+      if (isTRUE(info$ordinal)) {
+        any(
+          info$r$coef != "Intercept" & is.na(info$match_slope) &
+            !info$affine_ok_by_coef
+        )
+      } else {
+        any(is.na(info$match_q))
+      }
     }, logical(1)))[1L]
+    level <- if (isTRUE(infos[[first]]$ordinal)) {
+      "non-intercept sum-to-zero group-level slope"
+    } else {
+      "sum-to-zero group-level coefficient"
+    }
     stop_re_s2z(
       re_s2z_context(bframe, r = infos[[first]]$r, coef = missing),
       "matching_name",
       paste0(
-        "Every sum-to-zero group-level coefficient must have a matching ",
-        "population-level design column. Missing: ",
+        "Every ", level, " must have a matching population-level design ",
+        "column. Missing: ",
         paste(missing, collapse = ", "), "."
       ),
-      "add population-level terms with these coefficient names or remove the unmatched group effects."
+      "add population-level slope terms with these coefficient names or remove the unmatched group effects."
     )
+  }
+  if (isTRUE(infos[[1L]]$ordinal)) {
+    bad <- which(!vapply(infos, `[[`, logical(1), "affine_ok"))
+    if (length(bad)) {
+      first <- infos[[bad[1L]]]
+      bad_coef <- unique(unlist(lapply(infos[bad], function(info) {
+        names(info$affine_ok_by_coef)[!info$affine_ok_by_coef]
+      }), use.names = FALSE))
+      stop_re_s2z(
+        re_s2z_context(bframe, r = first$r, coef = bad_coef),
+        "affine_identity",
+        paste0(
+          "The ordinal group design does not satisfy the required exact ",
+          "affine identity Z = 1 a^T + Xc C for coefficient(s) '",
+          paste(bad_coef, collapse = ", "), "'."
+        ),
+        paste0(
+          "use the same named slope expressions and contrasts in the ",
+          "population- and group-level designs; varying intercepts may map ",
+          "directly to threshold location."
+        )
+      )
+    }
+    return(invisible(infos))
   }
   mismatches <- list()
   for (info in infos) {
@@ -735,7 +1239,7 @@ validate_re_s2z_design <- function(bframe, data) {
       "use the identical population- and group-level term expressions and contrasts."
     )
   }
-  invisible(NULL)
+  invisible(infos)
 }
 
 # Validate prior-dependent and cross-predictor constraints only after the
@@ -801,11 +1305,17 @@ validate_re_s2z_prior_global <- function(bframe, prior) {
   for (x in frames) {
     infos <- re_s2z_infos(x)
     active_q <- infos[[1L]]$active_q
-    active_names <- infos[[1L]]$qnames[active_q]
-    active_intercept <- infos[[1L]]$center & active_names == "Intercept"
-    active_b <- active_names[!active_intercept]
-    if (length(active_b) && has_special_prior(prior, x, class = "b")) {
+    if (isTRUE(infos[[1L]]$ordinal)) {
+      active_b_q <- intersect(active_q, infos[[1L]]$slope_q)
+      active_b <- infos[[1L]]$qnames[active_b_q]
+      active_intercept <- logical()
+    } else {
+      active_names <- infos[[1L]]$qnames[active_q]
+      active_intercept <- infos[[1L]]$center & active_names == "Intercept"
       active_b_q <- active_q[!active_intercept]
+      active_b <- active_names[!active_intercept]
+    }
+    if (length(active_b) && has_special_prior(prior, x, class = "b")) {
       touching <- which(vapply(infos, function(info) {
         active_b_q[1L] %in% info$block_active_q
       }, logical(1)))
@@ -822,19 +1332,26 @@ validate_re_s2z_prior_global <- function(bframe, prior) {
         "use a supported scalar prior on the active coordinates or make them fixed-only."
       )
     }
-    if (any(active_intercept) &&
+    active_threshold <- isTRUE(infos[[1L]]$ordinal) &&
+      length(infos[[1L]]$threshold_q)
+    if ((any(active_intercept) || active_threshold) &&
         has_special_prior(prior, x, class = "Intercept")) {
+      coef <- if (active_threshold) {
+        infos[[1L]]$qnames[infos[[1L]]$threshold_q]
+      } else {
+        "Intercept"
+      }
       stop_re_s2z(
         re_s2z_context(
-          x, r = infos[[1L]]$r, coef = "Intercept",
+          x, r = infos[[1L]]$r, coef = coef,
           prior = "special Intercept prior"
         ),
         "active_special_prior",
         paste0(
-          "Special population-level priors are not yet supported on ",
+          "Special intercept or threshold priors are not yet supported on ",
           "S2Z-active coordinates."
         ),
-        "use a supported scalar intercept prior or remove the active intercept map."
+        "use supported scalar normal, student_t, or cauchy priors, or remove the active location map."
       )
     }
     for (info in infos) {

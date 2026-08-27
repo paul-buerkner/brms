@@ -69,17 +69,28 @@ deviations whose sum is exactly zero over the grouping levels observed in
 the model data. For
 \code{1 + x + (1 + x | gr(g, s2z = TRUE))}, the constraint is applied
 separately to the varying intercepts and the varying \code{x} slopes.
-\pkg{brms} handles each omitted group-effect mean jointly with its matching
-population coefficient, then reconstructs conventional population and
-group effects. Thus \code{fixef}, \code{ranef}, \code{coef}, and prediction
-retain their usual interpretation.
+For nonordinal predictors, \pkg{brms} handles each omitted group-effect mean
+jointly with its matching population coefficient. For supported ordinal
+location predictors, it instead handles the mean jointly with the temporary
+thresholds and population slopes. Conventional population coefficients,
+ordinal thresholds, and group effects are reconstructed, so \code{fixef},
+\code{ranef}, \code{coef}, and prediction retain their usual interpretation.
 
-Every S2Z varying design column must have a population-level column with the
-same coefficient name and numerically identical values. This applies to
-varying intercepts, numeric and factor slopes, and interaction columns,
-including their contrasts. For example, \code{x * f} must appear on both
-sides of the grouping bar when all of its expanded columns vary. At least
-two grouping levels must be observed.
+For nonordinal predictors, every S2Z varying design column must have a
+population-level column with the same coefficient name and numerically
+identical values. This applies to varying intercepts, numeric and factor
+slopes, and interaction columns, including their contrasts. For example,
+\code{x * f} must appear on both sides of the grouping bar when all of its
+expanded columns vary.
+
+An ordinal location predictor instead requires the group design \eqn{Z} and
+the population design \eqn{X} used by its likelihood to satisfy the checked
+affine identity \eqn{Z = 1 a^T + X C}. Thus a varying intercept need not
+match a nonexistent scalar fixed intercept: its omitted mean translates all
+thresholds. Varying slopes are supported when the affine identity holds,
+including constant offsets caused by centering. A nonconstant varying column
+must still be represented by the population design. At least two grouping
+levels must be observed in all S2Z models.
 
 The main support boundaries are:
 
@@ -87,6 +98,11 @@ The main support boundaries are:
 Feature \tab Supported? \tab Details\cr
 Ordinary designs \tab Yes \tab Matched intercepts, numeric or factor slopes,
 and interactions.\cr
+Ordinal locations \tab Limited \tab \code{cumulative}, \code{cratio},
+\code{sratio}, \code{acat}, and \code{hurdle_cumulative}, with varying
+intercepts and slopes.\cr
+Ordinal thresholds \tab Limited \tab Flexible, equidistant, and grouped
+thresholds.\cr
 Group distribution \tab Yes \tab Gaussian or Student-t.\cr
 Coefficient correlation \tab Yes \tab \code{cor = TRUE} or \code{FALSE}
 within one predictor-local ID.\cr
@@ -103,10 +119,10 @@ multi-membership, and special group coefficients.\cr
 Group scales \tab Yes \tab Coefficient-specific \code{sd} parameters shared
 across observed grouping levels.\cr
 Active population priors \tab Limited \tab Flat, \code{normal},
-\code{student_t}, \code{cauchy}, or \code{logistic}, with numeric constant
-arguments.\cr
-Public output \tab Yes \tab Conventional population coefficients and group
-effects are reconstructed exactly.\cr
+\code{student_t}, or \code{cauchy}; \code{logistic} only outside ordinal
+location systems. Arguments must be numeric constants.\cr
+Public output \tab Yes \tab Conventional population coefficients, group
+effects, and supported ordinal thresholds are reconstructed exactly.\cr
 }
 
 A phylogenetic or pedigree covariance supplied through \code{cov} is a
@@ -146,6 +162,11 @@ includes their exact density and Jacobian. This supports, among others, the
 default \code{logistic(0, 1)} intercept prior in auxiliary probability
 predictors such as \code{zi}, \code{hu}, \code{zoi}, \code{coi}, mixture
 weights, Wiener \code{bias}, and asym-Laplace \code{quantile}.
+Ordinal S2Z systems support flat, \code{normal}, \code{student_t}, and
+\code{cauchy} active-coordinate priors through their conditionally Gaussian
+representations. The separate non-Gaussian fallback, including
+\code{logistic} active-coordinate priors, is not yet supported for ordinal
+location predictors.
 
 Usual priors on shared group-level standard deviations, correlations, and
 Student-t degrees of freedom remain available, including separate
@@ -160,19 +181,24 @@ shorthand term so that generated category predictors receive separate
 internal IDs, or specify eligible non-reference category predictors with a
 distinct ID for each one.
 
-This foundation intentionally provides physical S2Z coordinates only.
-Centered, partially centered, and automatically centered modes are deferred;
-there is no S2Z \code{center} argument. Group-level scales that vary across
-grouping levels and priors on realized level-specific scales are also
-deferred. Ordinal location predictors and ordered mixture intercepts are not
-supported. Structural extensions including \code{by}, \code{cov},
-\code{pw}, multi-membership, category-specific or other special group
-coefficients, cross-predictor IDs, and sparse or QR population designs are
-deferred as well. Bounds, tags, and special priors on S2Z-active
-population coordinates, prior-only sampling, and non-positive fixed
-group-level standard deviations are unsupported. Custom Stan code must not
-use conventional population- or group-level coefficients before they are
-reconstructed in generated quantities.
+This implementation intentionally provides physical S2Z coordinates only;
+there is no public S2Z centering or scaling-mode argument. Centered,
+partially centered, and automatically centered modes are deferred.
+Group-level scales that vary across grouping levels and priors on realized
+level-specific scales are also deferred.
+
+For ordinal location predictors, \code{threshold = "sum_to_zero"}, fixed or
+shared ordinal-mixture thresholds, and category-specific S2Z group effects
+are unsupported. Custom ordinal families and ordered mixture intercepts
+remain unsupported more generally. Structural extensions including
+\code{by}, \code{cov},
+\code{pw}, multi-membership, other special group coefficients,
+cross-predictor IDs, and sparse or QR population designs are deferred as
+well. Bounds, tags, and special priors on S2Z-active population coordinates,
+prior-only sampling, and non-positive fixed group-level standard deviations
+are unsupported. Custom Stan code must not use conventional population- or
+group-level coefficients before they are reconstructed in generated
+quantities.
 }
 \examples{
 \dontrun{

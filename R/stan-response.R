@@ -271,6 +271,103 @@ stan_response <- function(bframe, threads, normalize, ...) {
   out
 }
 
+# Normalize the ordinal part of an S2Z descriptor for Stan code generation.
+# Threshold descriptors are predictor-wide and therefore identical in every
+# local S2Z block. The fallback keeps this consumer usable while older fitted
+# frames are being restructured to the current descriptor schema.
+stan_re_s2z_thres <- function(bterms, info = NULL) {
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  if (is.null(info)) {
+    infos <- re_s2z_infos(bterms)
+    if (!length(infos)) {
+      return(data.frame())
+    }
+    info <- infos[[1L]]
+  }
+  out <- info$thresholds %||% info$threshold
+  required <- c("q", "group", "group_index", "coef",
+                "threshold_index", "kind")
+  if (!is.null(out) && !is.data.frame(out)) {
+    row_list <- is.list(out) && length(out) &&
+      !all(required %in% names(out)) &&
+      all(vapply(out, is.list, logical(1)))
+    if (row_list) {
+      out <- do.call(rbind, lapply(out, as.data.frame,
+                                  stringsAsFactors = FALSE))
+    } else {
+      out <- as.data.frame(out, stringsAsFactors = FALSE)
+    }
+  }
+  if (is.null(out) || !nrow(out)) {
+    # Compatibility fallback for descriptors produced before threshold
+    # metadata was stored explicitly. q still has thresholds first.
+    groups <- get_thres_groups(bterms)
+    if (!length(groups)) {
+      groups <- ""
+    }
+    if (has_equidistant_thres(bterms)) {
+      n <- rep(1L, length(groups))
+      coef <- rep("1", length(groups))
+      kind <- rep("first", length(groups))
+    } else {
+      n <- vapply(groups, function(group) {
+        length(get_thres(bterms, group = group))
+      }, integer(1))
+      coef <- unlist(lapply(groups, function(group) {
+        as.character(get_thres(bterms, group = group))
+      }), use.names = FALSE)
+      kind <- rep("flexible", sum(n))
+    }
+    q <- info$threshold_q %||% seq_len(sum(n))
+    out <- data.frame(
+      q = q,
+      group = rep(groups, n),
+      group_index = rep(seq_along(groups), n),
+      coef = coef,
+      threshold_index = unlist(lapply(n, seq_len), use.names = FALSE),
+      kind = kind,
+      stringsAsFactors = FALSE
+    )
+  }
+  missing <- setdiff(required, names(out))
+  if (length(missing)) {
+    stop2(
+      "Internal error: incomplete ordinal S2Z threshold descriptor; ",
+      "missing ", collapse_comma(missing), "."
+    )
+  }
+  out <- out[, required, drop = FALSE]
+  out$q <- as.integer(as.character(out$q))
+  out$group <- as.character(out$group)
+  out$group_index <- as.integer(as.character(out$group_index))
+  out$coef <- as.character(out$coef)
+  out$threshold_index <- as.integer(as.character(out$threshold_index))
+  out$kind <- as.character(out$kind)
+  if (anyNA(out$q) || anyNA(out$group_index) ||
+      anyNA(out$threshold_index) || anyDuplicated(out$q) ||
+      !all(out$kind %in% c("flexible", "first"))) {
+    stop2("Internal error: invalid ordinal S2Z threshold descriptor.")
+  }
+  threshold_q <- as.integer(info$threshold_q %||% out$q)
+  if (!setequal(out$q, threshold_q)) {
+    stop2("Internal error: ordinal S2Z threshold indices do not agree.")
+  }
+  out[order(out$q), , drop = FALSE]
+}
+
+# Stan expression holding one finite-population ordinal threshold primitive.
+stan_re_s2z_thres_source <- function(threshold, p = "", grouped = FALSE) {
+  stopifnot(is.data.frame(threshold), nrow(threshold) == 1L)
+  gr <- str_if(grouped, usc(threshold$group_index))
+  if (threshold$kind == "first") {
+    glue("first_theta_Intercept{p}{gr}")
+  } else {
+    glue(
+      "theta_Intercept{p}{gr}[{threshold$threshold_index}]"
+    )
+  }
+}
+
 # Stan code for ordinal thresholds
 # intercepts in ordinal models require special treatment
 # and must be present even when using non-linear predictors
@@ -288,11 +385,22 @@ stan_thres <- function(bterms, prior, normalize, ...) {
   coef_type <- str_if(has_ordered_thres(bterms), "", "real")
   gr <- grb <- ""
   groups <- get_thres_groups(bterms)
-  if (has_thres_groups(bterms)) {
+  grouped <- has_thres_groups(bterms)
+  if (grouped) {
     # include one threshold vector per group
     gr <- usc(seq_along(groups))
     grb <- paste0("[", seq_along(groups), "]")
   }
+  s2z <- has_re_s2z(bterms)
+  if (s2z) {
+    infos_s2z <- re_s2z_infos(bterms)
+    stopifnot(length(infos_s2z) > 0L)
+    info_s2z <- infos_s2z[[1L]]
+    thresholds_s2z <- stan_re_s2z_thres(bterms, info = info_s2z)
+  }
+  # Keep likelihood-facing finite thresholds distinct from the conventional
+  # temporary Intercept draws reconstructed in generated quantities.
+  finite_prefix <- str_if(s2z, "finite_")
   if (!is.customfamily(bterms$family)) {
     family_name <- bterms$family$family
     link <- bterms$family$link
@@ -323,42 +431,78 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     )
   } else {
     if (has_equidistant_thres(bterms)) {
-      bound <- subset2(prior, class = "delta", group = "", ls = px)$bound
       for (i in seq_along(groups)) {
+        if (s2z) {
+          str_add(out$par) <- glue(
+            "  real first_theta_Intercept{p}{gr[i]};",
+            "  // S2Z finite-population first threshold\n"
+          )
+        } else {
+          str_add_list(out) <- stan_prior(
+            prior, class = "Intercept", group = groups[i],
+            prefix = "first_", suffix = glue("{p}{gr[i]}"), px = px,
+            comment = "first threshold", normalize = normalize
+          )
+        }
         str_add_list(out) <- stan_prior(
-          prior, class = "Intercept", group = groups[i],
-          prefix = "first_", suffix = glue("{p}{gr[i]}"), px = px,
-          comment = "first threshold", normalize = normalize
-        )
-        str_add_list(out) <- stan_prior(
-          prior, class = "delta", group = groups[i], px = px, suffix = gr[i],
+          prior, class = "delta", group = groups[i], px = px,
+          suffix = glue("{p}{gr[i]}"),
           comment = "distance between thresholds", normalize = normalize
         )
       }
       str_add(out$tpar_def) <-
         "  // temporary thresholds for centered predictors\n"
       str_add(out$tpar_def) <- cglue(
-        "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
+        "  {type}[nthres{resp}{grb}] {finite_prefix}Intercept{p}{gr};\n"
       )
       str_add(out$tpar_comp) <-
         "  // compute equidistant thresholds\n"
       str_add(out$tpar_comp) <- cglue(
         "  for (k in 1:(nthres{resp}{grb})) {{\n",
-        "    Intercept{p}{gr}[k] = first_Intercept{p}{gr}",
+        "    {finite_prefix}Intercept{p}{gr}[k] = ",
+        str_if(s2z, "first_theta_", "first_"),
+        "Intercept{p}{gr}",
         " + (k - 1.0) * delta{p}{gr};\n",
         "  }}\n"
       )
     } else {
       for (i in seq_along(groups)) {
-        str_add_list(out) <- stan_prior(
-          prior, class = "Intercept", group = groups[i],
-          coef = get_thres(bterms, group = groups[i]),
-          type = glue("{type}[nthres{resp}{grb[i]}]"),
-          coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
-          comment = "temporary thresholds for centered predictors",
-          normalize = normalize
-        )
+        if (s2z) {
+          str_add(out$par) <- glue(
+            "  {type}[nthres{resp}{grb[i]}] ",
+            "theta_Intercept{p}{gr[i]};",
+            "  // S2Z finite-population thresholds\n"
+          )
+          str_add(out$tpar_def) <- glue(
+            "  {type}[nthres{resp}{grb[i]}] finite_Intercept{p}{gr[i]};",
+            "  // finite thresholds used by the ordinal likelihood\n"
+          )
+          str_add(out$tpar_comp) <- glue(
+            "  finite_Intercept{p}{gr[i]} = theta_Intercept{p}{gr[i]};\n"
+          )
+        } else {
+          str_add_list(out) <- stan_prior(
+            prior, class = "Intercept", group = groups[i],
+            coef = get_thres(bterms, group = groups[i]),
+            type = glue("{type}[nthres{resp}{grb[i]}]"),
+            coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
+            comment = "temporary thresholds for centered predictors",
+            normalize = normalize
+          )
+        }
       }
+    }
+  }
+  if (s2z) {
+    str_add(out$tpar_comp) <-
+      "  // assemble finite ordinal thresholds in the shared S2Z system\n"
+    for (i in seq_len(nrow(thresholds_s2z))) {
+      source <- stan_re_s2z_thres_source(
+        thresholds_s2z[i, , drop = FALSE], p = p, grouped = grouped
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  theta_s2z{p}[{thresholds_s2z$q[i]}] = {source};\n"
+      )
     }
   }
   stz <- ""
@@ -382,11 +526,14 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     grj <- seq_along(groups)
     grj <- glue("Kthres_start{resp}[{grj}]:Kthres_end{resp}[{grj}]")
     str_add(out$tpar_comp) <- cglue(
-      "  merged_Intercept{p}{stz}[{grj}] = Intercept{p}{stz}{gr};\n"
+      "  merged_Intercept{p}{stz}[{grj}] = ",
+      "{finite_prefix}Intercept{p}{stz}{gr};\n"
     )
     str_add(out$pll_args) <- cglue(", vector merged_Intercept{p}{stz}")
   } else {
-    str_add(out$pll_args) <- glue(", vector Intercept{p}{stz}")
+    str_add(out$pll_args) <- glue(
+      ", vector {finite_prefix}Intercept{p}{stz}"
+    )
   }
   sub_X_means <- ""
   if (stan_center_X(bterms) && length(all_terms(bterms$fe))) {
@@ -395,11 +542,53 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     # both implies adding <mean_X, b> to the temporary intercept
     sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
   }
-  str_add(out$gen_def) <- "  // compute actual thresholds\n"
-  str_add(out$gen_def) <- cglue(
-    "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",
-    " = Intercept{p}{stz}{gr}{sub_X_means};\n"
-  )
+  if (s2z) {
+    str_add(out$gen_def) <-
+      "  // conventional temporary and public raw-design thresholds\n"
+    str_add(out$gen_def) <- cglue(
+      "  vector[nthres{resp}{grb}] Intercept{p}{gr};\n"
+    )
+    str_add(out$gen_def) <- cglue(
+      "  vector[nthres{resp}{grb}] b{p}_Intercept{gr};\n"
+    )
+    set_id <- info_s2z$set_id %||% info_s2z$id
+    recovered <- glue("q_recovered_s2z_{set_id}")
+    str_add(out$gen_after_recovery) <-
+      "  // recover actual thresholds after conventional S2Z coefficients\n"
+    for (i in seq_along(groups)) {
+      take <- which(thresholds_s2z$group_index == i)
+      if (has_equidistant_thres(bterms)) {
+        stopifnot(length(take) == 1L,
+                  thresholds_s2z$kind[take] == "first")
+        str_add(out$gen_after_recovery) <- glue(
+          "  for (k in 1:(nthres{resp}{grb[i]})) {{\n",
+          "    Intercept{p}{gr[i]}[k] = {recovered}",
+          "[{thresholds_s2z$q[take]}] + (k - 1.0) * delta{p}{gr[i]}",
+          ";\n",
+          "    b{p}_Intercept{gr[i]}[k] = Intercept{p}{gr[i]}[k]",
+          "{sub_X_means};\n",
+          "  }}\n"
+        )
+      } else {
+        for (j in take) {
+          str_add(out$gen_after_recovery) <- glue(
+            "  Intercept{p}{gr[i]}",
+            "[{thresholds_s2z$threshold_index[j]}] = {recovered}",
+            "[{thresholds_s2z$q[j]}];\n",
+            "  b{p}_Intercept{gr[i]}",
+            "[{thresholds_s2z$threshold_index[j]}] = Intercept{p}{gr[i]}",
+            "[{thresholds_s2z$threshold_index[j]}]{sub_X_means};\n"
+          )
+        }
+      }
+    }
+  } else {
+    str_add(out$gen_def) <- "  // compute actual thresholds\n"
+    str_add(out$gen_def) <- cglue(
+      "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",
+      " = Intercept{p}{stz}{gr}{sub_X_means};\n"
+    )
+  }
   out
 }
 

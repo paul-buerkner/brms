@@ -100,9 +100,16 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
   validate_re_s2z_structure(x, data = data)
-  validate_re_s2z_design(x, data = data)
+  re_s2z <- validate_re_s2z_design(x, data = data)
   if (has_re_s2z(x)) {
-    x$frame$re_s2z <- re_s2z_infos(x)
+    # The affine ordinal map depends on the realized fixed and group designs.
+    # Cache the validated descriptors returned above so code generation and
+    # prediction reuse exactly the map that passed the identity check.
+    if (is.list(re_s2z) && length(re_s2z)) {
+      x$frame$re_s2z <- re_s2z
+    } else {
+      x$frame$re_s2z <- re_s2z_infos(x)
+    }
   }
   # these data_ functions may require the outputs of the corresponding
   # frame_ functions (but not vice versa) and are thus evaluated last
