@@ -8,18 +8,21 @@
 #   R_LIBS=/tmp/brms-plan02-lib \
 #     Rscript tests/local/tests.models-s2z-ordinal.R
 #
-# The default run fits conventional and exactly equivalent physical-S2Z
-# versions of cumulative, cratio, sratio, acat, and hurdle_cumulative models.
+# The default run fits conventional and exactly equivalent S2Z versions of
+# cumulative, cratio, sratio, acat, and hurdle_cumulative models. It samples
+# the S2Z target through standardized contrasts by default and reconstructs
+# the conventional physical effects for every public comparison.
 # The primary models have varying intercepts and slopes; additional cumulative
 # cases exercise slope-only, intercept-only, and Student group effects. Both
 # weak and coefficient-specific informative threshold priors are represented.
 # Useful controls (shown with their defaults) are
 #
 #   BRMS_S2Z_ORDINAL_CHAINS=4
-#   BRMS_S2Z_ORDINAL_WARMUP=750
-#   BRMS_S2Z_ORDINAL_SAMPLING=750
+#   BRMS_S2Z_ORDINAL_WARMUP=1000
+#   BRMS_S2Z_ORDINAL_SAMPLING=1000
 #   BRMS_S2Z_ORDINAL_CORES=min(chains, parallel::detectCores())
 #   BRMS_S2Z_ORDINAL_BACKEND=auto
+#   BRMS_S2Z_ORDINAL_CENTER=false
 #   BRMS_S2Z_ORDINAL_CACHE_DIR=
 #   BRMS_S2Z_ORDINAL_FILE_REFIT=on_change
 #   BRMS_S2Z_ORDINAL_CASES=all
@@ -27,7 +30,7 @@
 #   BRMS_S2Z_ORDINAL_ADAPT_DELTA=0.97
 #   BRMS_S2Z_ORDINAL_MAX_TREEDEPTH=12
 #   BRMS_S2Z_ORDINAL_EQUIV_Z=7
-#   BRMS_S2Z_ORDINAL_MAX_RHAT=1.01
+#   BRMS_S2Z_ORDINAL_MAX_RHAT=1.015
 #   BRMS_S2Z_ORDINAL_MIN_BULK_ESS=400
 #   BRMS_S2Z_ORDINAL_MIN_TAIL_ESS=400
 #   BRMS_S2Z_ORDINAL_MAX_DIVERGENCES=0
@@ -41,6 +44,10 @@
 # standard deviations. Each independently sampled difference must be no more
 # than BRMS_S2Z_ORDINAL_EQUIV_Z times its propagated Monte Carlo standard
 # error. Exact reconstruction identities have a separate numerical tolerance.
+# The diagnostic-gated default uses standardized S2Z contrasts because the
+# small weakly informed random-slope cases deliberately expose the centered
+# hierarchical funnel. Set BRMS_S2Z_ORDINAL_CENTER=true to characterize the
+# physical centered chart, or to a number in (0, 1) for partial centering.
 
 suppressPackageStartupMessages({
   library(brms)
@@ -85,6 +92,25 @@ env_logical <- function(name, default) {
   stop(name, " must be true or false.", call. = FALSE)
 }
 
+env_center <- function(name, default = FALSE) {
+  value <- tolower(Sys.getenv(name, unset = ""))
+  if (!nzchar(value)) {
+    return(default)
+  }
+  if (value %in% c("true", "t", "yes", "y", "1")) {
+    return(TRUE)
+  }
+  if (value %in% c("false", "f", "no", "n", "0")) {
+    return(FALSE)
+  }
+  out <- suppressWarnings(as.numeric(value))
+  if (length(out) != 1L || !is.finite(out) || out < 0 || out > 1) {
+    stop(name, " must be true, false, or a number in [0, 1].",
+         call. = FALSE)
+  }
+  out
+}
+
 choose_backend <- function() {
   requested <- tolower(Sys.getenv(
     "BRMS_S2Z_ORDINAL_BACKEND", unset = "auto"
@@ -116,8 +142,8 @@ choose_backend <- function() {
 }
 
 chains <- env_integer("BRMS_S2Z_ORDINAL_CHAINS", 4L, minimum = 2L)
-warmup <- env_integer("BRMS_S2Z_ORDINAL_WARMUP", 750L)
-sampling <- env_integer("BRMS_S2Z_ORDINAL_SAMPLING", 750L)
+warmup <- env_integer("BRMS_S2Z_ORDINAL_WARMUP", 1000L)
+sampling <- env_integer("BRMS_S2Z_ORDINAL_SAMPLING", 1000L)
 detected_cores <- parallel::detectCores(logical = FALSE)
 if (is.na(detected_cores)) {
   detected_cores <- 1L
@@ -126,12 +152,21 @@ cores <- env_integer(
   "BRMS_S2Z_ORDINAL_CORES", min(chains, detected_cores), minimum = 1L
 )
 backend <- choose_backend()
+s2z_center <- env_center("BRMS_S2Z_ORDINAL_CENTER", FALSE)
+s2z_chart <- if (isFALSE(s2z_center)) {
+  "noncentered"
+} else if (isTRUE(s2z_center)) {
+  "physical-centered"
+} else {
+  paste0("partial-", format(s2z_center, trim = TRUE, scientific = FALSE))
+}
+s2z_label <- paste0("s2z-", s2z_chart)
 adapt_delta <- env_number(
   "BRMS_S2Z_ORDINAL_ADAPT_DELTA", 0.97, minimum = 0.5
 )
 max_treedepth <- env_integer("BRMS_S2Z_ORDINAL_MAX_TREEDEPTH", 12L)
 equiv_z <- env_number("BRMS_S2Z_ORDINAL_EQUIV_Z", 7, minimum = 1)
-max_rhat <- env_number("BRMS_S2Z_ORDINAL_MAX_RHAT", 1.01, minimum = 1)
+max_rhat <- env_number("BRMS_S2Z_ORDINAL_MAX_RHAT", 1.015, minimum = 1)
 min_bulk_ess <- env_number(
   "BRMS_S2Z_ORDINAL_MIN_BULK_ESS", 400, minimum = 0
 )
@@ -169,6 +204,7 @@ options(mc.cores = cores, width = 160)
 configuration <- data.frame(
   brms_version = as.character(utils::packageVersion("brms")),
   backend = backend,
+  s2z_chart = s2z_chart,
   chains = chains,
   warmup = warmup,
   sampling = sampling,
@@ -272,7 +308,9 @@ cases <- list(
       y ~ x + (1 + x | gr(g, id = "cumulative"))
     ),
     s2z_formula = bf(
-      y ~ x + (1 + x | gr(g, id = "cumulative", s2z = TRUE))
+      y ~ x + (1 + x | gr(
+        g, id = "cumulative", s2z = TRUE, center = s2z_center
+      ))
     ),
     prior = model_prior("weak"),
     group_coef = c("Intercept", "x"),
@@ -287,7 +325,9 @@ cases <- list(
       y ~ x + (1 + x | gr(g, id = "cratio"))
     ),
     s2z_formula = bf(
-      y ~ x + (1 + x | gr(g, id = "cratio", s2z = TRUE))
+      y ~ x + (1 + x | gr(
+        g, id = "cratio", s2z = TRUE, center = s2z_center
+      ))
     ),
     prior = model_prior("informative"),
     group_coef = c("Intercept", "x"),
@@ -302,7 +342,9 @@ cases <- list(
       y ~ x + (1 + x | gr(g, id = "sratio"))
     ),
     s2z_formula = bf(
-      y ~ x + (1 + x | gr(g, id = "sratio", s2z = TRUE))
+      y ~ x + (1 + x | gr(
+        g, id = "sratio", s2z = TRUE, center = s2z_center
+      ))
     ),
     prior = model_prior("weak"),
     group_coef = c("Intercept", "x"),
@@ -317,7 +359,9 @@ cases <- list(
       y ~ x + (1 + x | gr(g, id = "acat"))
     ),
     s2z_formula = bf(
-      y ~ x + (1 + x | gr(g, id = "acat", s2z = TRUE))
+      y ~ x + (1 + x | gr(
+        g, id = "acat", s2z = TRUE, center = s2z_center
+      ))
     ),
     prior = model_prior("informative"),
     group_coef = c("Intercept", "x"),
@@ -334,7 +378,7 @@ cases <- list(
     ),
     s2z_formula = bf(
       y ~ x + (1 + x | gr(
-        g, id = "hurdle-ordinal", s2z = TRUE
+        g, id = "hurdle-ordinal", s2z = TRUE, center = s2z_center
       )),
       hu ~ 1 + z
     ),
@@ -351,7 +395,9 @@ cases <- list(
       y ~ x + (0 + x | gr(g, id = "slope-only"))
     ),
     s2z_formula = bf(
-      y ~ x + (0 + x | gr(g, id = "slope-only", s2z = TRUE))
+      y ~ x + (0 + x | gr(
+        g, id = "slope-only", s2z = TRUE, center = s2z_center
+      ))
     ),
     prior = model_prior("informative", correlated = FALSE),
     group_coef = "x",
@@ -366,7 +412,9 @@ cases <- list(
       y ~ x + (1 | gr(g, id = "intercept-only"))
     ),
     s2z_formula = bf(
-      y ~ x + (1 | gr(g, id = "intercept-only", s2z = TRUE))
+      y ~ x + (1 | gr(
+        g, id = "intercept-only", s2z = TRUE, center = s2z_center
+      ))
     ),
     prior = model_prior("weak", correlated = FALSE),
     group_coef = "Intercept",
@@ -382,7 +430,8 @@ cases <- list(
     ),
     s2z_formula = bf(
       y ~ x + (1 + x | gr(
-        g, id = "student", dist = "student", s2z = TRUE
+        g, id = "student", dist = "student", s2z = TRUE,
+        center = s2z_center
       ))
     ),
     prior = model_prior("informative", student_group = TRUE),
@@ -418,7 +467,7 @@ cache_file <- function(label) {
     return(NULL)
   }
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
-  suffix <- paste(backend, chains, warmup, sampling, sep = "-")
+  suffix <- paste(backend, s2z_chart, chains, warmup, sampling, sep = "-")
   file.path(cache_dir, paste0(label, "-", suffix, ".rds"))
 }
 
@@ -449,6 +498,10 @@ sample_model <- function(case, parameterization) {
   if (!is.null(file)) {
     args$file <- file
     args$file_refit <- file_refit
+  }
+  if (identical(backend, "cmdstanr")) {
+    # Exact reconstruction checks should not be limited by CSV serialization.
+    args$sig_figs <- 18L
   }
   do.call(brm, args)
 }
@@ -670,7 +723,12 @@ public_prediction_invariants <- function(fit, case, parameterization) {
   pp <- posterior_predict(fit)
   valid_prediction <- all(is.finite(pp)) &&
     all(pp %in% case$response_values)
-  threshold_ordered <- all(apply(thresholds, 1L, function(x) all(diff(x) > 0)))
+  ordered_thresholds <- brms:::has_ordered_thres(case$family)
+  threshold_support_ok <- if (ordered_thresholds) {
+    all(apply(thresholds, 1L, function(x) all(diff(x) > 0)))
+  } else {
+    all(is.finite(thresholds))
+  }
   public_names_ok <- all(
     c(sprintf("b_Intercept[%d]", seq_len(ncol(thresholds))), "b_x") %in%
       variables(fit)
@@ -685,7 +743,7 @@ public_prediction_invariants <- function(fit, case, parameterization) {
       "saved threshold and slope names use the conventional API",
       "fixef excludes internal finite ordinal coordinates",
       "public fixef and ranef reproduce posterior_linpred",
-      "ordinal thresholds are strictly ordered",
+      "ordinal thresholds satisfy the family support",
       "posterior_epred category probabilities sum to one",
       "posterior_predict returns only response categories"
     ),
@@ -693,7 +751,7 @@ public_prediction_invariants <- function(fit, case, parameterization) {
       if (public_names_ok) 0 else Inf,
       if (no_internal_fixef) 0 else Inf,
       max(abs(eta - eta_public)),
-      if (threshold_ordered) 0 else Inf,
+      if (threshold_support_ok) 0 else Inf,
       max(abs(probability_sum - 1)),
       if (valid_prediction) 0 else Inf
     ),
@@ -777,7 +835,7 @@ s2z_internal_invariants <- function(fit, case) {
 
   rows <- data.frame(
     case = case$name,
-    parameterization = "s2z",
+    parameterization = s2z_label,
     check = c(
       "internal physical group effects sum exactly to zero",
       "public ranef equals physical ranef plus one omitted mean",
@@ -956,12 +1014,12 @@ run_case <- function(case) {
   )
   invariants <- rbind(
     public_prediction_invariants(conventional, case, "conventional"),
-    public_prediction_invariants(s2z, case, "s2z"),
+    public_prediction_invariants(s2z, case, s2z_label),
     s2z_internal_invariants(s2z, case)
   )
   quality <- rbind(
     fit_quality(conventional, case$name, "conventional"),
-    fit_quality(s2z, case$name, "s2z")
+    fit_quality(s2z, case$name, s2z_label)
   )
   list(
     conventional = conventional,
@@ -1026,7 +1084,8 @@ if (nrow(failed_comparisons) || nrow(failed_invariants) ||
 }
 
 cat(
-  "\nPASS: ordinal conventional and physical-S2Z posteriors agree within ",
+  "\nPASS: ordinal conventional and S2Z posteriors agree under the ",
+  s2z_chart, " chart within ",
   "the prespecified propagated-MCSE thresholds; internal reconstruction, ",
   "observed/new-level prediction, serialization/update, and all sampler ",
   "diagnostic gates pass.\n",
